@@ -149,7 +149,7 @@ class Crawler:
 
         creds = None
         if os.path.exists(self.tokendirectory + '/' + 'token.pickle'):
-            with open('token.pickle', 'rb') as token:
+            with open(self.tokendirectory + '/' + 'token.pickle', 'rb') as token:
                 creds = pickle.load(token)
 
         if not creds or not creds.valid:
