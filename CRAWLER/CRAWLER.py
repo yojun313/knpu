@@ -51,7 +51,7 @@ class Crawler:
         #연구실 3번 컴퓨터
         if socket.gethostname() == "DESKTOP-HQK7QRT":
             self.filedirectory = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
-            self.proxydirectory = "C:/Users/qwe/Desktop/VSCODE/CRAWLER"
+            self.proxydirectory = "C:/Users/qwe/Documents/GitHub/BIGMACLAB/CRAWLER"
             self.DBpassword = "1234"
             self.proxy_option = "y"
             self.sender = "knpubigmac2024@gmail.com"
