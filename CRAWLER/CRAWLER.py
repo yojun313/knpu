@@ -53,34 +53,37 @@ class Crawler:
         if socket.gethostname() == "DESKTOP-HQK7QRT":
             self.filedirectory = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
             self.proxydirectory = "C:/Users/qwe/Documents/GitHub/BIGMACLAB/CRAWLER"
+            self.tokendirectory = "C:/Users/qwe/Desktop/VSCODE/CRAWLER"
             self.DBpassword = "1234"
             self.proxy_option = "y"
             self.sender = "knpubigmac2024@gmail.com"
             self.MailPassword = 'vygn nrmh erpf trji'
             self.mysql_option = "N" # 켜려면 Y
             self.crawlcom = "3번 컴퓨터"
-        
-        #연구실 2번 컴퓨터
-        elif socket.gethostname() == "DESKTOP-K8PL3FJ":
-            self.filedirectory = "C:/Users/skroh/OneDrive/Desktop/VSCODE/CRAWLER/scrapdata"
-            self.proxydirectory = "C:/Users/skroh/OneDrive/Desktop/VSCODE/CRAWLER"
-            self.DBpassword = "1234"
+            
+        # HP OMEN 
+        elif socket.gethostname() == "DESKTOP-502IMU5":
+            self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
+            self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
+            self.tokendirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER" 
+            self.DBpassword = "kingsman"
             self.proxy_option = "y"
             self.sender = "knpubigmac2024@gmail.com"
             self.MailPassword = 'vygn nrmh erpf trji'
             self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "2번 컴퓨터"
+            self.crawlcom = "HP OMEN"
         
-        #연구실 1번 컴퓨터
-        elif socket.gethostname() == "DESKTOP-UK7NR95":
-            self.filedirectory = "C:/Users/Roh/Desktop/VSCODE/CRAWLER/scrapdata"
-            self.proxydirectory = "C:/Users/Roh/Desktop/VSCODE/CRAWLER"
-            self.DBpassword = "1234"
+        # HP Z8
+        elif socket.gethostname() == "DESKTOP-0I9OM9K":
+            self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
+            self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
+            self.tokendirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER" 
+            self.DBpassword = "kingsman"
             self.proxy_option = "y"
             self.sender = "knpubigmac2024@gmail.com"
             self.MailPassword = 'vygn nrmh erpf trji'
             self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "1번 컴퓨터"
+            self.crawlcom = "HP Z8"
         
         # Yojun's MacBook Pro MACOS
         elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
@@ -104,28 +107,6 @@ class Crawler:
             self.mysql_option = "N" # 켜려면 Y
             self.crawlcom = "Yojun's MacBook Pro Window"
         
-        # HP OMEN 
-        elif socket.gethostname() == "DESKTOP-502IMU5":
-            self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
-            self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
-            self.DBpassword = "kingsman"
-            self.proxy_option = "y"
-            self.sender = "knpubigmac2024@gmail.com"
-            self.MailPassword = 'vygn nrmh erpf trji'
-            self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "HP OMEN"
-        
-        # HP Z8
-        elif socket.gethostname() == "DESKTOP-0I9OM9K":
-            self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
-            self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
-            self.DBpassword = "kingsman"
-            self.proxy_option = "y"
-            self.sender = "knpubigmac2024@gmail.com"
-            self.MailPassword = 'vygn nrmh erpf trji'
-            self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "HP Z8"
-            
         self.user_name = input("본인의 이름을 입력하세요: ")
         
         if self.user_name == "이정우":
@@ -167,7 +148,7 @@ class Crawler:
         SCOPES = ['https://www.googleapis.com/auth/drive']
 
         creds = None
-        if os.path.exists('token.pickle'):
+        if os.path.exists(self.tokendirectory + '/' + 'token.pickle'):
             with open('token.pickle', 'rb') as token:
                 creds = pickle.load(token)
 
@@ -181,7 +162,7 @@ class Crawler:
                 # access_type='offline' 추가
                 creds = flow.run_local_server(port=0, access_type='offline')
             # 새롭게 받은 인증 정보를 'token.pickle'에 저장
-            with open('token.pickle', 'wb') as token:
+            with open(self.tokendirectory + '/' + 'token.pickle', 'wb') as token:
                 pickle.dump(creds, token)
 
         self.drive_service = build('drive', 'v3', credentials=creds)
