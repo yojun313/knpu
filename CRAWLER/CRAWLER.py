@@ -36,7 +36,8 @@ from google.oauth2.credentials import Credentials
 import pickle
 import io
 
-#pip install lxml
+# pip install lxml
+# pip install google-api-python-client
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
