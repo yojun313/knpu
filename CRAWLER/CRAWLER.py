@@ -36,7 +36,8 @@ from google.oauth2.credentials import Credentials
 import pickle
 import io
 
-#pip install lxml
+# pip install lxml
+# pip install google-api-python-client
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -103,7 +104,7 @@ class Crawler:
             self.mysql_option = "N" # 켜려면 Y
             self.crawlcom = "Yojun's MacBook Pro Window"
         
-        # Omen 
+        # HP OMEN 
         elif socket.gethostname() == "DESKTOP-502IMU5":
             self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
             self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
@@ -112,7 +113,18 @@ class Crawler:
             self.sender = "knpubigmac2024@gmail.com"
             self.MailPassword = 'vygn nrmh erpf trji'
             self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "Omen"
+            self.crawlcom = "HP OMEN"
+        
+        # HP Z8
+        elif socket.gethostname() == "DESKTOP-0I9OM9K":
+            self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
+            self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
+            self.DBpassword = "kingsman"
+            self.proxy_option = "y"
+            self.sender = "knpubigmac2024@gmail.com"
+            self.MailPassword = 'vygn nrmh erpf trji'
+            self.mysql_option = "N" # 켜려면 Y
+            self.crawlcom = "HP Z8"
             
         self.user_name = input("본인의 이름을 입력하세요: ")
         
@@ -181,6 +193,7 @@ class Crawler:
         self.start = input("\nStart Date (ex: 20230101): ") 
         self.end = input("End Date (ex: 20231231): ") 
         self.keyword = input("\nKeyword: ")
+        self.upload = input("\n구글 드라이브에 업로드 하시겠습니까(Y/N)? ")
         #################################################################################
         
         self.start_dt, self.end_dt = datetime.datetime.strptime(self.start, "%Y%m%d"), datetime.datetime.strptime(self.end, "%Y%m%d")
@@ -197,27 +210,30 @@ class Crawler:
         self.urlList = []
         
     def upload_folder(self, folder_path):
-        folder_name = os.path.basename(folder_path)
-        
-        file_metadata = {
-        'name': folder_name,
-        'mimeType': 'application/vnd.google-apps.folder'
-        }
-        
-        if self.parent_folder_id:
-            file_metadata['parents'] = [self.parent_folder_id]
-        
-        folder = self.drive_service.files().create(body=file_metadata, fields='id').execute()
-        folder_id = folder.get('id')
-        
-        for file_name in os.listdir(folder_path):
-            file_path = os.path.join(folder_path, file_name)
-            if os.path.isfile(file_path):
-                file_metadata = {'name': file_name, 'parents': [folder_id]}
-                media = MediaFileUpload(file_path, resumable=True)
-                file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-        
-        self.drive_folder_link = f"https://drive.google.com/drive/folders/{folder_id}"
+        if self.upload.lower == 'y':
+            folder_name = os.path.basename(folder_path)
+            
+            file_metadata = {
+            'name': folder_name,
+            'mimeType': 'application/vnd.google-apps.folder'
+            }
+            
+            if self.parent_folder_id:
+                file_metadata['parents'] = [self.parent_folder_id]
+            
+            folder = self.drive_service.files().create(body=file_metadata, fields='id').execute()
+            folder_id = folder.get('id')
+            
+            for file_name in os.listdir(folder_path):
+                file_path = os.path.join(folder_path, file_name)
+                if os.path.isfile(file_path):
+                    file_metadata = {'name': file_name, 'parents': [folder_id]}
+                    media = MediaFileUpload(file_path, resumable=True)
+                    file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+            
+            self.drive_folder_link = f"https://drive.google.com/drive/folders/{folder_id}"
+        else:
+            self.drive_folder_link = "No Upload"
         
     def print_status(self, signal, print_type):
         
@@ -383,8 +399,8 @@ class Crawler:
         self.f.close()
         
         self.article_list = [["article id", "article press", "article type", "url", "article title", "article body", "article date"]]
-        self.reply_list = [["article id", "reply_id", "writer", "reply_date", "reply", "rere_count", "r_Like", "r_Bad", "r_Per_Like", 'r_Sentiment']]
-        self.rereply_list = [["article id", "reply_id", "id", "rerewriter", "rereply_date", "rereply", "rere_Like", "rere_Bad"]]
+        self.reply_list = [["article id", "reply_id", "writer", "reply_date", "reply", "rere_count", "r_Like", "r_Bad", "r_Per_Like", 'r_Sentiment', 'url']]
+        self.rereply_list = [["article id", "reply_id", "id", "rerewriter", "rereply_date", "rereply", "rere_Like", "rere_Bad", 'url']]
         
         print("====================================================================================================================") 
         print("크롤링: 네이버 뉴스")
@@ -395,6 +411,7 @@ class Crawler:
         print("컴퓨터:", self.crawlcom)
         print("저장 위치:", self.filedirectory + "/" + self.DBname)
         print("메일 수신:", self.receiver)
+        print("드라이브 업로드:", self.upload)
         print("====================================================================================================================\n")
 
         try:
@@ -637,7 +654,8 @@ class Crawler:
                     str(r_like_list[i]),
                     str(r_bad_list[i]),
                     str(r_per_like),
-                    str(r_sentiment),])
+                    str(r_sentiment),
+                    str(url)])
                 self.print_status(2, "news")
             
             if self.option == 3:
@@ -701,7 +719,8 @@ class Crawler:
                                         str(replyDate2),
                                         text2.replace("\n", " "),
                                         str(rere_like),
-                                        str(rere_bad)])
+                                        str(rere_bad),
+                                        str(url)])
                                     
                                     self.print_status(3, "news")
                                 except:
@@ -820,6 +839,7 @@ class Crawler:
         print("컴퓨터:", self.crawlcom)
         print("저장 위치:", self.filedirectory + "/" + self.DBname)
         print("메일 수신:", self.receiver)
+        print("드라이브 업로드:", self.upload)
         print("====================================================================================================================\n")
         
         try:
@@ -1128,6 +1148,7 @@ class Crawler:
         print("컴퓨터:", self.crawlcom)
         print("저장 위치:", self.filedirectory + "/" + self.DBname)
         print("메일 수신:", self.receiver)
+        print("드라이브 업로드:", self.upload)
         print("====================================================================================================================\n")
 
         try:
