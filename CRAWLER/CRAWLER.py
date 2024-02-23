@@ -109,7 +109,7 @@ class Crawler:
             self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
             self.DBpassword = "kingsman"
             self.proxy_option = "y"
-            self.sender = "knpubigmac2024@gmail.com"
+            self.sender = "knpubigmac2024@gmail.com"vs
             self.MailPassword = 'vygn nrmh erpf trji'
             self.mysql_option = "N" # 켜려면 Y
             self.crawlcom = "Omen"
