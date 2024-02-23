@@ -161,6 +161,15 @@ if socket.gethostname() == "DESKTOP-HQK7QRT":
 # 연구실 2번 컴퓨터
 elif socket.gethostname() == "DESKTOP-K8PL3FJ":
     csv_path = filedialog.askopenfilename(initialdir="C:/Users/skroh/OneDrive/Desktop/VSCODE/CRAWLER/scrapdata", title="Select CSV", filetypes = (("CSV files", "*.csv"), ("All files", "*.*")))
+    
+# HP OMEN 
+elif socket.gethostname() == "DESKTOP-502IMU5":
+    csv_path = filedialog.askopenfilename(initialdir="C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata", title="Select CSV", filetypes = (("CSV files", "*.csv"), ("All files", "*.*")))
+
+# HP Z8
+elif socket.gethostname() == "DESKTOP-0I9OM9K":
+    csv_path = filedialog.askopenfilename(initialdir="C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata", title="Select CSV", filetypes = (("CSV files", "*.csv"), ("All files", "*.*")))
+
 
 data_process = data_process(csv_path)
 data_process.main()
