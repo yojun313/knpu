@@ -112,7 +112,7 @@ class Crawler:
             self.sender = "knpubigmac2024@gmail.com"
             self.MailPassword = 'vygn nrmh erpf trji'
             self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "Omen"
+            self.crawlcom = "HP OMEN"
         
         # HP Z8
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
@@ -123,7 +123,7 @@ class Crawler:
             self.sender = "knpubigmac2024@gmail.com"
             self.MailPassword = 'vygn nrmh erpf trji'
             self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "Omen"
+            self.crawlcom = "HP Z8"
             
         self.user_name = input("본인의 이름을 입력하세요: ")
         
