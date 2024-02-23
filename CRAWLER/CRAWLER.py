@@ -100,6 +100,17 @@ class Crawler:
             self.MailPassword = 'vygn nrmh erpf trji'
             self.mysql_option = "N" # 켜려면 Y
             self.crawlcom = "Yojun's MacBook Pro Window"
+        
+        # Omen 
+        elif socket.gethostname() == "DESKTOP-502IMU5":
+            self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
+            self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
+            self.DBpassword = "kingsman"
+            self.proxy_option = "y"
+            self.sender = "knpubigmac2024@gmail.com"
+            self.MailPassword = 'vygn nrmh erpf trji'
+            self.mysql_option = "N" # 켜려면 Y
+            self.crawlcom = "Omen"
             
         self.user_name = input("본인의 이름을 입력하세요: ")
         
