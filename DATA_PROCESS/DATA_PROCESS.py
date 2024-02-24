@@ -13,18 +13,21 @@ warnings.filterwarnings('ignore', category=UserWarning)
 
 
 class data_process:
-    def __init__(self, csv_path):
+    def __init__(self):
         # 연구실 3번 컴퓨터
         if socket.gethostname() == "DESKTOP-HQK7QRT":
             self.scrapdata_path = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
+            self.projectfolder_path = "C:/Users/qwe/Desktop/VSCODE/PROJECT"
         
         # HP OMEN
         elif socket.gethostname() == "DESKTOP-502IMU5":
             self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata"
+            self.projectfolder_path = "C:/Users/User/Desktop/BIGMACLAB/PROJECT"
         
         # HP Z8
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
             self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata"
+            self.projectfolder_path = "C:/Users/User/Desktop/BIGMACLAB/PROJECT"
         
 
         
@@ -48,7 +51,7 @@ class data_process:
             
     def option_1(self):
         self.clear_screen()
-        self.csv_path = self.file_ask()
+        self.csv_path = self.file_ask(self.scrapdata_path, "분할할 csv 파일을 선택하세요")
         
         # csv 저장된 폴더 경로 및 csv 파일 이름
         self.folder_path = os.path.dirname(self.csv_path)
@@ -128,14 +131,22 @@ class data_process:
 
     def option_2(self):
         self.clear_screen()
-        self.csv_path = self.file_ask()
+        self.csv_path = self.file_ask(self.scrapdata_path, "대상 csv 파일을 선택하세요")
         
+        # csv 파일 저장된 폴더 경로
         self.folder_path = os.path.dirname(self.csv_path)
+        
+        # csv 파일 이름
         self.file_name = os.path.basename(self.csv_path)
         
         
+        self.exception_url_csv_path = self.file_ask(self.projectfolder_path, "제외 URL csv를 선택하세요")
         
+        self.origin_csv_data = pd.read_csv(self.csv_path, low_memory = False, index_col = 0)
+        self.origin_csv_data = pd.DataFrame(self.origin_csv_data)
         
+        exception_url_list = pd.read_csv(self.exception_url_csv_path, encoding='cp949', sep='\t').values.flatten().tolist()
+        print(exception_url_list)
         
         
         
@@ -204,10 +215,10 @@ class data_process:
             plt.savefig(self.data_path + "/월별 데이터/" + "월별 데이터 그래프.png")
 
 
-    def file_ask(self):
+    def file_ask(self, initialdir, title):
         root = tk.Tk()
         root.withdraw()
-        csv_path = filedialog.askopenfilename(initialdir=self.scrapdata_path, title="Select CSV", filetypes = (("CSV files", "*.csv"), ("All files", "*.*")))
+        csv_path = filedialog.askopenfilename(initialdir=initialdir, title=title, filetypes = (("CSV files", "*.csv"), ("All files", "*.*")))
         return csv_path
 
     def clear_screen(self):
@@ -221,5 +232,5 @@ class data_process:
 print("실행 중...")
 
 
-data_process = data_process(csv_path)
+data_process = data_process()
 data_process.main()
