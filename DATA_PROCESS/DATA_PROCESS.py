@@ -8,13 +8,47 @@ from tkinter import filedialog
 import sys
 import socket
 import warnings
+import platform
 warnings.filterwarnings('ignore', category=UserWarning)
 
 
 class data_process:
     def __init__(self, csv_path):
-        print("\n불러오는 중...\n")
-        self.csv_path = csv_path
+        # 연구실 3번 컴퓨터
+        if socket.gethostname() == "DESKTOP-HQK7QRT":
+            self.scrapdata_path = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
+        
+        # HP OMEN
+        elif socket.gethostname() == "DESKTOP-502IMU5":
+            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata"
+        
+        # HP Z8
+        elif socket.gethostname() == "DESKTOP-0I9OM9K":
+            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata"
+        
+
+        
+    def main(self):
+        print("\n1. 파일 분할\n2. URL 제외")
+        while True:
+            big_option = input("\n입력: ")
+            if big_option in ["1", "2"]:
+                break
+            else:
+                print("다시 입력하세요")
+                
+        if big_option == "1":
+            self.option_1()
+            
+        
+        if big_option == "2":
+            self.option_2()
+            
+            
+            
+    def option_1(self):
+        self.clear_screen()
+        self.csv_path = self.file_ask()
         
         # csv 저장된 폴더 경로 및 csv 파일 이름
         self.folder_path = os.path.dirname(self.csv_path)
@@ -64,16 +98,15 @@ class data_process:
         self.year_divided_group = self.csv_data.groupby('year')
         self.month_divided_group = self.csv_data.groupby('year_month')
         
-    def main(self):
         print("\n1. 연도별로 csv 분할\n2. 월별로 csv 분할\n3. 둘 다\n4. 종료")
-        
+            
         while True:
             option = input("\n입력: ")
             if option in ["1", "2", "3"]:
                 break
             else:
                 print("다시 입력하세요")
-         
+        
         print("\n처리 중...")
         
         if option == '1':
@@ -90,6 +123,25 @@ class data_process:
             sys.exit()
         
         print("\n완료")
+
+
+
+    def option_2(self):
+        self.clear_screen()
+        self.csv_path = self.file_ask()
+        
+        self.folder_path = os.path.dirname(self.csv_path)
+        self.file_name = os.path.basename(self.csv_path)
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
     def divide_data(self, option):
         
@@ -150,25 +202,23 @@ class data_process:
             plt.xlabel('Month')
             plt.ylabel('Values')
             plt.savefig(self.data_path + "/월별 데이터/" + "월별 데이터 그래프.png")
+
+
+    def file_ask(self):
+        root = tk.Tk()
+        root.withdraw()
+        csv_path = filedialog.askopenfilename(initialdir=self.scrapdata_path, title="Select CSV", filetypes = (("CSV files", "*.csv"), ("All files", "*.*")))
+        return csv_path
+
+    def clear_screen(self):
+        if platform.system() == "Windows":
+            os.system("cls")
+        else:
+            os.system("clear")
+
+
+
 print("실행 중...")
-root = tk.Tk()
-root.withdraw()
-
-# 연구실 3번 컴퓨터
-if socket.gethostname() == "DESKTOP-HQK7QRT":
-    csv_path = filedialog.askopenfilename(initialdir="C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata", title="Select CSV", filetypes = (("CSV files", "*.csv"), ("All files", "*.*")))
-
-# 연구실 2번 컴퓨터
-elif socket.gethostname() == "DESKTOP-K8PL3FJ":
-    csv_path = filedialog.askopenfilename(initialdir="C:/Users/skroh/OneDrive/Desktop/VSCODE/CRAWLER/scrapdata", title="Select CSV", filetypes = (("CSV files", "*.csv"), ("All files", "*.*")))
-    
-# HP OMEN 
-elif socket.gethostname() == "DESKTOP-502IMU5":
-    csv_path = filedialog.askopenfilename(initialdir="C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata", title="Select CSV", filetypes = (("CSV files", "*.csv"), ("All files", "*.*")))
-
-# HP Z8
-elif socket.gethostname() == "DESKTOP-0I9OM9K":
-    csv_path = filedialog.askopenfilename(initialdir="C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata", title="Select CSV", filetypes = (("CSV files", "*.csv"), ("All files", "*.*")))
 
 
 data_process = data_process(csv_path)
