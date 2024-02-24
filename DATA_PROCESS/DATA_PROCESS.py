@@ -141,12 +141,22 @@ class data_process:
         
         
         self.exception_url_csv_path = self.file_ask(self.projectfolder_path, "제외 URL csv를 선택하세요")
+        self.exception_url_csv_folder_path = os.path.dirname(self.exception_url_csv_path)
         
-        self.origin_csv_data = pd.read_csv(self.csv_path, low_memory = False, index_col = 0)
+        self.origin_csv_data = pd.read_csv(self.csv_path, low_memory = False, index_col = 0, encoding='cp949')
         self.origin_csv_data = pd.DataFrame(self.origin_csv_data)
+        self.origin_csv_data = self.origin_csv_data.dropna(subset=['url'])
+        
+        print(self.origin_csv_data.head())
         
         exception_url_list = pd.read_csv(self.exception_url_csv_path, encoding='cp949', sep='\t').values.flatten().tolist()
-        print(exception_url_list)
+        
+        for url in exception_url_list:
+            print("\n\n")
+            print(self.origin_csv_data.head())
+            self.origin_csv_data = self.origin_csv_data[~self.origin_csv_data['url'].str.contains(url)]
+        
+        self.origin_csv_data.to_csv(self.exception_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 제외.csv")
         
         
         
