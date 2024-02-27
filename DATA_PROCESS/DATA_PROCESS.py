@@ -130,8 +130,7 @@ class data_process:
             sys.exit()
         
         print("\n완료")
-
-
+        
 
     def option_2(self):
         self.clear_screen()
@@ -142,32 +141,19 @@ class data_process:
         
         # csv 파일 이름
         self.file_name = os.path.basename(self.csv_path)
-        
-        
+    
         self.exception_url_csv_path = self.file_ask(self.projectfolder_path, "제외 URL csv를 선택하세요")
         self.exception_url_csv_folder_path = os.path.dirname(self.exception_url_csv_path)
         
-        self.origin_csv_data = pd.read_csv(self.csv_path, low_memory = False, index_col = 0, encoding='cp949')
+        self.origin_csv_data = pd.read_csv(self.csv_path, low_memory = False)
         self.origin_csv_data = pd.DataFrame(self.origin_csv_data)
         self.origin_csv_data = self.origin_csv_data.dropna(subset=['url'])
         
-        print(self.origin_csv_data.head())
-        
-        exception_url_list = pd.read_csv(self.exception_url_csv_path, encoding='cp949', sep='\t').values.flatten().tolist()
-        
-        for url in exception_url_list:
-            print("\n\n")
-            print(self.origin_csv_data.head())
-            self.origin_csv_data = self.origin_csv_data[~self.origin_csv_data['url'].str.contains(url)]
-        
-        self.origin_csv_data.to_csv(self.exception_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 제외.csv")
-        
-        
-        
-        
-        
-        
-        
+        exception_url_list = pd.read_csv(self.exception_url_csv_path, sep='\t').values.flatten().tolist()
+
+        self.origin_csv_data = self.origin_csv_data[~self.origin_csv_data['url'].isin(exception_url_list)]
+        self.origin_csv_data.to_csv(self.exception_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 제외.csv", encoding = 'utf-8-sig', index = False)
+
     def divide_data(self, option):
         
         # 연도별로 나누기
