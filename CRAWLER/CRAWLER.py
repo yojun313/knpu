@@ -87,8 +87,8 @@ class Crawler:
         
         # Yojun's MacBook Pro MACOS
         elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
-            self.filedirectory = "/Users/yojunsmacbookprp/Documents/scrapdata"
-            self.proxydirectory = "/Users/yojunsmacbookprp/Documents/scrapdata"
+            self.filedirectory = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER/scrapdata"
+            self.proxydirectory = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER/scrapdata"
             self.DBpassword = "kingsman"
             self.proxy_option = "y"
             self.sender = "knpubigmac2024@gmail.com"

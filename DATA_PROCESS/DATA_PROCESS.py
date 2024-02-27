@@ -28,7 +28,11 @@ class data_process:
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
             self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata"
             self.projectfolder_path = "C:/Users/User/Desktop/BIGMACLAB/PROJECT"
-        
+            
+        # Yojun's MacBook Pro
+        elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
+            self.scrapdata_path = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER/scrapdata"
+            self.projectfolder_path = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/PROJECT"
 
         
     def main(self):
