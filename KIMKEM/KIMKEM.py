@@ -28,10 +28,10 @@ class kimkem:
         
         # Yojun Moon MacBook Pro
         if socket.gethostname() == "Yojuns-MacBook-Pro.local":
-            self.scrapdata_path = "/Users/yojunsmacbookprp/Documents/scrapdata" # scrapdata 폴더 경로
-            self.kimkem_data_path = "/Users/yojunsmacbookprp/Documents/DATA ANALYSIS/kimkem_data" # kimkem_data_path 폴더 경로
-            self.token_data_path = "/Users/yojunsmacbookprp/Documents/DATA ANALYSIS/token_data"
-            self.exception_list = "/Users/yojunsmacbookprp/Documents/DATA ANALYSIS/exception_list"
+            self.scrapdata_path = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER/scrapdata" # scrapdata 폴더 경로
+            self.kimkem_data_path = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/DATA ANALYSIS/kimkem_data" # kimkem_data_path 폴더 경로
+            self.token_data_path = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/DATA ANALYSIS/token_data"
+            self.exception_list = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/DATA ANALYSIS/exception_list"
         
         # 연구실 3번 컴퓨터 
         elif socket.gethostname() == "DESKTOP-HQK7QRT":
