@@ -123,10 +123,15 @@ class Crawler:
             self.receiver = "science22200@naver.com"
             
         elif self.user_name == "배시웅":
+<<<<<<< Updated upstream
             self.receiver = "siwoong.bae@barunlaw.com"
             
         elif self.user_name == "한승혁":
             self.receiver = "hankyeul80@naver.com"
+=======
+            self.receiver = "siWOONG.BAE@BARUNLAW.com"        
+            
+>>>>>>> Stashed changes
                         
         else:
             print("사용자를 추가하세요(메뉴얼 참고)")
