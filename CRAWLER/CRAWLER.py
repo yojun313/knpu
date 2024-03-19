@@ -125,6 +125,8 @@ class Crawler:
         elif self.user_name == "배시웅":
             self.receiver = "silverwolv@naver.com"        
             
+        elif self.user_name == "한승혁":
+            self.receiver = "hankyeul80@naver.com"     
         else:
             print("사용자를 추가하세요(메뉴얼 참고)")
             sys.exit()
