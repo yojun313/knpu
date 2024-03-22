@@ -37,7 +37,7 @@ import pickle
 import io
 
 
-'''
+
 def parseNews(url):
     oid = url[39:42]
     aid = url[43:53]
@@ -67,24 +67,26 @@ def parseNews(url):
                 'moreParam.next': '1000050000305guog893h1re',
                 'followSize': '100',
                 'includeAllStatus': 'true',
-                'sort': 'reply'
+                'sort': 'reply',
+                'initialize': 'true'
              }
     # https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json?ticket=news&templateId=view_society_m1&pool=cbox5&_cv=20240319154009&_callback=jQuery33108435267684748844_1711115022097&lang=ko&country=KR&objectId=news001%2C0014581332&categoryId=&pageSize=5&indexSize=10&groupId=&listType=OBJECT&pageType=more&page=1&initialize=true&followSize=5&userType=&useAltSort=true&replyPageSize=20&sort=FAVORITE&includeAllStatus=true&_=1711115022101
     #response = requests.get('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', params=params, headers=headers)
-    response = requests.get("https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json?ticket=news&templateId=view_society_m1&pool=cbox5&_cv=20240319154009&_callback=jQuery33108435267684748844_1711115022097&lang=ko&country=KR&objectId=news001%2C0014581332&categoryId=&pageSize=5&indexSize=10&groupId=&listType=OBJECT&pageType=more&page=1&initialize=true&followSize=5&userType=&useAltSort=true&replyPageSize=20&sort=FAVORITE&includeAllStatus=true&_=1711115022101", headers = headers)
+    response = requests.get('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', params=params, headers=headers)
     response.encoding = "UTF-8-sig"
     res = response.text.replace("_callback(","")[:-2]
     temp=json.loads(res)
-    print(temp)
+    print(temp['result']['graph']['old'][2]['value'])
 
 parseNews("https://n.news.naver.com/mnews/article/001/0014581332?sid=102")
-'''
+
+
 
 
 #이거 작동됨
 
 def parsetest(url):
-    
+    page = 1
     oid = url[39:42]
     aid = url[43:53]
 
@@ -97,7 +99,8 @@ def parsetest(url):
         'objectId':  f'news{oid},{aid}',
         'pageSize': '100',
         'indexSize': '10',
-        'page': '1',
+        'page': str(page),
+        'currentPage': '0',
         'initialize': 'true',
         'followSize': '100',
         'userType': '',
@@ -116,10 +119,9 @@ def parsetest(url):
 
     response = requests.get(basic_url, params=params, headers=headers)
     response.encoding = "UTF-8-sig"
-    #res = response.text.replace("_callback(","")[:-2]
-    #temp = json.loads(res)
-    #temp=json.loads(res)
-    print(response.text)
+    res = response.text.replace("_callback(","")[:-2]
+    temp = json.loads(res)
+    temp=json.loads(res)
+    print(temp)
 
-parsetest("https://n.news.naver.com/mnews/article/001/0014581332?sid=102")
-#parsetest("https://n.news.naver.com/mnews/article/001/0014581987?sid=102")#작동됨
+#parsetest("https://n.news.naver.com/mnews/article/001/0014581332?sid=102")
