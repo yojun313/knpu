@@ -45,14 +45,38 @@ class data_process:
                 print("다시 입력하세요")
                 
         if big_option == "1":
+            
             self.option_1()
             
+            self.clear_screen()
+            
+            print("[파일 분할]\n")
+            print("대상 csv 파일:", self.csv_path)
+            print("완성 파일:", self.data_path)
+            
         elif big_option == "2":
+            
             self.option_2()
+            
+            self.clear_screen()
+            
+            print("[URL 제외]\n")
+            print("대상 csv 파일:", self.csv_path)
+            print("제외 url 파일:", self.exception_url_csv_path)
+            print("완성 파일:", self.exception_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 제외.csv")
+    
         
         elif big_option == "3":
+            
             self.option_3()
-        print("완료")
+            
+            self.clear_screen()
+            
+            print("[URL 포함]\n")
+            print("대상 csv 파일:", self.csv_path)
+            print("포함 url 파일:", self.include_url_csv_csv_path)
+            print("완성 파일:", self.exception_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 포함.csv")
+        
             
     def option_1(self):
         self.clear_screen()
