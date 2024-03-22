@@ -51,62 +51,52 @@ class Crawler:
         
         #연구실 3번 컴퓨터
         if socket.gethostname() == "DESKTOP-HQK7QRT":
-            self.filedirectory = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
+            self.filedirectory  = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
             self.proxydirectory = "C:/Users/qwe/Documents/GitHub/BIGMACLAB/CRAWLER"
             self.tokendirectory = "C:/Users/qwe/Desktop/VSCODE/CRAWLER"
-            self.DBpassword = "1234"
-            self.proxy_option = "y"
-            self.sender = "knpubigmac2024@gmail.com"
-            self.MailPassword = 'vygn nrmh erpf trji'
-            self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "3번 컴퓨터"
+            self.proxy_option   = "y"
+            self.sender         = "knpubigmac2024@gmail.com"
+            self.MailPassword   = 'vygn nrmh erpf trji'
+            self.crawlcom       = "3번 컴퓨터"
             
         # HP OMEN 
         elif socket.gethostname() == "DESKTOP-502IMU5":
-            self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
+            self.filedirectory  = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
             self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
             self.tokendirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER" 
-            self.DBpassword = "kingsman"
-            self.proxy_option = "y"
-            self.sender = "knpubigmac2024@gmail.com"
-            self.MailPassword = 'vygn nrmh erpf trji'
-            self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "HP OMEN"
+            self.proxy_option   = "y"
+            self.sender         = "knpubigmac2024@gmail.com"
+            self.MailPassword   = 'vygn nrmh erpf trji'
+            self.crawlcom       = "HP OMEN"
         
         # HP Z8
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
-            self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
+            self.filedirectory  = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
             self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
             self.tokendirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER" 
-            self.DBpassword = "kingsman"
-            self.proxy_option = "y"
-            self.sender = "knpubigmac2024@gmail.com"
-            self.MailPassword = 'vygn nrmh erpf trji'
-            self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "HP Z8"
+            self.proxy_option   = "y"
+            self.sender         = "knpubigmac2024@gmail.com"
+            self.MailPassword   = 'vygn nrmh erpf trji'
+            self.crawlcom       = "HP Z8"
         
         # Yojun's MacBook Pro MACOS
         elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
-            self.filedirectory = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER/scrapdata"
+            self.filedirectory  = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER/scrapdata"
             self.proxydirectory = "/Users/yojunsmacbookprp/Documents/GitHub/BIGMACLAB/CRAWLER"
             self.tokendirectory = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER"
-            self.DBpassword = "kingsman"
-            self.proxy_option = "y"
-            self.sender = "knpubigmac2024@gmail.com"
-            self.MailPassword = 'vygn nrmh erpf trji'
-            self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "Yojun's MacBook Pro MACOS"
+            self.proxy_option   = "y"
+            self.sender         = "knpubigmac2024@gmail.com"
+            self.MailPassword   = 'vygn nrmh erpf trji'
+            self.crawlcom       = "Yojun's MacBook Pro MACOS"
         
         # Yojun's MacBook Pro WINDOW
         elif socket.gethostname() == "YOJUNMACBOOKPRO":
-            self.filedirectory = "C:/Users/yojunsmacbookprp/Documents/scrapdata" 
+            self.filedirectory  = "C:/Users/yojunsmacbookprp/Documents/scrapdata" 
             self.proxydirectory = "C:/Users/yojunsmacbookprp/Documents/scrapdata"
-            self.DBpassword = "kingsman"
-            self.proxy_option = "y"
-            self.sender = "knpubigmac2024@gmail.com"
-            self.MailPassword = 'vygn nrmh erpf trji'
-            self.mysql_option = "N" # 켜려면 Y
-            self.crawlcom = "Yojun's MacBook Pro Window"
+            self.proxy_option   = "y"
+            self.sender         = "knpubigmac2024@gmail.com"
+            self.MailPassword   = 'vygn nrmh erpf trji'
+            self.crawlcom       = "Yojun's MacBook Pro Window"
         
         self.user_name = input("본인의 이름을 입력하세요: ")
         
@@ -149,7 +139,7 @@ class Crawler:
         # 구글 드라이브 서비스 생성
         
         self.parent_folder_id = "1K3YTj9h_BMjpGyoDQYkWycqmnJLCxPCA"
-        self.storage_json = self.proxydirectory+"/storage.json"
+        self.storage_json     = self.proxydirectory+"/storage.json"
         
         SCOPES = ['https://www.googleapis.com/auth/drive']
 
@@ -174,27 +164,36 @@ class Crawler:
         self.drive_service = build('drive', 'v3', credentials=creds)
     
         self.starttime = time.time()
-        self.now = datetime.datetime.now()
+        self.now       = datetime.datetime.now()
             
         ##################################### 입력부  #####################################
-        self.start = input("\nStart Date (ex: 20230101): ") 
-        self.end = input("End Date (ex: 20231231): ") 
-        self.keyword = input("\nKeyword: ")
-        self.upload = input("\n구글 드라이브에 업로드 하시겠습니까(Y/N)? ")
+        self.start     = input("\nStart Date (ex: 20230101): ") 
+        self.end       = input("End Date (ex: 20231231): ") 
+        self.keyword   = input("\nKeyword: ")
+        self.upload    = input("\n구글 드라이브에 업로드 하시겠습니까(Y/N)? ")
         #################################################################################
         
-        self.start_dt, self.end_dt = datetime.datetime.strptime(self.start, "%Y%m%d"), datetime.datetime.strptime(self.end, "%Y%m%d")
+        self.start_dt   = datetime.datetime.strptime(self.start, "%Y%m%d")
+        self.end_dt     = datetime.datetime.strptime(self.end,   "%Y%m%d")
+        
         self.date_range = (self.end_dt.date() - self.start_dt.date()).days  #분석 날짜 기간
-        self.startYear, self.startMonth, self.startDay = int(self.start[0:4]), int(self.start[4:6]), int(self.start[6:8])
-        self.endYear, self.endMonth, self.endDay = int(self.end[0:4]), int(self.end[4:6]), int(self.end[6:8])
-        self.d_start, self.d_end = datetime.date(self.startYear, self.startMonth, self.startDay), datetime.date(self.endYear, self.endMonth, self.endDay)
-        self.deltaD = timedelta(days=1)
+        
+        self.startYear  = int(self.start[0:4])
+        self.startMonth = int(self.start[4:6])
+        self.startDay   = int(self.start[6:8])
+        
+        self.endYear     = int(self.end[0:4])
+        self.endMonth    = int(self.end[4:6])
+        self.endDay      = int(self.end[6:8])
+        self.d_start     = datetime.date(self.startYear, self.startMonth, self.startDay)
+        self.d_end       = datetime.date(self.endYear, self.endMonth, self.endDay)
+        self.deltaD      = timedelta(days=1)
         self.currentDate = self.d_start
         
         self.refinedword = self.keyword.split("-")[0].strip().replace('"', "").replace(" ", "")
         
-        self.error = False
-        self.urlList = []
+        self.error       = False
+        self.urlList     = []
         
     def upload_folder(self, folder_path):
         if self.upload.lower == 'y':
@@ -225,8 +224,8 @@ class Crawler:
     def print_status(self, signal, print_type):
         
         self.progress_time = time.time()
-        loading_second = self.progress_time - self.starttime
-        loadingtime = str(int(loading_second//3600))+"시간 "+str(int(loading_second%3600//60))+"분 "+str(int(loading_second%3600%60))+"초"
+        loading_second     = self.progress_time - self.starttime
+        loadingtime        = str(int(loading_second//3600))+"시간 "+str(int(loading_second%3600//60))+"분 "+str(int(loading_second%3600%60))+"초"
         
         if print_type == "news":
             print_type = "기사"
@@ -311,7 +310,7 @@ class Crawler:
     
     def send_email(self, loadingtime):
         
-        text = "[크롤링 완료] \n"
+        text  = "[크롤링 완료] \n"
         #text += "============================================================"
         text += "\n검색 기간: " + str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay)
         text += "\n검색어: " + str(self.keyword)
@@ -379,40 +378,33 @@ class Crawler:
         self.clear_screen()
 
         self.dbname_date = "_{}_{}".format(self.start, self.end)
-        self.DBname = "Naver_News_" + self.refinedword + self.dbname_date + "_" + self.now.strftime("%m%d_%H%M")
+        self.DBname      = "Naver_News_" + self.refinedword + self.dbname_date + "_" + self.now.strftime("%m%d_%H%M")
         os.mkdir(self.filedirectory + "/" + self.DBname)  # 폴더 생성
         
         self.f = open(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_log.txt", "w+")  # Log file 생성
         self.f.close()
         
-        self.article_list = [["article id", "article press", "article type", "url", "article title", "article body", "article date"]]
-        self.reply_list = [["article id", "reply_id", "writer", "reply_date", "reply", "rere_count", "r_Like", "r_Bad", "r_Per_Like", 'r_Sentiment', 'url']]
-        self.rereply_list = [["article id", "reply_id", "id", "rerewriter", "rereply_date", "rereply", "rere_Like", "rere_Bad", 'url']]
+        self.article_list = [["article press", "article type", "url", "article title", "article body", "article date", "reply_cnt", "statistics(Y/N)", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
+        self.reply_list   = [["reply_id", "writer", "reply_date", "reply", "rere_count", "r_Like", "r_Bad", "r_Per_Like", 'r_Sentiment', 'url']]
+        self.rereply_list = [["reply_id", "id", "rerewriter", "rereply_date", "rereply", "rere_Like", "rere_Bad", 'url']]
         
         print("====================================================================================================================") 
         print("크롤링: 네이버 뉴스")
         print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
-        print("검색어:", self.keyword)
+        print("검색어:",self.keyword)
         print("옵션 번호:", self.option)
-        print("DB 저장:", self.mysql_option)
-        print("컴퓨터:", self.crawlcom)
-        print("저장 위치:", self.filedirectory + "/" + self.DBname)
-        print("메일 수신:", self.receiver)
+        print("컴퓨터:",    self.crawlcom)
+        print("저장 위치:",  self.filedirectory + "/" + self.DBname)
+        print("메일 수신:",  self.receiver)
         print("드라이브 업로드:", self.upload)
         print("====================================================================================================================\n")
 
         try:
-            if self.mysql_option == 'Y':
-                dbconn = News_DBConnector(self.DBpassword, self.filedirectory) # DB 생성
-                dbconn.initialize(self.DBname)
-            else:
-                dbconn = None
-            
             for i in range(self.date_range+1):
                 self.progress = i
                 self.trans_date = str(self.currentDate).replace("-", ".")
                 self.print_status(-1, "news")
-                self.get_NEWS_URLs(self.trans_date, dbconn)
+                self.get_NEWS_URLs(self.trans_date)
                 self.currentDate += self.deltaD
                 
                 dfarticle = pd.DataFrame(self.article_list)
@@ -421,7 +413,7 @@ class Crawler:
                 if self.option == 2:
                     dfreply = pd.DataFrame(self.reply_list)
                     dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
-                
+                    
                 elif self.option == 3:
                     dfreply = pd.DataFrame(self.reply_list)
                     dfrereply = pd.DataFrame(self.rereply_list)
@@ -431,9 +423,9 @@ class Crawler:
             out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+"\033[37m"+" | 기사 수: "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글 수: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글 수: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
             print(out_str, end = "")
             
-            self.endtime = time.time()
+            self.endtime  = time.time()
             loadingsecond = self.endtime - self.starttime
-            loadingtime = str(int(loadingsecond//3600))+"시간 "+str(int(loadingsecond%3600//60))+"분 "+str(int(loadingsecond%3600%60))+"초"
+            loadingtime   = str(int(loadingsecond//3600))+"시간 "+str(int(loadingsecond%3600//60))+"분 "+str(int(loadingsecond%3600%60))+"초"
             
             self.upload_folder(self.filedirectory + "/" + self.DBname)
             
@@ -462,7 +454,7 @@ class Crawler:
             )
             self.writeLog(msg)
             
-    def parseNews(self, url, connector):
+    def parseNews(self, url):
         
         base_url = "".join(
                 [
@@ -473,20 +465,8 @@ class Crawler:
                 ]
             )
         try:
-            if self.mysql_option == 'Y':
-                dbconn = connector
             headers = self.random_heador()
-            data = {
-                "article_press": None,
-                "article_type": None,
-                "url": None,
-                "article_title": None,
-                "article_body": None,
-                "article_date": None,
-            }
-            data["url"] = url
-            
-            
+                      
             while True:
                 proxies = self.random_proxy()
                 try:
@@ -498,27 +478,24 @@ class Crawler:
                 except Exception as e:
                     self.error_exception(e, True)
                 
-
             try:
-
-                news = ''.join((i.text.replace("\n", "") for i in bs.find_all("div", {"class": "newsct_article"})))
+                news          = ''.join((i.text.replace("\n", "") for i in bs.find_all("div", {"class": "newsct_article"})))
                 article_press = str(bs.find("img")).split()[1][4:].replace("\"", '') # article_press
-                article_type = bs.find("em", class_="media_end_categorize_item").text # article_type
+                article_type  = bs.find("em", class_="media_end_categorize_item").text # article_type
                 article_title = bs.find("div", class_="media_end_head_title").text.replace("\n", " ") # article_title
-                article_date = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
-
-                data["article_body"] = news # article_body
-                data["article_press"] = article_press
-                data["article_type"] = article_type
-                data["article_title"] = article_title
-                data["article_date"] = article_date
-
-                if self.mysql_option == 'Y':
-                    article_id = dbconn.insertNaverArticleData(data=data)
-                else:
-                    article_id = 0
+                article_date  = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
+                reply_cnt     = 0
+                statistics    = 'N'
+                male          = 999
+                female        = 999
+                Y_10          = 999
+                Y_20          = 999
+                Y_30          = 999
+                Y_40          = 999
+                Y_50          = 999
+                Y_60          = 999
                     
-                self.article_list.append([article_id, article_press, article_type, url, article_title, news, article_date])
+                self.article_list.append([article_press, article_type, url, article_title, news, article_date, reply_cnt, statistics, male, female, Y_10, Y_20, Y_30, Y_40, Y_50, Y_60])
                 self.print_status(1, "news")
                 
             except:
@@ -527,8 +504,8 @@ class Crawler:
             if self.option == 1: # 기사만 수집할 때 여기서 끝냄
                 return
             
-            oid = url[39:42]
-            aid = url[43:53]
+            oid  = url[39:42]
+            aid  = url[43:53]
             page = 1
             
             nickname_list, replyDate_list, text_list, rere_count_list, r_like_list, r_bad_list = [], [], [], [], [], []
@@ -538,54 +515,67 @@ class Crawler:
                 try:
                     navigator = generate_navigator()
                     navigator = navigator['user_agent']
-                    headers = { 
-                    "User-agent":navigator, 
-                    "referer":url, 
-                    }  
+                    headers   = {"User-agent":navigator, "referer":url}  
                     
                     params = {
-                            'ticket': 'news',
-                            'templateId': 'default_society',
-                            'pool': 'cbox5',
-                            'lang': 'ko',
-                            'country': 'KR',
-                            'objectId': f'news{oid},{aid}',
-                            'pageSize': '100',
-                            'indexSize': '10',
-                            'page': str(page),
-                            'currentPage': '0',
-                            'moreParam.direction': 'next',
-                            'moreParam.prev': '10000o90000op06guicil48ars',
-                            'moreParam.next': '1000050000305guog893h1re',
-                            'followSize': '100',
-                            'includeAllStatus': 'true',
-                            'sort': 'reply'
-                        }
+                        'ticket'             : 'news',
+                        'templateId'         : 'default_society',
+                        'pool'               : 'cbox5',
+                        'lang'               : 'ko',
+                        'country'            : 'KR',
+                        'objectId'           : f'news{oid},{aid}',
+                        'pageSize'           : '100',
+                        'indexSize'          : '10',
+                        'page'               : str(page),
+                        'currentPage'        : '0',
+                        'moreParam.direction': 'next',
+                        'moreParam.prev'     : '10000o90000op06guicil48ars',
+                        'moreParam.next'     : '1000050000305guog893h1re',
+                        'followSize'         : '100',
+                        'includeAllStatus'   : 'true',
+                        'sort'               : 'reply',
+                        'initialize'         : 'true'
+                    }
                     try:
                         while True:
                             proxies = self.random_proxy()
                             try:
-                                response = requests.get('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', proxies = proxies, params=params, headers=headers, timeout = 3)
+                                response          = requests.get('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', proxies = proxies, params=params, headers=headers, timeout = 3)
                                 response.encoding = "UTF-8-sig"
-                                res = response.text.replace("_callback(","")[:-2]
-                                temp=json.loads(res)
+                                res               = response.text.replace("_callback(","")[:-2]
+                                temp              = json.loads(res)
                                 break
                             except requests.exceptions.Timeout as e:
                                 self.error_exception(e, True)
                             except Exception as e:
-                                self.error_exception(e, True)
+                                self.error_exception(e, True)                        
                                             
                         for comment_json in temp.get("result", {}).get("commentList", []):
                             parentCommentNo = comment_json["parentCommentNo"]
                             parentCommentNo_list.append(parentCommentNo)
                         
                         try:
-                            nickname_list.extend(list(pd.DataFrame(temp['result']['commentList'])['maskedUserId']))
-                            replyDate_list.extend(list(pd.DataFrame(temp['result']['commentList'])['modTime']))
-                            text_list.extend(list(pd.DataFrame(temp['result']['commentList'])['contents']))
-                            rere_count_list.extend(list(pd.DataFrame(temp['result']['commentList'])['replyCount']))
-                            r_like_list.extend(list(pd.DataFrame(temp['result']['commentList'])['sympathyCount']))
-                            r_bad_list.extend(list(pd.DataFrame(temp['result']['commentList'])['antipathyCount']))
+                            self.article_list[len(self.article_list)-1][8]  = temp['result']['graph']['gender']['male']  # male
+                            self.article_list[len(self.article_list)-1][9]  = temp['result']['graph']['gender']['female']# female
+                            self.article_list[len(self.article_list)-1][10] = temp['result']['graph']['old'][0]['value'] # 10Y
+                            self.article_list[len(self.article_list)-1][11] = temp['result']['graph']['old'][1]['value'] # 20Y
+                            self.article_list[len(self.article_list)-1][12] = temp['result']['graph']['old'][2]['value'] # 30Y
+                            self.article_list[len(self.article_list)-1][13] = temp['result']['graph']['old'][3]['value'] # 40Y
+                            self.article_list[len(self.article_list)-1][14] = temp['result']['graph']['old'][4]['value'] # 50Y
+                            self.article_list[len(self.article_list)-1][15] = temp['result']['graph']['old'][5]['value'] # 60Y
+                            self.article_list[len(self.article_list)-1][7]  = 'Y' # statistics
+                        except:
+                            pass
+                        
+                        
+                        try:
+                            self.article_list[len(self.article_list)-1][6] = temp['result']['count']['comment']
+                            nickname_list  .extend(list(pd.DataFrame(        temp['result']['commentList'])['maskedUserId']))
+                            replyDate_list .extend(list(pd.DataFrame(        temp['result']['commentList'])['modTime']))
+                            text_list      .extend(list(pd.DataFrame(        temp['result']['commentList'])['contents']))
+                            rere_count_list.extend(list(pd.DataFrame(        temp['result']['commentList'])['replyCount']))
+                            r_like_list    .extend(list(pd.DataFrame(        temp['result']['commentList'])['sympathyCount']))
+                            r_bad_list     .extend(list(pd.DataFrame(        temp['result']['commentList'])['antipathyCount']))
                         except:
                             break
                         
@@ -618,22 +608,8 @@ class Crawler:
                 else:  # 중립
                     r_sentiment = 0
                 
-                if self.mysql_option == 'Y':
-                    repleLastIndex = dbconn.insertNaverReplyData(
-                        str(article_id),
-                        str(reply_idx),
-                        str(nickname_list[i]),
-                        str(replyDate_list[i]),
-                        str(text_list[i].replace("\n", " ")),
-                        str(rere_count_list[i]),
-                        str(r_like_list[i]),
-                        str(r_bad_list[i]),
-                        str(r_per_like),
-                        str(r_sentiment),
-                    )
                 self.reply_list.append(
-                    [str(article_id),
-                    str(reply_idx),
+                    [str(reply_idx),
                     str(nickname_list[i]),
                     str(replyDate_list[i]),
                     str(text_list[i].replace("\n", " ")),
@@ -642,7 +618,8 @@ class Crawler:
                     str(r_bad_list[i]),
                     str(r_per_like),
                     str(r_sentiment),
-                    str(url)])
+                    str(url)]
+                )
                 self.print_status(2, "news")
             
             if self.option == 3:
@@ -686,21 +663,8 @@ class Crawler:
                                 rere_bad = re_parse_result[6]
                                 
                                 try:
-                                    if self.mysql_option == 'Y':
-                                        dbconn.insertNaverReReplyData(
-                                            str(article_id),
-                                            str(repleLastIndex),
-                                            str(rereply_idx),
-                                            nickName2,
-                                            str(replyDate2),
-                                            text2.replace("\n", " "),
-                                            str(rere_like),
-                                            str(rere_bad),
-                                        )
-                                    
                                     self.rereply_list.append(
-                                        [str(article_id),
-                                        str(repleLastIndex),
+                                        [str(repleLastIndex),
                                         str(rereply_idx),
                                         str(nickName2),
                                         str(replyDate2),
@@ -748,7 +712,7 @@ class Crawler:
                 antipathy_count,
             )
 
-    def get_NEWS_URLs(self, currentDate, connector):
+    def get_NEWS_URLs(self, currentDate):
         
         search_page_url = "https://search.naver.com/search.naver?where=news&query={}&sm=tab_srt&sort=2&photo=0&reporter_article=&pd=3&ds={}&de={}&&start={}&related=0"
         currentPage = 1
@@ -786,7 +750,7 @@ class Crawler:
                 currentPage += 10 # 다음페이지 이동
             
             for url in self.urlList:
-                self.parseNews(url, connector)
+                self.parseNews(url)
         except:
             self.error_exception(e)
 
@@ -822,7 +786,6 @@ class Crawler:
         print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
         print("검색어:", self.keyword)
         print("옵션 번호:", self.option)
-        print("DB 저장:", self.mysql_option)
         print("컴퓨터:", self.crawlcom)
         print("저장 위치:", self.filedirectory + "/" + self.DBname)
         print("메일 수신:", self.receiver)
@@ -830,17 +793,11 @@ class Crawler:
         print("====================================================================================================================\n")
         
         try:
-            if self.mysql_option == 'Y':
-                dbconn = News_DBConnector(self.DBpassword, self.filedirectory) # DB 생성
-                dbconn.initialize(self.DBname)
-            else:
-                dbconn = None
-            
             for i in range(self.date_range+1):
                 self.progress = i
                 self.trans_date = str(self.currentDate)
                 self.print_status(-1, "blog")
-                self.get_BLOG_URLs(self.trans_date, dbconn)
+                self.get_BLOG_URLs(self.trans_date)
                 self.currentDate += self.deltaD
                 
                 dfarticle = pd.DataFrame(self.article_list)
@@ -884,11 +841,10 @@ class Crawler:
             )
             self.writeLog(msg)
             
-    def parseBlog(self, url, connector):   
+    def parseBlog(self, url):   
         try:
             original_url = url
-            if self.mysql_option == 'Y':
-                dbconn = connector
+
             article_data = {
                 "blog_ID": None,
                 "url": None,
@@ -947,10 +903,7 @@ class Crawler:
                 article_data["good_cnt"] = str(good_cnt)
                 article_data["comment_cnt"] = str(comment_cnt)
                 
-                if self.mysql_option == 'Y':
-                    article_id = dbconn.insertNaverArticleData(data = article_data)
-                else:
-                    article_id = 0
+                article_id = 0
                 self.article_list.append([article_id, blogID, original_url, article, date, good_cnt, comment_cnt])
                 self.print_status(1, "blog")
             
@@ -1020,18 +973,6 @@ class Crawler:
             for i in range(len(nickname_list)):
                 if str(nickname_list[i]) != "":
                     reply_idx += 1
-                    try:
-                        if self.mysql_option == 'Y':
-                            dbconn.insertNaverReplyData(
-                                str(article_id),
-                                str(reply_idx),
-                                str(nickname_list[i]),
-                                str(replyDate_list[i]),
-                                str(text_list[i].replace("\n", " ").replace("\r", "").replace("<br>"," "))
-                            )
-                    except Exception as e:
-                        self.error_exception(e)
-        
                     self.reply_list.append([
                         str(article_id),
                         str(reply_idx),
@@ -1044,7 +985,7 @@ class Crawler:
         except Exception as e:
             self.error_exception(e)
             
-    def get_BLOG_URLs(self, currentDate, connector):
+    def get_BLOG_URLs(self, currentDate):
         
         self.urlList = []
         currentPage = 1
@@ -1094,7 +1035,7 @@ class Crawler:
                 currentPage += 1
                 
             for url in self.urlList:
-                self.parseBlog(url, connector)  
+                self.parseBlog(url)  
                 
         except Exception as e:
             self.error_exception(e)
@@ -1139,17 +1080,11 @@ class Crawler:
         print("====================================================================================================================\n")
 
         try:
-            if self.mysql_option == 'Y':
-                dbconn = News_DBConnector(self.DBpassword, self.filedirectory) # DB 생성
-                dbconn.initialize(self.DBname)
-            else:
-                dbconn = None
-            
             for i in range(self.date_range+1):
                 self.progress = i
                 self.trans_date = str(self.currentDate)
                 self.print_status(-1, "youtube")
-                self.get_YOUTUBE_URLs(str(self.currentDate.strftime("%m/%d/%Y")), dbconn)
+                self.get_YOUTUBE_URLs(str(self.currentDate.strftime("%m/%d/%Y")))
                 self.currentDate += self.deltaD
                 
                 
@@ -1191,10 +1126,8 @@ class Crawler:
             )
             self.writeLog(msg)
         
-    def parseYoutube(self, url, connector):
+    def parseYoutube(self, url):
         try:
-            if self.mysql_option == 'Y':
-                dbconn = connector
             #print(url)
             if url[8] == 'm':
                 youtube_info = url[30:]
@@ -1285,8 +1218,6 @@ class Crawler:
                 "comment_count": str(comment_count)
             }
             
-            info_id = dbconn.insertYouTubeInfoData(info_data)
-            
             self.info_list.append([info_id, channel, video_url, video_title, video_description, video_date, view_count, like_count, comment_count])
             self.print_status(1, "youtube")
             
@@ -1325,20 +1256,8 @@ class Crawler:
                     
                     for i in range(len(temp['content'])):
                         reply_idx += 1
-                        try:
-                            dbconn.insertYouTubeReplyData(
-                                info_id,
-                                reply_idx,
-                                str(temp['content'][i]['authorDisplayName']),
-                                str(temp['content'][i]['publishedAt']),
-                                str(temp['content'][i]['textDisplay'].replace("\n", " ").replace("\r", "").replace("\t", "").replace("<br>"," ")),
-                                str(temp['content'][i]['likeCount']),
-                                str(temp['content'][i]['totalReplyCount'])
-                            )
-
-                        except Exception as e:
-                            self.error_exception(e)
                             
+                        info_id = 0
                         self.reply_list.append(
                             [
                                 info_id,
@@ -1360,7 +1279,7 @@ class Crawler:
         except Exception as e:
             self.error_exception(e)  
         
-    def get_YOUTUBE_URLs(self, currentDate, connector):
+    def get_YOUTUBE_URLs(self, currentDate):
         
         currentPage = 0
         
@@ -1399,715 +1318,13 @@ class Crawler:
                 currentPage += 10
             
             for url in self.urlList:
-                self.parseYoutube(url, connector)
+                self.parseYoutube(url)
                 
         except Exception as e:
             self.error_exception(e)
 
 ###########################################################################################################
-
-################################################ mySQL DB ################################################
-
-class News_DBConnector:
-    
-    def __init__(self, password, filedirectory):
-        self.filedirectory = filedirectory
-        self.password = password
-        try:
-            self.conn = pymysql.connect(host='127.0.0.1', user='root', password=self.password, charset='utf8mb4', read_timeout = 2, write_timeout = 2, connect_timeout = 2)    
-        except Exception as e:
-            print('Connection Error : ', e)
-        return
-    
-    def error_exception(self, e, ipchange = False):
-        _, _, tb = sys.exc_info()  # tb -> traceback object
-        
-        if ipchange == True:
-            msg = (
-            "File name: "
-            + __file__
-            + "\n"
-            + "Error line= {}".format(tb.tb_lineno)
-            + "\n"
-            + "Error: {}".format(sys.exc_info()[0])
-            + " "
-            + str(e)
-            + "\n\nip 교체됨"
-        )
-            
-        else: 
-            msg = (
-            "File name: "
-            + __file__
-            + "\n"
-            + "Error line= {}".format(tb.tb_lineno)
-            + "\n"
-            + "Error: {}".format(sys.exc_info()[0])
-            + " "
-            + str(e)
-        )
-            self.error = True
-            
-        self.writeLog(msg)
-        
-    def writeLog(self, msg):
-        f = open(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_log.txt", "a")
-        msg += "\n\n"
-        f.write(msg)
-        f.close()
-    
-    def initialize(self, dbname):
-        
-        self.createNaverDatabase(dbname)
-        self.createNaverArticleTable(dbname)
-        self.createNaverReplyTable(dbname)
-        self.createNaverReReplyTable(dbname)
-        self.DBname = dbname
-    
-    def connect(self):
-        try:
-            return pymysql.connect(host='127.0.0.1', user='root', password=self.password, charset='utf8mb4', read_timeout = 2, write_timeout = 2, connect_timeout = 2)    
-        except Exception as e:
-            self.error_exception(e)
-            raise  # 연결 실패시 예외를 다시 발생시켜 호출자에게 알림
-
-    def setDBName(self, name):
-        self.dbname = name
-
-    #Naver뉴스 DB생성(NaverNews_DB) 함수
-    def createNaverDatabase(self,dbname):
-        try:
-            self.dbname = dbname
-            self.connect()
-            curs = self.conn.cursor() #cursor = 데이터베이스 쿼리를 실행하고 결과를 관리하는 객체, curs변수에 생성
-            #NaverNews_DB를 생성하는 쿼리
-            query = """CREATE DATABASE """+dbname # 데이터 베이스 생성
-            curs.execute(query) # query를 excute
-            print('DB를 생성. DB_NAME :' , dbname)
-            print("")
-            self.conn.commit()    
-
-            # NaverNews_DB의 문자세트를 utf8로 변환
-            query = """ALTER DATABASE """+ dbname + """ CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
-            curs.execute(query)
-            self.conn.commit()
-            self.conn.close()
-
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-                
-    #Naver뉴스 Table 생성 함수
-    def createNaverArticleTable(self, dbname):
-        self.connect()
-        curs = self.conn.cursor()
-        query = """use """+dbname
-        curs.execute(query)
-        self.conn.commit()
-        #NaverNews라는 ID, URL, TITLE 등등을 포함하는 테이블을 생성
-        query = """create table naver_articles(   
-                                            article_id int not null auto_increment primary key,
-                                            article_press varchar(50),
-                                            article_type varchar(11), 
-                                            url text, 
-                                            article_title text, 
-                                            article_body text,
-                                            article_date varchar(50)
-                                            )"""
-        try:
-            curs.execute(query)
-            self.conn.commit()
-            query = """ALTER TABLE naver_articles CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
-            curs.execute(query)
-            self.conn.commit()
-            self.conn.close()
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-
-    #Naver뉴스 댓글 Table 생성 함수
-    def createNaverReplyTable(self,dbname):
-        self.connect()
-        curs = self.conn.cursor()
-        query = """use """+dbname
-        curs.execute(query)
-        self.conn.commit()
-        #NaverNews라는 ID, URL, TITLE 등등을 포함하는 테이블을 생성
-        query = """create table naver_replies(   
-                                            article_id int not null, 
-                                            reply_id int not null auto_increment primary key, 
-                                            writer varchar(512),
-                                            reply_date varchar(50),
-                                            reply text, 
-                                            rere_count int,
-                                            r_Like int, 
-                                            r_Bad int,
-                                            r_Per_Like float,
-                                            r_Sentiment int,
-                                            FOREIGN KEY(article_id) REFERENCES naver_articles(article_id) ON UPDATE CASCADE ON DELETE CASCADE
-                                            )"""
-
-        try:
-            curs.execute(query)
-            self.conn.commit()
-            query = """ALTER TABLE naver_replies CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
-            curs.execute(query)
-            self.conn.commit()
-            self.conn.close()
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-
-    #Naver뉴스 대댓글 Table 생성 함수
-    def createNaverReReplyTable(self,dbname):
-        self.connect()
-        curs = self.conn.cursor()
-        query = """use """+dbname
-        curs.execute(query)
-        self.conn.commit()
-        #NaverNews라는 ID, URL, TITLE 등등을 포함하는 테이블을 생성
-        query = """create table naver_rereplies(   
-                                            article_id int not null, 
-                                            reply_id int not null, 
-                                            id int not null auto_increment primary key, 
-                                            rerewriter varchar(512), 
-                                            rereply_date varchar(50),
-                                            rere text,
-                                            rere_like int,
-                                            rere_bad int,
-                                            FOREIGN KEY(article_id) REFERENCES Naver_Articles(article_id) ON UPDATE CASCADE ON DELETE CASCADE,
-                                            FOREIGN KEY(reply_id) REFERENCES Naver_Replies(reply_id) ON UPDATE CASCADE ON DELETE CASCADE
-                                            )"""
-
-        try:
-            curs.execute(query)
-            self.conn.commit()
-            query = """ALTER TABLE naver_rereplies CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
-            curs.execute(query)
-            self.conn.commit()
-            self.conn.close()
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-    
-    #네이버 댓글 DB입력
-    def insertNaverReplyData(self, Article_ID, Reply_ID, Writer, ReplyDate ,Reply,ReRe_count,R_Like,R_Bad,R_Per_Like,R_Sentiment):
-        try:
-            self.connect()
-            curs = self.conn.cursor()
-            query = """insert into """ +self.dbname+ """.Naver_Replies(Article_ID, 
-                                                    Writer, 
-                                                    reply_date, 
-                                                    Reply,
-                                                    ReRe_count,
-                                                    R_Like,
-                                                    R_Bad,
-                                                    R_Per_Like,
-                                                    R_Sentiment) values (%s ,%s, %s, %s, %s, %s, %s, %s, %s)"""
-            curs.execute(query, (Article_ID, Writer, ReplyDate, Reply, ReRe_count, R_Like, R_Bad, R_Per_Like, R_Sentiment))
-            self.conn.commit()
-            self.conn.close()
-            lastIndex = curs.lastrowid
-            return lastIndex
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-        
-
-    #네이버 대댓글 DB입력
-    def insertNaverReReplyData(self, Article_ID, Reply_ID, ReReply_ID, ReReWriter,ReReDate, ReRe, ReRe_Like, ReRe_Bad):
-        try:
-            self.connect()
-            curs = self.conn.cursor()        
-            query = """insert into """ +self.dbname+ """.Naver_ReReplies(   
-                                                Article_ID,
-                                                Reply_ID,
-                                                ReReWriter,
-                                                rereply_date,
-                                                ReRe,
-                                                ReRe_Like,
-                                                ReRe_Bad) values (%s ,%s , %s, %s, %s, %s, %s)"""
-            curs.execute(query, (Article_ID, Reply_ID, ReReWriter,ReReDate,ReRe, ReRe_Like, ReRe_Bad))
-            self.conn.commit()
-            self.conn.close()
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-        
-
-    #네이버 기사 데이터 추가
-    def insertNaverArticleData(self, data):
-        try:
-            self.connect()
-            curs = self.conn.cursor()
-            lastIndex = -1 
-            query = """ insert into """ +self.dbname+ """.naver_articles (
-            article_press, 
-            article_type, 
-            url, 
-            article_title, 
-            article_body, 
-            article_date
-            ) select * from ( select %s as a, %s as b, %s as c, %s as d, %s as e, %s as f) as tmp"""
-                        
-            
-            
-            curs.execute(query, (data['article_press'], 
-                                data['article_type'], 
-                                data['url'], 
-                                data['article_title'], 
-                                data['article_body'], 
-                                data['article_date']))
-            lastIndex = curs.lastrowid
-            self.conn.commit()
-            self.conn.close()
-            
-            return lastIndex
-        
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-
-class Blog_DBConnector:
-    
-    def __init__(self, password, filedirectory):
-        self.password = password
-        self.filedirectory = filedirectory
-        try:
-            self.conn = pymysql.connect(host='127.0.0.1', user='root', password=self.password, charset='utf8mb4', read_timeout = 2, write_timeout = 2, connect_timeout = 2)    
-        except Exception as e:
-            print('Connection Error : ', e)
-        return
-    
-    def error_exception(self, e, ipchange = False):
-        _, _, tb = sys.exc_info()  # tb -> traceback object
-        
-        if ipchange == True:
-            msg = (
-            "File name: "
-            + __file__
-            + "\n"
-            + "Error line= {}".format(tb.tb_lineno)
-            + "\n"
-            + "Error: {}".format(sys.exc_info()[0])
-            + " "
-            + str(e)
-            + "\n\nip 교체됨"
-        )
-            
-        else: 
-            msg = (
-            "File name: "
-            + __file__
-            + "\n"
-            + "Error line= {}".format(tb.tb_lineno)
-            + "\n"
-            + "Error: {}".format(sys.exc_info()[0])
-            + " "
-            + str(e)
-        )
-            self.error = True
-            
-        self.writeLog(msg)
-        
-    def writeLog(self, msg):
-        f = open(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_log.txt", "a")
-        msg += "\n\n"
-        f.write(msg)
-        f.close()
-    
-    def initialize(self, dbname):
-        
-        self.createNaverDatabase(dbname)
-        self.createNaverArticleTable(dbname)
-        self.createNaverReplyTable(dbname)
-        self.DBname = dbname
-    
-    def connect(self):
-        try:
-            self.conn = pymysql.connect(host='127.0.0.1', user='root', password=self.password, charset='utf8mb4', read_timeout = 2, write_timeout = 2, connect_timeout = 2)    
-        except Exception as e:
-            self.error_exception(e)
-            raise  # 연결 실패시 예외를 다시 발생시켜 호출자에게 알림
-
-    #Naver블로그 DB생성(NaverNews_DB) 함수
-    def createNaverDatabase(self,dbname):
-        try:
-            self.dbname = dbname
-            self.connect()
-            curs = self.conn.cursor() #cursor = 데이터베이스 쿼리를 실행하고 결과를 관리하는 객체, curs변수에 생성
-            #NaverNews_DB를 생성하는 쿼리
-            query = """CREATE DATABASE """+dbname # 데이터 베이스 생성
-            curs.execute(query) # query를 excute
-            print('DB를 생성. DB_NAME :' , dbname)
-            print("")
-            self.conn.commit()    
-
-            # NaverNews_DB의 문자세트를 utf8로 변환
-            query = """ALTER DATABASE """+ dbname + """ CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
-            curs.execute(query)
-            self.conn.commit()
-            self.conn.close()
-
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-
-    #Naver블로그 Table 생성 함수
-    def createNaverArticleTable(self, dbname):
-        self.connect()
-        curs = self.conn.cursor()
-        query = """use """+dbname
-        curs.execute(query)
-        self.conn.commit()
-        #NaverNews라는 ID, URL, TITLE 등등을 포함하는 테이블을 생성
-        query = """create table naver_articles(   
-                                            article_id int not null auto_increment primary key,
-                                            blog_id text,
-                                            url text, 
-                                            article_body text,
-                                            article_date varchar(50),
-                                            good_cnt varchar(50),
-                                            comment_cnt varchar(50)
-                                            )"""
-        try:
-            curs.execute(query)
-            self.conn.commit()
-            query = """ALTER TABLE naver_articles CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
-            curs.execute(query)
-            self.conn.commit()
-            self.conn.close()
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-
-    #Naver블로그 댓글 Table 생성 함수
-    def createNaverReplyTable(self,dbname):
-        self.connect()
-        curs = self.conn.cursor()
-        query = """use """+dbname
-        curs.execute(query)
-        self.conn.commit()
-        #NaverNews라는 ID, URL, TITLE 등등을 포함하는 테이블을 생성
-        query = """create table naver_replies(   
-                                            article_id int not null, 
-                                            reply_id int not null auto_increment primary key, 
-                                            writer varchar(512),
-                                            reply_date varchar(50),
-                                            reply text, 
-                                            FOREIGN KEY(article_id) REFERENCES naver_articles(article_id) ON UPDATE CASCADE ON DELETE CASCADE
-                                            )"""
-
-        try:
-            curs.execute(query)
-            self.conn.commit()
-            query = """ALTER TABLE naver_replies CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
-            curs.execute(query)
-            self.conn.commit()
-            self.conn.close()
-        
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-
-    #네이버 블로그 댓글 DB입력
-    def insertNaverReplyData(self, Article_ID, Reply_ID, Writer, ReplyDate ,Reply):
-        try:
-            self.connect()
-            curs = self.conn.cursor()
-            query = """insert into """ +self.dbname+ """.Naver_Replies(Article_ID, 
-                                                    Writer, 
-                                                    reply_date, 
-                                                    Reply
-                                                    ) values (%s ,%s, %s, %s)"""
-            curs.execute(query, (Article_ID, Writer, ReplyDate, Reply))
-            self.conn.commit()
-            self.conn.close()
-            lastIndex = curs.lastrowid
-            return lastIndex
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-
-    #네이버 블로그 데이터 추가
-    def insertNaverArticleData(self, data):
-        try:
-            self.connect()
-            curs = self.conn.cursor()
-            lastIndex = -1 
-            query = """ insert into """ +self.dbname+ """.naver_articles (
-            blog_ID,
-            url, 
-            article_body, 
-            article_date,
-            good_cnt,
-            comment_cnt
-            ) select * from ( select %s as a, %s as b, %s as c, %s as d, %s as e, %s as f) as tmp"""
-                        
-            curs.execute(query, (
-                                data['blog_ID'],
-                                data['url'], 
-                                data['article_body'], 
-                                data['article_date'], 
-                                data['good_cnt'],
-                                data['comment_cnt']
-                                ))
-            lastIndex = curs.lastrowid
-            self.conn.commit()
-            self.conn.close()
-            
-            return lastIndex
-        
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-
-class YouTube_DBConnector:
-    
-    global conn
-    dbname = ''
-    
-    def __init__(self, password, filedirectory):
-        self.filedirectory = filedirectory
-        self.password = password
-        try:
-            self.conn = pymysql.connect(host='127.0.0.1', user='root', password=self.password, charset='utf8mb4', read_timeout = 2, write_timeout = 2, connect_timeout = 2)    
-        except Exception as e:
-            print('Connection Error : ', e)
-        return
-    
-    def error_exception(self, e, ipchange = False):
-        _, _, tb = sys.exc_info()  # tb -> traceback object
-        
-        if ipchange == True:
-            msg = (
-            "File name: "
-            + __file__
-            + "\n"
-            + "Error line= {}".format(tb.tb_lineno)
-            + "\n"
-            + "Error: {}".format(sys.exc_info()[0])
-            + " "
-            + str(e)
-            + "\n\nip 교체됨"
-        )
-            
-        else: 
-            msg = (
-            "File name: "
-            + __file__
-            + "\n"
-            + "Error line= {}".format(tb.tb_lineno)
-            + "\n"
-            + "Error: {}".format(sys.exc_info()[0])
-            + " "
-            + str(e)
-        )
-            self.error = True
-            
-        self.writeLog(msg)
-        
-    def writeLog(self, msg):
-        f = open(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_log.txt", "a")
-        msg += "\n\n"
-        f.write(msg)
-        f.close()
-    
-    def initialize(self, dbname):
-        
-        self.createYouTubeDatabase(dbname)
-        self.createYouTubeInfoTable(dbname)
-        self.createYouTubeReplyTable(dbname)
-        self.DBname = dbname
-    
-    def connect(self):
-        try:
-            self.conn = pymysql.connect(host='127.0.0.1', user='root', password=self.password, charset='utf8mb4', read_timeout = 2, write_timeout = 2, connect_timeout = 2)    
-        except Exception as e:
-            self.error_exception(e)
-            raise  # 연결 실패시 예외를 다시 발생시켜 호출자에게 알림
-
-    def setDBName(self, name):
-        self.dbname = name
-
-    #YouTube DB생성(NaverNews_DB) 함수
-    def createYouTubeDatabase(self,dbname):
-        try:
-            self.dbname = dbname
-            self.connect()
-            curs = self.conn.cursor() #cursor = 데이터베이스 쿼리를 실행하고 결과를 관리하는 객체, curs변수에 생성
-            #NaverNews_DB를 생성하는 쿼리
-            query = """CREATE DATABASE """+dbname # 데이터 베이스 생성
-            curs.execute(query) # query를 excute
-            print('DB를 생성. DB_NAME :' , dbname)
-            print("")
-            self.conn.commit()    
-
-            # NaverNews_DB의 문자세트를 utf8로 변환
-            query = """ALTER DATABASE """+ dbname + """ CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
-            curs.execute(query)
-            self.conn.commit()
-            self.conn.close()
-
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-
-    #YouTube 정보 Table 생성 함수
-    def createYouTubeInfoTable(self, dbname):
-        self.connect()
-        curs = self.conn.cursor()
-        query = """use """+dbname
-        curs.execute(query)
-        self.conn.commit()
-        #YouTube라는 ID, URL, TITLE 등등을 포함하는 테이블을 생성
-        query = """create table youtube_info(   
-                                            info_id int not null auto_increment primary key,
-                                            channel text,
-                                            video_url text,
-                                            video_title text,
-                                            video_description text,
-                                            video_date text,
-                                            view_count text,
-                                            like_count text,
-                                            comment_count text
-                                            )"""
-        try:
-            curs.execute(query)
-            self.conn.commit()
-            query = """ALTER TABLE youtube_info CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
-            curs.execute(query)
-            self.conn.commit()
-            self.conn.close()
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-
-    #YouTube 댓글 Table 생성 함수
-    def createYouTubeReplyTable(self,dbname):
-        self.connect()
-        curs = self.conn.cursor()
-        query = """use """+dbname
-        curs.execute(query)
-        self.conn.commit()
-        #NaverNews라는 ID, URL, TITLE 등등을 포함하는 테이블을 생성
-        query = """create table youtube_replies(   
-                                            info_id int not null, 
-                                            reply_id int not null auto_increment primary key, 
-                                            writer text,
-                                            reply_date text,
-                                            reply text, 
-                                            r_Like text,
-                                            rere_count text,
-                                            FOREIGN KEY(info_id) REFERENCES youtube_info(info_id) ON UPDATE CASCADE ON DELETE CASCADE
-                                            )"""
-
-        try:
-            curs.execute(query)
-            self.conn.commit()
-            query = """ALTER TABLE youtube_replies CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"""
-            curs.execute(query)
-            self.conn.commit()
-            self.conn.close()
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-
-    #YouTube 댓글 DB입력
-    def insertYouTubeReplyData(self, Info_ID, Reply_ID, Writer, ReplyDate, Reply ,R_Like, ReRe_count):
-        try:
-            self.connect()
-            curs = self.conn.cursor()
-            query = """insert into """ +self.dbname+ """.Youtube_Replies(Info_ID, 
-                                                    Writer, 
-                                                    reply_date, 
-                                                    Reply,
-                                                    R_Like,
-                                                    ReRe_count
-                                                    ) values (%s ,%s, %s, %s, %s, %s)"""
-            curs.execute(query, (Info_ID, Writer, ReplyDate, Reply, R_Like, ReRe_count))
-            self.conn.commit()
-            self.conn.close()
-            lastIndex = curs.lastrowid
-            return lastIndex
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-        
-
-    #YouTube 정보 데이터 추가
-    def insertYouTubeInfoData(self, data):
-        try:
-            self.connect()
-            curs = self.conn.cursor()
-            lastIndex = -1 
-            query = """ insert into """ +self.dbname+ """.youtube_info (
-            info_id,
-            channel,
-            video_url,
-            video_title,
-            video_description,
-            video_date,
-            view_count,
-            like_count,
-            comment_count
-            ) select * from ( select %s as a, %s as b, %s as c, %s as d, %s as e, %s as f, %s as g, %s as h, %s as i) as tmp"""
-                        
-            curs.execute(query, (data['info_id'], 
-                                data['channel'], 
-                                data['video_url'], 
-                                data['video_title'], 
-                                data['video_description'], 
-                                data['video_date'],
-                                data['view_count'],
-                                data['like_count'],
-                                data['comment_count']
-                                ))
-            lastIndex = curs.lastrowid
-            self.conn.commit()
-            self.conn.close()
-            
-            return lastIndex
-        
-        except Exception as e:
-            self.error_exception(e)
-        finally:
-            if conn:
-                conn.close()
-##########################################################################################################   
-         
+ 
 def control():
 
     print("================ Crawler Controller ================\n")
@@ -2123,15 +1340,16 @@ def control():
     
     print("\n====================================================")
     
-    crawler = Crawler()
-    
     if control_ask == 1:
+        crawler = Crawler()
         crawler.crawl_news()
     
     elif control_ask == 2:
+        crawler = Crawler()
         crawler.crawl_blog()
         
     elif control_ask == 3:
+        crawler = Crawler()
         crawler.crawl_youtube()
     
     else:
