@@ -40,7 +40,7 @@ import io
 # pip install google-api-python-client
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
+###
 class Crawler:
     
 ############################################### 공통 메서드 ###############################################
