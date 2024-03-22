@@ -36,10 +36,10 @@ class data_process:
 
         
     def main(self):
-        print("\n1. 파일 분할\n2. URL 제외")
+        print("\n1. 파일 분할\n2. URL 제외\n3. URL 포함")
         while True:
             big_option = input("\n입력: ")
-            if big_option in ["1", "2"]:
+            if big_option in ["1", "2", "3"]:
                 break
             else:
                 print("다시 입력하세요")
@@ -47,11 +47,12 @@ class data_process:
         if big_option == "1":
             self.option_1()
             
-        
-        if big_option == "2":
+        elif big_option == "2":
             self.option_2()
-            
-            
+        
+        elif big_option == "3":
+            self.option_3()
+        print("완료")
             
     def option_1(self):
         self.clear_screen()
@@ -131,7 +132,6 @@ class data_process:
         
         print("\n완료")
         
-
     def option_2(self):
         self.clear_screen()
         self.csv_path = self.file_ask(self.scrapdata_path, "대상 csv 파일을 선택하세요")
@@ -149,10 +149,36 @@ class data_process:
         self.origin_csv_data = pd.DataFrame(self.origin_csv_data)
         self.origin_csv_data = self.origin_csv_data.dropna(subset=['url'])
         
-        exception_url_list = pd.read_csv(self.exception_url_csv_path, sep='\t').values.flatten().tolist()
+        exception_url_list = pd.read_csv(self.exception_url_csv_path, sep='\t', header = None).values.flatten().tolist()
 
         self.origin_csv_data = self.origin_csv_data[~self.origin_csv_data['url'].isin(exception_url_list)]
         self.origin_csv_data.to_csv(self.exception_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 제외.csv", encoding = 'utf-8-sig', index = False)
+
+    def option_3(self):
+        self.clear_screen()
+        
+        self.csv_path = self.file_ask(self.scrapdata_path, "대상 csv 파일을 선택하세요")
+        
+        # csv 파일 저장된 폴더 경로
+        self.folder_path = os.path.dirname(self.csv_path)
+        
+        # csv 파일 이름
+        self.file_name = os.path.basename(self.csv_path)
+    
+        self.include_url_csv_path = self.file_ask(self.projectfolder_path, "포함할 URL csv를 선택하세요")
+        self.include_url_csv_folder_path = os.path.dirname(self.include_url_csv_path)
+        
+        # 원본 데이터 로드
+        self.origin_csv_data = pd.read_csv(self.csv_path, low_memory=False)
+        self.origin_csv_data = pd.DataFrame(self.origin_csv_data)
+        self.origin_csv_data = self.origin_csv_data.dropna(subset=['url'])
+        
+        # 포함할 URL 리스트 로드
+        include_url_list = pd.read_csv(self.include_url_csv_path, sep='\t', header = None).values.flatten().tolist()
+
+        # 포함할 URL에 해당하는 데이터만 필터링
+        self.origin_csv_data = self.origin_csv_data[self.origin_csv_data['url'].isin(include_url_list)]
+        self.origin_csv_data.to_csv(self.include_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_URL 포함.csv", encoding='utf-8-sig', index=False)
 
     def divide_data(self, option):
         
