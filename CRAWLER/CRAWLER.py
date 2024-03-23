@@ -407,18 +407,27 @@ class Crawler:
                 self.get_NEWS_URLs(self.trans_date)
                 self.currentDate += self.deltaD
                 
-                dfarticle = pd.DataFrame(self.article_list)
-                dfarticle.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                try:
+                    dfarticle = pd.DataFrame(self.article_list)
+                    dfarticle.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                except Exception as e:
+                    self.error_exception(e)
                 
                 if self.option == 2:
-                    dfreply = pd.DataFrame(self.reply_list)
-                    dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    try:
+                        dfreply = pd.DataFrame(self.reply_list)
+                        dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    except Exception as e:
+                        self.error_exception(e)
                     
                 elif self.option == 3:
-                    dfreply = pd.DataFrame(self.reply_list)
-                    dfrereply = pd.DataFrame(self.rereply_list)
-                    dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
-                    dfrereply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_rereply" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    try: 
+                        dfreply = pd.DataFrame(self.reply_list)
+                        dfrereply = pd.DataFrame(self.rereply_list)
+                        dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                        dfrereply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_rereply" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    except Exception as e:
+                        self.error_exception(e)
 
             out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+"\033[37m"+" | 기사 수: "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글 수: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글 수: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
             print(out_str, end = "")
@@ -800,12 +809,18 @@ class Crawler:
                 self.get_BLOG_URLs(self.trans_date)
                 self.currentDate += self.deltaD
                 
-                dfarticle = pd.DataFrame(self.article_list)
-                dfarticle.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                try:
+                    dfarticle = pd.DataFrame(self.article_list)
+                    dfarticle.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                except Exception as e:
+                    self.error_exception(e)
                 
                 if self.option == 2:
-                    dfreply = pd.DataFrame(self.reply_list)
-                    dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    try:
+                        dfreply = pd.DataFrame(self.reply_list)
+                        dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    except Exception as e:
+                        self.error_exception(e)
         
             out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+"\033[37m"+" | 블로그 수: "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글 수: "+"\033[33m"+str(len(self.reply_list)-1)+ "\033[37m"+" ||"
             print(out_str, end = "")
@@ -1087,13 +1102,18 @@ class Crawler:
                 self.get_YOUTUBE_URLs(str(self.currentDate.strftime("%m/%d/%Y")))
                 self.currentDate += self.deltaD
                 
-                
-                dfinfo = pd.DataFrame(self.info_list)
-                dfinfo.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_info" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                try:
+                    dfinfo = pd.DataFrame(self.info_list)
+                    dfinfo.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_info" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                except Exception as e:
+                    self.error_exception(e)
             
                 if self.option == 2:
-                    dfreply = pd.DataFrame(self.reply_list)
-                    dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    try:
+                        dfreply = pd.DataFrame(self.reply_list)
+                        dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    except Exception as e:
+                        self.error_exception(e)
         
             self.endtime = time.time()
             loadingsecond = self.endtime - self.starttime
