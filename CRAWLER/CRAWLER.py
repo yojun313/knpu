@@ -384,9 +384,10 @@ class Crawler:
         self.f = open(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_log.txt", "w+")  # Log file 생성
         self.f.close()
         
-        self.article_list = [["article press", "article type", "url", "article title", "article body", "article date", "reply_cnt", "statistics(Y/N)", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
-        self.reply_list   = [["reply_id", "writer", "reply_date", "reply", "rere_count", "r_Like", "r_Bad", "r_Per_Like", 'r_Sentiment', 'url']]
-        self.rereply_list = [["reply_id", "id", "rerewriter", "rereply_date", "rereply", "rere_Like", "rere_Bad", 'url']]
+        self.article_list    = [["article press", "article type", "url", "article title", "article body", "article date", "reply_cnt", "statistics(Y/N)", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
+        self.statistics_list = [["article press", "article type", "url", "article title", "article body", "article date", "reply_cnt", "statistics(Y/N)", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
+        self.reply_list      = [["reply_id", "writer", "reply_date", "reply", "rere_count", "r_Like", "r_Bad", "r_Per_Like", 'r_Sentiment', 'url']]
+        self.rereply_list    = [["reply_id", "id", "rerewriter", "rereply_date", "rereply", "rere_Like", "rere_Bad", 'url']]
         
         print("====================================================================================================================") 
         print("크롤링: 네이버 뉴스")
@@ -408,8 +409,10 @@ class Crawler:
                 self.currentDate += self.deltaD
                 
                 try:
-                    dfarticle = pd.DataFrame(self.article_list)
+                    dfarticle    = pd.DataFrame(self.article_list)
+                    dfstatistics = pd.DataFrame(self.statistics_list)
                     dfarticle.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    dfstatistics.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article(statistics)" + ".csv", index = False, encoding='utf-8-sig', header = False)
                 except Exception as e:
                     self.error_exception(e)
                 
@@ -564,20 +567,6 @@ class Crawler:
                             parentCommentNo_list.append(parentCommentNo)
                         
                         try:
-                            self.article_list[len(self.article_list)-1][8]  = temp['result']['graph']['gender']['male']  # male
-                            self.article_list[len(self.article_list)-1][9]  = temp['result']['graph']['gender']['female']# female
-                            self.article_list[len(self.article_list)-1][10] = temp['result']['graph']['old'][0]['value'] # 10Y
-                            self.article_list[len(self.article_list)-1][11] = temp['result']['graph']['old'][1]['value'] # 20Y
-                            self.article_list[len(self.article_list)-1][12] = temp['result']['graph']['old'][2]['value'] # 30Y
-                            self.article_list[len(self.article_list)-1][13] = temp['result']['graph']['old'][3]['value'] # 40Y
-                            self.article_list[len(self.article_list)-1][14] = temp['result']['graph']['old'][4]['value'] # 50Y
-                            self.article_list[len(self.article_list)-1][15] = temp['result']['graph']['old'][5]['value'] # 60Y
-                            self.article_list[len(self.article_list)-1][7]  = 'Y' # statistics
-                        except:
-                            pass
-                        
-                        
-                        try:
                             self.article_list[len(self.article_list)-1][6] = temp['result']['count']['comment']
                             nickname_list  .extend(list(pd.DataFrame(        temp['result']['commentList'])['maskedUserId']))
                             replyDate_list .extend(list(pd.DataFrame(        temp['result']['commentList'])['modTime']))
@@ -597,6 +586,20 @@ class Crawler:
                     
                 except Exception as e:
                     self.error_exception(e)
+            
+            try:
+                self.article_list[len(self.article_list)-1][8]  = temp['result']['graph']['gender']['male']  # male
+                self.article_list[len(self.article_list)-1][9]  = temp['result']['graph']['gender']['female']# female
+                self.article_list[len(self.article_list)-1][10] = temp['result']['graph']['old'][0]['value'] # 10Y
+                self.article_list[len(self.article_list)-1][11] = temp['result']['graph']['old'][1]['value'] # 20Y
+                self.article_list[len(self.article_list)-1][12] = temp['result']['graph']['old'][2]['value'] # 30Y
+                self.article_list[len(self.article_list)-1][13] = temp['result']['graph']['old'][3]['value'] # 40Y
+                self.article_list[len(self.article_list)-1][14] = temp['result']['graph']['old'][4]['value'] # 50Y
+                self.article_list[len(self.article_list)-1][15] = temp['result']['graph']['old'][5]['value'] # 60Y
+                self.article_list[len(self.article_list)-1][7]  = 'Y' # statistics
+                self.statistics_list.append(self.article_list[len(self.article_list)-1])
+            except:
+                pass
                     
             reply_idx = 0
             for i in range(len(nickname_list)):
