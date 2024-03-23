@@ -76,9 +76,9 @@ def parseNews(url):
     response.encoding = "UTF-8-sig"
     res = response.text.replace("_callback(","")[:-2]
     temp=json.loads(res)
-    print(temp['result']['graph']['old'][2]['value'])
+    print(temp)
 
-parseNews("https://n.news.naver.com/mnews/article/001/0014581332?sid=102")
+parseNews("https://n.news.naver.com/mnews/article/003/0012444743?sid=102")
 
 
 

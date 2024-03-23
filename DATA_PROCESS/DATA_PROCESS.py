@@ -36,10 +36,10 @@ class data_process:
 
         
     def main(self):
-        print("\n1. 파일 분할\n2. URL 제외\n3. URL 포함")
+        print("\n1. 파일 분할\n2. URL 제외\n3. URL 포함\n4. 정렬 및 통계")
         while True:
             big_option = input("\n입력: ")
-            if big_option in ["1", "2", "3"]:
+            if big_option in ["1", "2", "3", "4"]:
                 break
             else:
                 print("다시 입력하세요")
@@ -76,6 +76,17 @@ class data_process:
             print("대상 csv 파일:", self.csv_path)
             print("포함 url 파일:", self.include_url_csv_csv_path)
             print("완성 파일:", self.exception_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 포함.csv")
+            
+        elif big_option == "4":
+            
+            self.option_4()
+            
+            self.clear_screen()
+            
+            print("[정렬 및 통계]\n")
+            print("대상 csv 파일:", self.csv_path)
+            print("완성 파일:", self.data_path)
+            
         
             
     def option_1(self):
@@ -204,6 +215,111 @@ class data_process:
         self.origin_csv_data = self.origin_csv_data[self.origin_csv_data['url'].isin(include_url_list)]
         self.origin_csv_data.to_csv(self.include_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_URL 포함.csv", encoding='utf-8-sig', index=False)
 
+    def option_4(self):
+        self.clear_screen()
+
+        self.csv_path = self.file_ask(self.scrapdata_path, "대상 csv 파일을 선택하세요")
+        # csv 파일 저장된 폴더 경로
+        self.folder_path = os.path.dirname(self.csv_path)
+        # csv 파일 이름
+        self.file_name = os.path.basename(self.csv_path)
+        
+        print("선택된 파일:", self.csv_path)
+        
+        print("\n선택된 파일의 유형을 선택하세요")
+        
+        print("\n1. 기사\n2. 댓글")
+        while True:
+            type_option = input("\n입력: ")
+            if type_option in ["1", "2"]:
+                type_option = int(type_option)
+                break
+            else:
+                print("다시 입력하세요")
+                
+        print("\n정렬 및 통계 방식을 선택하세요")
+        
+        if type_option == 1:
+            print("\n1. 언론사\n2. 기사 유형\n3. 댓글 수\n4. 모두")
+            while True:
+                article_align_option = input("\n입력: ")
+                if article_align_option in ["1", "2", "3", "4"]:
+                    article_align_option = int(article_align_option)
+                    break
+                else:
+                    print("다시 입력하세요")
+        else:
+            print("\n1. 아이디")
+            while True:
+                reply_align_option = input("\n입력: ")
+                if reply_align_option in ["1"]:
+                    reply_align_option = int(reply_align_option)
+                    break
+                else:
+                    print("다시 입력하세요")
+                    
+        # 데이터 저장하는 경로
+        self.data_path = self.folder_path + "/" + self.file_name.replace(".csv", "") + "_통계 데이터"
+        
+        try:
+            os.mkdir(self.data_path)
+        except:
+            pass
+        
+        if type_option == 1:
+            if article_align_option == 1 or article_align_option == 4:
+                
+                self.press_align_data = pd.read_csv(self.csv_path, low_memory=False)
+                self.press_align_data = pd.DataFrame(self.press_align_data)
+                
+                self.press_align_data['Press_Count'] = self.press_align_data.groupby('article press')['article press'].transform('count')
+
+                # 'Press_Count' 내림차순, 'article press' 오름차순으로 정렬하여
+                # 언론사별로 뭉치고, 행 수가 많은 순서대로 배열
+                self.press_align_data = self.press_align_data.sort_values(by=['Press_Count', 'article press'], ascending=[False, True])
+
+                self.press_align_data.to_csv(self.data_path + "/" + "언론사 정렬_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
+                
+                press_counts = self.press_align_data['article press'].value_counts().reset_index()
+                press_counts.columns = ['article press', 'Count']
+                press_counts.to_csv(self.data_path + "/" + "언론사 통계_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
+        
+            if article_align_option == 2 or article_align_option == 4:
+                self.type_align_data = pd.read_csv(self.csv_path, low_memory=False)
+                self.type_align_data = pd.DataFrame(self.type_align_data)
+                
+                self.type_align_data['Type_Count'] = self.type_align_data.groupby('article type')['article type'].transform('count')
+
+                # 'Press_Count' 내림차순, 'article press' 오름차순으로 정렬하여
+                # 언론사별로 뭉치고, 행 수가 많은 순서대로 배열
+                self.type_align_data = self.type_align_data.sort_values(by=['Type_Count', 'article type'], ascending=[False, True])
+
+                self.type_align_data.to_csv(self.data_path + "/" + "기사 유형 정렬_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
+                
+                press_counts = self.type_align_data['article type'].value_counts().reset_index()
+                press_counts.columns = ['article type', 'Count']
+                press_counts.to_csv(self.data_path + "/" + "기사 유형 통계_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
+        
+            if article_align_option == 3 or article_align_option == 4:
+                self.reply_align_data = pd.read_csv(self.csv_path, low_memory=False)
+                self.reply_align_data = pd.DataFrame(self.reply_align_data)
+                
+                self.reply_align_data = self.reply_align_data.sort_values(by='reply_cnt', ascending = False)
+                self.reply_align_data.to_csv(self.data_path + "/" + "댓글 수 정렬_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
+
+        elif type_option == 2:
+            if reply_align_option == 1:
+                self.user_align_data = pd.read_csv(self.csv_path, low_memory=False)
+                self.user_align_data = pd.DataFrame(self.user_align_data)
+                
+                self.user_align_data['User_Count'] = self.user_align_data.groupby('writer')['writer'].transform('count')
+                self.user_align_data = self.user_align_data.sort_values(by=['User_Count', 'writer'], ascending=[False, True])
+                self.user_align_data.to_csv(self.data_path + "/" + "댓글 작성자 정렬_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
+                
+                user_counts = self.user_align_data['writer'].value_counts().reset_index()
+                user_counts.columns = ['writer', 'Count']
+                user_counts.to_csv(self.data_path + "/" + "댓글 작성자 통계_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
+                
     def divide_data(self, option):
         
         # 연도별로 나누기
