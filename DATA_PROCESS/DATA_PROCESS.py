@@ -36,10 +36,10 @@ class data_process:
 
         
     def main(self):
-        print("\n1. 파일 분할\n2. URL 제외\n3. URL 포함\n4. 정렬 및 통계")
+        print("\n1. 파일 분할\n2. URL 제외\n3. URL 포함\n4. 정렬 및 통계\n5. 댓글 공백 제거")
         while True:
             big_option = input("\n입력: ")
-            if big_option in ["1", "2", "3", "4"]:
+            if big_option in ["1", "2", "3", "4", "5"]:
                 break
             else:
                 print("다시 입력하세요")
@@ -86,6 +86,16 @@ class data_process:
             print("[정렬 및 통계]\n")
             print("대상 csv 파일:", self.csv_path)
             print("완성 파일:", self.data_path)
+            
+        elif big_option == "5":
+            
+            self.option_5()
+            
+            self.clear_screen()
+            
+            print("[댓글 공백 제거]\n")
+            print("대상 csv 파일:", self.csv_path)
+            print("완성 파일:", self.folder_path + "/" + self.file_name.replace(".csv", "") + "_공백 제거.csv")
             
         
             
@@ -319,6 +329,23 @@ class data_process:
                 user_counts = self.user_align_data['writer'].value_counts().reset_index()
                 user_counts.columns = ['writer', 'Count']
                 user_counts.to_csv(self.data_path + "/" + "댓글 작성자 통계_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
+    
+    def option_5(self):
+        self.clear_screen()
+        
+        self.csv_path = self.file_ask(self.scrapdata_path, "대상 csv 파일을 선택하세요")
+        # csv 파일 저장된 폴더 경로
+        self.folder_path = os.path.dirname(self.csv_path)
+        # csv 파일 이름
+        self.file_name = os.path.basename(self.csv_path)
+        
+        print("선택된 파일:", self.csv_path)
+        
+        self.reply_data = pd.read_csv(self.csv_path)
+        self.reply_data = self.reply_data.dropna(subset = ['reply'])
+        self.reply_data.to_csv(self.folder_path + "/" + self.file_name.replace(".csv", "") + "_공백 제거.csv", encoding='utf-8-sig', index=False)
+        
+    
                 
     def divide_data(self, option):
         
