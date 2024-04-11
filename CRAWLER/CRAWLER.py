@@ -45,7 +45,7 @@ class Crawler:
     
 ############################################### 공통 메서드 ###############################################
     
-    def __init__(self):
+    def __init__(self, name, start, end, keyword, upload):
         
         ##################################### 시스템 입력부  #####################################
         
@@ -98,7 +98,7 @@ class Crawler:
             self.MailPassword   = 'vygn nrmh erpf trji'
             self.crawlcom       = "Yojun's MacBook Pro Window"
         
-        self.user_name = input("본인의 이름을 입력하세요: ")
+        self.user_name = name
         
         if self.user_name == "이정우":
             self.receiver = "wjddn_1541@naver.com"
@@ -117,9 +117,9 @@ class Crawler:
             
         elif self.user_name == "한승혁":
             self.receiver = "hankyeul80@naver.com"     
+        
         else:
-            print("사용자를 추가하세요(메뉴얼 참고)")
-            sys.exit()
+            self.receiver = "moonyojun@naver.com"
             
         #######################################################################################
         
@@ -167,10 +167,10 @@ class Crawler:
         self.now       = datetime.datetime.now()
             
         ##################################### 입력부  #####################################
-        self.start     = input("\nStart Date (ex: 20230101): ") 
-        self.end       = input("End Date (ex: 20231231): ") 
-        self.keyword   = input("\nKeyword: ")
-        self.upload    = input("\n구글 드라이브에 업로드 하시겠습니까(Y/N)? ")
+        self.start     = start
+        self.end       = end
+        self.keyword   = keyword
+        self.upload    = upload
         #################################################################################
         
         self.start_dt   = datetime.datetime.strptime(self.start, "%Y%m%d")
@@ -365,15 +365,9 @@ class Crawler:
 
 ############################################### News Crawler #############################################
 
-    def crawl_news(self):
+    def crawl_news(self, option):
         
-        print("\n1. 기사 \n2. 기사 + 댓글\n3. 기사 + 댓글 + 대댓글\n")
-        while True:
-            self.option = int(input("Option: "))
-            if self.option in [1,2,3]:
-                break
-            else:
-                print("다시 입력하세요")
+        self.option = option
         
         self.clear_screen()
 
@@ -771,15 +765,11 @@ class Crawler:
 
 ############################################### Blog Crawler #############################################
 
-    def crawl_blog(self):
+    def crawl_blog(self, option):
         
-        print("\n1. 블로그 \n2. 블로그 + 댓글\n")
-        while True:
-            self.option = int(input("Option: "))
-            if self.option in [1,2]:
-                break
-            else:
-                print("다시 입력하세요")
+        self.option = option
+        if option == 3:
+            self.option = 2
                 
         self.clear_screen()
         
@@ -1062,15 +1052,11 @@ class Crawler:
 
 ############################################## YouTube Crawler ############################################
 
-    def crawl_youtube(self):
+    def crawl_youtube(self, option):
         
-        print("\n1. 영상 정보 \n2. 영상 정보 + 댓글\n")
-        while True:
-            self.option = int(input("Option: "))
-            if self.option in [1,2]:
-                break
-            else:
-                print("다시 입력하세요")
+        self.option = option
+        if option == 3:
+            self.option = 2
         
         self.clear_screen()
         
@@ -1351,7 +1337,8 @@ class Crawler:
 def control():
 
     print("================ Crawler Controller ================\n")
-    print("크롤링 대상\n")
+    name = input("본인의 이름을 입력하세요: ")
+    print("\n크롤링 대상\n")
     print("1. 네이버 뉴스\n2. 네이버 블로그\n3. 유튜브\n4. 프로그램 종료")
     
     while True:
@@ -1360,20 +1347,35 @@ def control():
             break
         else:
             print("다시 입력하세요")
+            
+    start     = input("\nStart Date (ex: 20230101): ") 
+    end       = input("End Date (ex: 20231231): ") 
+    keyword   = input("\nKeyword: ")
+    
+    print("\n1. 기사 \n2. 기사 + 댓글\n3. 기사 + 댓글 + 대댓글\n")
+    while True:
+        option = int(input("Option: "))
+        if option in [1,2,3]:
+            break
+        else:
+            print("다시 입력하세요")
+    
+    upload    = input("\n구글 드라이브에 업로드 하시겠습니까(Y/N)? ")
+    
     
     print("\n====================================================")
     
     if control_ask == 1:
-        crawler = Crawler()
-        crawler.crawl_news()
+        crawler = Crawler(name, start, end, keyword, upload)
+        crawler.crawl_news(option)
     
     elif control_ask == 2:
-        crawler = Crawler()
-        crawler.crawl_blog()
+        crawler = Crawler(name, start, end, keyword, upload)
+        crawler.crawl_blog(option)
         
     elif control_ask == 3:
-        crawler = Crawler()
-        crawler.crawl_youtube()
+        crawler = Crawler(name, start, end, keyword, upload)
+        crawler.crawl_youtube(option)
     
     else:
         sys.exit()
