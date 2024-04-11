@@ -45,7 +45,7 @@ class Crawler:
     
 ############################################### 공통 메서드 ###############################################
     
-    def __init__(self, name, start, end, keyword, upload):
+    def __init__(self, name, start, end, keyword, upload, weboption):
         
         ##################################### 시스템 입력부  #####################################
         
@@ -120,6 +120,8 @@ class Crawler:
         
         else:
             self.receiver = "moonyojun@naver.com"
+            
+        self.weboption = weboption
             
         #######################################################################################
         
@@ -196,7 +198,7 @@ class Crawler:
         self.urlList     = []
         
     def upload_folder(self, folder_path):
-        if self.upload.lower == 'y':
+        if self.upload.lower() == 'y' or self.upload.lower() == 'yes':
             folder_name = os.path.basename(folder_path)
             
             file_metadata = {
@@ -227,54 +229,105 @@ class Crawler:
         loading_second     = self.progress_time - self.starttime
         loadingtime        = str(int(loading_second//3600))+":"+str(int(loading_second%3600//60))+":"+str(int(loading_second%3600%60))
         
-        if print_type == "news":
-            print_type = "기사"
-            if signal == -1: # 날짜
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+ " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[36m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
-                print(out_str, end = "")
-            elif signal == 0: # url
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[36m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
-                print(out_str, end = "")
-            elif signal == 1: # 기사
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[36m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
-                print(out_str, end = "")
-            elif signal == 2: # 댓글
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[36m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
-                print(out_str, end = "")
-            else: # 대댓글
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[36m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
-                print(out_str, end = "")
-        
-        elif print_type == "blog":
-            print_type = "블로그"
-            if signal == -1: # 날짜
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[36m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                print(out_str, end = "")
-            elif signal == 0: # url
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[36m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                print(out_str, end = "")
-            elif signal == 1: # 블로그
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[36m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                print(out_str, end = "")
-            else: # 댓글
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[36m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                print(out_str, end = "")
-        
-        elif print_type == "youtube":
-            print_type = "영상"
+        if self.weboption == 0:
+            if print_type == "news":
+                print_type = "기사"
+                if signal == -1: # 날짜
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+ " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[36m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
+                    print(out_str, end = "")
+                elif signal == 0: # url
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[36m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
+                    print(out_str, end = "")
+                elif signal == 1: # 기사
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[36m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
+                    print(out_str, end = "")
+                elif signal == 2: # 댓글
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[36m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
+                    print(out_str, end = "")
+                else: # 대댓글
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[36m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
+                    print(out_str, end = "")
             
-            if signal == -1: # 날짜
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[36m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                print(out_str, end = "")
-            elif signal == 0: # url
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[36m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                print(out_str, end = "")
-            elif signal == 1: # 블로그
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[36m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                print(out_str, end = "")
-            else: # 댓글
-                out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[36m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                print(out_str, end = "")
+            elif print_type == "blog":
+                print_type = "블로그"
+                if signal == -1: # 날짜
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[36m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    print(out_str, end = "")
+                elif signal == 0: # url
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[36m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    print(out_str, end = "")
+                elif signal == 1: # 블로그
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[36m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    print(out_str, end = "")
+                else: # 댓글
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[36m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    print(out_str, end = "")
+            
+            elif print_type == "youtube":
+                print_type = "영상"
+                
+                if signal == -1: # 날짜
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[36m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    print(out_str, end = "")
+                elif signal == 0: # url
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[36m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    print(out_str, end = "")
+                elif signal == 1: # 블로그
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[36m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    print(out_str, end = "")
+                else: # 댓글
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[36m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    print(out_str, end = "")
+                    
+        elif self.weboption == 1:
+            if print_type == "news":
+                print_type = "기사"
+                if signal == -1: # 날짜
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+ " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | 대댓글: "+str(len(self.rereply_list)-1)+" ||"
+                    print(out_str, end = "")
+                elif signal == 0: # url
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | 대댓글: "+str(len(self.rereply_list)-1)+" ||"
+                    print(out_str, end = "")
+                elif signal == 1: # 기사
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | 대댓글: "+str(len(self.rereply_list)-1)+" ||"
+                    print(out_str, end = "")
+                elif signal == 2: # 댓글
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | 대댓글: "+str(len(self.rereply_list)-1)+" ||"
+                    print(out_str, end = "")
+                else: # 대댓글
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | 대댓글: "+str(len(self.rereply_list)-1)+" ||"
+                    print(out_str, end = "")
+    
+            elif print_type == "blog":
+                print_type = "블로그"
+                if signal == -1: # 날짜
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    print(out_str, end = "")
+                elif signal == 0: # url
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    print(out_str, end = "")
+                elif signal == 1: # 블로그
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    print(out_str, end = "")
+                else: # 댓글
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    print(out_str, end = "")
+            
+            elif print_type == "youtube":
+                print_type = "영상"
+                
+                if signal == -1: # 날짜
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    print(out_str, end = "")
+                elif signal == 0: # url
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    print(out_str, end = "")
+                elif signal == 1: # 블로그
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    print(out_str, end = "")
+                else: # 댓글
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    print(out_str, end = "")
                 
     def error_exception(self, e, ipchange = False):
         _, _, tb = sys.exc_info()  # tb -> traceback object
@@ -383,16 +436,17 @@ class Crawler:
         self.reply_list      = [["reply_id", "writer", "reply_date", "reply", "rere_count", "r_Like", "r_Bad", "r_Per_Like", 'r_Sentiment', 'url']]
         self.rereply_list    = [["reply_id", "id", "rerewriter", "rereply_date", "rereply", "rere_Like", "rere_Bad", 'url']]
         
-        print("====================================================================================================================") 
-        print("크롤링: 네이버 뉴스")
-        print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
-        print("검색어:",self.keyword)
-        print("옵션 번호:", self.option)
-        print("컴퓨터:",    self.crawlcom)
-        print("저장 위치:",  self.filedirectory + "/" + self.DBname)
-        print("메일 수신:",  self.receiver)
-        print("드라이브 업로드:", self.upload)
-        print("====================================================================================================================\n")
+        if self.weboption == 0:
+            print("====================================================================================================================") 
+            print("크롤링: 네이버 뉴스")
+            print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
+            print("검색어:",self.keyword)
+            print("옵션 번호:", self.option)
+            print("컴퓨터:",    self.crawlcom)
+            print("저장 위치:",  self.filedirectory + "/" + self.DBname)
+            print("메일 수신:",  self.receiver)
+            print("드라이브 업로드:", self.upload)
+            print("====================================================================================================================\n")
 
         try:
             for i in range(self.date_range+1):
@@ -427,6 +481,9 @@ class Crawler:
                         self.error_exception(e)
 
             out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+"\033[37m"+" | 기사 수: "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글 수: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글 수: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
+            if self.weboption == 1:
+                out_str = ""+"|| 진행: "+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ " | 날짜: "+self.trans_date+" | 기사 수: "+str(len(self.article_list)-1)+" | 댓글 수: "+str(len(self.reply_list)-1)+" | 대댓글 수: "+str(len(self.rereply_list)-1) +" ||"
+            
             print(out_str, end = "")
             
             self.endtime  = time.time()
@@ -435,8 +492,10 @@ class Crawler:
             
             self.upload_folder(self.filedirectory + "/" + self.DBname)
             
-            print("\n\n크롤링 완료\n")
-            print("분석 소요 시간:", loadingtime)
+            
+            if self.weboption == 0:
+                print("\n\n크롤링 완료\n")
+                print("분석 소요 시간:", loadingtime)
             
             self.send_email(loadingtime)
             
@@ -626,7 +685,8 @@ class Crawler:
                     str(r_sentiment),
                     str(url)]
                 )
-                self.print_status(2, "news")
+                if self.weboption == 0:
+                    self.print_status(2, "news")
             
             if self.option == 3:
                 try:
@@ -678,8 +738,8 @@ class Crawler:
                                         str(rere_like),
                                         str(rere_bad),
                                         str(url)])
-                                    
-                                    self.print_status(3, "news")
+                                    if self.weboption == 0:
+                                        self.print_status(3, "news")
                                 except:
                                     self.error_exception(e)  
 
@@ -748,7 +808,8 @@ class Crawler:
                     add_link = a['href']
                     if 'sports' not in set(add_link) and 'sid=106' not in set(add_link):
                         self.urlList.append(add_link)
-                        self.print_status(0, "news")
+                        if self.weboption == 0:
+                            self.print_status(0, "news")
                         
                     if add_link == None:
                         break
@@ -783,16 +844,17 @@ class Crawler:
         self.article_list = [["article id", "blog_id", "url", "article body", "article date", "good_cnt", "comment_cnt"]]
         self.reply_list = [["article id", "reply_id", "writer", "reply_date", "reply"]]
         
-        print("====================================================================================================================")
-        print("크롤링: 네이버 블로그")
-        print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
-        print("검색어:", self.keyword)
-        print("옵션 번호:", self.option)
-        print("컴퓨터:", self.crawlcom)
-        print("저장 위치:", self.filedirectory + "/" + self.DBname)
-        print("메일 수신:", self.receiver)
-        print("드라이브 업로드:", self.upload)
-        print("====================================================================================================================\n")
+        if self.weboption == 0:
+            print("====================================================================================================================")
+            print("크롤링: 네이버 블로그")
+            print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
+            print("검색어:", self.keyword)
+            print("옵션 번호:", self.option)
+            print("컴퓨터:", self.crawlcom)
+            print("저장 위치:", self.filedirectory + "/" + self.DBname)
+            print("메일 수신:", self.receiver)
+            print("드라이브 업로드:", self.upload)
+            print("====================================================================================================================\n")
         
         try:
             for i in range(self.date_range+1):
@@ -816,6 +878,9 @@ class Crawler:
                         self.error_exception(e)
         
             out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+"\033[37m"+" | 블로그 수: "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글 수: "+"\033[33m"+str(len(self.reply_list)-1)+ "\033[37m"+" ||"
+            if self.weboption == 1:
+                out_str = "\r"+"|| 진행: "+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ " | 날짜: "+self.trans_date+" | 블로그 수: "+str(len(self.article_list)-1)+" | 댓글 수: "+str(len(self.reply_list)-1)+" ||"
+
             print(out_str, end = "")
             
             self.endtime = time.time()
@@ -824,8 +889,9 @@ class Crawler:
             
             self.upload_folder(self.filedirectory + "/" + self.DBname)
             
-            print("\n\n크롤링 완료\n")
-            print("분석 소요 시간:", loadingtime)
+            if self.weboption == 0:
+                print("\n\n크롤링 완료\n")
+                print("분석 소요 시간:", loadingtime)
             
             self.send_email(loadingtime)
             
@@ -1071,17 +1137,18 @@ class Crawler:
         self.reply_list = [["info_id", "reply_id", "writer", "reply_date", "reply", "r_Like", "rere_count"]]
         self.bigurlList = []
 
-        print("====================================================================================================================") 
-        print("크롤링: 유튜브")
-        print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
-        print("검색어:", self.keyword)
-        print("옵션 번호:", self.option)
-        print("DB 저장:", self.mysql_option)
-        print("컴퓨터:", self.crawlcom)
-        print("저장 위치:", self.filedirectory + "/" + self.DBname)
-        print("메일 수신:", self.receiver)
-        print("드라이브 업로드:", self.upload)
-        print("====================================================================================================================\n")
+        if self.weboption == 0:
+            print("====================================================================================================================") 
+            print("크롤링: 유튜브")
+            print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
+            print("검색어:", self.keyword)
+            print("옵션 번호:", self.option)
+            print("DB 저장:", self.mysql_option)
+            print("컴퓨터:", self.crawlcom)
+            print("저장 위치:", self.filedirectory + "/" + self.DBname)
+            print("메일 수신:", self.receiver)
+            print("드라이브 업로드:", self.upload)
+            print("====================================================================================================================\n")
 
         try:
             for i in range(self.date_range+1):
@@ -1110,8 +1177,9 @@ class Crawler:
             
             self.upload_folder(self.filedirectory + "/" + self.DBname)
             
-            print("\n\n크롤링 완료\n")
-            print("분석 소요 시간:", loadingtime)
+            if self.weboption == 0:
+                print("\n\n크롤링 완료\n")
+                print("분석 소요 시간:", loadingtime)
             
             self.send_email(loadingtime)
             
@@ -1361,23 +1429,25 @@ def control():
             print("다시 입력하세요")
     
     upload    = input("\n구글 드라이브에 업로드 하시겠습니까(Y/N)? ")
+    weboption = 0
     
     
     print("\n====================================================")
     
     if control_ask == 1:
-        crawler = Crawler(name, start, end, keyword, upload)
+        crawler = Crawler(name, start, end, keyword, upload, weboption)
         crawler.crawl_news(option)
     
     elif control_ask == 2:
-        crawler = Crawler(name, start, end, keyword, upload)
+        crawler = Crawler(name, start, end, keyword, upload, weboption)
         crawler.crawl_blog(option)
         
     elif control_ask == 3:
-        crawler = Crawler(name, start, end, keyword, upload)
+        crawler = Crawler(name, start, end, keyword, upload, weboption)
         crawler.crawl_youtube(option)
     
     else:
         sys.exit()
-            
-control()
+
+if __name__ == "__main__":
+    control()
