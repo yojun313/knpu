@@ -1,50 +1,39 @@
-import CRAWLER
+# -*- coding: utf-8 -*-
+from CRAWLER import Crawler
 import sys
 
-def control():
+sys.stdout.reconfigure(encoding='utf-8')
+
+name = sys.argv[1]
+crawl_object = int(sys.argv[2])
+start = sys.argv[3]
+end = sys.argv[4]
+option = sys.argv[5]
+keyword = sys.argv[6]
+upload = sys.argv[7]
+weboption = 1
+
+
+'''
+name = "문요준"
+crawl_object = 1
+start = '20230101'
+end = '20230110'
+option = 2
+keyword = "아이패드"
+upload = 'n'
+weboption = 1
+'''
+
+if crawl_object == 1:
+    crawler = Crawler(name, start, end, keyword, upload, weboption)
+    crawler.crawl_news(option)
+
+elif crawl_object == 2:
+    crawler = Crawler(name, start, end, keyword, upload, weboption)
+    crawler.crawl_blog(option)
     
-    print("================ Crawler Controller ================\n")
-    name = input("본인의 이름을 입력하세요: ")
-    print("\n크롤링 대상\n")
-    print("1. 네이버 뉴스\n2. 네이버 블로그\n3. 유튜브\n4. 프로그램 종료")
-    
-    while True:
-        control_ask = int(input("\n입력: "))
-        if control_ask in [1,2,3,4]:
-            break
-        else:
-            print("다시 입력하세요")
-            
-    start     = input("\nStart Date (ex: 20230101): ") 
-    end       = input("End Date (ex: 20231231): ") 
-    keyword   = input("\nKeyword: ")
-    
-    print("\n1. 기사 \n2. 기사 + 댓글\n3. 기사 + 댓글 + 대댓글\n")
-    while True:
-        option = int(input("Option: "))
-        if option in [1,2,3]:
-            break
-        else:
-            print("다시 입력하세요")
-    
-    upload    = input("\n구글 드라이브에 업로드 하시겠습니까(Y/N)? ")
-    
-    
-    print("\n====================================================")
-    
-    if control_ask == 1:
-        crawler = CRAWLER.Crawler(name, start, end, keyword, upload)
-        crawler.crawl_news(option)
-    
-    elif control_ask == 2:
-        crawler = CRAWLER.Crawler(name, start, end, keyword, upload)
-        crawler.crawl_blog(option)
-        
-    elif control_ask == 3:
-        crawler = CRAWLER.Crawler(name, start, end, keyword, upload)
-        crawler.crawl_youtube(option)
-    
-    else:
-        sys.exit()
-            
-control()
+elif crawl_object == 3:
+    crawler = Crawler(name, start, end, keyword, upload, weboption)
+    crawler.crawl_youtube(option)
+
