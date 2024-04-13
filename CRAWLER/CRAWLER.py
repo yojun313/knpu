@@ -420,7 +420,7 @@ class Crawler:
 
     def crawl_news(self, option):
         
-        self.option = option
+        self.option = int(option)
         
         self.clear_screen()
 
@@ -463,7 +463,7 @@ class Crawler:
                     dfstatistics.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article(statistics)" + ".csv", index = False, encoding='utf-8-sig', header = False)
                 except Exception as e:
                     self.error_exception(e)
-                
+                    
                 if self.option == 2:
                     try:
                         dfreply = pd.DataFrame(self.reply_list)
