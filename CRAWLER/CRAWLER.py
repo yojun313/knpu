@@ -420,7 +420,7 @@ class Crawler:
 
     def crawl_news(self, option):
         
-        self.option = int(option)
+        self.option = option
         
         self.clear_screen()
 
