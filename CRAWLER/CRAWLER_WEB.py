@@ -4,14 +4,14 @@ import sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-name = sys.argv[1]
+name         = sys.argv[1]
 crawl_object = int(sys.argv[2])
-start = sys.argv[3]
-end = sys.argv[4]
-option = sys.argv[5]
-keyword = sys.argv[6]
-upload = sys.argv[7]
-weboption = 1
+start        = sys.argv[3]
+end          = sys.argv[4]
+option       = int(sys.argv[5])
+keyword      = sys.argv[6]
+upload       = sys.argv[7]
+weboption    = 1
 
 
 '''
@@ -26,6 +26,7 @@ weboption = 1
 '''
 
 if crawl_object == 1:
+    print("옵션번호:", option)
     crawler = Crawler(name, start, end, keyword, upload, weboption)
     crawler.crawl_news(option)
 
