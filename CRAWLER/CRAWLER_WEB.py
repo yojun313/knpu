@@ -26,7 +26,6 @@ weboption = 1
 '''
 
 if crawl_object == 1:
-    print("옵션번호:", option)
     crawler = Crawler(name, start, end, keyword, upload, weboption)
     crawler.crawl_news(option)
 
