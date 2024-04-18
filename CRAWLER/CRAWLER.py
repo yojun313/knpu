@@ -169,20 +169,20 @@ class Crawler:
         self.now       = datetime.datetime.now()
             
         ##################################### 입력부  #####################################
-        self.start     = start
-        self.end       = end
-        self.keyword   = keyword
-        self.upload    = upload
+        self.start       = start
+        self.end         = end
+        self.keyword     = keyword
+        self.upload      = upload
         #################################################################################
         
-        self.start_dt   = datetime.datetime.strptime(self.start, "%Y%m%d")
-        self.end_dt     = datetime.datetime.strptime(self.end,   "%Y%m%d")
+        self.start_dt    = datetime.datetime.strptime(self.start, "%Y%m%d")
+        self.end_dt      = datetime.datetime.strptime(self.end,   "%Y%m%d")
         
-        self.date_range = (self.end_dt.date() - self.start_dt.date()).days  #분석 날짜 기간
+        self.date_range  = (self.end_dt.date() - self.start_dt.date()).days  #분석 날짜 기간
         
-        self.startYear  = int(self.start[0:4])
-        self.startMonth = int(self.start[4:6])
-        self.startDay   = int(self.start[6:8])
+        self.startYear   = int(self.start[0:4])
+        self.startMonth  = int(self.start[4:6])
+        self.startDay    = int(self.start[6:8])
         
         self.endYear     = int(self.end[0:4])
         self.endMonth    = int(self.end[4:6])
