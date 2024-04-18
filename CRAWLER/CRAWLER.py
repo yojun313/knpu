@@ -175,6 +175,8 @@ class Crawler:
         self.upload      = upload
         #################################################################################
         
+        
+        
         self.start_dt    = datetime.datetime.strptime(self.start, "%Y%m%d")
         self.end_dt      = datetime.datetime.strptime(self.end,   "%Y%m%d")
         
@@ -192,7 +194,9 @@ class Crawler:
         self.deltaD      = timedelta(days=1)
         self.currentDate = self.d_start
         
-        self.refinedword = self.keyword.split("-")[0].strip().replace('"', "").replace(" ", "")
+        self.refinedword = self.keyword.replace('"', "").replace(" ", "")
+        self.keyword = self.keyword.replace('&', '%26').replace('+', '%2B')
+        self.keyword = self.keyword.replace(' ', '+')
         
         self.error       = False
         self.urlList     = []
@@ -445,7 +449,8 @@ class Crawler:
             print("====================================================================================================================") 
             print("크롤링: 네이버 뉴스")
             print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
-            print("검색어:",self.keyword)
+            print("쿼리:", self.keyword)
+            print("검색어:", self.refinedword)
             print("옵션 번호:", self.option)
             print("컴퓨터:",    self.crawlcom)
             print("저장 위치:",  self.filedirectory + "/" + self.DBname)
@@ -462,19 +467,19 @@ class Crawler:
                 self.currentDate += self.deltaD
                 
                 try:
-                    with open(self.article_csv, "w", newline = "") as article:
+                    with open(self.article_csv, "w", newline = "", encoding='utf-8-sig') as article:
                         csv.writer(article).writerows(self.article_list)
-                    with open(self.statistics_csv, "w", newline = "") as statistics:
+                    with open(self.statistics_csv, "w", newline = "", encoding='utf-8-sig') as statistics:
                         csv.writer(statistics).writerows(self.statistics_list)
                 except Exception as e:
                     self.error_exception(e)
                     
                 if self.option == 2 or self.option == 3:
                     try:
-                        with open(self.reply_csv, "w", newline = "") as reply:
+                        with open(self.reply_csv, "w", newline = "", encoding='utf-8-sig') as reply:
                             csv.writer(reply).writerows(self.reply_list)
                         if self.option == 3:
-                            with open(self.rereply_csv, "w", newline = "") as rereply:
+                            with open(self.rereply_csv, "w", newline = "", encoding='utf-8-sig') as rereply:
                                 csv.writer(rereply).writerows(self.rereply_list)
                     except Exception as e:
                         self.error_exception(e)
@@ -868,14 +873,14 @@ class Crawler:
                 self.currentDate += self.deltaD
                 
                 try:
-                    with open(self.article_csv, "w", newline = "") as article:
+                    with open(self.article_csv, "w", newline = "", encoding='utf-8-sig') as article:
                         csv.writer(article).writerows(self.article_list)
                 except Exception as e:
                     self.error_exception(e)
                     
                 if self.option == 2:
                     try:
-                        with open(self.reply_csv, "w", newline = "") as reply:
+                        with open(self.reply_csv, "w", newline = "", encoding='utf-8-sig') as reply:
                             csv.writer(reply).writerows(self.reply_list)
                     except Exception as e:
                         self.error_exception(e)
