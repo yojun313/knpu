@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from bs4 import BeautifulSoup
-import pymysql
 import sys
 from datetime import date, timedelta
 import socket
@@ -9,6 +8,7 @@ import random
 import urllib3
 from user_agent import generate_user_agent, generate_navigator
 import os
+import csv
 import requests
 import json
 import random
@@ -436,6 +436,11 @@ class Crawler:
         self.reply_list      = [["reply_id", "writer", "reply_date", "reply", "rere_count", "r_Like", "r_Bad", "r_Per_Like", 'r_Sentiment', 'url']]
         self.rereply_list    = [["reply_id", "id", "rerewriter", "rereply_date", "rereply", "rere_Like", "rere_Bad", 'url']]
         
+        self.article_csv         = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article" + ".csv"
+        self.statistics_csv      = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article(statistics)" + ".csv"
+        self.reply_csv           = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv"
+        self.rereply_csv         = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_rereply" + ".csv"
+        
         if self.weboption == 0:
             print("====================================================================================================================") 
             print("크롤링: 네이버 뉴스")
@@ -457,28 +462,23 @@ class Crawler:
                 self.currentDate += self.deltaD
                 
                 try:
-                    dfarticle    = pd.DataFrame(self.article_list)
-                    dfstatistics = pd.DataFrame(self.statistics_list)
-                    dfarticle.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article" + ".csv", index = False, encoding='utf-8-sig', header = False)
-                    dfstatistics.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article(statistics)" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    with open(self.article_csv, "w", newline = "") as article:
+                        csv.writer(article).writerows(self.article_list)
+                    with open(self.statistics_csv, "w", newline = "") as statistics:
+                        csv.writer(statistics).writerows(self.statistics_list)
                 except Exception as e:
                     self.error_exception(e)
                     
-                if self.option == 2:
+                if self.option == 2 or self.option == 3:
                     try:
-                        dfreply = pd.DataFrame(self.reply_list)
-                        dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                        with open(self.reply_csv, "w", newline = "") as reply:
+                            csv.writer(reply).writerows(self.reply_list)
+                        if self.option == 3:
+                            with open(self.rereply_csv, "w", newline = "") as rereply:
+                                csv.writer(rereply).writerows(self.rereply_list)
                     except Exception as e:
                         self.error_exception(e)
                     
-                elif self.option == 3:
-                    try: 
-                        dfreply = pd.DataFrame(self.reply_list)
-                        dfrereply = pd.DataFrame(self.rereply_list)
-                        dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
-                        dfrereply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_rereply" + ".csv", index = False, encoding='utf-8-sig', header = False)
-                    except Exception as e:
-                        self.error_exception(e)
 
             out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+"\033[37m"+" | 기사 수: "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글 수: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글 수: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
             if self.weboption == 1:
@@ -844,6 +844,9 @@ class Crawler:
         self.article_list = [["article id", "blog_id", "url", "article body", "article date", "good_cnt", "comment_cnt"]]
         self.reply_list = [["article id", "reply_id", "writer", "reply_date", "reply"]]
         
+        self.article_csv         = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article" + ".csv"
+        self.reply_csv           = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv"
+        
         if self.weboption == 0:
             print("====================================================================================================================")
             print("크롤링: 네이버 블로그")
@@ -865,15 +868,15 @@ class Crawler:
                 self.currentDate += self.deltaD
                 
                 try:
-                    dfarticle = pd.DataFrame(self.article_list)
-                    dfarticle.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    with open(self.article_csv, "w", newline = "") as article:
+                        csv.writer(article).writerows(self.article_list)
                 except Exception as e:
                     self.error_exception(e)
-                
+                    
                 if self.option == 2:
                     try:
-                        dfreply = pd.DataFrame(self.reply_list)
-                        dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                        with open(self.reply_csv, "w", newline = "") as reply:
+                            csv.writer(reply).writerows(self.reply_list)
                     except Exception as e:
                         self.error_exception(e)
         
