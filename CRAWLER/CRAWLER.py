@@ -100,12 +100,17 @@ class Crawler:
         
         self.user_name = name
         
-        if self.user_name == "이정우":
+        if self.user_name in ['admin', '관리자']:
+            self.admin = 1
+            self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/admin_scrapdata_folder"
+            self.receiver = "moonyojun@naver.com"
+            
+        elif self.user_name == "이정우":
             self.receiver = "wjddn_1541@naver.com"
         
         elif self.user_name == "문요준":
             self.receiver = "moonyojun@naver.com"
-        
+                
         elif self.user_name == "최우철":
             self.receiver = "woc0633@gmail.com"
             
@@ -447,6 +452,8 @@ class Crawler:
         
         if self.weboption == 0:
             print("====================================================================================================================") 
+            if self.admin == 1:
+                print("[관리자 모드]")
             print("크롤링: 네이버 뉴스")
             print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
             print("쿼리:", self.keyword)
@@ -854,6 +861,8 @@ class Crawler:
         
         if self.weboption == 0:
             print("====================================================================================================================")
+            if self.admin == 1:
+                print("[관리자 모드]")
             print("크롤링: 네이버 블로그")
             print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
             print("검색어:", self.keyword)
@@ -1147,6 +1156,8 @@ class Crawler:
 
         if self.weboption == 0:
             print("====================================================================================================================") 
+            if self.admin == 1:
+                print("[관리자 모드]")
             print("크롤링: 유튜브")
             print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
             print("검색어:", self.keyword)
@@ -1414,6 +1425,7 @@ def control():
 
     print("================ Crawler Controller ================\n")
     name = input("본인의 이름을 입력하세요: ")
+    
     print("\n크롤링 대상\n")
     print("1. 네이버 뉴스\n2. 네이버 블로그\n3. 유튜브\n4. 프로그램 종료")
     
