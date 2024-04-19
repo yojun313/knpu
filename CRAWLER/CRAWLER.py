@@ -35,6 +35,7 @@ from googleapiclient.http import MediaIoBaseDownload
 from google.oauth2.credentials import Credentials
 import pickle
 import io
+import shutil
 
 # pip install lxml
 # pip install google-api-python-client
@@ -48,7 +49,7 @@ class Crawler:
     def __init__(self, name, start, end, keyword, upload, weboption):
         
         ##################################### 시스템 입력부  #####################################
-        
+
         #연구실 3번 컴퓨터
         if socket.gethostname() == "DESKTOP-HQK7QRT":
             self.filedirectory  = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
@@ -68,6 +69,8 @@ class Crawler:
             self.sender         = "knpubigmac2024@gmail.com"
             self.MailPassword   = 'vygn nrmh erpf trji'
             self.crawlcom       = "HP OMEN"
+            if int(weboption) == 1:
+                self.filedirectory  = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/FASTCRAWLER_병합폴더" 
         
         # HP Z8
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
@@ -99,10 +102,13 @@ class Crawler:
             self.crawlcom       = "Yojun's MacBook Pro Window"
         
         self.user_name = name
+        self.admin = 0
         
         if self.user_name in ['admin', '관리자']:
             self.admin = 1
             self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/admin_scrapdata_folder"
+            if self.crawlcom == 'HP OMEN' and int(weboption) == 1:
+                self.filedirectory  = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/FASTCRAWLER_병합폴더"
             self.receiver = "moonyojun@naver.com"
             
         elif self.user_name == "이정우":
@@ -231,7 +237,123 @@ class Crawler:
             self.drive_folder_link = f"https://drive.google.com/drive/folders/{folder_id}"
         else:
             self.drive_folder_link = "No Upload"
-        
+    
+    def fast_crawler_merge(self, loadingtime):
+        folder_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/FASTCRAWLER_병합폴더"
+        scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/"
+
+        # 특정 폴더 내의 모든 폴더 경로 가져오기
+        folder_paths = []
+        for dirpath, dirnames, filenames in os.walk(folder_path):
+            for dirname in dirnames:
+                path = os.path.join(dirpath, dirname)
+                path = path.replace('\\', '/')
+                folder_paths.append(path)
+                
+        if len(folder_paths) == 10:
+            
+            folder_paths = [item for item in folder_paths if 'Naver' in item]
+            
+            all_file_list = []
+            all_file_list_sorted = []
+            all_article_statistics_list = []
+            all_article_list = []
+            all_reply_list = []
+            all_rereply_list = []
+            
+            for path in folder_paths:
+                file_paths = []
+                for dirpath, dirnames, filenames in os.walk(path):
+                    for filename in filenames:
+                        file_path = os.path.join(dirpath, filename)
+                        file_path = file_path.replace("\\", '/')
+                        file_paths.append(file_path)
+                all_file_list.append(file_paths)
+
+            for folder in all_file_list:
+                for file in folder:
+                    if "article(statistics).csv" in file:
+                        all_article_statistics_list.append(file)
+                    elif "article.csv" in file:
+                        all_article_list.append(file)
+                    elif "reply.csv" in file:
+                        all_reply_list.append(file)
+                    elif "rereply.csv" in file:
+                        all_rereply_list.append(file)
+
+            all_file_list_sorted.append(all_article_list)
+            all_file_list_sorted.append(all_article_statistics_list)
+            all_file_list_sorted.append(all_reply_list)
+            all_file_list_sorted.append(all_rereply_list)
+
+            end_year = all_article_list[-1].split('_')[5]
+            new_folder_name = os.path.basename(folder_paths[0]).replace(folder_paths[0].split('_')[5], end_year)
+            new_folder_path = scrapdata_path + new_folder_name
+            
+            os.makedirs(new_folder_path)
+
+            for file_list in all_file_list_sorted:
+                if file_list != []:
+                    merged_df = pd.DataFrame()
+                    for file in file_list:
+                        df = pd.read_csv(file, encoding='utf-8-sig')
+                        merged_df = pd.concat([merged_df, df], ignore_index=True)
+                    
+                    if "article(statistics).csv" in file_list[0]:
+                        output_file = new_folder_name + "_article(statistics).csv"
+                        merged_df.to_csv(new_folder_path + '/' +output_file, index=False, encoding='utf-8-sig')
+                    
+                    elif "article.csv" in file_list[0]:
+                        output_file = new_folder_name + "_article.csv"
+                        merged_df.to_csv(new_folder_path + '/' +output_file, index=False, encoding='utf-8-sig')
+
+                    elif "reply.csv" in file_list[0]:
+                        output_file = new_folder_name + "_reply.csv"
+                        merged_df.to_csv(new_folder_path + '/' +output_file, index=False, encoding='utf-8-sig')
+                    
+                    elif "rereply.csv" in file_list[0]:
+                        output_file = new_folder_name + "_rereply.csv"
+                        merged_df.to_csv(new_folder_path + '/' +output_file, index=False, encoding='utf-8-sig')
+
+            for item in os.listdir(folder_path):
+                item_path = os.path.join(folder_path, item)
+                try:
+                    if os.path.isfile(item_path) or os.path.islink(item_path):
+                        os.unlink(item_path)  # 파일 또는 링크 삭제
+                    elif os.path.isdir(item_path):
+                        shutil.rmtree(item_path)  # 폴더 삭제
+                except Exception as e:
+                    pass
+            
+            
+            text  = "[FAST CRAWLER 크롤링 완료] \n"
+            #text += "============================================================"
+            text += "\n검색어: " + str(self.keyword)
+            text += "\n옵션 번호: " + str(self.option)
+            text += "\n소요 시간: " + loadingtime
+            text += "\n컴퓨터: " + self.crawlcom
+            #text += "\n============================================================"
+
+            msg = MIMEMultipart()
+            msg['Subject'] = "[크롤링 완료]  " + self.DBname
+            msg['From'] = self.sender
+            msg['To'] = self.receiver
+
+            msg.attach(MIMEText(text, 'plain'))
+            
+            smtp_server = "smtp.gmail.com"
+            smtp_port = 587
+
+            # SMTP 연결 및 메일 보내기
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(self.sender, self.MailPassword)
+                server.sendmail(self.sender, self.receiver, msg.as_string())
+        else:
+            return
+            
+            
+            
     def print_status(self, signal, print_type):
         
         self.progress_time = time.time()
@@ -508,8 +630,13 @@ class Crawler:
             if self.weboption == 0:
                 print("\n\n크롤링 완료\n")
                 print("분석 소요 시간:", loadingtime)
-            
-            self.send_email(loadingtime)
+                
+            if self.crawlcom == "HP OMEN" and self.weboption == 1:
+                os.makedirs("C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/FASTCRAWLER_병합폴더/" + self.end)
+                self.fast_crawler_merge(loadingtime)
+                
+            else:
+                self.send_email(loadingtime)
             
         except Exception as e:
             _, _, tb = sys.exc_info()  # tb -> traceback object
