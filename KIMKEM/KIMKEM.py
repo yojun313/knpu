@@ -87,7 +87,7 @@ class kimkem:
         
         if option_num == 1:
             self.folder_path = filedialog.askdirectory(initialdir = self.scrapdata_path, title="Select folder")
-            self.folder_name = self.folder_path.split("/")[-1].replace("_article.csv", "")
+            self.folder_name = self.folder_path.split("/")[-1]
             self.kimkem_folder_path = f"{self.kimkem_data_path}/kimkem_{self.folder_name} (start={self.startyear} topword={self.word_num} except={self.except_option_display} time={self.now.strftime("%m%d_%H%M%S")})"
             try:
                 os.mkdir(self.kimkem_folder_path) # 테스트시 끄기
@@ -151,6 +151,9 @@ class kimkem:
                 analysis_data = list(data['rereply'])
                 data['rereply'] = [str(sublist).strip('[]') for sublist in self.token_analysis(analysis_data, type)]
                 
+            elif check[7] == 'article(statistics).csv':
+                pass
+            
             else:
                 print("파일 형태가 올바르지 않습니다")
         
