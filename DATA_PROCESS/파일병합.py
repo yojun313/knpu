@@ -31,8 +31,9 @@ def merge_csv_files(folder_path, output_file):
 
 # 실행 부분 (__file__ 사용 부분 제거, 대신 직접 경로 지정 또는 입력받기 필요)
 # 병합 파일명 입력 받기
-output_file = input("병합 파일명을 입력해주세요: ")
-output_file = folder_path + "/" + output_file + ".csv"
+if __name__ == "__main__":
+    output_file = input("병합 파일명을 입력해주세요: ")
+    output_file = folder_path + "/" + output_file + ".csv"
 
-# CSV 파일 병합 실행 (folder_path 직접 지정 또는 입력 받기 필요)
-merge_csv_files(folder_path, output_file)
+    # CSV 파일 병합 실행 (folder_path 직접 지정 또는 입력 받기 필요)
+    merge_csv_files(folder_path, output_file)
