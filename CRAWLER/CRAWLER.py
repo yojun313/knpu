@@ -325,6 +325,8 @@ class Crawler:
                 except Exception as e:
                     pass
             
+            self.upload_folder(new_folder_path)
+            
             
             text  = "[FAST CRAWLER 크롤링 완료] \n"
             #text += "============================================================"
@@ -332,6 +334,7 @@ class Crawler:
             text += "\n옵션 번호: " + str(self.option)
             text += "\n소요 시간: " + loadingtime
             text += "\n컴퓨터: " + self.crawlcom
+            text += "\n파일 링크: " + self.drive_folder_link
             #text += "\n============================================================"
 
             msg = MIMEMultipart()
