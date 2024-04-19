@@ -121,7 +121,7 @@ class Crawler:
         else:
             self.receiver = "moonyojun@naver.com"
             
-        self.weboption = weboption
+        self.weboption = int(weboption)
             
         #######################################################################################
         
