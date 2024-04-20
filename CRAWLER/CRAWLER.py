@@ -320,8 +320,8 @@ class Crawler:
                             merged_df = pd.concat([merged_df, df], ignore_index=True)
                         else:
                             output_file = new_folder_name + "_log.txt"
-                            with open(new_folder_path + '/' + output_file, 'w', encoding='utf-8-sig') as outfile:
-                                with open(file, 'r', encoding = 'utf-8-sig') as readfile:
+                            with open(new_folder_path + '/' + output_file, 'w', encoding='cp949', errors = 'ignore') as outfile:
+                                with open(file, 'r', encoding = 'cp949', errors = 'ignore') as readfile:
                                     outfile.write(readfile.read() + '\n')
                     
                     if "article(statistics).csv" in file_list[0]:
