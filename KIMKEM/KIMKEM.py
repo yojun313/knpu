@@ -11,6 +11,8 @@ import warnings
 import matplotlib.pyplot as plt
 import datetime
 import platform
+
+sys.dont_write_bytecode = True
 plt.rcParams['axes.unicode_minus'] =False
 
 warnings.filterwarnings('ignore', category=UserWarning)
