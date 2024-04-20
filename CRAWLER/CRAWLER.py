@@ -294,10 +294,10 @@ class Crawler:
                         all_article_statistics_list.append(file)
                     elif "article.csv" in file:
                         all_article_list.append(file)
-                    elif "reply.csv" in file:
-                        all_reply_list.append(file)
                     elif "rere" in file:
                         all_rereply_list.append(file)
+                    elif "reply.csv" in file:
+                        all_reply_list.append(file)
                     elif "log.txt" in file:
                         all_log_list.append(file)
 
@@ -338,14 +338,14 @@ class Crawler:
                         output_file = new_folder_name + "_article.csv"
                         merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
 
+                    elif "rere" in file_list[0]:
+                        output_file = new_folder_name + "_rereply.csv"
+                        merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
+                        
                     elif "reply.csv" in file_list[0]:
                         output_file = new_folder_name + "_reply.csv"
                         merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
                     
-                    elif "rere" in file_list[0]:
-                        output_file = new_folder_name + "_rereply.csv"
-                        merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
-
             for filename in os.listdir(folder_path):
                 file_path = os.path.join(folder_path, filename)
                 try:
