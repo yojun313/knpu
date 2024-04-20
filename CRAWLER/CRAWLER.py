@@ -132,7 +132,10 @@ class Crawler:
             self.receiver = "moonyojun@naver.com"
             
         # FAST CRAWLER OPTION
+        self.fast_option = 0
+        
         if self.crawlcom == "HP OMEN" and self.weboption == 1:
+            self.fast_option = 1
             self.filedirectory  = "C:/Users/User/Documents/CRAWLER_FAST_WEB/FASTCRAWLER_병합폴더" 
             folder_paths = []
             for dirpath, dirnames, filenames in os.walk(self.filedirectory):
@@ -222,6 +225,7 @@ class Crawler:
         self.urlList     = []
         
     def upload_folder(self, folder_path):
+        
         if self.upload.lower() == 'y' or self.upload.lower() == 'yes':
             folder_name = os.path.basename(folder_path)
             
@@ -519,8 +523,9 @@ class Crawler:
     
     def send_email(self, loadingtime):
         
-        if self.crawlcom == 'HP OMEN' and self.weboption == 1:
+        if self.fast_option == 1:
             return
+
         else:
             text  = "[크롤링 완료] \n"
             #text += "============================================================"
@@ -659,7 +664,7 @@ class Crawler:
                 print("\n\n크롤링 완료\n")
                 print("분석 소요 시간:", loadingtime)
                 
-            if self.crawlcom == "HP OMEN" and self.weboption == 1:
+            if self.fast_option == 1:
                 os.makedirs(self.filedirectory + '/' + self.end)
                 self.fast_crawler_merge(loadingtime)
                 
