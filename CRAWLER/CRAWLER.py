@@ -517,31 +517,34 @@ class Crawler:
     
     def send_email(self, loadingtime):
         
-        text  = "[크롤링 완료] \n"
-        #text += "============================================================"
-        text += "\n검색 기간: " + str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay)
-        text += "\n검색어: " + str(self.keyword)
-        text += "\n옵션 번호: " + str(self.option)
-        text += "\n소요 시간: " + loadingtime
-        text += "\n컴퓨터: " + self.crawlcom
-        text += "\n파일 링크: " + self.drive_folder_link
-        #text += "\n============================================================"
+        if self.crawlcom == 'HP OMEN' and self.weboption == 1:
+            return
+        else:
+            text  = "[크롤링 완료] \n"
+            #text += "============================================================"
+            text += "\n검색 기간: " + str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay)
+            text += "\n검색어: " + str(self.keyword)
+            text += "\n옵션 번호: " + str(self.option)
+            text += "\n소요 시간: " + loadingtime
+            text += "\n컴퓨터: " + self.crawlcom
+            text += "\n파일 링크: " + self.drive_folder_link
+            #text += "\n============================================================"
 
-        msg = MIMEMultipart()
-        msg['Subject'] = "[크롤링 완료]  " + self.DBname
-        msg['From'] = self.sender
-        msg['To'] = self.receiver
+            msg = MIMEMultipart()
+            msg['Subject'] = "[크롤링 완료]  " + self.DBname
+            msg['From'] = self.sender
+            msg['To'] = self.receiver
 
-        msg.attach(MIMEText(text, 'plain'))
-        
-        smtp_server = "smtp.gmail.com"
-        smtp_port = 587
+            msg.attach(MIMEText(text, 'plain'))
+            
+            smtp_server = "smtp.gmail.com"
+            smtp_port = 587
 
-        # SMTP 연결 및 메일 보내기
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(self.sender, self.MailPassword)
-            server.sendmail(self.sender, self.receiver, msg.as_string())
+            # SMTP 연결 및 메일 보내기
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(self.sender, self.MailPassword)
+                server.sendmail(self.sender, self.receiver, msg.as_string())
     
     def writeLog(self, msg):
         f = open(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_log.txt", "a")
