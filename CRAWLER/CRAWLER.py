@@ -278,6 +278,8 @@ class Crawler:
         if len(folder_paths) == 10:
             
             folder_paths = [item for item in folder_paths if 'Naver' in item]
+            print(folder_paths)
+            time.sleep(10)
             
             folder_paths.sort(key = extract_date)
             
@@ -317,7 +319,7 @@ class Crawler:
             all_file_list_sorted.append(all_rereply_list)
             all_file_list_sorted.append(all_log_list)
 
-            end_year = all_article_list[-1].split('_')[5]
+            end_year = os.path.basename(folder_paths[-1])[5]
             new_folder_name = os.path.basename(folder_paths[0]).replace(folder_paths[0].split('_')[5], end_year)
             new_folder_path = scrapdata_path + new_folder_name
             
