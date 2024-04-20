@@ -248,7 +248,7 @@ class Crawler:
     def fast_crawler_merge(self, loadingtime):
         folder_path = self.filedirectory
         if self.admin == 1:
-            scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/admin_scrapdata_folder"
+            scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/admin_scrapdata_folder/"
         else:
             scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/"
 
@@ -270,6 +270,7 @@ class Crawler:
             all_article_list = []
             all_reply_list = []
             all_rereply_list = []
+            all_log_list = []
             
             for path in folder_paths:
                 file_paths = []
@@ -290,11 +291,14 @@ class Crawler:
                         all_reply_list.append(file)
                     elif "rereply.csv" in file:
                         all_rereply_list.append(file)
+                    elif "log.txt" in file:
+                        all_log_list.append(file)
 
             all_file_list_sorted.append(all_article_list)
             all_file_list_sorted.append(all_article_statistics_list)
             all_file_list_sorted.append(all_reply_list)
             all_file_list_sorted.append(all_rereply_list)
+            all_file_list_sorted.append(all_log_list)
 
             end_year = all_article_list[-1].split('_')[5]
             new_folder_name = os.path.basename(folder_paths[0]).replace(folder_paths[0].split('_')[5], end_year)
@@ -306,8 +310,14 @@ class Crawler:
                 if file_list != []:
                     merged_df = pd.DataFrame()
                     for file in file_list:
-                        df = pd.read_csv(file, encoding='utf-8-sig')
-                        merged_df = pd.concat([merged_df, df], ignore_index=True)
+                        if ".csv" in file:
+                            df = pd.read_csv(file, encoding='utf-8-sig')
+                            merged_df = pd.concat([merged_df, df], ignore_index=True)
+                        else:
+                            output_file = new_folder_name + "_log.txt"
+                            with open(new_folder_path + '/' + output_file, 'w', encoding='utf-8-sig') as outfile:
+                                with open(file, 'r', encoding = 'utf-8-sig') as readfile:
+                                    outfile.write(readfile.read() + '\n')
                     
                     if "article(statistics).csv" in file_list[0]:
                         output_file = new_folder_name + "_article(statistics).csv"
@@ -645,7 +655,7 @@ class Crawler:
                 print("분석 소요 시간:", loadingtime)
                 
             if self.crawlcom == "HP OMEN" and self.weboption == 1:
-                os.makedirs("C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/FASTCRAWLER_병합폴더/" + self.end)
+                os.makedirs(self.filedirectory + '/' + self.end)
                 self.fast_crawler_merge(loadingtime)
                 
             else:
