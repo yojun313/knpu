@@ -9,6 +9,8 @@ import sys
 import socket
 import warnings
 import platform
+
+sys.dont_write_bytecode = True
 warnings.filterwarnings('ignore', category=UserWarning)
 
 
