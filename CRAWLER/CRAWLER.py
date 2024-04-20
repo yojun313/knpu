@@ -378,7 +378,7 @@ class Crawler:
             #text += "\n============================================================"
 
             msg = MIMEMultipart()
-            msg['Subject'] = "[크롤링 완료]  " + self.DBname
+            msg['Subject'] = "[크롤링 완료]  " + new_folder_name
             msg['From'] = self.sender
             msg['To'] = self.receiver
 
