@@ -37,6 +37,8 @@ import pickle
 import io
 import shutil
 
+sys.dont_write_bytecode = True
+
 # pip install lxml
 # pip install google-api-python-client
 
