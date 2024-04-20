@@ -281,9 +281,6 @@ class Crawler:
             
             folder_paths.sort(key = extract_date)
             
-            print(folder_paths)
-            time.sleep(10)
-            
             all_file_list = []
             all_file_list_sorted = []
             all_article_statistics_list = []
@@ -321,7 +318,7 @@ class Crawler:
             all_file_list_sorted.append(all_log_list)
 
             end_year = os.path.basename(folder_paths[-1])[5]
-            print(end_year)
+            print("end_year:", end_year)
             time.sleep(10)
             new_folder_name = os.path.basename(folder_paths[0]).replace(folder_paths[0].split('_')[5], end_year)
             new_folder_path = scrapdata_path + new_folder_name
