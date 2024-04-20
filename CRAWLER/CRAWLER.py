@@ -253,6 +253,14 @@ class Crawler:
             self.drive_folder_link = "No Upload"
     
     def fast_crawler_merge(self, loadingtime):
+        
+        def extract_date(folder_name):
+            # 폴더명에서 날짜 부분 추출
+            match = re.search(r'\d{8}', folder_name)
+            if match:
+                return match.group(0)
+            return None
+        
         folder_path = self.filedirectory
         if self.admin == 1:
             scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/admin_scrapdata_folder/"
@@ -270,6 +278,8 @@ class Crawler:
         if len(folder_paths) == 10:
             
             folder_paths = [item for item in folder_paths if 'Naver' in item]
+            
+            folder_paths.sort(key = extract_date)
             
             all_file_list = []
             all_file_list_sorted = []
