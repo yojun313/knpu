@@ -326,32 +326,31 @@ class Crawler:
                     
                     if "article(statistics).csv" in file_list[0]:
                         output_file = new_folder_name + "_article(statistics).csv"
-                        merged_df.to_csv(new_folder_path + '/' +output_file, index=False, encoding='utf-8-sig')
+                        merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
                     
                     elif "article.csv" in file_list[0]:
                         output_file = new_folder_name + "_article.csv"
-                        merged_df.to_csv(new_folder_path + '/' +output_file, index=False, encoding='utf-8-sig')
+                        merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
 
                     elif "reply.csv" in file_list[0]:
                         output_file = new_folder_name + "_reply.csv"
-                        merged_df.to_csv(new_folder_path + '/' +output_file, index=False, encoding='utf-8-sig')
+                        merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
                     
                     elif "rereply.csv" in file_list[0]:
                         output_file = new_folder_name + "_rereply.csv"
-                        merged_df.to_csv(new_folder_path + '/' +output_file, index=False, encoding='utf-8-sig')
+                        merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
 
-            for item in os.listdir(folder_path):
-                item_path = os.path.join(folder_path, item)
+            for filename in os.listdir(folder_path):
+                file_path = os.path.join(folder_path, filename)
                 try:
-                    if os.path.isfile(item_path) or os.path.islink(item_path):
-                        os.unlink(item_path)  # 파일 또는 링크 삭제
-                    elif os.path.isdir(item_path):
-                        shutil.rmtree(item_path)  # 폴더 삭제
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)  # 파일 또는 링크 삭제
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)  # 폴더 삭제
                 except Exception as e:
                     pass
-            
+
             self.upload_folder(new_folder_path)
-            
             
             text  = "[FAST CRAWLER 크롤링 완료] \n"
             #text += "============================================================"
