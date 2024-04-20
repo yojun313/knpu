@@ -36,12 +36,14 @@ from google.oauth2.credentials import Credentials
 import pickle
 import io
 import shutil
+import warnings
 
 
 # pip install lxml
 # pip install google-api-python-client
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 ###
 class Crawler:
     
@@ -317,7 +319,8 @@ class Crawler:
                     for file in file_list:
                         if ".csv" in file:
                             df = pd.read_csv(file, encoding='utf-8-sig')
-                            merged_df = pd.concat([merged_df, df], ignore_index=True)
+                            if not df.empty:  # 데이터프레임이 비어 있지 않다면
+                                merged_df = pd.concat([merged_df, df], ignore_index=True)
                         else:
                             try:
                                 output_file = new_folder_name + "_log.txt"
