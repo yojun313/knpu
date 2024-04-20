@@ -2,7 +2,6 @@
 from CRAWLER import Crawler
 import sys
 
-sys.dont_write_bytecode = True
 
 sys.stdout.reconfigure(encoding='utf-8')
 

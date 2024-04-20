@@ -3,7 +3,6 @@ import pandas as pd
 import socket
 import sys
 
-sys.dont_write_bytecode = True
 
 # HP Z8
 if socket.gethostname() == "DESKTOP-0I9OM9K":
