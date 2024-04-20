@@ -69,8 +69,6 @@ class Crawler:
             self.sender         = "knpubigmac2024@gmail.com"
             self.MailPassword   = 'vygn nrmh erpf trji'
             self.crawlcom       = "HP OMEN"
-            if int(weboption) == 1:
-                self.filedirectory  = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/FASTCRAWLER_병합폴더" 
         
         # HP Z8
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
@@ -100,15 +98,14 @@ class Crawler:
             self.sender         = "knpubigmac2024@gmail.com"
             self.MailPassword   = 'vygn nrmh erpf trji'
             self.crawlcom       = "Yojun's MacBook Pro Window"
-        
+            
         self.user_name = name
+        self.weboption = int(weboption)
         self.admin = 0
         
         if self.user_name in ['admin', '관리자']:
             self.admin = 1
             self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/admin_scrapdata_folder"
-            if self.crawlcom == 'HP OMEN' and int(weboption) == 1:
-                self.filedirectory  = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/FASTCRAWLER_병합폴더"
             self.receiver = "moonyojun@naver.com"
             
         elif self.user_name == "이정우":
@@ -132,7 +129,17 @@ class Crawler:
         else:
             self.receiver = "moonyojun@naver.com"
             
-        self.weboption = int(weboption)
+        # FAST CRAWLER OPTION
+        if self.crawlcom == "HP OMEN" and self.weboption == 1:
+            self.filedirectory  = "C:/Users/User/Documents/CRAWLER_FAST_WEB/FASTCRAWLER_병합폴더" 
+            folder_paths = []
+            for dirpath, dirnames, filenames in os.walk(self.filedirectory):
+                for dirname in dirnames:
+                    path = os.path.join(dirpath, dirname)
+                    path = path.replace('\\', '/')
+                    folder_paths.append(path)
+            if len(folder_paths) >= 5:
+                sys.exit()
             
         #######################################################################################
         
@@ -239,8 +246,11 @@ class Crawler:
             self.drive_folder_link = "No Upload"
     
     def fast_crawler_merge(self, loadingtime):
-        folder_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/FASTCRAWLER_병합폴더"
-        scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/"
+        folder_path = self.filedirectory
+        if self.admin == 1:
+            scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/admin_scrapdata_folder"
+        else:
+            scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/"
 
         # 특정 폴더 내의 모든 폴더 경로 가져오기
         folder_paths = []
