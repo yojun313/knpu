@@ -317,7 +317,7 @@ class Crawler:
             all_file_list_sorted.append(all_rereply_list)
             all_file_list_sorted.append(all_log_list)
 
-            end_year = os.path.basename(folder_paths[-1])[5]
+            end_year = os.path.basename(folder_paths[-1]).split('_')[5]
             print("end_year:", end_year)
             time.sleep(10)
             new_folder_name = os.path.basename(folder_paths[0]).replace(folder_paths[0].split('_')[5], end_year)
