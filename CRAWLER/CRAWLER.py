@@ -671,18 +671,17 @@ class Crawler:
             loadingsecond = self.endtime - self.starttime
             loadingtime   = str(int(loadingsecond//3600))+"시간 "+str(int(loadingsecond%3600//60))+"분 "+str(int(loadingsecond%3600%60))+"초"
             
-            self.upload_folder(self.filedirectory + "/" + self.DBname)
-            
-            
-            if self.weboption == 0:
-                print("\n\n크롤링 완료\n")
-                print("분석 소요 시간:", loadingtime)
-                
             if self.fast_option == 1:
                 os.makedirs(self.filedirectory + '/' + self.end)
                 self.fast_crawler_merge(loadingtime)
-                
+                return
+            
             else:
+                if self.weboption == 0:
+                    print("\n\n크롤링 완료\n")
+                    print("분석 소요 시간:", loadingtime)
+                    
+                self.upload_folder(self.filedirectory + "/" + self.DBname)
                 self.send_email(loadingtime)
             
         except Exception as e:
