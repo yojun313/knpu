@@ -819,6 +819,8 @@ class Crawler:
                             break
                         else:
                             page += 1
+                            if page == 301:
+                                break
                     except:
                         break
                     
@@ -1227,6 +1229,8 @@ class Crawler:
                             break
                         else:
                             page += 1
+                            if page == 301:
+                                break
                     except:
                         break
                     
