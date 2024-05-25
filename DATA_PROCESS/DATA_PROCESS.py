@@ -45,6 +45,16 @@ class data_process:
                 break
             else:
                 print("다시 입력하세요")
+        
+        self.clear_screen()
+        self.csv_path = self.file_ask(self.scrapdata_path, "대상 csv 파일을 선택하세요")
+        
+        # csv 저장된 폴더 경로 및 csv 파일 이름
+        self.folder_path = os.path.dirname(self.csv_path)
+        self.file_name = os.path.basename(self.csv_path)
+        
+        #if "(statistics)" in self.file_name:
+            #self.file_name = self.file_name.replace("(statistics)", "_s")
                 
         if big_option == "1":
             
@@ -102,12 +112,6 @@ class data_process:
         
             
     def option_1(self):
-        self.clear_screen()
-        self.csv_path = self.file_ask(self.scrapdata_path, "분할할 csv 파일을 선택하세요")
-        
-        # csv 저장된 폴더 경로 및 csv 파일 이름
-        self.folder_path = os.path.dirname(self.csv_path)
-        self.file_name = os.path.basename(self.csv_path)
         
         # 데이터 저장하는 경로
         self.data_path = self.folder_path + "/" + self.file_name.replace(".csv", "") + "_분할 데이터"
@@ -188,14 +192,6 @@ class data_process:
         print("\n완료")
         
     def option_2(self):
-        self.clear_screen()
-        self.csv_path = self.file_ask(self.scrapdata_path, "대상 csv 파일을 선택하세요")
-        
-        # csv 파일 저장된 폴더 경로
-        self.folder_path = os.path.dirname(self.csv_path)
-        
-        # csv 파일 이름
-        self.file_name = os.path.basename(self.csv_path)
     
         self.exception_url_csv_path = self.file_ask(self.projectfolder_path, "제외 URL csv를 선택하세요")
         self.exception_url_csv_folder_path = os.path.dirname(self.exception_url_csv_path)
@@ -210,15 +206,6 @@ class data_process:
         self.origin_csv_data.to_csv(self.exception_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 제외.csv", encoding = 'utf-8-sig', index = False)
 
     def option_3(self):
-        self.clear_screen()
-        
-        self.csv_path = self.file_ask(self.scrapdata_path, "대상 csv 파일을 선택하세요")
-        
-        # csv 파일 저장된 폴더 경로
-        self.folder_path = os.path.dirname(self.csv_path)
-        
-        # csv 파일 이름
-        self.file_name = os.path.basename(self.csv_path)
     
         self.include_url_csv_path = self.file_ask(self.projectfolder_path, "포함할 URL csv를 선택하세요")
         self.include_url_csv_folder_path = os.path.dirname(self.include_url_csv_path)
@@ -236,13 +223,6 @@ class data_process:
         self.origin_csv_data.to_csv(self.include_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_URL 포함.csv", encoding='utf-8-sig', index=False)
 
     def option_4(self):
-        self.clear_screen()
-
-        self.csv_path = self.file_ask(self.scrapdata_path, "대상 csv 파일을 선택하세요")
-        # csv 파일 저장된 폴더 경로
-        self.folder_path = os.path.dirname(self.csv_path)
-        # csv 파일 이름
-        self.file_name = os.path.basename(self.csv_path)
         
         print("선택된 파일:", self.csv_path)
         
@@ -297,7 +277,6 @@ class data_process:
                 # 'Press_Count' 내림차순, 'article press' 오름차순으로 정렬하여
                 # 언론사별로 뭉치고, 행 수가 많은 순서대로 배열
                 self.press_align_data = self.press_align_data.sort_values(by=['Press_Count', 'article press'], ascending=[False, True])
-
                 self.press_align_data.to_csv(self.data_path + "/" + "언론사 정렬_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
                 
                 press_counts = self.press_align_data['article press'].value_counts().reset_index()
