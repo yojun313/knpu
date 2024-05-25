@@ -76,8 +76,8 @@ class data_process:
             
             print("[URL 포함]\n")
             print("대상 csv 파일:", self.csv_path)
-            print("포함 url 파일:", self.include_url_csv_csv_path)
-            print("완성 파일:", self.exception_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 포함.csv")
+            print("포함 url 파일:", self.include_url_csv_path)
+            print("완성 파일:", self.include_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 포함.csv")
             
         elif big_option == "4":
             
@@ -127,6 +127,7 @@ class data_process:
             self.csv_data['year'] = self.csv_data['article date'].dt.year
             self.csv_data['month'] = self.csv_data['article date'].dt.month
             self.csv_data['year_month'] = self.csv_data['article date'].dt.to_period('M')
+            self.csv_data['week'] = self.csv_data['article date'].dt.to_period('W')
             
         # 댓글
         elif "reply" in self.file_name:
@@ -134,6 +135,7 @@ class data_process:
             self.csv_data['year'] = self.csv_data['reply date'].dt.year
             self.csv_data['month'] = self.csv_data['reply date'].dt.month
             self.csv_data['year_month'] = self.csv_data['reply date'].dt.to_period('M')
+            self.csv_data['week'] = self.csv_data['reply date'].dt.to_period('W')
         
         # 대댓글
         elif "rereply" in self.file_name:
@@ -141,6 +143,7 @@ class data_process:
             self.csv_data['year'] = self.csv_data['rereply date'].dt.year
             self.csv_data['month'] = self.csv_data['rereply date'].dt.month
             self.csv_data['year_month'] = self.csv_data['rereply date'].dt.to_period('M')
+            self.csv_data['week'] = self.csv_data['rereply date'].dt.to_period('W')
         
         # 유튜브 정보
         elif "info" in self.file_name:
@@ -148,16 +151,18 @@ class data_process:
             self.csv_data['year'] = self.csv_data['video date'].dt.year
             self.csv_data['month'] = self.csv_data['video date'].dt.month
             self.csv_data['year_month'] = self.csv_data['video date'].dt.to_period('M')
+            self.csv_data['week'] = self.csv_data['video date'].dt.to_period('W')
         
-        # 연도별로, 월별로 나눈 데이터
+        # 연도별로, 월별, 주별로 나눈 데이터
         self.year_divided_group = self.csv_data.groupby('year')
         self.month_divided_group = self.csv_data.groupby('year_month')
+        self.week_divided_group = self.csv_data.groupby('week')
         
-        print("\n1. 연도별로 csv 분할\n2. 월별로 csv 분할\n3. 둘 다\n4. 종료")
+        print("\n1. 연도별로 csv 분할\n2. 월별로 csv 분할\n3. 둘 다\n4. 주별로 csv 분할\n5. 종료")
             
         while True:
             option = input("\n입력: ")
-            if option in ["1", "2", "3"]:
+            if option in ["1", "2", "3", "4"]:
                 break
             else:
                 print("다시 입력하세요")
@@ -173,6 +178,9 @@ class data_process:
         elif option == '3':
             self.divide_data(1)
             self.divide_data(2)
+            
+        elif option == '4':
+            self.divide_data(3)
         
         else:
             sys.exit()
@@ -378,6 +386,38 @@ class data_process:
             month_info.to_csv(self.data_path + "/" + "월별 데이터" + "/" + "월별 개수" + ".csv", index = False, encoding='utf-8-sig', header = True)
             
             self.save_graph(info_month, "month")
+            
+        # 주별로 나누기
+        if option == 3:
+            info_week = {}
+        os.makedirs(self.data_path + "/" + "주별 데이터", exist_ok=True)
+        
+        for group_name, group_data in self.week_divided_group:
+            if 'article date' in group_data.columns:
+                start_date = group_data['article date'].min().strftime('%Y-%m-%d')
+                end_date = group_data['article date'].max().strftime('%Y-%m-%d')
+            elif 'reply date' in group_data.columns:
+                start_date = group_data['reply date'].min().strftime('%Y-%m-%d')
+                end_date = group_data['reply date'].max().strftime('%Y-%m-%d')
+            elif 'rereply date' in group_data.columns:
+                start_date = group_data['rereply date'].min().strftime('%Y-%m-%d')
+                end_date = group_data['rereply date'].max().strftime('%Y-%m-%d')
+            elif 'video date' in group_data.columns:
+                start_date = group_data['video date'].min().strftime('%Y-%m-%d')
+                end_date = group_data['video date'].max().strftime('%Y-%m-%d')
+            else:
+                continue  # 날짜 컬럼이 없는 경우 건너뛰기
+
+            week_folder_name = f"{start_date}_{end_date}"
+            week_folder_path = self.data_path + "/" + "주별 데이터" + "/" + week_folder_name
+            os.makedirs(week_folder_path, exist_ok=True)
+            info_week[week_folder_name] = len(group_data)
+            group_data.to_csv(week_folder_path + "/" + week_folder_name + ".csv", index=False, encoding='utf-8-sig', header=True)
+
+        week_info = pd.DataFrame(list(info_week.items()), columns=['week', '개수'])
+        week_info.to_csv(self.data_path + "/" + "주별 데이터" + "/" + "주별 개수" + ".csv", index=False, encoding='utf-8-sig', header=True)
+        
+        self.save_graph(info_week, "week")
     
     def save_graph(self, dic, option):
         keys = list(dic.keys())
