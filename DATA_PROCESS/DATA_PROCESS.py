@@ -369,34 +369,34 @@ class data_process:
         # 주별로 나누기
         if option == 3:
             info_week = {}
-        os.makedirs(self.data_path + "/" + "주별 데이터", exist_ok=True)
-        
-        for group_name, group_data in self.week_divided_group:
-            if 'article date' in group_data.columns:
-                start_date = group_data['article date'].min().strftime('%Y-%m-%d')
-                end_date = group_data['article date'].max().strftime('%Y-%m-%d')
-            elif 'reply date' in group_data.columns:
-                start_date = group_data['reply date'].min().strftime('%Y-%m-%d')
-                end_date = group_data['reply date'].max().strftime('%Y-%m-%d')
-            elif 'rereply date' in group_data.columns:
-                start_date = group_data['rereply date'].min().strftime('%Y-%m-%d')
-                end_date = group_data['rereply date'].max().strftime('%Y-%m-%d')
-            elif 'video date' in group_data.columns:
-                start_date = group_data['video date'].min().strftime('%Y-%m-%d')
-                end_date = group_data['video date'].max().strftime('%Y-%m-%d')
-            else:
-                continue  # 날짜 컬럼이 없는 경우 건너뛰기
+            os.makedirs(self.data_path + "/" + "주별 데이터", exist_ok=True)
+            
+            for group_name, group_data in self.week_divided_group:
+                if 'article date' in group_data.columns:
+                    start_date = group_data['article date'].min().strftime('%Y-%m-%d')
+                    end_date = group_data['article date'].max().strftime('%Y-%m-%d')
+                elif 'reply date' in group_data.columns:
+                    start_date = group_data['reply date'].min().strftime('%Y-%m-%d')
+                    end_date = group_data['reply date'].max().strftime('%Y-%m-%d')
+                elif 'rereply date' in group_data.columns:
+                    start_date = group_data['rereply date'].min().strftime('%Y-%m-%d')
+                    end_date = group_data['rereply date'].max().strftime('%Y-%m-%d')
+                elif 'video date' in group_data.columns:
+                    start_date = group_data['video date'].min().strftime('%Y-%m-%d')
+                    end_date = group_data['video date'].max().strftime('%Y-%m-%d')
+                else:
+                    continue  # 날짜 컬럼이 없는 경우 건너뛰기
 
-            week_folder_name = f"{start_date}_{end_date}"
-            week_folder_path = self.data_path + "/" + "주별 데이터" + "/" + week_folder_name
-            os.makedirs(week_folder_path, exist_ok=True)
-            info_week[week_folder_name] = len(group_data)
-            group_data.to_csv(week_folder_path + "/" + week_folder_name + ".csv", index=False, encoding='utf-8-sig', header=True)
+                week_folder_name = f"{start_date}_{end_date}"
+                week_folder_path = self.data_path + "/" + "주별 데이터"# + "/" + week_folder_name
+                os.makedirs(week_folder_path, exist_ok=True)
+                info_week[week_folder_name] = len(group_data)
+                group_data.to_csv(week_folder_path + "/" + week_folder_name + ".csv", index=False, encoding='utf-8-sig', header=True)
 
-        week_info = pd.DataFrame(list(info_week.items()), columns=['week', '개수'])
-        week_info.to_csv(self.data_path + "/" + "주별 데이터" + "/" + "주별 개수" + ".csv", index=False, encoding='utf-8-sig', header=True)
-        
-        self.save_graph(info_week, "week")
+            week_info = pd.DataFrame(list(info_week.items()), columns=['week', '개수'])
+            week_info.to_csv(self.data_path + "/" + "주별 데이터" + "/" + "주별 개수" + ".csv", index=False, encoding='utf-8-sig', header=True)
+            
+            self.save_graph(info_week, "week")
     
     def save_graph(self, dic, option):
         keys = list(dic.keys())
@@ -427,6 +427,18 @@ class data_process:
             plt.xlabel('Month')
             plt.ylabel('Values')
             plt.savefig(self.data_path + "/월별 데이터/" + "월별 데이터 그래프.png")
+            
+        elif option == "week":
+            plt.figure(figsize=(30, 18))
+            plt.plot(keys, values, marker='o')
+            plt.grid(True)
+            plt.xticks(keys, rotation=45)
+            plt.tight_layout()
+            
+            plt.title('Weekly Data Visualization')
+            plt.xlabel('Week')
+            plt.ylabel('Values')
+            plt.savefig(self.data_path + "/주별 데이터/" + "주별 데이터 그래프.png")
 
 
     def file_ask(self, initialdir, title):
