@@ -1576,7 +1576,10 @@ class Crawler:
                     escape = True
                 
                 except Exception as e:
-                    self.error_exception(e, True)   
+                    self.error_exception(e, True)  
+                    if "videoNotFound" in str(e):
+                        escape = True
+                        break 
                     self.api_list.pop(0)
                     self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
                     
