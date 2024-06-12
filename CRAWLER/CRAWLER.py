@@ -55,22 +55,14 @@ class Crawler:
             'AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io', # 배시웅 --> 5번
             'AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs', # 최우철 --> 6번
             'AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4', # knpubigmac2024@gmail.com --> 7번
-            'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0' # gpt4.bb@gmail.com --> 8번
+            'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0', # gpt4.bb@gmail.com --> 8번
+            'AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo' # moonyojun2@gmail.com --> 9번
             ]
         
         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
-        #연구실 3번 컴퓨터
-        if socket.gethostname() == "DESKTOP-HQK7QRT":
-            self.filedirectory  = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
-            self.proxydirectory = "C:/Users/qwe/Documents/GitHub/BIGMACLAB/CRAWLER"
-            self.tokendirectory = "C:/Users/qwe/Desktop/VSCODE/CRAWLER"
-            self.proxy_option   = "y"
-            self.sender         = "knpubigmac2024@gmail.com"
-            self.MailPassword   = 'vygn nrmh erpf trji'
-            self.crawlcom       = "3번 컴퓨터"
             
         # HP OMEN 
-        elif socket.gethostname() == "DESKTOP-502IMU5":
+        if socket.gethostname() == "DESKTOP-502IMU5":
             self.filedirectory  = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
             self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
             self.tokendirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER" 
@@ -1458,6 +1450,8 @@ class Crawler:
                     self.api_num = 7
                 elif self.api_list[0] == 'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0': # gpt4.bb@gmail.com --> 8번
                     self.api_num = 8
+                elif self.api_list[0] == 'AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo': # moonyojun2@gmail.com --> 9번
+                    self.api_num = 9
                     
                 self.progress = i
                 self.trans_date = str(self.currentDate)
@@ -1582,7 +1576,10 @@ class Crawler:
                     escape = True
                 
                 except Exception as e:
-                    self.error_exception(e, True)   
+                    self.error_exception(e, True)  
+                    if "videoNotFound" in str(e):
+                        escape = True
+                        break 
                     self.api_list.pop(0)
                     self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
                     
