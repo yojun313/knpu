@@ -48,14 +48,14 @@ class Crawler:
         ##################################### 시스템 입력부  #####################################
 
         self.api_list = [
-            '***REMOVED***', # 문요준 --> 1번
-            '***REMOVED***', # 문요준 g.postech.edu --> 2번
-            '***REMOVED***', # 한승혁 --> 3번
-            '***REMOVED***', # 배시웅 --> 4번
-            '***REMOVED***', # 최우철 --> 5번
-            '***REMOVED***', # knpubigmac2024@gmail.com --> 6번
-            '***REMOVED***', # gpt4.bb@gmail.com --> 7번
-            '***REMOVED***' # moonyojun2@gmail.com --> 8번
+            '***REMOVED***', # 문요준 g.postech.edu --> 1번
+            '***REMOVED***', # 한승혁 --> 2번
+            '***REMOVED***', # 배시웅 --> 3번
+            '***REMOVED***', # 최우철 --> 4번
+            '***REMOVED***', # knpubigmac2024@gmail.com --> 5번
+            '***REMOVED***', # gpt4.bb@gmail.com --> 6번
+            '***REMOVED***', # moonyojun2@gmail.com --> 7번
+            '***REMOVED***' # 이정우 --> 8번
             ]
         
         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
@@ -1448,6 +1448,8 @@ class Crawler:
                     self.api_num = 6
                 elif self.api_list[0] == '***REMOVED***': # moonyojun2@gmail.com --> 7번
                     self.api_num = 7
+                elif self.api_list[0] == '***REMOVED***': # 이정우 --> 8번
+                    self.api_num = 8
                     
                 self.progress = i
                 self.trans_date = str(self.currentDate)
