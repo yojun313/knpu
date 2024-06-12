@@ -49,17 +49,17 @@ class Crawler:
 
         self.api_list = [
             '***REMOVED***', # 문요준 --> 1번
-            '***REMOVED***', # 문요준 --> 2번
-            '***REMOVED***', # 문요준 g.postech.edu --> 3번
-            '***REMOVED***', # 한승혁 --> 4번
-            '***REMOVED***', # 배시웅 --> 5번
-            '***REMOVED***', # 최우철 --> 6번
-            '***REMOVED***', # knpubigmac2024@gmail.com --> 7번
-            '***REMOVED***', # gpt4.bb@gmail.com --> 8번
-            '***REMOVED***' # moonyojun2@gmail.com --> 9번
+            '***REMOVED***', # 문요준 g.postech.edu --> 2번
+            '***REMOVED***', # 한승혁 --> 3번
+            '***REMOVED***', # 배시웅 --> 4번
+            '***REMOVED***', # 최우철 --> 5번
+            '***REMOVED***', # knpubigmac2024@gmail.com --> 6번
+            '***REMOVED***', # gpt4.bb@gmail.com --> 7번
+            '***REMOVED***' # moonyojun2@gmail.com --> 8번
             ]
         
         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
+        self.api_num = 1
             
         # HP OMEN 
         if socket.gethostname() == "DESKTOP-502IMU5":
@@ -1434,24 +1434,20 @@ class Crawler:
         try:
             for i in range(self.date_range+1):
                 
-                if self.api_list[0] == '***REMOVED***': # 문요준 --> 1번
+                if self.api_list[0] == '***REMOVED***': # 문요준 g.postech.edu --> 1번
                     self.api_num = 1
-                elif self.api_list[0] == '***REMOVED***': # 문요준 --> 2번
+                elif self.api_list[0] == '***REMOVED***': # 한승혁 --> 2번
                     self.api_num = 2
-                elif self.api_list[0] == '***REMOVED***': # 문요준 g.postech.edu --> 3번
+                elif self.api_list[0] == '***REMOVED***': # 배시웅 --> 3번
                     self.api_num = 3
-                elif self.api_list[0] == '***REMOVED***': # 한승혁 --> 4번
+                elif self.api_list[0] == '***REMOVED***': # 최우철 --> 4번
                     self.api_num = 4
-                elif self.api_list[0] == '***REMOVED***': # 배시웅 --> 5번
+                elif self.api_list[0] == '***REMOVED***': # knpubigmac2024@gmail.com --> 5번
                     self.api_num = 5
-                elif self.api_list[0] == '***REMOVED***': # 최우철 --> 6번
+                elif self.api_list[0] == '***REMOVED***': # gpt4.bb@gmail.com --> 6번
                     self.api_num = 6
-                elif self.api_list[0] == '***REMOVED***': # knpubigmac2024@gmail.com --> 7번
+                elif self.api_list[0] == '***REMOVED***': # moonyojun2@gmail.com --> 7번
                     self.api_num = 7
-                elif self.api_list[0] == '***REMOVED***': # gpt4.bb@gmail.com --> 8번
-                    self.api_num = 8
-                elif self.api_list[0] == '***REMOVED***': # moonyojun2@gmail.com --> 9번
-                    self.api_num = 9
                     
                 self.progress = i
                 self.trans_date = str(self.currentDate)
@@ -1552,36 +1548,47 @@ class Crawler:
             escape = False
             while True:
                 try:
-                    response = self.api_obj.commentThreads().list(part='snippet,replies', videoId = youtube_info, maxResults=100, order = 'relevance').execute()
-                    while response:
+                    request = self.api_obj.commentThreads().list(part='snippet,replies', videoId = youtube_info, maxResults=100, order = 'relevance')
+                    while request:
+                        response = request.execute()
                         for item in response['items']:
-                            comment = item['snippet']['topLevelComment']['snippet']
-                            self.reply_list.append([comment['authorDisplayName'], comment['publishedAt'], comment['textDisplay'], comment['likeCount'], video_url, video_title])
-                            
-                        """ # 대댓글
-                            if item['snippet']['totalReplyCount'] > 0:
-                                for reply_item in item['replies']['comments']:
-                                    reply = reply_item['snippet']
-                                    self.reply_list.append([reply['textDisplay'], reply['authorDisplayName'], reply['publishedAt'], reply['likeCount']])
-                                    
-                        """
-                        """ # 100개 이상
-                        if 'nextPageToken' in response:
-                            response = self.api_obj.commentThreads().list(part='snippet,replies', videoId = youtube_info, pageToken=response['nextPageToken'], maxResults=100).execute()
+                            try:
+                                comment = item['snippet']['topLevelComment']['snippet']
+                                self.reply_list.append([comment['authorDisplayName'], comment['publishedAt'], comment['textDisplay'], comment['likeCount'], video_url, video_title])
+                                if self.option == 2:
+                                    try:
+                                        if item['snippet']['totalReplyCount'] > 0:
+                                            for reply_item in item['replies']['comments']:
+                                                reply = reply_item['snippet']
+                                                self.reply_list.append([reply['textDisplay'], reply['authorDisplayName'], reply['publishedAt'], reply['likeCount']])
+                                    except:
+                                        pass
+                            except:
+                                pass 
+
+                        # 100개 이상
+                        self.print_status(2, "youtube")
+                        if self.option == 2:
+                            if 'nextPageToken' in response:
+                                request = self.api_obj.commentThreads().list_next(request, response)
+                            else:
+                                escape = True
+                                break
                         else:
+                            escape = True
                             break
-                        """
-                        break
-                    self.print_status(2, "youtube")
-                    escape = True
-                
+                        
                 except Exception as e:
                     self.error_exception(e, True)  
-                    if "videoNotFound" in str(e):
+                    if "operationNotSupported" in str(e) or "commentDisabled" in str(e) or "forbidden" in str(e) or "channelNotFound" in str(e) or "commentThreadNotFound" in str(e) or "VideoNotFound" in str(e) or "processingFailure" in str(e):
                         escape = True
                         break 
-                    self.api_list.pop(0)
-                    self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
+                    elif "quotaExceeded" in str(e):
+                        if len(self.api_list) == 0:
+                            print("API 할당량 초과 --> 1일 후 유튜브 크롤링을 시도해주십시오")
+                            sys.exit()
+                        self.api_list.pop(0)
+                        self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
                     
                 if escape == True:
                     break
@@ -1660,15 +1667,14 @@ def control():
         print("\n1. 본문 \n2. 기사 + 댓글\n")
         
     elif control_ask == 3:
-        option = 1
+        print("\n1. 영상 + 댓글 (댓글 100개 제한) \n2. 영상 + 댓글 (무제한)\n")
     
-    if control_ask == 1 or control == 2:
-        while True:
-            option = int(input("Option: "))
-            if option in [1,2,3]:
-                break
-            else:
-                print("다시 입력하세요")
+    while True:
+        option = int(input("Option: "))
+        if option in [1,2,3]:
+            break
+        else:
+            print("다시 입력하세요")
     
     upload    = input("\n구글 드라이브에 업로드 하시겠습니까(Y/N)? ")
     weboption = 0
