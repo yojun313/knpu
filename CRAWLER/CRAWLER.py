@@ -48,13 +48,14 @@ class Crawler:
         ##################################### 시스템 입력부  #####################################
 
         self.api_list = [
-            'AIzaSyAQFjloe2BATOoPJW9qqADqxoOQBAwCh0Q', # 문요준
-            'AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU', # 문요준 g.postech.edu
-            'AIzaSyCkOqcZlTING7t6XqZV9M-aoTR8jHBDPTs', # 한승혁
-            'AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io', # 배시웅
-            'AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs', # 최우철
-            'AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4', # knpubigmac2024@gmail.com
-            'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0' # gpt4.bb@gmail.com
+            'AIzaSyCel8OH8wd4o2MSUrWI3SQG9QkUVRPUVME', # 문요준 --> 1번
+            'AIzaSyAQFjloe2BATOoPJW9qqADqxoOQBAwCh0Q', # 문요준 --> 2번
+            'AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU', # 문요준 g.postech.edu --> 3번
+            'AIzaSyCkOqcZlTING7t6XqZV9M-aoTR8jHBDPTs', # 한승혁 --> 4번
+            'AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io', # 배시웅 --> 5번
+            'AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs', # 최우철 --> 6번
+            'AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4', # knpubigmac2024@gmail.com --> 7번
+            'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0' # gpt4.bb@gmail.com --> 8번
             ]
         
         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
@@ -531,16 +532,16 @@ class Crawler:
                 print_type = "영상"
                 
                 if signal == -1: # 날짜
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[36m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[36m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
                     print(out_str, end = "")
                 elif signal == 0: # url
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[36m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[36m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
                     print(out_str, end = "")
                 elif signal == 1: # 블로그
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[36m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[36m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
                     print(out_str, end = "")
                 else: # 댓글
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[36m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[36m"+str(len(self.reply_list)-1)+"\033[37m"+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
                     print(out_str, end = "")
                     
         elif self.weboption == 1:
@@ -581,16 +582,16 @@ class Crawler:
                 print_type = "영상"
                 
                 if signal == -1: # 날짜
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | API: "+str(self.api_num)+" ||"
                     print(out_str, end = "")
                 elif signal == 0: # url
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | API: "+str(self.api_num)+" ||"
                     print(out_str, end = "")
                 elif signal == 1: # 블로그
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | API: "+str(self.api_num)+" ||"
                     print(out_str, end = "")
                 else: # 댓글
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
+                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | API: "+str(self.api_num)+" ||"
                     print(out_str, end = "")
                 
     def error_exception(self, e, ipchange = False):
@@ -1440,6 +1441,24 @@ class Crawler:
 
         try:
             for i in range(self.date_range+1):
+                
+                if self.api_list[0] == 'AIzaSyCel8OH8wd4o2MSUrWI3SQG9QkUVRPUVME': # 문요준 --> 1번
+                    self.api_num = 1
+                elif self.api_list[0] == 'AIzaSyAQFjloe2BATOoPJW9qqADqxoOQBAwCh0Q': # 문요준 --> 2번
+                    self.api_num = 2
+                elif self.api_list[0] == 'AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU': # 문요준 g.postech.edu --> 3번
+                    self.api_num = 3
+                elif self.api_list[0] == 'AIzaSyCkOqcZlTING7t6XqZV9M-aoTR8jHBDPTs': # 한승혁 --> 4번
+                    self.api_num = 4
+                elif self.api_list[0] == 'AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io': # 배시웅 --> 5번
+                    self.api_num = 5
+                elif self.api_list[0] == 'AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs': # 최우철 --> 6번
+                    self.api_num = 6
+                elif self.api_list[0] == 'AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4': # knpubigmac2024@gmail.com --> 7번
+                    self.api_num = 7
+                elif self.api_list[0] == 'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0': # gpt4.bb@gmail.com --> 8번
+                    self.api_num = 8
+                    
                 self.progress = i
                 self.trans_date = str(self.currentDate)
                 self.print_status(-1, "youtube")
@@ -1452,16 +1471,16 @@ class Crawler:
                         csv.writer(reply).writerows(self.reply_list)
                 except Exception as e:
                     self.error_exception(e)
-                    
-            out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+"영상"+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-            if self.weboption == 1:
-                out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+"영상"+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
-            
-            print(out_str, end = "")
             
             self.endtime = time.time()
             loadingsecond = self.endtime - self.starttime
             loadingtime = str(int(loadingsecond//3600))+"시간 "+str(int(loadingsecond%3600//60))+"분 "+str(int(loadingsecond%3600%60))+"초"
+            
+            out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+"영상"+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
+            if self.weboption == 1:
+                out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+"영상"+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | API: "+str(self.api_num)+" ||"
+            
+            print(out_str, end = "")
             
             if self.fast_option == 1:
                 os.makedirs(self.filedirectory + '/' + self.end)
@@ -1533,10 +1552,7 @@ class Crawler:
             self.info_list.append([channel, video_url, video_title, video_description, video_date, view_count, like_count, comment_count])
             self.print_status(1, "youtube")
             
-            if comment_count == None:
-                return
-            
-            if len(int(comment_count)) == 0:
+            if comment_count == None or int(comment_count) == 0:
                 return
             
             escape = False
@@ -1547,7 +1563,6 @@ class Crawler:
                         for item in response['items']:
                             comment = item['snippet']['topLevelComment']['snippet']
                             self.reply_list.append([comment['authorDisplayName'], comment['publishedAt'], comment['textDisplay'], comment['likeCount'], video_url, video_title])
-                            self.print_status(2, "youtube")
                             
                         """ # 대댓글
                             if item['snippet']['totalReplyCount'] > 0:
@@ -1563,6 +1578,7 @@ class Crawler:
                             break
                         """
                         break
+                    self.print_status(2, "youtube")
                     escape = True
                 
                 except Exception as e:
@@ -1607,11 +1623,10 @@ class Crawler:
                     if "playlist" not in add_link and add_link not in self.bigurlList:
                         self.urlList.append(add_link)
                         self.bigurlList.append(add_link)
-                        self.print_status(0, "youtube")
                 
                     if add_link == None:
                         break
-                
+                self.print_status(0, "youtube")
                 currentPage += 10
             
             for url in self.urlList:
@@ -1646,6 +1661,9 @@ def control():
     
     elif control_ask == 2:
         print("\n1. 본문 \n2. 기사 + 댓글\n")
+        
+    elif control_ask == 3:
+        option = 1
     
     if control_ask == 1 or control == 2:
         while True:
