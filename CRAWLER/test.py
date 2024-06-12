@@ -1,41 +1,34 @@
-from datetime import datetime, timedelta
-
-def split_years(start_date, end_date):
-    # 문자열로 된 날짜를 datetime 객체로 변환
-    start = datetime.strptime(start_date, "%Y%m%d")
-    end = datetime.strptime(end_date, "%Y%m%d")
-
-    current = start
-    results = []
-
-    while current <= end:
-        # 현재 연도의 첫 날 설정
-        if current == start:
-            start_of_year = current
-        else:
-            start_of_year = datetime(current.year, 1, 1)
-        
-        # 현재 연도의 마지막 날
-        end_of_year = datetime(current.year, 12, 31)
-        
-        if end_of_year > end:
-            end_of_year = end
-        
-        # 연도별 시작과 종료 날짜 저장
-        results.append((start_of_year.strftime("%Y%m%d"), end_of_year.strftime("%Y%m%d")))
-        
-        # 다음 연도의 첫 날 설정
-        current = end_of_year + timedelta(days=1)
-
-    return results
-
-# 사용 예
-start_date = '20010117'
-end_date = '20231207'
-yearly_splits = split_years(start_date, end_date)
-
-print(yearly_splits)
-
-# 결과 출력
-for start, end in yearly_splits:
-    print(start, end)
+import pandas
+from googleapiclient.discovery import build
+ 
+ 
+api_key = 'AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU'
+video_id = '8KVoR0XhyYo'
+ 
+comments = list()
+api_obj = build('youtube', 'v3', developerKey=api_key)
+request = api_obj.commentThreads().list(part='snippet,replies', videoId=video_id, maxResults=100)
+ 
+while request:
+    response = request.execute()
+    for item in response['items']:
+        try:
+            comment = item['snippet']['topLevelComment']['snippet']
+            comments.append([comment['textDisplay'], comment['authorDisplayName'], comment['publishedAt'], comment['likeCount']])
+            print(item)
+            try:
+                if item['snippet']['totalReplyCount'] > 0:
+                    for reply_item in item['replies']['comments']:
+                        reply = reply_item['snippet']
+                        comments.append([reply['textDisplay'], reply['authorDisplayName'], reply['publishedAt'], reply['likeCount']])
+            except:
+                pass
+        except:
+            pass
+    if 'nextPageToken' in response:
+        request = api_obj.commentThreads().list_next(request, response)
+    else:
+        break
+print(len(comments))
+df = pandas.DataFrame(comments)
+df.to_csv('results.csv', header=['comment', 'author', 'date', 'num_likes'], index=None)
