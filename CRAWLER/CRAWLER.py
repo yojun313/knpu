@@ -20,18 +20,12 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 import re
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service  
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 import pickle
 import io
@@ -53,6 +47,17 @@ class Crawler:
         
         ##################################### 시스템 입력부  #####################################
 
+        self.api_list = [
+            'AIzaSyAQFjloe2BATOoPJW9qqADqxoOQBAwCh0Q', # 문요준
+            'AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU', # 문요준 g.postech.edu
+            'AIzaSyCkOqcZlTING7t6XqZV9M-aoTR8jHBDPTs', # 한승혁
+            'AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io', # 배시웅
+            'AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs', # 최우철
+            'AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4', # knpubigmac2024@gmail.com
+            'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0' # gpt4.bb@gmail.com
+            ]
+        
+        self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
         #연구실 3번 컴퓨터
         if socket.gethostname() == "DESKTOP-HQK7QRT":
             self.filedirectory  = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
@@ -252,11 +257,14 @@ class Crawler:
         else:
             self.drive_folder_link = "No Upload"
     
-    def fast_crawler_merge(self, loadingtime):
+    def fast_crawler_merge(self, loadingtime, option):
         
         def extract_date(folder_name):
             # 폴더명에서 날짜 부분 추출
-            match = re.search(r'\d{8}', folder_name)
+            if option == "news":
+                match = re.search(r'\d{8}', folder_name)
+            elif option == "youtube":
+                match = re.search(r'\d{7}', folder_name)
             if match:
                 return match.group(0)
             return None
@@ -275,99 +283,184 @@ class Crawler:
                 path = path.replace('\\', '/')
                 folder_paths.append(path)
                 
+        email_send = False
         if len(folder_paths) == 10:
-            
-            folder_paths = [item for item in folder_paths if 'Naver' in item]
-            
-            folder_paths.sort(key = extract_date)
-            
-            all_file_list = []
-            all_file_list_sorted = []
-            all_article_statistics_list = []
-            all_article_list = []
-            all_reply_list = []
-            all_rereply_list = []
-            all_log_list = []
-            
-            for path in folder_paths:
-                file_paths = []
-                for dirpath, dirnames, filenames in os.walk(path):
-                    for filename in filenames:
-                        file_path = os.path.join(dirpath, filename)
-                        file_path = file_path.replace("\\", '/')
-                        file_paths.append(file_path)
-                all_file_list.append(file_paths)
+            if option == 'news':
+                folder_paths = [item for item in folder_paths if 'Naver' in item]
+                
+                folder_paths.sort(key = extract_date)
+                
+                all_file_list = []
+                all_file_list_sorted = []
+                all_article_statistics_list = []
+                all_article_list = []
+                all_reply_list = []
+                all_rereply_list = []
+                all_log_list = []
+                
+                for path in folder_paths:
+                    file_paths = []
+                    for dirpath, dirnames, filenames in os.walk(path):
+                        for filename in filenames:
+                            file_path = os.path.join(dirpath, filename)
+                            file_path = file_path.replace("\\", '/')
+                            file_paths.append(file_path)
+                    all_file_list.append(file_paths)
 
-            for folder in all_file_list:
-                for file in folder:
-                    if "article(statistics).csv" in file:
-                        all_article_statistics_list.append(file)
-                    elif "article.csv" in file:
-                        all_article_list.append(file)
-                    elif "rere" in file:
-                        all_rereply_list.append(file)
-                    elif "reply.csv" in file:
-                        all_reply_list.append(file)
-                    elif "log.txt" in file:
-                        all_log_list.append(file)
+                for folder in all_file_list:
+                    for file in folder:
+                        if "article(statistics).csv" in file:
+                            all_article_statistics_list.append(file)
+                        elif "article.csv" in file:
+                            all_article_list.append(file)
+                        elif "rere" in file:
+                            all_rereply_list.append(file)
+                        elif "reply.csv" in file:
+                            all_reply_list.append(file)
+                        elif "log.txt" in file:
+                            all_log_list.append(file)
 
-            all_file_list_sorted.append(all_article_list)
-            all_file_list_sorted.append(all_article_statistics_list)
-            all_file_list_sorted.append(all_reply_list)
-            all_file_list_sorted.append(all_rereply_list)
-            all_file_list_sorted.append(all_log_list)
+                all_file_list_sorted.append(all_article_list)
+                all_file_list_sorted.append(all_article_statistics_list)
+                all_file_list_sorted.append(all_reply_list)
+                all_file_list_sorted.append(all_rereply_list)
+                all_file_list_sorted.append(all_log_list)
 
-            end_year = os.path.basename(folder_paths[-1]).split('_')[4]
-            new_folder_name = os.path.basename(folder_paths[0]).replace(os.path.basename(folder_paths[0]).split('_')[4], end_year)
-            new_folder_path = scrapdata_path + new_folder_name
-            
-            os.makedirs(new_folder_path)
+                end_year = os.path.basename(folder_paths[-1]).split('_')[4]
+                new_folder_name = os.path.basename(folder_paths[0]).replace(os.path.basename(folder_paths[0]).split('_')[4], end_year)
+                new_folder_path = scrapdata_path + new_folder_name
+                
+                os.makedirs(new_folder_path)
 
-            for file_list in all_file_list_sorted:
-                if file_list != []:
-                    merged_df = pd.DataFrame()
-                    for file in file_list:
-                        if ".csv" in file:
-                            df = pd.read_csv(file, encoding='utf-8-sig')
-                            if not df.empty:  # 데이터프레임이 비어 있지 않다면
-                                merged_df = pd.concat([merged_df, df], ignore_index=True)
-                        else:
-                            try:
-                                output_file = new_folder_name + "_log.txt"
-                                with open(new_folder_path + '/' + output_file, 'w', encoding='cp949', errors = 'ignore') as outfile:
-                                    with open(file, 'r', encoding = 'cp949', errors = 'ignore') as readfile:
-                                        outfile.write(readfile.read() + '\n')
-                            except:
-                                pass
-                    
-                    if "article(statistics).csv" in file_list[0]:
-                        output_file = new_folder_name + "_article(statistics).csv"
-                        merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
-                    
-                    elif "article.csv" in file_list[0]:
-                        output_file = new_folder_name + "_article.csv"
-                        merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
-
-                    elif "rere" in file_list[0]:
-                        output_file = new_folder_name + "_rereply.csv"
-                        merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
+                for file_list in all_file_list_sorted:
+                    if file_list != []:
+                        merged_df = pd.DataFrame()
+                        for file in file_list:
+                            if ".csv" in file:
+                                df = pd.read_csv(file, encoding='utf-8-sig')
+                                if not df.empty:  # 데이터프레임이 비어 있지 않다면
+                                    merged_df = pd.concat([merged_df, df], ignore_index=True)
+                            else:
+                                try:
+                                    output_file = new_folder_name + "_log.txt"
+                                    with open(new_folder_path + '/' + output_file, 'w', encoding='cp949', errors = 'ignore') as outfile:
+                                        with open(file, 'r', encoding = 'cp949', errors = 'ignore') as readfile:
+                                            outfile.write(readfile.read() + '\n')
+                                except:
+                                    pass
                         
-                    elif "reply.csv" in file_list[0]:
-                        output_file = new_folder_name + "_reply.csv"
-                        merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
-                    
-            for filename in os.listdir(folder_path):
-                file_path = os.path.join(folder_path, filename)
-                try:
-                    if os.path.isfile(file_path) or os.path.islink(file_path):
-                        os.unlink(file_path)  # 파일 또는 링크 삭제
-                    elif os.path.isdir(file_path):
-                        shutil.rmtree(file_path)  # 폴더 삭제
-                except Exception as e:
-                    pass
+                        if "article(statistics).csv" in file_list[0]:
+                            output_file = new_folder_name + "_article(statistics).csv"
+                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
+                        
+                        elif "article.csv" in file_list[0]:
+                            output_file = new_folder_name + "_article.csv"
+                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
 
-            self.upload_folder(new_folder_path)
+                        elif "rere" in file_list[0]:
+                            output_file = new_folder_name + "_rereply.csv"
+                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
+                            
+                        elif "reply.csv" in file_list[0]:
+                            output_file = new_folder_name + "_reply.csv"
+                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
+                        
+                for filename in os.listdir(folder_path):
+                    file_path = os.path.join(folder_path, filename)
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path)  # 파일 또는 링크 삭제
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)  # 폴더 삭제
+                    except Exception as e:
+                        pass
+
+                self.upload_folder(new_folder_path)
+                
+                email_send = True
             
+            elif option == 'youtube':
+                folder_paths = [item for item in folder_paths if 'YouTube' in item]
+                
+                folder_paths.sort(key = extract_date)
+                
+                all_file_list = []
+                all_file_list_sorted = []
+                all_info_list = []
+                all_reply_list = []
+                all_log_list = []
+                
+                for path in folder_paths:
+                    file_paths = []
+                    for dirpath, dirnames, filenames in os.walk(path):
+                        for filename in filenames:
+                            file_path = os.path.join(dirpath, filename)
+                            file_path = file_path.replace("\\", '/')
+                            file_paths.append(file_path)
+                    all_file_list.append(file_paths)
+
+                for folder in all_file_list:
+                    for file in folder:
+                        if "info.csv" in file:
+                            all_article_list.append(file)
+                        elif "reply.csv" in file:
+                            all_reply_list.append(file)
+                        elif "log.txt" in file:
+                            all_log_list.append(file)
+
+                all_file_list_sorted.append(all_info_list)
+                all_file_list_sorted.append(all_reply_list)
+                all_file_list_sorted.append(all_log_list)
+
+                end_year = os.path.basename(folder_paths[-1]).split('_')[3]
+                new_folder_name = os.path.basename(folder_paths[0]).replace(os.path.basename(folder_paths[0]).split('_')[3], end_year)
+                new_folder_path = scrapdata_path + new_folder_name
+                
+                os.makedirs(new_folder_path)
+
+                for file_list in all_file_list_sorted:
+                    if file_list != []:
+                        merged_df = pd.DataFrame()
+                        for file in file_list:
+                            if ".csv" in file:
+                                df = pd.read_csv(file, encoding='utf-8-sig')
+                                if not df.empty:  # 데이터프레임이 비어 있지 않다면
+                                    merged_df = pd.concat([merged_df, df], ignore_index=True)
+                            else:
+                                try:
+                                    output_file = new_folder_name + "_log.txt"
+                                    with open(new_folder_path + '/' + output_file, 'w', encoding='cp949', errors = 'ignore') as outfile:
+                                        with open(file, 'r', encoding = 'cp949', errors = 'ignore') as readfile:
+                                            outfile.write(readfile.read() + '\n')
+                                except:
+                                    pass
+                        
+                        if "info.csv" in file_list[0]:
+                            output_file = new_folder_name + "info.csv"
+                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
+                            
+                        elif "reply.csv" in file_list[0]:
+                            output_file = new_folder_name + "_reply.csv"
+                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
+                        
+                for filename in os.listdir(folder_path):
+                    file_path = os.path.join(folder_path, filename)
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path)  # 파일 또는 링크 삭제
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)  # 폴더 삭제
+                    except Exception as e:
+                        pass
+
+                self.upload_folder(new_folder_path)
+                
+                email_send = True
+
+        else:
+            return
+        
+        if email_send == True:
             text  = "[FAST CRAWLER 크롤링 완료] \n"
             #text += "============================================================"
             text += "\n검색어: " + str(self.keyword)
@@ -392,9 +485,6 @@ class Crawler:
                 server.starttls()
                 server.login(self.sender, self.MailPassword)
                 server.sendmail(self.sender, self.receiver, msg.as_string())
-        else:
-            return
-            
             
             
     def print_status(self, signal, print_type):
@@ -673,7 +763,7 @@ class Crawler:
             
             if self.fast_option == 1:
                 os.makedirs(self.filedirectory + '/' + self.end)
-                self.fast_crawler_merge(loadingtime)
+                self.fast_crawler_merge(loadingtime, 'news')
                 return
             
             else:
@@ -1327,9 +1417,12 @@ class Crawler:
         self.f = open(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_log.txt", "w+")  # Log file 생성
         self.f.close()
         
-        self.info_list = [["info_id", "channel", "video_url", "video_title", "video_description", "video_date", "view_count", "like_count", "comment_count"]]
-        self.reply_list = [["info_id", "reply_id", "writer", "reply_date", "reply", "r_Like", "rere_count"]]
+        self.info_list = [["channel", "video_url", "video_title", "video_description", "video_date", "view_count", "like_count", "comment_count"]]
+        self.reply_list = [["writer", "reply_date", "reply", "r_Like", "video_url", "video_title"]]
         self.bigurlList = []
+        
+        self.info_csv = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_info" + ".csv"
+        self.reply_csv = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv"
 
         if self.weboption == 0:
             print("====================================================================================================================") 
@@ -1339,7 +1432,6 @@ class Crawler:
             print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
             print("검색어:", self.keyword)
             print("옵션 번호:", self.option)
-            print("DB 저장:", self.mysql_option)
             print("컴퓨터:", self.crawlcom)
             print("저장 위치:", self.filedirectory + "/" + self.DBname)
             print("메일 수신:", self.receiver)
@@ -1353,31 +1445,36 @@ class Crawler:
                 self.print_status(-1, "youtube")
                 self.get_YOUTUBE_URLs(str(self.currentDate.strftime("%m/%d/%Y")))
                 self.currentDate += self.deltaD
-                
                 try:
-                    dfinfo = pd.DataFrame(self.info_list)
-                    dfinfo.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_info" + ".csv", index = False, encoding='utf-8-sig', header = False)
+                    with open(self.info_csv, 'w', newline = "", encoding = 'utf-8-sig') as info:
+                        csv.writer(info).writerows(self.info_list)
+                    with open(self.reply_csv, 'w', newline = "", encoding = 'utf-8-sig') as reply:
+                        csv.writer(reply).writerows(self.reply_list)
                 except Exception as e:
                     self.error_exception(e)
+                    
+            out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+"영상"+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
+            if self.weboption == 1:
+                out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+"영상"+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
             
-                if self.option == 2:
-                    try:
-                        dfreply = pd.DataFrame(self.reply_list)
-                        dfreply.to_csv(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv", index = False, encoding='utf-8-sig', header = False)
-                    except Exception as e:
-                        self.error_exception(e)
-        
+            print(out_str, end = "")
+            
             self.endtime = time.time()
             loadingsecond = self.endtime - self.starttime
             loadingtime = str(int(loadingsecond//3600))+"시간 "+str(int(loadingsecond%3600//60))+"분 "+str(int(loadingsecond%3600%60))+"초"
             
-            self.upload_folder(self.filedirectory + "/" + self.DBname)
+            if self.fast_option == 1:
+                os.makedirs(self.filedirectory + '/' + self.end)
+                self.fast_crawler_merge(loadingtime)
+                return
             
-            if self.weboption == 0:
-                print("\n\n크롤링 완료\n")
-                print("분석 소요 시간:", loadingtime)
-            
-            self.send_email(loadingtime)
+            else:
+                if self.weboption == 0:
+                    print("\n\n크롤링 완료\n")
+                    print("분석 소요 시간:", loadingtime)
+                
+                self.upload_folder(self.filedirectory + "/" + self.DBname)
+                self.send_email(loadingtime)
             
         except Exception as e:
             _, _, tb = sys.exc_info()  # tb -> traceback object
@@ -1407,52 +1504,6 @@ class Crawler:
             else:
                 youtube_info = url[32:]
             
-            ######################################### selenium #########################################
-            try:
-                sele_proxy = random.choice(self.proxy_list)
-                sele_proxy = "--proxy-server="+str(sele_proxy)
-                header = self.random_heador()
-
-                options = Options()
-                options.add_argument('headless')
-                options.add_argument(sele_proxy)
-                options.add_argument(str(header))
-                options.add_experimental_option('excludeSwitches', ['enable-logging'])
-                
-                #options.add_argument("--start-maximized") #전체화면으로
-
-                crawler = webdriver.Chrome(options=options)
-                crawler.implicitly_wait(1) #타임슬립 유사 기능
-                #hadzy 접속
-                crawler.get("https://hadzy.com/")
-                #동의버튼 누르기
-                accept_all = crawler.find_element('xpath', '/html/body/div[2]/div[3]/div/div[3]/button/span[1]')
-                accept_all.click()
-
-                #URL 입력
-                enter_url = crawler.find_element('xpath', '//*[@id="root"]/div/div[2]/form/div/input')
-                enter_url.click()
-                enter_url.send_keys(url) #유튜브 URL 입력
-                enter_url.send_keys(Keys.ENTER)
-
-                #Load Data 클릭
-                load_data = crawler.find_element('xpath', '//*[@id="root"]/div/div[2]/div[2]/button')
-                load_data.click()
-
-                #로드가 완료되면 나타나는 요소 정의(View Comments 단추)
-                ld_complete_xpath = '//*[@id="root"]/div/div[2]/div[2]/a[1]/button/span[1]'
-
-                #로드 될 때까지 최대 30초 대기
-                WebDriverWait(crawler, 30).until(
-                    EC.presence_of_element_located((By.XPATH, ld_complete_xpath)))
-
-                # View Comments 또는 View Statictics 클릭
-                crawler.quit()
-            except:
-                pass
-        
-            ############################################################################################
-            
             headers = self.random_heador()
             info_api_url = "https://hadzy.com/api/videos/{}".format(youtube_info)
             
@@ -1478,76 +1529,49 @@ class Crawler:
                 comment_count = temp['items'][0]['statistics']['commentCount']  # 댓글 수
             except:
                 return
-                
-            info_data = {
-                "info_id": None, 
-                "channel": str(channel),
-                "video_url": str(video_url),
-                "video_title": str(video_title),
-                "video_description": str(video_description),
-                "video_date": str(video_date),
-                "view_count": str(view_count),
-                "like_count": str(like_count),
-                "comment_count": str(comment_count)
-            }
             
-            self.info_list.append([info_id, channel, video_url, video_title, video_description, video_date, view_count, like_count, comment_count])
+            self.info_list.append([channel, video_url, video_title, video_description, video_date, view_count, like_count, comment_count])
             self.print_status(1, "youtube")
             
             if comment_count == None:
                 return
             
-            if self.option == 1 or len(comment_count) == 0:
+            if len(int(comment_count)) == 0:
                 return
             
-            page = 0
-            reply_idx = 0
+            escape = False
             while True:
                 try:
-                    comment_api_url = "https://hadzy.com/api/comments/{}?page={}%20%20%20%20%20%20&size=10&sortBy=publishedAt&direction=asc%20%20%20%20%20%20&searchTerms=&author=".format(youtube_info, page)
-
-                    headers = self.random_heador()
-                    
-                    while True:
-                        proxies = self.random_proxy()
-                        try:
-                            main_page = requests.get(comment_api_url, headers = headers, proxies = proxies, timeout = 3)
+                    response = self.api_obj.commentThreads().list(part='snippet,replies', videoId = youtube_info, maxResults=100, order = 'relevance').execute()
+                    while response:
+                        for item in response['items']:
+                            comment = item['snippet']['topLevelComment']['snippet']
+                            self.reply_list.append([comment['authorDisplayName'], comment['publishedAt'], comment['textDisplay'], comment['likeCount'], video_url, video_title])
+                            self.print_status(2, "youtube")
+                            
+                        """ # 대댓글
+                            if item['snippet']['totalReplyCount'] > 0:
+                                for reply_item in item['replies']['comments']:
+                                    reply = reply_item['snippet']
+                                    self.reply_list.append([reply['textDisplay'], reply['authorDisplayName'], reply['publishedAt'], reply['likeCount']])
+                                    
+                        """
+                        """ # 100개 이상
+                        if 'nextPageToken' in response:
+                            response = self.api_obj.commentThreads().list(part='snippet,replies', videoId = youtube_info, pageToken=response['nextPageToken'], maxResults=100).execute()
+                        else:
                             break
-                        except requests.exceptions.Timeout as e:
-                            self.error_exception(e, True)
-                        except Exception as e:
-                            self.error_exception(e, True)
-                            
-                    try:
-                        temp = json.loads(main_page.text)
-                        #print(temp)
-                    except:
-                        return
-                    
-                    if len(temp["content"]) == 0:
+                        """
                         break
-                    
-                    for i in range(len(temp['content'])):
-                        reply_idx += 1
-                            
-                        info_id = 0
-                        self.reply_list.append(
-                            [
-                                info_id,
-                                reply_idx,
-                                temp['content'][i]['authorDisplayName'], # 작성자
-                                temp['content'][i]['publishedAt'], # 작성일
-                                temp['content'][i]['textDisplay'].replace("\n", " ").replace("\r", "").replace("\t", "").replace("<br>"," "), # 작성글
-                                temp['content'][i]['likeCount'], # 좋아요 수
-                                temp['content'][i]['totalReplyCount'] # 총 대댓글 수
-                                
-                            ]
-                        )
-                        self.print_status(2, "youtube")
-                    page += 1 
-                    
+                    escape = True
+                
                 except Exception as e:
-                    self.error_exception(e)  
+                    self.error_exception(e, True)   
+                    self.api_list.pop(0)
+                    self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
+                    
+                if escape == True:
+                    break
                     
         except Exception as e:
             self.error_exception(e)  
@@ -1617,13 +1641,19 @@ def control():
     end       = input("End Date (ex: 20231231): ") 
     keyword   = input("\nKeyword: ")
     
-    print("\n1. 기사 \n2. 기사 + 댓글\n3. 기사 + 댓글 + 대댓글\n")
-    while True:
-        option = int(input("Option: "))
-        if option in [1,2,3]:
-            break
-        else:
-            print("다시 입력하세요")
+    if control_ask == 1:
+        print("\n1. 기사 \n2. 기사 + 댓글\n3. 기사 + 댓글 + 대댓글\n")
+    
+    elif control_ask == 2:
+        print("\n1. 본문 \n2. 기사 + 댓글\n")
+    
+    if control_ask == 1 or control == 2:
+        while True:
+            option = int(input("Option: "))
+            if option in [1,2,3]:
+                break
+            else:
+                print("다시 입력하세요")
     
     upload    = input("\n구글 드라이브에 업로드 하시겠습니까(Y/N)? ")
     weboption = 0
