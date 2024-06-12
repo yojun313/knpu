@@ -403,7 +403,7 @@ class Crawler:
                 for folder in all_file_list:
                     for file in folder:
                         if "info.csv" in file:
-                            all_article_list.append(file)
+                            all_info_list.append(file)
                         elif "reply.csv" in file:
                             all_reply_list.append(file)
                         elif "log.txt" in file:
@@ -1484,7 +1484,7 @@ class Crawler:
             
             if self.fast_option == 1:
                 os.makedirs(self.filedirectory + '/' + self.end)
-                self.fast_crawler_merge(loadingtime)
+                self.fast_crawler_merge(loadingtime, 'youtube')
                 return
             
             else:
