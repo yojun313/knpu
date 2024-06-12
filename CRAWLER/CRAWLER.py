@@ -48,14 +48,14 @@ class Crawler:
         ##################################### 시스템 입력부  #####################################
 
         self.api_list = [
-            'AIzaSyAQFjloe2BATOoPJW9qqADqxoOQBAwCh0Q', # 문요준 --> 1번
-            'AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU', # 문요준 g.postech.edu --> 2번
-            'AIzaSyCkOqcZlTING7t6XqZV9M-aoTR8jHBDPTs', # 한승혁 --> 3번
-            'AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io', # 배시웅 --> 4번
-            'AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs', # 최우철 --> 5번
-            'AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4', # knpubigmac2024@gmail.com --> 6번
-            'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0', # gpt4.bb@gmail.com --> 7번
-            'AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo' # moonyojun2@gmail.com --> 8번
+            'AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU', # 문요준 g.postech.edu --> 1번
+            'AIzaSyCkOqcZlTING7t6XqZV9M-aoTR8jHBDPTs', # 한승혁 --> 2번
+            'AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io', # 배시웅 --> 3번
+            'AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs', # 최우철 --> 4번
+            'AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4', # knpubigmac2024@gmail.com --> 5번
+            'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0', # gpt4.bb@gmail.com --> 6번
+            'AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo', # moonyojun2@gmail.com --> 7번
+            'AIzaSyByxep-pVr7eM5Z-wvL1u-Iy_6q7iUrtWk' # 이정우 --> 8번
             ]
         
         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
@@ -1448,6 +1448,8 @@ class Crawler:
                     self.api_num = 6
                 elif self.api_list[0] == 'AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo': # moonyojun2@gmail.com --> 7번
                     self.api_num = 7
+                elif self.api_list[0] == 'AIzaSyByxep-pVr7eM5Z-wvL1u-Iy_6q7iUrtWk': # 이정우 --> 8번
+                    self.api_num = 8
                     
                 self.progress = i
                 self.trans_date = str(self.currentDate)
