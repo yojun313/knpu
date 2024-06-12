@@ -55,22 +55,14 @@ class Crawler:
             '***REMOVED***', # 배시웅 --> 5번
             '***REMOVED***', # 최우철 --> 6번
             '***REMOVED***', # knpubigmac2024@gmail.com --> 7번
-            '***REMOVED***' # gpt4.bb@gmail.com --> 8번
+            '***REMOVED***', # gpt4.bb@gmail.com --> 8번
+            '***REMOVED***' # moonyojun2@gmail.com --> 9번
             ]
         
         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
-        #연구실 3번 컴퓨터
-        if socket.gethostname() == "DESKTOP-HQK7QRT":
-            self.filedirectory  = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
-            self.proxydirectory = "C:/Users/qwe/Documents/GitHub/BIGMACLAB/CRAWLER"
-            self.tokendirectory = "C:/Users/qwe/Desktop/VSCODE/CRAWLER"
-            self.proxy_option   = "y"
-            self.sender         = "knpubigmac2024@gmail.com"
-            self.MailPassword   = 'vygn nrmh erpf trji'
-            self.crawlcom       = "3번 컴퓨터"
             
         # HP OMEN 
-        elif socket.gethostname() == "DESKTOP-502IMU5":
+        if socket.gethostname() == "DESKTOP-502IMU5":
             self.filedirectory  = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
             self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
             self.tokendirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER" 
@@ -1458,6 +1450,8 @@ class Crawler:
                     self.api_num = 7
                 elif self.api_list[0] == '***REMOVED***': # gpt4.bb@gmail.com --> 8번
                     self.api_num = 8
+                elif self.api_list[0] == '***REMOVED***': # moonyojun2@gmail.com --> 9번
+                    self.api_num = 9
                     
                 self.progress = i
                 self.trans_date = str(self.currentDate)
@@ -1582,7 +1576,10 @@ class Crawler:
                     escape = True
                 
                 except Exception as e:
-                    self.error_exception(e, True)   
+                    self.error_exception(e, True)  
+                    if "videoNotFound" in str(e):
+                        escape = True
+                        break 
                     self.api_list.pop(0)
                     self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
                     
