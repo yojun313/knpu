@@ -55,7 +55,8 @@ class Crawler:
             '***REMOVED***', # knpubigmac2024@gmail.com --> 5번
             '***REMOVED***', # gpt4.bb@gmail.com --> 6번
             '***REMOVED***', # moonyojun2@gmail.com --> 7번
-            '***REMOVED***' # 이정우 --> 8번
+            '***REMOVED***', # 이정우 --> 8번
+            '***REMOVED***' # yojunvai71@gmail.com
             ]
         
         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
@@ -1551,6 +1552,8 @@ class Crawler:
                     self.api_num = 7
                 elif self.api_list[0] == '***REMOVED***': # 이정우 --> 8번
                     self.api_num = 8
+                elif self.api_list[0] == '***REMOVED***': # yojunavi71@gmail.com
+                    self.api_num = 9
             
             try:
                 self.print_status(1, "youtube")            
