@@ -1434,23 +1434,6 @@ class Crawler:
         try:
             for i in range(self.date_range+1):
                 
-                if self.api_list[0] == 'AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU': # 문요준 g.postech.edu --> 1번
-                    self.api_num = 1
-                elif self.api_list[0] == 'AIzaSyCkOqcZlTING7t6XqZV9M-aoTR8jHBDPTs': # 한승혁 --> 2번
-                    self.api_num = 2
-                elif self.api_list[0] == 'AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io': # 배시웅 --> 3번
-                    self.api_num = 3
-                elif self.api_list[0] == 'AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs': # 최우철 --> 4번
-                    self.api_num = 4
-                elif self.api_list[0] == 'AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4': # knpubigmac2024@gmail.com --> 5번
-                    self.api_num = 5
-                elif self.api_list[0] == 'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0': # gpt4.bb@gmail.com --> 6번
-                    self.api_num = 6
-                elif self.api_list[0] == 'AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo': # moonyojun2@gmail.com --> 7번
-                    self.api_num = 7
-                elif self.api_list[0] == 'AIzaSyByxep-pVr7eM5Z-wvL1u-Iy_6q7iUrtWk': # 이정우 --> 8번
-                    self.api_num = 8
-                    
                 self.progress = i
                 self.trans_date = str(self.currentDate)
                 self.print_status(-1, "youtube")
@@ -1547,53 +1530,89 @@ class Crawler:
             if comment_count == None or int(comment_count) == 0:
                 return
             
-            escape = False
-            while True:
-                try:
-                    request = self.api_obj.commentThreads().list(part='snippet,replies', videoId = youtube_info, maxResults=100, order = 'relevance')
-                    while request:
+            if len(self.api_list) == 0:
+                print("\rAPI 할당량 초과 --> 1일 후 유튜브 크롤링을 시도해주십시오")
+                sys.exit()
+            
+            else:
+                if self.api_list[0] == 'AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU': # 문요준 g.postech.edu --> 1번
+                    self.api_num = 1
+                elif self.api_list[0] == 'AIzaSyCkOqcZlTING7t6XqZV9M-aoTR8jHBDPTs': # 한승혁 --> 2번
+                    self.api_num = 2
+                elif self.api_list[0] == 'AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io': # 배시웅 --> 3번
+                    self.api_num = 3
+                elif self.api_list[0] == 'AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs': # 최우철 --> 4번
+                    self.api_num = 4
+                elif self.api_list[0] == 'AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4': # knpubigmac2024@gmail.com --> 5번
+                    self.api_num = 5
+                elif self.api_list[0] == 'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0': # gpt4.bb@gmail.com --> 6번
+                    self.api_num = 6
+                elif self.api_list[0] == 'AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo': # moonyojun2@gmail.com --> 7번
+                    self.api_num = 7
+                elif self.api_list[0] == 'AIzaSyByxep-pVr7eM5Z-wvL1u-Iy_6q7iUrtWk': # 이정우 --> 8번
+                    self.api_num = 8
+            
+            try:
+                self.print_status(1, "youtube")            
+                while True:
+                    try:
+                        request = self.api_obj.commentThreads().list(part='snippet,replies', videoId = youtube_info, maxResults=100, order = 'relevance')
                         response = request.execute()
-                        for item in response['items']:
-                            try:
-                                comment = item['snippet']['topLevelComment']['snippet']
-                                self.reply_list.append([comment['authorDisplayName'], comment['publishedAt'], comment['textDisplay'], comment['likeCount'], video_url, video_title])
-                                if self.option == 2:
-                                    try:
-                                        if item['snippet']['totalReplyCount'] > 0:
-                                            for reply_item in item['replies']['comments']:
-                                                reply = reply_item['snippet']
-                                                self.reply_list.append([reply['textDisplay'], reply['authorDisplayName'], reply['publishedAt'], reply['likeCount']])
-                                    except:
-                                        pass
-                            except:
-                                pass 
-
-                        # 100개 이상
-                        self.print_status(2, "youtube")
-                        if self.option == 2:
-                            if 'nextPageToken' in response:
-                                request = self.api_obj.commentThreads().list_next(request, response)
-                            else:
-                                escape = True
-                                break
+                        break
+                    except Exception as e:
+                        self.error_exception(e, True)  
+                        if "operationNotSupported" in str(e) or "commentDisabled" in str(e) or "forbidden" in str(e) or "channelNotFound" in str(e) or "commentThreadNotFound" in str(e) or "VideoNotFound" in str(e) or "processingFailure" in str(e):
+                            return
+                        elif "quotaExceeded" in str(e):
+                            if len(self.api_list) <= 1:
+                                print("\rAPI 할당량 초과 --> 1일 후 유튜브 크롤링을 시도해주십시오")
+                                sys.exit()
+                            self.api_list.pop(0)
+                            self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
+                
+                while request:
+                    for item in response['items']:
+                        try:
+                            comment = item['snippet']['topLevelComment']['snippet']
+                            self.reply_list.append([comment['authorDisplayName'], comment['publishedAt'], comment['textDisplay'], comment['likeCount'], video_url, video_title])
+                            """
+                            if self.option == 2:
+                                try:
+                                    if item['snippet']['totalReplyCount'] > 0:
+                                        for reply_item in item['replies']['comments']:
+                                            reply = reply_item['snippet']
+                                            self.reply_list.append([reply['textDisplay'], reply['authorDisplayName'], reply['publishedAt'], reply['likeCount']])
+                                except:
+                                    pass
+                            """
+                        except:
+                            pass 
+                    # 100개 이상
+                    self.print_status(2, "youtube")
+                    if self.option == 2:
+                        if 'nextPageToken' in response:
+                            while True:
+                                try:
+                                    request = self.api_obj.commentThreads().list_next(request, response)
+                                    response = request.execute()
+                                    break
+                                except Exception as e:
+                                    self.error_exception(e, True)  
+                                    if "operationNotSupported" in str(e) or "commentDisabled" in str(e) or "forbidden" in str(e) or "channelNotFound" in str(e) or "commentThreadNotFound" in str(e) or "VideoNotFound" in str(e) or "processingFailure" in str(e):
+                                        return
+                                    elif "quotaExceeded" in str(e):
+                                        if len(self.api_list) <= 1:
+                                            print("\rAPI 할당량 초과 --> 1일 후 유튜브 크롤링을 시도해주십시오")
+                                            sys.exit()
+                                        self.api_list.pop(0)
+                                        self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
                         else:
-                            escape = True
-                            break
-                        
-                except Exception as e:
-                    self.error_exception(e, True)  
-                    if "operationNotSupported" in str(e) or "commentDisabled" in str(e) or "forbidden" in str(e) or "channelNotFound" in str(e) or "commentThreadNotFound" in str(e) or "VideoNotFound" in str(e) or "processingFailure" in str(e):
-                        escape = True
-                        break 
-                    elif "quotaExceeded" in str(e):
-                        if len(self.api_list) == 0:
-                            print("API 할당량 초과 --> 1일 후 유튜브 크롤링을 시도해주십시오")
-                            sys.exit()
-                        self.api_list.pop(0)
-                        self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
-                    
-                if escape == True:
-                    break
+                            return
+                    else:
+                        return
+            
+            except Exception as e:
+                self.error_exception(e)    
                     
         except Exception as e:
             self.error_exception(e)  
