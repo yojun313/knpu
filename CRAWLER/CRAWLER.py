@@ -56,7 +56,8 @@ class Crawler:
             'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0', # gpt4.bb@gmail.com --> 6번
             'AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo', # moonyojun2@gmail.com --> 7번
             'AIzaSyByxep-pVr7eM5Z-wvL1u-Iy_6q7iUrtWk', # 이정우 --> 8번
-            'AIzaSyC5i2IcG0ntpD0ZbO_8sRomMq8LbHEWnGk' # yojunvai71@gmail.com
+            'AIzaSyC5i2IcG0ntpD0ZbO_8sRomMq8LbHEWnGk', # yojunvai71@gmail.com
+            'AIzaSyAmO8mi1lX1KwUsMRQl6fI6YFp7Gxy2eLk' # yojunpremium1@gmail.com
             ]
         
         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
@@ -1554,6 +1555,8 @@ class Crawler:
                     self.api_num = 8
                 elif self.api_list[0] == 'AIzaSyC5i2IcG0ntpD0ZbO_8sRomMq8LbHEWnGk': # yojunavi71@gmail.com
                     self.api_num = 9
+                elif self.api_list[0] == 'AIzaSyAmO8mi1lX1KwUsMRQl6fI6YFp7Gxy2eLk': # yojunpremium1@gmail.com
+                    self.api_num = 10
             
             try:
                 self.print_status(1, "youtube")            
