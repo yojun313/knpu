@@ -56,8 +56,11 @@ class Crawler:
             '***REMOVED***', # gpt4.bb@gmail.com --> 6번
             '***REMOVED***', # moonyojun2@gmail.com --> 7번
             '***REMOVED***', # 이정우 --> 8번
-            '***REMOVED***', # yojunvai71@gmail.com
-            '***REMOVED***' # yojunpremium1@gmail.com
+            '***REMOVED***', # yojunvai71@gmail.com -> 9번
+            '***REMOVED***', # yojunpremium1@gmail.com -> 10번
+            '***REMOVED***', # yojunavi@gmail.com -> 11번
+            '***REMOVED***', # andrew101021@khu.ac.kr -> 12번
+            '***REMOVED***' # andrew77495@gmail.com -> 13번
             ]
         
         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
@@ -1553,11 +1556,16 @@ class Crawler:
                     self.api_num = 7
                 elif self.api_list[0] == '***REMOVED***': # 이정우 --> 8번
                     self.api_num = 8
-                elif self.api_list[0] == '***REMOVED***': # yojunavi71@gmail.com
+                elif self.api_list[0] == '***REMOVED***': # yojunavi71@gmail.com -> 9번
                     self.api_num = 9
-                elif self.api_list[0] == '***REMOVED***': # yojunpremium1@gmail.com
+                elif self.api_list[0] == '***REMOVED***': # yojunpremium1@gmail.com -> 10번
                     self.api_num = 10
-            
+                elif self.api_list[0] == '***REMOVED***': # yojunavi@gmail.com -> 11번
+                    self.api_num = 11
+                elif self.api_list[0] == '***REMOVED***': # andrew101021@khu.ac.kr -> 12번
+                    self.api_num = 12
+                elif self.api_list[0] == '***REMOVED***': # andrew77495@gmail.com -> 13번
+                    self.api_num = 13
             try:
                 self.print_status(1, "youtube")            
                 while True:
