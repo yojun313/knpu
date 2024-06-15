@@ -56,8 +56,11 @@ class Crawler:
             'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0', # gpt4.bb@gmail.com --> 6번
             'AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo', # moonyojun2@gmail.com --> 7번
             'AIzaSyByxep-pVr7eM5Z-wvL1u-Iy_6q7iUrtWk', # 이정우 --> 8번
-            'AIzaSyC5i2IcG0ntpD0ZbO_8sRomMq8LbHEWnGk', # yojunvai71@gmail.com
-            'AIzaSyAmO8mi1lX1KwUsMRQl6fI6YFp7Gxy2eLk' # yojunpremium1@gmail.com
+            'AIzaSyC5i2IcG0ntpD0ZbO_8sRomMq8LbHEWnGk', # yojunvai71@gmail.com -> 9번
+            'AIzaSyAmO8mi1lX1KwUsMRQl6fI6YFp7Gxy2eLk', # yojunpremium1@gmail.com -> 10번
+            'AIzaSyAzh54hQhYQK-qsLJBVAp1SPyGXcntGn1M', # yojunavi@gmail.com -> 11번
+            'AIzaSyBGISnI-0eBKuNYBeUko-Jj_avVSbdXLrU', # andrew101021@khu.ac.kr -> 12번
+            'AIzaSyAE0vxDo2CUIn0SsTYeCaV2HzdCJfhO4l4' # andrew77495@gmail.com -> 13번
             ]
         
         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
@@ -1553,11 +1556,16 @@ class Crawler:
                     self.api_num = 7
                 elif self.api_list[0] == 'AIzaSyByxep-pVr7eM5Z-wvL1u-Iy_6q7iUrtWk': # 이정우 --> 8번
                     self.api_num = 8
-                elif self.api_list[0] == 'AIzaSyC5i2IcG0ntpD0ZbO_8sRomMq8LbHEWnGk': # yojunavi71@gmail.com
+                elif self.api_list[0] == 'AIzaSyC5i2IcG0ntpD0ZbO_8sRomMq8LbHEWnGk': # yojunavi71@gmail.com -> 9번
                     self.api_num = 9
-                elif self.api_list[0] == 'AIzaSyAmO8mi1lX1KwUsMRQl6fI6YFp7Gxy2eLk': # yojunpremium1@gmail.com
+                elif self.api_list[0] == 'AIzaSyAmO8mi1lX1KwUsMRQl6fI6YFp7Gxy2eLk': # yojunpremium1@gmail.com -> 10번
                     self.api_num = 10
-            
+                elif self.api_list[0] == 'AIzaSyAzh54hQhYQK-qsLJBVAp1SPyGXcntGn1M': # yojunavi@gmail.com -> 11번
+                    self.api_num = 11
+                elif self.api_list[0] == 'AIzaSyBGISnI-0eBKuNYBeUko-Jj_avVSbdXLrU': # andrew101021@khu.ac.kr -> 12번
+                    self.api_num = 12
+                elif self.api_list[0] == 'AIzaSyAE0vxDo2CUIn0SsTYeCaV2HzdCJfhO4l4': # andrew77495@gmail.com -> 13번
+                    self.api_num = 13
             try:
                 self.print_status(1, "youtube")            
                 while True:
