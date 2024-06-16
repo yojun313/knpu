@@ -594,28 +594,27 @@ class Crawler:
                     print(out_str, end = "")
                 
     def error_exception(self, e, ipchange = False):
-        _, _, tb = sys.exc_info()  # tb -> traceback object
-        tb_info = traceback.extract_tb(tb)
+        exc_type, exc_value, exc_traceback = sys.exc_info()  # 예외 정보 가져오기
+        tb_info = traceback.extract_tb(exc_traceback)
         filename, lineno, func, text = tb_info[-1]  # 가장 최근의 호출 스택 정보
-
+        
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        error_type = sys.exc_info()[0]
-        error_msg = f"{error_type} {str(e)}"
+        error_msg = f"{exc_type} {str(e)}"
 
         if ipchange:
             msg = (
-                f"Timestamp:                {timestamp}\n"
+                f"Timestamp:               {timestamp}\n"
                 f"File name:                {filename}\n"
-                f"Error line:               {lineno}\n"
-                f"Error:                    {textwrap.fill(error_msg, subsequent_indent=' '*27)}\n"
-                f"--->> ip 교체됨\n"
+                f"Error line:                {lineno}\n"
+                f"Error:                    {error_msg}\n"
+                f"---------------------------------------------->> ip 교체됨\n"
             )
         else:
             msg = (
-                f"Timestamp:                {timestamp}\n"
+                f"Timestamp:               {timestamp}\n"
                 f"File name:                {filename}\n"
-                f"Error line:               {lineno}\n"
-                f"Error:                    {textwrap.fill(error_msg, subsequent_indent=' '*27)}\n"
+                f"Error line:                {lineno}\n"
+                f"Error:                    {error_msg}\n"
             )
             self.error = True
         
@@ -1610,7 +1609,7 @@ class Crawler:
                                     break
                                 except Exception as e:
                                     self.error_exception(e)  
-                                    if "operationNotSupported" in str(e) or "commentDisabled" in str(e) or "forbidden" in str(e) or "channelNotFound" in str(e) or "commentThreadNotFound" in str(e) or "VideoNotFound" in str(e) or "processingFailure" in str(e):
+                                    if "operationNotSupported" in str(e) or "commentsDisabled" in str(e) or "forbidden" in str(e) or "channelNotFound" in str(e) or "commentThreadNotFound" in str(e) or "videoNotFound" in str(e) or "processingFailure" in str(e):
                                         return
                                     elif "quotaExceeded" in str(e):
                                         if len(self.api_list) <= 1:
