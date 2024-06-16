@@ -607,7 +607,7 @@ class Crawler:
                 f"File name:                {filename}\n"
                 f"Error line:                {lineno}\n"
                 f"Error:                    {error_msg}\n"
-                f"---------------------------------------------->> ip 교체됨\n"
+                f"---------------------------------------------->> IP Changed\n"
             )
         else:
             msg = (
@@ -1571,7 +1571,7 @@ class Crawler:
                         break
                     except Exception as e:
                         self.error_exception(e)  
-                        if "operationNotSupported" in str(e) or "commentDisabled" in str(e) or "forbidden" in str(e) or "channelNotFound" in str(e) or "commentThreadNotFound" in str(e) or "VideoNotFound" in str(e) or "processingFailure" in str(e):
+                        if any(error in str(e) for error in ["operationNotSupported", "commentsDisabled", "forbidden", "channelNotFound", "commentThreadNotFound", "videoNotFound", "processingFailure"]):
                             return
                         elif "quotaExceeded" in str(e):
                             if len(self.api_list) <= 1:
@@ -1609,7 +1609,7 @@ class Crawler:
                                     break
                                 except Exception as e:
                                     self.error_exception(e)  
-                                    if "operationNotSupported" in str(e) or "commentsDisabled" in str(e) or "forbidden" in str(e) or "channelNotFound" in str(e) or "commentThreadNotFound" in str(e) or "videoNotFound" in str(e) or "processingFailure" in str(e):
+                                    if any(error in str(e) for error in ["operationNotSupported", "commentsDisabled", "forbidden", "channelNotFound", "commentThreadNotFound", "videoNotFound", "processingFailure"]):
                                         return
                                     elif "quotaExceeded" in str(e):
                                         if len(self.api_list) <= 1:
@@ -1618,10 +1618,12 @@ class Crawler:
                                         self.api_list.pop(0)
                                         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
                         else:
+                            self.print_status(2, "youtube")
                             return
                     else:
+                        self.print_status(2, "youtube")
                         return
-                self.print_status(2, "youtube")
+
             except Exception as e:
                 self.error_exception(e)    
                     
