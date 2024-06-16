@@ -31,6 +31,7 @@ import pickle
 import io
 import shutil
 import warnings
+import traceback
 
 
 # pip install lxml
@@ -593,34 +594,39 @@ class Crawler:
                 
     def error_exception(self, e, ipchange = False):
         _, _, tb = sys.exc_info()  # tb -> traceback object
-        
-        if ipchange == True:     
+        tb_info = traceback.extract_tb(tb)
+        filename, lineno, func, text = tb_info[-1]  # 가장 최근의 호출 스택 정보
+
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        error_type = sys.exc_info()[0]
+
+        if ipchange:
             msg = (
-            "File name: "
-            + __file__
-            + "\n"
-            + "Error line= {}".format(tb.tb_lineno)
-            + "\n"
-            + "Error: {}".format(sys.exc_info()[0])
-            + " "
-            + str(e)
-            + "\n\nip 교체됨"
-            + "\n" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        )
-        else: 
+                "{:<25} {}\n"
+                "{:<25} {}\n"
+                "{:<25} {}\n"
+                "{:<25} {}\n"
+                "--->> ip 교체됨\n\n"
+            ).format(
+                "Timestamp:", timestamp,
+                "File name:", filename,
+                "Error line:", lineno,
+                "Error:", f"{error_type} {str(e)}"
+            )
+        else:
             msg = (
-            "File name: "
-            + __file__
-            + "\n"
-            + "Error line= {}".format(tb.tb_lineno)
-            + "\n"
-            + "Error: {}".format(sys.exc_info()[0])
-            + " "
-            + str(e)
-            + "\n" + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        )
+                "{:<25} {}\n"
+                "{:<25} {}\n"
+                "{:<25} {}\n"
+                "{:<25} {}\n\n"
+            ).format(
+                "Timestamp:", timestamp,
+                "File name:", filename,
+                "Error line:", lineno,
+                "Error:", f"{error_type} {str(e)}"
+            )
             self.error = True
-            
+        
         self.writeLog(msg)
     
     def send_email(self, loadingtime):
@@ -1574,7 +1580,7 @@ class Crawler:
                         response = request.execute()
                         break
                     except Exception as e:
-                        self.error_exception(e, True)  
+                        self.error_exception(e)  
                         if "operationNotSupported" in str(e) or "commentDisabled" in str(e) or "forbidden" in str(e) or "channelNotFound" in str(e) or "commentThreadNotFound" in str(e) or "VideoNotFound" in str(e) or "processingFailure" in str(e):
                             return
                         elif "quotaExceeded" in str(e):
@@ -1600,6 +1606,7 @@ class Crawler:
                                     pass
                             """
                         except:
+                            self.error_exception(e)  
                             pass 
                     # 100개 이상
                     self.print_status(2, "youtube")
@@ -1611,7 +1618,7 @@ class Crawler:
                                     response = request.execute()
                                     break
                                 except Exception as e:
-                                    self.error_exception(e, True)  
+                                    self.error_exception(e)  
                                     if "operationNotSupported" in str(e) or "commentDisabled" in str(e) or "forbidden" in str(e) or "channelNotFound" in str(e) or "commentThreadNotFound" in str(e) or "VideoNotFound" in str(e) or "processingFailure" in str(e):
                                         return
                                     elif "quotaExceeded" in str(e):
