@@ -32,6 +32,7 @@ import io
 import shutil
 import warnings
 import traceback
+import textwrap
 
 
 # pip install lxml
@@ -599,31 +600,22 @@ class Crawler:
 
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         error_type = sys.exc_info()[0]
+        error_msg = f"{error_type} {str(e)}"
 
         if ipchange:
             msg = (
-                "{:<25} {}\n"
-                "{:<25} {}\n"
-                "{:<25} {}\n"
-                "{:<25} {}\n"
-                "--->> ip 교체됨\n\n"
-            ).format(
-                "Timestamp:", timestamp,
-                "File name:", filename,
-                "Error line:", lineno,
-                "Error:", f"{error_type} {str(e)}"
+                f"Timestamp:                {timestamp}\n"
+                f"File name:                {filename}\n"
+                f"Error line:               {lineno}\n"
+                f"Error:                    {textwrap.fill(error_msg, subsequent_indent=' '*27)}\n"
+                f"--->> ip 교체됨\n"
             )
         else:
             msg = (
-                "{:<25} {}\n"
-                "{:<25} {}\n"
-                "{:<25} {}\n"
-                "{:<25} {}\n\n"
-            ).format(
-                "Timestamp:", timestamp,
-                "File name:", filename,
-                "Error line:", lineno,
-                "Error:", f"{error_type} {str(e)}"
+                f"Timestamp:                {timestamp}\n"
+                f"File name:                {filename}\n"
+                f"Error line:               {lineno}\n"
+                f"Error:                    {textwrap.fill(error_msg, subsequent_indent=' '*27)}\n"
             )
             self.error = True
         
@@ -1536,7 +1528,6 @@ class Crawler:
                 return
             
             self.info_list.append([channel, video_url, video_title, video_description, video_date, view_count, like_count, comment_count])
-            self.print_status(1, "youtube")
             
             if comment_count == None or int(comment_count) == 0:
                 return
@@ -1609,7 +1600,7 @@ class Crawler:
                             self.error_exception(e)  
                             pass 
                     # 100개 이상
-                    self.print_status(2, "youtube")
+                    
                     if self.option == 2:
                         if 'nextPageToken' in response:
                             while True:
@@ -1631,7 +1622,7 @@ class Crawler:
                             return
                     else:
                         return
-            
+                self.print_status(2, "youtube")
             except Exception as e:
                 self.error_exception(e)    
                     
