@@ -1584,7 +1584,11 @@ class Crawler:
                     for item in response['items']:
                         try:
                             comment = item['snippet']['topLevelComment']['snippet']
-                            self.reply_list.append([comment['authorDisplayName'], comment['publishedAt'], comment['textDisplay'], comment['likeCount'], video_url, video_title])
+                            textdisplay = comment['publishedAt'].replace('<br>', ' ')
+                            if '</a>' in textdisplay:
+                                textdisplay = re.sub(r'<a[^>]*>(.*?)<\/a>', '', textdisplay)
+                                textdisplay = textdisplay[1:]
+                            self.reply_list.append([comment['authorDisplayName'], comment['publishedAt'], textdisplay, comment['likeCount'], video_url, video_title])
                             """
                             if self.option == 2:
                                 try:
