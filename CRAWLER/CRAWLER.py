@@ -904,7 +904,7 @@ class Crawler:
                             break
                         else:
                             page += 1
-                            if page == 301:
+                            if page == 101:
                                 break
                     except:
                         break
