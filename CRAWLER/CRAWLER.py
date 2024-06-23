@@ -1584,7 +1584,7 @@ class Crawler:
                     for item in response['items']:
                         try:
                             comment = item['snippet']['topLevelComment']['snippet']
-                            textdisplay = comment['publishedAt'].replace('<br>', ' ')
+                            textdisplay = comment['textDisplay'].replace('<br>', ' ')
                             if '</a>' in textdisplay:
                                 textdisplay = re.sub(r'<a[^>]*>(.*?)<\/a>', '', textdisplay)
                                 textdisplay = textdisplay[1:]
