@@ -486,7 +486,6 @@ class Crawler:
                 server.login(self.sender, self.MailPassword)
                 server.sendmail(self.sender, self.receiver, msg.as_string())
             
-            
     def print_status(self, signal, print_type):
         
         self.progress_time = time.time()
@@ -676,6 +675,21 @@ class Crawler:
         else:
             os.system("clear")
 
+    def requester(self, url, headers = {}, params = {}):
+        if headers == {}:
+            headers = self.random_heador()
+            
+        while True:
+            proxies = self.random_proxy()
+            try:
+                main_page = requests.get(url, proxies = proxies, headers = headers, params = params, verify = False, timeout = 3)
+                break
+            except requests.exceptions.Timeout as e:
+                self.error_exception(e, True)
+            except Exception as e:
+                self.error_exception(e, True)
+        return main_page  
+
 ##########################################################################################################
 
 
@@ -791,27 +805,9 @@ class Crawler:
             
     def parseNews(self, url):
         
-        base_url = "".join(
-                [
-                    "https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json?ticket=news",
-                    "&pool=cbox5&lang=ko&country=KR",
-                    "&objectId=news{}%2C{}&categoryId=&pageSize={}&indexSize=10&groupId=&listType=OBJECT&pageType=more",
-                    "&page={}&initialize=true&followSize=5&userType=&useAltSort=true&replyPageSize=20&sort={}&includeAllStatus=true&_=1696730082374",
-                ]
-            )
         try:
-            headers = self.random_heador()
-                      
-            while True:
-                proxies = self.random_proxy()
-                try:
-                    res = requests.get(url, proxies = proxies, headers = headers, timeout = 3)
-                    bs = BeautifulSoup(res.text, "lxml")
-                    break
-                except requests.exceptions.Timeout as e:
-                    self.error_exception(e, True)
-                except Exception as e:
-                    self.error_exception(e, True)
+            res = self.requester(url)        
+            bs = BeautifulSoup(res.text, 'lxml')    
                 
             try:
                 news          = ''.join((i.text.replace("\n", "") for i in bs.find_all("div", {"class": "newsct_article"})))
@@ -832,7 +828,6 @@ class Crawler:
                     
                 self.article_list.append([article_press, article_type, url, article_title, news, article_date, reply_cnt, statistics, male, female, Y_10, Y_20, Y_30, Y_40, Y_50, Y_60])
                 self.print_status(1, "news")
-                
             except:
                 return
         
@@ -848,10 +843,7 @@ class Crawler:
             
             while True:
                 try:
-                    navigator = generate_navigator()
-                    navigator = navigator['user_agent']
-                    headers   = {"User-agent":navigator, "referer":url}  
-                    
+                    headers   = {"User-agent":generate_navigator()['user_agent'], "referer":url}  
                     params = {
                         'ticket'             : 'news',
                         'templateId'         : 'default_society',
@@ -871,19 +863,12 @@ class Crawler:
                         'sort'               : 'reply',
                         'initialize'         : 'true'
                     }
+                
                     try:
-                        while True:
-                            proxies = self.random_proxy()
-                            try:
-                                response          = requests.get('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', proxies = proxies, params=params, headers=headers, timeout = 3)
-                                response.encoding = "UTF-8-sig"
-                                res               = response.text.replace("_callback(","")[:-2]
-                                temp              = json.loads(res)
-                                break
-                            except requests.exceptions.Timeout as e:
-                                self.error_exception(e, True)
-                            except Exception as e:
-                                self.error_exception(e, True)                        
+                        response = self.requester('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers, params)
+                        response.encoding = "UTF-8-sig"
+                        res               = response.text.replace("_callback(","")[:-2]
+                        temp              = json.loads(res)         
                                             
                         for comment_json in temp.get("result", {}).get("commentList", []):
                             parentCommentNo = comment_json["parentCommentNo"]
@@ -975,18 +960,9 @@ class Crawler:
                         if rere_count_list[i] != 0:
                             base_url_tmp_re = (base_url.format(oid, aid, 100, 1, "reply") + "&parentCommentNo=" + parentCommentNo_list[i])
                             
-                            while True:
-                                proxies = self.random_proxy()
-                                try:
-                                    re_r = requests.get(base_url_tmp_re, headers = headers, proxies = proxies, timeout = 3)
-                                    re_html = re_r.text.encode("cp949", "ignore").decode("cp949", "ignore")
-                                    re_html = re_html[10:-2]
-                                    re_response = json.loads(re_html)
-                                    break
-                                except requests.exceptions.Timeout as e:
-                                    self.error_exception(e, True)
-                                except Exception as e:
-                                    self.error_exception(e, True)
+                            re_r = self.requester(base_url_tmp_re)
+                            re_html = re_r.text.encode("cp949", "ignore").decode("cp949", "ignore")[10:-2]
+                            re_response = json.loads(re_html)
                             
                             rereply_idx = 0
                             for rereply_json in re_response.get("result", {}).get("commentList", []):
@@ -1059,20 +1035,10 @@ class Crawler:
         try:
             while True:
                 search_page_url_tmp = search_page_url.format(self.keyword, currentDate, currentDate, currentPage)
+                main_page = self.requester(search_page_url_tmp)
+                main_page = BeautifulSoup(main_page.text, "lxml") #스크랩 모듈에 url 넘김
+                site_result = main_page.select('a[class = "info"]')
                 
-                while True:
-                    proxies = self.random_proxy()
-                    try:
-                        main_page = requests.get(search_page_url_tmp, proxies = proxies, verify = False, timeout = 3)
-                        main_page = BeautifulSoup(main_page.text, "lxml") #스크랩 모듈에 url 넘김
-                        site_result = main_page.select('a[class = "info"]')
-                        break
-                    except requests.exceptions.Timeout as e:
-                        self.error_exception(e, True)
-                    except Exception as e:
-                        self.error_exception(e, True)
-                        
-
                 if site_result == []:
                     break
 
@@ -1091,7 +1057,7 @@ class Crawler:
             for url in self.urlList:
                 self.parseNews(url)
         except:
-            self.error_exception(e)
+            pass
 
 ##########################################################################################################
 
@@ -1214,7 +1180,6 @@ class Crawler:
                 "referer" : "https://blog.naver.com/SympathyHistoryList.naver?blogId={}&logNo={}".format(blogID, logNo)
             }
             
-        
             while True:
                 proxies = self.random_proxy()
                 try:
@@ -1277,30 +1242,22 @@ class Crawler:
                         'user-agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                         'referer': url}
                     try:
-                        while True:
-                            proxies = self.random_proxy()
-                            try: 
-                                params = {
-                                        'ticket': "blog",
-                                        'templateId': 'default',
-                                        'pool': 'blogid',
-                                        'lang': 'ko',
-                                        'country': 'KR',
-                                        'objectId': objectID,
-                                        'groupId': blogNo,
-                                        'pageSize': '50',
-                                        'indexSize': '10',
-                                        'page': str(page),
-                                        'morePage.prev': '051v2o4l34sgr1t0txuehz9fxg',
-                                        'morePage.next': '051sz9hwab3fe1t0w1916s34yt',
+                        params = {
+                                    'ticket': "blog",
+                                    'templateId': 'default',
+                                    'pool': 'blogid',
+                                    'lang': 'ko',
+                                    'country': 'KR',
+                                    'objectId': objectID,
+                                    'groupId': blogNo,
+                                    'pageSize': '50',
+                                    'indexSize': '10',
+                                    'page': str(page),
+                                    'morePage.prev': '051v2o4l34sgr1t0txuehz9fxg',
+                                    'morePage.next': '051sz9hwab3fe1t0w1916s34yt',
                                 }
-                                response = requests.get('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', params=params, headers=headers, proxies = proxies, timeout = 3)
-                                response.encoding = "UTF-8-sig"
-                                break
-                            except requests.exceptions.Timeout as e:
-                                self.error_exception(e, True)
-                            except Exception as e:
-                                self.error_exception(e, True)
+                        response = self.requester('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers, params)
+                        response.encoding = "UTF-8-sig"
                                 
                         try:
                             temp=json.loads(response.text)
@@ -1354,16 +1311,7 @@ class Crawler:
                 'referer': referer}
                 
                 tempList = []
-                
-                while True:
-                    proxies = self.random_proxy()
-                    try:
-                        main_page = requests.get(search_page_url, headers = header, proxies = proxies, timeout = 3).text[6:]
-                        break
-                    except requests.exceptions.Timeout as e:
-                        self.error_exception(e, True)
-                    except Exception as e:
-                        self.error_exception(e, True)
+                main_page = self.requester(search_page_url, header).text[6:]
                 
                 try:
                     temp = json.loads(main_page)
