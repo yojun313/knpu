@@ -1402,7 +1402,7 @@ class Crawler:
                     self.error_exception(e)
             
             self.endtime = time.time()
-            loadingsecond = self.endtime - self.starttime1
+            loadingsecond = self.endtime - self.starttime
             loadingtime = str(int(loadingsecond//3600))+"시간 "+str(int(loadingsecond%3600//60))+"분 "+str(int(loadingsecond%3600%60))+"초"
             
             out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+"영상"+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
