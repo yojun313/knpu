@@ -2,3 +2,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# macOS에서 생성되는 파일
+.DS_Store
