@@ -133,6 +133,9 @@ class Crawler:
             
         elif self.user_name == "한승혁":
             self.receiver = "hankyeul80@naver.com"     
+            
+        elif self.user_name == "이진원":
+            self.receiver = "nevermean@empas.com"
         
         else:
             self.receiver = "moonyojun@naver.com"
@@ -960,8 +963,9 @@ class Crawler:
                         if rere_count_list[i] != 0:
                             base_url_tmp_re = (base_url.format(oid, aid, 100, 1, "reply") + "&parentCommentNo=" + parentCommentNo_list[i])
                             
-                            re_r = self.requester(base_url_tmp_re)
-                            re_html = re_r.text.encode("cp949", "ignore").decode("cp949", "ignore")[10:-2]
+                            re_r = self.requester(base_url_tmp_re, headers)
+                            re_html = re_r.text.encode("cp949", "ignore").decode("cp949", "ignore")
+                            re_html = re_html[10:-2]
                             re_response = json.loads(re_html)
                             
                             rereply_idx = 0
@@ -1398,7 +1402,7 @@ class Crawler:
                     self.error_exception(e)
             
             self.endtime = time.time()
-            loadingsecond = self.endtime - self.starttime
+            loadingsecond = self.endtime - self.starttime1
             loadingtime = str(int(loadingsecond//3600))+"시간 "+str(int(loadingsecond%3600//60))+"분 "+str(int(loadingsecond%3600%60))+"초"
             
             out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+"영상"+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
