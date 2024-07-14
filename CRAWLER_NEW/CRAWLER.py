@@ -4,10 +4,11 @@ from Package.NaverCrawlerPackage.NaverCafeCrawler_Package  import NaverCafeCrawl
 from Package.OtherCrawlerPackage.YouTubeCrawler_Package    import YouTubeCrawler
 from Package.ChinaCrawlerPackage.ChinaDailyCrawler_Package import ChinaDailyCrawler
 
-from Package.GooglePackage import GooglePackage
-from Package.ToolPackage   import ToolPackage
+from Package.GooglePackage  import GooglePackage
+from Package.ToolPackage    import ToolPackage
+from Package.CrawlerPackage import CrawlerPackage
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import urllib3
 import warnings
 import socket
@@ -18,9 +19,10 @@ import time
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-class Crawler:
+class Crawler(CrawlerPackage):
     
     def __init__(self, user, startDate, endDate, keyword, upload, weboption):
+        super().__init__(proxy_option=True)
         
         self.ToolPackage_obj   = ToolPackage()
         self.GooglePackage_obj = GooglePackage(self.ToolPackage_obj.pathFinder()['token_path'])
@@ -50,6 +52,7 @@ class Crawler:
         
         self.currentDate = self.startDate_form
         self.date_range  = (self.endDate_form - self.startDate_form).days + 1
+        self.deltaD      = timedelta(days=1)
 
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
@@ -92,12 +95,8 @@ class Crawler:
       
     def ReturnChecker(self, value):
         error = False
-        if isinstance(value, int) == True:
-            err_msg_title = self.ToolPackage_obj.error_extractor(value)
-            err_msg_content = ""
-            error = True
             
-        elif isinstance(value, dict) == True:
+        if isinstance(value, dict) == True:
             first_key = list(value.keys())[0]
             if first_key == 'Error Code':
                 err_msg_title = self.ToolPackage_obj.error_extractor(value['Error Code'])
@@ -107,9 +106,6 @@ class Crawler:
         
         if error == True:
             log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'),'a')
-            
-            
-            
             msg = (
                 f"Error Time: {self.now}\n"
                 f"Error Type: {err_msg_title}\n"
@@ -121,15 +117,18 @@ class Crawler:
             return True
         else:
             return False
-            
-    def NaverNewsCrawler(self, option):
+    
+    def Naver_News_Crawler(self, option):
         
-        NaverNewsCrawler_obj = NaverNewsCrawler(True)
+        NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=True, print_status_option=True)
         
         self.option = option
         self.DBtype = "Naver_News"
         self.DBMaker(self.DBtype)
         
+        self.infoPrinter()
+    
+        self.urlList         = []
         self.article_list    = [["NaverNews Press", "NaverNews Type", "NaverNews URL", "NaverNews Title", "NaverNews Text", "NaverNews Date", "NaverNews ReplyCnt"]]
         self.statistics_list = [["NaverNews Press", "NaverNews Type", "NaverNews URL", "NaverNews Title", "NaverNews Text", "NaverNews Date", "NaverNews ReplyCnt", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
         self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'NaverNews URL', 'Reply ID']]
@@ -139,19 +138,61 @@ class Crawler:
             self.infoPrinter()
         
         for i in range(self.date_range):
-            self.progress = i
-            currentDate_str = self.currentDate.strptime('%Y%m%d')
-            returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=currentDate_str, endDate=currentDate_str)
             
-            if self.ReturnChecker(returnData) == True:
+            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+            percent = str(round((i/(self.date_range+1))*100, 1))
+            NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent)
+            
+            urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+            if self.ReturnChecker(urlList_returnData) == True:
                 continue
+            self.urlList = urlList_returnData['urlList']
             
-            self
+            for url in self.urlList:
+                # News article Part
+                article_returnData = NaverNewsCrawler_obj.articleCollector(newsURL=url)
+                if self.ReturnChecker(article_returnData) == True:
+                    continue
+                articleData = article_returnData['articleData']
+                
+                # News Reply Part
+                reply_returnData = NaverNewsCrawler_obj.replyCollector(newsURL=url)
+                if self.ReturnChecker(reply_returnData) == True:
+                    continue
+                replyCnt            = reply_returnData['replyCnt']
+                replyList           = reply_returnData['replyList']
+                parentCommentNoList = reply_returnData['parentCommentNo_list']
+                statistics_data     = reply_returnData['statistics_data']
+                
+                # append reply count into news article data
+                articleData.append(replyCnt)
+                
+                self.article_list.append(articleData)
+                self.reply_list.extend(replyList)
+                if statistics_data != []:
+                    self.article_list.extend(statistics_data)
+                    self.statistics_list.append(self.article_list)
+                
+                if self.option == 1 or replyCnt == 0:
+                    continue
+                
+                # News ReReply Part
+                rereply_returnData = NaverNewsCrawler_obj.rereplyCollector(newsURL=url, parentCommentNum_list=parentCommentNoList)
+                if self.ReturnChecker(reply_returnData) == True:
+                    continue
+                rereplyList = rereply_returnData['rereplyList']
+                
+                if rereplyList != []:
+                    self.rereply_list.append(rereplyList)
             
+            self.currentDate += self.deltaD
+            
+                
         
         
     
     
 if __name__ == '__main__':
-    object = Crawler('문요준', '20230101', '20231231', '아이패드', upload=False, weboption=True)
-    object.NaverNewsCrawler(1)
+    object = Crawler('문요준', '20230101', '20231231', '무고죄', upload=False, weboption=True)
+    object.Naver_News_Crawler(2)
+    
