@@ -23,8 +23,9 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 class NaverNewsCrawler(CrawlerPackage):
     
-    def __init__(self, proxy_option = False):
+    def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
+        self.print_status_option = print_status_option
     
     def newsURLChecker(self, url):
         parts = [
@@ -46,14 +47,18 @@ class NaverNewsCrawler(CrawlerPackage):
                 self.error_dump(2000, 'Check Keyword', keyword)
                 return self.error_data
             
-            datetime.strptime(str(startDate), '%Y%m%d')
-            datetime.strptime(str(endDate), '%Y%m%d')
+            startDate = datetime.strptime(str(startDate), '%Y%m%d').date()
+            endDate = datetime.strptime(str(endDate), '%Y%m%d').date()
             
         except:
             self.error_dump(2001, 'Check DateForm', startDate)
             return self.error_data
         
         try:
+            self.IntegratedDB['UrlCnt'] = 0
+            startDate = startDate.strftime('%Y.%m.%d')
+            endDate = endDate.strftime('%Y.%m.%d')
+            
             urlList = []
             keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
             search_page_url = "https://search.naver.com/search.naver?where=news&query={}&sm=tab_srt&sort=2&photo=0&reporter_article=&pd=3&ds={}&de={}&&start={}&related=0"
@@ -72,10 +77,12 @@ class NaverNewsCrawler(CrawlerPackage):
                     add_link = a['href']
                     if 'sports' not in add_link and 'sid=106' not in add_link and add_link not in urlList and 'entertain' not in add_link:
                         urlList.append(add_link)
-                        
+                        self.IntegratedDB['UrlCnt'] += 1
                     if add_link == None:
                         break
-                
+                    
+                if self.print_status_option == True:
+                    self.printStatus('NaverNews', 2, self.PrintData)
                 currentPage += 10 # 다음페이지 이동
             
             urlList = list(set(urlList))
@@ -105,12 +112,16 @@ class NaverNewsCrawler(CrawlerPackage):
             article_type  = bs.find("em", class_="media_end_categorize_item").text # article_type
             article_title = bs.find("div", class_="media_end_head_title").text.replace("\n", " ") # article_title
             article_date  = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
-            reply_cnt     = 0
 
-            articleData = [article_press, article_type, newsURL, article_title, news, article_date, reply_cnt]
+            articleData = [article_press, article_type, newsURL, article_title, news, article_date]
             returnData = {
                 'articleData' : articleData
             }
+            
+            self.IntegratedDB['TotalArticleCnt'] += 1
+            if self.print_status_option == True:
+                self.printStatus('NaverNews', 3, self.PrintData)
+                
             return returnData
                
         except Exception:
@@ -183,6 +194,7 @@ class NaverNewsCrawler(CrawlerPackage):
                     reply_counts     = list(df['replyCount'])
                     sympathy_counts  = list(df['sympathyCount'])
                     antipathy_counts = list(df['antipathyCount'])
+                    
                 except:
                     returnData = {
                         'replyList' : replyList,
@@ -199,10 +211,15 @@ class NaverNewsCrawler(CrawlerPackage):
                 rere_count_list.extend(reply_counts)
                 r_like_list.extend(sympathy_counts)
                 r_bad_list.extend(antipathy_counts)
-        
+
+                self.IntegratedDB['TotalReplyCnt'] += len(masked_user_ids)
+                
+                if self.print_status_option:
+                    self.printStatus('NaverNews', 4, self.PrintData)
+                    
                 if len(masked_user_ids) < 97:
                     break
-                
+        
                 page += 1
 
             # statistics_data PART
@@ -308,12 +325,18 @@ class NaverNewsCrawler(CrawlerPackage):
                     temp              = json.loads(res)    
                     
                     df = pd.DataFrame(temp['result']['commentList'])
-
-                    masked_user_ids  = list(df['maskedUserId'])
-                    mod_times        = list(df['modTime'])
-                    contents         = list(df['contents'])
-                    sympathy_counts  = list(df['sympathyCount'])
-                    antipathy_counts = list(df['antipathyCount'])
+                    try:
+                        masked_user_ids  = list(df['maskedUserId'])
+                        mod_times        = list(df['modTime'])
+                        contents         = list(df['contents'])
+                        sympathy_counts  = list(df['sympathyCount'])
+                        antipathy_counts = list(df['antipathyCount'])
+                    except:
+                        returnData = {
+                            'rereplyList' : rereplyList,
+                            'rereplyCnt': len(rereplyList)
+                        }
+                        return returnData
 
                     nickname_list.extend(masked_user_ids)
                     rereplyDate_list.extend(mod_times)
@@ -321,6 +344,10 @@ class NaverNewsCrawler(CrawlerPackage):
                     r_like_list.extend(sympathy_counts)
                     r_bad_list.extend(antipathy_counts)
                     parentReplynum_list.extend([parentCommentNum_list[i]] * len(masked_user_ids))     
+                    
+                    self.IntegratedDB['TotalRereplyCnt'] += len(masked_user_ids)
+                    if self.print_status_option == True:
+                        self.printStatus('NaverNews', 5, self.PrintData)
                 except:
                     pass      
             
@@ -367,6 +394,7 @@ class NaverNewsCrawler(CrawlerPackage):
             self.error_dump(2010, error_msg, newsURL)
             return self.error_data
 
+
 def CrawlerTester(url):
     print("\nNaverNewsCrawler_articleCollector: ", end = '')
     target = CrawlerPackage_obj.articleCollector(newsURL=url, error_detector_option=True)
@@ -376,7 +404,10 @@ def CrawlerTester(url):
     target = CrawlerPackage_obj.replyCollector(newsURL=url, error_detector_option=True)
     ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
     
-    parentCommentNum_list = target[1]['parentCommentNo_list']
+    if target['replyList'] == []:
+        return
+    
+    parentCommentNum_list = target['parentCommentNo_list']
     
     print("\nNaverNewsCrawler_rereplyCollector: ", end = '')
     target = CrawlerPackage_obj.rereplyCollector(newsURL=url, parentCommentNum_list=parentCommentNum_list, error_detector_option=True)
@@ -400,7 +431,7 @@ if __name__ == "__main__":
     
     if option == 1:
         print("\nNaverNewsCrawler_urlCollector: ", end = '')
-        returnData = CrawlerPackage_obj.urlCollector("급발진", 20240601, 20240601, error_detector_option=True)
+        returnData = CrawlerPackage_obj.urlCollector("아이패드", 20240601, 20240630, error_detector_option=True)
         ToolPackage_obj.CrawlerChecker(returnData, result_option=result_option)
         
         urlList = returnData['urlList']

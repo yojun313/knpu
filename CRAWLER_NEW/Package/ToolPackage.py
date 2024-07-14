@@ -40,12 +40,13 @@ class ToolPackage:
     # For testing Crawler_Package
     def CrawlerChecker(self, target, result_option = False):
             
-        if isinstance(target, int) == True:
-            print("Error Code:", target)
-
-        elif isinstance(target, dict):
-            print("GOOD")
-            
+        if isinstance(target, dict):
+            first_key = list(target.keys())[0]
+            if first_key == 'Error Code':
+                print(target['Error Code'])
+                return
+            else:
+                print("GOOD\n")
         if result_option == True:
             print(target)
     
