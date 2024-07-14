@@ -1,0 +1,91 @@
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+import smtplib
+import os
+import pickle
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
+
+class GooglePackage:
+    
+    def __init__(self, collection_path, token_path):
+        
+        # Gmail
+        self.sender = "knpubigmac2024@gmail.com"
+        self.MailPassword = 'vygn nrmh erpf trji'
+        
+        # Google Drive
+        self.parent_folder_id = "1K3YTj9h_BMjpGyoDQYkWycqmnJLCxPCA"
+        self.storage_json_path = collection_path + '/storage.json'
+        
+        SCOPES = ['https://www.googleapis.com/auth/drive']
+
+        creds = None
+        if os.path.exists(token_path + '/' + 'token.pickle'):
+            with open(token_path + '/' + 'token.pickle', 'rb') as token:
+                creds = pickle.load(token)
+
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request()) # 유효기간이 만료된 토큰 새로고침
+            else:
+                # 인증 정보 파일 public/storage.json에서 인증을 진행
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    self.storage_json_path, SCOPES)
+                # access_type='offline' 추가
+                creds = flow.run_local_server(port=0, access_type='offline')
+            # 새롭게 받은 인증 정보를 'token.pickle'에 저장
+            with open(token_path + '/' + 'token.pickle', 'wb') as token:
+                pickle.dump(creds, token)
+        
+        self.drive_service = build('drive', 'v3', credentials=creds)
+        
+    
+    
+    def SendMail(self, receiver, title, text):
+        
+        msg = MIMEMultipart()
+        msg['Subject'] = title
+        msg['From'] = self.sender
+        msg['To'] = receiver
+
+        msg.attach(MIMEText(text, 'plain'))
+        
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+
+        # SMTP 연결 및 메일 보내기
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(self.sender, self.MailPassword)
+            server.sendmail(self.sender, receiver, msg.as_string())
+    
+    def UploadFolder(self, folder_path):
+        
+        folder_name = os.path.basename(folder_path)
+            
+        file_metadata = {
+        'name': folder_name,
+        'mimeType': 'application/vnd.google-apps.folder'
+        }
+        
+        if self.parent_folder_id:
+            file_metadata['parents'] = [self.parent_folder_id]
+        
+        folder = self.drive_service.files().create(body=file_metadata, fields='id').execute()
+        folder_id = folder.get('id')
+        
+        for file_name in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, file_name)
+            if os.path.isfile(file_path):
+                file_metadata = {'name': file_name, 'parents': [folder_id]}
+                media = MediaFileUpload(file_path, resumable=True)
+                file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        
+        self.drive_folder_link = f"https://drive.google.com/drive/folders/{folder_id}"
