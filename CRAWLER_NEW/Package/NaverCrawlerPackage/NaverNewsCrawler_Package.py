@@ -43,11 +43,16 @@ class NaverNewsCrawler(CrawlerPackage):
     def urlCollector(self, keyword, startDate, endDate, error_detector_option = False): # DateForm: ex)20231231
         try:
             if isinstance(keyword, str) == False:
-                return 2001
+                self.error_dump(2000, 'Check Keyword', keyword)
+                return self.error_data
+            
             datetime.strptime(str(startDate), '%Y%m%d')
             datetime.strptime(str(endDate), '%Y%m%d')
+            
         except:
-            return 2002
+            self.error_dump(2001, 'Check DateForm', startDate)
+            return self.error_data
+        
         try:
             urlList = []
             keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
@@ -83,16 +88,15 @@ class NaverNewsCrawler(CrawlerPackage):
             
         except Exception:
             error_msg  = self.error_detector(error_detector_option)
-            error_data = {
-                'Error Code' : 2003,
-                'Error Msg' : error_msg
-            }
-            return error_data
+            self.error_dump(2003, error_msg, search_page_url_tmp)
+            return self.error_data
             
     # 파라미터로 (url) 전달
     def articleCollector(self, newsURL, error_detector_option = False):
         if isinstance(newsURL, str) == False or self.newsURLChecker(newsURL) == False:
-            return 2004
+            self.error_dump(2004, "Check newsURL", newsURL)
+            return self.error_data
+        
         try:
             res           = self.Requester(newsURL)
             bs            = BeautifulSoup(res.text, 'lxml')    
@@ -102,17 +106,8 @@ class NaverNewsCrawler(CrawlerPackage):
             article_title = bs.find("div", class_="media_end_head_title").text.replace("\n", " ") # article_title
             article_date  = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
             reply_cnt     = 0
-            statistics    = 'N'
-            male          = 999
-            female        = 999
-            Y_10          = 999
-            Y_20          = 999
-            Y_30          = 999
-            Y_40          = 999
-            Y_50          = 999
-            Y_60          = 999
 
-            articleData = [article_press, article_type, newsURL, article_title, news, article_date, reply_cnt, statistics, male, female, Y_10, Y_20, Y_30, Y_40, Y_50, Y_60]
+            articleData = [article_press, article_type, newsURL, article_title, news, article_date, reply_cnt]
             returnData = {
                 'articleData' : articleData
             }
@@ -120,16 +115,14 @@ class NaverNewsCrawler(CrawlerPackage):
                
         except Exception:
             error_msg  = self.error_detector(error_detector_option)
-            error_data = {
-                'Error Code' : 2005,
-                'Error Msg' : error_msg
-            }
-            return error_data
+            self.error_dump(2005, error_msg, newsURL)
+            return self.error_data
     
     # 파라미터로 (url, 통계데이터 반환 옵션, 댓글 코드 반환 옵션) 전달
     def replyCollector(self, newsURL, error_detector_option = False): 
         if isinstance(newsURL, str) == False or self.newsURLChecker(newsURL) == False:
-            return 2006
+            self.error_dump(2006, "Check newsURL", newsURL)
+            return self.error_data
         try:
             oid  = newsURL[39:42]
             aid  = newsURL[43:53]
@@ -273,18 +266,17 @@ class NaverNewsCrawler(CrawlerPackage):
             
         except Exception:
             error_msg  = self.error_detector(error_detector_option)
-            error_data = {
-                'Error Code' : 2007,
-                'Error Msg' : error_msg
-            }
-            return error_data
+            self.error_dump(2007, error_msg, newsURL)
+            return self.error_data
     
     # 파라미터로 (url, 댓글 코드) 전달
     def rereplyCollector(self, newsURL, parentCommentNum_list, error_detector_option = False):
         if isinstance(newsURL, str) == False or self.newsURLChecker(newsURL) == False:
-            return 2008
+            self.error_dump(2008, 'Check newsURL', newsURL)
+            return self.error_data
         if isinstance(parentCommentNum_list, list) == False:
-            return 2009
+            self.error_dump(2009, 'Check parentCommentNum_list', parentCommentNum_list)
+            return self.error_data
         
         try:
             oid  = newsURL[39:42]
@@ -353,7 +345,7 @@ class NaverNewsCrawler(CrawlerPackage):
                 
                 rereplyList.append(
                     [
-                    str(rereply_idx),
+                    parentReplynum_list[i],
                     str(nickname_list[i]),
                     str(rereplyDate_list[i]),
                     str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
@@ -361,8 +353,7 @@ class NaverNewsCrawler(CrawlerPackage):
                     str(r_bad_list[i]),
                     str(r_per_like),
                     str(r_sentiment),
-                    str(newsURL),
-                    parentReplynum_list[i]
+                    str(newsURL)
                     ]     
                 )
             returnData = {
@@ -373,11 +364,8 @@ class NaverNewsCrawler(CrawlerPackage):
         
         except Exception:
             error_msg  = self.error_detector(error_detector_option)
-            error_data = {
-                'Error Code' : 2010,
-                'Error Msg' : error_msg
-            }
-            return error_data
+            self.error_dump(2010, error_msg, newsURL)
+            return self.error_data
 
 def CrawlerTester(url):
     print("\nNaverNewsCrawler_articleCollector: ", end = '')

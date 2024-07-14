@@ -18,7 +18,7 @@ class ChinaDailyCrawler(CrawlerPackage):
     def __init__(self, proxy_option = False):
         super().__init__(proxy_option)
         self.proxy_option = proxy_option
-        
+    
     def keywordParser(self, keyword):
         # 검색어를 담을 리스트 초기화
         includeList = []
@@ -66,11 +66,13 @@ class ChinaDailyCrawler(CrawlerPackage):
     def articleCollector(self, keyword, startDate, endDate, error_detector_option = False):
         try:
             if isinstance(keyword, str) == False:
-                return 2029
+                self.error_dump(2029, 'Check Keyword', keyword)
+                return self.error_data
             datetime.strptime(str(startDate), '%Y%m%d')
             datetime.strptime(str(endDate), '%Y%m%d')
         except:
-            return 2030
+            self.error_dump(2030, 'Check DateForm', startDate + endDate)
+            return self.error_data
     
         try:
             includeList, excludeList = self.keywordParser(keyword)
@@ -141,11 +143,8 @@ class ChinaDailyCrawler(CrawlerPackage):
         
         except Exception:
             error_msg  = self.error_detector(error_detector_option)
-            error_data = {
-                'Error Code' : 2031,
-                'Error Msg' : error_msg
-            }
-            return error_data
+            self.error_dump(2031, error_msg, referer_url)
+            return self.error_data
 
 if __name__ == "__main__":
     ToolPackage_obj = ToolPackage()
