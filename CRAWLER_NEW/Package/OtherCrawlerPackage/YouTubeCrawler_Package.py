@@ -133,9 +133,9 @@ class YouTubeCrawler(CrawlerPackage):
                                     self.api_num += 1
                                     self.api_obj = build('youtube', 'v3', developerKey=self.api_list(self.api_num - 1))
                     else:
-                        return {'replyList': replyList, 'replyCnt': 0, 'api_num' : self.api_num}
+                        return {'replyList': replyList, 'replyCnt': len(replyList), 'api_num' : self.api_num}
                 else:
-                    return {'replyList': replyList, 'replyCnt': 0, 'api_num' : self.api_num}
+                    return {'replyList': replyList, 'replyCnt': len(replyList), 'api_num' : self.api_num}
         
         except Exception:
             error_msg  = self.error_detector(error_detector_option)
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     
     if option == 1:
         print("\nYouTubeCrawler_urlCollector: ", end = '')
-        returnData = CrawlerPackage_obj.urlCollector("급발진", 20240601, 20240601)
+        returnData = CrawlerPackage_obj.urlCollector("호빵가족", 20240601, 20240714)
         ToolPackage_obj.CrawlerChecker(returnData, result_option=result_option)
         
         urlList = returnData['urlList']

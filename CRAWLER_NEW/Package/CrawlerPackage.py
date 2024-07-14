@@ -39,8 +39,8 @@ class CrawlerPackage(ToolPackage):
             self.proxy_list     = self.read_txt(self.collection_path + '/proxy.txt')       # 로컬 proxy.txt 파일 경로
         
         self.error_data = {
-            'Error Code' : 1,
-            'Error Msg' : "",
+            'Error Code'   : 1,
+            'Error Msg'    : "",
             'Error Target' : ""
         }
         
