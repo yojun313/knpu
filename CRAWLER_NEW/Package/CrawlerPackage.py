@@ -34,7 +34,18 @@ class CrawlerPackage(ToolPackage):
         self.collection_path = COLLECTION_PATH
         if proxy_option == True:
             self.proxy_list     = self.read_txt(self.collection_path + '/proxy.txt')       # 로컬 proxy.txt 파일 경로
-
+        
+        self.error_data = {
+            'Error Code' : 1,
+            'Error Msg' : "",
+            'Error Target' : ""
+        }
+        
+    def error_dump(self, code, msg, target):
+        self.error_data['Error Code']   = code
+        self.error_data['Error Msg']    = msg
+        self.error_data['Error Target'] = target
+        
     def random_heador(self):
         navigator = generate_navigator()
         navigator = navigator['user_agent']

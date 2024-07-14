@@ -19,25 +19,24 @@ class ToolPackage:
         
         if socket.gethostname() == "DESKTOP-502IMU5":
             crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
-            scrapdata_path      = os.path.join(self.crawler_folder_path, 'scrapdata')
+            scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
             token_path          = self.crawler_folder_path
             computer_name       = 'HP OMEN'
             
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
             crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
-            scrapdata_path      = os.path.join(self.crawler_folder_path, 'scrapdata')
+            scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
             token_path          = self.crawler_folder_path
             computer_name       = 'HP Z8'
         
         elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
             crawler_folder_path = '/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER'
-            scrapdata_path      = os.path.join(self.crawler_folder_path, 'scrapdata')
-            token_path          = self.crawler_folder_path
+            scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
+            token_path          = crawler_folder_path
             computer_name       = "Yojun's MacBook Pro"
 
         
         return {'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name}
-    
     # For testing Crawler_Package
     def CrawlerChecker(self, target, result_option = False):
             
@@ -88,6 +87,42 @@ class ToolPackage:
         pretty_json_str = json.dumps(json_data, indent=4, ensure_ascii=False)
         
         print(pretty_json_str)
+
+    def error_extractor(self, errorCode):
+        error_dic = {
+            2001: '[Parameter Error] NaverNewsCrawler -> urlCollector: Keyword type error',
+            2002: '[Parameter Error] NaverNewsCrawler -> urlCollector: DateForm error',
+            2003: '[Internal Error] NaverNewsCrawler -> urlCollector: Internal unexpected error',
+            2004: '[Parameter Error] NaverNewsCrawler -> articleCollector: newsURL type/form error',
+            2005: '[Internal Error] NaverNewsCrawler -> articleCollector: Internal unexpected error',
+            2006: '[Parameter Error] NaverNewsCrawler -> replyCollector: newsURL type/form error',
+            2007: '[Internal Error] NaverNewsCrawler -> replyCollector: Internal unexpected error',
+            2008: '[Parameter Error] NaverNewsCrawler -> rereplyCollector: newsURL type/form error',
+            2009: '[Parameter Error] NaverNewsCrawler -> rereplyCollector: list type error',
+            2010: '[Internal Error] NaverNewsCrawler -> rereplyCollector: Internal unexpected error',
+            2011: '[Parameter Error] NaverBlogCrawler -> urlCollector: Keyword type error',
+            2012: '[Parameter Error] NaverBlogCrawler -> urlCollector: DateForm error',
+            2013: '[Internal Error] NaverBlogCrawler -> urlCollector: Internal unexpected error', 
+            2014: '[Parameter Error] NaverBlogCrawler -> articleCollector: blogURL type/form error',
+            2015: '[Internal Error] NaverBlogCrawler -> articleCollector: Internal unexpected error',
+            2016: '[Parameter Error] NaverBlogCrawler -> replyCollector: blogURL type/form error',
+            2017: '[Internal Error] NaverBlogCrawler -> replyCollector: Internal unexpected error',
+            2018: '[Parameter Error] NaverCafeCrawler -> urlCollector: Keyword type error',
+            2019: '[Parameter Error] NaverCafeCrawler -> urlCollector: DateForm error',
+            2020: '[Internal Error] NaverCafeCrawler -> urlCollector: Internal unexpected error',
+            2021: '[Parameter Error] NaverCafeCrawler -> articleCollector: cafeURL type/form error',
+            2022: '[Internal Error] NaverCafeCrawler -> articleCollector: Internal unexpected error',
+            2023: '[Parameter Error] NaverCafeCrawler -> replyCollector: cafeURL type/form error',
+            2024: '[Internal Error] NaverCafeCrawler -> replyCollector: Internal unexpected error',
+            2025: '[Parameter Error] YouTubeCrawler -> urlCollector: URL type/form error',
+            2026: '[Internal Error] YouTubeCrawler -> urlCollector: Internal unexpected error',
+            2027: '[Parameter Error] YouTubeCrawler -> replyCollector: URL type/form error',
+            2028: '[Internal Error] YouTubeCrawler -> replyCollector: Internal unexpected error',
+            2029: '[Parameter Error] ChinaDailyCrawler -> articleCollector: Keyword type error',
+            2030: '[Parameter Error] ChinaDailyCrawler -> articleCollector: DateForm error',
+            2031: '[Internal Error] ChinaDailyCrawler -> articleCollector: Internal unexpected error'
+        }
+        return error_dic[errorCode]
 
 if __name__ == '__main__':
     ToolPackage_obj = ToolPackage()
