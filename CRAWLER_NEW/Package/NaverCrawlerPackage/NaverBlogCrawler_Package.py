@@ -27,7 +27,7 @@ class NaverBlogCrawler(CrawlerPackage):
     
     def __init__(self, proxy_option = False):
         super().__init__(proxy_option)
-
+        
     def blogURLChecker(self, url):
         pattern = r"^https://blog\.naver\.com/[^/]+/\d+$"
         return re.match(pattern, url) is not None
@@ -35,11 +35,13 @@ class NaverBlogCrawler(CrawlerPackage):
     def urlCollector(self, keyword, startDate, endDate, error_detector_option = False):
         try:
             if isinstance(keyword, str) == False:
-                return 2011
+                self.error_dump(2011, 'Check Keyword', keyword)
+                return self.error_data
             datetime.strptime(str(startDate), '%Y%m%d')
             datetime.strptime(str(endDate), '%Y%m%d')
         except:
-            return 2012
+            self.error_dump(2012, 'Check DateForm', startDate)
+            return self.error_data
         try:
             ipChange = False
             urlList = []
@@ -102,16 +104,14 @@ class NaverBlogCrawler(CrawlerPackage):
             
         except Exception:
             error_msg  = self.error_detector(error_detector_option)
-            error_data = {
-                'Error Code' : 2013,
-                'Error Msg' : error_msg
-            }
-            return error_data
+            self.error_dump(2013, error_msg, search_page_url_tmp)
+            return self.error_data
     
     def articleCollector(self, blogURL, error_detector_option = False):
         trynum = 1
         if isinstance(blogURL, str) == False or self.blogURLChecker(blogURL) == False:
-            return 2014
+            self.error_dump(2014, "Check blogURL", blogURL)
+            return self.error_data
         try:
             while True:
                 original_url = blogURL
@@ -176,15 +176,13 @@ class NaverBlogCrawler(CrawlerPackage):
         
         except Exception:
             error_msg  = self.error_detector(error_detector_option)
-            error_data = {
-                'Error Code' : 2015,
-                'Error Msg' : error_msg
-            }
-            return error_data
+            self.error_dump(2015, error_msg, blogURL)
+            return self.error_data
     
     def replyCollector(self, blogURL, error_detector_option = False):
         if isinstance(blogURL, str) == False or self.blogURLChecker(blogURL) == False:
-            return 2016
+            self.error_dump(2016, "Check blogURL", blogURL)
+            return self.error_data
         try:
             split_url = blogURL.split("/")
             blogID    = split_url[3]
@@ -330,11 +328,8 @@ class NaverBlogCrawler(CrawlerPackage):
                 
         except Exception as e:
             error_msg  = self.error_detector(error_detector_option)
-            error_data = {
-                'Error Code' : 2017,
-                'Error Msg' : error_msg
-            }
-            return error_data
+            self.error_dump(2017, error_msg, blogURL)
+            return self.error_data
   
 def CrawlerTester(url):
     print("\nNaverBlogCrawler_articleCollector: ", end = '')

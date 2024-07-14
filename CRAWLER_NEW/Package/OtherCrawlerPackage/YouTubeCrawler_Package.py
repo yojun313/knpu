@@ -17,6 +17,12 @@ class YouTubeCrawler(CrawlerPackage):
     
     def __init__(self, proxy_option = False):
         super().__init__(proxy_option)
+        self.error_data = {
+            'Error Code' : 1,
+            'Error Msg' : "",
+            'Error Target' : ""
+        }
+        
         self.api_dic        = {}
         self.api_list       = self.read_txt(os.path.join(self.collection_path, 'YouTube_apiList.txt'))
         self.api_num        = 1
@@ -31,7 +37,8 @@ class YouTubeCrawler(CrawlerPackage):
     def articleCollector(self, url, error_detector_option = False):
         
         if 'https://www.youtube.com/watch?v=' not in url:
-            return 2025
+            self.error_dump(2025, "Check YouTubeURL", url)
+            return self.error_data
         
         try:
             youtube_info = url[32:]
@@ -60,15 +67,13 @@ class YouTubeCrawler(CrawlerPackage):
 
         except Exception:
             error_msg  = self.error_detector(error_detector_option)
-            error_data = {
-                'Error Code' : 2026,
-                'Error Msg' : error_msg
-            }
-            return error_data
+            self.error_dump(2026, error_msg, url)
+            return self.error_data
             
     def replyCollector(self, url, limiter = True, error_detector_option = False):
         if 'https://www.youtube.com/watch?v=' not in url:
-            return 2027
+            self.error_dump(2027, "Check YouTubeURL", url)
+            return self.error_data
         
         try:
             youtube_info = url[32:]
@@ -134,11 +139,8 @@ class YouTubeCrawler(CrawlerPackage):
         
         except Exception:
             error_msg  = self.error_detector(error_detector_option)
-            error_data = {
-                'Error Code' : 2028,
-                'Error Msg' : error_msg
-            }
-            return error_data 
+            self.error_dump(2028, error_msg, url)
+            return self.error_data
 
 def CrawlerTester(url):
     print("\nYouTubeCrawler_articleCollector: ", end = '')
