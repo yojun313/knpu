@@ -18,6 +18,7 @@ import warnings
 from bs4 import BeautifulSoup
 import pandas as pd
 import traceback
+import time
 
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
@@ -27,6 +28,8 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 # 옵션 유무는 True(yes) 또는 False(no)
 class CrawlerPackage(ToolPackage):
+    
+    startTime = time.time()
     
     def __init__(self, proxy_option = False):
         
@@ -40,6 +43,65 @@ class CrawlerPackage(ToolPackage):
             'Error Msg' : "",
             'Error Target' : ""
         }
+        
+        self.PrintData = {
+            'currentDate': '',
+            'percent'    : ''   
+        }
+        
+        self.IntegratedDB = {
+            'UrlCnt'          : 0,
+            'TotalArticleCnt' : 0,
+            'TotalReplyCnt'   : 0,
+            'TotalRereplyCnt' : 0
+        }
+        
+    def setPrintData(self, currentDate, percent):
+        self.PrintData['currentDate'] = currentDate
+        self.PrintData['percent']     = percent
+
+    def printStatus(self, type, option, printData):
+  
+        WHITE = "\033[37m"
+        YELLOW = "\033[33m"
+        CYAN = "\033[36m"
+        RESET = "\033[0m"
+        
+        def get_color(option):
+            colors = {
+                1: {"date": CYAN, "url": YELLOW, "type": YELLOW, "reply": YELLOW, "re_reply": YELLOW},
+                2: {"date": YELLOW, "url": CYAN, "type": YELLOW, "reply": YELLOW, "re_reply": YELLOW},
+                3: {"date": YELLOW, "url": YELLOW, "type": CYAN, "reply": YELLOW, "re_reply": YELLOW},
+                4: {"date": YELLOW, "url": YELLOW, "type": YELLOW, "reply": CYAN, "re_reply": YELLOW},
+                5: {"date": YELLOW, "url": YELLOW, "type": YELLOW, "reply": YELLOW, "re_reply": CYAN},
+            }
+            return colors.get(option, {"date": YELLOW, "url": YELLOW, "type": YELLOW, "reply": YELLOW, "re_reply": YELLOW})
+        
+        color = get_color(option)
+        
+        type_dic = {
+            'NaverNews' : '기사',
+            'NaverBlog' : '블로그',
+            'NaverCafe' : '카페',
+            'YouTube'   : '유튜브',
+            'ChinaDaily': '기사'
+        }
+        
+        progress_time = time.time()
+        loading_second = progress_time - CrawlerPackage.startTime
+        loadingtime    = str(int(loading_second//3600))+":"+str(int(loading_second%3600//60))+":"+str(int(loading_second%3600%60))
+        
+        out_str = (
+            f"\r{WHITE}|| 진행: {YELLOW}{printData['percent']}%{WHITE} "
+            f"| 경과: {YELLOW}{loadingtime}{WHITE} "
+            f"| 날짜: {color['date']}{printData['currentDate']}{WHITE} "
+            f"| url: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
+            f"| {type_dic[type]}: {color['type']}{self.IntegratedDB['TotalArticleCnt']}{WHITE} "
+            f"| 댓글: {color['reply']}{self.IntegratedDB['TotalReplyCnt']}{WHITE} "
+            f"| 대댓글: {color['re_reply']}{self.IntegratedDB['TotalRereplyCnt']}{WHITE} ||{RESET}"
+        )
+
+        print(out_str, end = "")
         
     def error_dump(self, code, msg, target):
         self.error_data['Error Code']   = code
