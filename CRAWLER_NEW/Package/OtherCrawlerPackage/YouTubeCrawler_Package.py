@@ -3,8 +3,8 @@ import sys
 import os
 
 NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
-CRAWLERPACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
-sys.path.append(CRAWLERPACKAGE_PATH)
+PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
+sys.path.append(PACKAGE_PATH)
 
 from CrawlerPackage import CrawlerPackage
 from ToolPackage import ToolPackage
@@ -18,7 +18,7 @@ class YouTubeCrawler(CrawlerPackage):
     def __init__(self, proxy_option = False):
         super().__init__(proxy_option)
         self.api_dic        = {}
-        self.api_list       = self.read_txt(self.collection_path + '/api_list.txt')
+        self.api_list       = self.read_txt(os.path.join(self.collection_path, 'YouTube_apiList.txt'))
         self.api_num        = 1
         self.api_obj        = build('youtube', 'v3', developerKey=self.api_list[self.api_num - 1])
         

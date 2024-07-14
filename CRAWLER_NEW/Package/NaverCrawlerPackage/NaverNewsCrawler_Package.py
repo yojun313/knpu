@@ -3,8 +3,8 @@ import sys
 import os
 
 NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
-CRAWLERPACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
-sys.path.append(CRAWLERPACKAGE_PATH)
+PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
+sys.path.append(PACKAGE_PATH)
 
 from CrawlerPackage import CrawlerPackage
 from ToolPackage import ToolPackage

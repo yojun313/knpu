@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+import sys
+import os
+
+CRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
+CRAWLER_PATH        = os.path.dirname(CRAWLERPACKAGE_PATH)
+COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
+
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
@@ -12,9 +20,10 @@ from googleapiclient.http import MediaIoBaseDownload
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 
+
 class GooglePackage:
     
-    def __init__(self, collection_path, token_path):
+    def __init__(self, token_path):
         
         # Gmail
         self.sender = "knpubigmac2024@gmail.com"
@@ -22,7 +31,7 @@ class GooglePackage:
         
         # Google Drive
         self.parent_folder_id = "1K3YTj9h_BMjpGyoDQYkWycqmnJLCxPCA"
-        self.storage_json_path = collection_path + '/storage.json'
+        self.storage_json_path = os.path.join(COLLECTION_PATH, 'storage.json')
         
         SCOPES = ['https://www.googleapis.com/auth/drive']
 
@@ -46,8 +55,6 @@ class GooglePackage:
         
         self.drive_service = build('drive', 'v3', credentials=creds)
         
-    
-    
     def SendMail(self, receiver, title, text):
         
         msg = MIMEMultipart()
