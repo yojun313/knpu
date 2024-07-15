@@ -23,10 +23,9 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 class NaverCafeCrawler(CrawlerPackage):
     
-    def __init__(self, proxy_option = False):
+    def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
-        
-        self.proxy_option = proxy_option
+        self.print_status_option = print_status_option
     
     def cafeURLChecker(self, url):
         pattern = r"https://cafe\.naver\.com/[^/]+/[^/]+\?art=[^/]+"
@@ -91,6 +90,9 @@ class NaverCafeCrawler(CrawlerPackage):
             self.error_dump(2019, 'Check DateForm', startDate)
             return self.error_data
         try:
+            if self.print_status_option == True:
+                self.printStatus('NaverCafe', 1, self.PrintData)
+                
             ipChange = False
             urlList = []
             idList  = []
@@ -106,20 +108,11 @@ class NaverCafeCrawler(CrawlerPackage):
                 
                 if self.proxy_option == True:
                     
-                    while True:
-                        proxy = {"http": 'http://' + ipList[0], 'https': 'http://' + ipList[0]}
-                        try:
-                            main_page = self.Requester(search_page_url_tmp, proxies = proxy)
-                            if main_page == 0:
-                                ipChange = True
-                                break
-                            break
-                        except requests.exceptions.Timeout as e:
-                            ipList.pop(0)
-                            ipChange = True
-                        except Exception as e:
-                            ipList.pop(0)
-                            ipChange = True
+                    proxy = {"http": 'http://' + ipList[0], 'https': 'http://' + ipList[0]}
+                    main_page = self.Requester(search_page_url_tmp, proxies = proxy)
+                    if main_page == 0:
+                        ipChange = True
+                        ipList.pop(0)
                 else:
                     main_page = self.Requester(search_page_url_tmp)
                 
@@ -135,9 +128,13 @@ class NaverCafeCrawler(CrawlerPackage):
                         if 'naver' in add_link and self.articleIDExtractor(add_link) not in idList:
                             urlList.append(add_link)
                             idList.append(self.articleIDExtractor(add_link))
+                            self.IntegratedDB['UrlCnt'] += 1
                             
                         if add_link == None:
                             break
+                    
+                    if self.print_status_option == True: 
+                        self.printStatus('NaverCafe', 2, self.PrintData)
                         
                     currentPage += 10
                 else:
@@ -145,6 +142,7 @@ class NaverCafeCrawler(CrawlerPackage):
                     ipChange = False
                     urlList = []
                     idList = []
+                    self.IntegratedDB['UrlCnt'] = 0
             
             urlList = list(set(urlList))
             returnData = {
@@ -184,6 +182,10 @@ class NaverCafeCrawler(CrawlerPackage):
             readCount    = temp['result']['article']['readCount']
             commentCount = temp['result']['article']['commentCount']
             
+            self.IntegratedDB['TotalArticleCnt'] += 1
+            if self.print_status_option == True:
+                self.printStatus('NaverCafe', 3, self.PrintData)
+            
             articleData = [cafe_name, memberCount, writer, title, text, date, readCount, commentCount, cafeURL]
             returnData = {
                     'articleData' : articleData
@@ -213,7 +215,9 @@ class NaverCafeCrawler(CrawlerPackage):
             replyList = []
             
             page = 1
+            reply_idx = 1
             while True:
+                
                 api_url = "https://apis.naver.com/cafe-web/cafe-articleapi/v2/cafes/{}/articles/{}/comments/pages/{}?requestFrom=A&orderBy=asc&art={}".format(cafeID, articleID, page, artID)
                 response = self.Requester(api_url)
                 
@@ -222,15 +226,27 @@ class NaverCafeCrawler(CrawlerPackage):
                 temp = json.loads(json_string)
                                 
                 comment_json = temp['result']['comments']['items']
+                if comment_json == []:
+                    returnData = {
+                        'replyList' : replyList,
+                        'replyCnt' : len(replyList)
+                    } 
+                    return returnData
                 
-                reply_idx = 1
                 for comment in comment_json:
                     writer  = comment['writer']['id']
                     date    = self.timeExtractor(comment['updateDate'])
                     content = comment['content'].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')
                     url     = cafeURL
                     replyList.append([reply_idx, writer, date, content, url])
-
+                    reply_idx += 1
+                    
+                self.IntegratedDB['TotalReplyCnt'] += len(comment_json)
+                self.IntegratedDB['TotalRereplyCnt'] += len(comment_json)
+                
+                if self.print_status_option == True:
+                    self.printStatus('NaverCafe', 6, self.PrintData)
+                    
                 if len(comment_json) < 100:
                     break
                 

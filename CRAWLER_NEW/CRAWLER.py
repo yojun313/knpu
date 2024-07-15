@@ -124,36 +124,45 @@ class Crawler(CrawlerPackage):
         self.option = option
         self.DBtype = "Naver_News"
         self.DBMaker(self.DBtype)
-    
+
+        # initial list
         self.urlList         = []
-        self.article_list    = [["NaverNews Press", "NaverNews Type", "NaverNews URL", "NaverNews Title", "NaverNews Text", "NaverNews Date", "NaverNews ReplyCnt"]]
-        self.statistics_list = [["NaverNews Press", "NaverNews Type", "NaverNews URL", "NaverNews Title", "NaverNews Text", "NaverNews Date", "NaverNews ReplyCnt", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
-        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'NaverNews URL', 'Reply ID']]
-        self.rereply_list    = [["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "NaverNews URL"]]
+        self.article_list    = [["NaverNews Press", "NaverNews Type", "News URL", "News Title", "News Text", "News Date", "News ReplyCnt"]]
+        self.statistics_list = [["NaverNews Press", "NaverNews Type", "News URL", "News Title", "News Text", "News Date", "News ReplyCnt", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
+        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'News URL', 'Reply ID']]
+        self.rereply_list    = [["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "News URL"]]
         
         if self.weboption == 0:
             self.infoPrinter()
         
-        for i in range(self.date_range):
+        for dayCount in range(self.date_range + 1):
             
             self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-            percent = str(round((i/(self.date_range+1))*100, 1))
+            percent = str(round((dayCount/(self.date_range+1))*100, 1))
             NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
             
+            # option 1: article + reply
             self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
             self.ListToCSV(object_list=self.statistics_list, csv_path=self.DBpath, csv_name=self.DBname + '_statistics.csv')
             self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
             
+            # option 2: article + reply + rereply
             if option == 2:
                 self.ListToCSV(object_list=self.rereply_list, csv_path=self.DBpath, csv_name=self.DBname + '_rereply.csv')
             
+            # finish line
+            if dayCount == self.date_range:
+                self.printStatus(type='NaverNews', endMsg_option=True)
+                return
+            
+            # News URL Part
             urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
             if self.ReturnChecker(urlList_returnData) == True:
                 continue
             self.urlList = urlList_returnData['urlList']
             
             for url in self.urlList:
-                # News article Part
+                # News Article Part
                 article_returnData = NaverNewsCrawler_obj.articleCollector(newsURL=url)
                 if self.ReturnChecker(article_returnData) == True:
                     continue
@@ -168,30 +177,153 @@ class Crawler(CrawlerPackage):
                 parentCommentNoList = reply_returnData['parentCommentNo_list']
                 statistics_data     = reply_returnData['statistics_data']
                 
-                # append reply count into news article data
+                # append reply count into article data
                 self.article_list.append(articleData + [replyCnt])
-                self.reply_list.extend(replyList)
-                if statistics_data != []:
-                    self.statistics_list.append(articleData + statistics_data)
-                
-                if self.option == 1 or replyCnt == 0:
-                    continue
-                
-                # News ReReply Part
-                rereply_returnData = NaverNewsCrawler_obj.rereplyCollector(newsURL=url, parentCommentNum_list=parentCommentNoList)
-                if self.ReturnChecker(reply_returnData) == True:
-                    continue
-                rereplyList = rereply_returnData['rereplyList']
-                
-                if rereplyList != []:
-                    print(rereplyList)
-                    self.rereply_list.extend(rereplyList)
+                if replyCnt != 0:
+                    self.reply_list.extend(replyList)
+                    if statistics_data != []:
+                        self.statistics_list.append(articleData + statistics_data)
+                    
+                    if self.option == 1 or replyCnt == 0:
+                        continue
+                    
+                    # News ReReply Part
+                    rereply_returnData = NaverNewsCrawler_obj.rereplyCollector(newsURL=url, parentCommentNum_list=parentCommentNoList)
+                    if self.ReturnChecker(reply_returnData) == True:
+                        continue
+                    rereplyList = rereply_returnData['rereplyList']
+                    
+                    if rereplyList != []:
+                        self.rereply_list.extend(rereplyList)
             
             self.currentDate += self.deltaD
+    
+    def Naver_Blog_Crawler(self, option):
+        
+        NaverBlogCrawler_obj = NaverBlogCrawler(proxy_option=True, print_status_option=True)
+        
+        self.option = option
+        self.DBtype = "Naver_Blog"
+        self.DBMaker(self.DBtype)
+        
+        # initial list
+        self.urlList         = []
+        self.article_list    = [["NaverBlog ID", "Blog URL", "Blog Text", "Blog Date"]]
+        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Blog URL', 'Reply ID']]
+        
+        if self.weboption == 0:
+            self.infoPrinter()
+        
+        for dayCount in range(self.date_range + 1):
             
+            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+            percent = str(round((dayCount/(self.date_range+1))*100, 1))
+            NaverBlogCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
             
+            # option 1: article
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
             
+            # option 2: article + reply + rereply
+            if option == 2:
+                self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
             
+            # finish line
+            if dayCount == self.date_range:
+                self.printStatus(type='NaverBlog', endMsg_option=True)
+                return
+            
+            # Blog Url Part
+            urlList_returnData = NaverBlogCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+            if self.ReturnChecker(urlList_returnData) == True:
+                continue
+            self.urlList = urlList_returnData['urlList']
+            
+            for url in self.urlList:
+                # Blog Article Part
+                article_returnData = NaverBlogCrawler_obj.articleCollector(blogURL=url)
+                if self.ReturnChecker(article_returnData) == True:
+                    continue
+                articleData = article_returnData['articleData']
+                if articleData != []:
+                    self.article_list.append(articleData)
+                
+                if option == 1:
+                    continue
+                
+                # Blog Reply Part
+                reply_returnData = NaverBlogCrawler_obj.replyCollector(blogURL=url)
+                if self.ReturnChecker(reply_returnData) == True:
+                    continue
+                replyList = reply_returnData['replyList']
+                replyCnt  = reply_returnData['replyCnt']
+                
+                if replyCnt != 0:
+                    self.reply_list.extend(replyList)
+            
+            self.currentDate += self.deltaD
+                
+    def Naver_Cafe_Crawler(self, option):
+        
+        NaverCafeCrawler_obj = NaverCafeCrawler(proxy_option=True, print_status_option=True)
+        
+        self.option = option
+        self.DBtype = "Naver_Cafe"
+        self.DBMaker(self.DBtype)
+        
+        # initial list
+        self.urlList         = []
+        self.article_list    = [["NaverCafe Name", "NaverCafe MemberCount", "Cafe Writer", "Cafe Title", "Cafe Text", "Cafe Date", "Cafe ReadCount", "Cafe ReplyCount", "Cafe URL"]]
+        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", 'Cafe URL']]
+        
+        if self.weboption == 0:
+            self.infoPrinter()
+        
+        for dayCount in range(self.date_range + 1):
+            
+            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+            percent = str(round((dayCount/(self.date_range+1))*100, 1))
+            NaverCafeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
+            
+            # option 1: article
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+            
+            # option 2: article + reply + rereply
+            if option == 2:
+                self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
+            
+            # finish line
+            if dayCount == self.date_range:
+                self.printStatus(type='NaverCafe', endMsg_option=True)
+                return
+            
+            # Cafe Url Part
+            urlList_returnData = NaverCafeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+            if self.ReturnChecker(urlList_returnData) == True:
+                continue
+            self.urlList = urlList_returnData['urlList']
+            
+            for url in self.urlList:
+                # Cafe Article Part
+                article_returnData = NaverCafeCrawler_obj.articleCollector(cafeURL=url)
+                if self.ReturnChecker(article_returnData) == True:
+                    continue
+                articleData = article_returnData['articleData']
+                self.article_list.append(articleData)
+                
+                if option == 1:
+                    continue
+                
+                # Cafe Reply Part
+                reply_returnData = NaverCafeCrawler_obj.replyCollector(cafeURL=url)
+                if self.ReturnChecker(reply_returnData) == True:
+                    continue
+                replyList = reply_returnData['replyList']
+                replyCnt  = reply_returnData['replyCnt']
+                
+                if replyCnt != 0:
+                    self.reply_list.extend(replyList)
+            
+            self.currentDate += self.deltaD
             
             
             
@@ -202,5 +334,6 @@ class Crawler(CrawlerPackage):
     
 if __name__ == '__main__':
     object = Crawler('문요준', '20230102', '20230102', '대통령', upload=False, weboption=False)
-    object.Naver_News_Crawler(1)
+    #object.Naver_News_Crawler(1)
+    object.Naver_Cafe_Crawler(2)
     
