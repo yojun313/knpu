@@ -55,6 +55,9 @@ class NaverNewsCrawler(CrawlerPackage):
             return self.error_data
         
         try:
+            if self.print_status_option == True:
+                self.printStatus('NaverNews', 1, self.PrintData)
+                
             self.IntegratedDB['UrlCnt'] = 0
             startDate = startDate.strftime('%Y.%m.%d')
             endDate = endDate.strftime('%Y.%m.%d')
@@ -62,7 +65,6 @@ class NaverNewsCrawler(CrawlerPackage):
             urlList = []
             keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
             search_page_url = "https://search.naver.com/search.naver?where=news&query={}&sm=tab_srt&sort=2&photo=0&reporter_article=&pd=3&ds={}&de={}&&start={}&related=0"
-
             currentPage = 1
             while True:
                 search_page_url_tmp = search_page_url.format(keyword, startDate, endDate, currentPage)
@@ -108,8 +110,15 @@ class NaverNewsCrawler(CrawlerPackage):
             res           = self.Requester(newsURL)
             bs            = BeautifulSoup(res.text, 'lxml')    
             news          = ''.join((i.text.replace("\n", "") for i in bs.find_all("div", {"class": "newsct_article"})))
-            article_press = str(bs.find("img")).split()[1][4:].replace("\"", '') # article_press
-            article_type  = bs.find("em", class_="media_end_categorize_item").text # article_type
+            try:
+                article_press = str(bs.find("img")).split()[1][4:].replace("\"", '') # article_press
+            except:
+                article_press = 'None'
+            try:
+                article_type  = bs.find("em", class_="media_end_categorize_item").text # article_type
+            except:
+                article_type = 'None'
+
             article_title = bs.find("div", class_="media_end_head_title").text.replace("\n", " ") # article_title
             article_date  = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
 
@@ -332,11 +341,7 @@ class NaverNewsCrawler(CrawlerPackage):
                         sympathy_counts  = list(df['sympathyCount'])
                         antipathy_counts = list(df['antipathyCount'])
                     except:
-                        returnData = {
-                            'rereplyList' : rereplyList,
-                            'rereplyCnt': len(rereplyList)
-                        }
-                        return returnData
+                        continue
 
                     nickname_list.extend(masked_user_ids)
                     rereplyDate_list.extend(mod_times)

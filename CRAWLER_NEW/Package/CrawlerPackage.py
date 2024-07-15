@@ -35,6 +35,7 @@ class CrawlerPackage(ToolPackage):
         
         self.proxy_option   = proxy_option
         self.collection_path = COLLECTION_PATH
+        
         if proxy_option == True:
             self.proxy_list     = self.read_txt(self.collection_path + '/proxy.txt')       # 로컬 proxy.txt 파일 경로
         
@@ -46,8 +47,9 @@ class CrawlerPackage(ToolPackage):
         
         self.PrintData = {
             'currentDate': '',
-            'percent'    : ''   
-        }
+            'percent'    : '',
+            'web_option' : False,
+        }   
         
         self.IntegratedDB = {
             'UrlCnt'          : 0,
@@ -56,9 +58,11 @@ class CrawlerPackage(ToolPackage):
             'TotalRereplyCnt' : 0
         }
         
-    def setPrintData(self, currentDate, percent):
+    def setPrintData(self, currentDate, percent, web_option):
+    
         self.PrintData['currentDate'] = currentDate
         self.PrintData['percent']     = percent
+        self.PrintData['web_option']  = web_option
 
     def printStatus(self, type, option, printData):
   
@@ -91,15 +95,28 @@ class CrawlerPackage(ToolPackage):
         loading_second = progress_time - CrawlerPackage.startTime
         loadingtime    = str(int(loading_second//3600))+":"+str(int(loading_second%3600//60))+":"+str(int(loading_second%3600%60))
         
-        out_str = (
-            f"\r{WHITE}|| 진행: {YELLOW}{printData['percent']}%{WHITE} "
-            f"| 경과: {YELLOW}{loadingtime}{WHITE} "
-            f"| 날짜: {color['date']}{printData['currentDate']}{WHITE} "
-            f"| url: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
-            f"| {type_dic[type]}: {color['type']}{self.IntegratedDB['TotalArticleCnt']}{WHITE} "
-            f"| 댓글: {color['reply']}{self.IntegratedDB['TotalReplyCnt']}{WHITE} "
-            f"| 대댓글: {color['re_reply']}{self.IntegratedDB['TotalRereplyCnt']}{WHITE} ||{RESET}"
-        )
+        if self.PrintData['web_option'] == False:
+            out_str = (
+                f"\r{WHITE}|| 진행: {YELLOW}{printData['percent']}%{WHITE} "
+                f"| 경과: {YELLOW}{loadingtime}{WHITE} "
+                f"| 날짜: {color['date']}{printData['currentDate']}{WHITE} "
+                f"| url: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
+                f"| {type_dic[type]}: {color['type']}{self.IntegratedDB['TotalArticleCnt']}{WHITE} "
+                f"| 댓글: {color['reply']}{self.IntegratedDB['TotalReplyCnt']}{WHITE} "
+                f"| 대댓글: {color['re_reply']}{self.IntegratedDB['TotalRereplyCnt']}{WHITE} ||{RESET}"
+            )
+        
+        else:
+            out_str = (
+                f"\r|| 진행: {printData['percent']}% "
+                f"| 경과: {loadingtime} "
+                f"| 날짜: {printData['currentDate']} "
+                f"| url: {self.IntegratedDB['UrlCnt']} "
+                f"| {type_dic[type]}: {self.IntegratedDB['TotalArticleCnt']} "
+                f"| 댓글: {self.IntegratedDB['TotalReplyCnt']} "
+                f"| 대댓글: {self.IntegratedDB['TotalRereplyCnt']} ||"
+            )
+            
 
         print(out_str, end = "")
         
@@ -182,7 +199,7 @@ class CrawlerPackage(ToolPackage):
         
         # Creating the detailed error message
         error_message = (
-            "\n[ ERROR DETECTED! ]\n"
+            "\n\n[ ERROR DETECTED! ]\n"
             f"{'Function name:':<20} {function_name}\n"
             f"{'Exception type:':<20} {exc_type.__name__}\n"
             f"{'Exception message:':<20} {exc_value}\n"
