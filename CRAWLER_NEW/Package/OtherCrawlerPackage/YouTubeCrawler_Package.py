@@ -15,8 +15,8 @@ import re
 
 class YouTubeCrawler(CrawlerPackage):
     
-    def __init__(self, proxy_option = False):
-        super().__init__(proxy_option)
+    def __init__(self, proxy_option = False, web_option = False):
+        super().__init__(proxy_option, web_option)
         self.error_data = {
             'Error Code' : 1,
             'Error Msg' : "",

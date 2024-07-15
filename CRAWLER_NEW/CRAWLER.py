@@ -5,7 +5,6 @@ from Package.OtherCrawlerPackage.YouTubeCrawler_Package    import YouTubeCrawler
 from Package.ChinaCrawlerPackage.ChinaDailyCrawler_Package import ChinaDailyCrawler
 
 from Package.GooglePackage  import GooglePackage
-from Package.ToolPackage    import ToolPackage
 from Package.CrawlerPackage import CrawlerPackage
 
 from datetime import datetime, timedelta
@@ -15,6 +14,7 @@ import socket
 import os
 import sys
 import time
+import copy
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -24,16 +24,15 @@ class Crawler(CrawlerPackage):
     def __init__(self, user, startDate, endDate, keyword, upload, weboption):
         super().__init__(proxy_option=True)
         
-        self.ToolPackage_obj   = ToolPackage()
-        self.GooglePackage_obj = GooglePackage(self.ToolPackage_obj.pathFinder()['token_path'])
+        self.GooglePackage_obj = GooglePackage(self.pathFinder()['token_path'])
         
         # Computer Info
-        self.scrapdata_path = self.ToolPackage_obj.pathFinder()['scrapdata_path']
-        self.crawlcom       = self.ToolPackage_obj.pathFinder()['computer_name']
+        self.scrapdata_path = self.pathFinder()['scrapdata_path']
+        self.crawlcom       = self.pathFinder()['computer_name']
         
         # User Info
         self.user      = user
-        self.userEmail = self.ToolPackage_obj.get_userEmail(user)
+        self.userEmail = self.get_userEmail(user)
         
         # For Web Version
         self.weboption = int(weboption)
@@ -87,7 +86,7 @@ class Crawler(CrawlerPackage):
         print(f"{'Object:':<15} {self.DBtype}")
         print(f"{'Option:':<15} {self.option}")
         print(f"{'Keyword:':<15} {self.keyword}")
-        print(f"{'Date Range:':<15} {self.startDate_form.strftime('%Y.%m.%d')} ~ {self.startDate_form.strftime('%Y.%m.%d')}")
+        print(f"{'Date Range:':<15} {self.startDate_form.strftime('%Y.%m.%d')} ~ {self.endDate_form.strftime('%Y.%m.%d')}")
         print(f"{'Computer:':<15} {self.crawlcom}")
         print(f"{'DB path:':<15} {self.DBpath}")
         print(f"{'Drive Upload:':<15} {self.upload}")
@@ -99,7 +98,7 @@ class Crawler(CrawlerPackage):
         if isinstance(value, dict) == True:
             first_key = list(value.keys())[0]
             if first_key == 'Error Code':
-                err_msg_title = self.ToolPackage_obj.error_extractor(value['Error Code'])
+                err_msg_title = self.error_extractor(value['Error Code'])
                 err_msg_content = value['Error Msg']
                 err_target = value['Error Target']
                 error = True
@@ -125,14 +124,12 @@ class Crawler(CrawlerPackage):
         self.option = option
         self.DBtype = "Naver_News"
         self.DBMaker(self.DBtype)
-        
-        self.infoPrinter()
     
         self.urlList         = []
         self.article_list    = [["NaverNews Press", "NaverNews Type", "NaverNews URL", "NaverNews Title", "NaverNews Text", "NaverNews Date", "NaverNews ReplyCnt"]]
         self.statistics_list = [["NaverNews Press", "NaverNews Type", "NaverNews URL", "NaverNews Title", "NaverNews Text", "NaverNews Date", "NaverNews ReplyCnt", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
         self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'NaverNews URL', 'Reply ID']]
-        self.rereply_list    = [["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", 'Rereply Sentiment' 'NaverNews URL']]
+        self.rereply_list    = [["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "NaverNews URL"]]
         
         if self.weboption == 0:
             self.infoPrinter()
@@ -141,7 +138,14 @@ class Crawler(CrawlerPackage):
             
             self.currentDate_str = self.currentDate.strftime('%Y%m%d')
             percent = str(round((i/(self.date_range+1))*100, 1))
-            NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent)
+            NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
+            
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+            self.ListToCSV(object_list=self.statistics_list, csv_path=self.DBpath, csv_name=self.DBname + '_statistics.csv')
+            self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
+            
+            if option == 2:
+                self.ListToCSV(object_list=self.rereply_list, csv_path=self.DBpath, csv_name=self.DBname + '_rereply.csv')
             
             urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
             if self.ReturnChecker(urlList_returnData) == True:
@@ -165,13 +169,10 @@ class Crawler(CrawlerPackage):
                 statistics_data     = reply_returnData['statistics_data']
                 
                 # append reply count into news article data
-                articleData.append(replyCnt)
-                
-                self.article_list.append(articleData)
+                self.article_list.append(articleData + [replyCnt])
                 self.reply_list.extend(replyList)
                 if statistics_data != []:
-                    self.article_list.extend(statistics_data)
-                    self.statistics_list.append(self.article_list)
+                    self.statistics_list.append(articleData + statistics_data)
                 
                 if self.option == 1 or replyCnt == 0:
                     continue
@@ -183,9 +184,16 @@ class Crawler(CrawlerPackage):
                 rereplyList = rereply_returnData['rereplyList']
                 
                 if rereplyList != []:
-                    self.rereply_list.append(rereplyList)
+                    print(rereplyList)
+                    self.rereply_list.extend(rereplyList)
             
             self.currentDate += self.deltaD
+            
+            
+            
+            
+            
+            
             
                 
         
@@ -193,6 +201,6 @@ class Crawler(CrawlerPackage):
     
     
 if __name__ == '__main__':
-    object = Crawler('문요준', '20230101', '20231231', '무고죄', upload=False, weboption=True)
-    object.Naver_News_Crawler(2)
+    object = Crawler('문요준', '20230102', '20230102', '대통령', upload=False, weboption=False)
+    object.Naver_News_Crawler(1)
     
