@@ -25,8 +25,9 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 class NaverBlogCrawler(CrawlerPackage):
     
-    def __init__(self, proxy_option = False):
+    def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
+        self.print_status_option = print_status_option
         
     def blogURLChecker(self, url):
         pattern = r"^https://blog\.naver\.com/[^/]+/\d+$"
@@ -43,6 +44,9 @@ class NaverBlogCrawler(CrawlerPackage):
             self.error_dump(2012, 'Check DateForm', startDate)
             return self.error_data
         try:
+            if self.print_status_option == True:
+                self.printStatus('NaverBlog', 1, self.PrintData)
+            
             ipChange = False
             urlList = []
             if self.proxy_option == True:
@@ -57,20 +61,11 @@ class NaverBlogCrawler(CrawlerPackage):
                 
                 if self.proxy_option == True:
                     
-                    while True:
-                        proxy = {"http": 'http://' + ipList[0], 'https': 'http://' + ipList[0]}
-                        try:
-                            main_page = self.Requester(search_page_url_tmp, proxies = proxy)
-                            if main_page == 0:
-                                ipChange = True
-                                break
-                            break
-                        except requests.exceptions.Timeout as e:
-                            ipList.pop(0)
-                            ipChange = True
-                        except Exception as e:
-                            ipList.pop(0)
-                            ipChange = True
+                    proxy = {"http": 'http://' + ipList[0], 'https': 'http://' + ipList[0]}
+                    main_page = self.Requester(search_page_url_tmp, proxies = proxy)
+                    if main_page == 0:
+                        ipChange = True
+                        ipList.pop(0)
                 else:
                     main_page = self.Requester(search_page_url_tmp)
                 
@@ -83,16 +78,22 @@ class NaverBlogCrawler(CrawlerPackage):
                         
                     for a in site_result: #스크랩한 데이터 중 링크만 추출
                         add_link = a['href']
-                        urlList.append(add_link)
-                            
-                        if add_link == None:
-                            break
-                        
+                        if add_link not in urlList and 'naver' in add_link:
+                            urlList.append(add_link)
+                            self.IntegratedDB['UrlCnt'] += 1
+                                
+                            if add_link == None:
+                                break
+                       
+                    if self.print_status_option == True: 
+                        self.printStatus('NaverBlog', 2, self.PrintData)
+                    
                     currentPage += 10
                 else:
                     currentPage = 1
                     ipChange = False
                     urlList = []
+                    self.IntegratedDB['UrlCnt'] = 0
             
             urlList = list(set(urlList))
             returnData = {
@@ -155,7 +156,11 @@ class NaverBlogCrawler(CrawlerPackage):
                 if article == "":
                     trynum += 1
                     if trynum == 10:
-                        return []
+                        articleData = [blogID, original_url, article, date]
+                        returnData = {
+                            'articleData' : []
+                        }
+                        return returnData
                     continue
                 article_data["blog_ID"]      = str(blogID)
                 article_data["url"]          = str(original_url)
@@ -166,6 +171,10 @@ class NaverBlogCrawler(CrawlerPackage):
                 article_data["good_cnt"] = str(good_cnt)
                 article_data["comment_cnt"] = str(comment_cnt)
                 '''
+                
+                self.IntegratedDB['TotalArticleCnt'] += 1
+                if self.print_status_option == True:
+                    self.printStatus('NaverBlog', 3, self.PrintData)
                 
                 articleData = [blogID, original_url, article, date]
                 returnData = {
@@ -277,7 +286,13 @@ class NaverBlogCrawler(CrawlerPackage):
                 rere_count_list.extend(reply_counts)
                 r_like_list.extend(sympathy_counts)
                 r_bad_list.extend(antipathy_counts)
-        
+
+                self.IntegratedDB['TotalReplyCnt'] += len(masked_user_ids)
+                self.IntegratedDB['TotalRereplyCnt'] += len(masked_user_ids)
+                
+                if self.print_status_option:
+                    self.printStatus('NaverBlog', 6, self.PrintData)
+                
                 if len(masked_user_ids) < 97:
                     break
                 

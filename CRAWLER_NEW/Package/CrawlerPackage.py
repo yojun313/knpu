@@ -64,7 +64,7 @@ class CrawlerPackage(ToolPackage):
         self.PrintData['percent']     = percent
         self.PrintData['web_option']  = web_option
 
-    def printStatus(self, type, option, printData):
+    def printStatus(self, type, option = 1, printData = {}, endMsg_option = False):
   
         WHITE = "\033[37m"
         YELLOW = "\033[33m"
@@ -78,6 +78,7 @@ class CrawlerPackage(ToolPackage):
                 3: {"date": YELLOW, "url": YELLOW, "type": CYAN, "reply": YELLOW, "re_reply": YELLOW},
                 4: {"date": YELLOW, "url": YELLOW, "type": YELLOW, "reply": CYAN, "re_reply": YELLOW},
                 5: {"date": YELLOW, "url": YELLOW, "type": YELLOW, "reply": YELLOW, "re_reply": CYAN},
+                6: {"date": YELLOW, "url": YELLOW, "type": YELLOW, "reply": CYAN, "re_reply": CYAN}
             }
             return colors.get(option, {"date": YELLOW, "url": YELLOW, "type": YELLOW, "reply": YELLOW, "re_reply": YELLOW})
         
@@ -95,7 +96,10 @@ class CrawlerPackage(ToolPackage):
         loading_second = progress_time - CrawlerPackage.startTime
         loadingtime    = str(int(loading_second//3600))+":"+str(int(loading_second%3600//60))+":"+str(int(loading_second%3600%60))
         
-        if self.PrintData['web_option'] == False:
+        if endMsg_option == True:
+            out_str = f"\r{type} 크롤링 종료"
+        
+        elif self.PrintData['web_option'] == False:
             out_str = (
                 f"\r{WHITE}|| 진행: {YELLOW}{printData['percent']}%{WHITE} "
                 f"| 경과: {YELLOW}{loadingtime}{WHITE} "
