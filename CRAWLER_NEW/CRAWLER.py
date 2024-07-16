@@ -15,6 +15,7 @@ import os
 import sys
 import time
 import copy
+import platform
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -106,7 +107,7 @@ class Crawler(CrawlerPackage):
         if error == True:
             log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'),'a')
             msg = (
-                f"Error Time: {self.now}\n"
+                f"\n\nError Time: {self.now}\n"
                 f"Error Type: {err_msg_title}\n"
                 f"Error Detail: {err_msg_content}\n"
                 f"Error Target: {err_target}\n\n\n"
@@ -296,7 +297,7 @@ class Crawler(CrawlerPackage):
                 self.printStatus(type='NaverCafe', endMsg_option=True)
                 return
             
-            # Cafe Url Part
+            # Cafe URL Part
             urlList_returnData = NaverCafeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
             if self.ReturnChecker(urlList_returnData) == True:
                 continue
@@ -308,7 +309,8 @@ class Crawler(CrawlerPackage):
                 if self.ReturnChecker(article_returnData) == True:
                     continue
                 articleData = article_returnData['articleData']
-                self.article_list.append(articleData)
+                if articleData != []:
+                    self.article_list.append(articleData)
                 
                 if option == 1:
                     continue
@@ -324,16 +326,190 @@ class Crawler(CrawlerPackage):
                     self.reply_list.extend(replyList)
             
             self.currentDate += self.deltaD
+    
+    def YouTube_Crawler(self, option):
+        
+        YouTubeCrawler_obj = YouTubeCrawler(proxy_option=True, print_status_option=True)
+        
+        limiter = True
+        if option == 2:
+            limiter = False
+        
+        self.option = option
+        self.DBtype = "YouTube"
+        self.DBMaker(self.DBtype)
+        self.api_num = 1
+        
+        self.urlList = []
+        self.article_list = [['YouTube Channel', 'Video URL', 'Video Title', 'Video Text', 'Video Date', 'Video ViewCount', 'Video Like', 'Video ReplyCount']]
+        self.reply_list = [['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Video URL']]
+        self.rereply_list = [['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Video URL']]
+        
+        if self.weboption == 0:
+            self.infoPrinter()
             
+        for dayCount in range(self.date_range + 1):
             
+            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+            percent = str(round((dayCount/(self.date_range+1))*100, 1))
+            YouTubeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption, self.api_num)
             
+            # option 1 & 2
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+            self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
+            self.ListToCSV(object_list=self.rereply_list, csv_path=self.DBpath, csv_name=self.DBname + '_rereply.csv')
+            
+            # finish line
+            if dayCount == self.date_range:
+                self.printStatus(type='YouTube', endMsg_option=True)
+                return
+            
+            # YouTube URL Part
+            urlList_returnData = YouTubeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+            if self.ReturnChecker(urlList_returnData) == True:
+                continue
+            self.urlList = urlList_returnData['urlList']
+            
+            for url in self.urlList:
+                # YouTube info Part
+                article_returnData = YouTubeCrawler_obj.articleCollector(url=url)
+                if self.ReturnChecker(article_returnData) == True:
+                    continue
+                articleData = article_returnData['articleData']
+                if articleData != []:
+                    self.article_list.append(articleData)
                 
-        
-        
+                if articleData == []:
+                    continue
+                elif articleData[7] == 0: # Comment Count
+                    continue
+                
+                # YouTube Reply Part
+                reply_returnData = YouTubeCrawler_obj.replyCollector(url=url, limiter=limiter)
+                if self.ReturnChecker(reply_returnData) == True:
+                    continue
+                replyList    = reply_returnData['replyList']
+                replyCnt     = reply_returnData['replyCnt']
+                rereplyList  = reply_returnData['rereplyList']
+                
+                self.api_num = reply_returnData['api_num']
+                
+                if replyCnt != 0:
+                    self.reply_list.extend(replyList)
+                    self.rereply_list.extend(rereplyList)
+            
+            self.currentDate += self.deltaD
     
+    def ChinaDaily_Crawler(self, option):
+        
+        ChinaDailyCrawler_obj = ChinaDailyCrawler(proxy_option=True, print_status_option=True)
+        
+        self.option = option
+        self.DBtype = "ChinaDaily"
+        self.DBMaker(self.DBtype)
+        
+        self.article_list = [['News Source', 'News Title', 'News Text', 'News Date', 'News Theme', 'News URL', 'News SearchURL']]
+
+        if self.weboption == 0:
+            self.infoPrinter()
+        
+        for dayCount in range(self.date_range + 1):
+            
+            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+            percent = str(round((dayCount/(self.date_range+1))*100, 1))
+            ChinaDailyCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
+            
+            # option 1 & 2
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+
+            # finish line
+            if dayCount == self.date_range:
+                self.printStatus(type='ChinaDaily', endMsg_option=True)
+                return
+            
+            articleList_returnData = ChinaDailyCrawler_obj.articleCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+            if self.ReturnChecker(articleList_returnData) == True:
+                continue
+            articleList = articleList_returnData['articleList']
+            articleCnt  = articleList_returnData['articleCnt']
+            
+            if articleCnt != 0:
+                self.article_list.extend(articleList)
+            
+            self.currentDate += self.deltaD
+        
+
+def controller():
+    option_dic = {
+        1 : "\n1. 기사 + 댓글\n2. 기사 + 댓글/대댓글\n",
+        2 : "\n1. 블로그 본문\n2. 블로그 본문 + 댓글/대댓글\n",
+        3 : "\n1. 카페 본문\n2. 카페 본문 + 댓글/대댓글\n",
+        4 : "\n1. 영상 정보 + 댓글/대댓글 (100개 제한)\n2. 영상 정보 + 댓글/대댓글(무제한)\n",
+        5 : "\n1. 기사\n"
+    }
+    print("================ Crawler Controller ================\n")
+    #name = input("본인의 이름을 입력하세요: ")
     
+    print("\n[ 크롤링 대상 ]\n")
+    print("1. Naver News\n2. Naver Blog\n3. Naver Cafe\n4. YouTube\n5. ChinaDaily")
+    
+    while True:
+        control_ask = int(input("\n입력: "))
+        if control_ask in [1,2,3,4,5]:
+            break
+        else:
+            print("다시 입력하세요")
+    
+    '''
+    startDate = input("\nStart Date (ex: 20230101): ") 
+    endDate   = input("End Date (ex: 20231231): ") 
+    keyword   = input("\nKeyword: ")
+    
+    print(option_dic[control_ask])
+    
+    while True:
+        option = int(input("Option: "))
+        if option in [1,2]:
+            break
+        else:
+            print("다시 입력하세요")
+            
+    upload    = input("\n구글 드라이브에 업로드 하시겠습니까(1/0)? ")
+    weboption = 0
+    '''
+    startDate = '20220101'
+    endDate = '20231231'
+    keyword = '비트코인'
+    if control_ask == 5:
+        keyword = 'president'
+    upload = 1
+    weboption = 0
+    option = 2
+    name = "문요준"
+    
+    if platform.system() == "Windows":
+        os.system("cls")
+    else:
+        os.system("clear")
+    
+    Crawler_obj = Crawler(name, startDate, endDate, keyword, upload, weboption)
+    
+    if control_ask == 1:
+        Crawler_obj.Naver_News_Crawler(option)
+    
+    elif control_ask == 2:
+        Crawler_obj.Naver_Blog_Crawler(option)
+        
+    elif control_ask == 3:
+        Crawler_obj.Naver_Cafe_Crawler(option)
+        
+    elif control_ask == 4:
+        Crawler_obj.YouTube_Crawler(option)
+    
+    elif control_ask == 5:
+        Crawler_obj.ChinaDaily_Crawler(option)
+
 if __name__ == '__main__':
-    object = Crawler('문요준', '20230102', '20230102', '대통령', upload=False, weboption=False)
-    #object.Naver_News_Crawler(1)
-    object.Naver_Cafe_Crawler(2)
+    controller()
+    
     

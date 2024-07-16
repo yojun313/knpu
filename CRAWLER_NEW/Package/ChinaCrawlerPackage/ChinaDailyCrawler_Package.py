@@ -15,9 +15,10 @@ import re
 
 class ChinaDailyCrawler(CrawlerPackage):
     
-    def __init__(self, proxy_option = False):
+    def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
-        self.proxy_option = proxy_option
+
+        self.print_status_option = print_status_option
     
     def keywordParser(self, keyword):
         # 검색어를 담을 리스트 초기화
@@ -75,6 +76,9 @@ class ChinaDailyCrawler(CrawlerPackage):
             return self.error_data
     
         try:
+            if self.print_status_option == True:
+                self.printStatus('ChinaDaily', option=1, printData=self.PrintData)
+            
             includeList, excludeList = self.keywordParser(keyword)
             includeWord = '+'.join(includeList).replace('&', '%26')
             excludeWord = '+'.join(excludeList).replace('&', '%26')
@@ -125,18 +129,20 @@ class ChinaDailyCrawler(CrawlerPackage):
                         }
                     
                     for content in contents:
+                        source    = content['source']
                         title     = content['title']
                         text      = content['plainText'] 
                         date      = content['pubDateStr']
                         theme     = content['columnName']
-                        source    = content['source']
                         url       = content['url']
                         searchURL = referer_url 
-                        print([title, text, date, theme, source, url, searchURL])
-                        print("\n\n\n\n")
                         
-                        articleList.append([title, text, date, theme, source, url, searchURL])
+                        if text != "":
+                            articleList.append([source, title, text, date, theme, url, searchURL])
+                            self.IntegratedDB['TotalArticleCnt'] += 1
 
+                    if self.print_status_option == True:
+                        self.printStatus('ChinaDaily', 3, self.PrintData)
                     page += 1
                 except:
                     page += 1
