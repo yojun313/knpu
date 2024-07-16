@@ -13,13 +13,14 @@ import requests
 from datetime import datetime, timezone
 import urllib3
 import warnings
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 import json
 import re
 from urllib.parse import urlparse, parse_qs
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 class NaverCafeCrawler(CrawlerPackage):
     
@@ -171,8 +172,15 @@ class NaverCafeCrawler(CrawlerPackage):
 
             soup = BeautifulSoup(response.text, 'html.parser')
             json_string = self.escape_content_html(soup.text)
-            temp = json.loads(json_string)
-
+            
+            try:
+                temp = json.loads(json_string)
+            except:
+                returnData = {
+                    'articleData' : []
+                }
+                return returnData
+                
             cafe_name    = temp['result']['cafe']['name']
             memberCount  = temp['result']['cafe']['memberCount']
             writer       = temp['result']['article']['writer']['id']

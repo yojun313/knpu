@@ -12,7 +12,7 @@ from user_agent import generate_user_agent, generate_navigator
 from datetime import datetime, timezone
 import urllib3
 import warnings
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 import json
 import pandas as pd
 import re
@@ -22,6 +22,7 @@ import requests
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 class NaverBlogCrawler(CrawlerPackage):
     
@@ -210,7 +211,11 @@ class NaverBlogCrawler(CrawlerPackage):
                 except:
                     trynum += 1
                     if trynum == 10:
-                        return [[]]
+                        returnData = {
+                            'replyList' : [],
+                            'replyCnt' : 0
+                        }
+                        return returnData
             
             objectID   = f'{blogNo}_201_{logNo}'
             

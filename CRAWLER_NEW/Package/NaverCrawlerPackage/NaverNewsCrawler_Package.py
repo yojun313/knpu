@@ -107,25 +107,30 @@ class NaverNewsCrawler(CrawlerPackage):
             return self.error_data
         
         try:
-            res           = self.Requester(newsURL)
-            bs            = BeautifulSoup(res.text, 'lxml')    
-            news          = ''.join((i.text.replace("\n", "") for i in bs.find_all("div", {"class": "newsct_article"})))
-            try:
-                article_press = str(bs.find("img")).split()[1][4:].replace("\"", '') # article_press
-            except:
-                article_press = 'None'
-            try:
-                article_type  = bs.find("em", class_="media_end_categorize_item").text # article_type
-            except:
-                article_type = 'None'
+            while True:
+                res           = self.Requester(newsURL)
+                bs            = BeautifulSoup(res.text, 'lxml')    
+                news          = ''.join((i.text.replace("\n", "") for i in bs.find_all("div", {"class": "newsct_article"})))
+                try:
+                    article_press = str(bs.find("img")).split()[1][4:].replace("\"", '') # article_press
+                except:
+                    article_press = 'None'
+                try:
+                    article_type  = bs.find("em", class_="media_end_categorize_item").text # article_type
+                except:
+                    article_type = 'None'
 
-            article_title = bs.find("div", class_="media_end_head_title").text.replace("\n", " ") # article_title
-            article_date  = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
+                try:
+                    article_title = bs.find("div", class_="media_end_head_title").text.replace("\n", " ") # article_title
+                    article_date  = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
+                except:
+                    continue
 
-            articleData = [article_press, article_type, newsURL, article_title, news, article_date]
-            returnData = {
-                'articleData' : articleData
-            }
+                articleData = [article_press, article_type, newsURL, article_title, news, article_date]
+                returnData = {
+                    'articleData' : articleData
+                }
+                break
             
             self.IntegratedDB['TotalArticleCnt'] += 1
             if self.print_status_option == True:

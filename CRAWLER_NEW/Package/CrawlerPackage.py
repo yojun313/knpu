@@ -49,6 +49,7 @@ class CrawlerPackage(ToolPackage):
             'currentDate': '',
             'percent'    : '',
             'web_option' : False,
+            'api_num'    : 1
         }   
         
         self.IntegratedDB = {
@@ -58,11 +59,12 @@ class CrawlerPackage(ToolPackage):
             'TotalRereplyCnt' : 0
         }
         
-    def setPrintData(self, currentDate, percent, web_option):
+    def setPrintData(self, currentDate, percent, web_option, api_num = 0):
     
         self.PrintData['currentDate'] = currentDate
         self.PrintData['percent']     = percent
         self.PrintData['web_option']  = web_option
+        self.PrintData['api_num']     = api_num
 
     def printStatus(self, type, option = 1, printData = {}, endMsg_option = False):
   
@@ -99,29 +101,35 @@ class CrawlerPackage(ToolPackage):
         if endMsg_option == True:
             out_str = f"\r{type} 크롤링 종료"
         
-        elif self.PrintData['web_option'] == False:
-            out_str = (
-                f"\r{WHITE}|| 진행: {YELLOW}{printData['percent']}%{WHITE} "
-                f"| 경과: {YELLOW}{loadingtime}{WHITE} "
-                f"| 날짜: {color['date']}{printData['currentDate']}{WHITE} "
-                f"| url: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
-                f"| {type_dic[type]}: {color['type']}{self.IntegratedDB['TotalArticleCnt']}{WHITE} "
-                f"| 댓글: {color['reply']}{self.IntegratedDB['TotalReplyCnt']}{WHITE} "
-                f"| 대댓글: {color['re_reply']}{self.IntegratedDB['TotalRereplyCnt']}{WHITE} ||{RESET}"
-            )
-        
         else:
-            out_str = (
-                f"\r|| 진행: {printData['percent']}% "
-                f"| 경과: {loadingtime} "
-                f"| 날짜: {printData['currentDate']} "
-                f"| url: {self.IntegratedDB['UrlCnt']} "
-                f"| {type_dic[type]}: {self.IntegratedDB['TotalArticleCnt']} "
-                f"| 댓글: {self.IntegratedDB['TotalReplyCnt']} "
-                f"| 대댓글: {self.IntegratedDB['TotalRereplyCnt']} ||"
-            )
+            if self.PrintData['web_option'] == False:
+                out_str = (
+                    f"\r{WHITE}|| 진행: {YELLOW}{printData['percent']}%{WHITE} "
+                    f"| 경과: {YELLOW}{loadingtime}{WHITE} "
+                    f"| 날짜: {color['date']}{printData['currentDate']}{WHITE} "
+                    f"| url: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
+                    f"| {type_dic[type]}: {color['type']}{self.IntegratedDB['TotalArticleCnt']}{WHITE} "
+                    f"| 댓글: {color['reply']}{self.IntegratedDB['TotalReplyCnt']}{WHITE} "
+                    f"| 대댓글: {color['re_reply']}{self.IntegratedDB['TotalRereplyCnt']}{WHITE} ||{RESET}"
+                )
             
-
+            else:
+                out_str = (
+                    f"\r|| 진행: {printData['percent']}% "
+                    f"| 경과: {loadingtime} "
+                    f"| 날짜: {printData['currentDate']} "
+                    f"| url: {self.IntegratedDB['UrlCnt']} "
+                    f"| {type_dic[type]}: {self.IntegratedDB['TotalArticleCnt']} "
+                    f"| 댓글: {self.IntegratedDB['TotalReplyCnt']} "
+                    f"| 대댓글: {self.IntegratedDB['TotalRereplyCnt']} ||"
+                )
+            
+            if type == 'YouTube':
+                if self.PrintData['web_option'] == False:
+                    out_str += f" | API num : {YELLOW}{self.PrintData['api_num']} {WHITE}|"
+                else:
+                    out_str += f" | API num : {self.PrintData['api_num']} |"
+            
         print(out_str, end = "")
         
     def error_dump(self, code, msg, target):
@@ -224,9 +232,8 @@ class CrawlerPackage(ToolPackage):
         
         urlList = []
         
-        try:
+        try:    
             while True:
-                
                 search_page_url = 'https://www.google.co.kr/search?q={}+site:{}&hl=ko&source=lnt&tbs=cdr%3A1%2Ccd_min%3A{}%2Ccd_max%3A{}&tbm=&start={}'.format(keyword, site, startDate, endDate, currentPage)
                 header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
                 cookie = {'CONSENT' : 'YES'}
