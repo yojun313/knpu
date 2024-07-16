@@ -10,18 +10,17 @@ from CrawlerPackage import CrawlerPackage
 from ToolPackage import ToolPackage
 import json
 from googleapiclient.discovery import build
+from bs4 import BeautifulSoup
+from datetime import datetime
 import sys
 import re
 
 class YouTubeCrawler(CrawlerPackage):
     
-    def __init__(self, proxy_option = False, web_option = False):
-        super().__init__(proxy_option, web_option)
-        self.error_data = {
-            'Error Code' : 1,
-            'Error Msg' : "",
-            'Error Target' : ""
-        }
+    def __init__(self, proxy_option = False, print_status_option = False):
+        super().__init__(proxy_option)
+        
+        self.print_status_option = print_status_option
         
         self.api_dic        = {}
         self.api_list       = self.read_txt(os.path.join(self.collection_path, 'YouTube_apiList.txt'))
@@ -32,7 +31,58 @@ class YouTubeCrawler(CrawlerPackage):
             self.api_dic[num] = self.api_list[num-1]
 
     def urlCollector(self, keyword, startDate, endDate):
-        return super().urlCollector(keyword, startDate, endDate, site='youtube.com', urlLimiter=['playlist', 'shorts', 'channel', 'user', 'm.'])
+        urlLimiter = ['playlist', 'shorts', 'channel', 'user', 'm.']
+        site       = ['youtube.com']
+        startDate = datetime.strptime(str(startDate), "%Y%m%d").strftime("%-m/%-d/%Y")
+        endDate   = datetime.strptime(str(endDate), "%Y%m%d").strftime("%-m/%-d/%Y")
+        currentPage = 0
+        
+        urlList = []
+        
+        try:
+            if self.print_status_option == True:
+                self.printStatus('YouTube', 1, self.PrintData)
+            while True:
+                search_page_url = 'https://www.google.co.kr/search?q={}+site:{}&hl=ko&source=lnt&tbs=cdr%3A1%2Ccd_min%3A{}%2Ccd_max%3A{}&tbm=&start={}'.format(keyword, site, startDate, endDate, currentPage)
+                header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+                cookie = {'CONSENT' : 'YES'}
+                
+                main_page = self.Requester(search_page_url, headers = header, cookies = cookie)
+                main_page = BeautifulSoup(main_page.text, "lxml")
+                site_result = main_page.select("a[jsname = 'UWckNb']")
+                
+                if site_result == []:
+                    break
+                
+                for a in site_result:
+                    add_link = a['href']
+                    
+                    if add_link not in urlList and 'youtube' in add_link:
+                        # Check if the URL contains any characters from urlLimiter
+                        contains_limiter = False
+                        for char in urlLimiter:
+                            if char in add_link:
+                                contains_limiter = True
+                                break
+                        
+                        if contains_limiter == False:
+                            urlList.append(add_link)
+                            self.IntegratedDB['UrlCnt'] += 1
+                        
+                if self.print_status_option == True:
+                    self.printStatus('YouTube', option=2, printData=self.PrintData)
+                currentPage += 10
+            
+            urlList = list(set(urlList))
+            returnData = {
+                'urlList' : urlList,
+                'urlCnt'  : len(urlList)
+            }
+            
+            return returnData
+        
+        except Exception as e:
+            self.error_detector()
     
     def articleCollector(self, url, error_detector_option = False):
         
@@ -57,7 +107,15 @@ class YouTubeCrawler(CrawlerPackage):
                 like_count = temp['items'][0]['statistics']['likeCount']  # 좋아요
                 comment_count = temp['items'][0]['statistics']['commentCount']  # 댓글 수
             except:
-                return []
+                returnData = {
+                    'articleData' : []
+                }
+                return returnData
+                
+                
+            self.IntegratedDB['TotalArticleCnt'] += 1
+            if self.print_status_option == True:
+                self.printStatus('YouTube', 3, self.PrintData)
             
             articleData = [channel, video_url, video_title, video_description, video_date, view_count, like_count, comment_count]
             returnData = {
@@ -78,6 +136,9 @@ class YouTubeCrawler(CrawlerPackage):
         try:
             youtube_info = url[32:]
             replyList = []
+            rereplyList = []
+            reply_idx = 1
+            rereply_idx = 1
             
             while True:
                 try:
@@ -86,12 +147,13 @@ class YouTubeCrawler(CrawlerPackage):
                     break
                 except Exception as e:
                     if any(error in str(e) for error in ["operationNotSupported", "commentsDisabled", "forbidden", "channelNotFound", "commentThreadNotFound", "videoNotFound", "processingFailure"]):
-                        return {'replyList': [], 'replyCnt': 0, 'api_num' : self.api_num}
+                        return {'replyList': [], 'rereplyList' : [], 'replyCnt': 0, 'rereplyCnt' : 0, 'api_num' : self.api_num}
                     elif "quotaExceeded" in str(e):
                         if self.api_num == len(self.api_list):
                             print("\rAPI 할당량 초과 --> 1일 후 유튜브 크롤링을 시도해주십시오")
                             sys.exit()
                         self.api_num += 1
+                        self.PrintData['api_num'] = self.api_num
                         self.api_obj = build('youtube', 'v3', developerKey=self.api_list(self.api_num - 1))
             
             while request:
@@ -102,40 +164,48 @@ class YouTubeCrawler(CrawlerPackage):
                         if '</a>' in textdisplay:
                             textdisplay = re.sub(r'<a[^>]*>(.*?)<\/a>', '', textdisplay)
                             textdisplay = textdisplay[1:]
-                        replyList.append([comment['authorDisplayName'], comment['publishedAt'], textdisplay, comment['likeCount'], url])
-                        """
-                        if self.option == 2:
-                            try:
-                                if item['snippet']['totalReplyCount'] > 0:
-                                    for reply_item in item['replies']['comments']:
-                                        reply = reply_item['snippet']
-                                        replyList.append([reply['textDisplay'], reply['authorDisplayName'], reply['publishedAt'], reply['likeCount']])
-                            except:
-                                pass
-                        """
-                    except:
+                        replyData = [reply_idx, comment['authorDisplayName'], comment['publishedAt'], textdisplay, comment['likeCount'], url]
+                        replyList.append(replyData)
+                        
+                        reply_idx += 1
+                        self.IntegratedDB['TotalReplyCnt'] += 1
+
+                        try:
+                            if item['snippet']['totalReplyCount'] > 0:
+                                for reply_item in item['replies']['comments']:
+                                    reply = reply_item['snippet']
+                                    rereplyList.append([rereply_idx, reply['authorDisplayName'], reply['publishedAt'], reply['textDisplay'], reply['likeCount'], url])
+                                    rereply_idx += 1
+                                    self.IntegratedDB['TotalRereplyCnt'] += 1
+                        except Exception as e:
+                            pass
+                    except Exception as e:
                         pass 
+                
+                if self.print_status_option == True:
+                    self.printStatus('YouTube', 6, self.PrintData)
                 
                 if limiter == False:
                     if 'nextPageToken' in response:
                         while True:
                             try:
-                                request = self.api_obj.commentThreads().list_next(request, response)
+                                request = self.api_obj.commentThreads().list(part='snippet,replies', videoId=youtube_info, pageToken=response['nextPageToken'], maxResults=100, order = 'relevance')
                                 response = request.execute()
                                 break
                             except Exception as e:
                                 if any(error in str(e) for error in ["operationNotSupported", "commentsDisabled", "forbidden", "channelNotFound", "commentThreadNotFound", "videoNotFound", "processingFailure"]):
-                                    return []
+                                    return {'replyList': replyList, 'rereplyList' : rereplyList, 'replyCnt': len(replyList), 'rereplyCnt' : len(rereplyList), 'api_num' : self.api_num}
                                 elif "quotaExceeded" in str(e):
                                     if self.api_num == len(self.api_list):
                                         print("\rAPI 할당량 초과 --> 1일 후 유튜브 크롤링을 시도해주십시오")
                                         sys.exit()
                                     self.api_num += 1
+                                    self.PrintData['api_num'] = self.api_num
                                     self.api_obj = build('youtube', 'v3', developerKey=self.api_list(self.api_num - 1))
                     else:
-                        return {'replyList': replyList, 'replyCnt': len(replyList), 'api_num' : self.api_num}
+                        return {'replyList': replyList, 'rereplyList': rereplyList, 'replyCnt': len(replyList), 'rereplyCnt': len(rereplyList), 'api_num' : self.api_num}
                 else:
-                    return {'replyList': replyList, 'replyCnt': len(replyList), 'api_num' : self.api_num}
+                    return {'replyList': replyList, 'rereplyList': rereplyList,  'replyCnt': len(replyList), 'rereplyCnt': len(rereplyList), 'api_num' : self.api_num}
         
         except Exception:
             error_msg  = self.error_detector(error_detector_option)
@@ -148,7 +218,7 @@ def CrawlerTester(url):
     ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
     
     print("\nYouTubeCrawler_replyCollector: ", end = '')
-    target = CrawlerPackage_obj.replyCollector(url=url, limiter=True, error_detector_option=True)
+    target = CrawlerPackage_obj.replyCollector(url=url, limiter=False, error_detector_option=True)
     ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
     
             

@@ -95,4 +95,5 @@ class GooglePackage:
                 media = MediaFileUpload(file_path, resumable=True)
                 file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
         
-        self.drive_folder_link = f"https://drive.google.com/drive/folders/{folder_id}"
+        drive_folder_link = f"https://drive.google.com/drive/folders/{folder_id}"
+        return drive_folder_link
