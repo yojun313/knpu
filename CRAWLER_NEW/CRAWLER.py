@@ -71,9 +71,9 @@ class Crawler(CrawlerPackage):
                 f"{'Computer:':<15} {self.crawlcom}\n"
                 f"{'DB path:':<15} {self.DBpath}\n"
                 f"{'Drive Upload:':<15} {self.upload}\n"
-                f"====================================================================================================================\n\n\n\n"
+                f"====================================================================================================================\n"
             )
-            log.write(self.msg)
+            log.write(self.msg + '\n\n')
             log.close()
         except:
             print("Error: 폴더 생성 실패")
@@ -86,16 +86,7 @@ class Crawler(CrawlerPackage):
             os.system("clear")
             
     def infoPrinter(self):
-        print("====================================================================================================================") 
-        print(f"{'User:':<15} {self.user}")
-        print(f"{'Object:':<15} {self.DBtype}")
-        print(f"{'Option:':<15} {self.option}")
-        print(f"{'Keyword:':<15} {self.keyword}")
-        print(f"{'Date Range:':<15} {self.startDate_form.strftime('%Y.%m.%d')} ~ {self.endDate_form.strftime('%Y.%m.%d')}")
-        print(f"{'Computer:':<15} {self.crawlcom}")
-        print(f"{'DB path:':<15} {self.DBpath}")
-        print(f"{'Drive Upload:':<15} {self.upload}")
-        print("====================================================================================================================\n")
+        print(self.msg)
       
     def ReturnChecker(self, value):
         error = False
@@ -293,7 +284,7 @@ class Crawler(CrawlerPackage):
         # initial list
         self.urlList         = []
         self.article_list    = [["NaverCafe Name", "NaverCafe MemberCount", "Cafe Writer", "Cafe Title", "Cafe Text", "Cafe Date", "Cafe ReadCount", "Cafe ReplyCount", "Cafe URL"]]
-        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", 'Cafe URL']]
+        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", 'Reply Text', 'Cafe URL']]
         
         if self.weboption == 0:
             self.infoPrinter()

@@ -239,8 +239,16 @@ class NaverCafeCrawler(CrawlerPackage):
                 soup = BeautifulSoup(response.text, 'html.parser')
                 json_string = self.escape_content_html(soup.text)
                 temp = json.loads(json_string)
-                                
-                comment_json = temp['result']['comments']['items']
+                
+                try:
+                    comment_json = temp['result']['comments']['items']
+                except:
+                    returnData = {
+                        'replyList' : replyList,
+                        'replyCnt' : len(replyList)
+                    } 
+                    return returnData
+                    
                 if comment_json == []:
                     returnData = {
                         'replyList' : replyList,
