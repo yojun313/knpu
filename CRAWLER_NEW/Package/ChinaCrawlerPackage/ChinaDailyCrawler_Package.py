@@ -77,6 +77,7 @@ class ChinaDailyCrawler(CrawlerPackage):
     
         try:
             if self.print_status_option == True:
+                self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('ChinaDaily', option=1, printData=self.PrintData)
             
             includeList, excludeList = self.keywordParser(keyword)

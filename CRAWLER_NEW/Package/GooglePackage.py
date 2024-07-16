@@ -97,3 +97,9 @@ class GooglePackage:
         
         drive_folder_link = f"https://drive.google.com/drive/folders/{folder_id}"
         return drive_folder_link
+'''
+object = GooglePackage('/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER')
+path = object.UploadFolder('/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER/scrapdata/Naver_News_무고죄_20230101_20230101_0716_2008')
+print(path)
+object.SendMail('moonyojun@naver.com', 'test', 'path')
+'''

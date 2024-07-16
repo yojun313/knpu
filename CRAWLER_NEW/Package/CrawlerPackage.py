@@ -99,7 +99,7 @@ class CrawlerPackage(ToolPackage):
         loadingtime    = str(int(loading_second//3600))+":"+str(int(loading_second%3600//60))+":"+str(int(loading_second%3600%60))
         
         if endMsg_option == True:
-            out_str = f"\r{type} 크롤링 종료"
+            out_str = f"\r{type} 크롤링 종료{RESET}"
         
         else:
             if self.PrintData['web_option'] == False:

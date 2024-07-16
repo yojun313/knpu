@@ -92,6 +92,7 @@ class NaverCafeCrawler(CrawlerPackage):
             return self.error_data
         try:
             if self.print_status_option == True:
+                self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverCafe', 1, self.PrintData)
                 
             ipChange = False
@@ -180,15 +181,21 @@ class NaverCafeCrawler(CrawlerPackage):
                     'articleData' : []
                 }
                 return returnData
-                
-            cafe_name    = temp['result']['cafe']['name']
-            memberCount  = temp['result']['cafe']['memberCount']
-            writer       = temp['result']['article']['writer']['id']
-            title        = re.sub(r'[^\w\s가-힣]', '', temp['result']['article']['subject'])
-            text         = ' '.join(BeautifulSoup(temp['result']['article']['contentHtml'], 'html.parser').get_text().split()).replace("\\n", "").replace("\\t", "").replace("\u200b", "").replace('\\', '')
-            date         = self.timeExtractor(int(temp['result']['article']['writeDate']))
-            readCount    = temp['result']['article']['readCount']
-            commentCount = temp['result']['article']['commentCount']
+            try:
+                cafe_name    = temp['result']['cafe']['name']
+                memberCount  = temp['result']['cafe']['memberCount']
+                writer       = temp['result']['article']['writer']['id']
+                title        = re.sub(r'[^\w\s가-힣]', '', temp['result']['article']['subject'])
+                text         = ' '.join(BeautifulSoup(temp['result']['article']['contentHtml'], 'html.parser').get_text().split()).replace("\\n", "").replace("\\t", "").replace("\u200b", "").replace('\\', '')
+                date         = self.timeExtractor(int(temp['result']['article']['writeDate']))
+                readCount    = temp['result']['article']['readCount']
+                commentCount = temp['result']['article']['commentCount']
+            except:
+                articleData = []
+                returnData = {
+                    'articleData' : articleData
+                }
+                return returnData
             
             self.IntegratedDB['TotalArticleCnt'] += 1
             if self.print_status_option == True:
