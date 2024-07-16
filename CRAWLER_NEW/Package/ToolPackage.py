@@ -67,16 +67,14 @@ class ToolPackage:
         with open(os.path.join(csv_path, csv_name), 'w', newline = '', encoding='utf-8-sig') as object:
             csv.writer(object).writerows(object_list)
     
-    def get_userEmail(self, name):
+    def get_userEmail(self, input_name):
         user_list = self.read_txt(os.path.join(COLLECTION_PATH, 'userList.txt'))
         user_dict = {}
         for user in user_list:
             name, email = user.split()
             user_dict[name] = email
-        
         try:
-            userEmail = user_dict[name]
-            
+            userEmail = user_dict[input_name]
         except:
             userEmail = 'moonyojun@naver.com'
         
@@ -127,4 +125,4 @@ class ToolPackage:
 
 if __name__ == '__main__':
     ToolPackage_obj = ToolPackage()
-    print(ToolPackage_obj.get_userEmail())
+    print(ToolPackage_obj.get_userEmail('문요준'))

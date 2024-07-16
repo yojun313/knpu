@@ -56,9 +56,9 @@ class NaverNewsCrawler(CrawlerPackage):
         
         try:
             if self.print_status_option == True:
+                self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverNews', 1, self.PrintData)
                 
-            self.IntegratedDB['UrlCnt'] = 0
             startDate = startDate.strftime('%Y.%m.%d')
             endDate = endDate.strftime('%Y.%m.%d')
             

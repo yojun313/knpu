@@ -46,8 +46,9 @@ class NaverBlogCrawler(CrawlerPackage):
             return self.error_data
         try:
             if self.print_status_option == True:
+                self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverBlog', 1, self.PrintData)
-            
+                
             ipChange = False
             urlList = []
             if self.proxy_option == True:
@@ -77,9 +78,9 @@ class NaverBlogCrawler(CrawlerPackage):
                     if site_result == []:
                         break
                         
-                    for a in site_result: #스크랩한 데이터 중 링크만 추출
+                    for a in site_result: #스크랩한 데이터 중 링크만 추출 
                         add_link = a['href']
-                        if add_link not in urlList and 'naver' in add_link:
+                        if add_link not in urlList and 'naver' in add_link and 'tistory' not in add_link:
                             urlList.append(add_link)
                             self.IntegratedDB['UrlCnt'] += 1
                                 
