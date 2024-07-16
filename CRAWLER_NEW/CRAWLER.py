@@ -10,11 +10,9 @@ from Package.CrawlerPackage import CrawlerPackage
 from datetime import datetime, timedelta
 import urllib3
 import warnings
-import socket
 import os
 import sys
 import time
-import copy
 import platform
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -63,7 +61,7 @@ class Crawler(CrawlerPackage):
             os.mkdir(self.DBpath)
             log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'),'w+')
             
-            msg = (
+            self.msg = (
                 f"====================================================================================================================\n"
                 f"{'User:':<15} {self.user}\n"
                 f"{'Object:':<15} {self.DBtype}\n"
@@ -75,12 +73,18 @@ class Crawler(CrawlerPackage):
                 f"{'Drive Upload:':<15} {self.upload}\n"
                 f"====================================================================================================================\n\n\n\n"
             )
-            log.write(msg)
+            log.write(self.msg)
             log.close()
         except:
             print("Error: 폴더 생성 실패")
             sys.exit()
     
+    def clear_screen(self):
+        if platform.system() == "Windows":
+            os.system("cls")
+        else:
+            os.system("clear")
+            
     def infoPrinter(self):
         print("====================================================================================================================") 
         print(f"{'User:':<15} {self.user}")
@@ -118,6 +122,20 @@ class Crawler(CrawlerPackage):
         else:
             return False
     
+    def FinalOperator(self):
+        self.clear_screen()
+        print(self.msg)
+        print('\r업로드 및 메일 전송 중...', end = '')
+        
+        title = '[크롤링 완료] ' + self.DBname
+        text = self.msg
+        
+        if self.upload == True:
+            driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
+            text = self.msg + f'File URL: {driveURL}'
+       
+        self.GooglePackage_obj.SendMail(self.userEmail, title, text)
+    
     def Naver_News_Crawler(self, option):
         
         NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=True, print_status_option=True)
@@ -153,6 +171,7 @@ class Crawler(CrawlerPackage):
             
             # finish line
             if dayCount == self.date_range:
+                self.FinalOperator()
                 self.printStatus(type='NaverNews', endMsg_option=True)
                 return
             
@@ -447,7 +466,7 @@ def controller():
         4 : "\n1. 영상 정보 + 댓글/대댓글 (100개 제한)\n2. 영상 정보 + 댓글/대댓글(무제한)\n",
         5 : "\n1. 기사\n"
     }
-    print("================ Crawler Controller ================\n")
+    print("================ Crawler Controller ================")
     #name = input("본인의 이름을 입력하세요: ")
     
     print("\n[ 크롤링 대상 ]\n")
@@ -477,22 +496,20 @@ def controller():
     upload    = input("\n구글 드라이브에 업로드 하시겠습니까(1/0)? ")
     weboption = 0
     '''
-    startDate = '20220101'
+    startDate = '20230101'
     endDate = '20231231'
-    keyword = '비트코인'
+    keyword = '대통령'
     if control_ask == 5:
         keyword = 'president'
     upload = 1
     weboption = 0
     option = 2
+    if control_ask == 1:
+        option = 1
     name = "문요준"
     
-    if platform.system() == "Windows":
-        os.system("cls")
-    else:
-        os.system("clear")
-    
     Crawler_obj = Crawler(name, startDate, endDate, keyword, upload, weboption)
+    Crawler_obj.clear_screen()
     
     if control_ask == 1:
         Crawler_obj.Naver_News_Crawler(option)

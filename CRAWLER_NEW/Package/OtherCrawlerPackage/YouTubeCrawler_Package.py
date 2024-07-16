@@ -41,9 +41,11 @@ class YouTubeCrawler(CrawlerPackage):
         
         try:
             if self.print_status_option == True:
+                self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('YouTube', 1, self.PrintData)
+                
             while True:
-                search_page_url = 'https://www.google.co.kr/search?q={}+site:{}&hl=ko&source=lnt&tbs=cdr%3A1%2Ccd_min%3A{}%2Ccd_max%3A{}&tbm=&start={}'.format(keyword, site, startDate, endDate, currentPage)
+                search_page_url = 'https://www.google.co.kr/search?q={}+site:{}&hl=ko&source=lnt&tbs=cdr%3A1%2Ccd_min%3A{}%2Ccd_max%3A{}&tbm=vid&start={}'.format(keyword, site, startDate, endDate, currentPage)
                 header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
                 cookie = {'CONSENT' : 'YES'}
                 
