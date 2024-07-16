@@ -156,7 +156,7 @@ class YouTubeCrawler(CrawlerPackage):
                             sys.exit()
                         self.api_num += 1
                         self.PrintData['api_num'] = self.api_num
-                        self.api_obj = build('youtube', 'v3', developerKey=self.api_list(self.api_num - 1))
+                        self.api_obj = build('youtube', 'v3', developerKey=self.api_list[self.api_num - 1])
             
             while request:
                 for item in response['items']:
@@ -203,7 +203,7 @@ class YouTubeCrawler(CrawlerPackage):
                                         sys.exit()
                                     self.api_num += 1
                                     self.PrintData['api_num'] = self.api_num
-                                    self.api_obj = build('youtube', 'v3', developerKey=self.api_list(self.api_num - 1))
+                                    self.api_obj = build('youtube', 'v3', developerKey=self.api_list[self.api_num - 1])
                     else:
                         return {'replyList': replyList, 'rereplyList': rereplyList, 'replyCnt': len(replyList), 'rereplyCnt': len(rereplyList), 'api_num' : self.api_num}
                 else:
@@ -238,6 +238,7 @@ if __name__ == "__main__":
     print("==================================================")
     
     CrawlerPackage_obj = YouTubeCrawler(proxy_option=proxy_option)
+    print(CrawlerPackage_obj.api_list)
     
     if option == 1:
         print("\nYouTubeCrawler_urlCollector: ", end = '')
