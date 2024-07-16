@@ -59,7 +59,7 @@ class YouTubeCrawler(CrawlerPackage):
                 for a in site_result:
                     add_link = a['href']
                     
-                    if add_link not in urlList and 'youtube' in add_link:
+                    if add_link not in urlList and 'https://www.youtube.com/' in add_link and '@' not in add_link:
                         # Check if the URL contains any characters from urlLimiter
                         contains_limiter = False
                         for char in urlLimiter:
