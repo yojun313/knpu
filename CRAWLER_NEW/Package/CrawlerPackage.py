@@ -91,7 +91,8 @@ class CrawlerPackage(ToolPackage):
             'NaverBlog' : '블로그',
             'NaverCafe' : '카페',
             'YouTube'   : '유튜브',
-            'ChinaDaily': '기사'
+            'ChinaDaily': '기사',
+            'ChinaSina' : '기사'
         }
         
         progress_time = time.time()
@@ -178,7 +179,6 @@ class CrawlerPackage(ToolPackage):
                     if trynum >= 100000:
                         print("Proxy Error: Check Proxy & Requester... Program Shut Down")
                         sys.exit()
-                    
                     proxies = self.random_proxy()
                     try:
                         main_page = requests.get(url, proxies = proxies, headers = headers, params = params, cookies = cookies, verify = False, timeout = 3)
