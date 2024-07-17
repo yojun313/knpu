@@ -51,6 +51,26 @@ class ChinaSinaCrawler(CrawlerPackage):
         sorted_urls = sorted(urls, key=extract_date)
         return sorted_urls
     
+    def newsURLChecker(self, newsURL):
+        if 'https://news.sina.com.cn' in newsURL:
+            return 1
+        elif 'https://news.sina.cn' in newsURL:
+            return 2
+        elif 'https://mil.news.sina.com.cn' in newsURL:
+            return 3
+        else:
+            return False
+    
+    def jsonFormatter(self, input_str):
+        # 첫 번째 '{'의 인덱스를 찾습니다.
+        start_index = input_str.index('{')
+        # 마지막 '}'의 인덱스를 찾습니다.
+        end_index = input_str.rindex('}') + 1
+        # JSON 문자열을 추출합니다.
+        json_str = input_str[start_index:end_index]
+        # JSON 문자열을 딕셔너리로 변환합니다.
+        return json_str
+    
     def urlCollector(self, keyword, startDate, endDate):
         try:
             if isinstance(keyword, str) == False:
@@ -126,16 +146,7 @@ class ChinaSinaCrawler(CrawlerPackage):
             error_msg = self.error_detector(self.error_detector_option)
             self.error_dump(2034, error_msg, search_page_url)
             return self.error_data
-     
-    def newsURLChecker(self, newsURL):
-        if 'https://news.sina.com.cn' in newsURL:
-            return 1
-        elif 'https://news.sina.cn' in newsURL:
-            return 2
-        elif 'https://mil.news.sina.com.cn' in newsURL:
-            return 3
-        else:
-            return False
+
      
     def articleCollector(self, newsURL):
         
@@ -159,7 +170,6 @@ class ChinaSinaCrawler(CrawlerPackage):
                 keywords = ', '.join([key.text for key in soup.find('div', {'class': 'keywords'}).find_all('a')])
                 
                 articleData = [title, text, date, source, keywords, newsURL]
-                print(articleData)
 
             elif newsURL_type == 2:
                 
@@ -171,35 +181,116 @@ class ChinaSinaCrawler(CrawlerPackage):
                 keywords = ''
                 
                 articleData = [title, text, date, source, keywords, newsURL]
-                print(articleData)
+
+            returnData = {
+                'articleData' : articleData
+            }
             
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
+            return returnData
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2036, error_msg, newsURL)
             return self.error_data
-            
+    
+    def replyCollector(self, newsURL):
         
+        #response = self.Requester('https://comment.sina.com.cn/page/info?version=1&format=json&channel=gn&newsid=comos-ncemisz7254091&group=undefined&compress=0&ie=utf-8&oe=utf-8&page=1&page_size=10&t_size=3&h_size=3&thread=1&uid=unlogin_user&callback=jsonp_1721225908987&_=1721225908987') 
+        #print(response.text)
+        
+        
+        
+        
+        
+        
+        newsURL_type = self.newsURLChecker(newsURL)
+        if isinstance(newsURL_type, int) == False:
+            self.error_dump(2037, "Check newsURL", newsURL)
+            return self.error_data
+        
+        
+        newsid = newsURL.split('/')[5].split('-')[1]
+        if newsid[0] == 'i':
+            newsid = newsid[1:].split('.')[0]
+        else:
+            newsid = newsid.split('.')[0]
+        
+        replyList = []
+        reply_num = 1
+        
+        try:
+            # https://news.sina.com.cn/c/2024-07-17/doc-incemisz7254091.shtml
+            if newsURL_type == 1:
+                page = 1
+                
+                while True:
+                    api_url = f'https://comment.sina.com.cn/page/info?version=1&format=json&channel=gn&newsid=comos-{newsid}&group=undefined&compress=0&ie=utf-8&oe=utf-8&page={page}&page_size=10&t_size=3&h_size=3&thread=1&uid=unlogin_user&callback=jsonp_{int(time.time())}&_={int(time.time())}'
+                    main_page = self.Requester(api_url)
+                    main_page.encoding = 'UTF-8'
+                    main_page = self.jsonFormatter(main_page.text)
+                    temp = json.loads(main_page)
+                    
+                    comment_json = temp['result']['cmntlist']
+                    
+                    if comment_json == []:
+                        returnData = {
+                            'replyList' : replyList,
+                            'replyCnt'  : len(replyList)
+                        }
+                        return returnData
+                    
+                    for data in comment_json:
+                        nickname = data['nick']
+                        date     = data['time']
+                        like     = data['rank']
+                        text     = data['content'].replace('\u200b', '')
+
+                        replyData = [reply_num, nickname, date, text, like, newsURL]
+                        replyList.append(replyData)
+                        reply_num += 1
+                            
+                    page += 1
+                    
+            # https://news.sina.cn/sh/2023-01-29/detail-imycwefp0361917.d.html
+            if newsURL_type == 2:
+                default_url = 'https://cmnt.sina.cn/aj/v2/list'
+                referURL = f'https://cmnt.sina.cn/index?product=comos&index={newsid}&tj_ch=news&is_clear=0'
+                page = 1
+                while True:
+                    params = {
+                        'channel': 'sh',
+                        'newsid': f'comos-{newsid}',
+                        'group': 'group',
+                        'thread': '1',
+                        'page': page,
+                        '_callback': 'jsonp1'
+                    }
+                    headers = {
+                        'User-Agent': generate_navigator()['user_agent'],
+                        'Referer'   : referURL
+                    }
+                    
+                    main_page = self.Requester(default_url, headers=headers, params=params)
+                    main_page.encoding = 'UTF-8'
+                    main_page = self.jsonFormatter(main_page.text)
+                    temp = json.loads(main_page)
+                    print(temp)
+                    
+
+
+        except Exception as e:
+            print(e)
             
     
            
 object = ChinaSinaCrawler(proxy_option=True)
-object.articleCollector('https://mil.news.sina.com.cn/dgby/2023-01-08/doc-imxzkitn2635178.shtml')       
+replyList = object.replyCollector('https://news.sina.com.cn/c/2024-07-17/doc-incemisz7254091.shtml')       
+for i in replyList['replyList']:
+    print(i)
 '''
 urlList = object.urlCollector('人民', 20230101, 20230131)  
 for url in urlList['urlList']:
     print(url)
 '''
+
+
