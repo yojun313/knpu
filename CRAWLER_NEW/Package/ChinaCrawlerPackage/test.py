@@ -1,29 +1,21 @@
-import re
-from datetime import datetime
+import json
 
-def sort_urls_by_date(urls):
-    # 날짜를 추출하는 정규 표현식
-    date_pattern = re.compile(r'/(\d{4}-\d{2}-\d{2})/')
-
-    def extract_date(url):
-        match = date_pattern.search(url)
-        if match:
-            return datetime.strptime(match.group(1), '%Y-%m-%d')
+def extract_json_from_string(input_str):
+    try:
+        # 첫 번째 '{'의 인덱스를 찾습니다.
+        start_index = input_str.index('{')
+        # 마지막 '}'의 인덱스를 찾습니다.
+        end_index = input_str.rindex('}') + 1
+        # JSON 문자열을 추출합니다.
+        json_str = input_str[start_index:end_index]
+        # JSON 문자열을 딕셔너리로 변환합니다.
+        json_data = json.loads(json_str)
+        return json_data
+    except (ValueError, json.JSONDecodeError) as e:
+        print(f"Error extracting JSON: {e}")
         return None
 
-    # 날짜를 기준으로 URL 정렬
-    sorted_urls = sorted(urls, key=extract_date)
-    return sorted_urls
-
-# 테스트 URL 리스트
-urls = [
-    "https://news.sina.cn/sh/2023-01-14/detail-imyacear8951274.d.html",
-    "https://news.sina.cn/sh/2022-05-20/detail-imyacear8951274.d.html",
-    "https://news.sina.cn/sh/2023-07-17/detail-imyacear8951274.d.html",
-    "https://news.sina.cn/sh/2021-12-25/detail-imyacear8951274.d.html"
-]
-
-# 정렬된 URL 리스트 출력
-sorted_urls = sort_urls_by_date(urls)
-for url in sorted_urls:
-    print(url)
+# 예제 사용법
+input_str = 'Zepto1721225570616({"status":1,"msg":"","data":[]});'
+json_data = extract_json_from_string(input_str)
+print(json_data)
