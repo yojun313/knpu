@@ -19,6 +19,7 @@ class ChinaDailyCrawler(CrawlerPackage):
         super().__init__(proxy_option)
 
         self.print_status_option = print_status_option
+        self.error_detector_option = False
     
     def keywordParser(self, keyword):
         # 검색어를 담을 리스트 초기화
@@ -64,7 +65,7 @@ class ChinaDailyCrawler(CrawlerPackage):
         
         return json_str
     
-    def articleCollector(self, keyword, startDate, endDate, error_detector_option = False):
+    def articleCollector(self, keyword, startDate, endDate):
         try:
             if isinstance(keyword, str) == False:
                 self.error_dump(2029, 'Check Keyword', keyword)
@@ -149,7 +150,7 @@ class ChinaDailyCrawler(CrawlerPackage):
                     page += 1
         
         except Exception:
-            error_msg  = self.error_detector(error_detector_option)
+            error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2031, error_msg, referer_url)
             return self.error_data
 
