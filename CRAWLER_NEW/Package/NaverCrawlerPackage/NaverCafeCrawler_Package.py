@@ -27,6 +27,7 @@ class NaverCafeCrawler(CrawlerPackage):
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
+        self.error_detector_option = False
     
     def cafeURLChecker(self, url):
         pattern = r"https://cafe\.naver\.com/[^/]+/[^/]+\?art=[^/]+"
@@ -80,7 +81,7 @@ class NaverCafeCrawler(CrawlerPackage):
         
         return json_str
     
-    def urlCollector(self, keyword, startDate, endDate, error_detector_option = False):
+    def urlCollector(self, keyword, startDate, endDate):
         try:
             if isinstance(keyword, str) == False:
                 self.error_dump(2018, 'Check Keyword', keyword)
@@ -155,11 +156,11 @@ class NaverCafeCrawler(CrawlerPackage):
             return returnData
             
         except Exception:
-            error_msg  = self.error_detector(error_detector_option)
+            error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2020, error_msg, search_page_url_tmp)
             return self.error_data
 
-    def articleCollector(self, cafeURL, error_detector_option = False):
+    def articleCollector(self, cafeURL):
         if isinstance(cafeURL, str) == False or self.cafeURLChecker(cafeURL) == False:
             self.error_dump(2021, "Check newsURL", cafeURL)
             return self.error_data
@@ -209,11 +210,11 @@ class NaverCafeCrawler(CrawlerPackage):
             return returnData
         
         except:
-            error_msg  = self.error_detector(error_detector_option)
+            error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2022, error_msg, cafeURL)
             return self.error_data
          
-    def replyCollector(self, cafeURL, info = {}, error_detector_option = False):
+    def replyCollector(self, cafeURL, info = {}):
         if isinstance(cafeURL, str) == False or self.cafeURLChecker(cafeURL) == False:
             self.error_dump(2023, "Check newsURL", cafeURL)
             return self.error_data
@@ -283,17 +284,17 @@ class NaverCafeCrawler(CrawlerPackage):
             return returnData
         
         except Exception:
-            error_msg  = self.error_detector(error_detector_option)
+            error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2024, error_msg, cafeURL)
             return self.error_data
 
 def CrawlerTester(url):
     print("\nNaverCafeCrawler_articleCollector: ", end = '')
-    target = CrawlerPackage_obj.articleCollector(cafeURL=url, error_detector_option=True)
+    target = CrawlerPackage_obj.articleCollector(cafeURL=url)
     ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
 
     print("\nNaverCafeCrawler_replyCollector: ", end = '')
-    target = CrawlerPackage_obj.replyCollector(cafeURL=url, error_detector_option=True)
+    target = CrawlerPackage_obj.replyCollector(cafeURL=url)
     ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
 
     
@@ -315,7 +316,7 @@ if __name__ == "__main__":
 
     if option == 1:
         print("\nNaverCafeCrawler_urlCollector: ", end = '')
-        returnData = CrawlerPackage_obj.urlCollector("무고죄", 20240601, 20240601, error_detector_option=True)
+        returnData = CrawlerPackage_obj.urlCollector("무고죄", 20240601, 20240601)
         ToolPackage_obj.CrawlerChecker(returnData, result_option=result_option)
         
         urlList = returnData['urlList']

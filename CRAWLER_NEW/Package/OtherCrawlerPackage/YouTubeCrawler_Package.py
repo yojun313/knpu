@@ -21,6 +21,7 @@ class YouTubeCrawler(CrawlerPackage):
         super().__init__(proxy_option)
         
         self.print_status_option = print_status_option
+        self.error_detector_option = False
         
         self.api_dic        = {}
         self.api_list       = self.read_txt(os.path.join(self.collection_path, 'YouTube_apiList.txt'))
@@ -86,7 +87,7 @@ class YouTubeCrawler(CrawlerPackage):
         except Exception as e:
             self.error_detector()
     
-    def articleCollector(self, url, error_detector_option = False):
+    def articleCollector(self, url):
         
         if 'https://www.youtube.com/watch?v=' not in url:
             self.error_dump(2025, "Check YouTubeURL", url)
@@ -126,11 +127,11 @@ class YouTubeCrawler(CrawlerPackage):
             return returnData
 
         except Exception:
-            error_msg  = self.error_detector(error_detector_option)
+            error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2026, error_msg, url)
             return self.error_data
             
-    def replyCollector(self, url, limiter = True, error_detector_option = False):
+    def replyCollector(self, url, limiter = True):
         if 'https://www.youtube.com/watch?v=' not in url:
             self.error_dump(2027, "Check YouTubeURL", url)
             return self.error_data
@@ -210,17 +211,17 @@ class YouTubeCrawler(CrawlerPackage):
                     return {'replyList': replyList, 'rereplyList': rereplyList,  'replyCnt': len(replyList), 'rereplyCnt': len(rereplyList), 'api_num' : self.api_num}
         
         except Exception:
-            error_msg  = self.error_detector(error_detector_option)
+            error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2028, error_msg, url)
             return self.error_data
 
 def CrawlerTester(url):
     print("\nYouTubeCrawler_articleCollector: ", end = '')
-    target = CrawlerPackage_obj.articleCollector(url=url, error_detector_option=True)
+    target = CrawlerPackage_obj.articleCollector(url=url)
     ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
     
     print("\nYouTubeCrawler_replyCollector: ", end = '')
-    target = CrawlerPackage_obj.replyCollector(url=url, limiter=False, error_detector_option=True)
+    target = CrawlerPackage_obj.replyCollector(url=url, limiter=False)
     ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
     
             
@@ -238,7 +239,7 @@ if __name__ == "__main__":
     print("==================================================")
     
     CrawlerPackage_obj = YouTubeCrawler(proxy_option=proxy_option)
-    print(CrawlerPackage_obj.api_list)
+    CrawlerPackage_obj.error_detector_option = True
     
     if option == 1:
         print("\nYouTubeCrawler_urlCollector: ", end = '')

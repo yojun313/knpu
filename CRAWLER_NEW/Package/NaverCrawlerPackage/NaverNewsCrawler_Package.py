@@ -26,6 +26,7 @@ class NaverNewsCrawler(CrawlerPackage):
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
+        self.error_detector_option = False
     
     def newsURLChecker(self, url):
         parts = [
@@ -41,7 +42,7 @@ class NaverNewsCrawler(CrawlerPackage):
         return True
     
     # 파라미터로 (검색어, 시작일, 종료일) 전달
-    def urlCollector(self, keyword, startDate, endDate, error_detector_option = False): # DateForm: ex)20231231
+    def urlCollector(self, keyword, startDate, endDate): # DateForm: ex)20231231
         try:
             if isinstance(keyword, str) == False:
                 self.error_dump(2000, 'Check Keyword', keyword)
@@ -96,12 +97,12 @@ class NaverNewsCrawler(CrawlerPackage):
             return returnData
             
         except Exception:
-            error_msg  = self.error_detector(error_detector_option)
+            error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2003, error_msg, search_page_url_tmp)
             return self.error_data
             
     # 파라미터로 (url) 전달
-    def articleCollector(self, newsURL, error_detector_option = False):
+    def articleCollector(self, newsURL):
         if isinstance(newsURL, str) == False or self.newsURLChecker(newsURL) == False:
             self.error_dump(2004, "Check newsURL", newsURL)
             return self.error_data
@@ -139,12 +140,12 @@ class NaverNewsCrawler(CrawlerPackage):
             return returnData
                
         except Exception:
-            error_msg  = self.error_detector(error_detector_option)
+            error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2005, error_msg, newsURL)
             return self.error_data
     
     # 파라미터로 (url, 통계데이터 반환 옵션, 댓글 코드 반환 옵션) 전달
-    def replyCollector(self, newsURL, error_detector_option = False): 
+    def replyCollector(self, newsURL): 
         if isinstance(newsURL, str) == False or self.newsURLChecker(newsURL) == False:
             self.error_dump(2006, "Check newsURL", newsURL)
             return self.error_data
@@ -296,12 +297,12 @@ class NaverNewsCrawler(CrawlerPackage):
             return returnData
             
         except Exception:
-            error_msg  = self.error_detector(error_detector_option)
+            error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2007, error_msg, newsURL)
             return self.error_data
     
     # 파라미터로 (url, 댓글 코드) 전달
-    def rereplyCollector(self, newsURL, parentCommentNum_list, error_detector_option = False):
+    def rereplyCollector(self, newsURL, parentCommentNum_list):
         if isinstance(newsURL, str) == False or self.newsURLChecker(newsURL) == False:
             self.error_dump(2008, 'Check newsURL', newsURL)
             return self.error_data
@@ -400,18 +401,18 @@ class NaverNewsCrawler(CrawlerPackage):
             return returnData
         
         except Exception:
-            error_msg  = self.error_detector(error_detector_option)
+            error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2010, error_msg, newsURL)
             return self.error_data
 
 
 def CrawlerTester(url):
     print("\nNaverNewsCrawler_articleCollector: ", end = '')
-    target = CrawlerPackage_obj.articleCollector(newsURL=url, error_detector_option=True)
+    target = CrawlerPackage_obj.articleCollector(newsURL=url)
     ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
     
     print("\nNaverNewsCrawler_replyCollector: ", end = '')
-    target = CrawlerPackage_obj.replyCollector(newsURL=url, error_detector_option=True)
+    target = CrawlerPackage_obj.replyCollector(newsURL=url)
     ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
     
     if target['replyList'] == []:
@@ -420,7 +421,7 @@ def CrawlerTester(url):
     parentCommentNum_list = target['parentCommentNo_list']
     
     print("\nNaverNewsCrawler_rereplyCollector: ", end = '')
-    target = CrawlerPackage_obj.rereplyCollector(newsURL=url, parentCommentNum_list=parentCommentNum_list, error_detector_option=True)
+    target = CrawlerPackage_obj.rereplyCollector(newsURL=url, parentCommentNum_list=parentCommentNum_list)
     ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
             
 if __name__ == "__main__":
@@ -438,10 +439,11 @@ if __name__ == "__main__":
     print("==================================================")
     
     CrawlerPackage_obj = NaverNewsCrawler(proxy_option=proxy_option)
+    CrawlerPackage_obj.error_detector_option = True
     
     if option == 1:
         print("\nNaverNewsCrawler_urlCollector: ", end = '')
-        returnData = CrawlerPackage_obj.urlCollector("아이패드", 20240601, 20240630, error_detector_option=True)
+        returnData = CrawlerPackage_obj.urlCollector("아이패드", 20240601, 20240630)
         ToolPackage_obj.CrawlerChecker(returnData, result_option=result_option)
         
         urlList = returnData['urlList']
