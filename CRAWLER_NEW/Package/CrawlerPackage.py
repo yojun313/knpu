@@ -35,6 +35,7 @@ class CrawlerPackage(ToolPackage):
         
         self.proxy_option   = proxy_option
         self.collection_path = COLLECTION_PATH
+        self.error_detector_option = False
         
         if proxy_option == True:
             self.proxy_list     = self.read_txt(self.collection_path + '/proxy.txt')       # 로컬 proxy.txt 파일 경로
@@ -58,6 +59,8 @@ class CrawlerPackage(ToolPackage):
             'TotalReplyCnt'   : 0,
             'TotalRereplyCnt' : 0
         }
+    def error_detector_option_on(self):
+        self.error_detector_option = True
         
     def setPrintData(self, currentDate, percent, web_option, api_num = 0):
     
