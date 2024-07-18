@@ -119,7 +119,14 @@ class ToolPackage:
             2028: '[Internal Error] YouTubeCrawler -> replyCollector: Internal unexpected error',
             2029: '[Parameter Error] ChinaDailyCrawler -> articleCollector: Keyword type error',
             2030: '[Parameter Error] ChinaDailyCrawler -> articleCollector: DateForm error',
-            2031: '[Internal Error] ChinaDailyCrawler -> articleCollector: Internal unexpected error'
+            2031: '[Internal Error] ChinaDailyCrawler -> articleCollector: Internal unexpected error',
+            2032: '[Parameter Error] ChinaSinaCrawler -> urlCollector: Keyword type error',
+            2033: '[Parameter Error] ChinaSinaCrawler -> urlCollector: DateForm error',
+            2034: '[Internal Error] ChinaSinaCrawler -> urlCollector: Internal unexpected error',
+            2035: '[Parameter Error] ChinaSinaCrawler -> articleCollector: URL type/form error',
+            2036: '[Internal Error] ChinaSinaCrawler -> articleCollector: Internal unexpected error',
+            2037: '[Parameter Error] ChinaSinaCrawler -> replyCollector: URL type/form error',
+            2038: '[Internal Error] ChinaSinaCrawler -> replyCollector: Internal unexpected error'
         }
         return error_dic[errorCode]
 

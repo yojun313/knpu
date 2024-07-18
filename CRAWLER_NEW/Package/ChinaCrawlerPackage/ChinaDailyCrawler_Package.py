@@ -125,10 +125,11 @@ class ChinaDailyCrawler(CrawlerPackage):
                     contents = json_data['content']
                 
                     if contents == []:
-                        return {
+                        returnData = {
                             'articleList' : articleList,
                             'articleCnt'  : len(articleList)
                         }
+                        return returnData
                     
                     for content in contents:
                         source    = content['source']

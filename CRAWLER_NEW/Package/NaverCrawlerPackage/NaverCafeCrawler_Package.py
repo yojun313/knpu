@@ -28,6 +28,20 @@ class NaverCafeCrawler(CrawlerPackage):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
         self.error_detector_option = False
+        
+        self.urlList_returnData = {
+            'urlList': [],
+            'urlCnt' : 0
+        }
+        
+        self.article_returnData = {
+            'articleData': []
+        }
+        
+        self.replyList_returnData = {
+            'replyList' : [],
+            'replyCnt' : 0
+        }
     
     def cafeURLChecker(self, url):
         pattern = r"https://cafe\.naver\.com/[^/]+/[^/]+\?art=[^/]+"
@@ -148,12 +162,11 @@ class NaverCafeCrawler(CrawlerPackage):
                     self.IntegratedDB['UrlCnt'] = 0
             
             urlList = list(set(urlList))
-            returnData = {
-                'urlList' : urlList,
-                'urlCnt' : len(urlList)
-            }
             
-            return returnData
+            self.urlList_returnData['urlList'] = urlList
+            self.urlList_returnData['urlCnt']  = len(urlList)
+            
+            return self.urlList_returnData
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
@@ -178,10 +191,7 @@ class NaverCafeCrawler(CrawlerPackage):
             try:
                 temp = json.loads(json_string)
             except:
-                returnData = {
-                    'articleData' : []
-                }
-                return returnData
+                return self.article_returnData
             try:
                 cafe_name    = temp['result']['cafe']['name']
                 memberCount  = temp['result']['cafe']['memberCount']
@@ -192,22 +202,15 @@ class NaverCafeCrawler(CrawlerPackage):
                 readCount    = temp['result']['article']['readCount']
                 commentCount = temp['result']['article']['commentCount']
             except:
-                articleData = []
-                returnData = {
-                    'articleData' : articleData
-                }
-                return returnData
+                return self.article_returnData
             
             self.IntegratedDB['TotalArticleCnt'] += 1
             if self.print_status_option == True:
                 self.printStatus('NaverCafe', 3, self.PrintData)
             
             articleData = [cafe_name, memberCount, writer, title, text, date, readCount, commentCount, cafeURL]
-            returnData = {
-                    'articleData' : articleData
-            }
-                
-            return returnData
+            self.article_returnData['articleData'] = articleData
+            return self.article_returnData
         
         except:
             error_msg  = self.error_detector(self.error_detector_option)
@@ -244,18 +247,10 @@ class NaverCafeCrawler(CrawlerPackage):
                 try:
                     comment_json = temp['result']['comments']['items']
                 except:
-                    returnData = {
-                        'replyList' : replyList,
-                        'replyCnt' : len(replyList)
-                    } 
-                    return returnData
+                    return self.replyList_returnData
                     
                 if comment_json == []:
-                    returnData = {
-                        'replyList' : replyList,
-                        'replyCnt' : len(replyList)
-                    } 
-                    return returnData
+                    return self.replyList_returnData
                 
                 for comment in comment_json:
                     writer  = comment['writer']['id']
@@ -277,11 +272,10 @@ class NaverCafeCrawler(CrawlerPackage):
                 page += 1
                 reply_idx += 1
             
-            returnData = {
-                'replyList' : replyList,
-                'replyCnt' : len(replyList)
-            } 
-            return returnData
+            self.replyList_returnData['replyList'] = replyList
+            self.replyList_returnData['replyCnt']  = len(replyList)
+            
+            return self.replyList_returnData
         
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)

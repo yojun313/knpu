@@ -21,7 +21,8 @@ import random
 import requests
 import time
 import copy
-from datetime import datetime
+from datetime import datetime, timedelta
+import calendar
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -34,7 +35,33 @@ class ChinaSinaCrawler(CrawlerPackage):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
         self.error_detector_option = False
-    
+        
+    def DateSplitter(self, start_date, end_date):
+        # 날짜 문자열을 datetime 객체로 변환
+        start = datetime.strptime(str(start_date), '%Y%m%d')
+        end = datetime.strptime(str(end_date), '%Y%m%d')
+        
+        result = []
+        current = start
+
+        while current <= end:
+            # 현재 날짜의 월의 마지막 날 계산
+            _, last_day = calendar.monthrange(current.year, current.month)
+            month_end = datetime(current.year, current.month, last_day)
+            
+            # 월의 마지막 날이 종료 날짜보다 크면 종료 날짜로 설정
+            if month_end > end:
+                month_end = end
+            
+            # 월의 시작일과 종료일 추가
+            result.append([str(current.strftime('%Y%m%d')), str(month_end.strftime('%Y%m%d'))])
+            
+            # 다음 달의 첫 번째 날로 이동
+            current = month_end + timedelta(days=1)
+            current = current.replace(day=1)
+        
+        return result
+
     def DateInverter(self, date_str):
         return int(time.mktime(time.strptime(date_str, '%Y%m%d')))
     
@@ -106,6 +133,10 @@ class ChinaSinaCrawler(CrawlerPackage):
             return self.error_data
         
         try:
+            if self.print_status_option == True:
+                self.IntegratedDB['UrlCnt'] = 0
+                self.printStatus('ChinaSina', 1, self.PrintData)
+                
             endCnt = 0
             urlList = []
             previus_links = []
@@ -121,7 +152,7 @@ class ChinaSinaCrawler(CrawlerPackage):
                     urlList = self.sortUrlList(urlList)
                     
                     returnData = {
-                        'urlList' : urlList,
+                        'urlList' : list(set(urlList)),
                         'urlCnt'  : len(urlList)
                     }
                     return returnData
@@ -155,9 +186,13 @@ class ChinaSinaCrawler(CrawlerPackage):
                 
                 for url in links:
                     if url not in urlList: 
-                        if 'news.sina.cn' in url or 'news.sina.com.cn' in url:
+                        if 'news.sina.cn' in url or 'news.sina.com.cn' in url and url.count('/') >= 5:
                             urlList.append(url)
-                        
+                            self.IntegratedDB['UrlCnt'] += 1
+                
+                if self.print_status_option == True:
+                    self.printStatus('ChinaSina', 2, self.PrintData)
+
                 previus_links = copy.deepcopy(links)
                 previus_search_page_url = search_page_url
                 
@@ -177,41 +212,39 @@ class ChinaSinaCrawler(CrawlerPackage):
             return self.error_data
         
         try:
-            while True:
-                try:
-                    main_page = self.Requester(newsURL)
-                    main_page.encoding = 'utf-8'
-                    soup      = BeautifulSoup(main_page.text, 'lxml')
+            main_page = self.Requester(newsURL)
+            main_page.encoding = 'utf-8'
+            soup      = BeautifulSoup(main_page.text, 'lxml')
 
-                    # 뉴스 날짜
-                    if self.newsidFormChecker(newsURL) == True:
-                        date   = newsURL.split('/')[4]
-                    else:
-                        date   = newsURL.split('/')[5]
-                    
-                    if newsURL_type == 1 or newsURL_type == 3:
-                        
-                        title = soup.find('h1', {'class': 'main-title'}).text
-                        paragraphs = soup.find('div', {'class': 'article', 'id': 'article'}).find_all('p')
-                        text   = " ".join(p.get_text(strip=True) for p in paragraphs)
-
-                    elif newsURL_type == 2:
-                        
-                        title = soup.find('h1', {'class': 'art_tit_h1'}).text
-                        paragraphs = soup.find('section', {'class': 'art_pic_card art_content'}).find_all('p')
-                        text   = " ".join(p.get_text(strip=True) for p in paragraphs)
-                        
-                    articleData = [title, text, date, newsURL]
-
-                    returnData = {
-                        'articleData' : articleData
-                    }
-                    
-                    return returnData
-                except Exception as e:
-                    print("경고", newsURL)
-                    continue
+            # 뉴스 날짜
+            if self.newsidFormChecker(newsURL) == True:
+                date   = newsURL.split('/')[4]
+            else:
+                date   = newsURL.split('/')[5]
             
+            if newsURL_type == 1 or newsURL_type == 3:
+                
+                title = soup.find('h1', {'class': 'main-title'}).text
+                paragraphs = soup.find('div', {'class': 'article', 'id': 'article'}).find_all('p')
+                text   = " ".join(p.get_text(strip=True) for p in paragraphs)
+
+            elif newsURL_type == 2:
+                
+                title = soup.find('h1', {'class': 'art_tit_h1'}).text
+                paragraphs = soup.find('section', {'class': 'art_pic_card art_content'}).find_all('p')
+                text   = " ".join(p.get_text(strip=True) for p in paragraphs)
+                
+            articleData = [title, text, date, newsURL]
+
+            returnData = {
+                'articleData' : articleData
+            }
+            
+            self.IntegratedDB['TotalArticleCnt'] += 1
+            if self.print_status_option == True:
+                self.printStatus('ChinaSina', 3, self.PrintData)
+            
+            return returnData
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2036, error_msg, newsURL)
@@ -279,7 +312,7 @@ class ChinaSinaCrawler(CrawlerPackage):
                 except:
                     if channelidList_exists == True:
                         # channelid 전환
-                        if len(channelidList) > 0:
+                        if len(channelidList) > 1:
                             channelidList.pop(0)
                             channelid = channelidList[0]
                             continue
@@ -306,6 +339,10 @@ class ChinaSinaCrawler(CrawlerPackage):
                     replyData = [reply_num, nickname, date, text, like, newsURL]
                     replyList.append(replyData)
                     reply_num += 1
+                    
+                self.IntegratedDB['TotalReplyCnt'] += len(comment_json)
+                if self.print_status_option:
+                    self.printStatus('ChinaSina', 4, self.PrintData)
 
                 page += 1
 
