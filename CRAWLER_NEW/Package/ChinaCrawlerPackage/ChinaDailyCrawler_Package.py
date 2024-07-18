@@ -19,7 +19,6 @@ class ChinaDailyCrawler(CrawlerPackage):
         super().__init__(proxy_option)
 
         self.print_status_option = print_status_option
-        self.error_detector_option = False
     
     def keywordParser(self, keyword):
         # 검색어를 담을 리스트 초기화
@@ -159,4 +158,5 @@ if __name__ == "__main__":
     ToolPackage_obj = ToolPackage()
     
     CrawlerPackage_obj = ChinaDailyCrawler(proxy_option=True)
+    CrawlerPackage_obj.error_detector_option_on()
     CrawlerPackage_obj.articleCollector('china', 20230101, 20230131, True)

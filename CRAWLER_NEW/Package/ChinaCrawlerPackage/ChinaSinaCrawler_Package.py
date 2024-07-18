@@ -34,7 +34,20 @@ class ChinaSinaCrawler(CrawlerPackage):
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
-        self.error_detector_option = False
+        
+        self.urlList_returnData = {
+            'urlList': [],
+            'urlCnt' : 0
+        }
+        
+        self.article_returnData = {
+            'articleData': []
+        }
+        
+        self.replyList_returnData = {
+            'replyList' : [],
+            'replyCnt' : 0
+        }
         
     def DateSplitter(self, start_date, end_date):
         # 날짜 문자열을 datetime 객체로 변환
@@ -151,11 +164,9 @@ class ChinaSinaCrawler(CrawlerPackage):
                 if endCnt > 5:
                     urlList = self.sortUrlList(urlList)
                     
-                    returnData = {
-                        'urlList' : list(set(urlList)),
-                        'urlCnt'  : len(urlList)
-                    }
-                    return returnData
+                    self.urlList_returnData['urlList'] = list(set(urlList))
+                    self.urlList_returnData['urlCnt']  = len(urlList)
+                    return self.urlList_returnData
                 
                 query_params = {
                     'wd': keyword,
@@ -236,15 +247,15 @@ class ChinaSinaCrawler(CrawlerPackage):
                 
             articleData = [title, text, date, newsURL]
 
-            returnData = {
-                'articleData' : articleData
-            }
+            self.article_returnData['articleData'] = articleData
+            
             
             self.IntegratedDB['TotalArticleCnt'] += 1
             if self.print_status_option == True:
                 self.printStatus('ChinaSina', 3, self.PrintData)
             
-            return returnData
+            return self.article_returnData
+        
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2036, error_msg, newsURL)
@@ -316,19 +327,14 @@ class ChinaSinaCrawler(CrawlerPackage):
                             channelidList.pop(0)
                             channelid = channelidList[0]
                             continue
-                    returnData = {
-                        'replyList': replyList,
-                        'replyCnt': len(replyList)
-                    }
-                    return returnData
+                    
+                    return self.replyList_returnData
 
                 # 댓글 없을 때
                 if comment_json == []:
-                    returnData = {
-                        'replyList': replyList,
-                        'replyCnt': len(replyList)
-                    }
-                    return returnData
+                    self.replyList_returnData['replyList'] = replyList
+                    self.replyList_returnData['replyCnt']  = len(replyList)
+                    return self.replyList_returnData
 
                 for data in comment_json:
                     nickname = data['nick']
@@ -378,7 +384,7 @@ if __name__ == "__main__":
     print("==================================================")
     
     CrawlerPackage_obj = ChinaSinaCrawler(proxy_option=proxy_option)
-    CrawlerPackage_obj.error_detector_option = True
+    CrawlerPackage_obj.error_detector_option_on()
     
     if option == 1:
         print("\nChinaSinaCrawler_urlCollector: ", end = '')
