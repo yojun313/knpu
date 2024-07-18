@@ -48,7 +48,8 @@ class ChinaSinaCrawler(CrawlerPackage):
             'replyList' : [],
             'replyCnt' : 0
         }
-        
+    
+    
     def DateSplitter(self, start_date, end_date):
         # 날짜 문자열을 datetime 객체로 변환
         start = datetime.strptime(str(start_date), '%Y%m%d')

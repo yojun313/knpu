@@ -135,7 +135,7 @@ class Crawler(CrawlerPackage):
         NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=True, print_status_option=True)
         
         self.option = option
-        self.DBtype = "Naver_News"
+        self.DBtype = "NaverNews"
         self.DBMaker(self.DBtype)
 
         # initial list
@@ -217,7 +217,7 @@ class Crawler(CrawlerPackage):
         NaverBlogCrawler_obj = NaverBlogCrawler(proxy_option=True, print_status_option=True)
         
         self.option = option
-        self.DBtype = "Naver_Blog"
+        self.DBtype = "NaverBlog"
         self.DBMaker(self.DBtype)
         
         # initial list
@@ -282,7 +282,7 @@ class Crawler(CrawlerPackage):
         NaverCafeCrawler_obj = NaverCafeCrawler(proxy_option=True, print_status_option=True)
         
         self.option = option
-        self.DBtype = "Naver_Cafe"
+        self.DBtype = "NaverCafe"
         self.DBMaker(self.DBtype)
         
         # initial list

@@ -12,13 +12,14 @@ from ToolPackage import ToolPackage
 import random
 import requests
 import csv
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import urllib3
 import warnings
 from bs4 import BeautifulSoup
 import pandas as pd
 import traceback
 import time
+import calendar
 
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
@@ -227,7 +228,34 @@ class CrawlerPackage(ToolPackage):
         if error_print_option == True:
             print(error_message)
         return error_message
+    
+    # 중국 크롤러 용, 전체 기간을 한 달 단위로 쪼갬
+    def DateSplitter(self, start_date, end_date):
+        # 날짜 문자열을 datetime 객체로 변환
+        start = datetime.strptime(str(start_date), '%Y%m%d')
+        end = datetime.strptime(str(end_date), '%Y%m%d')
         
+        result = []
+        current = start
+
+        while current <= end:
+            # 현재 날짜의 월의 마지막 날 계산
+            _, last_day = calendar.monthrange(current.year, current.month)
+            month_end = datetime(current.year, current.month, last_day)
+            
+            # 월의 마지막 날이 종료 날짜보다 크면 종료 날짜로 설정
+            if month_end > end:
+                month_end = end
+            
+            # 월의 시작일과 종료일 추가
+            result.append([str(current.strftime('%Y%m%d')), str(month_end.strftime('%Y%m%d'))])
+            
+            # 다음 달의 첫 번째 날로 이동
+            current = month_end + timedelta(days=1)
+            current = current.replace(day=1)
+        
+        return result
+    
     def urlCollector(self, keyword, startDate, endDate, site, urlLimiter = []):
         startDate = datetime.strptime(str(startDate), "%Y%m%d").strftime("%-m/%-d/%Y")
         endDate   = datetime.strptime(str(endDate), "%Y%m%d").strftime("%-m/%-d/%Y")
@@ -274,7 +302,7 @@ class CrawlerPackage(ToolPackage):
         
         except Exception as e:
             self.error_detector()
-                
+    
     def articleCollector(self):
         pass
     
