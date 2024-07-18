@@ -31,6 +31,22 @@ class NaverBlogCrawler(CrawlerPackage):
         self.print_status_option = print_status_option
         self.error_detector_option = False
         
+        self.urlList_returnData = {
+            'urlList': [],
+            'urlCnt' : 0
+        }
+        
+        self.article_returnData = {
+            'articleData': []
+        }
+        
+        self.replyList_returnData = {
+            'replyList' : [],
+            'replyCnt' : 0
+        }
+        
+        
+        
     def blogURLChecker(self, url):
         pattern = r"^https://blog\.naver\.com/[^/]+/\d+$"
         return re.match(pattern, url) is not None
@@ -99,12 +115,11 @@ class NaverBlogCrawler(CrawlerPackage):
                     self.IntegratedDB['UrlCnt'] = 0
             
             urlList = list(set(urlList))
-            returnData = {
-                'urlList' : urlList,
-                'urlCnt' : len(urlList)
-            }
+
+            self.urlList_returnData['urlList'] = urlList
+            self.urlList_returnData['urlCnt']  = len(urlList)
             
-            return returnData
+            return self.urlList_returnData
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
@@ -158,12 +173,8 @@ class NaverBlogCrawler(CrawlerPackage):
                                 
                 if article == "":
                     trynum += 1
-                    if trynum == 10:
-                        articleData = [blogID, original_url, article, date]
-                        returnData = {
-                            'articleData' : []
-                        }
-                        return returnData
+                    if trynum == 5:
+                        return self.article_returnData
                     continue
                 article_data["blog_ID"]      = str(blogID)
                 article_data["url"]          = str(original_url)
@@ -180,11 +191,9 @@ class NaverBlogCrawler(CrawlerPackage):
                     self.printStatus('NaverBlog', 3, self.PrintData)
                 
                 articleData = [blogID, original_url, article, date]
-                returnData = {
-                    'articleData' : articleData
-                }
                 
-                return returnData
+                self.article_returnData['articleData'] = articleData
+                return self.article_returnData
         
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
@@ -212,12 +221,8 @@ class NaverBlogCrawler(CrawlerPackage):
                     break
                 except:
                     trynum += 1
-                    if trynum == 10:
-                        returnData = {
-                            'replyList' : [],
-                            'replyCnt' : 0
-                        }
-                        return returnData
+                    if trynum == 5:
+                        return self.replyList_returnData
             
             objectID   = f'{blogNo}_201_{logNo}'
             
@@ -267,18 +272,10 @@ class NaverBlogCrawler(CrawlerPackage):
                 try:
                     df = pd.DataFrame(temp['result']['commentList'])
                 except:
-                    returnData = {
-                        'replyList' : [],
-                        'replyCnt' : 0
-                    }
-                    return returnData
+                    return self.replyList_returnData
 
                 if list(df) == []:
-                    returnData = {
-                        'replyList' : [],
-                        'replyCnt' : 0
-                    }
-                    return returnData
+                    return self.replyList_returnData
                 
                 masked_user_ids  = list(df['maskedUserId'])
                 mod_times        = list(df['modTime'])
@@ -340,13 +337,11 @@ class NaverBlogCrawler(CrawlerPackage):
                     parentCommentNo_list[i]
                     ]     
                 )
-                
-            returnData = {
-                'replyList' : replyList,
-                'replyCnt' : len(replyList)
-            }
             
-            return returnData
+            self.replyList_returnData['replyList'] = replyList
+            self.replyList_returnData['replyCnt']  = len(replyList)
+            
+            return self.replyList_returnData
                 
         except Exception as e:
             error_msg  = self.error_detector(self.error_detector_option)

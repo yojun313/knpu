@@ -3,6 +3,9 @@ from Package.NaverCrawlerPackage.NaverBlogCrawler_Package  import NaverBlogCrawl
 from Package.NaverCrawlerPackage.NaverCafeCrawler_Package  import NaverCafeCrawler
 from Package.OtherCrawlerPackage.YouTubeCrawler_Package    import YouTubeCrawler
 from Package.ChinaCrawlerPackage.ChinaDailyCrawler_Package import ChinaDailyCrawler
+from Package.ChinaCrawlerPackage.ChinaSinaCrawler_Package  import ChinaSinaCrawler
+
+
 
 from Package.GooglePackage  import GooglePackage
 from Package.CrawlerPackage import CrawlerPackage
@@ -67,7 +70,7 @@ class Crawler(CrawlerPackage):
                 f"{'Object:':<15} {self.DBtype}\n"
                 f"{'Option:':<15} {self.option}\n"
                 f"{'Keyword:':<15} {self.keyword}\n"
-                f"{'Date Range:':<15} {self.startDate_form.strftime('%Y.%m.%d')} ~ {self.startDate_form.strftime('%Y.%m.%d')}\n"
+                f"{'Date Range:':<15} {self.startDate_form.strftime('%Y.%m.%d')} ~ {self.endDate_form.strftime('%Y.%m.%d')}\n"
                 f"{'Computer:':<15} {self.crawlcom}\n"
                 f"{'DB path:':<15} {self.DBpath}\n"
                 f"{'Drive Upload:':<15} {self.upload}\n"
@@ -240,6 +243,7 @@ class Crawler(CrawlerPackage):
             
             # finish line
             if dayCount == self.date_range:
+                self.FinalOperator()
                 self.printStatus(type='NaverBlog', endMsg_option=True)
                 return
             
@@ -304,6 +308,7 @@ class Crawler(CrawlerPackage):
             
             # finish line
             if dayCount == self.date_range:
+                self.FinalOperator()
                 self.printStatus(type='NaverCafe', endMsg_option=True)
                 return
             
@@ -371,6 +376,7 @@ class Crawler(CrawlerPackage):
             
             # finish line
             if dayCount == self.date_range:
+                self.FinalOperator()
                 self.printStatus(type='YouTube', endMsg_option=True)
                 return
             
@@ -434,6 +440,7 @@ class Crawler(CrawlerPackage):
 
             # finish line
             if dayCount == self.date_range:
+                self.FinalOperator()
                 self.printStatus(type='ChinaDaily', endMsg_option=True)
                 return
             
@@ -447,7 +454,70 @@ class Crawler(CrawlerPackage):
                 self.article_list.extend(articleList)
             
             self.currentDate += self.deltaD
+
+    
+    def ChinaSina_Crawler(self, option):
         
+        ChinaSinaCrawler_obj = ChinaSinaCrawler(proxy_option=True, print_status_option=True)
+        
+        self.option = option
+        self.DBtype = "ChinaSina"
+        self.DBMaker(self.DBtype)
+        
+        self.article_list = [['News Title', 'News Text', 'News Date', 'News URL']]
+        self.reply_list   = [['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'News URL']]
+        
+        if self.weboption == 0:
+            self.infoPrinter()
+        
+        DateRangeList = ChinaSinaCrawler_obj.DateSplitter(self.startDate, self.endDate)
+        DateRangeList.append(DateRangeList[-1])
+        DateRangeCnt  = 0
+        
+        for DateRange in DateRangeList:
+            DateRangeCnt += 1
+            currentDate_start = DateRange[0]
+            currentDate_end   = DateRange[1]
+            currentDate_str_start = datetime.strptime(DateRange[0], '%Y%m%d').date()
+            currentDate_str_end   = datetime.strptime(DateRange[1], '%Y%m%d').date()
+            percent = str(round((DateRangeCnt/len(DateRangeList))*100, 1))
+            
+            ChinaSinaCrawler_obj.setPrintData(f"{currentDate_str_start.strftime('%Y.%m.%d')} ~ {currentDate_str_end.strftime('%Y.%m.%d')}", percent, self.weboption)
+            
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+            if option == 2:
+                self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
+            
+            if DateRangeCnt == len(DateRangeList):
+                self.FinalOperator()
+                self.printStatus(type='ChinaSina', endMsg_option=True)
+                return
+
+            urlList_returnData = ChinaSinaCrawler_obj.urlCollector(keyword=self.keyword, startDate=currentDate_start, endDate=currentDate_end)
+            if self.ReturnChecker(urlList_returnData) == True:
+                continue
+            self.urlList = urlList_returnData['urlList']
+            
+            for url in self.urlList:
+                
+                article_returnData = ChinaSinaCrawler_obj.articleCollector(newsURL=url)
+                if self.ReturnChecker(article_returnData) == True:
+                    continue
+                articleData = article_returnData['articleData']
+                if articleData != []:
+                    self.article_list.append(articleData)
+                    
+                if option == 1:
+                    continue
+                
+                reply_returnData = ChinaSinaCrawler_obj.replyCollector(newsURL=url)
+                if self.ReturnChecker(reply_returnData) == True:
+                    continue
+                replyList = reply_returnData['replyList']
+                replyCnt  = reply_returnData['replyCnt']
+                
+                if replyCnt != 0:
+                    self.reply_list.extend(replyList)
 
 def controller():
     option_dic = {
@@ -455,17 +525,18 @@ def controller():
         2 : "\n1. 블로그 본문\n2. 블로그 본문 + 댓글/대댓글\n",
         3 : "\n1. 카페 본문\n2. 카페 본문 + 댓글/대댓글\n",
         4 : "\n1. 영상 정보 + 댓글/대댓글 (100개 제한)\n2. 영상 정보 + 댓글/대댓글(무제한)\n",
-        5 : "\n1. 기사\n"
+        5 : "\n1. 기사\n",
+        6 : "\n1. 기사\n2. 기사 + 댓글\n"
     }
     print("================ Crawler Controller ================")
     #name = input("본인의 이름을 입력하세요: ")
     
     print("\n[ 크롤링 대상 ]\n")
-    print("1. Naver News\n2. Naver Blog\n3. Naver Cafe\n4. YouTube\n5. ChinaDaily")
+    print("1. Naver News\n2. Naver Blog\n3. Naver Cafe\n4. YouTube\n5. ChinaDaily\n6. ChinaSina")
     
     while True:
         control_ask = int(input("\n입력: "))
-        if control_ask in [1,2,3,4,5]:
+        if control_ask in [1,2,3,4,5,6]:
             break
         else:
             print("다시 입력하세요")
@@ -492,6 +563,8 @@ def controller():
     keyword = '대통령'
     if control_ask == 5:
         keyword = 'president'
+    if control_ask == 6:
+        keyword = '人民'
     upload = 1
     weboption = 0
     option = 2
@@ -516,6 +589,9 @@ def controller():
     
     elif control_ask == 5:
         Crawler_obj.ChinaDaily_Crawler(option)
+        
+    elif control_ask == 6:
+        Crawler_obj.ChinaSina_Crawler(option)
 
 if __name__ == '__main__':
     controller()
