@@ -21,7 +21,6 @@ class YouTubeCrawler(CrawlerPackage):
         super().__init__(proxy_option)
         
         self.print_status_option = print_status_option
-        self.error_detector_option = False
         
         self.urlList_returnData = {
             'urlList': [],
@@ -246,8 +245,8 @@ if __name__ == "__main__":
     print("==================================================")
     
     CrawlerPackage_obj = YouTubeCrawler(proxy_option=proxy_option)
-    CrawlerPackage_obj.error_detector_option = True
-    
+    CrawlerPackage_obj.error_detector_option_on()
+        
     if option == 1:
         print("\nYouTubeCrawler_urlCollector: ", end = '')
         returnData = CrawlerPackage_obj.urlCollector("호빵가족", 20240601, 20240714)

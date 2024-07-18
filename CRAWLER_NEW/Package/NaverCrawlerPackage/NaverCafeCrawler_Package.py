@@ -27,7 +27,6 @@ class NaverCafeCrawler(CrawlerPackage):
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
-        self.error_detector_option = False
         
         self.urlList_returnData = {
             'urlList': [],
@@ -307,7 +306,8 @@ if __name__ == "__main__":
     print("==================================================")
 
     CrawlerPackage_obj = NaverCafeCrawler(proxy_option=proxy_option)
-
+    CrawlerPackage_obj.error_detector_option_on()
+    
     if option == 1:
         print("\nNaverCafeCrawler_urlCollector: ", end = '')
         returnData = CrawlerPackage_obj.urlCollector("무고죄", 20240601, 20240601)
