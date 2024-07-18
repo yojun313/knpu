@@ -23,6 +23,20 @@ class YouTubeCrawler(CrawlerPackage):
         self.print_status_option = print_status_option
         self.error_detector_option = False
         
+        self.urlList_returnData = {
+            'urlList': [],
+            'urlCnt' : 0
+        }
+        
+        self.article_returnData = {
+            'articleData': []
+        }
+        
+        self.replyList_returnData = {
+            'replyList' : [],
+            'replyCnt' : 0
+        }
+        
         self.api_dic        = {}
         self.api_list       = self.read_txt(os.path.join(self.collection_path, 'YouTube_apiList.txt'))
         self.api_num        = 1
@@ -77,12 +91,10 @@ class YouTubeCrawler(CrawlerPackage):
                 currentPage += 10
             
             urlList = list(set(urlList))
-            returnData = {
-                'urlList' : urlList,
-                'urlCnt'  : len(urlList)
-            }
+            self.urlList_returnData['urlList'] = urlList
+            self.urlList_returnData['urlCnt']  = len(urlList)
             
-            return returnData
+            return self.urlList_returnData
         
         except Exception as e:
             self.error_detector()
@@ -110,10 +122,7 @@ class YouTubeCrawler(CrawlerPackage):
                 like_count = temp['items'][0]['statistics']['likeCount']  # 좋아요
                 comment_count = temp['items'][0]['statistics']['commentCount']  # 댓글 수
             except:
-                returnData = {
-                    'articleData' : []
-                }
-                return returnData
+                return self.article_returnData
                 
                 
             self.IntegratedDB['TotalArticleCnt'] += 1
@@ -121,10 +130,8 @@ class YouTubeCrawler(CrawlerPackage):
                 self.printStatus('YouTube', 3, self.PrintData)
             
             articleData = [channel, video_url, video_title, video_description, video_date, view_count, like_count, comment_count]
-            returnData = {
-                'articleData' : articleData
-            }
-            return returnData
+            self.article_returnData['articleData'] = articleData
+            return self.article_returnData
 
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)

@@ -27,6 +27,27 @@ class NaverNewsCrawler(CrawlerPackage):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
         self.error_detector_option = False
+        
+        self.urlList_returnData = {
+            'urlList': [],
+            'urlCnt' : 0
+        }
+        
+        self.article_returnData = {
+            'articleData': []
+        }
+        
+        self.replyList_returnData = {
+            'replyList' : [],
+            'parentCommentNo_list' : [],
+            'statistics_data' : [],
+            'replyCnt' : 0
+        }
+        
+        self.rereplyList_returnData = {
+            'rereplyList' : [],
+            'rereplyCnt': 0
+        }
     
     def newsURLChecker(self, url):
         parts = [
@@ -89,12 +110,11 @@ class NaverNewsCrawler(CrawlerPackage):
                 currentPage += 10 # 다음페이지 이동
             
             urlList = list(set(urlList))
-            returnData = {
-                'urlList' : urlList,
-                'urlCnt'  : len(urlList)
-            }
             
-            return returnData
+            # return part
+            self.urlList_returnData['urlList'] = urlList
+            self.urlList_returnData['urlCnt']  = len(urlList)
+            return self.urlList_returnData
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
@@ -128,16 +148,14 @@ class NaverNewsCrawler(CrawlerPackage):
                     continue
 
                 articleData = [article_press, article_type, newsURL, article_title, news, article_date]
-                returnData = {
-                    'articleData' : articleData
-                }
+                self.article_returnData['articleData'] = articleData
                 break
             
             self.IntegratedDB['TotalArticleCnt'] += 1
             if self.print_status_option == True:
                 self.printStatus('NaverNews', 3, self.PrintData)
                 
-            return returnData
+            return self.article_returnData
                
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
@@ -211,13 +229,7 @@ class NaverNewsCrawler(CrawlerPackage):
                     antipathy_counts = list(df['antipathyCount'])
                     
                 except:
-                    returnData = {
-                        'replyList' : replyList,
-                        'parentCommentNo_list' : parentCommentNo_list,
-                        'statistics_data' : statistics_data,
-                        'replyCnt' : len(replyList)
-                    }
-                    return returnData
+                    return self.replyList_returnData
                     
 
                 nickname_list.extend(masked_user_ids)
@@ -287,14 +299,13 @@ class NaverNewsCrawler(CrawlerPackage):
                     parentCommentNo_list[i]
                     ]     
                 )
-            returnData = {
-                'replyList' : replyList,
-                'parentCommentNo_list' : parentCommentNo_list,
-                'statistics_data' : statistics_data,
-                'replyCnt' : len(replyList)
-            }
             
-            return returnData
+            self.replyList_returnData['replyList']            = replyList
+            self.replyList_returnData['parentCommentNo_list'] = parentCommentNo_list
+            self.replyList_returnData['statistics_data']      = statistics_data
+            self.replyList_returnData['replyCnt']             = len(replyList)
+            
+            return self.replyList_returnData
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
@@ -394,11 +405,10 @@ class NaverNewsCrawler(CrawlerPackage):
                     str(newsURL)
                     ]     
                 )
-            returnData = {
-                'rereplyList' : rereplyList,
-                'rereplyCnt': len(rereplyList)
-            }
-            return returnData
+            
+            self.rereplyList_returnData['rereplyList'] = rereplyList
+            self.rereplyList_returnData['rereplyCnt']  = len(rereplyList)
+            return self.rereplyList_returnData
         
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
