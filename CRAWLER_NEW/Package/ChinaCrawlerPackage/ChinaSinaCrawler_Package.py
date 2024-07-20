@@ -163,9 +163,9 @@ class ChinaSinaCrawler(CrawlerPackage):
             while True:
                 # 요청 -> 응답 횟수
                 if endCnt > 5:
-                    urlList = self.sortUrlList(urlList)
+                    urlList = self.sortUrlList(list(set(urlList)))
                     
-                    self.urlList_returnData['urlList'] = list(set(urlList))
+                    self.urlList_returnData['urlList'] = urlList
                     self.urlList_returnData['urlCnt']  = len(urlList)
                     return self.urlList_returnData
                 
