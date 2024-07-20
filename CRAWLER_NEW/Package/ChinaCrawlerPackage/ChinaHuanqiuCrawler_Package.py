@@ -42,6 +42,23 @@ class ChinaHuanqiuCrawler(CrawlerPackage):
         self.article_returnData = {
             'articleData': []
         }
+        
+    def DateInverter(self, date_str):
+        return int(time.mktime(time.strptime(date_str, '%Y%m%d')))
+
+    def sortUrlList(self, urls):
+        # 날짜를 추출하는 정규 표현식
+        date_pattern = re.compile(r'/(\d{4}-\d{2}-\d{2})/')
+
+        def extract_date(url):
+            match = date_pattern.search(url)
+            if match:
+                return datetime.strptime(match.group(1), '%Y-%m-%d')
+            return None
+
+        # 날짜를 기준으로 URL 정렬
+        sorted_urls = sorted(urls, key=extract_date)
+        return sorted_urls
     
     def urlCollector(self, keyword, startDate, endDate):
         try:
@@ -71,9 +88,7 @@ class ChinaHuanqiuCrawler(CrawlerPackage):
             while True:
                 # 요청 -> 응답 횟수
                 if endCnt > 5:
-                    urlList = self.sortUrlList(urlList)
-                    
-                    self.urlList_returnData['urlList'] = list(set(urlList))
+                    self.urlList_returnData['urlList'] = urlList
                     self.urlList_returnData['urlCnt']  = len(urlList)
                     return self.urlList_returnData
                 
@@ -106,10 +121,9 @@ class ChinaHuanqiuCrawler(CrawlerPackage):
                 
                 for url in links:
                     if url not in urlList: 
-                        if 'news.sina.cn' in url or 'news.sina.com.cn' in url and url.count('/') >= 5:
-                            urlList.append(url)
-                            print(url)
-                            self.IntegratedDB['UrlCnt'] += 1
+                        urlList.append(url)
+                        print(url)
+                        self.IntegratedDB['UrlCnt'] += 1
                 
                 if self.print_status_option == True:
                     self.printStatus('ChinaSina', 2, self.PrintData)
@@ -127,4 +141,4 @@ class ChinaHuanqiuCrawler(CrawlerPackage):
             
 object = ChinaHuanqiuCrawler(True, False)
 object.error_detector_option_on()
-object.urlCollector('罪行', '20230101', '20230131')
+urlList = object.urlCollector('罪行', '20230101', '20231231')

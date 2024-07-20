@@ -6,22 +6,17 @@ CRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 CRAWLER_PATH        = os.path.dirname(CRAWLERPACKAGE_PATH)
 COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
 
-import socket
-from user_agent import generate_user_agent, generate_navigator
+from user_agent import generate_navigator
 from ToolPackage import ToolPackage
 import random
 import requests
-import csv
-from datetime import datetime, timezone, timedelta
+from datetime import timedelta
 import urllib3
 import warnings
 from bs4 import BeautifulSoup
-import pandas as pd
 import traceback
 import time
 import calendar
-
-from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -33,6 +28,7 @@ class CrawlerPackage(ToolPackage):
     startTime = time.time()
     
     def __init__(self, proxy_option = False):
+        super().__init__()
         
         self.proxy_option   = proxy_option
         self.collection_path = COLLECTION_PATH

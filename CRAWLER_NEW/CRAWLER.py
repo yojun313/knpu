@@ -387,7 +387,7 @@ class Crawler(CrawlerPackage):
             self.urlList = urlList_returnData['urlList']
             
             for url in self.urlList:
-                # YouTube info Part
+                # YouTube's info Part
                 article_returnData = YouTubeCrawler_obj.articleCollector(url=url)
                 if self.ReturnChecker(article_returnData) == True:
                     continue
@@ -454,7 +454,6 @@ class Crawler(CrawlerPackage):
                 self.article_list.extend(articleList)
             
             self.currentDate += self.deltaD
-
     
     def ChinaSina_Crawler(self, option):
         
@@ -519,6 +518,7 @@ class Crawler(CrawlerPackage):
                 if replyCnt != 0:
                     self.reply_list.extend(replyList)
 
+    
 def controller():
     option_dic = {
         1 : "\n1. 기사 + 댓글\n2. 기사 + 댓글/대댓글\n",
