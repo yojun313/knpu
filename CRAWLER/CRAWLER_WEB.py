@@ -26,15 +26,22 @@ upload = 'n'
 weboption = 1
 '''
 
+Crawler_obj = Crawler(name, start, end, keyword, upload, weboption)
 if crawl_object == 1:
-    crawler = Crawler(name, start, end, keyword, upload, weboption)
-    crawler.crawl_news(option)
+    Crawler_obj.Naver_News_Crawler(option)
 
 elif crawl_object == 2:
-    crawler = Crawler(name, start, end, keyword, upload, weboption)
-    crawler.crawl_blog(option)
+    Crawler_obj.Naver_Blog_Crawler(option)
     
 elif crawl_object == 3:
-    crawler = Crawler(name, start, end, keyword, upload, weboption)
-    crawler.crawl_youtube(option)
+    Crawler_obj.Naver_Cafe_Crawler(option)
+    
+elif crawl_object == 4:
+    Crawler_obj.YouTube_Crawler(option)
+
+elif crawl_object == 5:
+    Crawler_obj.ChinaDaily_Crawler(option)
+    
+elif crawl_object == 6:
+    Crawler_obj.ChinaSina_Crawler(option)
 

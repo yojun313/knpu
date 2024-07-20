@@ -1,1691 +1,583 @@
-# -*- coding: utf-8 -*-
-from bs4 import BeautifulSoup
-import sys
-from datetime import date, timedelta
-import socket
-import datetime
-import random
+from Package.NaverCrawlerPackage.NaverNewsCrawler_Package  import NaverNewsCrawler
+from Package.NaverCrawlerPackage.NaverBlogCrawler_Package  import NaverBlogCrawler
+from Package.NaverCrawlerPackage.NaverCafeCrawler_Package  import NaverCafeCrawler
+from Package.OtherCrawlerPackage.YouTubeCrawler_Package    import YouTubeCrawler
+from Package.ChinaCrawlerPackage.ChinaDailyCrawler_Package import ChinaDailyCrawler
+from Package.ChinaCrawlerPackage.ChinaSinaCrawler_Package  import ChinaSinaCrawler
+
+from Package.GooglePackage  import GooglePackage
+from Package.CrawlerPackage import CrawlerPackage
+
+from datetime import datetime, timedelta
 import urllib3
-from user_agent import generate_user_agent, generate_navigator
-import os
-import csv
-import requests
-import json
-import random
-import pandas as pd
-import platform
-import time
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-import re
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from googleapiclient.http import MediaIoBaseDownload
-from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
-import pickle
-import io
-import shutil
 import warnings
-import traceback
-import textwrap
-
-
-# pip install lxml
-# pip install google-api-python-client
+import os
+import sys
+import time
+import platform
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
-###
-class Crawler:
-    
-############################################### 공통 메서드 ###############################################
-    
-    def __init__(self, name, start, end, keyword, upload, weboption):
-        
-        ##################################### 시스템 입력부  #####################################
 
-        self.api_list = [
-            'AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU', # 문요준 g.postech.edu --> 1번
-            'AIzaSyCkOqcZlTING7t6XqZV9M-aoTR8jHBDPTs', # 한승혁 --> 2번
-            'AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io', # 배시웅 --> 3번
-            'AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs', # 최우철 --> 4번
-            'AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4', # knpubigmac2024@gmail.com --> 5번
-            'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0', # gpt4.bb@gmail.com --> 6번
-            'AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo', # moonyojun2@gmail.com --> 7번
-            'AIzaSyByxep-pVr7eM5Z-wvL1u-Iy_6q7iUrtWk', # 이정우 --> 8번
-            'AIzaSyC5i2IcG0ntpD0ZbO_8sRomMq8LbHEWnGk', # yojunvai71@gmail.com -> 9번
-            'AIzaSyAmO8mi1lX1KwUsMRQl6fI6YFp7Gxy2eLk', # yojunpremium1@gmail.com -> 10번
-            'AIzaSyAzh54hQhYQK-qsLJBVAp1SPyGXcntGn1M', # yojunavi@gmail.com -> 11번
-            'AIzaSyBGISnI-0eBKuNYBeUko-Jj_avVSbdXLrU', # andrew101021@khu.ac.kr -> 12번
-            'AIzaSyAE0vxDo2CUIn0SsTYeCaV2HzdCJfhO4l4' # andrew77495@gmail.com -> 13번
-            ]
+class Crawler(CrawlerPackage):
+    
+    def __init__(self, user, startDate, endDate, keyword, upload, weboption):
+        super().__init__(proxy_option=True)
         
-        self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
-        self.api_num = 1
-            
-        # HP OMEN 
-        if socket.gethostname() == "DESKTOP-502IMU5":
-            self.filedirectory  = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
-            self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
-            self.tokendirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER" 
-            self.proxy_option   = "y"
-            self.sender         = "knpubigmac2024@gmail.com"
-            self.MailPassword   = 'vygn nrmh erpf trji'
-            self.crawlcom       = "HP OMEN"
+        self.GooglePackage_obj = GooglePackage(self.pathFinder()['token_path'])
         
-        # HP Z8
-        elif socket.gethostname() == "DESKTOP-0I9OM9K":
-            self.filedirectory  = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
-            self.proxydirectory = "C:/Users/User/Documents/GitHub/BIGMACLAB/CRAWLER"
-            self.tokendirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER" 
-            self.proxy_option   = "y"
-            self.sender         = "knpubigmac2024@gmail.com"
-            self.MailPassword   = 'vygn nrmh erpf trji'
-            self.crawlcom       = "HP Z8"
+        # Computer Info
+        self.scrapdata_path = self.pathFinder()['scrapdata_path']
+        self.crawlcom       = self.pathFinder()['computer_name']
         
-        # Yojun's MacBook Pro MACOS
-        elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
-            self.filedirectory  = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER/scrapdata"
-            self.proxydirectory = "/Users/yojunsmacbookprp/Documents/GitHub/BIGMACLAB/CRAWLER"
-            self.tokendirectory = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER"
-            self.proxy_option   = "y"
-            self.sender         = "knpubigmac2024@gmail.com"
-            self.MailPassword   = 'vygn nrmh erpf trji'
-            self.crawlcom       = "Yojun's MacBook Pro MACOS"
+        # User Info
+        self.user      = user
+        self.userEmail = self.get_userEmail(user)
         
-        # Yojun's MacBook Pro WINDOW
-        elif socket.gethostname() == "YOJUNMACBOOKPRO":
-            self.filedirectory  = "C:/Users/yojunsmacbookprp/Documents/scrapdata" 
-            self.proxydirectory = "C:/Users/yojunsmacbookprp/Documents/scrapdata"
-            self.proxy_option   = "y"
-            self.sender         = "knpubigmac2024@gmail.com"
-            self.MailPassword   = 'vygn nrmh erpf trji'
-            self.crawlcom       = "Yojun's MacBook Pro Window"
-            
-        self.user_name = name
+        # For Web Version
         self.weboption = int(weboption)
-        self.admin = 0
         
-        if self.user_name in ['admin', '관리자']:
-            self.admin = 1
-            self.filedirectory = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/admin_scrapdata_folder"
-            self.receiver = "moonyojun@naver.com"
-            
-        elif self.user_name == "이정우":
-            self.receiver = "wjddn_1541@naver.com"
-        
-        elif self.user_name == "문요준":
-            self.receiver = "moonyojun@naver.com"
-                
-        elif self.user_name == "최우철":
-            self.receiver = "woc0633@gmail.com"
-            
-        elif self.user_name == "노승국":
-            self.receiver = "science22200@naver.com"
-            
-        elif self.user_name == "배시웅":
-            self.receiver = "silverwolv@naver.com"        
-            
-        elif self.user_name == "한승혁":
-            self.receiver = "hankyeul80@naver.com"     
-            
-        elif self.user_name == "이진원":
-            self.receiver = "nevermean@empas.com"
-        
-        else:
-            self.receiver = "moonyojun@naver.com"
-            
-        # FAST CRAWLER OPTION
-        self.fast_option = 0
-        
-        if self.crawlcom == "HP OMEN" and self.weboption == 1:
-            self.fast_option = 1
-            self.filedirectory  = "C:/Users/User/Documents/CRAWLER_FAST_WEB/FASTCRAWLER_병합폴더" 
-            folder_paths = []
-            for dirpath, dirnames, filenames in os.walk(self.filedirectory):
-                for dirname in dirnames:
-                    path = os.path.join(dirpath, dirname)
-                    path = path.replace('\\', '/')
-                    folder_paths.append(path)
-            if len(folder_paths) >= 5:
-                sys.exit()
-            
-        #######################################################################################
-        
-        # proxy.txt 파일에서 프록시 불러옴
-        try:
-            self.proxy_path = self.proxydirectory+"/proxy.txt"
-            self.proxy_list = []
-            with open(self.proxy_path) as f:
-                lines = f.readlines()
-            for ip in lines:
-                ip = ip.replace("\n", "")
-                self.proxy_list.append(ip)
-        except:
-            print("프록시 파일이 존재하지 않습니다")
-            sys.exit()
-            
-        # 구글 드라이브 서비스 생성
-        
-        self.parent_folder_id = "1K3YTj9h_BMjpGyoDQYkWycqmnJLCxPCA"
-        self.storage_json     = self.proxydirectory+"/storage.json"
-        
-        SCOPES = ['https://www.googleapis.com/auth/drive']
+        self.startTime = time.time()
+        self.now       = datetime.now()
 
-        creds = None
-        if os.path.exists(self.tokendirectory + '/' + 'token.pickle'):
-            with open(self.tokendirectory + '/' + 'token.pickle', 'rb') as token:
-                creds = pickle.load(token)
-
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request()) # 유효기간이 만료된 토큰 새로고침
-            else:
-                # 인증 정보 파일 public/storage.json에서 인증을 진행
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    self.storage_json, SCOPES)
-                # access_type='offline' 추가
-                creds = flow.run_local_server(port=0, access_type='offline')
-            # 새롭게 받은 인증 정보를 'token.pickle'에 저장
-            with open(self.tokendirectory + '/' + 'token.pickle', 'wb') as token:
-                pickle.dump(creds, token)
-
-        self.drive_service = build('drive', 'v3', credentials=creds)
-    
-        self.starttime = time.time()
-        self.now       = datetime.datetime.now()
-            
-        ##################################### 입력부  #####################################
-        self.start       = start
-        self.end         = end
-        self.keyword     = keyword
-        self.upload      = upload
-        #################################################################################
+        self.startDate = startDate
+        self.endDate   = endDate
+        self.keyword   = keyword
+        self.DBkeyword = keyword.replace('"', "").replace(" ", "")
+        self.upload    = upload
         
+        self.startDate_form = datetime.strptime(startDate, '%Y%m%d').date()
+        self.endDate_form   = datetime.strptime(endDate, '%Y%m%d').date()
         
-        
-        self.start_dt    = datetime.datetime.strptime(self.start, "%Y%m%d")
-        self.end_dt      = datetime.datetime.strptime(self.end,   "%Y%m%d")
-        
-        self.date_range  = (self.end_dt.date() - self.start_dt.date()).days  #분석 날짜 기간
-        
-        self.startYear   = int(self.start[0:4])
-        self.startMonth  = int(self.start[4:6])
-        self.startDay    = int(self.start[6:8])
-        
-        self.endYear     = int(self.end[0:4])
-        self.endMonth    = int(self.end[4:6])
-        self.endDay      = int(self.end[6:8])
-        self.d_start     = datetime.date(self.startYear, self.startMonth, self.startDay)
-        self.d_end       = datetime.date(self.endYear, self.endMonth, self.endDay)
+        self.currentDate = self.startDate_form
+        self.date_range  = (self.endDate_form - self.startDate_form).days + 1
         self.deltaD      = timedelta(days=1)
-        self.currentDate = self.d_start
+
+    def DBMaker(self, DBtype):
+        dbname_date = "_{}_{}".format(self.startDate, self.endDate)
+        self.DBname      = DBtype + '_' + self.DBkeyword + dbname_date + "_" + self.now.strftime('%m%d_%H%M')
+        self.DBpath      = os.path.join(self.scrapdata_path, self.DBname)
         
-        self.refinedword = self.keyword.replace('"', "").replace(" ", "")
-        self.keyword = self.keyword.replace('&', '%26').replace('+', '%2B')
-        self.keyword = self.keyword.replace(' ', '+')
-        
-        self.error       = False
-        self.urlList     = []
-        
-    def upload_folder(self, folder_path):
-        
-        if self.upload.lower() == 'y' or self.upload.lower() == 'yes':
-            folder_name = os.path.basename(folder_path)
+        try:
+            os.mkdir(self.DBpath)
+            log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'),'w+')
             
-            file_metadata = {
-            'name': folder_name,
-            'mimeType': 'application/vnd.google-apps.folder'
-            }
-            
-            if self.parent_folder_id:
-                file_metadata['parents'] = [self.parent_folder_id]
-            
-            folder = self.drive_service.files().create(body=file_metadata, fields='id').execute()
-            folder_id = folder.get('id')
-            
-            for file_name in os.listdir(folder_path):
-                file_path = os.path.join(folder_path, file_name)
-                if os.path.isfile(file_path):
-                    file_metadata = {'name': file_name, 'parents': [folder_id]}
-                    media = MediaFileUpload(file_path, resumable=True)
-                    file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-            
-            self.drive_folder_link = f"https://drive.google.com/drive/folders/{folder_id}"
-        else:
-            self.drive_folder_link = "No Upload"
-    
-    def fast_crawler_merge(self, loadingtime, option):
-        
-        def extract_date(folder_name):
-            # 폴더명에서 날짜 부분 추출
-            if option == "news":
-                match = re.search(r'\d{8}', folder_name)
-            elif option == "youtube":
-                match = re.search(r'\d{7}', folder_name)
-            if match:
-                return match.group(0)
-            return None
-        
-        folder_path = self.filedirectory
-        if self.admin == 1:
-            scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/admin_scrapdata_folder/"
-        else:
-            scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/"
-
-        # 특정 폴더 내의 모든 폴더 경로 가져오기
-        folder_paths = []
-        for dirpath, dirnames, filenames in os.walk(folder_path):
-            for dirname in dirnames:
-                path = os.path.join(dirpath, dirname)
-                path = path.replace('\\', '/')
-                folder_paths.append(path)
-                
-        email_send = False
-        if len(folder_paths) == 10:
-            if option == 'news':
-                folder_paths = [item for item in folder_paths if 'Naver' in item]
-                
-                folder_paths.sort(key = extract_date)
-                
-                all_file_list = []
-                all_file_list_sorted = []
-                all_article_statistics_list = []
-                all_article_list = []
-                all_reply_list = []
-                all_rereply_list = []
-                all_log_list = []
-                
-                for path in folder_paths:
-                    file_paths = []
-                    for dirpath, dirnames, filenames in os.walk(path):
-                        for filename in filenames:
-                            file_path = os.path.join(dirpath, filename)
-                            file_path = file_path.replace("\\", '/')
-                            file_paths.append(file_path)
-                    all_file_list.append(file_paths)
-
-                for folder in all_file_list:
-                    for file in folder:
-                        if "article(statistics).csv" in file:
-                            all_article_statistics_list.append(file)
-                        elif "article.csv" in file:
-                            all_article_list.append(file)
-                        elif "rere" in file:
-                            all_rereply_list.append(file)
-                        elif "reply.csv" in file:
-                            all_reply_list.append(file)
-                        elif "log.txt" in file:
-                            all_log_list.append(file)
-
-                all_file_list_sorted.append(all_article_list)
-                all_file_list_sorted.append(all_article_statistics_list)
-                all_file_list_sorted.append(all_reply_list)
-                all_file_list_sorted.append(all_rereply_list)
-                all_file_list_sorted.append(all_log_list)
-
-                end_year = os.path.basename(folder_paths[-1]).split('_')[4]
-                new_folder_name = os.path.basename(folder_paths[0]).replace(os.path.basename(folder_paths[0]).split('_')[4], end_year)
-                new_folder_path = scrapdata_path + new_folder_name
-                
-                os.makedirs(new_folder_path)
-
-                for file_list in all_file_list_sorted:
-                    if file_list != []:
-                        merged_df = pd.DataFrame()
-                        for file in file_list:
-                            if ".csv" in file:
-                                df = pd.read_csv(file, encoding='utf-8-sig')
-                                if not df.empty:  # 데이터프레임이 비어 있지 않다면
-                                    merged_df = pd.concat([merged_df, df], ignore_index=True)
-                            else:
-                                try:
-                                    output_file = new_folder_name + "_log.txt"
-                                    with open(new_folder_path + '/' + output_file, 'w', encoding='cp949', errors = 'ignore') as outfile:
-                                        with open(file, 'r', encoding = 'cp949', errors = 'ignore') as readfile:
-                                            outfile.write(readfile.read() + '\n')
-                                except:
-                                    pass
-                        
-                        if "article(statistics).csv" in file_list[0]:
-                            output_file = new_folder_name + "_article(statistics).csv"
-                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
-                        
-                        elif "article.csv" in file_list[0]:
-                            output_file = new_folder_name + "_article.csv"
-                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
-
-                        elif "rere" in file_list[0]:
-                            output_file = new_folder_name + "_rereply.csv"
-                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
-                            
-                        elif "reply.csv" in file_list[0]:
-                            output_file = new_folder_name + "_reply.csv"
-                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
-                        
-                for filename in os.listdir(folder_path):
-                    file_path = os.path.join(folder_path, filename)
-                    try:
-                        if os.path.isfile(file_path) or os.path.islink(file_path):
-                            os.unlink(file_path)  # 파일 또는 링크 삭제
-                        elif os.path.isdir(file_path):
-                            shutil.rmtree(file_path)  # 폴더 삭제
-                    except Exception as e:
-                        pass
-
-                self.upload_folder(new_folder_path)
-                
-                email_send = True
-            
-            elif option == 'youtube':
-                folder_paths = [item for item in folder_paths if 'YouTube' in item]
-                
-                folder_paths.sort(key = extract_date)
-                
-                all_file_list = []
-                all_file_list_sorted = []
-                all_info_list = []
-                all_reply_list = []
-                all_log_list = []
-                
-                for path in folder_paths:
-                    file_paths = []
-                    for dirpath, dirnames, filenames in os.walk(path):
-                        for filename in filenames:
-                            file_path = os.path.join(dirpath, filename)
-                            file_path = file_path.replace("\\", '/')
-                            file_paths.append(file_path)
-                    all_file_list.append(file_paths)
-
-                for folder in all_file_list:
-                    for file in folder:
-                        if "info.csv" in file:
-                            all_info_list.append(file)
-                        elif "reply.csv" in file:
-                            all_reply_list.append(file)
-                        elif "log.txt" in file:
-                            all_log_list.append(file)
-
-                all_file_list_sorted.append(all_info_list)
-                all_file_list_sorted.append(all_reply_list)
-                all_file_list_sorted.append(all_log_list)
-
-                end_year = os.path.basename(folder_paths[-1]).split('_')[3]
-                new_folder_name = os.path.basename(folder_paths[0]).replace(os.path.basename(folder_paths[0]).split('_')[3], end_year)
-                new_folder_path = scrapdata_path + new_folder_name
-                
-                os.makedirs(new_folder_path)
-
-                for file_list in all_file_list_sorted:
-                    if file_list != []:
-                        merged_df = pd.DataFrame()
-                        for file in file_list:
-                            if ".csv" in file:
-                                df = pd.read_csv(file, encoding='utf-8-sig')
-                                if not df.empty:  # 데이터프레임이 비어 있지 않다면
-                                    merged_df = pd.concat([merged_df, df], ignore_index=True)
-                            else:
-                                try:
-                                    output_file = new_folder_name + "_log.txt"
-                                    with open(new_folder_path + '/' + output_file, 'w', encoding='cp949', errors = 'ignore') as outfile:
-                                        with open(file, 'r', encoding = 'cp949', errors = 'ignore') as readfile:
-                                            outfile.write(readfile.read() + '\n')
-                                except:
-                                    pass
-                        
-                        if "info.csv" in file_list[0]:
-                            output_file = new_folder_name + "info.csv"
-                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
-                            
-                        elif "reply.csv" in file_list[0]:
-                            output_file = new_folder_name + "_reply.csv"
-                            merged_df.to_csv(new_folder_path + '/' + output_file, index=False, encoding='utf-8-sig')
-                        
-                for filename in os.listdir(folder_path):
-                    file_path = os.path.join(folder_path, filename)
-                    try:
-                        if os.path.isfile(file_path) or os.path.islink(file_path):
-                            os.unlink(file_path)  # 파일 또는 링크 삭제
-                        elif os.path.isdir(file_path):
-                            shutil.rmtree(file_path)  # 폴더 삭제
-                    except Exception as e:
-                        pass
-
-                self.upload_folder(new_folder_path)
-                
-                email_send = True
-
-        else:
-            return
-        
-        if email_send == True:
-            text  = "[FAST CRAWLER 크롤링 완료] \n"
-            #text += "============================================================"
-            text += "\n검색어: " + str(self.keyword)
-            text += "\n옵션 번호: " + str(self.option)
-            text += "\n소요 시간: " + loadingtime
-            text += "\n컴퓨터: " + self.crawlcom
-            text += "\n파일 링크: " + self.drive_folder_link
-            #text += "\n============================================================"
-
-            msg = MIMEMultipart()
-            msg['Subject'] = "[크롤링 완료]  " + new_folder_name
-            msg['From'] = self.sender
-            msg['To'] = self.receiver
-
-            msg.attach(MIMEText(text, 'plain'))
-            
-            smtp_server = "smtp.gmail.com"
-            smtp_port = 587
-
-            # SMTP 연결 및 메일 보내기
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(self.sender, self.MailPassword)
-                server.sendmail(self.sender, self.receiver, msg.as_string())
-            
-    def print_status(self, signal, print_type):
-        
-        self.progress_time = time.time()
-        loading_second     = self.progress_time - self.starttime
-        loadingtime        = str(int(loading_second//3600))+":"+str(int(loading_second%3600//60))+":"+str(int(loading_second%3600%60))
-        
-        if self.weboption == 0:
-            if print_type == "news":
-                print_type = "기사"
-                if signal == -1: # 날짜
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+ " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[36m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
-                    print(out_str, end = "")
-                elif signal == 0: # url
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[36m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
-                    print(out_str, end = "")
-                elif signal == 1: # 기사
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[36m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
-                    print(out_str, end = "")
-                elif signal == 2: # 댓글
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[36m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
-                    print(out_str, end = "")
-                else: # 대댓글
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글: "+"\033[36m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
-                    print(out_str, end = "")
-            
-            elif print_type == "blog":
-                print_type = "블로그"
-                if signal == -1: # 날짜
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[36m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                    print(out_str, end = "")
-                elif signal == 0: # url
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[36m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                    print(out_str, end = "")
-                elif signal == 1: # 블로그
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[36m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                    print(out_str, end = "")
-                else: # 댓글
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글: "+"\033[36m"+str(len(self.reply_list)-1)+"\033[37m"+" ||"
-                    print(out_str, end = "")
-            
-            elif print_type == "youtube":
-                print_type = "영상"
-                
-                if signal == -1: # 날짜
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[36m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
-                    print(out_str, end = "")
-                elif signal == 0: # url
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[36m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
-                    print(out_str, end = "")
-                elif signal == 1: # 블로그
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[36m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
-                    print(out_str, end = "")
-                else: # 댓글
-                    out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+print_type+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[36m"+str(len(self.reply_list)-1)+"\033[37m"+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
-                    print(out_str, end = "")
-                    
-        elif self.weboption == 1:
-            if print_type == "news":
-                print_type = "기사"
-                if signal == -1: # 날짜
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+ " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | 대댓글: "+str(len(self.rereply_list)-1)+" ||"
-                    print(out_str, end = "")
-                elif signal == 0: # url
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | 대댓글: "+str(len(self.rereply_list)-1)+" ||"
-                    print(out_str, end = "")
-                elif signal == 1: # 기사
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | 대댓글: "+str(len(self.rereply_list)-1)+" ||"
-                    print(out_str, end = "")
-                elif signal == 2: # 댓글
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | 대댓글: "+str(len(self.rereply_list)-1)+" ||"
-                    print(out_str, end = "")
-                else: # 대댓글
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | 대댓글: "+str(len(self.rereply_list)-1)+" ||"
-                    print(out_str, end = "")
-    
-            elif print_type == "blog":
-                print_type = "블로그"
-                if signal == -1: # 날짜
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
-                    print(out_str, end = "")
-                elif signal == 0: # url
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
-                    print(out_str, end = "")
-                elif signal == 1: # 블로그
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
-                    print(out_str, end = "")
-                else: # 댓글
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.article_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" ||"
-                    print(out_str, end = "")
-            
-            elif print_type == "youtube":
-                print_type = "영상"
-                
-                if signal == -1: # 날짜
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | API: "+str(self.api_num)+" ||"
-                    print(out_str, end = "")
-                elif signal == 0: # url
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | API: "+str(self.api_num)+" ||"
-                    print(out_str, end = "")
-                elif signal == 1: # 블로그
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | API: "+str(self.api_num)+" ||"
-                    print(out_str, end = "")
-                else: # 댓글
-                    out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+print_type+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | API: "+str(self.api_num)+" ||"
-                    print(out_str, end = "")
-                
-    def error_exception(self, e, ipchange = False):
-        exc_type, exc_value, exc_traceback = sys.exc_info()  # 예외 정보 가져오기
-        tb_info = traceback.extract_tb(exc_traceback)
-        filename, lineno, func, text = tb_info[-1]  # 가장 최근의 호출 스택 정보
-        
-        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        error_msg = f"{exc_type} {str(e)}"
-
-        if ipchange:
-            msg = (
-                f"Timestamp:               {timestamp}\n"
-                f"File name:                {filename}\n"
-                f"Error line:                {lineno}\n"
-                f"Error:                    {error_msg}\n"
-                f"---------------------------------------------->> IP Changed\n"
+            self.msg = (
+                f"====================================================================================================================\n"
+                f"{'User:':<15} {self.user}\n"
+                f"{'Object:':<15} {self.DBtype}\n"
+                f"{'Option:':<15} {self.option}\n"
+                f"{'Keyword:':<15} {self.keyword}\n"
+                f"{'Date Range:':<15} {self.startDate_form.strftime('%Y.%m.%d')} ~ {self.endDate_form.strftime('%Y.%m.%d')}\n"
+                f"{'Computer:':<15} {self.crawlcom}\n"
+                f"{'DB path:':<15} {self.DBpath}\n"
+                f"{'Drive Upload:':<15} {self.upload}\n"
+                f"====================================================================================================================\n"
             )
-        else:
-            msg = (
-                f"Timestamp:               {timestamp}\n"
-                f"File name:                {filename}\n"
-                f"Error line:                {lineno}\n"
-                f"Error:                    {error_msg}\n"
-            )
-            self.error = True
-        
-        self.writeLog(msg)
+            log.write(self.msg + '\n\n')
+            log.close()
+        except:
+            print("Error: 폴더 생성 실패")
+            sys.exit()
     
-    def send_email(self, loadingtime):
-        
-        if self.fast_option == 1:
-            return
-
-        else:
-            text  = "[크롤링 완료] \n"
-            #text += "============================================================"
-            text += "\n검색 기간: " + str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay)
-            text += "\n검색어: " + str(self.keyword)
-            text += "\n옵션 번호: " + str(self.option)
-            text += "\n소요 시간: " + loadingtime
-            text += "\n컴퓨터: " + self.crawlcom
-            text += "\n파일 링크: " + self.drive_folder_link
-            #text += "\n============================================================"
-
-            msg = MIMEMultipart()
-            msg['Subject'] = "[크롤링 완료]  " + self.DBname
-            msg['From'] = self.sender
-            msg['To'] = self.receiver
-
-            msg.attach(MIMEText(text, 'plain'))
-            
-            smtp_server = "smtp.gmail.com"
-            smtp_port = 587
-
-            # SMTP 연결 및 메일 보내기
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(self.sender, self.MailPassword)
-                server.sendmail(self.sender, self.receiver, msg.as_string())
-    
-    def writeLog(self, msg):
-        f = open(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_log.txt", "a")
-        msg += "\n\n"
-        f.write(msg)
-        f.close()
-
-    def random_heador(self):
-        navigator = generate_navigator()
-        navigator = navigator['user_agent']
-        return {"User-Agent": navigator}
-
-    def random_proxy(self):
-        proxy_server = random.choice(self.proxy_list)
-        if self.proxy_option.lower() == "y":
-            return {"http": 'http://' + proxy_server, 'https': 'http://' + proxy_server}
-        else:
-            return None
-        
     def clear_screen(self):
         if platform.system() == "Windows":
             os.system("cls")
         else:
             os.system("clear")
-
-    def requester(self, url, headers = {}, params = {}):
-        if headers == {}:
-            headers = self.random_heador()
             
-        while True:
-            proxies = self.random_proxy()
-            try:
-                main_page = requests.get(url, proxies = proxies, headers = headers, params = params, verify = False, timeout = 3)
-                break
-            except requests.exceptions.Timeout as e:
-                self.error_exception(e, True)
-            except Exception as e:
-                self.error_exception(e, True)
-        return main_page  
-
-##########################################################################################################
-
-
-############################################### News Crawler #############################################
-
-    def crawl_news(self, option):
+    def infoPrinter(self):
+        print(self.msg)
+      
+    def ReturnChecker(self, value):
+        error = False
+            
+        if isinstance(value, dict) == True:
+            first_key = list(value.keys())[0]
+            if first_key == 'Error Code':
+                err_msg_title = self.error_extractor(value['Error Code'])
+                err_msg_content = value['Error Msg']
+                err_target = value['Error Target']
+                error = True
+        
+        if error == True:
+            log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'),'a')
+            msg = (
+                f"\n\nError Time: {self.now}\n"
+                f"Error Type: {err_msg_title}\n"
+                f"Error Detail: {err_msg_content}\n"
+                f"Error Target: {err_target}\n\n\n"
+            )
+            log.write(msg)
+            log.close()
+            return True
+        else:
+            return False
+    
+    def FinalOperator(self):
+        self.clear_screen()
+        print(self.msg)
+        print('\r업로드 및 메일 전송 중...', end = '')
+        
+        title = '[크롤링 완료] ' + self.DBname
+        text = self.msg
+        
+        if self.upload == True:
+            driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
+            text = self.msg + f'File URL: {driveURL}'
+       
+        self.GooglePackage_obj.SendMail(self.userEmail, title, text)
+    
+    def Naver_News_Crawler(self, option):
+        
+        NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=True, print_status_option=True)
         
         self.option = option
-        
-        self.clear_screen()
+        self.DBtype = "NaverNews"
+        self.DBMaker(self.DBtype)
 
-        self.dbname_date = "_{}_{}".format(self.start, self.end)
-        self.DBname      = "Naver_News_" + self.refinedword + self.dbname_date + "_" + self.now.strftime("%m%d_%H%M")
-        os.mkdir(self.filedirectory + "/" + self.DBname)  # 폴더 생성
-        
-        self.f = open(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_log.txt", "w+")  # Log file 생성
-        self.f.close()
-        
-        self.article_list    = [["article press", "article type", "url", "article title", "article body", "article date", "reply_cnt", "statistics(Y/N)", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
-        self.statistics_list = [["article press", "article type", "url", "article title", "article body", "article date", "reply_cnt", "statistics(Y/N)", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
-        self.reply_list      = [["reply_id", "writer", "reply_date", "reply", "rere_count", "r_Like", "r_Bad", "r_Per_Like", 'r_Sentiment', 'url']]
-        self.rereply_list    = [["reply_id", "id", "rerewriter", "rereply_date", "rereply", "rere_Like", "rere_Bad", 'url']]
-        
-        self.article_csv         = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article" + ".csv"
-        self.statistics_csv      = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article(statistics)" + ".csv"
-        self.reply_csv           = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv"
-        self.rereply_csv         = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_rereply" + ".csv"
+        # initial list
+        self.urlList         = []
+        self.article_list    = [["NaverNews Press", "NaverNews Type", "News URL", "News Title", "News Text", "News Date", "News ReplyCnt"]]
+        self.statistics_list = [["NaverNews Press", "NaverNews Type", "News URL", "News Title", "News Text", "News Date", "News ReplyCnt", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
+        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'News URL', 'Reply ID']]
+        self.rereply_list    = [["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "News URL"]]
         
         if self.weboption == 0:
-            print("====================================================================================================================") 
-            if self.admin == 1:
-                print("[관리자 모드]")
-            print("크롤링: 네이버 뉴스")
-            print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
-            print("쿼리:", self.keyword)
-            print("검색어:", self.refinedword)
-            print("옵션 번호:", self.option)
-            print("컴퓨터:",    self.crawlcom)
-            print("저장 위치:",  self.filedirectory + "/" + self.DBname)
-            print("메일 수신:",  self.receiver)
-            print("드라이브 업로드:", self.upload)
-            print("====================================================================================================================\n")
-
-        try:
-            for i in range(self.date_range+1):
-                self.progress = i
-                self.trans_date = str(self.currentDate).replace("-", ".")
-                self.print_status(-1, "news")
-                self.get_NEWS_URLs(self.trans_date)
-                self.currentDate += self.deltaD
-                
-                try:
-                    with open(self.article_csv, "w", newline = "", encoding='utf-8-sig') as article:
-                        csv.writer(article).writerows(self.article_list)
-                    with open(self.statistics_csv, "w", newline = "", encoding='utf-8-sig') as statistics:
-                        csv.writer(statistics).writerows(self.statistics_list)
-                except Exception as e:
-                    self.error_exception(e)
-                    
-                if self.option == 2 or self.option == 3:
-                    try:
-                        with open(self.reply_csv, "w", newline = "", encoding='utf-8-sig') as reply:
-                            csv.writer(reply).writerows(self.reply_list)
-                        if self.option == 3:
-                            with open(self.rereply_csv, "w", newline = "", encoding='utf-8-sig') as rereply:
-                                csv.writer(rereply).writerows(self.rereply_list)
-                    except Exception as e:
-                        self.error_exception(e)
-                    
-
-            out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+"\033[37m"+" | 기사 수: "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글 수: "+"\033[33m"+str(len(self.reply_list)-1)+"\033[37m"+" | 대댓글 수: "+"\033[33m"+str(len(self.rereply_list)-1) + "\033[37m"+" ||"
-            if self.weboption == 1:
-                out_str = ""+"|| 진행: "+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ " | 날짜: "+self.trans_date+" | 기사 수: "+str(len(self.article_list)-1)+" | 댓글 수: "+str(len(self.reply_list)-1)+" | 대댓글 수: "+str(len(self.rereply_list)-1) +" ||"
+            self.infoPrinter()
+        
+        for dayCount in range(self.date_range + 1):
             
-            print(out_str, end = "")
+            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+            percent = str(round((dayCount/(self.date_range+1))*100, 1))
+            NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
             
-            self.endtime  = time.time()
-            loadingsecond = self.endtime - self.starttime
-            loadingtime   = str(int(loadingsecond//3600))+"시간 "+str(int(loadingsecond%3600//60))+"분 "+str(int(loadingsecond%3600%60))+"초"
+            # option 1: article + reply
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+            self.ListToCSV(object_list=self.statistics_list, csv_path=self.DBpath, csv_name=self.DBname + '_statistics.csv')
+            self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
             
-            if self.fast_option == 1:
-                os.makedirs(self.filedirectory + '/' + self.end)
-                self.fast_crawler_merge(loadingtime, 'news')
+            # option 2: article + reply + rereply
+            if option == 2:
+                self.ListToCSV(object_list=self.rereply_list, csv_path=self.DBpath, csv_name=self.DBname + '_rereply.csv')
+            
+            # finish line
+            if dayCount == self.date_range:
+                self.FinalOperator()
+                self.printStatus(type='NaverNews', endMsg_option=True)
                 return
             
-            else:
-                if self.weboption == 0:
-                    print("\n\n크롤링 완료\n")
-                    print("분석 소요 시간:", loadingtime)
-                    
-                self.upload_folder(self.filedirectory + "/" + self.DBname)
-                self.send_email(loadingtime)
-            
-        except Exception as e:
-            _, _, tb = sys.exc_info()  # tb -> traceback object
-            msg = (
-                "File name: "
-                + __file__
-                + "\n"
-                + "Error line= {}".format(tb.tb_lineno)
-                + "\n"
-                + "Error: {}".format(sys.exc_info()[0])
-                + " "
-                + str(e)
-                + "\n"
-                + "Date : "
-                + str(self.currentDate)
-                + "\n"
-                + "keyword : "
-                + self.keyword
-            )
-            self.writeLog(msg)
-            
-    def parseNews(self, url):
-        
-        try:
-            res = self.requester(url)        
-            bs = BeautifulSoup(res.text, 'lxml')    
-                
-            try:
-                news          = ''.join((i.text.replace("\n", "") for i in bs.find_all("div", {"class": "newsct_article"})))
-                article_press = str(bs.find("img")).split()[1][4:].replace("\"", '') # article_press
-                article_type  = bs.find("em", class_="media_end_categorize_item").text # article_type
-                article_title = bs.find("div", class_="media_end_head_title").text.replace("\n", " ") # article_title
-                article_date  = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
-                reply_cnt     = 0
-                statistics    = 'N'
-                male          = 999
-                female        = 999
-                Y_10          = 999
-                Y_20          = 999
-                Y_30          = 999
-                Y_40          = 999
-                Y_50          = 999
-                Y_60          = 999
-                    
-                self.article_list.append([article_press, article_type, url, article_title, news, article_date, reply_cnt, statistics, male, female, Y_10, Y_20, Y_30, Y_40, Y_50, Y_60])
-                self.print_status(1, "news")
-            except:
-                return
-        
-            if self.option == 1: # 기사만 수집할 때 여기서 끝냄
-                return
-            
-            oid  = url[39:42]
-            aid  = url[43:53]
-            page = 1
-            
-            nickname_list, replyDate_list, text_list, rere_count_list, r_like_list, r_bad_list = [], [], [], [], [], []
-            parentCommentNo_list = []
-            
-            while True:
-                try:
-                    headers   = {"User-agent":generate_navigator()['user_agent'], "referer":url}  
-                    params = {
-                        'ticket'             : 'news',
-                        'templateId'         : 'default_society',
-                        'pool'               : 'cbox5',
-                        'lang'               : 'ko',
-                        'country'            : 'KR',
-                        'objectId'           : f'news{oid},{aid}',
-                        'pageSize'           : '100',
-                        'indexSize'          : '10',
-                        'page'               : str(page),
-                        'currentPage'        : '0',
-                        'moreParam.direction': 'next',
-                        'moreParam.prev'     : '10000o90000op06guicil48ars',
-                        'moreParam.next'     : '1000050000305guog893h1re',
-                        'followSize'         : '100',
-                        'includeAllStatus'   : 'true',
-                        'sort'               : 'reply',
-                        'initialize'         : 'true'
-                    }
-                
-                    try:
-                        response = self.requester('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers, params)
-                        response.encoding = "UTF-8-sig"
-                        res               = response.text.replace("_callback(","")[:-2]
-                        temp              = json.loads(res)         
-                                            
-                        for comment_json in temp.get("result", {}).get("commentList", []):
-                            parentCommentNo = comment_json["parentCommentNo"]
-                            parentCommentNo_list.append(parentCommentNo)
-                        
-                        try:
-                            self.article_list[len(self.article_list)-1][6] = temp['result']['count']['comment']
-                            nickname_list  .extend(list(pd.DataFrame(        temp['result']['commentList'])['maskedUserId']))
-                            replyDate_list .extend(list(pd.DataFrame(        temp['result']['commentList'])['modTime']))
-                            text_list      .extend(list(pd.DataFrame(        temp['result']['commentList'])['contents']))
-                            rere_count_list.extend(list(pd.DataFrame(        temp['result']['commentList'])['replyCount']))
-                            r_like_list    .extend(list(pd.DataFrame(        temp['result']['commentList'])['sympathyCount']))
-                            r_bad_list     .extend(list(pd.DataFrame(        temp['result']['commentList'])['antipathyCount']))
-                        except:
-                            break
-                        
-                        if len(list(pd.DataFrame(temp['result']['commentList'])['maskedUserId'])) < 97:
-                            break
-                        else:
-                            page += 1
-                            if page == 101:
-                                break
-                    except:
-                        break
-                    
-                except Exception as e:
-                    self.error_exception(e)
-            
-            try:
-                self.article_list[len(self.article_list)-1][8]  = temp['result']['graph']['gender']['male']  # male
-                self.article_list[len(self.article_list)-1][9]  = temp['result']['graph']['gender']['female']# female
-                self.article_list[len(self.article_list)-1][10] = temp['result']['graph']['old'][0]['value'] # 10Y
-                self.article_list[len(self.article_list)-1][11] = temp['result']['graph']['old'][1]['value'] # 20Y
-                self.article_list[len(self.article_list)-1][12] = temp['result']['graph']['old'][2]['value'] # 30Y
-                self.article_list[len(self.article_list)-1][13] = temp['result']['graph']['old'][3]['value'] # 40Y
-                self.article_list[len(self.article_list)-1][14] = temp['result']['graph']['old'][4]['value'] # 50Y
-                self.article_list[len(self.article_list)-1][15] = temp['result']['graph']['old'][5]['value'] # 60Y
-                self.article_list[len(self.article_list)-1][7]  = 'Y' # statistics
-                self.statistics_list.append(self.article_list[len(self.article_list)-1])
-            except:
-                pass
-                    
-            reply_idx = 0
-            for i in range(len(nickname_list)):
-                reply_idx += 1
-                
-                r_per_like = 0.0 # 댓글 긍정 지수 구하기
-                r_sum_like_angry = int(r_like_list[i]) + int(r_bad_list[i])
-                if r_sum_like_angry != 0:
-                    r_per_like = float(int(r_like_list[i]) / r_sum_like_angry)
-                    r_per_like = float(format(r_per_like, ".2f"))
-                # 댓글 긍정,부정 평가
-                if r_per_like > 0.5:  # 긍정
-                    r_sentiment = 1
-                elif r_per_like == 0:  # 무관심
-                    r_sentiment = 2
-                elif r_per_like < 0.5:  # 부정
-                    r_sentiment = -1
-                else:  # 중립
-                    r_sentiment = 0
-                
-                self.reply_list.append(
-                    [str(reply_idx),
-                    str(nickname_list[i]),
-                    str(replyDate_list[i]),
-                    str(text_list[i].replace("\n", " ")),
-                    str(rere_count_list[i]),
-                    str(r_like_list[i]),
-                    str(r_bad_list[i]),
-                    str(r_per_like),
-                    str(r_sentiment),
-                    str(url)]
-                )
-                if self.weboption == 0:
-                    self.print_status(2, "news")
-            
-            if self.option == 3:
-                try:
-                    base_url = "".join(
-                        [
-                            "https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json?ticket=news",
-                            "&pool=cbox5&lang=ko&country=KR",
-                            "&objectId=news{}%2C{}&categoryId=&pageSize={}&indexSize=10&groupId=&listType=OBJECT&pageType=more",
-                            "&page={}&initialize=true&followSize=5&userType=&useAltSort=true&replyPageSize=20&sort={}&includeAllStatus=true&_=1696730082374",
-                        ]
-                    )
-                    for i in range(len(parentCommentNo_list)):
-                        
-                        if rere_count_list[i] != 0:
-                            base_url_tmp_re = (base_url.format(oid, aid, 100, 1, "reply") + "&parentCommentNo=" + parentCommentNo_list[i])
-                            
-                            re_r = self.requester(base_url_tmp_re, headers)
-                            re_html = re_r.text.encode("cp949", "ignore").decode("cp949", "ignore")
-                            re_html = re_html[10:-2]
-                            re_response = json.loads(re_html)
-                            
-                            rereply_idx = 0
-                            for rereply_json in re_response.get("result", {}).get("commentList", []):
-                                rereply_idx += 1
-                                re_parse_result = self._parse_news_comment(rereply_json)
-
-                                repleLastIndex = i + 1
-                                nickName2 = re_parse_result[0]
-                                replyDate2 = re_parse_result[4]
-                                text2 = re_parse_result[3]
-                                rere_like = re_parse_result[5]
-                                rere_bad = re_parse_result[6]
-                                
-                                try:
-                                    self.rereply_list.append(
-                                        [str(repleLastIndex),
-                                        str(rereply_idx),
-                                        str(nickName2),
-                                        str(replyDate2),
-                                        text2.replace("\n", " "),
-                                        str(rere_like),
-                                        str(rere_bad),
-                                        str(url)])
-                                    if self.weboption == 0:
-                                        self.print_status(3, "news")
-                                except:
-                                    self.error_exception(e)  
-
-                except Exception as e:
-                    self.error_exception(e)  
-                            
-        except Exception as e:
-            self.error_exception(e)
-
-    def _parse_news_comment(self, comment_json):
-            antipathy_count = comment_json["antipathyCount"]
-            sympathy_count = comment_json["sympathyCount"]
-            contents = (
-                comment_json["contents"]
-                .replace("\t", " ")
-                .replace("\r", " ")
-                .replace("\n", " ")
-                .encode("cp949", "ignore")
-                .decode("cp949", "ignore")
-            )
-            reg_time = comment_json["regTime"]
-            user_id = (
-                comment_json["userName"].encode("cp949", "ignore").decode("cp949", "ignore")
-            )
-
-            reply_count = comment_json["replyCount"]
-            parentCommentNo = comment_json["parentCommentNo"]
-
-            return (
-                user_id,
-                reply_count,
-                parentCommentNo,
-                contents,
-                reg_time,
-                sympathy_count,
-                antipathy_count,
-            )
-
-    def get_NEWS_URLs(self, currentDate):
-        
-        search_page_url = "https://search.naver.com/search.naver?where=news&query={}&sm=tab_srt&sort=2&photo=0&reporter_article=&pd=3&ds={}&de={}&&start={}&related=0"
-        currentPage = 1
-        
-        self.urlList = []
-        try:
-            while True:
-                search_page_url_tmp = search_page_url.format(self.keyword, currentDate, currentDate, currentPage)
-                main_page = self.requester(search_page_url_tmp)
-                main_page = BeautifulSoup(main_page.text, "lxml") #스크랩 모듈에 url 넘김
-                site_result = main_page.select('a[class = "info"]')
-                
-                if site_result == []:
-                    break
-
-                for a in site_result: #스크랩한 데이터 중 링크만 추출
-                    add_link = a['href']
-                    if 'sports' not in set(add_link) and 'sid=106' not in set(add_link):
-                        self.urlList.append(add_link)
-                        if self.weboption == 0:
-                            self.print_status(0, "news")
-                        
-                    if add_link == None:
-                        break
-                
-                currentPage += 10 # 다음페이지 이동
+            # News URL Part
+            urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+            if self.ReturnChecker(urlList_returnData) == True:
+                continue
+            self.urlList = urlList_returnData['urlList']
             
             for url in self.urlList:
-                self.parseNews(url)
-        except:
-            pass
-
-##########################################################################################################
-
-
-############################################### Blog Crawler #############################################
-
-    def crawl_blog(self, option):
+                # News Article Part
+                article_returnData = NaverNewsCrawler_obj.articleCollector(newsURL=url)
+                if self.ReturnChecker(article_returnData) == True:
+                    continue
+                articleData = article_returnData['articleData']
+                
+                # News Reply Part
+                reply_returnData = NaverNewsCrawler_obj.replyCollector(newsURL=url)
+                if self.ReturnChecker(reply_returnData) == True:
+                    continue
+                replyCnt            = reply_returnData['replyCnt']
+                replyList           = reply_returnData['replyList']
+                parentCommentNoList = reply_returnData['parentCommentNo_list']
+                statistics_data     = reply_returnData['statistics_data']
+                
+                # append reply count into article data
+                self.article_list.append(articleData + [replyCnt])
+                if replyCnt != 0:
+                    self.reply_list.extend(replyList)
+                    if statistics_data != []:
+                        self.statistics_list.append(articleData + statistics_data)
+                    
+                    if self.option == 1 or replyCnt == 0:
+                        continue
+                    
+                    # News ReReply Part
+                    rereply_returnData = NaverNewsCrawler_obj.rereplyCollector(newsURL=url, parentCommentNum_list=parentCommentNoList)
+                    if self.ReturnChecker(reply_returnData) == True:
+                        continue
+                    rereplyList = rereply_returnData['rereplyList']
+                    
+                    if rereplyList != []:
+                        self.rereply_list.extend(rereplyList)
+            
+            self.currentDate += self.deltaD
+    
+    def Naver_Blog_Crawler(self, option):
+        
+        NaverBlogCrawler_obj = NaverBlogCrawler(proxy_option=True, print_status_option=True)
         
         self.option = option
-        if option == 3:
-            self.option = 2
-                
-        self.clear_screen()
+        self.DBtype = "NaverBlog"
+        self.DBMaker(self.DBtype)
         
-        self.dbname_date = "_{}_{}".format(self.start, self.end)
-        self.DBname = "Naver_Blog_" + self.refinedword + self.dbname_date + "_" + self.now.strftime("%m%d_%H%M")
-        os.mkdir(self.filedirectory+"/" + self.DBname)  # 폴더 생성
-        
-        self.f = open(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_log.txt", "w+")  # Log file 생성
-        self.f.close()
-        
-        self.article_list = [["article id", "blog_id", "url", "article body", "article date", "good_cnt", "comment_cnt"]]
-        self.reply_list = [["article id", "reply_id", "writer", "reply_date", "reply"]]
-        
-        self.article_csv         = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_article" + ".csv"
-        self.reply_csv           = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv"
+        # initial list
+        self.urlList         = []
+        self.article_list    = [["NaverBlog ID", "Blog URL", "Blog Text", "Blog Date"]]
+        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Blog URL', 'Reply ID']]
         
         if self.weboption == 0:
-            print("====================================================================================================================")
-            if self.admin == 1:
-                print("[관리자 모드]")
-            print("크롤링: 네이버 블로그")
-            print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
-            print("검색어:", self.keyword)
-            print("옵션 번호:", self.option)
-            print("컴퓨터:", self.crawlcom)
-            print("저장 위치:", self.filedirectory + "/" + self.DBname)
-            print("메일 수신:", self.receiver)
-            print("드라이브 업로드:", self.upload)
-            print("====================================================================================================================\n")
+            self.infoPrinter()
         
-        try:
-            for i in range(self.date_range+1):
-                self.progress = i
-                self.trans_date = str(self.currentDate)
-                self.print_status(-1, "blog")
-                self.get_BLOG_URLs(self.trans_date)
-                self.currentDate += self.deltaD
-                
-                try:
-                    with open(self.article_csv, "w", newline = "", encoding='utf-8-sig') as article:
-                        csv.writer(article).writerows(self.article_list)
-                except Exception as e:
-                    self.error_exception(e)
-                    
-                if self.option == 2:
-                    try:
-                        with open(self.reply_csv, "w", newline = "", encoding='utf-8-sig') as reply:
-                            csv.writer(reply).writerows(self.reply_list)
-                    except Exception as e:
-                        self.error_exception(e)
-        
-            out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+"\033[37m"+" | 블로그 수: "+"\033[33m"+str(len(self.article_list)-1)+"\033[37m"+" | 댓글 수: "+"\033[33m"+str(len(self.reply_list)-1)+ "\033[37m"+" ||"
-            if self.weboption == 1:
-                out_str = "\r"+"|| 진행: "+"100% ("+str(self.date_range+1) + " / " + str(self.date_range+1)+")"+ " | 날짜: "+self.trans_date+" | 블로그 수: "+str(len(self.article_list)-1)+" | 댓글 수: "+str(len(self.reply_list)-1)+" ||"
-
-            print(out_str, end = "")
+        for dayCount in range(self.date_range + 1):
             
-            self.endtime = time.time()
-            loadingsecond = self.endtime - self.starttime
-            loadingtime = str(int(loadingsecond//3600))+"시간 "+str(int(loadingsecond%3600//60))+"분 "+str(int(loadingsecond%3600%60))+"초"
+            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+            percent = str(round((dayCount/(self.date_range+1))*100, 1))
+            NaverBlogCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
             
-            self.upload_folder(self.filedirectory + "/" + self.DBname)
+            # option 1: article
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
             
-            if self.weboption == 0:
-                print("\n\n크롤링 완료\n")
-                print("분석 소요 시간:", loadingtime)
+            # option 2: article + reply + rereply
+            if option == 2:
+                self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
             
-            self.send_email(loadingtime)
-            
-        except Exception as e:
-            _, _, tb = sys.exc_info()  # tb -> traceback object
-            msg = (
-                "File name: "
-                + __file__
-                + "\n"
-                + "Error line= {}".format(tb.tb_lineno)
-                + "\n"
-                + "Error: {}".format(sys.exc_info()[0])
-                + " "
-                + str(e)
-                + "\n"
-                + "Date : "
-                + str(self.currentDate)
-                + "\n"
-                + "keyword : "
-                + self.keyword
-            )
-            self.writeLog(msg)
-            
-    def parseBlog(self, url):   
-        try:
-            original_url = url
-
-            article_data = {
-                "blog_ID": None,
-                "url": None,
-                "article_body": None,
-                "article_date": None,
-                "good_cnt": None,
-                "comment_cnt": None
-            }
-            
-            split_url = url.split("/")
-            blogID, logNo = split_url[3], split_url[4]
-            
-            url = "https://blog.naver.com/PostView.naver?blogId={}&logNo={}&redirect=Dlog&widgetTypeCall=false&directAccess=false".format(blogID, logNo)
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                "referer" : "https://blog.naver.com/SympathyHistoryList.naver?blogId={}&logNo={}".format(blogID, logNo)
-            }
-            
-            while True:
-                proxies = self.random_proxy()
-                try:
-                    response = requests.get(url, headers = headers, proxies = proxies, timeout = 3)
-                    soup = BeautifulSoup(response.text, "html.parser")
-                    
-                    script_tag = soup.find('script', string=re.compile(r'var\s+blogNo\s*=\s*\'(\d+)\''))
-                    blogNo = re.search(r'var\s+blogNo\s*=\s* \'(\d+)\'', script_tag.text).group(1)
-                    objectID = f'{blogNo}_201_{logNo}'
-                    try:
-                        good_cnt_url = "https://blog.naver.com/api/blogs/{}/posts/{}/sympathy-users".format(blogID, logNo)
-                        good_cnt = json.loads(BeautifulSoup(requests.get(good_cnt_url, headers = headers, proxies = proxies, timeout = 3).text, "html.parser").text)['result']['totalCount']
-
-                        comment_cnt_url = "https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json?ticket=blog&pool=blogid&lang=ko&country=&objectId={}&groupId={}".format(objectID, blogNo)
-                        comment_cnt = json.loads(requests.get(comment_cnt_url, headers = headers, proxies = proxies, timeout = 3).text)['result']['count']['comment']
-                    except:
-                        good_cnt = 0
-                        comment_cnt = 0
-                        break
-                    break
-                except requests.exceptions.Timeout as e:
-                    self.error_exception(e, True)
-                except Exception as e:
-                    self.error_exception(e, True)
-                    
-                
-            try:
-                article = "".join([i.text.replace("\n", "").replace("\t", "").replace("\u200b", "") for i in soup.select("div[class = 'se-module se-module-text']")])
-                date = "".join([i.text for i in soup.select("span[class = 'se_publishDate pcol2']")])
-                
-                if article == "":
-                    return
-                article_data["blog_ID"] = str(blogID)
-                article_data["url"] = str(original_url)
-                article_data["article_body"] = str(article)
-                article_data["article_date"] = str(date)
-                article_data["good_cnt"] = str(good_cnt)
-                article_data["comment_cnt"] = str(comment_cnt)
-                
-                article_id = 0
-                self.article_list.append([article_id, blogID, original_url, article, date, good_cnt, comment_cnt])
-                self.print_status(1, "blog")
-            
-            except:
+            # finish line
+            if dayCount == self.date_range:
+                self.FinalOperator()
+                self.printStatus(type='NaverBlog', endMsg_option=True)
                 return
             
-            if self.option == 1 or comment_cnt == 0:
-                return
+            # Blog Url Part
+            urlList_returnData = NaverBlogCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+            if self.ReturnChecker(urlList_returnData) == True:
+                continue
+            self.urlList = urlList_returnData['urlList']
             
-            
-            page = 1
-            
-            nickname_list, replyDate_list, text_list= [], [], []
-            
-            while True:
-                try:
-                    navigator = generate_navigator()
-                    navigator = navigator['user_agent']
-                    headers = {
-                        'user-agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'referer': url}
-                    try:
-                        params = {
-                                    'ticket': "blog",
-                                    'templateId': 'default',
-                                    'pool': 'blogid',
-                                    'lang': 'ko',
-                                    'country': 'KR',
-                                    'objectId': objectID,
-                                    'groupId': blogNo,
-                                    'pageSize': '50',
-                                    'indexSize': '10',
-                                    'page': str(page),
-                                    'morePage.prev': '051v2o4l34sgr1t0txuehz9fxg',
-                                    'morePage.next': '051sz9hwab3fe1t0w1916s34yt',
-                                }
-                        response = self.requester('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers, params)
-                        response.encoding = "UTF-8-sig"
-                                
-                        try:
-                            temp=json.loads(response.text)
-                            nickname_list.extend(list(pd.DataFrame(temp['result']['commentList'])['userName']))
-                            replyDate_list.extend(list(pd.DataFrame(temp['result']['commentList'])['modTime']))
-                            text_list.extend(list(pd.DataFrame(temp['result']['commentList'])['contents']))
-                        except:
-                            break
-                        
-                        if len(list(pd.DataFrame(temp['result']['commentList'])['userName'])) < 50:
-                            break
-                        else:
-                            page += 1
-                            if page == 301:
-                                break
-                    except:
-                        break
-                    
-                except Exception as e:
-                    self.error_exception(e)
-                
-            reply_idx = 0
-            for i in range(len(nickname_list)):
-                if str(nickname_list[i]) != "":
-                    reply_idx += 1
-                    self.reply_list.append([
-                        str(article_id),
-                        str(reply_idx),
-                        str(nickname_list[i]),
-                        str(replyDate_list[i]),
-                        str(text_list[i].replace("\n", " ").replace("\r", "").replace("<br>"," ")),
-                    ])
-                    self.print_status(2, "blog")
-                
-        except Exception as e:
-            self.error_exception(e)
-            
-    def get_BLOG_URLs(self, currentDate):
-        
-        self.urlList = []
-        currentPage = 1
-        
-        try:
-            while True:
-                
-                search_page_url = "https://section.blog.naver.com/ajax/SearchList.naver?countPerPage=20&currentPage={}&endDate={}&keyword={}&orderBy=recentdate&startDate={}&type=post".format(str(currentPage), currentDate, self.keyword, currentDate)
-                referer = "https://section.blog.naver.com/Search/Post.naver?pageNo={}".format(str(currentPage))
-                
-                header = {
-                'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'referer': referer}
-                
-                tempList = []
-                main_page = self.requester(search_page_url, header).text[6:]
-                
-                try:
-                    temp = json.loads(main_page)
-                    searchList = temp["result"]['searchList']
-                except:
-                    break
-                
-                for i in searchList:
-                    tempList.append(i['postUrl'])
-                
-                if set(tempList) <= set(self.urlList):
-                    break
-                
-                self.urlList.extend(tempList)
-                self.print_status(0, "blog")
-                
-                if len(tempList) < 20:
-                    break
-                
-                self.print_status(0, "blog")
-                
-                currentPage += 1
-                
             for url in self.urlList:
-                self.parseBlog(url)  
+                # Blog Article Part
+                article_returnData = NaverBlogCrawler_obj.articleCollector(blogURL=url)
+                if self.ReturnChecker(article_returnData) == True:
+                    continue
+                articleData = article_returnData['articleData']
+                if articleData != []:
+                    self.article_list.append(articleData)
                 
-        except Exception as e:
-            self.error_exception(e)
-
-##########################################################################################################
-
-############################################## YouTube Crawler ############################################
-
-    def crawl_youtube(self, option):
+                if option == 1:
+                    continue
+                
+                # Blog Reply Part
+                reply_returnData = NaverBlogCrawler_obj.replyCollector(blogURL=url)
+                if self.ReturnChecker(reply_returnData) == True:
+                    continue
+                replyList = reply_returnData['replyList']
+                replyCnt  = reply_returnData['replyCnt']
+                
+                if replyCnt != 0:
+                    self.reply_list.extend(replyList)
+            
+            self.currentDate += self.deltaD
+                
+    def Naver_Cafe_Crawler(self, option):
+        
+        NaverCafeCrawler_obj = NaverCafeCrawler(proxy_option=True, print_status_option=True)
         
         self.option = option
-        if option == 3:
-            self.option = 2
+        self.DBtype = "NaverCafe"
+        self.DBMaker(self.DBtype)
         
-        self.clear_screen()
+        # initial list
+        self.urlList         = []
+        self.article_list    = [["NaverCafe Name", "NaverCafe MemberCount", "Cafe Writer", "Cafe Title", "Cafe Text", "Cafe Date", "Cafe ReadCount", "Cafe ReplyCount", "Cafe URL"]]
+        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", 'Reply Text', 'Cafe URL']]
         
-        self.dbname_date = "_{}_{}".format(self.start, self.end)
-        self.DBname = "YouTube_" + self.refinedword + self.dbname_date + "_" + self.now.strftime("%m%d_%H%M")
-        os.mkdir(self.filedirectory + "/" + self.DBname)  # 폴더 생성
-        
-        self.f = open(self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_log.txt", "w+")  # Log file 생성
-        self.f.close()
-        
-        self.info_list = [["channel", "video_url", "video_title", "video_description", "video_date", "view_count", "like_count", "comment_count"]]
-        self.reply_list = [["writer", "reply_date", "reply", "r_Like", "video_url", "video_title"]]
-        self.bigurlList = []
-        
-        self.info_csv = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_info" + ".csv"
-        self.reply_csv = self.filedirectory + "/" + self.DBname + "/" + self.DBname + "_reply" + ".csv"
-
         if self.weboption == 0:
-            print("====================================================================================================================") 
-            if self.admin == 1:
-                print("[관리자 모드]")
-            print("크롤링: 유튜브")
-            print("검색 기간:", str(self.startYear)+"."+str(self.startMonth)+"."+str(self.startDay)+" ~ "+str(self.endYear)+"."+str(self.endMonth)+"."+str(self.endDay))
-            print("검색어:", self.keyword)
-            print("옵션 번호:", self.option)
-            print("컴퓨터:", self.crawlcom)
-            print("저장 위치:", self.filedirectory + "/" + self.DBname)
-            print("메일 수신:", self.receiver)
-            print("드라이브 업로드:", self.upload)
-            print("====================================================================================================================\n")
-
-        try:
-            for i in range(self.date_range+1):
-                
-                self.progress = i
-                self.trans_date = str(self.currentDate)
-                self.print_status(-1, "youtube")
-                self.get_YOUTUBE_URLs(str(self.currentDate.strftime("%m/%d/%Y")))
-                self.currentDate += self.deltaD
-                try:
-                    with open(self.info_csv, 'w', newline = "", encoding = 'utf-8-sig') as info:
-                        csv.writer(info).writerows(self.info_list)
-                    with open(self.reply_csv, 'w', newline = "", encoding = 'utf-8-sig') as reply:
-                        csv.writer(reply).writerows(self.reply_list)
-                except Exception as e:
-                    self.error_exception(e)
+            self.infoPrinter()
+        
+        for dayCount in range(self.date_range + 1):
             
-            self.endtime = time.time()
-            loadingsecond = self.endtime - self.starttime
-            loadingtime = str(int(loadingsecond//3600))+"시간 "+str(int(loadingsecond%3600//60))+"분 "+str(int(loadingsecond%3600%60))+"초"
+            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+            percent = str(round((dayCount/(self.date_range+1))*100, 1))
+            NaverCafeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
             
-            out_str = "\r"+"\033[37m"+"|| 진행: "+"\033[33m"+str(round((self.progress/(self.date_range+1))*100, 1))+"%" + "\033[37m"+  " | 경과: " + "\033[33m"+loadingtime + "\033[37m"+" | 날짜: "+"\033[33m"+self.trans_date+ "\033[37m"+" | url: "+"\033[33m"+str(len(self.urlList)) + "\033[37m"+" | "+"영상"+": "+"\033[33m"+str(len(self.info_list)-1)+"\033[37m"+" | 댓글: "+"\033[33m"+str(len(self.reply_list)-1)+" | API: "+"\033[33m"+str(self.api_num)+"\033[37m"+" ||"
-            if self.weboption == 1:
-                out_str = "\r"+"|| 진행: "+str(round((self.progress/(self.date_range+1))*100, 1))+"%"+  " | 경과: " +loadingtime+" | 날짜: "+self.trans_date+" | url: "+str(len(self.urlList))+" | "+"영상"+": "+str(len(self.info_list)-1)+" | 댓글: "+str(len(self.reply_list)-1)+" | API: "+str(self.api_num)+" ||"
+            # option 1: article
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
             
-            print(out_str, end = "")
+            # option 2: article + reply + rereply
+            if option == 2:
+                self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
             
-            if self.fast_option == 1:
-                os.makedirs(self.filedirectory + '/' + self.end)
-                self.fast_crawler_merge(loadingtime, 'youtube')
+            # finish line
+            if dayCount == self.date_range:
+                self.FinalOperator()
+                self.printStatus(type='NaverCafe', endMsg_option=True)
                 return
             
-            else:
-                if self.weboption == 0:
-                    print("\n\n크롤링 완료\n")
-                    print("분석 소요 시간:", loadingtime)
-                
-                self.upload_folder(self.filedirectory + "/" + self.DBname)
-                self.send_email(loadingtime)
-            
-        except Exception as e:
-            _, _, tb = sys.exc_info()  # tb -> traceback object
-            msg = (
-                "File name: "
-                + __file__
-                + "\n"
-                + "Error line= {}".format(tb.tb_lineno)
-                + "\n"
-                + "Error: {}".format(sys.exc_info()[0])
-                + " "
-                + str(e)
-                + "\n"
-                + "Date : "
-                + str(self.currentDate)
-                + "\n"
-                + "keyword : "
-                + self.keyword
-            )
-            self.writeLog(msg)
-        
-    def parseYoutube(self, url):
-        try:
-            #print(url)
-            if url[8] == 'm':
-                youtube_info = url[30:]
-            else:
-                youtube_info = url[32:]
-            
-            headers = self.random_heador()
-            info_api_url = "https://hadzy.com/api/videos/{}".format(youtube_info)
-            
-            while True:
-                proxies = self.random_proxy()
-                try:
-                    main_page = requests.get(info_api_url, headers = headers, proxies = proxies, timeout = 3)
-                    break
-                except requests.exceptions.Timeout as e:
-                    self.error_exception(e, True)
-                except Exception as e:
-                    self.error_exception(e, True)
-            
-            try:
-                temp = json.loads(main_page.text)
-                channel = temp['items'][0]['snippet']['channelTitle'] # 채널 이름
-                video_url = url # url
-                video_title = temp['items'][0]['snippet']['title'].replace("\n", " ").replace("\r", "").replace("\t", "").replace("<br>"," ") # 영상 제목
-                video_description = temp['items'][0]['snippet']['description'].replace("\n","").replace("\t","").replace("\r", "").replace("<br>"," ") # 영상 설명
-                video_date = temp['items'][0]['snippet']['publishedAt']  # 영상 날짜
-                view_count = temp['items'][0]['statistics']['viewCount']  # 조회수
-                like_count = temp['items'][0]['statistics']['likeCount']  # 좋아요
-                comment_count = temp['items'][0]['statistics']['commentCount']  # 댓글 수
-            except:
-                return
-            
-            self.info_list.append([channel, video_url, video_title, video_description, video_date, view_count, like_count, comment_count])
-            
-            if comment_count == None or int(comment_count) == 0:
-                return
-            
-            if len(self.api_list) == 0:
-                print("\rAPI 할당량 초과 --> 1일 후 유튜브 크롤링을 시도해주십시오")
-                sys.exit()
-            
-            else:
-                if self.api_list[0] == 'AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU': # 문요준 g.postech.edu --> 1번
-                    self.api_num = 1
-                elif self.api_list[0] == 'AIzaSyCkOqcZlTING7t6XqZV9M-aoTR8jHBDPTs': # 한승혁 --> 2번
-                    self.api_num = 2
-                elif self.api_list[0] == 'AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io': # 배시웅 --> 3번
-                    self.api_num = 3
-                elif self.api_list[0] == 'AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs': # 최우철 --> 4번
-                    self.api_num = 4
-                elif self.api_list[0] == 'AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4': # knpubigmac2024@gmail.com --> 5번
-                    self.api_num = 5
-                elif self.api_list[0] == 'AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0': # gpt4.bb@gmail.com --> 6번
-                    self.api_num = 6
-                elif self.api_list[0] == 'AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo': # moonyojun2@gmail.com --> 7번
-                    self.api_num = 7
-                elif self.api_list[0] == 'AIzaSyByxep-pVr7eM5Z-wvL1u-Iy_6q7iUrtWk': # 이정우 --> 8번
-                    self.api_num = 8
-                elif self.api_list[0] == 'AIzaSyC5i2IcG0ntpD0ZbO_8sRomMq8LbHEWnGk': # yojunavi71@gmail.com -> 9번
-                    self.api_num = 9
-                elif self.api_list[0] == 'AIzaSyAmO8mi1lX1KwUsMRQl6fI6YFp7Gxy2eLk': # yojunpremium1@gmail.com -> 10번
-                    self.api_num = 10
-                elif self.api_list[0] == 'AIzaSyAzh54hQhYQK-qsLJBVAp1SPyGXcntGn1M': # yojunavi@gmail.com -> 11번
-                    self.api_num = 11
-                elif self.api_list[0] == 'AIzaSyBGISnI-0eBKuNYBeUko-Jj_avVSbdXLrU': # andrew101021@khu.ac.kr -> 12번
-                    self.api_num = 12
-                elif self.api_list[0] == 'AIzaSyAE0vxDo2CUIn0SsTYeCaV2HzdCJfhO4l4': # andrew77495@gmail.com -> 13번
-                    self.api_num = 13
-            try:
-                self.print_status(1, "youtube")            
-                while True:
-                    try:
-                        request = self.api_obj.commentThreads().list(part='snippet,replies', videoId = youtube_info, maxResults=100, order = 'relevance')
-                        response = request.execute()
-                        break
-                    except Exception as e:
-                        self.error_exception(e)  
-                        if any(error in str(e) for error in ["operationNotSupported", "commentsDisabled", "forbidden", "channelNotFound", "commentThreadNotFound", "videoNotFound", "processingFailure"]):
-                            return
-                        elif "quotaExceeded" in str(e):
-                            if len(self.api_list) <= 1:
-                                print("\rAPI 할당량 초과 --> 1일 후 유튜브 크롤링을 시도해주십시오")
-                                sys.exit()
-                            self.api_list.pop(0)
-                            self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
-                
-                while request:
-                    for item in response['items']:
-                        try:
-                            comment = item['snippet']['topLevelComment']['snippet']
-                            textdisplay = comment['textDisplay'].replace('<br>', ' ')
-                            if '</a>' in textdisplay:
-                                textdisplay = re.sub(r'<a[^>]*>(.*?)<\/a>', '', textdisplay)
-                                textdisplay = textdisplay[1:]
-                            self.reply_list.append([comment['authorDisplayName'], comment['publishedAt'], textdisplay, comment['likeCount'], video_url, video_title])
-                            """
-                            if self.option == 2:
-                                try:
-                                    if item['snippet']['totalReplyCount'] > 0:
-                                        for reply_item in item['replies']['comments']:
-                                            reply = reply_item['snippet']
-                                            self.reply_list.append([reply['textDisplay'], reply['authorDisplayName'], reply['publishedAt'], reply['likeCount']])
-                                except:
-                                    pass
-                            """
-                        except:
-                            self.error_exception(e)  
-                            pass 
-                    # 100개 이상
-                    
-                    if self.option == 2:
-                        if 'nextPageToken' in response:
-                            while True:
-                                try:
-                                    request = self.api_obj.commentThreads().list_next(request, response)
-                                    response = request.execute()
-                                    break
-                                except Exception as e:
-                                    self.error_exception(e)  
-                                    if any(error in str(e) for error in ["operationNotSupported", "commentsDisabled", "forbidden", "channelNotFound", "commentThreadNotFound", "videoNotFound", "processingFailure"]):
-                                        return
-                                    elif "quotaExceeded" in str(e):
-                                        if len(self.api_list) <= 1:
-                                            print("\rAPI 할당량 초과 --> 1일 후 유튜브 크롤링을 시도해주십시오")
-                                            sys.exit()
-                                        self.api_list.pop(0)
-                                        self.api_obj = build('youtube', 'v3', developerKey=self.api_list[0])
-                        else:
-                            self.print_status(2, "youtube")
-                            return
-                    else:
-                        self.print_status(2, "youtube")
-                        return
-
-            except Exception as e:
-                self.error_exception(e)    
-                    
-        except Exception as e:
-            self.error_exception(e)  
-        
-    def get_YOUTUBE_URLs(self, currentDate):
-        
-        currentPage = 0
-        
-        self.urlList = []
-        try:
-            while True:
-                search_page_url = "https://www.google.com/search?q=intitle:{}&tbm=vid&tbs=cdr:1,cd_min:{},cd_max:{}&as_sitesearch=youtube.com&start={}".format(self.keyword, currentDate, currentDate, currentPage)
-                header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-                cookie = {'CONSENT' : 'YES'}
-                
-                while True:
-                    proxies = self.random_proxy()
-                    try:
-                        main_page = requests.get(search_page_url, headers = header, proxies = proxies, cookies = cookie, timeout = 3)
-                        main_page = BeautifulSoup(main_page.text, "lxml")
-                        site_result = main_page.select("a[jsname = 'UWckNb']")
-                        break
-                    except requests.exceptions.Timeout as e:
-                        self.error_exception(e, True)
-                    except Exception as e:
-                        self.error_exception(e, True)
-                        
-                if site_result == []:
-                    break
-                
-                for a in site_result: #스크랩한 데이터 중 링크만 추출
-                    add_link = a['href']
-                    if "playlist" not in add_link and add_link not in self.bigurlList:
-                        self.urlList.append(add_link)
-                        self.bigurlList.append(add_link)
-                
-                    if add_link == None:
-                        break
-                self.print_status(0, "youtube")
-                currentPage += 10
+            # Cafe URL Part
+            urlList_returnData = NaverCafeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+            if self.ReturnChecker(urlList_returnData) == True:
+                continue
+            self.urlList = urlList_returnData['urlList']
             
             for url in self.urlList:
-                self.parseYoutube(url)
+                # Cafe Article Part
+                article_returnData = NaverCafeCrawler_obj.articleCollector(cafeURL=url)
+                if self.ReturnChecker(article_returnData) == True:
+                    continue
+                articleData = article_returnData['articleData']
+                if articleData != []:
+                    self.article_list.append(articleData)
                 
-        except Exception as e:
-            self.error_exception(e)
+                if option == 1:
+                    continue
+                
+                # Cafe Reply Part
+                reply_returnData = NaverCafeCrawler_obj.replyCollector(cafeURL=url)
+                if self.ReturnChecker(reply_returnData) == True:
+                    continue
+                replyList = reply_returnData['replyList']
+                replyCnt  = reply_returnData['replyCnt']
+                
+                if replyCnt != 0:
+                    self.reply_list.extend(replyList)
+            
+            self.currentDate += self.deltaD
+    
+    def YouTube_Crawler(self, option):
+        
+        YouTubeCrawler_obj = YouTubeCrawler(proxy_option=True, print_status_option=True)
+        
+        limiter = True
+        if option == 2:
+            limiter = False
+        
+        self.option = option
+        self.DBtype = "YouTube"
+        self.DBMaker(self.DBtype)
+        self.api_num = 1
+        
+        self.urlList = []
+        self.article_list = [['YouTube Channel', 'Video URL', 'Video Title', 'Video Text', 'Video Date', 'Video ViewCount', 'Video Like', 'Video ReplyCount']]
+        self.reply_list = [['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Video URL']]
+        self.rereply_list = [['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Video URL']]
+        
+        if self.weboption == 0:
+            self.infoPrinter()
+            
+        for dayCount in range(self.date_range + 1):
+            
+            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+            percent = str(round((dayCount/(self.date_range+1))*100, 1))
+            YouTubeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption, self.api_num)
+            
+            # option 1 & 2
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+            self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
+            self.ListToCSV(object_list=self.rereply_list, csv_path=self.DBpath, csv_name=self.DBname + '_rereply.csv')
+            
+            # finish line
+            if dayCount == self.date_range:
+                self.FinalOperator()
+                self.printStatus(type='YouTube', endMsg_option=True)
+                return
+            
+            # YouTube URL Part
+            urlList_returnData = YouTubeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+            if self.ReturnChecker(urlList_returnData) == True:
+                continue
+            self.urlList = urlList_returnData['urlList']
+            
+            for url in self.urlList:
+                # YouTube's info Part
+                article_returnData = YouTubeCrawler_obj.articleCollector(url=url)
+                if self.ReturnChecker(article_returnData) == True:
+                    continue
+                articleData = article_returnData['articleData']
+                if articleData != []:
+                    self.article_list.append(articleData)
+                
+                if articleData == []:
+                    continue
+                elif articleData[7] == 0: # Comment Count
+                    continue
+                
+                # YouTube Reply Part
+                reply_returnData = YouTubeCrawler_obj.replyCollector(url=url, limiter=limiter)
+                if self.ReturnChecker(reply_returnData) == True:
+                    continue
+                replyList    = reply_returnData['replyList']
+                replyCnt     = reply_returnData['replyCnt']
+                rereplyList  = reply_returnData['rereplyList']
+                
+                self.api_num = reply_returnData['api_num']
+                
+                if replyCnt != 0:
+                    self.reply_list.extend(replyList)
+                    self.rereply_list.extend(rereplyList)
+            
+            self.currentDate += self.deltaD
+    
+    def ChinaDaily_Crawler(self, option):
+        
+        ChinaDailyCrawler_obj = ChinaDailyCrawler(proxy_option=True, print_status_option=True)
+        
+        self.option = option
+        self.DBtype = "ChinaDaily"
+        self.DBMaker(self.DBtype)
+        
+        self.article_list = [['News Source', 'News Title', 'News Text', 'News Date', 'News Theme', 'News URL', 'News SearchURL']]
 
-###########################################################################################################
- 
-def control():
+        if self.weboption == 0:
+            self.infoPrinter()
+        
+        for dayCount in range(self.date_range + 1):
+            
+            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+            percent = str(round((dayCount/(self.date_range+1))*100, 1))
+            ChinaDailyCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
+            
+            # option 1 & 2
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
 
-    print("================ Crawler Controller ================\n")
+            # finish line
+            if dayCount == self.date_range:
+                self.FinalOperator()
+                self.printStatus(type='ChinaDaily', endMsg_option=True)
+                return
+            
+            articleList_returnData = ChinaDailyCrawler_obj.articleCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+            if self.ReturnChecker(articleList_returnData) == True:
+                continue
+            articleList = articleList_returnData['articleList']
+            articleCnt  = articleList_returnData['articleCnt']
+            
+            if articleCnt != 0:
+                self.article_list.extend(articleList)
+            
+            self.currentDate += self.deltaD
+    
+    def ChinaSina_Crawler(self, option):
+        
+        ChinaSinaCrawler_obj = ChinaSinaCrawler(proxy_option=True, print_status_option=True)
+        
+        self.option = option
+        self.DBtype = "ChinaSina"
+        self.DBMaker(self.DBtype)
+        
+        self.article_list = [['News Title', 'News Text', 'News Date', 'News URL']]
+        self.reply_list   = [['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'News URL']]
+        
+        if self.weboption == 0:
+            self.infoPrinter()
+        
+        DateRangeList = ChinaSinaCrawler_obj.DateSplitter(self.startDate, self.endDate)
+        DateRangeList.append(DateRangeList[-1])
+        DateRangeCnt  = 0
+        
+        for DateRange in DateRangeList:
+            DateRangeCnt += 1
+            currentDate_start = DateRange[0]
+            currentDate_end   = DateRange[1]
+            currentDate_str_start = datetime.strptime(DateRange[0], '%Y%m%d').date()
+            currentDate_str_end   = datetime.strptime(DateRange[1], '%Y%m%d').date()
+            percent = str(round((DateRangeCnt/len(DateRangeList))*100, 1))
+            
+            ChinaSinaCrawler_obj.setPrintData(f"{currentDate_str_start.strftime('%Y.%m.%d')} ~ {currentDate_str_end.strftime('%Y.%m.%d')}", percent, self.weboption)
+            
+            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+            if option == 2:
+                self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
+            
+            if DateRangeCnt == len(DateRangeList):
+                self.FinalOperator()
+                self.printStatus(type='ChinaSina', endMsg_option=True)
+                return
+
+            urlList_returnData = ChinaSinaCrawler_obj.urlCollector(keyword=self.keyword, startDate=currentDate_start, endDate=currentDate_end)
+            if self.ReturnChecker(urlList_returnData) == True:
+                continue
+            self.urlList = urlList_returnData['urlList']
+            
+            for url in self.urlList:
+                
+                article_returnData = ChinaSinaCrawler_obj.articleCollector(newsURL=url)
+                if self.ReturnChecker(article_returnData) == True:
+                    continue
+                articleData = article_returnData['articleData']
+                if articleData != []:
+                    self.article_list.append(articleData)
+                    
+                if option == 1:
+                    continue
+                
+                reply_returnData = ChinaSinaCrawler_obj.replyCollector(newsURL=url)
+                if self.ReturnChecker(reply_returnData) == True:
+                    continue
+                replyList = reply_returnData['replyList']
+                replyCnt  = reply_returnData['replyCnt']
+                
+                if replyCnt != 0:
+                    self.reply_list.extend(replyList)
+
+    
+def controller():
+    option_dic = {
+        1 : "\n1. 기사 + 댓글\n2. 기사 + 댓글/대댓글\n",
+        2 : "\n1. 블로그 본문\n2. 블로그 본문 + 댓글/대댓글\n",
+        3 : "\n1. 카페 본문\n2. 카페 본문 + 댓글/대댓글\n",
+        4 : "\n1. 영상 정보 + 댓글/대댓글 (100개 제한)\n2. 영상 정보 + 댓글/대댓글(무제한)\n",
+        5 : "\n1. 기사\n",
+        6 : "\n1. 기사\n2. 기사 + 댓글\n"
+    }
+    print("================ Crawler Controller ================")
     name = input("본인의 이름을 입력하세요: ")
     
-    print("\n크롤링 대상\n")
-    print("1. 네이버 뉴스\n2. 네이버 블로그\n3. 유튜브\n4. 프로그램 종료")
+    print("\n[ 크롤링 대상 ]\n")
+    print("1. Naver News\n2. Naver Blog\n3. Naver Cafe\n4. YouTube\n5. ChinaDaily\n6. ChinaSina")
     
     while True:
         control_ask = int(input("\n입력: "))
-        if control_ask in [1,2,3,4]:
+        if control_ask in [1,2,3,4,5,6]:
+            break
+        else:
+            print("다시 입력하세요")
+    
+
+    startDate = input("\nStart Date (ex: 20230101): ") 
+    endDate   = input("End Date (ex: 20231231): ") 
+    keyword   = input("\nKeyword: ")
+    
+    print(option_dic[control_ask])
+    
+    while True:
+        option = int(input("Option: "))
+        if option in [1,2]:
             break
         else:
             print("다시 입력하세요")
             
-    start     = input("\nStart Date (ex: 20230101): ") 
-    end       = input("End Date (ex: 20231231): ") 
-    keyword   = input("\nKeyword: ")
-    
-    if control_ask == 1:
-        print("\n1. 기사 \n2. 기사 + 댓글\n3. 기사 + 댓글 + 대댓글\n")
-    
-    elif control_ask == 2:
-        print("\n1. 본문 \n2. 기사 + 댓글\n")
-        
-    elif control_ask == 3:
-        print("\n1. 영상 + 댓글 (댓글 100개 제한) \n2. 영상 + 댓글 (무제한)\n")
-    
-    while True:
-        option = int(input("Option: "))
-        if option in [1,2,3]:
-            break
-        else:
-            print("다시 입력하세요")
-    
-    upload    = input("\n구글 드라이브에 업로드 하시겠습니까(Y/N)? ")
+    upload    = input("\n구글 드라이브에 업로드 하시겠습니까(1/0)? ")
     weboption = 0
-    
-    
-    print("\n====================================================")
+
+    Crawler_obj = Crawler(name, startDate, endDate, keyword, upload, weboption)
+    Crawler_obj.clear_screen()
     
     if control_ask == 1:
-        crawler = Crawler(name, start, end, keyword, upload, weboption)
-        crawler.crawl_news(option)
+        Crawler_obj.Naver_News_Crawler(option)
     
     elif control_ask == 2:
-        crawler = Crawler(name, start, end, keyword, upload, weboption)
-        crawler.crawl_blog(option)
+        Crawler_obj.Naver_Blog_Crawler(option)
         
     elif control_ask == 3:
-        crawler = Crawler(name, start, end, keyword, upload, weboption)
-        crawler.crawl_youtube(option)
+        Crawler_obj.Naver_Cafe_Crawler(option)
+        
+    elif control_ask == 4:
+        Crawler_obj.YouTube_Crawler(option)
     
-    else:
-        sys.exit()
+    elif control_ask == 5:
+        Crawler_obj.ChinaDaily_Crawler(option)
+        
+    elif control_ask == 6:
+        Crawler_obj.ChinaSina_Crawler(option)
 
-if __name__ == "__main__":
-    control()
+if __name__ == '__main__':
+    controller()
+    
+    
