@@ -53,13 +53,17 @@ class ToolPackage:
     def read_txt(self, filepath):
         txt_path = filepath
         result_list = []
-        with open(txt_path) as file:
+
+        # 파일을 바이너리 모드로 열어 raw 데이터 읽기
+        with open(txt_path, 'rb') as file:
             raw_data = file.read()
             result = chardet.detect(raw_data)
             charenc = result['encoding']
-        
+
+        # 감지된 인코딩을 사용하여 파일을 텍스트 모드로 읽기
         with open(txt_path, 'r', encoding=charenc) as f:
             lines = f.readlines()
+        
         for element in lines:
             element = element.replace('\n', '')
             result_list.append(element)
