@@ -9,7 +9,7 @@ COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
 import socket
 import csv
 import json
-
+import chardet
 
 class ToolPackage:
     def __init__(self):
@@ -53,8 +53,12 @@ class ToolPackage:
     def read_txt(self, filepath):
         txt_path = filepath
         result_list = []
+        with open(txt_path) as file:
+            raw_data = file.read()
+            result = chardet.detect(raw_data)
+            charenc = result['encoding']
         
-        with open(txt_path) as f:
+        with open(txt_path, 'r', encoding=charenc) as f:
             lines = f.readlines()
         for element in lines:
             element = element.replace('\n', '')
