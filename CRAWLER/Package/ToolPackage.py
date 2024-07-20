@@ -20,13 +20,13 @@ class ToolPackage:
         if socket.gethostname() == "DESKTOP-502IMU5":
             crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
-            token_path          = self.crawler_folder_path
+            token_path          = crawler_folder_path
             computer_name       = 'HP OMEN'
             
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
             crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
-            token_path          = self.crawler_folder_path
+            token_path          = crawler_folder_path
             computer_name       = 'HP Z8'
         
         elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
