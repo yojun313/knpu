@@ -15,7 +15,7 @@ class ToolModule:
         pass
     # Set folder path depending on the computer
     def pathFinder(self):
-        
+
         if socket.gethostname() == "DESKTOP-502IMU5":
             crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
@@ -34,7 +34,7 @@ class ToolModule:
             token_path          = crawler_folder_path
             computer_name       = "Yojun's MacBook Pro"
 
-        
+
         return {'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name}
     # For testing Crawler_Package
     def CrawlerChecker(self, target, result_option = False):
