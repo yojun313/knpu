@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import sys
 import os
+import sys
 
 NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
@@ -95,9 +95,6 @@ class NaverBlogCrawler(CrawlerModule):
                         if add_link not in urlList and 'naver' in add_link and 'tistory' not in add_link:
                             urlList.append(add_link)
                             self.IntegratedDB['UrlCnt'] += 1
-                                
-                            if add_link == None:
-                                break
                        
                     if self.print_status_option == True: 
                         self.printStatus('NaverBlog', 2, self.PrintData)

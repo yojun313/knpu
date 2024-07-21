@@ -1,22 +1,16 @@
 # -*- coding: utf-8 -*-
-import sys
-import os
-
-NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
-PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
-sys.path.append(PACKAGE_PATH)
-
-from BIGMACLAB.CRAWLER.Package.CrawlerModule import CrawlerModule
-from BIGMACLAB.CRAWLER.Package.ToolModule import ToolPackage
-from user_agent import generate_user_agent, generate_navigator
-from datetime import datetime, timezone
-import urllib3
-import warnings
-from bs4 import BeautifulSoup
 import json
-import pandas as pd
 import re
-from urllib.parse import urlparse, parse_qs
+import warnings
+from datetime import datetime
+
+import pandas as pd
+import urllib3
+from bs4 import BeautifulSoup
+from user_agent import generate_navigator
+
+from CrawlerModule import CrawlerModule
+from ToolModule import ToolModule
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -101,8 +95,6 @@ class NaverNewsCrawler(CrawlerModule):
                     if 'sports' not in add_link and 'sid=106' not in add_link and add_link not in urlList and 'entertain' not in add_link:
                         urlList.append(add_link)
                         self.IntegratedDB['UrlCnt'] += 1
-                    if add_link == None:
-                        break
                     
                 if self.print_status_option == True:
                     self.printStatus('NaverNews', 2, self.PrintData)
@@ -435,7 +427,7 @@ def CrawlerTester(url):
             
 if __name__ == "__main__":
     
-    ToolPackage_obj = ToolPackage()
+    ToolPackage_obj = ToolModule()
 
     print("============ Crawler Packeage Tester ============")
     print("I. Choose Option\n")
