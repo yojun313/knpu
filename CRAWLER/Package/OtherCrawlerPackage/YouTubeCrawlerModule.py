@@ -6,8 +6,8 @@ NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
-from CrawlerPackage import CrawlerPackage
-from ToolPackage import ToolPackage
+from BIGMACLAB.CRAWLER.Package.CrawlerModule import CrawlerModule
+from BIGMACLAB.CRAWLER.Package.ToolModule import ToolPackage
 import json
 from googleapiclient.discovery import build
 from bs4 import BeautifulSoup
@@ -15,7 +15,7 @@ from datetime import datetime
 import sys
 import re
 
-class YouTubeCrawler(CrawlerPackage):
+class YouTubeCrawler(CrawlerModule):
     
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)

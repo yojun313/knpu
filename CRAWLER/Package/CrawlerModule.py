@@ -7,7 +7,7 @@ CRAWLER_PATH        = os.path.dirname(CRAWLERPACKAGE_PATH)
 COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
 
 from user_agent import generate_navigator
-from ToolPackage import ToolPackage
+from ToolModule import ToolModule
 import random
 import requests
 from datetime import timedelta
@@ -23,7 +23,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # 옵션 유무는 True(yes) 또는 False(no)
-class CrawlerPackage(ToolPackage):
+class CrawlerModule(ToolModule):
     
     startTime = time.time()
     
@@ -96,7 +96,7 @@ class CrawlerPackage(ToolPackage):
         }
         
         progress_time = time.time()
-        loading_second = progress_time - CrawlerPackage.startTime
+        loading_second = progress_time - CrawlerModule.startTime
         loadingtime    = str(int(loading_second//3600))+":"+str(int(loading_second%3600//60))+":"+str(int(loading_second%3600%60))
         
         if endMsg_option == True:
@@ -308,7 +308,7 @@ class CrawlerPackage(ToolPackage):
 
 if __name__ == "__main__":
     
-    CrawlerPackage_obj = CrawlerPackage(True)
+    CrawlerPackage_obj = CrawlerModule(True)
     urlList = CrawlerPackage_obj.urlCollector("급발진", 20240601, 20240630, site='youtube.com', urlLimiter=['playlist', 'shorts', 'channel', 'user', 'm.'])
 
     for url in urlList:

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import sys
 
 CRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 CRAWLER_PATH        = os.path.dirname(CRAWLERPACKAGE_PATH)
@@ -11,7 +10,7 @@ import csv
 import json
 import chardet
 
-class ToolPackage:
+class ToolModule:
     def __init__(self):
         pass
     # Set folder path depending on the computer
@@ -139,5 +138,5 @@ class ToolPackage:
         return error_dic[errorCode]
 
 if __name__ == '__main__':
-    ToolPackage_obj = ToolPackage()
+    ToolPackage_obj = ToolModule()
     print(ToolPackage_obj.get_userEmail('문요준'))

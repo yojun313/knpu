@@ -2,18 +2,18 @@
 import sys
 import os
 
-NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
-PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
+CHINACRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
+PACKAGE_PATH      = os.path.dirname(CHINACRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
-from CrawlerPackage import CrawlerPackage
-from ToolPackage import ToolPackage
+from CrawlerModule import CrawlerModule
+from ToolModule import ToolModule
 from datetime import datetime
 from bs4 import BeautifulSoup
 import json
 import re
 
-class ChinaDailyCrawler(CrawlerPackage):
+class ChinaDailyCrawler(CrawlerModule):
     
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
@@ -155,8 +155,8 @@ class ChinaDailyCrawler(CrawlerPackage):
             return self.error_data
 
 if __name__ == "__main__":
-    ToolPackage_obj = ToolPackage()
+    ToolPackage_obj = ToolModule()
     
     CrawlerPackage_obj = ChinaDailyCrawler(proxy_option=True)
     CrawlerPackage_obj.error_detector_option_on()
-    CrawlerPackage_obj.articleCollector('china', 20230101, 20230131, True)
+    CrawlerPackage_obj.articleCollector('china', 20230101, 20230131)
