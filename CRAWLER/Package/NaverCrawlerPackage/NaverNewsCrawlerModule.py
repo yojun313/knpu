@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
+import os
+import sys
+
+NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
+PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
+sys.path.append(PACKAGE_PATH)
+
+from CrawlerModule import CrawlerModule
+from ToolModule import ToolModule
 import json
 import re
 import warnings
 from datetime import datetime
-
 import pandas as pd
 import urllib3
 from bs4 import BeautifulSoup
 from user_agent import generate_navigator
-
-from CrawlerModule import CrawlerModule
-from ToolModule import ToolModule
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
