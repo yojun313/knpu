@@ -47,7 +47,8 @@ class DATA_PROCESS(ToolModule):
         print("Complete")
 
     def main(self):
-        print("\n1. 파일 분할(Year, Month, Week)\n2. URL 제외\n3. URL 포함\n4. 정렬 및 통계\n5. 댓글 공백 제거")
+        #print("\n1. 파일 분할(Year, Month)\n2. URL 제외\n3. URL 포함\n4. 정렬 및 통계\n5. 댓글 공백 제거")
+        print("\n1. 파일 분할(Year, Month)")
         while True:
             big_option = input("\n입력: ")
             if big_option in ["1", "2", "3", "4", "5"]:
