@@ -1,35 +1,28 @@
 import sys
 import os
 
-NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
-PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
+CHINACRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
+PACKAGE_PATH      = os.path.dirname(CHINACRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
-from CrawlerPackage import CrawlerPackage
-from ToolPackage import ToolPackage
-from user_agent import generate_user_agent, generate_navigator
+from CrawlerModule import CrawlerModule
+from user_agent import generate_navigator
 from datetime import datetime, timezone
 import urllib3
-import urllib
 import warnings
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
-import json
-import pandas as pd
 import re
-from urllib.parse import urlunparse, parse_qs, urlencode
-import random
-import requests
+from urllib.parse import urlunparse, urlencode
 import time
 import copy
-from datetime import datetime, timedelta
-import calendar
+from datetime import datetime
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
-class ChinaHuanqiuCrawler(CrawlerPackage):
+class ChinaHuanqiuCrawler(CrawlerModule):
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option

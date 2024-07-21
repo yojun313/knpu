@@ -6,25 +6,23 @@ NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
-from CrawlerPackage import CrawlerPackage
-from ToolPackage import ToolPackage
-from user_agent import generate_user_agent, generate_navigator
-from datetime import datetime, timezone
+from CrawlerModule import CrawlerModule
+from ToolModule import ToolModule
+from user_agent import generate_navigator
+from datetime import datetime
 import urllib3
 import warnings
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 import json
 import pandas as pd
 import re
-from urllib.parse import urlparse, parse_qs
 import random
-import requests
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
-class NaverBlogCrawler(CrawlerPackage):
+class NaverBlogCrawler(CrawlerModule):
     
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
@@ -357,7 +355,7 @@ def CrawlerTester(url):
     
 if __name__ == "__main__":
     
-    ToolPackage_obj = ToolPackage()
+    ToolPackage_obj = ToolModule()
 
     print("============ Crawler Packeage Tester ============")
     print("I. Choose Option\n")

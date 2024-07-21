@@ -1,12 +1,12 @@
-from Package.NaverCrawlerPackage.NaverNewsCrawler_Package  import NaverNewsCrawler
-from Package.NaverCrawlerPackage.NaverBlogCrawler_Package  import NaverBlogCrawler
-from Package.NaverCrawlerPackage.NaverCafeCrawler_Package  import NaverCafeCrawler
-from Package.OtherCrawlerPackage.YouTubeCrawler_Package    import YouTubeCrawler
-from Package.ChinaCrawlerPackage.ChinaDailyCrawler_Package import ChinaDailyCrawler
-from Package.ChinaCrawlerPackage.ChinaSinaCrawler_Package  import ChinaSinaCrawler
+from Package.NaverCrawlerPackage.NaverNewsCrawlerModule  import NaverNewsCrawler
+from Package.NaverCrawlerPackage.NaverBlogCrawlerModule  import NaverBlogCrawler
+from Package.NaverCrawlerPackage.NaverCafeCrawlerModule  import NaverCafeCrawler
+from Package.OtherCrawlerPackage.YouTubeCrawlerModule    import YouTubeCrawler
+from Package.ChinaCrawlerPackage.ChinaDailyCrawlerModule import ChinaDailyCrawler
+from Package.ChinaCrawlerPackage.ChinaSinaCrawlerModule  import ChinaSinaCrawler
 
-from Package.GooglePackage  import GooglePackage
-from Package.CrawlerPackage import CrawlerPackage
+from Package.GoogleModule  import GoogleModule
+from Package.CrawlerModule import CrawlerModule
 
 from datetime import datetime, timedelta
 import urllib3
@@ -19,12 +19,12 @@ import platform
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-class Crawler(CrawlerPackage):
+class Crawler(CrawlerModule):
     
     def __init__(self, user, startDate, endDate, keyword, upload, weboption):
         super().__init__(proxy_option=True)
         
-        self.GooglePackage_obj = GooglePackage(self.pathFinder()['token_path'])
+        self.GooglePackage_obj = GoogleModule(self.pathFinder()['token_path'])
         
         # Computer Info
         self.scrapdata_path = self.pathFinder()['scrapdata_path']
