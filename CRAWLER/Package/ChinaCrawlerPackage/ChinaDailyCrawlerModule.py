@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-import sys
 import os
+import sys
 
 CHINACRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH      = os.path.dirname(CHINACRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
 from CrawlerModule import CrawlerModule
-from ToolModule import ToolModule
 from datetime import datetime
 from bs4 import BeautifulSoup
 import json
@@ -155,8 +154,4 @@ class ChinaDailyCrawler(CrawlerModule):
             return self.error_data
 
 if __name__ == "__main__":
-    ToolPackage_obj = ToolModule()
-    
-    CrawlerPackage_obj = ChinaDailyCrawler(proxy_option=True)
-    CrawlerPackage_obj.error_detector_option_on()
-    CrawlerPackage_obj.articleCollector('china', 20230101, 20230131)
+    print("hello")

@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-import sys
 import os
+import sys
 
 NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
-from BIGMACLAB.CRAWLER.Package.CrawlerModule import CrawlerModule
-from BIGMACLAB.CRAWLER.Package.ToolModule import ToolPackage
+from CrawlerModule import CrawlerModule
+from ToolModule import ToolModule
 import json
 from googleapiclient.discovery import build
 from bs4 import BeautifulSoup
@@ -136,7 +136,8 @@ class YouTubeCrawler(CrawlerModule):
             error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2026, error_msg, url)
             return self.error_data
-            
+
+    # noinspection RegExpRedundantEscape
     def replyCollector(self, url, limiter = True):
         if 'https://www.youtube.com/watch?v=' not in url:
             self.error_dump(2027, "Check YouTubeURL", url)
@@ -232,7 +233,7 @@ def CrawlerTester(url):
     
             
 if __name__ == "__main__":
-    ToolPackage_obj = ToolPackage()
+    ToolPackage_obj = ToolModule()
     
     print("============ Crawler Packeage Tester ============")
     print("I. Choose Option\n")
