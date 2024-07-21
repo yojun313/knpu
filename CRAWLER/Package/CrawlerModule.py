@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-import sys
 import os
+import sys
 
-CRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
-CRAWLER_PATH        = os.path.dirname(CRAWLERPACKAGE_PATH)
+PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
+CRAWLER_PATH        = os.path.dirname(PACKAGE_PATH)
 COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
+
+sys.path.append(PACKAGE_PATH)
 
 from user_agent import generate_navigator
 from ToolModule import ToolModule
@@ -308,8 +310,4 @@ class CrawlerModule(ToolModule):
 
 if __name__ == "__main__":
     
-    CrawlerPackage_obj = CrawlerModule(True)
-    urlList = CrawlerPackage_obj.urlCollector("급발진", 20240601, 20240630, site='youtube.com', urlLimiter=['playlist', 'shorts', 'channel', 'user', 'm.'])
-
-    for url in urlList:
-        print(url)
+    print("hello")

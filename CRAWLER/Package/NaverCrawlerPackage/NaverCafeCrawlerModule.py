@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-import sys
 import os
+import sys
 
 NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
-from BIGMACLAB.CRAWLER.Package.CrawlerModule import CrawlerModule
-from BIGMACLAB.CRAWLER.Package.ToolModule import ToolPackage
+from CrawlerModule import CrawlerModule
+from ToolModule import ToolModule
 import random
-import requests
 from datetime import datetime, timezone
 import urllib3
 import warnings
@@ -145,9 +144,6 @@ class NaverCafeCrawler(CrawlerModule):
                             urlList.append(add_link)
                             idList.append(self.articleIDExtractor(add_link))
                             self.IntegratedDB['UrlCnt'] += 1
-                            
-                        if add_link == None:
-                            break
                     
                     if self.print_status_option == True: 
                         self.printStatus('NaverCafe', 2, self.PrintData)
@@ -293,7 +289,7 @@ def CrawlerTester(url):
     
 if __name__ == "__main__":
     
-    ToolPackage_obj = ToolPackage()
+    ToolPackage_obj = ToolModule()
     
     print("============ Crawler Packeage Tester ============")
     print("I. Choose Option\n")

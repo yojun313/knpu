@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from CRAWLER import Crawler
 import sys
 
+from CRAWLER import Crawler
 
 sys.stdout.reconfigure(encoding='utf-8')
 

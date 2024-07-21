@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 CHINACRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH      = os.path.dirname(CHINACRAWLERPACKAGE_PATH)
@@ -8,7 +8,6 @@ sys.path.append(PACKAGE_PATH)
 from CrawlerModule import CrawlerModule
 from ToolModule import ToolModule
 from user_agent import generate_navigator
-from datetime import datetime
 import urllib3
 import warnings
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
