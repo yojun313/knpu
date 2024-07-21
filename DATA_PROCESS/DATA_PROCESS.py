@@ -1,462 +1,67 @@
-import pandas as pd
-from collections import OrderedDict
-from collections import Counter
+from ToolModule import ToolModule
 import os
-import matplotlib.pyplot as plt
-import tkinter as tk
-from tkinter import filedialog
 import sys
-import socket
 import warnings
-import platform
+warnings.filterwarnings("ignore", category=UserWarning, message="Converting to PeriodArray/Index representation will drop timezone information")
 
-
-warnings.filterwarnings('ignore', category=UserWarning)
-
-
-class data_process:
+class DATA_PROCESS(ToolModule):
     def __init__(self):
-        # 연구실 3번 컴퓨터
-        if socket.gethostname() == "DESKTOP-HQK7QRT":
-            self.scrapdata_path = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
-            self.projectfolder_path = "C:/Users/qwe/Desktop/VSCODE/PROJECT"
-        
-        # HP OMEN
-        elif socket.gethostname() == "DESKTOP-502IMU5":
-            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata"
-            self.projectfolder_path = "C:/Users/User/Desktop/BIGMACLAB/PROJECT"
-        
-        # HP Z8
-        elif socket.gethostname() == "DESKTOP-0I9OM9K":
-            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata"
-            self.projectfolder_path = "C:/Users/User/Desktop/BIGMACLAB/PROJECT"
-            
-        # Yojun's MacBook Pro
-        elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
-            self.scrapdata_path = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER/scrapdata"
-            self.projectfolder_path = "/Users/yojunsmacbookprp/Documents/BIGMACLAB/PROJECT"
+        super().__init__()
 
-        
+        pass
+
+    def DataDivider(self, csv_path):
+        csv_folder_path = os.path.dirname(csv_path)
+        csv_name = os.path.basename(csv_path)
+        data_path = os.path.join(csv_folder_path, csv_name.replace(".csv", "")) + '_분할 데이터'
+
+        # noinspection PyBroadException
+        try:
+            os.mkdir(data_path)
+        except:
+            print('분할 데이터 폴더가 이미 존재합니다')
+            sys.exit()
+
+        print("\n File Reading...: ", end = '')
+        csv_data = self.csvReader(csv_path)
+        print("Complete")
+
+
+        print("\n File Checking...: ", end = '')
+        typeData = self.typeChecker(csv_name)
+        crawlType = typeData['crawlType']
+        fileType = typeData['fileType'].replace('.csv', '')
+        print('Complete')
+
+
+        print("\n File Processing...: ", end = ' ')
+        csv_data = self.TimeSplitter(csv_data, crawlType, fileType)
+        year_divided_group = csv_data.groupby('year')
+        month_divided_group = csv_data.groupby('year_month')
+        week_divided_group = csv_data.groupby('week')
+        print('Complete')
+
+        print("\n File Saving...: ", end = ' ')
+        self.TimeSplitToCSV(1, year_divided_group, data_path)
+        self.TimeSplitToCSV(2, month_divided_group, data_path)
+        print("Complete")
+
     def main(self):
-        print("\n1. 파일 분할\n2. URL 제외\n3. URL 포함\n4. 정렬 및 통계\n5. 댓글 공백 제거")
+        print("\n1. 파일 분할(Year, Month, Week)\n2. URL 제외\n3. URL 포함\n4. 정렬 및 통계\n5. 댓글 공백 제거")
         while True:
             big_option = input("\n입력: ")
             if big_option in ["1", "2", "3", "4", "5"]:
                 break
             else:
                 print("다시 입력하세요")
-        
+
         self.clear_screen()
-        self.csv_path = self.file_ask(self.scrapdata_path, "대상 csv 파일을 선택하세요")
-        
-        # csv 저장된 폴더 경로 및 csv 파일 이름
-        self.folder_path = os.path.dirname(self.csv_path)
-        self.file_name = os.path.basename(self.csv_path)
-        
-        #if "(statistics)" in self.file_name:
-            #self.file_name = self.file_name.replace("(statistics)", "_s")
-                
-        if big_option == "1":
-            
-            self.option_1()
-            
-            self.clear_screen()
-            
-            print("[파일 분할]\n")
-            print("대상 csv 파일:", self.csv_path)
-            print("완성 파일:", self.data_path)
-            
-        elif big_option == "2":
-            
-            self.option_2()
-            
-            self.clear_screen()
-            
-            print("[URL 제외]\n")
-            print("대상 csv 파일:", self.csv_path)
-            print("제외 url 파일:", self.exception_url_csv_path)
-            print("완성 파일:", self.exception_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 제외.csv")
-    
-        
-        elif big_option == "3":
-            
-            self.option_3()
-            
-            self.clear_screen()
-            
-            print("[URL 포함]\n")
-            print("대상 csv 파일:", self.csv_path)
-            print("포함 url 파일:", self.include_url_csv_path)
-            print("완성 파일:", self.include_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 포함.csv")
-            
-        elif big_option == "4":
-            
-            self.option_4()
-            
-            self.clear_screen()
-            
-            print("[정렬 및 통계]\n")
-            print("대상 csv 파일:", self.csv_path)
-            print("완성 파일:", self.data_path)
-            
-        elif big_option == "5":
-            
-            self.option_5()
-            
-            self.clear_screen()
-            
-            print("[댓글 공백 제거]\n")
-            print("대상 csv 파일:", self.csv_path)
-            print("완성 파일:", self.folder_path + "/" + self.file_name.replace(".csv", "") + "_공백 제거.csv")
-            
-        
-            
-    def option_1(self):
-        
-        # 데이터 저장하는 경로
-        self.data_path = self.folder_path + "/" + self.file_name.replace(".csv", "") + "_분할 데이터"
-        
-        try:
-            os.mkdir(self.data_path)
-        except:
-            pass
-    
-        # 데이터프레임으로 변환
-        self.csv_data = pd.read_csv(self.csv_path, low_memory = False, index_col = 0)
-        self.csv_data = self.csv_data.loc[:, ~self.csv_data.columns.str.contains('^Unnamed')]
 
-        # 뉴스 기사
-        if "article" in self.file_name:
-            self.csv_data['article date'] = pd.to_datetime(self.csv_data['article date'].str.split().str[0], format='%Y.%m.%d.', errors='coerce')
-            self.csv_data['year'] = self.csv_data['article date'].dt.year
-            self.csv_data['month'] = self.csv_data['article date'].dt.month
-            self.csv_data['year_month'] = self.csv_data['article date'].dt.to_period('M')
-            self.csv_data['week'] = self.csv_data['article date'].dt.to_period('W')
-            
-        # 댓글
-        elif "reply" in self.file_name:
-            self.csv_data['reply date'] = pd.to_datetime(self.csv_data['reply_date'], errors='coerce')
-            self.csv_data['year'] = self.csv_data['reply date'].dt.year
-            self.csv_data['month'] = self.csv_data['reply date'].dt.month
-            self.csv_data['year_month'] = self.csv_data['reply date'].dt.to_period('M')
-            self.csv_data['week'] = self.csv_data['reply date'].dt.to_period('W')
-        
-        # 대댓글
-        elif "rereply" in self.file_name:
-            self.csv_data['rereply date'] = pd.to_datetime(self.csv_data['rereply_date'], errors='coerce')
-            self.csv_data['year'] = self.csv_data['rereply date'].dt.year
-            self.csv_data['month'] = self.csv_data['rereply date'].dt.month
-            self.csv_data['year_month'] = self.csv_data['rereply date'].dt.to_period('M')
-            self.csv_data['week'] = self.csv_data['rereply date'].dt.to_period('W')
-        
-        # 유튜브 정보
-        elif "info" in self.file_name:
-            self.csv_data['video date'] = pd.to_datetime(self.csv_data['video_date'].str.split().str[0], format='%Y.%m.%d.', errors='coerce')
-            self.csv_data['year'] = self.csv_data['video date'].dt.year
-            self.csv_data['month'] = self.csv_data['video date'].dt.month
-            self.csv_data['year_month'] = self.csv_data['video date'].dt.to_period('M')
-            self.csv_data['week'] = self.csv_data['video date'].dt.to_period('W')
-        
-        # 연도별로, 월별, 주별로 나눈 데이터
-        self.year_divided_group = self.csv_data.groupby('year')
-        self.month_divided_group = self.csv_data.groupby('year_month')
-        self.week_divided_group = self.csv_data.groupby('week')
-        
-        print("\n1. 연도별로 csv 분할\n2. 월별로 csv 분할\n3. 둘 다\n4. 주별로 csv 분할\n5. 종료")
-            
-        while True:
-            option = input("\n입력: ")
-            if option in ["1", "2", "3", "4"]:
-                break
-            else:
-                print("다시 입력하세요")
-        
-        print("\n처리 중...")
-        
-        if option == '1':
-            self.divide_data(1)
-        
-        elif option == '2':
-            self.divide_data(2)
-        
-        elif option == '3':
-            self.divide_data(1)
-            self.divide_data(2)
-            
-        elif option == '4':
-            self.divide_data(3)
-        
-        else:
-            sys.exit()
-        
-        print("\n완료")
-        
-    def option_2(self):
-    
-        self.exception_url_csv_path = self.file_ask(self.projectfolder_path, "제외 URL csv를 선택하세요")
-        self.exception_url_csv_folder_path = os.path.dirname(self.exception_url_csv_path)
-        
-        self.origin_csv_data = pd.read_csv(self.csv_path, low_memory = False)
-        self.origin_csv_data = pd.DataFrame(self.origin_csv_data)
-        self.origin_csv_data = self.origin_csv_data.dropna(subset=['url'])
-        
-        exception_url_list = pd.read_csv(self.exception_url_csv_path, sep='\t', header = None).values.flatten().tolist()
+        csv_path = self.file_ask("대상 csv 파일을 선택하세요")
 
-        self.origin_csv_data = self.origin_csv_data[~self.origin_csv_data['url'].isin(exception_url_list)]
-        self.origin_csv_data.to_csv(self.exception_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_url 제외.csv", encoding = 'utf-8-sig', index = False)
+        if int(big_option) == 1:
+            self.DataDivider(csv_path)
 
-    def option_3(self):
-    
-        self.include_url_csv_path = self.file_ask(self.projectfolder_path, "포함할 URL csv를 선택하세요")
-        self.include_url_csv_folder_path = os.path.dirname(self.include_url_csv_path)
-        
-        # 원본 데이터 로드
-        self.origin_csv_data = pd.read_csv(self.csv_path, low_memory=False)
-        self.origin_csv_data = pd.DataFrame(self.origin_csv_data)
-        self.origin_csv_data = self.origin_csv_data.dropna(subset=['url'])
-        
-        # 포함할 URL 리스트 로드
-        include_url_list = pd.read_csv(self.include_url_csv_path, sep='\t', header = None).values.flatten().tolist()
+object_obj = DATA_PROCESS()
+object_obj.main()
 
-        # 포함할 URL에 해당하는 데이터만 필터링
-        self.origin_csv_data = self.origin_csv_data[self.origin_csv_data['url'].isin(include_url_list)]
-        self.origin_csv_data.to_csv(self.include_url_csv_folder_path + "/" + self.file_name.replace(".csv", "") + "_URL 포함.csv", encoding='utf-8-sig', index=False)
-
-    def option_4(self):
-        
-        print("선택된 파일:", self.csv_path)
-        
-        print("\n선택된 파일의 유형을 선택하세요")
-        
-        print("\n1. 기사\n2. 댓글")
-        while True:
-            type_option = input("\n입력: ")
-            if type_option in ["1", "2"]:
-                type_option = int(type_option)
-                break
-            else:
-                print("다시 입력하세요")
-                
-        print("\n정렬 및 통계 방식을 선택하세요")
-        
-        if type_option == 1:
-            print("\n1. 언론사\n2. 기사 유형\n3. 댓글 수\n4. 모두")
-            while True:
-                article_align_option = input("\n입력: ")
-                if article_align_option in ["1", "2", "3", "4"]:
-                    article_align_option = int(article_align_option)
-                    break
-                else:
-                    print("다시 입력하세요")
-        else:
-            print("\n1. 아이디")
-            while True:
-                reply_align_option = input("\n입력: ")
-                if reply_align_option in ["1"]:
-                    reply_align_option = int(reply_align_option)
-                    break
-                else:
-                    print("다시 입력하세요")
-                    
-        # 데이터 저장하는 경로
-        self.data_path = self.folder_path + "/" + self.file_name.replace(".csv", "") + "_통계 데이터"
-        
-        try:
-            os.mkdir(self.data_path)
-        except:
-            pass
-        
-        if type_option == 1:
-            if article_align_option == 1 or article_align_option == 4:
-                
-                self.press_align_data = pd.read_csv(self.csv_path, low_memory=False)
-                self.press_align_data = pd.DataFrame(self.press_align_data)
-                
-                self.press_align_data['Press_Count'] = self.press_align_data.groupby('article press')['article press'].transform('count')
-
-                # 'Press_Count' 내림차순, 'article press' 오름차순으로 정렬하여
-                # 언론사별로 뭉치고, 행 수가 많은 순서대로 배열
-                self.press_align_data = self.press_align_data.sort_values(by=['Press_Count', 'article press'], ascending=[False, True])
-                self.press_align_data.to_csv(self.data_path + "/" + "언론사 정렬_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
-                
-                press_counts = self.press_align_data['article press'].value_counts().reset_index()
-                press_counts.columns = ['article press', 'Count']
-                press_counts.to_csv(self.data_path + "/" + "언론사 통계_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
-        
-            if article_align_option == 2 or article_align_option == 4:
-                self.type_align_data = pd.read_csv(self.csv_path, low_memory=False)
-                self.type_align_data = pd.DataFrame(self.type_align_data)
-                
-                self.type_align_data['Type_Count'] = self.type_align_data.groupby('article type')['article type'].transform('count')
-
-                # 'Press_Count' 내림차순, 'article press' 오름차순으로 정렬하여
-                # 언론사별로 뭉치고, 행 수가 많은 순서대로 배열
-                self.type_align_data = self.type_align_data.sort_values(by=['Type_Count', 'article type'], ascending=[False, True])
-
-                self.type_align_data.to_csv(self.data_path + "/" + "기사 유형 정렬_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
-                
-                press_counts = self.type_align_data['article type'].value_counts().reset_index()
-                press_counts.columns = ['article type', 'Count']
-                press_counts.to_csv(self.data_path + "/" + "기사 유형 통계_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
-        
-            if article_align_option == 3 or article_align_option == 4:
-                self.reply_align_data = pd.read_csv(self.csv_path, low_memory=False)
-                self.reply_align_data = pd.DataFrame(self.reply_align_data)
-                
-                self.reply_align_data = self.reply_align_data.sort_values(by='reply_cnt', ascending = False)
-                self.reply_align_data.to_csv(self.data_path + "/" + "댓글 수 정렬_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
-
-        elif type_option == 2:
-            if reply_align_option == 1:
-                self.user_align_data = pd.read_csv(self.csv_path, low_memory=False)
-                self.user_align_data = pd.DataFrame(self.user_align_data)
-                
-                self.user_align_data['User_Count'] = self.user_align_data.groupby('writer')['writer'].transform('count')
-                self.user_align_data = self.user_align_data.sort_values(by=['User_Count', 'writer'], ascending=[False, True])
-                self.user_align_data.to_csv(self.data_path + "/" + "댓글 작성자 정렬_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
-                
-                user_counts = self.user_align_data['writer'].value_counts().reset_index()
-                user_counts.columns = ['writer', 'Count']
-                user_counts.to_csv(self.data_path + "/" + "댓글 작성자 통계_" + self.file_name, index = False, encoding='utf-8-sig', header = True)
-    
-    def option_5(self):
-        self.clear_screen()
-        
-        self.csv_path = self.file_ask(self.scrapdata_path, "대상 csv 파일을 선택하세요")
-        # csv 파일 저장된 폴더 경로
-        self.folder_path = os.path.dirname(self.csv_path)
-        # csv 파일 이름
-        self.file_name = os.path.basename(self.csv_path)
-        
-        print("선택된 파일:", self.csv_path)
-        
-        self.reply_data = pd.read_csv(self.csv_path)
-        self.reply_data = self.reply_data.dropna(subset = ['reply'])
-        self.reply_data.to_csv(self.folder_path + "/" + self.file_name.replace(".csv", "") + "_공백 제거.csv", encoding='utf-8-sig', index=False)
-        
-    
-                
-    def divide_data(self, option):
-        
-        # 연도별로 나누기
-        if option == 1:
-            info_year = {}
-            os.mkdir(self.data_path + "/" + "연도별 데이터")
-            
-            for group_name, group_data in self.year_divided_group:
-                info_year[group_name] = len(group_data)
-                group_data.to_csv(self.data_path + "/" + "연도별 데이터" + "/" + str(int(group_name)) + ".csv", index = False, encoding='utf-8-sig', header = True)
-            
-            year_info = pd.DataFrame(list(info_year.items()), columns=['Year', '개수'])
-            year_info.to_csv(self.data_path + "/" + "연도별 데이터" + "/" + "연도별 개수" + ".csv", index = False, encoding='utf-8-sig', header = True)
-            
-            self.save_graph(info_year, "year")
-            
-        # 월별로 나누기
-        if option == 2:
-            info_month = {}
-            os.mkdir(self.data_path + "/" + "월별 데이터")
-            
-            for group_name, group_data in self.month_divided_group:
-                info_month[str(group_name)] = len(group_data)
-                group_data.to_csv(self.data_path + "/" + "월별 데이터" + "/" + str(group_name) + ".csv", index = False, encoding='utf-8-sig', header = True)
-
-            month_info = pd.DataFrame(list(info_month.items()), columns=['month', '개수'])
-            month_info.to_csv(self.data_path + "/" + "월별 데이터" + "/" + "월별 개수" + ".csv", index = False, encoding='utf-8-sig', header = True)
-            
-            self.save_graph(info_month, "month")
-            
-        # 주별로 나누기
-        if option == 3:
-            info_week = {}
-            os.makedirs(self.data_path + "/" + "주별 데이터", exist_ok=True)
-            
-            for group_name, group_data in self.week_divided_group:
-                if 'article date' in group_data.columns:
-                    start_date = group_data['article date'].min().strftime('%Y-%m-%d')
-                    end_date = group_data['article date'].max().strftime('%Y-%m-%d')
-                elif 'reply date' in group_data.columns:
-                    start_date = group_data['reply date'].min().strftime('%Y-%m-%d')
-                    end_date = group_data['reply date'].max().strftime('%Y-%m-%d')
-                elif 'rereply date' in group_data.columns:
-                    start_date = group_data['rereply date'].min().strftime('%Y-%m-%d')
-                    end_date = group_data['rereply date'].max().strftime('%Y-%m-%d')
-                elif 'video date' in group_data.columns:
-                    start_date = group_data['video date'].min().strftime('%Y-%m-%d')
-                    end_date = group_data['video date'].max().strftime('%Y-%m-%d')
-                else:
-                    continue  # 날짜 컬럼이 없는 경우 건너뛰기
-
-                week_folder_name = f"{start_date}_{end_date}"
-                week_folder_path = self.data_path + "/" + "주별 데이터"# + "/" + week_folder_name
-                os.makedirs(week_folder_path, exist_ok=True)
-                info_week[week_folder_name] = len(group_data)
-                group_data.to_csv(week_folder_path + "/" + week_folder_name + ".csv", index=False, encoding='utf-8-sig', header=True)
-
-            week_info = pd.DataFrame(list(info_week.items()), columns=['week', '개수'])
-            week_info.to_csv(self.data_path + "/" + "주별 데이터" + "/" + "주별 개수" + ".csv", index=False, encoding='utf-8-sig', header=True)
-            
-            self.save_graph(info_week, "week")
-    
-    def save_graph(self, dic, option):
-        keys = list(dic.keys())
-        values = list(dic.values())
-
-        if option == "year":
-            plt.figure(figsize=(10, 6))
-            plt.plot(keys, values, marker='o')
-            plt.grid(True)
-            plt.xticks(keys, rotation=45)
-            plt.tight_layout()
-            
-            for i in range(len(keys)):
-                plt.text(keys[i], values[i], str(values[i]), ha='center', va='bottom')
-            plt.title('Yearly Data Visualization')
-            plt.xlabel('Year')
-            plt.ylabel('Values')
-            plt.savefig(self.data_path + "/연도별 데이터/" + "연도별 데이터 그래프.png")
-            
-        elif option == "month":
-            plt.figure(figsize=(30, 18))
-            plt.plot(keys, values, marker='o')
-            plt.grid(True)
-            plt.xticks(keys, rotation=45)
-            plt.tight_layout()
-            
-            plt.title('Monthly Data Visualization')
-            plt.xlabel('Month')
-            plt.ylabel('Values')
-            plt.savefig(self.data_path + "/월별 데이터/" + "월별 데이터 그래프.png")
-            
-        elif option == "week":
-            plt.figure(figsize=(30, 18))
-            plt.plot(keys, values, marker='o')
-            plt.grid(True)
-            plt.xticks(keys, rotation=45)
-            plt.tight_layout()
-            
-            plt.title('Weekly Data Visualization')
-            plt.xlabel('Week')
-            plt.ylabel('Values')
-            plt.savefig(self.data_path + "/주별 데이터/" + "주별 데이터 그래프.png")
-
-
-    def file_ask(self, initialdir, title):
-        root = tk.Tk()
-        root.withdraw()
-        csv_path = filedialog.askopenfilename(initialdir=initialdir, title=title, filetypes = (("CSV files", "*.csv"), ("All files", "*.*")))
-        return csv_path
-
-    def clear_screen(self):
-        if platform.system() == "Windows":
-            os.system("cls")
-        else:
-            os.system("clear")
-
-
-
-print("실행 중...")
-
-
-data_process = data_process()
-data_process.main()
