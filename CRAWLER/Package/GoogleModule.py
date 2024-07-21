@@ -8,20 +8,16 @@ COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
 import smtplib
 import os
 import pickle
-from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-from googleapiclient.http import MediaIoBaseDownload
 from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
 
 
-class GooglePackage:
+class GoogleModule:
     
     def __init__(self, token_path):
         

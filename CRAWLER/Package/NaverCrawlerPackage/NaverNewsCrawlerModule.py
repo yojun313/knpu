@@ -6,8 +6,8 @@ NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
-from CrawlerPackage import CrawlerPackage
-from ToolPackage import ToolPackage
+from BIGMACLAB.CRAWLER.Package.CrawlerModule import CrawlerModule
+from BIGMACLAB.CRAWLER.Package.ToolModule import ToolPackage
 from user_agent import generate_user_agent, generate_navigator
 from datetime import datetime, timezone
 import urllib3
@@ -21,7 +21,7 @@ from urllib.parse import urlparse, parse_qs
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-class NaverNewsCrawler(CrawlerPackage):
+class NaverNewsCrawler(CrawlerModule):
     
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
