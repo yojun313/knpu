@@ -46,7 +46,7 @@ class YouTubeCrawler(CrawlerModule):
 
     def urlCollector(self, keyword, startDate, endDate):
         urlLimiter = ['playlist', 'shorts', 'channel', 'user', 'm.']
-        site       = ['youtube.com']
+        site       = 'youtube.com'
         startDate = datetime.strptime(str(startDate), "%Y%m%d").strftime("%-m/%-d/%Y")
         endDate   = datetime.strptime(str(endDate), "%Y%m%d").strftime("%-m/%-d/%Y")
         currentPage = 0
