@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 class ToolModule:
     def __init__(self):
         if socket.gethostname() == "DESKTOP-502IMU5":
-            crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
+            crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER_ASYNC'
             self.scrapdata_path = os.path.join(crawler_folder_path, 'scrapdata')
 
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
-            crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
+            crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER_ASYNC'
             self.scrapdata_path = os.path.join(crawler_folder_path, 'scrapdata')
 
         elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
