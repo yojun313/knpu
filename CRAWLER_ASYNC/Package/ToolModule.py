@@ -17,13 +17,13 @@ class ToolModule:
     def pathFinder(self):
 
         if socket.gethostname() == "DESKTOP-502IMU5":
-            crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
+            crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER_ASYNC'
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
             token_path          = crawler_folder_path
             computer_name       = 'HP OMEN'
             
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
-            crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
+            crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER_ASYNC'
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
             token_path          = crawler_folder_path
             computer_name       = 'HP Z8'
@@ -133,7 +133,8 @@ class ToolModule:
             2035: '[Parameter Error] ChinaSinaCrawler -> articleCollector: URL type/form error',
             2036: '[Internal Error] ChinaSinaCrawler -> articleCollector: Internal unexpected error',
             2037: '[Parameter Error] ChinaSinaCrawler -> replyCollector: URL type/form error',
-            2038: '[Internal Error] ChinaSinaCrawler -> replyCollector: Internal unexpected error'
+            2038: '[Internal Error] ChinaSinaCrawler -> replyCollector: Internal unexpected error',
+            2039: '[Internal Error] YouTubeCrawler -> urlCollector: Internal unexpected error'
         }
         return error_dic[errorCode]
 

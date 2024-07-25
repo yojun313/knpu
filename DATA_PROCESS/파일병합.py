@@ -6,10 +6,10 @@ import sys
 
 # HP Z8
 if socket.gethostname() == "DESKTOP-0I9OM9K":
-    folder_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/파일병합폴더"
+    folder_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER_ASYNC/scrapdata/파일병합폴더"
     
 elif socket.gethostname() == "DESKTOP-502IMU5":
-    folder_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata/파일병합폴더"
+    folder_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER_ASYNC/scrapdata/파일병합폴더"
 
 def merge_csv_files(folder_path, output_file):
     # 지정된 폴더 내의 모든 파일 목록 가져오기

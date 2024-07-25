@@ -37,21 +37,21 @@ class kimkem:
         
         # 연구실 3번 컴퓨터 
         elif socket.gethostname() == "DESKTOP-HQK7QRT":
-            self.scrapdata_path = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
+            self.scrapdata_path = "C:/Users/qwe/Desktop/VSCODE/CRAWLER_ASYNC/scrapdata"
             self.kimkem_data_path = "C:/Users/qwe/Desktop/VSCODE/DATA ANALYSIS/kimkem_data"
             self.token_data_path = "C:/Users/qwe/Desktop/VSCODE/DATA ANALYSIS/token_data"
             self.exception_list = "C:/Users/qwe/Desktop/VSCODE/DATA ANALYSIS/exception_list"
         
         # HP OMEN 
         elif socket.gethostname() == "DESKTOP-502IMU5":
-            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
+            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER_ASYNC/scrapdata"
             self.kimkem_data_path = "C:/Users/User/Desktop/BIGMACLAB/DATA ANALYSIS/kimkem_data"
             self.token_data_path = "C:/Users/User/Desktop/BIGMACLAB/DATA ANALYSIS/token_data"
             self.exception_list = "C:/Users/User/Desktop/BIGMACLAB/DATA ANALYSIS/exception_list"
             
         # HP Z8
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
-            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata" 
+            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER_ASYNC/scrapdata"
             self.kimkem_data_path = "C:/Users/User/Desktop/BIGMACLAB/DATA ANALYSIS/kimkem_data"
             self.token_data_path = "C:/Users/User/Desktop/BIGMACLAB/DATA ANALYSIS/token_data"
             self.exception_list = "C:/Users/User/Desktop/BIGMACLAB/DATA ANALYSIS/exception_list"

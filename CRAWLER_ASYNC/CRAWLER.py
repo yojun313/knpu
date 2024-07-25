@@ -2,6 +2,7 @@ import os
 import platform
 import sys
 import time
+import asyncio
 import warnings
 from datetime import datetime, timedelta
 
@@ -15,6 +16,7 @@ from Package.NaverCrawlerPackage.NaverBlogCrawlerModule import NaverBlogCrawler
 from Package.NaverCrawlerPackage.NaverCafeCrawlerModule import NaverCafeCrawler
 from Package.NaverCrawlerPackage.NaverNewsCrawlerModule import NaverNewsCrawler
 from Package.OtherCrawlerPackage.YouTubeCrawlerModule import YouTubeCrawler
+
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -90,29 +92,25 @@ class Crawler(CrawlerModule):
         print(self.msg)
       
     def ReturnChecker(self, value):
-        error = False
-            
         if isinstance(value, dict) == True:
             first_key = list(value.keys())[0]
             if first_key == 'Error Code':
                 err_msg_title = self.error_extractor(value['Error Code'])
                 err_msg_content = value['Error Msg']
                 err_target = value['Error Target']
-                error = True
-        
-        if error == True:
-            log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'),'a')
-            msg = (
-                f"\n\nError Time: {self.now}\n"
-                f"Error Type: {err_msg_title}\n"
-                f"Error Detail: {err_msg_content}\n"
-                f"Error Target: {err_target}\n\n\n"
-            )
-            log.write(msg)
-            log.close()
-            return True
-        else:
-            return False
+
+                log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'), 'a')
+                msg = (
+                    f"\n\nError Time: {self.now}\n"
+                    f"Error Type: {err_msg_title}\n"
+                    f"Error Detail: {err_msg_content}\n"
+                    f"Error Target: {err_target}\n\n\n"
+                )
+                log.write(msg)
+                log.close()
+                return False
+            else:
+                return True
     
     def FinalOperator(self):
         self.clear_screen()
@@ -138,10 +136,10 @@ class Crawler(CrawlerModule):
 
         # initial list
         self.urlList         = []
-        self.article_list    = [["NaverNews Press", "NaverNews Type", "News URL", "News Title", "News Text", "News Date", "News ReplyCnt"]]
-        self.statistics_list = [["NaverNews Press", "NaverNews Type", "News URL", "News Title", "News Text", "News Date", "News ReplyCnt", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
-        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'News URL', 'Reply ID']]
-        self.rereply_list    = [["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "News URL"]]
+        self.article_list    = [["Article Press", "Article Type", "Article URL", "Article Title", "Article Text", "Article Date", "Article ReplyCnt"]]
+        self.statistics_list = [["Article Press", "Article Type", "Article URL", "Article Title", "Article Text", "Article Date", "Article ReplyCnt", "male(%)", "female(%)", "10Y(%)", "20Y(%)", "30Y(%)", "40Y(%)", "50Y(%)", "60Y(%)"]]
+        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID']]
+        self.rereply_list    = [["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "Article URL"]]
         
         if self.weboption == 0:
             self.infoPrinter()
@@ -169,45 +167,36 @@ class Crawler(CrawlerModule):
             
             # News URL Part
             urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
-            if self.ReturnChecker(urlList_returnData) == True:
+            if self.ReturnChecker(urlList_returnData) == False:
                 continue
             self.urlList = urlList_returnData['urlList']
-            
-            for url in self.urlList:
-                # News Article Part
-                article_returnData = NaverNewsCrawler_obj.articleCollector(newsURL=url)
+
+            FullreturnData = asyncio.run(NaverNewsCrawler_obj.asyncMultiCollector(self.urlList, option))
+
+            for returnData in FullreturnData:
+
+                # articleData 정상 확인
+                articleStatus = False
+                article_returnData = returnData['articleData']
                 if self.ReturnChecker(article_returnData) == True:
-                    continue
-                articleData = article_returnData['articleData']
-                
-                # News Reply Part
-                reply_returnData = NaverNewsCrawler_obj.replyCollector(newsURL=url)
-                if self.ReturnChecker(reply_returnData) == True:
-                    continue
-                replyCnt            = reply_returnData['replyCnt']
-                replyList           = reply_returnData['replyList']
-                parentCommentNoList = reply_returnData['parentCommentNo_list']
-                statistics_data     = reply_returnData['statistics_data']
-                
-                # append reply count into article data
-                self.article_list.append(articleData + [replyCnt])
-                if replyCnt != 0:
-                    self.reply_list.extend(replyList)
-                    if statistics_data != []:
-                        self.statistics_list.append(articleData + statistics_data)
-                    
-                    if self.option == 1 or replyCnt == 0:
-                        continue
-                    
-                    # News ReReply Part
-                    rereply_returnData = NaverNewsCrawler_obj.rereplyCollector(newsURL=url, parentCommentNum_list=parentCommentNoList)
-                    if self.ReturnChecker(reply_returnData) == True:
-                        continue
-                    rereplyList = rereply_returnData['rereplyList']
-                    
-                    if rereplyList != []:
-                        self.rereply_list.extend(rereplyList)
-            
+                    articleStatus = True
+
+                replyList_returnData = returnData['replyData']
+                # replyData 정상 확인
+                if self.ReturnChecker(replyList_returnData) == True:
+                    if articleStatus == True:
+                        self.article_list.append(article_returnData['articleData'] + [replyList_returnData['replyCnt']])
+                        if replyList_returnData['statisticsData'] != []:
+                            self.statistics_list.append(article_returnData['articleData'] + replyList_returnData['statisticsData'])
+
+                    self.reply_list.extend(replyList_returnData['replyList'])
+
+                if option == 2:
+                    # rereplyData 정상확인
+                    rereplyList_returnData = returnData['rereplyData']
+                    if self.ReturnChecker(rereplyList_returnData) == True:
+                        self.rereply_list.extend(rereplyList_returnData['rereplyList'])
+
             self.currentDate += self.deltaD
     
     def Naver_Blog_Crawler(self, option):
@@ -220,8 +209,8 @@ class Crawler(CrawlerModule):
         
         # initial list
         self.urlList         = []
-        self.article_list    = [["NaverBlog ID", "Blog URL", "Blog Text", "Blog Date"]]
-        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Blog URL', 'Reply ID']]
+        self.article_list    = [["Article ID", "Article URL", "Article Text", "Article Date"]]
+        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID']]
         
         if self.weboption == 0:
             self.infoPrinter()
@@ -247,34 +236,25 @@ class Crawler(CrawlerModule):
             
             # Blog Url Part
             urlList_returnData = NaverBlogCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
-            if self.ReturnChecker(urlList_returnData) == True:
+            if self.ReturnChecker(urlList_returnData) == False:
                 continue
             self.urlList = urlList_returnData['urlList']
-            
-            for url in self.urlList:
-                # Blog Article Part
-                article_returnData = NaverBlogCrawler_obj.articleCollector(blogURL=url)
+
+            FullreturnData = asyncio.run(NaverBlogCrawler_obj.asyncMultiCollector(self.urlList, option))
+
+            for returnData in FullreturnData:
+
+                article_returnData = returnData['articleData']
                 if self.ReturnChecker(article_returnData) == True:
-                    continue
-                articleData = article_returnData['articleData']
-                if articleData != []:
-                    self.article_list.append(articleData)
-                
-                if option == 1:
-                    continue
-                
-                # Blog Reply Part
-                reply_returnData = NaverBlogCrawler_obj.replyCollector(blogURL=url)
-                if self.ReturnChecker(reply_returnData) == True:
-                    continue
-                replyList = reply_returnData['replyList']
-                replyCnt  = reply_returnData['replyCnt']
-                
-                if replyCnt != 0:
-                    self.reply_list.extend(replyList)
-            
+                    self.article_list.append(article_returnData['articleData'])
+
+                if option == 2:
+                    replyList_returnData = returnData['replyData']
+                    if self.ReturnChecker(replyList_returnData) == True:
+                        self.reply_list.extend(replyList_returnData['replyList'])
+
             self.currentDate += self.deltaD
-                
+
     def Naver_Cafe_Crawler(self, option):
         
         NaverCafeCrawler_obj = NaverCafeCrawler(proxy_option=True, print_status_option=True)
@@ -285,8 +265,8 @@ class Crawler(CrawlerModule):
         
         # initial list
         self.urlList         = []
-        self.article_list    = [["NaverCafe Name", "NaverCafe MemberCount", "Cafe Writer", "Cafe Title", "Cafe Text", "Cafe Date", "Cafe ReadCount", "Cafe ReplyCount", "Cafe URL"]]
-        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", 'Reply Text', 'Cafe URL']]
+        self.article_list    = [["NaverCafe Name", "NaverCafe MemberCount", "Article Writer", "Article Title", "Article Text", "Article Date", "Article ReadCount", "Article ReplyCount", "Article URL"]]
+        self.reply_list      = [["Reply Num", "Reply Writer", "Reply Date", 'Reply Text', 'Article URL']]
         
         if self.weboption == 0:
             self.infoPrinter()
@@ -312,31 +292,22 @@ class Crawler(CrawlerModule):
             
             # Cafe URL Part
             urlList_returnData = NaverCafeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
-            if self.ReturnChecker(urlList_returnData) == True:
+            if self.ReturnChecker(urlList_returnData) == False:
                 continue
             self.urlList = urlList_returnData['urlList']
-            
-            for url in self.urlList:
-                # Cafe Article Part
-                article_returnData = NaverCafeCrawler_obj.articleCollector(cafeURL=url)
+
+            FullreturnData = asyncio.run(NaverCafeCrawler_obj.asyncMultiCollector(self.urlList, option))
+
+            for returnData in FullreturnData:
+
+                article_returnData = returnData['articleData']
                 if self.ReturnChecker(article_returnData) == True:
-                    continue
-                articleData = article_returnData['articleData']
-                if articleData != []:
-                    self.article_list.append(articleData)
-                
-                if option == 1:
-                    continue
-                
-                # Cafe Reply Part
-                reply_returnData = NaverCafeCrawler_obj.replyCollector(cafeURL=url)
-                if self.ReturnChecker(reply_returnData) == True:
-                    continue
-                replyList = reply_returnData['replyList']
-                replyCnt  = reply_returnData['replyCnt']
-                
-                if replyCnt != 0:
-                    self.reply_list.extend(replyList)
+                    self.article_list.append(article_returnData['articleData'])
+
+                if option == 2:
+                    replyList_returnData = returnData['replyData']
+                    if self.ReturnChecker(replyList_returnData) == True:
+                        self.reply_list.extend(replyList_returnData['replyList'])
             
             self.currentDate += self.deltaD
     
@@ -354,9 +325,9 @@ class Crawler(CrawlerModule):
         self.api_num = 1
         
         self.urlList = []
-        self.article_list = [['YouTube Channel', 'Video URL', 'Video Title', 'Video Text', 'Video Date', 'Video ViewCount', 'Video Like', 'Video ReplyCount']]
-        self.reply_list = [['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Video URL']]
-        self.rereply_list = [['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Video URL']]
+        self.article_list = [['YouTube Channel', 'Article URL', 'Article Title', 'Article Text', 'Article Date', 'Article ViewCount', 'Article Like', 'Article ReplyCount']]
+        self.reply_list = [['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Article URL']]
+        self.rereply_list = [['Rereply Num', 'Rereply Writer', 'Rereply Date', 'Rereply Text', 'Rereply Like', 'Article URL']]
         
         if self.weboption == 0:
             self.infoPrinter()
@@ -380,37 +351,22 @@ class Crawler(CrawlerModule):
             
             # YouTube URL Part
             urlList_returnData = YouTubeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
-            if self.ReturnChecker(urlList_returnData) == True:
+            if self.ReturnChecker(urlList_returnData) == False:
                 continue
             self.urlList = urlList_returnData['urlList']
-            
-            for url in self.urlList:
-                # YouTube's info Part
-                article_returnData = YouTubeCrawler_obj.articleCollector(url=url)
+
+            FullreturnData = YouTubeCrawler_obj.syncMultiCollector(self.urlList, option)
+
+            for returnData in FullreturnData:
+
+                article_returnData = returnData['articleData']
                 if self.ReturnChecker(article_returnData) == True:
-                    continue
-                articleData = article_returnData['articleData']
-                if articleData != []:
-                    self.article_list.append(articleData)
-                
-                if articleData == []:
-                    continue
-                elif articleData[7] == 0: # Comment Count
-                    continue
-                
-                # YouTube Reply Part
-                reply_returnData = YouTubeCrawler_obj.replyCollector(url=url, limiter=limiter)
-                if self.ReturnChecker(reply_returnData) == True:
-                    continue
-                replyList    = reply_returnData['replyList']
-                replyCnt     = reply_returnData['replyCnt']
-                rereplyList  = reply_returnData['rereplyList']
-                
-                self.api_num = reply_returnData['api_num']
-                
-                if replyCnt != 0:
-                    self.reply_list.extend(replyList)
-                    self.rereply_list.extend(rereplyList)
+                    self.article_list.append(article_returnData['articleData'])
+
+                replyList_returnData = returnData['replyData']
+                if self.ReturnChecker(replyList_returnData) == True:
+                    self.reply_list.extend(replyList_returnData['replyList'])
+                    self.rereply_list.extend(replyList_returnData['rereplyList'])
             
             self.currentDate += self.deltaD
     
@@ -422,7 +378,7 @@ class Crawler(CrawlerModule):
         self.DBtype = "ChinaDaily"
         self.DBMaker(self.DBtype)
         
-        self.article_list = [['News Source', 'News Title', 'News Text', 'News Date', 'News Theme', 'News URL', 'News SearchURL']]
+        self.article_list = [['Article Source', 'Article Title', 'Article Text', 'Article Date', 'Article Theme', 'Article URL', 'Article SearchURL']]
 
         if self.weboption == 0:
             self.infoPrinter()
@@ -443,7 +399,7 @@ class Crawler(CrawlerModule):
                 return
             
             articleList_returnData = ChinaDailyCrawler_obj.articleCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
-            if self.ReturnChecker(articleList_returnData) == True:
+            if self.ReturnChecker(articleList_returnData) == False:
                 continue
             articleList = articleList_returnData['articleList']
             articleCnt  = articleList_returnData['articleCnt']
@@ -461,8 +417,8 @@ class Crawler(CrawlerModule):
         self.DBtype = "ChinaSina"
         self.DBMaker(self.DBtype)
         
-        self.article_list = [['News Title', 'News Text', 'News Date', 'News URL']]
-        self.reply_list   = [['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'News URL']]
+        self.article_list = [['Article Title', 'Article Text', 'Article Date', 'Article URL']]
+        self.reply_list   = [['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Article URL']]
         
         if self.weboption == 0:
             self.infoPrinter()
@@ -472,6 +428,7 @@ class Crawler(CrawlerModule):
         DateRangeCnt  = 0
         
         for DateRange in DateRangeList:
+            articleList = []
             DateRangeCnt += 1
             currentDate_start = DateRange[0]
             currentDate_end   = DateRange[1]
@@ -491,31 +448,24 @@ class Crawler(CrawlerModule):
                 return
 
             urlList_returnData = ChinaSinaCrawler_obj.urlCollector(keyword=self.keyword, startDate=currentDate_start, endDate=currentDate_end)
-            if self.ReturnChecker(urlList_returnData) == True:
+            if self.ReturnChecker(urlList_returnData) == False:
                 continue
             self.urlList = urlList_returnData['urlList']
-            
-            for url in self.urlList:
-                
-                article_returnData = ChinaSinaCrawler_obj.articleCollector(newsURL=url)
-                if self.ReturnChecker(article_returnData) == True:
-                    continue
-                articleData = article_returnData['articleData']
-                if articleData != []:
-                    self.article_list.append(articleData)
-                    
-                if option == 1:
-                    continue
-                
-                reply_returnData = ChinaSinaCrawler_obj.replyCollector(newsURL=url)
-                if self.ReturnChecker(reply_returnData) == True:
-                    continue
-                replyList = reply_returnData['replyList']
-                replyCnt  = reply_returnData['replyCnt']
-                
-                if replyCnt != 0:
-                    self.reply_list.extend(replyList)
 
+            FullreturnData = asyncio.run(ChinaSinaCrawler_obj.asyncMultiCollector(self.urlList, option))
+
+            for returnData in FullreturnData:
+
+                article_returnData = returnData['articleData']
+                if self.ReturnChecker(article_returnData) == True:
+                    articleList.append(article_returnData['articleData'])
+
+                if option == 2:
+                    replyList_returnData = returnData['replyData']
+                    if self.ReturnChecker(replyList_returnData) == True:
+                        self.reply_list.extend(replyList_returnData['replyList'])
+
+            self.article_list.extend(sorted(articleList, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d")))
     
 def controller():
     option_dic = {
