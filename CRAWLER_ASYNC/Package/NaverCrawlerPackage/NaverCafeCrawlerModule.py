@@ -270,7 +270,7 @@ class NaverCafeCrawler(CrawlerModule):
             return self.error_data
 
     async def asyncSingleCollector(self, cafeURL, option):
-        semaphore = asyncio.Semaphore(5)
+        semaphore = asyncio.Semaphore(1)
         async with semaphore:
             articleData = await self.articleCollector(cafeURL)
             if option == 1:
