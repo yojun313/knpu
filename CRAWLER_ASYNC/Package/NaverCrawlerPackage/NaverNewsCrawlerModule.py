@@ -17,6 +17,7 @@ import urllib3
 from bs4 import BeautifulSoup
 from user_agent import generate_navigator
 import asyncio
+import aiohttp
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -107,42 +108,40 @@ class NaverNewsCrawler(CrawlerModule):
     # Sync Part
 
     # 파라미터로 (url) 전달
-    async def articleCollector(self, newsURL):
+    async def articleCollector(self, newsURL, session):
         if isinstance(newsURL, str) == False or self._newsURLChecker(newsURL) == False:
             self.error_dump(2004, "Check newsURL", newsURL)
             return self.error_data
         
         try:
-            while True:
-                res = await self.asyncRequester(newsURL)
-                bs            = BeautifulSoup(res, 'lxml')
-                news          = ''.join((i.text.replace("\n", "") for i in bs.find_all("div", {"class": "newsct_article"})))
-                try:
-                    article_press = str(bs.find("img")).split()[1][4:].replace("\"", '') # article_press
-                except:
-                    article_press = 'None'
-                try:
-                    article_type  = bs.find("em", class_="media_end_categorize_item").text # article_type
-                except:
-                    article_type = 'None'
+            if self.print_status_option == True:
+                self.printStatus('NaverNews', 3, self.PrintData)
+            res = await self.asyncRequester(newsURL, session=session)
+            bs            = BeautifulSoup(res, 'lxml')
+            news          = ''.join((i.text.replace("\n", "") for i in bs.find_all("div", {"class": "newsct_article"})))
+            try:
+                article_press = str(bs.find("img")).split()[1][4:].replace("\"", '') # article_press
+            except:
+                article_press = 'None'
+            try:
+                article_type  = bs.find("em", class_="media_end_categorize_item").text # article_type
+            except:
+                article_type = 'None'
 
-                try:
-                    article_title = bs.find("div", class_="media_end_head_title").text.replace("\n", " ") # article_title
-                    article_date  = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
-                    date_obj = datetime.strptime(article_date.split()[0], "%Y.%m.%d.")
-                    article_date = date_obj.strftime("%Y-%m-%d")
-                except Exception:
-                    continue
+            article_title = bs.find("div", class_="media_end_head_title").text.replace("\n", " ") # article_title
+            article_date  = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
+            date_obj = datetime.strptime(article_date.split()[0], "%Y.%m.%d.")
+            article_date = date_obj.strftime("%Y-%m-%d")
 
-                articleData = [article_press, article_type, newsURL, article_title, news, article_date]
-                returnData = {
-                    'articleData': articleData
-                }
-                self.IntegratedDB['TotalArticleCnt'] += 1
-                if self.print_status_option == True:
-                    self.printStatus('NaverNews', 3, self.PrintData)
+            articleData = [article_press, article_type, newsURL, article_title, news, article_date]
+            returnData = {
+                'articleData': articleData
+            }
+            self.IntegratedDB['TotalArticleCnt'] += 1
+            if self.print_status_option == True:
+                self.printStatus('NaverNews', 3, self.PrintData)
 
-                return returnData
+            return returnData
                
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
@@ -150,7 +149,7 @@ class NaverNewsCrawler(CrawlerModule):
             return self.error_data
     
     # 파라미터로 (url, 통계데이터 반환 옵션, 댓글 코드 반환 옵션) 전달
-    async def replyCollector(self, newsURL):
+    async def replyCollector(self, newsURL, session):
         if isinstance(newsURL, str) == False or self._newsURLChecker(newsURL) == False:
             self.error_dump(2006, "Check newsURL", newsURL)
             return self.error_data
@@ -201,7 +200,7 @@ class NaverNewsCrawler(CrawlerModule):
                         'sort'               : 'reply',
                         'initialize'         : 'true'
                     }
-                response = await self.asyncRequester('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers, params)
+                response = await self.asyncRequester('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers=headers, params=params, session=session)
                 res               = response.replace("_callback(","")[:-2]
                 temp              = json.loads(res)    
 
@@ -414,22 +413,17 @@ class NaverNewsCrawler(CrawlerModule):
     async def asyncSingleCollector(self, newsURL, option):
         semaphore = asyncio.Semaphore(1)
         async with semaphore:
-            await self.rate_limiter()  # 레이트 리미터 호출
-            articleData = await self.articleCollector(newsURL)
-            replyData = await self.replyCollector(newsURL)
+            session = aiohttp.ClientSession()
+            articleData = await self.articleCollector(newsURL, session)
+
+            session = aiohttp.ClientSession()
+            replyData = await self.replyCollector(newsURL, session)
             if option == 1:
                 return {'articleData': articleData, 'replyData': replyData}
 
             parentCommentNum_list = replyData['parentCommentNoList']
             rereplyData = await self.rereplyCollector(newsURL, parentCommentNum_list)
             return {'articleData': articleData, 'replyData': replyData, 'rereplyData': rereplyData}
-
-    async def rate_limiter(self):
-        current_time = time.time()
-        elapsed = current_time - self.last_request_time
-        if elapsed < self.rate_limit:
-            await asyncio.sleep(self.rate_limit - elapsed)
-        self.last_request_time = time.time()
 
     async def asyncMultiCollector(self, urlList, option):
         tasks = []
@@ -455,7 +449,7 @@ async def asyncTester():
 
     if number == 1:
         print("\nNaverNewsCrawler_urlCollector: ", end='')
-        urlList_returnData = CrawlerPackage_obj.urlCollector("무고죄", 20240601, 20240601)
+        urlList_returnData = CrawlerPackage_obj.urlCollector("대통령", 20230101, 20230101)
         urlList = urlList_returnData['urlList']
 
         results = await CrawlerPackage_obj.asyncMultiCollector(urlList, option)

@@ -30,13 +30,14 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 class CrawlerModule(ToolModule):
     
     startTime = time.time()
-    
+
     def __init__(self, proxy_option = False):
         super().__init__()
         
         self.proxy_option   = proxy_option
         self.collection_path = COLLECTION_PATH
         self.error_detector_option = False
+
         
         if proxy_option == True:
             self.proxy_list     = self.read_txt(self.collection_path + '/proxy.txt')       # 로컬 proxy.txt 파일 경로
@@ -208,32 +209,26 @@ class CrawlerModule(ToolModule):
             return 'http://' + str(proxy_server)
         else:
             return None
-    async def fetch(self, session, url, headers, params, proxies, cookies, verify, timeout):
-        async with session.get(url, headers=headers, params=params, proxy=proxies, cookies=cookies, ssl=verify, timeout=timeout) as response:
+    async def fetch(self, url, headers, params, proxies, cookies, verify, session):
+        async with session.get(url, headers=headers, params=params, proxy=proxies, cookies=cookies, ssl=verify) as response:
             return await response.text()
-    async def asyncRequester(self, url, headers = {}, params = {}, proxies = '', cookies = {}):
-
-        async with aiohttp.ClientSession() as session:
-            if proxies != '':
-                for _ in range(3):
-                    try:
-                        main_page = await self.fetch(session, url, headers, params, proxies, cookies, verify=False, timeout=3)
-                        return main_page
-                    except (aiohttp.ClientError, asyncio.TimeoutError):
-                        continue
-                return 0
-
+    async def asyncRequester(self, url, headers = {}, params = {}, proxies = '', cookies = {}, session=None):
+        async with session:
             if self.proxy_option:
+                trynum = 0
                 while True:
+                    if trynum >= 10000:
+                        print("경고")
                     proxies = self.async_proxy()
                     try:
-                        main_page = await self.fetch(session, url, headers, params, proxies, cookies, verify=False, timeout=3)
+                        main_page = await self.fetch(url, headers, params, proxies, cookies, False, session)
                         return main_page
-                    except (aiohttp.ClientError, asyncio.TimeoutError):
+                    except aiohttp.ClientError as e:
+                        print(f"오류: {e}")
                         continue
 
             else:
-                main_page = await self.fetch(session, url, headers, params, proxies, cookies, verify=False, timeout=3)
+                main_page = await self.fetch(url, headers, params, proxies, cookies, False, session)
                 return main_page
 
 

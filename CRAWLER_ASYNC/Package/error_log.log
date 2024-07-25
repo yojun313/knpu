@@ -1,0 +1,4 @@
+2024-07-25 23:43:54,358 - ERROR - Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x105662d80>
+2024-07-25 23:43:54,358 - ERROR - Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x111d0d160>

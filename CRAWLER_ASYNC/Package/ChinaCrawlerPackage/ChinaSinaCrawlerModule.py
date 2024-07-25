@@ -343,11 +343,13 @@ class ChinaSinaCrawler(CrawlerModule):
             return self.error_data
             
     async def asyncSingleCollector(self, newsURL, option):
-        articleData = await self.articleCollector(newsURL)
-        if option == 1:
-            return {'articleData': articleData}
-        replyData = await self.replyCollector(newsURL)
-        return {'articleData': articleData, 'replyData': replyData}
+        semaphore = asyncio.Semaphore(1)
+        async with semaphore:
+            articleData = await self.articleCollector(newsURL)
+            if option == 1:
+                return {'articleData': articleData}
+            replyData = await self.replyCollector(newsURL)
+            return {'articleData': articleData, 'replyData': replyData}
 
     async def asyncMultiCollector(self, urlList, option):
         tasks = []
