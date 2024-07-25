@@ -17,7 +17,6 @@ import json
 import pandas as pd
 import re
 import random
-import asyncio
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -28,8 +27,22 @@ class NaverBlogCrawler(CrawlerModule):
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
+        
+        self.urlList_returnData = {
+            'urlList': [],
+            'urlCnt' : 0
+        }
+        
+        self.article_returnData = {
+            'articleData': []
+        }
+        
+        self.replyList_returnData = {
+            'replyList' : [],
+            'replyCnt' : 0
+        }
             
-    def _blogURLChecker(self, url):
+    def blogURLChecker(self, url):
         pattern = r"^https://blog\.naver\.com/[^/]+/\d+$"
         return re.match(pattern, url) is not None
     
@@ -92,22 +105,22 @@ class NaverBlogCrawler(CrawlerModule):
                     ipChange = False
                     urlList = []
                     self.IntegratedDB['UrlCnt'] = 0
+            
+            urlList = list(set(urlList))
 
-            returnData = {
-                'urlList': urlList,
-                'urlCnt': len(urlList)
-            }
-            # return part
-            return returnData
+            self.urlList_returnData['urlList'] = urlList
+            self.urlList_returnData['urlCnt']  = len(urlList)
+            
+            return self.urlList_returnData
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2013, error_msg, search_page_url_tmp)
             return self.error_data
     
-    async def articleCollector(self, blogURL):
+    def articleCollector(self, blogURL):
         trynum = 1
-        if isinstance(blogURL, str) == False or self._blogURLChecker(blogURL) == False:
+        if isinstance(blogURL, str) == False or self.blogURLChecker(blogURL) == False:
             self.error_dump(2014, "Check blogURL", blogURL)
             return self.error_data
         try:
@@ -122,10 +135,6 @@ class NaverBlogCrawler(CrawlerModule):
                     "good_cnt": None,
                     "comment_cnt": None
                 }
-
-                returnData = {
-                    'articleData': []
-                }
                 
                 split_url = blogURL.split("/")
                 blogID    = split_url[3]
@@ -137,8 +146,8 @@ class NaverBlogCrawler(CrawlerModule):
                     "referer" : blogURL
                 }
 
-                response = await self.asyncRequester(url, headers)
-                soup = BeautifulSoup(response, "html.parser")
+                response = self.Requester(url, headers)
+                soup = BeautifulSoup(response.text, "html.parser")
                 '''
                 try:
                     good_cnt_url = "https://blog.naver.com/api/blogs/{}/posts/{}/sympathy-users".format(blogID, logNo)
@@ -153,20 +162,12 @@ class NaverBlogCrawler(CrawlerModule):
             
                 article = "".join([i.text.replace("\n", "").replace("\t", "").replace("\u200b", "") for i in soup.select("div[class = 'se-module se-module-text']")])
                 date = "".join([i.text for i in soup.select("span[class = 'se_publishDate pcol2']")])
-                date_only = re.match(r"(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})", date)
-                if date_only:
-                    year, month, day = date_only.groups()
-                    # 월과 일이 한 자리수일 경우 앞에 0을 추가
-                    month = month.zfill(2)
-                    day = day.zfill(2)
-                    date = f"{year}-{month}-{day}"
-
+                                
                 if article == "":
                     trynum += 1
                     if trynum == 5:
-                        return returnData
+                        return self.article_returnData
                     continue
-
                 article_data["blog_ID"]      = str(blogID)
                 article_data["url"]          = str(original_url)
                 article_data["article_body"] = str(article)
@@ -182,18 +183,17 @@ class NaverBlogCrawler(CrawlerModule):
                     self.printStatus('NaverBlog', 3, self.PrintData)
                 
                 articleData = [blogID, original_url, article, date]
-
-                returnData['articleData'] = articleData
-
-                return returnData
+                
+                self.article_returnData['articleData'] = articleData
+                return self.article_returnData
         
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2015, error_msg, blogURL)
             return self.error_data
     
-    async def replyCollector(self, blogURL):
-        if isinstance(blogURL, str) == False or self._blogURLChecker(blogURL) == False:
+    def replyCollector(self, blogURL):
+        if isinstance(blogURL, str) == False or self.blogURLChecker(blogURL) == False:
             self.error_dump(2016, "Check blogURL", blogURL)
             return self.error_data
         try:
@@ -202,24 +202,19 @@ class NaverBlogCrawler(CrawlerModule):
             logNo     = split_url[4]
             
             url        = "https://blog.naver.com/PostView.naver?blogId={}&logNo={}&redirect=Dlog&widgetTypeCall=false&directAccess=false".format(blogID, logNo)
-
-            returnData = {
-                'replyList': [],
-                'replyCnt': 0
-            }
-
+            
             trynum = 1
             while True:
                 try:
-                    response   = await self.asyncRequester(url)
-                    soup       = BeautifulSoup(response, "html.parser")
+                    response   = self.Requester(url)
+                    soup       = BeautifulSoup(response.text, "html.parser")
                     script_tag = soup.find('script', string=re.compile(r'var\s+blogNo\s*=\s*\'(\d+)\''))
                     blogNo     = re.search(r'var\s+blogNo\s*=\s* \'(\d+)\'', script_tag.text).group(1)
                     break
                 except:
                     trynum += 1
                     if trynum == 5:
-                        return returnData
+                        return self.replyList_returnData
             
             objectID   = f'{blogNo}_201_{logNo}'
             
@@ -233,7 +228,6 @@ class NaverBlogCrawler(CrawlerModule):
             r_bad_list      = []
             replyList       = []
             parentCommentNo_list = []
-
 
             headers = {
                 'user-agent':generate_navigator()['user_agent'],
@@ -258,20 +252,22 @@ class NaverBlogCrawler(CrawlerModule):
                             'morePage.next': '051sz9hwab3fe1t0w1916s34yt',
                         }
                 
-                response = await self.asyncRequester('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers, params)
-                res               = response
+                response = self.Requester('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers, params)
+                response.encoding = "UTF-8-sig"
+                res               = response.text
                 temp              = json.loads(res)  
 
+                
                 for comment_json in temp.get("result", {}).get("commentList", []):
                     parentCommentNo_list.append(comment_json["parentCommentNo"])
                 
                 try:
                     df = pd.DataFrame(temp['result']['commentList'])
                 except:
-                    return returnData
+                    return self.replyList_returnData
 
                 if list(df) == []:
-                    return returnData
+                    return self.replyList_returnData
                 
                 masked_user_ids  = list(df['maskedUserId'])
                 mod_times        = list(df['modTime'])
@@ -322,7 +318,7 @@ class NaverBlogCrawler(CrawlerModule):
                     [
                     str(reply_idx),
                     str(nickname_list[i]),
-                    datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
+                    str(replyDate_list[i]),
                     str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
                     str(rere_count_list[i]),
                     str(r_like_list[i]),
@@ -333,64 +329,54 @@ class NaverBlogCrawler(CrawlerModule):
                     parentCommentNo_list[i]
                     ]     
                 )
-
-            returnData['replyList'] = replyList
-            returnData['replyCnt'] = len(replyList)
-
-            return returnData
-
+            
+            self.replyList_returnData['replyList'] = replyList
+            self.replyList_returnData['replyCnt']  = len(replyList)
+            
+            return self.replyList_returnData
                 
         except Exception as e:
             error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2017, error_msg, blogURL)
             return self.error_data
   
+def CrawlerTester(url):
+    print("\nNaverBlogCrawler_articleCollector: ", end = '')
+    target = CrawlerPackage_obj.articleCollector(blogURL=url)
+    ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
 
-    async def asyncSingleCollector(self, blogURL, option):
-        articleData = await self.articleCollector(blogURL)
-        if option == 1:
-            return {'articleData': articleData}
+    print("\nNaverBlogCrawler_replyCollector: ", end = '')
+    target = CrawlerPackage_obj.replyCollector(blogURL=url)
+    ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
 
-        replyData = await self.replyCollector(blogURL)
-        return {'articleData': articleData, 'replyData': replyData}
+    
+if __name__ == "__main__":
+    
+    ToolPackage_obj = ToolModule()
 
-    async def asyncMultiCollector(self, urlList, option):
-        tasks = []
-        for blogURL in urlList:
-            tasks.append(self.asyncSingleCollector(blogURL, option))
-
-        results = await asyncio.gather(*tasks)
-        return results
-
-async def asyncTester():
     print("============ Crawler Packeage Tester ============")
     print("I. Choose Option\n")
     print("1. ALL  (Full Automatic: UrlCollector -> articleCollector & replyCollector)")
     print("2. Part (NaverBlogURL Required -> articleCollector & replyCollector)\n")
 
-    number = int(input("Number: "))
+    option = int(input("Number: "))
     proxy_option = int(input("\nUse Proxy? (1/0): "))
-    option = int(input("\nOption: "))
+    result_option = int(input("\nPrint Result (1/0): "))
     print("==================================================")
 
-    CrawlerPackage_obj = NaverBlogCrawler(proxy_option=proxy_option, print_status_option=True)
+    CrawlerPackage_obj = NaverBlogCrawler(proxy_option=proxy_option)
     CrawlerPackage_obj.error_detector_option_on()
 
-    if number == 1:
-        print("\nNaverBlogCrawler_urlCollector: ", end='')
-        urlList_returnData = CrawlerPackage_obj.urlCollector("대통령", 20240601, 20240601)
-        urlList = urlList_returnData['urlList']
+    if option == 1:
+        print("\nNaverBlogCrawler_urlCollector: ", end = '')
+        returnData = CrawlerPackage_obj.urlCollector("무고죄", 20240601, 20240601)
+        ToolPackage_obj.CrawlerChecker(returnData, result_option=result_option)
+        
+        urlList = returnData['urlList']
+        
+        for url in urlList:
+            CrawlerTester(url)
 
-        results = await CrawlerPackage_obj.asyncMultiCollector(urlList, option)
-        print('\n')
-        for i in results:
-            print(i)
-
-    elif number == 2:
+    elif option == 2:
         url = input("\nTarget NaverBlog URL: ")
-        result = await CrawlerPackage_obj.asycSingleCollector(url, option)
-        print(result)
-
-
-if __name__ == "__main__":
-    asyncio.run(asyncTester())
+        CrawlerTester(url)

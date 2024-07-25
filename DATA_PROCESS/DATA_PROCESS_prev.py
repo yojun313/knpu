@@ -18,17 +18,17 @@ class data_process:
     def __init__(self):
         # 연구실 3번 컴퓨터
         if socket.gethostname() == "DESKTOP-HQK7QRT":
-            self.scrapdata_path = "C:/Users/qwe/Desktop/VSCODE/CRAWLER/scrapdata"
+            self.scrapdata_path = "C:/Users/qwe/Desktop/VSCODE/CRAWLER_ASYNC/scrapdata"
             self.projectfolder_path = "C:/Users/qwe/Desktop/VSCODE/PROJECT"
         
         # HP OMEN
         elif socket.gethostname() == "DESKTOP-502IMU5":
-            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata"
+            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER_ASYNC/scrapdata"
             self.projectfolder_path = "C:/Users/User/Desktop/BIGMACLAB/PROJECT"
         
         # HP Z8
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
-            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER/scrapdata"
+            self.scrapdata_path = "C:/Users/User/Desktop/BIGMACLAB/CRAWLER_ASYNC/scrapdata"
             self.projectfolder_path = "C:/Users/User/Desktop/BIGMACLAB/PROJECT"
             
         # Yojun's MacBook Pro
