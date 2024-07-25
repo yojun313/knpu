@@ -20,6 +20,8 @@ import traceback
 import time
 import calendar
 from datetime import datetime
+import aiohttp
+import asyncio
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -198,7 +200,47 @@ class CrawlerModule(ToolModule):
         except Exception:
             print("Critical Error: Check Proxy & Requester... Program Shut Down")
             sys.exit()
-        
+
+    # Async Part
+    def async_proxy(self):
+        proxy_server = random.choice(self.proxy_list)
+        if self.proxy_option == True:
+            return 'http://' + str(proxy_server)
+        else:
+            return None
+    async def fetch(self, session, url, headers, params, proxies, cookies, verify, timeout):
+        async with session.get(url, headers=headers, params=params, proxy=proxies, cookies=cookies, ssl=verify, timeout=timeout) as response:
+            return await response.text()
+    async def asyncRequester(self, url, headers = {}, params = {}, proxies = '', cookies = {}):
+
+        async with aiohttp.ClientSession() as session:
+            if proxies != '':
+                for _ in range(3):
+                    try:
+                        main_page = await self.fetch(session, url, headers, params, proxies, cookies, verify=False, timeout=3)
+                        return main_page
+                    except (aiohttp.ClientError, asyncio.TimeoutError):
+                        continue
+                return 0
+
+            if self.proxy_option:
+                while True:
+
+                    proxies = self.async_proxy()
+                    try:
+                        main_page = await self.fetch(session, url, headers, params, proxies, cookies, verify=False, timeout=3)
+                        return main_page
+                    except (aiohttp.ClientError, asyncio.TimeoutError):
+                        continue
+
+            else:
+                main_page = await self.fetch(session, url, headers, params, proxies, cookies, verify=False, timeout=3)
+                return main_page
+
+
+
+
+
     def error_detector(self, error_print_option):
         exc_type, exc_value, exc_traceback = sys.exc_info()
     
