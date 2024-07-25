@@ -347,12 +347,14 @@ class NaverBlogCrawler(CrawlerModule):
   
 
     async def asyncSingleCollector(self, blogURL, option):
-        articleData = await self.articleCollector(blogURL)
-        if option == 1:
-            return {'articleData': articleData}
+        semaphore = asyncio.Semaphore(1)
+        async with semaphore:
+            articleData = await self.articleCollector(blogURL)
+            if option == 1:
+                return {'articleData': articleData}
 
-        replyData = await self.replyCollector(blogURL)
-        return {'articleData': articleData, 'replyData': replyData}
+            replyData = await self.replyCollector(blogURL)
+            return {'articleData': articleData, 'replyData': replyData}
 
     async def asyncMultiCollector(self, urlList, option):
         tasks = []
