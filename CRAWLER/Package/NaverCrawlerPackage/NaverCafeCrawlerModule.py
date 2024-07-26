@@ -7,7 +7,6 @@ PACKAGE_PATH      = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
 from CrawlerModule import CrawlerModule
-from ToolModule import ToolModule
 import random
 from datetime import datetime, timezone
 import urllib3
@@ -16,40 +15,27 @@ from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 import json
 import re
 from urllib.parse import urlparse, parse_qs
+import asyncio
+import aiohttp
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 class NaverCafeCrawler(CrawlerModule):
-    
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
-        
-        self.urlList_returnData = {
-            'urlList': [],
-            'urlCnt' : 0
-        }
-        
-        self.article_returnData = {
-            'articleData': []
-        }
-        
-        self.replyList_returnData = {
-            'replyList' : [],
-            'replyCnt' : 0
-        }
     
-    def cafeURLChecker(self, url):
+    def _cafeURLChecker(self, url):
         pattern = r"https://cafe\.naver\.com/[^/]+/[^/]+\?art=[^/]+"
         match = re.match(pattern, url)
         return bool(match)
     
-    def cafeIDExtractor(self, cafeURL):
+    async def _cafeIDExtractor(self, cafeURL, session):
     
-        response = self.Requester(cafeURL)
-        soup     = BeautifulSoup(response.text, "html.parser")
+        response = await self.asyncRequester(cafeURL, session=session)
+        soup     = BeautifulSoup(response, "html.parser")
         script_tags = soup.find_all('script')
 
         club_id = None
@@ -64,15 +50,15 @@ class NaverCafeCrawler(CrawlerModule):
 
         return club_id
     
-    def articleIDExtractor(self, cafeURL):
+    def _articleIDExtractor(self, cafeURL):
         return cafeURL.split('/')[4].split('?')[0]
     
-    def timeExtractor(self, value):
+    def _timeExtractor(self, value):
         timestamp_s = value / 1000
         date = datetime.fromtimestamp(timestamp_s, timezone.utc).date()
         return date.strftime("%Y-%m-%d")
     
-    def artExtractor(self, url):
+    def _artExtractor(self, url):
         parsed_url = urlparse(url)
         # 쿼리 파라미터를 딕셔너리로 변환
         query_params = parse_qs(parsed_url.query)
@@ -81,7 +67,7 @@ class NaverCafeCrawler(CrawlerModule):
         return art_code
     
     # contentHtml 필드를 이스케이프 처리하여 JSON 문자열을 정리
-    def escape_content_html(self, json_str):
+    def _escape_content_html(self, json_str):
         # 정규식을 사용하여 contentHtml 필드 추출 및 이스케이프 처리
         pattern = re.compile(r'("contentHtml":\s?")(.*?)(?=",\s*")', re.DOTALL)
         match = pattern.search(json_str)
@@ -140,9 +126,9 @@ class NaverCafeCrawler(CrawlerModule):
                         
                     for a in site_result: #스크랩한 데이터 중 링크만 추출
                         add_link = a['href']
-                        if 'naver' in add_link and self.articleIDExtractor(add_link) not in idList and 'book' not in add_link:
+                        if 'naver' in add_link and self._articleIDExtractor(add_link) not in idList and 'book' not in add_link:
                             urlList.append(add_link)
-                            idList.append(self.articleIDExtractor(add_link))
+                            idList.append(self._articleIDExtractor(add_link))
                             self.IntegratedDB['UrlCnt'] += 1
                     
                     if self.print_status_option == True: 
@@ -157,99 +143,105 @@ class NaverCafeCrawler(CrawlerModule):
                     self.IntegratedDB['UrlCnt'] = 0
             
             urlList = list(set(urlList))
-            
-            self.urlList_returnData['urlList'] = urlList
-            self.urlList_returnData['urlCnt']  = len(urlList)
-            
-            return self.urlList_returnData
+
+            returnData = {
+                'urlList': urlList,
+                'urlCnt': len(urlList)
+            }
+            # return part
+            return returnData
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2020, error_msg, search_page_url_tmp)
             return self.error_data
 
-    def articleCollector(self, cafeURL):
-        if isinstance(cafeURL, str) == False or self.cafeURLChecker(cafeURL) == False:
+    async def articleCollector(self, cafeURL, session):
+        if isinstance(cafeURL, str) == False or self._cafeURLChecker(cafeURL) == False:
             self.error_dump(2021, "Check newsURL", cafeURL)
             return self.error_data
         
         try:
-            articleID = self.articleIDExtractor(cafeURL)
-            cafeID = self.cafeIDExtractor(cafeURL)
-            artID = self.artExtractor(cafeURL)
-            api_url = "https://apis.naver.com/cafe-web/cafe-articleapi/v2.1/cafes/{}/articles/{}?query=&art={}&useCafeId=true&requestFrom=A".format(cafeID, articleID, artID)
-            response = self.Requester(api_url)
+            returnData = {
+                'articleData': []
+            }
 
-            soup = BeautifulSoup(response.text, 'html.parser')
-            json_string = self.escape_content_html(soup.text)
+            articleID = self._articleIDExtractor(cafeURL)
+            cafeID = await self._cafeIDExtractor(cafeURL, session)
+            artID = self._artExtractor(cafeURL)
+            api_url = "https://apis.naver.com/cafe-web/cafe-articleapi/v2.1/cafes/{}/articles/{}?query=&art={}&useCafeId=true&requestFrom=A".format(cafeID, articleID, artID)
+            response = await self.asyncRequester(api_url, session=session)
+            soup = BeautifulSoup(response, 'html.parser')
+            json_string = self._escape_content_html(soup.text)
             
             try:
                 temp = json.loads(json_string)
             except:
-                return self.article_returnData
+                return returnData
             try:
                 cafe_name    = temp['result']['cafe']['name']
                 memberCount  = temp['result']['cafe']['memberCount']
                 writer       = temp['result']['article']['writer']['id']
                 title        = re.sub(r'[^\w\s가-힣]', '', temp['result']['article']['subject'])
                 text         = ' '.join(BeautifulSoup(temp['result']['article']['contentHtml'], 'html.parser').get_text().split()).replace("\\n", "").replace("\\t", "").replace("\u200b", "").replace('\\', '')
-                date         = self.timeExtractor(int(temp['result']['article']['writeDate']))
+                date         = self._timeExtractor(int(temp['result']['article']['writeDate']))
                 readCount    = temp['result']['article']['readCount']
                 commentCount = temp['result']['article']['commentCount']
             except:
-                return self.article_returnData
+                return returnData
             
             self.IntegratedDB['TotalArticleCnt'] += 1
             if self.print_status_option == True:
                 self.printStatus('NaverCafe', 3, self.PrintData)
             
             articleData = [cafe_name, memberCount, writer, title, text, date, readCount, commentCount, cafeURL]
-            self.article_returnData['articleData'] = articleData
-            return self.article_returnData
+            returnData['articleData'] = articleData
+
+            return returnData
         
         except:
             error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2022, error_msg, cafeURL)
             return self.error_data
          
-    def replyCollector(self, cafeURL, info = {}):
-        if isinstance(cafeURL, str) == False or self.cafeURLChecker(cafeURL) == False:
+    async def replyCollector(self, cafeURL, session):
+        if isinstance(cafeURL, str) == False or self._cafeURLChecker(cafeURL) == False:
             self.error_dump(2023, "Check newsURL", cafeURL)
             return self.error_data
         try:
-            if info == {}:
-                articleID = self.articleIDExtractor(cafeURL)
-                cafeID = self.cafeIDExtractor(cafeURL)
-                artID = self.artExtractor(cafeURL)
-            else:
-                articleID = info['articleID']
-                cafeID    = info['cafeID']
-                artID     = info['artID']
+            articleID = self._articleIDExtractor(cafeURL)
+            cafeID = await self._cafeIDExtractor(cafeURL, session)
+            artID = self._artExtractor(cafeURL)
 
             replyList = []
+            returnData = {
+                'replyList': replyList,
+                'replyCnt' : len(replyList)
+            }
             
             page = 1
             reply_idx = 1
+
             while True:
                 
                 api_url = "https://apis.naver.com/cafe-web/cafe-articleapi/v2/cafes/{}/articles/{}/comments/pages/{}?requestFrom=A&orderBy=asc&art={}".format(cafeID, articleID, page, artID)
-                response = self.Requester(api_url)
+                response = await self.asyncRequester(api_url, session=session)
                 
-                soup = BeautifulSoup(response.text, 'html.parser')
-                json_string = self.escape_content_html(soup.text)
+                soup = BeautifulSoup(response, 'html.parser')
+                json_string = self._escape_content_html(soup.text)
                 temp = json.loads(json_string)
                 
                 try:
                     comment_json = temp['result']['comments']['items']
                 except:
-                    return self.replyList_returnData
+                    return returnData
                     
                 if comment_json == []:
-                    return self.replyList_returnData
+                    return returnData
                 
                 for comment in comment_json:
                     writer  = comment['writer']['id']
-                    date    = self.timeExtractor(comment['updateDate'])
+                    date    = self._timeExtractor(comment['updateDate'])
                     content = comment['content'].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')
                     url     = cafeURL
                     replyList.append([reply_idx, writer, date, content, url])
@@ -267,53 +259,65 @@ class NaverCafeCrawler(CrawlerModule):
                 page += 1
                 reply_idx += 1
             
-            self.replyList_returnData['replyList'] = replyList
-            self.replyList_returnData['replyCnt']  = len(replyList)
+            returnData['replyList'] = replyList
+            returnData['replyCnt']  = len(replyList)
             
-            return self.replyList_returnData
+            return returnData
         
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2024, error_msg, cafeURL)
             return self.error_data
 
-def CrawlerTester(url):
-    print("\nNaverCafeCrawler_articleCollector: ", end = '')
-    target = CrawlerPackage_obj.articleCollector(cafeURL=url)
-    ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
+    async def asyncSingleCollector(self, cafeURL, option, session):
+        semaphore = asyncio.Semaphore(10)
+        async with semaphore:
+            articleData = await self.articleCollector(cafeURL, session)
+            if option == 1:
+                return {'articleData': articleData}
 
-    print("\nNaverCafeCrawler_replyCollector: ", end = '')
-    target = CrawlerPackage_obj.replyCollector(cafeURL=url)
-    ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
+            replyData = await self.replyCollector(cafeURL, session)
+            return {'articleData': articleData, 'replyData': replyData}
 
-    
-if __name__ == "__main__":
-    
-    ToolPackage_obj = ToolModule()
-    
+    async def asyncMultiCollector(self, urlList, option):
+        tasks = []
+        session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=self.socketnum))
+        for cafeURL in urlList:
+            tasks.append(self.asyncSingleCollector(cafeURL, option, session))
+
+        results = await asyncio.gather(*tasks)
+        await session.close()
+        return results
+
+async def asyncTester():
     print("============ Crawler Packeage Tester ============")
     print("I. Choose Option\n")
     print("1. ALL  (Full Automatic: UrlCollector -> articleCollector & replyCollector)")
     print("2. Part (NaverCafeURL Required -> articleCollector & replyCollector)\n")
 
-    option = int(input("Number: "))
+    number = int(input("Number: "))
     proxy_option = int(input("\nUse Proxy? (1/0): "))
-    result_option = int(input("\nPrint Result (1/0): "))
+    option = int(input("\nOption: "))
     print("==================================================")
 
-    CrawlerPackage_obj = NaverCafeCrawler(proxy_option=proxy_option)
+    CrawlerPackage_obj = NaverCafeCrawler(proxy_option=proxy_option, print_status_option=True)
     CrawlerPackage_obj.error_detector_option_on()
-    
-    if option == 1:
-        print("\nNaverCafeCrawler_urlCollector: ", end = '')
-        returnData = CrawlerPackage_obj.urlCollector("무고죄", 20240601, 20240601)
-        ToolPackage_obj.CrawlerChecker(returnData, result_option=result_option)
-        
-        urlList = returnData['urlList']
-        
-        for url in urlList:
-            CrawlerTester(url)
 
-    elif option == 2:
-        url = input("\nTarget NaverBlog URL: ")
-        CrawlerTester(url)
+    if number == 1:
+        print("\nNaverCafeCrawler_urlCollector: ", end='')
+        urlList_returnData = CrawlerPackage_obj.urlCollector("대통령", 20230101, 20230110)
+        urlList = urlList_returnData['urlList']
+
+        results = await CrawlerPackage_obj.asyncMultiCollector(urlList, option)
+        print('\n')
+        for i in results:
+            print(i)
+
+    elif number == 2:
+        url = input("\nTarget NaverCafe URL: ")
+        result = await CrawlerPackage_obj.asycSingleCollector(url, option)
+        print(result)
+
+    
+if __name__ == "__main__":
+    asyncio.run(asyncTester())

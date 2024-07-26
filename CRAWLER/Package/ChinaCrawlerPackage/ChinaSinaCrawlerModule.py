@@ -6,7 +6,6 @@ PACKAGE_PATH      = os.path.dirname(CHINACRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
 from CrawlerModule import CrawlerModule
-from ToolModule import ToolModule
 from user_agent import generate_navigator
 import urllib3
 import warnings
@@ -18,7 +17,8 @@ import time
 import copy
 from datetime import datetime, timedelta
 import calendar
-
+import asyncio
+import aiohttp
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -29,27 +29,12 @@ class ChinaSinaCrawler(CrawlerModule):
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
-        
-        self.urlList_returnData = {
-            'urlList': [],
-            'urlCnt' : 0
-        }
-        
-        self.article_returnData = {
-            'articleData': []
-        }
-        
-        self.replyList_returnData = {
-            'replyList' : [],
-            'replyCnt' : 0
-        }
-    
     
     def DateSplitter(self, start_date, end_date):
         # 날짜 문자열을 datetime 객체로 변환
         start = datetime.strptime(str(start_date), '%Y%m%d')
         end = datetime.strptime(str(end_date), '%Y%m%d')
-        
+
         result = []
         current = start
 
@@ -57,21 +42,21 @@ class ChinaSinaCrawler(CrawlerModule):
             # 현재 날짜의 월의 마지막 날 계산
             _, last_day = calendar.monthrange(current.year, current.month)
             month_end = datetime(current.year, current.month, last_day)
-            
+
             # 월의 마지막 날이 종료 날짜보다 크면 종료 날짜로 설정
             if month_end > end:
                 month_end = end
-            
+
             # 월의 시작일과 종료일 추가
             result.append([str(current.strftime('%Y%m%d')), str(month_end.strftime('%Y%m%d'))])
-            
+
             # 다음 달의 첫 번째 날로 이동
-            current = month_end + timedelta(days=1)
-            current = current.replace(day=1)
+            next_month = current.replace(day=28) + timedelta(days=4)  # 이 방법으로 다음 달로 이동
+            current = next_month.replace(day=1)  # 다음 달의 첫 번째 날로 설정
         
         return result
 
-    def DateInverter(self, date_str):
+    def _DateInverter(self, date_str):
         return int(time.mktime(time.strptime(date_str, '%Y%m%d')))
     
     def sortUrlList(self, urls):
@@ -89,7 +74,7 @@ class ChinaSinaCrawler(CrawlerModule):
         return sorted_urls
     
     # sina.cn, sina.com.cn 등 구분
-    def newsURLChecker(self, newsURL):
+    def _newsURLChecker(self, newsURL):
         if 'https://news.sina.com.cn' in newsURL:
             return 1
         elif 'https://news.sina.cn' in newsURL:
@@ -100,7 +85,7 @@ class ChinaSinaCrawler(CrawlerModule):
             return False
     
     # 댓글 api 요청 위한 채널 파라미터 추출
-    def newsChannelChecker(self, newsURL):
+    def _newsChannelChecker(self, newsURL):
         param = newsURL.split('/')[3]
         channel = ''
         if param in ['c', 'gov', 'sx']: 
@@ -112,7 +97,7 @@ class ChinaSinaCrawler(CrawlerModule):
             
         return channel
     
-    def newsidFormChecker(self, newsURL):
+    def _newsidFormChecker(self, newsURL):
         try:
             num = int(newsURL.split('/')[4][0]) # ex) https://news.sina.com.cn/zx/gj/2024-01-02/doc-inaacqsy5385670.shtml
             return 1
@@ -120,7 +105,7 @@ class ChinaSinaCrawler(CrawlerModule):
             return 2
     
     # json string 깔끔하게 정리
-    def jsonFormatter(self, input_str):
+    def _jsonFormatter(self, input_str):
         # 첫 번째 '{'의 인덱스를 찾습니다.
         start_index = input_str.index('{')
         # 마지막 '}'의 인덱스를 찾습니다.
@@ -150,8 +135,8 @@ class ChinaSinaCrawler(CrawlerModule):
             urlList = []
             previus_links = []
             previus_search_page_url = 'https://www.baidu.com/'
-            startDate = self.DateInverter(str(startDate))
-            endDate   = self.DateInverter(str(endDate))
+            startDate = self._DateInverter(str(startDate))
+            endDate   = self._DateInverter(str(endDate))
             site      = 'news.sina.com.cn'
             
             page = 0
@@ -159,11 +144,12 @@ class ChinaSinaCrawler(CrawlerModule):
                 # 요청 -> 응답 횟수
                 if endCnt > 5:
                     urlList = self.sortUrlList(list(set(urlList)))
-                    
-                    self.urlList_returnData['urlList'] = urlList
-                    self.urlList_returnData['urlCnt']  = len(urlList)
-                    return self.urlList_returnData
-                
+                    returnData = {
+                        'urlList': urlList,
+                        'urlCnt' : len(urlList)
+                    }
+                    return returnData
+
                 query_params = {
                     'wd': keyword,
                     'pn': page,
@@ -211,20 +197,19 @@ class ChinaSinaCrawler(CrawlerModule):
             self.error_dump(2034, error_msg, search_page_url)
             return self.error_data
 
-    def articleCollector(self, newsURL):
+    async def articleCollector(self, newsURL, session):
         
-        newsURL_type = self.newsURLChecker(newsURL)
+        newsURL_type = self._newsURLChecker(newsURL)
         if isinstance(newsURL_type, int) == False:
             self.error_dump(2035, "Check newsURL", newsURL)
             return self.error_data
         
         try:
-            main_page = self.Requester(newsURL)
-            main_page.encoding = 'utf-8'
-            soup      = BeautifulSoup(main_page.text, 'lxml')
+            main_page = await self.asyncRequester(newsURL, session=session)
+            soup      = BeautifulSoup(main_page, 'lxml')
 
             # 뉴스 날짜
-            if self.newsidFormChecker(newsURL) == True:
+            if self._newsidFormChecker(newsURL) == True:
                 date   = newsURL.split('/')[4]
             else:
                 date   = newsURL.split('/')[5]
@@ -242,29 +227,29 @@ class ChinaSinaCrawler(CrawlerModule):
                 text   = " ".join(p.get_text(strip=True) for p in paragraphs)
                 
             articleData = [title, text, date, newsURL]
-
-            self.article_returnData['articleData'] = articleData
-            
             
             self.IntegratedDB['TotalArticleCnt'] += 1
             if self.print_status_option == True:
                 self.printStatus('ChinaSina', 3, self.PrintData)
-            
-            return self.article_returnData
+
+            returnData = {
+                'articleData': articleData
+            }
+            return returnData
         
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
             self.error_dump(2036, error_msg, newsURL)
             return self.error_data
     
-    def replyCollector(self, newsURL):
-        newsURL_type = self.newsURLChecker(newsURL)
+    async def replyCollector(self, newsURL, session):
+        newsURL_type = self._newsURLChecker(newsURL)
         if isinstance(newsURL_type, int) == False:
             self.error_dump(2037, "Check newsURL", newsURL)
             return self.error_data
         
         try:
-            if self.newsidFormChecker(newsURL) == True:
+            if self._newsidFormChecker(newsURL) == True:
                 newsid = newsURL.split('/')[5].split('-')[1]
             else:
                 newsid = newsURL.split('/')[6].split('-')[1]
@@ -274,25 +259,29 @@ class ChinaSinaCrawler(CrawlerModule):
             else:
                 newsid = newsid.split('.')[0]
                 
-            channelid = self.newsChannelChecker(newsURL)
+            channelid = self._newsChannelChecker(newsURL)
             channelidList_exists = False
             # 예외처리로 channel id를 모르는 경우 리스트로 둘 다 받아 둘다 시도
             if isinstance(channelid, list) == True:
                 channelidList = copy.deepcopy(channelid)
                 channelidList_exists = True
                 channelid = channelidList[0]
-                
-            
+
             replyList = []
             reply_num = 1
             page      = 1
+
+            returnData = {
+                'replyList': replyList,
+                'replyCnt': len(replyList)
+            }
             
             while True:
                 # https://news.sina.com.cn/c/2024-07-17/doc-incemisz7254091.shtml
                 if newsURL_type == 1:
                     default_url = 'https://comment.sina.com.cn/page/info'
                     api_url = f'https://comment.sina.com.cn/page/info?version=1&format=json&channel={channelid}&newsid=comos-{newsid}&group=undefined&compress=0&ie=utf-8&oe=utf-8&page={page}&page_size=10&t_size=3&h_size=3&thread=1&uid=unlogin_user&callback=jsonp_{int(time.time())}&_={int(time.time())}'
-                    main_page = self.Requester(api_url)
+                    main_page = await self.asyncRequester(api_url, session=session)
                     
                 # https://news.sina.cn/sh/2023-01-29/detail-imycwefp0361917.d.html
                 elif newsURL_type == 2:
@@ -310,10 +299,9 @@ class ChinaSinaCrawler(CrawlerModule):
                         'User-Agent': generate_navigator()['user_agent'],
                         'Referer': referURL
                     }
-                    main_page = self.Requester(default_url, headers=headers, params=params)
+                    main_page = await self.asyncRequester(default_url, headers=headers, params=params, session=session)
                 try:
-                    main_page.encoding = 'UTF-8'
-                    main_page = self.jsonFormatter(main_page.text)
+                    main_page = self._jsonFormatter(main_page)
                     temp = json.loads(main_page)
                     comment_json = temp['result']['cmntlist']
                 except:
@@ -324,17 +312,17 @@ class ChinaSinaCrawler(CrawlerModule):
                             channelid = channelidList[0]
                             continue
                     
-                    return self.replyList_returnData
+                    return returnData
 
                 # 댓글 없을 때
                 if comment_json == []:
-                    self.replyList_returnData['replyList'] = replyList
-                    self.replyList_returnData['replyCnt']  = len(replyList)
-                    return self.replyList_returnData
+                    returnData['replyList'] = replyList
+                    returnData['replyCnt'] = len(replyList)
+                    return returnData
 
                 for data in comment_json:
                     nickname = data['nick']
-                    date = data['time']
+                    date = data['time'].split()[0]
                     like = data['rank']
                     text = data['content'].replace('\u200b', '')
 
@@ -353,45 +341,54 @@ class ChinaSinaCrawler(CrawlerModule):
             self.error_dump(2038, error_msg, newsURL)
             return self.error_data
             
-def CrawlerTester(url):
-    print("\nChinaSinaCrawler_articleCollector: ", end = '')
-    target = CrawlerPackage_obj.articleCollector(newsURL=url)
-    ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
-    
-    print("\nChinaSinaCrawler_replyCollector: ", end = '')
-    target = CrawlerPackage_obj.replyCollector(newsURL=url)
-    ToolPackage_obj.CrawlerChecker(target, result_option=result_option)
-    
-    if target['replyList'] == []:
-        return
-           
-if __name__ == "__main__":
-    
-    ToolPackage_obj = ToolModule()
+    async def asyncSingleCollector(self, newsURL, option, session):
+        semaphore = asyncio.Semaphore(10)
+        async with semaphore:
+            articleData = await self.articleCollector(newsURL, session)
+            if option == 1:
+                return {'articleData': articleData}
+            replyData = await self.replyCollector(newsURL, session)
+            return {'articleData': articleData, 'replyData': replyData}
 
+    async def asyncMultiCollector(self, urlList, option):
+        tasks = []
+        session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=self.socketnum))
+        for newsURL in urlList:
+            tasks.append(self.asyncSingleCollector(newsURL, option, session))
+
+        results = await asyncio.gather(*tasks)
+        await session.close()
+        return results
+
+async def asyncTester():
     print("============ Crawler Packeage Tester ============")
     print("I. Choose Option\n")
     print("1. ALL  (Full Automatic: UrlCollector -> articleCollector & replyCollector)")
-    print("2. Part (SinaNewsURL Required -> articleCollector & replyCollector)\n")
-    
-    option = int(input("Number: "))
+    print("2. Part (ChinaSinaURL Required -> articleCollector & replyCollector)\n")
+
+    number       = int(input("Number: "))
     proxy_option = int(input("\nUse Proxy? (1/0): "))
-    result_option = int(input("\nPrint Result (1/0): "))
+    option       = int(input("\nOption: "))
     print("==================================================")
-    
-    CrawlerPackage_obj = ChinaSinaCrawler(proxy_option=proxy_option)
+
+    CrawlerPackage_obj = ChinaSinaCrawler(proxy_option=proxy_option, print_status_option=True)
     CrawlerPackage_obj.error_detector_option_on()
-    
-    if option == 1:
-        print("\nChinaSinaCrawler_urlCollector: ", end = '')
-        returnData = CrawlerPackage_obj.urlCollector("人民", 20240101, 20240131)
-        ToolPackage_obj.CrawlerChecker(returnData, result_option=result_option)
-        
-        urlList = returnData['urlList']
-        
-        for url in urlList:
-            CrawlerTester(url)
-    
-    elif option == 2:
-        url = input("\nTarget SinaNews URL: ")
-        CrawlerTester(url)
+
+    if number == 1:
+        print("\nChinaSinaCrawler_urlCollector: ", end='')
+        urlList_returnData = CrawlerPackage_obj.urlCollector("人民", 20240101, 20240105)
+        urlList = urlList_returnData['urlList']
+
+        results = await CrawlerPackage_obj.asyncMultiCollector(urlList, option)
+        print('\n')
+        for i in results:
+            print(i)
+
+    elif number == 2:
+        url = input("\nTarget ChinaSina URL: ")
+        result = await CrawlerPackage_obj.asycSingleCollector(url, option)
+        print(result)
+
+if __name__ == "__main__":
+    asyncio.run(asyncTester())
+
