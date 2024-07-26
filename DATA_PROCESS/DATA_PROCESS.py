@@ -35,7 +35,7 @@ class DATA_PROCESS(ToolModule):
 
 
         print("\n File Processing...: ", end = ' ')
-        csv_data = self.TimeSplitter(csv_data, crawlType, fileType)
+        csv_data = self.TimeSplitter(csv_data, fileType)
         year_divided_group = csv_data.groupby('year')
         month_divided_group = csv_data.groupby('year_month')
         week_divided_group = csv_data.groupby('week')

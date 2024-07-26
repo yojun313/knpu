@@ -45,53 +45,17 @@ class ToolModule:
         fileType  = csv_name.split('_')[6]
         return {'crawlType': crawlType, 'fileType': fileType}
 
-    def TimeSplitter(self, csv_data, crawlType, fileType):
+    def TimeSplitter(self, csv_data, fileType):
         date_columns = {
-            'NaverNews': {
-                'article': 'News Date', 'statistics': 'News Date', 'reply': 'Reply Date', 'rereply': 'Rereply Date'
-            },
-            'NaverBlog': {
-                'article': 'Blog Date', 'reply': 'Reply Date'
-            },
-            'NaverCafe': {
-                'article': 'Cafe Date', 'reply': 'Reply Date'
-            },
-            'YouTube': {
-                'article': 'Video Date', 'reply': 'Reply Date', 'rereply': 'Rereply Date'
-            },
-            'ChinaDaily': {
-                'article': 'News Date'
-            },
-            'ChinaSina': {
-                'article': 'News Date', 'reply': 'Reply Date'
-            }
+            'article': 'Article Date',
+            'statistics': 'Article Date',
+            'reply': 'Reply Date',
+            'rereply': 'Rereply Date'
         }
 
-        date_formats = {
-            'NaverNews': {
-                'article': '%Y.%m.%d.', 'statistics': '%Y.%m.%d.'
-            },
-            'NaverBlog': {
-                'article': '%Y. %m. %d. %H:%M'
-            },
-            'NaverCafe': {
-                'article': '%Y-%m-%d', 'reply': '%Y-%m-%d'
-            },
-            'ChinaDaily': {
-                'article': '%Y-%m-%d %H:%M'
-            },
-            'ChinaSina': {
-                'article': '%Y-%m-%d', 'reply': '%Y-%m-%d %H:%M:%S'
-            }
-        }
+        word = date_columns[fileType]
 
-        word = date_columns.get(crawlType, {}).get(fileType)
-        format = date_formats.get(crawlType, {}).get(fileType)
-
-        if crawlType == 'NaverNews':
-            csv_data[word] = pd.to_datetime(csv_data[word].str.split().str[0], format=format, errors='coerce')
-        else:
-            csv_data[word] = pd.to_datetime(csv_data[word], format=format, errors='coerce')
+        csv_data[word] = pd.to_datetime(csv_data[word], format='%Y-%m-%d', errors='coerce')
 
         csv_data['year'] = csv_data[word].dt.year
         csv_data['month'] = csv_data[word].dt.month
