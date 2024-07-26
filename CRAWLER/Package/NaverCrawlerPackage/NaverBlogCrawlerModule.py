@@ -71,7 +71,7 @@ class NaverBlogCrawler(CrawlerModule):
                     main_page = self.Requester(search_page_url_tmp)
                 
                 if ipChange == False:
-                    main_page = BeautifulSoup(main_page, "lxml") #스크랩 모듈에 url 넘김
+                    main_page = BeautifulSoup(main_page.text, "lxml") #스크랩 모듈에 url 넘김
                     site_result = main_page.select('a[class = "title_link"]')
                     
                     if site_result == []:
