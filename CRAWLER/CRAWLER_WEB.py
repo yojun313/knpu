@@ -26,7 +26,7 @@ upload = 'n'
 weboption = 1
 '''
 
-Crawler_obj = Crawler(name, start, end, keyword, int(upload), weboption)
+Crawler_obj = Crawler(name, start, end, keyword, int(upload), speed, weboption)
 if crawl_object == 1:
     Crawler_obj.Naver_News_Crawler(option)
 
