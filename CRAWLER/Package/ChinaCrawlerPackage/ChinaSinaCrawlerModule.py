@@ -169,7 +169,7 @@ class ChinaSinaCrawler(CrawlerModule):
                 }
                 
                 main_page = self.Requester(url=search_page_url, headers=headers)
-                soup = BeautifulSoup(main_page.text, 'html.parser')
+                soup = BeautifulSoup(main_page, 'html.parser')
                 
                 result_divs = soup.find_all('div', class_='result')
                 links = [div.get('mu') for div in result_divs if div.get('mu')]
