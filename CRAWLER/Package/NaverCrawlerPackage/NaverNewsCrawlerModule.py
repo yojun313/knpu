@@ -34,17 +34,17 @@ class NaverNewsCrawler(CrawlerModule):
         self.last_request_time = 0
 
     def _newsURLChecker(self, url):
-        parts = [
-        r"https://n\.news\.naver\.com",
-        r"/mnews/article",
-        r"/\d{3}",
-        r"/\d{9}",
-        r"\?sid=\d{3}"
-        ]
-        for part in parts:
-            if not re.search(part, url):
-                return False
-        return True
+        pattern = (
+            r"https://n\.news\.naver\.com"  # 고정 부분
+            r"/mnews/article"  # 고정 부분
+            r"/\d{3}"  # 고정 부분
+            r"/\d{9}"  # 고정 부분
+            r"(\?sid=\d{3})?"  # 선택적 부분
+        )
+
+        if re.search(pattern, url):
+            return True
+        return False
     
     # 파라미터로 (검색어, 시작일, 종료일) 전달
     def urlCollector(self, keyword, startDate, endDate): # DateForm: ex)20231231
