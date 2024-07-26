@@ -242,15 +242,12 @@ class CrawlerModule(ToolModule):
                     return main_page
                 except aiohttp.ClientError as e:
                     print(f"오류: {e}")
+                    trynum += 1
                     continue
 
         else:
             main_page = await self.fetch(url, headers, params, proxies, cookies, False, session, timeout)
             return main_page
-
-
-
-
 
     def error_detector(self, error_print_option):
         exc_type, exc_value, exc_traceback = sys.exc_info()
