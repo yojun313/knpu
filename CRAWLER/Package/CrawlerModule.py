@@ -33,7 +33,7 @@ class CrawlerModule(ToolModule):
 
     def __init__(self, proxy_option = False):
         super().__init__()
-        
+
         self.proxy_option   = proxy_option
         self.collection_path = COLLECTION_PATH
         self.error_detector_option = False
