@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import signal
 import sys
 
 from CRAWLER import Crawler
@@ -25,6 +26,11 @@ keyword = "아이패드"
 upload = 'n'
 weboption = 1
 '''
+
+def signal_handler(sig, frame):
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 Crawler_obj = Crawler(name, start, end, keyword, int(upload), speed, weboption)
 if crawl_object == 1:
