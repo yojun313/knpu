@@ -31,11 +31,16 @@ class YouTubeCrawler(CrawlerModule):
         for num in range(1, len(self.api_list)):
             self.api_dic[num] = self.api_list[num - 1]
 
+    def _format_date(date_str):
+        date_obj = datetime.strptime(date_str, "%Y%m%d")
+        formatted_date = f"{date_obj.month}/{date_obj.day}/{date_obj.year}"
+        return formatted_date
+    
     def urlCollector(self, keyword, startDate, endDate):
         urlLimiter = ['playlist', 'shorts', 'channel', 'user', 'm.']
         site = 'youtube.com'
-        startDate = datetime.strptime(str(startDate), "%Y%m%d").strftime("%-m/%-d/%Y")
-        endDate = datetime.strptime(str(endDate), "%Y%m%d").strftime("%-m/%-d/%Y")
+        startDate = self._format_date(startDate)
+        endDate = self._format_date(endDate)
         currentPage = 0
 
         urlList = []
