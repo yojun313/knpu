@@ -100,7 +100,7 @@ class CrawlerModule(ToolModule):
             'NaverNews' : '기사',
             'NaverBlog' : '블로그',
             'NaverCafe' : '카페',
-            'YouTube'   : '유튜브',
+            'YouTube'   : '영상',
             'ChinaDaily': '기사',
             'ChinaSina' : '기사'
         }
