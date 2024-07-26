@@ -229,16 +229,15 @@ class NaverCafeCrawler(CrawlerModule):
                 
                 soup = BeautifulSoup(response, 'html.parser')
                 json_string = self._escape_content_html(soup.text)
-                temp = json.loads(json_string)
-                
+
                 try:
+                    temp = json.loads(json_string)
                     comment_json = temp['result']['comments']['items']
+                    if comment_json == []:
+                        return returnData
                 except:
                     return returnData
-                    
-                if comment_json == []:
-                    return returnData
-                
+
                 for comment in comment_json:
                     writer  = comment['writer']['id']
                     date    = self._timeExtractor(comment['updateDate'])

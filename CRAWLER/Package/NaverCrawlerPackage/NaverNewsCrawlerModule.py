@@ -121,19 +121,16 @@ class NaverNewsCrawler(CrawlerModule):
             news          = ''.join((i.text.replace("\n", "") for i in bs.find_all("div", {"class": "newsct_article"})))
             try:
                 article_press = str(bs.find("img")).split()[1][4:].replace("\"", '') # article_press
-            except:
-                article_press = 'None'
-            try:
                 article_type  = bs.find("em", class_="media_end_categorize_item").text # article_type
+                article_title = bs.find("div", class_="media_end_head_title").text.replace("\n", " ") # article_title
+                article_date  = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
+                date_obj = datetime.strptime(article_date.split()[0], "%Y.%m.%d.")
+                article_date = date_obj.strftime("%Y-%m-%d")
+
+                articleData = [article_press, article_type, newsURL, article_title, news, article_date]
             except:
-                article_type = 'None'
+                articleData = []
 
-            article_title = bs.find("div", class_="media_end_head_title").text.replace("\n", " ") # article_title
-            article_date  = bs.find("span", {"class": "media_end_head_info_datestamp_time _ARTICLE_DATE_TIME"}).text.replace("\n", " ")
-            date_obj = datetime.strptime(article_date.split()[0], "%Y.%m.%d.")
-            article_date = date_obj.strftime("%Y-%m-%d")
-
-            articleData = [article_press, article_type, newsURL, article_title, news, article_date]
             returnData = {
                 'articleData': articleData
             }

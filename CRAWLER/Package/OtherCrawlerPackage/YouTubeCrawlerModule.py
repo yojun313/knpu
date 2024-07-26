@@ -75,7 +75,7 @@ class YouTubeCrawler(CrawlerModule):
                                 contains_limiter = True
                                 break
 
-                        if contains_limiter == False:
+                        if contains_limiter == False and 'watch?v=' in add_link:
                             urlList.append(add_link)
                             self.IntegratedDB['UrlCnt'] += 1
 

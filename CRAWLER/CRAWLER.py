@@ -187,7 +187,7 @@ class Crawler(CrawlerModule):
                 replyList_returnData = returnData['replyData']
                 # replyData 정상 확인
                 if self.ReturnChecker(replyList_returnData) == True:
-                    if articleStatus == True:
+                    if articleStatus == True and article_returnData['articleData'] != []:
                         self.article_list.append(article_returnData['articleData'] + [replyList_returnData['replyCnt']])
                         if replyList_returnData['statisticsData'] != []:
                             self.statistics_list.append(article_returnData['articleData'] + replyList_returnData['statisticsData'])
