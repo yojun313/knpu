@@ -307,7 +307,7 @@ class NaverNewsCrawler(CrawlerModule):
             return self.error_data
     
     # 파라미터로 (url, 댓글 코드) 전달
-    async def rereplyCollector(self, newsURL, parentCommentNum_list):
+    async def rereplyCollector(self, newsURL, parentCommentNum_list, session):
         if isinstance(newsURL, str) == False or self._newsURLChecker(newsURL) == False:
             self.error_dump(2008, 'Check newsURL', newsURL)
             return self.error_data
@@ -339,7 +339,7 @@ class NaverNewsCrawler(CrawlerModule):
             for i in range(len(parentCommentNum_list)):
                 try:
                     base_url_tmp_re = (base_url.format(oid, aid, 100, 1, "reply") + "&parentCommentNo=" + parentCommentNum_list[i])
-                    response = await self.asyncRequester(base_url_tmp_re, headers)
+                    response = await self.asyncRequester(base_url_tmp_re, headers, session=session)
                     res               = response.replace("_callback(","")[:-2]
                     temp              = json.loads(res)    
                     
@@ -419,7 +419,7 @@ class NaverNewsCrawler(CrawlerModule):
                 return {'articleData': articleData, 'replyData': replyData}
 
             parentCommentNum_list = replyData['parentCommentNoList']
-            rereplyData = await self.rereplyCollector(newsURL, parentCommentNum_list)
+            rereplyData = await self.rereplyCollector(newsURL, parentCommentNum_list, session)
             return {'articleData': articleData, 'replyData': replyData, 'rereplyData': rereplyData}
 
     async def asyncMultiCollector(self, urlList, option):
