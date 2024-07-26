@@ -180,9 +180,8 @@ class CrawlerModule(ToolModule):
                     except Exception as e:
                         pass
                     trynum += 1
-
-                main_page.encoding = 'utf-8'
-                return main_page.text
+            
+                return main_page  
                 
             if self.proxy_option == True:
                 trynum = 0
@@ -199,9 +198,8 @@ class CrawlerModule(ToolModule):
                     except Exception as e:
                         pass
                     trynum += 1
-
-                main_page.encoding = 'utf-8'
-                return main_page.text
+            
+                return main_page  
             else:
                 return requests.get(url, headers = headers, params = params, verify = False)
         
@@ -219,7 +217,7 @@ class CrawlerModule(ToolModule):
     async def fetch(self, url, headers, params, proxies, cookies, verify, session, timeout):
         try:
             async with session.get(url, headers=headers, params=params, proxy=proxies, cookies=cookies, ssl=verify, timeout=timeout) as response:
-                return await response.text(encoding='utf-8')
+                return await response.text()
 
         except aiohttp.ClientError as e:
             return 0
@@ -227,6 +225,7 @@ class CrawlerModule(ToolModule):
             return 0
         except Exception as e:
             return 0
+
     async def asyncRequester(self, url, headers = {}, params = {}, proxies = '', cookies = {}, session=None):
         timeout = aiohttp.ClientTimeout(total=3)
         if self.proxy_option == True:
