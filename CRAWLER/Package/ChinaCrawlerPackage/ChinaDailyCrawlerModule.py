@@ -112,7 +112,7 @@ class ChinaDailyCrawler(CrawlerModule):
                 }
                 
                 main_page = self.Requester(base_search_page_url, params=params)
-                soup = BeautifulSoup(main_page.text, "lxml").text
+                soup = BeautifulSoup(main_page, "lxml").text
                 soup = self._escape_content_html(soup)
                 try:
                     json_data = json.loads(soup)

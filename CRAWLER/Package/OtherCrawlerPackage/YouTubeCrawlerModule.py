@@ -53,7 +53,7 @@ class YouTubeCrawler(CrawlerModule):
                 cookie = {'CONSENT': 'YES'}
 
                 main_page = self.Requester(search_page_url, headers=header, cookies=cookie)
-                main_page = BeautifulSoup(main_page.text, "lxml")
+                main_page = BeautifulSoup(main_page, "lxml")
                 site_result = main_page.select("a[jsname = 'UWckNb']")
 
                 if site_result == []:
@@ -105,7 +105,7 @@ class YouTubeCrawler(CrawlerModule):
             main_page = self.Requester(info_api_url)
 
             try:
-                temp = json.loads(main_page.text)
+                temp = json.loads(main_page)
                 channel = temp['items'][0]['snippet']['channelTitle']  # 채널 이름
                 video_url = url  # url
                 video_title = temp['items'][0]['snippet']['title'].replace("\n", " ").replace("\r", "").replace("\t",
