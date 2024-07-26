@@ -224,44 +224,44 @@ class Crawler(CrawlerModule):
             self.infoPrinter()
         
         for dayCount in range(self.date_range + 1):
-            
-            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-            percent = str(round((dayCount/(self.date_range+1))*100, 1))
-            NaverBlogCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
-            
-            # option 1: article
-            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
-            
-            # option 2: article + reply + rereply
-            if option == 2:
-                self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
-            
-            # finish line
-            if dayCount == self.date_range:
-                self.FinalOperator()
-                self.printStatus(type='NaverBlog', endMsg_option=True)
-                return
-            
-            # Blog Url Part
-            urlList_returnData = NaverBlogCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
-            if self.ReturnChecker(urlList_returnData) == False:
-                continue
-            self.urlList = urlList_returnData['urlList']
+            while self.running == True:
+                self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+                percent = str(round((dayCount/(self.date_range+1))*100, 1))
+                NaverBlogCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
-            FullreturnData = asyncio.run(NaverBlogCrawler_obj.asyncMultiCollector(self.urlList, option))
+                # option 1: article
+                self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
 
-            for returnData in FullreturnData:
-
-                article_returnData = returnData['articleData']
-                if self.ReturnChecker(article_returnData) == True:
-                    self.article_list.append(article_returnData['articleData'])
-
+                # option 2: article + reply + rereply
                 if option == 2:
-                    replyList_returnData = returnData['replyData']
-                    if self.ReturnChecker(replyList_returnData) == True:
-                        self.reply_list.extend(replyList_returnData['replyList'])
+                    self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
 
-            self.currentDate += self.deltaD
+                # finish line
+                if dayCount == self.date_range:
+                    self.FinalOperator()
+                    self.printStatus(type='NaverBlog', endMsg_option=True)
+                    return
+
+                # Blog Url Part
+                urlList_returnData = NaverBlogCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+                if self.ReturnChecker(urlList_returnData) == False:
+                    continue
+                self.urlList = urlList_returnData['urlList']
+
+                FullreturnData = asyncio.run(NaverBlogCrawler_obj.asyncMultiCollector(self.urlList, option))
+
+                for returnData in FullreturnData:
+
+                    article_returnData = returnData['articleData']
+                    if self.ReturnChecker(article_returnData) == True:
+                        self.article_list.append(article_returnData['articleData'])
+
+                    if option == 2:
+                        replyList_returnData = returnData['replyData']
+                        if self.ReturnChecker(replyList_returnData) == True:
+                            self.reply_list.extend(replyList_returnData['replyList'])
+
+                self.currentDate += self.deltaD
 
     def Naver_Cafe_Crawler(self, option):
         
@@ -281,44 +281,44 @@ class Crawler(CrawlerModule):
             self.infoPrinter()
         
         for dayCount in range(self.date_range + 1):
-            
-            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-            percent = str(round((dayCount/(self.date_range+1))*100, 1))
-            NaverCafeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
-            
-            # option 1: article
-            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
-            
-            # option 2: article + reply + rereply
-            if option == 2:
-                self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
-            
-            # finish line
-            if dayCount == self.date_range:
-                self.FinalOperator()
-                self.printStatus(type='NaverCafe', endMsg_option=True)
-                return
-            
-            # Cafe URL Part
-            urlList_returnData = NaverCafeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
-            if self.ReturnChecker(urlList_returnData) == False:
-                continue
-            self.urlList = urlList_returnData['urlList']
+            while self.running == True:
+                self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+                percent = str(round((dayCount/(self.date_range+1))*100, 1))
+                NaverCafeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
-            FullreturnData = asyncio.run(NaverCafeCrawler_obj.asyncMultiCollector(self.urlList, option))
+                # option 1: article
+                self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
 
-            for returnData in FullreturnData:
-
-                article_returnData = returnData['articleData']
-                if self.ReturnChecker(article_returnData) == True:
-                    self.article_list.append(article_returnData['articleData'])
-
+                # option 2: article + reply + rereply
                 if option == 2:
-                    replyList_returnData = returnData['replyData']
-                    if self.ReturnChecker(replyList_returnData) == True:
-                        self.reply_list.extend(replyList_returnData['replyList'])
-            
-            self.currentDate += self.deltaD
+                    self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
+
+                # finish line
+                if dayCount == self.date_range:
+                    self.FinalOperator()
+                    self.printStatus(type='NaverCafe', endMsg_option=True)
+                    return
+
+                # Cafe URL Part
+                urlList_returnData = NaverCafeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+                if self.ReturnChecker(urlList_returnData) == False:
+                    continue
+                self.urlList = urlList_returnData['urlList']
+
+                FullreturnData = asyncio.run(NaverCafeCrawler_obj.asyncMultiCollector(self.urlList, option))
+
+                for returnData in FullreturnData:
+
+                    article_returnData = returnData['articleData']
+                    if self.ReturnChecker(article_returnData) == True:
+                        self.article_list.append(article_returnData['articleData'])
+
+                    if option == 2:
+                        replyList_returnData = returnData['replyData']
+                        if self.ReturnChecker(replyList_returnData) == True:
+                            self.reply_list.extend(replyList_returnData['replyList'])
+
+                self.currentDate += self.deltaD
     
     def YouTube_Crawler(self, option):
         
@@ -338,42 +338,42 @@ class Crawler(CrawlerModule):
             self.infoPrinter()
             
         for dayCount in range(self.date_range + 1):
-            
-            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-            percent = str(round((dayCount/(self.date_range+1))*100, 1))
-            YouTubeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption, self.api_num)
-            
-            # option 1 & 2
-            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
-            self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
-            self.ListToCSV(object_list=self.rereply_list, csv_path=self.DBpath, csv_name=self.DBname + '_rereply.csv')
-            
-            # finish line
-            if dayCount == self.date_range:
-                self.FinalOperator()
-                self.printStatus(type='YouTube', endMsg_option=True)
-                return
-            
-            # YouTube URL Part
-            urlList_returnData = YouTubeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
-            if self.ReturnChecker(urlList_returnData) == False:
-                continue
-            self.urlList = urlList_returnData['urlList']
+            while self.running == True:
+                self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+                percent = str(round((dayCount/(self.date_range+1))*100, 1))
+                YouTubeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption, self.api_num)
 
-            FullreturnData = YouTubeCrawler_obj.syncMultiCollector(self.urlList, option)
+                # option 1 & 2
+                self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+                self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
+                self.ListToCSV(object_list=self.rereply_list, csv_path=self.DBpath, csv_name=self.DBname + '_rereply.csv')
 
-            for returnData in FullreturnData:
+                # finish line
+                if dayCount == self.date_range:
+                    self.FinalOperator()
+                    self.printStatus(type='YouTube', endMsg_option=True)
+                    return
 
-                article_returnData = returnData['articleData']
-                if self.ReturnChecker(article_returnData) == True:
-                    self.article_list.append(article_returnData['articleData'])
+                # YouTube URL Part
+                urlList_returnData = YouTubeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+                if self.ReturnChecker(urlList_returnData) == False:
+                    continue
+                self.urlList = urlList_returnData['urlList']
 
-                replyList_returnData = returnData['replyData']
-                if self.ReturnChecker(replyList_returnData) == True:
-                    self.reply_list.extend(replyList_returnData['replyList'])
-                    self.rereply_list.extend(replyList_returnData['rereplyList'])
-            
-            self.currentDate += self.deltaD
+                FullreturnData = YouTubeCrawler_obj.syncMultiCollector(self.urlList, option)
+
+                for returnData in FullreturnData:
+
+                    article_returnData = returnData['articleData']
+                    if self.ReturnChecker(article_returnData) == True:
+                        self.article_list.append(article_returnData['articleData'])
+
+                    replyList_returnData = returnData['replyData']
+                    if self.ReturnChecker(replyList_returnData) == True:
+                        self.reply_list.extend(replyList_returnData['replyList'])
+                        self.rereply_list.extend(replyList_returnData['rereplyList'])
+
+                self.currentDate += self.deltaD
     
     def ChinaDaily_Crawler(self, option):
         
@@ -389,30 +389,30 @@ class Crawler(CrawlerModule):
             self.infoPrinter()
         
         for dayCount in range(self.date_range + 1):
-            
-            self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-            percent = str(round((dayCount/(self.date_range+1))*100, 1))
-            ChinaDailyCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
-            
-            # option 1 & 2
-            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+            while self.running == True:
+                self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+                percent = str(round((dayCount/(self.date_range+1))*100, 1))
+                ChinaDailyCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
-            # finish line
-            if dayCount == self.date_range:
-                self.FinalOperator()
-                self.printStatus(type='ChinaDaily', endMsg_option=True)
-                return
-            
-            articleList_returnData = ChinaDailyCrawler_obj.articleCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
-            if self.ReturnChecker(articleList_returnData) == False:
-                continue
-            articleList = articleList_returnData['articleList']
-            articleCnt  = articleList_returnData['articleCnt']
-            
-            if articleCnt != 0:
-                self.article_list.extend(articleList)
-            
-            self.currentDate += self.deltaD
+                # option 1 & 2
+                self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+
+                # finish line
+                if dayCount == self.date_range:
+                    self.FinalOperator()
+                    self.printStatus(type='ChinaDaily', endMsg_option=True)
+                    return
+
+                articleList_returnData = ChinaDailyCrawler_obj.articleCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+                if self.ReturnChecker(articleList_returnData) == False:
+                    continue
+                articleList = articleList_returnData['articleList']
+                articleCnt  = articleList_returnData['articleCnt']
+
+                if articleCnt != 0:
+                    self.article_list.extend(articleList)
+
+                self.currentDate += self.deltaD
     
     def ChinaSina_Crawler(self, option):
         
@@ -434,44 +434,45 @@ class Crawler(CrawlerModule):
         DateRangeCnt  = 0
         
         for DateRange in DateRangeList:
-            articleList = []
-            DateRangeCnt += 1
-            currentDate_start = DateRange[0]
-            currentDate_end   = DateRange[1]
-            currentDate_str_start = datetime.strptime(DateRange[0], '%Y%m%d').date()
-            currentDate_str_end   = datetime.strptime(DateRange[1], '%Y%m%d').date()
-            percent = str(round((DateRangeCnt/len(DateRangeList))*100, 1))
-            
-            ChinaSinaCrawler_obj.setPrintData(f"{currentDate_str_start.strftime('%Y.%m.%d')} ~ {currentDate_str_end.strftime('%Y.%m.%d')}", percent, self.weboption)
-            
-            self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
-            if option == 2:
-                self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
-            
-            if DateRangeCnt == len(DateRangeList):
-                self.FinalOperator()
-                self.printStatus(type='ChinaSina', endMsg_option=True)
-                return
+            while self.running == True:
+                articleList = []
+                DateRangeCnt += 1
+                currentDate_start = DateRange[0]
+                currentDate_end   = DateRange[1]
+                currentDate_str_start = datetime.strptime(DateRange[0], '%Y%m%d').date()
+                currentDate_str_end   = datetime.strptime(DateRange[1], '%Y%m%d').date()
+                percent = str(round((DateRangeCnt/len(DateRangeList))*100, 1))
 
-            urlList_returnData = ChinaSinaCrawler_obj.urlCollector(keyword=self.keyword, startDate=currentDate_start, endDate=currentDate_end)
-            if self.ReturnChecker(urlList_returnData) == False:
-                continue
-            self.urlList = urlList_returnData['urlList']
+                ChinaSinaCrawler_obj.setPrintData(f"{currentDate_str_start.strftime('%Y.%m.%d')} ~ {currentDate_str_end.strftime('%Y.%m.%d')}", percent, self.weboption)
 
-            FullreturnData = asyncio.run(ChinaSinaCrawler_obj.asyncMultiCollector(self.urlList, option))
-
-            for returnData in FullreturnData:
-
-                article_returnData = returnData['articleData']
-                if self.ReturnChecker(article_returnData) == True:
-                    articleList.append(article_returnData['articleData'])
-
+                self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
                 if option == 2:
-                    replyList_returnData = returnData['replyData']
-                    if self.ReturnChecker(replyList_returnData) == True:
-                        self.reply_list.extend(replyList_returnData['replyList'])
+                    self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
 
-            self.article_list.extend(sorted(articleList, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d")))
+                if DateRangeCnt == len(DateRangeList):
+                    self.FinalOperator()
+                    self.printStatus(type='ChinaSina', endMsg_option=True)
+                    return
+
+                urlList_returnData = ChinaSinaCrawler_obj.urlCollector(keyword=self.keyword, startDate=currentDate_start, endDate=currentDate_end)
+                if self.ReturnChecker(urlList_returnData) == False:
+                    continue
+                self.urlList = urlList_returnData['urlList']
+
+                FullreturnData = asyncio.run(ChinaSinaCrawler_obj.asyncMultiCollector(self.urlList, option))
+
+                for returnData in FullreturnData:
+
+                    article_returnData = returnData['articleData']
+                    if self.ReturnChecker(article_returnData) == True:
+                        articleList.append(article_returnData['articleData'])
+
+                    if option == 2:
+                        replyList_returnData = returnData['replyData']
+                        if self.ReturnChecker(replyList_returnData) == True:
+                            self.reply_list.extend(replyList_returnData['replyList'])
+
+                self.article_list.extend(sorted(articleList, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d")))
     
 def controller():
     option_dic = {
