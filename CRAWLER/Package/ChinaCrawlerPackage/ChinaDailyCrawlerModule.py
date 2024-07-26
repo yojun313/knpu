@@ -11,15 +11,15 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 import json
 import re
+import asyncio
 
 class ChinaDailyCrawler(CrawlerModule):
     
     def __init__(self, proxy_option = False, print_status_option = False):
         super().__init__(proxy_option)
-
         self.print_status_option = print_status_option
     
-    def keywordParser(self, keyword):
+    def _keywordParser(self, keyword):
         # 검색어를 담을 리스트 초기화
         includeList = []
         excludeList = []
@@ -36,7 +36,7 @@ class ChinaDailyCrawler(CrawlerModule):
 
         return includeList, excludeList
     
-    def timeFormatter(self, date):
+    def _timeFormatter(self, date):
         # 문자열을 datetime 객체로 변환
         date_obj = datetime.strptime(str(date), "%Y%m%d")
         
@@ -44,11 +44,8 @@ class ChinaDailyCrawler(CrawlerModule):
         formatted_date = date_obj.strftime("%Y-%m-%d")
         
         return formatted_date
-
-    def remove_inner_quotes(self, match):
-        return match.group(0).replace('\\"', '').replace('"', '')
     
-    def escape_content_html(self, json_str):
+    def _escape_content_html(self, json_str):
         # 이스케이프 함수 정의
         def escape_match(match):
             plain_text = match.group(2)
@@ -79,12 +76,12 @@ class ChinaDailyCrawler(CrawlerModule):
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('ChinaDaily', option=1, printData=self.PrintData)
             
-            includeList, excludeList = self.keywordParser(keyword)
+            includeList, excludeList = self._keywordParser(keyword)
             includeWord = '+'.join(includeList).replace('&', '%26')
             excludeWord = '+'.join(excludeList).replace('&', '%26')
             
-            startDate = self.timeFormatter(startDate)
-            endDate = self.timeFormatter(endDate)
+            startDate = self._timeFormatter(startDate)
+            endDate = self._timeFormatter(endDate)
             
             articleList = []
             page = 0
@@ -116,7 +113,7 @@ class ChinaDailyCrawler(CrawlerModule):
                 
                 main_page = self.Requester(base_search_page_url, params=params)
                 soup = BeautifulSoup(main_page.text, "lxml").text
-                soup = self.escape_content_html(soup)
+                soup = self._escape_content_html(soup)
                 try:
                     json_data = json.loads(soup)
                                 
@@ -133,7 +130,7 @@ class ChinaDailyCrawler(CrawlerModule):
                         source    = content['source']
                         title     = content['title']
                         text      = content['plainText'] 
-                        date      = content['pubDateStr']
+                        date      = content['pubDateStr'].split()[0]
                         theme     = content['columnName']
                         url       = content['url']
                         searchURL = referer_url 
