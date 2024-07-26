@@ -180,8 +180,9 @@ class CrawlerModule(ToolModule):
                     except Exception as e:
                         pass
                     trynum += 1
-            
-                return main_page  
+
+                main_page.encoding = 'utf-8'
+                return main_page.text
                 
             if self.proxy_option == True:
                 trynum = 0
@@ -198,8 +199,9 @@ class CrawlerModule(ToolModule):
                     except Exception as e:
                         pass
                     trynum += 1
-            
-                return main_page  
+
+                main_page.encoding = 'utf-8'
+                return main_page.text
             else:
                 return requests.get(url, headers = headers, params = params, verify = False)
         
