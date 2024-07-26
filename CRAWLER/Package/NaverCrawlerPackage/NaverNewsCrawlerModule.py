@@ -295,7 +295,7 @@ class NaverNewsCrawler(CrawlerModule):
                 self.printStatus('NaverNews', 4, self.PrintData)
 
             returnData['replyList']           = replyList
-            returnData['parentCommentNoList'] = parentCommentNo_list
+            returnData['parentCommentNo_list'] = parentCommentNo_list
             returnData['statisticsData']      = statistics_data
             returnData['replyCnt']            = len(replyList)
 
@@ -418,7 +418,7 @@ class NaverNewsCrawler(CrawlerModule):
             if option == 1:
                 return {'articleData': articleData, 'replyData': replyData}
 
-            parentCommentNum_list = replyData['parentCommentNoList']
+            parentCommentNum_list = replyData['parentCommentNo_list']
             rereplyData = await self.rereplyCollector(newsURL, parentCommentNum_list, session)
             return {'articleData': articleData, 'replyData': replyData, 'rereplyData': rereplyData}
 
