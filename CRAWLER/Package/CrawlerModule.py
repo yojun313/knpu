@@ -231,12 +231,13 @@ class CrawlerModule(ToolModule):
         if self.proxy_option == True:
             trynum = 0
             while True:
-                if trynum >= 10000:
-                    print("경고")
+                if trynum >= 100:
+                    return '[asyncRequester Failure]'
                 proxies = self.async_proxy()
                 try:
                     main_page = await self.fetch(url, headers, params, proxies, cookies, False, session, timeout)
                     if main_page == 0:
+                        trynum += 1
                         continue
                     return main_page
                 except aiohttp.ClientError as e:
