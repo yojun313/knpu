@@ -173,12 +173,9 @@ class NaverCafeCrawler(CrawlerModule):
             response = await self.asyncRequester(api_url, session=session)
             soup = BeautifulSoup(response, 'html.parser')
             json_string = self._escape_content_html(soup.text)
-            
+
             try:
                 temp = json.loads(json_string)
-            except:
-                return returnData
-            try:
                 cafe_name    = temp['result']['cafe']['name']
                 memberCount  = temp['result']['cafe']['memberCount']
                 writer       = temp['result']['article']['writer']['id']

@@ -254,7 +254,7 @@ class Crawler(CrawlerModule):
                 for returnData in FullreturnData:
 
                     article_returnData = returnData['articleData']
-                    if self.ReturnChecker(article_returnData) == True:
+                    if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
                         self.article_list.append(article_returnData['articleData'])
 
                     if option == 2:
@@ -311,7 +311,7 @@ class Crawler(CrawlerModule):
                 for returnData in FullreturnData:
 
                     article_returnData = returnData['articleData']
-                    if self.ReturnChecker(article_returnData) == True:
+                    if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
                         self.article_list.append(article_returnData['articleData'])
 
                     if option == 2:
@@ -367,7 +367,7 @@ class Crawler(CrawlerModule):
                 for returnData in FullreturnData:
 
                     article_returnData = returnData['articleData']
-                    if self.ReturnChecker(article_returnData) == True:
+                    if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
                         self.article_list.append(article_returnData['articleData'])
 
                     replyList_returnData = returnData['replyData']
@@ -468,7 +468,7 @@ class Crawler(CrawlerModule):
                 for returnData in FullreturnData:
 
                     article_returnData = returnData['articleData']
-                    if self.ReturnChecker(article_returnData) == True:
+                    if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != 0:
                         articleList.append(article_returnData['articleData'])
 
                     if option == 2:
