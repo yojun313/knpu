@@ -28,6 +28,7 @@ class Crawler(CrawlerModule):
 
         self.running = True
         self.speed = int(speed)
+        self.saveInterval = 30
         self.GooglePackage_obj = GoogleModule(self.pathFinder()['token_path'])
         
         # Computer Info
@@ -153,10 +154,11 @@ class Crawler(CrawlerModule):
 
         while self.running == True:
             for dayCount in range(self.date_range + 1):
-                    self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-                    percent = str(round((dayCount/(self.date_range+1))*100, 1))
-                    NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
+                self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+                percent = str(round((dayCount/(self.date_range+1))*100, 1))
+                NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
+                if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
                     # option 1: article + reply
                     self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
                     self.ListToCSV(object_list=self.statistics_list, csv_path=self.DBpath, csv_name=self.DBname + '_statistics.csv')
@@ -166,45 +168,45 @@ class Crawler(CrawlerModule):
                     if option == 2:
                         self.ListToCSV(object_list=self.rereply_list, csv_path=self.DBpath, csv_name=self.DBname + '_rereply.csv')
 
-                    # finish line
-                    if dayCount == self.date_range:
-                        self.FinalOperator()
-                        self.printStatus(type='NaverNews', endMsg_option=True)
-                        return
+                # finish line
+                if dayCount == self.date_range:
+                    self.FinalOperator()
+                    self.printStatus(type='NaverNews', endMsg_option=True)
+                    return
 
-                    # News URL Part
-                    urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
-                    if self.ReturnChecker(urlList_returnData) == False:
-                        continue
-                    self.urlList = urlList_returnData['urlList']
+                # News URL Part
+                urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+                if self.ReturnChecker(urlList_returnData) == False:
+                    continue
+                self.urlList = urlList_returnData['urlList']
 
-                    FullreturnData = asyncio.run(NaverNewsCrawler_obj.asyncMultiCollector(self.urlList, option))
+                FullreturnData = asyncio.run(NaverNewsCrawler_obj.asyncMultiCollector(self.urlList, option))
 
-                    for returnData in FullreturnData:
+                for returnData in FullreturnData:
 
-                        # articleData 정상 확인
-                        articleStatus = False
-                        article_returnData = returnData['articleData']
-                        if self.ReturnChecker(article_returnData) == True:
-                            articleStatus = True
+                    # articleData 정상 확인
+                    articleStatus = False
+                    article_returnData = returnData['articleData']
+                    if self.ReturnChecker(article_returnData) == True:
+                        articleStatus = True
 
-                        replyList_returnData = returnData['replyData']
-                        # replyData 정상 확인
-                        if self.ReturnChecker(replyList_returnData) == True:
-                            if articleStatus == True and article_returnData['articleData'] != []:
-                                self.article_list.append(article_returnData['articleData'] + [replyList_returnData['replyCnt']])
-                                if replyList_returnData['statisticsData'] != []:
-                                    self.statistics_list.append(article_returnData['articleData'] + replyList_returnData['statisticsData'])
+                    replyList_returnData = returnData['replyData']
+                    # replyData 정상 확인
+                    if self.ReturnChecker(replyList_returnData) == True:
+                        if articleStatus == True and article_returnData['articleData'] != []:
+                            self.article_list.append(article_returnData['articleData'] + [replyList_returnData['replyCnt']])
+                            if replyList_returnData['statisticsData'] != []:
+                                self.statistics_list.append(article_returnData['articleData'] + replyList_returnData['statisticsData'])
 
-                            self.reply_list.extend(replyList_returnData['replyList'])
+                        self.reply_list.extend(replyList_returnData['replyList'])
 
-                        if option == 2:
-                            # rereplyData 정상확인
-                            rereplyList_returnData = returnData['rereplyData']
-                            if self.ReturnChecker(rereplyList_returnData) == True:
-                                self.rereply_list.extend(rereplyList_returnData['rereplyList'])
+                    if option == 2:
+                        # rereplyData 정상확인
+                        rereplyList_returnData = returnData['rereplyData']
+                        if self.ReturnChecker(rereplyList_returnData) == True:
+                            self.rereply_list.extend(rereplyList_returnData['rereplyList'])
 
-                    self.currentDate += self.deltaD
+                self.currentDate += self.deltaD
             return
     
     def Naver_Blog_Crawler(self, option):
@@ -230,12 +232,12 @@ class Crawler(CrawlerModule):
                 percent = str(round((dayCount/(self.date_range+1))*100, 1))
                 NaverBlogCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
-                # option 1: article
-                self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
-
-                # option 2: article + reply + rereply
-                if option == 2:
-                    self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
+                if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
+                    # option 1: article
+                    self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+                    # option 2: article + reply + rereply
+                    if option == 2:
+                        self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
 
                 # finish line
                 if dayCount == self.date_range:
@@ -287,12 +289,12 @@ class Crawler(CrawlerModule):
                 percent = str(round((dayCount/(self.date_range+1))*100, 1))
                 NaverCafeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
-                # option 1: article
-                self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
-
-                # option 2: article + reply + rereply
-                if option == 2:
-                    self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
+                if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
+                    # option 1: article
+                    self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+                    # option 2: article + reply + rereply
+                    if option == 2:
+                        self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
 
                 # finish line
                 if dayCount == self.date_range:
@@ -345,10 +347,11 @@ class Crawler(CrawlerModule):
                 percent = str(round((dayCount/(self.date_range+1))*100, 1))
                 YouTubeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption, self.api_num)
 
-                # option 1 & 2
-                self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
-                self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
-                self.ListToCSV(object_list=self.rereply_list, csv_path=self.DBpath, csv_name=self.DBname + '_rereply.csv')
+                if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
+                    # option 1 & 2
+                    self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+                    self.ListToCSV(object_list=self.reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_reply.csv')
+                    self.ListToCSV(object_list=self.rereply_list, csv_path=self.DBpath, csv_name=self.DBname + '_rereply.csv')
 
                 # finish line
                 if dayCount == self.date_range:
@@ -397,8 +400,9 @@ class Crawler(CrawlerModule):
                 percent = str(round((dayCount/(self.date_range+1))*100, 1))
                 ChinaDailyCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
-                # option 1 & 2
-                self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
+                if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
+                    # option 1 & 2
+                    self.ListToCSV(object_list=self.article_list, csv_path=self.DBpath, csv_name=self.DBname + '_article.csv')
 
                 # finish line
                 if dayCount == self.date_range:
