@@ -28,7 +28,7 @@ class Crawler(CrawlerModule):
 
         self.running = True
         self.speed = int(speed)
-        self.saveInterval = 30
+        self.saveInterval = 90
         self.GooglePackage_obj = GoogleModule(self.pathFinder()['token_path'])
         
         # Computer Info
