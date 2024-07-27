@@ -205,7 +205,7 @@ class Crawler(CrawlerModule):
                                 self.rereply_list.extend(rereplyList_returnData['rereplyList'])
 
                     self.currentDate += self.deltaD
-            break
+            return
     
     def Naver_Blog_Crawler(self, option):
         
@@ -223,9 +223,9 @@ class Crawler(CrawlerModule):
         
         if self.weboption == 0:
             self.infoPrinter()
-        
-        for dayCount in range(self.date_range + 1):
-            while self.running == True:
+
+        while self.running == True:
+            for dayCount in range(self.date_range + 1):
                 self.currentDate_str = self.currentDate.strftime('%Y%m%d')
                 percent = str(round((dayCount/(self.date_range+1))*100, 1))
                 NaverBlogCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
@@ -263,7 +263,7 @@ class Crawler(CrawlerModule):
                             self.reply_list.extend(replyList_returnData['replyList'])
 
                 self.currentDate += self.deltaD
-
+            return
     def Naver_Cafe_Crawler(self, option):
         
         NaverCafeCrawler_obj = NaverCafeCrawler(proxy_option=True, print_status_option=True)
@@ -280,9 +280,9 @@ class Crawler(CrawlerModule):
         
         if self.weboption == 0:
             self.infoPrinter()
-        
-        for dayCount in range(self.date_range + 1):
-            while self.running == True:
+
+        while self.running == True:
+            for dayCount in range(self.date_range + 1):
                 self.currentDate_str = self.currentDate.strftime('%Y%m%d')
                 percent = str(round((dayCount/(self.date_range+1))*100, 1))
                 NaverCafeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
@@ -320,7 +320,8 @@ class Crawler(CrawlerModule):
                             self.reply_list.extend(replyList_returnData['replyList'])
 
                 self.currentDate += self.deltaD
-    
+            return
+
     def YouTube_Crawler(self, option):
         
         YouTubeCrawler_obj = YouTubeCrawler(proxy_option=True, print_status_option=True)
@@ -337,9 +338,9 @@ class Crawler(CrawlerModule):
         
         if self.weboption == 0:
             self.infoPrinter()
-            
-        for dayCount in range(self.date_range + 1):
-            while self.running == True:
+
+        while self.running == True:
+            for dayCount in range(self.date_range + 1):
                 self.currentDate_str = self.currentDate.strftime('%Y%m%d')
                 percent = str(round((dayCount/(self.date_range+1))*100, 1))
                 YouTubeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption, self.api_num)
@@ -375,7 +376,8 @@ class Crawler(CrawlerModule):
                         self.rereply_list.extend(replyList_returnData['rereplyList'])
 
                 self.currentDate += self.deltaD
-    
+            return
+
     def ChinaDaily_Crawler(self, option):
         
         ChinaDailyCrawler_obj = ChinaDailyCrawler(proxy_option=True, print_status_option=True)
@@ -388,9 +390,9 @@ class Crawler(CrawlerModule):
 
         if self.weboption == 0:
             self.infoPrinter()
-        
-        for dayCount in range(self.date_range + 1):
-            while self.running == True:
+
+        while self.running == True:
+            for dayCount in range(self.date_range + 1):
                 self.currentDate_str = self.currentDate.strftime('%Y%m%d')
                 percent = str(round((dayCount/(self.date_range+1))*100, 1))
                 ChinaDailyCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
@@ -414,7 +416,8 @@ class Crawler(CrawlerModule):
                     self.article_list.extend(articleList)
 
                 self.currentDate += self.deltaD
-    
+            return
+
     def ChinaSina_Crawler(self, option):
         
         ChinaSinaCrawler_obj = ChinaSinaCrawler(proxy_option=True, print_status_option=True)
@@ -433,9 +436,9 @@ class Crawler(CrawlerModule):
         DateRangeList = ChinaSinaCrawler_obj.DateSplitter(self.startDate, self.endDate)
         DateRangeList.append(DateRangeList[-1])
         DateRangeCnt  = 0
-        
-        for DateRange in DateRangeList:
-            while self.running == True:
+
+        while self.running == True:
+            for DateRange in DateRangeList:
                 articleList = []
                 DateRangeCnt += 1
                 currentDate_start = DateRange[0]
@@ -474,7 +477,8 @@ class Crawler(CrawlerModule):
                             self.reply_list.extend(replyList_returnData['replyList'])
 
                 self.article_list.extend(sorted(articleList, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d")))
-    
+            return
+
 def controller():
     option_dic = {
         1 : "\n1. 기사 + 댓글\n2. 기사 + 댓글/대댓글\n",
