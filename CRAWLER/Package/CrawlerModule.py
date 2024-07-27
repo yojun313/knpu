@@ -107,7 +107,7 @@ class CrawlerModule(ToolModule):
         
         progress_time = time.time()
         loading_second = progress_time - CrawlerModule.startTime
-        loadingtime    = str(int(loading_second//3600))+":"+str(int(loading_second%3600//60))+":"+str(int(loading_second%3600%60))
+        loadingtime = f"{int(loading_second // 3600):02}:{int(loading_second % 3600 // 60):02}:{int(loading_second % 3600 % 60):02}"
         
         if endMsg_option == True:
             out_str = f"\r{type} 크롤링 종료{RESET}"
