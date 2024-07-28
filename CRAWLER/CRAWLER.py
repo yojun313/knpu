@@ -31,8 +31,8 @@ class Crawler(CrawlerModule):
         self.GooglePackage_obj = GoogleModule(self.pathFinder()['token_path'])
         
         # Computer Info
-        self.scrapdata_path = self.pathFinder()['scrapdata_path']
-        self.crawlcom       = self.pathFinder()['computer_name']
+        self.scrapdata_path = self.pathFinder(user)['scrapdata_path']
+        self.crawlcom       = self.pathFinder(user)['computer_name']
         
         # User Info
         self.user      = user
@@ -79,6 +79,7 @@ class Crawler(CrawlerModule):
                 f"{'Option:':<15} {self.option}\n"
                 f"{'Keyword:':<15} {self.keyword}\n"
                 f"{'Date Range:':<15} {self.startDate_form.strftime('%Y.%m.%d')} ~ {self.endDate_form.strftime('%Y.%m.%d')}\n"
+                f"{'Crawl Start:':<15} {datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')}\n"
                 f"{'Computer:':<15} {self.crawlcom}\n"
                 f"{'DB path:':<15} {self.DBpath}\n"
                 f"{'Drive Upload:':<15} {self.upload}\n"
