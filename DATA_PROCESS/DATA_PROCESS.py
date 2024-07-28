@@ -46,6 +46,9 @@ class DATA_PROCESS(ToolModule):
         self.TimeSplitToCSV(2, month_divided_group, data_path)
         print("Complete")
 
+    def AlignStatistics(self, csv_path):
+        pass
+
     def main(self):
         #print("\n1. 파일 분할(Year, Month)\n2. URL 제외\n3. URL 포함\n4. 정렬 및 통계\n5. 댓글 공백 제거")
         print("\n1. 파일 분할(Year, Month)")
