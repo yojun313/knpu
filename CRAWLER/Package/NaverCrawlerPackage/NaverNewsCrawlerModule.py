@@ -253,10 +253,9 @@ class NaverNewsCrawler(CrawlerModule):
                 pass
             
             # comment_list PART
-            reply_idx = 0
+            reply_idx = 1
             for i in range(len(nickname_list)):
-                reply_idx += 1
-                
+
                 r_per_like = 0.0 # 댓글 긍정 지수 구하기
                 r_sum_like_angry = int(r_like_list[i]) + int(r_bad_list[i])
                 if r_sum_like_angry != 0:
@@ -271,22 +270,24 @@ class NaverNewsCrawler(CrawlerModule):
                     r_sentiment = -1
                 else:  # 중립
                     r_sentiment = 0
-                
-                replyList.append(
-                    [
-                    str(reply_idx),
-                    str(nickname_list[i]),
-                    datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
-                    str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
-                    str(rere_count_list[i]),
-                    str(r_like_list[i]),
-                    str(r_bad_list[i]),
-                    str(r_per_like),
-                    str(r_sentiment),
-                    str(newsURL),
-                    parentCommentNo_list[i]
-                    ]     
-                )
+
+                if text_list[i] != '':
+                    replyList.append(
+                        [
+                        str(reply_idx),
+                        str(nickname_list[i]),
+                        datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
+                        str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
+                        str(rere_count_list[i]),
+                        str(r_like_list[i]),
+                        str(r_bad_list[i]),
+                        str(r_per_like),
+                        str(r_sentiment),
+                        str(newsURL),
+                        parentCommentNo_list[i]
+                        ]
+                    )
+                    reply_idx += 1
 
             if self.print_status_option:
                 self.printStatus('NaverNews', 4, self.PrintData)
@@ -381,20 +382,21 @@ class NaverNewsCrawler(CrawlerModule):
                     r_sentiment = -1
                 else:  # 중립
                     r_sentiment = 0
-                
-                rereplyList.append(
-                    [
-                    parentReplynum_list[i],
-                    str(nickname_list[i]),
-                    datetime.strptime(rereplyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
-                    str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
-                    str(r_like_list[i]),
-                    str(r_bad_list[i]),
-                    str(r_per_like),
-                    str(r_sentiment),
-                    str(newsURL)
-                    ]     
-                )
+
+                if text_list[i] != '':
+                    rereplyList.append(
+                        [
+                        parentReplynum_list[i],
+                        str(nickname_list[i]),
+                        datetime.strptime(rereplyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
+                        str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
+                        str(r_like_list[i]),
+                        str(r_bad_list[i]),
+                        str(r_per_like),
+                        str(r_sentiment),
+                        str(newsURL)
+                        ]
+                    )
             rereplyList_returnData = {
                 'rereplyList': rereplyList,
                 'rereplyCnt': len(rereplyList)
