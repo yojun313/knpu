@@ -57,6 +57,9 @@ class Crawler(CrawlerModule):
         self.date_range  = (self.endDate_form - self.startDate_form).days + 1
         self.deltaD      = timedelta(days=1)
 
+        if user == 'admin':
+            self.scrapdata_path = os.path.join(self.scrapdata_path, 'admin_scrapdata_folder')
+
     def webCrawlerStop(self):
         self.running = False
 
