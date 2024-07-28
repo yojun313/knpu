@@ -130,7 +130,8 @@ class Crawler(CrawlerModule):
        
         self.GooglePackage_obj.SendMail(self.userEmail, title, text)
         if self.pushoverKey != 'n':
-            self.send_pushOver(msg=title + '\n' + text, user_key=self.pushoverKey)
+            text.replace('=', '')
+            self.send_pushOver(msg=title + '\n\n' + text, user_key=self.pushoverKey)
 
         end_msg = (
             f"\r|| 크롤링 종료 | 시작: {datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')} "

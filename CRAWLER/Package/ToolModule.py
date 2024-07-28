@@ -118,6 +118,7 @@ class ToolModule:
                 }
                 # Pushover에 요청을 보냄
                 response = requests.post(url, data=message)
+                break
             except:
                 continue
 
