@@ -24,6 +24,9 @@ class Crawler(CrawlerModule):
     def __init__(self, user, startDate, endDate, keyword, upload, speed, weboption):
         super().__init__(proxy_option=True)
 
+        if user == '문요준':
+            user = 'admin'
+
         self.running = True
         self.speed = int(speed)
         self.saveInterval = 90
