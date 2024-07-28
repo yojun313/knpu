@@ -9,6 +9,7 @@ import socket
 import csv
 import json
 import chardet
+import requests
 
 class ToolModule:
     def __init__(self):
@@ -88,7 +89,39 @@ class ToolModule:
             userEmail = 'moonyojun@naver.com'
         
         return userEmail
-    
+
+    def get_pushover(self, input_name):
+        user_list = self.read_txt(os.path.join(COLLECTION_PATH, 'userPushOverList.txt'))
+        user_dict = {}
+        for user in user_list:
+            name, pushover = user.split()
+            user_dict[name] = pushover
+        try:
+            pushover = user_dict[input_name]
+        except:
+            pushover = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
+
+        return pushover
+
+    def send_pushOver(self, msg, user_key):
+        app_key_list  = ["a273soeggkmq1eafdyghexusve42bq", "a39cudwdti3ap97kax9pmvp6gdm2b9"]
+
+        for app_key in app_key_list:
+            try:
+                # Pushover API 설정
+                url = 'https://api.pushover.net/1/messages.json'
+                # 메시지 내용
+                message = {
+                    'token': app_key,
+                    'user': user_key,
+                    'message': msg
+                }
+                # Pushover에 요청을 보냄
+                response = requests.post(url, data=message)
+            except:
+                continue
+
+
     def print_json(self, json_data):
         
         # 파이썬 객체를 보기 쉽게 문자열로 변환 (들여쓰기 포함)
