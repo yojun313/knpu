@@ -240,8 +240,9 @@ class NaverCafeCrawler(CrawlerModule):
                     date    = self._timeExtractor(comment['updateDate'])
                     content = comment['content'].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')
                     url     = cafeURL
-                    replyList.append([reply_idx, writer, date, content, url])
-                    reply_idx += 1
+                    if content != '':
+                        replyList.append([reply_idx, writer, date, content, url])
+                        reply_idx += 1
                     
                 self.IntegratedDB['TotalReplyCnt'] += len(comment_json)
                 self.IntegratedDB['TotalRereplyCnt'] += len(comment_json)
