@@ -132,7 +132,7 @@ class Crawler(CrawlerModule):
         end_msg = (
             f"\r|| 크롤링 종료 | 시작: {datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')} "
             f"| 종료: {datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')} "
-            f"| 소요시간: {str(timedelta(seconds=time.time() - self.startTime))} ||"
+            f"| 소요시간: {str(timedelta(seconds=int(time.time() - self.startTime)))} ||"
         )
 
         print(f'\r{end_msg}', end = '')
