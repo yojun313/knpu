@@ -136,7 +136,7 @@ class Crawler(CrawlerModule):
         )
 
         log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'), 'a')
-        log.write(end_msg)
+        log.write('\n\n'+end_msg)
         log.close()
 
         print(f'\r{end_msg}', end = '')
