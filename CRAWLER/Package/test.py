@@ -1,17 +1,15 @@
-import re
+def mark_dangerous_words(word_list, text):
+    is_dangerous = False
+    for word in word_list:
+        if word in text:
+            text = text.replace(word, f"{word}(Danger)")
+            is_dangerous = True
+    return is_dangerous, text
 
+# 예제 사용법
+words = ["단어1", "단어2", "단어3"]
+input_text = "이 문장에는 단어1이 포함되어 있습니다."
 
-def _newsURLChecker(url):
-    pattern = (
-        r"https://n\.news\.naver\.com"  # 고정 부분
-        r"/mnews/article"  # 고정 부분
-        r"/\d{3}"  # 고정 부분
-        r"/\d{9}"  # 고정 부분
-        r"(\?sid=\d{3})?"  # 선택적 부분
-    )
-
-    if re.search(pattern, url):
-        return True
-    return False
-
-print(_newsURLChecker("https://n.news.naver.com/mnews/article/078/0000011113"))
+is_dangerous, result = mark_dangerous_words(words, input_text)
+print(is_dangerous)  # True
+print(result)  # 이 문장에는 단어1(Danger)이 포함되어 있습니다.

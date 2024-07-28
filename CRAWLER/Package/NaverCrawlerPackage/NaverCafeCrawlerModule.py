@@ -50,7 +50,7 @@ class NaverCafeCrawler(CrawlerModule):
 
         return club_id
     
-    def _articleIDExtractor(self, cafeURL):
+    def articleIDExtractor(self, cafeURL):
         return cafeURL.split('/')[4].split('?')[0]
     
     def _timeExtractor(self, value):
@@ -126,9 +126,9 @@ class NaverCafeCrawler(CrawlerModule):
                         
                     for a in site_result: #스크랩한 데이터 중 링크만 추출
                         add_link = a['href']
-                        if 'naver' in add_link and self._articleIDExtractor(add_link) not in idList and 'book' not in add_link:
+                        if 'naver' in add_link and self.articleIDExtractor(add_link) not in idList and 'book' not in add_link:
                             urlList.append(add_link)
-                            idList.append(self._articleIDExtractor(add_link))
+                            idList.append(self.articleIDExtractor(add_link))
                             self.IntegratedDB['UrlCnt'] += 1
                     
                     if self.print_status_option == True: 
@@ -166,7 +166,7 @@ class NaverCafeCrawler(CrawlerModule):
                 'articleData': []
             }
 
-            articleID = self._articleIDExtractor(cafeURL)
+            articleID = self.articleIDExtractor(cafeURL)
             cafeID = await self._cafeIDExtractor(cafeURL, session)
             artID = self._artExtractor(cafeURL)
             api_url = "https://apis.naver.com/cafe-web/cafe-articleapi/v2.1/cafes/{}/articles/{}?query=&art={}&useCafeId=true&requestFrom=A".format(cafeID, articleID, artID)
@@ -206,7 +206,7 @@ class NaverCafeCrawler(CrawlerModule):
             self.error_dump(2023, "Check newsURL", cafeURL)
             return self.error_data
         try:
-            articleID = self._articleIDExtractor(cafeURL)
+            articleID = self.articleIDExtractor(cafeURL)
             cafeID = await self._cafeIDExtractor(cafeURL, session)
             artID = self._artExtractor(cafeURL)
 
@@ -284,6 +284,40 @@ class NaverCafeCrawler(CrawlerModule):
         results = await asyncio.gather(*tasks)
         await session.close()
         return results
+
+    def RealTimeurlCollector(self, keyword, checkPage, checkedIDList):
+        try:
+            urlList = []
+            keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
+            search_page_url = 'https://search.naver.com/search.naver?cafe_where=&prdtype=0&query={}&sm=mtb_opt&ssc=tab.cafe.all&st=date&stnm=rel&opt_tab=0&nso=so%3Add%2Cp%3Aall&page={}'
+
+            currentPage = 1
+            for page in range(checkPage):
+                search_page_url_tmp = search_page_url.format(keyword, currentPage)
+                main_page = self.Requester(search_page_url_tmp)
+                main_page = BeautifulSoup(main_page.text, "lxml")
+                site_result = main_page.select('a[class = "title_link"]')
+
+                for a in site_result:
+                    add_link = a['href']
+                    if 'naver' in add_link and self.articleIDExtractor(add_link) not in checkedIDList and 'book' not in add_link:
+                        urlList.append(add_link)
+                        checkedIDList.append(self.articleIDExtractor(add_link))
+
+                currentPage += 10
+
+            returnData = {
+                'urlList': urlList,
+                'urlCnt': len(urlList)
+            }
+            # return part
+            return returnData
+
+        except Exception as e:
+            error_msg = self.error_detector(self.error_detector_option)
+            self.error_dump(2020, error_msg, search_page_url_tmp)
+            return self.error_data
+
 
 async def asyncTester():
     print("============ Crawler Packeage Tester ============")

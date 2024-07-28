@@ -22,6 +22,7 @@ import calendar
 from datetime import datetime
 import aiohttp
 import asyncio
+import platform
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -68,6 +69,12 @@ class CrawlerModule(ToolModule):
 
     def error_detector_option_on(self):
         self.error_detector_option = True
+
+    def clear_screen(self):
+        if platform.system() == "Windows":
+            os.system("cls")
+        else:
+            os.system("clear")
         
     def setPrintData(self, currentDate, percent, web_option, api_num = 0):
     
