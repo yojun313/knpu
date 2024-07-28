@@ -135,6 +135,10 @@ class Crawler(CrawlerModule):
             f"| 소요시간: {str(timedelta(seconds=int(time.time() - self.startTime)))} ||"
         )
 
+        log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'), 'a')
+        log.write(end_msg)
+        log.close()
+
         print(f'\r{end_msg}', end = '')
 
     def Naver_News_Crawler(self, option):
