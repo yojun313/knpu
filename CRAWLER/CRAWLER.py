@@ -16,7 +16,6 @@ from Package.NaverCrawlerPackage.NaverCafeCrawlerModule import NaverCafeCrawler
 from Package.NaverCrawlerPackage.NaverNewsCrawlerModule import NaverNewsCrawler
 from Package.OtherCrawlerPackage.YouTubeCrawlerModule import YouTubeCrawler
 
-
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -126,7 +125,15 @@ class Crawler(CrawlerModule):
             text = self.msg + f'File URL: {driveURL}'
        
         self.GooglePackage_obj.SendMail(self.userEmail, title, text)
-    
+
+        end_msg = (
+            f"\r|| 크롤링 종료 | 시작: {datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')}"
+            f"| 종료: {datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')} "
+            f"| 소요시간: {str(timedelta(seconds=time.time() - self.startTime))} ||"
+        )
+        
+        print(f'\r{end_msg}', end = '')
+
     def Naver_News_Crawler(self, option):
         
         NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=True, print_status_option=True)
@@ -165,7 +172,7 @@ class Crawler(CrawlerModule):
                 # finish line
                 if dayCount == self.date_range:
                     self.FinalOperator()
-                    self.printStatus(type='NaverNews', endMsg_option=True)
+
                     return
 
                 # News URL Part
@@ -236,7 +243,6 @@ class Crawler(CrawlerModule):
                 # finish line
                 if dayCount == self.date_range:
                     self.FinalOperator()
-                    self.printStatus(type='NaverBlog', endMsg_option=True)
                     return
 
                 # Blog Url Part
@@ -293,7 +299,6 @@ class Crawler(CrawlerModule):
                 # finish line
                 if dayCount == self.date_range:
                     self.FinalOperator()
-                    self.printStatus(type='NaverCafe', endMsg_option=True)
                     return
 
                 # Cafe URL Part
@@ -350,7 +355,6 @@ class Crawler(CrawlerModule):
                 # finish line
                 if dayCount == self.date_range:
                     self.FinalOperator()
-                    self.printStatus(type='YouTube', endMsg_option=True)
                     return
 
                 # YouTube URL Part
@@ -401,7 +405,6 @@ class Crawler(CrawlerModule):
                 # finish line
                 if dayCount == self.date_range:
                     self.FinalOperator()
-                    self.printStatus(type='ChinaDaily', endMsg_option=True)
                     return
 
                 articleList_returnData = ChinaDailyCrawler_obj.articleCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
@@ -453,7 +456,6 @@ class Crawler(CrawlerModule):
 
                 if DateRangeCnt == len(DateRangeList):
                     self.FinalOperator()
-                    self.printStatus(type='ChinaSina', endMsg_option=True)
                     return
 
                 urlList_returnData = ChinaSinaCrawler_obj.urlCollector(keyword=self.keyword, startDate=currentDate_start, endDate=currentDate_end)
