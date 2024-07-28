@@ -39,6 +39,7 @@ class Crawler(CrawlerModule):
         # User Info
         self.user      = user
         self.userEmail = self.get_userEmail(user)
+        self.pushoverKey = self.get_pushover(user)
         
         # For Web Version
         self.weboption = int(weboption)
@@ -128,6 +129,8 @@ class Crawler(CrawlerModule):
             text = self.msg + f'File URL: {driveURL}'
        
         self.GooglePackage_obj.SendMail(self.userEmail, title, text)
+        if self.pushoverKey != 'n':
+            self.send_pushOver(msg=title + '\n' + text, user_key=self.pushoverKey)
 
         end_msg = (
             f"\r|| 크롤링 종료 | 시작: {datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')} "
