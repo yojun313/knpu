@@ -123,14 +123,15 @@ class Crawler(CrawlerModule):
         
         title = '[크롤링 완료] ' + self.DBname
         text = self.msg
+        text = text.replace('=', '')
         
         if self.upload == True:
             driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
-            text = self.msg + f'File URL: {driveURL}'
-       
-        self.GooglePackage_obj.SendMail(self.userEmail, title, text)
-        if self.pushoverKey != 'n':
-            text.replace('=', '')
+            text += f'\nFile URL: {driveURL}'
+
+        if self.pushoverKey == 'n':
+            self.GooglePackage_obj.SendMail(self.userEmail, title, text)
+        else:
             self.send_pushOver(msg=title + '\n\n' + text, user_key=self.pushoverKey)
 
         end_msg = (
