@@ -1,5 +1,4 @@
 import os
-import platform
 import sys
 import time
 import asyncio
@@ -63,7 +62,7 @@ class Crawler(CrawlerModule):
 
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
-        self.DBname      = DBtype + '_' + self.DBkeyword + dbname_date + "_" + self.now.strftime('%m%d_%H%M')
+        self.DBname      = f"{DBtype}_{self.DBkeyword}{dbname_date}_{self.now.strftime('%m%d_%H%M')}"
         self.DBpath      = os.path.join(self.scrapdata_path, self.DBname)
         
         try:
@@ -86,14 +85,8 @@ class Crawler(CrawlerModule):
             log.write(self.msg + '\n\n')
             log.close()
         except:
-            print("Error: 폴더 생성 실패")
+            print("ERROR: DB 폴더 생성 실패 --> 잠시 후 다시 시도하세요")
             sys.exit()
-    
-    def clear_screen(self):
-        if platform.system() == "Windows":
-            os.system("cls")
-        else:
-            os.system("clear")
             
     def infoPrinter(self):
         print(self.msg)

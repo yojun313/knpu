@@ -21,21 +21,23 @@ class ToolModule:
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
             token_path          = crawler_folder_path
             computer_name       = 'HP OMEN'
+            RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
             
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
             crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
             token_path          = crawler_folder_path
             computer_name       = 'HP Z8'
+            RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
         
         elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
             crawler_folder_path = '/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER'
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
             token_path          = crawler_folder_path
             computer_name       = "Yojun's MacBook Pro"
+            RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
 
-
-        return {'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name}
+        return {'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name, 'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath}
     # For testing Crawler_Package
     def CrawlerChecker(self, target, result_option = False):
             
