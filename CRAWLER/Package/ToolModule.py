@@ -14,18 +14,18 @@ class ToolModule:
     def __init__(self):
         pass
     # Set folder path depending on the computer
-    def pathFinder(self):
+    def pathFinder(self, name = ''):
 
         if socket.gethostname() == "DESKTOP-502IMU5":
             crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
-            scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
+            scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
             token_path          = crawler_folder_path
             computer_name       = 'HP OMEN'
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
             
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
             crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
-            scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
+            scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
             token_path          = crawler_folder_path
             computer_name       = 'HP Z8'
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
