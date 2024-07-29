@@ -251,7 +251,12 @@ class NaverNewsCrawler(CrawlerModule):
                 statistics_data = [commentCnt, male, female, Y_10, Y_20, Y_30, Y_40, Y_50, Y_60]
             except:
                 pass
-            
+
+            returnParentCommentNo_list = []
+            for i in range(len(parentCommentNo_list)):
+                if rere_count_list[i] > 0:
+                    returnParentCommentNo_list.append(parentCommentNo_list[i])
+
             # comment_list PART
             reply_idx = 1
             for i in range(len(nickname_list)):
@@ -293,7 +298,7 @@ class NaverNewsCrawler(CrawlerModule):
                 self.printStatus('NaverNews', 4, self.PrintData)
 
             returnData['replyList']           = replyList
-            returnData['parentCommentNo_list'] = parentCommentNo_list
+            returnData['parentCommentNo_list'] = returnParentCommentNo_list
             returnData['statisticsData']      = statistics_data
             returnData['replyCnt']            = len(replyList)
 
