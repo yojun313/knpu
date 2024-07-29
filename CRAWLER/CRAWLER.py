@@ -173,7 +173,6 @@ class Crawler(CrawlerModule):
             for dayCount in range(self.date_range + 1):
                 try:
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-                    print(int(dayCount) + str(self.running))
                     percent = str(round((dayCount/(self.date_range+1))*100, 1))
                     NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
