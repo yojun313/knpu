@@ -127,16 +127,18 @@ class Crawler(CrawlerModule):
             f"| 종료: {datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')} "
             f"| 소요시간: {str(timedelta(seconds=int(time.time() - self.startTime)))} ||"
         )
-        text = end_msg
+        
+        text = f'\n크롤링 시작: {datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')}' + f'\n크롤링 종료: {datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')}'
+        text += f'\n소요시간: {str(timedelta(seconds=int(time.time() - self.startTime)))}'
 
         if self.upload == True:
             driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
-            text += f'\nFile URL: {driveURL}'
+            text += f'\n\nFile URL: {driveURL}'
 
         if self.pushoverKey == 'n':
             self.GooglePackage_obj.SendMail(self.userEmail, title, text)
         else:
-            self.send_pushOver(msg=title + '\n\n' + text, user_key=self.pushoverKey)
+            self.send_pushOver(msg=title + '\n' + text, user_key=self.pushoverKey)
 
         log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'), 'a')
         log.write('\n\n'+end_msg)
