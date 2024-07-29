@@ -132,6 +132,8 @@ class ToolModule:
 
     def error_extractor(self, errorCode):
         error_dic = {
+            1001: '[Internal Error] CrawlerPackage -> Requester: Internal unexpected error',
+            1002: '[Internal Error] CRAWLER.py : Internal unexpected error',
             2001: '[Parameter Error] NaverNewsCrawler -> urlCollector: Keyword type error',
             2002: '[Parameter Error] NaverNewsCrawler -> urlCollector: DateForm error',
             2003: '[Internal Error] NaverNewsCrawler -> urlCollector: Internal unexpected error',

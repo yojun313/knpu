@@ -150,6 +150,7 @@ class CrawlerModule(ToolModule):
         self.error_data['Error Code']   = code
         self.error_data['Error Msg']    = msg
         self.error_data['Error Target'] = target
+        return self.error_data
         
     def random_heador(self):
         navigator = generate_navigator()
@@ -162,6 +163,12 @@ class CrawlerModule(ToolModule):
             return {"http": 'http://' + proxy_server, 'https': 'http://' + proxy_server}
         else:
             return None
+
+    def RequesterChecker(self, data):
+        if isinstance(data, dict):
+            return False
+        return True
+
     
     # 프록시 기반 반복 요청 기능 / self.proxy_option으로 ON/OFF / header, parameter 전달 가능
     def Requester(self, url, headers = {}, params = {}, proxies = {}, cookies = {}):
@@ -177,36 +184,29 @@ class CrawlerModule(ToolModule):
                         return 0
                     try:
                         main_page = requests.get(url, proxies = proxies, verify = False, timeout = 3)
-                        break
-                    except requests.exceptions.Timeout as e:
-                        pass
+                        return main_page
                     except Exception as e:
                         pass
                     trynum += 1
-            
-                return main_page  
-                
+
             if self.proxy_option == True:
                 trynum = 0
                 while True:
-                    if trynum >= 100000:
-                        return '[Requester Failure]'
                     proxies = self.random_proxy()
                     try:
                         main_page = requests.get(url, proxies = proxies, headers = headers, params = params, cookies = cookies, verify = False, timeout = 3)
-                        break
-                    except requests.exceptions.Timeout as e:
-                        pass
+                        return main_page
                     except Exception as e:
-                        pass
-                    trynum += 1
-            
-                return main_page  
+                        if trynum >= 100:
+                            error_data = self.error_dump(1001, self.error_detector(), url)
+                            return error_data
+                        trynum += 1
             else:
                 return requests.get(url, headers = headers, params = params, verify = False)
-        
-        except Exception:
-            return '[Requester Failure]'
+
+        except Exception as e:
+            error_data = self.error_dump(1001, self.error_detector(), url)
+            return error_data
 
     # Async Part
     def async_proxy(self):
@@ -219,12 +219,7 @@ class CrawlerModule(ToolModule):
         try:
             async with session.get(url, headers=headers, params=params, proxy=proxies, cookies=cookies, ssl=verify, timeout=timeout) as response:
                 return await response.text()
-
-        except aiohttp.ClientError as e:
-            return 0
-        except asyncio.TimeoutError as e:
-            return 0
-        except Exception as e:
+        except (aiohttp.ClientError, asyncio.TimeoutError, Exception) as e:
             return 0
 
     async def asyncRequester(self, url, headers = {}, params = {}, proxies = '', cookies = {}, session=None):
@@ -233,7 +228,9 @@ class CrawlerModule(ToolModule):
             trynum = 0
             while True:
                 if trynum >= 100:
-                    return '[asyncRequester Failure]'
+                    error_data = self.error_dump(1003, self.error_detector(), url)
+                    return error_data
+
                 proxies = self.async_proxy()
                 try:
                     main_page = await self.fetch(url, headers, params, proxies, cookies, False, session, timeout)
@@ -241,16 +238,15 @@ class CrawlerModule(ToolModule):
                         trynum += 1
                         continue
                     return main_page
-                except aiohttp.ClientError as e:
-                    print(f"오류: {e}")
-                    trynum += 1
-                    continue
 
+                except aiohttp.ClientError as e:
+                    error_data = self.error_dump(1003, self.error_detector(), url)
+                    return error_data
         else:
             main_page = await self.fetch(url, headers, params, proxies, cookies, False, session, timeout)
             return main_page
 
-    def error_detector(self, error_print_option):
+    def error_detector(self, error_print_option = False):
         exc_type, exc_value, exc_traceback = sys.exc_info()
     
         # Formatting the traceback
