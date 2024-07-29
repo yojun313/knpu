@@ -118,7 +118,7 @@ class Crawler(CrawlerModule):
     
     def FinalOperator(self):
         self.clear_screen()
-        print('\r업로드 및 메일 전송 중...', end = '')
+        print('\r업로드 및 알림 전송 중...', end = '')
         
         title = '[크롤링 완료] ' + self.DBname
 
@@ -130,7 +130,7 @@ class Crawler(CrawlerModule):
         text = f'\n크롤링 시작: {starttime}' + f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
         if self.upload == True:
             driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
-            text += f'\n\nFile URL: {driveURL}'
+            text += f'\n\n크롤링 데이터: {driveURL}'
 
         if self.pushoverKey == 'n':
             self.GooglePackage_obj.SendMail(self.userEmail, title, text)
@@ -187,7 +187,6 @@ class Crawler(CrawlerModule):
                 # finish line
                 if dayCount == self.date_range:
                     self.FinalOperator()
-
                     return
 
                 # News URL Part
