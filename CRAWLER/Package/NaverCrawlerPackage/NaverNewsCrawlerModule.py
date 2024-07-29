@@ -75,6 +75,8 @@ class NaverNewsCrawler(CrawlerModule):
             while True:
                 search_page_url_tmp = search_page_url.format(keyword, startDate, endDate, currentPage)
                 main_page = self.Requester(search_page_url_tmp)
+                if self.RequesterChecker(main_page) == False:
+                    return main_page
                 main_page = BeautifulSoup(main_page.text, "lxml") #스크랩 모듈에 url 넘김
                 site_result = main_page.select('a[class = "info"]')
                 
@@ -117,6 +119,8 @@ class NaverNewsCrawler(CrawlerModule):
             if self.print_status_option == True:
                 self.printStatus('NaverNews', 3, self.PrintData)
             res = await self.asyncRequester(newsURL, session=session)
+            if self.RequesterChecker(res) == False:
+                return res
             bs            = BeautifulSoup(res, 'lxml')
             news          = ''.join((i.text.replace("\n", "") for i in bs.find_all("div", {"class": "newsct_article"})))
             try:
@@ -198,6 +202,8 @@ class NaverNewsCrawler(CrawlerModule):
                         'initialize'         : 'true'
                     }
                 response = await self.asyncRequester('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers=headers, params=params, session=session)
+                if self.RequesterChecker(response) == False:
+                    return response
                 res               = response.replace("_callback(","")[:-2]
                 temp              = json.loads(res)    
 
@@ -343,6 +349,8 @@ class NaverNewsCrawler(CrawlerModule):
                 try:
                     base_url_tmp_re = (base_url.format(oid, aid, 100, 1, "reply") + "&parentCommentNo=" + parentCommentNum_list[i])
                     response = await self.asyncRequester(base_url_tmp_re, headers, session=session)
+                    if self.RequesterChecker(response) == False:
+                        return response
                     res               = response.replace("_callback(","")[:-2]
                     temp              = json.loads(res)    
                     
