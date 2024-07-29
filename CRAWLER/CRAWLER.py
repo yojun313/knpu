@@ -149,15 +149,9 @@ class Crawler(CrawlerModule):
         log.close()
 
         print(f'\r{end_msg}', end = '')
-    def log_error(self, error_message):
-        with open(os.path.join(self.DBpath, self.DBname + '_log.txt'), 'a') as log_file:
-            log_file.write(f"{error_message}\n")
-            log_file.write("Traceback:\n")
-            log_file.write(traceback.format_exc())
-            log_file.write("\n\n")
     
     def Naver_News_Crawler(self, option):
-        
+
         NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=True, print_status_option=True)
         NaverNewsCrawler_obj.setCrawlSpeed(self.speed)
 
@@ -179,6 +173,7 @@ class Crawler(CrawlerModule):
             for dayCount in range(self.date_range + 1):
                 try:
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
+                    print(int(dayCount) + str(self.running))
                     percent = str(round((dayCount/(self.date_range+1))*100, 1))
                     NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
@@ -230,8 +225,11 @@ class Crawler(CrawlerModule):
                                 self.rereply_list.extend(rereplyList_returnData['rereplyList'])
 
                     self.currentDate += self.deltaD
+
                 except Exception as e:
-                    self.log_error(e)
+                    error_msg = self.error_detector(self.error_detector_option)
+                    self.error_dump(1002, error_msg, self.currentDate_str)
+                    self.ReturnChecker(self.error_data)
             return
     
     def Naver_Blog_Crawler(self, option):
@@ -290,8 +288,11 @@ class Crawler(CrawlerModule):
                                 self.reply_list.extend(replyList_returnData['replyList'])
 
                     self.currentDate += self.deltaD
+
                 except Exception as e:
-                    self.log_error(e)
+                    error_msg = self.error_detector(self.error_detector_option)
+                    self.error_dump(1002, error_msg, self.currentDate_str)
+                    self.ReturnChecker(self.error_data)
             return
     def Naver_Cafe_Crawler(self, option):
         
@@ -349,8 +350,11 @@ class Crawler(CrawlerModule):
                                 self.reply_list.extend(replyList_returnData['replyList'])
 
                     self.currentDate += self.deltaD
+
                 except Exception as e:
-                    self.log_error(e)
+                    error_msg = self.error_detector(self.error_detector_option)
+                    self.error_dump(1002, error_msg, self.currentDate_str)
+                    self.ReturnChecker(self.error_data)
             return
 
     def YouTube_Crawler(self, option):
@@ -408,8 +412,11 @@ class Crawler(CrawlerModule):
                             self.rereply_list.extend(replyList_returnData['rereplyList'])
 
                     self.currentDate += self.deltaD
+
                 except Exception as e:
-                    self.log_error(e)
+                    error_msg = self.error_detector(self.error_detector_option)
+                    self.error_dump(1002, error_msg, self.currentDate_str)
+                    self.ReturnChecker(self.error_data)
             return
 
     def ChinaDaily_Crawler(self, option):
@@ -451,8 +458,11 @@ class Crawler(CrawlerModule):
                         self.article_list.extend(articleList)
 
                     self.currentDate += self.deltaD
+
                 except Exception as e:
-                    self.log_error(e)
+                    error_msg = self.error_detector(self.error_detector_option)
+                    self.error_dump(1002, error_msg, self.currentDate_str)
+                    self.ReturnChecker(self.error_data)
             return
 
     def ChinaSina_Crawler(self, option):
@@ -514,8 +524,11 @@ class Crawler(CrawlerModule):
                                 self.reply_list.extend(replyList_returnData['replyList'])
 
                     self.article_list.extend(sorted(articleList, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d")))
+
                 except Exception as e:
-                    self.log_error(e)
+                    error_msg = self.error_detector(self.error_detector_option)
+                    self.error_dump(1002, error_msg, self.currentDate_str)
+                    self.ReturnChecker(self.error_data)
             return
 
 def controller():
