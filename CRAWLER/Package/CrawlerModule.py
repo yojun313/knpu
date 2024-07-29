@@ -190,8 +190,7 @@ class CrawlerModule(ToolModule):
                 trynum = 0
                 while True:
                     if trynum >= 100000:
-                        print("Proxy Error: Check Proxy & Requester... Program Shut Down")
-                        sys.exit()
+                        return '[Requester Failure]'
                     proxies = self.random_proxy()
                     try:
                         main_page = requests.get(url, proxies = proxies, headers = headers, params = params, cookies = cookies, verify = False, timeout = 3)
@@ -207,8 +206,7 @@ class CrawlerModule(ToolModule):
                 return requests.get(url, headers = headers, params = params, verify = False)
         
         except Exception:
-            print("Critical Error: Check Proxy & Requester... Program Shut Down")
-            sys.exit()
+            return '[Requester Failure]'
 
     # Async Part
     def async_proxy(self):
