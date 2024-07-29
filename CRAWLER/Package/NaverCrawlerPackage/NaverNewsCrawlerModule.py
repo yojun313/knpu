@@ -423,7 +423,10 @@ class NaverNewsCrawler(CrawlerModule):
                 return {'articleData': articleData, 'replyData': replyData}
 
             parentCommentNum_list = replyData['parentCommentNo_list']
-            rereplyData = await self.rereplyCollector(newsURL, parentCommentNum_list, session)
+            if len(parentCommentNum_list) == 0:
+                rereplyData = []
+            else:
+                rereplyData = await self.rereplyCollector(newsURL, parentCommentNum_list, session)
             return {'articleData': articleData, 'replyData': replyData, 'rereplyData': rereplyData}
 
     async def asyncMultiCollector(self, urlList, option):
