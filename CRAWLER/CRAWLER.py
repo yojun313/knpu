@@ -118,13 +118,17 @@ class Crawler(CrawlerModule):
     
     def FinalOperator(self):
         self.clear_screen()
-        print(self.msg)
         print('\r업로드 및 메일 전송 중...', end = '')
         
         title = '[크롤링 완료] ' + self.DBname
-        text = self.msg
-        text = text.replace('=', '')
-        
+
+        end_msg = (
+            f"\r|| 크롤링 종료 | 시작: {datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')} "
+            f"| 종료: {datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')} "
+            f"| 소요시간: {str(timedelta(seconds=int(time.time() - self.startTime)))} ||"
+        )
+        text = end_msg
+
         if self.upload == True:
             driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
             text += f'\nFile URL: {driveURL}'
@@ -133,12 +137,6 @@ class Crawler(CrawlerModule):
             self.GooglePackage_obj.SendMail(self.userEmail, title, text)
         else:
             self.send_pushOver(msg=title + '\n\n' + text, user_key=self.pushoverKey)
-
-        end_msg = (
-            f"\r|| 크롤링 종료 | 시작: {datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')} "
-            f"| 종료: {datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')} "
-            f"| 소요시간: {str(timedelta(seconds=int(time.time() - self.startTime)))} ||"
-        )
 
         log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'), 'a')
         log.write('\n\n'+end_msg)
