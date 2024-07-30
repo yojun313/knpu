@@ -44,12 +44,6 @@ class CrawlerModule(ToolModule):
         if proxy_option == True:
             self.proxy_list     = self.read_txt(self.collection_path + '/proxy.txt')       # 로컬 proxy.txt 파일 경로
         
-        self.error_data = {
-            'Error Code'   : 1,
-            'Error Msg'    : "",
-            'Error Target' : ""
-        }
-        
         self.PrintData = {
             'currentDate': '',
             'percent'    : '',
@@ -147,10 +141,12 @@ class CrawlerModule(ToolModule):
         print(out_str, end = "")
         
     def error_dump(self, code, msg, target):
-        self.error_data['Error Code']   = code
-        self.error_data['Error Msg']    = msg
-        self.error_data['Error Target'] = target
-        return self.error_data
+        error_data = {
+            'Error Code': code,
+            'Error Msg': msg,
+            'Error Target': target
+        }
+        return error_data
         
     def random_heador(self):
         navigator = generate_navigator()
@@ -198,15 +194,13 @@ class CrawlerModule(ToolModule):
                         return main_page
                     except Exception as e:
                         if trynum >= 100:
-                            error_data = self.error_dump(1001, self.error_detector(), url)
-                            return error_data
+                            return self.error_dump(1001, self.error_detector(), url)
                         trynum += 1
             else:
                 return requests.get(url, headers = headers, params = params, verify = False)
 
         except Exception as e:
-            error_data = self.error_dump(1001, self.error_detector(), url)
-            return error_data
+            return self.error_dump(1001, self.error_detector(), url)
 
     # Async Part
     def async_proxy(self):
@@ -221,8 +215,7 @@ class CrawlerModule(ToolModule):
                 return await response.text()
         except (aiohttp.ClientError, asyncio.TimeoutError, Exception) as e:
             if trynum >= 100:
-                error_data = self.error_dump(1003, self.error_detector(), url)
-                return error_data
+                return self.error_dump(1003, self.error_detector(), url)
             else:
                 return 0
 
@@ -237,9 +230,6 @@ class CrawlerModule(ToolModule):
                     if main_page == 0:
                         trynum += 1
                         continue
-                    elif isinstance(main_page, dict):
-                        return main_page
-
                     return main_page
                 except aiohttp.ClientError as e:
                     error_data = self.error_dump(1003, self.error_detector(), url)

@@ -82,13 +82,11 @@ class NaverCafeCrawler(CrawlerModule):
     def urlCollector(self, keyword, startDate, endDate):
         try:
             if isinstance(keyword, str) == False:
-                self.error_dump(2018, 'Check Keyword', keyword)
-                return self.error_data
+                return self.error_dump(2018, 'Check Keyword', keyword)
             datetime.strptime(str(startDate), '%Y%m%d')
             datetime.strptime(str(endDate), '%Y%m%d')
         except:
-            self.error_dump(2019, 'Check DateForm', startDate)
-            return self.error_data
+            return self.error_dump(2019, 'Check DateForm', startDate)
         try:
             if self.print_status_option == True:
                 self.IntegratedDB['UrlCnt'] = 0
@@ -153,13 +151,11 @@ class NaverCafeCrawler(CrawlerModule):
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2020, error_msg, search_page_url_tmp)
-            return self.error_data
+            return self.error_dump(2020, error_msg, search_page_url_tmp)
 
     async def articleCollector(self, cafeURL, session):
         if isinstance(cafeURL, str) == False or self._cafeURLChecker(cafeURL) == False:
-            self.error_dump(2021, "Check newsURL", cafeURL)
-            return self.error_data
+            return self.error_dump(2021, "Check newsURL", cafeURL)
         
         try:
             returnData = {
@@ -200,13 +196,11 @@ class NaverCafeCrawler(CrawlerModule):
         
         except:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2022, error_msg, cafeURL)
-            return self.error_data
+            return self.error_dump(2022, error_msg, cafeURL)
          
     async def replyCollector(self, cafeURL, session):
         if isinstance(cafeURL, str) == False or self._cafeURLChecker(cafeURL) == False:
-            self.error_dump(2023, "Check newsURL", cafeURL)
-            return self.error_data
+            return self.error_dump(2023, "Check newsURL", cafeURL)
         try:
             articleID = self.articleIDExtractor(cafeURL)
             cafeID = await self._cafeIDExtractor(cafeURL, session)
@@ -267,8 +261,7 @@ class NaverCafeCrawler(CrawlerModule):
         
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2024, error_msg, cafeURL)
-            return self.error_data
+            return self.error_dump(2024, error_msg, cafeURL)
 
     async def asyncSingleCollector(self, cafeURL, option, session):
         semaphore = asyncio.Semaphore(10)
@@ -320,8 +313,7 @@ class NaverCafeCrawler(CrawlerModule):
 
         except Exception as e:
             error_msg = self.error_detector(self.error_detector_option)
-            self.error_dump(2020, error_msg, search_page_url_tmp)
-            return self.error_data
+            return self.error_dump(2020, error_msg, search_page_url_tmp)
 
 
 async def asyncTester():
