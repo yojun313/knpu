@@ -222,7 +222,9 @@ class CrawlerModule(ToolModule):
         except (aiohttp.ClientError, asyncio.TimeoutError, Exception) as e:
             if trynum >= 100:
                 error_data = self.error_dump(1003, self.error_detector(), url)
-            return error_data
+                return error_data
+            else:
+                return 0
 
     async def asyncRequester(self, url, headers = {}, params = {}, proxies = '', cookies = {}, session=None):
         timeout = aiohttp.ClientTimeout(total=3)
