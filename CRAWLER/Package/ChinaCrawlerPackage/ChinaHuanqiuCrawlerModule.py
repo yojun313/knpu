@@ -103,6 +103,8 @@ class ChinaHuanqiuCrawler(CrawlerModule):
                 }
                 
                 main_page = self.Requester(url=search_page_url, headers=headers)
+                if self.RequesterChecker(main_page) == False:
+                    return main_page
                 soup = BeautifulSoup(main_page.text, 'html.parser')
                 
                 result_divs = soup.find_all('div', class_='result')
