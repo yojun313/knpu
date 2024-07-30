@@ -169,6 +169,8 @@ class ChinaSinaCrawler(CrawlerModule):
                 }
                 
                 main_page = self.Requester(url=search_page_url, headers=headers)
+                if self.RequesterChecker() == False:
+                    return main_page
                 soup = BeautifulSoup(main_page.text, 'html.parser')
                 
                 result_divs = soup.find_all('div', class_='result')
@@ -206,6 +208,8 @@ class ChinaSinaCrawler(CrawlerModule):
         
         try:
             main_page = await self.asyncRequester(newsURL, session=session)
+            if self.RequesterChecker(main_page) == False:
+                return main_page
             soup      = BeautifulSoup(main_page, 'lxml')
 
             # 뉴스 날짜
@@ -282,8 +286,10 @@ class ChinaSinaCrawler(CrawlerModule):
                     default_url = 'https://comment.sina.com.cn/page/info'
                     api_url = f'https://comment.sina.com.cn/page/info?version=1&format=json&channel={channelid}&newsid=comos-{newsid}&group=undefined&compress=0&ie=utf-8&oe=utf-8&page={page}&page_size=10&t_size=3&h_size=3&thread=1&uid=unlogin_user&callback=jsonp_{int(time.time())}&_={int(time.time())}'
                     main_page = await self.asyncRequester(api_url, session=session)
-                    
-                # https://news.sina.cn/sh/2023-01-29/detail-imycwefp0361917.d.html
+                    if self.RequesterChecker(main_page) == False:
+                        return main_page
+
+                        # https://news.sina.cn/sh/2023-01-29/detail-imycwefp0361917.d.html
                 elif newsURL_type == 2:
                     default_url = 'https://cmnt.sina.cn/aj/v2/list'
                     referURL = f'https://cmnt.sina.cn/index?product=comos&index={newsid}&tj_ch=news&is_clear=0'
@@ -300,6 +306,8 @@ class ChinaSinaCrawler(CrawlerModule):
                         'Referer': referURL
                     }
                     main_page = await self.asyncRequester(default_url, headers=headers, params=params, session=session)
+                    if self.RequesterChecker(main_page) == False:
+                        return main_page
                 try:
                     main_page = self._jsonFormatter(main_page)
                     temp = json.loads(main_page)

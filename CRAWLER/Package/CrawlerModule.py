@@ -215,30 +215,30 @@ class CrawlerModule(ToolModule):
             return 'http://' + str(proxy_server)
         else:
             return None
-    async def fetch(self, url, headers, params, proxies, cookies, verify, session, timeout):
+    async def fetch(self, url, headers, params, proxies, cookies, verify, session, timeout, trynum = 0):
         try:
             async with session.get(url, headers=headers, params=params, proxy=proxies, cookies=cookies, ssl=verify, timeout=timeout) as response:
                 return await response.text()
         except (aiohttp.ClientError, asyncio.TimeoutError, Exception) as e:
-            return 0
+            if trynum >= 100:
+                error_data = self.error_dump(1003, self.error_detector(), url)
+            return error_data
 
     async def asyncRequester(self, url, headers = {}, params = {}, proxies = '', cookies = {}, session=None):
         timeout = aiohttp.ClientTimeout(total=3)
         if self.proxy_option == True:
             trynum = 0
             while True:
-                if trynum >= 100:
-                    error_data = self.error_dump(1003, self.error_detector(), url)
-                    return error_data
-
                 proxies = self.async_proxy()
                 try:
-                    main_page = await self.fetch(url, headers, params, proxies, cookies, False, session, timeout)
+                    main_page = await self.fetch(url, headers, params, proxies, cookies, False, session, timeout, trynum)
                     if main_page == 0:
                         trynum += 1
                         continue
-                    return main_page
+                    elif isinstance(main_page, dict):
+                        return main_page
 
+                    return main_page
                 except aiohttp.ClientError as e:
                     error_data = self.error_dump(1003, self.error_detector(), url)
                     return error_data
