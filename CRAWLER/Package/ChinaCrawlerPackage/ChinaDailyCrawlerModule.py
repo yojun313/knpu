@@ -63,13 +63,11 @@ class ChinaDailyCrawler(CrawlerModule):
     def articleCollector(self, keyword, startDate, endDate):
         try:
             if isinstance(keyword, str) == False:
-                self.error_dump(2029, 'Check Keyword', keyword)
-                return self.error_data
+                return self.error_dump(2029, 'Check Keyword', keyword)
             datetime.strptime(str(startDate), '%Y%m%d')
             datetime.strptime(str(endDate), '%Y%m%d')
         except:
-            self.error_dump(2030, 'Check DateForm', startDate + endDate)
-            return self.error_data
+            return self.error_dump(2030, 'Check DateForm', startDate + endDate)
     
         try:
             if self.print_status_option == True:
@@ -149,8 +147,7 @@ class ChinaDailyCrawler(CrawlerModule):
         
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2031, error_msg, referer_url)
-            return self.error_data
+            return self.error_dump(2031, error_msg, referer_url)
 
 if __name__ == "__main__":
     print("hello")

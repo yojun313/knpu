@@ -118,13 +118,11 @@ class ChinaSinaCrawler(CrawlerModule):
     def urlCollector(self, keyword, startDate, endDate):
         try:
             if isinstance(keyword, str) == False:
-                self.error_dump(2032, 'Check Keyword', keyword)
-                return self.error_data
+                return self.error_dump(2032, 'Check Keyword', keyword)
             datetime.strptime(str(startDate), '%Y%m%d')
             datetime.strptime(str(endDate), '%Y%m%d')
         except:
-            self.error_dump(2033, 'Check DateForm', startDate)
-            return self.error_data
+            return self.error_dump(2033, 'Check DateForm', startDate)
         
         try:
             if self.print_status_option == True:
@@ -196,15 +194,13 @@ class ChinaSinaCrawler(CrawlerModule):
                     
         except Exception:
             error_msg = self.error_detector(self.error_detector_option)
-            self.error_dump(2034, error_msg, search_page_url)
-            return self.error_data
+            return self.error_dump(2034, error_msg, search_page_url)
 
     async def articleCollector(self, newsURL, session):
         
         newsURL_type = self._newsURLChecker(newsURL)
         if isinstance(newsURL_type, int) == False:
-            self.error_dump(2035, "Check newsURL", newsURL)
-            return self.error_data
+            return self.error_dump(2035, "Check newsURL", newsURL)
         
         try:
             main_page = await self.asyncRequester(newsURL, session=session)
@@ -243,14 +239,12 @@ class ChinaSinaCrawler(CrawlerModule):
         
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2036, error_msg, newsURL)
-            return self.error_data
+            return self.error_dump(2036, error_msg, newsURL)
     
     async def replyCollector(self, newsURL, session):
         newsURL_type = self._newsURLChecker(newsURL)
         if isinstance(newsURL_type, int) == False:
-            self.error_dump(2037, "Check newsURL", newsURL)
-            return self.error_data
+            return self.error_dump(2037, "Check newsURL", newsURL)
         
         try:
             if self._newsidFormChecker(newsURL) == True:
@@ -346,8 +340,7 @@ class ChinaSinaCrawler(CrawlerModule):
 
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2038, error_msg, newsURL)
-            return self.error_data
+            return self.error_dump(2038, error_msg, newsURL)
             
     async def asyncSingleCollector(self, newsURL, option, session):
         semaphore = asyncio.Semaphore(10)

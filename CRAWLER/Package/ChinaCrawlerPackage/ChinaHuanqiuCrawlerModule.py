@@ -55,13 +55,11 @@ class ChinaHuanqiuCrawler(CrawlerModule):
     def urlCollector(self, keyword, startDate, endDate):
         try:
             if isinstance(keyword, str) == False:
-                self.error_dump(2039, 'Check Keyword', keyword)
-                return self.error_data
+                return self.error_dump(2039, 'Check Keyword', keyword)
             datetime.strptime(str(startDate), '%Y%m%d')
             datetime.strptime(str(endDate), '%Y%m%d')
         except:
-            self.error_dump(2040, 'Check DateForm', startDate)
-            return self.error_data
+            return self.error_dump(2040, 'Check DateForm', startDate)
         
         try:
             if self.print_status_option == True:
@@ -130,8 +128,7 @@ class ChinaHuanqiuCrawler(CrawlerModule):
                     
         except Exception:
             error_msg = self.error_detector(self.error_detector_option)
-            self.error_dump(2041, error_msg, 'search_page_url')
-            return self.error_data
+            return self.error_dump(2041, error_msg, 'search_page_url')
             
 object = ChinaHuanqiuCrawler(True, False)
 object.error_detector_option_on()

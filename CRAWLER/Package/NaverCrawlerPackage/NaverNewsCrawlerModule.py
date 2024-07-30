@@ -50,15 +50,13 @@ class NaverNewsCrawler(CrawlerModule):
     def urlCollector(self, keyword, startDate, endDate): # DateForm: ex)20231231
         try:
             if isinstance(keyword, str) == False:
-                self.error_dump(2000, 'Check Keyword', keyword)
-                return self.error_data
+                return self.error_dump(2000, 'Check Keyword', keyword)
             
             startDate = datetime.strptime(str(startDate), '%Y%m%d').date()
             endDate = datetime.strptime(str(endDate), '%Y%m%d').date()
             
         except:
-            self.error_dump(2001, 'Check DateForm', startDate)
-            return self.error_data
+            return self.error_dump(2001, 'Check DateForm', startDate)
         
         try:
             if self.print_status_option == True:
@@ -104,16 +102,14 @@ class NaverNewsCrawler(CrawlerModule):
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2003, error_msg, search_page_url_tmp)
-            return self.error_data
+            return self.error_dump(2003, error_msg, search_page_url_tmp)
 
     # Sync Part
 
     # 파라미터로 (url) 전달
     async def articleCollector(self, newsURL, session):
         if isinstance(newsURL, str) == False or self._newsURLChecker(newsURL) == False:
-            self.error_dump(2004, "Check newsURL", newsURL)
-            return self.error_data
+            return self.error_dump(2004, "Check newsURL", newsURL)
         
         try:
             if self.print_status_option == True:
@@ -146,14 +142,12 @@ class NaverNewsCrawler(CrawlerModule):
                
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2005, error_msg, newsURL)
-            return self.error_data
+            return self.error_dump(2005, error_msg, newsURL)
     
     # 파라미터로 (url, 통계데이터 반환 옵션, 댓글 코드 반환 옵션) 전달
     async def replyCollector(self, newsURL, session):
         if isinstance(newsURL, str) == False or self._newsURLChecker(newsURL) == False:
-            self.error_dump(2006, "Check newsURL", newsURL)
-            return self.error_data
+            return self.error_dump(2006, "Check newsURL", newsURL)
         try:
             oid  = newsURL[39:42]
             aid  = newsURL[43:53]
@@ -312,17 +306,14 @@ class NaverNewsCrawler(CrawlerModule):
 
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2007, error_msg, newsURL)
-            return self.error_data
+            return self.error_dump(2007, error_msg, newsURL)
     
     # 파라미터로 (url, 댓글 코드) 전달
     async def rereplyCollector(self, newsURL, parentCommentNum_list, session):
         if isinstance(newsURL, str) == False or self._newsURLChecker(newsURL) == False:
-            self.error_dump(2008, 'Check newsURL', newsURL)
-            return self.error_data
+            return self.error_dump(2008, 'Check newsURL', newsURL)
         if isinstance(parentCommentNum_list, list) == False:
-            self.error_dump(2009, 'Check parentCommentNum_list', parentCommentNum_list)
-            return self.error_data
+            return self.error_dump(2009, 'Check parentCommentNum_list', parentCommentNum_list)
         
         try:
             oid  = newsURL[39:42]
@@ -418,8 +409,7 @@ class NaverNewsCrawler(CrawlerModule):
         
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2010, error_msg, newsURL)
-            return self.error_data
+            return self.error_dump(2010, error_msg, newsURL)
 
     # Async Part
     async def asyncSingleCollector(self, newsURL, option, session):
