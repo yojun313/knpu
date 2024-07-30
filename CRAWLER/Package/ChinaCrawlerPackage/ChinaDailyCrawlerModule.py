@@ -112,6 +112,8 @@ class ChinaDailyCrawler(CrawlerModule):
                 }
                 
                 main_page = self.Requester(base_search_page_url, params=params)
+                if self.RequesterChecker(main_page) == False:
+                    return main_page
                 soup = BeautifulSoup(main_page.text, "lxml").text
                 soup = self._escape_content_html(soup)
                 try:

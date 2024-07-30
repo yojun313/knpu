@@ -171,6 +171,8 @@ class NaverCafeCrawler(CrawlerModule):
             artID = self._artExtractor(cafeURL)
             api_url = "https://apis.naver.com/cafe-web/cafe-articleapi/v2.1/cafes/{}/articles/{}?query=&art={}&useCafeId=true&requestFrom=A".format(cafeID, articleID, artID)
             response = await self.asyncRequester(api_url, session=session)
+            if self.RequesterChecker(response) == False:
+                return response
             soup = BeautifulSoup(response, 'html.parser')
             json_string = self._escape_content_html(soup.text)
 
@@ -223,6 +225,8 @@ class NaverCafeCrawler(CrawlerModule):
                 
                 api_url = "https://apis.naver.com/cafe-web/cafe-articleapi/v2/cafes/{}/articles/{}/comments/pages/{}?requestFrom=A&orderBy=asc&art={}".format(cafeID, articleID, page, artID)
                 response = await self.asyncRequester(api_url, session=session)
+                if self.RequesterChecker(response) == False:
+                    return response
                 
                 soup = BeautifulSoup(response, 'html.parser')
                 json_string = self._escape_content_html(soup.text)

@@ -58,6 +58,8 @@ class YouTubeCrawler(CrawlerModule):
                 cookie = {'CONSENT': 'YES'}
 
                 main_page = self.Requester(search_page_url, headers=header, cookies=cookie)
+                if self.RequesterChecker(main_page) == False:
+                    return main_page
                 main_page = BeautifulSoup(main_page.text, "lxml")
                 site_result = main_page.select("a[jsname = 'UWckNb']")
 
@@ -108,6 +110,8 @@ class YouTubeCrawler(CrawlerModule):
             info_api_url = "https://hadzy.com/api/videos/{}".format(youtube_info)
 
             main_page = self.Requester(info_api_url)
+            if self.RequesterChecker(main_page) == False:
+                return main_page
 
             try:
                 temp = json.loads(main_page.text)

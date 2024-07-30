@@ -138,6 +138,8 @@ class NaverBlogCrawler(CrawlerModule):
                 }
 
                 response = await self.asyncRequester(url, headers, session=session)
+                if self.RequesterChecker(response) == False:
+                    return response
                 soup = BeautifulSoup(response, "html.parser")
                 '''
                 try:
@@ -212,6 +214,8 @@ class NaverBlogCrawler(CrawlerModule):
             while True:
                 try:
                     response   = await self.asyncRequester(url, session=session)
+                    if self.RequesterChecker(response) == False:
+                        return response
                     soup       = BeautifulSoup(response, "html.parser")
                     script_tag = soup.find('script', string=re.compile(r'var\s+blogNo\s*=\s*\'(\d+)\''))
                     blogNo     = re.search(r'var\s+blogNo\s*=\s* \'(\d+)\'', script_tag.text).group(1)
@@ -259,6 +263,8 @@ class NaverBlogCrawler(CrawlerModule):
                         }
                 
                 response = await self.asyncRequester('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers, params, session=session)
+                if self.RequesterChecker(response) == False:
+                    return response
                 res               = response
                 temp              = json.loads(res)  
 
