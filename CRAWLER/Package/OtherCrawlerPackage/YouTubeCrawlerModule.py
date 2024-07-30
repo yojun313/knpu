@@ -99,8 +99,7 @@ class YouTubeCrawler(CrawlerModule):
     def articleCollector(self, url):
 
         if 'https://www.youtube.com/watch?v=' not in url:
-            self.error_dump(2025, "Check YouTubeURL", url)
-            return self.error_data
+            return self.error_dump(2025, "Check YouTubeURL", url)
 
         try:
             returnData = {
@@ -142,14 +141,13 @@ class YouTubeCrawler(CrawlerModule):
 
         except Exception:
             error_msg = self.error_detector(self.error_detector_option)
-            self.error_dump(2026, error_msg, url)
-            return self.error_data
+
+            return self.error_dump(2026, error_msg, url)
 
     # noinspection RegExpRedundantEscape
     def replyCollector(self, url, option):
         if 'https://www.youtube.com/watch?v=' not in url:
-            self.error_dump(2027, "Check YouTubeURL", url)
-            return self.error_data
+            return self.error_dump(2027, "Check YouTubeURL", url)
 
         try:
             youtube_info = url[32:]
@@ -242,8 +240,7 @@ class YouTubeCrawler(CrawlerModule):
 
         except Exception:
             error_msg = self.error_detector(self.error_detector_option)
-            self.error_dump(2028, error_msg, url)
-            return self.error_data
+            return self.error_dump(2028, error_msg, url)
 
     def syncSingleCollector(self, url, option):
         articleData = self.articleCollector(url)

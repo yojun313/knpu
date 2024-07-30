@@ -36,13 +36,11 @@ class NaverBlogCrawler(CrawlerModule):
     def urlCollector(self, keyword, startDate, endDate):
         try:
             if isinstance(keyword, str) == False:
-                self.error_dump(2011, 'Check Keyword', keyword)
-                return self.error_data
+                return self.error_dump(2011, 'Check Keyword', keyword)
             datetime.strptime(str(startDate), '%Y%m%d')
             datetime.strptime(str(endDate), '%Y%m%d')
         except:
-            self.error_dump(2012, 'Check DateForm', startDate)
-            return self.error_data
+            return self.error_dump(2012, 'Check DateForm', startDate)
         try:
             if self.print_status_option == True:
                 self.IntegratedDB['UrlCnt'] = 0
@@ -102,14 +100,12 @@ class NaverBlogCrawler(CrawlerModule):
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2013, error_msg, search_page_url_tmp)
-            return self.error_data
+            return self.error_dump(2013, error_msg, search_page_url_tmp)
     
     async def articleCollector(self, blogURL, session):
         trynum = 1
         if isinstance(blogURL, str) == False or self._blogURLChecker(blogURL) == False:
-            self.error_dump(2014, "Check blogURL", blogURL)
-            return self.error_data
+            return self.error_dump(2014, "Check blogURL", blogURL)
         try:
             while True:
                 original_url = blogURL
@@ -191,13 +187,11 @@ class NaverBlogCrawler(CrawlerModule):
         
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2015, error_msg, blogURL)
-            return self.error_data
+            return self.error_dump(2015, error_msg, blogURL)
     
     async def replyCollector(self, blogURL, session):
         if isinstance(blogURL, str) == False or self._blogURLChecker(blogURL) == False:
-            self.error_dump(2016, "Check blogURL", blogURL)
-            return self.error_data
+            return self.error_dump(2016, "Check blogURL", blogURL)
         try:
             split_url = blogURL.split("/")
             blogID    = split_url[3]
@@ -349,8 +343,7 @@ class NaverBlogCrawler(CrawlerModule):
                 
         except Exception as e:
             error_msg  = self.error_detector(self.error_detector_option)
-            self.error_dump(2017, error_msg, blogURL)
-            return self.error_data
+            return self.error_dump(2017, error_msg, blogURL)
   
 
     async def asyncSingleCollector(self, blogURL, option, session):
