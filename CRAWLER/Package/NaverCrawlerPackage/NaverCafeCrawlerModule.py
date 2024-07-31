@@ -162,7 +162,8 @@ class NaverCafeCrawler(CrawlerModule):
         
         try:
             returnData = {
-                'articleData': []
+                'articleData': [],
+                'cafeID': 0
             }
 
             articleID = self.articleIDExtractor(cafeURL)
@@ -194,6 +195,7 @@ class NaverCafeCrawler(CrawlerModule):
             
             articleData = [cafe_name, memberCount, writer, title, text, date, readCount, commentCount, cafeURL]
             returnData['articleData'] = articleData
+            returnData['cafeID'] = cafeID
 
             return returnData
         
@@ -201,12 +203,13 @@ class NaverCafeCrawler(CrawlerModule):
             error_msg  = self.error_detector(self.error_detector_option)
             return self.error_dump(2022, error_msg, cafeURL)
          
-    async def replyCollector(self, cafeURL, session):
+    async def replyCollector(self, cafeURL, session, cafeID = 0):
         if isinstance(cafeURL, str) == False or self._cafeURLChecker(cafeURL) == False:
             return self.error_dump(2023, "Check newsURL", cafeURL)
         try:
             articleID = self.articleIDExtractor(cafeURL)
-            cafeID = await self._cafeIDExtractor(cafeURL, session)
+            if cafeID == 0:
+                cafeID = await self._cafeIDExtractor(cafeURL, session)
             artID = self._artExtractor(cafeURL)
 
             replyList = []
@@ -273,7 +276,11 @@ class NaverCafeCrawler(CrawlerModule):
             if option == 1:
                 return {'articleData': articleData}
 
-            replyData = await self.replyCollector(cafeURL, session)
+            if list(articleData.keys())[0] == 'Error Code':
+                replyData = {'replyList': [], 'replyCnt': 0}
+            else:
+                cafeID = articleData['cafeID']
+                replyData = await self.replyCollector(cafeURL, session, cafeID)
             return {'articleData': articleData, 'replyData': replyData}
 
     async def asyncMultiCollector(self, urlList, option):
