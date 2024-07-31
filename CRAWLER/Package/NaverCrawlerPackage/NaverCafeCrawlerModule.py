@@ -128,9 +128,9 @@ class NaverCafeCrawler(CrawlerModule):
                         
                     for a in site_result: #스크랩한 데이터 중 링크만 추출
                         add_link = a['href']
-                        if self.articleIDExtractor(add_link) in idList:
-                            breakPoint = True
-                        if 'naver' in add_link and 'book' not in add_link:
+                        #if self.articleIDExtractor(add_link) in idList:
+                        #    breakPoint = True
+                        if 'naver' in add_link and self.articleIDExtractor(add_link) not in idList and 'book' not in add_link:
                             urlList.append(add_link)
                             idList.append(self.articleIDExtractor(add_link))
                             self.IntegratedDB['UrlCnt'] += 1

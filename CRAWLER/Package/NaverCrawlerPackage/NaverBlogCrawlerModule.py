@@ -78,9 +78,9 @@ class NaverBlogCrawler(CrawlerModule):
                         
                     for a in site_result: #스크랩한 데이터 중 링크만 추출 
                         add_link = a['href']
-                        if add_link in urlList:
-                            breakPoint = True
-                        if 'naver' in add_link and 'tistory' not in add_link:
+                        #if add_link in urlList:
+                        #    breakPoint = True
+                        if 'naver' in add_link and add_link not in urlList and 'tistory' not in add_link:
                             urlList.append(add_link)
                             self.IntegratedDB['UrlCnt'] += 1
                        
