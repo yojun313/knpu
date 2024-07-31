@@ -165,7 +165,7 @@ class RealTimeCRAWLER(CrawlerModule):
 
                     self.print_status()
 
-                replyList_returnData = returnData['replyList']
+                replyList_returnData = returnData['replyData']
                 if self.ReturnChecker(replyList_returnData) == True:
                     for replyCnt in range(replyList_returnData['replyCnt']):
                         replyData = replyList_returnData['replyList'][replyCnt]
