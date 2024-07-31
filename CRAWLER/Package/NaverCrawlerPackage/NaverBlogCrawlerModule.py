@@ -49,13 +49,14 @@ class NaverBlogCrawler(CrawlerModule):
             ipChange = False
             urlList = []
             if self.proxy_option == True:
-                ipList  = random.sample(self.proxy_list, 1000)
+                ipList  = random.sample(self.proxy_list, 3000)
             
             keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
             search_page_url = "https://search.naver.com/search.naver?ssc=tab.blog.all&query={}&sm=tab_opt&nso=so%3Ar%2Cp%3Afrom{}to{}&&start={}"
             
             currentPage = 1
             while True:
+                breakPoint = False
                 search_page_url_tmp = search_page_url.format(keyword, startDate, endDate, currentPage)
                 
                 if self.proxy_option == True:
@@ -77,13 +78,18 @@ class NaverBlogCrawler(CrawlerModule):
                         
                     for a in site_result: #스크랩한 데이터 중 링크만 추출 
                         add_link = a['href']
-                        if add_link not in urlList and 'naver' in add_link and 'tistory' not in add_link:
+                        if add_link in urlList:
+                            breakPoint = True
+                        if 'naver' in add_link and 'tistory' not in add_link:
                             urlList.append(add_link)
                             self.IntegratedDB['UrlCnt'] += 1
                        
                     if self.print_status_option == True: 
                         self.printStatus('NaverBlog', 2, self.PrintData)
-                    
+
+                    if breakPoint == True:
+                        break
+
                     currentPage += 10
                 else:
                     currentPage = 1
