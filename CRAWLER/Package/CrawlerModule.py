@@ -113,7 +113,7 @@ class CrawlerModule(ToolModule):
 
             if self.PrintData['web_option'] == False:
                 out_str = (
-                    f"{WHITE}|| 진행: {YELLOW}{printData['percent']}%{WHITE} "
+                    f"\r{WHITE}|| 진행: {YELLOW}{printData['percent']}%{WHITE} "
                     f"| 경과: {YELLOW}{loadingtime}{WHITE} "
                     f"| 날짜: {color['date']}{printData['currentDate']}{WHITE} "
                     f"| url: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
@@ -124,7 +124,7 @@ class CrawlerModule(ToolModule):
 
             else:
                 out_str = (
-                    f"|| 진행: {printData['percent']}% "
+                    f"\r|| 진행: {printData['percent']}% "
                     f"| 경과: {loadingtime} "
                     f"| 날짜: {printData['currentDate']} "
                     f"| url: {self.IntegratedDB['UrlCnt']} "
@@ -139,9 +139,9 @@ class CrawlerModule(ToolModule):
                 else:
                     out_str += f" | API num : {self.PrintData['api_num']} |"
 
-            print('\r'+out_str, end = '')
+            print(out_str, end = '')
         except:
-            print('\r상태 출력 오류', end = '')
+            print('\rError in printing status', end = '')
         
     def error_dump(self, code, msg, target):
         error_data = {
