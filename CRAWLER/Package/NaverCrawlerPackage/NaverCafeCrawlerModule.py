@@ -35,6 +35,9 @@ class NaverCafeCrawler(CrawlerModule):
     async def _cafeIDExtractor(self, cafeURL, session):
     
         response = await self.asyncRequester(cafeURL, session=session)
+        if response.startswith('\ufeff'):
+            response= response[1:]
+
         soup     = BeautifulSoup(response, "html.parser")
         script_tags = soup.find_all('script')
 
