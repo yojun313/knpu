@@ -23,6 +23,9 @@ from datetime import datetime
 import aiohttp
 import asyncio
 import platform
+from rich.console import Console
+from rich.live import Live
+from rich.table import Table
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -38,6 +41,9 @@ class CrawlerModule(ToolModule):
         self.proxy_option   = proxy_option
         self.collection_path = COLLECTION_PATH
         self.error_detector_option = False
+
+        self.console = Console()
+        self.live = None
 
         self.socketnum = 1
 
@@ -77,14 +83,25 @@ class CrawlerModule(ToolModule):
         self.PrintData['web_option']  = web_option
         self.PrintData['api_num']     = api_num
 
-    def printStatus(self, type, option = 1, printData = {}):
+    def printStatus(self, type, option = 1, printData = {}, rich = True):
 
         WHITE = "\033[37m"
         YELLOW = "\033[33m"
         CYAN = "\033[36m"
         RESET = "\033[0m"
-        
+
+        type_dic = {
+            'NaverNews': '기사',
+            'NaverBlog': '블로그',
+            'NaverCafe': '카페',
+            'YouTube': '영상',
+            'ChinaDaily': '기사',
+            'ChinaSina': '기사'
+        }
+        type_word = type_dic[type]
+
         def get_color(option):
+
             colors = {
                 1: {"date": CYAN, "url": YELLOW, "type": YELLOW, "reply": YELLOW, "re_reply": YELLOW},
                 2: {"date": YELLOW, "url": CYAN, "type": YELLOW, "reply": YELLOW, "re_reply": YELLOW},
@@ -93,55 +110,76 @@ class CrawlerModule(ToolModule):
                 5: {"date": YELLOW, "url": YELLOW, "type": YELLOW, "reply": YELLOW, "re_reply": CYAN},
                 6: {"date": YELLOW, "url": YELLOW, "type": YELLOW, "reply": CYAN, "re_reply": CYAN}
             }
-            return colors.get(option, {"date": YELLOW, "url": YELLOW, "type": YELLOW, "reply": YELLOW, "re_reply": YELLOW})
+            return colors.get(option,
+                              {"date": YELLOW, "url": YELLOW, "type": YELLOW, "reply": YELLOW, "re_reply": YELLOW})
+        color = get_color(option)
 
-        try:
-            color = get_color(option)
+        progress_time = time.time()
+        loading_second = progress_time - CrawlerModule.startTime
+        loadingtime = f"{int(loading_second // 3600):02}:{int(loading_second % 3600 // 60):02}:{int(loading_second % 3600 % 60):02}"
 
-            type_dic = {
-                'NaverNews' : '기사',
-                'NaverBlog' : '블로그',
-                'NaverCafe' : '카페',
-                'YouTube'   : '영상',
-                'ChinaDaily': '기사',
-                'ChinaSina' : '기사'
-            }
+        if rich == False:
 
-            progress_time = time.time()
-            loading_second = progress_time - CrawlerModule.startTime
-            loadingtime = f"{int(loading_second // 3600):02}:{int(loading_second % 3600 // 60):02}:{int(loading_second % 3600 % 60):02}"
-
-            if self.PrintData['web_option'] == False:
-                out_str = (
-                    f"\r{WHITE}|| 진행: {YELLOW}{printData['percent']}%{WHITE} "
-                    f"| 경과: {YELLOW}{loadingtime}{WHITE} "
-                    f"| 날짜: {color['date']}{printData['currentDate']}{WHITE} "
-                    f"| url: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
-                    f"| {type_dic[type]}: {color['type']}{self.IntegratedDB['TotalArticleCnt']}{WHITE} "
-                    f"| 댓글: {color['reply']}{self.IntegratedDB['TotalReplyCnt']}{WHITE} "
-                    f"| 대댓글: {color['re_reply']}{self.IntegratedDB['TotalRereplyCnt']}{WHITE} ||{RESET}"
-                )
-
-            else:
-                out_str = (
-                    f"\r|| 진행: {printData['percent']}% "
-                    f"| 경과: {loadingtime} "
-                    f"| 날짜: {printData['currentDate']} "
-                    f"| url: {self.IntegratedDB['UrlCnt']} "
-                    f"| {type_dic[type]}: {self.IntegratedDB['TotalArticleCnt']} "
-                    f"| 댓글: {self.IntegratedDB['TotalReplyCnt']} "
-                    f"| 대댓글: {self.IntegratedDB['TotalRereplyCnt']} ||"
-                )
-
-            if type == 'YouTube':
+            try:
                 if self.PrintData['web_option'] == False:
-                    out_str += f" | API num : {YELLOW}{self.PrintData['api_num']} {WHITE}|"
-                else:
-                    out_str += f" | API num : {self.PrintData['api_num']} |"
+                    out_str = (
+                        f"\r{WHITE}|| 진행: {YELLOW}{printData['percent']}%{WHITE} "
+                        f"| 경과: {YELLOW}{loadingtime}{WHITE} "
+                        f"| 날짜: {color['date']}{printData['currentDate']}{WHITE} "
+                        f"| url: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
+                        f"| {type_word}: {color['type']}{self.IntegratedDB['TotalArticleCnt']}{WHITE} "
+                        f"| 댓글: {color['reply']}{self.IntegratedDB['TotalReplyCnt']}{WHITE} "
+                        f"| 대댓글: {color['re_reply']}{self.IntegratedDB['TotalRereplyCnt']}{WHITE} ||{RESET}"
+                    )
 
-            print(out_str, end = '')
-        except:
-            print('\rError in printing status', end = '')
+                else:
+                    out_str = (
+                        f"\r|| 진행: {printData['percent']}% "
+                        f"| 경과: {loadingtime} "
+                        f"| 날짜: {printData['currentDate']} "
+                        f"| url: {self.IntegratedDB['UrlCnt']} "
+                        f"| {type_word}: {self.IntegratedDB['TotalArticleCnt']} "
+                        f"| 댓글: {self.IntegratedDB['TotalReplyCnt']} "
+                        f"| 대댓글: {self.IntegratedDB['TotalRereplyCnt']} ||"
+                    )
+
+                if type == 'YouTube':
+                    if self.PrintData['web_option'] == False:
+                        out_str += f" | API num : {YELLOW}{self.PrintData['api_num']} {WHITE}|"
+                    else:
+                        out_str += f" | API num : {self.PrintData['api_num']} |"
+
+                print(out_str, end = '')
+            except:
+                print('\rError in printing status', end = '')
+        else:
+            def generate_table():
+                table = Table()
+
+                table.add_column("Target", style="bold yellow")
+                table.add_column("Count", style="bold white")
+
+                table.add_row("진행", str(printData['percent'])+'%')
+                table.add_row("경과", str(loadingtime))
+                table.add_row("날짜", str(printData['currentDate']))
+                table.add_row("url", str(self.IntegratedDB['UrlCnt']))
+                table.add_row(f"{type_word}", str(self.IntegratedDB['TotalArticleCnt']))
+                table.add_row("댓글", str(self.IntegratedDB['TotalReplyCnt']))
+                table.add_row("대댓글", str(self.IntegratedDB['TotalRereplyCnt']))
+
+                return table
+
+            if self.live is None:
+                self.live = Live(console=self.console, refresh_per_second=10)
+                self.live.start()
+
+            table = generate_table()
+
+            if self.live is not None:
+                self.live.update(table)
+
+
+
         
     def error_dump(self, code, msg, target):
         error_data = {
