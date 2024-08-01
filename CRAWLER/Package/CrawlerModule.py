@@ -83,7 +83,7 @@ class CrawlerModule(ToolModule):
         self.PrintData['web_option']  = web_option
         self.PrintData['api_num']     = api_num
 
-    def printStatus(self, type, option = 1, printData = {}, rich = True):
+    def printStatus(self, type, option = 1, printData = {}):
 
         WHITE = "\033[37m"
         YELLOW = "\033[33m"
@@ -118,15 +118,14 @@ class CrawlerModule(ToolModule):
         loading_second = progress_time - CrawlerModule.startTime
         loadingtime = f"{int(loading_second // 3600):02}:{int(loading_second % 3600 // 60):02}:{int(loading_second % 3600 % 60):02}"
 
-        if rich == False:
-
+        if self.PrintData['web_option'] == True:
             try:
                 if self.PrintData['web_option'] == False:
                     out_str = (
                         f"\r{WHITE}|| 진행: {YELLOW}{printData['percent']}%{WHITE} "
                         f"| 경과: {YELLOW}{loadingtime}{WHITE} "
                         f"| 날짜: {color['date']}{printData['currentDate']}{WHITE} "
-                        f"| url: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
+                        f"| URL: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
                         f"| {type_word}: {color['type']}{self.IntegratedDB['TotalArticleCnt']}{WHITE} "
                         f"| 댓글: {color['reply']}{self.IntegratedDB['TotalReplyCnt']}{WHITE} "
                         f"| 대댓글: {color['re_reply']}{self.IntegratedDB['TotalRereplyCnt']}{WHITE} ||{RESET}"
@@ -137,7 +136,7 @@ class CrawlerModule(ToolModule):
                         f"\r|| 진행: {printData['percent']}% "
                         f"| 경과: {loadingtime} "
                         f"| 날짜: {printData['currentDate']} "
-                        f"| url: {self.IntegratedDB['UrlCnt']} "
+                        f"| URL: {self.IntegratedDB['UrlCnt']} "
                         f"| {type_word}: {self.IntegratedDB['TotalArticleCnt']} "
                         f"| 댓글: {self.IntegratedDB['TotalReplyCnt']} "
                         f"| 대댓글: {self.IntegratedDB['TotalRereplyCnt']} ||"
@@ -162,10 +161,12 @@ class CrawlerModule(ToolModule):
                 table.add_row("진행", str(printData['percent'])+'%')
                 table.add_row("경과", str(loadingtime))
                 table.add_row("날짜", str(printData['currentDate']))
-                table.add_row("url", str(self.IntegratedDB['UrlCnt']))
+                table.add_row("URL", str(self.IntegratedDB['UrlCnt']))
                 table.add_row(f"{type_word}", str(self.IntegratedDB['TotalArticleCnt']))
                 table.add_row("댓글", str(self.IntegratedDB['TotalReplyCnt']))
                 table.add_row("대댓글", str(self.IntegratedDB['TotalRereplyCnt']))
+                if type == 'YouTube':
+                    table.add_row("API NUM", str(self.PrintData['api_num']))
 
                 return table
 
