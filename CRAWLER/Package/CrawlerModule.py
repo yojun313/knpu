@@ -179,9 +179,6 @@ class CrawlerModule(ToolModule):
             if self.live is not None:
                 self.live.update(table)
 
-
-
-        
     def error_dump(self, code, msg, target):
         error_data = {
             'Error Code': code,
