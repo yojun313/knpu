@@ -59,6 +59,7 @@ class NaverNewsCrawler(CrawlerModule):
             return self.error_dump(2001, 'Check DateForm', startDate)
         
         try:
+            search_page_url_tmp = ''
             if self.print_status_option == True:
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverNews', 1, self.PrintData)

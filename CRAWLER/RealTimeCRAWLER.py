@@ -14,6 +14,7 @@ import time
 from datetime import datetime
 import copy
 import asyncio
+from datetime import datetime
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -85,7 +86,7 @@ class RealTimeCRAWLER(CrawlerModule):
 
     def print_status(self):
         out_str = (
-            f"|| url: {len(self.urlList)} "
+            f"|| Time: {datetime.now().strftime("%H:%M:%S")} "
             f"| Safe Article: {len(self.safe_article_list)-1} "
             f"| Safe Reply: {len(self.safe_reply_list)-1} "
             f"| Danger Article: {len(self.danger_article_list)-1} "
@@ -116,7 +117,7 @@ class RealTimeCRAWLER(CrawlerModule):
 
     def RealTimeNaverCafeCrawler(self):
 
-        NaverCafeCrawler_obj = NaverCafeCrawler(proxy_option=True, print_status_option=True)
+        NaverCafeCrawler_obj = NaverCafeCrawler(proxy_option=True, print_status_option=False)
         NaverCafeCrawler_obj.setCrawlSpeed(self.speed)
 
         self.DBtype = 'NaverCafe'
@@ -138,12 +139,17 @@ class RealTimeCRAWLER(CrawlerModule):
             self.ListToCSV(object_list=self.danger_article_list, csv_path=self.DBpath, csv_name=self.DBname + '_DangerArticle.csv')
             self.ListToCSV(object_list=self.danger_reply_list, csv_path=self.DBpath, csv_name=self.DBname + '_DangerReply.csv')
 
+            #print('\rCollecting Article...', end = '')
             urlList_returnData = NaverCafeCrawler_obj.RealTimeurlCollector(self.keyword, self.checkPage, self.checkedIDList)
             if self.ReturnChecker(urlList_returnData) == False:
                 continue
             self.urlList = urlList_returnData['urlList']
 
-            self.print_status()
+
+            if len(self.urlList) == 0:
+                self.print_status()
+                time.sleep(1)
+                continue
 
             for url in self.urlList:
                 self.checkedIDList.append(NaverCafeCrawler_obj.articleIDExtractor(url))
@@ -177,7 +183,6 @@ class RealTimeCRAWLER(CrawlerModule):
                             self.danger_reply_list.append(replyData)
                         else:
                             self.safe_reply_list.append(replyData)
-
                     self.print_status()
 
 def controller():
