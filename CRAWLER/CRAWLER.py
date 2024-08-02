@@ -167,8 +167,6 @@ class Crawler(CrawlerModule):
             self.infoPrinter()
         print(f'{end_msg}')
 
-
-    
     def Naver_News_Crawler(self, option):
 
         NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=True, print_status_option=True)
@@ -199,7 +197,7 @@ class Crawler(CrawlerModule):
             for dayCount in range(self.date_range + 1):
                 try:
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-                    percent = str(round((dayCount+1/(self.date_range+1))*100, 1))
+                    percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
                     if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
@@ -284,7 +282,7 @@ class Crawler(CrawlerModule):
             for dayCount in range(self.date_range + 1):
                 try:
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-                    percent = str(round((dayCount/(self.date_range+1))*100, 1))
+                    percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     NaverBlogCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
                     if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
@@ -351,7 +349,7 @@ class Crawler(CrawlerModule):
             for dayCount in range(self.date_range + 1):
                 try:
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-                    percent = str(round((dayCount/(self.date_range+1))*100, 1))
+                    percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     NaverCafeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
                     if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
@@ -418,7 +416,7 @@ class Crawler(CrawlerModule):
             for dayCount in range(self.date_range + 1):
                 try:
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-                    percent = str(round((dayCount/(self.date_range+1))*100, 1))
+                    percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     YouTubeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption, self.api_num)
 
                     if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
@@ -480,7 +478,7 @@ class Crawler(CrawlerModule):
             for dayCount in range(self.date_range + 1):
                 try:
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-                    percent = str(round((dayCount/(self.date_range+1))*100, 1))
+                    percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     ChinaDailyCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
                     if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
@@ -542,7 +540,7 @@ class Crawler(CrawlerModule):
                     currentDate_end   = DateRange[1]
                     currentDate_str_start = datetime.strptime(DateRange[0], '%Y%m%d').date()
                     currentDate_str_end   = datetime.strptime(DateRange[1], '%Y%m%d').date()
-                    percent = str(round((DateRangeCnt/len(DateRangeList))*100, 1))
+                    percent = str(round(((DateRangeCnt+1)/len(DateRangeList))*100, 1))
 
                     ChinaSinaCrawler_obj.setPrintData(f"{currentDate_str_start.strftime('%Y.%m.%d')} ~ {currentDate_str_end.strftime('%Y.%m.%d')}", percent, self.weboption)
 
