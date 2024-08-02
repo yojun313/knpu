@@ -83,7 +83,7 @@ class CrawlerModule(ToolModule):
         self.PrintData['web_option']  = web_option
         self.PrintData['api_num']     = api_num
 
-    def printStatus(self, type, option = 1, printData = {}):
+    def printStatus(self, type, option = 1, printData = {}, finish = False):
 
         WHITE = "\033[37m"
         YELLOW = "\033[33m"
@@ -178,6 +178,10 @@ class CrawlerModule(ToolModule):
 
             if self.live is not None:
                 self.live.update(table)
+
+            if finish == True:
+                self.live.stop()
+                self.live = None
 
     def error_dump(self, code, msg, target):
         error_data = {
