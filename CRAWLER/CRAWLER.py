@@ -8,6 +8,7 @@ sys.path.append(MYSQL_PATH)
 
 import time
 import asyncio
+import socket
 import warnings
 from datetime import datetime, timedelta
 
@@ -38,7 +39,7 @@ class Crawler(CrawlerModule):
         self.speed = int(speed)
         self.saveInterval = 90
         self.GooglePackage_obj = GoogleModule(self.pathFinder()['token_path'])
-        self.mySQL = mySQL(host='localhost', user='root', password='kingsman', port=3306)
+        self.makemySQL()
         
         # Computer Info
         self.scrapdata_path = self.pathFinder(user)['scrapdata_path']
@@ -71,6 +72,11 @@ class Crawler(CrawlerModule):
     def webCrawlerStop(self):
         self.running = False
 
+    def makemySQL(self):
+        if socket.gethostname() == "Yojuns-MacBook-Pro.local":
+            self.mySQL = mySQL(host='localhost', user='root', password='kingsman', port=3306)
+        elif socket.gethostname() == "BigMacServer":
+            self.mySQL = mySQL(host='localhost', user='root', password='bigmaclab2022!', port=3306)
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
         self.DBname      = f"{DBtype}_{self.DBkeyword}{dbname_date}_{self.now.strftime('%m%d_%H%M')}"
