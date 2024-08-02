@@ -38,6 +38,13 @@ class ToolModule:
             computer_name       = "Yojun's MacBook Pro"
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
 
+        elif socket.gethostname() == "BigMacServer":
+            crawler_folder_path = "C:/Users/skroh/Documents/BIGMACLAB/CRAWLER"
+            scrapdata_path = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
+            token_path = crawler_folder_path
+            computer_name = "BIGMACLAB SERVER"
+            RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
+
         return {'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name, 'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath}
     # For testing Crawler_Package
     def CrawlerChecker(self, target, result_option = False):
