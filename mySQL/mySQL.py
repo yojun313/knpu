@@ -1,6 +1,7 @@
 import pymysql
 import csv
 import os
+import pandas as pd
 
 class mySQL:
     def __init__(self, host, user, password, port, database=None):
@@ -9,7 +10,7 @@ class mySQL:
         self.password = password
         self.port = port
         self.database = database
-        self.connectDB()
+        self.connectDB(database)
 
     def connectDB(self, database_name):
         try:
@@ -27,6 +28,11 @@ class mySQL:
             else:
                 print(f"Failed to connect to MySQL server on host:{self.host} with user:{self.user}")
             print(str(e))
+
+    def resetServer(self):
+        DBlist = self.showAllDB()
+        for DB in DBlist:
+            self.dropDB(DB)
 
     def commit(self):
         self.conn.commit()
@@ -164,9 +170,66 @@ class mySQL:
             print(f"Failed to save table {tableName} to CSV")
             print(str(e))
 
+    def TableToDataframe(self, tableName):
+        try:
+            with self.conn.cursor() as cursor:
+                cursor.execute(f"SELECT * FROM `{tableName}`")
+                rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
+                dataframe = pd.DataFrame(rows, columns=columns)
+                return dataframe
+        except Exception as e:
+            print(f"Failed to convert table {tableName} to DataFrame")
+            print(str(e))
+            return None
+
+    def CSVToTable(self, csv_path, tableName):
+        try:
+            # CSV 파일을 읽어서 데이터프레임으로 변환
+            df = pd.read_csv(csv_path)
+
+            # 데이터프레임의 열 이름을 가져오기
+            columns = df.columns.tolist()
+
+            # 테이블 생성 쿼리 생성
+            if 'id' in columns:
+                create_table_query = f"CREATE TABLE IF NOT EXISTS `{tableName}` ("
+            else:
+                create_table_query = f"CREATE TABLE IF NOT EXISTS `{tableName}` (id INT AUTO_INCREMENT PRIMARY KEY, "
+
+            for column in columns:
+                create_table_query += f"`{column}` LONGTEXT, "
+            create_table_query = create_table_query.rstrip(', ')  # 마지막 쉼표와 공백 제거
+            create_table_query += ")"
+
+            with self.conn.cursor() as cursor:
+                # 테이블 생성
+                cursor.execute(create_table_query)
+                self.conn.commit()
+
+                # 데이터프레임의 데이터를 리스트로 변환
+                data_list = df.values.tolist()
+
+                # 열 이름을 문자열로 변환
+                columns_str = ', '.join([f'`{col}`' for col in columns])
+
+                # VALUES 부분의 자리표시자 생성
+                placeholders = ', '.join(['%s'] * len(columns))
+
+                # INSERT 쿼리 생성
+                insert_query = f"INSERT INTO `{tableName}` ({columns_str}) VALUES ({placeholders})"
+
+                # 여러 행의 데이터를 한 번에 삽입
+                cursor.executemany(insert_query, data_list)
+                self.conn.commit()
+
+        except Exception as e:
+            print(f"Failed to convert CSV file {csv_path} to table {tableName}")
+            print(str(e))
+
+
 
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='localhost', user='root', password='kingsman', port=3306)
-    print(mySQL_obj.showAllTable('NaverCafe_포항공대_20230101_20230131_0802_1900'))
-
+    mySQL_obj.resetServer()
