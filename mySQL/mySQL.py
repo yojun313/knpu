@@ -11,15 +11,16 @@ class mySQL:
         self.database = database
         self.connectDB()
 
-    def connectDB(self):
+    def connectDB(self, database_name):
         try:
             self.conn = pymysql.connect(
                 host=self.host,
                 user=self.user,
                 password=self.password,
                 port=self.port,
-                database=self.database  # 데이터베이스 지정
+                database=database_name  # 데이터베이스 지정
             )
+            self.database = database_name
         except Exception as e:
             if self.database:
                 print(f"Failed to connect to database {self.database} on host:{self.host} with user:{self.user}")
@@ -38,7 +39,7 @@ class mySQL:
 
                 # 데이터베이스 생성 후 다시 연결
                 self.database = database_name
-                self.connectDB()
+                self.connectDB(database_name)
         except Exception as e:
             print(f"Failed to create database {database_name}")
             print(str(e))
@@ -51,6 +52,25 @@ class mySQL:
         except Exception as e:
             print(f"Failed to drop database {database_name}")
             print(str(e))
+
+    def showAllDB(self):
+        try:
+            with self.conn.cursor() as cursor:
+                cursor.execute("SHOW DATABASES")
+                databases = cursor.fetchall()
+                # 데이터베이스 이름을 리스트로 변환
+                database_list = [db[0] for db in databases]
+
+                remove_list = ['information_schema', 'mysql', 'performance_schema']
+                for remove_target in remove_list:
+                    database_list.remove(remove_target)
+
+                return database_list
+
+        except Exception as e:
+            print("Failed to retrieve databases")
+            print(str(e))
+            return []
 
     def newTable(self, tableName, column_list):
         try:
@@ -76,6 +96,19 @@ class mySQL:
         except Exception as e:
             print(f"Failed to drop table {tableName}")
             print(str(e))
+
+    def showAllTable(self, database_name):
+        try:
+            with self.conn.cursor() as cursor:
+                cursor.execute(f"SHOW TABLES FROM `{database_name}`")
+                tables = cursor.fetchall()
+                # 테이블 이름을 리스트로 변환
+                table_list = [table[0] for table in tables]
+                return table_list
+        except Exception as e:
+            print(f"Failed to retrieve tables from database {database_name}")
+            print(str(e))
+            return []
 
     def insertToTable(self, tableName, data_list):
         try:
@@ -113,6 +146,7 @@ class mySQL:
 
         except Exception as e:
             print(f"Failed to insert data into {tableName}")
+            print(str(e))
 
     def TableToCSV(self, tableName, csv_path):
         try:
@@ -130,8 +164,9 @@ class mySQL:
             print(f"Failed to save table {tableName} to CSV")
             print(str(e))
 
+
 if __name__ == "__main__":
     # 사용 예제
-    mySQL_obj = mySQL(host='localhost', user='root', password='kingsman', port=3306, database='NaverNews_아이폰_20230101_20230131_0802_1746')
-    mySQL_obj.TableToCSV('NaverNews_아이폰_20230101_20230131_0802_1746_article', '/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER/scrapdata/NaverNews_아이패드_20230101_20230131_0802_1733')
+    mySQL_obj = mySQL(host='localhost', user='root', password='kingsman', port=3306)
+    print(mySQL_obj.showAllTable('NaverCafe_포항공대_20230101_20230131_0802_1900'))
 
