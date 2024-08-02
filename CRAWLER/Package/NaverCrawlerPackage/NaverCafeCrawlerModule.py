@@ -106,7 +106,6 @@ class NaverCafeCrawler(CrawlerModule):
 
             currentPage = 1
             while True:
-                breakPoint = False
                 search_page_url_tmp = search_page_url.format(keyword, startDate, endDate, currentPage)
                 
                 if self.proxy_option == True:
@@ -122,14 +121,12 @@ class NaverCafeCrawler(CrawlerModule):
                 if ipChange == False:
                     main_page = BeautifulSoup(main_page.text, "lxml") #스크랩 모듈에 url 넘김
                     site_result = main_page.select('a[class = "title_link"]')
-                    
-                    if site_result == []:
+                    new_urlList = [a['href'] for a in site_result]
+
+                    if new_urlList == [] or set(new_urlList).issubset(set(urlList)) == True:
                         break
-                        
-                    for a in site_result: #스크랩한 데이터 중 링크만 추출
-                        add_link = a['href']
-                        #if self.articleIDExtractor(add_link) in idList:
-                        #    breakPoint = True
+
+                    for add_link in new_urlList:
                         if 'naver' in add_link and self.articleIDExtractor(add_link) not in idList and 'book' not in add_link:
                             urlList.append(add_link)
                             idList.append(self.articleIDExtractor(add_link))
@@ -137,9 +134,6 @@ class NaverCafeCrawler(CrawlerModule):
                     
                     if self.print_status_option == True: 
                         self.printStatus('NaverCafe', 2, self.PrintData)
-
-                    if breakPoint == True:
-                        break
 
                     currentPage += 10
                 else:
