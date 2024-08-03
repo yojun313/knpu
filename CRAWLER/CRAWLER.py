@@ -73,10 +73,12 @@ class Crawler(CrawlerModule):
         self.running = False
 
     def makemySQL(self):
-        if socket.gethostname() == "Yojuns-MacBook-Pro.local":
-            self.mySQL = mySQL(host='REDACTED_IP', user='admin', password='***REMOVED***', port=3306)
-        elif socket.gethostname() == "BigMacServer":
+        if socket.gethostname() == "BigMacServer":
             self.mySQL = mySQL(host='localhost', user='root', password='***REMOVED***', port=3306)
+        elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
+            self.mySQL = mySQL(host='localhost', user='root', password='***REMOVED***', port=3306)
+        else:
+            self.mySQL = mySQL(host='REDACTED_IP', user='admin', password='***REMOVED***', port=3306)
             
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
