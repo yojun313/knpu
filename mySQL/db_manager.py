@@ -1,9 +1,12 @@
 import sys
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog
+from PyQt5.QtWebEngineWidgets import QWebEngineView
+import PyQt5.QtCore as QtCore
 from mySQL import mySQL
 import os
 import platform
+from functools import partial
 
 
 class TableWindow(QMainWindow):
@@ -62,6 +65,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         uic.loadUi('main_window.ui', self)
+        self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
 
         self.mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,
                                database='User_DB')
@@ -76,9 +80,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_delete_db.clicked.connect(self.delete_db)
         self.pushButton_view_db.clicked.connect(self.view_db)
         self.pushButton_save_db.clicked.connect(self.save_db)
+        self.lineEdit_search.returnPressed.connect(self.search_db)
 
         self.pushButton_delete_user.clicked.connect(self.delete_user)
         self.pushButton_add_user.clicked.connect(self.add_user)
+
+        self.browser = None
+        self.crawler_history_button.clicked.connect(partial(self.open_webbrowser, "http://bigmaclab-crawler.kro.kr/history"))
+        self.crawler_dashboard_button.clicked.connect(partial(self.open_webbrowser, "http://bigmaclab-crawler.kro.kr"))
+        self.crawler_add_button.clicked.connect(partial(self.open_webbrowser, "http://bigmaclab-crawler.kro.kr/add_crawler"))
+
 
     ################################################################################################
     def init_DB_table(self):
@@ -154,6 +165,39 @@ class MainWindow(QtWidgets.QMainWindow):
             self.table_window = TableWindow(self, target_db)
             self.table_window.show()
 
+    def search_db(self):
+        search_text = self.lineEdit_search.text().lower()
+        if not search_text:
+            return
+
+        # 현재 선택된 행의 다음 행부터 검색 시작
+        start_row = self.tableWidget_db.currentRow() + 1 if self.tableWidget_db.currentRow() != -1 else 0
+
+        for row in range(start_row, self.tableWidget_db.rowCount()):
+            match = False
+            for col in range(self.tableWidget_db.columnCount()):
+                item = self.tableWidget_db.item(row, col)
+                if item and search_text in item.text().lower():
+                    match = True
+                    break
+
+            if match:
+                self.tableWidget_db.selectRow(row)
+                return
+
+        # 검색어가 처음부터 검색되도록 반복
+        for row in range(0, start_row):
+            match = False
+            for col in range(self.tableWidget_db.columnCount()):
+                item = self.tableWidget_db.item(row, col)
+                if item and search_text in item.text().lower():
+                    match = True
+                    break
+
+            if match:
+                self.tableWidget_db.selectRow(row)
+                return
+
     def save_db(self):
         # 파일 탐색기 열기
         selected_row = self.tableWidget_db.currentRow()
@@ -225,6 +269,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.lineEdit_email.clear()
             self.lineEdit_key.clear()
 
+    def open_webbrowser(self, url):
+        # 이전 브라우저가 있으면 제거
+        if self.browser is not None:
+            self.webViewContainer.layout().removeWidget(self.browser)
+            self.browser.deleteLater()
+
+        # 새로운 브라우저 생성 및 추가
+        self.browser = QWebEngineView(self.webViewContainer)
+        self.browser.setUrl(QtCore.QUrl(url))
+        self.webViewContainer.layout().addWidget(self.browser)
+        self.browser.show()
 
 app = QtWidgets.QApplication([])
 application = MainWindow()
