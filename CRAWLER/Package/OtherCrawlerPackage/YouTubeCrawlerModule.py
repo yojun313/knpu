@@ -7,7 +7,6 @@ PACKAGE_PATH = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
 from CrawlerModule import CrawlerModule
-from ToolModule import ToolModule
 import json
 from googleapiclient.discovery import build
 from bs4 import BeautifulSoup
@@ -18,13 +17,13 @@ import re
 
 class YouTubeCrawler(CrawlerModule):
 
-    def __init__(self, proxy_option=False, print_status_option=False):
+    def __init__(self, api_list, proxy_option=False, print_status_option=False):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
 
 
         self.api_dic = {}
-        self.api_list = self.read_txt(os.path.join(self.collection_path, 'YouTube_apiList.txt'))
+        self.api_list = api_list
         self.api_num = 1
         self.api_obj = build('youtube', 'v3', developerKey=self.api_list[self.api_num - 1])
 
