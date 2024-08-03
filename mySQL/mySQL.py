@@ -227,11 +227,18 @@ class mySQL:
             print(f"Failed to convert CSV file {csv_path} to table {tableName}")
             print(str(e))
 
-
+    def deleteTableRowByColumn(self, tableName, target, ColumnName):
+        try:
+            with self.conn.cursor() as cursor:
+                # DELETE 쿼리 생성
+                query = f"DELETE FROM `{tableName}` WHERE {ColumnName} = %s"
+                cursor.execute(query, (target,))
+                self.conn.commit()
+        except Exception as e:
+            print(f"Failed to delete row with id {target} from table {tableName}")
+            print(str(e))
 
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='REDACTED_IP', user='admin', password='***REMOVED***', port=3306, database='User_DB')
-    object = mySQL_obj.TableToDataframe('youtube_api')
-    print(object['API code'].tolist())
-    #mySQL_obj = mySQL(host='localhost', user='root', password='***REMOVED***', port=3306, database='User_DB')
+    mySQL_obj.deleteTableRowById(tableName='user_info', row_id=10)
