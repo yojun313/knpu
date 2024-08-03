@@ -147,6 +147,7 @@ class mySQL:
 
                 # INSERT 쿼리 생성
                 query = f"INSERT INTO `{tableName}` ({columns_str}) VALUES ({placeholders})"
+                print(query)
 
                 cursor.executemany(query, values)
 
@@ -231,5 +232,16 @@ class mySQL:
 
 if __name__ == "__main__":
     # 사용 예제
-    mySQL_obj = mySQL(host='localhost', user='root', password='kingsman', port=3306)
-    mySQL_obj.resetServer()
+    mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='User_DB')
+
+    data_list = [
+        ['admin', 'moonyojun@naver.com', 'uvz7oczixno7daxvgxmq65g2gbnsd5'],
+        ['이정우', 'wjddn_1541@naver.com', 'n'],
+        ['최우철', 'woc0633@gmail.com', 'n'],
+        ['노승국', 'science2200@naver.com', 'uxjkfr6cjx6bpcdx4oybq9xi51fjhz'],
+        ['배시웅', 'silverwolv@naver.com', 'n'],
+        ['한승혁', 'hankyeul80@naver.com', 'n'],
+        ['이진원', 'nevermean@empas.com', 'n']
+    ]
+
+    mySQL_obj.insertToTable('User_Info', data_list)
