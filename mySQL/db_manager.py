@@ -64,7 +64,8 @@ class TableWindow(QMainWindow):
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
-        uic.loadUi('main_window.ui', self)
+        ui_path = os.path.join(os.path.dirname(__file__), 'main_window.ui')
+        uic.loadUi(ui_path, self)
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
 
         self.mySQL_obj = mySQL(host='REDACTED_IP', user='admin', password='***REMOVED***', port=3306,
