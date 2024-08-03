@@ -22,12 +22,38 @@ class TableWindow(QMainWindow):
         self.setWindowTitle(target_db)
         self.setGeometry(100, 100, 800, 600)
 
+        self.parent = parent  # 부모 객체를 저장하여 나중에 사용
+        self.target_db = target_db  # target_db를 저장하여 나중에 사용
+
+        self.central_widget = QtWidgets.QWidget(self)
+        self.setCentralWidget(self.central_widget)
+
+        self.layout = QVBoxLayout(self.central_widget)
+
+        # 상단 버튼 레이아웃
+        self.button_layout = QtWidgets.QHBoxLayout()
+
+        # 새로고침 버튼 추가
+        self.refresh_button = QtWidgets.QPushButton("새로고침", self)
+        self.refresh_button.setFixedWidth(80)  # 가로 길이 조정
+        self.refresh_button.clicked.connect(self.refresh_table)
+        self.button_layout.addWidget(self.refresh_button)
+
+        # 닫기 버튼 추가
+        self.close_button = QtWidgets.QPushButton("닫기", self)
+        self.close_button.setFixedWidth(80)  # 가로 길이 조정
+        self.close_button.clicked.connect(self.close)
+        self.button_layout.addWidget(self.close_button)
+
+        # 버튼 레이아웃을 메인 레이아웃에 추가
+        self.layout.addLayout(self.button_layout)
+
         self.tabWidget_tables = QtWidgets.QTabWidget(self)
-        self.setCentralWidget(self.tabWidget_tables)
+        self.layout.addWidget(self.tabWidget_tables)
 
         # target_db가 주어지면 테이블 뷰를 초기화
         if target_db is not None:
-            self.init_table_view(parent.mySQL_obj, target_db)
+            self.init_table_view(self.parent.mySQL_obj, target_db)
 
     def init_table_view(self, mySQL_obj, target_db):
         # target_db에 연결
@@ -67,6 +93,9 @@ class TableWindow(QMainWindow):
 
             self.tabWidget_tables.addTab(new_tab, tableName.split('_')[-1])
 
+    def refresh_table(self):
+        # 테이블 뷰를 다시 초기화하여 데이터를 새로 로드
+        self.init_table_view(self.parent.mySQL_obj, self.target_db)
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -77,59 +106,111 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # 스타일시트 적용
         self.setStyleSheet("""
-                    QMainWindow {
-                        background-color: #f7f7f7;
-                        font-family: 'Segoe UI';
-                        font-size: 14px;
-                    }
-                    QPushButton {
-                        background-color: #2c3e50;
-                        color: white;
-                        border: none;
-                        border-radius: 5px;
-                        padding: 10px;
-                        font-family: 'Segoe UI';
-                        font-size: 14px;
-                    }
-                    QPushButton:hover {
-                        background-color: #34495e;
-                    }
-                    QLineEdit {
-                        border: 1px solid #bdc3c7;
-                        border-radius: 5px;
-                        padding: 8px;
-                        font-family: 'Segoe UI';
-                        font-size: 14px;
-                    }
-                    QTableWidget {
-                        background-color: white;
-                        border: 1px solid #bdc3c7;
-                        font-family: 'Segoe UI';
-                        font-size: 14px;
-                    }
-                    QHeaderView::section {
-                        background-color: #2c3e50;
-                        color: white;
-                        padding: 8px;
-                        border: none;
-                        font-family: 'Segoe UI';
-                        font-size: 14px;
-                    }
-                    QListWidget {
-                        background-color: #2c3e50;
-                        color: white;
-                        font-family: 'Segoe UI';
-                        font-size: 14px;
-                        border: none;
-                    }
-                    QListWidget::item {
-                        height: 40px;  /* 각 아이템의 높이를 조정 */
-                        padding: 10px;
-                    }
-                    QListWidget::item:selected {
-                        background-color: #34495e;
-                    }
-                """)
+                QMainWindow {
+                    background-color: #f7f7f7;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                }
+                QPushButton {
+                    background-color: #2c3e50;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 10px;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                }
+                QPushButton:hover {
+                    background-color: #34495e;
+                }
+                QLineEdit {
+                    border: 1px solid #bdc3c7;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                }
+                QTableWidget {
+                    background-color: white;
+                    border: 1px solid #bdc3c7;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                }
+                QHeaderView::section {
+                    background-color: #2c3e50;
+                    color: white;
+                    padding: 8px;
+                    border: none;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                }
+                QListWidget {
+                    background-color: #2c3e50;
+                    color: white;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                    border: none;
+                }
+                QListWidget::item {
+                    height: 40px;  /* 각 아이템의 높이를 조정 */
+                    padding: 10px;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                }
+                QListWidget::item:selected {
+                    background-color: #34495e;
+                }
+                QTabWidget::pane {
+                    border-top: 2px solid #bdc3c7;
+                    background-color: #f7f7f7;  /* Matches QMainWindow background */
+                }
+                QTabWidget::tab-bar {
+                    left: 5px;
+                }
+                QTabBar::tab {
+                    background: #2c3e50;  /* Matches QPushButton background */
+                    color: white;  /* Matches QPushButton text color */
+                    border: 1px solid #bdc3c7;
+                    border-bottom-color: #f7f7f7;  /* Matches QMainWindow background */
+                    border-radius: 4px;
+                    border-top-right-radius: 4px;
+                    padding: 10px;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                    min-width: 100px;  /* 최소 가로 길이 설정 */
+                    max-width: 200px;  /* 최대 가로 길이 설정 */
+                }
+                QTabBar::tab:selected, QTabBar::tab:hover {
+                    background: #34495e;  /* Matches QPushButton hover background */
+                }
+                QTabBar::tab:selected {
+                    border-color: #9B9B9B;
+                    border-bottom-color: #f7f7f7;
+                }
+                QPushButton#pushButton_divide_DB {
+                    background-color: #2c3e50;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 10px;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                    min-width: 70px;  /* 최소 가로 길이 설정 */
+                    max-width: 100px;  /* 최대 가로 길이 설정 */
+                }
+                QPushButton#pushButton_divide_DB:hover {
+                    background-color: #34495e;
+                }
+                QLabel#label_status_divide_DB {
+                    background-color: #f7f7f7;
+                    color: #2c3e50;
+                    border: 1px solid #bdc3c7;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                }
+            """)
 
         self.mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,
                                database='User_DB')
@@ -137,26 +218,33 @@ class MainWindow(QtWidgets.QMainWindow):
         self.listWidget.currentRowChanged.connect(self.display)
 
         # 테이블 초기화 및 예시 데이터 추가
+        self.refresh_data()
+
+        # DATABASE
+        self.database_button()
+
+        # CRAWLER
+        self.crawler_button()
+
+        # USER
+        self.user_button()
+
+        # DATA PROCESS
+        self.dataprocess_button()
+
+    def refresh_data(self):
         self.init_DB_table()
         self.init_user_table()
+        self.init_dataprocessDB_table()
 
-        # 버튼 연결
-        self.pushButton_delete_db.clicked.connect(self.delete_db)
-        self.pushButton_view_db.clicked.connect(self.view_db)
-        self.pushButton_save_db.clicked.connect(self.save_db)
-        self.pushButton_search_db.clicked.connect(self.search_db)
-        self.lineEdit_search.returnPressed.connect(self.search_db)
-
-        self.pushButton_delete_user.clicked.connect(self.delete_user)
-        self.pushButton_add_user.clicked.connect(self.add_user)
-
-        self.browser = None
-        self.crawler_history_button.clicked.connect(partial(self.open_webbrowser, "http://bigmaclab-crawler.kro.kr/history"))
-        self.crawler_dashboard_button.clicked.connect(partial(self.open_webbrowser, "http://bigmaclab-crawler.kro.kr"))
-        self.crawler_add_button.clicked.connect(partial(self.open_webbrowser, "http://bigmaclab-crawler.kro.kr/add_crawler"))
+    def display(self, index):
+        self.stackedWidget.setCurrentIndex(index)
+        if index == 1:
+            self.open_webbrowser('http://bigmaclab-crawler.kro.kr')
 
 
-    ################################################################################################
+
+    #DATABASE ######################################################################################
     def init_DB_table(self):
         self.database_list = self.mySQL_obj.showAllDB()
         db_data = []
@@ -183,33 +271,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tableWidget_db.setItem(i, 1, QTableWidgetItem(keyword))
             self.tableWidget_db.setItem(i, 2, QTableWidgetItem(date))
             self.tableWidget_db.setItem(i, 3, QTableWidgetItem(time))
-
-    def init_user_table(self):
-        self.mySQL_obj.connectDB('user_db')
-
-        self.userNameList = []
-        userDF = self.mySQL_obj.TableToDataframe('user_info')
-        user_data = [tuple(row) for row in userDF.itertuples(index=False, name=None)]
-
-        self.tableWidget_user.setRowCount(len(user_data))
-        self.tableWidget_user.setColumnCount(3)
-        self.tableWidget_user.setHorizontalHeaderLabels(['Name', 'Email', 'PushOverKey'])
-        self.tableWidget_user.setSelectionBehavior(QTableWidget.SelectRows)
-        self.tableWidget_user.setSelectionMode(QTableWidget.SingleSelection)
-
-        header = self.tableWidget_user.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Stretch)
-
-        for i, (id, name, email, key) in enumerate(user_data):
-            self.tableWidget_user.setItem(i, 0, QTableWidgetItem(name))
-            self.tableWidget_user.setItem(i, 1, QTableWidgetItem(email))
-            self.tableWidget_user.setItem(i, 2, QTableWidgetItem(key))
-            self.userNameList.append(name)
-
-    ################################################################################################
-
-    def display(self, index):
-        self.stackedWidget.setCurrentIndex(index)
 
     def delete_db(self):
         selected_row = self.tableWidget_db.currentRow()
@@ -300,6 +361,39 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             QMessageBox.warning(self, "Warning", "No directory selected.")
 
+    def database_button(self):
+        self.pushButton_delete_db.clicked.connect(self.delete_db)
+        self.pushButton_view_db.clicked.connect(self.view_db)
+        self.pushButton_save_db.clicked.connect(self.save_db)
+        self.pushButton_search_db.clicked.connect(self.search_db)
+        self.pushButton_refresh_db.clicked.connect(self.refresh_data)
+        self.lineEdit_search.returnPressed.connect(self.search_db)
+    ################################################################################################
+
+
+    # USER #########################################################################################
+    def init_user_table(self):
+        self.mySQL_obj.connectDB('user_db')
+
+        self.userNameList = []
+        userDF = self.mySQL_obj.TableToDataframe('user_info')
+        user_data = [tuple(row) for row in userDF.itertuples(index=False, name=None)]
+
+        self.tableWidget_user.setRowCount(len(user_data))
+        self.tableWidget_user.setColumnCount(3)
+        self.tableWidget_user.setHorizontalHeaderLabels(['Name', 'Email', 'PushOverKey'])
+        self.tableWidget_user.setSelectionBehavior(QTableWidget.SelectRows)
+        self.tableWidget_user.setSelectionMode(QTableWidget.SingleSelection)
+
+        header = self.tableWidget_user.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+
+        for i, (id, name, email, key) in enumerate(user_data):
+            self.tableWidget_user.setItem(i, 0, QTableWidgetItem(name))
+            self.tableWidget_user.setItem(i, 1, QTableWidgetItem(email))
+            self.tableWidget_user.setItem(i, 2, QTableWidgetItem(key))
+            self.userNameList.append(name)
+
     def delete_user(self):
         selected_row = self.tableWidget_user.currentRow()
         if selected_row >= 0:
@@ -334,6 +428,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.lineEdit_email.clear()
             self.lineEdit_key.clear()
 
+    def user_button(self):
+        self.pushButton_delete_user.clicked.connect(self.delete_user)
+        self.pushButton_add_user.clicked.connect(self.add_user)
+    ################################################################################################
+
+
+    # CRAWLER ######################################################################################
     def open_webbrowser(self, url):
         # 이전 브라우저가 있으면 제거
         if self.browser is not None:
@@ -345,6 +446,82 @@ class MainWindow(QtWidgets.QMainWindow):
         self.browser.setUrl(QtCore.QUrl(url))
         self.webViewContainer.layout().addWidget(self.browser)
         self.browser.show()
+
+    def crawler_button(self):
+        self.browser = None
+        self.crawler_history_button.clicked.connect(partial(self.open_webbrowser, "http://bigmaclab-crawler.kro.kr/history"))
+        self.crawler_dashboard_button.clicked.connect(partial(self.open_webbrowser, "http://bigmaclab-crawler.kro.kr"))
+        self.crawler_add_button.clicked.connect(partial(self.open_webbrowser, "http://bigmaclab-crawler.kro.kr/add_crawler"))
+    ################################################################################################
+
+    # Tab: 날짜 분할
+    def init_dataprocessDB_table(self):
+        self.database_list = self.mySQL_obj.showAllDB()
+        db_data = []
+        for db in self.database_list:
+            db_split = db.split('_')
+            type = db_split[0]
+            keyword = db_split[1]
+            date = f"{db_split[2]}~{db_split[3]}"
+            time = db_split[4] + db_split[5]
+            time = f"{time[:2]}/{time[2:4]} {time[4:6]}:{time[6:]}"
+            db_data.append((type, keyword, date, time))
+
+        self.tableWidget_data_process.setRowCount(len(self.database_list))
+        self.tableWidget_data_process.setColumnCount(4)
+        self.tableWidget_data_process.setHorizontalHeaderLabels(
+            ['Crawl Type', 'Crawl Keyword', 'Crawl Date', 'Crawl Time'])
+        self.tableWidget_data_process.setSelectionBehavior(QTableWidget.SelectRows)
+        self.tableWidget_data_process.setSelectionMode(QTableWidget.SingleSelection)
+
+        header = self.tableWidget_data_process.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+
+        for i, (type, keyword, date, time) in enumerate(db_data):
+            self.tableWidget_data_process.setItem(i, 0, QTableWidgetItem(type))
+            self.tableWidget_data_process.setItem(i, 1, QTableWidgetItem(keyword))
+            self.tableWidget_data_process.setItem(i, 2, QTableWidgetItem(date))
+            self.tableWidget_data_process.setItem(i, 3, QTableWidgetItem(time))
+
+    # Tab: 날짜 분할
+    def search_dataprocessDB(self):
+        search_text = self.lineEdit_search_dataprocessDB.text().lower()
+        if not search_text:
+            return
+
+        # 현재 선택된 행의 다음 행부터 검색 시작
+        start_row = self.tableWidget_data_process.currentRow() + 1 if self.tableWidget_data_process.currentRow() != -1 else 0
+
+        for row in range(start_row, self.tableWidget_data_process.rowCount()):
+            match = False
+            for col in range(self.tableWidget_data_process.columnCount()):
+                item = self.tableWidget_data_process.item(row, col)
+                if item and search_text in item.text().lower():
+                    match = True
+                    break
+
+            if match:
+                self.tableWidget_data_process.selectRow(row)
+                return
+
+        # 검색어가 처음부터 검색되도록 반복
+        for row in range(0, start_row):
+            match = False
+            for col in range(self.tableWidget_data_process.columnCount()):
+                item = self.tableWidget_data_process.item(row, col)
+                if item and search_text in item.text().lower():
+                    match = True
+                    break
+
+            if match:
+                self.tableWidget_data_process.selectRow(row)
+                return
+
+    def dataprocess_button(self):
+        self.pushButton_search_dataprocessDB.clicked.connect(self.search_dataprocessDB)
+        self.pushButton_refresh_dataprocessDB.clicked.connect(self.refresh_data)
+        self.lineEdit_search_dataprocessDB.returnPressed.connect(self.search_dataprocessDB)
+
 
 app = QtWidgets.QApplication([])
 application = MainWindow()

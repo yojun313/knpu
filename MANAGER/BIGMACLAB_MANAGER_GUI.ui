@@ -14,215 +14,308 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_main">
-     <item>
-       <widget class="QListWidget" name="listWidget">
-         <property name="minimumSize">
-           <size>
-             <width>100</width>
-             <height>0</height>
-           </size>
-         </property>
-         <property name="maximumSize">
-           <size>
-             <width>150</width>
-             <height>16777215</height>
-           </size>
-         </property>
-         <item>
-           <property name="text">
-             <string>DB 관리</string>
-           </property>
-         </item>
-         <item>
-           <property name="text">
-             <string>CRAWLER</string>
-           </property>
-         </item>
-         <item>
-           <property name="text">
-             <string>User 관리</string>
-           </property>
-         </item>
-       </widget>
-     </item>
-     <item>
-       <widget class="QStackedWidget" name="stackedWidget">
-         <widget class="QWidget" name="page_db">
-           <layout class="QVBoxLayout" name="verticalLayout_2">
-             <item>
-               <widget class="QTableWidget" name="tableWidget_db"/>
-             </item>
-             <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_search">
-                 <item>
-                   <widget class="QLineEdit" name="lineEdit_search">
-                     <property name="placeholderText">
-                       <string>검색어를 입력하고 Enter키나 검색 버튼을 누르세요...</string>
-                     </property>
-                   </widget>
-                 </item>
-                 <item>
-                   <widget class="QPushButton" name="pushButton_search_db">
-                     <property name="text">
-                       <string>검색</string>
-                     </property>
-                   </widget>
-                 </item>
-               </layout>
-             </item>
-             <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_2">
-                 <item>
-                   <spacer name="horizontalSpacer">
-                     <property name="sizeType">
-                       <enum>QSizePolicy::Expanding</enum>
-                     </property>
-                   </spacer>
-                 </item>
-                 <item>
-                   <widget class="QPushButton" name="pushButton_delete_db">
-                     <property name="text">
-                       <string>DB 삭제</string>
-                     </property>
-                   </widget>
-                 </item>
-                 <item>
-                   <widget class="QPushButton" name="pushButton_view_db">
-                     <property name="text">
-                       <string>DB 조회</string>
-                     </property>
-                   </widget>
-                 </item>
-                 <item>
-                   <widget class="QPushButton" name="pushButton_save_db">
-                     <property name="text">
-                       <string>DB 저장</string>
-                     </property>
-                   </widget>
-                 </item>
-               </layout>
-             </item>
-           </layout>
+    <item>
+     <widget class="QListWidget" name="listWidget">
+      <property name="minimumSize">
+       <size>
+        <width>100</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>150</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <item>
+       <property name="text">
+        <string>DATABASE</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>CRAWLER</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>DATA PROCESS</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>USER</string>
+       </property>
+      </item>
+     </widget>
+    </item>
+    <item>
+     <widget class="QStackedWidget" name="stackedWidget">
+      <widget class="QWidget" name="page_db">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QTableWidget" name="tableWidget_db"/>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_search">
+          <item>
+           <widget class="QLineEdit" name="lineEdit_search">
+            <property name="placeholderText">
+             <string>검색어를 입력하고 Enter키나 검색 버튼을 누르세요...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_search_db">
+            <property name="text">
+             <string>검색</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_refresh_db">
+            <property name="text">
+             <string>새로고침</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="sizeType">
+             <enum>QSizePolicy::Expanding</enum>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_delete_db">
+            <property name="text">
+             <string>DB 삭제</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_view_db">
+            <property name="text">
+             <string>DB 조회</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_save_db">
+            <property name="text">
+             <string>DB 저장</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_crawler">
+       <property name="windowTitle">
+        <string>CRAWLER</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <widget class="QWidget" name="webViewContainer">
+          <layout class="QVBoxLayout" name="webViewLayout"/>
          </widget>
-         <widget class="QWidget" name="page_log">
-           <property name="windowTitle">
-             <string>CRAWLER</string>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_4">
-             <item>
-               <widget class="QWidget" name="webViewContainer">
-                 <layout class="QVBoxLayout" name="webViewLayout"/>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <spacer name="horizontalSpacer_3">
+            <property name="sizeType">
+             <enum>QSizePolicy::Expanding</enum>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="crawler_history_button">
+            <property name="text">
+             <string>크롤링 기록</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="crawler_dashboard_button">
+            <property name="text">
+             <string>대시보드</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="crawler_add_button">
+            <property name="text">
+             <string>크롤러 추가</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_data_process">
+       <property name="windowTitle">
+        <string>DATA PROCESS</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_data_process">
+        <item>
+         <widget class="QTabWidget" name="tabWidget_data_process">
+          <property name="tabPosition">
+           <enum>QTabWidget::North</enum>
+          </property>
+          <widget class="QWidget" name="tab_1">
+           <attribute name="title">
+            <string>날짜 분할</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
+            <item>
+             <widget class="QTableWidget" name="tableWidget_data_process"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_search">
+              <item>
+               <widget class="QLineEdit" name="lineEdit_search_dataprocessDB">
+                <property name="placeholderText">
+                 <string>검색어를 입력하고 Enter키나 검색 버튼을 누르세요...</string>
+                </property>
                </widget>
-             </item>
-             <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_3">
-                 <item>
-                   <spacer name="horizontalSpacer_3">
-                     <property name="sizeType">
-                       <enum>QSizePolicy::Expanding</enum>
-                     </property>
-                   </spacer>
-                 </item>
-                 <item>
-                   <widget class="QPushButton" name="crawler_history_button">
-                     <property name="text">
-                       <string>크롤링 기록</string>
-                     </property>
-                   </widget>
-                 </item>
-                 <item>
-                   <widget class="QPushButton" name="crawler_dashboard_button">
-                     <property name="text">
-                       <string>대시보드</string>
-                     </property>
-                   </widget>
-                 </item>
-                 <item>
-                   <widget class="QPushButton" name="crawler_add_button">
-                     <property name="text">
-                       <string>크롤러 추가</string>
-                     </property>
-                   </widget>
-                 </item>
-               </layout>
-             </item>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButton_search_dataprocessDB">
+                <property name="text">
+                 <string>검색</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButton_refresh_dataprocessDB">
+                <property name="text">
+                 <string>새로고침</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_2">
+              <item>
+               <spacer name="horizontalSpacer">
+                <property name="sizeType">
+                 <enum>QSizePolicy::Expanding</enum>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButton_divide_DB">
+                <property name="text">
+                 <string>파일 분할(년/월)</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_status_divide_DB">
+                <property name="text">
+                 <string>상태 메시지</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
            </layout>
-         </widget>
-         <widget class="QWidget" name="page_user">
-           <layout class="QVBoxLayout" name="verticalLayout">
-             <item>
-               <widget class="QTableWidget" name="tableWidget_user"/>
-             </item>
-             <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_input">
-                 <item>
-                   <widget class="QLabel" name="label_name">
-                     <property name="text">
-                       <string>이름:</string>
-                     </property>
-                   </widget>
-                 </item>
-                 <item>
-                   <widget class="QLineEdit" name="lineEdit_name"/>
-                 </item>
-                 <item>
-                   <widget class="QLabel" name="label_email">
-                     <property name="text">
-                       <string>이메일:</string>
-                     </property>
-                   </widget>
-                 </item>
-                 <item>
-                   <widget class="QLineEdit" name="lineEdit_email"/>
-                 </item>
-                 <item>
-                   <widget class="QLabel" name="label_key">
-                     <property name="text">
-                       <string>Key:</string>
-                     </property>
-                   </widget>
-                 </item>
-                 <item>
-                   <widget class="QLineEdit" name="lineEdit_key"/>
-                 </item>
-               </layout>
-             </item>
-             <item>
-               <layout class="QHBoxLayout" name="horizontalLayout">
-                 <item>
-                   <spacer name="horizontalSpacer_2">
-                     <property name="sizeType">
-                       <enum>QSizePolicy::Expanding</enum>
-                     </property>
-                   </spacer>
-                 </item>
-                 <item>
-                   <widget class="QPushButton" name="pushButton_delete_user">
-                     <property name="text">
-                       <string>사용자 삭제</string>
-                     </property>
-                   </widget>
-                 </item>
-                 <item>
-                   <widget class="QPushButton" name="pushButton_add_user">
-                     <property name="text">
-                       <string>사용자 추가</string>
-                     </property>
-                   </widget>
-                 </item>
-               </layout>
-             </item>
+          </widget>
+          <widget class="QWidget" name="tab_2">
+           <attribute name="title">
+            <string>정렬 / 통계</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_2">
+            <item>
+             <widget class="QLabel" name="label_tab_2">
+              <property name="text">
+               <string>This is Tab 2</string>
+              </property>
+             </widget>
+            </item>
            </layout>
+          </widget>
          </widget>
-         <widget class="QWidget" name="page_table_view">
-           <layout class="QVBoxLayout" name="verticalLayout_3">
-             <item>
-               <widget class="QTabWidget" name="tabWidget_tables"/>
-             </item>
-           </layout>
-         </widget>
-       </widget>
-     </item>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_user">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QTableWidget" name="tableWidget_user"/>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_input">
+          <item>
+           <widget class="QLabel" name="label_name">
+            <property name="text">
+             <string>이름:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEdit_name"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_email">
+            <property name="text">
+             <string>이메일:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEdit_email"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_key">
+            <property name="text">
+             <string>Key:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEdit_key"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="sizeType">
+             <enum>QSizePolicy::Expanding</enum>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_delete_user">
+            <property name="text">
+             <string>사용자 삭제</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_add_user">
+            <property name="text">
+             <string>사용자 추가</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
