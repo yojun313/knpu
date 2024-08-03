@@ -1,10 +1,17 @@
+import os
 import sys
+
+MANAGER_PATH = os.path.dirname(os.path.abspath(__file__))
+BIGMACLAB_PATH = os.path.dirname(MANAGER_PATH)
+MYSQL_PATH = os.path.join(BIGMACLAB_PATH, 'MYSQL')
+
+sys.path.append(MYSQL_PATH)
+
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 import PyQt5.QtCore as QtCore
 from mySQL import mySQL
-import os
 import platform
 from functools import partial
 
@@ -67,6 +74,49 @@ class MainWindow(QtWidgets.QMainWindow):
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
         uic.loadUi(ui_path, self)
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
+
+        self.setStyleSheet("""
+                    QMainWindow {
+                        background-color: #f7f7f7;
+                    }
+                    QPushButton {
+                        background-color: #2c3e50;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        padding: 10px;
+                        font-size: 14px;
+                    }
+                    QPushButton:hover {
+                        background-color: #34495e;
+                    }
+                    QLineEdit {
+                        border: 1px solid #bdc3c7;
+                        border-radius: 5px;
+                        padding: 8px;
+                        font-size: 14px;
+                    }
+                    QTableWidget {
+                        background-color: white;
+                        border: 1px solid #bdc3c7;
+                        font-size: 14px;
+                    }
+                    QHeaderView::section {
+                        background-color: #2c3e50;
+                        color: white;
+                        padding: 8px;
+                        border: none;
+                    }
+                    QListWidget {
+                        background-color: #2c3e50;
+                        color: white;
+                        font-size: 14px;
+                        border: none;
+                    }
+                    QListWidget::item:selected {
+                        background-color: #34495e;
+                    }
+                """)
 
         self.mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,
                                database='User_DB')
