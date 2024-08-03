@@ -64,7 +64,7 @@ class TableWindow(QMainWindow):
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
-        ui_path = os.path.join(os.path.dirname(__file__), 'main_window.ui')
+        ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
         uic.loadUi(ui_path, self)
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
 
