@@ -67,7 +67,7 @@ class mySQL:
                 # 데이터베이스 이름을 리스트로 변환
                 database_list = [db[0] for db in databases]
 
-                remove_list = ['information_schema', 'mysql', 'performance_schema']
+                remove_list = ['information_schema', 'mysql', 'performance_schema', 'user_db']
                 for remove_target in remove_list:
                     database_list.remove(remove_target)
 
@@ -98,7 +98,6 @@ class mySQL:
             with self.conn.cursor() as cursor:
                 cursor.execute(f"DROP TABLE IF EXISTS {tableName}")
                 self.conn.commit()
-                print(f"Table {tableName} dropped successfully")
         except Exception as e:
             print(f"Failed to drop table {tableName}")
             print(str(e))
@@ -147,7 +146,7 @@ class mySQL:
 
                 # INSERT 쿼리 생성
                 query = f"INSERT INTO `{tableName}` ({columns_str}) VALUES ({placeholders})"
-                print(query)
+
 
                 cursor.executemany(query, values)
 
@@ -233,15 +232,6 @@ class mySQL:
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='User_DB')
-
-    data_list = [
-        ['admin', 'moonyojun@naver.com', 'uvz7oczixno7daxvgxmq65g2gbnsd5'],
-        ['이정우', 'wjddn_1541@naver.com', 'n'],
-        ['최우철', 'woc0633@gmail.com', 'n'],
-        ['노승국', 'science2200@naver.com', 'uxjkfr6cjx6bpcdx4oybq9xi51fjhz'],
-        ['배시웅', 'silverwolv@naver.com', 'n'],
-        ['한승혁', 'hankyeul80@naver.com', 'n'],
-        ['이진원', 'nevermean@empas.com', 'n']
-    ]
-
-    mySQL_obj.insertToTable('User_Info', data_list)
+    object = mySQL_obj.TableToDataframe('youtube_api')
+    print(object['API code'].tolist())
+    #mySQL_obj = mySQL(host='localhost', user='root', password='kingsman', port=3306, database='User_DB')

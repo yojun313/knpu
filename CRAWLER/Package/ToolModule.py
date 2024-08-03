@@ -1,15 +1,22 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
 
 CRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 CRAWLER_PATH        = os.path.dirname(CRAWLERPACKAGE_PATH)
+BIGMACLAB_PATH      = os.path.dirname(CRAWLER_PATH)
+MYSQL_PATH          = os.path.join(BIGMACLAB_PATH, 'mySQL')
 COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
+
+sys.path.append(MYSQL_PATH)
+
 
 import socket
 import csv
 import json
 import chardet
 import requests
+from mySQL import mySQL
 
 class ToolModule:
     def __init__(self):
@@ -23,13 +30,15 @@ class ToolModule:
             token_path          = crawler_folder_path
             computer_name       = 'HP OMEN'
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
-            
+            mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
+
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
             crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
             token_path          = crawler_folder_path
             computer_name       = 'HP Z8'
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
+            mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
         
         elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
             crawler_folder_path = '/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER'
@@ -37,6 +46,7 @@ class ToolModule:
             token_path          = crawler_folder_path
             computer_name       = "Yojun's MacBook Pro"
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
+            mySQL_obj = mySQL(host='localhost', user='root', password='kingsman', port=3306)
 
         elif socket.gethostname() == "BigMacServer":
             crawler_folder_path = "C:/Users/skroh/Documents/BIGMACLAB/CRAWLER"
@@ -44,20 +54,9 @@ class ToolModule:
             token_path = crawler_folder_path
             computer_name = "BIGMACLAB SERVER"
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
+            mySQL_obj = mySQL(host='localhost', user='root', password='bigmaclab2022!', port=3306)
 
-        return {'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name, 'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath}
-    # For testing Crawler_Package
-    def CrawlerChecker(self, target, result_option = False):
-            
-        if isinstance(target, dict):
-            first_key = list(target.keys())[0]
-            if first_key == 'Error Code':
-                print(target['Error Code'])
-                return
-            else:
-                print("GOOD\n")
-        if result_option == True:
-            print(target)
+        return {'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name, 'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath, 'mySQL': mySQL_obj}
     
     def read_txt(self, filepath):
         txt_path = filepath
@@ -84,31 +83,14 @@ class ToolModule:
         with open(os.path.join(csv_path, csv_name), 'w', newline = '', encoding='utf-8-sig', errors='ignore') as object:
             csv.writer(object).writerows(object_list)
     
-    def get_userEmail(self, input_name):
-        user_list = self.read_txt(os.path.join(COLLECTION_PATH, 'userList.txt'))
-        user_dict = {}
-        for user in user_list:
-            name, email = user.split()
-            user_dict[name] = email
-        try:
-            userEmail = user_dict[input_name]
-        except:
-            userEmail = 'moonyojun@naver.com'
-        
-        return userEmail
+    def get_userInfo(self, input_name, mysql):
+        mysql.connectDB(database_name='user_db')
+        df = mysql.TableToDataframe(tableName='user_info')
 
-    def get_pushover(self, input_name):
-        user_list = self.read_txt(os.path.join(COLLECTION_PATH, 'userPushOverList.txt'))
-        user_dict = {}
-        for user in user_list:
-            name, pushover = user.split()
-            user_dict[name] = pushover
-        try:
-            pushover = user_dict[input_name]
-        except:
-            pushover = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
+        email = df.loc[df['Name'] == input_name, 'Email'].values[0]
+        pushover = df.loc[df['Name'] == input_name, 'PushOver'].values[0]
 
-        return pushover
+        return {'Email': email, 'PushOver': pushover}
 
     def send_pushOver(self, msg, user_key):
         app_key_list  = ["a273soeggkmq1eafdyghexusve42bq", "a39cudwdti3ap97kax9pmvp6gdm2b9"]
@@ -128,7 +110,6 @@ class ToolModule:
                 break
             except:
                 continue
-
 
     def print_json(self, json_data):
         
@@ -185,5 +166,5 @@ class ToolModule:
         return error_dic[errorCode]
 
 if __name__ == '__main__':
-    ToolPackage_obj = ToolModule()
-    print(ToolPackage_obj.get_userEmail('문요준'))
+    ToolModule = ToolModule()
+    mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='User_DB')
