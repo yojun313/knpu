@@ -74,9 +74,10 @@ class Crawler(CrawlerModule):
 
     def makemySQL(self):
         if socket.gethostname() == "Yojuns-MacBook-Pro.local":
-            self.mySQL = mySQL(host='localhost', user='root', password='kingsman', port=3306)
+            self.mySQL = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
         elif socket.gethostname() == "BigMacServer":
             self.mySQL = mySQL(host='localhost', user='root', password='bigmaclab2022!', port=3306)
+            
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
         self.DBname      = f"{DBtype}_{self.DBkeyword}{dbname_date}_{self.now.strftime('%m%d_%H%M')}"
@@ -94,7 +95,7 @@ class Crawler(CrawlerModule):
             log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'),'w+')
             
             self.msg = (
-                f"==============================================================================================================================\n"
+                f"=======================================================================================================================================\n"
                 f"{'User:':<15} {self.user}\n"
                 f"{'Object:':<15} {self.DBtype}\n"
                 f"{'Option:':<15} {self.option}\n"
@@ -105,7 +106,7 @@ class Crawler(CrawlerModule):
                 f"{'DB path:':<15} {self.DBpath}\n"
                 f"{'Drive Upload:':<15} {self.upload}\n"
                 f"{'Crawler Speed:':<15} {self.speed}\n"
-                f"==============================================================================================================================\n"
+                f"=======================================================================================================================================\n"
             )
             log.write(self.msg + '\n\n')
             log.close()
