@@ -57,7 +57,7 @@
                  <item>
                    <widget class="QLineEdit" name="lineEdit_search">
                      <property name="placeholderText">
-                       <string>검색어를 입력하세요...</string>
+                       <string>검색어를 입력하고 Enter키나 검색 버튼을 누르세요...</string>
                      </property>
                    </widget>
                  </item>

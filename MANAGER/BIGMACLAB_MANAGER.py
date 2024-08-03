@@ -75,9 +75,12 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi(ui_path, self)
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
 
+        # 스타일시트 적용
         self.setStyleSheet("""
                     QMainWindow {
                         background-color: #f7f7f7;
+                        font-family: 'Segoe UI';
+                        font-size: 14px;
                     }
                     QPushButton {
                         background-color: #2c3e50;
@@ -85,6 +88,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         border: none;
                         border-radius: 5px;
                         padding: 10px;
+                        font-family: 'Segoe UI';
                         font-size: 14px;
                     }
                     QPushButton:hover {
@@ -94,11 +98,13 @@ class MainWindow(QtWidgets.QMainWindow):
                         border: 1px solid #bdc3c7;
                         border-radius: 5px;
                         padding: 8px;
+                        font-family: 'Segoe UI';
                         font-size: 14px;
                     }
                     QTableWidget {
                         background-color: white;
                         border: 1px solid #bdc3c7;
+                        font-family: 'Segoe UI';
                         font-size: 14px;
                     }
                     QHeaderView::section {
@@ -106,12 +112,19 @@ class MainWindow(QtWidgets.QMainWindow):
                         color: white;
                         padding: 8px;
                         border: none;
+                        font-family: 'Segoe UI';
+                        font-size: 14px;
                     }
                     QListWidget {
                         background-color: #2c3e50;
                         color: white;
+                        font-family: 'Segoe UI';
                         font-size: 14px;
                         border: none;
+                    }
+                    QListWidget::item {
+                        height: 40px;  /* 각 아이템의 높이를 조정 */
+                        padding: 10px;
                     }
                     QListWidget::item:selected {
                         background-color: #34495e;
@@ -131,6 +144,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_delete_db.clicked.connect(self.delete_db)
         self.pushButton_view_db.clicked.connect(self.view_db)
         self.pushButton_save_db.clicked.connect(self.save_db)
+        self.pushButton_search_db.clicked.connect(self.search_db)
         self.lineEdit_search.returnPressed.connect(self.search_db)
 
         self.pushButton_delete_user.clicked.connect(self.delete_user)
