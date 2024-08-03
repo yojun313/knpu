@@ -176,7 +176,7 @@ class Crawler(CrawlerModule):
         NaverNewsCrawler_obj.setCrawlSpeed(self.speed)
 
         self.option = option
-        self.DBtype = "NaverNews"
+        self.DBtype = "navernews"
         self.DBMaker(self.DBtype)
 
         # initial list
@@ -265,7 +265,7 @@ class Crawler(CrawlerModule):
         NaverBlogCrawler_obj.setCrawlSpeed(self.speed)
 
         self.option = option
-        self.DBtype = "NaverBlog"
+        self.DBtype = "naverblog"
         self.DBMaker(self.DBtype)
         
         # initial list
@@ -332,7 +332,7 @@ class Crawler(CrawlerModule):
         NaverCafeCrawler_obj.setCrawlSpeed(self.speed)
 
         self.option = option
-        self.DBtype = "NaverCafe"
+        self.DBtype = "navercafe"
         self.DBMaker(self.DBtype)
         
         # initial list
@@ -402,7 +402,7 @@ class Crawler(CrawlerModule):
         YouTubeCrawler_obj = YouTubeCrawler(api_list=api_list, proxy_option=True, print_status_option=True)
         
         self.option = option
-        self.DBtype = "YouTube"
+        self.DBtype = "youtube"
         self.DBMaker(self.DBtype)
         self.api_num = 1
         
@@ -472,7 +472,7 @@ class Crawler(CrawlerModule):
         ChinaDailyCrawler_obj = ChinaDailyCrawler(proxy_option=True, print_status_option=True)
         
         self.option = option
-        self.DBtype = "ChinaDaily"
+        self.DBtype = "chinadaily"
         self.DBMaker(self.DBtype)
         
         article_column = ['Article Source', 'Article Title', 'Article Text', 'Article Date', 'Article Theme', 'Article URL', 'Article SearchURL']
@@ -520,7 +520,7 @@ class Crawler(CrawlerModule):
         ChinaSinaCrawler_obj.setCrawlSpeed(self.speed)
         
         self.option = option
-        self.DBtype = "ChinaSina"
+        self.DBtype = "chinasina"
         self.DBMaker(self.DBtype)
         
 
