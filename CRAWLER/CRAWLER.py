@@ -39,17 +39,19 @@ class Crawler(CrawlerModule):
         self.speed = int(speed)
         self.saveInterval = 90
         self.GooglePackage_obj = GoogleModule(self.pathFinder()['token_path'])
-        self.makemySQL()
         
         # Computer Info
         self.scrapdata_path = self.pathFinder(user)['scrapdata_path']
         self.crawlcom       = self.pathFinder(user)['computer_name']
+        self.mySQL          = self.pathFinder(user)['mySQL']
         
         # User Info
         self.user      = user
-        self.userEmail = self.get_userEmail(user)
-        self.pushoverKey = self.get_pushover(user)
-        
+
+        userData = self.get_userInfo(user, self.mySQL)
+        self.userEmail = userData['Email']
+        self.pushoverKey = userData['PushOver']
+
         # For Web Version
         self.weboption = int(weboption)
         
@@ -71,14 +73,6 @@ class Crawler(CrawlerModule):
 
     def webCrawlerStop(self):
         self.running = False
-
-    def makemySQL(self):
-        if socket.gethostname() == "BigMacServer":
-            self.mySQL = mySQL(host='localhost', user='root', password='bigmaclab2022!', port=3306)
-        elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
-            self.mySQL = mySQL(host='localhost', user='root', password='kingsman', port=3306)
-        else:
-            self.mySQL = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
             
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
@@ -400,8 +394,12 @@ class Crawler(CrawlerModule):
             return
 
     def YouTube_Crawler(self, option):
-        
-        YouTubeCrawler_obj = YouTubeCrawler(proxy_option=True, print_status_option=True)
+
+        self.mySQL.connectDB('user_db')
+        api_list_df = self.mySQL.TableToDataframe('youtube_api')
+        api_list = api_list_df['API code'].tolist()
+
+        YouTubeCrawler_obj = YouTubeCrawler(api_list=api_list, proxy_option=True, print_status_option=True)
         
         self.option = option
         self.DBtype = "YouTube"
