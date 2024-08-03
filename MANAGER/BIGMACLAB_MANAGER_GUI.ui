@@ -61,6 +61,13 @@
                      </property>
                    </widget>
                  </item>
+                 <item>
+                   <widget class="QPushButton" name="pushButton_search_db">
+                     <property name="text">
+                       <string>검색</string>
+                     </property>
+                   </widget>
+                 </item>
                </layout>
              </item>
              <item>

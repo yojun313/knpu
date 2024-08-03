@@ -5,7 +5,7 @@ import sys
 CRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 CRAWLER_PATH        = os.path.dirname(CRAWLERPACKAGE_PATH)
 BIGMACLAB_PATH      = os.path.dirname(CRAWLER_PATH)
-MYSQL_PATH          = os.path.join(BIGMACLAB_PATH, 'mySQL')
+MYSQL_PATH          = os.path.join(BIGMACLAB_PATH, 'MYSQL')
 COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
 
 sys.path.append(MYSQL_PATH)
@@ -56,7 +56,7 @@ class ToolModule:
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
             mySQL_obj = mySQL(host='localhost', user='root', password='bigmaclab2022!', port=3306)
 
-        return {'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name, 'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath, 'mySQL': mySQL_obj}
+        return {'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name, 'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath, 'MYSQL': mySQL_obj}
     
     def read_txt(self, filepath):
         txt_path = filepath
