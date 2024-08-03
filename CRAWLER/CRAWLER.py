@@ -3,7 +3,7 @@ import sys
 
 CRAWLER_PATH = os.path.dirname(os.path.abspath(__file__))
 BIGMACLAB_PATH      = os.path.dirname(CRAWLER_PATH)
-MYSQL_PATH          = os.path.join(BIGMACLAB_PATH, 'mySQL')
+MYSQL_PATH          = os.path.join(BIGMACLAB_PATH, 'MYSQL')
 sys.path.append(MYSQL_PATH)
 
 import time
@@ -43,7 +43,7 @@ class Crawler(CrawlerModule):
         # Computer Info
         self.scrapdata_path = self.pathFinder(user)['scrapdata_path']
         self.crawlcom       = self.pathFinder(user)['computer_name']
-        self.mySQL          = self.pathFinder(user)['mySQL']
+        self.mySQL          = self.pathFinder(user)['MYSQL']
         
         # User Info
         self.user      = user
