@@ -5,3 +5,6 @@ __pycache__/
 
 # macOS에서 생성되는 파일
 .DS_Store
+
+# Ignore .exe files
+*.exe
