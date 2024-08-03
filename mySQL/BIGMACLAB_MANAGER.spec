@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['db_manager.py'],
+    ['BIGMACLAB_MANAGER.py'],
     pathex=[],
     binaries=[],
-    datas=[('main_window.ui', '.')],
+    datas=[('BIGMACLAB_MANAGER_GUI.ui', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='db_manager',
+    name='BIGMACLAB_MANAGER',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
