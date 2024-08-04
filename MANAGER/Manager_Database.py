@@ -1,6 +1,7 @@
 import os
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog
+from PyQt5.QtCore import Qt
 import platform
 
 class TableWindow(QMainWindow):
@@ -90,29 +91,33 @@ class Manager_Database:
         self.database_init_table()
         self.database_buttonMatch()
 
+    from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
+    from PyQt5.QtCore import Qt
+
     def database_init_table(self):
         db_data = []
         for db in self.main.DB_list:
-            db_split  = db.split('_')
+            db_split = db.split('_')
             crawltype = db_split[0]
-            keyword   = db_split[1]
-            date      = f"{db_split[2]}~{db_split[3]}"
-            time      = db_split[4] + db_split[5]
-            time      = f"{time[:2]}/{time[2:4]} {time[4:6]}:{time[6:]}"
+            keyword = db_split[1]
+            date = f"{db_split[2]}~{db_split[3]}"
+            time = db_split[4] + db_split[5]
+            time = f"{time[:2]}/{time[2:4]} {time[4:6]}:{time[6:]}"
             db_data.append((crawltype, keyword, date, time))
 
         self.main.database_tablewidget.setRowCount(len(self.main.DB_list))
         self.main.database_tablewidget.setColumnCount(4)
-        self.main.database_tablewidget.setHorizontalHeaderLabels(['Crawl Type', 'Crawl Keyword', 'Crawl Date', 'Crawl Time'])
+        self.main.database_tablewidget.setHorizontalHeaderLabels(
+            ['Crawl Type', 'Crawl Keyword', 'Crawl Date', 'Crawl Time'])
         self.main.database_tablewidget.setSelectionBehavior(QTableWidget.SelectRows)
         self.main.database_tablewidget.setSelectionMode(QTableWidget.SingleSelection)
         self.main.database_tablewidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        for i, (crawltype, keyword, date, time) in enumerate(db_data):
-            self.main.database_tablewidget.setItem(i, 0, QTableWidgetItem(crawltype))
-            self.main.database_tablewidget.setItem(i, 1, QTableWidgetItem(keyword))
-            self.main.database_tablewidget.setItem(i, 2, QTableWidgetItem(date))
-            self.main.database_tablewidget.setItem(i, 3, QTableWidgetItem(time))
+        for i, row_data in enumerate(db_data):
+            for j, cell_data in enumerate(row_data):
+                item = QTableWidgetItem(cell_data)
+                item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
+                self.main.database_tablewidget.setItem(i, j, item)
 
     def database_delete_DB(self):
         selected_row = self.main.database_tablewidget.currentRow()
