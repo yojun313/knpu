@@ -73,9 +73,10 @@ class Crawler(CrawlerModule):
         option = self.option
         starttime = datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')
         endtime = '-'
-        if endoption:
+        if endoption == True:
             endtime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
         user = self.user
+        self.mySQL.connectDB(self.DBname)
         self.mySQL.insertToTable(self.DBname + '_info', [option, starttime, endtime, user])
 
     def webCrawlerStop(self):
