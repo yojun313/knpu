@@ -1,14 +1,5 @@
 import os
 import sys
-
-MANAGER_PATH = os.path.dirname(os.path.abspath(__file__))
-PACKAGE_PATH = os.path.join(MANAGER_PATH, 'Package')
-BIGMACLAB_PATH = os.path.dirname(MANAGER_PATH)
-MYSQL_PATH = os.path.join(BIGMACLAB_PATH, 'MYSQL')
-
-sys.path.append(MYSQL_PATH)
-sys.path.append(PACKAGE_PATH)
-
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QAction, QLabel
 from PyQt5.QtCore import Qt
