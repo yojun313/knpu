@@ -81,6 +81,7 @@ class Crawler(CrawlerModule):
         self.mySQL.commit()
 
     def webCrawlerRunCheck(self):
+        print('\rStopped by BIGMACLAB MANAGER PROGRAM', end = '')
         if self.DBname in self.mySQL.showAllDB():
             self.running = True
         else:
