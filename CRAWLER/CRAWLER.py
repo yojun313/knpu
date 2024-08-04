@@ -82,10 +82,7 @@ class Crawler(CrawlerModule):
 
     def webCrawlerRunCheck(self):
         print('\rStopped by BIGMACLAB MANAGER PROGRAM', end = '')
-        if self.DBname in self.mySQL.showAllDB():
-            self.running = True
-        else:
-            self.running = False
+        sys.exit()
 
 
             
@@ -269,6 +266,7 @@ class Crawler(CrawlerModule):
                             if self.ReturnChecker(rereplyList_returnData) == True and rereplyList_returnData['rereplyList'] != []:
                                 self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=rereplyList_returnData['rereplyList'])
 
+                    self.webCrawlerRunCheck()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
 
