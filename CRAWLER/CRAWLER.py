@@ -169,7 +169,7 @@ class Crawler(CrawlerModule):
             f"| 소요시간: {crawltime} ||"
         )
 
-        self.DBinfoRecorder()
+        self.DBinfoRecorder(endoption=True)
 
         log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'), 'a')
         log.write('\n\n'+end_msg)
