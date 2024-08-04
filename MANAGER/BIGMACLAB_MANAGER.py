@@ -1,7 +1,7 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QAction, QLabel, QStatusBar
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QAction, QLabel, QStatusBar, QHBoxLayout
 from PyQt5.QtCore import Qt
 from mySQL import mySQL
 from Manager_Database import Manager_Database
@@ -17,16 +17,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
         self.setGeometry(0, 0, 1400, 900)
 
-        self.statusBar = QStatusBar()
-        self.setStatusBar(self.statusBar)
-
-        # 왼쪽에 표시할 레이블 생성
+        # 상태 표시줄 생성
+        self.statusbar = QStatusBar()
+        self.setStatusBar(self.statusbar)
         self.left_label = QLabel("  Copyright 2024. BIGMACLAB all rights reserved.")
-        self.statusBar.addWidget(self.left_label)
-
-        self.right_label = QLabel()
-        self.statusBar.addPermanentWidget(self.right_label)
-
+        self.right_label = QLabel(" hello")
+        self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.right_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.statusbar.addPermanentWidget(self.left_label, 1)
+        self.statusbar.addPermanentWidget(self.right_label, 1)
 
         # 스타일시트 적용
         self.setStyle()
@@ -184,17 +183,25 @@ class MainWindow(QtWidgets.QMainWindow):
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
         if index == 0:
+            self.printStatus("불러오는 중")
+            QtWidgets.QApplication.processEvents()
             self.Manager_Database_obj    = Manager_Database(self)
-        if index == 1:
+            self.printStatus()
+        elif index == 1:
             self.Manager_Crawler_obj.crawler_open_webbrowser('http://bigmaclab-crawler.kro.kr')
-        if index == 2:
+        elif index == 2:
+            self.printStatus("불러오는 중")
+            QtWidgets.QApplication.processEvents()
             self.Manager_Dataprocess_obj = Manager_Dataprocess_TabDB(self)
-        if index == 3:
+            self.printStatus()
+        elif index == 3:
             self.Manager_User_obj = Manager_User(self)
 
-
     def printStatus(self, message=''):
-        self.right_label.setText(message)  # 오른쪽 레이블의 텍스트를 업데이트
+
+        self.right_label.setText(message)
+
+
 
 
 

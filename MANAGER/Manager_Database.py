@@ -51,6 +51,8 @@ class TableWindow(QMainWindow):
         self.tabWidget_tables.clear()  # 기존 탭 내용 초기화
 
         for tableName in tableNameList:
+            if 'info' in tableName:
+                continue
             tableDF = mySQL_obj.TableToDataframe(tableName)
 
             # 데이터프레임 값을 튜플 형태의 리스트로 변환
