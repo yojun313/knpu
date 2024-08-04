@@ -28,7 +28,6 @@ class NaverNewsCrawler(CrawlerModule):
         super().__init__(proxy_option)
         self.print_status_option = print_status_option
 
-
         self.delay = 1
         self.rate_limit = 5
         self.last_request_time = 0
