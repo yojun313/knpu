@@ -53,7 +53,7 @@ class MainWindow(QtWidgets.QMainWindow):
             starttime = db_info[2]
             endtime = db_info[3]
             if endtime == '-':
-                endtime = '진행 중'
+                endtime = '크롤링 중'
             requester = db_info[4]
 
             db_data.append((crawltype, keyword, date, option, starttime, endtime, requester))
