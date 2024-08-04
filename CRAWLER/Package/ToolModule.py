@@ -5,10 +5,10 @@ import sys
 CRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 CRAWLER_PATH        = os.path.dirname(CRAWLERPACKAGE_PATH)
 BIGMACLAB_PATH      = os.path.dirname(CRAWLER_PATH)
-MYSQL_PATH          = os.path.join(BIGMACLAB_PATH, 'MYSQL')
+MANAGER_PATH          = os.path.join(BIGMACLAB_PATH, 'MANAGER')
 COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
 
-sys.path.append(MYSQL_PATH)
+sys.path.append(MANAGER_PATH)
 
 
 import socket
