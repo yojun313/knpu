@@ -3,8 +3,8 @@ import sys
 
 CRAWLER_PATH = os.path.dirname(os.path.abspath(__file__))
 BIGMACLAB_PATH      = os.path.dirname(CRAWLER_PATH)
-MYSQL_PATH          = os.path.join(BIGMACLAB_PATH, 'MYSQL')
-sys.path.append(MYSQL_PATH)
+MANAGER_PATH        = os.path.join(BIGMACLAB_PATH, 'MANAGER')
+sys.path.append(MANAGER_PATH)
 
 import time
 import asyncio

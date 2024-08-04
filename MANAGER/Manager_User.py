@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox
+from PyQt5.QtCore import Qt
 
 class Manager_User:
     def __init__(self, main_window):
@@ -23,9 +24,11 @@ class Manager_User:
         header.setSectionResizeMode(QHeaderView.Stretch)
 
         for i, (id, name, email, key) in enumerate(user_data):
-            self.main.user_tablewidget.setItem(i, 0, QTableWidgetItem(name))
-            self.main.user_tablewidget.setItem(i, 1, QTableWidgetItem(email))
-            self.main.user_tablewidget.setItem(i, 2, QTableWidgetItem(key))
+            for j, cell_data in enumerate((name, email, key)):
+                item = QTableWidgetItem(cell_data)
+                item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
+                self.main.user_tablewidget.setItem(i, j, item)
+
             self.userNameList.append(name)
 
     def user_add_user(self):

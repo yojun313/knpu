@@ -1,7 +1,7 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QAction, QLabel
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QAction, QLabel, QStatusBar
 from PyQt5.QtCore import Qt
 from mySQL import mySQL
 from Manager_Database import Manager_Database
@@ -15,11 +15,9 @@ class MainWindow(QtWidgets.QMainWindow):
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
         uic.loadUi(ui_path, self)
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
-        self.status_label = QLabel()
-        self.statusBar().addPermanentWidget(self.status_label, 1)
-        self.status_label.setAlignment(Qt.AlignRight)
 
-        self.printStatus("Copyright 2024. BIGMACLAB all rights reserved.")
+
+        self.printStatus("상태표시창")
 
         # 스타일시트 적용
         self.setStyle()
@@ -48,9 +46,9 @@ class MainWindow(QtWidgets.QMainWindow):
                             color: white;
                             border: none;
                             border-radius: 5px;
-                            padding: 10px;
+                            padding: 13px;
                             font-family: 'Tahoma';
-                            font-size: 14px;
+                            font-size: 15px;
                         }
                         QPushButton:hover {
                             background-color: #34495e;
@@ -144,15 +142,25 @@ class MainWindow(QtWidgets.QMainWindow):
                         }
                     """)
 
-
-
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
         if index == 1:
             self.Manager_Crawler_obj.crawler_open_webbrowser('http://bigmaclab-crawler.kro.kr')
 
-    def printStatus(self, message):
-        self.status_label.setText(message)
+    def printStatus(self, message=''):
+        # 상태 표시줄 생성
+        self.statusBar = QStatusBar()
+        self.setStatusBar(self.statusBar)
+
+        # 왼쪽에 표시할 레이블 생성
+        self.left_label = QLabel("  Copyright 2024. BIGMACLAB all rights reserved.")
+        self.statusBar.addWidget(self.left_label)
+
+        # 오른쪽에 표시할 레이블 생성
+        self.right_label = QLabel(message)
+        self.statusBar.addPermanentWidget(self.right_label)
+
+        self.show()
 
 app = QtWidgets.QApplication([])
 application = MainWindow()
