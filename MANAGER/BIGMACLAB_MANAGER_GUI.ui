@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
@@ -5,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1069</width>
+    <height>748</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +19,7 @@
      <widget class="QListWidget" name="listWidget">
       <property name="minimumSize">
        <size>
-        <width>100</width>
+        <width>75</width>
         <height>0</height>
        </size>
       </property>
@@ -52,29 +53,32 @@
     </item>
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
-      <widget class="QWidget" name="page_db">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="page_database">
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QTableWidget" name="tableWidget_db"/>
+         <widget class="QTableWidget" name="database_tablewidget"/>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_search">
           <item>
-           <widget class="QLineEdit" name="lineEdit_search">
+           <widget class="QLineEdit" name="database_searchDB_lineinput">
             <property name="placeholderText">
              <string>검색어를 입력하고 Enter키나 검색 버튼을 누르세요...</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_search_db">
+           <widget class="QPushButton" name="database_searchDB_button">
             <property name="text">
              <string>검색</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_refresh_db">
+           <widget class="QPushButton" name="database_refreshDB_button">
             <property name="text">
              <string>새로고침</string>
             </property>
@@ -83,30 +87,26 @@
          </layout>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0">
+          <property name="sizeConstraint">
+           <enum>QLayout::SetNoConstraint</enum>
+          </property>
           <item>
-           <spacer name="horizontalSpacer">
-            <property name="sizeType">
-             <enum>QSizePolicy::Expanding</enum>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_delete_db">
+           <widget class="QPushButton" name="database_deleteDB_button">
             <property name="text">
              <string>DB 삭제</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_view_db">
+           <widget class="QPushButton" name="database_viewDB_button">
             <property name="text">
              <string>DB 조회</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_save_db">
+           <widget class="QPushButton" name="database_saveDB_button">
             <property name="text">
              <string>DB 저장</string>
             </property>
@@ -122,19 +122,10 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="QWidget" name="webViewContainer">
-          <layout class="QVBoxLayout" name="webViewLayout"/>
-         </widget>
+         <widget class="QWidget" name="webViewLayout" native="true"/>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <spacer name="horizontalSpacer_3">
-            <property name="sizeType">
-             <enum>QSizePolicy::Expanding</enum>
-            </property>
-           </spacer>
-          </item>
           <item>
            <widget class="QPushButton" name="crawler_history_button">
             <property name="text">
@@ -170,32 +161,42 @@
           <property name="tabPosition">
            <enum>QTabWidget::North</enum>
           </property>
-          <widget class="QWidget" name="tab_1">
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="tab_DB">
            <attribute name="title">
-            <string>날짜 분할</string>
+            <string>DB 불러오기</string>
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_tab_1">
             <item>
-             <widget class="QTableWidget" name="tableWidget_data_process"/>
+             <widget class="QTableWidget" name="dataprocess_tab1_tablewidget">
+              <property name="minimumSize">
+               <size>
+                <width>19</width>
+                <height>1</height>
+               </size>
+              </property>
+             </widget>
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_search">
               <item>
-               <widget class="QLineEdit" name="lineEdit_search_dataprocessDB">
+               <widget class="QLineEdit" name="dataprocess_tab1_searchDB_lineinput">
                 <property name="placeholderText">
                  <string>검색어를 입력하고 Enter키나 검색 버튼을 누르세요...</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="pushButton_search_dataprocessDB">
+               <widget class="QPushButton" name="dataprocess_tab1_searchDB_button">
                 <property name="text">
                  <string>검색</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="pushButton_refresh_dataprocessDB">
+               <widget class="QPushButton" name="dataprocess_tab1_refreshDB_button">
                 <property name="text">
                  <string>새로고침</string>
                 </property>
@@ -204,25 +205,48 @@
              </layout>
             </item>
             <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <layout class="QHBoxLayout" name="horizontalLayout_6" stretch=""/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_button">
               <item>
-               <spacer name="horizontalSpacer">
-                <property name="sizeType">
-                 <enum>QSizePolicy::Expanding</enum>
+               <widget class="QPushButton" name="dataprocess_tab1_dividefile_button">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
                 </property>
-               </spacer>
-              </item>
-              <item>
-               <widget class="QPushButton" name="pushButton_divide_DB">
+                <property name="minimumSize">
+                 <size>
+                  <width>44</width>
+                  <height>0</height>
+                 </size>
+                </property>
                 <property name="text">
-                 <string>파일 분할(년/월)</string>
+                 <string>분할(년/월)</string>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+                <property name="default">
+                 <bool>false</bool>
+                </property>
+                <property name="flat">
+                 <bool>false</bool>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QLabel" name="label_status_divide_DB">
+               <widget class="QPushButton" name="pushButton">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
-                 <string>상태 메시지</string>
+                 <string>정렬/통계</string>
                 </property>
                </widget>
               </item>
@@ -230,9 +254,9 @@
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="tab_2">
+          <widget class="QWidget" name="tab_file">
            <attribute name="title">
-            <string>정렬 / 통계</string>
+            <string>파일 불러오기</string>
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_tab_2">
             <item>
@@ -251,7 +275,7 @@
       <widget class="QWidget" name="page_user">
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <widget class="QTableWidget" name="tableWidget_user"/>
+         <widget class="QTableWidget" name="user_tablewidget"/>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_input">
@@ -263,7 +287,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit_name"/>
+           <widget class="QLineEdit" name="user_name_lineinput"/>
           </item>
           <item>
            <widget class="QLabel" name="label_email">
@@ -273,7 +297,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit_email"/>
+           <widget class="QLineEdit" name="user_email_lineinput"/>
           </item>
           <item>
            <widget class="QLabel" name="label_key">
@@ -283,28 +307,21 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit_key"/>
+           <widget class="QLineEdit" name="user_key_lineinput"/>
           </item>
          </layout>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
-           <spacer name="horizontalSpacer_2">
-            <property name="sizeType">
-             <enum>QSizePolicy::Expanding</enum>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButton_delete_user">
+           <widget class="QPushButton" name="user_deleteuser_button">
             <property name="text">
              <string>사용자 삭제</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_add_user">
+           <widget class="QPushButton" name="user_adduser_button">
             <property name="text">
              <string>사용자 추가</string>
             </property>
@@ -323,7 +340,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1069</width>
      <height>21</height>
     </rect>
    </property>
