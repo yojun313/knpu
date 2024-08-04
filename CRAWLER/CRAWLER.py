@@ -69,6 +69,15 @@ class Crawler(CrawlerModule):
         self.date_range  = (self.endDate_form - self.startDate_form).days + 1
         self.deltaD      = timedelta(days=1)
 
+    def DBinfoRecorder(self, endoption = False):
+        option = self.option
+        starttime = datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')
+        endtime = '-'
+        if endoption:
+            endtime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
+        user = self.user
+        self.mySQL.insertToTable(self.DBname + '_info', [option, starttime, endtime, user])
+
     def webCrawlerStop(self):
         self.running = False
             
@@ -78,6 +87,8 @@ class Crawler(CrawlerModule):
         self.DBpath      = os.path.join(self.scrapdata_path, self.DBname)
 
         self.mySQL.newDB(self.DBname)
+        self.mySQL.newTable(self.DBname + '_info', ['option', 'start', 'end', 'requester'])
+        self.DBinfoRecorder()
 
         self.articleDB    = self.DBname + '_article'
         self.statisticsDB = self.DBname + '_statistics'
@@ -157,6 +168,8 @@ class Crawler(CrawlerModule):
             f"| 종료: {endtime} "
             f"| 소요시간: {crawltime} ||"
         )
+
+        self.DBinfoRecorder()
 
         log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'), 'a')
         log.write('\n\n'+end_msg)
