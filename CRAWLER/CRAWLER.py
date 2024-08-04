@@ -81,8 +81,14 @@ class Crawler(CrawlerModule):
         self.mySQL.commit()
 
     def webCrawlerRunCheck(self):
-        print('\rStopped by BIGMACLAB MANAGER PROGRAM', end = '')
-        sys.exit()
+        if self.DBname in self.mySQL.showAllDB():
+            self.running = True
+        else:
+            print('\rStopped by BIGMACLAB MANAGER PROGRAM', end='')
+            sys.exit()
+
+
+
             
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
