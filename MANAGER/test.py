@@ -1,13 +1,15 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QAction, QLabel, QStatusBar, QHBoxLayout
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, \
+    QFileDialog, QAction, QLabel, QStatusBar, QHBoxLayout
 from PyQt5.QtCore import Qt
 from mySQL import mySQL
 from Manager_Database import Manager_Database
 from Manager_Crawler import Manager_Crawler
 from Manager_User import Manager_User
 from Manager_Dataprocess import Manager_Dataprocess_TabDB
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -18,24 +20,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setGeometry(0, 0, 1400, 900)
 
         # 상태 표시줄 생성
-        self.statusbar = QStatusBar()
-        self.setStatusBar(self.statusbar)
-        self.left_label = QLabel("  Copyright 2024. BIGMACLAB all rights reserved.")
-        self.right_label = QLabel(" hello")
-        self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.right_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.statusbar.addPermanentWidget(self.left_label, 1)
-        self.statusbar.addPermanentWidget(self.right_label, 1)
+        self.statusBar = QStatusBar(self)
+        self.setStatusBar(self.statusBar)
 
         # 스타일시트 적용
         self.setStyle()
 
-        self.mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,database='User_DB')
+        self.mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,
+                               database='User_DB')
 
         # 사이드바 연결My
         self.listWidget.currentRowChanged.connect(self.display)
-        self.Manager_Crawler_obj     = Manager_Crawler(self)
-
+        self.Manager_Crawler_obj = Manager_Crawler(self)
 
     def DB_table_maker(self, widgetname, DB_list):
         db_data = []
@@ -98,7 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             font-size: 14px;
                         }
                         QTableWidget {
-                            
+
                             border: 1px solid #bdc3c7;
                             font-family: 'Tahoma';
                             font-size: 14px;
@@ -179,19 +175,16 @@ class MainWindow(QtWidgets.QMainWindow):
                         }
                     """)
 
-
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
         if index == 0:
-            self.printStatus("불러오는 중")
-            QtWidgets.QApplication.processEvents()
-            self.Manager_Database_obj    = Manager_Database(self)
+            self.statusBar.showMessage("로딩중...")
+            self.Manager_Database_obj = Manager_Database(self)
             self.printStatus()
         elif index == 1:
             self.Manager_Crawler_obj.crawler_open_webbrowser('http://bigmaclab-crawler.kro.kr')
         elif index == 2:
-            self.printStatus("불러오는 중")
-            QtWidgets.QApplication.processEvents()
+            self.statusBar.showMessage("로딩중...")
             self.Manager_Dataprocess_obj = Manager_Dataprocess_TabDB(self)
             self.printStatus()
         elif index == 3:
@@ -199,10 +192,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def printStatus(self, message=''):
 
-        self.right_label.setText(message)
-
-
-
+        self.statusBar.showMessage(message)
 
 
 app = QtWidgets.QApplication([])
