@@ -41,7 +41,7 @@ class Crawler(CrawlerModule):
         
         # Computer Info
         self.scrapdata_path = self.pathFinder(user)['scrapdata_path']
-        self.crawllog_path  = os.path.join(os.path.dirname(self.scrapdata_path), 'CrawlLog')
+        self.crawllog_path  = os.path.join(self.pathFinder()['crawler_folder_path'], 'CrawlLog')
         self.crawlcom       = self.pathFinder(user)['computer_name']
         self.mySQL          = self.pathFinder(user)['MYSQL']
         
