@@ -8,7 +8,6 @@ sys.path.append(MANAGER_PATH)
 
 import time
 import asyncio
-import socket
 import warnings
 from datetime import datetime, timedelta
 
@@ -22,7 +21,6 @@ from Package.NaverCrawlerPackage.NaverBlogCrawlerModule import NaverBlogCrawler
 from Package.NaverCrawlerPackage.NaverCafeCrawlerModule import NaverCafeCrawler
 from Package.NaverCrawlerPackage.NaverNewsCrawlerModule import NaverNewsCrawler
 from Package.OtherCrawlerPackage.YouTubeCrawlerModule import YouTubeCrawler
-from mySQL import mySQL
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)

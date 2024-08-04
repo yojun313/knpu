@@ -4,7 +4,6 @@ import sys
 
 PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 CRAWLER_PATH        = os.path.dirname(PACKAGE_PATH)
-COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
 
 sys.path.append(PACKAGE_PATH)
 
@@ -39,7 +38,6 @@ class CrawlerModule(ToolModule):
         super().__init__()
 
         self.proxy_option   = proxy_option
-        self.collection_path = COLLECTION_PATH
         self.error_detector_option = False
 
         self.console = Console()
@@ -48,7 +46,8 @@ class CrawlerModule(ToolModule):
         self.socketnum = 1
 
         if proxy_option == True:
-            self.proxy_list     = self.read_txt(self.collection_path + '/proxy.txt')       # 로컬 proxy.txt 파일 경로
+            path_data = self.pathFinder()
+            self.proxy_list = self.read_txt(os.path.join(path_data['crawler_folder_path'], '아이피샵(유동프록시).txt'))       # 로컬 proxy.txt 파일 경로
         
         self.PrintData = {
             'currentDate': '',

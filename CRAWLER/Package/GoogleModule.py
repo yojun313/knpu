@@ -3,7 +3,6 @@ import os
 
 CRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 CRAWLER_PATH        = os.path.dirname(CRAWLERPACKAGE_PATH)
-COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -14,19 +13,22 @@ from googleapiclient.http import MediaFileUpload
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+from ToolModule import ToolModule
 
 
 class GoogleModule:
     
     def __init__(self, token_path):
-        
+
+        toolmodule_obj = ToolModule()
         # Gmail
         self.sender = "knpubigmac2024@gmail.com"
         self.MailPassword = 'vygn nrmh erpf trji'
-        
+
+        path_data = toolmodule_obj.pathFinder()
         # Google Drive
         self.parent_folder_id = "1K3YTj9h_BMjpGyoDQYkWycqmnJLCxPCA"
-        self.storage_json_path = os.path.join(COLLECTION_PATH, 'storage.json')
+        self.storage_json_path = os.path.join(path_data['crawler_folder_path'], 'storage.json')
         
         SCOPES = ['https://www.googleapis.com/auth/drive']
 

@@ -6,10 +6,8 @@ CRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 CRAWLER_PATH        = os.path.dirname(CRAWLERPACKAGE_PATH)
 BIGMACLAB_PATH      = os.path.dirname(CRAWLER_PATH)
 MANAGER_PATH          = os.path.join(BIGMACLAB_PATH, 'MANAGER')
-COLLECTION_PATH     = os.path.join(CRAWLER_PATH, 'Collection')
 
 sys.path.append(MANAGER_PATH)
-
 
 import socket
 import csv
@@ -49,14 +47,14 @@ class ToolModule:
             mySQL_obj = mySQL(host='localhost', user='root', password='kingsman', port=3306)
 
         elif socket.gethostname() == "BigMacServer":
-            crawler_folder_path = "C:/Users/skroh/Documents/BIGMACLAB/CRAWLER"
+            crawler_folder_path = "D:/BIGMACLAB/CRAWLER"
             scrapdata_path = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
             token_path = crawler_folder_path
             computer_name = "BIGMACLAB SERVER"
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
             mySQL_obj = mySQL(host='localhost', user='root', password='bigmaclab2022!', port=3306)
 
-        return {'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name, 'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath, 'MYSQL': mySQL_obj}
+        return {'crawler_folder_path': crawler_folder_path, 'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name, 'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath, 'MYSQL': mySQL_obj}
     
     def read_txt(self, filepath):
         txt_path = filepath

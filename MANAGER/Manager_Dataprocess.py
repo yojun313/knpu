@@ -82,4 +82,5 @@ class DataProcess:
     def __init__(self, main_window):
         self.main = main_window
 
-    def DataDivider(self, ):
+    def DataDivider(self):
+        pass
