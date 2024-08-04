@@ -83,8 +83,6 @@ class Crawler(CrawlerModule):
     def webCrawlerRunCheck(self):
         print('\rStopped by BIGMACLAB MANAGER PROGRAM', end = '')
         sys.exit()
-
-
             
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
