@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon= ''
+    icon= 'C:/GitHub/BIGMACLAB/MANAGER/exe_icon.ico'
 )
