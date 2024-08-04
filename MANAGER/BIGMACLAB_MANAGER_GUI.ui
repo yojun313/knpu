@@ -54,7 +54,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="page_database">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -108,7 +108,7 @@
           <item>
            <widget class="QPushButton" name="database_saveDB_button">
             <property name="text">
-             <string>DB 저장</string>
+             <string>CSV로 저장</string>
             </property>
            </widget>
           </item>
@@ -205,7 +205,7 @@
              </layout>
             </item>
             <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_6" stretch=""/>
+             <layout class="QHBoxLayout" name="horizontalLayout_6"/>
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_button">
