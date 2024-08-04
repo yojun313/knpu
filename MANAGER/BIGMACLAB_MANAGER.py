@@ -8,6 +8,7 @@ from Manager_Database import Manager_Database
 from Manager_Crawler import Manager_Crawler
 from Manager_User import Manager_User
 from Manager_Dataprocess import Manager_Dataprocess_TabDB
+from datetime import datetime
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -21,7 +22,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
         self.left_label = QLabel("  Copyright 2024. BIGMACLAB all rights reserved.")
-        self.right_label = QLabel(" hello")
+        self.right_label = QLabel("")
         self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.right_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.statusbar.addPermanentWidget(self.left_label, 1)
@@ -32,21 +33,53 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,database='User_DB')
 
-        # 사이드바 연결My
+        # 사이드바 연결
         self.listWidget.currentRowChanged.connect(self.display)
-        self.Manager_Crawler_obj     = Manager_Crawler(self)
+
+        self.DB = self.update_DB({'DBlist':[], 'DBdata': []})
+        self.Manager_Database_obj = Manager_Database(self)
+        self.Manager_Crawler_obj  = Manager_Crawler(self)
+        self.Manager_Dataprocess_obj = Manager_Dataprocess_TabDB(self)
+        self.Manager_User_obj        = Manager_User(self)
 
 
-    def DB_table_maker(self, widgetname, DB_list):
-        db_data = []
-        for db in DB_list:
-            db_split = db.split('_')
+    def update_DB(self, currentDB):
+        def parse_date(date_str):
+            for fmt in ('%m-%d %H:%M', '%m/%d %H:%M'):
+                try:
+                    return datetime.strptime(date_str, fmt)
+                except ValueError:
+                    pass
+            raise ValueError(f"time data '{date_str}' does not match any known format")
+
+        mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,database='User_DB')
+        currentDB_list = currentDB['DBlist']
+        newDB_list = mySQL_obj.showAllDB()
+        print(newDB_list)
+
+        delete_target_list = list(set(currentDB_list)-set(newDB_list))
+        add_target_list    = list(set(newDB_list)-set(currentDB_list))
+        print(add_target_list)
+        # Delete
+        currentDB_list_copy = currentDB_list.copy()
+        for i in range(len(currentDB_list_copy)):
+            DB_name = currentDB_list_copy[i]
+            if DB_name in delete_target_list:
+                index_to_remove = currentDB_list.index(DB_name)
+                currentDB['DBlist'].pop(index_to_remove)
+                currentDB['DBdata'].pop(index_to_remove)
+
+        for i in range(len(add_target_list)):
+            DB_name = add_target_list[i]
+            currentDB['DBlist'].append(DB_name)
+
+            db_split = DB_name.split('_')
             crawltype = db_split[0]
             keyword = db_split[1]
             date = f"{db_split[2]}~{db_split[3]}"
 
-            self.mySQL_obj.connectDB(db)
-            db_info_df = self.mySQL_obj.TableToDataframe(db + '_info')
+            self.mySQL_obj.connectDB(DB_name)
+            db_info_df = self.mySQL_obj.TableToDataframe(DB_name + '_info')
             db_info = db_info_df.iloc[-1].tolist()
             option = db_info[1]
             starttime = db_info[2]
@@ -55,9 +88,23 @@ class MainWindow(QtWidgets.QMainWindow):
                 endtime = '크롤링 중'
             requester = db_info[4]
 
-            db_data.append((crawltype, keyword, date, option, starttime, endtime, requester))
+            currentDB['DBdata'].append((crawltype, keyword, date, option, starttime, endtime, requester))
 
-        widgetname.setRowCount(len(DB_list))
+        db_data = currentDB['DBdata']
+        db_list = currentDB['DBlist']
+
+        # 다섯 번째 요소를 datetime 객체로 변환하여 정렬
+        sorted_indices = sorted(range(len(db_data)), key=lambda i: parse_date(db_data[i][4]), reverse=True)
+
+        # 정렬된 순서대로 새로운 리스트 생성
+        sorted_db_data = [db_data[i] for i in sorted_indices]
+        sorted_db_list = [db_list[i] for i in sorted_indices]
+
+        return {'DBdata': sorted_db_data, 'DBlist': sorted_db_list}
+
+    def DB_table_maker(self, widgetname, DB):
+        db_data = DB['DBdata']
+        widgetname.setRowCount(len(db_data))
         widgetname.setColumnCount(7)
         widgetname.setHorizontalHeaderLabels(
             ['Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester'])
@@ -179,27 +226,21 @@ class MainWindow(QtWidgets.QMainWindow):
                         }
                     """)
 
-
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
         if index == 0:
-            self.printStatus("불러오는 중")
-            QtWidgets.QApplication.processEvents()
-            self.Manager_Database_obj    = Manager_Database(self)
-            self.printStatus()
+            self.Manager_Database_obj.database_refresh_DB()
         elif index == 1:
             self.Manager_Crawler_obj.crawler_open_webbrowser('http://bigmaclab-crawler.kro.kr')
         elif index == 2:
-            self.printStatus("불러오는 중")
-            QtWidgets.QApplication.processEvents()
-            self.Manager_Dataprocess_obj = Manager_Dataprocess_TabDB(self)
-            self.printStatus()
+            self.Manager_Dataprocess_obj.Tab_DB_refresh_DB()
+            pass
         elif index == 3:
-            self.Manager_User_obj = Manager_User(self)
+            pass
 
     def printStatus(self, message=''):
-
         self.right_label.setText(message)
+        QtWidgets.QApplication.processEvents()  # GUI 업데이트 강제 처리
 
 
 

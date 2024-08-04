@@ -1,201 +1,63 @@
-import os
-import sys
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, \
-    QFileDialog, QAction, QLabel, QStatusBar, QHBoxLayout
-from PyQt5.QtCore import Qt
-from mySQL import mySQL
-from Manager_Database import Manager_Database
-from Manager_Crawler import Manager_Crawler
-from Manager_User import Manager_User
-from Manager_Dataprocess import Manager_Dataprocess_TabDB
+import time
+
+class MySQLDatabase:
+    def __init__(self, connection):
+        self.conn = connection
+
+    def showAllDB(self):
+        try:
+            with self.conn.cursor() as cursor:
+                start_time = time.time()
+                cursor.execute("SHOW DATABASES")
+                databases = cursor.fetchall()
+                elapsed_time = time.time() - start_time
 
 
-class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
-        super(MainWindow, self).__init__()
-        ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
-        uic.loadUi(ui_path, self)
-        self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
-        self.setGeometry(0, 0, 1400, 900)
+                # 불필요한 데이터베이스를 제거하면서 리스트로 변환
+                remove_list = {'information_schema', 'mysql', 'performance_schema', 'user_db'}
+                database_list = [db[0] for db in databases if db[0] not in remove_list]
+                print(f"SHOW DATABASES took {elapsed_time:.4f} seconds")
+                print(database_list)
+                return database_list
+        except Exception as e:
+            print("Failed to retrieve databases")
+            print(str(e))
+            return []
 
-        # 상태 표시줄 생성
-        self.statusBar = QStatusBar(self)
-        self.setStatusBar(self.statusBar)
+    def showAllTable(self, database_name):
+        try:
+            with self.conn.cursor() as cursor:
+                start_time = time.time()
+                cursor.execute(f"SHOW TABLES FROM `{database_name}`")
+                tables = cursor.fetchall()
+                elapsed_time = time.time() - start_time
+                print(f"SHOW TABLES FROM {database_name} took {elapsed_time:.4f} seconds")
 
-        # 스타일시트 적용
-        self.setStyle()
+                # 테이블 이름을 리스트로 변환
+                table_list = [table[0] for table in tables]
+                return table_list
+        except Exception as e:
+            print(f"Failed to retrieve tables from database {database_name}")
+            print(str(e))
+            return []
 
-        self.mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,
-                               database='User_DB')
+# Usage example
+if __name__ == "__main__":
+    import pymysql
 
-        # 사이드바 연결My
-        self.listWidget.currentRowChanged.connect(self.display)
-        self.Manager_Crawler_obj = Manager_Crawler(self)
+    # Replace with your actual database connection details
+    connection = pymysql.connect(
+        host='121.152.225.232',
+        user='admin',
+        password='bigmaclab2022!',
+        port=3306
+    )
 
-    def DB_table_maker(self, widgetname, DB_list):
-        db_data = []
-        for db in DB_list:
-            db_split = db.split('_')
-            crawltype = db_split[0]
-            keyword = db_split[1]
-            date = f"{db_split[2]}~{db_split[3]}"
+    db = MySQLDatabase(connection)
 
-            self.mySQL_obj.connectDB(db)
-            db_info_df = self.mySQL_obj.TableToDataframe(db + '_info')
-            db_info = db_info_df.iloc[-1].tolist()
-            option = db_info[1]
-            starttime = db_info[2]
-            endtime = db_info[3]
-            if endtime == '-':
-                endtime = '크롤링 중'
-            requester = db_info[4]
+    # Compare performance of SHOW DATABASES and SHOW TABLES
+    db_list = db.showAllDB()
+    for database_name in db_list:
+        table_list = db.showAllTable(database_name)
 
-            db_data.append((crawltype, keyword, date, option, starttime, endtime, requester))
-
-        widgetname.setRowCount(len(DB_list))
-        widgetname.setColumnCount(7)
-        widgetname.setHorizontalHeaderLabels(
-            ['Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester'])
-        widgetname.setSelectionBehavior(QTableWidget.SelectRows)
-        widgetname.setSelectionMode(QTableWidget.SingleSelection)
-        widgetname.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
-        for i, row_data in enumerate(db_data):
-            for j, cell_data in enumerate(row_data):
-                item = QTableWidgetItem(cell_data)
-                item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
-                widgetname.setItem(i, j, item)
-
-    def setStyle(self):
-        self.setStyleSheet("""
-                        QMainWindow {
-                            background-color: #f7f7f7;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                        QPushButton {
-                            background-color: #2c3e50;
-                            color: white;
-                            border: none;
-                            border-radius: 5px;
-                            padding: 13px;
-                            font-family: 'Tahoma';
-                            font-size: 15px;
-                        }
-                        QPushButton:hover {
-                            background-color: #34495e;
-                        }
-                        QLineEdit {
-                            border: 1px solid #bdc3c7;
-                            border-radius: 5px;
-                            padding: 8px;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                        QTableWidget {
-
-                            border: 1px solid #bdc3c7;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                        QHeaderView::section {
-                            background-color: #2c3e50;
-                            color: white;
-                            padding: 8px;
-                            border: none;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                        QListWidget {
-                            background-color: #2c3e50;
-                            color: white;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                            border: none;
-                        }
-                        QListWidget::item {
-                            height: 40px;  /* 각 아이템의 높이를 조정 */
-                            padding: 10px;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                        QListWidget::item:selected {
-                            background-color: #34495e;
-                        }
-                        QTabWidget::pane {
-                            border-top: 2px solid #bdc3c7;
-                            background-color: #f7f7f7;  /* Matches QMainWindow background */
-                        }
-                        QTabWidget::tab-bar {
-                            left: 5px;
-                        }
-                        QTabBar::tab {
-                            background: #2c3e50;  /* Matches QPushButton background */
-                            color: white;  /* Matches QPushButton text color */
-                            border: 1px solid #bdc3c7;
-                            border-bottom-color: #f7f7f7;  /* Matches QMainWindow background */
-                            border-radius: 4px;
-                            border-top-right-radius: 4px;
-                            padding: 10px;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                            min-width: 100px;  /* 최소 가로 길이 설정 */
-                            max-width: 200px;  /* 최대 가로 길이 설정 */
-                        }
-                        QTabBar::tab:selected, QTabBar::tab:hover {
-                            background: #34495e;  /* Matches QPushButton hover background */
-                        }
-                        QTabBar::tab:selected {
-                            border-color: #9B9B9B;
-                            border-bottom-color: #f7f7f7;
-                        }
-                        QPushButton#pushButton_divide_DB {
-                            background-color: #2c3e50;
-                            color: white;
-                            border: none;
-                            border-radius: 5px;
-                            padding: 10px;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                            min-width: 70px;  /* 최소 가로 길이 설정 */
-                            max-width: 100px;  /* 최대 가로 길이 설정 */
-                        }
-                        QPushButton#pushButton_divide_DB:hover {
-                            background-color: #34495e;
-                        }
-                        QLabel#label_status_divide_DB {
-                            background-color: #f7f7f7;
-                            color: #2c3e50;
-                            border: 1px solid #bdc3c7;
-                            border-radius: 5px;
-                            padding: 8px;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                    """)
-
-    def display(self, index):
-        self.stackedWidget.setCurrentIndex(index)
-        if index == 0:
-            self.statusBar.showMessage("로딩중...")
-            self.Manager_Database_obj = Manager_Database(self)
-            self.printStatus()
-        elif index == 1:
-            self.Manager_Crawler_obj.crawler_open_webbrowser('http://bigmaclab-crawler.kro.kr')
-        elif index == 2:
-            self.statusBar.showMessage("로딩중...")
-            self.Manager_Dataprocess_obj = Manager_Dataprocess_TabDB(self)
-            self.printStatus()
-        elif index == 3:
-            self.Manager_User_obj = Manager_User(self)
-
-    def printStatus(self, message=''):
-
-        self.statusBar.showMessage(message)
-
-
-app = QtWidgets.QApplication([])
-application = MainWindow()
-application.show()
-sys.exit(app.exec_())
+    connection.close()

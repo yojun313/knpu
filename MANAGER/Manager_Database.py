@@ -3,6 +3,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog
 from PyQt5.QtCore import Qt
 import platform
+import copy
 
 class TableWindow(QMainWindow):
     def __init__(self, parent=None, target_db=None):
@@ -90,23 +91,19 @@ class TableWindow(QMainWindow):
 class Manager_Database:
     def __init__(self, main_window):
         self.main = main_window
-        self.database_makeTable_DB()
+        self.DB = copy.deepcopy(self.main.DB)
+        self.main.DB_table_maker(self.main.database_tablewidget, self.DB)
         self.database_buttonMatch()
-
-    def database_makeTable_DB(self):
-        self.Database_DBlist = self.main.mySQL_obj.showAllDB()
-        self.main.DB_table_maker(self.main.database_tablewidget, self.Database_DBlist)
 
     def database_delete_DB(self):
         selected_row = self.main.database_tablewidget.currentRow()
         if selected_row >= 0:
             self.main.printStatus("조회 중...")
-            target_db = self.Database_DBlist[selected_row]
+            target_db = self.DB['DBlist'][selected_row]
             self.main.mySQL_obj.connectDB(target_db)
             db_info_df = self.main.mySQL_obj.TableToDataframe(target_db + '_info')
             db_info = db_info_df.iloc[-1].tolist()
             endtime = db_info[3]
-            self.main.printStatus()
 
             if endtime == '-':
                 confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하시겠습니까?"
@@ -116,13 +113,13 @@ class Manager_Database:
             reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 self.main.mySQL_obj.dropDB(target_db)
-                self.main.database_tablewidget.removeRow(selected_row)
-                self.Database_DBlist.remove(target_db)
+                self.database_refresh_DB()
+
 
     def database_view_DB(self):
         selected_row = self.main.database_tablewidget.currentRow()
         if selected_row >= 0:
-            target_DB = self.Database_DBlist[selected_row]
+            target_DB = self.DB['DBlist'][selected_row]
             self.DBtable_window = TableWindow(self.main, target_DB)
             self.DBtable_window.show()
 
@@ -163,7 +160,7 @@ class Manager_Database:
         selected_row = self.main.database_tablewidget.currentRow()
         if not selected_row >= 0:
             return
-        target_db = self.Database_DBlist[selected_row]
+        target_db = self.DB['DBlist'][selected_row]
 
         folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory")
         # 선택된 경로가 있는지 확인
@@ -196,7 +193,9 @@ class Manager_Database:
             QMessageBox.warning(self.main, "Warning", "No directory selected.")
 
     def database_refresh_DB(self):
-        self.database_makeTable_DB()
+        self.DB = self.main.update_DB(self.DB)
+        self.main.DB_table_maker(self.main.database_tablewidget, self.DB)
+
 
     def database_buttonMatch(self):
         self.main.database_refreshDB_button.clicked.connect(self.database_refresh_DB)

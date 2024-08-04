@@ -64,12 +64,10 @@ class mySQL:
             with self.conn.cursor() as cursor:
                 cursor.execute("SHOW DATABASES")
                 databases = cursor.fetchall()
-                # 데이터베이스 이름을 리스트로 변환
-                database_list = [db[0] for db in databases]
 
-                remove_list = ['information_schema', 'mysql', 'performance_schema', 'user_db']
-                for remove_target in remove_list:
-                    database_list.remove(remove_target)
+                # 불필요한 데이터베이스를 제거하면서 리스트로 변환
+                remove_list = {'information_schema', 'mysql', 'performance_schema', 'user_db'}
+                database_list = [db[0] for db in databases if db[0] not in remove_list]
 
                 return database_list
 

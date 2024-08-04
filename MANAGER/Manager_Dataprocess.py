@@ -2,16 +2,13 @@ from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog
 from PyQt5.QtCore import Qt
 import time
-
+import copy
 class Manager_Dataprocess_TabDB:
     def __init__(self, main_window):
         self.main = main_window
-        self.Tab_DB_makeTable_DB()
+        self.DB = copy.deepcopy(self.main.DB)
+        self.main.DB_table_maker(self.main.dataprocess_tab1_tablewidget, self.DB)
         self.Tab_DB_buttonMatch()
-
-    def Tab_DB_makeTable_DB(self):
-        self.Dataprocess_DBlist = self.main.mySQL_obj.showAllDB()
-        self.main.DB_table_maker(self.main.dataprocess_tab1_tablewidget, self.Dataprocess_DBlist)
 
     def Tab_DB_search_DB(self):
         search_text = self.main.dataprocess_tab1_searchDB_lineinput.text().lower()
@@ -47,9 +44,8 @@ class Manager_Dataprocess_TabDB:
                 return
 
     def Tab_DB_refresh_DB(self):
-        self.main.printStatus('새로고침 중...')
-        self.Tab_DB_makeTable_DB()
-        self.main.printStatus()
+        self.DB = self.main.update_DB(self.DB)
+        self.main.DB_table_maker(self.main.dataprocess_tab1_tablewidget, self.DB)
 
     def Tab_DB_buttonMatch(self):
         self.main.dataprocess_tab1_refreshDB_button.clicked.connect(self.Tab_DB_refresh_DB)
