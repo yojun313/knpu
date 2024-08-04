@@ -88,52 +88,28 @@ class TableWindow(QMainWindow):
 class Manager_Database:
     def __init__(self, main_window):
         self.main = main_window
-        self.database_init_table()
+        self.database_makeTable_DB()
         self.database_buttonMatch()
 
-    from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
-    from PyQt5.QtCore import Qt
-
-    def database_init_table(self):
-        db_data = []
-        for db in self.main.DB_list:
-            db_split = db.split('_')
-            crawltype = db_split[0]
-            keyword = db_split[1]
-            date = f"{db_split[2]}~{db_split[3]}"
-            time = db_split[4] + db_split[5]
-            time = f"{time[:2]}/{time[2:4]} {time[4:6]}:{time[6:]}"
-            db_data.append((crawltype, keyword, date, time))
-
-        self.main.database_tablewidget.setRowCount(len(self.main.DB_list))
-        self.main.database_tablewidget.setColumnCount(4)
-        self.main.database_tablewidget.setHorizontalHeaderLabels(
-            ['Crawl Type', 'Crawl Keyword', 'Crawl Date', 'Crawl Time'])
-        self.main.database_tablewidget.setSelectionBehavior(QTableWidget.SelectRows)
-        self.main.database_tablewidget.setSelectionMode(QTableWidget.SingleSelection)
-        self.main.database_tablewidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
-        for i, row_data in enumerate(db_data):
-            for j, cell_data in enumerate(row_data):
-                item = QTableWidgetItem(cell_data)
-                item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
-                self.main.database_tablewidget.setItem(i, j, item)
+    def database_makeTable_DB(self):
+        self.Database_DBlist = self.main.mySQL_obj.showAllDB()
+        self.main.DB_table_maker(self.main.database_tablewidget, self.Database_DBlist)
 
     def database_delete_DB(self):
         selected_row = self.main.database_tablewidget.currentRow()
         if selected_row >= 0:
-            target_db = self.main.DB_list[selected_row]
+            target_db = self.Database_DBlist[selected_row]
             reply = QMessageBox.question(self.main, 'Confirm Delete', f"'{target_db}'를 삭제하시겠습니까?",
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 self.main.mySQL_obj.dropDB(target_db)
                 self.main.database_tablewidget.removeRow(selected_row)
-                self.main.DB_list.remove(target_db)
+                self.Database_DBlist.remove(target_db)
 
     def database_view_DB(self):
         selected_row = self.main.database_tablewidget.currentRow()
         if selected_row >= 0:
-            target_DB = self.main.DB_list[selected_row]
+            target_DB = self.Database_DBlist[selected_row]
             self.DBtable_window = TableWindow(self.main, target_DB)
             self.DBtable_window.show()
 
@@ -174,7 +150,7 @@ class Manager_Database:
         selected_row = self.main.database_tablewidget.currentRow()
         if not selected_row >= 0:
             return
-        target_db = self.main.DB_list[selected_row]
+        target_db = self.Database_DBlist[selected_row]
 
         folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory")
         # 선택된 경로가 있는지 확인
@@ -207,7 +183,7 @@ class Manager_Database:
             QMessageBox.warning(self.main, "Warning", "No directory selected.")
 
     def database_refresh_DB(self):
-        self.database_init_table()
+        self.database_makeTable_DB()
 
     def database_buttonMatch(self):
         self.main.database_refreshDB_button.clicked.connect(self.database_refresh_DB)

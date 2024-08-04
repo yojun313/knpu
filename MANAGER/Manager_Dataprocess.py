@@ -1,41 +1,17 @@
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog
 from PyQt5.QtCore import Qt
-class Manager_Dataprocess:
-    def __init__(self, main_window):
-        self.main = main_window
-        Tab_DB_obj = Tab_DB(main_window)
+import time
 
-class Tab_DB:
+class Manager_Dataprocess_TabDB:
     def __init__(self, main_window):
         self.main = main_window
-        self.Tab_DB_init_table()
+        self.Tab_DB_makeTable_DB()
         self.Tab_DB_buttonMatch()
 
-    def Tab_DB_init_table(self):
-        db_data = []
-        for db in self.main.DB_list:
-            db_split = db.split('_')
-            crawltype = db_split[0]
-            keyword = db_split[1]
-            date = f"{db_split[2]}~{db_split[3]}"
-            time = db_split[4] + db_split[5]
-            time = f"{time[:2]}/{time[2:4]} {time[4:6]}:{time[6:]}"
-            db_data.append((crawltype, keyword, date, time))
-
-        self.main.dataprocess_tab1_tablewidget.setRowCount(len(self.main.DB_list))
-        self.main.dataprocess_tab1_tablewidget.setColumnCount(4)
-        self.main.dataprocess_tab1_tablewidget.setHorizontalHeaderLabels(
-            ['Crawl Type', 'Crawl Keyword', 'Crawl Date', 'Crawl Time'])
-        self.main.dataprocess_tab1_tablewidget.setSelectionBehavior(QTableWidget.SelectRows)
-        self.main.dataprocess_tab1_tablewidget.setSelectionMode(QTableWidget.SingleSelection)
-        self.main.dataprocess_tab1_tablewidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
-        for i, row_data in enumerate(db_data):
-            for j, cell_data in enumerate(row_data):
-                item = QTableWidgetItem(cell_data)
-                item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
-                self.main.dataprocess_tab1_tablewidget.setItem(i, j, item)
+    def Tab_DB_makeTable_DB(self):
+        self.Dataprocess_DBlist = self.main.mySQL_obj.showAllDB()
+        self.main.DB_table_maker(self.main.dataprocess_tab1_tablewidget, self.Dataprocess_DBlist)
 
     def Tab_DB_search_DB(self):
         search_text = self.main.dataprocess_tab1_searchDB_lineinput.text().lower()
@@ -71,7 +47,9 @@ class Tab_DB:
                 return
 
     def Tab_DB_refresh_DB(self):
-        self.Tab_DB_init_table()
+        self.main.printStatus('새로고침 중...')
+        self.Tab_DB_makeTable_DB()
+        self.main.printStatus()
 
     def Tab_DB_buttonMatch(self):
         self.main.dataprocess_tab1_refreshDB_button.clicked.connect(self.Tab_DB_refresh_DB)

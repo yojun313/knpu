@@ -7,7 +7,7 @@ from mySQL import mySQL
 from Manager_Database import Manager_Database
 from Manager_Crawler import Manager_Crawler
 from Manager_User import Manager_User
-from Manager_Dataprocess import Manager_Dataprocess
+from Manager_Dataprocess import Manager_Dataprocess_TabDB
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -15,24 +15,62 @@ class MainWindow(QtWidgets.QMainWindow):
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
         uic.loadUi(ui_path, self)
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
+        self.setGeometry(0, 0, 1400, 900)
 
+        self.statusBar = QStatusBar()
+        self.setStatusBar(self.statusBar)
 
-        self.printStatus("상태표시창")
+        # 왼쪽에 표시할 레이블 생성
+        self.left_label = QLabel("  Copyright 2024. BIGMACLAB all rights reserved.")
+        self.statusBar.addWidget(self.left_label)
+
+        self.right_label = QLabel()
+        self.statusBar.addPermanentWidget(self.right_label)
+
 
         # 스타일시트 적용
         self.setStyle()
 
         self.mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,database='User_DB')
-        self.DB_list = self.mySQL_obj.showAllDB()
 
-        # 사이드바 연결
+        # 사이드바 연결My
         self.listWidget.currentRowChanged.connect(self.display)
-
-        self.Manager_Database_obj    = Manager_Database(self)
         self.Manager_Crawler_obj     = Manager_Crawler(self)
-        self.Manager_User_obj        = Manager_User(self)
-        self.Manager_Dataprocess_obj = Manager_Dataprocess(self)
 
+
+    def DB_table_maker(self, widgetname, DB_list):
+        db_data = []
+        for db in DB_list:
+            db_split = db.split('_')
+            crawltype = db_split[0]
+            keyword = db_split[1]
+            date = f"{db_split[2]}~{db_split[3]}"
+
+            self.mySQL_obj.connectDB(db)
+            db_info_df = self.mySQL_obj.TableToDataframe(db + '_info')
+            db_info = db_info_df.iloc[-1].tolist()
+            option = db_info[1]
+            starttime = db_info[2]
+            endtime = db_info[3]
+            if endtime == '-':
+                endtime = '진행 중'
+            requester = db_info[4]
+
+            db_data.append((crawltype, keyword, date, option, starttime, endtime, requester))
+
+        widgetname.setRowCount(len(DB_list))
+        widgetname.setColumnCount(7)
+        widgetname.setHorizontalHeaderLabels(
+            ['Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester'])
+        widgetname.setSelectionBehavior(QTableWidget.SelectRows)
+        widgetname.setSelectionMode(QTableWidget.SingleSelection)
+        widgetname.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        for i, row_data in enumerate(db_data):
+            for j, cell_data in enumerate(row_data):
+                item = QTableWidgetItem(cell_data)
+                item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
+                widgetname.setItem(i, j, item)
 
     def setStyle(self):
         self.setStyleSheet("""
@@ -61,7 +99,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             font-size: 14px;
                         }
                         QTableWidget {
-                            background-color: white;
+                            
                             border: 1px solid #bdc3c7;
                             font-family: 'Tahoma';
                             font-size: 14px;
@@ -142,25 +180,23 @@ class MainWindow(QtWidgets.QMainWindow):
                         }
                     """)
 
+
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
+        if index == 0:
+            self.Manager_Database_obj    = Manager_Database(self)
         if index == 1:
             self.Manager_Crawler_obj.crawler_open_webbrowser('http://bigmaclab-crawler.kro.kr')
+        if index == 2:
+            self.Manager_Dataprocess_obj = Manager_Dataprocess_TabDB(self)
+        if index == 3:
+            self.Manager_User_obj = Manager_User(self)
+
 
     def printStatus(self, message=''):
-        # 상태 표시줄 생성
-        self.statusBar = QStatusBar()
-        self.setStatusBar(self.statusBar)
+        self.right_label.setText(message)  # 오른쪽 레이블의 텍스트를 업데이트
 
-        # 왼쪽에 표시할 레이블 생성
-        self.left_label = QLabel("  Copyright 2024. BIGMACLAB all rights reserved.")
-        self.statusBar.addWidget(self.left_label)
 
-        # 오른쪽에 표시할 레이블 생성
-        self.right_label = QLabel(message)
-        self.statusBar.addPermanentWidget(self.right_label)
-
-        self.show()
 
 app = QtWidgets.QApplication([])
 application = MainWindow()
