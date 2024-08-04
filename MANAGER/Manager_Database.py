@@ -98,9 +98,20 @@ class Manager_Database:
     def database_delete_DB(self):
         selected_row = self.main.database_tablewidget.currentRow()
         if selected_row >= 0:
+            self.main.printStatus("조회 중...")
             target_db = self.Database_DBlist[selected_row]
-            reply = QMessageBox.question(self.main, 'Confirm Delete', f"'{target_db}'를 삭제하시겠습니까?",
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            self.main.mySQL_obj.connectDB(target_db)
+            db_info_df = self.main.mySQL_obj.TableToDataframe(target_db + '_info')
+            db_info = db_info_df.iloc[-1].tolist()
+            endtime = db_info[3]
+            self.main.printStatus()
+
+            if endtime == '-':
+                confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하시겠습니까?"
+            else:
+                confirm_msg = f"'{target_db}'를 삭제하시겠습니까?"
+
+            reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 self.main.mySQL_obj.dropDB(target_db)
                 self.main.database_tablewidget.removeRow(selected_row)
