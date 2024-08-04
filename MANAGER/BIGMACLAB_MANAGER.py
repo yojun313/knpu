@@ -1,9 +1,6 @@
 import os
 import sys
 
-from MANAGER.Package.Manager_Crawler import Manager_Crawler
-from MANAGER.Package.Manager_User import Manager_User
-
 MANAGER_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH = os.path.join(MANAGER_PATH, 'Package')
 BIGMACLAB_PATH = os.path.dirname(MANAGER_PATH)
