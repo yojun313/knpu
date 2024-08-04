@@ -11,6 +11,7 @@ import asyncio
 import warnings
 from datetime import datetime, timedelta
 
+import shutil
 import urllib3
 from Package.CrawlerModule import CrawlerModule
 from Package.GoogleModule import GoogleModule
@@ -40,6 +41,7 @@ class Crawler(CrawlerModule):
         
         # Computer Info
         self.scrapdata_path = self.pathFinder(user)['scrapdata_path']
+        self.crawllog_path  = os.path.join(os.path.dirname(self.scrapdata_path), 'CrawlLog')
         self.crawlcom       = self.pathFinder(user)['computer_name']
         self.mySQL          = self.pathFinder(user)['MYSQL']
         
@@ -69,6 +71,7 @@ class Crawler(CrawlerModule):
         self.date_range  = (self.endDate_form - self.startDate_form).days + 1
         self.deltaD      = timedelta(days=1)
 
+    # DB에 크롤링 상태 기록
     def DBinfoRecorder(self, endoption = False):
         option = self.option
         starttime = datetime.fromtimestamp(self.startTime).strftime('%m/%d %H:%M')
@@ -80,16 +83,15 @@ class Crawler(CrawlerModule):
         self.mySQL.insertToTable(self.DBname + '_info', [option, starttime, endtime, user])
         self.mySQL.commit()
 
+    # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
         if self.DBname in self.mySQL.showAllDB():
             self.running = True
         else:
             print('\rStopped by BIGMACLAB MANAGER PROGRAM', end='')
+            self.localDBRemover()
             sys.exit()
 
-
-
-            
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
         self.DBname      = f"{DBtype}_{self.DBkeyword}{dbname_date}_{self.now.strftime('%m%d_%H%M')}"
@@ -106,7 +108,7 @@ class Crawler(CrawlerModule):
         
         try:
             os.mkdir(self.DBpath)
-            log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'),'w+')
+            log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'),'w+')
 
             self.msg = (
                 f"=======================================================================================================================================\n"
@@ -127,7 +129,10 @@ class Crawler(CrawlerModule):
         except:
             print("ERROR: DB 폴더 생성 실패 --> 잠시 후 다시 시도하세요")
             sys.exit()
-            
+
+    def localDBRemover(self):
+        shutil.rmtree(self.DBpath)
+
     def infoPrinter(self):
         print(self.msg)
       
@@ -139,7 +144,7 @@ class Crawler(CrawlerModule):
                 err_msg_content = value['Error Msg']
                 err_target = value['Error Target']
 
-                log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'), 'a')
+                log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a')
                 msg = (
                     f"\n\nError Time: {datetime.now()}\n"
                     f"Error Type: {err_msg_title}\n"
@@ -179,8 +184,9 @@ class Crawler(CrawlerModule):
         )
 
         self.DBinfoRecorder(endoption=True)
+        self.localDBRemover()
 
-        log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'), 'a')
+        log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a')
         log.write('\n\n'+end_msg)
         log.close()
 
