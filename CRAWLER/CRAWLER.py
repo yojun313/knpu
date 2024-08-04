@@ -80,8 +80,13 @@ class Crawler(CrawlerModule):
         self.mySQL.insertToTable(self.DBname + '_info', [option, starttime, endtime, user])
         self.mySQL.commit()
 
-    def webCrawlerStop(self):
-        self.running = False
+    def webCrawlerRunCheck(self):
+        if self.DBname in self.mySQL.showAllDB():
+            self.running = True
+        else:
+            self.running = False
+
+
             
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
@@ -100,7 +105,7 @@ class Crawler(CrawlerModule):
         try:
             os.mkdir(self.DBpath)
             log = open(os.path.join(self.DBpath, self.DBname + '_log.txt'),'w+')
-            
+
             self.msg = (
                 f"=======================================================================================================================================\n"
                 f"{'User:':<15} {self.user}\n"
@@ -265,6 +270,8 @@ class Crawler(CrawlerModule):
 
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
+
+
 
                 except Exception as e:
                     error_msg = self.error_detector()
