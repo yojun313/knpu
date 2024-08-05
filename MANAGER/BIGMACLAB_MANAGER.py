@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout
 from PyQt5.QtCore import Qt
 from mySQL import mySQL
 from Manager_Database import Manager_Database
-from Manager_Crawler import Manager_Crawler
+from Manager_Web import Manager_Web
 from Manager_User import Manager_User
 from Manager_Dataprocess import Manager_Dataprocess_TabDB
 from datetime import datetime
@@ -38,7 +38,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.DB = self.update_DB({'DBlist':[], 'DBdata': []})
         self.Manager_Database_obj = Manager_Database(self)
-        self.Manager_Crawler_obj  = Manager_Crawler(self)
+        self.Manager_Web_obj  = Manager_Web(self)
         self.Manager_Dataprocess_obj = Manager_Dataprocess_TabDB(self)
         self.Manager_User_obj        = Manager_User(self)
 
@@ -229,11 +229,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if index == 0:
             self.Manager_Database_obj.database_refresh_DB()
         elif index == 1:
-            self.Manager_Crawler_obj.crawler_open_webbrowser('http://bigmaclab-crawler.kro.kr')
+            self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr', self.Manager_Web_obj.crawler_web_layout)
         elif index == 2:
             self.Manager_Dataprocess_obj.Tab_DB_refresh_DB()
             pass
         elif index == 3:
+            self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
             pass
 
 
