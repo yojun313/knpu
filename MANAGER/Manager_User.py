@@ -47,9 +47,19 @@ class Manager_User:
 
             row_position = self.main.user_tablewidget.rowCount()
             self.main.user_tablewidget.insertRow(row_position)
-            self.main.user_tablewidget.setItem(row_position, 0, QTableWidgetItem(name))
-            self.main.user_tablewidget.setItem(row_position, 1, QTableWidgetItem(email))
-            self.main.user_tablewidget.setItem(row_position, 2, QTableWidgetItem(key))
+
+            name_item = QTableWidgetItem(name)
+            email_item = QTableWidgetItem(email)
+            key_item = QTableWidgetItem(key)
+
+            name_item.setTextAlignment(Qt.AlignCenter)
+            email_item.setTextAlignment(Qt.AlignCenter)
+            key_item.setTextAlignment(Qt.AlignCenter)
+
+            self.main.user_tablewidget.setItem(row_position, 0, name_item)
+            self.main.user_tablewidget.setItem(row_position, 1, email_item)
+            self.main.user_tablewidget.setItem(row_position, 2, key_item)
+
             self.main.user_name_lineinput.clear()
             self.main.user_email_lineinput.clear()
             self.main.user_key_lineinput.clear()
