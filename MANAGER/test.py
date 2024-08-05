@@ -1,63 +1,63 @@
-import time
-
-class MySQLDatabase:
-    def __init__(self, connection):
-        self.conn = connection
-
-    def showAllDB(self):
-        try:
-            with self.conn.cursor() as cursor:
-                start_time = time.time()
-                cursor.execute("SHOW DATABASES")
-                databases = cursor.fetchall()
-                elapsed_time = time.time() - start_time
+import sys
+from PyQt5.QtCore import QUrl
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QHBoxLayout
+from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile
 
 
-                # 불필요한 데이터베이스를 제거하면서 리스트로 변환
-                remove_list = {'information_schema', 'mysql', 'performance_schema', 'user_db'}
-                database_list = [db[0] for db in databases if db[0] not in remove_list]
-                print(f"SHOW DATABASES took {elapsed_time:.4f} seconds")
-                print(database_list)
-                return database_list
-        except Exception as e:
-            print("Failed to retrieve databases")
-            print(str(e))
-            return []
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-    def showAllTable(self, database_name):
-        try:
-            with self.conn.cursor() as cursor:
-                start_time = time.time()
-                cursor.execute(f"SHOW TABLES FROM `{database_name}`")
-                tables = cursor.fetchall()
-                elapsed_time = time.time() - start_time
-                print(f"SHOW TABLES FROM {database_name} took {elapsed_time:.4f} seconds")
+        # 메인 레이아웃
+        self.setWindowTitle('Web Browser with Download Support')
+        self.setGeometry(100, 100, 1200, 800)
 
-                # 테이블 이름을 리스트로 변환
-                table_list = [table[0] for table in tables]
-                return table_list
-        except Exception as e:
-            print(f"Failed to retrieve tables from database {database_name}")
-            print(str(e))
-            return []
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
 
-# Usage example
-if __name__ == "__main__":
-    import pymysql
+        main_layout = QVBoxLayout()
+        central_widget.setLayout(main_layout)
 
-    # Replace with your actual database connection details
-    connection = pymysql.connect(
-        host='121.152.225.232',
-        user='admin',
-        password='bigmaclab2022!',
-        port=3306
-    )
+        # QWebEngineView 설정
+        self.web_view = QWebEngineView()
+        self.web_view.setUrl(QUrl("http://www.example.com"))
+        main_layout.addWidget(self.web_view)
 
-    db = MySQLDatabase(connection)
+        # 버튼 레이아웃 생성
+        button_layout = QHBoxLayout()
+        self.web_homepage_button = QPushButton("Home Page")
+        self.web_downloadpage_button = QPushButton("Download Page")
 
-    # Compare performance of SHOW DATABASES and SHOW TABLES
-    db_list = db.showAllDB()
-    for database_name in db_list:
-        table_list = db.showAllTable(database_name)
+        # 버튼을 버튼 레이아웃에 추가
+        button_layout.addWidget(self.web_homepage_button)
+        button_layout.addWidget(self.web_downloadpage_button)
 
-    connection.close()
+        # 버튼 클릭 이벤트 연결
+        self.web_homepage_button.clicked.connect(self.open_home_page)
+        self.web_downloadpage_button.clicked.connect(self.open_download_page)
+
+        # 메인 레이아웃에 버튼 레이아웃 추가
+        main_layout.addLayout(button_layout)
+
+        # 다운로드 처리기 설정
+        profile = QWebEngineProfile.defaultProfile()
+        profile.downloadRequested.connect(self.on_download_requested)
+
+    def open_home_page(self):
+        self.web_view.setUrl(QUrl('http://www.example.com'))
+
+    def open_download_page(self):
+        self.web_view.setUrl(QUrl('http://bigmaclab-download.r-e.kr:90'))
+
+    def on_download_requested(self, download):
+        # 다운로드 요청을 처리하는 함수
+        download_path = download.path()  # 파일 경로를 얻어옴
+        download.accept()  # 다운로드 수락
+        download.downloadProgress.connect(lambda received, total: print(f"Downloading: {received}/{total} bytes"))
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    main_window = MainWindow()
+    main_window.show()
+    sys.exit(app.exec_())

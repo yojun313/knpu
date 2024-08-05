@@ -46,6 +46,11 @@
       </item>
       <item>
        <property name="text">
+        <string>WEB</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
         <string>USER</string>
        </property>
       </item>
@@ -54,7 +59,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="page_database">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -122,7 +127,7 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="QWidget" name="webViewLayout" native="true"/>
+         <widget class="QWidget" name="crawler_webview" native="true"/>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -269,6 +274,38 @@
            </layout>
           </widget>
          </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_web">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QWidget" name="web_webview" native="true"/>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QPushButton" name="web_homepage_button">
+            <property name="text">
+             <string>Home Page</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="web_downloadpage_button">
+            <property name="text">
+             <string>Download Page</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="web_github_button">
+            <property name="text">
+             <string>Developer GitHub</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
