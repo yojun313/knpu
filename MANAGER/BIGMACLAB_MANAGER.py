@@ -22,7 +22,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
         self.left_label = QLabel("  Copyright 2024. BIGMACLAB all rights reserved.")
-        self.right_label = QLabel("")
+        self.right_label = QLabel("Version 1.0.0")
         self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.right_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.statusbar.addPermanentWidget(self.left_label, 1)
@@ -236,9 +236,6 @@ class MainWindow(QtWidgets.QMainWindow):
         elif index == 3:
             pass
 
-    def printStatus(self, message=''):
-        self.right_label.setText(message)
-        QtWidgets.QApplication.processEvents()  # GUI 업데이트 강제 처리
 
 
 
