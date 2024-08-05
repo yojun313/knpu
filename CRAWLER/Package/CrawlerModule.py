@@ -42,12 +42,12 @@ class CrawlerModule(ToolModule):
 
         self.console = Console()
         self.live = None
-
+        
         self.socketnum = 1
 
         if proxy_option == True:
-            path_data = self.pathFinder()
-            self.proxy_list = self.read_txt(os.path.join(path_data['crawler_folder_path'], '아이피샵(유동프록시).txt'))       # 로컬 proxy.txt 파일 경로
+            proxy_path = os.path.dirname(PACKAGE_PATH)
+            self.proxy_list = self.read_txt(os.path.join(proxy_path, '아이피샵(유동프록시).txt'))       # 로컬 proxy.txt 파일 경로
         
         self.PrintData = {
             'currentDate': '',
