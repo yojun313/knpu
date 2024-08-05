@@ -9,6 +9,7 @@ sys.path.append(MANAGER_PATH)
 import time
 import asyncio
 import warnings
+import os
 from datetime import datetime, timedelta
 
 import shutil
@@ -250,6 +251,7 @@ class Crawler(CrawlerModule):
                     # News URL Part
                     urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
+                        os._exit(1)
                         continue
                     self.urlList = urlList_returnData['urlList']
 
@@ -284,8 +286,6 @@ class Crawler(CrawlerModule):
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
-
-
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -335,6 +335,7 @@ class Crawler(CrawlerModule):
                     # Blog Url Part
                     urlList_returnData = NaverBlogCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
+                        os._exit(1)
                         continue
                     self.urlList = urlList_returnData['urlList']
 
@@ -402,6 +403,7 @@ class Crawler(CrawlerModule):
                     # Cafe URL Part
                     urlList_returnData = NaverCafeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
+                        os._exit(1)
                         continue
                     self.urlList = urlList_returnData['urlList']
 
@@ -474,6 +476,7 @@ class Crawler(CrawlerModule):
                     # YouTube URL Part
                     urlList_returnData = YouTubeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
+                        os._exit(1)
                         continue
                     self.urlList = urlList_returnData['urlList']
 

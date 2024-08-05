@@ -237,6 +237,7 @@ class CrawlerModule(ToolModule):
                     except Exception as e:
                         if trynum >= 100:
                             return self.error_dump(1001, self.error_detector(), url)
+
                         trynum += 1
             else:
                 return requests.get(url, headers = headers, params = params, verify = False)
