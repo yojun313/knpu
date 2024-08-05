@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['BIGMACLAB_MANAGER.py'],
+    ['C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER.py'],
     pathex=[],
     binaries=[],
     datas=[('C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER_GUI.ui', '.')],
