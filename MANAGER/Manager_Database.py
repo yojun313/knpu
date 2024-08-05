@@ -22,6 +22,10 @@ class TableWindow(QMainWindow):
         # 상단 버튼 레이아웃
         self.button_layout = QtWidgets.QHBoxLayout()
 
+        # spacer 아이템 추가 (버튼들을 오른쪽 끝에 배치하기 위해 앞에 추가)
+        spacer = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.button_layout.addItem(spacer)
+
         # 새로고침 버튼 추가
         self.refresh_button = QtWidgets.QPushButton("새로고침", self)
         self.refresh_button.setFixedWidth(80)  # 가로 길이 조정
