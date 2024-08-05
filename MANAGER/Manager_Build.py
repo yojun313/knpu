@@ -1,6 +1,7 @@
 import os
 import subprocess
 import socket
+import shutil
 
 def create_spec_file(original_spec_file, new_spec_file, exe_name):
     with open(original_spec_file, 'r') as file:
@@ -38,6 +39,8 @@ def build_exe_from_spec(spec_file, output_directory, version):
         # Clean up the new spec file
         if os.path.exists(new_spec_file):
             os.remove(new_spec_file)
+            shutil.rmtree(os.path.join(os.path.dirname(new_spec_file), 'build'))
+        print(os.path.dirname(new_spec_file))
 
 if __name__ == "__main__":
     if socket.gethostname() == "BigMacServer":
