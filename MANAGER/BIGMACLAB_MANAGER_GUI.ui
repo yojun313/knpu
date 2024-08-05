@@ -46,6 +46,11 @@
       </item>
       <item>
        <property name="text">
+        <string>BOARD</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
         <string>WEB</string>
        </property>
       </item>
@@ -59,7 +64,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="page_database">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -145,13 +150,6 @@
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QPushButton" name="crawler_server_button">
-            <property name="text">
-             <string>크롤러 서버 3</string>
-            </property>
-           </widget>
-          </item>
          </layout>
         </item>
        </layout>
@@ -175,85 +173,72 @@
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_tab_1">
             <item>
-             <widget class="QTableWidget" name="dataprocess_tab1_tablewidget">
-              <property name="minimumSize">
-               <size>
-                <width>19</width>
-                <height>1</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_search">
+             <layout class="QHBoxLayout" name="horizontalLayout_6">
               <item>
-               <widget class="QLineEdit" name="dataprocess_tab1_searchDB_lineinput">
-                <property name="placeholderText">
-                 <string>검색어를 입력하고 Enter키나 검색 버튼을 누르세요...</string>
-                </property>
-               </widget>
+               <layout class="QVBoxLayout" name="verticalLayout_6">
+                <item>
+                 <widget class="QTableWidget" name="dataprocess_tab1_tablewidget"/>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_7">
+                  <item>
+                   <widget class="QLineEdit" name="dataprocess_tab1_searchDB_lineinput"/>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="dataprocess_tab1_searchDB_button">
+                    <property name="text">
+                     <string>검색</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="dataprocess_tab1_refreshDB_button">
+                    <property name="text">
+                     <string>새로고침</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
               </item>
               <item>
-               <widget class="QPushButton" name="dataprocess_tab1_searchDB_button">
-                <property name="text">
-                 <string>검색</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="dataprocess_tab1_refreshDB_button">
-                <property name="text">
-                 <string>새로고침</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_6"/>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_button">
-              <item>
-               <widget class="QPushButton" name="dataprocess_tab1_dividefile_button">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>44</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>분할(년/월)</string>
-                </property>
-                <property name="autoDefault">
-                 <bool>false</bool>
-                </property>
-                <property name="default">
-                 <bool>false</bool>
-                </property>
-                <property name="flat">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="pushButton">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>정렬/통계</string>
-                </property>
-               </widget>
+               <layout class="QVBoxLayout" name="verticalLayout_7">
+                <item>
+                 <widget class="QPushButton" name="pushButton_5">
+                  <property name="text">
+                   <string>분할(년/월)</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButton_6">
+                  <property name="text">
+                   <string>정렬/통계</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButton">
+                  <property name="text">
+                   <string>추가 예정</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="verticalSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>40</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
               </item>
              </layout>
             </item>
@@ -263,13 +248,75 @@
            <attribute name="title">
             <string>파일 불러오기</string>
            </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1"/>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_board">
+       <layout class="QVBoxLayout" name="verticalLayout_data_process">
+        <item>
+         <widget class="QTabWidget" name="tabWidget_version">
+          <property name="tabPosition">
+           <enum>QTabWidget::North</enum>
+          </property>
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="tab_version">
+           <attribute name="title">
+            <string>버전 관리</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
+            <item>
+             <widget class="QTableWidget" name="tableWidget_3"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <item>
+               <widget class="QPushButton" name="pushButton_3">
+                <property name="text">
+                 <string>추가</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButton_4">
+                <property name="text">
+                 <string>삭제</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButton_7">
+                <property name="text">
+                 <string>자세히</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tab_file">
+           <attribute name="title">
+            <string>자유게시판</string>
+           </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_tab_2">
             <item>
-             <widget class="QLabel" name="label_tab_2">
-              <property name="text">
-               <string>This is Tab 2</string>
-              </property>
-             </widget>
+             <widget class="QTableWidget" name="tableWidget"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <item>
+               <widget class="QPushButton" name="pushButton_2">
+                <property name="text">
+                 <string>PushButton</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
           </widget>
