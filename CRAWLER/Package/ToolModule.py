@@ -22,8 +22,16 @@ class ToolModule:
     # Set folder path depending on the computer
     def pathFinder(self, name = ''):
 
-        if socket.gethostname() == "DESKTOP-502IMU5":
-            crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
+        if socket.gethostname() == "Yojuns-MacBook-Pro.local":
+            crawler_folder_path = '/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER'
+            scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
+            token_path          = crawler_folder_path
+            computer_name       = "Yojun's MacBook Pro"
+            RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
+            mySQL_obj = mySQL(host='localhost', user='root', password='kingsman', port=3306)
+               
+        elif socket.gethostname() == "DESKTOP-502IMU5":
+            crawler_folder_path = 'C:/BIGMACLAB/CRAWLER'
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
             token_path          = crawler_folder_path
             computer_name       = 'HP OMEN'
@@ -31,21 +39,13 @@ class ToolModule:
             mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
 
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
-            crawler_folder_path = 'C:/Users/User/Desktop/BIGMACLAB/CRAWLER'
+            crawler_folder_path = 'D:/BIGMACLAB/CRAWLER'
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
             token_path          = crawler_folder_path
             computer_name       = 'HP Z8'
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
             mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
         
-        elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
-            crawler_folder_path = '/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER'
-            scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
-            token_path          = crawler_folder_path
-            computer_name       = "Yojun's MacBook Pro"
-            RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
-            mySQL_obj = mySQL(host='localhost', user='root', password='kingsman', port=3306)
-
         elif socket.gethostname() == "BigMacServer":
             crawler_folder_path = "D:/BIGMACLAB/CRAWLER"
             scrapdata_path = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
@@ -54,7 +54,15 @@ class ToolModule:
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
             mySQL_obj = mySQL(host='localhost', user='root', password='bigmaclab2022!', port=3306)
 
-        return {'crawler_folder_path': crawler_folder_path, 'scrapdata_path' : scrapdata_path, 'token_path' : token_path, 'computer_name' : computer_name, 'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath, 'MYSQL': mySQL_obj}
+        returnData = {
+            'crawler_folder_path': crawler_folder_path, 
+            'scrapdata_path' : scrapdata_path, 
+            'token_path' : token_path, 
+            'computer_name' : computer_name, 
+            'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath, 
+            'MYSQL': mySQL_obj
+        }
+        return returnData
     
     def read_txt(self, filepath):
         txt_path = filepath
