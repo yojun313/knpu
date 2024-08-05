@@ -149,7 +149,7 @@ class CrawlerModule(ToolModule):
 
                 print(out_str, end = '')
             except:
-                print('\rError in printing status', end = '')
+                pass
         else:
             def generate_table():
                 table = Table()
