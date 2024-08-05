@@ -98,7 +98,6 @@ class Manager_Database:
     def database_delete_DB(self):
         selected_row = self.main.database_tablewidget.currentRow()
         if selected_row >= 0:
-            self.main.printStatus("조회 중...")
             target_db = self.DB['DBlist'][selected_row]
             self.main.mySQL_obj.connectDB(target_db)
             db_info_df = self.main.mySQL_obj.TableToDataframe(target_db + '_info')
