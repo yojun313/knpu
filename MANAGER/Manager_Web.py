@@ -37,12 +37,13 @@ class Manager_Web:
         webbrowser.open('https://knpu.re.kr:90')
 
     def web_buttonMatch(self):
-        self.main.crawler_server_button.clicked.connect(
+        self.main.crawler_omen_button.clicked.connect(
             partial(self.web_open_webbrowser, "http://bigmaclab-crawler.kro.kr:80", self.crawler_web_layout))
         self.main.crawler_z_button.clicked.connect(
             partial(self.web_open_webbrowser, "http://bigmaclab-crawler.kro.kr:81", self.crawler_web_layout))
-        self.main.crawler_omen_button.clicked.connect(
+        self.main.crawler_server_button.clicked.connect(
             partial(self.web_open_webbrowser, "http://bigmaclab-crawler.kro.kr:82", self.crawler_web_layout))
+
         self.main.web_downloadpage_button.clicked.connect(self.web_open_downloadbrowser)
         self.main.web_homepage_button.clicked.connect(
             partial(self.web_open_webbrowser, "https://knpu.re.kr", self.web_web_layout))
