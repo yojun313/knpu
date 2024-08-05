@@ -55,11 +55,9 @@ class MainWindow(QtWidgets.QMainWindow):
         mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,database='User_DB')
         currentDB_list = currentDB['DBlist']
         newDB_list = mySQL_obj.showAllDB()
-        print(newDB_list)
 
         delete_target_list = list(set(currentDB_list)-set(newDB_list))
         add_target_list    = list(set(newDB_list)-set(currentDB_list))
-        print(add_target_list)
         # Delete
         currentDB_list_copy = currentDB_list.copy()
         for i in range(len(currentDB_list_copy)):
