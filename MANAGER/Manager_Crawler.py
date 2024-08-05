@@ -27,9 +27,9 @@ class Manager_Crawler:
         self.browser.show()
 
     def crawler_buttonMatch(self):
-        self.main.crawler_history_button.clicked.connect(
-            partial(self.crawler_open_webbrowser, "http://bigmaclab-crawler.kro.kr/history"))
-        self.main.crawler_dashboard_button.clicked.connect(
-            partial(self.crawler_open_webbrowser, "http://bigmaclab-crawler.kro.kr"))
-        self.main.crawler_add_button.clicked.connect(
-            partial(self.crawler_open_webbrowser, "http://bigmaclab-crawler.kro.kr/add_crawler"))
+        self.main.crawler_server_button.clicked.connect(
+            partial(self.crawler_open_webbrowser, "http://bigmaclab-crawler.kro.kr:80"))
+        self.main.crawler_z_button.clicked.connect(
+            partial(self.crawler_open_webbrowser, "http://bigmaclab-crawler.kro.kr:81"))
+        self.main.crawler_omen_button.clicked.connect(
+            partial(self.crawler_open_webbrowser, "http://bigmaclab-crawler.kro.kr:82"))

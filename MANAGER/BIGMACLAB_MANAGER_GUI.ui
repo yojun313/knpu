@@ -54,7 +54,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="page_database">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -127,23 +127,23 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
           <item>
-           <widget class="QPushButton" name="crawler_history_button">
+           <widget class="QPushButton" name="crawler_z_button">
             <property name="text">
-             <string>크롤링 기록</string>
+             <string>크롤러 서버 1</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="crawler_dashboard_button">
+           <widget class="QPushButton" name="crawler_server_button">
             <property name="text">
-             <string>대시보드</string>
+             <string>크롤러 서버 2</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="crawler_add_button">
+           <widget class="QPushButton" name="crawler_omen_button">
             <property name="text">
-             <string>크롤러 추가</string>
+             <string>크롤러 서버 3</string>
             </property>
            </widget>
           </item>
