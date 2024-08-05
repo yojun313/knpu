@@ -73,11 +73,13 @@ class Crawler(CrawlerModule):
         self.deltaD      = timedelta(days=1)
 
     # DB에 크롤링 상태 기록
-    def DBinfoRecorder(self, endoption = False):
+    def DBinfoRecorder(self, endoption = False, error = False):
         option = self.option
         starttime = datetime.fromtimestamp(self.startTime).strftime('%m/%d %H:%M')
         endtime = '-'
-        if endoption == True:
+        if error == True:
+            endtime = 'ip 오류 중단'
+        elif endoption == True:
             endtime = datetime.fromtimestamp(time.time()).strftime('%m/%d %H:%M')
         user = self.user
         self.mySQL.connectDB(self.DBname)
@@ -251,8 +253,9 @@ class Crawler(CrawlerModule):
                     # News URL Part
                     urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
+                        self.DBinfoRecorder(False, True)
+                        self.localDBRemover()
                         os._exit(1)
-                        continue
                     self.urlList = urlList_returnData['urlList']
 
                     FullreturnData = asyncio.run(NaverNewsCrawler_obj.asyncMultiCollector(self.urlList, option))
@@ -335,8 +338,10 @@ class Crawler(CrawlerModule):
                     # Blog Url Part
                     urlList_returnData = NaverBlogCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
+                        self.DBinfoRecorder(False, True)
+                        self.localDBRemover()
                         os._exit(1)
-                        continue
+
                     self.urlList = urlList_returnData['urlList']
 
                     FullreturnData = asyncio.run(NaverBlogCrawler_obj.asyncMultiCollector(self.urlList, option))
@@ -403,8 +408,10 @@ class Crawler(CrawlerModule):
                     # Cafe URL Part
                     urlList_returnData = NaverCafeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
+                        self.DBinfoRecorder(False, True)
+                        self.localDBRemover()
                         os._exit(1)
-                        continue
+
                     self.urlList = urlList_returnData['urlList']
 
                     FullreturnData = asyncio.run(NaverCafeCrawler_obj.asyncMultiCollector(self.urlList, option))
@@ -476,8 +483,10 @@ class Crawler(CrawlerModule):
                     # YouTube URL Part
                     urlList_returnData = YouTubeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
+                        self.DBinfoRecorder(False, True)
+                        self.localDBRemover()
                         os._exit(1)
-                        continue
+
                     self.urlList = urlList_returnData['urlList']
 
                     FullreturnData = YouTubeCrawler_obj.syncMultiCollector(self.urlList, option)
