@@ -34,7 +34,7 @@ class Manager_Web:
         self.browser.show()
 
     def web_open_downloadbrowser(self, url):
-        webbrowser.open('http://bigmaclab-download.r-e.kr:90')
+        webbrowser.open('https://knpu.re.kr:90')
 
     def web_buttonMatch(self):
         self.main.crawler_server_button.clicked.connect(
