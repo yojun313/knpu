@@ -1,13 +1,11 @@
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog
-from PyQt5.QtCore import Qt
-import time
+from PyQt5.QtCore import QTimer
 import copy
 class Manager_Dataprocess_TabDB:
     def __init__(self, main_window):
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
-        self.main.DB_table_maker(self.main.dataprocess_tab1_tablewidget, self.DB)
+        self.DB_table_column = ['Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester']
+        self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBdata'], self.DB_table_column)
         self.Tab_DB_buttonMatch()
 
     def Tab_DB_search_DB(self):
@@ -44,8 +42,14 @@ class Manager_Dataprocess_TabDB:
                 return
 
     def Tab_DB_refresh_DB(self):
-        self.DB = self.main.update_DB(self.DB)
-        self.main.DB_table_maker(self.main.dataprocess_tab1_tablewidget, self.DB)
+        self.main.printStatus("새로고침 중...")
+
+        def refresh_database():
+            self.DB = self.main.update_DB(self.DB)
+            self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBdata'], self.DB_table_column)
+
+        QTimer.singleShot(1, refresh_database)
+        QTimer.singleShot(1, self.main.printStatus)
 
     def Tab_DB_buttonMatch(self):
         self.main.dataprocess_tab1_refreshDB_button.clicked.connect(self.Tab_DB_refresh_DB)
