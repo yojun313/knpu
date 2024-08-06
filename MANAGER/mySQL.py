@@ -66,7 +66,7 @@ class mySQL:
                 databases = cursor.fetchall()
 
                 # 불필요한 데이터베이스를 제거하면서 리스트로 변환
-                remove_list = {'information_schema', 'mysql', 'performance_schema', 'user_db'}
+                remove_list = {'information_schema', 'mysql', 'performance_schema'}
                 database_list = [db[0] for db in databases if db[0] not in remove_list]
 
                 return database_list
@@ -181,6 +181,27 @@ class mySQL:
             print(str(e))
             return None
 
+    def TableToList(self, tableName):
+        try:
+            with self.conn.cursor() as cursor:
+                cursor.execute(f"SELECT * FROM `{tableName}`")
+                rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
+
+                # 데이터프레임으로 변환
+                dataframe = pd.DataFrame(rows, columns=columns)
+
+                # 첫 번째 행과 첫 번째 열 제외
+                sub_dataframe = dataframe.iloc[:, 1:]
+
+                # 2차원 리스트로 변환하여 반환
+                result = sub_dataframe.values.tolist()
+                return result
+        except Exception as e:
+            print(f"Failed to convert table {tableName} to 2D list")
+            print(str(e))
+            return None
+
     def CSVToTable(self, csv_path, tableName):
         try:
             # CSV 파일을 읽어서 데이터프레임으로 변환
@@ -225,18 +246,21 @@ class mySQL:
             print(f"Failed to convert CSV file {csv_path} to table {tableName}")
             print(str(e))
 
-    def deleteTableRowByColumn(self, tableName, target, ColumnName):
+    def deleteTableRowByColumn(self, tableName, target, columnName):
         try:
             with self.conn.cursor() as cursor:
                 # DELETE 쿼리 생성
-                query = f"DELETE FROM `{tableName}` WHERE {ColumnName} = %s"
+                query = f"DELETE FROM `{tableName}` WHERE `{columnName}` = %s"
                 cursor.execute(query, (target,))
                 self.conn.commit()
         except Exception as e:
-            print(f"Failed to delete row with id {target} from table {tableName}")
+            print(f"Failed to delete row with {columnName} = {target} from table {tableName}")
             print(str(e))
 
 if __name__ == "__main__":
     # 사용 예제
-    mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='User_DB')
-    mySQL_obj.deleteTableRowById(tableName='user_info', row_id=10)
+    mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
+    mySQL_obj.dropTable(tableName='version_info')
+    mySQL_obj.newTable(tableName='version_info', column_list=['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status', 'Version Detail'])
+    mySQL_obj.insertToTable('version_info', [['1.0.0', '20240805', '초기 릴리즈', '초기 릴리즈', 'Stable', '초기 릴리즈']])
+    mySQL_obj.commit()

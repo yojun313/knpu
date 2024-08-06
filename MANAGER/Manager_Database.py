@@ -1,9 +1,11 @@
 import os
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QTimer
 import platform
 import copy
+from functools import partial
+import time
 
 class TableWindow(QMainWindow):
     def __init__(self, parent=None, target_db=None):
@@ -96,35 +98,46 @@ class Manager_Database:
     def __init__(self, main_window):
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
-        self.main.DB_table_maker(self.main.database_tablewidget, self.DB)
+        self.DB_table_column = ['Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester']
+        self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
         self.database_buttonMatch()
 
     def database_delete_DB(self):
-        selected_row = self.main.database_tablewidget.currentRow()
-        if selected_row >= 0:
-            target_db = self.DB['DBlist'][selected_row]
-            self.main.mySQL_obj.connectDB(target_db)
-            db_info_df = self.main.mySQL_obj.TableToDataframe(target_db + '_info')
-            db_info = db_info_df.iloc[-1].tolist()
-            endtime = db_info[3]
+        self.main.printStatus("삭제 중...")
+        def delete_database():
+            selected_row = self.main.database_tablewidget.currentRow()
+            if selected_row >= 0:
+                target_db = self.DB['DBlist'][selected_row]
+                self.main.mySQL_obj.connectDB(target_db)
+                db_info_df = self.main.mySQL_obj.TableToDataframe(target_db + '_info')
+                db_info = db_info_df.iloc[-1].tolist()
+                endtime = db_info[3]
 
-            if endtime == '-':
-                confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하시겠습니까?"
-            else:
-                confirm_msg = f"'{target_db}'를 삭제하시겠습니까?"
+                if endtime == '-':
+                    confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하시겠습니까?"
+                else:
+                    confirm_msg = f"'{target_db}'를 삭제하시겠습니까?"
 
-            reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.Yes:
-                self.main.mySQL_obj.dropDB(target_db)
-                self.database_refresh_DB()
+                reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.main.mySQL_obj.dropDB(target_db)
+                    self.database_refresh_DB()
 
+        QTimer.singleShot(1, delete_database)
+        QTimer.singleShot(1, self.main.printStatus)
 
     def database_view_DB(self):
-        selected_row = self.main.database_tablewidget.currentRow()
-        if selected_row >= 0:
-            target_DB = self.DB['DBlist'][selected_row]
-            self.DBtable_window = TableWindow(self.main, target_DB)
-            self.DBtable_window.show()
+        self.main.printStatus("불러오는 중...")
+        def load_database():
+            selected_row = self.main.database_tablewidget.currentRow()
+            if selected_row >= 0:
+                target_DB = self.DB['DBlist'][selected_row]
+                self.DBtable_window = TableWindow(self.main, target_DB)
+                self.DBtable_window.show()
+
+        QTimer.singleShot(1, load_database)
+        QTimer.singleShot(1, self.main.printStatus)
+
 
     def database_search_DB(self):
         search_text = self.main.database_searchDB_lineinput.text().lower()
@@ -160,45 +173,54 @@ class Manager_Database:
                 return
 
     def database_save_DB(self):
-        selected_row = self.main.database_tablewidget.currentRow()
-        if not selected_row >= 0:
-            return
-        target_db = self.DB['DBlist'][selected_row]
+        self.main.printStatus("저장 중...")
+        def save_database():
+            selected_row = self.main.database_tablewidget.currentRow()
+            if not selected_row >= 0:
+                return
+            target_db = self.DB['DBlist'][selected_row]
 
-        folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory")
-        # 선택된 경로가 있는지 확인
-        if folder_path:
-            try:
-                dbpath = os.path.join(folder_path, target_db)
-
+            folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory")
+            # 선택된 경로가 있는지 확인
+            if folder_path:
                 try:
-                    os.mkdir(dbpath)
-                except:
-                    dbpath += "_copy"
-                    os.mkdir(dbpath)
+                    dbpath = os.path.join(folder_path, target_db)
 
-                self.main.mySQL_obj.connectDB(target_db)
-                tableList = self.main.mySQL_obj.showAllTable(target_db)
-                for tableName in tableList:
-                    self.main.mySQL_obj.TableToCSV(tableName, dbpath)
+                    try:
+                        os.mkdir(dbpath)
+                    except:
+                        dbpath += "_copy"
+                        os.mkdir(dbpath)
 
-                # 저장된 폴더를 파일 탐색기로 열기
-                if platform.system() == "Windows":
-                    os.startfile(dbpath)
-                elif platform.system() == "Darwin":  # macOS
-                    os.system(f"open '{dbpath}'")
-                else:  # Linux and other OS
-                    os.system(f"xdg-open '{dbpath}'")
+                    self.main.mySQL_obj.connectDB(target_db)
+                    tableList = self.main.mySQL_obj.showAllTable(target_db)
+                    for tableName in tableList:
+                        self.main.mySQL_obj.TableToCSV(tableName, dbpath)
 
-            except Exception as e:
-                QMessageBox.critical(self.main, "Error", f"Failed to save database: {str(e)}")
-        else:
-            QMessageBox.warning(self.main, "Warning", "No directory selected.")
+                    # 저장된 폴더를 파일 탐색기로 열기
+                    if platform.system() == "Windows":
+                        os.startfile(dbpath)
+                    elif platform.system() == "Darwin":  # macOS
+                        os.system(f"open '{dbpath}'")
+                    else:  # Linux and other OS
+                        os.system(f"xdg-open '{dbpath}'")
+
+                except Exception as e:
+                    QMessageBox.critical(self.main, "Error", f"Failed to save database: {str(e)}")
+            else:
+                QMessageBox.warning(self.main, "Warning", "No directory selected.")
+
+        QTimer.singleShot(1, save_database)
+        QTimer.singleShot(1, self.main.printStatus)
 
     def database_refresh_DB(self):
-        self.DB = self.main.update_DB(self.DB)
-        self.main.DB_table_maker(self.main.database_tablewidget, self.DB)
+        self.main.printStatus("새로고침 중")
+        def refresh_database():
+            self.DB = self.main.update_DB(self.DB)
+            self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
 
+        QTimer.singleShot(1, refresh_database)
+        QTimer.singleShot(1, self.main.printStatus)
 
     def database_buttonMatch(self):
         self.main.database_refreshDB_button.clicked.connect(self.database_refresh_DB)

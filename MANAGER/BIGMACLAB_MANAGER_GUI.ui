@@ -64,7 +64,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="page_database">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -270,26 +270,26 @@
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_tab_1">
             <item>
-             <widget class="QTableWidget" name="tableWidget_3"/>
+             <widget class="QTableWidget" name="board_version_tableWidget"/>
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_5">
               <item>
-               <widget class="QPushButton" name="pushButton_3">
+               <widget class="QPushButton" name="board_addversion_button">
                 <property name="text">
                  <string>추가</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="pushButton_4">
+               <widget class="QPushButton" name="board_deleteversion_button">
                 <property name="text">
                  <string>삭제</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="pushButton_7">
+               <widget class="QPushButton" name="board_detailversion_button">
                 <property name="text">
                  <string>자세히</string>
                 </property>

@@ -1,32 +1,33 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QAction, QLabel, QStatusBar, QHBoxLayout
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt, QTimer
+
+
 from mySQL import mySQL
 from Manager_Database import Manager_Database
 from Manager_Web import Manager_Web
+from Manager_Board import Manager_Board
 from Manager_User import Manager_User
 from Manager_Dataprocess import Manager_Dataprocess_TabDB
 from datetime import datetime
 
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
+        self.version = 'Version 1.0.1'
+
         super(MainWindow, self).__init__()
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
         uic.loadUi(ui_path, self)
+
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
         self.setGeometry(0, 0, 1400, 900)
-
-        # 상태 표시줄 생성
-        self.statusbar = QStatusBar()
-        self.setStatusBar(self.statusbar)
-        self.left_label = QLabel("  Copyright 2024. BIGMACLAB all rights reserved.")
-        self.right_label = QLabel("Version 1.0.3")
-        self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.right_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.statusbar.addPermanentWidget(self.left_label, 1)
-        self.statusbar.addPermanentWidget(self.right_label, 1)
+        self.menubar_init()
+        self.statusBar_init()
+        self.password = 'kingsman'
 
         # 스타일시트 적용
         self.setStyle()
@@ -34,14 +35,55 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,database='User_DB')
 
         # 사이드바 연결
-        self.listWidget.currentRowChanged.connect(self.display)
+        def load_program():
+            self.listWidget.currentRowChanged.connect(self.display)
 
-        self.DB = self.update_DB({'DBlist':[], 'DBdata': []})
-        self.Manager_Database_obj = Manager_Database(self)
-        self.Manager_Web_obj  = Manager_Web(self)
-        self.Manager_Dataprocess_obj = Manager_Dataprocess_TabDB(self)
-        self.Manager_User_obj        = Manager_User(self)
+            self.DB = self.update_DB({'DBlist':[], 'DBdata': []})
+            self.Manager_Database_obj = Manager_Database(self)
+            self.Manager_Web_obj  = Manager_Web(self)
+            self.Manager_Dataprocess_obj = Manager_Dataprocess_TabDB(self)
+            self.Manager_Board_obj = Manager_Board(self)
+            self.Manager_User_obj        = Manager_User(self)
 
+        self.listWidget.setCurrentRow(0)
+        self.printStatus("프로그램 시작 중...")
+        QTimer.singleShot(1, load_program)
+        QTimer.singleShot(1, self.printStatus)
+
+    def statusBar_init(self):
+        # 상태 표시줄 생성
+        self.statusbar = QStatusBar()
+        self.setStatusBar(self.statusbar)
+        self.left_label = QLabel('  ' + self.version)
+        self.right_label = QLabel('')
+        self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.right_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.statusbar.addPermanentWidget(self.left_label, 1)
+        self.statusbar.addPermanentWidget(self.right_label, 1)
+
+    def menubar_init(self):
+        def showInfoDialog():
+            dialog = InfoDialog(self.version)
+            dialog.exec_()
+
+        menubar = self.menuBar()
+
+        # 파일 메뉴 생성
+        infoMenu = menubar.addMenu('&Info')
+        #editMenu = menubar.addMenu('&Edit')
+
+        # 액션 생성
+        infoAct = QAction('Info', self)
+        copyAct = QAction('Copy', self)
+        pasteAct = QAction('Paste', self)
+
+        infoAct = QAction('Info', self)
+        infoAct.triggered.connect(showInfoDialog)
+
+        # 편집 메뉴에 액션 추가
+        infoMenu.addAction(infoAct)
+        #editMenu.addAction(copyAct)
+        #editMenu.addAction(pasteAct)
 
     def update_DB(self, currentDB):
         def parse_date(date_str):
@@ -52,9 +94,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     pass
             raise ValueError(f"time data '{date_str}' does not match any known format")
 
-        mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306,database='User_DB')
+        mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
         currentDB_list = currentDB['DBlist']
         newDB_list = mySQL_obj.showAllDB()
+        newDB_list = [DB for DB in newDB_list if DB.count('_') == 5]
 
         delete_target_list = list(set(currentDB_list)-set(newDB_list))
         add_target_list    = list(set(newDB_list)-set(currentDB_list))
@@ -100,17 +143,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         return {'DBdata': sorted_db_data, 'DBlist': sorted_db_list}
 
-    def DB_table_maker(self, widgetname, DB):
-        db_data = DB['DBdata']
-        widgetname.setRowCount(len(db_data))
-        widgetname.setColumnCount(7)
-        widgetname.setHorizontalHeaderLabels(
-            ['Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester'])
+    def table_maker(self, widgetname, data, column):
+        widgetname.setRowCount(len(data))
+        widgetname.setColumnCount(len(column))
+        widgetname.setHorizontalHeaderLabels(column)
         widgetname.setSelectionBehavior(QTableWidget.SelectRows)
         widgetname.setSelectionMode(QTableWidget.SingleSelection)
         widgetname.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        for i, row_data in enumerate(db_data):
+        for i, row_data in enumerate(data):
             for j, cell_data in enumerate(row_data):
                 item = QTableWidgetItem(cell_data)
                 item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
@@ -237,9 +278,65 @@ class MainWindow(QtWidgets.QMainWindow):
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
             pass
 
+    def admin_password(self):
+        input_dialog = QInputDialog(self)
+        input_dialog.setWindowTitle('Admin Mode')
+        input_dialog.setLabelText('Enter admin password:')
+        input_dialog.setTextEchoMode(QLineEdit.Password)
+        input_dialog.resize(300, 200)  # 원하는 크기로 설정
+
+        # 비밀번호 입력 창 띄우기
+        ok = input_dialog.exec_()
+        password = input_dialog.textValue()
+
+        return ok, password
+
+    def printStatus(self, msg=''):
+        msg += ' '
+        self.right_label.setText(msg)
+        QtWidgets.QApplication.processEvents()
 
 
 
+class InfoDialog(QDialog):
+    def __init__(self, version):
+        super().__init__()
+        self.version = version
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle('Info')
+        self.setGeometry(100, 100, 300, 250)
+
+        layout = QVBoxLayout()
+
+        # 긴 문자열
+        long_text = """
+        <p align="center">BIGMACLAB MANAGER</p>
+        <p align="center">{version}</p>
+        <p align="center">Copyright © 2024 KNPU BIGMACLAB<br>all rights reserved.</p>
+        """.format(version=self.version)
+
+        # QLabel에 HTML 형식으로 긴 문자열 추가
+        info_label = QLabel(long_text, self)
+        info_label.setAlignment(Qt.AlignCenter)
+
+        # 이미지 추가
+        pixmap = QPixmap(os.path.join(os.path.dirname(__file__), 'exe_icon.png'))  # 이미지 경로를 적절히 변경
+        if pixmap.isNull():
+            print("Failed to load image!")
+        else:
+            scaled_pixmap = pixmap.scaled(100, 100, Qt.KeepAspectRatio)  # 이미지 크기 조정
+
+        image_label = QLabel(self)
+        image_label.setPixmap(scaled_pixmap)
+        image_label.setAlignment(Qt.AlignCenter)
+
+        # 레이아웃에 라벨 추가
+        layout.addWidget(image_label)
+        layout.addWidget(info_label)
+
+        self.setLayout(layout)
 
 
 app = QtWidgets.QApplication([])

@@ -44,7 +44,7 @@ def build_exe_from_spec(spec_file, output_directory, version):
 
 if __name__ == "__main__":
     if socket.gethostname() == "BigMacServer":
-        output_directory = "D:/BIGMACLAB/CRAWLER/BIGMACLAB_MANAGER"
+        output_directory = "D:/BIGMACLAB/BIGMACLAB_MANAGER"
 
     # Spec file path
     spec_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'BIGMACLAB_MANAGER.spec')
