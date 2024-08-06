@@ -253,9 +253,11 @@ class Crawler(CrawlerModule):
                     # News URL Part
                     urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
-                        self.DBinfoRecorder(False, True)
-                        self.localDBRemover()
-                        os._exit(1)
+                        if dayCount == 0:
+                            self.DBinfoRecorder(False, True)
+                            self.localDBRemover()
+                            os._exit(1)
+                        continue
                     self.urlList = urlList_returnData['urlList']
 
                     FullreturnData = asyncio.run(NaverNewsCrawler_obj.asyncMultiCollector(self.urlList, option))
@@ -338,9 +340,11 @@ class Crawler(CrawlerModule):
                     # Blog Url Part
                     urlList_returnData = NaverBlogCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
-                        self.DBinfoRecorder(False, True)
-                        self.localDBRemover()
-                        os._exit(1)
+                        if dayCount == 0:
+                            self.DBinfoRecorder(False, True)
+                            self.localDBRemover()
+                            os._exit(1)
+                        continue
 
                     self.urlList = urlList_returnData['urlList']
 
@@ -408,9 +412,11 @@ class Crawler(CrawlerModule):
                     # Cafe URL Part
                     urlList_returnData = NaverCafeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
-                        self.DBinfoRecorder(False, True)
-                        self.localDBRemover()
-                        os._exit(1)
+                        if dayCount == 0:
+                            self.DBinfoRecorder(False, True)
+                            self.localDBRemover()
+                            os._exit(1)
+                        continue
 
                     self.urlList = urlList_returnData['urlList']
 
@@ -483,9 +489,11 @@ class Crawler(CrawlerModule):
                     # YouTube URL Part
                     urlList_returnData = YouTubeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
-                        self.DBinfoRecorder(False, True)
-                        self.localDBRemover()
-                        os._exit(1)
+                        if dayCount == 0:
+                            self.DBinfoRecorder(False, True)
+                            self.localDBRemover()
+                            os._exit(1)
+                        continue
 
                     self.urlList = urlList_returnData['urlList']
 
@@ -607,6 +615,10 @@ class Crawler(CrawlerModule):
 
                     urlList_returnData = ChinaSinaCrawler_obj.urlCollector(keyword=self.keyword, startDate=currentDate_start, endDate=currentDate_end)
                     if self.ReturnChecker(urlList_returnData) == False:
+                        if DateRange == DateRangeList[0]:
+                            self.DBinfoRecorder(False, True)
+                            self.localDBRemover()
+                            os._exit(1)
                         continue
                     self.urlList = urlList_returnData['urlList']
 
