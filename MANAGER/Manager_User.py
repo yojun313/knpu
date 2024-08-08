@@ -11,6 +11,7 @@ class Manager_User:
         self.main.mySQL_obj.connectDB('user_db')
 
         self.userNameList = []
+        self.userKeyList  = []
         userDF = self.main.mySQL_obj.TableToDataframe('user_info')
         user_data = [tuple(row) for row in userDF.itertuples(index=False, name=None)]
 
@@ -30,16 +31,20 @@ class Manager_User:
                 self.main.user_tablewidget.setItem(i, j, item)
 
             self.userNameList.append(name)
+            if key != 'n':
+                self.userKeyList.append(key)
+
+
 
     def user_add_user(self):
         name = self.main.user_name_lineinput.text()
         email = self.main.user_email_lineinput.text()
         key = self.main.user_key_lineinput.text()
 
-        ok, password = self.main.admin_password()
+        ok, password = self.main.admin_check()
 
         # 비밀번호 검증
-        if ok and password == self.main.password:
+        if ok and password == self.main.admin_password:
 
             self.main.mySQL_obj.connectDB('user_db')
 
@@ -73,9 +78,9 @@ class Manager_User:
             QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
 
     def user_delete_user(self):
-        ok, password = self.main.admin_password()
+        ok, password = self.main.admin_check()
 
-        if ok and password == self.main.password:
+        if ok and password == self.main.admin_password:
             selected_row = self.main.user_tablewidget.currentRow()
             if selected_row >= 0:
                 reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.userNameList[selected_row]}님을 삭제하시겠습니까?",
