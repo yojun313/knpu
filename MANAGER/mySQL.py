@@ -260,7 +260,6 @@ class mySQL:
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
-    mySQL_obj.dropTable(tableName='version_info')
-    mySQL_obj.newTable(tableName='version_info', column_list=['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status', 'Version Detail'])
-    mySQL_obj.insertToTable('version_info', [['1.0.0', '20240805', '초기 릴리즈', '초기 릴리즈', 'Stable', '초기 릴리즈']])
+    mySQL_obj.dropTable('version_bug')
+    mySQL_obj.newTable(tableName='version_bug', column_list=['User', 'Version Num', 'Bug Title', 'DateTime', 'Bug Detail'])
     mySQL_obj.commit()

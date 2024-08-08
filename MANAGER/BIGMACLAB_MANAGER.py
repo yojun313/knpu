@@ -1,7 +1,7 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer
 
@@ -11,13 +11,17 @@ from Manager_Database import Manager_Database
 from Manager_Web import Manager_Web
 from Manager_Board import Manager_Board
 from Manager_User import Manager_User
-from Manager_Dataprocess import Manager_Dataprocess_TabDB
+from Manager_Dataprocess import Manager_Dataprocess
 from datetime import datetime
-
+import platform
+import requests
+from packaging import version
+import pandas as pd
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.version = 'Version 1.0.1'
+        self.versionNum = '1.0.2'
+        self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
@@ -27,7 +31,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setGeometry(0, 0, 1400, 900)
         self.menubar_init()
         self.statusBar_init()
-        self.password = 'kingsman'
+        self.admin_password = 'kingsman'
+        self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
 
         # 스타일시트 적용
         self.setStyle()
@@ -41,9 +46,19 @@ class MainWindow(QtWidgets.QMainWindow):
             self.DB = self.update_DB({'DBlist':[], 'DBdata': []})
             self.Manager_Database_obj = Manager_Database(self)
             self.Manager_Web_obj  = Manager_Web(self)
-            self.Manager_Dataprocess_obj = Manager_Dataprocess_TabDB(self)
-            self.Manager_Board_obj = Manager_Board(self)
+            self.Manager_Dataprocess_obj = Manager_Dataprocess(self)
+            self.Manager_Board_obj       = Manager_Board(self)
             self.Manager_User_obj        = Manager_User(self)
+
+            # New version check
+            current_version = version.parse(self.versionNum)
+            new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
+            if current_version < new_version:
+                reply = QMessageBox.question(self, 'Confirm Update', f"새로운 {new_version} 버전이 존재합니다.\n다운로드 받으시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.Manager_Web_obj.web_open_downloadbrowser('https://knpu.re.kr:90')
+
+            self.userPushOverKeyList = self.Manager_User_obj.userKeyList
 
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")
@@ -156,6 +171,41 @@ class MainWindow(QtWidgets.QMainWindow):
                 item = QTableWidgetItem(cell_data)
                 item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
                 widgetname.setItem(i, j, item)
+
+    def filefinder_maker(self):
+        class EmbeddedFileDialog(QFileDialog):
+            def __init__(self, parent=None):
+                super().__init__(parent)
+                self.setFileMode(QFileDialog.ExistingFiles)
+                self.setOptions(QFileDialog.DontUseNativeDialog)
+                self.setNameFilters(["CSV Files (*.csv)"])  # 파일 필터 설정
+                self.currentChanged.connect(self.on_directory_change)
+                self.accepted.connect(self.on_accepted)
+                self.rejected.connect(self.on_rejected)
+                self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+            def on_directory_change(self, path):
+                pass
+
+            def on_accepted(self):
+                selected_files = self.selectedFiles()
+                if selected_files:
+                    self.selectFile(', '.join([os.path.basename(file) for file in selected_files]))
+                self.show()
+
+            def on_rejected(self):
+                self.show()
+
+            def accept(self):
+                selected_files = self.selectedFiles()
+                if selected_files:
+                    self.selectFile(', '.join([os.path.basename(file) for file in selected_files]))
+                self.show()
+
+            def reject(self):
+                self.show()
+
+        return EmbeddedFileDialog(self)
 
     def setStyle(self):
         self.setStyleSheet("""
@@ -272,13 +322,13 @@ class MainWindow(QtWidgets.QMainWindow):
         elif index == 1:
             self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr', self.Manager_Web_obj.crawler_web_layout)
         elif index == 2:
-            self.Manager_Dataprocess_obj.Tab_DB_refresh_DB()
+            self.Manager_Dataprocess_obj.dataprocess_refresh_DB()
             pass
         elif index == 3:
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
             pass
 
-    def admin_password(self):
+    def admin_check(self):
         input_dialog = QInputDialog(self)
         input_dialog.setWindowTitle('Admin Mode')
         input_dialog.setLabelText('Enter admin password:')
@@ -295,6 +345,39 @@ class MainWindow(QtWidgets.QMainWindow):
         msg += ' '
         self.right_label.setText(msg)
         QtWidgets.QApplication.processEvents()
+
+    def openFileExplorer(self, path):
+        # 저장된 폴더를 파일 탐색기로 열기
+        if platform.system() == "Windows":
+            os.startfile(path)
+        elif platform.system() == "Darwin":  # macOS
+            os.system(f"open '{path}'")
+        else:  # Linux and other OS
+            os.system(f"xdg-open '{path}'")
+
+    def send_pushOver(self, msg, user_key):
+        app_key_list  = ["a22qabchdf25zzkd1vjn12exjytsjx"]
+
+        for app_key in app_key_list:
+            try:
+                # Pushover API 설정
+                url = 'https://api.pushover.net/1/messages.json'
+                # 메시지 내용
+                message = {
+                    'token': app_key,
+                    'user': user_key,
+                    'message': msg
+                }
+                # Pushover에 요청을 보냄
+                response = requests.post(url, data=message)
+                break
+            except:
+                continue
+
+    def csvReader(self, csvPath):
+        csv_data = pd.read_csv(csvPath, low_memory=False, index_col=0)
+        csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
+        return csv_data
 
 
 
