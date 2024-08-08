@@ -205,7 +205,7 @@
               <item>
                <layout class="QVBoxLayout" name="verticalLayout_7">
                 <item>
-                 <widget class="QPushButton" name="pushButton_5">
+                 <widget class="QPushButton" name="dataprocess_tab1_timesplit_button">
                   <property name="text">
                    <string>분할(년/월)</string>
                   </property>
@@ -248,7 +248,53 @@
            <attribute name="title">
             <string>파일 불러오기</string>
            </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_tab_1"/>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_9">
+              <item>
+               <layout class="QHBoxLayout" name="tab2_fileexplorer_layout"/>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_5">
+                <item>
+                 <widget class="QPushButton" name="dataprocess_tab2_timesplit_button">
+                  <property name="text">
+                   <string>분할(년/월)</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButton_5">
+                  <property name="text">
+                   <string>PushButton</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButton_4">
+                  <property name="text">
+                   <string>PushButton</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="verticalSpacer_2">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>40</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+           </layout>
           </widget>
          </widget>
         </item>
@@ -257,7 +303,7 @@
       <widget class="QWidget" name="page_board">
        <layout class="QVBoxLayout" name="verticalLayout_data_process">
         <item>
-         <widget class="QTabWidget" name="tabWidget_version">
+         <widget class="QTabWidget" name="tabWidget_board">
           <property name="tabPosition">
            <enum>QTabWidget::North</enum>
           </property>
@@ -275,13 +321,6 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_5">
               <item>
-               <widget class="QPushButton" name="board_addversion_button">
-                <property name="text">
-                 <string>추가</string>
-                </property>
-               </widget>
-              </item>
-              <item>
                <widget class="QPushButton" name="board_deleteversion_button">
                 <property name="text">
                  <string>삭제</string>
@@ -295,11 +334,53 @@
                 </property>
                </widget>
               </item>
+              <item>
+               <widget class="QPushButton" name="board_addversion_button">
+                <property name="text">
+                 <string>추가</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="tab_file">
+          <widget class="QWidget" name="tab_bugreport">
+           <attribute name="title">
+            <string>버그 리포트</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
+            <item>
+             <widget class="QTableWidget" name="board_bug_tableWidget"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_8">
+              <item>
+               <widget class="QPushButton" name="board_deletebug_button">
+                <property name="text">
+                 <string>삭제</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="board_detailbug_button">
+                <property name="text">
+                 <string>자세히</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="board_addbug_button">
+                <property name="text">
+                 <string>추가</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tab_freeboard">
            <attribute name="title">
             <string>자유게시판</string>
            </attribute>

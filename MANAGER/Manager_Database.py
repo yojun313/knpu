@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout
 from PyQt5.QtCore import QTimer
 import platform
 import copy
-from functools import partial
 import time
 
 class TableWindow(QMainWindow):
@@ -138,7 +137,6 @@ class Manager_Database:
         QTimer.singleShot(1, load_database)
         QTimer.singleShot(1, self.main.printStatus)
 
-
     def database_search_DB(self):
         search_text = self.main.database_searchDB_lineinput.text().lower()
         if not search_text:
@@ -173,45 +171,45 @@ class Manager_Database:
                 return
 
     def database_save_DB(self):
-        self.main.printStatus("저장 중...")
-        def save_database():
+        def select_database():
             selected_row = self.main.database_tablewidget.currentRow()
             if not selected_row >= 0:
                 return
             target_db = self.DB['DBlist'][selected_row]
-
             folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory")
+
+            self.main.printStatus(f"{target_db} 저장 중...")
+            QTimer.singleShot(1000, lambda: save_database(target_db, folder_path))
+            QTimer.singleShot(1000, self.main.printStatus)
+
+        def save_database(target_db, folder_path):
             # 선택된 경로가 있는지 확인
             if folder_path:
                 try:
                     dbpath = os.path.join(folder_path, target_db)
 
-                    try:
-                        os.mkdir(dbpath)
-                    except:
-                        dbpath += "_copy"
-                        os.mkdir(dbpath)
+                    while True:
+                        try:
+                            os.mkdir(dbpath)
+                            break
+                        except:
+                            dbpath += "_copy"
 
                     self.main.mySQL_obj.connectDB(target_db)
                     tableList = self.main.mySQL_obj.showAllTable(target_db)
                     for tableName in tableList:
-                        self.main.mySQL_obj.TableToCSV(tableName, dbpath)
+                        if 'info' not in tableName:
+                            self.main.mySQL_obj.TableToCSV(tableName, dbpath)
 
-                    # 저장된 폴더를 파일 탐색기로 열기
-                    if platform.system() == "Windows":
-                        os.startfile(dbpath)
-                    elif platform.system() == "Darwin":  # macOS
-                        os.system(f"open '{dbpath}'")
-                    else:  # Linux and other OS
-                        os.system(f"xdg-open '{dbpath}'")
+                    self.main.openFileExplorer(dbpath)
 
                 except Exception as e:
                     QMessageBox.critical(self.main, "Error", f"Failed to save database: {str(e)}")
             else:
-                QMessageBox.warning(self.main, "Warning", "No directory selected.")
+                pass
 
-        QTimer.singleShot(1, save_database)
-        QTimer.singleShot(1, self.main.printStatus)
+        self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
+        select_database()
 
     def database_refresh_DB(self):
         self.main.printStatus("새로고침 중")
