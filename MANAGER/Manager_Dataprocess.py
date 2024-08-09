@@ -1,11 +1,22 @@
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QSizePolicy, QPushButton
+from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QCheckBox, QComboBox, QRadioButton, QLabel, QDialogButtonBox, QVBoxLayout
 import copy
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
-from functools import partial
+import matplotlib.font_manager as fm
+import seaborn as sns
+import platform
+from wordcloud import WordCloud
 
+# 운영체제에 따라 한글 폰트를 설정
+if platform.system() == 'Darwin':  # macOS
+    plt.rcParams['font.family'] = 'AppleGothic'
+elif platform.system() == 'Windows':  # Windows
+    plt.rcParams['font.family'] = 'Malgun Gothic'  # 맑은 고딕 폰트 사용
+
+# 폰트 설정 후 음수 기호가 깨지는 것을 방지
+plt.rcParams['axes.unicode_minus'] = False
 
 class Manager_Dataprocess:
     def __init__(self, main_window):
@@ -22,8 +33,12 @@ class Manager_Dataprocess:
         self.main.dataprocess_tab1_searchDB_lineinput.returnPressed.connect(self.dataprocess_search_DB)
         self.main.dataprocess_tab1_searchDB_button.clicked.connect(self.dataprocess_search_DB)
         self.main.dataprocess_tab1_timesplit_button.clicked.connect(self.dataprocess_timesplit_DB)
+        self.main.dataprocess_tab1_analysis_button.clicked.connect(self.dataprocess_analysis_DB)
 
         self.main.dataprocess_tab2_timesplit_button.clicked.connect(self.dataprocess_timesplit_file)
+        self.main.dataprocess_tab2_analysis_button.clicked.connect(self.dataprocess_analysis_file)
+        self.main.dataprocess_tab2_merge_button.clicked.connect(self.dataprocess_merge_file)
+
 
     def dataprocess_search_DB(self):
         search_text = self.main.dataprocess_tab1_searchDB_lineinput.text().lower()
@@ -132,6 +147,61 @@ class Manager_Dataprocess:
         QTimer.singleShot(1000, lambda: main(tableList, splitdata_path))
         QTimer.singleShot(1000, self.main.printStatus)
 
+    def dataprocess_analysis_DB(self):
+        def selectDB():
+            selected_row = self.main.dataprocess_tab1_tablewidget.currentRow()
+            if not selected_row >= 0:
+                return 0 ,0, 0
+            target_db = self.DB['DBlist'][selected_row]
+
+            folder_path  = QFileDialog.getExistingDirectory(self.main, "분석 데이터를 저장할 폴더를 선택하세요")
+            if folder_path:
+                try:
+                    analysisdata_path = os.path.join(folder_path, target_db + '_analysis')
+
+                    while True:
+                        try:
+                            os.mkdir(analysisdata_path)
+                            break
+                        except:
+                            analysisdata_path += "_copy"
+
+                    self.main.mySQL_obj.connectDB(target_db)
+                    tableList = self.main.mySQL_obj.showAllTable(target_db)
+                    tableList = [table for table in tableList if 'info' not in table]
+
+                    return target_db, tableList, analysisdata_path
+
+                except Exception as e:
+                    QMessageBox.critical(self.main, "Error", f"Failed to save splited database: {str(e)}")
+            else:
+                QMessageBox.warning(self.main, "Warning", "No directory selected.")
+                return 0,0,0
+        def main(tableList, analysisdata_path):
+            for table in tableList:
+                tablename = table.split('_')
+                tabledf = self.main.mySQL_obj.TableToDataframe(table)
+
+                if tablename[0] == 'navernews':
+                    if tablename[6] == 'article':
+                        self.dataprocess_obj.NaverNewsArticleAnalysis(tabledf, os.path.join(analysisdata_path, table))
+                    if tablename[6] == 'statistics':
+                        self.dataprocess_obj.NaverNewsStatisticsAnalysis(tabledf, os.path.join(analysisdata_path, table))
+                    if tablename[6] == 'reply':
+                        self.dataprocess_obj.NaverNewsReplyAnalysis(tabledf, os.path.join(analysisdata_path, table))
+                    if tablename[6] == 'rereply':
+                        self.dataprocess_obj.NaverNewsReplyAnalysis(tabledf, os.path.join(analysisdata_path, table))
+
+        self.main.printStatus("분석 데이터를 저장할 위치를 선택하세요...")
+        targetDB, tableList, analysisdata_path = selectDB()
+        if targetDB == 0:
+            self.main.printStatus()
+            return
+        QTimer.singleShot(1, lambda: self.main.printStatus(f"{targetDB} 분석 및 저장 중..."))
+        self.main.openFileExplorer(analysisdata_path)
+        QTimer.singleShot(1000, lambda: main(tableList, analysisdata_path))
+        QTimer.singleShot(1000, self.main.printStatus)
+
 
     def dataprocess_filefinder_maker(self):
         self.file_dialog = self.main.filefinder_maker()
@@ -139,11 +209,13 @@ class Manager_Dataprocess:
 
     def dataprocess_getfiledirectory(self):
         selected_directory = self.file_dialog.selectedFiles()
+        if selected_directory == []:
+            return selected_directory
         selected_directory = selected_directory[0].split(', ')
 
         for directory in selected_directory:
             if not directory.endswith('.csv'):
-                return False
+                return [False, directory]
 
         for index, directory in enumerate(selected_directory):
             if index != 0:
@@ -152,41 +224,127 @@ class Manager_Dataprocess:
         return selected_directory
 
     def dataprocess_timesplit_file(self):
-        try:
-            selected_directory = self.dataprocess_getfiledirectory()
-            if selected_directory == False:
-                return
-            def split_table(csv_path):
-                table_path = os.path.join(os.path.dirname(csv_path), os.path.basename(csv_path).replace('.csv', '') + '_split')
-                while True:
-                    try:
-                        os.mkdir(table_path)
-                        break
-                    except:
-                        table_path += "_copy"
+        selected_directory = self.dataprocess_getfiledirectory()
+        if len(selected_directory) == 0:
+            return
+        elif selected_directory[0] == False:
+            QMessageBox.warning(self.main, f"Warning", f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
+            return
+        def split_table(csv_path):
+            table_path = os.path.join(os.path.dirname(csv_path), os.path.basename(csv_path).replace('.csv', '') + '_split')
+            while True:
+                try:
+                    os.mkdir(table_path)
+                    break
+                except:
+                    table_path += "_copy"
 
-                table_df = self.main.csvReader(csv_path)
-                table_df = self.dataprocess_obj.TimeSplitter(table_df)
+            table_df = self.main.csvReader(csv_path)
+            table_df = self.dataprocess_obj.TimeSplitter(table_df)
 
-                self.year_divided_group = table_df.groupby('year')
-                self.month_divided_group = table_df.groupby('year_month')
-                self.week_divided_group = table_df.groupby('week')
+            self.year_divided_group = table_df.groupby('year')
+            self.month_divided_group = table_df.groupby('year_month')
+            self.week_divided_group = table_df.groupby('week')
 
-                return table_path
-            def saveTable(tablename, table_path):
-                self.dataprocess_obj.TimeSplitToCSV(1, self.year_divided_group, table_path, tablename)
-                self.dataprocess_obj.TimeSplitToCSV(2, self.month_divided_group, table_path, tablename)
-            def main(directory_list):
-                for csv_path in directory_list:
-                    table_path = split_table(csv_path)
-                    saveTable(os.path.basename(csv_path).replace('.csv', ''), table_path)
+            return table_path
+        def saveTable(tablename, table_path):
+            self.dataprocess_obj.TimeSplitToCSV(1, self.year_divided_group, table_path, tablename)
+            self.dataprocess_obj.TimeSplitToCSV(2, self.month_divided_group, table_path, tablename)
+        def main(directory_list):
+            for csv_path in directory_list:
+                table_path = split_table(csv_path)
+                saveTable(os.path.basename(csv_path).replace('.csv', ''), table_path)
 
-            QTimer.singleShot(1, lambda: self.main.printStatus("변환 및 저장 중..."))
-            self.main.openFileExplorer(os.path.dirname(selected_directory[0]))
-            QTimer.singleShot(1000, lambda: main(selected_directory))
-            QTimer.singleShot(1000, self.main.printStatus)
-        except:
-            pass
+        QTimer.singleShot(1, lambda: self.main.printStatus("변환 및 저장 중..."))
+        self.main.openFileExplorer(os.path.dirname(selected_directory[0]))
+        QTimer.singleShot(1000, lambda: main(selected_directory))
+        QTimer.singleShot(1000, self.main.printStatus)
+
+    def dataprocess_merge_file(self):
+        def find_different_element_index(lst):
+            # 리스트가 비어있으면 None을 반환
+            if not lst:
+                return None
+
+            # 첫 번째 요소와 나머지 요소가 다르면 첫 번째 요소의 인덱스 반환
+            if lst.count(lst[0]) == 1:
+                return 0
+
+            # 그렇지 않으면 첫 번째 요소와 다른 첫 번째 요소의 인덱스 반환
+            for i in range(1, len(lst)):
+                if lst[i] != lst[0]:
+                    return i
+
+            return None  # 모든 요소가 같다면 None을 반환
+
+        selected_directory = self.dataprocess_getfiledirectory()
+        if len(selected_directory) == 0:
+            return
+        elif selected_directory[0] == False:
+            QMessageBox.warning(self.main, f"Warning", f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
+            return
+        elif len(selected_directory) < 2:
+            QMessageBox.warning(self.main, f"Warning", "2개 이상의 CSV 파일 선택이 필요합니다.")
+            return
+
+
+        all_df = [self.main.csvReader(directory) for directory in selected_directory]
+        all_columns = [df.columns.tolist() for df in all_df]
+        same_check_result = find_different_element_index(all_columns)
+        if same_check_result != None:
+            QMessageBox.warning(self.main, f"Warning", f"{os.path.basename(selected_directory[same_check_result])}의 CSV 형태가 다른 파일의 형태와 다릅니다.")
+            return
+
+        mergedfilename, ok = QInputDialog.getText(None, '파일명 입력', '병합 파일명을 입력하세요:', text='merged_file')
+        mergedfiledir      = os.path.dirname(selected_directory[0])
+        if ok and mergedfilename:
+            merged_df = pd.DataFrame()
+
+            for df in all_df:
+                merged_df = pd.concat([merged_df, df], ignore_index=True)
+
+            merged_df.to_csv(os.path.join(mergedfiledir, mergedfilename)+'.csv', index=False, encoding='utf-8-sig')
+            self.main.openFileExplorer(mergedfiledir)
+
+    def dataprocess_analysis_file(self):
+        selected_directory = self.dataprocess_getfiledirectory()
+        if len(selected_directory) == 0:
+            return
+        elif selected_directory[0] == False:
+            QMessageBox.warning(self.main, f"Warning", f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
+            return
+        elif len(selected_directory) != 1:
+            QMessageBox.warning(self.main, f"Warning", "한 개의 CSV 파일만 선택하여 주십시오")
+            return
+
+        csv_path = selected_directory[0]
+        csv_data = pd.read_csv(csv_path, low_memory=False)
+
+        dialog = OptionDialog()
+        if dialog.exec_() == QDialog.Accepted:
+            selected_options = []
+
+            # 선택된 체크박스 옵션 추가
+            for checkbox in dialog.checkbox_group:
+                if checkbox.isChecked():
+                    selected_options.append(checkbox.text())
+
+            # 콤보박스에서 선택된 옵션 추가
+            selected_options.append(dialog.combobox.currentText())
+
+        match selected_options:
+            case ['article 분석', 'Naver News']:
+                self.dataprocess_obj.NaverNewsArticleAnalysis(csv_data, csv_path)
+            case ['statistics 분석', 'Naver News']:
+                self.dataprocess_obj.NaverNewsStatisticsAnalysis(csv_data, csv_path)
+            case ['reply 분석', 'Naver News']:
+                self.dataprocess_obj.NaverNewsReplyAnalysis(csv_data, csv_path)
+            case ['rereply 분석', 'Naver News']:
+                self.dataprocess_obj.NaverNewsReplyAnalysis(csv_data, csv_path)
+
+        self.main.openFileExplorer(os.path.dirname(csv_path))
+
+
 
 class DataProcess:
     def __init__(self):
@@ -209,6 +367,7 @@ class DataProcess:
         data['week'] = data[word].dt.to_period('W')
 
         return data
+
     def TimeSplitToCSV(self, option, divided_group, data_path, tablename):
         # 폴더 이름과 데이터 그룹 설정
         data_group = divided_group
@@ -242,14 +401,20 @@ class DataProcess:
         keys = list(info_df.index)
         values = info_df['Count'].tolist()
 
-        # 옵션에 따라 그래프 크기 조정
-        if option == 1:
-            plt.figure(figsize=(10, 6))
-        else:
-            plt.figure(figsize=(30, 18))
+        # 데이터의 수에 따라 그래프 크기 자동 조정
+        num_data_points = len(keys)
+        width_per_data_point = 0.5  # 데이터 포인트 하나당 가로 크기 (조정 가능)
+        base_width = 10  # 최소 가로 크기
+        height = 6  # 고정된 세로 크기
+
+        fig_width = max(base_width, num_data_points * width_per_data_point)
+
+        plt.figure(figsize=(fig_width, height))
 
         # 그래프 그리기
-        plt.plot(keys, values, marker='o')
+        sns.lineplot(x=keys, y=values, marker='o')
+
+        # 그래프 설정
         plt.grid(True)
         plt.xticks(rotation=45)
         plt.tight_layout()
@@ -261,5 +426,397 @@ class DataProcess:
         # 그래프 저장
         plt.savefig(f"{data_path}/{folder_name}/{folder_name} Graph.png", bbox_inches='tight')
 
-    def DataDivider(self):
-        pass
+    def NaverNewsArticleAnalysis(self, data, file_path):
+        # 'Article Date'를 datetime 형식으로 변환
+        data['Article Date'] = pd.to_datetime(data['Article Date'])
+
+        # 기본 통계 분석
+        basic_stats = data.describe(include='all')
+
+        # 시간에 따른 기사 및 댓글 수 분석
+        time_analysis = data.groupby(data['Article Date'].dt.to_period("M")).agg({
+            'id': 'count',
+            'Article ReplyCnt': 'sum'
+        }).rename(columns={'id': 'Article Count'})
+
+        # 기사 유형별 분석
+        article_type_analysis = data.groupby('Article Type').agg({
+            'id': 'count',
+            'Article ReplyCnt': 'sum'
+        }).rename(columns={'id': 'Article Count'})
+
+        # 언론사별 분석 (상위 10개 언론사만)
+        top_10_press = data['Article Press'].value_counts().head(10).index
+        press_analysis = data[data['Article Press'].isin(top_10_press)].groupby('Article Press').agg({
+            'id': 'count',
+            'Article ReplyCnt': 'sum'
+        }).rename(columns={'id': 'Article Count'})
+
+        # 상관관계 분석
+        correlation_matrix = data[['Article ReplyCnt']].corr()
+
+        # 시각화 및 분석 결과 저장 디렉토리 설정
+        output_dir = os.path.join(os.path.dirname(file_path),
+                                  os.path.basename(file_path).replace('.csv', '') + '_analysis')
+        csv_output_dir = os.path.join(output_dir, "csv_files")
+        graph_output_dir = os.path.join(output_dir, "graphs")
+        os.makedirs(csv_output_dir, exist_ok=True)
+        os.makedirs(graph_output_dir, exist_ok=True)
+
+        # 결과를 CSV로 저장
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"))
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
+        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"))
+        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"))
+        #correlation_matrix.to_csv(os.path.join(output_dir, "correlation_matrix.csv"))
+
+        # 시각화 그래프를 이미지 파일로 저장
+
+        # 1. 월별 기사 및 댓글 수 추세
+        plt.figure(figsize=(12, 6))
+        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article Count', label='Article Count')
+        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article ReplyCnt',
+                     label='Reply Count')
+        plt.title('Monthly Article and Reply Count Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "monthly_article_reply_count.png"))
+        plt.close()
+
+        # 2. 기사 유형별 기사 및 댓글 수
+        plt.figure(figsize=(12, 6))
+        article_type_analysis = article_type_analysis.sort_values('Article Count', ascending=False)
+        sns.barplot(x=article_type_analysis.index, y=article_type_analysis['Article Count'], palette="viridis")
+        plt.title('Article Count by Type')
+        plt.xlabel('Article Type')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "article_type_count.png"))
+        plt.close()
+
+        # 3. 상위 10개 언론사별 기사 및 댓글 수
+        plt.figure(figsize=(12, 6))
+        press_analysis = press_analysis.sort_values('Article Count', ascending=False)
+        sns.barplot(x=press_analysis.index, y=press_analysis['Article Count'], palette="plasma")
+        plt.title('Top 10 Press by Article Count')
+        plt.xlabel('Press')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "press_article_count.png"))
+        plt.close()
+
+        '''
+        # 4. 상관관계 행렬 히트맵 (현재는 댓글 수에 대한 상관관계만 존재)
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+        plt.title('Correlation Matrix of Key Metrics')
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, "correlation_matrix.png"))
+        plt.close()
+        '''
+
+    def NaverNewsStatisticsAnalysis(self, data, file_path):
+        # 'Article Date'를 datetime 형식으로 변환
+        data['Article Date'] = pd.to_datetime(data['Article Date'])
+
+        # 분석 결과 저장 디렉토리 설정
+        output_dir = os.path.join(os.path.dirname(file_path),
+                                  os.path.basename(file_path).replace('.csv', '') + '_analysis')
+        csv_output_dir = os.path.join(output_dir, "csv_files")
+        graph_output_dir = os.path.join(output_dir, "graphs")
+        os.makedirs(csv_output_dir, exist_ok=True)
+        os.makedirs(graph_output_dir, exist_ok=True)
+
+        # 기본 통계 분석
+        basic_stats = data.describe(include='all')
+
+        # 시간에 따른 기사 및 댓글 수 분석
+        time_analysis = data.groupby(data['Article Date'].dt.to_period("M")).agg({
+            'id': 'count',
+            'Article ReplyCnt': 'sum'
+        }).rename(columns={'id': 'Article Count'})
+
+        # 기사 유형별 분석
+        article_type_analysis = data.groupby('Article Type').agg({
+            'id': 'count',
+            'Article ReplyCnt': 'sum'
+        }).rename(columns={'id': 'Article Count'})
+
+        # 언론사별 분석 (상위 10개 언론사만)
+        top_10_press = data['Article Press'].value_counts().head(10).index
+        press_analysis = data[data['Article Press'].isin(top_10_press)].groupby(
+            'Article Press').agg({
+            'id': 'count',
+            'Article ReplyCnt': 'sum'
+        }).rename(columns={'id': 'Article Count'})
+
+        # 상관관계 분석
+        correlation_matrix = data[
+            ['Article ReplyCnt', 'Male', 'Female', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y']].corr()
+
+        # 결과를 CSV로 저장
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"))
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
+        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"))
+        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"))
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"))
+
+        # 시각화 그래프를 이미지 파일로 저장
+
+        # 1. 월별 기사 및 댓글 수 추세
+        plt.figure(figsize=(12, 6))
+        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article Count', label='Article Count')
+        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article ReplyCnt',
+                     label='Reply Count')
+        plt.title('Monthly Article and Reply Count Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "monthly_article_reply_count.png"))
+        plt.close()
+
+        # 2. 기사 유형별 기사 및 댓글 수
+        plt.figure(figsize=(12, 6))
+        article_type_analysis = article_type_analysis.sort_values('Article Count', ascending=False)
+        sns.barplot(x=article_type_analysis.index, y=article_type_analysis['Article Count'], palette="viridis")
+        plt.title('Article Count by Type')
+        plt.xlabel('Article Type')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "article_type_count.png"))
+        plt.close()
+
+        # 3. 상위 10개 언론사별 기사 및 댓글 수
+        plt.figure(figsize=(12, 6))
+        press_analysis = press_analysis.sort_values('Article Count', ascending=False)
+        sns.barplot(x=press_analysis.index, y=press_analysis['Article Count'], palette="plasma")
+        plt.title('Top 10 Press by Article Count')
+        plt.xlabel('Press')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "press_article_count.png"))
+        plt.close()
+
+        # 4. 상관관계 행렬 히트맵
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+        plt.title('Correlation Matrix of Key Metrics')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
+        plt.close()
+
+        # 5. 성별 댓글 수 분석 및 시각화
+        gender_reply_count = {
+            'Male': data['Male'].sum(),
+            'Female': data['Female'].sum()
+        }
+        gender_reply_df = pd.DataFrame(list(gender_reply_count.items()), columns=['Gender', 'Reply Count'])
+        plt.figure(figsize=(8, 6))
+        sns.barplot(x='Gender', y='Reply Count', data=gender_reply_df, palette="pastel")
+        plt.title('Total Number of Replies by Gender')
+        plt.xlabel('Gender')
+        plt.ylabel('Reply Count')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "gender_reply_count.png"))
+        plt.close()
+        gender_reply_df.to_csv(os.path.join(csv_output_dir, "gender_reply_count.csv"), index=False)
+
+        # 6. 연령대별 댓글 수 분석 및 시각화
+        age_group_reply_count = {
+            '10Y': data['10Y'].sum(),
+            '20Y': data['20Y'].sum(),
+            '30Y': data['30Y'].sum(),
+            '40Y': data['40Y'].sum(),
+            '50Y': data['50Y'].sum(),
+            '60Y': data['60Y'].sum()
+        }
+        age_group_reply_df = pd.DataFrame(list(age_group_reply_count.items()), columns=['Age Group', 'Reply Count'])
+        plt.figure(figsize=(10, 6))
+        sns.barplot(x='Age Group', y='Reply Count', data=age_group_reply_df, palette="coolwarm")
+        plt.title('Total Number of Replies by Age Group')
+        plt.xlabel('Age Group')
+        plt.ylabel('Reply Count')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "age_group_reply_count.png"))
+        plt.close()
+        age_group_reply_df.to_csv(os.path.join(csv_output_dir, "age_group_reply_count.csv"), index=False)
+
+        # 7. 연령대별 성별 댓글 비율 분석
+        age_gender_df = data.groupby(['Article Date', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y'])[
+            ['Male', 'Female']].sum().reset_index()
+        age_gender_df = age_gender_df.melt(id_vars=['Article Date', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y'],
+                                           value_vars=['Male', 'Female'],
+                                           var_name='Gender',
+                                           value_name='Reply Count')
+
+        plt.figure(figsize=(12, 8))
+        sns.lineplot(data=age_gender_df, x='Article Date', y='Reply Count', hue='Gender')
+        plt.title('Reply Count by Gender Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Reply Count')
+        plt.legend(title='Gender')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "age_gender_reply_count.png"))
+        plt.close()
+        age_gender_df.to_csv(os.path.join(csv_output_dir, "age_gender_reply_count.csv"), index=False)
+
+    def NaverNewsReplyAnalysis(self, data, file_path):
+
+        # 'Reply Date'를 datetime 형식으로 변환
+        data['Reply Date'] = pd.to_datetime(data['Reply Date'])
+
+        # 기본 통계 분석
+        basic_stats = data.describe(include='all')
+
+        # 댓글 길이 추가
+        data['Reply Length'] = data['Reply Text'].apply(len)
+
+        # 날짜별 댓글 수 분석
+        time_analysis = data.groupby(data['Reply Date'].dt.date).agg({
+            'id': 'count',
+            'Reply Like': 'sum',
+            'Reply Bad': 'sum'
+        }).rename(columns={'id': 'Reply Count'})
+
+        # 댓글 감성 분석 결과 빈도
+        sentiment_counts = data['Reply Sentiment'].value_counts()
+
+        # 상관관계 분석
+        correlation_matrix = data[['Reply Like', 'Reply Bad', 'Rereply Count', 'Reply LikeRatio', 'Reply Sentiment',
+                                   'Reply Length']].corr()
+
+        # 작성자별 댓글 수 계산
+        writer_reply_count = data['Reply Writer'].value_counts()
+
+        # 결과를 저장할 디렉토리 생성
+        output_dir = os.path.join(os.path.dirname(file_path),
+                                  os.path.basename(file_path).replace('.csv', '') + '_analysis')
+        csv_output_dir = os.path.join(output_dir, "csv_files")
+        graph_output_dir = os.path.join(output_dir, "graphs")
+        os.makedirs(csv_output_dir, exist_ok=True)
+        os.makedirs(graph_output_dir, exist_ok=True)
+
+        # 결과를 CSV로 저장
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"))
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
+        sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"))
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"))
+        writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_reply_count.csv"))
+
+        # 시각화 그래프를 이미지 파일로 저장
+
+        # 1. 날짜별 댓글 수 추세
+        plt.figure(figsize=(12, 6))
+        sns.lineplot(data=time_analysis, x=time_analysis.index, y='Reply Count')
+        plt.title('Daily Reply Count Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Number of Replies')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "daily_reply_count.png"))
+        plt.close()
+
+        # 2. 댓글 감성 분석 결과 분포
+        plt.figure(figsize=(8, 6))
+        sns.countplot(x='Reply Sentiment', data=data)
+        plt.title('Reply Sentiment Distribution')
+        plt.xlabel('Sentiment')
+        plt.ylabel('Count')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "reply_sentiment_distribution.png"))
+        plt.close()
+
+        # 3. 좋아요 및 비추천 수 분포
+        plt.figure(figsize=(12, 6))
+        sns.histplot(data['Reply Like'], bins=30, kde=True, color='green', label='Reply Like', alpha=0.6)
+        sns.histplot(data['Reply Bad'], bins=30, kde=True, color='red', label='Reply Bad', alpha=0.6)
+        plt.title('Distribution of Reply Like and Bad Counts')
+        plt.xlabel('Count')
+        plt.ylabel('Frequency')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "like_bad_distribution.png"))
+        plt.close()
+
+        # 4. 상관관계 행렬 히트맵
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+        plt.title('Correlation Matrix of Key Metrics')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
+        plt.close()
+
+        # 5. 작성자별 댓글 수 분포 (상위 10명)
+        top_10_writers = writer_reply_count.head(10)  # 상위 10명 작성자 선택
+
+        plt.figure(figsize=(12, 6))
+        sns.barplot(x=top_10_writers.index, y=top_10_writers.values, palette="viridis")
+        plt.title('Top 10 Writers by Number of Replies')
+        plt.xlabel('Writer')
+        plt.ylabel('Number of Replies')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "writer_reply_count.png"))
+        plt.close()
+
+
+
+class OptionDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Select Options')
+
+        # 다이얼로그 레이아웃
+        layout = QVBoxLayout()
+
+        # 여러 옵션 추가 (예: 체크박스, 라디오 버튼, 콤보박스)
+        # 여러 옵션 추가 (예: 체크박스, 라디오 버튼, 콤보박스)
+        self.checkbox_group = []
+
+        self.combobox = QComboBox()
+        self.combobox.addItems(['Naver News', 'Naver Blog', 'Naver Cafe'])
+        self.combobox.currentIndexChanged.connect(self.update_checkboxes)
+
+        layout.addWidget(QLabel('Choose from combo box:'))
+        layout.addWidget(self.combobox)
+
+        # 다이얼로그의 OK/Cancel 버튼
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+
+        layout.addWidget(self.button_box)
+
+        self.setLayout(layout)
+        self.update_checkboxes()
+
+    def update_checkboxes(self):
+        # 기존 체크박스 제거
+        for checkbox in self.checkbox_group:
+            checkbox.setParent(None)
+        self.checkbox_group.clear()
+
+        # 콤보박스 선택에 따라 다른 체크박스 표시
+        if self.combobox.currentText() == 'Naver News':
+            options = ['article 분석', 'statistics 분석', 'reply 분석', 'rereply 분석']
+        elif self.combobox.currentText() == 'Naver Blog':
+            options = ['Option A', 'Option B', 'Option C']
+        elif self.combobox.currentText() == 'Naver Cafe':
+            options = ['Option X', 'Option Y', 'Option Z']
+
+        for option in options:
+            checkbox = QCheckBox(option)
+            checkbox.setAutoExclusive(True)  # 중복 체크 불가
+            self.checkbox_group.append(checkbox)
+            self.layout().insertWidget(self.layout().count() - 1, checkbox)  # 버튼 위에 체크박스 추가
+
+
