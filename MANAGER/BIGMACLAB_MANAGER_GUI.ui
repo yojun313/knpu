@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1069</width>
-    <height>748</height>
+    <height>787</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -212,9 +212,9 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="pushButton_6">
+                 <widget class="QPushButton" name="dataprocess_tab1_analysis_button">
                   <property name="text">
-                   <string>정렬/통계</string>
+                   <string>정밀 분석</string>
                   </property>
                  </widget>
                 </item>
@@ -264,16 +264,16 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="pushButton_5">
+                 <widget class="QPushButton" name="dataprocess_tab2_analysis_button">
                   <property name="text">
-                   <string>PushButton</string>
+                   <string>정밀 분석</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="pushButton_4">
+                 <widget class="QPushButton" name="dataprocess_tab2_merge_button">
                   <property name="text">
-                   <string>PushButton</string>
+                   <string>CSV 병합</string>
                   </property>
                  </widget>
                 </item>

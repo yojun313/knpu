@@ -16,7 +16,10 @@ from datetime import datetime
 import platform
 import requests
 from packaging import version
+import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -378,7 +381,6 @@ class MainWindow(QtWidgets.QMainWindow):
         csv_data = pd.read_csv(csvPath, low_memory=False, index_col=0)
         csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
         return csv_data
-
 
 
 class InfoDialog(QDialog):

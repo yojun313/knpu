@@ -361,6 +361,7 @@ class Crawler(CrawlerModule):
                             if self.ReturnChecker(replyList_returnData) == True and replyList_returnData['replyList'] != []:
                                 self.mySQL.insertToTable(tableName=self.replyDB, data_list=replyList_returnData['replyList'])
 
+                    self.webCrawlerRunCheck()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
 
@@ -433,6 +434,7 @@ class Crawler(CrawlerModule):
                             if self.ReturnChecker(replyList_returnData) == True and replyList_returnData['replyList'] != []:
                                 self.mySQL.insertToTable(tableName=self.replyDB, data_list=replyList_returnData['replyList'])
 
+                    self.webCrawlerRunCheck()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
 
@@ -512,6 +514,7 @@ class Crawler(CrawlerModule):
                             if replyList_returnData['rereplyList'] != []:
                                 self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=replyList_returnData['rereplyList'])
 
+                    self.webCrawlerRunCheck()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
 
@@ -560,6 +563,8 @@ class Crawler(CrawlerModule):
                     if articleCnt != 0:
                         self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
 
+                    self.webCrawlerRunCheck()
+                    self.mySQL.commit()
                     self.currentDate += self.deltaD
 
                 except Exception as e:
@@ -636,6 +641,9 @@ class Crawler(CrawlerModule):
                                 self.mySQL.insertToTable(tableName=self.replyDB, data_list=replyList_returnData['replyList'])
 
                     self.mySQL.insertToTable(tableName=self.articleDB, data_list=sorted(articleList, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d")))
+
+                    self.webCrawlerRunCheck()
+                    self.mySQL.commit()
 
                 except Exception as e:
                     error_msg = self.error_detector()
