@@ -184,6 +184,7 @@ class Manager_Database:
 
         def save_database(target_db, folder_path):
             # 선택된 경로가 있는지 확인
+
             if folder_path:
                 try:
                     dbpath = os.path.join(folder_path, target_db)
@@ -195,11 +196,31 @@ class Manager_Database:
                         except:
                             dbpath += "_copy"
 
+
+                    statisticsURL = []
+
                     self.main.mySQL_obj.connectDB(target_db)
                     tableList = self.main.mySQL_obj.showAllTable(target_db)
+                    tableList = [table for table in tableList if 'info' not in table]
+                    tableList = sorted(tableList, key=lambda x: ('statistics' not in x, x))
+
                     for tableName in tableList:
-                        if 'info' not in tableName:
-                            self.main.mySQL_obj.TableToCSV(tableName, dbpath)
+                        if 'statistics' in tableName:
+                            statisticsDF = self.main.mySQL_obj.TableToDataframe(tableName)
+                            statisticsURL = statisticsDF['Article URL'].tolist()
+                            statisticsdata_path = os.path.join(dbpath, "statistics_data")
+                            os.makedirs(statisticsdata_path, exist_ok=True)
+                            filename = tableName.replace('statistics', 'article_statistics')
+                            self.main.mySQL_obj.TableToCSV(tableName, statisticsdata_path, filename)
+                            continue
+
+                        elif statisticsURL != [] and 'reply' in tableName:
+                            targetDF = self.main.mySQL_obj.TableToDataframe(tableName)
+                            targetDF = targetDF[targetDF['Article URL'].isin(statisticsURL)]
+                            targetDF.to_csv(f"{statisticsdata_path}/{tableName + '_statistics'}.csv", index=False,
+                                           encoding='utf-8-sig', header=True)
+
+                        self.main.mySQL_obj.TableToCSV(tableName, dbpath)
 
                     self.main.openFileExplorer(dbpath)
 

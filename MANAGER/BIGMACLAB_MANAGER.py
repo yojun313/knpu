@@ -23,7 +23,7 @@ import seaborn as sns
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.0.2'
+        self.versionNum = '1.0.3'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()

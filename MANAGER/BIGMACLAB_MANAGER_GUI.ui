@@ -41,7 +41,7 @@
       </item>
       <item>
        <property name="text">
-        <string>DATA PROCESS</string>
+        <string>ANALYSIS</string>
        </property>
       </item>
       <item>
@@ -156,7 +156,7 @@
       </widget>
       <widget class="QWidget" name="page_data_process">
        <property name="windowTitle">
-        <string>DATA PROCESS</string>
+        <string>ANALYSIS</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_data_process">
         <item>
@@ -214,7 +214,7 @@
                 <item>
                  <widget class="QPushButton" name="dataprocess_tab1_analysis_button">
                   <property name="text">
-                   <string>정밀 분석</string>
+                   <string>데이터 분석</string>
                   </property>
                  </widget>
                 </item>
@@ -266,7 +266,7 @@
                 <item>
                  <widget class="QPushButton" name="dataprocess_tab2_analysis_button">
                   <property name="text">
-                   <string>정밀 분석</string>
+                   <string>데이터 분석</string>
                   </property>
                  </widget>
                 </item>
