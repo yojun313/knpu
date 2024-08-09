@@ -21,7 +21,7 @@ plt.rcParams['axes.unicode_minus'] = False
 class Manager_Dataprocess:
     def __init__(self, main_window):
         self.main = main_window
-        self.dataprocess_obj = DataProcess()
+        self.dataprocess_obj = DataProcess(self.main)
         self.DB = copy.deepcopy(self.main.DB)
         self.DB_table_column = ['Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester']
         self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBdata'], self.DB_table_column)
@@ -38,7 +38,6 @@ class Manager_Dataprocess:
         self.main.dataprocess_tab2_timesplit_button.clicked.connect(self.dataprocess_timesplit_file)
         self.main.dataprocess_tab2_analysis_button.clicked.connect(self.dataprocess_analysis_file)
         self.main.dataprocess_tab2_merge_button.clicked.connect(self.dataprocess_merge_file)
-
 
     def dataprocess_search_DB(self):
         search_text = self.main.dataprocess_tab1_searchDB_lineinput.text().lower()
@@ -178,19 +177,37 @@ class Manager_Dataprocess:
                 QMessageBox.warning(self.main, "Warning", "No directory selected.")
                 return 0,0,0
         def main(tableList, analysisdata_path):
-            for table in tableList:
+
+            for index, table in enumerate(tableList):
                 tablename = table.split('_')
                 tabledf = self.main.mySQL_obj.TableToDataframe(table)
 
-                if tablename[0] == 'navernews':
-                    if tablename[6] == 'article':
-                        self.dataprocess_obj.NaverNewsArticleAnalysis(tabledf, os.path.join(analysisdata_path, table))
-                    if tablename[6] == 'statistics':
-                        self.dataprocess_obj.NaverNewsStatisticsAnalysis(tabledf, os.path.join(analysisdata_path, table))
-                    if tablename[6] == 'reply':
-                        self.dataprocess_obj.NaverNewsReplyAnalysis(tabledf, os.path.join(analysisdata_path, table))
-                    if tablename[6] == 'rereply':
-                        self.dataprocess_obj.NaverNewsReplyAnalysis(tabledf, os.path.join(analysisdata_path, table))
+                match tablename[0]:
+                    case 'navernews':
+                        match tablename[6]:
+                            case 'article':
+                                self.dataprocess_obj.NaverNewsArticleAnalysis(tabledf,
+                                                                              os.path.join(analysisdata_path, table))
+                            case 'statistics':
+                                statisticsURL = tabledf['Article URL'].tolist()
+                                self.dataprocess_obj.NaverNewsStatisticsAnalysis(tabledf,
+                                                                                 os.path.join(analysisdata_path, table))
+                            case 'reply' | 'rereply':
+                                self.dataprocess_obj.NaverNewsReplyAnalysis(tabledf,
+                                                                            os.path.join(analysisdata_path, table))
+
+                    case 'navercafe':
+                        match tablename[6]:
+                            case 'article':
+                                self.dataprocess_obj.NaverCafeArticleAnalysis(tabledf,
+                                                                              os.path.join(analysisdata_path, table))
+                            case 'reply':
+                                self.dataprocess_obj.NaverCafeReplyAnalysis(tabledf,
+                                                                            os.path.join(analysisdata_path, table))
+
+                    case _:
+                            QMessageBox.warning(self.main, "Warning", f"{tablename[0]} {tablename[6]} 분석은 지원되지 않는 기능입니다")
+
 
         self.main.printStatus("분석 데이터를 저장할 위치를 선택하세요...")
         targetDB, tableList, analysisdata_path = selectDB()
@@ -320,6 +337,7 @@ class Manager_Dataprocess:
         csv_path = selected_directory[0]
         csv_data = pd.read_csv(csv_path, low_memory=False)
 
+        selected_options = []
         dialog = OptionDialog()
         if dialog.exec_() == QDialog.Accepted:
             selected_options = []
@@ -337,18 +355,23 @@ class Manager_Dataprocess:
                 self.dataprocess_obj.NaverNewsArticleAnalysis(csv_data, csv_path)
             case ['statistics 분석', 'Naver News']:
                 self.dataprocess_obj.NaverNewsStatisticsAnalysis(csv_data, csv_path)
-            case ['reply 분석', 'Naver News']:
+            case ['reply 분석', 'Naver News'] | ['rereply 분석', 'Naver News']:
                 self.dataprocess_obj.NaverNewsReplyAnalysis(csv_data, csv_path)
-            case ['rereply 분석', 'Naver News']:
-                self.dataprocess_obj.NaverNewsReplyAnalysis(csv_data, csv_path)
+            case ['article 분석', 'Naver Cafe']:
+                self.dataprocess_obj.NaverCafeArticleAnalysis(csv_data, csv_path)
+            case ['reply 분석', 'Naver Cafe']:
+                self.dataprocess_obj.NaverCafeReplyAnalysis(csv_data, csv_path)
+            case []:
+                QMessageBox.warning(self.main, "Warning", "CSV 파일 클릭 -> Open버튼 클릭 -> 옵션을 선택하세요")
+            case _:
+                QMessageBox.warning(self.main, "Warning", f"{selected_options[1]} {selected_options[0]} 분석은 지원되지 않는 기능입니다")
 
         self.main.openFileExplorer(os.path.dirname(csv_path))
 
 
-
 class DataProcess:
-    def __init__(self):
-        pass
+    def __init__(self, main_window):
+        self.main = main_window
 
     def TimeSplitter(self, data):
         # data 형태: DataFrame
@@ -426,7 +449,16 @@ class DataProcess:
         # 그래프 저장
         plt.savefig(f"{data_path}/{folder_name}/{folder_name} Graph.png", bbox_inches='tight')
 
+    def calculate_figsize(self, data_length, base_width=12, height=6, max_width=50):
+        # Increase width proportionally to the number of data points, but limit the maximum width
+        width = min(base_width + (data_length / 20), max_width)
+        return (width, height)
+
     def NaverNewsArticleAnalysis(self, data, file_path):
+        if 'Article Press' not in list(data.columns):
+            QMessageBox.warning(self.main, f"Warning", f"NaverNews Article CSV 형태와 일치하지 않습니다")
+            return
+
         # 'Article Date'를 datetime 형식으로 변환
         data['Article Date'] = pd.to_datetime(data['Article Date'])
 
@@ -470,10 +502,9 @@ class DataProcess:
         press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"))
         #correlation_matrix.to_csv(os.path.join(output_dir, "correlation_matrix.csv"))
 
-        # 시각화 그래프를 이미지 파일로 저장
-
-        # 1. 월별 기사 및 댓글 수 추세
-        plt.figure(figsize=(12, 6))
+        # For time_analysis graph
+        data_length = len(time_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
         sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article Count', label='Article Count')
         sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article ReplyCnt',
                      label='Reply Count')
@@ -481,13 +512,16 @@ class DataProcess:
         plt.xlabel('Date')
         plt.ylabel('Count')
         plt.xticks(rotation=45)
+        plt.yticks([])
+        plt.ylabel('')
         plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "monthly_article_reply_count.png"))
         plt.close()
 
-        # 2. 기사 유형별 기사 및 댓글 수
-        plt.figure(figsize=(12, 6))
+        # For article_type_analysis graph
+        data_length = len(article_type_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
         article_type_analysis = article_type_analysis.sort_values('Article Count', ascending=False)
         sns.barplot(x=article_type_analysis.index, y=article_type_analysis['Article Count'], palette="viridis")
         plt.title('Article Count by Type')
@@ -498,8 +532,9 @@ class DataProcess:
         plt.savefig(os.path.join(graph_output_dir, "article_type_count.png"))
         plt.close()
 
-        # 3. 상위 10개 언론사별 기사 및 댓글 수
-        plt.figure(figsize=(12, 6))
+        # For press_analysis graph
+        data_length = len(press_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
         press_analysis = press_analysis.sort_values('Article Count', ascending=False)
         sns.barplot(x=press_analysis.index, y=press_analysis['Article Count'], palette="plasma")
         plt.title('Top 10 Press by Article Count')
@@ -519,10 +554,19 @@ class DataProcess:
         plt.savefig(os.path.join(output_dir, "correlation_matrix.png"))
         plt.close()
         '''
-
     def NaverNewsStatisticsAnalysis(self, data, file_path):
+        if 'Male' not in list(data.columns):
+            QMessageBox.warning(self.main, f"Warning", f"NaverNews Statistics CSV 형태와 일치하지 않습니다")
+            return
+
         # 'Article Date'를 datetime 형식으로 변환
         data['Article Date'] = pd.to_datetime(data['Article Date'])
+        data['Article ReplyCnt'] = pd.to_numeric(data['Article ReplyCnt'], errors='coerce')
+
+        # 백분율 값을 실제 댓글 수로 변환하기 전에 숫자(float)로 변환
+        for col in ['Male', 'Female', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y']:
+            data[col] = pd.to_numeric(data[col], errors='coerce')  # 각 열을 숫자로 변환
+            data[col] = (data[col] / 100.0) * data['Article ReplyCnt']
 
         # 분석 결과 저장 디렉토리 설정
         output_dir = os.path.join(os.path.dirname(file_path),
@@ -569,7 +613,8 @@ class DataProcess:
         # 시각화 그래프를 이미지 파일로 저장
 
         # 1. 월별 기사 및 댓글 수 추세
-        plt.figure(figsize=(12, 6))
+        data_length = len(time_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
         sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article Count', label='Article Count')
         sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article ReplyCnt',
                      label='Reply Count')
@@ -583,7 +628,8 @@ class DataProcess:
         plt.close()
 
         # 2. 기사 유형별 기사 및 댓글 수
-        plt.figure(figsize=(12, 6))
+        data_length = len(article_type_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
         article_type_analysis = article_type_analysis.sort_values('Article Count', ascending=False)
         sns.barplot(x=article_type_analysis.index, y=article_type_analysis['Article Count'], palette="viridis")
         plt.title('Article Count by Type')
@@ -595,7 +641,8 @@ class DataProcess:
         plt.close()
 
         # 3. 상위 10개 언론사별 기사 및 댓글 수
-        plt.figure(figsize=(12, 6))
+        data_length = len(press_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
         press_analysis = press_analysis.sort_values('Article Count', ascending=False)
         sns.barplot(x=press_analysis.index, y=press_analysis['Article Count'], palette="plasma")
         plt.title('Top 10 Press by Article Count')
@@ -607,7 +654,8 @@ class DataProcess:
         plt.close()
 
         # 4. 상관관계 행렬 히트맵
-        plt.figure(figsize=(10, 8))
+        data_length = len(correlation_matrix)
+        plt.figure(figsize=self.calculate_figsize(data_length, height=8))
         sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
         plt.title('Correlation Matrix of Key Metrics')
         plt.tight_layout()
@@ -620,7 +668,8 @@ class DataProcess:
             'Female': data['Female'].sum()
         }
         gender_reply_df = pd.DataFrame(list(gender_reply_count.items()), columns=['Gender', 'Reply Count'])
-        plt.figure(figsize=(8, 6))
+        data_length = len(gender_reply_df)
+        plt.figure(figsize=self.calculate_figsize(data_length, base_width=8))
         sns.barplot(x='Gender', y='Reply Count', data=gender_reply_df, palette="pastel")
         plt.title('Total Number of Replies by Gender')
         plt.xlabel('Gender')
@@ -640,7 +689,8 @@ class DataProcess:
             '60Y': data['60Y'].sum()
         }
         age_group_reply_df = pd.DataFrame(list(age_group_reply_count.items()), columns=['Age Group', 'Reply Count'])
-        plt.figure(figsize=(10, 6))
+        data_length = len(age_group_reply_df)
+        plt.figure(figsize=self.calculate_figsize(data_length, base_width=10))
         sns.barplot(x='Age Group', y='Reply Count', data=age_group_reply_df, palette="coolwarm")
         plt.title('Total Number of Replies by Age Group')
         plt.xlabel('Age Group')
@@ -657,8 +707,8 @@ class DataProcess:
                                            value_vars=['Male', 'Female'],
                                            var_name='Gender',
                                            value_name='Reply Count')
-
-        plt.figure(figsize=(12, 8))
+        data_length = len(age_gender_df)
+        plt.figure(figsize=self.calculate_figsize(data_length, base_width=12, height=8))
         sns.lineplot(data=age_gender_df, x='Article Date', y='Reply Count', hue='Gender')
         plt.title('Reply Count by Gender Over Time')
         plt.xlabel('Date')
@@ -668,9 +718,10 @@ class DataProcess:
         plt.savefig(os.path.join(graph_output_dir, "age_gender_reply_count.png"))
         plt.close()
         age_gender_df.to_csv(os.path.join(csv_output_dir, "age_gender_reply_count.csv"), index=False)
-
     def NaverNewsReplyAnalysis(self, data, file_path):
-
+        if 'Reply Sentiment' not in list(data.columns):
+            QMessageBox.warning(self.main, f"Warning", f"NaverNews Reply CSV 형태와 일치하지 않습니다")
+            return
         # 'Reply Date'를 datetime 형식으로 변환
         data['Reply Date'] = pd.to_datetime(data['Reply Date'])
 
@@ -715,7 +766,8 @@ class DataProcess:
         # 시각화 그래프를 이미지 파일로 저장
 
         # 1. 날짜별 댓글 수 추세
-        plt.figure(figsize=(12, 6))
+        data_length = len(time_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
         sns.lineplot(data=time_analysis, x=time_analysis.index, y='Reply Count')
         plt.title('Daily Reply Count Over Time')
         plt.xlabel('Date')
@@ -726,7 +778,8 @@ class DataProcess:
         plt.close()
 
         # 2. 댓글 감성 분석 결과 분포
-        plt.figure(figsize=(8, 6))
+        data_length = len(sentiment_counts)
+        plt.figure(figsize=self.calculate_figsize(data_length, base_width=8))
         sns.countplot(x='Reply Sentiment', data=data)
         plt.title('Reply Sentiment Distribution')
         plt.xlabel('Sentiment')
@@ -735,20 +788,9 @@ class DataProcess:
         plt.savefig(os.path.join(graph_output_dir, "reply_sentiment_distribution.png"))
         plt.close()
 
-        # 3. 좋아요 및 비추천 수 분포
-        plt.figure(figsize=(12, 6))
-        sns.histplot(data['Reply Like'], bins=30, kde=True, color='green', label='Reply Like', alpha=0.6)
-        sns.histplot(data['Reply Bad'], bins=30, kde=True, color='red', label='Reply Bad', alpha=0.6)
-        plt.title('Distribution of Reply Like and Bad Counts')
-        plt.xlabel('Count')
-        plt.ylabel('Frequency')
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "like_bad_distribution.png"))
-        plt.close()
-
         # 4. 상관관계 행렬 히트맵
-        plt.figure(figsize=(10, 8))
+        data_length = len(correlation_matrix)
+        plt.figure(figsize=self.calculate_figsize(data_length, height=8))
         sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
         plt.title('Correlation Matrix of Key Metrics')
         plt.tight_layout()
@@ -757,8 +799,8 @@ class DataProcess:
 
         # 5. 작성자별 댓글 수 분포 (상위 10명)
         top_10_writers = writer_reply_count.head(10)  # 상위 10명 작성자 선택
-
-        plt.figure(figsize=(12, 6))
+        data_length = len(top_10_writers)
+        plt.figure(figsize=self.calculate_figsize(data_length))
         sns.barplot(x=top_10_writers.index, y=top_10_writers.values, palette="viridis")
         plt.title('Top 10 Writers by Number of Replies')
         plt.xlabel('Writer')
@@ -768,7 +810,157 @@ class DataProcess:
         plt.savefig(os.path.join(graph_output_dir, "writer_reply_count.png"))
         plt.close()
 
+    def NaverCafeArticleAnalysis(self, data, file_path):
+        if 'NaverCafe Name' not in list(data.columns):
+            QMessageBox.warning(self.main, f"Warning", f"NaverCafe Article CSV 형태와 일치하지 않습니다")
+            return
+        # 'Article Date'를 datetime 형식으로 변환
+        data['Article Date'] = pd.to_datetime(data['Article Date'])
+        # 특정 열들에 대해 pd.to_numeric을 적용하여 숫자형으로 변환
+        cols_to_convert = ['NaverCafe MemberCount', 'Article ReadCount', 'Article ReplyCount']
+        data[cols_to_convert] = data[cols_to_convert].apply(pd.to_numeric, errors='coerce')
 
+        # 기본 통계 분석
+        basic_stats = data.describe(include='all')
+
+        # 카페별 분석
+        cafe_analysis = data.groupby('NaverCafe Name').agg({
+            'id': 'count',
+            'Article ReadCount': 'mean',
+            'Article ReplyCount': 'mean',
+            'NaverCafe MemberCount': 'mean'
+        }).rename(columns={'id': 'Article Count', 'Article ReadCount': 'Avg ReadCount',
+                           'Article ReplyCount': 'Avg ReplyCount'})
+
+        # 작성자별 분석
+        writer_analysis = data.groupby('Article Writer').agg({
+            'id': 'count',
+            'Article ReadCount': 'mean',
+            'Article ReplyCount': 'mean'
+        }).rename(columns={'id': 'Article Count', 'Article ReadCount': 'Avg ReadCount',
+                           'Article ReplyCount': 'Avg ReplyCount'})
+
+        # 시간별 분석 (연도, 월별)
+        time_analysis = data.groupby(data['Article Date'].dt.to_period("M")).agg({
+            'id': 'count',
+            'Article ReadCount': 'sum',
+            'Article ReplyCount': 'sum'
+        }).rename(columns={'id': 'Article Count'})
+
+        # 상관관계 분석
+        numerical_cols = ['NaverCafe MemberCount', 'Article ReadCount', 'Article ReplyCount']
+        correlation_matrix = data[numerical_cols].corr()
+
+        # 결과를 저장할 디렉토리 생성
+        output_dir = os.path.join(os.path.dirname(file_path),
+                                  os.path.basename(file_path).replace('.csv', '') + '_analysis')
+        csv_output_dir = os.path.join(output_dir, "csv_files")
+        graph_output_dir = os.path.join(output_dir, "graphs")
+        os.makedirs(csv_output_dir, exist_ok=True)
+        os.makedirs(graph_output_dir, exist_ok=True)
+
+        # 결과를 CSV로 저장
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"))
+        cafe_analysis.to_csv(os.path.join(csv_output_dir, "cafe_analysis.csv"))
+        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"))
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"))
+
+        # 시각화 그래프를 이미지 파일로 저장
+
+        # 1. 카페별 게시글 수 분포
+        data_length = len(cafe_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
+        sns.barplot(x=cafe_analysis.index, y=cafe_analysis['Article Count'])
+        plt.title('Number of Articles by NaverCafe')
+        plt.xlabel('NaverCafe')
+        plt.ylabel('Number of Articles')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "cafe_article_count.png"))
+        plt.close()
+
+        # 2. 시간별 게시글 수 추세
+        data_length = len(time_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
+        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article Count')
+        plt.title('Monthly Article Count Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Number of Articles')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "monthly_article_count.png"))
+        plt.close()
+
+
+        # 4. 작성자별 게시글 수 분포 (상위 10명)
+        top_10_writers = writer_analysis.sort_values('Article Count', ascending=False).head(10)
+        data_length = len(top_10_writers)
+        plt.figure(figsize=self.calculate_figsize(data_length))
+        sns.barplot(x=top_10_writers.index, y=top_10_writers['Article Count'])
+        plt.title('Top 10 Writers by Number of Articles')
+        plt.xlabel('Writer')
+        plt.ylabel('Number of Articles')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "top_10_writers.png"))
+        plt.close()
+    def NaverCafeReplyAnalysis(self, data, file_path):
+        # 'Article URL' 열이 있는지 확인
+        if 'Article URL' not in list(data.columns):
+            QMessageBox.warning(self.main, "Warning", "NaverCafe Reply CSV 형태와 일치하지 않습니다")
+            return
+
+        # 'Reply Date'를 datetime 형식으로 변환
+        data['Reply Date'] = pd.to_datetime(data['Reply Date'])
+
+        # 작성자별 분석 (상위 10명)
+        writer_analysis = data.groupby('Reply Writer').agg({
+            'id': 'count'
+        }).rename(columns={'id': 'Reply Count'}).sort_values(by='Reply Count', ascending=False).head(100)
+
+        # 시간별 분석 (연도, 월별)
+        time_analysis = data.groupby(data['Reply Date'].dt.to_period("M")).agg({
+            'id': 'count'
+        }).rename(columns={'id': 'Reply Count'})
+
+        # 결과를 저장할 디렉토리 생성
+        output_dir = os.path.join(os.path.dirname(file_path),
+                                  os.path.basename(file_path).replace('.csv', '') + '_analysis')
+        csv_output_dir = os.path.join(output_dir, "csv_files")
+        graph_output_dir = os.path.join(output_dir, "graphs")
+        os.makedirs(csv_output_dir, exist_ok=True)
+        os.makedirs(graph_output_dir, exist_ok=True)
+
+        # 결과를 CSV로 저장
+        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"))
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
+
+        # 시각화 그래프를 이미지 파일로 저장
+
+        # 1. 작성자별 댓글 수 분포 (상위 10명)
+        data_length = len(writer_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
+        sns.barplot(x=writer_analysis.index, y=writer_analysis['Reply Count'])
+        plt.title('Number of Replies by Top 100 Writers')
+        plt.xlabel('Writer')
+        plt.ylabel('Number of Replies')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "writer_reply_count.png"))
+        plt.close()
+
+        # 2. 시간별 댓글 수 추세
+        data_length = len(time_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
+        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Reply Count')
+        plt.title('Monthly Reply Count Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Number of Replies')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "monthly_reply_count.png"))
+        plt.close()
 
 class OptionDialog(QDialog):
     def __init__(self):
@@ -783,10 +975,10 @@ class OptionDialog(QDialog):
         self.checkbox_group = []
 
         self.combobox = QComboBox()
-        self.combobox.addItems(['Naver News', 'Naver Blog', 'Naver Cafe'])
+        self.combobox.addItems(['Naver News', 'Naver Blog', 'Naver Cafe', 'YouTube'])
         self.combobox.currentIndexChanged.connect(self.update_checkboxes)
 
-        layout.addWidget(QLabel('Choose from combo box:'))
+        layout.addWidget(QLabel('Choose Data Type:'))
         layout.addWidget(self.combobox)
 
         # 다이얼로그의 OK/Cancel 버튼
@@ -809,9 +1001,11 @@ class OptionDialog(QDialog):
         if self.combobox.currentText() == 'Naver News':
             options = ['article 분석', 'statistics 분석', 'reply 분석', 'rereply 분석']
         elif self.combobox.currentText() == 'Naver Blog':
-            options = ['Option A', 'Option B', 'Option C']
+            options = ['article 분석', 'reply 분석']
         elif self.combobox.currentText() == 'Naver Cafe':
-            options = ['Option X', 'Option Y', 'Option Z']
+            options = ['article 분석', 'reply 분석']
+        elif self.combobox.currentText() == 'YouTube':
+            options = ['article 분석', 'reply 분석', 'rereply 분석']
 
         for option in options:
             checkbox = QCheckBox(option)

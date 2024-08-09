@@ -152,17 +152,23 @@ class mySQL:
             print(f"Failed to insert data into {tableName}")
             print(str(e))
 
-    def TableToCSV(self, tableName, csv_path):
+    def TableToCSV(self, tableName, csv_path, filename = ''):
         try:
             with self.conn.cursor() as cursor:
                 cursor.execute(f"SELECT * FROM `{tableName}`")
                 rows = cursor.fetchall()
                 fieldnames = [desc[0] for desc in cursor.description]
 
-                with open(os.path.join(csv_path, tableName + '.csv'), 'w', newline='', encoding='utf-8-sig', errors='ignore') as csvfile:
-                    csvwriter = csv.writer(csvfile)
-                    csvwriter.writerow(fieldnames)
-                    csvwriter.writerows(rows)
+                if filename == '':
+                    with open(os.path.join(csv_path, tableName + '.csv'), 'w', newline='', encoding='utf-8-sig', errors='ignore') as csvfile:
+                        csvwriter = csv.writer(csvfile)
+                        csvwriter.writerow(fieldnames)
+                        csvwriter.writerows(rows)
+                else:
+                    with open(os.path.join(csv_path, filename + '.csv'), 'w', newline='', encoding='utf-8-sig', errors='ignore') as csvfile:
+                        csvwriter = csv.writer(csvfile)
+                        csvwriter.writerow(fieldnames)
+                        csvwriter.writerows(rows)
 
         except Exception as e:
             print(f"Failed to save table {tableName} to CSV")
