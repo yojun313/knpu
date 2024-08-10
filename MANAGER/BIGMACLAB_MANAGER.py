@@ -1,9 +1,9 @@
 import os
 import sys
-from PyQt5 import QtWidgets, uic
+from PyQt5 import QtWidgets, uic, QtGui
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QCoreApplication
 
 
 from mySQL import mySQL
@@ -432,7 +432,18 @@ class InfoDialog(QDialog):
         self.setLayout(layout)
 
 
+# High DPI 스케일링 활성화 (QApplication 생성 전 설정)
+QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+
 app = QtWidgets.QApplication([])
+
+# 기본 폰트 설정 및 힌팅 설정
+font = QtGui.QFont()
+font.setHintingPreference(QtGui.QFont.PreferNoHinting)
+app.setFont(font)
+
+# 메인 윈도우 실행
 application = MainWindow()
 application.show()
 sys.exit(app.exec_())
