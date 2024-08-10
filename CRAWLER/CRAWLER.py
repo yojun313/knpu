@@ -244,7 +244,7 @@ class Crawler(CrawlerModule):
                 tokenized_data.append(tokenized_text_str)
 
                 progress_value = round((index + 1) / len(text_list) * 100, 1)
-                print(f'\r{textColumn_name.split(' ')[0]} Tokenization Progress: {progress_value}%')
+                print(f'\r{textColumn_name.split(' ')[0]} Tokenization Progress: {progress_value}%', end='')
             except:
                 tokenized_data.append([])
 
