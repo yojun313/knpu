@@ -10,6 +10,8 @@ import time
 import asyncio
 import warnings
 import os
+import re
+from kiwipiepy import Kiwi
 from datetime import datetime, timedelta
 
 import shutil
@@ -39,7 +41,8 @@ class Crawler(CrawlerModule):
         self.speed = int(speed)
         self.saveInterval = 90
         self.GooglePackage_obj = GoogleModule(self.pathFinder()['token_path'])
-        
+        self.kiwi = Kiwi(num_workers=8)
+
         # Computer Info
         self.scrapdata_path = self.pathFinder(user)['scrapdata_path']
         self.crawllog_path  = os.path.join(self.pathFinder()['crawler_folder_path'], 'CrawlLog')
@@ -166,6 +169,20 @@ class Crawler(CrawlerModule):
                 return True
     
     def FinalOperator(self):
+        self.mySQL.connect(self.DBname)
+        DBlist = [DB for DB in self.mySQL.showAllDB() if 'info' not in DB]
+        for DB in DBlist:
+            data_df = self.mySQL.TableToDataframe(DB)
+
+            if 'reply' in DB or 'rereply' in DB:
+                data_df = data_df.groupby('Article URL').agg({
+                    'Reply Text': ' '.join,
+                    'Reply Date': 'first'
+                }).reset_index()
+
+            token_df = self.tokenization(data_df)
+            self.mySQL.DataframeToTable(token_df, 'token_'+DB)
+
         self.clear_screen()
         print('\r업로드 및 알림 전송 중...', end = '')
         
@@ -203,6 +220,36 @@ class Crawler(CrawlerModule):
         if self.weboption == False:
             self.infoPrinter()
         print(f'{end_msg}')
+
+    def tokenization(self, data):
+        for column in data.columns.tolist():
+            if 'Text' in column:
+                textColumn_name = column
+
+        text_list = list(data[textColumn_name])
+        tokenized_data = []
+
+        for index, text in enumerate(text_list):
+            try:
+                if not isinstance(text, str):
+                    tokenized_data.append([])
+                    continue  # 문자열이 아니면 넘어감
+
+                text = re.sub(r'[^가-힣a-zA-Z\s]', '', text)
+                tokens = self.kiwi.tokenize(text)
+                tokenized_text = [token.form for token in tokens if token.tag in ('NNG', 'NNP')]
+
+                # 리스트를 쉼표로 구분된 문자열로 변환
+                tokenized_text_str = ", ".join(tokenized_text)
+                tokenized_data.append(tokenized_text_str)
+
+                progress_value = round((index + 1) / len(text_list) * 100, 1)
+                print(f'\r{textColumn_name.split(' ')[0]} Tokenization Progress: {progress_value}%')
+            except:
+                tokenized_data.append([])
+
+        data[textColumn_name] = tokenized_data
+        return data
 
     def Naver_News_Crawler(self, option):
 
