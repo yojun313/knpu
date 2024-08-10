@@ -254,6 +254,10 @@ class mySQL:
 
     def DataframeToTable(self, dataframe, tableName):
         try:
+            # 데이터프레임에서 'id' 열이 있을 경우 제거
+            if 'id' in dataframe.columns:
+                dataframe = dataframe.drop(columns=['id'])
+
             # 데이터프레임의 열 이름을 가져오기
             columns = dataframe.columns.tolist()
 
