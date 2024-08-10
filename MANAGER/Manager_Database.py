@@ -2,9 +2,7 @@ import os
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog
 from PyQt5.QtCore import QTimer
-import platform
 import copy
-import time
 
 class TableWindow(QMainWindow):
     def __init__(self, parent=None, target_db=None):
@@ -97,7 +95,7 @@ class Manager_Database:
     def __init__(self, main_window):
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
-        self.DB_table_column = ['Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester']
+        self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester']
         self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
         self.database_buttonMatch()
 
@@ -176,7 +174,7 @@ class Manager_Database:
             if not selected_row >= 0:
                 return
             target_db = self.DB['DBlist'][selected_row]
-            folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory")
+            folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
 
             self.main.printStatus(f"{target_db} 저장 중...")
             QTimer.singleShot(1000, lambda: save_database(target_db, folder_path))

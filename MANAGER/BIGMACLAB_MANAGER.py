@@ -16,14 +16,12 @@ from datetime import datetime
 import platform
 import requests
 from packaging import version
-import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.0.3'
+        self.versionNum = '1.0.4'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()
@@ -45,6 +43,14 @@ class MainWindow(QtWidgets.QMainWindow):
         # 사이드바 연결
         def load_program():
             self.listWidget.currentRowChanged.connect(self.display)
+
+            if platform.system() == "Windows":
+                self.default_directory = 'C:/BIGMACLAB_MANAGER'
+            else:
+                self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
+
+            if os.path.isdir(self.default_directory) == False:
+                os.mkdir(self.default_directory)
 
             self.DB = self.update_DB({'DBlist':[], 'DBdata': []})
             self.Manager_Database_obj = Manager_Database(self)
@@ -119,6 +125,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         delete_target_list = list(set(currentDB_list)-set(newDB_list))
         add_target_list    = list(set(newDB_list)-set(currentDB_list))
+
         # Delete
         currentDB_list_copy = currentDB_list.copy()
         for i in range(len(currentDB_list_copy)):
@@ -128,8 +135,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 currentDB['DBlist'].pop(index_to_remove)
                 currentDB['DBdata'].pop(index_to_remove)
 
-        for i in range(len(add_target_list)):
-            DB_name = add_target_list[i]
+        for i, DB_name in enumerate(add_target_list):
             currentDB['DBlist'].append(DB_name)
 
             db_split = DB_name.split('_')
@@ -147,13 +153,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 endtime = '크롤링 중'
             requester = db_info[4]
 
-            currentDB['DBdata'].append((crawltype, keyword, date, option, starttime, endtime, requester))
+            currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester))
 
         db_data = currentDB['DBdata']
         db_list = currentDB['DBlist']
 
         # 다섯 번째 요소를 datetime 객체로 변환하여 정렬
-        sorted_indices = sorted(range(len(db_data)), key=lambda i: parse_date(db_data[i][4]), reverse=True)
+        sorted_indices = sorted(range(len(db_data)), key=lambda i: parse_date(db_data[i][5]), reverse=True)
 
         # 정렬된 순서대로 새로운 리스트 생성
         sorted_db_data = [db_data[i] for i in sorted_indices]
@@ -177,7 +183,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def filefinder_maker(self):
         class EmbeddedFileDialog(QFileDialog):
-            def __init__(self, parent=None):
+            def __init__(self, parent=None, default_directory=None):
                 super().__init__(parent)
                 self.setFileMode(QFileDialog.ExistingFiles)
                 self.setOptions(QFileDialog.DontUseNativeDialog)
@@ -186,6 +192,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.accepted.connect(self.on_accepted)
                 self.rejected.connect(self.on_rejected)
                 self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                if default_directory:
+                    self.setDirectory(default_directory)
 
             def on_directory_change(self, path):
                 pass
@@ -208,7 +216,7 @@ class MainWindow(QtWidgets.QMainWindow):
             def reject(self):
                 self.show()
 
-        return EmbeddedFileDialog(self)
+        return EmbeddedFileDialog(self, self.default_directory)
 
     def setStyle(self):
         self.setStyleSheet("""

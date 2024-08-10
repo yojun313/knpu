@@ -4,10 +4,8 @@ import copy
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 import seaborn as sns
 import platform
-from wordcloud import WordCloud
 
 # 운영체제에 따라 한글 폰트를 설정
 if platform.system() == 'Darwin':  # macOS
@@ -23,7 +21,7 @@ class Manager_Dataprocess:
         self.main = main_window
         self.dataprocess_obj = DataProcess(self.main)
         self.DB = copy.deepcopy(self.main.DB)
-        self.DB_table_column = ['Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester']
+        self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester']
         self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBdata'], self.DB_table_column)
         self.dataprocess_filefinder_maker()
         self.dataprocess_buttonMatch()
@@ -89,7 +87,7 @@ class Manager_Dataprocess:
                 return 0 ,0, 0
             target_db = self.DB['DBlist'][selected_row]
 
-            folder_path  = QFileDialog.getExistingDirectory(self.main, "분할 데이터를 저장할 폴더를 선택하세요")
+            folder_path  = QFileDialog.getExistingDirectory(self.main, "분할 데이터를 저장할 폴더를 선택하세요", self.main.default_directory)
             if folder_path:
                 try:
                     splitdata_path = os.path.join(folder_path, target_db + '_split')
@@ -153,7 +151,7 @@ class Manager_Dataprocess:
                 return 0 ,0, 0
             target_db = self.DB['DBlist'][selected_row]
 
-            folder_path  = QFileDialog.getExistingDirectory(self.main, "분석 데이터를 저장할 폴더를 선택하세요")
+            folder_path  = QFileDialog.getExistingDirectory(self.main, "분석 데이터를 저장할 폴더를 선택하세요", self.main.default_directory)
             if folder_path:
                 try:
                     analysisdata_path = os.path.join(folder_path, target_db + '_analysis')
