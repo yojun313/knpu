@@ -271,13 +271,6 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="kimkem_tab2_tokenization_button">
-                  <property name="text">
-                   <string>토큰화</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
                  <widget class="QPushButton" name="kimkem_tab2_kimkem_button">
                   <property name="text">
                    <string>KEM KIM</string>

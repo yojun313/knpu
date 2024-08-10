@@ -42,7 +42,7 @@ class Manager_Analysis:
         self.main.dataprocess_tab2_analysis_button.clicked.connect(self.dataprocess_analysis_file)
         self.main.dataprocess_tab2_merge_button.clicked.connect(self.dataprocess_merge_file)
 
-        self.main.kimkem_tab2_tokenization_button.clicked.connect(self.kimkem_tokenization_file)
+        #self.main.kimkem_tab2_tokenization_button.clicked.connect(self.kimkem_tokenization_file)
         self.main.kimkem_tab2_kimkem_button.clicked.connect(self.kimkem_kimkem_file)
 
     def dataprocess_search_DB(self):

@@ -252,6 +252,43 @@ class mySQL:
             print(f"Failed to convert CSV file {csv_path} to table {tableName}")
             print(str(e))
 
+    def DataframeToTable(self, dataframe, tableName):
+        try:
+            # 데이터프레임의 열 이름을 가져오기
+            columns = dataframe.columns.tolist()
+
+            # 테이블 생성 쿼리 생성
+            create_table_query = f"CREATE TABLE IF NOT EXISTS `{tableName}` (id INT AUTO_INCREMENT PRIMARY KEY, "
+            for column in columns:
+                create_table_query += f"`{column}` LONGTEXT, "
+            create_table_query = create_table_query.rstrip(', ')  # 마지막 쉼표와 공백 제거
+            create_table_query += ")"
+
+            with self.conn.cursor() as cursor:
+                # 테이블 생성
+                cursor.execute(create_table_query)
+                self.conn.commit()
+
+                # 데이터프레임의 데이터를 리스트로 변환
+                data_list = dataframe.values.tolist()
+
+                # 열 이름을 문자열로 변환
+                columns_str = ', '.join([f'`{col}`' for col in columns])
+
+                # VALUES 부분의 자리표시자 생성
+                placeholders = ', '.join(['%s'] * len(columns))
+
+                # INSERT 쿼리 생성
+                insert_query = f"INSERT INTO `{tableName}` ({columns_str}) VALUES ({placeholders})"
+
+                # 여러 행의 데이터를 한 번에 삽입
+                cursor.executemany(insert_query, data_list)
+                self.conn.commit()
+
+        except Exception as e:
+            print(f"Failed to insert DataFrame into table {tableName}")
+            print(str(e))
+
     def deleteTableRowByColumn(self, tableName, target, columnName):
         try:
             with self.conn.cursor() as cursor:
