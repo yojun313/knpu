@@ -100,144 +100,163 @@ class Manager_Database:
         self.database_buttonMatch()
 
     def database_delete_DB(self):
-        self.main.printStatus("삭제 중...")
-        def delete_database():
-            selected_row = self.main.database_tablewidget.currentRow()
-            if selected_row >= 0:
-                target_db = self.DB['DBlist'][selected_row]
-                self.main.mySQL_obj.connectDB(target_db)
-                db_info_df = self.main.mySQL_obj.TableToDataframe(target_db + '_info')
-                db_info = db_info_df.iloc[-1].tolist()
-                endtime = db_info[3]
+        try:
+            self.main.printStatus("삭제 중...")
+            def delete_database():
+                selected_row = self.main.database_tablewidget.currentRow()
+                if selected_row >= 0:
+                    target_db = self.DB['DBlist'][selected_row]
+                    self.main.mySQL_obj.connectDB(target_db)
+                    db_info_df = self.main.mySQL_obj.TableToDataframe(target_db + '_info')
+                    db_info = db_info_df.iloc[-1].tolist()
+                    endtime = db_info[3]
 
-                if endtime == '-':
-                    confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하시겠습니까?"
-                else:
-                    confirm_msg = f"'{target_db}'를 삭제하시겠습니까?"
+                    if endtime == '-':
+                        confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하시겠습니까?"
+                    else:
+                        confirm_msg = f"'{target_db}'를 삭제하시겠습니까?"
 
-                reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if reply == QMessageBox.Yes:
-                    self.main.mySQL_obj.dropDB(target_db)
-                    self.database_refresh_DB()
+                    reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        self.main.mySQL_obj.dropDB(target_db)
+                        self.database_refresh_DB()
 
-        QTimer.singleShot(1, delete_database)
-        QTimer.singleShot(1, self.main.printStatus)
+            QTimer.singleShot(1, delete_database)
+            QTimer.singleShot(1, self.main.printStatus)
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
     def database_view_DB(self):
-        self.main.printStatus("불러오는 중...")
-        def load_database():
-            selected_row = self.main.database_tablewidget.currentRow()
-            if selected_row >= 0:
-                target_DB = self.DB['DBlist'][selected_row]
-                self.DBtable_window = TableWindow(self.main, target_DB)
-                self.DBtable_window.show()
+        try:
+            self.main.printStatus("불러오는 중...")
+            def load_database():
+                selected_row = self.main.database_tablewidget.currentRow()
+                if selected_row >= 0:
+                    target_DB = self.DB['DBlist'][selected_row]
+                    self.DBtable_window = TableWindow(self.main, target_DB)
+                    self.DBtable_window.show()
 
-        QTimer.singleShot(1, load_database)
-        QTimer.singleShot(1, self.main.printStatus)
+            QTimer.singleShot(1, load_database)
+            QTimer.singleShot(1, self.main.printStatus)
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
     def database_search_DB(self):
-        search_text = self.main.database_searchDB_lineinput.text().lower()
-        if not search_text:
-            return
-
-        # 현재 선택된 행의 다음 행부터 검색 시작
-        start_row = self.main.database_tablewidget.currentRow() + 1 if self.main.database_tablewidget.currentRow() != -1 else 0
-
-        for row in range(start_row, self.main.database_tablewidget.rowCount()):
-            match = False
-            for col in range(self.main.database_tablewidget.columnCount()):
-                item = self.main.database_tablewidget.item(row, col)
-                if item and search_text in item.text().lower():
-                    match = True
-                    break
-
-            if match:
-                self.main.database_tablewidget.selectRow(row)
+        try:
+            search_text = self.main.database_searchDB_lineinput.text().lower()
+            if not search_text:
                 return
 
-        # 검색어가 처음부터 검색되도록 반복
-        for row in range(0, start_row):
-            match = False
-            for col in range(self.main.database_tablewidget.columnCount()):
-                item = self.main.database_tablewidget.item(row, col)
-                if item and search_text in item.text().lower():
-                    match = True
-                    break
+            # 현재 선택된 행의 다음 행부터 검색 시작
+            start_row = self.main.database_tablewidget.currentRow() + 1 if self.main.database_tablewidget.currentRow() != -1 else 0
 
-            if match:
-                self.main.database_tablewidget.selectRow(row)
-                return
+            for row in range(start_row, self.main.database_tablewidget.rowCount()):
+                match = False
+                for col in range(self.main.database_tablewidget.columnCount()):
+                    item = self.main.database_tablewidget.item(row, col)
+                    if item and search_text in item.text().lower():
+                        match = True
+                        break
+
+                if match:
+                    self.main.database_tablewidget.selectRow(row)
+                    return
+
+            # 검색어가 처음부터 검색되도록 반복
+            for row in range(0, start_row):
+                match = False
+                for col in range(self.main.database_tablewidget.columnCount()):
+                    item = self.main.database_tablewidget.item(row, col)
+                    if item and search_text in item.text().lower():
+                        match = True
+                        break
+
+                if match:
+                    self.main.database_tablewidget.selectRow(row)
+                    return
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
     def database_save_DB(self):
-        def select_database():
-            selected_row = self.main.database_tablewidget.currentRow()
-            if not selected_row >= 0:
-                return
-            target_db = self.DB['DBlist'][selected_row]
-            folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
+        try:
+            def select_database():
+                selected_row = self.main.database_tablewidget.currentRow()
+                if not selected_row >= 0:
+                    return
+                target_db = self.DB['DBlist'][selected_row]
+                folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
+                if folder_path == '':
+                    QMessageBox.warning(self.main, "Warning", "No directory selected.")
+                    return
+                if folder_path:
+                    self.main.printStatus(f"{target_db} 저장 중...")
+                QTimer.singleShot(1000, lambda: save_database(target_db, folder_path))
+                QTimer.singleShot(1000, self.main.printStatus)
 
-            self.main.printStatus(f"{target_db} 저장 중...")
-            QTimer.singleShot(1000, lambda: save_database(target_db, folder_path))
-            QTimer.singleShot(1000, self.main.printStatus)
+            def save_database(target_db, folder_path):
+                # 선택된 경로가 있는지 확인
 
-        def save_database(target_db, folder_path):
-            # 선택된 경로가 있는지 확인
+                if folder_path:
+                    try:
+                        dbpath = os.path.join(folder_path, target_db)
 
-            if folder_path:
-                try:
-                    dbpath = os.path.join(folder_path, target_db)
-
-                    while True:
-                        try:
-                            os.mkdir(dbpath)
-                            break
-                        except:
-                            dbpath += "_copy"
+                        while True:
+                            try:
+                                os.mkdir(dbpath)
+                                break
+                            except:
+                                dbpath += "_copy"
 
 
-                    statisticsURL = []
+                        statisticsURL = []
 
-                    self.main.mySQL_obj.connectDB(target_db)
-                    tableList = self.main.mySQL_obj.showAllTable(target_db)
-                    tableList = [table for table in tableList if 'info' not in table]
-                    tableList = sorted(tableList, key=lambda x: ('statistics' not in x, x))
+                        self.main.mySQL_obj.connectDB(target_db)
+                        tableList = self.main.mySQL_obj.showAllTable(target_db)
+                        tableList = [table for table in tableList if 'info' not in table]
+                        tableList = sorted(tableList, key=lambda x: ('statistics' not in x, x))
 
-                    for tableName in tableList:
-                        if 'statistics' in tableName:
-                            statisticsDF = self.main.mySQL_obj.TableToDataframe(tableName)
-                            statisticsURL = statisticsDF['Article URL'].tolist()
-                            statisticsdata_path = os.path.join(dbpath, "statistics_data")
-                            os.makedirs(statisticsdata_path, exist_ok=True)
-                            filename = tableName.replace('statistics', 'article_statistics')
-                            self.main.mySQL_obj.TableToCSV(tableName, statisticsdata_path, filename)
-                            continue
+                        for tableName in tableList:
+                            if 'statistics' in tableName:
+                                statisticsDF = self.main.mySQL_obj.TableToDataframe(tableName)
+                                statisticsURL = statisticsDF['Article URL'].tolist()
+                                statisticsdata_path = os.path.join(dbpath, "statistics_data")
+                                os.makedirs(statisticsdata_path, exist_ok=True)
+                                filename = tableName.replace('statistics', 'article_statistics')
+                                self.main.mySQL_obj.TableToCSV(tableName, statisticsdata_path, filename)
+                                continue
 
-                        elif statisticsURL != [] and 'reply' in tableName:
-                            targetDF = self.main.mySQL_obj.TableToDataframe(tableName)
-                            targetDF = targetDF[targetDF['Article URL'].isin(statisticsURL)]
-                            targetDF.to_csv(f"{statisticsdata_path}/{tableName + '_statistics'}.csv", index=False,
-                                           encoding='utf-8-sig', header=True)
+                            elif statisticsURL != [] and 'reply' in tableName:
+                                targetDF = self.main.mySQL_obj.TableToDataframe(tableName)
+                                targetDF = targetDF[targetDF['Article URL'].isin(statisticsURL)]
+                                targetDF.to_csv(f"{statisticsdata_path}/{tableName + '_statistics'}.csv", index=False,
+                                               encoding='utf-8-sig', header=True)
 
-                        self.main.mySQL_obj.TableToCSV(tableName, dbpath)
+                            self.main.mySQL_obj.TableToCSV(tableName, dbpath)
 
-                    self.main.openFileExplorer(dbpath)
+                        self.main.openFileExplorer(dbpath)
+                        QMessageBox.information(self.main, "Information", f"{target_db}가 성공적으로 저장되었습니다")
 
-                except Exception as e:
-                    QMessageBox.critical(self.main, "Error", f"Failed to save database: {str(e)}")
-            else:
-                pass
+                    except Exception as e:
+                        QMessageBox.critical(self.main, "Error", f"Failed to save database: {str(e)}")
+                else:
+                    pass
 
-        self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
-        select_database()
+            self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
+            select_database()
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
     def database_refresh_DB(self):
-        self.main.printStatus("새로고침 중")
-        def refresh_database():
-            self.DB = self.main.update_DB(self.DB)
-            self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
+        try:
+            self.main.printStatus("새로고침 중")
+            def refresh_database():
+                self.DB = self.main.update_DB(self.DB)
+                self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
 
-        QTimer.singleShot(1, refresh_database)
-        QTimer.singleShot(1, self.main.printStatus)
+            QTimer.singleShot(1, refresh_database)
+            QTimer.singleShot(1, self.main.printStatus)
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
     def database_buttonMatch(self):
         self.main.database_refreshDB_button.clicked.connect(self.database_refresh_DB)

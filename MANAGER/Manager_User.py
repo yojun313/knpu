@@ -37,61 +37,67 @@ class Manager_User:
 
 
     def user_add_user(self):
-        name = self.main.user_name_lineinput.text()
-        email = self.main.user_email_lineinput.text()
-        key = self.main.user_key_lineinput.text()
+        try:
+            name = self.main.user_name_lineinput.text()
+            email = self.main.user_email_lineinput.text()
+            key = self.main.user_key_lineinput.text()
 
-        ok, password = self.main.admin_check()
+            ok, password = self.main.admin_check()
 
-        # 비밀번호 검증
-        if ok and password == self.main.admin_password:
+            # 비밀번호 검증
+            if ok and password == self.main.admin_password:
 
-            self.main.mySQL_obj.connectDB('user_db')
+                self.main.mySQL_obj.connectDB('user_db')
 
-            reply = QMessageBox.question(self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?",
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.Yes:
-                self.main.mySQL_obj.insertToTable(tableName='user_info', data_list=[name, email, key])
-                self.main.mySQL_obj.commit()
-                self.userNameList.append(name)
-
-                row_position = self.main.user_tablewidget.rowCount()
-                self.main.user_tablewidget.insertRow(row_position)
-
-                name_item = QTableWidgetItem(name)
-                email_item = QTableWidgetItem(email)
-                key_item = QTableWidgetItem(key)
-
-                name_item.setTextAlignment(Qt.AlignCenter)
-                email_item.setTextAlignment(Qt.AlignCenter)
-                key_item.setTextAlignment(Qt.AlignCenter)
-
-                self.main.user_tablewidget.setItem(row_position, 0, name_item)
-                self.main.user_tablewidget.setItem(row_position, 1, email_item)
-                self.main.user_tablewidget.setItem(row_position, 2, key_item)
-
-                self.main.user_name_lineinput.clear()
-                self.main.user_email_lineinput.clear()
-                self.main.user_key_lineinput.clear()
-
-        elif ok:
-            QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
-
-    def user_delete_user(self):
-        ok, password = self.main.admin_check()
-
-        if ok and password == self.main.admin_password:
-            selected_row = self.main.user_tablewidget.currentRow()
-            if selected_row >= 0:
-                reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.userNameList[selected_row]}님을 삭제하시겠습니까?",
+                reply = QMessageBox.question(self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
-                    self.main.mySQL_obj.connectDB('user_db')
-                    self.main.mySQL_obj.deleteTableRowByColumn('user_info', self.userNameList[selected_row], 'Name')
-                    self.userNameList.pop(selected_row)
-                    self.main.user_tablewidget.removeRow(selected_row)
-        elif ok:
-            QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
+                    self.main.mySQL_obj.insertToTable(tableName='user_info', data_list=[name, email, key])
+                    self.main.mySQL_obj.commit()
+                    self.userNameList.append(name)
+
+                    row_position = self.main.user_tablewidget.rowCount()
+                    self.main.user_tablewidget.insertRow(row_position)
+
+                    name_item = QTableWidgetItem(name)
+                    email_item = QTableWidgetItem(email)
+                    key_item = QTableWidgetItem(key)
+
+                    name_item.setTextAlignment(Qt.AlignCenter)
+                    email_item.setTextAlignment(Qt.AlignCenter)
+                    key_item.setTextAlignment(Qt.AlignCenter)
+
+                    self.main.user_tablewidget.setItem(row_position, 0, name_item)
+                    self.main.user_tablewidget.setItem(row_position, 1, email_item)
+                    self.main.user_tablewidget.setItem(row_position, 2, key_item)
+
+                    self.main.user_name_lineinput.clear()
+                    self.main.user_email_lineinput.clear()
+                    self.main.user_key_lineinput.clear()
+
+            elif ok:
+                QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+
+    def user_delete_user(self):
+        try:
+            ok, password = self.main.admin_check()
+
+            if ok and password == self.main.admin_password:
+                selected_row = self.main.user_tablewidget.currentRow()
+                if selected_row >= 0:
+                    reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.userNameList[selected_row]}님을 삭제하시겠습니까?",
+                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        self.main.mySQL_obj.connectDB('user_db')
+                        self.main.mySQL_obj.deleteTableRowByColumn('user_info', self.userNameList[selected_row], 'Name')
+                        self.userNameList.pop(selected_row)
+                        self.main.user_tablewidget.removeRow(selected_row)
+            elif ok:
+                QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
     def user_buttonMatch(self):
         self.main.user_adduser_button.clicked.connect(self.user_add_user)
