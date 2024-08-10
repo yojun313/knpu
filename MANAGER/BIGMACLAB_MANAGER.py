@@ -17,6 +17,7 @@ import platform
 import requests
 from packaging import version
 import pandas as pd
+from os import environ
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -433,6 +434,11 @@ class InfoDialog(QDialog):
 
 
 if __name__ == '__main__':
+    environ["QT_DEVICE_PIXEL_RATIO"] = "0"
+    environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+    environ["QT_SCREEN_SCALE_FACTORS"] = "1"
+    environ["QT_SCALE_FACTOR"] = "1"
+
     # High DPI 스케일링 활성화 (QApplication 생성 전 설정)
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
