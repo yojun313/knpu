@@ -219,13 +219,6 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="pushButton">
-                  <property name="text">
-                   <string>추가 예정</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
                  <spacer name="verticalSpacer">
                   <property name="orientation">
                    <enum>Qt::Vertical</enum>
@@ -274,6 +267,20 @@
                  <widget class="QPushButton" name="dataprocess_tab2_merge_button">
                   <property name="text">
                    <string>CSV 병합</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="kimkem_tab2_tokenization_button">
+                  <property name="text">
+                   <string>토큰화</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="kimkem_tab2_kimkem_button">
+                  <property name="text">
+                   <string>KEM KIM</string>
                   </property>
                  </widget>
                 </item>

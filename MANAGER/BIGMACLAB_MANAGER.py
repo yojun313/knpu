@@ -11,7 +11,7 @@ from Manager_Database import Manager_Database
 from Manager_Web import Manager_Web
 from Manager_Board import Manager_Board
 from Manager_User import Manager_User
-from Manager_Dataprocess import Manager_Dataprocess
+from Manager_Analysis import Manager_Analysis
 from datetime import datetime
 import platform
 import requests
@@ -56,7 +56,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.DB = self.update_DB({'DBlist':[], 'DBdata': []})
             self.Manager_Database_obj = Manager_Database(self)
             self.Manager_Web_obj  = Manager_Web(self)
-            self.Manager_Dataprocess_obj = Manager_Dataprocess(self)
+            self.Manager_Analysis_obj = Manager_Analysis(self)
             self.Manager_Board_obj       = Manager_Board(self)
             self.Manager_User_obj        = Manager_User(self)
 
@@ -334,7 +334,7 @@ class MainWindow(QtWidgets.QMainWindow):
         elif index == 1:
             self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr', self.Manager_Web_obj.crawler_web_layout)
         elif index == 2:
-            self.Manager_Dataprocess_obj.dataprocess_refresh_DB()
+            self.Manager_Analysis_obj.dataprocess_refresh_DB()
             pass
         elif index == 3:
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
@@ -390,7 +390,6 @@ class MainWindow(QtWidgets.QMainWindow):
         csv_data = pd.read_csv(csvPath, low_memory=False, index_col=0)
         csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
         return csv_data
-
 
 class InfoDialog(QDialog):
     def __init__(self, version):
