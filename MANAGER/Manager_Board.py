@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QTextEdit, QInputDialog
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QTextEdit, QScrollArea
 from datetime import datetime
 
 class Manager_Board:
@@ -212,7 +212,12 @@ class Manager_Board:
                 detail_label = QLabel(details_html)
                 detail_label.setWordWrap(True)
 
-                layout.addWidget(detail_label)
+                # QScrollArea를 사용하여 스크롤 가능하게 설정
+                scroll_area = QScrollArea()
+                scroll_area.setWidgetResizable(True)
+                scroll_area.setWidget(detail_label)
+
+                layout.addWidget(scroll_area)
 
                 # 닫기 버튼 추가
                 close_button = QPushButton('Close')
@@ -394,11 +399,15 @@ class Manager_Board:
                     <p class="detail-content">{bug_data[4]}</p>
                 </div>
                 """
-
                 detail_label = QLabel(details_html)
                 detail_label.setWordWrap(True)
 
-                layout.addWidget(detail_label)
+                # QScrollArea를 사용하여 스크롤 가능하게 설정
+                scroll_area = QScrollArea()
+                scroll_area.setWidgetResizable(True)
+                scroll_area.setWidget(detail_label)
+
+                layout.addWidget(scroll_area)
 
                 # 닫기 버튼 추가
                 close_button = QPushButton('Close')

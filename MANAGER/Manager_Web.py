@@ -34,7 +34,7 @@ class Manager_Web:
         self.browser.show()
 
     def web_open_downloadbrowser(self, url):
-        webbrowser.open('https://knpu.re.kr:90')
+        webbrowser.open('9')
 
     def web_buttonMatch(self):
         self.main.crawler_omen_button.clicked.connect(
