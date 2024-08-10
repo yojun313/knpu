@@ -280,7 +280,7 @@ class Manager_Analysis:
 
                 table_df = self.main.csvReader(csv_path)
 
-                if all('Date' in element for element in table_df.columns.tolist()) == False or table_df.columns.tolist() == []:
+                if any('Date' in element for element in table_df.columns.tolist()) == False or table_df.columns.tolist() == []:
                     QMessageBox.information(self.main, "Warning", f"시간 분할할 수 없는 파일입니다")
                     return 0
 
@@ -498,7 +498,7 @@ class Manager_Analysis:
             csv_data = pd.read_csv(self.csv_path, low_memory=False)
 
             # Column 열에 Text라는 글자가 하나도 없으면
-            if all('Text' in element for element in csv_data.columns.tolist()) == False:
+            if any('Text' in element for element in csv_data.columns.tolist()) == False:
                 QMessageBox.information(self.main, "Warning", f"토큰화할 수 없는 파일입니다")
                 return
 
