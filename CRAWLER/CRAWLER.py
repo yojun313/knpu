@@ -170,7 +170,7 @@ class Crawler(CrawlerModule):
     
     def FinalOperator(self):
         self.mySQL.connectDB(self.DBname)
-        tablelist = [table for table in self.mySQL.showAllTable() if 'info' not in table]
+        tablelist = [table for table in self.mySQL.showAllTable(self.DBname) if 'info' not in table]
         for table in tablelist:
             data_df = self.mySQL.TableToDataframe(table)
 
