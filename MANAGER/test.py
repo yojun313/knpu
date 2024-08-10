@@ -1,40 +1,40 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QFileDialog, QPushButton
+import os
+import subprocess
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
 
-class EmbeddedFileDialog(QFileDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFileMode(QFileDialog.Directory)
-        self.setOptions(QFileDialog.DontUseNativeDialog)
-
-class MainWindow(QMainWindow):
+class MyApp(QWidget):
     def __init__(self):
         super().__init__()
+        self.initUI()
 
-        self.setWindowTitle('Embedded File Dialog Example')
-        self.setGeometry(100, 100, 800, 600)
+    def initUI(self):
+        self.setWindowTitle('Run KIMKEM')
+        self.setGeometry(300, 300, 300, 200)
 
         layout = QVBoxLayout()
 
-        self.file_dialog = EmbeddedFileDialog(self)
-        layout.addWidget(self.file_dialog)
+        self.btn = QPushButton('Run KIMKEM.py', self)
+        self.btn.clicked.connect(self.run_kimkem)
 
-        container = QWidget()
-        container.setLayout(layout)
-        self.setCentralWidget(container)
+        layout.addWidget(self.btn)
+        self.setLayout(layout)
 
-        self.select_button = QPushButton("Get Selected Directory", self)
-        self.select_button.clicked.connect(self.get_selected_directory)
-        layout.addWidget(self.select_button)
+    def run_kimkem(self):
+        # 현재 디렉토리의 경로를 가져옵니다.
+        script_path = os.path.join(os.getcwd(), 'KIMKEM.py')
 
-    def get_selected_directory(self):
-        selected_directory = self.file_dialog.selectedFiles()
-        if selected_directory:
-            print(f'Selected directory: {selected_directory[0]}')
+        if sys.platform == "win32":
+            # Windows에서 새로운 cmd 창에서 실행
+            subprocess.Popen(['start', 'cmd', '/k', f'python {script_path}'], shell=True)
+        elif sys.platform == "darwin":
+            # MacOS에서 새로운 터미널에서 실행
+            subprocess.Popen(['osascript', '-e', f'tell application "Terminal" to do script "python3 {script_path}"'])
         else:
-            print("No directory selected")
+            print("지원되지 않는 운영체제입니다.")
 
-app = QApplication(sys.argv)
-window = MainWindow()
-window.show()
-sys.exit(app.exec_())
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = MyApp()
+    ex.show()
+    sys.exit(app.exec_())
