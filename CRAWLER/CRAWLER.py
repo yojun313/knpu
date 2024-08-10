@@ -170,18 +170,18 @@ class Crawler(CrawlerModule):
     
     def FinalOperator(self):
         self.mySQL.connectDB(self.DBname)
-        DBlist = [DB for DB in self.mySQL.showAllDB() if 'info' not in DB]
-        for DB in DBlist:
-            data_df = self.mySQL.TableToDataframe(DB)
+        tablelist = [table for table in self.mySQL.showAllTable() if 'info' not in table]
+        for table in tablelist:
+            data_df = self.mySQL.TableToDataframe(table)
 
-            if 'reply' in DB or 'rereply' in DB:
+            if 'reply' in table or 'rereply' in table:
                 data_df = data_df.groupby('Article URL').agg({
                     'Reply Text': ' '.join,
                     'Reply Date': 'first'
                 }).reset_index()
 
             token_df = self.tokenization(data_df)
-            self.mySQL.DataframeToTable(token_df, 'token_'+DB)
+            self.mySQL.DataframeToTable(token_df, 'token_'+table)
 
         self.clear_screen()
         print('\r업로드 및 알림 전송 중...', end = '')
