@@ -51,8 +51,8 @@ class NaverNewsCrawler(CrawlerModule):
             if isinstance(keyword, str) == False:
                 return self.error_dump(2000, 'Check Keyword', keyword)
             
-            startDate = datetime.strptime(str(startDate), '%Y%m%d').date()
-            endDate = datetime.strptime(str(endDate), '%Y%m%d').date()
+            startDate = datetime.strptime(str(startDate), '%Y%m%d').date().strftime('%Y.%m.%d')
+            endDate = datetime.strptime(str(endDate), '%Y%m%d').date().strftime('%Y.%m.%d')
             
         except:
             return self.error_dump(2001, 'Check DateForm', startDate)
@@ -62,39 +62,72 @@ class NaverNewsCrawler(CrawlerModule):
             if self.print_status_option == True:
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverNews', 1, self.PrintData)
-                
-            startDate = startDate.strftime('%Y.%m.%d')
-            endDate = endDate.strftime('%Y.%m.%d')
-            
-            urlList = []
-            keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
-            search_page_url = "https://search.naver.com/search.naver?where=news&query={}&sm=tab_srt&sort=2&photo=0&reporter_article=&pd=3&ds={}&de={}&&start={}&related=0"
-            currentPage = 1
-            while True:
-                search_page_url_tmp = search_page_url.format(keyword, startDate, endDate, currentPage)
-                main_page = self.Requester(search_page_url_tmp)
-                if self.RequesterChecker(main_page) == False:
-                    return main_page
-                main_page = BeautifulSoup(main_page.text, "lxml") #스크랩 모듈에 url 넘김
-                site_result = main_page.select('a[class = "info"]')
-                
-                if site_result == []:
-                    break
 
-                for a in site_result: #스크랩한 데이터 중 링크만 추출
-                    add_link = a['href']
-                    if 'sports' not in add_link and 'sid=106' not in add_link and add_link not in urlList and 'entertain' not in add_link:
-                        urlList.append(add_link)
+            urlList = []
+            keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(
+                ' ', '+')
+            api_url = "https://s.search.naver.com/p/newssearch/search.naver"
+            currentPage = 1
+
+            while True:
+                params = {
+                    "de": startDate,
+                    "ds": endDate,
+                    "eid": "",
+                    "field": "0",
+                    "force_original": "",
+                    "is_dts": "0",
+                    "is_sug_officeid": "0",
+                    "mynews": "0",
+                    "news_office_checked": "",
+                    "nlu_query": "",
+                    "nqx_theme": "",
+                    "nso": "so:r,p:from20240801to20240802,a:all",
+                    "nx_and_query": "",
+                    "nx_search_hlquery": "",
+                    "nx_search_query": "",
+                    "nx_sub_query": "",
+                    "office_category": "0",
+                    "office_section_code": "0",
+                    "office_type": "0",
+                    "pd": "3",
+                    "photo": "0",
+                    "query": keyword,
+                    "query_original": "",
+                    "service_area": "0",
+                    "sort": "1",
+                    "spq": "0",
+                    "start": str(currentPage),
+                    "where": "news_tab_api",
+                    "_callback": "jQuery112406351013586512539_1722744441764",
+                    "_": "1722744441765"
+                }
+
+                response = self.Requester(api_url, parmas=params)
+                jsonp_text = response.text
+                json_text = re.sub(r'^.*?\(', '', jsonp_text)[:-2]
+                data = json.loads(json_text)
+
+                for item in data["contents"]:
+                    soup = BeautifulSoup(item, 'html.parser')
+                    url = naver_links = [a['href'] for a in soup.find_all('a', href=True) if
+                                         a['href'].startswith('https://n.news.naver.com')]
+                    if url != [] and url[0] not in urlList:
+                        urlList.append(url[0])
                         self.IntegratedDB['UrlCnt'] += 1
-                    
+
                 if self.print_status_option == True:
                     self.printStatus('NaverNews', 2, self.PrintData)
-                currentPage += 10 # 다음페이지 이동
-            
+
+                if data['contents'] == []:
+                    break
+
+                currentPage += 10
+
             urlList = list(set(urlList))
 
             returnData = {
-                'urlList' : urlList,
+                'urlList': urlList,
                 'urlCnt': len(urlList)
             }
             # return part
