@@ -22,7 +22,7 @@ from os import environ
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.0.4'
+        self.versionNum = '1.0.5'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()

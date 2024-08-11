@@ -203,6 +203,7 @@ class Manager_Database:
                         while True:
                             try:
                                 os.mkdir(dbpath)
+                                os.mkdir(os.path.join(dbpath, 'token_data'))
                                 break
                             except:
                                 dbpath += "_copy"
@@ -216,22 +217,25 @@ class Manager_Database:
                         tableList = sorted(tableList, key=lambda x: ('statistics' not in x, x))
 
                         for tableName in tableList:
+                            # 통계 관련 테이블 처리
                             if 'statistics' in tableName:
                                 statisticsDF = self.main.mySQL_obj.TableToDataframe(tableName)
                                 statisticsURL = statisticsDF['Article URL'].tolist()
-                                statisticsdata_path = os.path.join(dbpath, "statistics_data")
-                                os.makedirs(statisticsdata_path, exist_ok=True)
                                 filename = tableName.replace('statistics', 'article_statistics')
-                                self.main.mySQL_obj.TableToCSV(tableName, statisticsdata_path, filename)
+                                save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{filename}.csv")
+                                statisticsDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
                                 continue
 
-                            elif statisticsURL != [] and 'reply' in tableName:
+                            # 통계 URL이 있고, reply가 포함된 테이블 처리
+                            elif 'reply' in tableName and statisticsURL:
                                 targetDF = self.main.mySQL_obj.TableToDataframe(tableName)
-                                targetDF = targetDF[targetDF['Article URL'].isin(statisticsURL)]
-                                targetDF.to_csv(f"{statisticsdata_path}/{tableName + '_statistics'}.csv", index=False,
-                                               encoding='utf-8-sig', header=True)
+                                filteredDF = targetDF[targetDF['Article URL'].isin(statisticsURL)]
+                                save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{tableName + '_statistics'}.csv")
+                                filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
 
-                            self.main.mySQL_obj.TableToCSV(tableName, dbpath)
+                            # 기타 테이블 처리
+                            save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
+                            self.main.mySQL_obj.TableToCSV(tableName, save_dir)
 
                         self.main.openFileExplorer(dbpath)
                         QMessageBox.information(self.main, "Information", f"{target_db}가 성공적으로 저장되었습니다")
