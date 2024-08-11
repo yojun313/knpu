@@ -103,7 +103,7 @@ class NaverNewsCrawler(CrawlerModule):
                     "_": "1722744441765"
                 }
 
-                response = self.Requester(api_url, parmas=params)
+                response = self.Requester(api_url, params=params)
                 jsonp_text = response.text
                 json_text = re.sub(r'^.*?\(', '', jsonp_text)[:-2]
                 data = json.loads(json_text)
