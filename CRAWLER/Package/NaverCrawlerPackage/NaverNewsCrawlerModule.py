@@ -125,8 +125,6 @@ class NaverNewsCrawler(CrawlerModule):
 
                 currentPage += 10
 
-            urlList = list(set(urlList))
-
             returnData = {
                 'urlList': urlList,
                 'urlCnt': len(urlList)
