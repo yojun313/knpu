@@ -136,7 +136,7 @@ class NaverCafeCrawler(CrawlerModule):
                 url_list = [a['href'] for a in result]
 
                 for url in url_list:
-                    if url not in urlList and 'https://cafe.naver.com/' in url:
+                    if url not in urlList and 'https://cafe.naver.com/' in url and 'book' not in url:
                         urlList.append(url)
                         self.IntegratedDB['UrlCnt'] += 1
 
@@ -164,7 +164,7 @@ class NaverCafeCrawler(CrawlerModule):
 
     async def articleCollector(self, cafeURL, session):
         if isinstance(cafeURL, str) == False or self._cafeURLChecker(cafeURL) == False:
-            return self.error_dump(2021, "Check newsURL", cafeURL)
+            return self.error_dump(2021, "Check cafeURL", cafeURL)
         
         try:
             returnData = {
