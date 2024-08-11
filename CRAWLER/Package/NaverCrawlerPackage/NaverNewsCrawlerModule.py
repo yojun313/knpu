@@ -112,7 +112,7 @@ class NaverNewsCrawler(CrawlerModule):
                     soup = BeautifulSoup(item, 'html.parser')
                     url = naver_links = [a['href'] for a in soup.find_all('a', href=True) if
                                          a['href'].startswith('https://n.news.naver.com')]
-                    if url != [] and url[0] not in urlList:
+                    if url != [] and url[0] not in urlList and 'sid=106' not in url[0]:
                         urlList.append(url[0])
                         self.IntegratedDB['UrlCnt'] += 1
 

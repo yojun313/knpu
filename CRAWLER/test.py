@@ -64,24 +64,14 @@ def urlCollector(keyword, startDate, endDate):
             url = naver_links = [a['href'] for a in soup.find_all('a', href=True) if a['href'].startswith('https://n.news.naver.com')]
             if url != [] and url[0] not in urlList:
                 urlList.append(url[0])
-                self.IntegratedDB['UrlCnt'] += 1
-
-        if self.print_status_option == True:
-            self.printStatus('NaverNews', 2, self.PrintData)
 
         if data['contents'] == []:
-            break
+            print(urlList)
+            return urlList
 
         currentPage += 10
 
-    urlList = list(set(urlList))
 
-    returnData = {
-        'urlList': urlList,
-        'urlCnt': len(urlList)
-    }
-    # return part
-    return returnData
 
 startDate = '20230101'
 endDate = '20230101'
