@@ -574,6 +574,8 @@ class Manager_Analysis:
 
         self.main.openFileExplorer(save_path)
         kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startyear, topword, exception_word_list)
+
+        self.main.printStatus(f"{tokenfile_name} KEMKIM 분석 중...")
         result = kimkem_obj.make_kimkem()
 
         if result == 1:
@@ -581,6 +583,7 @@ class Manager_Analysis:
         else:
             QMessageBox.information(self.main, "Information", f"Keyword가 존재하지 않아 KEM KIM 분석이 진행되지 않았습니다")
 
+        self.main.printStatus()
 
 class DataProcess:
     def __init__(self, main_window):
@@ -1204,7 +1207,11 @@ class KimKem:
         yyear_divided_dic = self._initialize_year_divided_dic(year_divided_group)#
 
         # Step 2: 연도별 단어 리스트 생성
+
+        # DF 계산을 위해서 각 연도(key)마다 2차원 리스트 할당 -> 요소 리스트 하나 = 문서 하나
         year_divided_dic = self._generate_year_divided_dic(yyear_divided_dic)#
+
+        # TF 계산을 위해서 각 연도마다 모든 token 할당
         year_divided_dic_merged = self._merge_year_divided_dic(year_divided_dic)#
 
         # Step 3: 상위 공통 단어 추출 및 키워드 리스트 생성
@@ -1340,8 +1347,7 @@ class KimKem:
         communal_strong_signal = [word for word in DoV_signal['strong_signal'] if word in DoD_signal['strong_signal']]
         communal_weak_signal = [word for word in DoV_signal['weak_signal'] if word in DoD_signal['weak_signal']]
         communal_latent_signal = [word for word in DoV_signal['latent_signal'] if word in DoD_signal['latent_signal']]
-        communal_well_known_signal = [word for word in DoV_signal['well_known_signal'] if
-                                      word in DoD_signal['well_known_signal']]
+        communal_well_known_signal = [word for word in DoV_signal['well_known_signal'] if word in DoD_signal['well_known_signal']]
         return {
             'strong_signal': communal_strong_signal,
             'weak_signal': communal_weak_signal,
@@ -1397,8 +1403,7 @@ class KimKem:
         for year in year_divided_dic:
             keyword_DoV_dic = {}
             for keyword in keyword_list:
-                value = (tf_counts[year][keyword] / len(year_divided_dic[year])) * (
-                            1 - 0.05 * (int(year) - self.startyear))
+                value = (tf_counts[year][keyword] / len(year_divided_dic[year])) * (1 - 0.05 * (int(year) - self.startyear))
                 keyword_DoV_dic[keyword] = value
             DoV_dict[year] = keyword_DoV_dic
         return DoV_dict
@@ -1409,8 +1414,7 @@ class KimKem:
         for year in year_divided_dic:
             keyword_DoV_dic = {}
             for keyword in keyword_list:
-                value = (df_counts[year][keyword] / len(year_divided_dic[year])) * (
-                            1 - 0.05 * (int(year) - self.startyear))
+                value = (df_counts[year][keyword] / len(year_divided_dic[year])) * (1 - 0.05 * (int(year) - self.startyear))
                 keyword_DoV_dic[keyword] = value
             DoD_dict[year] = keyword_DoV_dic
         return DoD_dict
@@ -1512,7 +1516,7 @@ class KimKem:
         # 그래프 제목 및 레이블 설정
 
         plt.title("Keyword Issue Map", fontsize=50)
-        plt.xlabel("Average Document Frequency(TF)", fontsize=50)
+        plt.xlabel("Average Document Frequency(DF)", fontsize=50)
         plt.ylabel("Time-Weighted increasing rate", fontsize=50)
 
         # 그래프 표시
