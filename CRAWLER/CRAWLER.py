@@ -181,13 +181,12 @@ class Crawler(CrawlerModule):
                 text_column = 'Reply Text' if 'reply' in table else 'Rereply Text'
 
                 # 날짜 형식 변환 및 그룹화 후 정렬
-                data_df[date_column] = pd.to_datetime(data_df[date_column], format='%Y-%m-%d')
+                data_df[date_column] = pd.to_datetime(data_df[date_column], format='%Y-%m-%d').dt.date
                 data_df = data_df.groupby('Article URL').agg({
                     text_column: ' '.join,
                     date_column: 'min'
                 }).reset_index()
                 data_df = data_df.sort_values(by=date_column)
-
 
             token_df = self.tokenization(data_df)
             self.mySQL.DataframeToTable(token_df, 'token_'+table)
@@ -252,7 +251,7 @@ class Crawler(CrawlerModule):
                 tokenized_text_str = ", ".join(tokenized_text)
                 tokenized_data.append(tokenized_text_str)
 
-                progress_value = round((index + 1) / len(text_list) * 100, 1)
+                progress_value = round((index + 1) / len(text_list) * 100, 2)
                 print(f'\r{textColumn_name.split(' ')[0]} Tokenization Progress: {progress_value}%', end='')
             except:
                 tokenized_data.append([])
