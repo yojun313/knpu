@@ -18,6 +18,7 @@ import shutil
 import urllib3
 from Package.CrawlerModule import CrawlerModule
 from Package.GoogleModule import GoogleModule
+import pandas as pd
 
 from Package.ChinaCrawlerPackage.ChinaDailyCrawlerModule import ChinaDailyCrawler
 from Package.ChinaCrawlerPackage.ChinaSinaCrawlerModule import ChinaSinaCrawler
@@ -174,10 +175,17 @@ class Crawler(CrawlerModule):
         for table in tablelist:
             data_df = self.mySQL.TableToDataframe(table)
 
-            if 'reply' in table or 'rereply' in table:
+            if 'reply' in table:
+                data_df['Reply Date'] = pd.to_datetime(data_df['Reply Date'], format='%Y-%m-%d')
                 data_df = data_df.groupby('Article URL').agg({
                     'Reply Text': ' '.join,
-                    'Reply Date': 'first'
+                    'Reply Date': 'min'
+                }).reset_index()
+            elif 'rereply' in table:
+                data_df['Rereply Date'] = pd.to_datetime(data_df['Reply Date'], format='%Y-%m-%d')
+                data_df = data_df.groupby('Article URL').agg({
+                    'Rereply Text': ' '.join,
+                    'Rereply Date': 'min'
                 }).reset_index()
 
             token_df = self.tokenization(data_df)
