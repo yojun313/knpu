@@ -15,9 +15,10 @@ from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 import json
 import pandas as pd
 import re
-import random
 import asyncio
 import aiohttp
+import urllib.parse
+
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -45,51 +46,60 @@ class NaverBlogCrawler(CrawlerModule):
             if self.print_status_option == True:
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverBlog', 1, self.PrintData)
-                
-            ipChange = False
+
             urlList = []
-            if self.proxy_option == True:
-                ipList  = random.sample(self.proxy_list, 3000)
-            
             keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
-            search_page_url = "https://search.naver.com/search.naver?ssc=tab.blog.all&query={}&sm=tab_opt&nso=so%3Ar%2Cp%3Afrom{}to{}&&start={}"
-            
+            api_url = "https://s.search.naver.com/p/review/48/search.naver"
             currentPage = 1
+
+            params = {
+                "ssc": "tab.blog.all",
+                "api_type": 8,
+                "query": keyword,
+                "start": 1,
+                "nx_search_query": "",
+                "nx_and_query": "",
+                "nx_sub_query": "",
+                "ac": 1,
+                "aq": 0,
+                "spq": 0,
+                "sm": "tab_jum",
+                "nso": f"so:dd,p:from{startDate}to{endDate}",
+                "prank": 30,
+                "ngn_country": "KR",
+                "lgl_rcode": "02131104",
+                "fgn_region": "",
+                "fgn_city": "",
+                "lgl_lat": 37.449409,
+                "lgl_long": 127.155387,
+                "enlu_query": "IggCAGiDULjaAAAAAtdoURqXUdp9ygLvMM8qJoxy7zkJYF06kLK+78VOhRxred9auhhnSFfsCLYIjSo9ZcL044Nzze...",
+                "enqx_theme": "IggCABSCULhCAAAAAr/DtntZaiMLGh3DOFtIyw/t3q4cI3VHNtryN4kMOyz+YZnp6yyiXnfmTYMeozydGMP/CzL2DpK9j0J2w==",
+                "abt": [{"eid": "RQT-BOOST", "value": {"bucket": "0", "for": "impression-neo", "is_control": True}}],
+                "retry_count": 0
+            }
+
             while True:
-                search_page_url_tmp = search_page_url.format(keyword, startDate, endDate, currentPage)
-                
-                if self.proxy_option == True:
-                    
-                    proxy = {"http": 'http://' + ipList[0], 'https': 'http://' + ipList[0]}
-                    main_page = self.Requester(search_page_url_tmp, proxies = proxy)
-                    if main_page == 0:
-                        ipChange = True
-                        ipList.pop(0)
+                response = self.Requester.get(api_url, params=params)
+                json_text = response.text
+                data = json.loads(json_text)
+
+                soup = BeautifulSoup(data["contents"], 'html.parser')
+                result = soup.select('a[class = "title_link"]')
+                url_list = [a['href'] for a in result]
+
+                for url in url_list:
+                    if url not in urlList and 'https://blog.naver.com/' in url:
+                        urlList.append(url)
+                        self.IntegratedDB['UrlCnt'] += 1
+
+                if self.print_status_option == True:
+                    self.printStatus('NaverBlog', 2, self.PrintData)
+
+                if data['nextUrl'] == '':
+                    break
                 else:
-                    main_page = self.Requester(search_page_url_tmp)
-                
-                if ipChange == False:
-                    main_page = BeautifulSoup(main_page.text, "lxml") #스크랩 모듈에 url 넘김
-                    site_result = main_page.select('a[class = "title_link"]')
-                    new_urlList = [a['href'] for a in site_result]
-
-                    if new_urlList == [] or set(new_urlList).issubset(set(urlList)) == True:
-                        break
-
-                    for add_link in new_urlList:
-                        if 'naver' in add_link and add_link not in urlList and 'tistory' not in add_link:
-                            urlList.append(add_link)
-                            self.IntegratedDB['UrlCnt'] += 1
-                       
-                    if self.print_status_option == True: 
-                        self.printStatus('NaverBlog', 2, self.PrintData)
-
-                    currentPage += 10
-                else:
-                    currentPage = 1
-                    ipChange = False
-                    urlList = []
-                    self.IntegratedDB['UrlCnt'] = 0
+                    api_url = data['nextUrl']
+                    params = {}
 
             returnData = {
                 'urlList': urlList,
@@ -100,7 +110,7 @@ class NaverBlogCrawler(CrawlerModule):
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            return self.error_dump(2013, error_msg, search_page_url_tmp)
+            return self.error_dump(2013, error_msg, api_url)
     
     async def articleCollector(self, blogURL, session):
         trynum = 1

@@ -18,6 +18,8 @@ from bs4 import BeautifulSoup
 from user_agent import generate_navigator
 import asyncio
 import aiohttp
+import urllib.parse
+
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -58,7 +60,6 @@ class NaverNewsCrawler(CrawlerModule):
             return self.error_dump(2001, 'Check DateForm', startDate)
         
         try:
-            search_page_url_tmp = ''
             if self.print_status_option == True:
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverNews', 1, self.PrintData)
@@ -135,7 +136,7 @@ class NaverNewsCrawler(CrawlerModule):
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            return self.error_dump(2003, error_msg, search_page_url_tmp)
+            return self.error_dump(2003, error_msg, f"{api_url}?{urllib.parse.urlencode(params)}")
 
     # Sync Part
 
