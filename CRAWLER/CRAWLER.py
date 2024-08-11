@@ -175,18 +175,19 @@ class Crawler(CrawlerModule):
         for table in tablelist:
             data_df = self.mySQL.TableToDataframe(table)
 
-            if 'reply' in table:
-                data_df['Reply Date'] = pd.to_datetime(data_df['Reply Date'], format='%Y-%m-%d')
+            if any(key in table for key in ['reply', 'rereply']):
+                # 열 이름 설정
+                date_column = 'Reply Date' if 'reply' in table else 'Rereply Date'
+                text_column = 'Reply Text' if 'reply' in table else 'Rereply Text'
+
+                # 날짜 형식 변환 및 그룹화 후 정렬
+                data_df[date_column] = pd.to_datetime(data_df[date_column], format='%Y-%m-%d')
                 data_df = data_df.groupby('Article URL').agg({
-                    'Reply Text': ' '.join,
-                    'Reply Date': 'min'
+                    text_column: ' '.join,
+                    date_column: 'min'
                 }).reset_index()
-            elif 'rereply' in table:
-                data_df['Rereply Date'] = pd.to_datetime(data_df['Reply Date'], format='%Y-%m-%d')
-                data_df = data_df.groupby('Article URL').agg({
-                    'Rereply Text': ' '.join,
-                    'Rereply Date': 'min'
-                }).reset_index()
+                data_df = data_df.sort_values(by=date_column)
+
 
             token_df = self.tokenization(data_df)
             self.mySQL.DataframeToTable(token_df, 'token_'+table)
