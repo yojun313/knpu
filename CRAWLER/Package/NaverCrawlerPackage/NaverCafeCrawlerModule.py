@@ -94,56 +94,62 @@ class NaverCafeCrawler(CrawlerModule):
             if self.print_status_option == True:
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverCafe', 1, self.PrintData)
-                
-            ipChange = False
+
             urlList = []
-            idList  = []
-            if self.proxy_option == True:
-                ipList  = random.sample(self.proxy_list, 1000)
-            
-            keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
-            search_page_url = "https://search.naver.com/search.naver?ssc=tab.cafe.all&cafe_where=&query={}&ie=utf8&st=date&date_option=8&date_from={}&date_to={}&srchby=text&dup_remove=1&cafe_url=&without_cafe_url=&sm=tab_opt&nso_open=1&prdtype=0&start={}"
+            keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(
+                ' ', '+')
+            api_url = "https://s.search.naver.com/p/cafe/47/search.naver"
 
-            currentPage = 1
+            params = {
+                "ac": 1,
+                "aq": 0,
+                "cafe_where": "",
+                "date_from": startDate,
+                "date_option": 8,
+                "date_to": endDate,
+                "display": 30,
+                "m": 0,
+                "nx_and_query": "",
+                "nx_search_query": "",
+                "nx_sub_query": "",
+                "prdtype": 0,
+                "prmore": 1,
+                "qdt": 1,
+                "query": keyword,
+                "qvt": 1,
+                "spq": 0,
+                "ssc": "tab.cafe.all",
+                "st": "date",
+                "stnm": "date",
+                "_callback": "getCafeContents",
+                "_": "1723354030871"
+            }
+
+            # 첫 데이터는 들어오는 데이터 전처리 필요
+            response = self.Requester(api_url, params=params)
+            json_text = response.text
+            json_text = json_text[16:len(json_text) - 2]
             while True:
-                search_page_url_tmp = search_page_url.format(keyword, startDate, endDate, currentPage)
-                
-                if self.proxy_option == True:
-                    
-                    proxy = {"http": 'http://' + ipList[0], 'https': 'http://' + ipList[0]}
-                    main_page = self.Requester(search_page_url_tmp, proxies = proxy)
-                    if main_page == 0:
-                        ipChange = True
-                        ipList.pop(0)
+                data = json.loads(json_text)
+                soup = BeautifulSoup(data["contents"], 'html.parser')
+                result = soup.select('a[class = "title_link"]')
+                url_list = [a['href'] for a in result]
+
+                for url in url_list:
+                    if url not in urlList and 'https://cafe.naver.com/' in url:
+                        urlList.append(url)
+                        self.IntegratedDB['UrlCnt'] += 1
+
+                if self.print_status_option == True:
+                    self.printStatus('NaverCafe', 2, self.PrintData)
+
+                if data['nextUrl'] == '':
+                    break
                 else:
-                    main_page = self.Requester(search_page_url_tmp)
-                
-                if ipChange == False:
-                    main_page = BeautifulSoup(main_page.text, "lxml") #스크랩 모듈에 url 넘김
-                    site_result = main_page.select('a[class = "title_link"]')
-                    new_urlList = [a['href'] for a in site_result]
-
-                    if new_urlList == [] or set(new_urlList).issubset(set(urlList)) == True:
-                        break
-
-                    for add_link in new_urlList:
-                        if 'naver' in add_link and self.articleIDExtractor(add_link) not in idList and 'book' not in add_link:
-                            urlList.append(add_link)
-                            idList.append(self.articleIDExtractor(add_link))
-                            self.IntegratedDB['UrlCnt'] += 1
-                    
-                    if self.print_status_option == True: 
-                        self.printStatus('NaverCafe', 2, self.PrintData)
-
-                    currentPage += 10
-                else:
-                    currentPage = 1
-                    ipChange = False
-                    urlList = []
-                    idList = []
-                    self.IntegratedDB['UrlCnt'] = 0
-            
-            urlList = list(set(urlList))
+                    api_url = data['nextUrl']
+                    response = self.Requester(api_url)
+                    json_text = response.text
+                    params = {}
 
             returnData = {
                 'urlList': urlList,
@@ -154,7 +160,7 @@ class NaverCafeCrawler(CrawlerModule):
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            return self.error_dump(2020, error_msg, search_page_url_tmp)
+            return self.error_dump(2020, error_msg, api_url)
 
     async def articleCollector(self, cafeURL, session):
         if isinstance(cafeURL, str) == False or self._cafeURLChecker(cafeURL) == False:
