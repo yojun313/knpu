@@ -189,6 +189,7 @@ class Crawler(CrawlerModule):
                 data_df = data_df.sort_values(by=date_column)
 
             token_df = self.tokenization(data_df)
+            print(f'\r{table} DB Inserting...', end='')
             self.mySQL.DataframeToTable(token_df, 'token_'+table)
 
         self.clear_screen()
