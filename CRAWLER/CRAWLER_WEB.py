@@ -14,7 +14,7 @@ option       = int(sys.argv[5])
 keyword      = sys.argv[6]
 upload       = sys.argv[7]
 weboption    = 1
-speed        = 10
+speed        = 3
 
 '''
 name = "문요준"
