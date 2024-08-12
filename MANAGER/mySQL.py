@@ -306,5 +306,6 @@ class mySQL:
 
 if __name__ == "__main__":
     # 사용 예제
-    mySQL_obj = mySQL(host='192.168.0.15', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
-    print(mySQL_obj.showAllDB())
+    mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
+    mySQL_obj.newDB('user_db')
+    mySQL_obj.CSVToTable("D:/BIGMACLAB/youtube_api.csv", 'youtube_api')
