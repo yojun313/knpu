@@ -22,7 +22,7 @@ import socket
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.0.5'
+        self.versionNum = '1.1.0'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()
