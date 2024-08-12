@@ -106,7 +106,7 @@ class NaverNewsCrawler(CrawlerModule):
             while True:
 
                 data = json.loads(json_text)
-                
+
                 for item in data["contents"]:
                     soup = BeautifulSoup(item, 'html.parser')
                     url = naver_links = [a['href'] for a in soup.find_all('a', href=True) if
