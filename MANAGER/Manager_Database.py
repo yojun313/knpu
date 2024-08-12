@@ -216,6 +216,7 @@ class Manager_Database:
                         tableList = [table for table in tableList if 'info' not in table]
                         tableList = sorted(tableList, key=lambda x: ('statistics' not in x, x))
 
+                        self.main.openFileExplorer(dbpath)
                         for tableName in tableList:
                             # 통계 관련 테이블 처리
                             if 'statistics' in tableName:
@@ -237,7 +238,6 @@ class Manager_Database:
                             save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
                             self.main.mySQL_obj.TableToCSV(tableName, save_dir)
 
-                        self.main.openFileExplorer(dbpath)
                         QMessageBox.information(self.main, "Information", f"{target_db}가 성공적으로 저장되었습니다")
 
                     except Exception as e:
