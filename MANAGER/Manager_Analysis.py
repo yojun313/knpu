@@ -267,7 +267,7 @@ class Manager_Analysis:
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
-                QMessageBox.warning(self.main, f"Warning", f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
+                QMessageBox.warning(self.main, f"Warning", f"{selected_directory[1]}는 CSV 파일이 아닙니다")
                 return
             def split_table(csv_path):
                 table_path = os.path.join(os.path.dirname(csv_path), os.path.basename(csv_path).replace('.csv', '') + '_split')
@@ -301,7 +301,7 @@ class Manager_Analysis:
                         return
                     saveTable(os.path.basename(csv_path).replace('.csv', ''), table_path)
 
-            QTimer.singleShot(1, lambda: self.main.printStatus("변환 및 저장 중..."))
+            QTimer.singleShot(1, lambda: self.main.printStatus("데이터 분할 및 저장 중..."))
             self.main.openFileExplorer(os.path.dirname(selected_directory[0]))
             QTimer.singleShot(1000, lambda: main(selected_directory))
             QTimer.singleShot(1000, self.main.printStatus)
@@ -331,21 +331,22 @@ class Manager_Analysis:
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
-                QMessageBox.warning(self.main, f"Warning", f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
+                QMessageBox.warning(self.main, f"Warning", f"{selected_directory[1]}는 CSV 파일이 아닙니다")
                 return
             elif len(selected_directory) < 2:
-                QMessageBox.warning(self.main, f"Warning", "2개 이상의 CSV 파일 선택이 필요합니다.")
+                QMessageBox.warning(self.main, f"Warning", "2개 이상의 CSV 파일 선택이 필요합니다")
                 return
 
-
+            mergedfilename, ok = QInputDialog.getText(None, '파일명 입력', '병합 파일명을 입력하세요:', text='merged_file')
             all_df = [self.main.csvReader(directory) for directory in selected_directory]
             all_columns = [df.columns.tolist() for df in all_df]
             same_check_result = find_different_element_index(all_columns)
             if same_check_result != None:
-                QMessageBox.warning(self.main, f"Warning", f"{os.path.basename(selected_directory[same_check_result])}의 CSV 형태가 다른 파일의 형태와 다릅니다.")
+                QMessageBox.warning(self.main, f"Warning", f"{os.path.basename(selected_directory[same_check_result])}의 CSV 형식이 다른 파일과 일치하지 않습니다")
                 return
 
-            mergedfilename, ok = QInputDialog.getText(None, '파일명 입력', '병합 파일명을 입력하세요:', text='merged_file')
+            self.main.printStatus("")
+
             mergedfiledir      = os.path.dirname(selected_directory[0])
             if ok and mergedfilename:
                 merged_df = pd.DataFrame()

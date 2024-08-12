@@ -65,48 +65,45 @@ class NaverNewsCrawler(CrawlerModule):
                 self.printStatus('NaverNews', 1, self.PrintData)
 
             urlList = []
-            keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(
-                ' ', '+')
+            keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
             api_url = "https://s.search.naver.com/p/newssearch/search.naver"
-            currentPage = 1
+            params = {
+                "de": startDate,
+                "ds": endDate,
+                "eid": "",
+                "field": "0",
+                "force_original": "",
+                "is_dts": "0",
+                "is_sug_officeid": "0",
+                "mynews": "0",
+                "news_office_checked": "",
+                "nlu_query": "",
+                "nqx_theme": "",
+                "nso": "so:r,p:from20240801to20240802,a:all",
+                "nx_and_query": "",
+                "nx_search_hlquery": "",
+                "nx_search_query": "",
+                "nx_sub_query": "",
+                "office_category": "0",
+                "office_section_code": "0",
+                "office_type": "0",
+                "pd": "3",
+                "photo": "0",
+                "query": keyword,
+                "query_original": "",
+                "service_area": "0",
+                "sort": "1",
+                "spq": "0",
+                "start": '1',
+                "where": "news_tab_api",
+                "_callback": "jQuery112406351013586512539_1722744441764",
+                "_": "1722744441765"
+            }
 
+            response = self.Requester(api_url, params=params)
+            jsonp_text = response.text
+            json_text = re.sub(r'^.*?\(', '', jsonp_text)[:-2]
             while True:
-                params = {
-                    "de": startDate,
-                    "ds": endDate,
-                    "eid": "",
-                    "field": "0",
-                    "force_original": "",
-                    "is_dts": "0",
-                    "is_sug_officeid": "0",
-                    "mynews": "0",
-                    "news_office_checked": "",
-                    "nlu_query": "",
-                    "nqx_theme": "",
-                    "nso": "so:r,p:from20240801to20240802,a:all",
-                    "nx_and_query": "",
-                    "nx_search_hlquery": "",
-                    "nx_search_query": "",
-                    "nx_sub_query": "",
-                    "office_category": "0",
-                    "office_section_code": "0",
-                    "office_type": "0",
-                    "pd": "3",
-                    "photo": "0",
-                    "query": keyword,
-                    "query_original": "",
-                    "service_area": "0",
-                    "sort": "1",
-                    "spq": "0",
-                    "start": str(currentPage),
-                    "where": "news_tab_api",
-                    "_callback": "jQuery112406351013586512539_1722744441764",
-                    "_": "1722744441765"
-                }
-
-                response = self.Requester(api_url, params=params)
-                jsonp_text = response.text
-                json_text = re.sub(r'^.*?\(', '', jsonp_text)[:-2]
                 data = json.loads(json_text)
 
                 for item in data["contents"]:
@@ -120,10 +117,15 @@ class NaverNewsCrawler(CrawlerModule):
                 if self.print_status_option == True:
                     self.printStatus('NaverNews', 2, self.PrintData)
 
-                if data['contents'] == []:
+                if data['nextUrl'] == '':
+                    for i in urlList:
+                        print(i)
                     break
-
-                currentPage += 10
+                else:
+                    api_url = data['nextUrl']
+                    response = self.Requester(api_url)
+                    json_text = response.text
+                    params = {}
 
             returnData = {
                 'urlList': urlList,
