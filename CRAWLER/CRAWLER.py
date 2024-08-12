@@ -313,6 +313,7 @@ class Crawler(CrawlerModule):
                             self.DBinfoRecorder(False, True)
                             self.localDBRemover()
                             os._exit(1)
+                        self.currentDate += self.deltaD
                         continue
                     self.urlList = urlList_returnData['urlList']
 
@@ -400,6 +401,7 @@ class Crawler(CrawlerModule):
                             self.DBinfoRecorder(False, True)
                             self.localDBRemover()
                             os._exit(1)
+                        self.currentDate += self.deltaD
                         continue
 
                     self.urlList = urlList_returnData['urlList']
@@ -473,6 +475,7 @@ class Crawler(CrawlerModule):
                             self.DBinfoRecorder(False, True)
                             self.localDBRemover()
                             os._exit(1)
+                        self.currentDate += self.deltaD
                         continue
 
                     self.urlList = urlList_returnData['urlList']
@@ -551,6 +554,7 @@ class Crawler(CrawlerModule):
                             self.DBinfoRecorder(False, True)
                             self.localDBRemover()
                             os._exit(1)
+                        self.currentDate += self.deltaD
                         continue
 
                     self.urlList = urlList_returnData['urlList']
