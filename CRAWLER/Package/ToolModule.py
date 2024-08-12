@@ -28,7 +28,7 @@ class ToolModule:
             token_path          = crawler_folder_path
             computer_name       = "Yojun's MacBook Pro"
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
-            mySQL_obj = mySQL(host='localhost', user='root', password='kingsman', port=3306)
+            mySQL_obj = mySQL(host='192.168.0.15', user='root', password='kingsman', port=3306)
                
         elif socket.gethostname() == "DESKTOP-502IMU5":
             crawler_folder_path = 'C:/BIGMACLAB/CRAWLER'
@@ -36,7 +36,7 @@ class ToolModule:
             token_path          = crawler_folder_path
             computer_name       = 'HP OMEN'
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
-            mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
+            mySQL_obj = mySQL(host='192.168.0.15', user='admin', password='bigmaclab2022!', port=3306)
 
         elif socket.gethostname() == "DESKTOP-0I9OM9K":
             crawler_folder_path = 'D:/BIGMACLAB/CRAWLER'
@@ -44,7 +44,7 @@ class ToolModule:
             token_path          = crawler_folder_path
             computer_name       = 'HP Z8'
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
-            mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
+            mySQL_obj = mySQL(host='192.168.0.15', user='admin', password='bigmaclab2022!', port=3306)
         
         elif socket.gethostname() == "BigMacServer":
             crawler_folder_path = "D:/BIGMACLAB/CRAWLER"
