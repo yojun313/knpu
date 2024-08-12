@@ -41,9 +41,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         DB_ip = '121.152.225.232'
         if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
-            DB_ip = '192.168.0.15'
+            DB_ip = '192.168.0.3'
 
-        self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='bigmaclab2022!', port=3306,database='User_DB')
+        self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='bigmaclab2022!', port=3306, database='User_DB')
 
         # 사이드바 연결
         def load_program():
