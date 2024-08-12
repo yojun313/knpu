@@ -18,7 +18,7 @@ import requests
 from packaging import version
 import pandas as pd
 from os import environ
-
+import socket
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -39,7 +39,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # 스타일시트 적용
         self.setStyle()
 
-        self.mySQL_obj = mySQL(host='REDACTED_IP', user='admin', password='***REMOVED***', port=3306,database='User_DB')
+        DB_ip = 'REDACTED_IP'
+        if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
+            DB_ip = '192.168.0.15'
+
+        self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='***REMOVED***', port=3306,database='User_DB')
 
         # 사이드바 연결
         def load_program():
