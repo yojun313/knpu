@@ -102,10 +102,11 @@ class NaverNewsCrawler(CrawlerModule):
 
             response = self.Requester(api_url, params=params)
             jsonp_text = response.text
-            json_text = re.sub(r'^.*?\(', '', jsonp_text)[:-2]
+            json_text = jsonp_text[42:len(jsonp_text)-2]
             while True:
-                data = json.loads(json_text)
 
+                data = json.loads(json_text)
+                
                 for item in data["contents"]:
                     soup = BeautifulSoup(item, 'html.parser')
                     url = naver_links = [a['href'] for a in soup.find_all('a', href=True) if
@@ -125,7 +126,6 @@ class NaverNewsCrawler(CrawlerModule):
                     api_url = data['nextUrl']
                     response = self.Requester(api_url)
                     json_text = response.text
-                    params = {}
 
             returnData = {
                 'urlList': urlList,

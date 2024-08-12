@@ -345,9 +345,10 @@ class Manager_Analysis:
                 QMessageBox.warning(self.main, f"Warning", f"{os.path.basename(selected_directory[same_check_result])}의 CSV 형식이 다른 파일과 일치하지 않습니다")
                 return
 
-            self.main.printStatus("")
+            self.main.printStatus("데이터 병합 중...")
 
             mergedfiledir      = os.path.dirname(selected_directory[0])
+            self.main.openFileExplorer(mergedfiledir)
             if ok and mergedfilename:
                 merged_df = pd.DataFrame()
 
@@ -355,7 +356,9 @@ class Manager_Analysis:
                     merged_df = pd.concat([merged_df, df], ignore_index=True)
 
                 merged_df.to_csv(os.path.join(mergedfiledir, mergedfilename)+'.csv', index=False, encoding='utf-8-sig')
-                self.main.openFileExplorer(mergedfiledir)
+
+            self.main.printStatus()
+
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
