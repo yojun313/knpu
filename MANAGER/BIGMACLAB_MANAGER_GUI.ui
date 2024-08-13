@@ -380,27 +380,6 @@
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="tab_freeboard">
-           <attribute name="title">
-            <string>자유게시판</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_tab_2">
-            <item>
-             <widget class="QTableWidget" name="tableWidget"/>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_4">
-              <item>
-               <widget class="QPushButton" name="pushButton_2">
-                <property name="text">
-                 <string>PushButton</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
          </widget>
         </item>
        </layout>
@@ -506,7 +485,7 @@
      <x>0</x>
      <y>0</y>
      <width>1069</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

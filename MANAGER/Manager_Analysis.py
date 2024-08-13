@@ -123,7 +123,6 @@ class Manager_Analysis:
                     except Exception as e:
                         QMessageBox.critical(self.main, "Error", f"Failed to save splited database: {str(e)}")
                 else:
-                    QMessageBox.warning(self.main, "Warning", "No directory selected.")
                     return 0,0,0
             def splitTable(table, splitdata_path):
                 table_path = os.path.join(splitdata_path, table + '_split')
@@ -192,11 +191,12 @@ class Manager_Analysis:
                     except Exception as e:
                         QMessageBox.critical(self.main, "Error", f"Failed to save splited database: {str(e)}")
                 else:
-                    QMessageBox.warning(self.main, "Warning", "No directory selected.")
                     return 0,0,0
             def main(tableList, analysisdata_path):
 
                 for index, table in enumerate(tableList):
+                    if 'token' in table:
+                        continue
                     tablename = table.split('_')
                     tabledf = self.main.mySQL_obj.TableToDataframe(table)
 
@@ -481,7 +481,6 @@ class Manager_Analysis:
                 QMessageBox.information(self.main, "Information", f"{self.csv_name} 토큰화가 완료되었습니다\n\n데이터를 저장할 위치를 선택하세요")
                 save_path = QFileDialog.getExistingDirectory(self.main, "데이터를 저장할 위치를 선택하세요", self.csv_path)
                 if save_path == '':
-                    QMessageBox.warning(self.main, "Warning", "No directory selected.")
                     return
 
                 self.main.openFileExplorer(save_path)
@@ -545,14 +544,13 @@ class Manager_Analysis:
         QMessageBox.information(self.main, "Information", f"KEM KIM 데이터를 저장할 위치를 선택하세요")
         save_path = QFileDialog.getExistingDirectory(self.main, "데이터를 저장할 위치를 선택하세요", self.main.default_directory)
         if save_path == '':
-            QMessageBox.warning(self.main, "Warning", "No directory selected.")
             return
 
         while True:
             dialog = KimKemInputDialog()
             dialog.exec_()
             try:
-                if dialog.data['startyear'] == '' or dialog.data['topword'] == '':
+                if dialog.data == None:
                     return
                 startyear = int(dialog.data['startyear'])
                 topword = int(dialog.data['topword'])
