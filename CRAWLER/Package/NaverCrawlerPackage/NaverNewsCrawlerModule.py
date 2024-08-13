@@ -106,7 +106,6 @@ class NaverNewsCrawler(CrawlerModule):
             jsonp_text = response.text
             json_text = jsonp_text[42:len(jsonp_text)-2]
             while True:
-
                 data = json.loads(json_text)
 
                 for item in data["contents"]:
@@ -125,6 +124,10 @@ class NaverNewsCrawler(CrawlerModule):
                     api_url = data['nextUrl']
                     response = self.Requester(api_url)
                     json_text = response.text
+                    try:
+                        data = json.loads(json_text)
+                    except:
+                        json_text = json_text[42:len(jsonp_text)-2]
 
             returnData = {
                 'urlList': urlList,
