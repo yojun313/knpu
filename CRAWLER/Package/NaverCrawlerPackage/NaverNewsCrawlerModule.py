@@ -101,6 +101,8 @@ class NaverNewsCrawler(CrawlerModule):
             }
 
             response = self.Requester(api_url, params=params)
+            if self.RequesterChecker(response) == False:
+                return response
             jsonp_text = response.text
             json_text = jsonp_text[42:len(jsonp_text)-2]
             while True:

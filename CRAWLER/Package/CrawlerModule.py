@@ -213,19 +213,6 @@ class CrawlerModule(ToolModule):
         try:
             if headers == {}:
                 headers = self.random_heador()
-                
-            # 프록시를 별도로 지정해서 줬을 때 (네이버 카페 url 수집 전용)
-            if proxies != {}:
-                trynum = 0
-                while True:
-                    if trynum >= 3:
-                        return 0
-                    try:
-                        main_page = requests.get(url, proxies = proxies, verify = False, timeout = 3)
-                        return main_page
-                    except Exception as e:
-                        pass
-                    trynum += 1
 
             if self.proxy_option == True:
                 trynum = 0
@@ -237,7 +224,6 @@ class CrawlerModule(ToolModule):
                     except Exception as e:
                         if trynum >= 100:
                             return self.error_dump(1001, self.error_detector(), url)
-
                         trynum += 1
             else:
                 return requests.get(url, headers = headers, params = params, verify = False)
