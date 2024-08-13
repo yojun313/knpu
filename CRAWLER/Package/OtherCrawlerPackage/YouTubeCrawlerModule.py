@@ -54,7 +54,7 @@ class YouTubeCrawler(CrawlerModule):
                     keyword, site, startDate, endDate, currentPage)
                 header = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-                cookie = {'CONSENT': 'YES'}
+                cookie = {'CONSENT': 'YES'} 
 
                 main_page = self.Requester(search_page_url, headers=header, cookies=cookie)
                 if self.RequesterChecker(main_page) == False:

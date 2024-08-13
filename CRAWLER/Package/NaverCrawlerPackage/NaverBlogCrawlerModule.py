@@ -80,6 +80,8 @@ class NaverBlogCrawler(CrawlerModule):
 
             while True:
                 response = self.Requester(api_url, params=params)
+                if self.RequesterChecker(response) == False:
+                    return response
                 json_text = response.text
                 data = json.loads(json_text)
 

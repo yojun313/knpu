@@ -127,6 +127,8 @@ class NaverCafeCrawler(CrawlerModule):
 
             # 첫 데이터는 들어오는 데이터 전처리 필요
             response = self.Requester(api_url, params=params)
+            if self.RequesterChecker(response) == False:
+                return response
             json_text = response.text
             json_text = json_text[16:len(json_text) - 2]
             while True:
