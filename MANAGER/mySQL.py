@@ -28,6 +28,17 @@ class mySQL:
             else:
                 print(f"Failed to connect to MySQL server on host:{self.host} with user:{self.user}")
             print(str(e))
+    
+    def disconnectDB(self):
+        try:
+            if self.conn:
+                self.conn.close()
+            self.connectDB('')
+        except Exception as e:
+            print(f"Failed to close the connection to database {self.database}")
+            print(str(e))
+        finally:
+            self.conn = None
 
     def resetServer(self):
         DBlist = self.showAllDB()
@@ -93,6 +104,7 @@ class mySQL:
 
     def dropTable(self, tableName):
         try:
+            self.disconnectDB()
             with self.conn.cursor() as cursor:
                 cursor.execute(f"DROP TABLE IF EXISTS {tableName}")
                 self.conn.commit()
@@ -307,5 +319,5 @@ class mySQL:
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
-    mySQL_obj.newDB('user_db')
-    mySQL_obj.CSVToTable("D:/BIGMACLAB/youtube_api.csv", 'youtube_api')
+    print(mySQL_obj.showAllDB())
+    mySQL_obj.dropDB('naverblog_대통령_20100101_20231231_0813_0919')
