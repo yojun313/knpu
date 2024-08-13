@@ -172,10 +172,7 @@ class NaverBlogCrawler(CrawlerModule):
                     date = f"{year}-{month}-{day}"
 
                 if article == "":
-                    trynum += 1
-                    if trynum == 5:
-                        return returnData
-                    continue
+                    return returnData
 
                 article_data["blog_ID"]      = str(blogID)
                 article_data["url"]          = str(original_url)
@@ -198,6 +195,7 @@ class NaverBlogCrawler(CrawlerModule):
                 return returnData
         
         except Exception:
+            print("error")
             error_msg  = self.error_detector(self.error_detector_option)
             return self.error_dump(2015, error_msg, blogURL)
     
@@ -394,7 +392,7 @@ async def asyncTester():
 
     if number == 1:
         print("\nNaverBlogCrawler_urlCollector: ", end='')
-        urlList_returnData = CrawlerPackage_obj.urlCollector("대통령", 20240601, 20240601)
+        urlList_returnData = CrawlerPackage_obj.urlCollector("포항공대", 20100101, 20100101)
         urlList = urlList_returnData['urlList']
 
         results = await CrawlerPackage_obj.asyncMultiCollector(urlList, option)
