@@ -286,8 +286,10 @@ class Manager_Database:
                     if selected_options == {}:
                         self.main.printStatus()
                         return
-
-                    self.main.printStatus(f"{replace_dates_in_filename(target_db, selected_options['start_date'], selected_options['end_date'])} 저장 중...")
+                    if selected_options['option'] == 'part':
+                        self.main.printStatus(f"{replace_dates_in_filename(target_db, selected_options['start_date'], selected_options['end_date'])} 저장 중...")
+                    else:
+                        self.main.printStatus(f"{target_db} 저장 중...")
                     QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options))
                     QTimer.singleShot(1000, self.main.printStatus)
 
@@ -348,7 +350,7 @@ class Manager_Database:
                         save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
                         tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
 
-                    QMessageBox.information(self.main, "Information", f"{replace_dates_in_filename(target_db, start_date, end_date)}가 성공적으로 저장되었습니다")
+                    QMessageBox.information(self.main, "Information", f"{edited_tableName}가 성공적으로 저장되었습니다")
 
                 except Exception as e:
                     QMessageBox.critical(self.main, "Error", f"Failed to save database: {str(e)}")

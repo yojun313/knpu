@@ -52,7 +52,8 @@ class Manager_User:
                 reply = QMessageBox.question(self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
-                    self.main.mySQL_obj.insertToTable(tableName='user_info', data_list=[name, email, key])
+                    self.main.mySQL_obj.connectDB('user_db')
+                    self.main.mySQL_obj.insertToTable(tableName='user_info', data_list=[[name, email, key]])
                     self.main.mySQL_obj.commit()
                     self.userNameList.append(name)
 
