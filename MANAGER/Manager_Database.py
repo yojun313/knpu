@@ -1,9 +1,10 @@
 import os
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog
-from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QDialog, QInputDialog, QDialogButtonBox, QRadioButton, QLabel, QFormLayout, QLineEdit
+from PyQt5.QtCore import QTimer, QDate
+import pandas as pd
 import copy
-
+import re
 class TableWindow(QMainWindow):
     def __init__(self, parent=None, target_db=None):
         super(TableWindow, self).__init__(parent)
@@ -128,16 +129,18 @@ class Manager_Database:
 
     def database_view_DB(self):
         try:
-            self.main.printStatus("불러오는 중...")
-            def load_database():
-                selected_row = self.main.database_tablewidget.currentRow()
-                if selected_row >= 0:
-                    target_DB = self.DB['DBlist'][selected_row]
-                    self.DBtable_window = TableWindow(self.main, target_DB)
-                    self.DBtable_window.show()
+            reply = QMessageBox.question(self.main, 'Confirm Delete', 'DB 조회는 로딩 시 많은 시간이 소요됩니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.main.printStatus("불러오는 중...")
+                def load_database():
+                    selected_row = self.main.database_tablewidget.currentRow()
+                    if selected_row >= 0:
+                        target_DB = self.DB['DBlist'][selected_row]
+                        self.DBtable_window = TableWindow(self.main, target_DB)
+                        self.DBtable_window.show()
 
-            QTimer.singleShot(1, load_database)
-            QTimer.singleShot(1, self.main.printStatus)
+                QTimer.singleShot(1, load_database)
+                QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
@@ -179,73 +182,177 @@ class Manager_Database:
 
     def database_save_DB(self):
         try:
+            class OptionDialog(QDialog):
+                def __init__(self):
+                    super().__init__()
+                    self.setWindowTitle('Select Options')
+                    self.resize(250, 150)  # 너비 400, 높이 300
+
+                    # 다이얼로그 레이아웃
+                    self.layout = QVBoxLayout()
+
+                    # 라디오 버튼 그룹 생성
+                    self.radio_all = QRadioButton('전체 기간')
+                    self.radio_custom = QRadioButton('기간 설정')
+                    self.radio_all.setChecked(True)  # 기본으로 "전체 저장" 선택
+
+                    self.layout.addWidget(QLabel('Choose Option:'))
+                    self.layout.addWidget(self.radio_all)
+                    self.layout.addWidget(self.radio_custom)
+
+                    # 기간 입력 폼 (처음엔 숨김)
+                    self.date_input_form = QWidget()
+                    self.date_input_form_layout = QFormLayout()
+
+                    self.start_date_input = QLineEdit()
+                    self.start_date_input.setPlaceholderText('YYYYMMDD')
+                    self.end_date_input = QLineEdit()
+                    self.end_date_input.setPlaceholderText('YYYYMMDD')
+
+                    self.date_input_form_layout.addRow('시작 날짜:', self.start_date_input)
+                    self.date_input_form_layout.addRow('종료 날짜:', self.end_date_input)
+                    self.date_input_form.setLayout(self.date_input_form_layout)
+                    self.date_input_form.setVisible(False)
+
+                    self.layout.addWidget(self.date_input_form)
+
+                    # 다이얼로그의 OK/Cancel 버튼
+                    self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+                    self.button_box.accepted.connect(self.accept)
+                    self.button_box.rejected.connect(self.reject)
+
+                    self.layout.addWidget(self.button_box)
+
+                    self.setLayout(self.layout)
+
+                    # 신호 연결
+                    self.radio_custom.toggled.connect(self.toggle_date_input)
+
+                def toggle_date_input(self, checked):
+                    # "기간 설정" 라디오 버튼이 선택되면 날짜 입력 필드 표시
+                    self.date_input_form.setVisible(checked)
+
+                def accept(self):
+                    # 확인 버튼을 눌렀을 때 데이터 유효성 검사
+                    if self.radio_custom.isChecked():
+                        date_format = "yyyyMMdd"
+                        start_date = QDate.fromString(self.start_date_input.text(), date_format)
+                        end_date = QDate.fromString(self.end_date_input.text(), date_format)
+
+                        if not (start_date.isValid() and end_date.isValid()):
+                            QMessageBox.warning(self, '날짜 오류', '잘못된 날짜 형식입니다.')
+                            return  # 확인 동작을 취소함
+
+                    super().accept()  # 정상적인 경우에만 다이얼로그를 종료함
+
+            def replace_dates_in_filename(filename, new_start_date, new_end_date):
+                pattern = r"_(\d{8})_(\d{8})_"
+                new_filename = re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
+                return new_filename
+
             def select_database():
                 selected_row = self.main.database_tablewidget.currentRow()
                 if not selected_row >= 0:
                     return
+                self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
                 target_db = self.DB['DBlist'][selected_row]
                 folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
                 if folder_path == '':
-                    QMessageBox.warning(self.main, "Warning", "No directory selected.")
+                    self.main.printStatus()
                     return
                 if folder_path:
-                    self.main.printStatus(f"{target_db} 저장 중...")
-                QTimer.singleShot(1000, lambda: save_database(target_db, folder_path))
-                QTimer.singleShot(1000, self.main.printStatus)
+                    dialog = OptionDialog()
+                    selected_options = {}
+                    if dialog.exec_() == QDialog.Accepted:
+                        # 선택된 라디오 버튼 확인
+                        if dialog.radio_all.isChecked():
+                            selected_options['option'] = 'all'
+                        elif dialog.radio_custom.isChecked():
+                            selected_options['option'] = 'part'
 
-            def save_database(target_db, folder_path):
-                # 선택된 경로가 있는지 확인
+                        # 기간 설정이 선택된 경우, 입력된 날짜 가져오기
+                        if selected_options['option'] == 'part':
+                            date_format = "yyyyMMdd"
+                            start_date = QDate.fromString(dialog.start_date_input.text(), date_format)
+                            end_date = QDate.fromString(dialog.end_date_input.text(), date_format)
 
-                if folder_path:
-                    try:
-                        dbpath = os.path.join(folder_path, target_db)
+                            if start_date.isValid() and end_date.isValid():
+                                selected_options['start_date'] = start_date.toString(date_format)
+                                selected_options['end_date'] = end_date.toString(date_format)
+                            else:
+                                QMessageBox.warning(dialog, '날짜 오류', '잘못된 날짜 형식입니다.')
+                                selected_options['option'] = None  # 잘못된 날짜가 입력된 경우 선택 옵션을 None으로 설정
 
-                        while True:
-                            try:
-                                os.mkdir(dbpath)
-                                os.mkdir(os.path.join(dbpath, 'token_data'))
-                                break
-                            except:
-                                dbpath += "_copy"
+                    if selected_options == {}:
+                        self.main.printStatus()
+                        return
 
+                    self.main.printStatus(f"{replace_dates_in_filename(target_db, selected_options['start_date'], selected_options['end_date'])} 저장 중...")
+                    QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options))
+                    QTimer.singleShot(1000, self.main.printStatus)
 
-                        statisticsURL = []
+            def save_database(target_db, folder_path, selected_options):
 
-                        self.main.mySQL_obj.connectDB(target_db)
-                        tableList = self.main.mySQL_obj.showAllTable(target_db)
-                        tableList = [table for table in tableList if 'info' not in table]
-                        tableList = sorted(tableList, key=lambda x: ('statistics' not in x, x))
+                dbpath = os.path.join(folder_path, target_db)
+                if selected_options['option'] == 'part':
+                    start_date = selected_options['start_date']
+                    end_date = selected_options['end_date']
 
-                        self.main.openFileExplorer(dbpath)
-                        for tableName in tableList:
-                            # 통계 관련 테이블 처리
-                            if 'statistics' in tableName:
-                                statisticsDF = self.main.mySQL_obj.TableToDataframe(tableName)
-                                statisticsURL = statisticsDF['Article URL'].tolist()
-                                filename = tableName.replace('statistics', 'article_statistics')
-                                save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{filename}.csv")
-                                statisticsDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
-                                continue
+                    start_date_formed = pd.to_datetime(start_date, format='%Y%m%d')
+                    end_date_formed = pd.to_datetime(end_date, format='%Y%m%d')
+                    dbpath = os.path.join(folder_path, replace_dates_in_filename(target_db, start_date, end_date))
 
-                            # 통계 URL이 있고, reply가 포함된 테이블 처리
-                            elif 'reply' in tableName and statisticsURL:
-                                targetDF = self.main.mySQL_obj.TableToDataframe(tableName)
-                                filteredDF = targetDF[targetDF['Article URL'].isin(statisticsURL)]
-                                save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{tableName + '_statistics'}.csv")
-                                filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
+                try:
+                    while True:
+                        try:
+                            os.mkdir(dbpath)
+                            os.mkdir(os.path.join(dbpath, 'token_data'))
+                            break
+                        except:
+                            dbpath += "_copy"
 
-                            # 기타 테이블 처리
-                            save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
-                            self.main.mySQL_obj.TableToCSV(tableName, save_dir)
+                    statisticsURL = []
 
-                        QMessageBox.information(self.main, "Information", f"{target_db}가 성공적으로 저장되었습니다")
+                    self.main.mySQL_obj.connectDB(target_db)
+                    tableList = self.main.mySQL_obj.showAllTable(target_db)
+                    tableList = [table for table in tableList if 'info' not in table]
+                    tableList = sorted(tableList, key=lambda x: ('statistics' not in x, x))
 
-                    except Exception as e:
-                        QMessageBox.critical(self.main, "Error", f"Failed to save database: {str(e)}")
-                else:
-                    pass
+                    self.main.openFileExplorer(dbpath)
+                    for tableName in tableList:
+                        edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
 
-            self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
+                        # 테이블 데이터를 DataFrame으로 변환
+                        tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
+                        target = next((column for column in tableDF.columns if 'Date' in column), None)
+                        tableDF[target] = pd.to_datetime(tableDF[target])
+
+                        # 기간 저장 옵션이 선택된 경우, 날짜 범위로 필터링
+                        if selected_options['option'] == 'part':
+                            tableDF = tableDF[(tableDF[target] >= start_date_formed) & (tableDF[target] <= end_date_formed)]
+
+                        # statistics 테이블 처리
+                        if 'statistics' in tableName:
+                            statisticsURL = tableDF['Article URL'].tolist()
+                            save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
+                            tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
+                            continue
+
+                        # reply 테이블 처리
+                        if 'reply' in tableName and 'statisticsURL' in locals():
+                            filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
+                            save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
+                            filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
+
+                        # 기타 테이블 처리
+                        save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
+                        tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
+
+                    QMessageBox.information(self.main, "Information", f"{replace_dates_in_filename(target_db, start_date, end_date)}가 성공적으로 저장되었습니다")
+
+                except Exception as e:
+                    QMessageBox.critical(self.main, "Error", f"Failed to save database: {str(e)}")
+
             select_database()
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")

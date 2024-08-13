@@ -22,7 +22,7 @@ import socket
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.1.1'
+        self.versionNum = '1.1.2'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()
@@ -31,7 +31,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
         self.setGeometry(0, 0, 1400, 900)
-        self.menubar_init()
+        #self.menubar_init()
         self.statusBar_init()
         self.admin_password = 'kingsman'
         self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
