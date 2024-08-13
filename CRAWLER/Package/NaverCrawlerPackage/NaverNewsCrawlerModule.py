@@ -111,8 +111,7 @@ class NaverNewsCrawler(CrawlerModule):
 
                 for item in data["contents"]:
                     soup = BeautifulSoup(item, 'html.parser')
-                    url = naver_links = [a['href'] for a in soup.find_all('a', href=True) if
-                                         a['href'].startswith('https://n.news.naver.com')]
+                    url = [a['href'] for a in soup.find_all('a', href=True) if a['href'].startswith('https://n.news.naver.com')]
                     if url != [] and url[0] not in urlList and 'sid=106' not in url[0]:
                         urlList.append(url[0])
                         self.IntegratedDB['UrlCnt'] += 1
@@ -121,8 +120,6 @@ class NaverNewsCrawler(CrawlerModule):
                     self.printStatus('NaverNews', 2, self.PrintData)
 
                 if data['nextUrl'] == '':
-                    for i in urlList:
-                        print(i)
                     break
                 else:
                     api_url = data['nextUrl']
