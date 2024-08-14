@@ -56,7 +56,7 @@ class TableWindow(QMainWindow):
         self.tabWidget_tables.clear()  # 기존 탭 내용 초기화
 
         for tableName in tableNameList:
-            if 'info' in tableName:
+            if 'info' in tableName or 'token' in tableName:
                 continue
             tableDF = mySQL_obj.TableToDataframe(tableName)
 
