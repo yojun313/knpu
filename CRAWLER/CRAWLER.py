@@ -201,7 +201,10 @@ class Crawler(CrawlerModule):
         endtime   = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
         crawltime = str(timedelta(seconds=int(time.time() - self.startTime)))
 
+        IntegratedDB = self.printStatus('1', finish=True)
+
         text = f'\n크롤링 시작: {starttime}' + f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
+        text = f'\n\nArticle: {IntegratedDB['TotalArticleCnt']}' + f'\nReply: {IntegratedDB['TotalReplyCnt']}' + f'\nRereply: {IntegratedDB['TotalRereplyCnt']}'
         if self.upload == True:
             driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
             text += f'\n\n크롤링 데이터: {driveURL}'

@@ -84,6 +84,11 @@ class CrawlerModule(ToolModule):
 
     def printStatus(self, type, option = 1, printData = {}, finish = False):
 
+        if finish == True:
+            self.live.stop()
+            self.live = None
+            return self.IntegratedDB
+
         WHITE = "\033[37m"
         YELLOW = "\033[33m"
         CYAN = "\033[36m"
@@ -178,9 +183,6 @@ class CrawlerModule(ToolModule):
             if self.live is not None:
                 self.live.update(table)
 
-            if finish == True:
-                self.live.stop()
-                self.live = None
 
     def error_dump(self, code, msg, target):
         error_data = {
