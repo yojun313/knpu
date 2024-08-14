@@ -19,10 +19,11 @@ from packaging import version
 import pandas as pd
 from os import environ
 import socket
+import gc
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.1.3'
+        self.versionNum = '1.1.4'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()
@@ -343,6 +344,7 @@ class MainWindow(QtWidgets.QMainWindow):
         elif index == 3:
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
             pass
+        gc.collect()
 
     def admin_check(self):
         input_dialog = QInputDialog(self)
