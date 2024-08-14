@@ -72,8 +72,8 @@ class TableWindow(QMainWindow):
         for tableName in tableNameList:
             if 'info' in tableName or 'token' in tableName:
                 continue
-            tableDF_begin = mySQL_obj.TableToDataframe(tableName, ':100')
-            tableDF_end = mySQL_obj.TableToDataframe(tableName, ':-100')
+            tableDF_begin = mySQL_obj.TableToDataframe(tableName, ':50')
+            tableDF_end = mySQL_obj.TableToDataframe(tableName, ':-50')
             tableDF = pd.concat([tableDF_begin, tableDF_end], axis = 0)
 
             # 데이터프레임 값을 튜플 형태의 리스트로 변환
