@@ -1,77 +1,30 @@
-import sys
-import time
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtWidgets import QApplication, QWidget, QProgressBar, QPushButton, QVBoxLayout, QLabel
+import requests
+import re
+response = requests.get('https://s.search.naver.com/p/newssearch/search.naver?de=2024.07.14&ds=2024.07.14&eid=&field=0&force_original=&is_dts=0&is_sug_officeid=0&mynews=0&news_office_checked=&nlu_query=&nqx_theme=&nso=%26nso%3Dso%3Add%2Cp%3Afrom20240714to20240714%2Ca%3Aall&nx_and_query=&nx_search_hlquery=&nx_search_query=&nx_sub_query=&office_category=0&office_section_code=0&office_type=0&pd=3&photo=0&query=%EC%98%AC%EB%A6%BC%ED%94%BD&query_original=&service_area=0&sort=1&spq=0&start=121&where=news_tab_api&nso=so:dd,p:from20240714to20240714,a:all?de=2024.07.14&ds=2024.07.14&eid=&field=0&force_original=&is_dts=0&is_sug_officeid=0&mynews=0&news_office_checked=&nlu_query=&nqx_theme=&nso=so%3Ar%2Cp%3Afrom20240801to20240802%2Ca%3Aall&nx_and_query=&nx_search_hlquery=&nx_search_query=&nx_sub_query=&office_category=0&office_section_code=0&office_type=0&pd=3&photo=0&query=%EC%98%AC%EB%A6%BC%ED%94%BD&query_original=&service_area=0&sort=1&spq=0&start=1&where=news_tab_api&_callback=jQuery112406351013586512539_1722744441764&_=1722744441765')
+text = response.text
+def extract_naver_urls(text):
+    # 정규식 패턴 정의 (조금 더 일반화된 형태로)
+    pattern = r'https://n\.news\.naver\.com/mnews/article/\d+/\d+\?sid=\d+'
+
+    # 정규식으로 모든 매칭되는 패턴 찾기
+    urls = re.findall(pattern, text)
+
+    return urls
 
 
-class Worker(QThread):
-    # 작업의 진행 상황을 전달하기 위한 신호
-    progress = pyqtSignal(int)
+def extract_nexturl(text):
+    # 정규식 패턴 정의
+    pattern = r'https://s\.search\.naver\.com/p/newssearch/search\.naver\?.*'
 
-    def __init__(self, task_func, *args, **kwargs):
-        super().__init__()
-        self.task_func = task_func  # 작업 함수 저장
-        self.args = args  # 작업 함수의 인자
-        self.kwargs = kwargs  # 작업 함수의 키워드 인자
+    # 정규식으로 매칭되는 패턴 찾기
+    match = re.search(pattern, text)
 
-    def run(self):
-        # 작업 함수를 실행하고, 진행 상황을 전달
-        self.task_func(self, *self.args, **self.kwargs)
+    if match:
+        return match.group(0)[:-1].replace('}', '').replace(')', '')  # 매칭된 패턴과 그 뒤의 모든 문자열을 반환
+    else:
+        return None
 
-
-class LoadingBarExample(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-
-    def initUI(self):
-        layout = QVBoxLayout()
-
-        self.progress = QProgressBar(self)
-        self.progress.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.progress)
-
-        self.label = QLabel('Progress:', self)
-        layout.addWidget(self.label)
-
-        self.btn = QPushButton('Start', self)
-        self.btn.clicked.connect(self.startTask)
-        layout.addWidget(self.btn)
-
-        self.setLayout(layout)
-
-        self.setWindowTitle('Loading Bar with Background Task')
-        self.setGeometry(300, 300, 280, 170)
-
-    def startTask(self):
-        # Worker 인스턴스에 실행할 작업 함수와 인자들을 전달
-        arg1 = 10  # 첫 번째 추가 인자
-        arg2 = 2   # 두 번째 추가 인자
-        arg3 = 5   # 세 번째 추가 인자
-        self.worker = Worker(self.someLongTask, arg1, arg2, arg3)
-        self.worker.progress.connect(self.updateProgress)
-        self.worker.start()
-        self.btn.setEnabled(False)  # 작업 중에 버튼 비활성화
-
-    def updateProgress(self, value):
-        self.progress.setValue(value)
-        self.label.setText(f'Progress: {value}%')
-        if value == 100:
-            self.btn.setEnabled(True)  # 작업 완료 후 버튼 활성화
-            self.label.setText('Task Completed!')
-
-    def someLongTask(self, worker, increment, multiplier, decrement):
-        # 복잡한 작업을 시뮬레이션 (여기서는 세 개의 추가 인자를 사용)
-        for i in range(1, 101):
-            time.sleep(0.1)  # 작업의 일부를 처리 (시간 지연)
-            progress_value = (i + increment) * multiplier - decrement
-            worker.progress.emit(progress_value)  # 진행 상황을 전달 (세 개의 인자 사용)
-            if progress_value >= 100:
-                break
+result = extract_url_and_following_text(text)
+print(result)
 
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = LoadingBarExample()
-    ex.show()
-    sys.exit(app.exec_())
