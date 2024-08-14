@@ -162,15 +162,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 crawlcom = db_info[6]
                 crawlspeed = db_info[7]
                 IntegratedDB = db_info[8]
-                currentDB['DBinfo'].append([crawlcom, crawlspeed, IntegratedDB])
+                currentDB['DBinfo'].append((crawlcom, crawlspeed, IntegratedDB))
             except:
                 keyword = db_split[1]
-                currentDB['DBinfo'].append(['', '', ''])
+                currentDB['DBinfo'].append(('', '', ''))
 
             currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester))
 
         db_data = currentDB['DBdata']
         db_list = currentDB['DBlist']
+        db_info = currentDB['DBinfo']
 
         # 다섯 번째 요소를 datetime 객체로 변환하여 정렬
         sorted_indices = sorted(range(len(db_data)), key=lambda i: parse_date(db_data[i][5]), reverse=True)
@@ -178,10 +179,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # 정렬된 순서대로 새로운 리스트 생성
         sorted_db_data = [db_data[i] for i in sorted_indices]
         sorted_db_list = [db_list[i] for i in sorted_indices]
+        sorted_db_info = [db_info[i] for i in sorted_indices]
 
-        return {'DBdata': sorted_db_data, 'DBlist': sorted_db_list}
+        return {'DBdata': sorted_db_data, 'DBlist': sorted_db_list, 'DBinfo': sorted_db_info}
 
-    def table_maker(self, widgetname, data, column):
+    def table_maker(self, widgetname, data, column, right_click_function = None):
         widgetname.setRowCount(len(data))
         widgetname.setColumnCount(len(column))
         widgetname.setHorizontalHeaderLabels(column)
@@ -194,6 +196,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 item = QTableWidgetItem(cell_data)
                 item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
                 widgetname.setItem(i, j, item)
+
+        if right_click_function:
+            widgetname.setContextMenuPolicy(Qt.CustomContextMenu)
+            widgetname.customContextMenuRequested.connect(
+                lambda pos: right_click_function(widgetname.rowAt(pos.y()))
+            )
 
     def filefinder_maker(self):
         class EmbeddedFileDialog(QFileDialog):
