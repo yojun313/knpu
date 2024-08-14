@@ -60,6 +60,26 @@ class NaverNewsCrawler(CrawlerModule):
             return self.error_dump(2001, 'Check DateForm', startDate)
         
         try:
+            def extract_newsurls(text):
+                # 정규식 패턴 정의 (조금 더 일반화된 형태로)
+                pattern = r'https://n\.news\.naver\.com/mnews/article/\d+/\d+\?sid=\d+'
+
+                # 정규식으로 모든 매칭되는 패턴 찾기
+                urls = re.findall(pattern, text)
+
+                return urls
+            def extract_nexturl(text):
+                # 정규식 패턴 정의
+                pattern = r'https://s\.search\.naver\.com/p/newssearch/search\.naver\?.*'
+
+                # 정규식으로 매칭되는 패턴 찾기
+                match = re.search(pattern, text)
+
+                if match:
+                    return match.group(0)[:-1].replace('}', '').replace(')', '')  # 매칭된 패턴과 그 뒤의 모든 문자열을 반환
+                else:
+                    return None
+
             if self.print_status_option == True:
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverNews', 1, self.PrintData)
@@ -103,31 +123,24 @@ class NaverNewsCrawler(CrawlerModule):
             response = self.Requester(api_url, params=params)
             if self.RequesterChecker(response) == False:
                 return response
-            jsonp_text = response.text
-            json_text = jsonp_text[42:len(jsonp_text)-2]
+            json_text = response.text
             while True:
-                data = json.loads(json_text)
+                pre_urlList = extract_newsurls(json_text)
 
-                for item in data["contents"]:
-                    soup = BeautifulSoup(item, 'html.parser')
-                    url = [a['href'] for a in soup.find_all('a', href=True) if a['href'].startswith('https://n.news.naver.com')]
-                    if url != [] and url[0] not in urlList and 'sid=106' not in url[0]:
-                        urlList.append(url[0])
+                for url in pre_urlList:
+                    if url not in urlList and 'sid=106' not in url:
+                        urlList.append(url)
                         self.IntegratedDB['UrlCnt'] += 1
 
                 if self.print_status_option == True:
                     self.printStatus('NaverNews', 2, self.PrintData)
 
-                if data['nextUrl'] == '':
+                if extract_nexturl(json_text) == None:
                     break
                 else:
-                    api_url = data['nextUrl']
+                    api_url = extract_nexturl(json_text)
                     response = self.Requester(api_url)
                     json_text = response.text
-                    try:
-                        data = json.loads(json_text)
-                    except:
-                        json_text = json_text[42:len(jsonp_text)-2]
 
             returnData = {
                 'urlList': urlList,
