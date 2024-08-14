@@ -116,7 +116,7 @@ class Crawler(CrawlerModule):
         self.DBpath      = os.path.join(self.scrapdata_path, self.DBname)
 
         self.mySQL.newDB(self.DBname)
-        self.mySQL.newTable(self.DBname + '_info', ['option', 'start', 'end', 'requester', 'keyword'])
+        self.mySQL.newTable(self.DBname + '_info', ['option', 'start', 'end', 'requester', 'keyword', 'crawlcom', 'crawlspeed', 'IntegratedDB'])
         self.DBinfoRecorder()
 
         self.articleDB    = self.DBname + '_article'
