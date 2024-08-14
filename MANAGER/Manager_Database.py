@@ -1,6 +1,7 @@
+import json
 import os
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QVBoxLayout, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QDialog, QInputDialog, QDialogButtonBox, QRadioButton, QLabel, QFormLayout, QLineEdit
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QPushButton, QVBoxLayout, QScrollArea, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QDialog, QInputDialog, QDialogButtonBox, QRadioButton, QLabel, QFormLayout, QLineEdit
 from PyQt5.QtCore import QTimer, QDate
 import pandas as pd
 import copy
@@ -61,7 +62,6 @@ class TableWindow(QMainWindow):
         self.closeWindow()
         event.accept()  # 창 닫기 이벤트를 허용
 
-
     def init_table_view(self, mySQL_obj, target_db):
         # target_db에 연결
         mySQL_obj.connectDB(target_db)
@@ -116,7 +116,7 @@ class Manager_Database:
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
         self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester']
-        self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
+        self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column, self.database_dbinfo_viewer)
         self.database_buttonMatch()
 
     def database_delete_DB(self):
@@ -169,6 +169,141 @@ class Manager_Database:
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+
+    def database_dbinfo_viewer(self, row):
+        DBdata = self.DB['DBdata'][row]
+        DBname = self.DB['DBlist'][row]
+        DBinfo = self.DB['DBinfo'][row]
+
+        print(self.DB)
+
+        # 다이얼로그 생성
+        dialog = QDialog(self.main)
+        dialog.setWindowTitle(f'{DBname}_Info')
+        dialog.setGeometry(100, 100, 500, 600)
+
+        layout = QVBoxLayout()
+
+        crawlType = DBdata[1]
+        crawlOption_int = int(DBdata[4])
+
+        try:
+            IntegratedDB = json.loads(DBinfo[2])
+            CountText = (
+                f"Article Count: {IntegratedDB['TotalArticleCnt']}\n"
+                f"Reply Count: {IntegratedDB['TotalReplyCnt']}\n"
+                f"Rereply Count: {IntegratedDB['TotalRereplyCnt']}\n"
+            )
+        except:
+            CountText = "크롤링 중..."
+
+        match crawlType:
+            case 'navernews':
+                match crawlOption_int:
+                    case 1:
+                        crawlOption = '기사 + 댓글'
+                    case 2:
+                        crawlOption = '기사 + 댓글/대댓글'
+
+            case 'naverblog':
+                match crawlOption_int:
+                    case 1:
+                        crawlOption = '블로그 본문'
+                    case 2:
+                        crawlOption = '블로그 본문 + 댓글/대댓글'
+
+            case 'navercafe':
+                match crawlOption_int:
+                    case 1:
+                        crawlOption = '카페 본문'
+                    case 2:
+                        crawlOption = '카페 본문 + 댓글/대댓글'
+
+            case 'youtube':
+                match crawlOption_int:
+                    case 1:
+                        crawlOption = '영상 정보 + 댓글/대댓글 (100개 제한)'
+                    case 2:
+                        crawlOption = '영상 정보 + 댓글/대댓글(무제한)'
+
+            case 'chinadaily':
+                match crawlOption_int:
+                    case 1:
+                        crawlOption = '기사 + 댓글'
+
+            case 'chinasina':
+                match crawlOption_int:
+                    case 1:
+                        crawlOption = '기사'
+                    case 2:
+                        crawlOption = '기사 + 댓글'
+
+        # HTML을 사용하여 디테일 표시
+        details_html = f"""
+            <style>
+                h2 {{
+                    color: #2c3e50;
+                    text-align: center;
+                }}
+                p {{
+                    font-family: Arial, sans-serif;
+                    font-size: 14px;
+                    line-height: 1.5;
+                    margin: 5px 0;
+                }}
+                b {{
+                    color: #34495e;
+                }}
+                .version-details {{
+                    padding: 10px;
+                    border: 1px solid #bdc3c7;
+                    border-radius: 5px;
+                    background-color: #ecf0f1;
+                }}
+                .detail-content {{
+                    white-space: pre-wrap;
+                    margin-top: 5px;
+                    font-family: Arial, sans-serif;
+                    font-size: 14px;
+                    color: #34495e;
+                }}
+            </style>
+            <div class="version-details">
+                <p><b>DB Name:</b> {DBdata[0]}</p>
+                <p><b>Crawl Type:</b> {DBdata[1]}</p>
+                <p><b>Crawl Keyword:</b> {DBdata[2]}</p>
+                <p><b>Crawl Period:</b> {DBdata[3]}</p>
+                <p><b>Crawl Option:</b> {crawlOption}</p>
+                <p><b>Crawl Start:</b> {DBdata[5]}</p>
+                <p><b>Crawl End:</b> {DBdata[6]}</p>
+                <p><b>Crawl Requester:</b> {DBdata[7]}</p>
+                <p><b>Crawl Server:</b> {DBinfo[0]}</p>
+                <p><b>Crawl Speed:</b> {DBinfo[1]}</p>
+                <p><b>Crawl Result</b></p>
+                <p class="detail-content">{CountText}</p>                
+            </div>
+            """
+
+        detail_label = QLabel(details_html)
+        detail_label.setWordWrap(True)
+
+        # QScrollArea를 사용하여 스크롤 가능하게 설정
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(detail_label)
+
+        layout.addWidget(scroll_area)
+
+        # 닫기 버튼 추가
+        close_button = QPushButton('Close')
+        close_button.clicked.connect(dialog.accept)
+        layout.addWidget(close_button)
+
+        dialog.setLayout(layout)
+
+        # 다이얼로그 실행
+        dialog.exec_()
+
 
     def database_search_DB(self):
         try:
