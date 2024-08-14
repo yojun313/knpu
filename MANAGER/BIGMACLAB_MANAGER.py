@@ -58,7 +58,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if os.path.isdir(self.default_directory) == False:
                 os.mkdir(self.default_directory)
 
-            self.DB = self.update_DB({'DBlist':[], 'DBdata': []})
+            self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
             self.Manager_Database_obj = Manager_Database(self)
             self.Manager_Web_obj  = Manager_Web(self)
             self.Manager_Analysis_obj = Manager_Analysis(self)
@@ -146,7 +146,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
             db_split = DB_name.split('_')
             crawltype = db_split[0]
-            keyword = db_split[1]
             date = f"{db_split[2]}~{db_split[3]}"
 
             self.mySQL_obj.connectDB(DB_name)
@@ -158,6 +157,15 @@ class MainWindow(QtWidgets.QMainWindow):
             if endtime == '-':
                 endtime = '크롤링 중'
             requester = db_info[4]
+            try:
+                keyword = db_info[5]
+                crawlcom = db_info[6]
+                crawlspeed = db_info[7]
+                IntegratedDB = db_info[8]
+                currentDB['DBinfo'].append([crawlcom, crawlspeed, IntegratedDB])
+            except:
+                keyword = db_split[1]
+                currentDB['DBinfo'].append(['', '', ''])
 
             currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester))
 
