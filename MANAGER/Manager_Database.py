@@ -5,6 +5,8 @@ from PyQt5.QtCore import QTimer, QDate
 import pandas as pd
 import copy
 import re
+import gc
+
 class TableWindow(QMainWindow):
     def __init__(self, parent=None, target_db=None):
         super(TableWindow, self).__init__(parent)
@@ -35,7 +37,7 @@ class TableWindow(QMainWindow):
         # 닫기 버튼 추가
         self.close_button = QtWidgets.QPushButton("닫기", self)
         self.close_button.setFixedWidth(80)  # 가로 길이 조정
-        self.close_button.clicked.connect(self.close)
+        self.close_button.clicked.connect(self.closeWindow)
         self.button_layout.addWidget(self.close_button)
 
         # 버튼 레이아웃을 메인 레이아웃에 추가
@@ -48,6 +50,18 @@ class TableWindow(QMainWindow):
         if target_db is not None:
             self.init_table_view(parent.mySQL_obj, target_db)
 
+    def closeWindow(self):
+        self.tabWidget_tables.clear()  # 탭 위젯 내용 삭제
+        self.close()  # 창 닫기
+        self.deleteLater()  # 객체 삭제
+        gc.collect()
+
+    def closeEvent(self, event):
+        # 윈도우 창이 닫힐 때 closeWindow 메서드 호출
+        self.closeWindow()
+        event.accept()  # 창 닫기 이벤트를 허용
+
+
     def init_table_view(self, mySQL_obj, target_db):
         # target_db에 연결
         mySQL_obj.connectDB(target_db)
@@ -58,10 +72,12 @@ class TableWindow(QMainWindow):
         for tableName in tableNameList:
             if 'info' in tableName or 'token' in tableName:
                 continue
-            tableDF = mySQL_obj.TableToDataframe(tableName)
+            tableDF_begin = mySQL_obj.TableToDataframe(tableName, ':100')
+            tableDF_end = mySQL_obj.TableToDataframe(tableName, ':-100')
+            tableDF = pd.concat([tableDF_begin, tableDF_end], axis = 0)
 
             # 데이터프레임 값을 튜플 형태의 리스트로 변환
-            tuple_list = [tuple(row) for row in tableDF.itertuples(index=False, name=None)]
+            self.tuple_list = [tuple(row) for row in tableDF.itertuples(index=False, name=None)]
 
             # 새로운 탭 생성
             new_tab = QWidget()
@@ -70,7 +86,7 @@ class TableWindow(QMainWindow):
             new_tab_layout.addWidget(new_table)
 
             # 테이블 데이터 설정
-            new_table.setRowCount(len(tuple_list))
+            new_table.setRowCount(len(self.tuple_list))
             new_table.setColumnCount(len(tableDF.columns))
             new_table.setHorizontalHeaderLabels(tableDF.columns)
 
@@ -82,11 +98,14 @@ class TableWindow(QMainWindow):
             new_table.setSelectionBehavior(QTableWidget.SelectRows)
             new_table.setSelectionMode(QTableWidget.SingleSelection)
 
-            for row_idx, row_data in enumerate(tuple_list):
+            for row_idx, row_data in enumerate(self.tuple_list):
                 for col_idx, col_data in enumerate(row_data):
                     new_table.setItem(row_idx, col_idx, QTableWidgetItem(str(col_data)))
 
             self.tabWidget_tables.addTab(new_tab, tableName.split('_')[-1])
+
+            new_tab = None
+            new_table = None
 
     def refresh_table(self):
         # 테이블 뷰를 다시 초기화하여 데이터를 새로 로드
@@ -129,18 +148,25 @@ class Manager_Database:
 
     def database_view_DB(self):
         try:
-            reply = QMessageBox.question(self.main, 'Confirm Delete', 'DB 조회는 로딩 시 많은 시간이 소요됩니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self.main, 'Confirm Delete', 'DB 조회는 데이터의 처음과 마지막 100개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 self.main.printStatus("불러오는 중...")
+
+                def destory_table():
+                    del self.DBtable_window
+                    gc.collect()
+
                 def load_database():
                     selected_row = self.main.database_tablewidget.currentRow()
                     if selected_row >= 0:
                         target_DB = self.DB['DBlist'][selected_row]
                         self.DBtable_window = TableWindow(self.main, target_DB)
+                        self.DBtable_window.destroyed.connect(destory_table)
                         self.DBtable_window.show()
 
                 QTimer.singleShot(1, load_database)
                 QTimer.singleShot(1, self.main.printStatus)
+
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
@@ -349,6 +375,8 @@ class Manager_Database:
                         # 기타 테이블 처리
                         save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
                         tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
+                        tableDF = None
+                        gc.collect()
 
                     QMessageBox.information(self.main, "Information", f"{edited_tableName}가 성공적으로 저장되었습니다")
 

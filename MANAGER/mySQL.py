@@ -2,6 +2,7 @@ import pymysql
 import csv
 import os
 import pandas as pd
+import gc
 
 class mySQL:
     def __init__(self, host, user, password, port, database=None):
@@ -181,19 +182,62 @@ class mySQL:
                         csvwriter = csv.writer(csvfile)
                         csvwriter.writerow(fieldnames)
                         csvwriter.writerows(rows)
+                del rows
+                del fieldnames
+                gc.collect()
 
         except Exception as e:
             print(f"Failed to save table {tableName} to CSV")
             print(str(e))
 
-    def TableToDataframe(self, tableName):
+    def TableToDataframe(self, tableName, index_range=None):
         try:
             with self.conn.cursor() as cursor:
-                cursor.execute(f"SELECT * FROM `{tableName}`")
+                if index_range:
+                    parts = index_range.split(':')
+                    start = parts[0].strip()
+                    end = parts[1].strip() if len(parts) > 1 else ''
+
+                    if start == '' and end != '':  # ":100" or ":-100" 형태
+                        end = int(end)
+                        if end > 0:
+                            query = f"SELECT * FROM `{tableName}` LIMIT {end}"
+                        elif end < 0:  # ":-100" 형태
+                            limit = abs(end)
+                            query = f"""
+                            SELECT * FROM (
+                                SELECT * FROM `{tableName}` ORDER BY id DESC LIMIT {limit}
+                            ) subquery ORDER BY id ASC
+                            """
+
+                    elif start != '' and end == '':  # "100:" 형태
+                        start = int(start)
+                        if start >= 0:
+                            query = f"SELECT * FROM `{tableName}` LIMIT {start}, 18446744073709551615"
+
+                    elif start != '' and end != '':  # "100:200" 형태
+                        start = int(start)
+                        end = int(end)
+                        if start >= 0 and end > 0 and end > start:
+                            limit = end - start
+                            query = f"SELECT * FROM `{tableName}` LIMIT {start}, {limit}"
+                        else:
+                            raise ValueError("Invalid index range: end must be greater than start.")
+
+                    elif start == '' and end == '':  # ":" 형태, 모든 데이터 가져오기
+                        query = f"SELECT * FROM `{tableName}`"
+
+                    else:
+                        raise ValueError("Unsupported index range format.")
+                else:
+                    query = f"SELECT * FROM `{tableName}`"
+
+                cursor.execute(query)
                 rows = cursor.fetchall()
                 columns = [desc[0] for desc in cursor.description]
                 dataframe = pd.DataFrame(rows, columns=columns)
                 return dataframe
+
         except Exception as e:
             print(f"Failed to convert table {tableName} to DataFrame")
             print(str(e))
@@ -319,5 +363,6 @@ class mySQL:
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
-    print(mySQL_obj.showAllDB())
-    mySQL_obj.dropDB('naverblog_대통령_20100101_20231231_0813_0919')
+    mySQL_obj.connectDB('navernews_올림픽_20240701_20240731_0814_1203')
+    print(mySQL_obj.showAllTable('navernews_올림픽_20240701_20240731_0814_1203'))
+    print(mySQL_obj.TableToDataframe('navernews_올림픽_20240701_20240731_0814_1203_article', ':101'))
