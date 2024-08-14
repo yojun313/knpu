@@ -66,7 +66,8 @@ class Crawler(CrawlerModule):
         self.startDate = startDate
         self.endDate   = endDate
         self.keyword   = keyword
-        self.DBkeyword = keyword.replace('"', "").replace(" ", "")
+        self.DBkeyword = keyword.replace('+', '$').replace('-', '#')
+        self.DBkeyword = keyword.translate(str.maketrans('', '', '/\\?%@\'":*|,;.&'))
         self.upload    = upload
         
         self.startDate_form = datetime.strptime(startDate, '%Y%m%d').date()
@@ -82,13 +83,17 @@ class Crawler(CrawlerModule):
         option = self.option
         starttime = datetime.fromtimestamp(self.startTime).strftime('%m/%d %H:%M')
         endtime = '-'
+        keyword = self.keyword
+        crawlcom = self.crawlcom
+        crawlspeed = self.speed
+        IntegratedDB = str(self.IntegratedDB)
         if error == True:
             endtime = 'ip 오류 중단'
         elif endoption == True:
             endtime = datetime.fromtimestamp(time.time()).strftime('%m/%d %H:%M')
         user = self.user
         self.mySQL.connectDB(self.DBname)
-        self.mySQL.insertToTable(self.DBname + '_info', [option, starttime, endtime, user])
+        self.mySQL.insertToTable(self.DBname + '_info', [option, starttime, endtime, user, keyword, crawlcom, crawlspeed, IntegratedDB])
         self.mySQL.commit()
 
     # 크롤링 중단 검사
@@ -111,7 +116,7 @@ class Crawler(CrawlerModule):
         self.DBpath      = os.path.join(self.scrapdata_path, self.DBname)
 
         self.mySQL.newDB(self.DBname)
-        self.mySQL.newTable(self.DBname + '_info', ['option', 'start', 'end', 'requester'])
+        self.mySQL.newTable(self.DBname + '_info', ['option', 'start', 'end', 'requester', 'keyword'])
         self.DBinfoRecorder()
 
         self.articleDB    = self.DBname + '_article'

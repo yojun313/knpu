@@ -88,8 +88,8 @@ class NaverNewsCrawler(CrawlerModule):
             keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
             api_url = "https://s.search.naver.com/p/newssearch/search.naver"
             params = {
-                "de": startDate,
-                "ds": endDate,
+                "de": endDate,
+                "ds": startDate,
                 "eid": "",
                 "field": "0",
                 "force_original": "",
