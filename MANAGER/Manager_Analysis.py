@@ -679,6 +679,7 @@ class DataProcess:
 
         # 'Article Date'를 datetime 형식으로 변환
         data['Article Date'] = pd.to_datetime(data['Article Date'])
+        data['Article ReplyCnt'] = pd.to_numeric(data['Article ReplyCnt'], errors='coerce')
 
         # 기본 통계 분석
         basic_stats = data.describe(include='all')
