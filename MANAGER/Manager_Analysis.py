@@ -10,7 +10,7 @@ import platform
 from kiwipiepy import Kiwi
 from collections import Counter
 import re
-
+import gc
 
 # 운영체제에 따라 한글 폰트를 설정
 if platform.system() == 'Darwin':  # macOS
@@ -148,6 +148,13 @@ class Manager_Analysis:
                     table_path = splitTable(table, splitdata_path)
                     saveTable(table, table_path)
 
+                    del self.year_divided_group
+                    del self.month_divided_group
+                    del self.week_divided_group
+                    gc.collect()
+
+                QMessageBox.information(self.main, "Information", f"{targetDB}가 성공적으로 분할 저장되었습니다")
+
             self.main.printStatus("분할 데이터를 저장할 위치를 선택하세요...")
             targetDB, tableList, splitdata_path = selectDB()
             if targetDB == 0:
@@ -157,7 +164,7 @@ class Manager_Analysis:
             self.main.openFileExplorer(splitdata_path)
             QTimer.singleShot(1000, lambda: main(tableList, splitdata_path))
             QTimer.singleShot(1000, self.main.printStatus)
-            QMessageBox.information(self.main, "Information", f"{targetDB}가 성공적으로 분할 저장되었습니다")
+
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
@@ -210,8 +217,11 @@ class Manager_Analysis:
                                     statisticsURL = tabledf['Article URL'].tolist()
                                     self.dataprocess_obj.NaverNewsStatisticsAnalysis(tabledf,
                                                                                      os.path.join(analysisdata_path, table))
-                                case 'reply' | 'rereply':
+                                case 'reply':
                                     self.dataprocess_obj.NaverNewsReplyAnalysis(tabledf,
+                                                                                os.path.join(analysisdata_path, table))
+                                case 'rereply':
+                                    self.dataprocess_obj.NaverNewsRereplyAnalysis(tabledf,
                                                                                 os.path.join(analysisdata_path, table))
 
                         case 'navercafe':
@@ -226,6 +236,8 @@ class Manager_Analysis:
                         case _:
                                 QMessageBox.warning(self.main, "Warning", f"{tablename[0]} {tablename[6]} 분석은 지원되지 않는 기능입니다")
                                 break
+                    del tabledf
+                    gc.collect()
 
 
             self.main.printStatus("분석 데이터를 저장할 위치를 선택하세요...")
@@ -300,6 +312,11 @@ class Manager_Analysis:
                     if table_path == 0:
                         return
                     saveTable(os.path.basename(csv_path).replace('.csv', ''), table_path)
+
+                    del self.year_divided_group
+                    del self.month_divided_group
+                    del self.week_divided_group
+                    gc.collect()
 
             QTimer.singleShot(1, lambda: self.main.printStatus("데이터 분할 및 저장 중..."))
             self.main.openFileExplorer(os.path.dirname(selected_directory[0]))
@@ -446,8 +463,10 @@ class Manager_Analysis:
                     self.dataprocess_obj.NaverNewsArticleAnalysis(csv_data, csv_path)
                 case ['statistics 분석', 'Naver News']:
                     self.dataprocess_obj.NaverNewsStatisticsAnalysis(csv_data, csv_path)
-                case ['reply 분석', 'Naver News'] | ['rereply 분석', 'Naver News']:
+                case ['reply 분석', 'Naver News']:
                     self.dataprocess_obj.NaverNewsReplyAnalysis(csv_data, csv_path)
+                case ['rereply 분석', 'Naver News']:
+                    self.dataprocess_obj.NaverNewsRereplyAnalysis(csv_data, csv_path)
                 case ['article 분석', 'Naver Cafe']:
                     self.dataprocess_obj.NaverCafeArticleAnalysis(csv_data, csv_path)
                 case ['reply 분석', 'Naver Cafe']:
@@ -458,6 +477,8 @@ class Manager_Analysis:
                     QMessageBox.warning(self.main, "Warning", f"{selected_options[1]} {selected_options[0]} 분석은 지원되지 않는 기능입니다")
 
             self.main.openFileExplorer(os.path.dirname(csv_path))
+            del csv_data
+            gc.collect()
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
@@ -586,6 +607,8 @@ class Manager_Analysis:
             QMessageBox.information(self.main, "Information", f"Keyword가 존재하지 않아 KEM KIM 분석이 진행되지 않았습니다")
 
         self.main.printStatus()
+        del kimkem_obj
+        gc.collect()
 
 class DataProcess:
     def __init__(self, main_window):
@@ -938,11 +961,106 @@ class DataProcess:
         plt.close()
         age_gender_df.to_csv(os.path.join(csv_output_dir, "age_gender_reply_count.csv"), index=False)
     def NaverNewsReplyAnalysis(self, data, file_path):
-        if 'Reply Sentiment' not in list(data.columns):
+        if 'Reply Date' not in list(data.columns):
             QMessageBox.warning(self.main, f"Warning", f"NaverNews Reply CSV 형태와 일치하지 않습니다")
             return
         # 'Reply Date'를 datetime 형식으로 변환
         data['Reply Date'] = pd.to_datetime(data['Reply Date'])
+        for col in ['Rereply Count', 'Reply Like', 'Reply Bad', 'Reply LikeRatio', 'Reply Sentiment']:
+            data[col] = pd.to_numeric(data[col], errors='coerce')  # 각 열을 숫자로 변환
+
+        # 기본 통계 분석
+        basic_stats = data.describe(include='all')
+
+        # 댓글 길이 추가
+        data['Reply Length'] = data['Reply Text'].apply(len)
+
+        # 날짜별 댓글 수 분석
+        time_analysis = data.groupby(data['Reply Date'].dt.date).agg({
+            'id': 'count',
+            'Reply Like': 'sum',
+            'Reply Bad': 'sum'
+        }).rename(columns={'id': 'Reply Count'})
+
+        # 댓글 감성 분석 결과 빈도
+        sentiment_counts = data['Reply Sentiment'].value_counts()
+
+        # 상관관계 분석
+        correlation_matrix = data[['Reply Like', 'Reply Bad', 'Rereply Count', 'Reply LikeRatio', 'Reply Sentiment',
+                                   'Reply Length']].corr()
+
+        # 작성자별 댓글 수 계산
+        writer_reply_count = data['Reply Writer'].value_counts()
+
+        # 결과를 저장할 디렉토리 생성
+        output_dir = os.path.join(os.path.dirname(file_path),
+                                  os.path.basename(file_path).replace('.csv', '') + '_analysis')
+        csv_output_dir = os.path.join(output_dir, "csv_files")
+        graph_output_dir = os.path.join(output_dir, "graphs")
+        os.makedirs(csv_output_dir, exist_ok=True)
+        os.makedirs(graph_output_dir, exist_ok=True)
+
+        # 결과를 CSV로 저장
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"))
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
+        sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"))
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"))
+        writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_reply_count.csv"))
+
+        # 시각화 그래프를 이미지 파일로 저장
+
+        # 1. 날짜별 댓글 수 추세
+        data_length = len(time_analysis)
+        plt.figure(figsize=self.calculate_figsize(data_length))
+        sns.lineplot(data=time_analysis, x=time_analysis.index, y='Reply Count')
+        plt.title('Daily Reply Count Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Number of Replies')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "daily_reply_count.png"))
+        plt.close()
+
+        # 2. 댓글 감성 분석 결과 분포
+        data_length = len(sentiment_counts)
+        plt.figure(figsize=self.calculate_figsize(data_length, base_width=8))
+        sns.countplot(x='Reply Sentiment', data=data)
+        plt.title('Reply Sentiment Distribution')
+        plt.xlabel('Sentiment')
+        plt.ylabel('Count')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "reply_sentiment_distribution.png"))
+        plt.close()
+
+        # 4. 상관관계 행렬 히트맵
+        data_length = len(correlation_matrix)
+        plt.figure(figsize=self.calculate_figsize(data_length, height=8))
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+        plt.title('Correlation Matrix of Key Metrics')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
+        plt.close()
+
+        # 5. 작성자별 댓글 수 분포 (상위 10명)
+        top_10_writers = writer_reply_count.head(10)  # 상위 10명 작성자 선택
+        data_length = len(top_10_writers)
+        plt.figure(figsize=self.calculate_figsize(data_length))
+        sns.barplot(x=top_10_writers.index, y=top_10_writers.values, palette="viridis")
+        plt.title('Top 10 Writers by Number of Replies')
+        plt.xlabel('Writer')
+        plt.ylabel('Number of Replies')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "writer_reply_count.png"))
+        plt.close()
+    def NaverNewsRereplyAnalysis(self, data, file_path):
+        if 'Rereply Date' not in list(data.columns):
+            QMessageBox.warning(self.main, f"Warning", f"NaverNews Rereply CSV 형태와 일치하지 않습니다")
+            return
+        # 'Reply Date'를 datetime 형식으로 변환
+        data['Rereply Date'] = pd.to_datetime(data['Rereply Date'])
+        for col in ['Rereply Like', 'Rereply Bad', 'Rereply LikeRatio', 'Rereply Sentiment']:
+            data[col] = pd.to_numeric(data[col], errors='coerce')  # 각 열을 숫자로 변환
 
         # 기본 통계 분석
         basic_stats = data.describe(include='all')
@@ -1035,9 +1153,8 @@ class DataProcess:
             return
         # 'Article Date'를 datetime 형식으로 변환
         data['Article Date'] = pd.to_datetime(data['Article Date'])
-        # 특정 열들에 대해 pd.to_numeric을 적용하여 숫자형으로 변환
-        cols_to_convert = ['NaverCafe MemberCount', 'Article ReadCount', 'Article ReplyCount']
-        data[cols_to_convert] = data[cols_to_convert].apply(pd.to_numeric, errors='coerce')
+        for col in ['NaverCafe MemberCount', 'Article ReadCount', 'Article ReplyCount']:
+            data[col] = pd.to_numeric(data[col], errors='coerce')  # 각 열을 숫자로 변환
 
         # 기본 통계 분석
         basic_stats = data.describe(include='all')
@@ -1132,6 +1249,9 @@ class DataProcess:
 
         # 'Reply Date'를 datetime 형식으로 변환
         data['Reply Date'] = pd.to_datetime(data['Reply Date'])
+        for col in ['Reply Like']:
+            data[col] = pd.to_numeric(data[col], errors='coerce')  # 각 열을 숫자로 변환
+
 
         # 작성자별 분석 (상위 10명)
         writer_analysis = data.groupby('Reply Writer').agg({
