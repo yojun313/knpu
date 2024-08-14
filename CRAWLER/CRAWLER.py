@@ -75,6 +75,7 @@ class Crawler(CrawlerModule):
         self.currentDate = self.startDate_form
         self.date_range  = (self.endDate_form - self.startDate_form).days + 1
         self.deltaD      = timedelta(days=1)
+        
 
     # DB에 크롤링 상태 기록
     def DBinfoRecorder(self, endoption = False, error = False):
@@ -175,10 +176,11 @@ class Crawler(CrawlerModule):
         for table in tablelist:
             data_df = self.mySQL.TableToDataframe(table)
 
-            if any(key in table for key in ['reply', 'rereply']):
+            if 'reply' in table or 'rereply' in table:
+                
                 # 열 이름 설정
-                date_column = 'Reply Date' if 'reply' in table else 'Rereply Date'
-                text_column = 'Reply Text' if 'reply' in table else 'Rereply Text'
+                date_column = 'Rereply Date' if 'rereply' in table else 'Reply Date'
+                text_column = 'Rereply Text' if 'rereply' in table else 'Reply Text'
 
                 # 날짜 형식 변환 및 그룹화 후 정렬
                 data_df[date_column] = pd.to_datetime(data_df[date_column], format='%Y-%m-%d').dt.date
@@ -201,10 +203,8 @@ class Crawler(CrawlerModule):
         endtime   = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
         crawltime = str(timedelta(seconds=int(time.time() - self.startTime)))
 
-        IntegratedDB = self.printStatus('1', finish=True)
-
         text = f'\n크롤링 시작: {starttime}' + f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
-        text = f'\n\nArticle: {IntegratedDB['TotalArticleCnt']}' + f'\nReply: {IntegratedDB['TotalReplyCnt']}' + f'\nRereply: {IntegratedDB['TotalRereplyCnt']}'
+        text += f'\n\nArticle: {self.IntegratedDB['TotalArticleCnt']}' + f'\nReply: {self.IntegratedDB['TotalReplyCnt']}' + f'\nRereply: {self.IntegratedDB['TotalRereplyCnt']}'
         if self.upload == True:
             driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
             text += f'\n\n크롤링 데이터: {driveURL}'
@@ -351,6 +351,7 @@ class Crawler(CrawlerModule):
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
+                    self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -425,6 +426,7 @@ class Crawler(CrawlerModule):
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
+                    self.IntegratedDB = NaverBlogCrawler_obj.CountReturn()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -499,6 +501,7 @@ class Crawler(CrawlerModule):
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
+                    self.IntegratedDB = NaverCafeCrawler_obj.CountReturn()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -580,6 +583,7 @@ class Crawler(CrawlerModule):
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
+                    self.IntegratedDB = YouTubeCrawler_obj.CountReturn()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -629,6 +633,7 @@ class Crawler(CrawlerModule):
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
+                    self.IntegratedDB = ChinaDailyCrawler_obj.CountReturn()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -707,6 +712,7 @@ class Crawler(CrawlerModule):
 
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
+                    self.IntegratedDB = ChinaSinaCrawler_obj.CountReturn()
 
                 except Exception as e:
                     error_msg = self.error_detector()
