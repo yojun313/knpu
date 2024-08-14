@@ -33,7 +33,7 @@ class NaverNewsCrawler(CrawlerModule):
         self.delay = 1
         self.rate_limit = 5
         self.last_request_time = 0
-
+    
     def _newsURLChecker(self, url):
         pattern = (
             r"https://n\.news\.naver\.com"  # 고정 부분

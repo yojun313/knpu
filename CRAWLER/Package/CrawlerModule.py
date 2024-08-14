@@ -81,13 +81,11 @@ class CrawlerModule(ToolModule):
         self.PrintData['percent']     = percent
         self.PrintData['web_option']  = web_option
         self.PrintData['api_num']     = api_num
+    
+    def CountReturn(self):
+        return self.IntegratedDB
 
-    def printStatus(self, type, option = 1, printData = {}, finish = False):
-
-        if finish == True:
-            self.live.stop()
-            self.live = None
-            return self.IntegratedDB
+    def printStatus(self, type, option = 1, printData = {}):
 
         WHITE = "\033[37m"
         YELLOW = "\033[33m"
