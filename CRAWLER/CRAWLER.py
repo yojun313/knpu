@@ -67,7 +67,7 @@ class Crawler(CrawlerModule):
         self.endDate   = endDate
         self.keyword   = keyword
         self.DBkeyword = keyword.replace('+', '$').replace('-', '#')
-        self.DBkeyword = keyword.translate(str.maketrans('', '', '/\\?%@\'":*|,;.&'))
+        self.DBkeyword = self.DBkeyword.translate(str.maketrans('', '', '/\\?%@\'":*|,;.&'))
         self.upload    = upload
         
         self.startDate_form = datetime.strptime(startDate, '%Y%m%d').date()
