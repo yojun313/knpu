@@ -1,5 +1,7 @@
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox, QComboBox, QLineEdit, QLabel, QDialogButtonBox, QVBoxLayout, QWidget, QProgressBar, QPushButton, QApplication
+from PyQt5.QtCore import QTimer, QStringListModel
+from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox, QComboBox, \
+    QLineEdit, QLabel, QDialogButtonBox, QWidget, QProgressBar, QToolBox, \
+    QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 import copy
 import pandas as pd
@@ -28,8 +30,11 @@ class Manager_Analysis:
         self.DB = copy.deepcopy(self.main.DB)
         self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester']
         self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBdata'], self.DB_table_column)
+        self.userDB_layout_maker()
         self.dataprocess_filefinder_maker()
+
         self.anaylsis_buttonMatch()
+
 
     def anaylsis_buttonMatch(self):
         self.main.dataprocess_tab1_refreshDB_button.clicked.connect(self.dataprocess_refresh_DB)
@@ -44,6 +49,15 @@ class Manager_Analysis:
 
         #self.main.kimkem_tab2_tokenization_button.clicked.connect(self.kimkem_tokenization_file)
         self.main.kimkem_tab2_kimkem_button.clicked.connect(self.kimkem_kimkem_file)
+
+        self.selected_userDB = 'admin_db'
+        self.selected_DBlistItem = None
+        self.selected_DBlistItems = []
+        self.main.userDB_list_delete_button.clicked.connect(self.toolbox_DBlistItem_delete)
+        self.main.userDB_list_add_button.clicked.connect(self.toolbox_DBlistItem_add)
+        self.main.userDB_list_view_button.clicked.connect(self.toolbox_DBlistItem_view)
+
+
 
     def dataprocess_search_DB(self):
         try:
@@ -254,11 +268,12 @@ class Manager_Analysis:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
     def dataprocess_filefinder_maker(self):
-        self.file_dialog = self.main.filefinder_maker()
+        self.file_dialog = self.main.filefinder_maker(self.main)
         self.main.tab2_fileexplorer_layout.addWidget(self.file_dialog)
 
-    def dataprocess_getfiledirectory(self):
-        selected_directory = self.file_dialog.selectedFiles()
+
+    def dataprocess_getfiledirectory(self, file_dialog):
+        selected_directory = file_dialog.selectedFiles()
         if selected_directory == []:
             return selected_directory
         selected_directory = selected_directory[0].split(', ')
@@ -275,7 +290,7 @@ class Manager_Analysis:
 
     def dataprocess_timesplit_file(self):
         try:
-            selected_directory = self.dataprocess_getfiledirectory()
+            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
@@ -344,7 +359,7 @@ class Manager_Analysis:
 
                 return None  # 모든 요소가 같다면 None을 반환
 
-            selected_directory = self.dataprocess_getfiledirectory()
+            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
@@ -432,7 +447,7 @@ class Manager_Analysis:
                         self.checkbox_group.append(checkbox)
                         self.layout().insertWidget(self.layout().count() - 1, checkbox)  # 버튼 위에 체크박스 추가
 
-            selected_directory = self.dataprocess_getfiledirectory()
+            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
@@ -484,7 +499,7 @@ class Manager_Analysis:
 
     def kimkem_tokenization_file(self):
         try:
-            selected_directory = self.dataprocess_getfiledirectory()
+            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
@@ -543,7 +558,7 @@ class Manager_Analysis:
 
     def kimkem_kimkem_file(self):
         try:
-            selected_directory = self.dataprocess_getfiledirectory()
+            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
@@ -609,6 +624,227 @@ class Manager_Analysis:
         self.main.printStatus()
         del kimkem_obj
         gc.collect()
+
+    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QListView, QToolBox, QMessageBox
+    from PyQt5.QtCore import QStringListModel
+
+    def userDB_layout_maker(self):
+        # File Explorer를 탭 레이아웃에 추가
+        self.userDBfiledialog = self.main.filefinder_maker(self.main)
+        self.main.tab3_userDB_fileexplorerlayout.addWidget(self.userDBfiledialog)
+
+        # QToolBox 생성
+        self.tool_box = QToolBox()
+        self.main.tab3_userDB_buttonlayout.addWidget(self.tool_box)
+
+        # QListView들을 저장할 딕셔너리 생성
+        self.list_views = {}
+
+        def create_list(DBname):
+            # 데이터베이스에서 테이블 목록 가져오기
+            data = self.main.mySQL_obj.showAllTable(database_name=DBname)
+
+            # QListView 생성
+            list_view = QListView()
+
+            # 여러 항목을 선택할 수 있도록 MultiSelection 모드로 설정
+            list_view.setSelectionMode(QListView.MultiSelection)
+
+            # 데이터를 QListView와 연결하기 위한 모델 설정
+            model = QStringListModel(data)
+            list_view.setModel(model)
+
+            # QListView 항목이 클릭될 때 발생하는 시그널 연결
+            list_view.clicked.connect(self.toolbox_DBlistItem_selected)
+
+            # QListView를 포함하는 QWidget 생성
+            section = QWidget()
+            layout = QVBoxLayout(section)
+            layout.addWidget(list_view)
+
+            # 생성된 QListView를 딕셔너리에 저장
+            self.list_views[DBname] = list_view
+
+            return section
+
+        for userName in self.main.userNameList:
+            DBname = userName + '_db'
+            section = create_list(DBname)
+            self.tool_box.addItem(section, DBname.replace('_db', ' DB'))
+
+        self.tool_box.setCurrentIndex(-1)
+        self.tool_box.currentChanged.connect(self.toolbox_DB_selected)
+
+    def toolbox_DB_selected(self, index):
+        self.selected_userDB = self.tool_box.itemText(index)
+
+    def toolbox_DBlistItem_selected(self, index):
+        self.selected_DBlistItems = [item.data() for item in self.list_views[self.selected_userDB].selectedIndexes()]
+        self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 선택됨")
+
+    def toolbox_DBlistItem_delete(self):
+        if not self.selected_DBlistItems or self.selected_DBlistItems == []:
+            self.main.printStatus()
+            return
+
+        reply = QMessageBox.question(self.main, 'Confirm Delete', "테이블을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 삭제 중...")
+            self.main.mySQL_obj.connectDB(self.selected_userDB)
+
+            for item in self.selected_DBlistItems:
+                self.main.mySQL_obj.dropTable(item)
+
+            # QListView에서 해당 항목 삭제 및 업데이트
+            list_view = self.list_views[self.selected_userDB]
+            model = list_view.model()
+
+            for item in self.selected_DBlistItems:
+                row = model.stringList().index(item)
+                model.removeRow(row)
+
+            # 선택된 항목 초기화
+            self.selected_DBlistItems = []
+
+            # 리스트 갱신 (이 작업을 통해 UI에 즉각 반영됨)
+            list_view.setModel(model)
+            self.main.printStatus()
+
+    def toolbox_DBlistItem_add(self):
+        try:
+            selected_directory = self.dataprocess_getfiledirectory(self.userDBfiledialog)
+            if len(selected_directory) == 0:
+                return
+            elif selected_directory[0] == False:
+                QMessageBox.warning(self.main, f"Warning", f"{selected_directory[1]}는 CSV 파일이 아닙니다")
+                return
+            self.main.printStatus()
+
+            def update_list_view(DBname):
+                # 데이터베이스에서 테이블 목록 다시 가져오기
+                updated_data = self.main.mySQL_obj.showAllTable(database_name=DBname)
+
+                # 해당 DB의 QListView 가져오기
+                list_view = self.list_views[DBname]
+                model = QStringListModel(updated_data)
+
+                # 모델 업데이트 (QListView 갱신)
+                list_view.setModel(model)
+
+            self.main.mySQL_obj.connectDB(self.selected_userDB)
+
+            self.main.printStatus(f'{self.selected_userDB}에 Table {len(selected_directory)}개 추가 중...')
+            for csv_path in selected_directory:
+                self.main.mySQL_obj.CSVToTable(csv_path, os.path.basename(csv_path).replace('.csv', ''))
+            update_list_view(self.selected_userDB)
+            self.main.printStatus()
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+
+    def toolbox_DBlistItem_view(self):
+        class SingleTableWindow(QMainWindow):
+            def __init__(self, parent=None, target_db=None, target_table=None):
+                super(SingleTableWindow, self).__init__(parent)
+                self.setWindowTitle(target_table)
+                self.setGeometry(100, 100, 1600, 1200)
+
+                self.parent = parent  # 부모 객체 저장
+                self.target_db = target_db  # 대상 데이터베이스 이름 저장
+                self.target_table = target_table  # 대상 테이블 이름 저장
+
+                self.central_widget = QWidget(self)
+                self.setCentralWidget(self.central_widget)
+
+                self.layout = QVBoxLayout(self.central_widget)
+
+                # 상단 버튼 레이아웃
+                self.button_layout = QHBoxLayout()
+
+                # spacer 아이템 추가 (버튼을 오른쪽 끝에 배치)
+                spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+                self.button_layout.addItem(spacer)
+
+                # 닫기 버튼 추가
+                self.close_button = QPushButton("닫기", self)
+                self.close_button.setFixedWidth(80)
+                self.close_button.clicked.connect(self.closeWindow)
+                self.button_layout.addWidget(self.close_button)
+
+                # 버튼 레이아웃을 메인 레이아웃에 추가
+                self.layout.addLayout(self.button_layout)
+
+                # target_db와 target_table이 주어지면 테이블 뷰를 초기화
+                if target_db is not None and target_table is not None:
+                    self.init_table_view(parent.mySQL_obj, target_db, target_table)
+
+            def closeWindow(self):
+                self.close()  # 창 닫기
+                self.deleteLater()  # 객체 삭제
+                gc.collect()
+
+            def closeEvent(self, event):
+                # 윈도우 창이 닫힐 때 closeWindow 메서드 호출
+                self.closeWindow()
+                event.accept()  # 창 닫기 이벤트 허용
+
+            def init_table_view(self, mySQL_obj, target_db, target_table):
+                # target_db에 연결
+                mySQL_obj.connectDB(target_db)
+
+                tableDF_begin = mySQL_obj.TableToDataframe(target_table, ':50')
+                tableDF_end = mySQL_obj.TableToDataframe(target_table, ':-50')
+                tableDF = pd.concat([tableDF_begin, tableDF_end], axis=0)
+
+                # 데이터프레임 값을 튜플 형태의 리스트로 변환
+                self.tuple_list = [tuple(row) for row in tableDF.itertuples(index=False, name=None)]
+
+                # 테이블 위젯 생성
+                new_table = QTableWidget(self.central_widget)
+                self.layout.addWidget(new_table)
+
+                # 테이블 데이터 설정
+                new_table.setRowCount(len(self.tuple_list))
+                new_table.setColumnCount(len(tableDF.columns))
+                new_table.setHorizontalHeaderLabels(tableDF.columns)
+
+                # 열 너비 조정
+                header = new_table.horizontalHeader()
+                header.setSectionResizeMode(QHeaderView.Stretch)
+
+                # 행 전체 선택 설정 및 단일 선택 모드
+                new_table.setSelectionBehavior(QTableWidget.SelectRows)
+                new_table.setSelectionMode(QTableWidget.SingleSelection)
+
+                for row_idx, row_data in enumerate(self.tuple_list):
+                    for col_idx, col_data in enumerate(row_data):
+                        new_table.setItem(row_idx, col_idx, QTableWidgetItem(str(col_data)))
+
+        try:
+            if not self.selected_DBlistItems or self.selected_DBlistItems == []:
+                self.main.printStatus()
+                return
+            if len(self.selected_DBlistItems) > 1:
+                QMessageBox.information(self.main, "Information", f"선택 가능한 테이블 수는 1개입니다")
+                return
+
+            def destory_table():
+                del self.DBtable_window
+                gc.collect()
+
+            def load_database():
+                self.DBtable_window = SingleTableWindow(self.main, self.selected_userDB, self.selected_DBlistItems[0])
+                self.DBtable_window.destroyed.connect(destory_table)
+                self.DBtable_window.show()
+
+            self.main.printStatus(f"{self.selected_DBlistItems[0]} 조회 중...")
+            QTimer.singleShot(1, load_database)
+            QTimer.singleShot(1, self.main.printStatus)
+
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+
+
 
 class DataProcess:
     def __init__(self, main_window):
