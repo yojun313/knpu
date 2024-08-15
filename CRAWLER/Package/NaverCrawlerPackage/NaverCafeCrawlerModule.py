@@ -17,6 +17,7 @@ import re
 from urllib.parse import urlparse, parse_qs
 import asyncio
 import aiohttp
+import urllib.parse
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -96,8 +97,7 @@ class NaverCafeCrawler(CrawlerModule):
                 self.printStatus('NaverCafe', 1, self.PrintData)
 
             urlList = []
-            keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(
-                ' ', '+')
+            keyword = urllib.parse.quote_plus(keyword)
             api_url = "https://s.search.naver.com/p/cafe/47/search.naver"
 
             params = {
