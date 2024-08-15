@@ -85,7 +85,7 @@ class NaverNewsCrawler(CrawlerModule):
                 self.printStatus('NaverNews', 1, self.PrintData)
 
             urlList = []
-            keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
+            keyword = urllib.parse.quote_plus(keyword)
             api_url = "https://s.search.naver.com/p/newssearch/search.naver"
             params = {
                 "de": endDate,
@@ -99,7 +99,7 @@ class NaverNewsCrawler(CrawlerModule):
                 "news_office_checked": "",
                 "nlu_query": "",
                 "nqx_theme": "",
-                "nso": "so:r,p:from20240801to20240802,a:all",
+                "nso": f"so:r,p:from{startDate}to{endDate},a:all",
                 "nx_and_query": "",
                 "nx_search_hlquery": "",
                 "nx_search_query": "",
