@@ -106,9 +106,9 @@ class mySQL:
 
     def dropTable(self, tableName):
         try:
-            self.disconnectDB()
             with self.conn.cursor() as cursor:
-                cursor.execute(f"DROP TABLE IF EXISTS {tableName}")
+                # 테이블 이름을 백틱으로 감싸기
+                cursor.execute(f"DROP TABLE IF EXISTS `{tableName}`")
                 self.conn.commit()
         except Exception as e:
             print(f"Failed to drop table {tableName}")
@@ -166,14 +166,13 @@ class mySQL:
             print(f"Failed to insert data into {tableName}")
             print(str(e))
 
-    def TableToCSV(self, tableName, csv_path, filename=''):
+    def TableToCSV(self, tableName, csv_path, filename = ''):
         try:
             with self.conn.cursor() as cursor:
                 cursor.execute(f"SELECT * FROM `{tableName}`")
                 rows = cursor.fetchall()
                 fieldnames = [desc[0] for desc in cursor.description]
 
-                # 파일 이름 결정
                 if filename == '':
                     with open(os.path.join(csv_path, tableName + '.csv'), 'w', newline='', encoding='utf-8-sig', errors='ignore') as csvfile:
                         csvwriter = csv.writer(csvfile)
@@ -184,12 +183,9 @@ class mySQL:
                         csvwriter = csv.writer(csvfile)
                         csvwriter.writerow(fieldnames)
                         csvwriter.writerows(rows)
-                del rows
-                del fieldnames
-                gc.collect()
 
         except Exception as e:
-            print(f"Failed to save table {tableName} to CSV using OUTFILE")
+            print(f"Failed to save table {tableName} to CSV")
             print(str(e))
 
     def TableToDataframe(self, tableName, index_range=None):
@@ -245,6 +241,28 @@ class mySQL:
             print(str(e))
             return None
 
+    def TableToDataframeByDate(self, tableName, start_date, end_date):
+        try:
+            with self.conn.cursor() as cursor:
+                cursor.execute(f"SHOW COLUMNS FROM {tableName}")
+                columns = cursor.fetchall()
+                date_column = [column[0] for column in columns if 'date' in column[0].lower()][0]
+
+            query = f"""
+                    SELECT * FROM `{tableName}`
+                    WHERE `{date_column}` BETWEEN %s AND %s;
+                    """
+            with self.conn.cursor() as cursor:
+                cursor.execute(query, (start_date, end_date))
+                rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
+                dataframe = pd.DataFrame(rows, columns=columns)
+                return dataframe
+        except Exception as e:
+            print(f"Failed to retrieve data from {tableName} between {start_date} and {end_date}")
+            print(str(e))
+            return None
+
     def TableToList(self, tableName):
         try:
             with self.conn.cursor() as cursor:
@@ -270,6 +288,9 @@ class mySQL:
         try:
             # CSV 파일을 읽어서 데이터프레임으로 변환
             df = pd.read_csv(csv_path)
+
+            # NaN 값을 None (SQL의 NULL에 해당)으로 변환
+            df = df.where(pd.notnull(df), None)
 
             # 데이터프레임의 열 이름을 가져오기
             columns = df.columns.tolist()
@@ -364,7 +385,8 @@ class mySQL:
 
 if __name__ == "__main__":
     # 사용 예제
-    mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
-    mySQL_obj.connectDB('navernews_올림픽_20240701_20240731_0814_1203')
-    print(mySQL_obj.showAllTable('navernews_올림픽_20240701_20240731_0814_1203'))
-    print(mySQL_obj.TableToDataframe('navernews_올림픽_20240701_20240731_0814_1203_article', ':101'))
+    mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='admin_db')
+    mySQL_obj.newTable('a', ['a', 'b', 'c'])
+    mySQL_obj.newTable('b', ['a', 'b', 'c'])
+    mySQL_obj.newTable('c', ['a', 'b', 'c'])
+    mySQL_obj.newTable('d', ['a', 'b', 'c'])
