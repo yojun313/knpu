@@ -13,7 +13,7 @@ class mySQL:
         self.database = database
         self.connectDB(database)
 
-    def connectDB(self, database_name):
+    def connectDB(self, database_name=None):
         try:
             self.conn = pymysql.connect(
                 host=self.host,
@@ -34,7 +34,6 @@ class mySQL:
         try:
             if self.conn:
                 self.conn.close()
-            self.connectDB('')
         except Exception as e:
             print(f"Failed to close the connection to database {self.database}")
             print(str(e))
@@ -64,6 +63,8 @@ class mySQL:
 
     def dropDB(self, database_name):
         try:
+            self.disconnectDB()
+            self.connectDB()
             with self.conn.cursor() as cursor:
                 cursor.execute(f"DROP DATABASE IF EXISTS {database_name}")
                 self.conn.commit()
