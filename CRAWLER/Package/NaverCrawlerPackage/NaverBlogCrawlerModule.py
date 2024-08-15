@@ -48,7 +48,7 @@ class NaverBlogCrawler(CrawlerModule):
                 self.printStatus('NaverBlog', 1, self.PrintData)
 
             urlList = []
-            keyword = keyword.replace('&', '%26').replace('+', '%2B').replace('"', '%22').replace('|', '%7C').replace(' ', '+')
+            keyword = urllib.parse.quote_plus(keyword)
             api_url = "https://s.search.naver.com/p/review/48/search.naver"
             currentPage = 1
 
