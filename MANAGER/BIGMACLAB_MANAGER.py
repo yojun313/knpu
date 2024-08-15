@@ -20,6 +20,7 @@ import pandas as pd
 from os import environ
 import socket
 import gc
+import winsound
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -28,6 +29,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         super(MainWindow, self).__init__()
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
+        sound_path = os.path.join(os.path.dirname(__file__), 'alert_sound.wav')
         uic.loadUi(ui_path, self)
 
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
@@ -412,6 +414,13 @@ class MainWindow(QtWidgets.QMainWindow):
         csv_data = pd.read_csv(csvPath, low_memory=False, index_col=0)
         csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
         return csv_data
+
+    def alert(self, msg, type = 'Information'):
+        if platform.system() == 'Darwin':  # macOS
+            pass
+        elif platform.system() == 'Windows':  # Windows
+            winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+        QMessageBox.information(self, type, msg)
 
 class InfoDialog(QDialog):
     def __init__(self, version):
