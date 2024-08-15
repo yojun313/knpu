@@ -175,8 +175,6 @@ class Manager_Database:
         DBname = self.DB['DBlist'][row]
         DBinfo = self.DB['DBinfo'][row]
 
-        print(self.DB)
-
         # 다이얼로그 생성
         dialog = QDialog(self.main)
         dialog.setWindowTitle(f'{DBname}_Info')
