@@ -168,26 +168,24 @@ class mySQL:
     def TableToCSV(self, tableName, csv_path, filename=''):
         try:
             with self.conn.cursor() as cursor:
+                cursor.execute(f"SELECT * FROM `{tableName}`")
+                rows = cursor.fetchall()
+                fieldnames = [desc[0] for desc in cursor.description]
+
                 # 파일 이름 결정
                 if filename == '':
-                    filename = tableName + '.csv'
-                file_path = os.path.join(csv_path, filename)
-
-                # MySQL 명령어로 CSV 파일로 내보내기
-                outfile_path = file_path.replace('\\', '/')
-                query = f"""
-                SELECT * 
-                INTO OUTFILE '{outfile_path}'
-                FIELDS TERMINATED BY ',' 
-                OPTIONALLY ENCLOSED BY '\"' 
-                LINES TERMINATED BY '\\n'
-                FROM `{tableName}`;
-                """
-
-                cursor.execute(query)
-                self.conn.commit()
-
-                gc.collect()  # 메모리 정리
+                    with open(os.path.join(csv_path, tableName + '.csv'), 'w', newline='', encoding='utf-8-sig', errors='ignore') as csvfile:
+                        csvwriter = csv.writer(csvfile)
+                        csvwriter.writerow(fieldnames)
+                        csvwriter.writerows(rows)
+                else:
+                    with open(os.path.join(csv_path, filename + '.csv'), 'w', newline='', encoding='utf-8-sig', errors='ignore') as csvfile:
+                        csvwriter = csv.writer(csvfile)
+                        csvwriter.writerow(fieldnames)
+                        csvwriter.writerows(rows)
+                del rows
+                del fieldnames
+                gc.collect()
 
         except Exception as e:
             print(f"Failed to save table {tableName} to CSV using OUTFILE")

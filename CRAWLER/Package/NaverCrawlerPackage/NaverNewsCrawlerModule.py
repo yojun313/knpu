@@ -53,8 +53,8 @@ class NaverNewsCrawler(CrawlerModule):
             if isinstance(keyword, str) == False:
                 return self.error_dump(2000, 'Check Keyword', keyword)
             
-            startDate = datetime.strptime(str(startDate), '%Y%m%d').date().strftime('%Y.%m.%d')
-            endDate = datetime.strptime(str(endDate), '%Y%m%d').date().strftime('%Y.%m.%d')
+            startDate_formed = datetime.strptime(str(startDate), '%Y%m%d').date().strftime('%Y.%m.%d')
+            endDate_formed = datetime.strptime(str(endDate), '%Y%m%d').date().strftime('%Y.%m.%d')
             
         except:
             return self.error_dump(2001, 'Check DateForm', startDate)
@@ -86,44 +86,13 @@ class NaverNewsCrawler(CrawlerModule):
 
             urlList = []
             keyword = urllib.parse.quote_plus(keyword)
-            api_url = "https://s.search.naver.com/p/newssearch/search.naver"
-            params = {
-                "de": endDate,
-                "ds": startDate,
-                "eid": "",
-                "field": "0",
-                "force_original": "",
-                "is_dts": "0",
-                "is_sug_officeid": "0",
-                "mynews": "0",
-                "news_office_checked": "",
-                "nlu_query": "",
-                "nqx_theme": "",
-                "nso": f"so:r,p:from{startDate}to{endDate},a:all",
-                "nx_and_query": "",
-                "nx_search_hlquery": "",
-                "nx_search_query": "",
-                "nx_sub_query": "",
-                "office_category": "0",
-                "office_section_code": "0",
-                "office_type": "0",
-                "pd": "3",
-                "photo": "0",
-                "query": keyword,
-                "query_original": "",
-                "service_area": "0",
-                "sort": "1",
-                "spq": "0",
-                "start": '1',
-                "where": "news_tab_api",
-                "_callback": "jQuery112406351013586512539_1722744441764",
-                "_": "1722744441765"
-            }
-
-            response = self.Requester(api_url, params=params)
+            api_url = f"https://s.search.naver.com/p/newssearch/search.naver?de={endDate_formed}&ds={startDate_formed}&eid=&field=0&force_original=&is_dts=1&is_sug_officeid=0&mynews=0&news_office_checked=&nlu_query=&nqx_theme=&office_category=0&office_section_code=0&office_type=0&pd=3&photo=0&query={keyword}&query_original=&service_area=0&sort=1&spq=0&start=1&where=news_tab_api&_callback=jQuery112409864105848430387_1723710693433&_=1723710693436"
+             
+            response = self.Requester(api_url)
             if self.RequesterChecker(response) == False:
                 return response
             json_text = response.text
+            
             while True:
                 pre_urlList = extract_newsurls(json_text)
 
@@ -151,7 +120,7 @@ class NaverNewsCrawler(CrawlerModule):
             
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
-            return self.error_dump(2003, error_msg, f"{api_url}?{urllib.parse.urlencode(params)}")
+            return self.error_dump(2003, error_msg, f"")
 
     # Sync Part
 
