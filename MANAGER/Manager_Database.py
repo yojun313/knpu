@@ -7,109 +7,7 @@ import pandas as pd
 import copy
 import re
 import gc
-
-class TableWindow(QMainWindow):
-    def __init__(self, parent=None, target_db=None):
-        super(TableWindow, self).__init__(parent)
-        self.setWindowTitle(target_db)
-        self.setGeometry(100, 100, 1600, 1200)
-
-        self.parent = parent  # 부모 객체를 저장하여 나중에 사용
-        self.target_db = target_db  # target_db를 저장하여 나중에 사용
-
-        self.central_widget = QtWidgets.QWidget(self)
-        self.setCentralWidget(self.central_widget)
-
-        self.layout = QVBoxLayout(self.central_widget)
-
-        # 상단 버튼 레이아웃
-        self.button_layout = QtWidgets.QHBoxLayout()
-
-        # spacer 아이템 추가 (버튼들을 오른쪽 끝에 배치하기 위해 앞에 추가)
-        spacer = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.button_layout.addItem(spacer)
-
-        # 새로고침 버튼 추가
-        self.refresh_button = QtWidgets.QPushButton("새로고침", self)
-        self.refresh_button.setFixedWidth(80)  # 가로 길이 조정
-        self.refresh_button.clicked.connect(self.refresh_table)
-        self.button_layout.addWidget(self.refresh_button)
-
-        # 닫기 버튼 추가
-        self.close_button = QtWidgets.QPushButton("닫기", self)
-        self.close_button.setFixedWidth(80)  # 가로 길이 조정
-        self.close_button.clicked.connect(self.closeWindow)
-        self.button_layout.addWidget(self.close_button)
-
-        # 버튼 레이아웃을 메인 레이아웃에 추가
-        self.layout.addLayout(self.button_layout)
-
-        self.tabWidget_tables = QtWidgets.QTabWidget(self)
-        self.layout.addWidget(self.tabWidget_tables)
-
-        # target_db가 주어지면 테이블 뷰를 초기화
-        if target_db is not None:
-            self.init_table_view(parent.mySQL_obj, target_db)
-
-    def closeWindow(self):
-        self.tabWidget_tables.clear()  # 탭 위젯 내용 삭제
-        self.close()  # 창 닫기
-        self.deleteLater()  # 객체 삭제
-        gc.collect()
-
-    def closeEvent(self, event):
-        # 윈도우 창이 닫힐 때 closeWindow 메서드 호출
-        self.closeWindow()
-        event.accept()  # 창 닫기 이벤트를 허용
-
-    def init_table_view(self, mySQL_obj, target_db):
-        # target_db에 연결
-        mySQL_obj.connectDB(target_db)
-
-        tableNameList = mySQL_obj.showAllTable(target_db)
-        self.tabWidget_tables.clear()  # 기존 탭 내용 초기화
-
-        for tableName in tableNameList:
-            if 'info' in tableName or 'token' in tableName:
-                continue
-            tableDF_begin = mySQL_obj.TableToDataframe(tableName, ':50')
-            tableDF_end = mySQL_obj.TableToDataframe(tableName, ':-50')
-            tableDF = pd.concat([tableDF_begin, tableDF_end], axis = 0)
-
-            # 데이터프레임 값을 튜플 형태의 리스트로 변환
-            self.tuple_list = [tuple(row) for row in tableDF.itertuples(index=False, name=None)]
-
-            # 새로운 탭 생성
-            new_tab = QWidget()
-            new_tab_layout = QVBoxLayout(new_tab)
-            new_table = QTableWidget(new_tab)
-            new_tab_layout.addWidget(new_table)
-
-            # 테이블 데이터 설정
-            new_table.setRowCount(len(self.tuple_list))
-            new_table.setColumnCount(len(tableDF.columns))
-            new_table.setHorizontalHeaderLabels(tableDF.columns)
-
-            # 열 너비 조정
-            header = new_table.horizontalHeader()
-            header.setSectionResizeMode(QHeaderView.Stretch)
-
-            # 행 전체 선택 설정 및 단일 선택 모드
-            new_table.setSelectionBehavior(QTableWidget.SelectRows)
-            new_table.setSelectionMode(QTableWidget.SingleSelection)
-
-            for row_idx, row_data in enumerate(self.tuple_list):
-                for col_idx, col_data in enumerate(row_data):
-                    new_table.setItem(row_idx, col_idx, QTableWidgetItem(str(col_data)))
-
-            self.tabWidget_tables.addTab(new_tab, tableName.split('_')[-1])
-
-            new_tab = None
-            new_table = None
-
-    def refresh_table(self):
-        # 테이블 뷰를 다시 초기화하여 데이터를 새로 로드
-        self.init_table_view(self.parent.mySQL_obj, self.target_db)
+from datetime import datetime
 
 class Manager_Database:
     def __init__(self, main_window):
@@ -149,6 +47,109 @@ class Manager_Database:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
     def database_view_DB(self):
+        class TableWindow(QMainWindow):
+            def __init__(self, parent=None, target_db=None):
+                super(TableWindow, self).__init__(parent)
+                self.setWindowTitle(target_db)
+                self.setGeometry(100, 100, 1600, 1200)
+
+                self.parent = parent  # 부모 객체를 저장하여 나중에 사용
+                self.target_db = target_db  # target_db를 저장하여 나중에 사용
+
+                self.central_widget = QtWidgets.QWidget(self)
+                self.setCentralWidget(self.central_widget)
+
+                self.layout = QVBoxLayout(self.central_widget)
+
+                # 상단 버튼 레이아웃
+                self.button_layout = QtWidgets.QHBoxLayout()
+
+                # spacer 아이템 추가 (버튼들을 오른쪽 끝에 배치하기 위해 앞에 추가)
+                spacer = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+                self.button_layout.addItem(spacer)
+
+                # 새로고침 버튼 추가
+                self.refresh_button = QtWidgets.QPushButton("새로고침", self)
+                self.refresh_button.setFixedWidth(80)  # 가로 길이 조정
+                self.refresh_button.clicked.connect(self.refresh_table)
+                self.button_layout.addWidget(self.refresh_button)
+
+                # 닫기 버튼 추가
+                self.close_button = QtWidgets.QPushButton("닫기", self)
+                self.close_button.setFixedWidth(80)  # 가로 길이 조정
+                self.close_button.clicked.connect(self.closeWindow)
+                self.button_layout.addWidget(self.close_button)
+
+                # 버튼 레이아웃을 메인 레이아웃에 추가
+                self.layout.addLayout(self.button_layout)
+
+                self.tabWidget_tables = QtWidgets.QTabWidget(self)
+                self.layout.addWidget(self.tabWidget_tables)
+
+                # target_db가 주어지면 테이블 뷰를 초기화
+                if target_db is not None:
+                    self.init_table_view(parent.mySQL_obj, target_db)
+
+            def closeWindow(self):
+                self.tabWidget_tables.clear()  # 탭 위젯 내용 삭제
+                self.close()  # 창 닫기
+                self.deleteLater()  # 객체 삭제
+                gc.collect()
+
+            def closeEvent(self, event):
+                # 윈도우 창이 닫힐 때 closeWindow 메서드 호출
+                self.closeWindow()
+                event.accept()  # 창 닫기 이벤트를 허용
+
+            def init_table_view(self, mySQL_obj, target_db):
+                # target_db에 연결
+                mySQL_obj.connectDB(target_db)
+
+                tableNameList = mySQL_obj.showAllTable(target_db)
+                self.tabWidget_tables.clear()  # 기존 탭 내용 초기화
+
+                for tableName in tableNameList:
+                    if 'info' in tableName or 'token' in tableName:
+                        continue
+                    tableDF_begin = mySQL_obj.TableToDataframe(tableName, ':50')
+                    tableDF_end = mySQL_obj.TableToDataframe(tableName, ':-50')
+                    tableDF = pd.concat([tableDF_begin, tableDF_end], axis=0)
+
+                    # 데이터프레임 값을 튜플 형태의 리스트로 변환
+                    self.tuple_list = [tuple(row) for row in tableDF.itertuples(index=False, name=None)]
+
+                    # 새로운 탭 생성
+                    new_tab = QWidget()
+                    new_tab_layout = QVBoxLayout(new_tab)
+                    new_table = QTableWidget(new_tab)
+                    new_tab_layout.addWidget(new_table)
+
+                    # 테이블 데이터 설정
+                    new_table.setRowCount(len(self.tuple_list))
+                    new_table.setColumnCount(len(tableDF.columns))
+                    new_table.setHorizontalHeaderLabels(tableDF.columns)
+
+                    # 열 너비 조정
+                    header = new_table.horizontalHeader()
+                    header.setSectionResizeMode(QHeaderView.Stretch)
+
+                    # 행 전체 선택 설정 및 단일 선택 모드
+                    new_table.setSelectionBehavior(QTableWidget.SelectRows)
+                    new_table.setSelectionMode(QTableWidget.SingleSelection)
+
+                    for row_idx, row_data in enumerate(self.tuple_list):
+                        for col_idx, col_data in enumerate(row_data):
+                            new_table.setItem(row_idx, col_idx, QTableWidgetItem(str(col_data)))
+
+                    self.tabWidget_tables.addTab(new_tab, tableName.split('_')[-1])
+
+                    new_tab = None
+                    new_table = None
+
+            def refresh_table(self):
+                # 테이블 뷰를 다시 초기화하여 데이터를 새로 로드
+                self.init_table_view(self.parent.mySQL_obj, self.target_db)
+
         try:
             reply = QMessageBox.question(self.main, 'Confirm Delete', 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
@@ -457,14 +458,15 @@ class Manager_Database:
             def save_database(target_db, folder_path, selected_options):
 
                 dbpath = os.path.join(folder_path, target_db)
+                dbname = target_db
                 if selected_options['option'] == 'part':
                     start_date = selected_options['start_date']
                     end_date = selected_options['end_date']
 
-                    start_date_formed = pd.to_datetime(start_date, format='%Y%m%d')
-                    end_date_formed = pd.to_datetime(end_date, format='%Y%m%d')
-                    dbpath = os.path.join(folder_path, replace_dates_in_filename(target_db, start_date, end_date))
-
+                    start_date_formed = datetime.strptime(start_date, "%Y%m%d").strftime("%Y-%m-%d")
+                    end_date_formed = datetime.strptime(end_date, "%Y%m%d").strftime("%Y-%m-%d")
+                    dbname = replace_dates_in_filename(target_db, start_date, end_date)
+                    dbpath = os.path.join(folder_path, dbname)
                 try:
                     while True:
                         try:
@@ -486,13 +488,10 @@ class Manager_Database:
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
 
                         # 테이블 데이터를 DataFrame으로 변환
-                        tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
-                        target = next((column for column in tableDF.columns if 'Date' in column), None)
-                        tableDF[target] = pd.to_datetime(tableDF[target])
-
-                        # 기간 저장 옵션이 선택된 경우, 날짜 범위로 필터링
                         if selected_options['option'] == 'part':
-                            tableDF = tableDF[(tableDF[target] >= start_date_formed) & (tableDF[target] <= end_date_formed)]
+                            tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
+                        else:
+                            tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
 
                         # statistics 테이블 처리
                         if 'statistics' in tableName:
@@ -513,10 +512,12 @@ class Manager_Database:
                         tableDF = None
                         gc.collect()
 
+                    QMessageBox.information(self.main, "Information", f"{dbname}이 성공적으로 저장되었습니다")
                 except Exception as e:
                     QMessageBox.critical(self.main, "Error", f"Failed to save database: {str(e)}")
 
             select_database()
+
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 

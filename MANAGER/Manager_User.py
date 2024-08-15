@@ -56,6 +56,7 @@ class Manager_User:
                     self.main.mySQL_obj.insertToTable(tableName='user_info', data_list=[[name, email, key]])
                     self.main.mySQL_obj.commit()
                     self.userNameList.append(name)
+                    self.main.mySQL_obj.newDB(name+'_db')
 
                     row_position = self.main.user_tablewidget.rowCount()
                     self.main.user_tablewidget.insertRow(row_position)
@@ -93,8 +94,10 @@ class Manager_User:
                     if reply == QMessageBox.Yes:
                         self.main.mySQL_obj.connectDB('user_db')
                         self.main.mySQL_obj.deleteTableRowByColumn('user_info', self.userNameList[selected_row], 'Name')
+                        self.main.mySQL_obj.dropDB(self.userNameList[selected_row]+'_db')
                         self.userNameList.pop(selected_row)
                         self.main.user_tablewidget.removeRow(selected_row)
+
             elif ok:
                 QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:

@@ -23,7 +23,7 @@ import gc
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.1.5'
+        self.versionNum = '1.1.6'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()
@@ -62,9 +62,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
             self.Manager_Database_obj = Manager_Database(self)
             self.Manager_Web_obj  = Manager_Web(self)
-            self.Manager_Analysis_obj = Manager_Analysis(self)
             self.Manager_Board_obj       = Manager_Board(self)
             self.Manager_User_obj        = Manager_User(self)
+            self.userNameList = self.Manager_User_obj.userNameList
+            self.Manager_Analysis_obj = Manager_Analysis(self)
 
             # New version check
             current_version = version.parse(self.versionNum)
@@ -75,6 +76,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.Manager_Web_obj.web_open_downloadbrowser('https://knpu.re.kr:90')
 
             self.userPushOverKeyList = self.Manager_User_obj.userKeyList
+
 
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")
@@ -204,7 +206,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 lambda pos: right_click_function(widgetname.rowAt(pos.y()))
             )
 
-    def filefinder_maker(self):
+    def filefinder_maker(self, main_window):
         class EmbeddedFileDialog(QFileDialog):
             def __init__(self, parent=None, default_directory=None):
                 super().__init__(parent)
@@ -215,16 +217,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.accepted.connect(self.on_accepted)
                 self.rejected.connect(self.on_rejected)
                 self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                self.main = main_window
                 if default_directory:
                     self.setDirectory(default_directory)
 
             def on_directory_change(self, path):
-                pass
+                self.main.printStatus(f"{os.path.basename(path)} 선택됨")
 
             def on_accepted(self):
                 selected_files = self.selectedFiles()
                 if selected_files:
                     self.selectFile(', '.join([os.path.basename(file) for file in selected_files]))
+                if len(selected_files) == 0:
+                    self.main.printStatus()
+                else:
+                    self.main.printStatus(f"파일 {len(selected_files)}개 선택됨")
                 self.show()
 
             def on_rejected(self):
@@ -234,6 +241,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 selected_files = self.selectedFiles()
                 if selected_files:
                     self.selectFile(', '.join([os.path.basename(file) for file in selected_files]))
+                if len(selected_files) == 0:
+                    self.main.printStatus()
+                else:
+                    self.main.printStatus(f"파일 {len(selected_files)}개 선택됨")
                 self.show()
 
             def reject(self):
