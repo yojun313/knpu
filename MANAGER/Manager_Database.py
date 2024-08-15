@@ -511,8 +511,6 @@ class Manager_Database:
                         tableDF = None
                         gc.collect()
 
-                    self.main.alert("Information", f"{edited_tableName}가 성공적으로 저장되었습니다")
-
                 except Exception as e:
                     QMessageBox.critical(self.main, "Error", f"Failed to save database: {str(e)}")
 
