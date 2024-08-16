@@ -340,6 +340,13 @@
                       </property>
                      </widget>
                     </item>
+                    <item>
+                     <widget class="QPushButton" name="userDB_list_save_button">
+                      <property name="text">
+                       <string>다운</string>
+                      </property>
+                     </widget>
+                    </item>
                    </layout>
                   </item>
                  </layout>

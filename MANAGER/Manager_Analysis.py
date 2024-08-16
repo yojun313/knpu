@@ -11,6 +11,7 @@ import seaborn as sns
 import platform
 from kiwipiepy import Kiwi
 from collections import Counter
+from datetime import datetime
 import re
 import gc
 
@@ -56,8 +57,7 @@ class Manager_Analysis:
         self.main.userDB_list_delete_button.clicked.connect(self.toolbox_DBlistItem_delete)
         self.main.userDB_list_add_button.clicked.connect(self.toolbox_DBlistItem_add)
         self.main.userDB_list_view_button.clicked.connect(self.toolbox_DBlistItem_view)
-
-
+        self.main.userDB_list_save_button.clicked.connect(self.toolbox_DBlistItem_save)
 
     def dataprocess_search_DB(self):
         try:
@@ -844,7 +844,28 @@ class Manager_Analysis:
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
+    def toolbox_DBlistItem_save(self):
+        if not self.selected_DBlistItems or self.selected_DBlistItems == []:
+            self.main.printStatus()
+            return
 
+        self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
+        folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
+        if folder_path == '':
+            self.main.printStatus()
+            return
+
+        folder_path = os.path.join(folder_path, f'{self.selected_userDB}_download_{datetime.now().strftime('%m%d_%H%M')}')
+        os.makedirs(folder_path, exist_ok=True)
+
+        self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 저장 중...")
+        self.main.mySQL_obj.connectDB(self.selected_userDB)
+
+        self.main.openFileExplorer(folder_path)
+        for item in self.selected_DBlistItems:
+            self.main.mySQL_obj.TableToCSV(item, folder_path)
+
+        self.main.printStatus()
 
 class DataProcess:
     def __init__(self, main_window):
