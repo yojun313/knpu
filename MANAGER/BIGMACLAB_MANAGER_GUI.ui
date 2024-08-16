@@ -373,7 +373,7 @@
           </property>
           <widget class="QWidget" name="tab_version">
            <attribute name="title">
-            <string>버전 관리</string>
+            <string>패치 노트</string>
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_tab_1">
             <item>

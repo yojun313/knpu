@@ -677,6 +677,7 @@ class Manager_Analysis:
 
     def toolbox_DB_selected(self, index):
         self.selected_userDB = self.tool_box.itemText(index)
+        self.selected_userDB = self.selected_userDB.replace(' DB', '_db')
 
     def toolbox_DBlistItem_selected(self, index):
         self.selected_DBlistItems = [item.data() for item in self.list_views[self.selected_userDB].selectedIndexes()]
@@ -1053,6 +1054,33 @@ class DataProcess:
         plt.savefig(os.path.join(output_dir, "correlation_matrix.png"))
         plt.close()
         '''
+
+        # 그래프 설명 작성 (한국어)
+        description_text = """
+        그래프 설명:
+
+        1. 월별 기사 및 댓글 수 분석 (monthly_article_reply_count.png):
+           - 이 선 그래프는 시간에 따른 월별 기사 수와 댓글 수를 보여줍니다.
+           - x축은 날짜를, y축은 수량을 나타냅니다.
+           - 이 그래프는 특정 기간 동안 기사와 댓글이 어떻게 변동했는지를 파악하는 데 도움이 됩니다.
+
+        2. 기사 유형별 분석 (article_type_count.png):
+           - 이 막대 그래프는 기사 유형별 기사 수를 보여줍니다.
+           - x축은 기사 유형을, y축은 해당 유형의 기사 수를 나타냅니다.
+           - 이 그래프는 어떤 유형의 기사가 가장 많이 발행되었는지 확인하는 데 유용합니다.
+
+        3. 상위 10개 언론사별 기사 수 (press_article_count.png):
+           - 이 막대 그래프는 기사 수를 기준으로 상위 10개 언론사를 보여줍니다.
+           - x축은 언론사명을, y축은 각 언론사에서 발행한 기사 수를 나타냅니다.
+           - 이 그래프는 가장 활발하게 기사를 발행하는 언론사를 파악하는 데 도움을 줍니다.
+        """
+
+        # 설명을 txt 파일로 저장
+        description_file_path = os.path.join(output_dir, "description.txt")
+        with open(description_file_path, 'w') as file:
+            file.write(description_text)
+
+
     def NaverNewsStatisticsAnalysis(self, data, file_path):
         if 'Male' not in list(data.columns):
             QMessageBox.warning(self.main, f"Warning", f"NaverNews Statistics CSV 형태와 일치하지 않습니다")
@@ -1217,6 +1245,52 @@ class DataProcess:
         plt.savefig(os.path.join(graph_output_dir, "age_gender_reply_count.png"))
         plt.close()
         age_gender_df.to_csv(os.path.join(csv_output_dir, "age_gender_reply_count.csv"), index=False)
+
+        # 그래프 설명 작성 (한국어)
+        description_text = """
+        그래프 설명:
+
+        1. 월별 기사 및 댓글 수 추세 (monthly_article_reply_count.png):
+           - 이 그래프는 월별 기사 수와 댓글 수의 변화를 보여줍니다.
+           - x축은 날짜를, y축은 기사 수와 댓글 수를 나타냅니다.
+           - 이를 통해 특정 시기에 기사와 댓글의 변동 추이를 확인할 수 있습니다.
+
+        2. 기사 유형별 기사 및 댓글 수 (article_type_count.png):
+           - 이 그래프는 기사 유형별로 기사의 수를 나타냅니다.
+           - x축은 기사 유형을, y축은 기사 수를 나타냅니다.
+           - 이를 통해 어떤 유형의 기사가 많이 작성되었는지 알 수 있습니다.
+
+        3. 상위 10개 언론사별 기사 및 댓글 수 (press_article_count.png):
+           - 이 그래프는 상위 10개 언론사에서 작성한 기사 수를 나타냅니다.
+           - x축은 언론사명을, y축은 기사 수를 나타냅니다.
+           - 이 그래프는 가장 많은 기사를 작성한 언론사를 보여줍니다.
+
+        4. 상관관계 행렬 히트맵 (correlation_matrix.png):
+           - 이 히트맵은 주요 지표들 간의 상관관계를 시각화한 것입니다.
+           - 색상이 진할수록 상관관계가 높음을 나타내며, 음수는 음의 상관관계를 의미합니다.
+           - 이를 통해 변수들 간의 관계를 파악할 수 있습니다.
+
+        5. 성별 댓글 수 분석 (gender_reply_count.png):
+           - 이 그래프는 남성과 여성의 총 댓글 수를 보여줍니다.
+           - x축은 성별을, y축은 댓글 수를 나타냅니다.
+           - 성별에 따른 댓글 수의 차이를 확인할 수 있습니다.
+
+        6. 연령대별 댓글 수 분석 (age_group_reply_count.png):
+           - 이 그래프는 각 연령대별 총 댓글 수를 나타냅니다.
+           - x축은 연령대를, y축은 댓글 수를 나타냅니다.
+           - 이를 통해 어떤 연령대가 댓글을 많이 남겼는지 알 수 있습니다.
+
+        7. 연령대별 성별 댓글 비율 분석 (age_gender_reply_count.png):
+           - 이 그래프는 시간에 따른 성별 댓글 비율을 연령대별로 보여줍니다.
+           - x축은 날짜를, y축은 댓글 수를 나타내며, 성별에 따라 분리됩니다.
+           - 이를 통해 특정 시기와 연령대에서 남성 또는 여성이 얼마나 댓글을 많이 달았는지 알 수 있습니다.
+        """
+
+        # 설명을 txt 파일로 저장
+        description_file_path = os.path.join(output_dir, "description.txt")
+        with open(description_file_path, 'w') as file:
+            file.write(description_text)
+
     def NaverNewsReplyAnalysis(self, data, file_path):
         if 'Reply Date' not in list(data.columns):
             QMessageBox.warning(self.main, f"Warning", f"NaverNews Reply CSV 형태와 일치하지 않습니다")
@@ -1310,6 +1384,37 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "writer_reply_count.png"))
         plt.close()
+
+        # 그래프 설명 작성 (한국어)
+        description_text = """
+        그래프 설명:
+
+        1. 날짜별 댓글 수 추세 (daily_reply_count.png):
+           - 이 그래프는 날짜별 댓글 수의 변화를 보여줍니다.
+           - x축은 날짜를, y축은 댓글 수를 나타냅니다.
+           - 이를 통해 특정 기간 동안 댓글이 얼마나 많이 달렸는지 파악할 수 있습니다.
+
+        2. 댓글 감성 분석 결과 분포 (reply_sentiment_distribution.png):
+           - 이 그래프는 댓글의 감성 분석 결과를 시각화한 것입니다.
+           - x축은 감성의 유형(긍정, 부정, 중립)을, y축은 해당 감성의 댓글 수를 나타냅니다.
+           - 댓글의 전반적인 감성 분포를 확인할 수 있습니다.
+
+        3. 상관관계 행렬 히트맵 (correlation_matrix.png):
+           - 이 히트맵은 주요 지표들 간의 상관관계를 시각화한 것입니다.
+           - 색상이 진할수록 상관관계가 높음을 나타내며, 음수는 음의 상관관계를 의미합니다.
+           - 이를 통해 변수들 간의 관계를 파악할 수 있습니다.
+
+        4. 작성자별 댓글 수 분포 (상위 10명) (writer_reply_count.png):
+           - 이 그래프는 댓글을 가장 많이 작성한 상위 10명의 작성자를 보여줍니다.
+           - x축은 작성자의 이름을, y축은 해당 작성자가 작성한 댓글 수를 나타냅니다.
+           - 이를 통해 어떤 작성자가 댓글 활동이 활발한지 알 수 있습니다.
+        """
+
+        # 설명을 txt 파일로 저장
+        description_file_path = os.path.join(output_dir, "description.txt")
+        with open(description_file_path, 'w') as file:
+            file.write(description_text)
+
     def NaverNewsRereplyAnalysis(self, data, file_path):
         if 'Rereply Date' not in list(data.columns):
             QMessageBox.warning(self.main, f"Warning", f"NaverNews Rereply CSV 형태와 일치하지 않습니다")
@@ -1323,24 +1428,24 @@ class DataProcess:
         basic_stats = data.describe(include='all')
 
         # 댓글 길이 추가
-        data['Reply Length'] = data['Reply Text'].apply(len)
+        data['Rereply Length'] = data['Rereply Text'].apply(len)
 
         # 날짜별 댓글 수 분석
-        time_analysis = data.groupby(data['Reply Date'].dt.date).agg({
+        time_analysis = data.groupby(data['Rereply Date'].dt.date).agg({
             'id': 'count',
-            'Reply Like': 'sum',
-            'Reply Bad': 'sum'
-        }).rename(columns={'id': 'Reply Count'})
+            'Rereply Like': 'sum',
+            'Rereply Bad': 'sum'
+        }).rename(columns={'id': 'Rereply Count'})
 
         # 댓글 감성 분석 결과 빈도
-        sentiment_counts = data['Reply Sentiment'].value_counts()
+        sentiment_counts = data['Rereply Sentiment'].value_counts()
 
         # 상관관계 분석
-        correlation_matrix = data[['Reply Like', 'Reply Bad', 'Rereply Count', 'Reply LikeRatio', 'Reply Sentiment',
-                                   'Reply Length']].corr()
+        correlation_matrix = data[['Rereply Like', 'Rereply Bad', 'Rereply Count', 'Rereply LikeRatio', 'Rereply Sentiment',
+                                   'Rereply Length']].corr()
 
         # 작성자별 댓글 수 계산
-        writer_reply_count = data['Reply Writer'].value_counts()
+        writer_reply_count = data['Rereply Writer'].value_counts()
 
         # 결과를 저장할 디렉토리 생성
         output_dir = os.path.join(os.path.dirname(file_path),
@@ -1355,31 +1460,31 @@ class DataProcess:
         time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
         sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"))
         correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"))
-        writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_reply_count.csv"))
+        writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_rereply_count.csv"))
 
         # 시각화 그래프를 이미지 파일로 저장
 
         # 1. 날짜별 댓글 수 추세
         data_length = len(time_analysis)
         plt.figure(figsize=self.calculate_figsize(data_length))
-        sns.lineplot(data=time_analysis, x=time_analysis.index, y='Reply Count')
-        plt.title('Daily Reply Count Over Time')
+        sns.lineplot(data=time_analysis, x=time_analysis.index, y='Rereply Count')
+        plt.title('Daily Rereply Count Over Time')
         plt.xlabel('Date')
-        plt.ylabel('Number of Replies')
+        plt.ylabel('Number of Rereplies')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "daily_reply_count.png"))
+        plt.savefig(os.path.join(graph_output_dir, "daily_rereply_count.png"))
         plt.close()
 
         # 2. 댓글 감성 분석 결과 분포
         data_length = len(sentiment_counts)
         plt.figure(figsize=self.calculate_figsize(data_length, base_width=8))
-        sns.countplot(x='Reply Sentiment', data=data)
-        plt.title('Reply Sentiment Distribution')
+        sns.countplot(x='Rereply Sentiment', data=data)
+        plt.title('Rereply Sentiment Distribution')
         plt.xlabel('Sentiment')
         plt.ylabel('Count')
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "reply_sentiment_distribution.png"))
+        plt.savefig(os.path.join(graph_output_dir, "rereply_sentiment_distribution.png"))
         plt.close()
 
         # 4. 상관관계 행렬 히트맵
@@ -1396,13 +1501,42 @@ class DataProcess:
         data_length = len(top_10_writers)
         plt.figure(figsize=self.calculate_figsize(data_length))
         sns.barplot(x=top_10_writers.index, y=top_10_writers.values, palette="viridis")
-        plt.title('Top 10 Writers by Number of Replies')
+        plt.title('Top 10 Writers by Number of Rereplies')
         plt.xlabel('Writer')
-        plt.ylabel('Number of Replies')
+        plt.ylabel('Number of Rereplies')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "writer_reply_count.png"))
+        plt.savefig(os.path.join(graph_output_dir, "writer_rereply_count.png"))
         plt.close()
+
+        # 그래프 설명 작성 (한국어)
+        description_text = """
+            그래프 설명:
+
+            1. 날짜별 댓글 수 추세 (daily_rereply_count.png):
+               - 이 그래프는 날짜별 댓글 수의 변화를 보여줍니다.
+               - x축은 날짜를, y축은 댓글 수를 나타냅니다.
+               - 이를 통해 특정 기간 동안 댓글이 얼마나 많이 달렸는지 파악할 수 있습니다.
+
+            2. 댓글 감성 분석 결과 분포 (rereply_sentiment_distribution.png):
+               - 이 그래프는 댓글의 감성 분석 결과를 시각화한 것입니다.
+               - x축은 감성의 유형(긍정, 부정, 중립)을, y축은 해당 감성의 댓글 수를 나타냅니다.
+               - 댓글의 전반적인 감성 분포를 확인할 수 있습니다.
+
+            3. 상관관계 행렬 히트맵 (correlation_matrix.png):
+               - 이 히트맵은 주요 지표들 간의 상관관계를 시각화한 것입니다.
+               - 색상이 진할수록 상관관계가 높음을 나타내며, 음수는 음의 상관관계를 의미합니다.
+               - 이를 통해 변수들 간의 관계를 파악할 수 있습니다.
+
+            4. 작성자별 댓글 수 분포 (상위 10명) (writer_rereply_count.png):
+               - 이 그래프는 댓글을 가장 많이 작성한 상위 10명의 작성자를 보여줍니다.
+               - x축은 작성자의 이름을, y축은 해당 작성자가 작성한 댓글 수를 나타냅니다.
+               - 이를 통해 어떤 작성자가 댓글 활동이 활발한지 알 수 있습니다.
+        """
+        # 설명을 txt 파일로 저장
+        description_file_path = os.path.join(output_dir, "description.txt")
+        with open(description_file_path, 'w') as file:
+            file.write(description_text)
 
     def NaverCafeArticleAnalysis(self, data, file_path):
         if 'NaverCafe Name' not in list(data.columns):
@@ -1498,6 +1632,32 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "top_10_writers.png"))
         plt.close()
+
+        # 그래프 설명 작성 (한국어)
+        description_text = """
+        그래프 설명:
+
+        1. 카페별 게시글 수 분포 (cafe_article_count.png):
+           - 이 그래프는 각 네이버 카페별로 작성된 게시글 수를 보여줍니다.
+           - x축은 네이버 카페명을, y축은 해당 카페에서 작성된 게시글 수를 나타냅니다.
+           - 이를 통해 각 카페에서의 게시글 작성 활동을 파악할 수 있습니다.
+
+        2. 시간별 게시글 수 추세 (monthly_article_count.png):
+           - 이 그래프는 시간에 따른 월별 게시글 수의 변화를 보여줍니다.
+           - x축은 날짜를, y축은 해당 월에 작성된 게시글 수를 나타냅니다.
+           - 이를 통해 특정 기간 동안의 게시글 작성 추세를 알 수 있습니다.
+
+        3. 작성자별 게시글 수 분포 (상위 10명) (top_10_writers.png):
+           - 이 그래프는 게시글을 가장 많이 작성한 상위 10명의 작성자를 보여줍니다.
+           - x축은 작성자명을, y축은 해당 작성자가 작성한 게시글 수를 나타냅니다.
+           - 이를 통해 어떤 작성자가 게시글 활동이 활발한지 파악할 수 있습니다.
+        """
+
+        # 설명을 txt 파일로 저장
+        description_file_path = os.path.join(output_dir, "description.txt")
+        with open(description_file_path, 'w') as file:
+            file.write(description_text)
+
     def NaverCafeReplyAnalysis(self, data, file_path):
         # 'Article URL' 열이 있는지 확인
         if 'Article URL' not in list(data.columns):
@@ -1557,6 +1717,27 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "monthly_reply_count.png"))
         plt.close()
+
+        # 그래프 설명 작성 (한국어)
+        description_text = """
+        그래프 설명:
+
+        1. 작성자별 댓글 수 분포 (상위 100명) (writer_reply_count.png):
+           - 이 그래프는 댓글을 가장 많이 작성한 상위 100명의 작성자를 보여줍니다.
+           - x축은 작성자명을, y축은 해당 작성자가 작성한 댓글 수를 나타냅니다.
+           - 이를 통해 어떤 작성자가 댓글 활동이 활발한지 파악할 수 있습니다.
+
+        2. 시간별 댓글 수 추세 (monthly_reply_count.png):
+           - 이 그래프는 시간에 따른 월별 댓글 수의 변화를 보여줍니다.
+           - x축은 날짜를, y축은 해당 월에 작성된 댓글 수를 나타냅니다.
+           - 이를 통해 특정 기간 동안의 댓글 작성 추세를 알 수 있습니다.
+        """
+
+        # 설명을 txt 파일로 저장
+        description_file_path = os.path.join(output_dir, "description.txt")
+        with open(description_file_path, 'w') as file:
+            file.write(description_text)
+
 
 class KimKem:
     def __init__(self, token_data, csv_name, save_path, startyear, word_num, exception_word_list = []):
