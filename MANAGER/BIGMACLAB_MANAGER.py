@@ -23,7 +23,7 @@ import gc
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.1.8'
+        self.versionNum = '1.1.9'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()
@@ -59,13 +59,19 @@ class MainWindow(QtWidgets.QMainWindow):
             if os.path.isdir(self.default_directory) == False:
                 os.mkdir(self.default_directory)
 
+            # DB 불러오기
             self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
             self.Manager_Database_obj = Manager_Database(self)
-            self.Manager_Web_obj  = Manager_Web(self)
-            self.Manager_Board_obj       = Manager_Board(self)
-            self.Manager_User_obj        = Manager_User(self)
+
+            # 로딩 시간 개선을 위해 ANALYSIS는 누를 때만 로드됨
+            self.Manager_Analysis_generate = False
+
+            # 각 모듈 객체 생성
+            self.Manager_Web_obj = Manager_Web(self)
+            self.Manager_Board_obj = Manager_Board(self)
+            self.Manager_User_obj = Manager_User(self)
             self.userNameList = self.Manager_User_obj.userNameList
-            self.Manager_Analysis_obj = Manager_Analysis(self)
+            self.userPushOverKeyList = self.Manager_User_obj.userKeyList
 
             # New version check
             current_version = version.parse(self.versionNum)
@@ -74,9 +80,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 reply = QMessageBox.question(self, 'Confirm Update', f"새로운 {new_version} 버전이 존재합니다.\n다운로드 받으시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     self.Manager_Web_obj.web_open_downloadbrowser('https://knpu.re.kr:90')
-
-            self.userPushOverKeyList = self.Manager_User_obj.userKeyList
-
 
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")
@@ -362,15 +365,26 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
+        # DATABASE
         if index == 0:
             self.Manager_Database_obj.database_refresh_DB()
+        # CRAWLER
         elif index == 1:
             self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr', self.Manager_Web_obj.crawler_web_layout)
+        # ANALYSIS
         elif index == 2:
+            if self.Manager_Analysis_generate == False:
+                self.Manager_Analysis_obj = Manager_Analysis(self)
+                self.Manager_Analysis_generate = True
             self.Manager_Analysis_obj.dataprocess_refresh_DB()
-            pass
+        # BOARD
         elif index == 3:
+            pass
+        # WEB
+        elif index == 4:
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
+        # USER
+        elif index == 5:
             pass
         gc.collect()
 

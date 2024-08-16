@@ -189,13 +189,16 @@ class Manager_Database:
         crawlOption_int = int(DBdata[4])
 
         try:
-            IntegratedDB = json.loads(DBinfo[2])
+            json_str = DBinfo[2].replace("'", '"')
+            IntegratedDB = json.loads(json_str)
             CountText = (
                 f"Article Count: {IntegratedDB['TotalArticleCnt']}\n"
                 f"Reply Count: {IntegratedDB['TotalReplyCnt']}\n"
                 f"Rereply Count: {IntegratedDB['TotalRereplyCnt']}\n"
             )
-        except:
+            if IntegratedDB['TotalArticleCnt'] == 0 and IntegratedDB['TotalReplyCnt'] == 0 and IntegratedDB['TotalRereplyCnt'] == 0:
+                CountText = "크롤링 중..."
+        except Exception as e:
             CountText = "크롤링 중..."
 
         match crawlType:
@@ -303,8 +306,7 @@ class Manager_Database:
         dialog.setLayout(layout)
 
         # 다이얼로그 실행
-        dialog.exec_()
-
+        dialog.show()
 
     def database_search_DB(self):
         try:
