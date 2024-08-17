@@ -488,8 +488,10 @@ class Manager_Analysis:
                     self.dataprocess_obj.NaverCafeReplyAnalysis(csv_data, csv_path)
                 case []:
                     QMessageBox.warning(self.main, "Warning", "CSV 파일 클릭 -> Open버튼 클릭 -> 옵션을 선택하세요")
+                    return
                 case _:
                     QMessageBox.warning(self.main, "Warning", f"{selected_options[1]} {selected_options[0]} 분석은 지원되지 않는 기능입니다")
+                    return
 
             self.main.openFileExplorer(os.path.dirname(csv_path))
             del csv_data
@@ -584,7 +586,7 @@ class Manager_Analysis:
 
         while True:
             dialog = KimKemInputDialog()
-            dialog.exec_()
+            dialog.show()
             try:
                 if dialog.data == None:
                     return
