@@ -1,7 +1,7 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic, QtGui
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QApplication, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QDesktopWidget
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication
 
@@ -32,22 +32,8 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi(ui_path, self)
 
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
-        
-        # 화면 해상도와 배율 감지
-        screen = QApplication.primaryScreen()
-        screen_geometry = screen.geometry()
-        screen_width = screen_geometry.width()
-        screen_height = screen_geometry.height()
-
-        # 화면 배율(스케일 팩터) 감지
-        screen_dpi = screen.logicalDotsPerInch()
-        scale_factor = screen_dpi / 96  # 96 DPI가 표준 배율
-
-        # 창 크기를 화면 크기에 맞게 조정, 배율 고려
-        window_width = int(screen_width / scale_factor)
-        window_height = int(screen_height / scale_factor)
-
-        self.setGeometry(0, 0, window_width, window_height)
+        #self.setGeometry(0, 0, 1400, 1000)
+        self.resize(1400, 1000)
 
         #self.menubar_init()
         self.statusBar_init()
