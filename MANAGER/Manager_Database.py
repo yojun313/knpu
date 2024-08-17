@@ -242,6 +242,8 @@ class Manager_Database:
                     case 2:
                         crawlOption = '기사 + 댓글'
 
+        ElapsedTime = datetime.strptime(DBdata[6], "%m/%d %H:%M") - datetime.strptime(DBdata[5], "%m/%d %H:%M")
+
         # HTML을 사용하여 디테일 표시
         details_html = f"""
             <style>
@@ -280,6 +282,7 @@ class Manager_Database:
                 <p><b>Crawl Option:</b> {crawlOption}</p>
                 <p><b>Crawl Start:</b> {DBdata[5]}</p>
                 <p><b>Crawl End:</b> {DBdata[6]}</p>
+                <p><b>Crawl ElapsedTime:</b> {ElapsedTime}</p>
                 <p><b>Crawl Requester:</b> {DBdata[7]}</p>
                 <p><b>Crawl Server:</b> {DBinfo[0]}</p>
                 <p><b>Crawl Speed:</b> {DBinfo[1]}</p>

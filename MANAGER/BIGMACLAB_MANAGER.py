@@ -1,11 +1,12 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic, QtGui
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QApplication, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QDesktopWidget
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication
 
-
+import shutil
+import tempfile
 from mySQL import mySQL
 from Manager_Database import Manager_Database
 from Manager_Web import Manager_Web
@@ -23,16 +24,31 @@ import gc
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.1.9'
+        self.versionNum = '1.1.10'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
-        sound_path = os.path.join(os.path.dirname(__file__), 'alert_sound.wav')
         uic.loadUi(ui_path, self)
 
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
-        self.setGeometry(0, 0, 1400, 900)
+        
+        # 화면 해상도와 배율 감지
+        screen = QApplication.primaryScreen()
+        screen_geometry = screen.geometry()
+        screen_width = screen_geometry.width()
+        screen_height = screen_geometry.height()
+
+        # 화면 배율(스케일 팩터) 감지
+        screen_dpi = screen.logicalDotsPerInch()
+        scale_factor = screen_dpi / 96  # 96 DPI가 표준 배율
+
+        # 창 크기를 화면 크기에 맞게 조정, 배율 고려
+        window_width = int(screen_width / scale_factor)
+        window_height = int(screen_height / scale_factor)
+
+        self.setGeometry(0, 0, window_width, window_height)
+
         #self.menubar_init()
         self.statusBar_init()
         self.admin_password = 'kingsman'
@@ -481,6 +497,8 @@ class InfoDialog(QDialog):
 
 
 if __name__ == '__main__':
+    temp_dir = tempfile.mkdtemp()
+    shutil.rmtree(temp_dir, ignore_errors=True)
     environ["QT_DEVICE_PIXEL_RATIO"] = "0"
     environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     environ["QT_SCREEN_SCALE_FACTORS"] = "1"
@@ -501,3 +519,4 @@ if __name__ == '__main__':
     application = MainWindow()
     application.show()
     sys.exit(app.exec_())
+
