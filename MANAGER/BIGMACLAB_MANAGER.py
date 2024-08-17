@@ -303,6 +303,8 @@ class MainWindow(QtWidgets.QMainWindow):
                             font-family: 'Tahoma';
                             font-size: 14px;
                             border: none;
+                            min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
+                            max-width: 150px;
                         }
                         QListWidget::item {
                             height: 40px;  /* 각 아이템의 높이를 조정 */
