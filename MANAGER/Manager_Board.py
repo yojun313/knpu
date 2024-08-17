@@ -172,7 +172,7 @@ class Manager_Board:
                     # 다이얼로그 생성
                     dialog = QDialog(self.main)
                     dialog.setWindowTitle(f'Version {version_data[0]} Details')
-                    dialog.setGeometry(100, 100, 400, 300)
+                    dialog.setGeometry(100, 100, 400, 600)
 
                     layout = QVBoxLayout()
 
@@ -371,7 +371,7 @@ class Manager_Board:
                     # 다이얼로그 생성
                     dialog = QDialog(self.main)
                     dialog.setWindowTitle(f'Bug {bug_data[1]} Details')
-                    dialog.setGeometry(100, 100, 400, 300)
+                    dialog.setGeometry(100, 100, 400, 600)
 
                     layout = QVBoxLayout()
 

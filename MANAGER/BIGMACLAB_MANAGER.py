@@ -24,7 +24,7 @@ import gc
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.1.10'
+        self.versionNum = '1.2.0'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()
@@ -62,18 +62,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 os.mkdir(self.default_directory)
 
             # DB 불러오기
-            self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
-            self.Manager_Database_obj = Manager_Database(self)
-
-            # 로딩 시간 개선을 위해 ANALYSIS는 누를 때만 로드됨
-            self.Manager_Analysis_generate = False
-
-            # 각 모듈 객체 생성
-            self.Manager_Web_obj = Manager_Web(self)
-            self.Manager_Board_obj = Manager_Board(self)
             self.Manager_User_obj = Manager_User(self)
             self.userNameList = self.Manager_User_obj.userNameList
             self.userPushOverKeyList = self.Manager_User_obj.userKeyList
+            if self.login_program() == False:
+                sys.exit()
+
+            self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
+            self.Manager_Database_obj = Manager_Database(self)
+            self.Manager_Web_obj = Manager_Web(self)
+            self.Manager_Board_obj = Manager_Board(self)
+            self.Manager_Analysis_generate = False
 
             # New version check
             current_version = version.parse(self.versionNum)
@@ -87,6 +86,44 @@ class MainWindow(QtWidgets.QMainWindow):
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1, self.printStatus)
+
+    def login_program(self):
+        self.mySQL_obj.connectDB('bigmaclab_manager_db')
+        self.device_list = [item[0] for item in self.mySQL_obj.TableToList('device_list')]
+        current_device = socket.gethostname()
+        if current_device in self.device_list:
+            return
+        else:
+            input_dialog_id = QInputDialog(self)
+            input_dialog_id.setWindowTitle('Login')
+            input_dialog_id.setLabelText('User Name:')
+            input_dialog_id.resize(300, 200)  # 원하는 크기로 설정
+            ok_id = input_dialog_id.exec_()
+            user_name = input_dialog_id.textValue()
+            if not ok_id:
+                QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
+                return False
+            elif  user_name not in self.userNameList:
+                QMessageBox.warning(self, 'Error', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
+                return False
+
+            ok, password = self.admin_check()
+            if ok and password == 'bigmaclab2022!':
+                reply = QMessageBox.question(self, 'Confirm Delete', f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.mySQL_obj.insertToTable('device_list', [[current_device, user_name]])
+                    self.mySQL_obj.commit()
+                    QMessageBox.information(self, "Information", "디바이스가 등록되었습니다\n\n다음 실행 시 추가적인 로그인이 필요하지 않습니다")
+                    return True
+                else:
+                    QMessageBox.information(self, "Information", "디바이스가 등록되지 않았습니다\n\n다음 실행 시 추가적인 로그인이 필요합니다")
+                    return True
+            elif ok:
+                QMessageBox.warning(self, 'Error', '비밀번호가 올바르지 않습니다\n\n프로그램을 종료합니다')
+                return False
+            else:
+                QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
+                return False
 
     def statusBar_init(self):
         # 상태 표시줄 생성
