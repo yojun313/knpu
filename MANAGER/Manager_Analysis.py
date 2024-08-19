@@ -14,6 +14,8 @@ from collections import Counter
 from datetime import datetime
 import re
 import gc
+from PIL import Image
+import numpy as np
 
 # 운영체제에 따라 한글 폰트를 설정
 if platform.system() == 'Darwin':  # macOS
@@ -572,35 +574,48 @@ class Manager_Analysis:
             elif 'token' not in selected_directory[0]:
                 QMessageBox.warning(self.main, f"Warning", "토큰 파일이 아닙니다")
                 return
+            def start():
+                token_data = pd.read_csv(selected_directory[0], low_memory=False)
+                self.kimkem_kimkemStart(token_data, os.path.basename(selected_directory[0]))
 
-            token_data = pd.read_csv(selected_directory[0], low_memory=False)
-            self.kimkem_kimkemStart(token_data, os.path.basename(selected_directory[0]))
+            self.main.printStatus("파일 읽는 중...")
+            QTimer.singleShot(1000, start)
+
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
     def kimkem_kimkemStart(self, token_data, tokenfile_name):
-        QMessageBox.information(self.main, "Information", f"KEM KIM 데이터를 저장할 위치를 선택하세요")
+        self.main.printStatus("KEM KIM 데이터를 저장할 위치를 선택하세요")
         save_path = QFileDialog.getExistingDirectory(self.main, "데이터를 저장할 위치를 선택하세요", self.main.default_directory)
         if save_path == '':
+            self.main.printStatus()
             return
 
         while True:
             dialog = KimKemInputDialog()
-            dialog.show()
+            dialog.exec_()
             try:
                 if dialog.data == None:
                     return
                 startyear = int(dialog.data['startyear'])
                 topword = int(dialog.data['topword'])
+                weight = float(dialog.data['weight'])
+                graph_wordcnt = int(dialog.data['graph_wordcnt'])
                 yes_selected = dialog.data['yes_selected']
                 no_selected = dialog.data['no_selected']
+                split_option = dialog.data['split_option']
+                split_custom = dialog.data['split_custom']
+                if split_option in ['평균(Mean)', '중간값(Median)'] and split_custom is None:
+                    pass
+                else:
+                    split_custom = float(split_custom)
                 break
             except:
-                QMessageBox.information(self.main, "Warning", "분석 시작 연도, 상위 단어 개수는 숫자로만 입력하세요")
+                QMessageBox.information(self.main, "Warning", "입력 형식이 올바르지 않습니다")
 
         if yes_selected == True:
             QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
-            exception_word_list_path = QFileDialog.getOpenFileName(self.main, "데이터를 저장할 위치를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
+            exception_word_list_path   = QFileDialog.getOpenFileName(self.main, "데이터를 저장할 위치를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
             exception_word_list_path = exception_word_list_path[0]
             if exception_word_list_path == "":
                 return
@@ -612,10 +627,9 @@ class Manager_Analysis:
         else:
             exception_word_list = []
 
-        self.main.openFileExplorer(save_path)
-        kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startyear, topword, exception_word_list)
-
         self.main.printStatus(f"{tokenfile_name} KEMKIM 분석 중...")
+        self.main.openFileExplorer(save_path)
+        kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startyear, topword, weight, graph_wordcnt, split_option, split_custom, exception_word_list)
         result = kimkem_obj.make_kimkem()
 
         if result == 1:
@@ -1742,13 +1756,18 @@ class DataProcess:
 
 
 class KimKem:
-    def __init__(self, token_data, csv_name, save_path, startyear, word_num, exception_word_list = []):
+    def __init__(self, token_data, csv_name, save_path, startyear, topword, weight, graph_wordcnt, split_option, split_custom=None, exception_word_list=[]):
         self.token_data = token_data
         self.folder_name = csv_name.replace('.csv', '').replace('token_', '')
         self.startyear = startyear
-        self.word_num = word_num
+        self.topword = topword
+        self.weight = weight
+        self.graph_wordcnt = graph_wordcnt
         self.except_option_display = 'Y' if exception_word_list else 'N'
         self.exception_word_list = exception_word_list
+        self.split_option = split_option
+        self.split_custom = split_custom
+        self.now = datetime.now()
 
         # Text Column Name 지정
         for column in token_data.columns.tolist():
@@ -1757,12 +1776,27 @@ class KimKem:
             elif 'Date' in column:
                 self.dateColumn_name = column
 
-
         self.kimkem_folder_path = os.path.join(
             save_path,
-            f"kimkem_{str(self.folder_name)} (start={str(self.startyear)},topword={str(self.word_num)},except={str(self.except_option_display)})"
+            f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
         )
         os.makedirs(self.kimkem_folder_path, exist_ok=True)
+
+        info = (
+            f"===================================================================================================================\n"
+            f"{'분석 데이터:':<15} {self.folder_name}\n"
+            f"{'분석 시각:':<15} {self.now.strftime('%Y.%m.%d %H:%M')}\n"
+            f"{'분석 시작 연도:':<15} {self.startyear}\n"
+            f"{'상위 단어 개수:':<15} {self.topword}\n"
+            f"{'계산 가중치:':<15} {self.weight}\n"
+            f"{'제외 단어 여부:':<15} {self.except_option_display}\n"
+            f"{'분할 기준:':<15} {self.split_option}\n"
+            f"{'분할 상위%:':<15} {self.split_custom}\n"
+            f"===================================================================================================================\n"
+        )
+
+        with open(os.path.join(self.kimkem_folder_path, 'kemkim_info.txt'),'w+') as info_txt:
+            info_txt.write(info)
 
     def make_kimkem(self):
         # Step 1: 데이터 분할 및 초기화
@@ -1788,6 +1822,8 @@ class KimKem:
         # Step 4: TF, DF, DoV, DoD 계산
         tf_counts, df_counts = self.cal_tf(keyword_list, year_divided_dic_merged), self.cal_df(keyword_list, year_divided_dic)
         DoV_dict, DoD_dict = self.cal_DoV(keyword_list, year_divided_dic, tf_counts), self.cal_DoD(keyword_list, year_divided_dic, df_counts)
+        self.year_list = list(tf_counts.keys())
+        self.year_list = [int(year) for year in self.year_list]
 
         # Step 5: 결과 저장 디렉토리 설정
         self._create_output_directories()
@@ -1795,14 +1831,20 @@ class KimKem:
         # Step 6: 결과 저장 (TF, DF, DoV, DoD)
         self._save_kimkem_results(tf_counts, df_counts, DoV_dict, DoD_dict)
 
-        # Step 7: 평균 증가율 및 빈도 계산
-        avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts)
+        for year in self.year_list:
+            # Step 7: 평균 증가율 및 빈도 계산
+            if year == min(self.year_list):
+                continue
+            graph_folder = self.graph_folder if year == max(self.year_list) else os.path.join(self.history_folder, year)
 
-        # Step 8: 신호 분석 및 그래프 생성
-        DoV_signal, DoD_signal = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency)
+            avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, year)
 
-        # Step 9: 최종 신호 저장
-        self._save_final_signals(DoV_signal, DoD_signal)
+            # Step 8: 신호 분석 및 그래프 생성
+            DoV_signal, DoD_signal = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, graph_folder)
+
+            if year == max(self.year_list):
+                # Step 9: 최종 신호 저장
+                self._save_final_signals(DoV_signal, DoD_signal)
 
         return 1
 
@@ -1829,9 +1871,9 @@ class KimKem:
     def _merge_year_divided_dic(self, year_divided_dic):
         return {key: [item for sublist in value for item in sublist] for key, value in year_divided_dic.items()}
 
-    # self.word_num 개의 top common words 뽑아냄
+    # self.topword 개의 top common words 뽑아냄
     def _extract_top_common_words(self, year_divided_dic_merged):
-        return {k: [item for item, count in Counter(v).most_common(self.word_num)] for k, v in
+        return {k: [item for item, count in Counter(v).most_common(self.topword)] for k, v in
                 year_divided_dic_merged.items()}
 
     def _get_keyword_list(self, top_common_words):
@@ -1840,12 +1882,13 @@ class KimKem:
 
     def _create_output_directories(self):
         article_kimkem_folder = self.kimkem_folder_path
-        self.tf_folder = os.path.join(article_kimkem_folder, "article_TF")
-        self.df_folder = os.path.join(article_kimkem_folder, "article_DF")
-        self.DoV_folder = os.path.join(article_kimkem_folder, "article_DoV")
-        self.DoD_folder = os.path.join(article_kimkem_folder, "article_DoD")
+        self.tf_folder = os.path.join(article_kimkem_folder, "TF")
+        self.df_folder = os.path.join(article_kimkem_folder, "DF")
+        self.DoV_folder = os.path.join(article_kimkem_folder, "DoV")
+        self.DoD_folder = os.path.join(article_kimkem_folder, "DoD")
         self.signal_folder = os.path.join(article_kimkem_folder, "signal")
         self.graph_folder = os.path.join(article_kimkem_folder, "graph")
+        self.history_folder = os.path.join(self.graph_folder, 'history')
 
         os.makedirs(self.tf_folder, exist_ok=True)
         os.makedirs(self.df_folder, exist_ok=True)
@@ -1854,6 +1897,9 @@ class KimKem:
         os.makedirs(self.signal_folder, exist_ok=True)
         os.makedirs(self.graph_folder, exist_ok=True)
 
+        for year in self.year_list:
+            os.makedirs(os.path.join(self.history_folder, str(year)), exist_ok=True)
+
     def _save_kimkem_results(self, tf_counts, df_counts, DoV_dict, DoD_dict):
         for year in tf_counts:
             self._save_yearly_data(self.tf_folder, year, tf_counts, 'TF')
@@ -1861,13 +1907,18 @@ class KimKem:
             self._save_yearly_data(self.DoV_folder, year, DoV_dict, 'DoV')
             self._save_yearly_data(self.DoD_folder, year, DoD_dict, 'DoD')
 
+        self.create_top_words_animation(tf_counts, os.path.join(self.tf_folder, 'tf_counts_animation.gif'), self.graph_wordcnt)
+        self.create_top_words_animation(df_counts, os.path.join(self.df_folder, 'df_counts_animation.gif'), self.graph_wordcnt)
+        self.create_top_words_animation(DoV_dict, os.path.join(self.DoV_folder, 'DOV_animation.gif'), self.graph_wordcnt, 100)
+        self.create_top_words_animation(DoD_dict, os.path.join(self.DoD_folder, 'DOD_animation.gif'), self.graph_wordcnt, 100)
+
     def _save_yearly_data(self, folder, year, data_dict, label):
         data_df = pd.DataFrame(list(data_dict[year].items()), columns=['keyword', label])
         data_df.to_csv(f"{folder}/{year}_{label}.csv", index=False, encoding='utf-8-sig')
 
-    def _calculate_averages(self, keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts):
-        year_list = list(tf_counts.keys())
-        max_year, min_year = max(year_list), min(year_list)
+    def _calculate_averages(self, keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, current_year):
+        min_year = self.startyear
+        max_year = current_year
 
         avg_DoV_increase_rate = {}
         avg_DoD_increase_rate = {}
@@ -1877,8 +1928,8 @@ class KimKem:
         for word in keyword_list:
             avg_DoV_increase_rate[word] = self._calculate_average_increase(DoV_dict, word, max_year, min_year)
             avg_DoD_increase_rate[word] = self._calculate_average_increase(DoD_dict, word, max_year, min_year)
-            avg_term_frequency[word] = self._calculate_average_frequency(tf_counts, word)
-            avg_doc_frequency[word] = self._calculate_average_frequency(df_counts, word)
+            avg_term_frequency[word] = self._calculate_average_frequency(tf_counts, word, max_year, min_year)
+            avg_doc_frequency[word] = self._calculate_average_frequency(df_counts, word, max_year, min_year)
 
         return avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency
 
@@ -1886,12 +1937,14 @@ class KimKem:
         return (((data_dict[max_year][word] / data_dict[min_year][word]) ** (
                     1 / (int(max_year) - int(min_year)))) - 1) * 100
 
-    def _calculate_average_frequency(self, counts_dict, word):
-        return sum([counts_dict[year][word] for year in counts_dict.keys()]) / len(counts_dict)
+    def _calculate_average_frequency(self, counts_dict, word, max_year, min_year):
+        relevant_years = [year for year in counts_dict.keys() if min_year <= year <= max_year]
+        total_frequency = sum([counts_dict[year][word] for year in relevant_years])
+        return total_frequency / len(relevant_years) if relevant_years else 0
 
-    def _analyze_signals(self, avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency):
-        DoV_signal = self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, self.graph_folder)
-        DoD_signal = self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, self.graph_folder)
+    def _analyze_signals(self, avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, folder_path):
+        DoV_signal = self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, folder_path)
+        DoD_signal = self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path)
         return DoV_signal, DoD_signal
 
     def _save_final_signals(self, DoV_signal, DoD_signal):
@@ -1930,34 +1983,125 @@ class KimKem:
 
         return year_divided_group
 
+    def create_top_words_animation(self, dataframe, output_filename='top_words_animation.gif', word_cnt=10, scale_factor=1):
+        # 데이터프레임을 pandas로 변환
+        import os
+        df = pd.DataFrame(dataframe).fillna(0)
+        output_folder = os.path.dirname(output_filename)
+
+        # 연도별로 상위 word_cnt개 단어를 추출
+        top_words_per_year = {}
+        for year in df.columns:
+            top_words_per_year[year] = df[year].nlargest(word_cnt).sort_values(ascending=True)
+
+        # 색상 팔레트 설정 (세련된 색상)
+        colors = sns.color_palette("husl", word_cnt)
+
+        # 애니메이션 초기 설정
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        # 보간 함수 생성
+        def interpolate(start, end, num_steps):
+            return np.linspace(start, end, num_steps)
+
+        def animate(i):
+            year_idx = i // 20
+            year = list(top_words_per_year.keys())[year_idx]
+            next_year_idx = year_idx + 1 if year_idx + 1 < len(top_words_per_year) else year_idx
+            next_year = list(top_words_per_year.keys())[next_year_idx]
+
+            start_data = top_words_per_year[year]
+            end_data = top_words_per_year[next_year]
+
+            # 데이터를 정렬하여 순위를 유지하게끔 보간
+            combined_data = pd.concat([start_data, end_data], axis=1).fillna(0)
+            combined_data.columns = ['start', 'end']
+            combined_data['start_rank'] = combined_data['start'].rank(ascending=False, method='first')
+            combined_data['end_rank'] = combined_data['end'].rank(ascending=False, method='first')
+
+            interpolated_values = interpolate(combined_data['start'].values, combined_data['end'].values, 20)[
+                                      i % 20] * scale_factor
+            interpolated_ranks = interpolate(combined_data['start_rank'].values, combined_data['end_rank'].values, 20)[
+                i % 20]
+
+            # 순위에 따라 재정렬 (역순으로 정렬하여 막대가 긴 것이 위로 가도록 설정)
+            sorted_indices = np.argsort(interpolated_ranks)[::-1]  # 역순 정렬
+            sorted_words = combined_data.index[sorted_indices]
+            sorted_values = interpolated_values[sorted_indices]
+
+            ax.clear()
+            ax.barh(sorted_words, sorted_values, color=colors)
+            ax.set_xlim(0, (df.max().max() * scale_factor) + 500)  # 최대 빈도수를 기준으로 x축 설정
+            ax.set_title(f'Top {word_cnt} Keywords in {year}', fontsize=16)
+            ax.set_xlabel('Frequency', fontsize=14)
+            ax.set_ylabel('Keywords', fontsize=14)
+            plt.box(False)
+
+        # GIF로 저장 (더 부드러운 진행을 위해 20 프레임씩 보간)
+        frames = []
+        for i in range((len(top_words_per_year) - 1) * 20):
+            animate(i)
+            plt.savefig(os.path.join(output_folder, f"frame_{i}.png"))
+            frames.append(Image.open(os.path.join(output_folder, f"frame_{i}.png")))
+
+        # Pillow를 사용해 GIF로 저장
+        frames[0].save(output_filename, save_all=True, append_images=frames[1:], duration=100, loop=0)
+
+        # 임시로 저장된 이미지 파일 삭제
+        import os
+        for i in range((len(top_words_per_year) - 1) * 20):
+            os.remove(os.path.join(output_folder, f"frame_{i}.png"))
+
+        plt.close()
+
+    @staticmethod
+    def count_keywords(year, value, keyword_list):
+        keyword_counts = {keyword: value.count(keyword) for keyword in keyword_list}
+        keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
+        return year, keyword_counts
+
     # 연도별 keyword tf 딕셔너리 반환
     def cal_tf(self, keyword_list, year_divided_dic_merged):
+        from concurrent.futures import ProcessPoolExecutor, as_completed
         tf_counts = {}
-        for key, value in year_divided_dic_merged.items():
-            keyword_counts = {}
-            for keyword in keyword_list:
-                keyword_counts[keyword] = value.count(keyword)
 
-            keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
+        with ProcessPoolExecutor() as executor:
+            # ProcessPoolExecutor는 staticmethod로 정의된 메서드도 처리할 수 있음
+            futures = [
+                executor.submit(KimKem.count_keywords, key, value, keyword_list)
+                for key, value in year_divided_dic_merged.items()
+            ]
 
-            tf_counts[key] = keyword_counts
+            for future in as_completed(futures):
+                key, keyword_counts = future.result()
+                tf_counts[key] = keyword_counts
+
         return tf_counts
+
+    @staticmethod
+    def count_keyword_in_docs(year, docs, keyword_list):
+        keyword_counts = {}
+        for keyword in keyword_list:
+            count = sum(1 for doc in docs if keyword in doc)
+            keyword_counts[keyword] = count
+        keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
+        return year, keyword_counts
 
     # 연도별 keyword df 딕셔너리 반환
     def cal_df(self, keyword_list, year_divided_dic):
+        from concurrent.futures import ProcessPoolExecutor, as_completed
         df_counts = {}
-        for year in year_divided_dic:
-            keyword_counts = {}
-            for keyword in keyword_list:  # keyword는 keyword_list의 keyword
-                count = 0
-                for doc in year_divided_dic[year]:
-                    if keyword in doc:
-                        count += 1
-                keyword_counts[keyword] = count
 
-            keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
+        with ProcessPoolExecutor() as executor:
+            futures = [
+                executor.submit(KimKem.count_keyword_in_docs, year, year_divided_dic[year], keyword_list)
+                for year in year_divided_dic
+            ]
 
-            df_counts[year] = keyword_counts
+            for future in as_completed(futures):
+                year, keyword_counts = future.result()
+                df_counts[year] = keyword_counts
+
         return df_counts
 
     # 연도별 keyword DoV 딕셔너리 반환
@@ -1966,7 +2110,7 @@ class KimKem:
         for year in year_divided_dic:
             keyword_DoV_dic = {}
             for keyword in keyword_list:
-                value = (tf_counts[year][keyword] / len(year_divided_dic[year])) * (1 - 0.05 * (int(year) - self.startyear))
+                value = (tf_counts[year][keyword] / len(year_divided_dic[year])) * (1 - self.weight * (int(year) - self.startyear))
                 keyword_DoV_dic[keyword] = value
             DoV_dict[year] = keyword_DoV_dic
         return DoV_dict
@@ -1977,7 +2121,7 @@ class KimKem:
         for year in year_divided_dic:
             keyword_DoV_dic = {}
             for keyword in keyword_list:
-                value = (df_counts[year][keyword] / len(year_divided_dic[year])) * (1 - 0.05 * (int(year) - self.startyear))
+                value = (df_counts[year][keyword] / len(year_divided_dic[year])) * (1 - self.weight * (int(year) - self.startyear))
                 keyword_DoV_dic[keyword] = value
             DoD_dict[year] = keyword_DoV_dic
         return DoD_dict
@@ -1993,29 +2137,52 @@ class KimKem:
         else:
             return (sorted_lst[n // 2 - 1] + sorted_lst[n // 2]) / 2
 
+    def find_mean(self, lst):
+        return sum(lst) / len(lst) if lst else 0
+
+    def top_n_percent(self, lst, n):
+        if not lst:
+            return None  # 빈 리스트가 입력될 경우 None 반환
+
+        if n <= 0:
+            return None  # n이 0이거나 음수일 경우 None 반환
+
+        sorted_lst = sorted(lst, reverse=True)  # 내림차순으로 정렬
+        threshold_index = max(0, int(len(sorted_lst) * n / 100) - 1)  # n%에 해당하는 인덱스 계산
+
+        return sorted_lst[threshold_index]  # 상위 n%에 가장 가까운 요소 반환
+
     def DoV_draw_graph(self, avg_DoV_increase_rate, avg_term_frequency, graph_folder):
-        median_avg_term = self.find_median(list(avg_term_frequency.values()))  # x축, 평균 단어 빈도
-        median_avg_DoV = self.find_median(list(avg_DoV_increase_rate.values()))  # y축, 평균 증가율
+        match self.split_option:
+            case '평균(Mean)':
+                avg_term = self.find_mean(list(avg_term_frequency.values()))  # x축, 평균 단어 빈도
+                avg_DoV = self.find_mean(list(avg_DoV_increase_rate.values()))  # y축, 평균 증가율
+            case '중간값(Median)':
+                avg_term = self.find_median(list(avg_term_frequency.values()))  # x축, 평균 단어 빈도
+                avg_DoV = self.find_median(list(avg_DoV_increase_rate.values()))  # y축, 평균 증가율
+            case '직접 입력: 상위( )%':
+                avg_term = self.top_n_percent(list(avg_term_frequency.values()), self.split_custom)  # x축, 평균 단어 빈도
+                avg_DoV = self.top_n_percent(list(avg_DoV_increase_rate.values()), self.split_custom)  # y축, 평균 증가율
 
         coordinates = {}
-        coordinates['axis'] = [median_avg_term, median_avg_DoV]
+        coordinates['axis'] = [avg_term, avg_DoV]
 
         for key in avg_DoV_increase_rate:
             if key not in self.exception_word_list:
                 coordinates[key] = (avg_term_frequency[key], avg_DoV_increase_rate[key])
 
         plt.figure(figsize=(100, 100))
-        plt.axvline(x=median_avg_term, color='k', linestyle='--')  # x축 중앙값 수직선
-        plt.axhline(y=median_avg_DoV, color='k', linestyle='--')  # y축 중앙값 수평선
+        plt.axvline(x=avg_term, color='k', linestyle='--')  # x축 중앙값 수직선
+        plt.axhline(y=avg_DoV, color='k', linestyle='--')  # y축 중앙값 수평선
 
         strong_signal = [word for word in coordinates if
-                         coordinates[word][0] > median_avg_term and coordinates[word][1] > median_avg_DoV]
+                         coordinates[word][0] > avg_term and coordinates[word][1] > avg_DoV]
         weak_signal = [word for word in coordinates if
-                       coordinates[word][0] < median_avg_term and coordinates[word][1] > median_avg_DoV]
+                       coordinates[word][0] < avg_term and coordinates[word][1] > avg_DoV]
         latent_signal = [word for word in coordinates if
-                         coordinates[word][0] < median_avg_term and coordinates[word][1] < median_avg_DoV]
+                         coordinates[word][0] < avg_term and coordinates[word][1] < avg_DoV]
         well_known_signal = [word for word in coordinates if
-                             coordinates[word][0] > median_avg_term and coordinates[word][1] < median_avg_DoV]
+                             coordinates[word][0] > avg_term and coordinates[word][1] < avg_DoV]
 
         strong_signal = [word for word in strong_signal if word not in self.exception_word_list]
         weak_signal = [word for word in weak_signal if word not in self.exception_word_list]
@@ -2034,7 +2201,7 @@ class KimKem:
         plt.ylabel("Time-Weighted increasing rate", fontsize=50)
 
         # 그래프 표시
-        plt.savefig(graph_folder + "/" + "TF_DOV_graph (size=100 font=50).png")
+        plt.savefig(graph_folder + "/" + "TF_DOV_graph.png")
 
         coordinates_df = pd.DataFrame([(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
         coordinates_df.to_csv(graph_folder + "/" + "DOV_coordinates.csv", index=False, encoding='utf-8-sig')
@@ -2042,28 +2209,36 @@ class KimKem:
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}
 
     def DoD_draw_graph(self, avg_DoD_increase_rate, avg_doc_frequency, graph_folder):
-        median_avg_doc = self.find_median(list(avg_doc_frequency.values()))  # x축, 평균 단어 빈도
-        median_avg_DoD = self.find_median(list(avg_DoD_increase_rate.values()))  # y축, 평균 증가율
+        match self.split_option:
+            case '평균(Mean)':
+                avg_doc = self.find_mean(list(avg_doc_frequency.values()))  # x축, 평균 단어 빈도
+                avg_DoD = self.find_mean(list(avg_DoD_increase_rate.values()))  # y축, 평균 증가율
+            case '중간값(Median)':
+                avg_doc = self.find_median(list(avg_doc_frequency.values()))  # x축, 평균 단어 빈도
+                avg_DoD = self.find_median(list(avg_DoD_increase_rate.values()))  # y축, 평균 증가율
+            case '직접 입력: 상위( )%':
+                avg_doc = self.top_n_percent(list(avg_doc_frequency.values()), self.split_custom)  # x축, 평균 단어 빈도
+                avg_DoD = self.top_n_percent(list(avg_DoD_increase_rate.values()), self.split_custom)  # y축, 평균 증가율
 
         coordinates = {}
-        coordinates['axis'] = [median_avg_doc, median_avg_DoD]
+        coordinates['axis'] = [avg_doc, avg_DoD]
 
         for key in avg_DoD_increase_rate:
             if key not in self.exception_word_list:
                 coordinates[key] = (avg_doc_frequency[key], avg_DoD_increase_rate[key])
 
         plt.figure(figsize=(100, 100))
-        plt.axvline(x=median_avg_doc, color='k', linestyle='--')  # x축 중앙값 수직선
-        plt.axhline(y=median_avg_DoD, color='k', linestyle='--')  # y축 중앙값 수평선
+        plt.axvline(x=avg_doc, color='k', linestyle='--')  # x축 중앙값 수직선
+        plt.axhline(y=avg_DoD, color='k', linestyle='--')  # y축 중앙값 수평선
 
         strong_signal = [word for word in coordinates if
-                         coordinates[word][0] > median_avg_doc and coordinates[word][1] > median_avg_DoD]
+                         coordinates[word][0] > avg_doc and coordinates[word][1] > avg_DoD]
         weak_signal = [word for word in coordinates if
-                       coordinates[word][0] < median_avg_doc and coordinates[word][1] > median_avg_DoD]
+                       coordinates[word][0] < avg_doc and coordinates[word][1] > avg_DoD]
         latent_signal = [word for word in coordinates if
-                         coordinates[word][0] < median_avg_doc and coordinates[word][1] < median_avg_DoD]
+                         coordinates[word][0] < avg_doc and coordinates[word][1] < avg_DoD]
         well_known_signal = [word for word in coordinates if
-                             coordinates[word][0] > median_avg_doc and coordinates[word][1] < median_avg_DoD]
+                             coordinates[word][0] > avg_doc and coordinates[word][1] < avg_DoD]
 
         strong_signal = [word for word in strong_signal if word not in self.exception_word_list]
         weak_signal = [word for word in weak_signal if word not in self.exception_word_list]
@@ -2083,7 +2258,7 @@ class KimKem:
         plt.ylabel("Time-Weighted increasing rate", fontsize=50)
 
         # 그래프 표시
-        plt.savefig(graph_folder + "/" + "TF_DOD_graph (size=100 font=50).png")
+        plt.savefig(graph_folder + "/" + "TF_DOD_graph.png")
 
         coordinates_df = pd.DataFrame([(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
         coordinates_df.to_csv(graph_folder + "/" + "DOD_coordinates.csv", index=False, encoding='utf-8-sig')
@@ -2119,6 +2294,18 @@ class KimKemInputDialog(QDialog):
         layout.addWidget(self.topword_label)
         layout.addWidget(self.topword_input)
 
+        self.weight_label = QLabel('계산 가중치를 입력하세요: ')
+        self.weight_input = QLineEdit()
+        self.weight_input.setText('0.05')  # 기본값 설정
+        layout.addWidget(self.weight_label)
+        layout.addWidget(self.weight_input)
+
+        self.wordcnt_label = QLabel('그래프 애니메이션에 띄울 단어의 개수를 입력하세요: ')
+        self.wordcnt_input = QLineEdit()
+        self.wordcnt_input.setText('10')  # 기본값 설정
+        layout.addWidget(self.wordcnt_label)
+        layout.addWidget(self.wordcnt_input)
+
         # 체크박스 생성
         self.checkbox_label = QLabel('제외 단어 리스트를 추가하시겠습니까? ')
         layout.addWidget(self.checkbox_label)
@@ -2140,6 +2327,28 @@ class KimKemInputDialog(QDialog):
         checkbox_layout.addWidget(self.no_checkbox)
         layout.addLayout(checkbox_layout)
 
+        # 드롭다운 메뉴(QComboBox) 생성
+        self.dropdown_label = QLabel('분할 기준: ')
+        layout.addWidget(self.dropdown_label)
+
+        self.dropdown_menu = QComboBox()
+        self.dropdown_menu.addItem('평균(Mean)')
+        self.dropdown_menu.addItem('중간값(Median)')
+        self.dropdown_menu.addItem('직접 입력: 상위( )%')
+        layout.addWidget(self.dropdown_menu)
+
+        # 추가 입력창 (QLineEdit), 초기에는 숨김
+        self.additional_input_label = QLabel('숫자를 입력하세요')
+        self.additional_input = QLineEdit()
+        self.additional_input.setPlaceholderText('입력')
+        self.additional_input_label.hide()
+        self.additional_input.hide()
+        layout.addWidget(self.additional_input_label)
+        layout.addWidget(self.additional_input)
+
+        # 드롭다운 메뉴의 항목 변경 시 추가 입력창을 표시/숨김
+        self.dropdown_menu.currentIndexChanged.connect(self.handle_dropdown_change)
+
         # 확인 버튼 생성 및 클릭 시 동작 연결
         self.submit_button = QPushButton('Submit')
         self.submit_button.clicked.connect(self.submit)
@@ -2147,18 +2356,35 @@ class KimKemInputDialog(QDialog):
 
         self.setLayout(layout)
 
+    def handle_dropdown_change(self, index):
+        # 특정 옵션이 선택되면 추가 입력창을 표시, 그렇지 않으면 숨김
+        if self.dropdown_menu.currentText() == '직접 입력: 상위( )%':
+            self.additional_input_label.show()
+            self.additional_input.show()
+        else:
+            self.additional_input_label.hide()
+            self.additional_input.hide()
+
     def submit(self):
         # 입력된 데이터를 확인하고 처리
         startyear = self.startyear_input.text()
         topword = self.topword_input.text()
+        weight = self.weight_input.text()
+        graph_wordcnt = self.wordcnt_input.text()
         yes_selected = self.yes_checkbox.isChecked()
         no_selected = self.no_checkbox.isChecked()
+        split_option = self.dropdown_menu.currentText()
+        split_custom = self.additional_input.text() if self.additional_input.isVisible() else None
 
         self.data = {
             'startyear': startyear,
             'topword': topword,
+            'weight': weight,
+            'graph_wordcnt': graph_wordcnt,
             'yes_selected': yes_selected,
             'no_selected': no_selected,
+            'split_option': split_option,
+            'split_custom': split_custom
         }
         self.accept()
 
