@@ -1830,9 +1830,14 @@ class KimKem:
 
         # Step 6: 결과 저장 (TF, DF, DoV, DoD)
         self._save_kimkem_results(tf_counts, df_counts, DoV_dict, DoD_dict)
-
-
-        for index, year in enumerate(self.year_list):
+        
+        DoV_signal_record = {}
+        DoD_signal_record = {}
+        DoV_coordinates_record = {}
+        DoD_coordinates_record = {}
+        Final_signal_record = {}
+        
+        for year in self.year_list:
             # Step 7: 평균 증가율 및 빈도 계산
 
             result_folder = os.path.join(self.history_folder, year)
@@ -1840,11 +1845,52 @@ class KimKem:
             avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, year)
 
             # Step 8: 신호 분석 및 그래프 생성
-            DoV_signal, DoD_signal = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
-            self._save_final_signals(DoV_signal, DoD_signal, os.path.join(result_folder, 'Signal'))
+            DoV_signal_record[year], DoD_signal_record[year], DoV_coordinates_record[year], DoD_coordinates_record[year] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
+            Final_signal_record[year] = self._save_final_signals(DoV_signal_record[year], DoD_signal_record[year], os.path.join(result_folder, 'Signal'))
+        
+
+        DoV_signal_track = self.track_keyword_positions(DoV_signal_record)
+        DoD_signal_track = self.track_keyword_positions(DoD_signal_record)
+        Final_signal_track = self.track_keyword_positions(Final_signal_record)
+            
+        DoV_signal_track.to_csv(os.path.join(self.result_folder, 'DoV_signal_track.csv'), encoding='utf-8-sig', header=True)
+        DoD_signal_track.to_csv(os.path.join(self.result_folder, 'DoD_signal_track.csv'), encoding='utf-8-sig', header=True)
+        Final_signal_track.to_csv(os.path.join(self.result_folder, 'Final_signal_track.csv'), encoding='utf-8-sig', header=True)
+        
+        self.create_coordinates_animation(DoV_coordinates_record, os.path.join(self.result_folder, 'DoV_graph_animation.gif'))
+        self.create_coordinates_animation(DoD_coordinates_record, os.path.join(self.result_folder, 'DoD_graph_animation.gif'))
 
         return 1
 
+    def track_keyword_positions(self, yearly_data):
+        
+        # 모든 단어를 수집하기 위한 집합
+        all_keywords = set()
+
+        # 연도를 정렬하여 순차적으로 처리
+        years = sorted(yearly_data.keys())
+
+        # 각 연도별로 단어의 위치를 추적할 딕셔너리
+        keyword_positions = {}
+
+        for year in years:
+            year_positions = {}
+            for key, words in yearly_data[year].items():
+                for word in words:
+                    all_keywords.add(word)
+                    year_positions[word] = f"{key}"
+            
+            keyword_positions[year] = year_positions
+
+        # set을 list로 변환하여 인덱스로 사용
+        df = pd.DataFrame(index=list(all_keywords))
+
+        for year in years:
+            df[year] = df.index.map(keyword_positions[year].get)
+
+        return df
+
+    
     def _initialize_year_divided_dic(self, year_divided_group):
         yyear_divided_dic = {}
         for group_name, group_data in year_divided_group:
@@ -1942,9 +1988,9 @@ class KimKem:
         return total_frequency / len(relevant_years) if relevant_years else 0
 
     def _analyze_signals(self, avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, folder_path):
-        DoV_signal = self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, folder_path)
-        DoD_signal = self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path)
-        return DoV_signal, DoD_signal
+        DoV_signal, DoV_coordinates = self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, folder_path)
+        DoD_signal, DoD_coordinates = self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path)
+        return DoV_signal, DoD_signal, DoV_coordinates, DoD_coordinates
 
     def _save_final_signals(self, DoV_signal, DoD_signal, result_folder):
         DoV_signal_df = pd.DataFrame([(k, v) for k, v in DoV_signal.items()], columns=['signal', 'word'])
@@ -1955,8 +2001,9 @@ class KimKem:
 
         final_signal = self._get_communal_signals(DoV_signal, DoD_signal)
         final_signal_df = pd.DataFrame([(k, v) for k, v in final_signal.items()], columns=['signal', 'word'])
-        final_signal_df.to_csv(os.path.join(result_folder, "Final_signal.csv"), index=False,
-                               encoding='utf-8-sig')
+        final_signal_df.to_csv(os.path.join(result_folder, "Final_signal.csv"), index=False, encoding='utf-8-sig')
+        
+        return final_signal
 
     def _get_communal_signals(self, DoV_signal, DoD_signal):
         communal_strong_signal = [word for word in DoV_signal['strong_signal'] if word in DoD_signal['strong_signal']]
@@ -2051,6 +2098,98 @@ class KimKem:
 
         plt.close()
 
+    def create_coordinates_animation(self, yearly_coordinates_dict, output_filename='coordinates_animation.gif'):
+        
+        def calculate_axis_avg(yearly_coordinates_dict):
+            x_values = []
+            y_values = []
+
+            # 각 연도의 axis 값을 추출하여 리스트에 추가
+            for year, data in yearly_coordinates_dict.items():
+                axis_coords = data['axis']
+                x_values.append(axis_coords[0])
+                y_values.append(axis_coords[1])
+
+            # x와 y의 평균값 계산
+            avg_x = np.mean(x_values)
+            avg_y = np.mean(y_values)
+
+            return avg_x, avg_y
+        
+        # 모든 연도의 axis 평균값 계산
+        avg_x, avg_y = calculate_axis_avg(yearly_coordinates_dict)
+
+        # 연도 순서대로 정렬
+        years = sorted(yearly_coordinates_dict.keys())
+
+        # 첫 번째 연도의 데이터 사용하여 플롯 초기화
+        first_year_data = yearly_coordinates_dict[years[0]]
+        words = [key for key in first_year_data.keys() if key != 'axis']  # 'axis'를 제외한 단어들
+
+        # 초기 좌표 설정
+        fig = plt.figure(figsize=(100, 100))
+        ax = fig.add_subplot(1, 1, 1)
+        initial_coords = np.array([first_year_data[word] for word in words])
+        scatter = ax.scatter(initial_coords[:, 0], initial_coords[:, 1])
+
+        # 텍스트 추가
+        texts = [ax.text(coord[0], coord[1], word, fontsize=50) for coord, word in zip(initial_coords, words)]
+
+        # x, y 축의 범위 설정
+        #ax.set_xlim(min(initial_coords[:, 0]) - 1, max(initial_coords[:, 0]) + 1)
+        #ax.set_ylim(min(initial_coords[:, 1]) - 1, max(initial_coords[:, 1]) + 1)
+
+        # x축 y축 교점을 모든 연도의 평균값으로 설정
+        plt.axvline(x=avg_x, color='k', linestyle='--', linewidth=3)  # x축 교점 수직선
+        plt.axhline(y=avg_y, color='k', linestyle='--', linewidth=3)  # y축 교점 수평선
+
+        # 좌표와 해당 키를 표시
+        def draw_coordinates(coords, texts):
+            scatter.set_offsets(coords)
+            for j, text in enumerate(texts):
+                text.set_position((coords[j][0], coords[j][1]))
+
+        def interpolate_coords(start_coords, end_coords, num_steps):
+            return np.linspace(start_coords, end_coords, num_steps)
+
+        def animate(i):
+            year_idx = i // 20
+            year = years[year_idx]
+            next_year_idx = year_idx + 1 if year_idx + 1 < len(years) else year_idx
+            next_year = years[next_year_idx]
+
+            # 현재와 다음 연도의 좌표 데이터 추출
+            current_data = yearly_coordinates_dict[year]
+            next_data = yearly_coordinates_dict[next_year]
+
+            current_coords = np.array([current_data[word] for word in words])
+            next_coords = np.array([next_data[word] for word in words])
+
+            # 보간을 통해 좌표 값 계산
+            interpolated_coords = interpolate_coords(current_coords, next_coords, 20)[i % 20]
+
+            draw_coordinates(interpolated_coords, texts)
+            ax.set_title(f'Keyword Positions in {year}', fontsize=50)
+
+        # GIF로 저장 (더 부드러운 진행을 위해 20 프레임씩 보간)
+        frames = []
+        output_folder = os.path.dirname(output_filename)
+        
+        for i in range((len(years) - 1) * 20):
+            animate(i)
+            frame_filename = os.path.join(output_folder, f"frame_{i}.png")
+            plt.savefig(frame_filename)
+            frames.append(Image.open(frame_filename))
+
+        # Pillow를 사용해 GIF로 저장
+        frames[0].save(output_filename, save_all=True, append_images=frames[1:], duration=100, loop=0)
+
+        # 임시로 저장된 이미지 파일 삭제
+        for i in range((len(years) - 1) * 20):
+            os.remove(os.path.join(output_folder, f"frame_{i}.png"))
+
+        plt.close()
+    
     # 연도별 keyword tf 딕셔너리 반환
     def cal_tf(self, keyword_list, year_divided_dic_merged):
         tf_counts = {}
@@ -2141,7 +2280,7 @@ class KimKem:
                 avg_DoV = self.top_n_percent(list(avg_DoV_increase_rate.values()), self.split_custom)  # y축, 평균 증가율
 
         coordinates = {}
-        coordinates['axis'] = [avg_term, avg_DoV]
+        coordinates['axis'] = (avg_term, avg_DoV)
 
         for key in avg_DoV_increase_rate:
             if key not in self.exception_word_list:
@@ -2178,11 +2317,12 @@ class KimKem:
 
         # 그래프 표시
         plt.savefig(graph_folder + "/" + "TF_DOV_graph.png")
+        plt.close()
 
         coordinates_df = pd.DataFrame([(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
         coordinates_df.to_csv(graph_folder + "/" + "DOV_coordinates.csv", index=False, encoding='utf-8-sig')
 
-        return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}
+        return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
 
     def DoD_draw_graph(self, avg_DoD_increase_rate, avg_doc_frequency, graph_folder):
         match self.split_option:
@@ -2197,7 +2337,7 @@ class KimKem:
                 avg_DoD = self.top_n_percent(list(avg_DoD_increase_rate.values()), self.split_custom)  # y축, 평균 증가율
 
         coordinates = {}
-        coordinates['axis'] = [avg_doc, avg_DoD]
+        coordinates['axis'] = (avg_doc, avg_DoD)
 
         for key in avg_DoD_increase_rate:
             if key not in self.exception_word_list:
@@ -2235,11 +2375,12 @@ class KimKem:
 
         # 그래프 표시
         plt.savefig(graph_folder + "/" + "DF_DOD_graph.png")
+        plt.close()
 
         coordinates_df = pd.DataFrame([(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
         coordinates_df.to_csv(graph_folder + "/" + "DOD_coordinates.csv", index=False, encoding='utf-8-sig')
 
-        return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}
+        return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
 
 class KimKemInputDialog(QDialog):
     def __init__(self):
