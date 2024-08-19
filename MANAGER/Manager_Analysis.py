@@ -1823,7 +1823,7 @@ class KimKem:
         tf_counts, df_counts = self.cal_tf(keyword_list, year_divided_dic_merged), self.cal_df(keyword_list, year_divided_dic)
         DoV_dict, DoD_dict = self.cal_DoV(keyword_list, year_divided_dic, tf_counts), self.cal_DoD(keyword_list, year_divided_dic, df_counts)
         self.year_list = list(tf_counts.keys())
-        self.year_list = [int(year) for year in self.year_list]
+        self.year_list.pop(0)
 
         # Step 5: 결과 저장 디렉토리 설정
         self._create_output_directories()
@@ -1831,20 +1831,17 @@ class KimKem:
         # Step 6: 결과 저장 (TF, DF, DoV, DoD)
         self._save_kimkem_results(tf_counts, df_counts, DoV_dict, DoD_dict)
 
-        for year in self.year_list:
+
+        for index, year in enumerate(self.year_list):
             # Step 7: 평균 증가율 및 빈도 계산
-            if year == min(self.year_list):
-                continue
-            graph_folder = self.graph_folder if year == max(self.year_list) else os.path.join(self.history_folder, year)
+
+            result_folder = os.path.join(self.history_folder, year)
 
             avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, year)
 
             # Step 8: 신호 분석 및 그래프 생성
-            DoV_signal, DoD_signal = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, graph_folder)
-
-            if year == max(self.year_list):
-                # Step 9: 최종 신호 저장
-                self._save_final_signals(DoV_signal, DoD_signal)
+            DoV_signal, DoD_signal = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, result_folder)
+            self._save_final_signals(DoV_signal, DoD_signal, result_folder)
 
         return 1
 
@@ -1886,19 +1883,17 @@ class KimKem:
         self.df_folder = os.path.join(article_kimkem_folder, "DF")
         self.DoV_folder = os.path.join(article_kimkem_folder, "DoV")
         self.DoD_folder = os.path.join(article_kimkem_folder, "DoD")
-        self.signal_folder = os.path.join(article_kimkem_folder, "signal")
-        self.graph_folder = os.path.join(article_kimkem_folder, "graph")
-        self.history_folder = os.path.join(self.graph_folder, 'history')
+        self.result_folder = os.path.join(article_kimkem_folder, "Result")
+        self.history_folder = os.path.join(self.result_folder, 'History')
 
         os.makedirs(self.tf_folder, exist_ok=True)
         os.makedirs(self.df_folder, exist_ok=True)
         os.makedirs(self.DoV_folder, exist_ok=True)
         os.makedirs(self.DoD_folder, exist_ok=True)
-        os.makedirs(self.signal_folder, exist_ok=True)
-        os.makedirs(self.graph_folder, exist_ok=True)
+        os.makedirs(self.result_folder, exist_ok=True)
 
         for year in self.year_list:
-            os.makedirs(os.path.join(self.history_folder, str(year)), exist_ok=True)
+            os.makedirs(os.path.join(self.history_folder, year), exist_ok=True)
 
     def _save_kimkem_results(self, tf_counts, df_counts, DoV_dict, DoD_dict):
         for year in tf_counts:
@@ -1917,7 +1912,7 @@ class KimKem:
         data_df.to_csv(f"{folder}/{year}_{label}.csv", index=False, encoding='utf-8-sig')
 
     def _calculate_averages(self, keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, current_year):
-        min_year = self.startyear
+        min_year = str(self.startyear)
         max_year = current_year
 
         avg_DoV_increase_rate = {}
@@ -1947,16 +1942,16 @@ class KimKem:
         DoD_signal = self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path)
         return DoV_signal, DoD_signal
 
-    def _save_final_signals(self, DoV_signal, DoD_signal):
+    def _save_final_signals(self, DoV_signal, DoD_signal, result_folder):
         DoV_signal_df = pd.DataFrame([(k, v) for k, v in DoV_signal.items()], columns=['signal', 'word'])
-        DoV_signal_df.to_csv(os.path.join(self.signal_folder, "DoV_signal.csv"), index=False, encoding='utf-8-sig')
+        DoV_signal_df.to_csv(os.path.join(result_folder, "DoV_signal.csv"), index=False, encoding='utf-8-sig')
 
         DoD_signal_df = pd.DataFrame([(k, v) for k, v in DoD_signal.items()], columns=['signal', 'word'])
-        DoD_signal_df.to_csv(os.path.join(self.signal_folder, "DoD_signal.csv"), index=False, encoding='utf-8-sig')
+        DoD_signal_df.to_csv(os.path.join(result_folder, "DoD_signal.csv"), index=False, encoding='utf-8-sig')
 
         final_signal = self._get_communal_signals(DoV_signal, DoD_signal)
         final_signal_df = pd.DataFrame([(k, v) for k, v in final_signal.items()], columns=['signal', 'word'])
-        final_signal_df.to_csv(os.path.join(self.signal_folder, "communal_signal.csv"), index=False,
+        final_signal_df.to_csv(os.path.join(result_folder, "communal_signal.csv"), index=False,
                                encoding='utf-8-sig')
 
     def _get_communal_signals(self, DoV_signal, DoD_signal):
@@ -1984,7 +1979,6 @@ class KimKem:
         return year_divided_group
 
     def create_top_words_animation(self, dataframe, output_filename='top_words_animation.gif', word_cnt=10, scale_factor=1):
-        # 데이터프레임을 pandas로 변환
         import os
         df = pd.DataFrame(dataframe).fillna(0)
         output_folder = os.path.dirname(output_filename)
@@ -2024,13 +2018,13 @@ class KimKem:
             interpolated_ranks = interpolate(combined_data['start_rank'].values, combined_data['end_rank'].values, 20)[
                 i % 20]
 
-            # 순위에 따라 재정렬 (역순으로 정렬하여 막대가 긴 것이 위로 가도록 설정)
-            sorted_indices = np.argsort(interpolated_ranks)[::-1]  # 역순 정렬
+            # 순위에 따라 재정렬 및 word_cnt로 제한
+            sorted_indices = np.argsort(interpolated_ranks)[::-1][:word_cnt]  # 역순 정렬 후 상위 word_cnt개만 선택
             sorted_words = combined_data.index[sorted_indices]
             sorted_values = interpolated_values[sorted_indices]
 
             ax.clear()
-            ax.barh(sorted_words, sorted_values, color=colors)
+            ax.barh(sorted_words, sorted_values, color=colors[:len(sorted_words)])  # 색상도 word_cnt에 맞게 제한
             ax.set_xlim(0, (df.max().max() * scale_factor) + 500)  # 최대 빈도수를 기준으로 x축 설정
             ax.set_title(f'Top {word_cnt} Keywords in {year}', fontsize=16)
             ax.set_xlabel('Frequency', fontsize=14)
@@ -2048,60 +2042,38 @@ class KimKem:
         frames[0].save(output_filename, save_all=True, append_images=frames[1:], duration=100, loop=0)
 
         # 임시로 저장된 이미지 파일 삭제
-        import os
         for i in range((len(top_words_per_year) - 1) * 20):
             os.remove(os.path.join(output_folder, f"frame_{i}.png"))
 
         plt.close()
 
-    @staticmethod
-    def count_keywords(year, value, keyword_list):
-        keyword_counts = {keyword: value.count(keyword) for keyword in keyword_list}
-        keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
-        return year, keyword_counts
-
     # 연도별 keyword tf 딕셔너리 반환
     def cal_tf(self, keyword_list, year_divided_dic_merged):
-        from concurrent.futures import ProcessPoolExecutor, as_completed
         tf_counts = {}
+        for key, value in year_divided_dic_merged.items():
+            keyword_counts = {}
+            for keyword in keyword_list:
+                keyword_counts[keyword] = value.count(keyword)
 
-        with ProcessPoolExecutor() as executor:
-            # ProcessPoolExecutor는 staticmethod로 정의된 메서드도 처리할 수 있음
-            futures = [
-                executor.submit(KimKem.count_keywords, key, value, keyword_list)
-                for key, value in year_divided_dic_merged.items()
-            ]
+            keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
 
-            for future in as_completed(futures):
-                key, keyword_counts = future.result()
-                tf_counts[key] = keyword_counts
-
+            tf_counts[key] = keyword_counts
         return tf_counts
-
-    @staticmethod
-    def count_keyword_in_docs(year, docs, keyword_list):
-        keyword_counts = {}
-        for keyword in keyword_list:
-            count = sum(1 for doc in docs if keyword in doc)
-            keyword_counts[keyword] = count
-        keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
-        return year, keyword_counts
-
     # 연도별 keyword df 딕셔너리 반환
     def cal_df(self, keyword_list, year_divided_dic):
-        from concurrent.futures import ProcessPoolExecutor, as_completed
         df_counts = {}
+        for year in year_divided_dic:
+            keyword_counts = {}
+            for keyword in keyword_list:  # keyword는 keyword_list의 keyword
+                count = 0
+                for doc in year_divided_dic[year]:
+                    if keyword in doc:
+                        count += 1
+                keyword_counts[keyword] = count
 
-        with ProcessPoolExecutor() as executor:
-            futures = [
-                executor.submit(KimKem.count_keyword_in_docs, year, year_divided_dic[year], keyword_list)
-                for year in year_divided_dic
-            ]
+            keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
 
-            for future in as_completed(futures):
-                year, keyword_counts = future.result()
-                df_counts[year] = keyword_counts
-
+            df_counts[year] = keyword_counts
         return df_counts
 
     # 연도별 keyword DoV 딕셔너리 반환
@@ -2258,7 +2230,7 @@ class KimKem:
         plt.ylabel("Time-Weighted increasing rate", fontsize=50)
 
         # 그래프 표시
-        plt.savefig(graph_folder + "/" + "TF_DOD_graph.png")
+        plt.savefig(graph_folder + "/" + "DF_DOD_graph.png")
 
         coordinates_df = pd.DataFrame([(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
         coordinates_df.to_csv(graph_folder + "/" + "DOD_coordinates.csv", index=False, encoding='utf-8-sig')
