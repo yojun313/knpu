@@ -1840,8 +1840,8 @@ class KimKem:
             avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, year)
 
             # Step 8: 신호 분석 및 그래프 생성
-            DoV_signal, DoD_signal = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, result_folder)
-            self._save_final_signals(DoV_signal, DoD_signal, result_folder)
+            DoV_signal, DoD_signal = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
+            self._save_final_signals(DoV_signal, DoD_signal, os.path.join(result_folder, 'Signal'))
 
         return 1
 
@@ -1893,7 +1893,11 @@ class KimKem:
         os.makedirs(self.result_folder, exist_ok=True)
 
         for year in self.year_list:
-            os.makedirs(os.path.join(self.history_folder, year), exist_ok=True)
+            year_path = os.path.join(self.history_folder, year)
+            os.makedirs(year_path, exist_ok=True)
+            os.makedirs(os.path.join(year_path, 'Graph'), exist_ok=True)
+            os.makedirs(os.path.join(year_path, 'Signal'), exist_ok=True)
+
 
     def _save_kimkem_results(self, tf_counts, df_counts, DoV_dict, DoD_dict):
         for year in tf_counts:
@@ -1951,7 +1955,7 @@ class KimKem:
 
         final_signal = self._get_communal_signals(DoV_signal, DoD_signal)
         final_signal_df = pd.DataFrame([(k, v) for k, v in final_signal.items()], columns=['signal', 'word'])
-        final_signal_df.to_csv(os.path.join(result_folder, "communal_signal.csv"), index=False,
+        final_signal_df.to_csv(os.path.join(result_folder, "Final_signal.csv"), index=False,
                                encoding='utf-8-sig')
 
     def _get_communal_signals(self, DoV_signal, DoD_signal):
