@@ -8,10 +8,8 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 import platform
-from kiwipiepy import Kiwi
 from collections import Counter
 from datetime import datetime
-import re
 import gc
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
