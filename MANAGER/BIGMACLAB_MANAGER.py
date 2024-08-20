@@ -24,7 +24,7 @@ import gc
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.2.1'
+        self.versionNum = '1.3.0'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()

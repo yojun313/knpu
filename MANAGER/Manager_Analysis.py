@@ -1,8 +1,7 @@
-from PyQt5.QtCore import QTimer, QStringListModel
 from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox, QComboBox, \
-    QLineEdit, QLabel, QDialogButtonBox, QWidget, QProgressBar, QToolBox, \
+    QLineEdit, QLabel, QDialogButtonBox, QWidget, QProgressBar, QToolBox, QGridLayout, \
     QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QStringListModel
 import copy
 import pandas as pd
 import os
@@ -15,7 +14,9 @@ from datetime import datetime
 import re
 import gc
 from PIL import Image
+Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 import numpy as np
+import io
 
 # 운영체제에 따라 한글 폰트를 설정
 if platform.system() == 'Darwin':  # macOS
@@ -51,7 +52,8 @@ class Manager_Analysis:
         self.main.dataprocess_tab2_merge_button.clicked.connect(self.dataprocess_merge_file)
 
         #self.main.kimkem_tab2_tokenization_button.clicked.connect(self.kimkem_tokenization_file)
-        self.main.kimkem_tab2_kimkem_button.clicked.connect(self.kimkem_kimkem_file)
+        self.main.kimkem_tab2_kimkem_button.clicked.connect(self.kimkem_kimkem)
+        
 
         self.selected_userDB = 'admin_db'
         self.selected_DBlistItem = None
@@ -272,7 +274,6 @@ class Manager_Analysis:
     def dataprocess_filefinder_maker(self):
         self.file_dialog = self.main.filefinder_maker(self.main)
         self.main.tab2_fileexplorer_layout.addWidget(self.file_dialog)
-
 
     def dataprocess_getfiledirectory(self, file_dialog):
         selected_directory = file_dialog.selectedFiles()
@@ -501,69 +502,57 @@ class Manager_Analysis:
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
-    def kimkem_tokenization_file(self):
-        try:
-            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
-            if len(selected_directory) == 0:
-                return
-            elif selected_directory[0] == False:
-                QMessageBox.warning(self.main, f"Warning", f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
-                return
-            elif len(selected_directory) != 1:
-                QMessageBox.warning(self.main, f"Warning", "한 개의 CSV 파일만 선택하여 주십시오")
-                return
+    def kimkem_kimkem(self):
+        class KimKemOptionDialog(QDialog):
+            def __init__(self, kimkem_file, rekimkem_file):
+                super().__init__()
+                self.kimkem_file = kimkem_file
+                self.rekimkem_file = rekimkem_file
+                self.initUI()
+                self.data = None  # 데이터를 저장할 속성 추가
 
-            if 'token' in selected_directory[0]:
-                QMessageBox.information(self.main, "Information", f"이미 토큰 파일입니다")
-                return
+            def initUI(self):
+                self.setWindowTitle('KEMKIM Start')
+                self.resize(300, 100)  # 창 크기를 조정
+                # 레이아웃 생성
+                layout = QVBoxLayout()
 
-            def tokenization_finished(tokenized_data):
-                QMessageBox.information(self.main, "Information", f"{self.csv_name} 토큰화가 완료되었습니다\n\n데이터를 저장할 위치를 선택하세요")
-                save_path = QFileDialog.getExistingDirectory(self.main, "데이터를 저장할 위치를 선택하세요", self.csv_path)
-                if save_path == '':
-                    return
+                # 버튼 생성
+                btn1 = QPushButton('새로운 KEMKIM 분석', self)
+                btn2 = QPushButton('KEMKIM 재분석', self)
+                
+                # 버튼에 이벤트 연결
+                btn1.clicked.connect(self.run_kimkem_file)
+                btn2.clicked.connect(self.run_rekimkem_file)
+                
+                # 버튼 배치를 위한 가로 레이아웃
+                button_layout = QHBoxLayout()
+                button_layout.addWidget(btn1)
+                button_layout.addWidget(btn2)
 
-                self.main.openFileExplorer(save_path)
-                tokenized_data.to_csv(os.path.join(save_path, 'token_' + self.csv_name), index=False, encoding='utf-8-sig')
+                # 레이아웃에 버튼 레이아웃 추가
+                layout.addLayout(button_layout)
 
-                reply = QMessageBox.question(self.main, 'KEM KIM', "KEMKIM을 구동하시겠습니까?", QMessageBox.Yes | QMessageBox.No)
-                token_data = tokenized_data
-                tokenfile_name = self.csv_name
+                # 레이아웃을 다이얼로그에 설정
+                self.setLayout(layout)
+            
+            def run_kimkem_file(self):
+                self.accept()
+                self.kimkem_file()
+            
+            def run_rekimkem_file(self):
+                self.accept()
+                self.rekimkem_file()
+                
 
-                if reply == QMessageBox.Yes:
-                    self.kimkem_kimkemStart(token_data, tokenfile_name)
-
-                elif reply == QMessageBox.No:
-                    return
-
-            self.csv_path = selected_directory[0]
-            self.csv_name = os.path.basename(self.csv_path)
-            csv_data = pd.read_csv(self.csv_path, low_memory=False)
-
-            # Column 열에 Text라는 글자가 하나도 없으면
-            if any('Text' in element for element in csv_data.columns.tolist()) == False:
-                QMessageBox.information(self.main, "Warning", f"토큰화할 수 없는 파일입니다")
-                return
-
-            # Article URL을 기준으로 댓글을 하나의 문자열로 다 합침
-            if 'Reply Text' in csv_data.columns.tolist() or 'Rereply Text' in csv_data.columns.tolist():
-                # Article URL을 기준으로 Reply Text를 합칩니다.
-                csv_data = csv_data.groupby('Article URL').agg({
-                    'Reply Text': ' '.join,
-                    'Reply Date': 'first'
-                }).reset_index()
-
-            self.tokenization_window = Tokenization(csv_data, self.csv_path)  # 새로운 창의 인스턴스를 생성
-            self.tokenization_window.finished.connect(tokenization_finished)
-            self.tokenization_window.show()  # 새로운 창을 띄움
-
-        except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
-
+        dialog = KimKemOptionDialog(self.kimkem_kimkem_file, self.kimkem_rekimkem_file)
+        dialog.exec_()
+    
     def kimkem_kimkem_file(self):
         try:
             selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
+                QMessageBox.warning(self.main, f"Warning", f"선택된 CSV 토큰 파일이 없습니다")
                 return
             elif selected_directory[0] == False:
                 QMessageBox.warning(self.main, f"Warning", f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
@@ -583,8 +572,238 @@ class Manager_Analysis:
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+    
+    def kimkem_rekimkem_file(self):
+        import ast
+        class WordSelector(QDialog):
+            def __init__(self, words):
+                super().__init__()
+                self.words = words
+                self.selected_words = []
+                self.initUI()
 
+            def initUI(self):
+                # 레이아웃 설정
+                layout = QVBoxLayout()
+
+                grid_layout = QGridLayout()
+
+                # 체크박스 추가
+                self.checkboxes = []
+                num_columns = min(20, len(self.words))  # 한 행에 최대 20개의 체크박스가 오도록 설정
+                for i, word in enumerate(self.words):
+                    checkbox = QCheckBox(word, self)
+                    self.checkboxes.append(checkbox)
+                    # 그리드 레이아웃에 체크박스 배치
+                    row = i // num_columns
+                    col = i % num_columns
+                    grid_layout.addWidget(checkbox, row, col)
+
+                # 그리드 레이아웃을 QVBoxLayout에 추가
+                layout.addLayout(grid_layout)
+
+                # 선택된 단어 출력 버튼 추가
+                btn = QPushButton('제외 단어 결정', self)
+                btn.clicked.connect(self.show_selected_words)
+                layout.addWidget(btn)
+
+                # 창 설정
+                self.setLayout(layout)
+                self.setWindowTitle('제외할 키워드를 선택하세요')
+                self.setGeometry(300, 300, 300, 200)
+                self.show()
+
+            def show_selected_words(self):
+                # 선택된 단어를 리스트에 추가
+                self.selected_words = [cb.text() for cb in self.checkboxes if cb.isChecked()]
+                # 선택된 단어를 메시지 박스로 출력
+                QMessageBox.information(self, '선택한 단어', ', '.join(self.selected_words))
+                self.accept()
+        
+        result_directory = self.file_dialog.selectedFiles()
+        if len(result_directory) == 0:
+            QMessageBox.warning(self.main, f"Warning", f"선택된 'Result' 디렉토리가 없습니다")
+            return
+        elif len(result_directory) > 1:
+            QMessageBox.warning(self.main, f"Warning", f"하나의 'Result' 디렉토리만 선택하여 주십시오")
+            return
+        elif 'Result' in os.path.basename(result_directory[0]):
+            QMessageBox.warning(self.main, f"Warning", f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
+            return
+        
+        result_directory = result_directory[0]
+        deletedword_df = pd.read_csv(os.path.join(result_directory, "Graph", "DOV_coordinates.csv"))
+        words = deletedword_df['key'].dropna().unique().tolist()
+        words.pop(0)
+        
+        self.word_selector = WordSelector(words)
+        if self.word_selector.exec_() == QDialog.Accepted:  # show() 대신 exec_() 사용
+            selected_words = self.word_selector.selected_words
+        
+        if len(selected_words) == 0:
+            QMessageBox.information(self.main, '선택된 제외 단어가 없습니다')
+            return
+        
+        DoV_coordinates_df = pd.read_csv(os.path.join(result_directory, "Graph", "DOV_coordinates.csv"))
+        DoV_coordinates_dict = {}
+        for index, row in DoV_coordinates_df.iterrows():
+            key = row['key']
+            value = ast.literal_eval(row['value'])  # 문자열을 튜플로 변환
+            DoV_coordinates_dict[key] = value
+            
+        DoD_coordinates_df = pd.read_csv(os.path.join(result_directory, "Graph", "DOD_coordinates.csv"))
+        DoD_coordinates_dict = {}
+        for index, row in DoD_coordinates_df.iterrows():
+            key = row['key']
+            value = ast.literal_eval(row['value'])  # 문자열을 튜플로 변환
+            DoD_coordinates_dict[key] = value
+            
+        delete_word_list = pd.read_csv(os.path.join(result_directory, 'filtered_words.csv'))['deleted_words'].tolist()
+        
+        kimkem_obj = KimKem(exception_word_list=selected_words, rekemkim=True)
+        
+        new_result_folder = os.path.join(os.path.dirname(result_directory), f'Result_{datetime.now().strftime('%m%d%H%M')}')
+        new_graph_folder = os.path.join(new_result_folder, 'Graph')
+        new_signal_folder = os.path.join(new_result_folder, 'Signal')
+        
+        os.makedirs(new_result_folder, exist_ok=True)
+        os.makedirs(new_graph_folder, exist_ok=True)
+        os.makedirs(new_signal_folder, exist_ok=True)
+        
+        DoV_signal, DoV_coordinates = kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict)
+        DoD_signal, DoD_coordinates = kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict)
+        kimkem_obj._save_final_signals(DoV_signal, DoD_signal, new_signal_folder)
+        
+        delete_word_list.extend(selected_words)
+        pd.DataFrame(delete_word_list, columns=['deleted_words']).to_csv(os.path.join(new_result_folder, 'filtered_words.csv'), index = False)
+        
+        self.main.openFileExplorer(new_result_folder)
+        
     def kimkem_kimkemStart(self, token_data, tokenfile_name):
+        class KimKemInputDialog(QDialog):
+            def __init__(self):
+                super().__init__()
+                self.initUI()
+                self.data = None  # 데이터를 저장할 속성 추가
+
+            def initUI(self):
+                self.setWindowTitle('KEM KIM OPTION')
+                self.setGeometry(100, 100, 300, 250)  # 창 크기를 조정
+
+                layout = QVBoxLayout()
+
+                # 레이아웃의 마진과 간격 조정
+                layout.setContentsMargins(10, 10, 10, 10)  # (left, top, right, bottom) 여백 설정
+                layout.setSpacing(10)  # 위젯 간 간격 설정
+
+                # 각 입력 필드를 위한 QLabel 및 QTextEdit 생성
+                self.startyear_label = QLabel('분석 시작 연도를 입력하세요: ')
+                self.startyear_input = QLineEdit()
+                self.startyear_input.setText('2010')  # 기본값 설정
+                layout.addWidget(self.startyear_label)
+                layout.addWidget(self.startyear_input)
+
+                self.topword_label = QLabel('상위 단어 개수를 입력하세요: ')
+                self.topword_input = QLineEdit()
+                self.topword_input.setText('500')  # 기본값 설정
+                layout.addWidget(self.topword_label)
+                layout.addWidget(self.topword_input)
+
+                self.weight_label = QLabel('계산 가중치를 입력하세요: ')
+                self.weight_input = QLineEdit()
+                self.weight_input.setText('0.05')  # 기본값 설정
+                layout.addWidget(self.weight_label)
+                layout.addWidget(self.weight_input)
+
+                self.wordcnt_label = QLabel('그래프 애니메이션에 띄울 단어의 개수를 입력하세요: ')
+                self.wordcnt_input = QLineEdit()
+                self.wordcnt_input.setText('10')  # 기본값 설정
+                layout.addWidget(self.wordcnt_label)
+                layout.addWidget(self.wordcnt_input)
+
+                # 체크박스 생성
+                self.checkbox_label = QLabel('제외 단어 리스트를 추가하시겠습니까? ')
+                layout.addWidget(self.checkbox_label)
+
+                checkbox_layout = QHBoxLayout()
+                self.yes_checkbox = QCheckBox('Yes')
+                self.no_checkbox = QCheckBox('No')
+
+                self.yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
+                self.no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
+
+                # 서로 배타적으로 선택되도록 설정
+                self.yes_checkbox.toggled.connect(
+                    lambda: self.no_checkbox.setChecked(False) if self.yes_checkbox.isChecked() else None)
+                self.no_checkbox.toggled.connect(
+                    lambda: self.yes_checkbox.setChecked(False) if self.no_checkbox.isChecked() else None)
+
+                checkbox_layout.addWidget(self.yes_checkbox)
+                checkbox_layout.addWidget(self.no_checkbox)
+                layout.addLayout(checkbox_layout)
+
+                # 드롭다운 메뉴(QComboBox) 생성
+                self.dropdown_label = QLabel('분할 기준: ')
+                layout.addWidget(self.dropdown_label)
+
+                self.dropdown_menu = QComboBox()
+                self.dropdown_menu.addItem('평균(Mean)')
+                self.dropdown_menu.addItem('중간값(Median)')
+                self.dropdown_menu.addItem('직접 입력: 상위( )%')
+                layout.addWidget(self.dropdown_menu)
+
+                # 추가 입력창 (QLineEdit), 초기에는 숨김
+                self.additional_input_label = QLabel('숫자를 입력하세요')
+                self.additional_input = QLineEdit()
+                self.additional_input.setPlaceholderText('입력')
+                self.additional_input_label.hide()
+                self.additional_input.hide()
+                layout.addWidget(self.additional_input_label)
+                layout.addWidget(self.additional_input)
+
+                # 드롭다운 메뉴의 항목 변경 시 추가 입력창을 표시/숨김
+                self.dropdown_menu.currentIndexChanged.connect(self.handle_dropdown_change)
+
+                # 확인 버튼 생성 및 클릭 시 동작 연결
+                self.submit_button = QPushButton('Submit')
+                self.submit_button.clicked.connect(self.submit)
+                layout.addWidget(self.submit_button)
+
+                self.setLayout(layout)
+
+            def handle_dropdown_change(self, index):
+                # 특정 옵션이 선택되면 추가 입력창을 표시, 그렇지 않으면 숨김
+                if self.dropdown_menu.currentText() == '직접 입력: 상위( )%':
+                    self.additional_input_label.show()
+                    self.additional_input.show()
+                else:
+                    self.additional_input_label.hide()
+                    self.additional_input.hide()
+
+            def submit(self):
+                # 입력된 데이터를 확인하고 처리
+                startyear = self.startyear_input.text()
+                topword = self.topword_input.text()
+                weight = self.weight_input.text()
+                graph_wordcnt = self.wordcnt_input.text()
+                yes_selected = self.yes_checkbox.isChecked()
+                no_selected = self.no_checkbox.isChecked()
+                split_option = self.dropdown_menu.currentText()
+                split_custom = self.additional_input.text() if self.additional_input.isVisible() else None
+
+                self.data = {
+                    'startyear': startyear,
+                    'topword': topword,
+                    'weight': weight,
+                    'graph_wordcnt': graph_wordcnt,
+                    'yes_selected': yes_selected,
+                    'no_selected': no_selected,
+                    'split_option': split_option,
+                    'split_custom': split_custom
+                }
+                self.accept()
+
+        
         self.main.printStatus("KEM KIM 데이터를 저장할 위치를 선택하세요")
         save_path = QFileDialog.getExistingDirectory(self.main, "데이터를 저장할 위치를 선택하세요", self.main.default_directory)
         if save_path == '':
@@ -640,9 +859,6 @@ class Manager_Analysis:
         self.main.printStatus()
         del kimkem_obj
         gc.collect()
-
-    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QListView, QToolBox, QMessageBox
-    from PyQt5.QtCore import QStringListModel
 
     def userDB_layout_maker(self):
         # File Explorer를 탭 레이아웃에 추가
@@ -884,7 +1100,9 @@ class Manager_Analysis:
 
         self.main.printStatus()
 
+
 class DataProcess:
+    
     def __init__(self, main_window):
         self.main = main_window
 
@@ -1095,7 +1313,6 @@ class DataProcess:
         description_file_path = os.path.join(output_dir, "description.txt")
         with open(description_file_path, 'w') as file:
             file.write(description_text)
-
 
     def NaverNewsStatisticsAnalysis(self, data, file_path):
         if 'Male' not in list(data.columns):
@@ -1754,34 +1971,36 @@ class DataProcess:
         with open(description_file_path, 'w') as file:
             file.write(description_text)
 
-
 class KimKem:
-    def __init__(self, token_data, csv_name, save_path, startyear, topword, weight, graph_wordcnt, split_option, split_custom=None, exception_word_list=[]):
-        self.token_data = token_data
-        self.folder_name = csv_name.replace('.csv', '').replace('token_', '')
-        self.startyear = startyear
-        self.topword = topword
-        self.weight = weight
-        self.graph_wordcnt = graph_wordcnt
-        self.except_option_display = 'Y' if exception_word_list else 'N'
+    def __init__(self, token_data=None, csv_name=None, save_path=None, startyear=None, topword=None, weight=None, graph_wordcnt=None, split_option=None, split_custom=None, exception_word_list=[], rekemkim = False):
         self.exception_word_list = exception_word_list
-        self.split_option = split_option
-        self.split_custom = split_custom
-        self.now = datetime.now()
+        
+        if rekemkim == False:
+            self.token_data = token_data
+            self.folder_name = csv_name.replace('.csv', '').replace('token_', '')
+            self.startyear = startyear
+            self.topword = topword
+            self.weight = weight
+            self.graph_wordcnt = graph_wordcnt
+            self.except_option_display = 'Y' if exception_word_list else 'N'
+            self.split_option = split_option
+            self.split_custom = split_custom
+            self.now = datetime.now()
 
-        # Text Column Name 지정
-        for column in token_data.columns.tolist():
-            if 'Text' in column:
-                self.textColumn_name = column
-            elif 'Date' in column:
-                self.dateColumn_name = column
+            # Text Column Name 지정
+            for column in token_data.columns.tolist():
+                if 'Text' in column:
+                    self.textColumn_name = column
+                elif 'Date' in column:
+                    self.dateColumn_name = column
 
-        self.kimkem_folder_path = os.path.join(
-            save_path,
-            f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
-        )
-        os.makedirs(self.kimkem_folder_path, exist_ok=True)
+            self.kimkem_folder_path = os.path.join(
+                save_path,
+                f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
+            )
+            os.makedirs(self.kimkem_folder_path, exist_ok=True)
 
+    def write_status(self, msg=''):
         info = (
             f"===================================================================================================================\n"
             f"{'분석 데이터:':<15} {self.folder_name}\n"
@@ -1794,17 +2013,21 @@ class KimKem:
             f"{'분할 상위%:':<15} {self.split_custom}\n"
             f"===================================================================================================================\n"
         )
-
+        info += f'\n진행 상황: {msg}'
+        
         with open(os.path.join(self.kimkem_folder_path, 'kemkim_info.txt'),'w+') as info_txt:
             info_txt.write(info)
-
+        
     def make_kimkem(self):
         # Step 1: 데이터 분할 및 초기화
         year_divided_group = self.divide_period(self.token_data)#
-        yyear_divided_dic = self._initialize_year_divided_dic(year_divided_group)#
-
+        year_list = list(year_divided_group.groups.keys())
+        if self.startyear < int(year_list[0]):
+            self.startyear = year_list[0]
+        self.write_status()
+            
         # Step 2: 연도별 단어 리스트 생성
-
+        yyear_divided_dic = self._initialize_year_divided_dic(year_divided_group)#
         # DF 계산을 위해서 각 연도(key)마다 2차원 리스트 할당 -> 요소 리스트 하나 = 문서 하나
         year_divided_dic = self._generate_year_divided_dic(yyear_divided_dic)#
 
@@ -1819,8 +2042,11 @@ class KimKem:
             os.rmdir(self.kimkem_folder_path)
             return 0
 
+        self.write_status("TF/DF 계산 중...")
         # Step 4: TF, DF, DoV, DoD 계산
         tf_counts, df_counts = self.cal_tf(keyword_list, year_divided_dic_merged), self.cal_df(keyword_list, year_divided_dic)
+        
+        self.write_status("DOV/DOD 계산 중...")
         DoV_dict, DoD_dict = self.cal_DoV(keyword_list, year_divided_dic, tf_counts), self.cal_DoD(keyword_list, year_divided_dic, df_counts)
         self.year_list = list(tf_counts.keys())
         self.year_list.pop(0)
@@ -1837,31 +2063,55 @@ class KimKem:
         DoD_coordinates_record = {}
         Final_signal_record = {}
         
+        self.DoV_graphPath_list = []
+        self.DoD_graphPath_list = []
+        
         for year in self.year_list:
             # Step 7: 평균 증가율 및 빈도 계산
 
             result_folder = os.path.join(self.history_folder, year)
 
-            avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, year)
+            self.write_status(f"{year}년 KEMKIM 증가율 계산 중...")
+            avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, str(int(year)-1), year)
 
+            self.write_status(f"{year}년 KEMKIM 신호 분석 및 그래프 생성 중...")
             # Step 8: 신호 분석 및 그래프 생성
             DoV_signal_record[year], DoD_signal_record[year], DoV_coordinates_record[year], DoD_coordinates_record[year] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
             Final_signal_record[year] = self._save_final_signals(DoV_signal_record[year], DoD_signal_record[year], os.path.join(result_folder, 'Signal'))
         
-
+        self.write_status("키워드 추적 중..")
         DoV_signal_track = self.track_keyword_positions(DoV_signal_record)
         DoD_signal_track = self.track_keyword_positions(DoD_signal_record)
         Final_signal_track = self.track_keyword_positions(Final_signal_record)
-            
-        DoV_signal_track.to_csv(os.path.join(self.result_folder, 'DoV_signal_track.csv'), encoding='utf-8-sig', header=True)
-        DoD_signal_track.to_csv(os.path.join(self.result_folder, 'DoD_signal_track.csv'), encoding='utf-8-sig', header=True)
-        Final_signal_track.to_csv(os.path.join(self.result_folder, 'Final_signal_track.csv'), encoding='utf-8-sig', header=True)
         
-        self.create_coordinates_animation(DoV_coordinates_record, os.path.join(self.result_folder, 'DoV_graph_animation.gif'))
-        self.create_coordinates_animation(DoD_coordinates_record, os.path.join(self.result_folder, 'DoD_graph_animation.gif'))
-
+        DoV_signal_track, DoV_signal_deletewords = self.filter_clockwise_movements(DoV_signal_track)
+        DoV_signal_track, DoD_signal_deletewords = self.filter_clockwise_movements(DoV_signal_track)        
+        self.exception_word_list.extend(DoV_signal_deletewords)
+        self.exception_word_list.extend(DoD_signal_deletewords)
+        self.exception_word_list = list(set(self.exception_word_list))
+            
+        DoV_signal_track.to_csv(os.path.join(self.track_folder, 'DoV_signal_track.csv'), encoding='utf-8-sig', index=True)
+        DoD_signal_track.to_csv(os.path.join(self.track_folder, 'DoD_signal_track.csv'), encoding='utf-8-sig', index=True)
+        Final_signal_track.to_csv(os.path.join(self.track_folder, 'Final_signal_track.csv'), encoding='utf-8-sig', index=True)
+        
+        self.write_status("키워드 추적 그래프 생성 중...")
+        self.visualize_keyword_movements(DoV_signal_track, os.path.join(self.track_folder, 'DoV_signal_track_graph.png'), 'TF', 'Increasing Rate')
+        self.visualize_keyword_movements(DoD_signal_track, os.path.join(self.track_folder, 'DoD_signal_track_graph.png'), 'DF', 'Increasing Rate')
+        
+        self.write_status("키워드 추적 애니메이션 생성 중...")
+        self.animate_keyword_movements(DoV_signal_track, os.path.join(self.track_folder, 'DoV_signal_track_animation.gif'), 'TF', 'Increasing Rate')
+        self.animate_keyword_movements(DoD_signal_track, os.path.join(self.track_folder, 'DoD_signal_track_animation.gif'), 'DF', 'Increasing Rate')
+        
+        self.write_status("최종 KEM KIM 생성 중...")
+        avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, str(self.startyear), self.year_list[-1])
+        DoV_signal_record[year], DoD_signal_record[year], DoV_coordinates_record[year], DoD_coordinates_record[year] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(self.result_folder, 'Graph'))
+        Final_signal_record[year] = self._save_final_signals(DoV_signal_record[year], DoD_signal_record[year], os.path.join(self.result_folder, 'Signal'))
+        add_list = list(set(DoV_signal_deletewords+DoD_signal_deletewords))
+        pd.DataFrame(self.exception_word_list+['']+add_list, columns=['deleted_words']).to_csv(os.path.join(self.result_folder, 'filtered_words.csv'), index = False)
+        
+        self.write_status("완료")
         return 1
-
+    
     def track_keyword_positions(self, yearly_data):
         
         # 모든 단어를 수집하기 위한 집합
@@ -1884,13 +2134,254 @@ class KimKem:
 
         # set을 list로 변환하여 인덱스로 사용
         df = pd.DataFrame(index=list(all_keywords))
-
+        df.index.name = 'Keyword'
+        
         for year in years:
             df[year] = df.index.map(keyword_positions[year].get)
 
         return df
 
+    def visualize_keyword_movements(self, df, graph_path, x_axis_name='X-Axis', y_axis_name='Y-Axis', base_size=2, size_increment=2):
+        # 포지션 매핑: 각 사분면에 위치를 계산
+        def get_position(quadrant, size):
+            if quadrant == 'strong_signal':   # 1사분면
+                return size, size
+            elif quadrant == 'weak_signal':   # 2사분면
+                return -size, size
+            elif quadrant == 'latent_signal': # 3사분면
+                return -size, -size
+            elif quadrant == 'well_known_signal': # 4사분면
+                return size, -size
+
+        # 각 키워드의 연도별 위치를 저장할 딕셔너리
+        keyword_trajectories = {keyword: [] for keyword in df.index}
+
+        max_size = base_size + (len(df.index) - 1) * size_increment  # 최대 크기 계산
+
+        # 연도별 키워드의 위치를 계산
+        for idx, keyword in enumerate(df.index):
+            size = base_size + (idx * size_increment)  # 크기 증가를 반영
+            for year in df.columns:
+                quadrant = df.loc[keyword, year]
+                position = get_position(quadrant, size)  # 크기를 포지션에 반영
+                keyword_trajectories[keyword].append(position)
+
+        # 색상 팔레트 생성
+        num_keywords = len(df.index)
+        colors = sns.color_palette("husl", num_keywords)
+        
+        # 시각화 함수
+        plt.figure(figsize=(18, 18))  # 그래프 크기를 더 크게 설정
+        
+        # 4분면의 선 그리기
+        plt.axhline(0, color='black', linewidth=1)
+        plt.axvline(0, color='black', linewidth=1)
+
+        position_years = {}
+        
+        # 각 키워드의 포인트를 시각화
+        for i, (keyword, trajectory) in enumerate(keyword_trajectories.items()):
+            trajectory_df = pd.DataFrame(trajectory, columns=['x', 'y'])
+            
+            # 포인트만 표시
+            plt.scatter(trajectory_df['x'], trajectory_df['y'], label=keyword, color=colors[i], alpha=0.75)
+
+            # 각 위치에 연도 표시
+            for j, (x, y) in enumerate(trajectory):
+                # 해당 위치에 이미 연도가 기록되어 있는지 확인
+                if (x, y) in position_years:
+                    position_years[(x, y)].append(df.columns[j])
+                else:
+                    position_years[(x, y)] = [df.columns[j]]
+
+        # 모든 연도를 한 번에 표시
+        for (x, y), years in position_years.items():
+            keyword_at_position = None
+            for keyword, trajectory in keyword_trajectories.items():
+                if (x, y) in trajectory:
+                    keyword_at_position = keyword
+                    break
+            
+            # 키워드와 연도를 함께 표시
+            label = f"{keyword_at_position}: " + ', '.join(map(str, years))
+            plt.text(x, y, label, fontsize=6, ha='center', va='center')
+
+        # 각 사분면의 이름을 그래프 바깥쪽에 설정
+        plt.text(max_size * 1.1, max_size * 1.1, 'Strong Signal', fontsize=14, ha='center', va='center', color='black')
+        plt.text(-max_size * 1.1, max_size * 1.1, 'Weak Signal', fontsize=14, ha='center', va='center', color='black')
+        plt.text(-max_size * 1.1, -max_size * 1.1, 'Latent Signal', fontsize=14, ha='center', va='center', color='black')
+        plt.text(max_size * 1.1, -max_size * 1.1, 'Well-Known Signal', fontsize=14, ha='center', va='center', color='black')
+
+        # 그래프 설정
+        plt.title('KEMKIM Keyword Movements', fontsize=18)
+        plt.xlabel(x_axis_name, fontsize=14)
+        plt.ylabel(y_axis_name, fontsize=14)
+        plt.xlim(-max_size * 1.2, max_size * 1.2)  # 최대 크기에 따라 축 설정
+        plt.ylim(-max_size * 1.2, max_size * 1.2)
+        plt.xticks([])
+        plt.yticks([])
+        plt.grid(True)
+
+        # 범례를 그래프 바깥으로 배치하고 여러 줄로 표시
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize='small', ncol=2, frameon=False)
+        
+        plt.savefig(graph_path, dpi=600, bbox_inches='tight')
+        plt.close()
     
+    def animate_keyword_movements(self, df,  gif_filename='keyword_movements.gif', x_axis_name='X-Axis', y_axis_name='Y-Axis', base_size=2, size_increment=2, frames_between_years=3, duration = 1000):
+        # 포지션 매핑: 각 사분면에 위치를 계산
+        def get_position(quadrant, size):
+            if quadrant == 'strong_signal':   # 1사분면
+                return size, size
+            elif quadrant == 'weak_signal':   # 2사분면
+                return -size, size
+            elif quadrant == 'latent_signal': # 3사분면
+                return -size, -size
+            elif quadrant == 'well_known_signal': # 4사분면
+                return size, -size
+
+        # 각 키워드의 연도별 위치를 저장할 딕셔너리
+        keyword_positions = {keyword: [] for keyword in df.index}
+
+        max_size = base_size + (len(df.index) - 1) * size_increment  # 최대 크기 계산
+
+        # 연도별 키워드의 위치를 계산
+        for idx, keyword in enumerate(df.index):
+            size = base_size + (idx * size_increment)  # 크기 증가를 반영
+            for year in df.columns:
+                quadrant = df.loc[keyword, year]
+                position = get_position(quadrant, size)  # 크기를 포지션에 반영
+                keyword_positions[keyword].append(position)
+
+        # 색상 팔레트 생성
+        num_keywords = len(df.index)
+        colors = sns.color_palette("husl", num_keywords)
+        
+        # GIF로 저장할 프레임 리스트
+        frames = []
+        
+        # 중간 프레임 생성
+        for t in range(len(df.columns) - 1):
+            year = df.columns[t]
+            next_year = df.columns[t + 1]
+            
+            for frame in range(frames_between_years):
+                plt.figure(figsize=(18, 18))  # 그래프 크기를 더 크게 설정
+                
+                # 4분면의 선 그리기
+                plt.axhline(0, color='black', linewidth=1)
+                plt.axvline(0, color='black', linewidth=1)
+                
+                # 각 키워드의 현재 위치와 다음 위치 사이의 중간 위치 계산 및 시각화
+                for i, keyword in enumerate(keyword_positions.keys()):
+                    x_start, y_start = keyword_positions[keyword][t]
+                    x_end, y_end = keyword_positions[keyword][t + 1]
+                    
+                    # 중간 위치 계산
+                    x = x_start + (x_end - x_start) * (frame / frames_between_years)
+                    y = y_start + (y_end - y_start) * (frame / frames_between_years)
+                    
+                    plt.scatter(x, y, label=keyword, color=colors[i], alpha=0.75)
+                    label = f"{keyword} ({year})"
+                    plt.text(x, y, label, fontsize=6, ha='center', va='center')
+
+                # 각 사분면의 이름을 그래프 바깥쪽에 설정
+                plt.text(max_size * 1.1, max_size * 1.1, 'Strong Signal', fontsize=14, ha='center', va='center', color='black')
+                plt.text(-max_size * 1.1, max_size * 1.1, 'Weak Signal', fontsize=14, ha='center', va='center', color='black')
+                plt.text(-max_size * 1.1, -max_size * 1.1, 'Latent Signal', fontsize=14, ha='center', va='center', color='black')
+                plt.text(max_size * 1.1, -max_size * 1.1, 'Well-Known Signal', fontsize=14, ha='center', va='center', color='black')
+
+                # 그래프 설정
+                plt.title(f'KEMKIM Keyword Movements ({year})', fontsize=18)
+                plt.xlabel(x_axis_name, fontsize=14)
+                plt.ylabel(y_axis_name, fontsize=14)
+                plt.xlim(-max_size * 1.2, max_size * 1.2)  # 최대 크기에 따라 축 설정
+                plt.ylim(-max_size * 1.2, max_size * 1.2)
+                plt.xticks([])
+                plt.yticks([])
+                plt.grid(True)
+
+                # 범례를 그래프 바깥으로 배치하고 여러 줄로 표시
+                plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize='small', ncol=2, frameon=False)
+                
+                # 프레임을 메모리에 저장
+                buf = io.BytesIO()
+                plt.savefig(buf, format='png')
+                buf.seek(0)
+                img = Image.open(buf).copy()  # 이미지 복사하여 사용
+                frames.append(img)
+                buf.close()
+                plt.close()
+
+        # 마지막 연도에 대한 프레임 추가
+        plt.figure(figsize=(18, 18))  # 그래프 크기를 더 크게 설정
+        plt.axhline(0, color='black', linewidth=1)
+        plt.axvline(0, color='black', linewidth=1)
+        
+        for i, keyword in enumerate(keyword_positions.keys()):
+            x, y = keyword_positions[keyword][-1]
+            plt.scatter(x, y, label=keyword, color=colors[i], alpha=0.75)
+            label = f"{keyword} ({df.columns[-1]})"
+            plt.text(x, y, label, fontsize=6, ha='center', va='center')
+
+        plt.text(max_size * 1.1, max_size * 1.1, 'Strong Signal', fontsize=14, ha='center', va='center', color='black')
+        plt.text(-max_size * 1.1, max_size * 1.1, 'Weak Signal', fontsize=14, ha='center', va='center', color='black')
+        plt.text(-max_size * 1.1, -max_size * 1.1, 'Latent Signal', fontsize=14, ha='center', va='center', color='black')
+        plt.text(max_size * 1.1, -max_size * 1.1, 'Well-Known Signal', fontsize=14, ha='center', va='center', color='black')
+
+        plt.title(f'KEMKIM Keyword Movements ({df.columns[-1]})', fontsize=18)
+        plt.xlabel(x_axis_name, fontsize=14)
+        plt.ylabel(y_axis_name, fontsize=14)
+        plt.xlim(-max_size * 1.2, max_size * 1.2)  # 최대 크기에 따라 축 설정
+        plt.ylim(-max_size * 1.2, max_size * 1.2)
+        plt.xticks([])
+        plt.yticks([])
+        plt.grid(True)
+
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize='small', ncol=2, frameon=False)
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        img = Image.open(buf).copy()  # 이미지 복사하여 사용
+        frames.append(img)
+        buf.close()
+        plt.close()
+
+        # GIF로 변환
+        frames[0].save(gif_filename, save_all=True, append_images=frames[1:], duration=duration, loop=0)
+        
+        plt.close()
+
+    def filter_clockwise_movements(self, df):
+        # 사분면 순서 정의
+        quadrant_order = {
+            'weak_signal': 2,
+            'strong_signal': 1,
+            'latent_signal': 3,
+            'well_known_signal': 4
+        }
+
+        # 시계방향 이동 여부 확인 함수 (주어진 정의에 따른)
+        def is_clockwise_movement(trajectory):
+            for i in range(len(trajectory) - 1):
+                current_quadrant = quadrant_order[trajectory.iloc[i]]
+                next_quadrant = quadrant_order[trajectory.iloc[i + 1]]
+                
+                # 시계방향 순서 확인, 같은 사분면에 있으면 통과
+                if (current_quadrant == 1 and next_quadrant not in [1, 3, 4]) or \
+                (current_quadrant == 2 and next_quadrant not in [1, 2, 4]) or \
+                (current_quadrant == 3 and next_quadrant not in [1, 2, 3]) or \
+                (current_quadrant == 4 and next_quadrant not in [2, 3, 4]):
+                    return False
+            return True
+
+        # 각 키워드별로 시계방향으로 이동한 데이터만 필터링we
+        filtered_df = df[df.apply(lambda row: is_clockwise_movement(row), axis=1)]
+        non_matching_keywords = df[~df.apply(lambda row: is_clockwise_movement(row), axis=1)].index.tolist()
+        
+        return filtered_df, non_matching_keywords
+
     def _initialize_year_divided_dic(self, year_divided_group):
         yyear_divided_dic = {}
         for group_name, group_data in year_divided_group:
@@ -1925,25 +2416,28 @@ class KimKem:
 
     def _create_output_directories(self):
         article_kimkem_folder = self.kimkem_folder_path
-        self.tf_folder = os.path.join(article_kimkem_folder, "TF")
-        self.df_folder = os.path.join(article_kimkem_folder, "DF")
-        self.DoV_folder = os.path.join(article_kimkem_folder, "DoV")
-        self.DoD_folder = os.path.join(article_kimkem_folder, "DoD")
+        self.data_folder = os.path.join(article_kimkem_folder, "Data")
+        self.tf_folder = os.path.join(self.data_folder, "TF")
+        self.df_folder = os.path.join(self.data_folder, "DF")
+        self.DoV_folder = os.path.join(self.data_folder, "DoV")
+        self.DoD_folder = os.path.join(self.data_folder, "DoD")
         self.result_folder = os.path.join(article_kimkem_folder, "Result")
-        self.history_folder = os.path.join(self.result_folder, 'History')
+        self.track_folder = os.path.join(article_kimkem_folder, "Track")
+        self.history_folder = os.path.join(self.track_folder, 'History')
 
         os.makedirs(self.tf_folder, exist_ok=True)
         os.makedirs(self.df_folder, exist_ok=True)
         os.makedirs(self.DoV_folder, exist_ok=True)
         os.makedirs(self.DoD_folder, exist_ok=True)
         os.makedirs(self.result_folder, exist_ok=True)
+        os.makedirs(os.path.join(self.result_folder, 'Graph'))
+        os.makedirs(os.path.join(self.result_folder, 'Signal'))
 
         for year in self.year_list:
             year_path = os.path.join(self.history_folder, year)
             os.makedirs(year_path, exist_ok=True)
             os.makedirs(os.path.join(year_path, 'Graph'), exist_ok=True)
             os.makedirs(os.path.join(year_path, 'Signal'), exist_ok=True)
-
 
     def _save_kimkem_results(self, tf_counts, df_counts, DoV_dict, DoD_dict):
         for year in tf_counts:
@@ -1961,10 +2455,8 @@ class KimKem:
         data_df = pd.DataFrame(list(data_dict[year].items()), columns=['keyword', label])
         data_df.to_csv(f"{folder}/{year}_{label}.csv", index=False, encoding='utf-8-sig')
 
-    def _calculate_averages(self, keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, current_year):
-        min_year = str(self.startyear)
-        max_year = current_year
-
+    def _calculate_averages(self, keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, min_year, max_year):
+        
         avg_DoV_increase_rate = {}
         avg_DoD_increase_rate = {}
         avg_term_frequency = {}
@@ -1991,7 +2483,7 @@ class KimKem:
         DoV_signal, DoV_coordinates = self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, folder_path)
         DoD_signal, DoD_coordinates = self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path)
         return DoV_signal, DoD_signal, DoV_coordinates, DoD_coordinates
-
+    
     def _save_final_signals(self, DoV_signal, DoD_signal, result_folder):
         DoV_signal_df = pd.DataFrame([(k, v) for k, v in DoV_signal.items()], columns=['signal', 'word'])
         DoV_signal_df.to_csv(os.path.join(result_folder, "DoV_signal.csv"), index=False, encoding='utf-8-sig')
@@ -2029,11 +2521,9 @@ class KimKem:
 
         return year_divided_group
 
-    def create_top_words_animation(self, dataframe, output_filename='top_words_animation.gif', word_cnt=10, scale_factor=1):
-        import os
+    def create_top_words_animation(self, dataframe, output_filename='top_words_animation.gif', word_cnt=10, scale_factor=1, frames_per_transition=20):
         df = pd.DataFrame(dataframe).fillna(0)
-        output_folder = os.path.dirname(output_filename)
-
+    
         # 연도별로 상위 word_cnt개 단어를 추출
         top_words_per_year = {}
         for year in df.columns:
@@ -2050,7 +2540,7 @@ class KimKem:
             return np.linspace(start, end, num_steps)
 
         def animate(i):
-            year_idx = i // 20
+            year_idx = i // frames_per_transition
             year = list(top_words_per_year.keys())[year_idx]
             next_year_idx = year_idx + 1 if year_idx + 1 < len(top_words_per_year) else year_idx
             next_year = list(top_words_per_year.keys())[next_year_idx]
@@ -2064,10 +2554,10 @@ class KimKem:
             combined_data['start_rank'] = combined_data['start'].rank(ascending=False, method='first')
             combined_data['end_rank'] = combined_data['end'].rank(ascending=False, method='first')
 
-            interpolated_values = interpolate(combined_data['start'].values, combined_data['end'].values, 20)[
-                                      i % 20] * scale_factor
-            interpolated_ranks = interpolate(combined_data['start_rank'].values, combined_data['end_rank'].values, 20)[
-                i % 20]
+            interpolated_values = interpolate(combined_data['start'].values, combined_data['end'].values, frames_per_transition)[
+                                    i % frames_per_transition] * scale_factor
+            interpolated_ranks = interpolate(combined_data['start_rank'].values, combined_data['end_rank'].values, frames_per_transition)[
+                i % frames_per_transition]
 
             # 순위에 따라 재정렬 및 word_cnt로 제한
             sorted_indices = np.argsort(interpolated_ranks)[::-1][:word_cnt]  # 역순 정렬 후 상위 word_cnt개만 선택
@@ -2082,111 +2572,20 @@ class KimKem:
             ax.set_ylabel('Keywords', fontsize=14)
             plt.box(False)
 
-        # GIF로 저장 (더 부드러운 진행을 위해 20 프레임씩 보간)
+        # GIF로 저장 (메모리 내에서 처리하여 속도 향상)
         frames = []
-        for i in range((len(top_words_per_year) - 1) * 20):
+        
+        for i in range((len(top_words_per_year) - 1) * frames_per_transition):
             animate(i)
-            plt.savefig(os.path.join(output_folder, f"frame_{i}.png"))
-            frames.append(Image.open(os.path.join(output_folder, f"frame_{i}.png")))
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png')
+            buf.seek(0)
+            img = Image.open(buf).copy()  # 이미지 복사하여 사용
+            frames.append(img)
+            buf.close()
 
         # Pillow를 사용해 GIF로 저장
         frames[0].save(output_filename, save_all=True, append_images=frames[1:], duration=100, loop=0)
-
-        # 임시로 저장된 이미지 파일 삭제
-        for i in range((len(top_words_per_year) - 1) * 20):
-            os.remove(os.path.join(output_folder, f"frame_{i}.png"))
-
-        plt.close()
-
-    def create_coordinates_animation(self, yearly_coordinates_dict, output_filename='coordinates_animation.gif'):
-        
-        def calculate_axis_avg(yearly_coordinates_dict):
-            x_values = []
-            y_values = []
-
-            # 각 연도의 axis 값을 추출하여 리스트에 추가
-            for year, data in yearly_coordinates_dict.items():
-                axis_coords = data['axis']
-                x_values.append(axis_coords[0])
-                y_values.append(axis_coords[1])
-
-            # x와 y의 평균값 계산
-            avg_x = np.mean(x_values)
-            avg_y = np.mean(y_values)
-
-            return avg_x, avg_y
-        
-        # 모든 연도의 axis 평균값 계산
-        avg_x, avg_y = calculate_axis_avg(yearly_coordinates_dict)
-
-        # 연도 순서대로 정렬
-        years = sorted(yearly_coordinates_dict.keys())
-
-        # 첫 번째 연도의 데이터 사용하여 플롯 초기화
-        first_year_data = yearly_coordinates_dict[years[0]]
-        words = [key for key in first_year_data.keys() if key != 'axis']  # 'axis'를 제외한 단어들
-
-        # 초기 좌표 설정
-        fig = plt.figure(figsize=(100, 100))
-        ax = fig.add_subplot(1, 1, 1)
-        initial_coords = np.array([first_year_data[word] for word in words])
-        scatter = ax.scatter(initial_coords[:, 0], initial_coords[:, 1])
-
-        # 텍스트 추가
-        texts = [ax.text(coord[0], coord[1], word, fontsize=50) for coord, word in zip(initial_coords, words)]
-
-        # x, y 축의 범위 설정
-        #ax.set_xlim(min(initial_coords[:, 0]) - 1, max(initial_coords[:, 0]) + 1)
-        #ax.set_ylim(min(initial_coords[:, 1]) - 1, max(initial_coords[:, 1]) + 1)
-
-        # x축 y축 교점을 모든 연도의 평균값으로 설정
-        plt.axvline(x=avg_x, color='k', linestyle='--', linewidth=3)  # x축 교점 수직선
-        plt.axhline(y=avg_y, color='k', linestyle='--', linewidth=3)  # y축 교점 수평선
-
-        # 좌표와 해당 키를 표시
-        def draw_coordinates(coords, texts):
-            scatter.set_offsets(coords)
-            for j, text in enumerate(texts):
-                text.set_position((coords[j][0], coords[j][1]))
-
-        def interpolate_coords(start_coords, end_coords, num_steps):
-            return np.linspace(start_coords, end_coords, num_steps)
-
-        def animate(i):
-            year_idx = i // 20
-            year = years[year_idx]
-            next_year_idx = year_idx + 1 if year_idx + 1 < len(years) else year_idx
-            next_year = years[next_year_idx]
-
-            # 현재와 다음 연도의 좌표 데이터 추출
-            current_data = yearly_coordinates_dict[year]
-            next_data = yearly_coordinates_dict[next_year]
-
-            current_coords = np.array([current_data[word] for word in words])
-            next_coords = np.array([next_data[word] for word in words])
-
-            # 보간을 통해 좌표 값 계산
-            interpolated_coords = interpolate_coords(current_coords, next_coords, 20)[i % 20]
-
-            draw_coordinates(interpolated_coords, texts)
-            ax.set_title(f'Keyword Positions in {year}', fontsize=50)
-
-        # GIF로 저장 (더 부드러운 진행을 위해 20 프레임씩 보간)
-        frames = []
-        output_folder = os.path.dirname(output_filename)
-        
-        for i in range((len(years) - 1) * 20):
-            animate(i)
-            frame_filename = os.path.join(output_folder, f"frame_{i}.png")
-            plt.savefig(frame_filename)
-            frames.append(Image.open(frame_filename))
-
-        # Pillow를 사용해 GIF로 저장
-        frames[0].save(output_filename, save_all=True, append_images=frames[1:], duration=100, loop=0)
-
-        # 임시로 저장된 이미지 파일 삭제
-        for i in range((len(years) - 1) * 20):
-            os.remove(os.path.join(output_folder, f"frame_{i}.png"))
 
         plt.close()
     
@@ -2267,25 +2666,28 @@ class KimKem:
 
         return sorted_lst[threshold_index]  # 상위 n%에 가장 가까운 요소 반환
 
-    def DoV_draw_graph(self, avg_DoV_increase_rate, avg_term_frequency, graph_folder):
-        match self.split_option:
-            case '평균(Mean)':
-                avg_term = self.find_mean(list(avg_term_frequency.values()))  # x축, 평균 단어 빈도
-                avg_DoV = self.find_mean(list(avg_DoV_increase_rate.values()))  # y축, 평균 증가율
-            case '중간값(Median)':
-                avg_term = self.find_median(list(avg_term_frequency.values()))  # x축, 평균 단어 빈도
-                avg_DoV = self.find_median(list(avg_DoV_increase_rate.values()))  # y축, 평균 증가율
-            case '직접 입력: 상위( )%':
-                avg_term = self.top_n_percent(list(avg_term_frequency.values()), self.split_custom)  # x축, 평균 단어 빈도
-                avg_DoV = self.top_n_percent(list(avg_DoV_increase_rate.values()), self.split_custom)  # y축, 평균 증가율
+    def DoV_draw_graph(self, avg_DoV_increase_rate=None, avg_term_frequency=None, graph_folder=None, redraw_option = False, coordinates=False):
+        if redraw_option == False:
+            match self.split_option:
+                case '평균(Mean)':
+                    avg_term = self.find_mean(list(avg_term_frequency.values()))  # x축, 평균 단어 빈도
+                    avg_DoV = self.find_mean(list(avg_DoV_increase_rate.values()))  # y축, 평균 증가율
+                case '중간값(Median)':
+                    avg_term = self.find_median(list(avg_term_frequency.values()))  # x축, 평균 단어 빈도
+                    avg_DoV = self.find_median(list(avg_DoV_increase_rate.values()))  # y축, 평균 증가율
+                case '직접 입력: 상위( )%':
+                    avg_term = self.top_n_percent(list(avg_term_frequency.values()), self.split_custom)  # x축, 평균 단어 빈도
+                    avg_DoV = self.top_n_percent(list(avg_DoV_increase_rate.values()), self.split_custom)  # y축, 평균 증가율
 
-        coordinates = {}
-        coordinates['axis'] = (avg_term, avg_DoV)
+            coordinates = {}
+            coordinates['axis'] = (avg_term, avg_DoV)
 
-        for key in avg_DoV_increase_rate:
-            if key not in self.exception_word_list:
-                coordinates[key] = (avg_term_frequency[key], avg_DoV_increase_rate[key])
-
+            for key in avg_DoV_increase_rate:
+                if key not in self.exception_word_list:
+                    coordinates[key] = (avg_term_frequency[key], avg_DoV_increase_rate[key])
+        else:
+            avg_term = coordinates['axis'][0]
+            avg_DoV = coordinates['axis'][1]
         plt.figure(figsize=(100, 100))
         plt.axvline(x=avg_term, color='k', linestyle='--')  # x축 중앙값 수직선
         plt.axhline(y=avg_DoV, color='k', linestyle='--')  # y축 중앙값 수평선
@@ -2316,33 +2718,38 @@ class KimKem:
         plt.ylabel("Time-Weighted increasing rate", fontsize=50)
 
         # 그래프 표시
-        plt.savefig(graph_folder + "/" + "TF_DOV_graph.png")
+        plt.savefig(os.path.join(graph_folder, "TF_DOV_graph.png"), bbox_inches='tight')
         plt.close()
-
+        
         coordinates_df = pd.DataFrame([(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
         coordinates_df.to_csv(graph_folder + "/" + "DOV_coordinates.csv", index=False, encoding='utf-8-sig')
 
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
 
-    def DoD_draw_graph(self, avg_DoD_increase_rate, avg_doc_frequency, graph_folder):
-        match self.split_option:
-            case '평균(Mean)':
-                avg_doc = self.find_mean(list(avg_doc_frequency.values()))  # x축, 평균 단어 빈도
-                avg_DoD = self.find_mean(list(avg_DoD_increase_rate.values()))  # y축, 평균 증가율
-            case '중간값(Median)':
-                avg_doc = self.find_median(list(avg_doc_frequency.values()))  # x축, 평균 단어 빈도
-                avg_DoD = self.find_median(list(avg_DoD_increase_rate.values()))  # y축, 평균 증가율
-            case '직접 입력: 상위( )%':
-                avg_doc = self.top_n_percent(list(avg_doc_frequency.values()), self.split_custom)  # x축, 평균 단어 빈도
-                avg_DoD = self.top_n_percent(list(avg_DoD_increase_rate.values()), self.split_custom)  # y축, 평균 증가율
+    def DoD_draw_graph(self, avg_DoD_increase_rate=None, avg_doc_frequency=None, graph_folder=None, redraw_option=False, coordinates=None):
+        if redraw_option == False:
+            match self.split_option:
+                case '평균(Mean)':
+                    avg_doc = self.find_mean(list(avg_doc_frequency.values()))  # x축, 평균 단어 빈도
+                    avg_DoD = self.find_mean(list(avg_DoD_increase_rate.values()))  # y축, 평균 증가율
+                case '중간값(Median)':
+                    avg_doc = self.find_median(list(avg_doc_frequency.values()))  # x축, 평균 단어 빈도
+                    avg_DoD = self.find_median(list(avg_DoD_increase_rate.values()))  # y축, 평균 증가율
+                case '직접 입력: 상위( )%':
+                    avg_doc = self.top_n_percent(list(avg_doc_frequency.values()), self.split_custom)  # x축, 평균 단어 빈도
+                    avg_DoD = self.top_n_percent(list(avg_DoD_increase_rate.values()), self.split_custom)  # y축, 평균 증가율
 
-        coordinates = {}
-        coordinates['axis'] = (avg_doc, avg_DoD)
+            coordinates = {}
+            coordinates['axis'] = (avg_doc, avg_DoD)
 
-        for key in avg_DoD_increase_rate:
-            if key not in self.exception_word_list:
-                coordinates[key] = (avg_doc_frequency[key], avg_DoD_increase_rate[key])
+            for key in avg_DoD_increase_rate:
+                if key not in self.exception_word_list:
+                    coordinates[key] = (avg_doc_frequency[key], avg_DoD_increase_rate[key])
 
+        else:
+            avg_doc = coordinates['axis'][0]
+            avg_DoD = coordinates['axis'][1]
+        
         plt.figure(figsize=(100, 100))
         plt.axvline(x=avg_doc, color='k', linestyle='--')  # x축 중앙값 수직선
         plt.axhline(y=avg_DoD, color='k', linestyle='--')  # y축 중앙값 수평선
@@ -2374,247 +2781,10 @@ class KimKem:
         plt.ylabel("Time-Weighted increasing rate", fontsize=50)
 
         # 그래프 표시
-        plt.savefig(graph_folder + "/" + "DF_DOD_graph.png")
+        plt.savefig(os.path.join(graph_folder, "DF_DOD_graph.png"), bbox_inches='tight')
         plt.close()
-
+        
         coordinates_df = pd.DataFrame([(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
         coordinates_df.to_csv(graph_folder + "/" + "DOD_coordinates.csv", index=False, encoding='utf-8-sig')
 
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
-
-class KimKemInputDialog(QDialog):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-        self.data = None  # 데이터를 저장할 속성 추가
-
-    def initUI(self):
-        self.setWindowTitle('KEM KIM OPTION')
-        self.setGeometry(100, 100, 300, 250)  # 창 크기를 조정
-
-        layout = QVBoxLayout()
-
-        # 레이아웃의 마진과 간격 조정
-        layout.setContentsMargins(10, 10, 10, 10)  # (left, top, right, bottom) 여백 설정
-        layout.setSpacing(10)  # 위젯 간 간격 설정
-
-        # 각 입력 필드를 위한 QLabel 및 QTextEdit 생성
-        self.startyear_label = QLabel('분석 시작 연도를 입력하세요: ')
-        self.startyear_input = QLineEdit()
-        self.startyear_input.setText('2010')  # 기본값 설정
-        layout.addWidget(self.startyear_label)
-        layout.addWidget(self.startyear_input)
-
-        self.topword_label = QLabel('상위 단어 개수를 입력하세요: ')
-        self.topword_input = QLineEdit()
-        self.topword_input.setText('500')  # 기본값 설정
-        layout.addWidget(self.topword_label)
-        layout.addWidget(self.topword_input)
-
-        self.weight_label = QLabel('계산 가중치를 입력하세요: ')
-        self.weight_input = QLineEdit()
-        self.weight_input.setText('0.05')  # 기본값 설정
-        layout.addWidget(self.weight_label)
-        layout.addWidget(self.weight_input)
-
-        self.wordcnt_label = QLabel('그래프 애니메이션에 띄울 단어의 개수를 입력하세요: ')
-        self.wordcnt_input = QLineEdit()
-        self.wordcnt_input.setText('10')  # 기본값 설정
-        layout.addWidget(self.wordcnt_label)
-        layout.addWidget(self.wordcnt_input)
-
-        # 체크박스 생성
-        self.checkbox_label = QLabel('제외 단어 리스트를 추가하시겠습니까? ')
-        layout.addWidget(self.checkbox_label)
-
-        checkbox_layout = QHBoxLayout()
-        self.yes_checkbox = QCheckBox('Yes')
-        self.no_checkbox = QCheckBox('No')
-
-        self.yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
-        self.no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
-
-        # 서로 배타적으로 선택되도록 설정
-        self.yes_checkbox.toggled.connect(
-            lambda: self.no_checkbox.setChecked(False) if self.yes_checkbox.isChecked() else None)
-        self.no_checkbox.toggled.connect(
-            lambda: self.yes_checkbox.setChecked(False) if self.no_checkbox.isChecked() else None)
-
-        checkbox_layout.addWidget(self.yes_checkbox)
-        checkbox_layout.addWidget(self.no_checkbox)
-        layout.addLayout(checkbox_layout)
-
-        # 드롭다운 메뉴(QComboBox) 생성
-        self.dropdown_label = QLabel('분할 기준: ')
-        layout.addWidget(self.dropdown_label)
-
-        self.dropdown_menu = QComboBox()
-        self.dropdown_menu.addItem('평균(Mean)')
-        self.dropdown_menu.addItem('중간값(Median)')
-        self.dropdown_menu.addItem('직접 입력: 상위( )%')
-        layout.addWidget(self.dropdown_menu)
-
-        # 추가 입력창 (QLineEdit), 초기에는 숨김
-        self.additional_input_label = QLabel('숫자를 입력하세요')
-        self.additional_input = QLineEdit()
-        self.additional_input.setPlaceholderText('입력')
-        self.additional_input_label.hide()
-        self.additional_input.hide()
-        layout.addWidget(self.additional_input_label)
-        layout.addWidget(self.additional_input)
-
-        # 드롭다운 메뉴의 항목 변경 시 추가 입력창을 표시/숨김
-        self.dropdown_menu.currentIndexChanged.connect(self.handle_dropdown_change)
-
-        # 확인 버튼 생성 및 클릭 시 동작 연결
-        self.submit_button = QPushButton('Submit')
-        self.submit_button.clicked.connect(self.submit)
-        layout.addWidget(self.submit_button)
-
-        self.setLayout(layout)
-
-    def handle_dropdown_change(self, index):
-        # 특정 옵션이 선택되면 추가 입력창을 표시, 그렇지 않으면 숨김
-        if self.dropdown_menu.currentText() == '직접 입력: 상위( )%':
-            self.additional_input_label.show()
-            self.additional_input.show()
-        else:
-            self.additional_input_label.hide()
-            self.additional_input.hide()
-
-    def submit(self):
-        # 입력된 데이터를 확인하고 처리
-        startyear = self.startyear_input.text()
-        topword = self.topword_input.text()
-        weight = self.weight_input.text()
-        graph_wordcnt = self.wordcnt_input.text()
-        yes_selected = self.yes_checkbox.isChecked()
-        no_selected = self.no_checkbox.isChecked()
-        split_option = self.dropdown_menu.currentText()
-        split_custom = self.additional_input.text() if self.additional_input.isVisible() else None
-
-        self.data = {
-            'startyear': startyear,
-            'topword': topword,
-            'weight': weight,
-            'graph_wordcnt': graph_wordcnt,
-            'yes_selected': yes_selected,
-            'no_selected': no_selected,
-            'split_option': split_option,
-            'split_custom': split_custom
-        }
-        self.accept()
-
-class Tokenization(QWidget):
-    # 작업 완료 시 데이터를 반환하는 신호
-    finished = pyqtSignal(pd.DataFrame)
-
-    def __init__(self, csv_data, csv_path):
-        super().__init__()
-        self.kiwi = Kiwi(num_workers=8)
-        self.csv_data = csv_data
-        self.csv_path = csv_path
-        self.csv_name = os.path.basename(csv_path)
-
-        for column in csv_data.columns.tolist():
-            if 'Text' in column:
-                self.textColumn_name = column
-
-        self.initUI()
-
-    def initUI(self):
-        layout = QVBoxLayout()
-
-        self.progress = QProgressBar(self)
-        self.progress.setRange(0, 1000)  # 범위를 0.0에서 100.0처럼 보이게 설정
-        self.progress.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.progress)
-
-        self.label = QLabel('Progress:', self)
-        layout.addWidget(self.label)
-
-        self.btn = QPushButton('토큰화 시작', self)
-        self.btn.clicked.connect(self.startTask)
-        layout.addWidget(self.btn)
-
-        self.setLayout(layout)
-
-        self.setWindowTitle(f'{self.csv_name} Tokenization')
-        self.setGeometry(300, 300, 800, 170)
-
-    def startTask(self):
-        # Worker 인스턴스에 실행할 작업 함수와 인자들을 전달
-        self.worker = Worker(self.tokenization_task)
-        self.worker.progress.connect(self.updateProgress)
-        self.worker.finished.connect(self.onFinished)
-        self.worker.start()
-        self.btn.setEnabled(False)  # 작업 중에 버튼 비활성화
-
-    def updateProgress(self, value):
-        self.progress.setValue(value)
-        self.label.setText(f'Progress: {value/10}%')
-        if int(value/10) == 100:
-            self.label.setText('Task Completed!')
-
-    def onFinished(self):
-        self.btn.setEnabled(True)  # 작업 완료 후 버튼 활성화
-        self.finished.emit(self.csv_data)  # 작업 완료 신호와 함께 데이터 반환
-        self.close()
-
-    def tokenization_task(self, worker):
-        text_list = list(self.csv_data[self.textColumn_name])
-        tokenized_data = []
-
-        for index, text in enumerate(text_list):
-            try:
-                if not isinstance(text, str):
-                    tokenized_data.append([])
-                    continue  # 문자열이 아니면 넘어감
-
-                text = re.sub(r'[^가-힣a-zA-Z\s]', '', text)
-                tokens = self.kiwi.tokenize(text)
-                tokenized_text = [token.form for token in tokens if token.tag in ('NNG', 'NNP')]
-
-                # 리스트를 쉼표로 구분된 문자열로 변환
-                tokenized_text_str = ", ".join(tokenized_text)
-                tokenized_data.append(tokenized_text_str)
-
-                progress_value = round((index + 1) / len(text_list) * 100, 1) * 10
-                progress_value = int(progress_value)
-                worker.progress.emit(progress_value)  # 진행 상황을 전달
-
-            except:
-                tokenized_data.append([])
-
-        self.csv_data[self.textColumn_name] = tokenized_data
-
-class Worker(QThread):
-    # 작업의 진행 상황을 전달하기 위한 신호
-    progress = pyqtSignal(int)
-    finished = pyqtSignal()
-
-    def __init__(self, task_func, *args, **kwargs):
-        super().__init__()
-        self.task_func = task_func  # 작업 함수 저장
-        self.args = args  # 작업 함수의 인자
-        self.kwargs = kwargs  # 작업 함수의 키워드 인자
-
-    def run(self):
-        # 작업 함수를 실행하고, 완료되면 finished 신호 발송
-        self.task_func(self, *self.args, **self.kwargs)
-        self.finished.emit()
-
-if __name__ == '__main__':
-    import pandas as pd
-
-    # CSV 파일을 읽어옵니다.
-    df = pd.read_csv('/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER/navernews_무고죄_20100101_20200101_0808_1047/navernews_무고죄_20100101_20200101_0808_1047_reply.csv')
-
-    # Article URL을 기준으로 Reply Text를 합칩니다.
-    merged_df = df.groupby('Article URL').agg({
-        'Reply Text': ' '.join,
-        'Reply Date': 'first'
-    }).reset_index()
-
-    # 결과를 새로운 CSV 파일로 저장합니다.
-    merged_df.to_csv('merged_reply.csv', index=False, encoding='utf-8-sig')
