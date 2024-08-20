@@ -620,10 +620,10 @@ class Manager_Analysis:
         
         result_directory = self.file_dialog.selectedFiles()
         if len(result_directory) == 0:
-            QMessageBox.warning(self.main, f"Warning", f"선택된 'Result' 디렉토리가 없습니다")
+            QMessageBox.warning(self.main, f"Warning", f"선택된 'Result' 디렉토리가 없습니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
             return
         elif len(result_directory) > 1:
-            QMessageBox.warning(self.main, f"Warning", f"하나의 'Result' 디렉토리만 선택하여 주십시오")
+            QMessageBox.warning(self.main, f"Warning", f"KemKim 폴더에 있는 하나의 'Result' 디렉토리만 선택하여 주십시오")
             return
         elif 'Result' in os.path.basename(result_directory[0]):
             QMessageBox.warning(self.main, f"Warning", f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
@@ -676,6 +676,9 @@ class Manager_Analysis:
         pd.DataFrame(delete_word_list, columns=['deleted_words']).to_csv(os.path.join(new_result_folder, 'filtered_words.csv'), index = False)
         
         self.main.openFileExplorer(new_result_folder)
+        
+        del kimkem_obj
+        gc.collect()
         
     def kimkem_kimkemStart(self, token_data, tokenfile_name):
         class KimKemInputDialog(QDialog):
@@ -2022,7 +2025,7 @@ class KimKem:
         year_list = list(year_divided_group.groups.keys())
         if self.startyear < int(year_list[0]):
             self.startyear = year_list[0]
-        self.write_status()
+        self.write_status("토큰 데이터 분할 중...")
             
         # Step 2: 연도별 단어 리스트 생성
         yyear_divided_dic = self._initialize_year_divided_dic(year_divided_group)#
@@ -2053,6 +2056,7 @@ class KimKem:
         self._create_output_directories()
 
         # Step 6: 결과 저장 (TF, DF, DoV, DoD)
+        self.write_status("시계열 데이터 애니메이션 생성 중...")
         self._save_kimkem_results(tf_counts, df_counts, DoV_dict, DoD_dict)
         
         DoV_signal_record = {}
@@ -2077,16 +2081,15 @@ class KimKem:
             DoV_signal_record[year], DoD_signal_record[year], DoV_coordinates_record[year], DoD_coordinates_record[year] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
             Final_signal_record[year] = self._save_final_signals(DoV_signal_record[year], DoD_signal_record[year], os.path.join(result_folder, 'Signal'))
         
-        self.write_status("키워드 추적 중..")
+        self.write_status("키워드 추적 데이터 생성 중...")
         DoV_signal_track = self.track_keyword_positions(DoV_signal_record)
         DoD_signal_track = self.track_keyword_positions(DoD_signal_record)
         Final_signal_track = self.track_keyword_positions(Final_signal_record)
         
         DoV_signal_track, DoV_signal_deletewords = self.filter_clockwise_movements(DoV_signal_track)
-        DoV_signal_track, DoD_signal_deletewords = self.filter_clockwise_movements(DoV_signal_track)        
-        self.exception_word_list.extend(DoV_signal_deletewords)
-        self.exception_word_list.extend(DoD_signal_deletewords)
-        self.exception_word_list = list(set(self.exception_word_list))
+        DoV_signal_track, DoD_signal_deletewords = self.filter_clockwise_movements(DoV_signal_track)  
+        add_list = list(set(DoV_signal_deletewords+DoD_signal_deletewords))
+        self.exception_word_list.extend(['']+add_list)
             
         DoV_signal_track.to_csv(os.path.join(self.track_folder, 'DoV_signal_track.csv'), encoding='utf-8-sig', index=True)
         DoD_signal_track.to_csv(os.path.join(self.track_folder, 'DoD_signal_track.csv'), encoding='utf-8-sig', index=True)
@@ -2104,8 +2107,7 @@ class KimKem:
         avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, str(self.startyear), self.year_list[-1])
         DoV_signal_record[year], DoD_signal_record[year], DoV_coordinates_record[year], DoD_coordinates_record[year] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(self.result_folder, 'Graph'))
         Final_signal_record[year] = self._save_final_signals(DoV_signal_record[year], DoD_signal_record[year], os.path.join(self.result_folder, 'Signal'))
-        add_list = list(set(DoV_signal_deletewords+DoD_signal_deletewords))
-        pd.DataFrame(self.exception_word_list+['']+add_list, columns=['deleted_words']).to_csv(os.path.join(self.result_folder, 'filtered_words.csv'), index = False)
+        pd.DataFrame(self.exception_word_list, columns=['deleted_words']).to_csv(os.path.join(self.result_folder, 'filtered_words.csv'), index = False)
         
         self.write_status("완료")
         return 1
@@ -2366,12 +2368,16 @@ class KimKem:
                 current_quadrant = quadrant_order[trajectory.iloc[i]]
                 next_quadrant = quadrant_order[trajectory.iloc[i + 1]]
                 
+                if current_quadrant is None or next_quadrant is None:
+                    return False
+                
                 # 시계방향 순서 확인, 같은 사분면에 있으면 통과
                 if (current_quadrant == 1 and next_quadrant not in [1, 3, 4]) or \
                 (current_quadrant == 2 and next_quadrant not in [1, 2, 4]) or \
                 (current_quadrant == 3 and next_quadrant not in [1, 2, 3]) or \
                 (current_quadrant == 4 and next_quadrant not in [2, 3, 4]):
                     return False
+                
             return True
 
         # 각 키워드별로 시계방향으로 이동한 데이터만 필터링we
