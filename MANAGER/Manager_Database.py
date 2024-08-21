@@ -8,6 +8,8 @@ import copy
 import re
 import gc
 from datetime import datetime
+import warnings
+warnings.filterwarnings("ignore")
 
 class Manager_Database:
     def __init__(self, main_window):

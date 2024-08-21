@@ -21,6 +21,8 @@ import pandas as pd
 from os import environ
 import socket
 import gc
+import warnings
+warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):

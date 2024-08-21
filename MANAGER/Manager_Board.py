@@ -1,6 +1,8 @@
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QTextEdit, QScrollArea
 from datetime import datetime
+import warnings
+warnings.filterwarnings("ignore")
 
 class Manager_Board:
     def __init__(self, main_window):
