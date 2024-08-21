@@ -243,9 +243,11 @@ class Manager_Database:
                         crawlOption = '기사'
                     case 2:
                         crawlOption = '기사 + 댓글'
-
-        ElapsedTime = datetime.strptime(DBdata[6], "%m/%d %H:%M") - datetime.strptime(DBdata[5], "%m/%d %H:%M")
-
+        try:
+            ElapsedTime = datetime.strptime(DBdata[6], "%m/%d %H:%M") - datetime.strptime(DBdata[5], "%m/%d %H:%M")
+        except:
+            ElapsedTime = "크롤링 중..."
+            
         # HTML을 사용하여 디테일 표시
         details_html = f"""
             <style>
