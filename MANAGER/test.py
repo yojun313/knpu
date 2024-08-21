@@ -1,54 +1,43 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import imageio
-import io
-from PIL import Image
-import numpy as np
+import requests
+import re
+import urllib
 
-def filter_clockwise_movements(df):
-    # 사분면 순서 정의
-    quadrant_order = {
-        'weak_signal': 2,
-        'strong_signal': 1,
-        'latent_signal': 3,
-        'well_known_signal': 4
-    }
+def extract_blogurls(text):
+    # 정규식 패턴 정의
+    pattern = r'https://blog\.naver\.com/[a-zA-Z0-9_-]+/\d+'
 
-    # 시계방향 이동 여부 확인 함수 (주어진 정의에 따른)
-    def is_clockwise_movement(trajectory):
-        for i in range(len(trajectory) - 1):
-            current_quadrant = quadrant_order[trajectory.iloc[i]]
-            next_quadrant = quadrant_order[trajectory.iloc[i + 1]]
-            
-            # 시계방향 순서 확인, 같은 사분면에 있으면 통과
-            if (current_quadrant == 1 and next_quadrant not in [1, 3, 4]) or \
-               (current_quadrant == 2 and next_quadrant not in [1, 2, 4]) or \
-               (current_quadrant == 3 and next_quadrant not in [1, 2, 3]) or \
-               (current_quadrant == 4 and next_quadrant not in [2, 3, 4]):
-                return False
-        return True
-
-    # 각 키워드별로 시계방향으로 이동한 데이터만 필터링we
-    filtered_df = df[df.apply(lambda row: is_clockwise_movement(row), axis=1)]
-    non_matching_keywords = df[~df.apply(lambda row: is_clockwise_movement(row), axis=1)].index.tolist()
+    # 정규식으로 모든 매칭되는 패턴 찾기
+    urls = re.findall(pattern, text)
+    urls = list(dict.fromkeys(urls))
     
-    return filtered_df, non_matching_keywords
+    return urls
 
-# 예시 데이터 생성 (연도 증가)
-data = {
-    'Keyword': [f'Keyword_{i}' for i in range(1, 11)],  # 단어 개수 10개로 설정
-    '2017': ['strong_signal', 'weak_signal', 'latent_signal', 'well_known_signal', 'strong_signal', 'weak_signal', 'latent_signal', 'well_known_signal', 'strong_signal', 'weak_signal'],
-    '2018': ['weak_signal', 'weak_signal', 'weak_signal', 'latent_signal', 'well_known_signal', 'strong_signal', 'weak_signal', 'latent_signal', 'well_known_signal', 'strong_signal'],
-    '2019': ['latent_signal', 'well_known_signal', 'strong_signal', 'weak_signal', 'latent_signal', 'well_known_signal', 'strong_signal', 'weak_signal', 'latent_signal', 'well_known_signal'],
-    '2020': ['weak_signal', 'well_known_signal', 'well_known_signal', 'strong_signal', 'weak_signal', 'latent_signal', 'well_known_signal', 'strong_signal', 'weak_signal', 'latent_signal'],
-    '2021': ['strong_signal', 'latent_signal', 'latent_signal', 'well_known_signal', 'strong_signal', 'weak_signal', 'latent_signal', 'well_known_signal', 'strong_signal', 'weak_signal'],
-}
-df = pd.DataFrame(data)
-df.set_index('Keyword', inplace=True)
+def extract_nexturl(text):
+    # 정규식 패턴 정의
+    pattern = r'https://s\.search\.naver\.com/p/review[^"]*'
 
-# 함수 호출
-newdf, newlist = filter_clockwise_movements(df)
+    # 정규식으로 매칭되는 패턴 찾기
+    match = re.search(pattern, text)
 
-print(newdf)
-print(newlist)
+    if match:
+        return match.group(0)
+    else:
+        return None
+
+startDate = '20230102'
+endDate = '20230202'
+keyword = "테러 +예고"
+keyword = urllib.parse.quote_plus(keyword)
+
+api_url = f"https://s.search.naver.com/p/review/48/search.naver?ssc=tab.blog.all&api_type=8&query={keyword}&start=1&ac=0&aq=0&spq=0&sm=tab_opt&nso=so%3Add%2Cp%3Afrom{startDate}to{endDate}&prank=30&ngn_country=KR&lgl_rcode=15200104&fgn_region=&fgn_city=&lgl_lat=36.7512&lgl_long=126.9629&abt=&retry_count=0"
+response = requests.get(api_url)
+json_text = response.text
+urlList = extract_blogurls(json_text)
+nexturl = extract_nexturl(json_text)
+
+for url in urlList:
+    print(url)
+    
+print('\n\n')
+
+print(nexturl)
