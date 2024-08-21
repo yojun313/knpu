@@ -92,66 +92,59 @@ class NaverCafeCrawler(CrawlerModule):
         except:
             return self.error_dump(2019, 'Check DateForm', startDate)
         try:
+            def extract_cafeurls(text):
+                # 정규식 패턴 정의
+                pattern = r'https://cafe\.naver\.com/[a-zA-Z0-9_-]+/\d+\?art=[a-zA-Z0-9._-]+'
+
+                # 정규식으로 모든 매칭되는 패턴 찾기
+                urls = re.findall(pattern, text)
+                urls = list(dict.fromkeys(urls))
+                return urls
+            
+            def extract_nexturl(text):
+                # 정규식 패턴 정의
+                pattern = r'https://s\.search\.naver\.com/p/cafe[^"]*'
+
+                # 정규식으로 매칭되는 패턴 찾기
+                match = re.search(pattern, text)
+
+                if match:
+                    return match.group(0)
+                else:
+                    return None
+
             if self.print_status_option == True:
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverCafe', 1, self.PrintData)
 
             urlList = []
             keyword = urllib.parse.quote_plus(keyword)
-            api_url = "https://s.search.naver.com/p/cafe/47/search.naver"
-
-            params = {
-                "ac": 1,
-                "aq": 0,
-                "cafe_where": "",
-                "date_from": startDate,
-                "date_option": 8,
-                "date_to": endDate,
-                "display": 30,
-                "m": 0,
-                "nx_and_query": "",
-                "nx_search_query": "",
-                "nx_sub_query": "",
-                "prdtype": 0,
-                "prmore": 1,
-                "qdt": 1,
-                "query": keyword,
-                "qvt": 1,
-                "spq": 0,
-                "ssc": "tab.cafe.all",
-                "st": "date",
-                "stnm": "date",
-                "_callback": "getCafeContents",
-                "_": "1723354030871"
-            }
+            api_url = f"https://s.search.naver.com/p/cafe/47/search.naver?ac=0&aq=0&cafe_where=&date_from={startDate}&date_option=8&date_to={endDate}&display=30&m=0&nlu_query=&prdtype=0&prmore=1&qdt=1&query={keyword}&qvt=1&spq=0&ssc=tab.cafe.all&st=date&start=1&stnm=date&_callback=getCafeContents&_=1724218724778"
 
             # 첫 데이터는 들어오는 데이터 전처리 필요
-            response = self.Requester(api_url, params=params)
+            response = self.Requester(api_url)
             if self.RequesterChecker(response) == False:
                 return response
             json_text = response.text
-            json_text = json_text[16:len(json_text) - 2]
-            while True:
-                data = json.loads(json_text)
-                soup = BeautifulSoup(data["contents"], 'html.parser')
-                result = soup.select('a[class = "title_link"]')
-                url_list = [a['href'] for a in result]
 
-                for url in url_list:
-                    if url not in urlList and 'https://cafe.naver.com/' in url and 'book' not in url:
+            while True:
+                pre_urlList = extract_cafeurls(json_text)
+
+                for url in pre_urlList:
+                    if url not in urlList and 'book' not in url:
                         urlList.append(url)
                         self.IntegratedDB['UrlCnt'] += 1
 
                 if self.print_status_option == True:
                     self.printStatus('NaverCafe', 2, self.PrintData)
 
-                if data['nextUrl'] == '':
+                nextUrl = extract_nexturl(json_text)
+                if nextUrl == None:
                     break
                 else:
-                    api_url = data['nextUrl']
+                    api_url = nextUrl
                     response = self.Requester(api_url)
                     json_text = response.text
-                    params = {}
 
             returnData = {
                 'urlList': urlList,
@@ -350,7 +343,7 @@ async def asyncTester():
 
     if number == 1:
         print("\nNaverCafeCrawler_urlCollector: ", end='')
-        urlList_returnData = CrawlerPackage_obj.urlCollector("대통령", 20230101, 20230110)
+        urlList_returnData = CrawlerPackage_obj.urlCollector("테러 +예고", 20230102, 20230102)
         urlList = urlList_returnData['urlList']
 
         results = await CrawlerPackage_obj.asyncMultiCollector(urlList, option)
