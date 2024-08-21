@@ -44,6 +44,8 @@ class CrawlerModule(ToolModule):
         self.live = None
         
         self.socketnum = 1
+        
+        self.mySQL = self.pathFinder()['MYSQL']
 
         if proxy_option == True:
             proxy_path = os.path.dirname(PACKAGE_PATH)
