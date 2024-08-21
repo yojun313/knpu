@@ -59,6 +59,11 @@
         <string>USER</string>
        </property>
       </item>
+      <item>
+       <property name="text">
+        <string>INFO</string>
+       </property>
+      </item>
      </widget>
     </item>
     <item>
@@ -536,6 +541,10 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="page_info">
+       <layout class="QVBoxLayout" name="verticalLayout">
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -546,7 +555,7 @@
      <x>0</x>
      <y>0</y>
      <width>1069</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
