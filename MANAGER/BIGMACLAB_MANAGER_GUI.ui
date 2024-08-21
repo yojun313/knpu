@@ -59,11 +59,6 @@
         <string>USER</string>
        </property>
       </item>
-      <item>
-       <property name="text">
-        <string>INFO</string>
-       </property>
-      </item>
      </widget>
     </item>
     <item>

@@ -26,7 +26,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.3.1'
+        self.versionNum = '1.3.2'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()
@@ -429,9 +429,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # USER
         elif index == 5:
             pass
-        elif index == 6:
-            dialog = InfoDialog(self.version)
-            dialog.exec_()
             
         gc.collect()
 
