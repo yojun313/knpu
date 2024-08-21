@@ -289,7 +289,7 @@ class Manager_Database:
                 <p><b>Crawl Result</b></p>
                 <p class="detail-content">{CountText}</p>                
             </div>
-            """
+        """
 
         detail_label = QLabel(details_html)
         detail_label.setWordWrap(True)
