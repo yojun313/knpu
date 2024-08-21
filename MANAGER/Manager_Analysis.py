@@ -15,6 +15,8 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 import numpy as np
 import io
+import warnings
+warnings.filterwarnings("ignore")
 
 # 운영체제에 따라 한글 폰트를 설정
 if platform.system() == 'Darwin':  # macOS
