@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-##
 import os
 
 CRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
