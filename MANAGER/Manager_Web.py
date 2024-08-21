@@ -3,7 +3,8 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 import PyQt5.QtCore as QtCore
 from functools import partial
 import webbrowser
-
+import warnings
+warnings.filterwarnings("ignore")
 
 class Manager_Web:
 

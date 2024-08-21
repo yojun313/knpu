@@ -1,5 +1,7 @@
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox
 from PyQt5.QtCore import Qt
+import warnings
+warnings.filterwarnings("ignore")
 
 class Manager_User:
     def __init__(self, main_window):
