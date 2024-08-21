@@ -43,65 +43,59 @@ class NaverBlogCrawler(CrawlerModule):
         except:
             return self.error_dump(2012, 'Check DateForm', startDate)
         try:
+            def extract_blogurls(text):
+                    # 정규식 패턴 정의
+                pattern = r'https://blog\.naver\.com/[a-zA-Z0-9_-]+/\d+'
+
+                # 정규식으로 모든 매칭되는 패턴 찾기
+                urls = re.findall(pattern, text)
+                urls = list(dict.fromkeys(urls))
+                
+                return urls
+
+            def extract_nexturl(text):
+                # 정규식 패턴 정의
+                pattern = r'https://s\.search\.naver\.com/p/review[^"]*'
+
+                # 정규식으로 매칭되는 패턴 찾기
+                match = re.search(pattern, text)
+
+                if match:
+                    return match.group(0)
+                else:
+                    return None
+                
             if self.print_status_option == True:
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverBlog', 1, self.PrintData)
 
             urlList = []
             keyword = urllib.parse.quote_plus(keyword)
-            api_url = "https://s.search.naver.com/p/review/48/search.naver"
-            currentPage = 1
-
-            params = {
-                "ssc": "tab.blog.all",
-                "api_type": 8,
-                "query": keyword,
-                "start": 1,
-                "nx_search_query": "",
-                "nx_and_query": "",
-                "nx_sub_query": "",
-                "ac": 1,
-                "aq": 0,
-                "spq": 0,
-                "sm": "tab_jum",
-                "nso": f"so:dd,p:from{startDate}to{endDate}",
-                "prank": 30,
-                "ngn_country": "KR",
-                "lgl_rcode": "02131104",
-                "fgn_region": "",
-                "fgn_city": "",
-                "lgl_lat": 37.449409,
-                "lgl_long": 127.155387,
-                "enlu_query": "IggCAGiDULjaAAAAAtdoURqXUdp9ygLvMM8qJoxy7zkJYF06kLK+78VOhRxred9auhhnSFfsCLYIjSo9ZcL044Nzze...",
-                "enqx_theme": "IggCABSCULhCAAAAAr/DtntZaiMLGh3DOFtIyw/t3q4cI3VHNtryN4kMOyz+YZnp6yyiXnfmTYMeozydGMP/CzL2DpK9j0J2w==",
-                "abt": [{"eid": "RQT-BOOST", "value": {"bucket": "0", "for": "impression-neo", "is_control": True}}],
-                "retry_count": 0
-            }
-
+            api_url = f"https://s.search.naver.com/p/review/48/search.naver?ssc=tab.blog.all&api_type=8&query={keyword}&start=1&ac=0&aq=0&spq=0&sm=tab_opt&nso=so%3Add%2Cp%3Afrom{startDate}to{endDate}&prank=30&ngn_country=KR&lgl_rcode=15200104&fgn_region=&fgn_city=&lgl_lat=36.7512&lgl_long=126.9629&abt=&retry_count=0"
+            
+            response = self.Requester(api_url)
+            if self.RequesterChecker(response) == False:
+                return response
+            json_text = response.text
+            
             while True:
-                response = self.Requester(api_url, params=params)
-                if self.RequesterChecker(response) == False:
-                    return response
-                json_text = response.text
-                data = json.loads(json_text)
+                pre_urlList = extract_blogurls(json_text)
 
-                soup = BeautifulSoup(data["contents"], 'html.parser')
-                result = soup.select('a[class = "title_link"]')
-                url_list = [a['href'] for a in result]
-
-                for url in url_list:
-                    if url not in urlList and 'https://blog.naver.com/' in url:
+                for url in pre_urlList:
+                    if url not in urlList and 'book' not in url:
                         urlList.append(url)
                         self.IntegratedDB['UrlCnt'] += 1
 
                 if self.print_status_option == True:
                     self.printStatus('NaverBlog', 2, self.PrintData)
 
-                if data['nextUrl'] == '':
+                nextUrl = extract_nexturl(json_text)
+                if nextUrl == None:
                     break
                 else:
-                    api_url = data['nextUrl']
-                    params = {}
+                    api_url = nextUrl
+                    response = self.Requester(api_url)
+                    json_text = response.text
 
             returnData = {
                 'urlList': urlList,
@@ -392,7 +386,7 @@ async def asyncTester():
 
     if number == 1:
         print("\nNaverBlogCrawler_urlCollector: ", end='')
-        urlList_returnData = CrawlerPackage_obj.urlCollector("포항공대", 20100101, 20100101)
+        urlList_returnData = CrawlerPackage_obj.urlCollector("테러 +예고", 20230102, 20230102)
         urlList = urlList_returnData['urlList']
 
         results = await CrawlerPackage_obj.asyncMultiCollector(urlList, option)

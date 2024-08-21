@@ -66,17 +66,18 @@ class NaverNewsCrawler(CrawlerModule):
 
                 # 정규식으로 모든 매칭되는 패턴 찾기
                 urls = re.findall(pattern, text)
+                urls = list(dict.fromkeys(urls))
 
                 return urls
             def extract_nexturl(text):
                 # 정규식 패턴 정의
-                pattern = r'https://s\.search\.naver\.com/p/newssearch/search\.naver\?.*'
+                pattern = r'https://s\.search\.naver\.com/p/newssearch[^"]*'
 
                 # 정규식으로 매칭되는 패턴 찾기
                 match = re.search(pattern, text)
 
                 if match:
-                    return match.group(0)[:-1].replace('}', '').replace(')', '')  # 매칭된 패턴과 그 뒤의 모든 문자열을 반환
+                    return match.group(0)
                 else:
                     return None
 
@@ -104,10 +105,11 @@ class NaverNewsCrawler(CrawlerModule):
                 if self.print_status_option == True:
                     self.printStatus('NaverNews', 2, self.PrintData)
 
-                if extract_nexturl(json_text) == None:
+                nextUrl = extract_nexturl(json_text)
+                if nextUrl == None:
                     break
                 else:
-                    api_url = extract_nexturl(json_text)
+                    api_url = nextUrl
                     response = self.Requester(api_url)
                     json_text = response.text
 
@@ -476,7 +478,7 @@ async def asyncTester():
 
     if number == 1:
         print("\nNaverNewsCrawler_urlCollector: ", end='')
-        urlList_returnData = CrawlerPackage_obj.urlCollector("대통령", 20230101, 20230101)
+        urlList_returnData = CrawlerPackage_obj.urlCollector("테러 +예고", 20230102, 20230102)
         urlList = urlList_returnData['urlList']
 
         results = await CrawlerPackage_obj.asyncMultiCollector(urlList, option)
