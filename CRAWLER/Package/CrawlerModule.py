@@ -48,8 +48,9 @@ class CrawlerModule(ToolModule):
         self.mySQL = self.pathFinder()['MYSQL']
 
         if proxy_option == True:
-            proxy_path = os.path.dirname(PACKAGE_PATH)
-            self.proxy_list = self.read_txt(os.path.join(proxy_path, '아이피샵(유동프록시).txt'))       # 로컬 proxy.txt 파일 경로
+            self.mySQL.connectDB('crawler_db')
+            self.proxy_list = self.mySQL.TableToList('proxy_list')
+            self.proxy_list = [proxy[0] for proxy in self.proxy_list]
         
         self.PrintData = {
             'currentDate': '',
