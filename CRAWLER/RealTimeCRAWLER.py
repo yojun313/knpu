@@ -214,6 +214,3 @@ def controller():
 
 if __name__ == '__main__':
     controller()
-
-
-#최우철 왓따 감ㅠㅠ 문요준 왔다ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ
