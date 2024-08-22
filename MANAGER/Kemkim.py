@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
 from datetime import datetime
-import gc
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 import numpy as np
@@ -13,11 +12,35 @@ import csv
 import traceback
 import warnings
 import re
+import platform
 import scipy.stats as stats
 warnings.filterwarnings("ignore")
 
+# 운영체제에 따라 한글 폰트를 설정
+if platform.system() == 'Darwin':  # macOS
+    plt.rcParams['font.family'] = 'AppleGothic'
+elif platform.system() == 'Windows':  # Windows
+    plt.rcParams['font.family'] = 'Malgun Gothic'  # 맑은 고딕 폰트 사용
+
+# 폰트 설정 후 음수 기호가 깨지는 것을 방지
+plt.rcParams['axes.unicode_minus'] = False
+
+
+
 class KimKem:
-    def __init__(self, token_data=None, csv_name=None, save_path=None, startyear=None, endyear=None, topword=None, weight=None, graph_wordcnt=None, split_option=None, split_custom=None, exception_word_list=[], rekemkim = False):
+    def __init__(self, 
+                 token_data=None, 
+                 csv_name=None, 
+                 save_path=None, 
+                 startyear=None, 
+                 endyear=None, 
+                 topword=None, 
+                 weight=None, 
+                 graph_wordcnt=None, 
+                 split_option=None, 
+                 split_custom=None, 
+                 exception_word_list=[], 
+                 rekemkim = False):
         self.exception_word_list = exception_word_list
         
         if rekemkim == False:
@@ -891,4 +914,18 @@ class KimKem:
         coordinates_df.to_csv(os.path.join(graph_folder, "DOD_coordinates.csv"), index=False, encoding='utf-8-sig')
 
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
-    
+
+if __name__=='__main__':
+    token_data = pd.read_csv("C:/BIGMACLAB_MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/navernews_바이오의료_20100101_20240731_0815_2036_article.csv", low_memory=False, encoding='utf-8-sig')
+    kimkem_obj = KimKem(token_data=token_data, 
+                        csv_name='navernews_바이오의료_20100101_20240731_0815_2036_article.csv', 
+                        save_path='C:\BIGMACLAB_MANAGER',
+                        startyear=2010,
+                        endyear=2024,
+                        topword=500,
+                        weight=0.05,
+                        graph_wordcnt=20,
+                        split_option='평균(Mean)',
+                        exception_word_list=[]
+                )
+    kimkem_obj.make_kimkem()
