@@ -2,6 +2,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QTextEdit, QScrollArea
 from datetime import datetime
 import warnings
+import traceback
 warnings.filterwarnings("ignore")
 
 class Manager_Board:
@@ -36,7 +37,7 @@ class Manager_Board:
             self.main.table_maker(self.main.board_version_tableWidget, self.version_data_for_table,self.version_table_column)
             self.version_name_list = [version_data[0] for version_data in self.version_data_for_table]
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
     def board_add_version(self):
         try:
             ok, password = self.main.admin_check()
@@ -142,7 +143,7 @@ class Manager_Board:
             elif ok:
                 QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
     def board_delete_version(self):
         try:
             ok, password = self.main.admin_check()
@@ -162,7 +163,7 @@ class Manager_Board:
             elif ok:
                 QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
     def board_view_version(self):
         try:
             self.main.printStatus("불러오는 중...")
@@ -243,7 +244,7 @@ class Manager_Board:
             QTimer.singleShot(1, view_version)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
     def board_bug_refresh(self):
         try:
             def sort_by_date(two_dim_list):
@@ -262,7 +263,7 @@ class Manager_Board:
                                   self.bug_table_column)
             self.bug_title_list = [bug_data[2] for bug_data in self.bug_data_for_table]
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
     def board_add_bug(self):
         try:
             # QDialog를 상속받은 클래스 생성
@@ -344,7 +345,7 @@ class Manager_Board:
                 )
                 self.main.send_pushOver(msg, self.main.admin_pushoverkey)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
     def board_delete_bug(self):
         try:
             self.main.printStatus("삭제 중...")
@@ -440,6 +441,6 @@ class Manager_Board:
             QTimer.singleShot(1, view_bug)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
 
 
