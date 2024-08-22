@@ -523,15 +523,15 @@ class Manager_Analysis:
                 layout = QVBoxLayout()
 
                 # 버튼 생성
-                btn1 = QPushButton('새로운 KEMKIM 분석', self)
-                btn2 = QPushButton('KEMKIM 재분석', self)
+                btn1 = QPushButton('새로운 KEMKIM 분석 (Token CSV 선택 필요)', self)
+                btn2 = QPushButton('KEMKIM 키워드 필터링 (Result 폴더 선택 필요)', self)
                 
                 # 버튼에 이벤트 연결
                 btn1.clicked.connect(self.run_kimkem_file)
                 btn2.clicked.connect(self.run_rekimkem_file)
                 
                 # 버튼 배치를 위한 가로 레이아웃
-                button_layout = QHBoxLayout()
+                button_layout = QVBoxLayout()
                 button_layout.addWidget(btn1)
                 button_layout.addWidget(btn2)
 
@@ -709,7 +709,7 @@ class Manager_Analysis:
             kimkem_obj._save_final_signals(DoV_signal, DoD_signal, new_signal_folder)
             
             delete_word_list.extend(selected_words)
-            pd.DataFrame(delete_word_list, columns=['word']).to_csv(os.path.join(new_result_folder, 'filtered_words.csv'), index = False)
+            pd.DataFrame(delete_word_list, columns=['word']).to_csv(os.path.join(new_result_folder, 'filtered_words.csv'), index = False, encoding='utf-8-sig')
             
             del kimkem_obj
             gc.collect()
@@ -824,7 +824,7 @@ class Manager_Analysis:
                 self.dropdown_menu.currentIndexChanged.connect(self.handle_dropdown_change)
 
                 # 확인 버튼 생성 및 클릭 시 동작 연결
-                self.submit_button = QPushButton('Submit')
+                self.submit_button = QPushButton('분석 실행')
                 self.submit_button.clicked.connect(self.submit)
                 layout.addWidget(self.submit_button)
 
@@ -1210,13 +1210,11 @@ class DataProcess:
         # 데이터 그룹을 순회하며 파일 저장 및 정보 수집
         for group_name, group_data in data_group:
             info[str(group_name)] = len(group_data)
-            group_data.to_csv(f"{data_path}/{folder_name}/{tablename+'_'+str(group_name)}.csv", index=False,
-                              encoding='utf-8-sig', header=True)
+            group_data.to_csv(f"{data_path}/{folder_name}/{tablename+'_'+str(group_name)}.csv", index=False, encoding='utf-8-sig', header=True)
 
         # 정보 파일 생성
         info_df = pd.DataFrame(list(info.items()), columns=[info_label, 'Count'])
-        info_df.to_csv(f"{data_path}/{folder_name}/{folder_name} Count.csv", index=False,
-                       encoding='utf-8-sig', header=True)
+        info_df.to_csv(f"{data_path}/{folder_name}/{folder_name} Count.csv", index=False, encoding='utf-8-sig', header=True)
 
         info_df.set_index(info_label, inplace=True)
         keys = list(info_df.index)
@@ -1295,10 +1293,10 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"))
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
-        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"))
-        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"))
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
+        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig')
+        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig')
         #correlation_matrix.to_csv(os.path.join(output_dir, "correlation_matrix.csv"))
 
         # For time_analysis graph
@@ -1429,11 +1427,11 @@ class DataProcess:
             ['Article ReplyCnt', 'Male', 'Female', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y']].corr()
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"))
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
-        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"))
-        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"))
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"))
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
+        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig')
+        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig')
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -1502,7 +1500,7 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "gender_reply_count.png"))
         plt.close()
-        gender_reply_df.to_csv(os.path.join(csv_output_dir, "gender_reply_count.csv"), index=False)
+        gender_reply_df.to_csv(os.path.join(csv_output_dir, "gender_reply_count.csv"), index=False, encoding='utf-8-sig')
 
         # 6. 연령대별 댓글 수 분석 및 시각화
         age_group_reply_count = {
@@ -1523,7 +1521,7 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "age_group_reply_count.png"))
         plt.close()
-        age_group_reply_df.to_csv(os.path.join(csv_output_dir, "age_group_reply_count.csv"), index=False)
+        age_group_reply_df.to_csv(os.path.join(csv_output_dir, "age_group_reply_count.csv"), index=False, encoding='utf-8-sig')
 
         # 7. 연령대별 성별 댓글 비율 분석
         age_gender_df = data.groupby(['Article Date', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y'])[
@@ -1542,7 +1540,7 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "age_gender_reply_count.png"))
         plt.close()
-        age_gender_df.to_csv(os.path.join(csv_output_dir, "age_gender_reply_count.csv"), index=False)
+        age_gender_df.to_csv(os.path.join(csv_output_dir, "age_gender_reply_count.csv"), index=False, encoding='utf-8-sig')
 
         # 그래프 설명 작성 (한국어)
         description_text = """
@@ -1630,11 +1628,11 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"))
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
-        sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"))
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"))
-        writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_reply_count.csv"))
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
+        sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"), encoding='utf-8-sig')
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
+        writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_reply_count.csv"), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -1754,11 +1752,11 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"))
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
-        sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"))
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"))
-        writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_rereply_count.csv"))
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
+        sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"), encoding='utf-8-sig')
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
+        writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_rereply_count.csv"), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -1885,11 +1883,11 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"))
-        cafe_analysis.to_csv(os.path.join(csv_output_dir, "cafe_analysis.csv"))
-        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"))
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"))
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        cafe_analysis.to_csv(os.path.join(csv_output_dir, "cafe_analysis.csv"), encoding='utf-8-sig')
+        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -1987,8 +1985,8 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"))
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"))
+        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -2159,9 +2157,18 @@ class KimKem:
             DoD_signal_trace = self.trace_keyword_positions(DoD_signal_record)
             Final_signal_trace = self.trace_keyword_positions(Final_signal_record)
             
+            # 인덱스 포함되어있으면 CSV 생성 시 헤더 포함 안되서 인덱스에서 뺐다가 다시 넣음
+            DoV_signal_trace.reset_index(inplace=True)
+            DoD_signal_trace.reset_index(inplace=True)
+            Final_signal_trace.reset_index(inplace=True)
+            
             DoV_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoV_signal_trace.csv'), encoding='utf-8-sig', index=True, header=True)
             DoD_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoD_signal_trace.csv'), encoding='utf-8-sig', index=True, header=True)
             Final_signal_trace.to_csv(os.path.join(self.trace_folder, 'Final_signal_trace.csv'), encoding='utf-8-sig', index=True, header=True)
+            
+            DoV_signal_trace.set_index('Keyword', inplace=True)
+            DoD_signal_trace.set_index('Keyword', inplace=True)
+            Final_signal_trace.set_index('Keyword', inplace=True)
             
             self.write_status("키워드 필터링 중...")
             DoV_signal_trace, DoV_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
@@ -2182,7 +2189,7 @@ class KimKem:
             avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, str(self.startyear), str(self.endyear))
             DoV_signal_record[year], DoD_signal_record[year], DoV_coordinates_record[year], DoD_coordinates_record[year] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(self.result_folder, 'Graph'))
             Final_signal_record[year] = self._save_final_signals(DoV_signal_record[year], DoD_signal_record[year], os.path.join(self.result_folder, 'Signal'))
-            pd.DataFrame(self.exception_word_list, columns=['word']).to_csv(os.path.join(self.result_folder, 'filtered_words.csv'), index = False)
+            pd.DataFrame(self.exception_word_list, columns=['word']).to_csv(os.path.join(self.result_folder, 'filtered_words.csv'), index = False, encoding='utf-8-sig')
             
             self.write_status("완료")
             return 1
@@ -2214,10 +2221,10 @@ class KimKem:
         df.index.name = 'Keyword'
         
         for year in years:
-            df[year] = df.index.map(keyword_positions[year].get)
-
+            df[str(year)] = df.index.map(keyword_positions[year].get)
+        
         return df
-
+    
     def visualize_keyword_movements(self, df, graph_path, x_axis_name='X-Axis', y_axis_name='Y-Axis', base_size=2, size_increment=2):
         # 포지션 매핑: 각 사분면에 위치를 계산
         def get_position(quadrant, size):
