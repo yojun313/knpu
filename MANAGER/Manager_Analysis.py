@@ -2157,18 +2157,12 @@ class KimKem:
             DoD_signal_trace = self.trace_keyword_positions(DoD_signal_record)
             Final_signal_trace = self.trace_keyword_positions(Final_signal_record)
             
-            # 인덱스 포함되어있으면 CSV 생성 시 헤더 포함 안되서 인덱스에서 뺐다가 다시 넣음
-            DoV_signal_trace.reset_index(inplace=True)
-            DoD_signal_trace.reset_index(inplace=True)
-            Final_signal_trace.reset_index(inplace=True)
+            signal_column_list = list(DoV_signal_trace.columns)
+            signal_column_list = [f'year_{column}' for column in signal_column_list]
             
-            DoV_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoV_signal_trace.csv'), encoding='utf-8-sig', index=True, header=True)
-            DoD_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoD_signal_trace.csv'), encoding='utf-8-sig', index=True, header=True)
-            Final_signal_trace.to_csv(os.path.join(self.trace_folder, 'Final_signal_trace.csv'), encoding='utf-8-sig', index=True, header=True)
-            
-            DoV_signal_trace.set_index('Keyword', inplace=True)
-            DoD_signal_trace.set_index('Keyword', inplace=True)
-            Final_signal_trace.set_index('Keyword', inplace=True)
+            DoV_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoV_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
+            DoD_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoD_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
+            Final_signal_trace.to_csv(os.path.join(self.trace_folder, 'Final_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
             
             self.write_status("키워드 필터링 중...")
             DoV_signal_trace, DoV_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
