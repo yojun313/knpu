@@ -26,7 +26,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.3.2'
+        self.versionNum = '1.4.0'
         self.version = 'Version ' + self.versionNum
 
         super(MainWindow, self).__init__()
@@ -297,114 +297,116 @@ class MainWindow(QtWidgets.QMainWindow):
         return EmbeddedFileDialog(self, self.default_directory)
 
     def setStyle(self):
-        self.setStyleSheet("""
-                        QMainWindow {
-                            background-color: #f7f7f7;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                        QPushButton {
-                            background-color: #2c3e50;
-                            color: white;
-                            border: none;
-                            border-radius: 5px;
-                            padding: 13px;
-                            font-family: 'Tahoma';
-                            font-size: 15px;
-                        }
-                        QPushButton:hover {
-                            background-color: #34495e;
-                        }
-                        QLineEdit {
-                            border: 1px solid #bdc3c7;
-                            border-radius: 5px;
-                            padding: 8px;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                        QTableWidget {
-                            
-                            border: 1px solid #bdc3c7;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                        QHeaderView::section {
-                            background-color: #2c3e50;
-                            color: white;
-                            padding: 8px;
-                            border: none;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                        QListWidget {
-                            background-color: #2c3e50;
-                            color: white;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                            border: none;
-                            min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
-                            max-width: 150px;
-                        }
-                        QListWidget::item {
-                            height: 40px;  /* 각 아이템의 높이를 조정 */
-                            padding: 10px;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                        QListWidget::item:selected {
-                            background-color: #34495e;
-                        }
-                        QTabWidget::pane {
-                            border-top: 2px solid #bdc3c7;
-                            background-color: #f7f7f7;  /* Matches QMainWindow background */
-                        }
-                        QTabWidget::tab-bar {
-                            left: 5px;
-                        }
-                        QTabBar::tab {
-                            background: #2c3e50;  /* Matches QPushButton background */
-                            color: white;  /* Matches QPushButton text color */
-                            border: 1px solid #bdc3c7;
-                            border-bottom-color: #f7f7f7;  /* Matches QMainWindow background */
-                            border-radius: 4px;
-                            border-top-right-radius: 4px;
-                            padding: 10px;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                            min-width: 100px;  /* 최소 가로 길이 설정 */
-                            max-width: 200px;  /* 최대 가로 길이 설정 */
-                        }
-                        QTabBar::tab:selected, QTabBar::tab:hover {
-                            background: #34495e;  /* Matches QPushButton hover background */
-                        }
-                        QTabBar::tab:selected {
-                            border-color: #9B9B9B;
-                            border-bottom-color: #f7f7f7;
-                        }
-                        QPushButton#pushButton_divide_DB {
-                            background-color: #2c3e50;
-                            color: white;
-                            border: none;
-                            border-radius: 5px;
-                            padding: 10px;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                            min-width: 70px;  /* 최소 가로 길이 설정 */
-                            max-width: 100px;  /* 최대 가로 길이 설정 */
-                        }
-                        QPushButton#pushButton_divide_DB:hover {
-                            background-color: #34495e;
-                        }
-                        QLabel#label_status_divide_DB {
-                            background-color: #f7f7f7;
-                            color: #2c3e50;
-                            border: 1px solid #bdc3c7;
-                            border-radius: 5px;
-                            padding: 8px;
-                            font-family: 'Tahoma';
-                            font-size: 14px;
-                        }
-                    """)
+        self.setStyleSheet(
+            """
+            QMainWindow {
+                background-color: #f7f7f7;
+                font-family: 'Tahoma';
+                font-size: 14px;
+            }
+            QPushButton {
+                background-color: #2c3e50;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 13px;
+                font-family: 'Tahoma';
+                font-size: 15px;
+            }
+            QPushButton:hover {
+                background-color: #34495e;
+            }
+            QLineEdit {
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                padding: 8px;
+                font-family: 'Tahoma';
+                font-size: 14px;
+            }
+            QTableWidget {
+                
+                border: 1px solid #bdc3c7;
+                font-family: 'Tahoma';
+                font-size: 14px;
+            }
+            QHeaderView::section {
+                background-color: #2c3e50;
+                color: white;
+                padding: 8px;
+                border: none;
+                font-family: 'Tahoma';
+                font-size: 14px;
+            }
+            QListWidget {
+                background-color: #2c3e50;
+                color: white;
+                font-family: 'Tahoma';
+                font-size: 14px;
+                border: none;
+                min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
+                max-width: 150px;
+            }
+            QListWidget::item {
+                height: 40px;  /* 각 아이템의 높이를 조정 */
+                padding: 10px;
+                font-family: 'Tahoma';
+                font-size: 14px;
+            }
+            QListWidget::item:selected {
+                background-color: #34495e;
+            }
+            QTabWidget::pane {
+                border-top: 2px solid #bdc3c7;
+                background-color: #f7f7f7;  /* Matches QMainWindow background */
+            }
+            QTabWidget::tab-bar {
+                left: 5px;
+            }
+            QTabBar::tab {
+                background: #2c3e50;  /* Matches QPushButton background */
+                color: white;  /* Matches QPushButton text color */
+                border: 1px solid #bdc3c7;
+                border-bottom-color: #f7f7f7;  /* Matches QMainWindow background */
+                border-radius: 4px;
+                border-top-right-radius: 4px;
+                padding: 10px;
+                font-family: 'Tahoma';
+                font-size: 14px;
+                min-width: 100px;  /* 최소 가로 길이 설정 */
+                max-width: 200px;  /* 최대 가로 길이 설정 */
+            }
+            QTabBar::tab:selected, QTabBar::tab:hover {
+                background: #34495e;  /* Matches QPushButton hover background */
+            }
+            QTabBar::tab:selected {
+                border-color: #9B9B9B;
+                border-bottom-color: #f7f7f7;
+            }
+            QPushButton#pushButton_divide_DB {
+                background-color: #2c3e50;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 10px;
+                font-family: 'Tahoma';
+                font-size: 14px;
+                min-width: 70px;  /* 최소 가로 길이 설정 */
+                max-width: 100px;  /* 최대 가로 길이 설정 */
+            }
+            QPushButton#pushButton_divide_DB:hover {
+                background-color: #34495e;
+            }
+            QLabel#label_status_divide_DB {
+                background-color: #f7f7f7;
+                color: #2c3e50;
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                padding: 8px;
+                font-family: 'Tahoma';
+                font-size: 14px;
+            }
+            """
+        )
 
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
