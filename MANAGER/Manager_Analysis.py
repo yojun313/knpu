@@ -770,6 +770,7 @@ class Manager_Analysis:
                 
                 self.period_option_menu = QComboBox()
                 self.period_option_menu.addItem('12개월 (Yearly)')
+                self.period_option_menu.addItem('6개월 (Half-Yearly)')
                 self.period_option_menu.addItem('3개월 (Quarterly)')
                 self.period_option_menu.addItem('1개월 (Monthly)')
                 layout.addWidget(self.period_option_menu)
@@ -859,6 +860,8 @@ class Manager_Analysis:
                 match period:
                     case '12개월 (Yearly)':
                         period = 12
+                    case '6개월 (Half-Yearly)':
+                        period = 6
                     case '3개월 (Quarterly)':
                         period = 3
                     case '1개월 (Monthly)':
