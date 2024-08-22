@@ -9,6 +9,7 @@ import re
 import gc
 from datetime import datetime
 import warnings
+import traceback
 warnings.filterwarnings("ignore")
 
 class Manager_Database:
@@ -46,7 +47,7 @@ class Manager_Database:
             QTimer.singleShot(1, delete_database)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
 
     def database_view_DB(self):
         class TableWindow(QMainWindow):
@@ -173,7 +174,7 @@ class Manager_Database:
                 QTimer.singleShot(1, self.main.printStatus)
 
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
 
     def database_dbinfo_viewer(self, row):
         DBdata = self.DB['DBdata'][row]
@@ -349,7 +350,7 @@ class Manager_Database:
                     self.main.database_tablewidget.selectRow(row)
                     return
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
 
     def database_save_DB(self):
         try:
@@ -523,12 +524,12 @@ class Manager_Database:
 
                     QMessageBox.information(self.main, "Information", f"{dbname}이 성공적으로 저장되었습니다")
                 except Exception as e:
-                    QMessageBox.critical(self.main, "Error", f"Failed to save database: {str(e)}")
+                    QMessageBox.critical(self.main, "Error", f"Failed to save database: {traceback.format_exc()}")
 
             select_database()
 
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
 
     def database_refresh_DB(self):
         try:
@@ -540,7 +541,7 @@ class Manager_Database:
             QTimer.singleShot(1, refresh_database)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
 
     def database_buttonMatch(self):
         self.main.database_refreshDB_button.clicked.connect(self.database_refresh_DB)
