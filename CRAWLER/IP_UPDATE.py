@@ -19,3 +19,5 @@ except:
 mysql_obj.newTable('proxy_list', ['proxy'])
 mysql_obj.insertToTable('proxy_list', proxy_list)
 mysql_obj.commit()
+
+print('IP 업데이트가 완료되었습니다. 아이피샵 Proxy 프로그램을 종료하지 마십시오\n현재 창은 닫아도 무방합니다')
