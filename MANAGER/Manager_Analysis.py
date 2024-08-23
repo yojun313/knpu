@@ -20,6 +20,7 @@ import csv
 import traceback
 import warnings
 import re
+import chardet
 import scipy.stats as stats
 warnings.filterwarnings("ignore")
 
@@ -770,9 +771,9 @@ class Manager_Analysis:
                 
                 self.period_option_menu = QComboBox()
                 self.period_option_menu.addItem('12개월 (Yearly)')
-                self.period_option_menu.addItem('6개월 (Half-Yearly)')
-                self.period_option_menu.addItem('3개월 (Quarterly)')
-                self.period_option_menu.addItem('1개월 (Monthly)')
+                #self.period_option_menu.addItem('6개월 (Half-Yearly)')
+                #self.period_option_menu.addItem('3개월 (Quarterly)')
+                #self.period_option_menu.addItem('1개월 (Monthly)')
                 layout.addWidget(self.period_option_menu)
 
                 self.topword_label = QLabel('상위 단어 개수를 입력하세요: ')
@@ -888,67 +889,69 @@ class Manager_Analysis:
                     'split_custom': split_custom
                 }
                 self.accept()
-        #try:
-        self.main.printStatus("KEM KIM 데이터를 저장할 위치를 선택하세요")
-        save_path = QFileDialog.getExistingDirectory(self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요", self.main.default_directory)
-        if save_path == '':
-            self.main.printStatus()
-            return
+        try:
+            self.main.printStatus("KEM KIM 데이터를 저장할 위치를 선택하세요")
+            save_path = QFileDialog.getExistingDirectory(self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요", self.main.default_directory)
+            if save_path == '':
+                self.main.printStatus()
+                return
 
-        while True:
-            dialog = KimKemInputDialog(tokenfile_name)
-            dialog.exec_()
-            try:
-                if dialog.data == None:
+            while True:
+                dialog = KimKemInputDialog(tokenfile_name)
+                dialog.exec_()
+                try:
+                    if dialog.data == None:
+                        return
+                    startyear = int(dialog.data['startyear'])
+                    endyear = int(dialog.data['endyear'])
+                    period = int(dialog.data['period'])
+                    topword = int(dialog.data['topword'])
+                    weight = float(dialog.data['weight'])
+                    graph_wordcnt = int(dialog.data['graph_wordcnt'])
+                    yes_selected = dialog.data['yes_selected']
+                    split_option = dialog.data['split_option']
+                    split_custom = dialog.data['split_custom']
+                    if split_option in ['평균(Mean)', '중앙값(Median)'] and split_custom is None:
+                        pass
+                    else:
+                        split_custom = float(split_custom)
+                    break
+                except:
+                    QMessageBox.information(self.main, "Warning", "입력 형식이 올바르지 않습니다")
+
+            if yes_selected == True:
+                QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
+                exception_word_list_path   = QFileDialog.getOpenFileName(self.main, "예외어 사전(CSV)를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
+                exception_word_list_path = exception_word_list_path[0]
+                if exception_word_list_path == "":
                     return
-                startyear = int(dialog.data['startyear'])
-                endyear = int(dialog.data['endyear'])
-                period = int(dialog.data['period'])
-                topword = int(dialog.data['topword'])
-                weight = float(dialog.data['weight'])
-                graph_wordcnt = int(dialog.data['graph_wordcnt'])
-                yes_selected = dialog.data['yes_selected']
-                split_option = dialog.data['split_option']
-                split_custom = dialog.data['split_custom']
-                if split_option in ['평균(Mean)', '중앙값(Median)'] and split_custom is None:
-                    pass
-                else:
-                    split_custom = float(split_custom)
-                break
-            except:
-                QMessageBox.information(self.main, "Warning", "입력 형식이 올바르지 않습니다")
+                with open(exception_word_list_path, 'rb') as f:
+                    codec = chardet.detect(f.read())['encoding']
+                df = pd.read_csv(exception_word_list_path, low_memory=False, encoding=codec)
+                if 'word' not in list(df.keys()):
+                    QMessageBox.information(self.main, "Warning", "예외어 사전 형식과 일치하지 않습니다")
+                    return
+                exception_word_list = df['word'].tolist()
+            else:
+                exception_word_list = []
 
-        if yes_selected == True:
-            QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
-            exception_word_list_path   = QFileDialog.getOpenFileName(self.main, "예외어 사전(CSV)를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
-            exception_word_list_path = exception_word_list_path[0]
-            if exception_word_list_path == "":
-                return
-            df = pd.read_csv(exception_word_list_path, low_memory=False, encoding='utf-8-sig')
-            if 'word' not in list(df.keys()):
-                QMessageBox.information(self.main, "Warning", "예외어 사전 형식과 일치하지 않습니다")
-                return
-            exception_word_list = df['word'].tolist()
-        else:
-            exception_word_list = []
+            self.main.printStatus(f"{tokenfile_name} KEMKIM 분석 중...")
+            kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startyear, endyear, topword, weight, graph_wordcnt, split_option, split_custom, exception_word_list)
+            self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
+            result = kimkem_obj.make_kimkem()
 
-        self.main.printStatus(f"{tokenfile_name} KEMKIM 분석 중...")
-        kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startyear, endyear, topword, weight, graph_wordcnt, split_option, split_custom, exception_word_list)
-        self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
-        result = kimkem_obj.make_kimkem()
-
-        if result == 1:
-            QMessageBox.information(self.main, "Information", f"KEM KIM 분석 데이터가 성공적으로 저장되었습니다")
-        elif result == 0:
-            QMessageBox.information(self.main, "Information", f"Keyword가 존재하지 않아 KEM KIM 분석이 진행되지 않았습니다")
-        else:
-            QMessageBox.information(self.main, "Warning", f"치명적 오류가 발생하였습니다. 버그 리포트에 오류 작성 부탁드립니다\n\nlog:{result}")
-        
-        self.main.printStatus()
-        del kimkem_obj
-        gc.collect()
-        #except Exception as e:
-        #    QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            if result == 1:
+                QMessageBox.information(self.main, "Information", f"KEM KIM 분석 데이터가 성공적으로 저장되었습니다")
+            elif result == 0:
+                QMessageBox.information(self.main, "Information", f"Keyword가 존재하지 않아 KEM KIM 분석이 진행되지 않았습니다")
+            else:
+                QMessageBox.information(self.main, "Warning", f"치명적 오류가 발생하였습니다. 버그 리포트에 오류 작성 부탁드립니다\n\nlog:{result}")
+            
+            self.main.printStatus()
+            del kimkem_obj
+            gc.collect()
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
 
     def userDB_layout_maker(self):
         # File Explorer를 탭 레이아웃에 추가

@@ -1,8 +1,8 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic, QtGui
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QApplication, QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy
+from PyQt5.QtGui import QPixmap, QScreen
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication
 
 import shutil
@@ -26,9 +26,17 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.4.0'
+        self.versionNum = '1.3.3'
         self.version = 'Version ' + self.versionNum
 
+        def center():
+            # 현재 사용 중인 화면의 가운데로 창을 이동
+            screen = QScreen.availableGeometry(QApplication.primaryScreen())
+            screen_center = screen.center()
+            frame_geometry = self.frameGeometry()
+            frame_geometry.moveCenter(screen_center)
+            self.move(frame_geometry.topLeft())
+         
         super(MainWindow, self).__init__()
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
         uic.loadUi(ui_path, self)
@@ -36,6 +44,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
         #self.setGeometry(0, 0, 1400, 1000)
         self.resize(1400, 1000)
+        center()
 
         #self.menubar_init()
         self.statusBar_init()
@@ -88,7 +97,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1, self.printStatus)
-
+   
     def login_program(self):
         self.mySQL_obj.connectDB('bigmaclab_manager_db')
         self.device_list = [item[0] for item in self.mySQL_obj.TableToList('device_list')]
