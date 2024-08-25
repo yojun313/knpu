@@ -59,9 +59,6 @@ class MainWindow(QtWidgets.QMainWindow):
             DB_ip = '192.168.0.3'
 
         self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='bigmaclab2022!', port=3306)
-        if self.mySQL_obj.showAllDB() == []:
-            QMessageBox.information(self, "Information", "DB 서버 접속에 실패했습니다\n\n다시 시도하여 주십시오")
-            sys.exit()
         
         # 사이드바 연결
         def load_program():
@@ -80,6 +77,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.userNameList = self.Manager_User_obj.userNameList
             self.userPushOverKeyList = self.Manager_User_obj.userKeyList
             if self.login_program() == False:
+                sys.exit()
+                
+            if self.mySQL_obj.showAllDB() == []:
+                QMessageBox.information(self, "Information", "DB 서버 접속에 실패했습니다\n\n다시 시도하여 주십시오")
                 sys.exit()
 
             self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
