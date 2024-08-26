@@ -46,7 +46,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.resize(1400, 1000)
         center()
 
-        #self.menubar_init()
         self.statusBar_init()
         self.admin_password = 'kingsman'
         self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
@@ -54,12 +53,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # 스타일시트 적용
         self.setStyle()
 
-        DB_ip = '121.152.225.232'
-        if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
-            DB_ip = '192.168.0.3'
-
-        self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='bigmaclab2022!', port=3306)
-        
         # 사이드바 연결
         def load_program():
             self.listWidget.currentRowChanged.connect(self.display)
@@ -72,15 +65,28 @@ class MainWindow(QtWidgets.QMainWindow):
             if os.path.isdir(self.default_directory) == False:
                 os.mkdir(self.default_directory)
 
-            # DB 불러오기
-            self.Manager_User_obj = Manager_User(self)
-            self.userNameList = self.Manager_User_obj.userNameList
-            self.userPushOverKeyList = self.Manager_User_obj.userKeyList
+            DB_ip = '121.152.225.232'
+            if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
+                DB_ip = '192.168.0.3'
+
+            while True:
+                try:
+                    self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='bigmaclab2022!', port=3306)
+                    if self.mySQL_obj.showAllDB() == []:
+                        raise
+                    # DB 불러오기
+                    self.Manager_User_obj = Manager_User(self)
+                    self.userNameList = self.Manager_User_obj.userNameList
+                    self.userPushOverKeyList = self.Manager_User_obj.userKeyList
+                    break
+                except:
+                    reply = QMessageBox.question(self, 'Confirm Delete', "DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                       continue
+                    else:
+                        sys.exit()
+
             if self.login_program() == False:
-                sys.exit()
-                
-            if self.mySQL_obj.showAllDB() == []:
-                QMessageBox.information(self, "Information", "DB 서버 접속에 실패했습니다\n\n다시 시도하여 주십시오")
                 sys.exit()
 
             self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
