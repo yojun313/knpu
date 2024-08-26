@@ -573,8 +573,8 @@ class KimKem:
         for key in top_common_words:
             common_elements.intersection_update(top_common_words[key])
 
-        # 결과를 리스트로 변환하여 반환
-        return list(common_elements)
+        # 길이가 2 이상인 단어만 필터링하여 리스트로 반환
+        return [word for word in common_elements if len(word) >= 2]
 
     def _create_output_directories(self):
         article_kimkem_folder = self.kimkem_folder_path
