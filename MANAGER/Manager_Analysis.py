@@ -600,6 +600,12 @@ class Manager_Analysis:
                 grid_layout = QGridLayout()
                 
                 sorted_words = sorted(self.words)
+
+                # 모두 선택 체크박스 추가
+                select_all_checkbox = QCheckBox("모두 선택", self)
+                select_all_checkbox.stateChanged.connect(self.select_all_checkboxes)
+                grid_layout.addWidget(select_all_checkbox, 0, 0)
+
                 # 체크박스 추가
                 self.checkboxes = []
                 num_columns = min(20, len(sorted_words))  # 한 행에 최대 20개의 체크박스가 오도록 설정
@@ -607,8 +613,8 @@ class Manager_Analysis:
                     checkbox = QCheckBox(word, self)
                     self.checkboxes.append(checkbox)
                     # 그리드 레이아웃에 체크박스 배치
-                    row = i // num_columns
-                    col = i % num_columns
+                    row = (i + 1) // num_columns  # 첫 번째 행에 "모두 선택"이 있으므로 나머지는 +1 로 설정
+                    col = (i + 1) % num_columns
                     grid_layout.addWidget(checkbox, row, col)
 
                 # 그리드 레이아웃을 QVBoxLayout에 추가
@@ -625,13 +631,18 @@ class Manager_Analysis:
                 self.setGeometry(300, 300, 300, 200)
                 self.show()
 
+            def select_all_checkboxes(self, state):
+                # 모두 선택 체크박스의 상태에 따라 다른 체크박스들의 선택/해제를 설정
+                for checkbox in self.checkboxes[0:]:  # 첫 번째 체크박스("모두 선택")는 제외
+                    checkbox.setChecked(state == 2)
+
             def show_selected_words(self):
                 # 선택된 단어를 리스트에 추가
                 self.selected_words = [cb.text() for cb in self.checkboxes if cb.isChecked()]
                 # 선택된 단어를 메시지 박스로 출력
                 QMessageBox.information(self, '선택한 단어', ', '.join(self.selected_words))
                 self.accept()
-        
+
         def copy_csv(input_file_path, output_file_path):
                 # CSV 파일 읽기
             with open(input_file_path, 'r') as csvfile:
@@ -741,6 +752,12 @@ class Manager_Analysis:
                 grid_layout = QGridLayout()
 
                 sorted_words = sorted(self.words)
+
+                # 모두 선택 체크박스 추가
+                select_all_checkbox = QCheckBox("모두 선택", self)
+                select_all_checkbox.stateChanged.connect(self.select_all_checkboxes)
+                grid_layout.addWidget(select_all_checkbox, 0, 0)
+
                 # 체크박스 추가
                 self.checkboxes = []
                 num_columns = min(20, len(sorted_words))  # 한 행에 최대 20개의 체크박스가 오도록 설정
@@ -748,8 +765,8 @@ class Manager_Analysis:
                     checkbox = QCheckBox(word, self)
                     self.checkboxes.append(checkbox)
                     # 그리드 레이아웃에 체크박스 배치
-                    row = i // num_columns
-                    col = i % num_columns
+                    row = (i + 1) // num_columns  # 첫 번째 행에 "모두 선택"이 있으므로 나머지는 +1 로 설정
+                    col = (i + 1) % num_columns
                     grid_layout.addWidget(checkbox, row, col)
 
                 # 그리드 레이아웃을 QVBoxLayout에 추가
@@ -780,6 +797,11 @@ class Manager_Analysis:
                 self.setWindowTitle('크롤링 데이터 CSV 필터링 기준 단어를 선택하세요')
                 self.setGeometry(300, 300, 300, 200)
                 self.show()
+
+            def select_all_checkboxes(self, state):
+                # 모두 선택 체크박스의 상태에 따라 다른 체크박스들의 선택/해제를 설정
+                for checkbox in self.checkboxes[0:]:  # 첫 번째 체크박스("모두 선택")는 제외
+                    checkbox.setChecked(state == 2)
 
             def show_selected_words(self):
                 # 선택된 단어를 리스트에 추가
@@ -812,7 +834,19 @@ class Manager_Analysis:
                 word_list = ast.literal_eval(word_list_str)
                 all_keyword.extend(word_list)
 
-            QMessageBox.information(self.main, "Information", 'Keyword를 추출할 CSV 파일을 선택하세요')
+            try:
+                infotxt_path = os.path.join(os.path.dirname(result_directory), "kemkim_info.txt")
+                with open(infotxt_path, 'r') as info_txt:
+                    lines = info_txt.readlines()
+
+                for line in lines:
+                    if line.startswith('분석 데이터:'):
+                        # '분석 데이터:' 뒤에 오는 값을 파싱
+                        recommend_csv_name = line.split('분석 데이터:')[-1].strip().replace('token_', '')
+            except:
+                recommend_csv_name = 'KemKim 생성 시 사용한 크롤링 데이터'
+
+            QMessageBox.information(self.main, "Information", f'Keyword를 추출할 CSV 파일을 선택하세요\n\n"{recommend_csv_name}"를 선택하세요')
             object_csv_path = QFileDialog.getOpenFileName(self.main, "Keyword 추출 대상 CSV 파일을 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
             object_csv_path = object_csv_path[0]
             object_csv_name = os.path.basename(object_csv_path).replace('.csv', '')
@@ -917,7 +951,7 @@ class Manager_Analysis:
                 layout.addWidget(self.topword_label)
                 layout.addWidget(self.topword_input)
 
-                self.weight_label = QLabel('계산 가중치를 입력하세요: ')
+                self.weight_label = QLabel('시간 가중치(tw)를 입력하세요: ')
                 self.weight_input = QLineEdit()
                 self.weight_input.setText('0.05')  # 기본값 설정
                 layout.addWidget(self.weight_label)
