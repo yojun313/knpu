@@ -1,27 +1,23 @@
 from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox, QComboBox, \
-    QLineEdit, QLabel, QDialogButtonBox, QWidget, QProgressBar, QToolBox, QGridLayout, \
+    QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout, \
     QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QStringListModel
+from PyQt5.QtCore import QTimer, QStringListModel
 import copy
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
-import seaborn as sns
 import platform
-from collections import Counter
 from datetime import datetime
 import gc
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
-import numpy as np
-import io
 import ast
 import csv
 import traceback
 import warnings
 import re
 import chardet
-import scipy.stats as stats
+
 warnings.filterwarnings("ignore")
 
 from DataProcess import DataProcess
@@ -771,9 +767,9 @@ class Manager_Analysis:
                 
                 self.period_option_menu = QComboBox()
                 self.period_option_menu.addItem('12개월 (Yearly)')
-                #self.period_option_menu.addItem('6개월 (Half-Yearly)')
-                #self.period_option_menu.addItem('3개월 (Quarterly)')
-                #self.period_option_menu.addItem('1개월 (Monthly)')
+                self.period_option_menu.addItem('6개월 (Half-Yearly)')
+                self.period_option_menu.addItem('3개월 (Quarterly)')
+                self.period_option_menu.addItem('1개월 (Monthly)')
                 layout.addWidget(self.period_option_menu)
 
                 self.topword_label = QLabel('상위 단어 개수를 입력하세요: ')
@@ -794,25 +790,46 @@ class Manager_Analysis:
                 layout.addWidget(self.wordcnt_label)
                 layout.addWidget(self.wordcnt_input)
 
-                # 체크박스 생성
-                self.checkbox_label = QLabel('제외 단어 리스트를 추가하시겠습니까? ')
-                layout.addWidget(self.checkbox_label)
+                # 애니메이션 체크박스 생성
+                self.ani_checkbox_label = QLabel('애니메이션을 생성하시겠습니까? ')
+                layout.addWidget(self.ani_checkbox_label)
 
                 checkbox_layout = QHBoxLayout()
-                self.yes_checkbox = QCheckBox('Yes')
-                self.no_checkbox = QCheckBox('No')
+                self.ani_yes_checkbox = QCheckBox('Yes')
+                self.ani_no_checkbox = QCheckBox('No')
 
-                self.yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
-                self.no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
+                self.ani_yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
+                self.ani_no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
 
                 # 서로 배타적으로 선택되도록 설정
-                self.yes_checkbox.toggled.connect(
-                    lambda: self.no_checkbox.setChecked(False) if self.yes_checkbox.isChecked() else None)
-                self.no_checkbox.toggled.connect(
-                    lambda: self.yes_checkbox.setChecked(False) if self.no_checkbox.isChecked() else None)
+                self.ani_yes_checkbox.toggled.connect(
+                    lambda: self.ani_no_checkbox.setChecked(False) if self.ani_yes_checkbox.isChecked() else None)
+                self.ani_no_checkbox.toggled.connect(
+                    lambda: self.ani_yes_checkbox.setChecked(False) if self.ani_no_checkbox.isChecked() else None)
 
-                checkbox_layout.addWidget(self.yes_checkbox)
-                checkbox_layout.addWidget(self.no_checkbox)
+                checkbox_layout.addWidget(self.ani_yes_checkbox)
+                checkbox_layout.addWidget(self.ani_no_checkbox)
+                layout.addLayout(checkbox_layout)
+
+                # 체크박스 생성
+                self.except_checkbox_label = QLabel('제외 단어 리스트를 추가하시겠습니까? ')
+                layout.addWidget(self.except_checkbox_label)
+
+                checkbox_layout = QHBoxLayout()
+                self.except_yes_checkbox = QCheckBox('Yes')
+                self.except_no_checkbox = QCheckBox('No')
+
+                self.except_yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
+                self.except_no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
+
+                # 서로 배타적으로 선택되도록 설정
+                self.except_yes_checkbox.toggled.connect(
+                    lambda: self.except_no_checkbox.setChecked(False) if self.except_yes_checkbox.isChecked() else None)
+                self.except_no_checkbox.toggled.connect(
+                    lambda: self.except_yes_checkbox.setChecked(False) if self.except_no_checkbox.isChecked() else None)
+
+                checkbox_layout.addWidget(self.except_yes_checkbox)
+                checkbox_layout.addWidget(self.except_no_checkbox)
                 layout.addLayout(checkbox_layout)
 
                 # 드롭다운 메뉴(QComboBox) 생성
@@ -871,8 +888,8 @@ class Manager_Analysis:
                 topword = self.topword_input.text()
                 weight = self.weight_input.text()
                 graph_wordcnt = self.wordcnt_input.text()
-                yes_selected = self.yes_checkbox.isChecked()
-                no_selected = self.no_checkbox.isChecked()
+                ani_yes_selected = self.ani_yes_checkbox.isChecked()
+                except_yes_selected = self.except_yes_checkbox.isChecked()
                 split_option = self.dropdown_menu.currentText()
                 split_custom = self.additional_input.text() if self.additional_input.isVisible() else None
 
@@ -883,8 +900,8 @@ class Manager_Analysis:
                     'topword': topword,
                     'weight': weight,
                     'graph_wordcnt': graph_wordcnt,
-                    'yes_selected': yes_selected,
-                    'no_selected': no_selected,
+                    'ani_yes_selected': ani_yes_selected,
+                    'except_yes_selected': except_yes_selected,
                     'split_option': split_option,
                     'split_custom': split_custom
                 }
@@ -908,7 +925,8 @@ class Manager_Analysis:
                     topword = int(dialog.data['topword'])
                     weight = float(dialog.data['weight'])
                     graph_wordcnt = int(dialog.data['graph_wordcnt'])
-                    yes_selected = dialog.data['yes_selected']
+                    ani_yes_selected = dialog.data['ani_yes_selected']
+                    except_yes_selected = dialog.data['except_yes_selected']
                     split_option = dialog.data['split_option']
                     split_custom = dialog.data['split_custom']
                     if split_option in ['평균(Mean)', '중앙값(Median)'] and split_custom is None:
@@ -919,7 +937,7 @@ class Manager_Analysis:
                 except:
                     QMessageBox.information(self.main, "Warning", "입력 형식이 올바르지 않습니다")
 
-            if yes_selected == True:
+            if except_yes_selected == True:
                 QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
                 exception_word_list_path   = QFileDialog.getOpenFileName(self.main, "예외어 사전(CSV)를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
                 exception_word_list_path = exception_word_list_path[0]
@@ -936,7 +954,7 @@ class Manager_Analysis:
                 exception_word_list = []
 
             self.main.printStatus(f"{tokenfile_name} KEMKIM 분석 중...")
-            kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startyear, endyear, topword, weight, graph_wordcnt, split_option, split_custom, exception_word_list)
+            kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startyear, endyear, period, topword, weight, graph_wordcnt, split_option, split_custom, ani_yes_selected, exception_word_list)
             self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
             result = kimkem_obj.make_kimkem()
 

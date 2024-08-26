@@ -25,20 +25,20 @@ elif platform.system() == 'Windows':  # Windows
 # 폰트 설정 후 음수 기호가 깨지는 것을 방지
 plt.rcParams['axes.unicode_minus'] = False
 
-
-
 class KimKem:
     def __init__(self, 
                  token_data=None, 
                  csv_name=None, 
                  save_path=None, 
                  startyear=None, 
-                 endyear=None, 
+                 endyear=None,
+                 period=None,
                  topword=None, 
                  weight=None, 
                  graph_wordcnt=None, 
                  split_option=None, 
-                 split_custom=None, 
+                 split_custom=None,
+                 ani_option = None,
                  exception_word_list=[], 
                  rekemkim = False):
         self.exception_word_list = exception_word_list
@@ -49,9 +49,11 @@ class KimKem:
             self.folder_name = csv_name.replace('.csv', '').replace('token_', '')
             self.startyear = startyear
             self.endyear = endyear
+            self.period = period
             self.topword = topword
             self.weight = weight
             self.graph_wordcnt = graph_wordcnt
+            self.ani_option = ani_option
             self.except_option_display = 'Y' if exception_word_list else 'N'
             self.split_option = split_option
             self.split_custom = split_custom
@@ -65,15 +67,15 @@ class KimKem:
                     self.dateColumn_name = column
             
             # Step 1: 데이터 분할 및 초기화
-            self.year_divided_group = self.divide_period(self.token_data)
-            year_list = list(self.year_divided_group.groups.keys())
-            if self.startyear < int(year_list[0]):
-                self.startyear = year_list[0]
-            if self.endyear > int(year_list[-1]):
-                self.endyear = year_list[-1]
-            
+            self.period_divided_group = self.divide_period(self.token_data, period)
+            period_list = list(self.period_divided_group.groups.keys())
+            if self.startyear < self.year_extractor(period_list[0]):
+                self.startyear = self.year_extractor(period_list[0])
+            if self.endyear > self.year_extractor(period_list[-1]):
+                self.endyear = self.year_extractor(period_list[-1])
+
             # 폴더 이름 20230101 -> 2023으로 startyear, endyear 형식으로 변경
-            self.folder_name = re.sub(r'(\d{8})_(\d{8})', f'{self.startyear}~{self.endyear}', self.folder_name)
+            self.folder_name = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startyear}~{self.endyear}_{period}', self.folder_name)
             self.kimkem_folder_path = os.path.join(
                 save_path,
                 f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
@@ -104,15 +106,16 @@ class KimKem:
         try:
             self.write_status("토큰 데이터 분할 중...")
             # Step 2: 연도별 단어 리스트 생성
-            yyear_divided_dic = self._initialize_year_divided_dic(self.year_divided_group)#
+            period_divided_dic_raw = self._initialize_period_divided_dic(self.period_divided_group)#
+
             # DF 계산을 위해서 각 연도(key)마다 2차원 리스트 할당 -> 요소 리스트 하나 = 문서 하나
-            year_divided_dic = self._generate_year_divided_dic(yyear_divided_dic)#
+            period_divided_dic = self._generate_year_divided_dic(period_divided_dic_raw)#
 
             # TF 계산을 위해서 각 연도마다 모든 token 할당
-            year_divided_dic_merged = self._merge_year_divided_dic(year_divided_dic)#
+            period_divided_dic_merged = self._merge_year_divided_dic(period_divided_dic)#
 
             # Step 3: 상위 공통 단어 추출 및 키워드 리스트 생성
-            top_common_words = self._extract_top_common_words(year_divided_dic_merged)#
+            top_common_words = self._extract_top_common_words(period_divided_dic_merged)#
             keyword_list = self._get_keyword_list(top_common_words)#
 
             if keyword_list == []:
@@ -121,80 +124,97 @@ class KimKem:
 
             self.write_status("TF/DF 계산 중...")
             # Step 4: TF, DF, DoV, DoD 계산
-            tf_counts, df_counts = self.cal_tf(keyword_list, year_divided_dic_merged), self.cal_df(keyword_list, year_divided_dic)
-            
-            self.write_status("DOV/DOD 계산 중...")
-            DoV_dict, DoD_dict = self.cal_DoV(keyword_list, year_divided_dic, tf_counts), self.cal_DoD(keyword_list, year_divided_dic, df_counts)
-            self.year_list = list(tf_counts.keys())
-            self.year_list.pop(0)
+            tf_counts, df_counts = self.cal_tf(keyword_list, period_divided_dic_merged), self.cal_df(keyword_list, period_divided_dic)
+            self.period_list = list(tf_counts.keys())
+            self.startperiod = self.period_list[0]
+
+            self.write_status("추적 데이터 DOV/DOD 계산 중...")
+            trace_DoV_dict, trace_DoD_dict = self.cal_DoV(keyword_list, period_divided_dic, tf_counts), self.cal_DoD(keyword_list, period_divided_dic, df_counts)
 
             # Step 5: 결과 저장 디렉토리 설정
             self._create_output_directories()
 
             # Step 6: 결과 저장 (TF, DF, DoV, DoD)
-            self.write_status("시계열 데이터 애니메이션 생성 중...")
-            self._save_kimkem_results(tf_counts, df_counts, DoV_dict, DoD_dict)
-            
+            self.write_status("추적 데이터 DOV/DOD 저장 중...")
+            self._save_trace_results(trace_DoV_dict, trace_DoD_dict)
+
             DoV_signal_record = {}
             DoD_signal_record = {}
             DoV_coordinates_record = {}
             DoD_coordinates_record = {}
             Final_signal_record = {}
-            
+
             self.DoV_graphPath_list = []
             self.DoD_graphPath_list = []
-            
-            for year in self.year_list:
+
+            for index, period in enumerate(self.period_list):
                 # Step 7: 평균 증가율 및 빈도 계산
 
-                result_folder = os.path.join(self.history_folder, year)
+                if index == 0:
+                    continue
 
-                self.write_status(f"{year}년 KEMKIM 증가율 계산 중...")
-                avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, str(int(year)-1), year)
+                result_folder = os.path.join(self.trace_result_folder, period)
 
-                self.write_status(f"{year}년 KEMKIM 신호 분석 및 그래프 생성 중...")
+                self.write_status(f"{period} KEMKIM 증가율 계산 중...")
+                avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[index-1], period)
+
+                self.write_status(f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
                 # Step 8: 신호 분석 및 그래프 생성
-                DoV_signal_record[year], DoD_signal_record[year], DoV_coordinates_record[year], DoD_coordinates_record[year] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
-                Final_signal_record[year] = self._save_final_signals(DoV_signal_record[year], DoD_signal_record[year], os.path.join(result_folder, 'Signal'))
-            
+                DoV_signal_record[period], DoD_signal_record[period], DoV_coordinates_record[period], DoD_coordinates_record[period] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
+                Final_signal_record[period] = self._save_final_signals(DoV_signal_record[period], DoD_signal_record[period], os.path.join(result_folder, 'Signal'))
+
             self.write_status("키워드 추적 데이터 생성 중...")
             DoV_signal_trace = self.trace_keyword_positions(DoV_signal_record)
             DoD_signal_trace = self.trace_keyword_positions(DoD_signal_record)
             Final_signal_trace = self.trace_keyword_positions(Final_signal_record)
-            
+
             signal_column_list = list(DoV_signal_trace.columns)
             signal_column_list = [f'year_{column}' for column in signal_column_list]
-            
+
             DoV_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoV_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
             DoD_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoD_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
             Final_signal_trace.to_csv(os.path.join(self.trace_folder, 'Final_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
-            
+
             self.write_status("키워드 필터링 중...")
             DoV_signal_trace, DoV_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
-            DoV_signal_trace, DoD_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)  
+            DoV_signal_trace, DoD_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
             add_list = sorted(list(set(DoV_signal_deletewords+DoD_signal_deletewords)))
-            
+
             self.exception_word_list = self.exception_word_list + [''] + add_list if self.exception_word_list else add_list
 
             self.write_status("키워드 추적 그래프 생성 중...")
             self.visualize_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_graph.png'), 'TF', 'Increasing Rate')
             self.visualize_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_graph.png'), 'DF', 'Increasing Rate')
-            
-            self.write_status("키워드 추적 애니메이션 생성 중...")
-            self.animate_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_animation.gif'), 'TF', 'Increasing Rate')
-            self.animate_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_animation.gif'), 'DF', 'Increasing Rate')
-            
+
+            if self.ani_option == True:
+                self.write_status("키워드 추적 애니메이션 생성 중...")
+                self.animate_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_animation.gif'), 'TF', 'Increasing Rate')
+                self.animate_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_animation.gif'), 'DF', 'Increasing Rate')
+
             self.write_status("최종 KEM KIM 생성 중...")
-            avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, str(self.startyear), str(self.endyear))
-            DoV_signal_record[year], DoD_signal_record[year], DoV_coordinates_record[year], DoD_coordinates_record[year] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(self.result_folder, 'Graph'))
-            Final_signal_record[year] = self._save_final_signals(DoV_signal_record[year], DoD_signal_record[year], os.path.join(self.result_folder, 'Signal'))
+            DoV_dict, DoD_dict = self.cal_DoV(keyword_list, period_divided_dic, tf_counts, trace=False), self.cal_DoD(keyword_list, period_divided_dic, df_counts, trace=False)
+            self._save_kimkem_results(tf_counts, df_counts, DoV_dict, DoD_dict)
+            avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, self.period_list[0], self.period_list[-1])
+            DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(self.result_folder, 'Graph'))
+            Final_signal_record = self._save_final_signals(DoV_signal_record, DoD_signal_record, os.path.join(self.result_folder, 'Signal'))
             pd.DataFrame(self.exception_word_list, columns=['word']).to_csv(os.path.join(self.result_folder, 'filtered_words.csv'), index = False, encoding='utf-8-sig')
-            
+
             self.write_status("완료")
             return 1
         except Exception as e:
-            return traceback.format_exc()
-    
+            traceback.format_exc()
+
+    def year_extractor(self, text):
+
+        # 정규 표현식을 사용하여 첫 번째 네 자리 숫자 찾기
+        return int(text[:4])
+
+    def find_key_position(self, dic, target_key):
+        try:
+            return list(dic.keys()).index(target_key)
+        except ValueError:
+            return None  # 키가 없을 경우 None 반환
+
     def trace_keyword_positions(self, yearly_data):
         
         # 모든 단어를 수집하기 위한 집합
@@ -469,12 +489,18 @@ class KimKem:
         
         return filtered_df, non_matching_keywords
 
-    def _initialize_year_divided_dic(self, year_divided_group):
-        yyear_divided_dic = {}
-        for group_name, group_data in year_divided_group:
-            yyear_divided_dic[str(int(group_name))] = group_data[self.textColumn_name].tolist()
-        yyear_divided_dic = {key: value for key, value in yyear_divided_dic.items() if self.endyear >= int(key) >= self.startyear}
-        return yyear_divided_dic
+    def _initialize_period_divided_dic(self, period_divided_group):
+        period_divided_dic = {}
+
+        # 그룹화된 데이터 처리
+        for group_name, group_data in period_divided_group:
+            period_divided_dic[str(group_name)] = group_data[self.textColumn_name].tolist()
+
+        # 시작 연도와 종료 연도에 따라 필터링 (필요한 경우)
+        period_divided_dic = {key: value for key, value in period_divided_dic.items()
+                              if self.endyear >= int(key[:4]) >= self.startyear}
+
+        return period_divided_dic
 
     def _generate_year_divided_dic(self, yyear_divided_dic):
         year_divided_dic = {}
@@ -493,9 +519,9 @@ class KimKem:
         return {key: [item for sublist in value for item in sublist] for key, value in year_divided_dic.items()}
 
     # self.topword 개의 top common words 뽑아냄
-    def _extract_top_common_words(self, year_divided_dic_merged):
+    def _extract_top_common_words(self, period_divided_dic_merged):
         return {k: [item for item, count in Counter(v).most_common(self.topword)] for k, v in
-                year_divided_dic_merged.items()}
+                period_divided_dic_merged.items()}
 
     def _get_keyword_list(self, top_common_words):
         intersection = set.intersection(*[set(value) for value in top_common_words.values()])
@@ -510,8 +536,12 @@ class KimKem:
         self.DoD_folder = os.path.join(self.data_folder, "DoD")
         self.result_folder = os.path.join(article_kimkem_folder, "Result")
         self.trace_folder = os.path.join(article_kimkem_folder, "Trace")
-        self.history_folder = os.path.join(self.trace_folder, 'History')
+        self.trace_result_folder = os.path.join(self.trace_folder, 'Trace_Result')
+        self.trace_data_folder = os.path.join(self.trace_folder, 'Trace_Data')
+        self.trace_DOV_folder = os.path.join(self.trace_data_folder, 'DoV')
+        self.trace_DOD_folder = os.path.join(self.trace_data_folder, 'DoD')
 
+        # Final
         os.makedirs(self.tf_folder, exist_ok=True)
         os.makedirs(self.df_folder, exist_ok=True)
         os.makedirs(self.DoV_folder, exist_ok=True)
@@ -520,29 +550,42 @@ class KimKem:
         os.makedirs(os.path.join(self.result_folder, 'Graph'))
         os.makedirs(os.path.join(self.result_folder, 'Signal'))
 
-        for year in self.year_list:
-            year_path = os.path.join(self.history_folder, year)
+        # Trace
+        os.makedirs(self.trace_folder, exist_ok=True)
+        os.makedirs(self.trace_result_folder, exist_ok=True)
+        os.makedirs(self.trace_data_folder, exist_ok=True)
+        os.makedirs(self.trace_DOV_folder, exist_ok=True)
+        os.makedirs(self.trace_DOD_folder, exist_ok=True)
+
+        for period in self.period_list:
+            year_path = os.path.join(self.trace_result_folder, period)
             os.makedirs(year_path, exist_ok=True)
             os.makedirs(os.path.join(year_path, 'Graph'), exist_ok=True)
             os.makedirs(os.path.join(year_path, 'Signal'), exist_ok=True)
 
     def _save_kimkem_results(self, tf_counts, df_counts, DoV_dict, DoD_dict):
         for year in tf_counts:
-            self._save_yearly_data(self.tf_folder, year, tf_counts, 'TF')
-            self._save_yearly_data(self.df_folder, year, df_counts, 'DF')
-            self._save_yearly_data(self.DoV_folder, year, DoV_dict, 'DoV')
-            self._save_yearly_data(self.DoD_folder, year, DoD_dict, 'DoD')
+            self._save_period_data(self.tf_folder, year, tf_counts, 'TF')
+            self._save_period_data(self.df_folder, year, df_counts, 'DF')
+            self._save_period_data(self.DoV_folder, year, DoV_dict, 'DoV')
+            self._save_period_data(self.DoD_folder, year, DoD_dict, 'DoD')
 
-        self.create_top_words_animation(tf_counts, os.path.join(self.tf_folder, 'tf_counts_animation.gif'), self.graph_wordcnt)
-        self.create_top_words_animation(df_counts, os.path.join(self.df_folder, 'df_counts_animation.gif'), self.graph_wordcnt)
-        self.create_top_words_animation(DoV_dict, os.path.join(self.DoV_folder, 'DOV_animation.gif'), self.graph_wordcnt, 100)
-        self.create_top_words_animation(DoD_dict, os.path.join(self.DoD_folder, 'DOD_animation.gif'), self.graph_wordcnt, 100)
+        if self.ani_option == True:
+            self.create_top_words_animation(tf_counts, os.path.join(self.tf_folder, 'tf_counts_animation.gif'), self.graph_wordcnt)
+            self.create_top_words_animation(df_counts, os.path.join(self.df_folder, 'df_counts_animation.gif'), self.graph_wordcnt)
+            self.create_top_words_animation(DoV_dict, os.path.join(self.DoV_folder, 'DOV_animation.gif'), self.graph_wordcnt, 100)
+            self.create_top_words_animation(DoD_dict, os.path.join(self.DoD_folder, 'DOD_animation.gif'), self.graph_wordcnt, 100)
 
-    def _save_yearly_data(self, folder, year, data_dict, label):
-        data_df = pd.DataFrame(list(data_dict[year].items()), columns=['keyword', label])
-        data_df.to_csv(f"{folder}/{year}_{label}.csv", index=False, encoding='utf-8-sig')
+    def _save_trace_results(self, DoV_dict, DoD_dict):
+        for period in DoV_dict:
+            self._save_period_data(self.trace_DOV_folder, period, DoV_dict, 'DoV')
+            self._save_period_data(self.trace_DOD_folder, period, DoD_dict, 'DoD')
 
-    def _calculate_averages(self, keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, min_year, max_year):
+    def _save_period_data(self, folder, period, data_dict, label):
+        data_df = pd.DataFrame(list(data_dict[period].items()), columns=['keyword', label])
+        data_df.to_csv(f"{folder}/{period}_{label}.csv", index=False, encoding='utf-8-sig')
+
+    def _calculate_averages(self, keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, min_period, max_period):
         
         avg_DoV_increase_rate = {}
         avg_DoD_increase_rate = {}
@@ -550,19 +593,18 @@ class KimKem:
         avg_doc_frequency = {}
 
         for word in keyword_list:
-            avg_DoV_increase_rate[word] = self._calculate_average_increase(DoV_dict, word, max_year, min_year)
-            avg_DoD_increase_rate[word] = self._calculate_average_increase(DoD_dict, word, max_year, min_year)
-            avg_term_frequency[word] = self._calculate_average_frequency(tf_counts, word, max_year, min_year)
-            avg_doc_frequency[word] = self._calculate_average_frequency(df_counts, word, max_year, min_year)
+            avg_DoV_increase_rate[word] = self._calculate_average_increase(DoV_dict, word, max_period, min_period)
+            avg_DoD_increase_rate[word] = self._calculate_average_increase(DoD_dict, word, max_period, min_period)
+            avg_term_frequency[word] = self._calculate_average_frequency(tf_counts, word, max_period, min_period)
+            avg_doc_frequency[word] = self._calculate_average_frequency(df_counts, word, max_period, min_period)
 
         return avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency
 
-    def _calculate_average_increase(self, data_dict, word, max_year, min_year):
-        return (((data_dict[max_year][word] / data_dict[min_year][word]) ** (
-                    1 / (int(max_year) - int(min_year)))) - 1) * 100
+    def _calculate_average_increase(self, data_dict, word, max_period, min_period):
+        return (((data_dict[max_period][word] / data_dict[min_period][word]) ** (1 / (self.period_list.index(max_period) - self.period_list.index(min_period)))) - 1) * 100
 
-    def _calculate_average_frequency(self, counts_dict, word, max_year, min_year):
-        relevant_years = [year for year in counts_dict.keys() if min_year <= year <= max_year]
+    def _calculate_average_frequency(self, counts_dict, word, max_period, min_period):
+        relevant_years = [year for year in counts_dict.keys() if min_period <= year <= max_period]
         total_frequency = sum([counts_dict[year][word] for year in relevant_years])
         return total_frequency / len(relevant_years) if relevant_years else 0
 
@@ -596,18 +638,38 @@ class KimKem:
             'well_known_signal': communal_well_known_signal
         }
 
-    def divide_period(self, csv_data):
+    def divide_period(self, csv_data, period):
+        # 'Unnamed' 열 제거
         csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
-        csv_data[self.dateColumn_name] = pd.to_datetime(csv_data[self.dateColumn_name].str.split().str[0], format='%Y-%m-%d',
-                                                  errors='coerce')
-        csv_data['year'] = csv_data[self.dateColumn_name].dt.year
-        csv_data['month'] = csv_data[self.dateColumn_name].dt.month
+
+        # 날짜 열을 datetime 형식으로 변환
+        csv_data[self.dateColumn_name] = pd.to_datetime(csv_data[self.dateColumn_name].str.split().str[0],
+                                                        format='%Y-%m-%d', errors='coerce')
+
+        # 'year_month' 열 추가 (월 단위 기간으로 변환)
         csv_data['year_month'] = csv_data[self.dateColumn_name].dt.to_period('M')
 
-        year_divided_group = csv_data.groupby('year')
+        # 필요한 전체 기간 생성
+        full_range = pd.period_range(start=csv_data['year_month'].min(), end=csv_data['year_month'].max(), freq='M')
+        full_df = pd.DataFrame(full_range, columns=['year_month'])
 
-        return year_divided_group
+        # 원본 데이터와 병합하여 빈 기간도 포함하도록 함
+        csv_data = pd.merge(full_df, csv_data, on='year_month', how='left')
 
+        # 새로운 열을 추가하여 주기 단위로 기간을 그룹화
+        if period == 1:  # 월
+            csv_data['period_group'] = csv_data['year_month'].dt.to_timestamp().dt.to_period('M').astype(str)
+        elif period == 3:  # 분기
+            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'Q' + ((csv_data['year_month'].dt.month - 1) // 3 + 1).astype(str))
+        elif period == 6:  # 반기
+            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'H' + ((csv_data['year_month'].dt.month - 1) // 6 + 1).astype(str))
+        elif period == 12:  # 연도
+            csv_data['period_group'] = csv_data['year_month'].dt.year.astype(str)
+
+        # 주기별로 그룹화하여 결과 반환
+        period_divided_group = csv_data.groupby('period_group')
+
+        return period_divided_group
     def create_top_words_animation(self, dataframe, output_filename='top_words_animation.gif', word_cnt=10, scale_factor=1, frames_per_transition=20):
         df = pd.DataFrame(dataframe).fillna(0)
     
@@ -677,9 +739,9 @@ class KimKem:
         plt.close()
     
     # 연도별 keyword tf 딕셔너리 반환
-    def cal_tf(self, keyword_list, year_divided_dic_merged):
+    def cal_tf(self, keyword_list, period_divided_dic_merged):
         tf_counts = {}
-        for key, value in year_divided_dic_merged.items():
+        for key, value in period_divided_dic_merged.items():
             keyword_counts = {}
             for keyword in keyword_list:
                 keyword_counts[keyword] = value.count(keyword)
@@ -689,13 +751,13 @@ class KimKem:
             tf_counts[key] = keyword_counts
         return tf_counts
     # 연도별 keyword df 딕셔너리 반환
-    def cal_df(self, keyword_list, year_divided_dic):
+    def cal_df(self, keyword_list, period_divided_dic):
         df_counts = {}
-        for year in year_divided_dic:
+        for year in period_divided_dic:
             keyword_counts = {}
             for keyword in keyword_list:  # keyword는 keyword_list의 keyword
                 count = 0
-                for doc in year_divided_dic[year]:
+                for doc in period_divided_dic[year]:
                     if keyword in doc:
                         count += 1
                 keyword_counts[keyword] = count
@@ -706,25 +768,31 @@ class KimKem:
         return df_counts
 
     # 연도별 keyword DoV 딕셔너리 반환
-    def cal_DoV(self, keyword_list, year_divided_dic, tf_counts):
+    def cal_DoV(self, keyword_list, period_divided_dic, tf_counts, trace=True):
         DoV_dict = {}
-        for year in year_divided_dic:
+        for period in period_divided_dic:
             keyword_DoV_dic = {}
+            
+            n_j = 1 if trace else self.find_key_position(period_divided_dic, period) - self.find_key_position(period_divided_dic, self.startperiod)
+
             for keyword in keyword_list:
-                value = (tf_counts[year][keyword] / len(year_divided_dic[year])) * (1 - self.weight * (int(year) - self.startyear))
+                value = (tf_counts[period][keyword] / len(period_divided_dic[period])) * (1 - self.weight * n_j)
                 keyword_DoV_dic[keyword] = value
-            DoV_dict[year] = keyword_DoV_dic
+            DoV_dict[period] = keyword_DoV_dic
         return DoV_dict
 
     # 연도별 keyword DoD 딕셔너리 반환
-    def cal_DoD(self, keyword_list, year_divided_dic, df_counts):
+    def cal_DoD(self, keyword_list, period_divided_dic, df_counts, trace=True):
         DoD_dict = {}
-        for year in year_divided_dic:
+        for period in period_divided_dic:
             keyword_DoV_dic = {}
+            
+            n_j = 1 if trace else self.find_key_position(period_divided_dic, period) - self.find_key_position(period_divided_dic, self.startperiod)
+            
             for keyword in keyword_list:
-                value = (df_counts[year][keyword] / len(year_divided_dic[year])) * (1 - self.weight * (int(year) - self.startyear))
+                value = (df_counts[period][keyword] / len(period_divided_dic[period])) * (1 - self.weight * n_j)
                 keyword_DoV_dic[keyword] = value
-            DoD_dict[year] = keyword_DoV_dic
+            DoD_dict[period] = keyword_DoV_dic
         return DoD_dict
 
     def top_n_percent(self, lst, n):
@@ -916,16 +984,18 @@ class KimKem:
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
 
 if __name__=='__main__':
-    token_data = pd.read_csv("C:/BIGMACLAB_MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/navernews_바이오의료_20100101_20240731_0815_2036_article.csv", low_memory=False, encoding='utf-8-sig')
+    token_data = pd.read_csv("C:/BIGMACLAB_MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/token_data/token_navernews_바이오의료_20100101_20240731_0815_2036_statistics.csv", low_memory=False, encoding='utf-8-sig')
     kimkem_obj = KimKem(token_data=token_data, 
                         csv_name='navernews_바이오의료_20100101_20240731_0815_2036_article.csv', 
-                        save_path='C:\BIGMACLAB_MANAGER',
+                        save_path='C:/BIGMACLAB_MANAGER/바이오의료 KIMKEM 데이터',
                         startyear=2010,
                         endyear=2024,
+                        period=12,
                         topword=500,
                         weight=0.05,
                         graph_wordcnt=20,
                         split_option='평균(Mean)',
+                        ani_option=False,
                         exception_word_list=[]
                 )
     kimkem_obj.make_kimkem()
