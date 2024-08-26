@@ -126,9 +126,7 @@ class KimKem:
             keyword_list = self._get_keyword_list(top_common_words)#
 
             if keyword_list == []:
-                import shutil
-                if os.path.exists(self.kimkem_folder_path):
-                    shutil.rmtree(self.kimkem_folder_path)
+                self.write_status("키워드 없음 종료")
                 return 0
 
             self.write_status("TF/DF 계산 중...")
@@ -237,7 +235,7 @@ class KimKem:
         # 역순으로 검사하여 빈 리스트나 NaN이 포함된 리스트를 가진 key를 제거
         for key in reversed(keys):
             value = dictionary[key]
-            if not value or any(np.isnan(x) for x in value if isinstance(x, (int, float, np.number))):
+            if not value:
                 del dictionary[key]
             else:
                 break  # 빈 리스트가 아니고 NaN도 없으면 멈춤
