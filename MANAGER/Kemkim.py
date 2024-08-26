@@ -45,6 +45,7 @@ class KimKem:
         
         if rekemkim == False:
             self.csv_name = csv_name
+            self.save_path = save_path
             self.token_data = token_data
             self.folder_name = csv_name.replace('.csv', '').replace('token_', '')
             self.startyear = startyear
@@ -54,6 +55,7 @@ class KimKem:
             self.weight = weight
             self.graph_wordcnt = graph_wordcnt
             self.ani_option = ani_option
+            self.ani_option_display = 'Y' if ani_option == True else 'N'
             self.except_option_display = 'Y' if exception_word_list else 'N'
             self.split_option = split_option
             self.split_custom = split_custom
@@ -77,7 +79,7 @@ class KimKem:
             # 폴더 이름 20230101 -> 2023으로 startyear, endyear 형식으로 변경
             self.folder_name = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startyear}~{self.endyear}_{period}', self.folder_name)
             self.kimkem_folder_path = os.path.join(
-                save_path,
+                self.save_path,
                 f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
             )
             os.makedirs(self.kimkem_folder_path, exist_ok=True)
@@ -90,8 +92,10 @@ class KimKem:
             f"{'분석 시각:':<15} {self.now.strftime('%Y.%m.%d %H:%M')}\n"
             f"{'분석 시작 연도:':<15} {self.startyear}\n"
             f"{'분석 종료 연도:':<15} {self.endyear}\n"
+            f"{'분석 기간 단위:':<15} {self.period}개월\n"
             f"{'상위 단어 개수:':<15} {self.topword}\n"
             f"{'계산 가중치:':<15} {self.weight}\n"
+            f"{'애니메이션 여부:':<15} {self.ani_option_display}\n"
             f"{'제외 단어 여부:':<15} {self.except_option_display}\n"
             f"{'분할 기준:':<15} {self.split_option}\n"
             f"{'분할 상위%:':<15} {self.split_custom}\n"
@@ -105,21 +109,24 @@ class KimKem:
     def make_kimkem(self):
         try:
             self.write_status("토큰 데이터 분할 중...")
-            # Step 2: 연도별 단어 리스트 생성
+            # Step 2: 연도별 단어 리스트 생성 (딕셔너리)
             period_divided_dic_raw = self._initialize_period_divided_dic(self.period_divided_group)#
+            period_divided_dic_raw = self.filter_dic_empty_list(period_divided_dic_raw)
 
             # DF 계산을 위해서 각 연도(key)마다 2차원 리스트 할당 -> 요소 리스트 하나 = 문서 하나
-            period_divided_dic = self._generate_year_divided_dic(period_divided_dic_raw)#
+            period_divided_dic = self._generate_period_divided_dic(period_divided_dic_raw)#
 
             # TF 계산을 위해서 각 연도마다 모든 token 할당
-            period_divided_dic_merged = self._merge_year_divided_dic(period_divided_dic)#
+            period_divided_dic_merged = self._merge_period_divided_dic(period_divided_dic)#
 
             # Step 3: 상위 공통 단어 추출 및 키워드 리스트 생성
             top_common_words = self._extract_top_common_words(period_divided_dic_merged)#
             keyword_list = self._get_keyword_list(top_common_words)#
 
             if keyword_list == []:
-                os.rmdir(self.kimkem_folder_path)
+                import shutil
+                if os.path.exists(self.kimkem_folder_path):
+                    shutil.rmtree(self.kimkem_folder_path)
                 return 0
 
             self.write_status("TF/DF 계산 중...")
@@ -202,7 +209,22 @@ class KimKem:
             self.write_status("완료")
             return 1
         except Exception as e:
-            traceback.format_exc()
+            return traceback.format_exc()
+
+    def filter_dic_empty_list(self, dictionary):
+
+        # 딕셔너리의 키 리스트를 역순으로 가져옴
+        keys = list(dictionary.keys())
+
+        # 역순으로 검사하여 빈 리스트나 NaN이 포함된 리스트를 가진 key를 제거
+        for key in reversed(keys):
+            value = dictionary[key]
+            if not value or any(np.isnan(x) for x in value if isinstance(x, (int, float, np.number))):
+                del dictionary[key]
+            else:
+                break  # 빈 리스트가 아니고 NaN도 없으면 멈춤
+
+        return dictionary
 
     def year_extractor(self, text):
 
@@ -502,9 +524,9 @@ class KimKem:
 
         return period_divided_dic
 
-    def _generate_year_divided_dic(self, yyear_divided_dic):
-        year_divided_dic = {}
-        for key, string_list in yyear_divided_dic.items():
+    def _generate_period_divided_dic(self, period_divided_dic_raw):
+        period_divided_dic = {}
+        for key, string_list in period_divided_dic_raw.items():
             word_lists = []
             for string in string_list:
                 try:
@@ -512,20 +534,29 @@ class KimKem:
                     word_lists.append(words)
                 except:
                     pass
-            year_divided_dic[key] = word_lists
-        return year_divided_dic
+            period_divided_dic[key] = word_lists
+        return period_divided_dic
 
-    def _merge_year_divided_dic(self, year_divided_dic):
-        return {key: [item for sublist in value for item in sublist] for key, value in year_divided_dic.items()}
+    def _merge_period_divided_dic(self, period_divided_dic):
+        return {key: [item for sublist in value for item in sublist] for key, value in period_divided_dic.items()}
 
     # self.topword 개의 top common words 뽑아냄
     def _extract_top_common_words(self, period_divided_dic_merged):
-        return {k: [item for item, count in Counter(v).most_common(self.topword)] for k, v in
-                period_divided_dic_merged.items()}
+        return {k: [item for item, count in Counter(v).most_common(self.topword)] for k, v in period_divided_dic_merged.items()}
 
     def _get_keyword_list(self, top_common_words):
-        intersection = set.intersection(*[set(value) for value in top_common_words.values()])
-        return [word for word in list(intersection) if len(word) >= 2]
+        if not top_common_words:
+            return []
+
+            # 첫 번째 리스트를 set으로 변환하여 초기화
+        common_elements = set(top_common_words[list(top_common_words.keys())[0]])
+
+        # 딕셔너리의 각 value 리스트와 교집합을 구함
+        for key in top_common_words:
+            common_elements.intersection_update(top_common_words[key])
+
+        # 결과를 리스트로 변환하여 반환
+        return list(common_elements)
 
     def _create_output_directories(self):
         article_kimkem_folder = self.kimkem_folder_path
@@ -604,7 +635,7 @@ class KimKem:
         return (((data_dict[max_period][word] / data_dict[min_period][word]) ** (1 / (self.period_list.index(max_period) - self.period_list.index(min_period)))) - 1) * 100
 
     def _calculate_average_frequency(self, counts_dict, word, max_period, min_period):
-        relevant_years = [year for year in counts_dict.keys() if min_period <= year <= max_period]
+        relevant_years = [period for period in counts_dict.keys() if period == max_period or period == min_period]
         total_frequency = sum([counts_dict[year][word] for year in relevant_years])
         return total_frequency / len(relevant_years) if relevant_years else 0
 
@@ -649,8 +680,10 @@ class KimKem:
         # 'year_month' 열 추가 (월 단위 기간으로 변환)
         csv_data['year_month'] = csv_data[self.dateColumn_name].dt.to_period('M')
 
-        # 필요한 전체 기간 생성
-        full_range = pd.period_range(start=csv_data['year_month'].min(), end=csv_data['year_month'].max(), freq='M')
+        # 필요한 전체 기간 생성 (start_year와 end_year를 사용)
+        full_range = pd.period_range(start=pd.Period(str(self.startyear) + '-01', freq='M'),
+                                     end=pd.Period(str(self.endyear) + '-12', freq='M'),
+                                     freq='M')
         full_df = pd.DataFrame(full_range, columns=['year_month'])
 
         # 원본 데이터와 병합하여 빈 기간도 포함하도록 함
@@ -660,9 +693,11 @@ class KimKem:
         if period == 1:  # 월
             csv_data['period_group'] = csv_data['year_month'].dt.to_timestamp().dt.to_period('M').astype(str)
         elif period == 3:  # 분기
-            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'Q' + ((csv_data['year_month'].dt.month - 1) // 3 + 1).astype(str))
+            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'Q' + (
+                        (csv_data['year_month'].dt.month - 1) // 3 + 1).astype(str))
         elif period == 6:  # 반기
-            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'H' + ((csv_data['year_month'].dt.month - 1) // 6 + 1).astype(str))
+            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'H' + (
+                        (csv_data['year_month'].dt.month - 1) // 6 + 1).astype(str))
         elif period == 12:  # 연도
             csv_data['period_group'] = csv_data['year_month'].dt.year.astype(str)
 
@@ -670,6 +705,7 @@ class KimKem:
         period_divided_group = csv_data.groupby('period_group')
 
         return period_divided_group
+
     def create_top_words_animation(self, dataframe, output_filename='top_words_animation.gif', word_cnt=10, scale_factor=1, frames_per_transition=20):
         df = pd.DataFrame(dataframe).fillna(0)
     

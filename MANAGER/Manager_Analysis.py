@@ -913,6 +913,7 @@ class Manager_Analysis:
                 self.main.printStatus()
                 return
 
+            self.main.printStatus("KEM KIM 옵션을 설정하세요")
             while True:
                 dialog = KimKemInputDialog(tokenfile_name)
                 dialog.exec_()
@@ -969,7 +970,7 @@ class Manager_Analysis:
             del kimkem_obj
             gc.collect()
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
 
     def userDB_layout_maker(self):
         # File Explorer를 탭 레이아웃에 추가
