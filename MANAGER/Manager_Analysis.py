@@ -1052,7 +1052,7 @@ class Manager_Analysis:
                 self.main.printStatus()
                 return
 
-            self.main.printStatus("KEM KIM 옵션을 설정하세요")
+            self.main.printStatus(f"{tokenfile_name} KEMKIM 분석 중...")
             while True:
                 dialog = KimKemInputDialog(tokenfile_name)
                 dialog.exec_()
@@ -1093,7 +1093,6 @@ class Manager_Analysis:
             else:
                 exception_word_list = []
 
-            self.main.printStatus(f"{tokenfile_name} KEMKIM 분석 중...")
             kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startyear, endyear, period, topword, weight, graph_wordcnt, split_option, split_custom, ani_yes_selected, exception_word_list)
             self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
             result = kimkem_obj.make_kimkem()
