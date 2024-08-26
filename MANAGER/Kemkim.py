@@ -189,15 +189,23 @@ class KimKem:
             DoV_signal_trace, DoD_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
             add_list = sorted(list(set(DoV_signal_deletewords+DoD_signal_deletewords)))
 
+            self.write_status("키워드 좌표 추적 데이터 저장 중...")
+
+            # 좌표 추적에서 키워드 필터링
             for period in DoV_coordinates_record:
                 for keyword in add_list:
                     del DoV_coordinates_record[period][keyword]
                     del DoD_coordinates_record[period][keyword]
 
-            pd.DataFrame(DoV_coordinates_record).to_csv(os.path.join(self.trace_folder, 'DoV_coordinates_trace.csv'), encoding='utf-8-sig', header = signal_column_list)
-            pd.DataFrame(DoD_coordinates_record).to_csv(os.path.join(self.trace_folder, 'DoD_coordinates_trace.csv'), encoding='utf-8-sig', header = signal_column_list)
+            # 좌표 추적 csv 저장
+            DoV_coordinates_record_df = pd.DataFrame(DoV_coordinates_record)
+            DoD_coordinates_record_df = pd.DataFrame(DoD_coordinates_record)
+            DoV_coordinates_record_df.index.name = 'Keyword'
+            DoD_coordinates_record_df.index.name = 'Keyword'
+            DoV_coordinates_record_df.to_csv(os.path.join(self.trace_folder, 'DoV_coordinates_trace.csv'), encoding='utf-8-sig', header = signal_column_list)
+            DoD_coordinates_record_df.to_csv(os.path.join(self.trace_folder, 'DoD_coordinates_trace.csv'), encoding='utf-8-sig', header = signal_column_list)
 
-            self.exception_word_list = self.exception_word_list + [''] + add_list if self.exception_word_list else add_list
+            self.exception_word_list = self.exception_word_list + ['@@@'] + add_list if self.exception_word_list else add_list
 
             self.write_status("키워드 추적 그래프 생성 중...")
             self.visualize_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_graph.png'), 'TF', 'Increasing Rate')
