@@ -1,43 +1,25 @@
-import requests
-import re
-import urllib
+def remove_trailing_empty_values(dictionary):
+    # 딕셔너리의 키 리스트를 역순으로 가져옴
+    keys = list(dictionary.keys())
 
-def extract_blogurls(text):
-    # 정규식 패턴 정의
-    pattern = r'https://blog\.naver\.com/[a-zA-Z0-9_-]+/\d+'
+    # 역순으로 빈 리스트를 가진 key를 제거
+    for key in reversed(keys):
+        if dictionary[key] == []:
+            del dictionary[key]
+        else:
+            break  # 빈 리스트가 아닌 값을 만나면 멈춤
 
-    # 정규식으로 모든 매칭되는 패턴 찾기
-    urls = re.findall(pattern, text)
-    urls = list(dict.fromkeys(urls))
-    
-    return urls
+    return dictionary
 
-def extract_nexturl(text):
-    # 정규식 패턴 정의
-    pattern = r'https://s\.search\.naver\.com/p/review[^"]*'
+# 예시 딕셔너리
+my_dict = {
+    'a': [1, 2],
+    'b': [],
+    'c': [],
+    'd': [3],
+    'e': []
+}
 
-    # 정규식으로 매칭되는 패턴 찾기
-    match = re.search(pattern, text)
-
-    if match:
-        return match.group(0)
-    else:
-        return None
-
-startDate = '20230102'
-endDate = '20230202'
-keyword = "테러 +예고"
-keyword = urllib.parse.quote_plus(keyword)
-
-api_url = f"https://s.search.naver.com/p/review/48/search.naver?ssc=tab.blog.all&api_type=8&query={keyword}&start=1&ac=0&aq=0&spq=0&sm=tab_opt&nso=so%3Add%2Cp%3Afrom{startDate}to{endDate}&prank=30&ngn_country=KR&lgl_rcode=15200104&fgn_region=&fgn_city=&lgl_lat=36.7512&lgl_long=126.9629&abt=&retry_count=0"
-response = requests.get(api_url)
-json_text = response.text
-urlList = extract_blogurls(json_text)
-nexturl = extract_nexturl(json_text)
-
-for url in urlList:
-    print(url)
-    
-print('\n\n')
-
-print(nexturl)
+# 함수 호출
+updated_dict = remove_trailing_empty_values(my_dict)
+print(updated_dict)
