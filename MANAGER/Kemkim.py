@@ -537,8 +537,7 @@ class KimKem:
             period_divided_dic[str(group_name)] = group_data[self.textColumn_name].tolist()
 
         # 시작 연도와 종료 연도에 따라 필터링 (필요한 경우)
-        period_divided_dic = {key: value for key, value in period_divided_dic.items()
-                              if self.endyear >= int(key[:4]) >= self.startyear}
+        period_divided_dic = {key: value for key, value in period_divided_dic.items() if self.endyear >= int(key[:4]) >= self.startyear}
 
         return period_divided_dic
 
