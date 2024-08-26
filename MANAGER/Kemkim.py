@@ -75,6 +75,8 @@ class KimKem:
                 self.startyear = self.year_extractor(period_list[0])
             if self.endyear > self.year_extractor(period_list[-1]):
                 self.endyear = self.year_extractor(period_list[-1])
+            self.period_divided_group = self.period_divided_group.filter(lambda x: self.endyear >= self.year_extractor(x.name) >= self.startyear)
+            self.period_divided_group = self.period_divided_group.groupby('period_group')
 
             # 폴더 이름 20230101 -> 2023으로 startyear, endyear 형식으로 변경
             self.folder_name = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startyear}~{self.endyear}_{period}', self.folder_name)
@@ -176,7 +178,7 @@ class KimKem:
             Final_signal_trace = self.trace_keyword_positions(Final_signal_record)
 
             signal_column_list = list(DoV_signal_trace.columns)
-            signal_column_list = [f'year_{column}' for column in signal_column_list]
+            signal_column_list = [f'period_{column}' for column in signal_column_list]
 
             DoV_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoV_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
             DoD_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoD_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
@@ -186,6 +188,14 @@ class KimKem:
             DoV_signal_trace, DoV_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
             DoV_signal_trace, DoD_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
             add_list = sorted(list(set(DoV_signal_deletewords+DoD_signal_deletewords)))
+
+            for period in DoV_coordinates_record:
+                for keyword in add_list:
+                    del DoV_coordinates_record[period][keyword]
+                    del DoD_coordinates_record[period][keyword]
+
+            pd.DataFrame(DoV_coordinates_record).to_csv(os.path.join(self.trace_folder, 'DoV_coordinates_trace.csv'), encoding='utf-8-sig', header = signal_column_list)
+            pd.DataFrame(DoD_coordinates_record).to_csv(os.path.join(self.trace_folder, 'DoD_coordinates_trace.csv'), encoding='utf-8-sig', header = signal_column_list)
 
             self.exception_word_list = self.exception_word_list + [''] + add_list if self.exception_word_list else add_list
 
@@ -642,6 +652,15 @@ class KimKem:
     def _analyze_signals(self, avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, folder_path):
         DoV_signal, DoV_coordinates = self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, folder_path)
         DoD_signal, DoD_coordinates = self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path)
+
+        final_signal = self._get_communal_signals(DoV_signal, DoD_signal)
+        final_signal_list = []
+        for value in final_signal.values():
+            final_signal_list.extend(value)
+
+        self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, folder_path, final_signal_list=final_signal_list, graph_name='KEM_graph.png')
+        self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path, final_signal_list=final_signal_list, graph_name='KIM_graph.png')
+
         return DoV_signal, DoD_signal, DoV_coordinates, DoD_coordinates
     
     def _save_final_signals(self, DoV_signal, DoD_signal, result_folder):
@@ -680,10 +699,8 @@ class KimKem:
         # 'year_month' 열 추가 (월 단위 기간으로 변환)
         csv_data['year_month'] = csv_data[self.dateColumn_name].dt.to_period('M')
 
-        # 필요한 전체 기간 생성 (start_year와 end_year를 사용)
-        full_range = pd.period_range(start=pd.Period(str(self.startyear) + '-01', freq='M'),
-                                     end=pd.Period(str(self.endyear) + '-12', freq='M'),
-                                     freq='M')
+        # 필요한 전체 기간 생성
+        full_range = pd.period_range(start=csv_data['year_month'].min(), end=csv_data['year_month'].max(), freq='M')
         full_df = pd.DataFrame(full_range, columns=['year_month'])
 
         # 원본 데이터와 병합하여 빈 기간도 포함하도록 함
@@ -693,11 +710,9 @@ class KimKem:
         if period == 1:  # 월
             csv_data['period_group'] = csv_data['year_month'].dt.to_timestamp().dt.to_period('M').astype(str)
         elif period == 3:  # 분기
-            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'Q' + (
-                        (csv_data['year_month'].dt.month - 1) // 3 + 1).astype(str))
+            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'Q' + ((csv_data['year_month'].dt.month - 1) // 3 + 1).astype(str))
         elif period == 6:  # 반기
-            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'H' + (
-                        (csv_data['year_month'].dt.month - 1) // 6 + 1).astype(str))
+            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'H' + ((csv_data['year_month'].dt.month - 1) // 6 + 1).astype(str))
         elif period == 12:  # 연도
             csv_data['period_group'] = csv_data['year_month'].dt.year.astype(str)
 
@@ -875,7 +890,7 @@ class KimKem:
         
         return result
     
-    def DoV_draw_graph(self, avg_DoV_increase_rate=None, avg_term_frequency=None, graph_folder=None, redraw_option = False, coordinates=False):
+    def DoV_draw_graph(self, avg_DoV_increase_rate=None, avg_term_frequency=None, graph_folder=None, final_signal_list = [], graph_name = '', redraw_option = False, coordinates=False):
         if redraw_option == False:
             x_data = self.calculate_statistics(list(avg_term_frequency.values()))
             y_data = self.calculate_statistics(list(avg_DoV_increase_rate.values()))
@@ -930,6 +945,8 @@ class KimKem:
         # 각 좌표와 해당 키를 표시, 글자 크기 변경
         for key, value in coordinates.items():
             if key != 'axis':
+                if final_signal_list != [] and key not in final_signal_list:
+                    continue
                 plt.scatter(value[0], value[1])
                 plt.text(value[0], value[1], key, fontsize=50)
 
@@ -939,7 +956,10 @@ class KimKem:
         plt.ylabel("Time-Weighted increasing rate", fontsize=50)
 
         # 그래프 표시
-        plt.savefig(os.path.join(graph_folder, "TF_DOV_graph.png"), bbox_inches='tight')
+        if graph_name == '':
+            graph_name = "TF_DOV_graph.png"
+
+        plt.savefig(os.path.join(graph_folder, graph_name), bbox_inches='tight')
         plt.close()
         
         coordinates_df = pd.DataFrame([(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
@@ -947,7 +967,7 @@ class KimKem:
 
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
 
-    def DoD_draw_graph(self, avg_DoD_increase_rate=None, avg_doc_frequency=None, graph_folder=None, redraw_option=False, coordinates=None):
+    def DoD_draw_graph(self, avg_DoD_increase_rate=None, avg_doc_frequency=None, graph_folder=None, final_signal_list = [], graph_name='', redraw_option=False, coordinates=None):
         if redraw_option == False:
             x_data = self.calculate_statistics(list(avg_doc_frequency.values()))
             y_data = self.calculate_statistics(list(avg_DoD_increase_rate.values()))
@@ -1002,6 +1022,8 @@ class KimKem:
         # 각 좌표와 해당 키를 표시
         for key, value in coordinates.items():
             if key != 'axis':
+                if final_signal_list != [] and key not in final_signal_list:
+                    continue
                 plt.scatter(value[0], value[1])
                 plt.text(value[0], value[1], key, fontsize=50)
 
@@ -1011,11 +1033,15 @@ class KimKem:
         plt.ylabel("Time-Weighted increasing rate", fontsize=50)
 
         # 그래프 표시
-        plt.savefig(os.path.join(graph_folder, "DF_DOD_graph.png"), bbox_inches='tight')
+        if graph_name == '':
+            graph_name = "DF_DOD_graph.png"
+
+        plt.savefig(os.path.join(graph_folder, graph_name), bbox_inches='tight')
         plt.close()
-        
-        coordinates_df = pd.DataFrame([(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
-        coordinates_df.to_csv(os.path.join(graph_folder, "DOD_coordinates.csv"), index=False, encoding='utf-8-sig')
+
+        if final_signal_list == []:
+            coordinates_df = pd.DataFrame([(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
+            coordinates_df.to_csv(os.path.join(graph_folder, "DOD_coordinates.csv"), index=False, encoding='utf-8-sig')
 
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
 
