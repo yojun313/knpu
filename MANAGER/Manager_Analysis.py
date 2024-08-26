@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox, QComboBox, \
     QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout, \
-    QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy
+    QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton
 from PyQt5.QtCore import QTimer, QStringListModel
 import copy
 import pandas as pd
@@ -508,10 +508,11 @@ class Manager_Analysis:
 
     def kimkem_kimkem(self):
         class KimKemOptionDialog(QDialog):
-            def __init__(self, kimkem_file, rekimkem_file):
+            def __init__(self, kimkem_file, rekimkem_file, interpret_kimkem):
                 super().__init__()
                 self.kimkem_file = kimkem_file
                 self.rekimkem_file = rekimkem_file
+                self.interpret_kimkem = interpret_kimkem
                 self.initUI()
                 self.data = None  # 데이터를 저장할 속성 추가
 
@@ -524,15 +525,18 @@ class Manager_Analysis:
                 # 버튼 생성
                 btn1 = QPushButton('새로운 KEMKIM 분석 (Token CSV 선택 필요)', self)
                 btn2 = QPushButton('KEMKIM 키워드 필터링 (Result 폴더 선택 필요)', self)
+                btn3 = QPushButton('KEMKIM 키워드 해석 (Result 폴더 선택 필요)', self)
                 
                 # 버튼에 이벤트 연결
                 btn1.clicked.connect(self.run_kimkem_file)
                 btn2.clicked.connect(self.run_rekimkem_file)
+                btn3.clicked.connect(self.run_interpretkimkem_file)
                 
                 # 버튼 배치를 위한 가로 레이아웃
                 button_layout = QVBoxLayout()
                 button_layout.addWidget(btn1)
                 button_layout.addWidget(btn2)
+                button_layout.addWidget(btn3)
 
                 # 레이아웃에 버튼 레이아웃 추가
                 layout.addLayout(button_layout)
@@ -547,9 +551,12 @@ class Manager_Analysis:
             def run_rekimkem_file(self):
                 self.accept()
                 self.rekimkem_file()
-                
 
-        dialog = KimKemOptionDialog(self.kimkem_kimkem_file, self.kimkem_rekimkem_file)
+            def run_interpretkimkem_file(self):
+                self.accept()
+                self.interpret_kimkem()
+
+        dialog = KimKemOptionDialog(self.kimkem_kimkem_file, self.kimkem_rekimkem_file, self.kimkem_interpretkimkem_file)
         dialog.exec_()
     
     def kimkem_kimkem_file(self):
@@ -718,7 +725,139 @@ class Manager_Analysis:
         
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
-        
+
+    def kimkem_interpretkimkem_file(self):
+        class WordSelector(QDialog):
+            def __init__(self, words):
+                super().__init__()
+                self.words = words
+                self.selected_words = []
+                self.initUI()
+
+            def initUI(self):
+                # 레이아웃 설정
+                layout = QVBoxLayout()
+
+                grid_layout = QGridLayout()
+
+                sorted_words = sorted(self.words)
+                # 체크박스 추가
+                self.checkboxes = []
+                num_columns = min(20, len(sorted_words))  # 한 행에 최대 20개의 체크박스가 오도록 설정
+                for i, word in enumerate(sorted_words):
+                    checkbox = QCheckBox(word, self)
+                    self.checkboxes.append(checkbox)
+                    # 그리드 레이아웃에 체크박스 배치
+                    row = i // num_columns
+                    col = i % num_columns
+                    grid_layout.addWidget(checkbox, row, col)
+
+                # 그리드 레이아웃을 QVBoxLayout에 추가
+                layout.addLayout(grid_layout)
+
+                # 라디오 버튼 추가
+                self.radio_button_group = QButtonGroup(self)
+
+                radio_all = QRadioButton("모두 포함", self)
+                radio_part = QRadioButton("개별 포함", self)
+
+                self.radio_button_group.addButton(radio_all)
+                self.radio_button_group.addButton(radio_part)
+
+                layout.addWidget(radio_all)
+                layout.addWidget(radio_part)
+
+                # 기본값 설정 (첫 번째 옵션 선택)
+                radio_all.setChecked(True)
+
+                # 선택된 단어 출력 버튼 추가
+                btn = QPushButton('포함 단어 결정', self)
+                btn.clicked.connect(self.show_selected_words)
+                layout.addWidget(btn)
+
+                # 창 설정
+                self.setLayout(layout)
+                self.setWindowTitle('크롤링 데이터 CSV 필터링 기준 단어를 선택하세요')
+                self.setGeometry(300, 300, 300, 200)
+                self.show()
+
+            def show_selected_words(self):
+                # 선택된 단어를 리스트에 추가
+                self.selected_words = [cb.text() for cb in self.checkboxes if cb.isChecked()]
+                self.selected_option = self.radio_button_group.checkedButton().text()
+                # 선택된 단어를 메시지 박스로 출력
+                QMessageBox.information(self, '선택한 단어', ', '.join(self.selected_words))
+                self.accept()
+
+        try:
+            result_directory = self.file_dialog.selectedFiles()
+            if len(result_directory) == 0:
+                QMessageBox.warning(self.main, f"Warning", f"선택된 'Result' 디렉토리가 없습니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
+                return
+            elif len(result_directory) > 1:
+                QMessageBox.warning(self.main, f"Warning", f"KemKim 폴더에 있는 하나의 'Result' 디렉토리만 선택하여 주십시오")
+                return
+            elif 'Result' not in os.path.basename(result_directory[0]):
+                QMessageBox.warning(self.main, f"Warning", f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
+                return
+
+            self.main.printStatus("CSV 데이터 불러오는 중")
+
+            result_directory = result_directory[0]
+            final_signal_csv_path = os.path.join(result_directory, "Signal", "Final_signal.csv")
+            final_signal_df = pd.read_csv(final_signal_csv_path, low_memory=False)
+            words = final_signal_df['word'].tolist()
+            all_keyword = []
+            for word_list_str in words:
+                word_list = ast.literal_eval(word_list_str)
+                all_keyword.extend(word_list)
+
+            QMessageBox.information(self.main, "Information", 'Keyword를 추출할 CSV 파일을 선택하세요')
+            object_csv_path = QFileDialog.getOpenFileName(self.main, "Keyword 추출 대상 CSV 파일을 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
+            object_csv_path = object_csv_path[0]
+            object_csv_name = os.path.basename(object_csv_path).replace('.csv', '')
+            if object_csv_path == "":
+                return
+            with open(object_csv_path, 'rb') as f:
+                codec = chardet.detect(f.read())['encoding']
+            object_csv_df = pd.read_csv(object_csv_path, low_memory=False, encoding=codec)
+            if all('Text' not in word for word in list(object_csv_df.keys())):
+                QMessageBox.information(self.main, "Warning", "크롤링 데이터 CSV 형식과 일치하지 않습니다")
+                return
+            for column in object_csv_df.columns.tolist():
+                if 'Text' in column:
+                    textColumn_name = column
+
+            self.word_selector = WordSelector(all_keyword)
+            if self.word_selector.exec_() == QDialog.Accepted:  # show() 대신 exec_() 사용
+                selected_words = self.word_selector.selected_words
+                selected_option = self.word_selector.selected_option
+            else:
+                self.main.printStatus()
+                return
+
+            # 단어 선택 안했을 때
+            if len(selected_words) == 0:
+                QMessageBox.information(self.main, 'Information', '선택된 필터링 단어가 없습니다')
+                return
+
+            self.main.printStatus("CSV 데이터 키워드 필터링 중")
+            self.main.openFileExplorer(result_directory)
+
+            if selected_option == "모두 포함":
+                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: all(word in x for word in selected_words))]
+                selected_words_str = f"({'+'.join(selected_words)})"
+            else:
+                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: any(word in x for word in word_list))]
+                selected_words_str = f"({'or'.join(selected_words)})"
+
+            filtered_object_csv_df.to_csv(os.path.join(result_directory, object_csv_name + selected_words_str + '.csv'), index = False, encoding='utf-8-sig')
+            QMessageBox.information(self.main, "Information", "CSV 키워드 필터링이 완료되었습니다")
+            self.main.printStatus()
+
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+
     def kimkem_kimkemStart(self, token_data, tokenfile_name):
         class KimKemInputDialog(QDialog):
             def __init__(self, tokenfile_name):
