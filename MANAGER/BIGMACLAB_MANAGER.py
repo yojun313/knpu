@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.4.0'
+        self.versionNum = '1.4.1'
         self.version = 'Version ' + self.versionNum
 
         def center():
