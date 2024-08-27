@@ -1263,8 +1263,9 @@ class Manager_Analysis:
                 exception_word_list = df['word'].tolist()
             else:
                 exception_word_list = []
+                exception_word_list_name = 'N'
 
-            kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startyear, endyear, period, topword, weight, graph_wordcnt, split_option, split_custom, ani_yes_selected, exception_word_list)
+            kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startyear, endyear, period, topword, weight, graph_wordcnt, split_option, split_custom, ani_yes_selected, exception_word_list, exception_word_list_path)
             self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
             result = kimkem_obj.make_kimkem()
 

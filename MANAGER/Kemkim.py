@@ -39,7 +39,8 @@ class KimKem:
                  split_option=None, 
                  split_custom=None,
                  ani_option = None,
-                 exception_word_list=[], 
+                 exception_word_list=[],
+                 exception_filename = 'N',
                  rekemkim = False):
         self.exception_word_list = exception_word_list
         
@@ -57,6 +58,7 @@ class KimKem:
             self.ani_option = ani_option
             self.ani_option_display = 'Y' if ani_option == True else 'N'
             self.except_option_display = 'Y' if exception_word_list else 'N'
+            self.exception_filename = exception_filename
             self.split_option = split_option
             self.split_custom = split_custom
             self.now = datetime.now()
@@ -103,6 +105,7 @@ class KimKem:
             f"{'계산 가중치:':<15} {self.weight}\n"
             f"{'애니메이션 여부:':<15} {self.ani_option_display}\n"
             f"{'제외 단어 여부:':<15} {self.except_option_display}\n"
+            f"{'제외 단어 파일:':<15} {self.exception_filename}\n"
             f"{'분할 기준:':<15} {self.split_option}\n"
             f"{'분할 상위%:':<15} {self.split_custom}\n"
             f"===================================================================================================================\n"
