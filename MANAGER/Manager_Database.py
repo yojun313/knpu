@@ -320,7 +320,6 @@ class Manager_Database:
 
     def database_search_DB(self):
         try:
-            raise
             search_text = self.main.database_searchDB_lineinput.text().lower()
             if not search_text:
                 return
