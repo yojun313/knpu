@@ -893,10 +893,10 @@ class Manager_Analysis:
                     textColumn_name = column
 
             if selected_option == "모두 포함":
-                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: all(word in x for word in selected_words))]
+                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].dropna().apply(lambda x: all(word in x for word in selected_words))]
                 selected_words_str = f"({'+'.join(selected_words)})"
             else:
-                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: any(word in x for word in word_list))]
+                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].dropna().apply(lambda x: any(word in x for word in selected_words))]
                 selected_words_str = f"({'or'.join(selected_words)})"
 
             analyze_directory = os.path.join(os.path.dirname(result_directory), f'Analyze_{datetime.now().strftime('%m%d%H%M')}')
