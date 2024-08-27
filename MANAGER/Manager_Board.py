@@ -368,6 +368,8 @@ class Manager_Board:
 
                 if os.path.exists(self.main.program_log_path):
                     os.remove(self.main.program_log_path)
+                with open(self.main.program_log_path, "w") as log:
+                    log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
 
                 msg = (
                     "[BIGMACLAB MANAGER] New Bug Added!\n"
