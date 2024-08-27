@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets, uic, QtGui
 from PyQt5.QtWidgets import QApplication, QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy
 from PyQt5.QtGui import QPixmap, QScreen
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication
-
+from openai import OpenAI
 import shutil
 import tempfile
 from mySQL import mySQL
@@ -19,14 +19,16 @@ import requests
 from packaging import version
 import pandas as pd
 from os import environ
+from pathlib import Path
 import socket
 import gc
+import ctypes
 import warnings
 warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.3.6'
+        self.versionNum = '1.4.0'
         self.version = 'Version ' + self.versionNum
 
         def center():
@@ -49,6 +51,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusBar_init()
         self.admin_password = 'kingsman'
         self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
+        self.gpt_api_key = "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"
 
         # 스타일시트 적용
         self.setStyle()
@@ -59,8 +62,26 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if platform.system() == "Windows":
                 self.default_directory = 'C:/BIGMACLAB_MANAGER'
+                self.program_log_path = os.path.join(self.default_directory, 'manager_log.txt')
+
+                if not Path(self.program_log_path).exists():
+                    with open(self.program_log_path, "w") as log:
+                        log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
+                    # 파일을 숨김 처리
+                    FILE_ATTRIBUTE_HIDDEN = 0x02
+                    ctypes.windll.kernel32.SetFileAttributesW(self.program_log_path, FILE_ATTRIBUTE_HIDDEN)
+                else:
+                    self.program_bug_log(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
+
             else:
                 self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
+                self.program_log_path = os.path.join(self.default_directory, '.manager_log.txt')
+
+                if not Path(self.program_log_path).exists():
+                    with open(self.program_log_path, "w") as log:
+                        log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
+                else:
+                    self.program_bug_log(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
 
             if os.path.isdir(self.default_directory) == False:
                 os.mkdir(self.default_directory)
@@ -503,6 +524,24 @@ class MainWindow(QtWidgets.QMainWindow):
         csv_data = pd.read_csv(csvPath, low_memory=False, index_col=0)
         csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
         return csv_data
+
+    def chatgpt_generate(self, query):
+        client = OpenAI(api_key=self.gpt_api_key)
+        model = "gpt-4"
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": query},
+            ]
+        )
+        content = response.choices[0].message.content
+        return content
+
+    def program_bug_log(self, text):
+        with open(self.program_log_path, "a") as file:
+            # 이어서 기록할 내용
+            file.write(f"\n\n{text}")
 
 class InfoDialog(QDialog):
     def __init__(self, version):

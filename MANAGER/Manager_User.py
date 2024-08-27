@@ -84,6 +84,7 @@ class Manager_User:
                 QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def user_delete_user(self):
         try:
@@ -105,6 +106,7 @@ class Manager_User:
                 QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def user_buttonMatch(self):
         self.main.user_adduser_button.clicked.connect(self.user_add_user)
