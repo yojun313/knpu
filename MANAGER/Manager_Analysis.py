@@ -1101,7 +1101,7 @@ class Manager_Analysis:
                 layout.addWidget(self.wordcnt_input)
 
                 # 애니메이션 체크박스 생성
-                self.ani_checkbox_label = QLabel('애니메이션을 생성하시겠습니까? ')
+                self.ani_checkbox_label = QLabel('추적 데이터를 시각화하시겠습니까? ')
                 layout.addWidget(self.ani_checkbox_label)
 
                 checkbox_layout = QHBoxLayout()

@@ -212,11 +212,10 @@ class KimKem:
 
             self.exception_word_list = self.exception_word_list + ['@@@'] + add_list if self.exception_word_list else add_list
 
-            self.write_status("키워드 추적 그래프 생성 중...")
-            self.visualize_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_graph.png'), 'TF', 'Increasing Rate')
-            self.visualize_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_graph.png'), 'DF', 'Increasing Rate')
-
             if self.ani_option == True:
+                self.write_status("키워드 추적 그래프 생성 중...")
+                self.visualize_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_graph.png'), 'TF','Increasing Rate')
+                self.visualize_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_graph.png'), 'DF', 'Increasing Rate')
                 self.write_status("키워드 추적 애니메이션 생성 중...")
                 self.animate_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_animation.gif'), 'TF', 'Increasing Rate')
                 self.animate_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_animation.gif'), 'DF', 'Increasing Rate')
@@ -372,8 +371,12 @@ class KimKem:
 
         # 범례를 그래프 바깥으로 배치하고 여러 줄로 표시
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize='small', ncol=2, frameon=False)
-        
-        plt.savefig(graph_path, dpi=600, bbox_inches='tight')
+
+        try:
+            plt.savefig(graph_path, dpi=600, bbox_inches='tight')
+        except:
+            plt.savefig(graph_path, dpi=300, bbox_inches='tight')
+
         plt.close()
     
     def animate_keyword_movements(self, df,  gif_filename='keyword_movements.gif', x_axis_name='X-Axis', y_axis_name='Y-Axis', base_size=2, size_increment=2, frames_between_years=3, duration = 1000):
