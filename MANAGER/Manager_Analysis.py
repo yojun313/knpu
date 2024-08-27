@@ -102,6 +102,7 @@ class Manager_Analysis:
                     return
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_refresh_DB(self):
         try:
@@ -115,6 +116,7 @@ class Manager_Analysis:
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_timesplit_DB(self):
         try:
@@ -143,7 +145,8 @@ class Manager_Analysis:
                         return target_db, tableList, splitdata_path
 
                     except Exception as e:
-                        QMessageBox.critical(self.main, "Error", f"Failed to save splited database: {traceback.format_exc()}")
+                        QMessageBox.critical(self.main, "Error", f"오류가 발생했습니다: {traceback.format_exc()}")
+                        self.main.program_bug_log(traceback.format_exc())
                 else:
                     return 0,0,0
             def splitTable(table, splitdata_path):
@@ -219,6 +222,7 @@ class Manager_Analysis:
 
                     except Exception as e:
                         QMessageBox.critical(self.main, "Error", f"Failed to save splited database: {str(traceback.format_exc())}")
+                        self.main.program_bug_log(traceback.format_exc())
                 else:
                     return 0,0,0
             def main(tableList, analysisdata_path):
@@ -274,6 +278,7 @@ class Manager_Analysis:
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_filefinder_maker(self):
         self.file_dialog = self.main.filefinder_maker(self.main)
@@ -347,6 +352,7 @@ class Manager_Analysis:
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_merge_file(self):
         try:
@@ -400,6 +406,7 @@ class Manager_Analysis:
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_analysis_file(self):
         try:
@@ -505,6 +512,7 @@ class Manager_Analysis:
             gc.collect()
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def kimkem_kimkem(self):
         class KimKemOptionDialog(QDialog):
@@ -583,6 +591,7 @@ class Manager_Analysis:
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
     
     def kimkem_rekimkem_file(self):
 
@@ -723,6 +732,14 @@ class Manager_Analysis:
             
             DoV_signal, DoV_coordinates = kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict)
             DoD_signal, DoD_coordinates = kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict)
+
+            final_signal = kimkem_obj._get_communal_signals(DoV_signal, DoD_signal)
+            final_signal_list = []
+            for value in final_signal.values():
+                final_signal_list.extend(value)
+
+            kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict, final_signal_list=final_signal_list, graph_name='KEM_graph.png')
+            kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict, final_signal_list=final_signal_list, graph_name='KIM_graph.png')
             kimkem_obj._save_final_signals(DoV_signal, DoD_signal, new_signal_folder)
             
             delete_word_list.extend(selected_words)
@@ -736,6 +753,7 @@ class Manager_Analysis:
         
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def kimkem_interpretkimkem_file(self):
         class WordSelector(QDialog):
@@ -823,8 +841,6 @@ class Manager_Analysis:
                 QMessageBox.warning(self.main, f"Warning", f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
                 return
 
-            self.main.printStatus("CSV 데이터 불러오는 중")
-
             result_directory = result_directory[0]
             final_signal_csv_path = os.path.join(result_directory, "Signal", "Final_signal.csv")
             final_signal_df = pd.read_csv(final_signal_csv_path, low_memory=False)
@@ -852,16 +868,8 @@ class Manager_Analysis:
             object_csv_name = os.path.basename(object_csv_path).replace('.csv', '')
             if object_csv_path == "":
                 return
-            with open(object_csv_path, 'rb') as f:
-                codec = chardet.detect(f.read())['encoding']
-            object_csv_df = pd.read_csv(object_csv_path, low_memory=False, encoding=codec)
-            if all('Text' not in word for word in list(object_csv_df.keys())):
-                QMessageBox.information(self.main, "Warning", "크롤링 데이터 CSV 형식과 일치하지 않습니다")
-                return
-            for column in object_csv_df.columns.tolist():
-                if 'Text' in column:
-                    textColumn_name = column
 
+            self.main.printStatus("CSV 데이터 키워드 필터링 중...")
             self.word_selector = WordSelector(all_keyword)
             if self.word_selector.exec_() == QDialog.Accepted:  # show() 대신 exec_() 사용
                 selected_words = self.word_selector.selected_words
@@ -875,8 +883,15 @@ class Manager_Analysis:
                 QMessageBox.information(self.main, 'Information', '선택된 필터링 단어가 없습니다')
                 return
 
-            self.main.printStatus("CSV 데이터 키워드 필터링 중")
-            self.main.openFileExplorer(result_directory)
+            with open(object_csv_path, 'rb') as f:
+                codec = chardet.detect(f.read())['encoding']
+            object_csv_df = pd.read_csv(object_csv_path, low_memory=False, encoding=codec)
+            if all('Text' not in word for word in list(object_csv_df.keys())):
+                QMessageBox.information(self.main, "Warning", "크롤링 데이터 CSV 형식과 일치하지 않습니다")
+                return
+            for column in object_csv_df.columns.tolist():
+                if 'Text' in column:
+                    textColumn_name = column
 
             if selected_option == "모두 포함":
                 filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: all(word in x for word in selected_words))]
@@ -885,12 +900,49 @@ class Manager_Analysis:
                 filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: any(word in x for word in word_list))]
                 selected_words_str = f"({'or'.join(selected_words)})"
 
-            filtered_object_csv_df.to_csv(os.path.join(result_directory, object_csv_name + selected_words_str + '.csv'), index = False, encoding='utf-8-sig')
-            QMessageBox.information(self.main, "Information", "CSV 키워드 필터링이 완료되었습니다")
-            self.main.printStatus()
+            analyze_directory = os.path.join(os.path.dirname(result_directory), f'Analyze_{datetime.now().strftime('%m%d%H%M')}')
+            os.makedirs(analyze_directory, exist_ok=True)
+
+            filtered_object_csv_df.to_csv(os.path.join(analyze_directory, f"{object_csv_name}{selected_words_str}.csv"), index = False, encoding='utf-8-sig')
+            if any('Title' in word for word in list(filtered_object_csv_df.keys())):
+                reply = QMessageBox.question(self.main, 'Confirm Delete', 'CSV 키워드 필터링이 완료되었습니다\n\n인공지능 분석을 진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    def gpt_start():
+                        for column in filtered_object_csv_df.columns.tolist():
+                            if 'Title' in column:
+                                titleColumn_name = column
+
+                        random_titles = filtered_object_csv_df[titleColumn_name].sample(n=50, random_state=42)
+                        merged_title = ' '.join(random_titles.tolist())
+                        gpt_query = (
+                            "한국어로 대답해. 지금 밑에 있는 텍스트는 신문기사의 제목들을 모아놓은거야\n\n"
+                            f"{merged_title}\n\n"
+                            "제시된 50개의 뉴스기사 제목을 바탕으로 관련된 토픽(주제)를 추출 및 요약해줘. 토픽은 최소 1개에서 최대 5개를 제시해줘. 토픽 추출 및 요약 방식, 너의 응답 형식은 다음과 같아\n"
+                            "토픽 1. ~~: (여기에 내용 기입)\n"
+                            "토픽 2. ~~: (여기에 내용 기입)\n"
+                            "...\n"
+                            "토픽 5. ~~: (여기에 내용 기입)"
+                        )
+                        gpt_response = self.main.chatgpt_generate(gpt_query)
+
+                        with open(os.path.join(analyze_directory, f"{object_csv_name}{selected_words_str}_GPT_analyze.txt"), 'w+') as gpt_txt:
+                            gpt_txt.write(gpt_response)
+
+                        QMessageBox.information(self.main, "인공지능 분석 결과", gpt_response)
+                        self.main.openFileExplorer(analyze_directory)
+
+                    self.main.printStatus("인공지능 분석 중...")
+                    QTimer.singleShot(1000, gpt_start)
+                else:
+                    self.main.printStatus()
+                    self.main.openFileExplorer(analyze_directory)
+            else:
+                QMessageBox.information(self.main, "Information", "CSV 키워드 필터링이 완료되었습니다")
+                self.main.openFileExplorer(analyze_directory)
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def kimkem_kimkemStart(self, token_data, tokenfile_name):
         class KimKemInputDialog(QDialog):
@@ -1143,6 +1195,7 @@ class Manager_Analysis:
             gc.collect()
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def userDB_layout_maker(self):
         # File Explorer를 탭 레이아웃에 추가
@@ -1200,33 +1253,37 @@ class Manager_Analysis:
         self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 선택됨")
 
     def toolbox_DBlistItem_delete(self):
-        if not self.selected_DBlistItems or self.selected_DBlistItems == []:
-            self.main.printStatus()
-            return
+        try:
+            if not self.selected_DBlistItems or self.selected_DBlistItems == []:
+                self.main.printStatus()
+                return
 
-        reply = QMessageBox.question(self.main, 'Confirm Delete', "테이블을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self.main, 'Confirm Delete', "테이블을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
-        if reply == QMessageBox.Yes:
-            self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 삭제 중...")
-            self.main.mySQL_obj.connectDB(self.selected_userDB)
+            if reply == QMessageBox.Yes:
+                self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 삭제 중...")
+                self.main.mySQL_obj.connectDB(self.selected_userDB)
 
-            for item in self.selected_DBlistItems:
-                self.main.mySQL_obj.dropTable(item)
+                for item in self.selected_DBlistItems:
+                    self.main.mySQL_obj.dropTable(item)
 
-            # QListView에서 해당 항목 삭제 및 업데이트
-            list_view = self.list_views[self.selected_userDB]
-            model = list_view.model()
+                # QListView에서 해당 항목 삭제 및 업데이트
+                list_view = self.list_views[self.selected_userDB]
+                model = list_view.model()
 
-            for item in self.selected_DBlistItems:
-                row = model.stringList().index(item)
-                model.removeRow(row)
+                for item in self.selected_DBlistItems:
+                    row = model.stringList().index(item)
+                    model.removeRow(row)
 
-            # 선택된 항목 초기화
-            self.selected_DBlistItems = []
+                # 선택된 항목 초기화
+                self.selected_DBlistItems = []
 
-            # 리스트 갱신 (이 작업을 통해 UI에 즉각 반영됨)
-            list_view.setModel(model)
-            self.main.printStatus()
+                # 리스트 갱신 (이 작업을 통해 UI에 즉각 반영됨)
+                list_view.setModel(model)
+                self.main.printStatus()
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def toolbox_DBlistItem_add(self):
         try:
@@ -1258,6 +1315,7 @@ class Manager_Analysis:
             self.main.printStatus()
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def toolbox_DBlistItem_view(self):
         class SingleTableWindow(QMainWindow):
@@ -1360,26 +1418,31 @@ class Manager_Analysis:
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def toolbox_DBlistItem_save(self):
-        if not self.selected_DBlistItems or self.selected_DBlistItems == []:
+        try:
+            if not self.selected_DBlistItems or self.selected_DBlistItems == []:
+                self.main.printStatus()
+                return
+
+            self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
+            folder_path = QFileDialog.getExistingDirectory(self.main, "데이터를 저장할 위치를 선택하세요", self.main.default_directory)
+            if folder_path == '':
+                self.main.printStatus()
+                return
+
+            folder_path = os.path.join(folder_path, f'{self.selected_userDB}_download_{datetime.now().strftime('%m%d_%H%M')}')
+            os.makedirs(folder_path, exist_ok=True)
+
+            self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 저장 중...")
+            self.main.mySQL_obj.connectDB(self.selected_userDB)
+
+            self.main.openFileExplorer(folder_path)
+            for item in self.selected_DBlistItems:
+                self.main.mySQL_obj.TableToCSV(item, folder_path)
+
             self.main.printStatus()
-            return
-
-        self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
-        folder_path = QFileDialog.getExistingDirectory(self.main, "데이터를 저장할 위치를 선택하세요", self.main.default_directory)
-        if folder_path == '':
-            self.main.printStatus()
-            return
-
-        folder_path = os.path.join(folder_path, f'{self.selected_userDB}_download_{datetime.now().strftime('%m%d_%H%M')}')
-        os.makedirs(folder_path, exist_ok=True)
-
-        self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 저장 중...")
-        self.main.mySQL_obj.connectDB(self.selected_userDB)
-
-        self.main.openFileExplorer(folder_path)
-        for item in self.selected_DBlistItems:
-            self.main.mySQL_obj.TableToCSV(item, folder_path)
-
-        self.main.printStatus()
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())

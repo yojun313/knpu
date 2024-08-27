@@ -48,6 +48,7 @@ class Manager_Database:
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def database_view_DB(self):
         class TableWindow(QMainWindow):
@@ -175,6 +176,7 @@ class Manager_Database:
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def database_dbinfo_viewer(self, row):
         DBdata = self.DB['DBdata'][row]
@@ -318,6 +320,7 @@ class Manager_Database:
 
     def database_search_DB(self):
         try:
+            raise
             search_text = self.main.database_searchDB_lineinput.text().lower()
             if not search_text:
                 return
@@ -351,6 +354,7 @@ class Manager_Database:
                     return
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def database_save_DB(self):
         try:
@@ -530,6 +534,7 @@ class Manager_Database:
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def database_refresh_DB(self):
         try:
@@ -542,6 +547,7 @@ class Manager_Database:
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def database_buttonMatch(self):
         self.main.database_refreshDB_button.clicked.connect(self.database_refresh_DB)
