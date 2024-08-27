@@ -2,6 +2,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QTextEdit, QScrollArea
 from datetime import datetime
 import warnings
+import os
 import traceback
 warnings.filterwarnings("ignore")
 
@@ -344,8 +345,8 @@ class Manager_Board:
                 self.main.mySQL_obj.commit()
                 self.board_bug_refresh()
 
-                with open(self.main.program_log_path, 'w') as log:
-                    pass
+                if os.path.exists(self.main.program_log_path):
+                    os.remove(self.main.program_log_path)
 
                 msg = (
                     "[BIGMACLAB MANAGER] New Bug Added!\n"
