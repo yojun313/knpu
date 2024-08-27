@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QTextEdit, QScrollArea
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QTextEdit, QScrollArea, QWidget
 from datetime import datetime
 import warnings
 import os
@@ -57,7 +57,9 @@ class Manager_Board:
                         self.setWindowTitle('Add Version')
                         self.setGeometry(100, 100, 400, 400)
 
-                        layout = QVBoxLayout()
+                        # 컨테이너 위젯 생성
+                        container_widget = QWidget()
+                        layout = QVBoxLayout(container_widget)
 
                         # 각 입력 필드를 위한 QLabel 및 QTextEdit 생성
                         self.version_num_label = QLabel('Version Num:')
@@ -95,7 +97,15 @@ class Manager_Board:
                         self.submit_button.clicked.connect(self.submit)
                         layout.addWidget(self.submit_button)
 
-                        self.setLayout(layout)
+                        # QScrollArea 설정
+                        scroll_area = QScrollArea()
+                        scroll_area.setWidgetResizable(True)
+                        scroll_area.setWidget(container_widget)  # 컨테이너 위젯을 스크롤 영역에 추가
+
+                        # 최종 레이아웃 설정
+                        final_layout = QVBoxLayout()
+                        final_layout.addWidget(scroll_area)
+                        self.setLayout(final_layout)
 
                     def submit(self):
                         # 입력된 데이터를 확인하고 처리
@@ -225,13 +235,15 @@ class Manager_Board:
                     </div>
                     """
 
-                    detail_label = QLabel(details_html)
-                    detail_label.setWordWrap(True)
+                    # QLabel을 QTextEdit으로 변경하여 HTML을 설정하고 스크롤 가능하게 설정
+                    detail_text_edit = QTextEdit()
+                    detail_text_edit.setReadOnly(True)
+                    detail_text_edit.setHtml(details_html)
 
                     # QScrollArea를 사용하여 스크롤 가능하게 설정
                     scroll_area = QScrollArea()
                     scroll_area.setWidgetResizable(True)
-                    scroll_area.setWidget(detail_label)
+                    scroll_area.setWidget(detail_text_edit)
 
                     layout.addWidget(scroll_area)
 
@@ -244,7 +256,6 @@ class Manager_Board:
 
                     # 다이얼로그 실행
                     dialog.exec_()
-
             QTimer.singleShot(1, view_version)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
@@ -284,9 +295,11 @@ class Manager_Board:
                     self.setWindowTitle('Add Bug')
                     self.setGeometry(100, 100, 400, 400)
 
-                    layout = QVBoxLayout()
+                    # 컨테이너 위젯 생성
+                    container_widget = QWidget()
+                    layout = QVBoxLayout(container_widget)
 
-                    # 각 입력 필드를 위한 QLabel 및 QTextEdit 생성
+                    # 각 입력 필드를 위한 QLabel 및 QLineEdit, QTextEdit 생성
                     self.user_label = QLabel('User Name:')
                     self.user_input = QLineEdit()
                     layout.addWidget(self.user_label)
@@ -308,7 +321,15 @@ class Manager_Board:
                     self.submit_button.clicked.connect(self.submit)
                     layout.addWidget(self.submit_button)
 
-                    self.setLayout(layout)
+                    # QScrollArea 설정
+                    scroll_area = QScrollArea()
+                    scroll_area.setWidgetResizable(True)
+                    scroll_area.setWidget(container_widget)  # 컨테이너 위젯을 스크롤 영역에 추가
+
+                    # 최종 레이아웃 설정
+                    final_layout = QVBoxLayout()
+                    final_layout.addWidget(scroll_area)
+                    self.setLayout(final_layout)
 
                 def submit(self):
                     # 입력된 데이터를 확인하고 처리
