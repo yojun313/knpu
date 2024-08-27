@@ -893,11 +893,15 @@ class Manager_Analysis:
                     textColumn_name = column
 
             if selected_option == "모두 포함":
-                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].dropna().apply(lambda x: all(word in x for word in selected_words))]
+                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: all(word in str(x) for word in selected_words))]
                 selected_words_str = f"({'+'.join(selected_words)})"
             else:
-                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].dropna().apply(lambda x: any(word in x for word in selected_words))]
+                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: any(word in str(x) for word in selected_words))]
                 selected_words_str = f"({'or'.join(selected_words)})"
+            
+            if filtered_object_csv_df.shape[0] < 1:
+                QMessageBox.information(self.main, "Information", "필터링 키워드를 포함하는 데이터가 존재하지 않습니다")
+                return
 
             analyze_directory = os.path.join(os.path.dirname(result_directory), f'Analyze_{datetime.now().strftime('%m%d%H%M')}')
             os.makedirs(analyze_directory, exist_ok=True)
@@ -910,13 +914,17 @@ class Manager_Analysis:
                         for column in filtered_object_csv_df.columns.tolist():
                             if 'Title' in column:
                                 titleColumn_name = column
-
-                        random_titles = filtered_object_csv_df[titleColumn_name].sample(n=50, random_state=42)
+                                
+                        if filtered_object_csv_df[titleColumn_name].count() > 50:
+                            random_titles = filtered_object_csv_df[titleColumn_name].sample(n=50, random_state=42)
+                        else:
+                            random_titles = filtered_object_csv_df[titleColumn_name]
+                        
                         merged_title = ' '.join(random_titles.tolist())
                         gpt_query = (
                             "한국어로 대답해. 지금 밑에 있는 텍스트는 신문기사의 제목들을 모아놓은거야\n\n"
                             f"{merged_title}\n\n"
-                            "제시된 50개의 뉴스기사 제목을 바탕으로 관련된 토픽(주제)를 추출 및 요약해줘. 토픽은 최소 1개에서 최대 5개를 제시해줘. 토픽 추출 및 요약 방식, 너의 응답 형식은 다음과 같아\n"
+                            "제시된 여러 개의 뉴스기사 제목을 바탕으로 관련된 토픽(주제)를 추출 및 요약해줘. 토픽은 최소 1개에서 최대 5개를 제시해줘. 토픽 추출 및 요약 방식, 너의 응답 형식은 다음과 같아\n"
                             "토픽 1. ~~: (여기에 내용 기입)\n"
                             "토픽 2. ~~: (여기에 내용 기입)\n"
                             "...\n"
