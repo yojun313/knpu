@@ -71,10 +71,14 @@ class KimKem:
             # Step 1: 데이터 분할 및 초기화
             self.period_divided_group = self.divide_period(self.token_data, period)
             period_list = list(self.period_divided_group.groups.keys())
+
+            # 사용자가 실제 데이터보다 연도를 작게 입력한 경우 또는 크게 입력한 경우 자동으로 조정
             if self.startyear < self.year_extractor(period_list[0]):
                 self.startyear = self.year_extractor(period_list[0])
             if self.endyear > self.year_extractor(period_list[-1]):
                 self.endyear = self.year_extractor(period_list[-1])
+
+            # 시작 연도, 종료 연도에 맞게 데이터 추출
             self.period_divided_group = self.period_divided_group.filter(lambda x: self.endyear >= self.year_extractor(x.name) >= self.startyear)
             self.period_divided_group = self.period_divided_group.groupby('period_group')
 
@@ -125,12 +129,13 @@ class KimKem:
             top_common_words = self._extract_top_common_words(period_divided_dic_merged)#
             keyword_list = self._get_keyword_list(top_common_words)#
 
+            # 추출된 공통 키워드 존재하지 않으면 프로그램 종료
             if keyword_list == []:
                 self.write_status("키워드 없음 종료")
                 return 0
 
             self.write_status("TF/DF 계산 중...")
-            # Step 4: TF, DF, DoV, DoD 계산
+            # Step 4: TF, DF, DoV, DoD 계산 -> 결과: {key: 키워드, value: 계산값} 형식의 딕셔너리
             tf_counts, df_counts = self.cal_tf(keyword_list, period_divided_dic_merged), self.cal_df(keyword_list, period_divided_dic)
             self.period_list = list(tf_counts.keys())
             self.startperiod = self.period_list[0]
@@ -151,9 +156,6 @@ class KimKem:
             DoD_coordinates_record = {}
             Final_signal_record = {}
 
-            self.DoV_graphPath_list = []
-            self.DoD_graphPath_list = []
-
             for index, period in enumerate(self.period_list):
                 # Step 7: 평균 증가율 및 빈도 계산
 
@@ -170,6 +172,7 @@ class KimKem:
                 DoV_signal_record[period], DoD_signal_record[period], DoV_coordinates_record[period], DoD_coordinates_record[period] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
                 Final_signal_record[period] = self._save_final_signals(DoV_signal_record[period], DoD_signal_record[period], os.path.join(result_folder, 'Signal'))
 
+            # Trace 데이터에서 키워드별로 Signal 변화를 추적
             self.write_status("키워드 추적 데이터 생성 중...")
             DoV_signal_trace = self.trace_keyword_positions(DoV_signal_record)
             DoD_signal_trace = self.trace_keyword_positions(DoD_signal_record)
@@ -182,6 +185,7 @@ class KimKem:
             DoD_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoD_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
             Final_signal_trace.to_csv(os.path.join(self.trace_folder, 'Final_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
 
+            # Signal 추적 데이터에서 시계 방향으로 시그널 이동하지 않은 키워드들을 걸러냄
             self.write_status("키워드 필터링 중...")
             DoV_signal_trace, DoV_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
             DoV_signal_trace, DoD_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
@@ -622,6 +626,7 @@ class KimKem:
             self.create_top_words_animation(DoV_dict, os.path.join(self.DoV_folder, 'DOV_animation.gif'), self.graph_wordcnt, 100)
             self.create_top_words_animation(DoD_dict, os.path.join(self.DoD_folder, 'DOD_animation.gif'), self.graph_wordcnt, 100)
 
+    # 시그널 추적 데이터 저장
     def _save_trace_results(self, DoV_dict, DoD_dict):
         for period in DoV_dict:
             self._save_period_data(self.trace_DOV_folder, period, DoV_dict, 'DoV')
@@ -631,6 +636,7 @@ class KimKem:
         data_df = pd.DataFrame(list(data_dict[period].items()), columns=['keyword', label])
         data_df.to_csv(f"{folder}/{period}_{label}.csv", index=False, encoding='utf-8-sig')
 
+    # DOV/DOD 평균 증가율(y값), TF/DF 평균값(x값) 계산
     def _calculate_averages(self, keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, min_period, max_period):
         
         avg_DoV_increase_rate = {}
@@ -654,10 +660,12 @@ class KimKem:
         total_frequency = sum([counts_dict[year][word] for year in relevant_years])
         return total_frequency / len(relevant_years) if relevant_years else 0
 
+    # 그래프 생성 / 시그널 분석
     def _analyze_signals(self, avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, folder_path):
         DoV_signal, DoV_coordinates = self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, folder_path)
         DoD_signal, DoD_coordinates = self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path)
 
+        # 파이널 시그널 추출 후 DOV/DOD 그래프에 예외어 리스트를 넣어서 KIM/KEM 그래프 생성
         final_signal = self._get_communal_signals(DoV_signal, DoD_signal)
         final_signal_list = []
         for value in final_signal.values():
