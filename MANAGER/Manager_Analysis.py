@@ -915,6 +915,7 @@ class Manager_Analysis:
                     if line.startswith('분석 데이터:'):
                         # '분석 데이터:' 뒤에 오는 값을 파싱
                         recommend_csv_name = line.split('분석 데이터:')[-1].strip().replace('token_', '')
+                        topic = recommend_csv_name.split('_')[1]
                     if line.startswith('분석 시작 연도:'):
                         # '분석 데이터:' 뒤에 오는 값을 파싱
                         startyear = line.split('분석 시작 연도:')[-1].strip().replace('token_', '')
@@ -925,6 +926,7 @@ class Manager_Analysis:
                         endyear = int(endyear)
             except:
                 recommend_csv_name = 'KemKim 생성 시 사용한 크롤링 데이터'
+                topic = ""
 
             QMessageBox.information(self.main, "Information", f'Keyword를 추출할 CSV 파일을 선택하세요\n\n"{recommend_csv_name}"를 선택하세요')
             object_csv_path = QFileDialog.getOpenFileName(self.main, "Keyword 추출 대상 CSV 파일을 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
@@ -998,6 +1000,7 @@ class Manager_Analysis:
                         gpt_query = (
                             "한국어로 대답해. 지금 밑에 있는 텍스트는 신문기사의 제목들을 모아놓은거야\n\n"
                             f"{merged_title}\n\n"
+                            f"이 신문기사 제목들은 검색창에 {topic}이라고 검색했을 때 나온 신문기사 제목이야"
                             "제시된 여러 개의 뉴스기사 제목을 바탕으로 관련된 토픽(주제)를 추출 및 요약해줘. 토픽은 최소 1개에서 최대 5개를 제시해줘. 토픽 추출 및 요약 방식, 너의 응답 형식은 다음과 같아\n"
                             "토픽 1. ~~: (여기에 내용 기입)\n"
                             "토픽 2. ~~: (여기에 내용 기입)\n"
@@ -1010,6 +1013,7 @@ class Manager_Analysis:
                             gpt_txt.write(gpt_response)
 
                         QMessageBox.information(self.main, "인공지능 분석 결과", gpt_response)
+                        self.main.printStatus()
                         self.main.openFileExplorer(analyze_directory)
 
                     self.main.printStatus("인공지능 분석 중...")
@@ -1265,13 +1269,15 @@ class Manager_Analysis:
             result = kimkem_obj.make_kimkem()
 
             if result == 1:
+                self.main.printStatus()
                 QMessageBox.information(self.main, "Information", f"KEM KIM 분석 데이터가 성공적으로 저장되었습니다")
             elif result == 0:
+                self.main.printStatus()
                 QMessageBox.information(self.main, "Information", f"Keyword가 존재하지 않아 KEM KIM 분석이 진행되지 않았습니다")
             else:
+                self.main.printStatus()
                 QMessageBox.information(self.main, "Warning", f"치명적 오류가 발생하였습니다. 버그 리포트에 오류 작성 부탁드립니다\n\nlog:{result}")
-            
-            self.main.printStatus()
+
             del kimkem_obj
             gc.collect()
         except Exception as e:
