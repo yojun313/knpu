@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox, QComboBox, \
-    QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout, \
+    QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout, QGroupBox,\
     QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton
-from PyQt5.QtCore import QTimer, QStringListModel
+from PyQt5.QtCore import QTimer, QStringListModel, Qt
 import copy
 import pandas as pd
 import os
@@ -763,31 +763,42 @@ class Manager_Analysis:
                 self.initUI()
 
             def initUI(self):
-                # 레이아웃 설정
-                layout = QVBoxLayout()
+                main_layout = QVBoxLayout()
 
-                grid_layout = QGridLayout()
+                # 체크박스를 배치할 각 그룹 박스 생성
+                groups = ["Strong Signal", "Weak Signal", "Latent Signal", "Well-known Signal"]
 
-                sorted_words = sorted(self.words)
-
-                # 모두 선택 체크박스 추가
-                select_all_checkbox = QCheckBox("모두 선택", self)
-                select_all_checkbox.stateChanged.connect(self.select_all_checkboxes)
-                grid_layout.addWidget(select_all_checkbox, 0, 0)
-
-                # 체크박스 추가
                 self.checkboxes = []
-                num_columns = min(20, len(sorted_words))  # 한 행에 최대 20개의 체크박스가 오도록 설정
-                for i, word in enumerate(sorted_words):
-                    checkbox = QCheckBox(word, self)
-                    self.checkboxes.append(checkbox)
-                    # 그리드 레이아웃에 체크박스 배치
-                    row = (i + 1) // num_columns  # 첫 번째 행에 "모두 선택"이 있으므로 나머지는 +1 로 설정
-                    col = (i + 1) % num_columns
-                    grid_layout.addWidget(checkbox, row, col)
+                for group_name, words in zip(groups, self.words):
+                    group_box = QGroupBox(group_name)
+                    group_layout = QVBoxLayout()
 
-                # 그리드 레이아웃을 QVBoxLayout에 추가
-                layout.addLayout(grid_layout)
+                    # '모두 선택' 체크박스 추가
+                    select_all_checkbox = QCheckBox("모두 선택", self)
+                    select_all_checkbox.stateChanged.connect(self.create_select_all_handler(group_name))
+                    group_layout.addWidget(select_all_checkbox)
+
+                    sorted_words = sorted(words)
+                    num_columns = 10  # 한 행에 최대 10개의 체크박스
+
+                    # 그리드 레이아웃 설정
+                    grid_layout = QGridLayout()
+                    grid_layout.setHorizontalSpacing(5)  # 수평 간격 설정
+                    grid_layout.setVerticalSpacing(10)  # 수직 간격 설정
+                    # 각 열이 동일한 비율로 확장되도록 설정
+                    for col in range(num_columns):
+                        grid_layout.setColumnStretch(col, 1)
+
+                    for i, word in enumerate(sorted_words):
+                        checkbox = QCheckBox(word, self)
+                        self.checkboxes.append(checkbox)
+                        row = i // num_columns
+                        col = i % num_columns
+                        grid_layout.addWidget(checkbox, row, col)
+
+                    group_layout.addLayout(grid_layout)
+                    group_box.setLayout(group_layout)
+                    main_layout.addWidget(group_box)
 
                 # 라디오 버튼 추가
                 self.radio_button_group = QButtonGroup(self)
@@ -798,8 +809,8 @@ class Manager_Analysis:
                 self.radio_button_group.addButton(radio_all)
                 self.radio_button_group.addButton(radio_part)
 
-                layout.addWidget(radio_all)
-                layout.addWidget(radio_part)
+                main_layout.addWidget(radio_all)
+                main_layout.addWidget(radio_part)
 
                 # 기본값 설정 (첫 번째 옵션 선택)
                 radio_all.setChecked(True)
@@ -807,18 +818,23 @@ class Manager_Analysis:
                 # 선택된 단어 출력 버튼 추가
                 btn = QPushButton('포함 단어 결정', self)
                 btn.clicked.connect(self.show_selected_words)
-                layout.addWidget(btn)
+                main_layout.addWidget(btn)
 
                 # 창 설정
-                self.setLayout(layout)
+                self.setLayout(main_layout)
                 self.setWindowTitle('크롤링 데이터 CSV 필터링 기준 단어를 선택하세요')
-                self.setGeometry(300, 300, 300, 200)
+                self.setGeometry(300, 300, 800, 600)
                 self.show()
 
-            def select_all_checkboxes(self, state):
-                # 모두 선택 체크박스의 상태에 따라 다른 체크박스들의 선택/해제를 설정
-                for checkbox in self.checkboxes[0:]:  # 첫 번째 체크박스("모두 선택")는 제외
-                    checkbox.setChecked(state == 2)
+            def create_select_all_handler(self, group_name):
+                def select_all_handler(state):
+                    group_checkboxes = [
+                        cb for cb in self.checkboxes if cb.parentWidget().title() == group_name
+                    ]
+                    for checkbox in group_checkboxes:
+                        checkbox.setChecked(state == Qt.Checked)
+
+                return select_all_handler
 
             def show_selected_words(self):
                 # 선택된 단어를 리스트에 추가
@@ -847,7 +863,7 @@ class Manager_Analysis:
             all_keyword = []
             for word_list_str in words:
                 word_list = ast.literal_eval(word_list_str)
-                all_keyword.extend(word_list)
+                all_keyword.append(word_list)
 
             try:
                 infotxt_path = os.path.join(os.path.dirname(result_directory), "kemkim_info.txt")
@@ -858,6 +874,14 @@ class Manager_Analysis:
                     if line.startswith('분석 데이터:'):
                         # '분석 데이터:' 뒤에 오는 값을 파싱
                         recommend_csv_name = line.split('분석 데이터:')[-1].strip().replace('token_', '')
+                    if line.startswith('분석 시작 연도:'):
+                        # '분석 데이터:' 뒤에 오는 값을 파싱
+                        startyear = line.split('분석 시작 연도:')[-1].strip().replace('token_', '')
+                        startyear = int(startyear)
+                    if line.startswith('분석 종료 연도:'):
+                        # '분석 데이터:' 뒤에 오는 값을 파싱
+                        endyear = line.split('분석 종료 연도:')[-1].strip().replace('token_', '')
+                        endyear = int(endyear)
             except:
                 recommend_csv_name = 'KemKim 생성 시 사용한 크롤링 데이터'
 
@@ -891,6 +915,15 @@ class Manager_Analysis:
             for column in object_csv_df.columns.tolist():
                 if 'Text' in column:
                     textColumn_name = column
+                elif 'Date' in column:
+                    dateColumn_name = column
+
+            # 연도 범위 설정
+            object_csv_df[dateColumn_name] = pd.to_datetime(object_csv_df[dateColumn_name], format='%Y-%m-%d', errors='coerce')
+            object_csv_df = object_csv_df[
+                (object_csv_df[dateColumn_name].dt.year >= startyear) &
+                (object_csv_df[dateColumn_name].dt.year <= endyear)
+            ]
 
             if selected_option == "모두 포함":
                 filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: all(word in str(x) for word in selected_words))]
