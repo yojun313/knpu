@@ -941,7 +941,7 @@ class Manager_Analysis:
 
             filtered_object_csv_df.to_csv(os.path.join(analyze_directory, f"{object_csv_name}{selected_words_str}.csv"), index = False, encoding='utf-8-sig')
             if any('Title' in word for word in list(filtered_object_csv_df.keys())):
-                reply = QMessageBox.question(self.main, 'Confirm Delete', 'CSV 키워드 필터링이 완료되었습니다\n\n인공지능 분석을 진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                reply = QMessageBox.question(self.main, 'Confirm Delete', f'CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n인공지능 분석을 진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     def gpt_start():
                         for column in filtered_object_csv_df.columns.tolist():
@@ -977,7 +977,7 @@ class Manager_Analysis:
                     self.main.printStatus()
                     self.main.openFileExplorer(analyze_directory)
             else:
-                QMessageBox.information(self.main, "Information", "CSV 키워드 필터링이 완료되었습니다")
+                QMessageBox.information(self.main, "Information", f"CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다")
                 self.main.openFileExplorer(analyze_directory)
 
         except Exception as e:
