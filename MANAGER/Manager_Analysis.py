@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox, QComboBox, \
-    QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout, QGroupBox,\
+    QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout, QGroupBox, QScrollArea,\
     QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton
 from PyQt5.QtCore import QTimer, QStringListModel, Qt
 import copy
@@ -602,48 +602,74 @@ class Manager_Analysis:
                 self.initUI()
 
             def initUI(self):
-                # 레이아웃 설정
-                layout = QVBoxLayout()
+                # 메인 레이아웃을 감쌀 위젯 생성
+                container_widget = QWidget()
+                main_layout = QVBoxLayout(container_widget)
 
-                grid_layout = QGridLayout()
-                
-                sorted_words = sorted(self.words)
+                # 체크박스를 배치할 각 그룹 박스 생성
+                groups = ["Strong Signal", "Weak Signal", "Latent Signal", "Well-known Signal"]
 
-                # 모두 선택 체크박스 추가
-                select_all_checkbox = QCheckBox("모두 선택", self)
-                select_all_checkbox.stateChanged.connect(self.select_all_checkboxes)
-                grid_layout.addWidget(select_all_checkbox, 0, 0)
-
-                # 체크박스 추가
                 self.checkboxes = []
-                num_columns = min(20, len(sorted_words))  # 한 행에 최대 20개의 체크박스가 오도록 설정
-                for i, word in enumerate(sorted_words):
-                    checkbox = QCheckBox(word, self)
-                    self.checkboxes.append(checkbox)
-                    # 그리드 레이아웃에 체크박스 배치
-                    row = (i + 1) // num_columns  # 첫 번째 행에 "모두 선택"이 있으므로 나머지는 +1 로 설정
-                    col = (i + 1) % num_columns
-                    grid_layout.addWidget(checkbox, row, col)
+                for group_name, words in zip(groups, self.words):
+                    group_box = QGroupBox(group_name)
+                    group_layout = QVBoxLayout()
 
-                # 그리드 레이아웃을 QVBoxLayout에 추가
-                layout.addLayout(grid_layout)
+                    # '모두 선택' 체크박스 추가
+                    select_all_checkbox = QCheckBox("모두 선택", self)
+                    select_all_checkbox.stateChanged.connect(self.create_select_all_handler(group_name))
+                    group_layout.addWidget(select_all_checkbox)
+
+                    sorted_words = sorted(words)
+                    num_columns = 10  # 한 행에 최대 10개의 체크박스
+
+                    # 그리드 레이아웃 설정
+                    grid_layout = QGridLayout()
+                    grid_layout.setHorizontalSpacing(5)  # 수평 간격 설정
+                    grid_layout.setVerticalSpacing(10)  # 수직 간격 설정
+                    # 각 열이 동일한 비율로 확장되도록 설정
+                    for col in range(num_columns):
+                        grid_layout.setColumnStretch(col, 1)
+
+                    for i, word in enumerate(sorted_words):
+                        checkbox = QCheckBox(word, self)
+                        self.checkboxes.append(checkbox)
+                        row = i // num_columns
+                        col = i % num_columns
+                        grid_layout.addWidget(checkbox, row, col)
+
+                    group_layout.addLayout(grid_layout)
+                    group_box.setLayout(group_layout)
+                    main_layout.addWidget(group_box)
 
                 # 선택된 단어 출력 버튼 추가
                 btn = QPushButton('제외 단어 결정', self)
                 btn.clicked.connect(self.show_selected_words)
-                layout.addWidget(btn)
+                main_layout.addWidget(btn)
+
+                # QScrollArea 설정
+                scroll_area = QScrollArea(self)
+                scroll_area.setWidgetResizable(True)
+                scroll_area.setWidget(container_widget)  # 위젯을 스크롤 영역에 추가
+
+                # 기존의 main_layout을 scroll_area에 추가
+                final_layout = QVBoxLayout()
+                final_layout.addWidget(scroll_area)
 
                 # 창 설정
-                self.setLayout(layout)
+                self.setLayout(final_layout)
                 self.setWindowTitle('제외할 키워드를 선택하세요')
-                self.setGeometry(300, 300, 300, 200)
+                self.setGeometry(300, 300, 800, 600)
                 self.show()
+                
+            def create_select_all_handler(self, group_name):
+                def select_all_handler(state):
+                    group_checkboxes = [
+                        cb for cb in self.checkboxes if cb.parentWidget().title() == group_name
+                    ]
+                    for checkbox in group_checkboxes:
+                        checkbox.setChecked(state == Qt.Checked)
 
-            def select_all_checkboxes(self, state):
-                # 모두 선택 체크박스의 상태에 따라 다른 체크박스들의 선택/해제를 설정
-                for checkbox in self.checkboxes[0:]:  # 첫 번째 체크박스("모두 선택")는 제외
-                    checkbox.setChecked(state == 2)
-
+                return select_all_handler
             def show_selected_words(self):
                 # 선택된 단어를 리스트에 추가
                 self.selected_words = [cb.text() for cb in self.checkboxes if cb.isChecked()]
@@ -682,11 +708,15 @@ class Manager_Analysis:
             self.main.printStatus("KEMKIM 재분석 중...")
             
             result_directory = result_directory[0]
-            deletedword_df = pd.read_csv(os.path.join(result_directory, "Graph", "DOV_coordinates.csv"))
-            words = deletedword_df['key'].dropna().unique().tolist()
-            words.pop(0)
+            final_signal_csv_path = os.path.join(result_directory, "Signal", "Final_signal.csv")
+            final_signal_df = pd.read_csv(final_signal_csv_path, low_memory=False)
+            words = final_signal_df['word'].tolist()
+            all_keyword = []
+            for word_list_str in words:
+                word_list = ast.literal_eval(word_list_str)
+                all_keyword.append(word_list)
             
-            self.word_selector = WordSelector(words)
+            self.word_selector = WordSelector(all_keyword)
             if self.word_selector.exec_() == QDialog.Accepted:  # show() 대신 exec_() 사용
                 selected_words = self.word_selector.selected_words
             else:
@@ -763,7 +793,9 @@ class Manager_Analysis:
                 self.initUI()
 
             def initUI(self):
-                main_layout = QVBoxLayout()
+                # 메인 레이아웃을 감쌀 위젯 생성
+                container_widget = QWidget()
+                main_layout = QVBoxLayout(container_widget)
 
                 # 체크박스를 배치할 각 그룹 박스 생성
                 groups = ["Strong Signal", "Weak Signal", "Latent Signal", "Well-known Signal"]
@@ -820,8 +852,17 @@ class Manager_Analysis:
                 btn.clicked.connect(self.show_selected_words)
                 main_layout.addWidget(btn)
 
+                # QScrollArea 설정
+                scroll_area = QScrollArea(self)
+                scroll_area.setWidgetResizable(True)
+                scroll_area.setWidget(container_widget)  # 위젯을 스크롤 영역에 추가
+
+                # 기존의 main_layout을 scroll_area에 추가
+                final_layout = QVBoxLayout()
+                final_layout.addWidget(scroll_area)
+
                 # 창 설정
-                self.setLayout(main_layout)
+                self.setLayout(final_layout)
                 self.setWindowTitle('크롤링 데이터 CSV 필터링 기준 단어를 선택하세요')
                 self.setGeometry(300, 300, 800, 600)
                 self.show()
