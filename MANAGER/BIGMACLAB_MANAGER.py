@@ -30,14 +30,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         self.versionNum = '1.4.1'
         self.version = 'Version ' + self.versionNum
-
-        def center():
-            # 현재 사용 중인 화면의 가운데로 창을 이동
-            screen = QScreen.availableGeometry(QApplication.primaryScreen())
-            screen_center = screen.center()
-            frame_geometry = self.frameGeometry()
-            frame_geometry.moveCenter(screen_center)
-            self.move(frame_geometry.topLeft())
          
         super(MainWindow, self).__init__()
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
@@ -46,7 +38,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
         #self.setGeometry(0, 0, 1400, 1000)
         if platform.system() == "Windows":
-            self.self.showFullScreen()  # 전체 화면으로 창 열기
+            self.showFullScreen()  # 전체 화면으로 창 열기
         else:
             self.resize(1400, 1000)
         
