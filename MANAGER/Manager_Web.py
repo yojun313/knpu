@@ -37,7 +37,7 @@ class Manager_Web:
             self.browser.show()
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
-
+            self.main.program_bug_log(traceback.format_exc())
     def web_open_downloadbrowser(self, url):
         webbrowser.open('https://knpu.re.kr:90')
 

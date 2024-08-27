@@ -38,6 +38,7 @@ class Manager_Board:
             self.version_name_list = [version_data[0] for version_data in self.version_data_for_table]
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
     def board_add_version(self):
         try:
             ok, password = self.main.admin_check()
@@ -144,6 +145,7 @@ class Manager_Board:
                 QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
     def board_delete_version(self):
         try:
             ok, password = self.main.admin_check()
@@ -164,6 +166,7 @@ class Manager_Board:
                 QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
     def board_view_version(self):
         try:
             self.main.printStatus("불러오는 중...")
@@ -245,6 +248,7 @@ class Manager_Board:
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
     def board_bug_refresh(self):
         try:
             def sort_by_date(two_dim_list):
@@ -257,13 +261,14 @@ class Manager_Board:
 
             self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
             self.bug_data = sort_by_date(self.main.mySQL_obj.TableToList('version_bug'))
-            self.bug_data_for_table = [sub_list[:-1] for sub_list in self.bug_data]
+            self.bug_data_for_table = [sub_list[:-2] for sub_list in self.bug_data]
             self.bug_table_column = ['User', 'Version Num', 'Title', 'DateTime']
             self.main.table_maker(self.main.board_bug_tableWidget, self.bug_data_for_table,
                                   self.bug_table_column)
             self.bug_title_list = [bug_data[2] for bug_data in self.bug_data_for_table]
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
     def board_add_bug(self):
         try:
             # QDialog를 상속받은 클래스 생성
@@ -293,6 +298,7 @@ class Manager_Board:
 
                     self.bug_detail_label = QLabel('Bug Detail:')
                     self.bug_detail_input = QTextEdit()
+                    self.bug_detail_input.setPlaceholderText('버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해주세요')
                     layout.addWidget(self.bug_detail_label)
                     layout.addWidget(self.bug_detail_input)
 
@@ -330,10 +336,16 @@ class Manager_Board:
             if dialog.data:
                 bug_data = dialog.data
                 bug_data = list(bug_data.values())
+                with open(self.main.program_log_path, 'r') as log:
+                    log_record = log.read()
+                bug_data.append(log_record)
                 self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
                 self.main.mySQL_obj.insertToTable('version_bug', bug_data)
                 self.main.mySQL_obj.commit()
                 self.board_bug_refresh()
+
+                with open(self.main.program_log_path, 'w') as log:
+                    pass
 
                 msg = (
                     "[BIGMACLAB MANAGER] New Bug Added!\n"
@@ -346,6 +358,7 @@ class Manager_Board:
                 self.main.send_pushOver(msg, self.main.admin_pushoverkey)
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
     def board_delete_bug(self):
         try:
             self.main.printStatus("삭제 중...")
@@ -363,6 +376,7 @@ class Manager_Board:
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            self.main.program_bug_log(traceback.format_exc())
     def board_view_bug(self):
         try:
             self.main.printStatus("불러오는 중...")
@@ -416,6 +430,8 @@ class Manager_Board:
                         <p><b>DateTime:</b> {bug_data[3]}</p>
                         <p><b>Bug Detail:</b></p>
                         <p class="detail-content">{bug_data[4]}</p>
+                        <p><b>Program Log:</b></p>
+                        <p class="detail-content">{bug_data[5]}</p>
                     </div>
                     """
                     detail_label = QLabel(details_html)
@@ -442,5 +458,6 @@ class Manager_Board:
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
 

@@ -386,5 +386,4 @@ class mySQL:
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='REDACTED_IP', user='admin', password='***REMOVED***', port=3306, database='bigmaclab_manager_db')
-    mySQL_obj.dropTable('device_list')
-    mySQL_obj.newTable('device_list', ['device_name', 'user_name'])
+    mySQL_obj.newTable('version_bug', ['User', 'Version Num', 'Bug Title', 'DateTime', 'Bug Detail', 'Program Log'])
