@@ -992,7 +992,7 @@ class Manager_Analysis:
                 QMessageBox.information(self.main, "Information", "필터링 키워드를 포함하는 데이터가 존재하지 않습니다")
                 return
 
-            analyze_directory = os.path.join(os.path.dirname(result_directory), f'Analyze_{datetime.now().strftime('%m%d%H%M')}')
+            analyze_directory = os.path.join(os.path.dirname(result_directory), f'Analysis_{datetime.now().strftime('%m%d%H%M')}')
             os.makedirs(analyze_directory, exist_ok=True)
             selected_words_dic = {
                 'Filter Option': selected_option,
