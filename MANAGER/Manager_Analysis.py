@@ -1044,6 +1044,35 @@ class Manager_Analysis:
                 os.makedirs(analyze_directory, exist_ok=True)
                 filtered_object_csv_df.to_csv(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option}).csv"), index = False, encoding='utf-8-sig')
                 pd.DataFrame([selected_words_dic]).to_csv(os.path.join(analyze_directory, f"filtered_words.csv"), index = False, encoding='utf-8-sig')
+
+                def extract_surrounding_text(text, keyword, chars_before=200, chars_after=200):
+                    # 키워드 위치 찾기
+                    match = re.search(keyword, text)
+                    if match:
+                        start = max(match.start() - chars_before, 0)
+                        end = min(match.end() + chars_after, len(text))
+
+                        # 키워드를 강조 표시
+                        highlighted_keyword = f'_____{keyword}_____'
+                        extracted_text = text[start:end]
+
+                        # 키워드를 강조 표시된 버전으로 대체
+                        extracted_text = extracted_text.replace(keyword, highlighted_keyword)
+
+                        return extracted_text
+                    else:
+                        return None  # 키워드가 없으면 None 반환
+
+                context_dict = {}
+                for keyword in selected_words:
+                    extracted_texts = filtered_object_csv_df[textColumn_name].apply(lambda x: extract_surrounding_text(x, keyword))
+                    keyword_texts = extracted_texts.dropna().tolist()
+                    if keyword_texts:
+                        context_dict[keyword] = "\n\n".join(keyword_texts)
+
+                context_df = pd.DataFrame(list(context_dict.items()), columns=['Keyword', 'Context Text'])
+                # 데이터프레임을 CSV 파일로 저장
+                context_df.to_csv(os.path.join(analyze_directory, 'keyword_context.csv'), index=False, encoding='utf-8-sig')
             else:
                 self.main.printStatus()
                 return
