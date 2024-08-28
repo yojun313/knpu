@@ -878,11 +878,25 @@ class Manager_Analysis:
                 return select_all_handler
 
             def show_selected_words(self):
-                # 선택된 단어를 리스트에 추가
-                self.selected_words = [cb.text() for cb in self.checkboxes if cb.isChecked()]
+                # 선택된 단어들을 그룹별로 분류하여 2차원 리스트로 저장
+                selected_words_by_group = []
+
+                groups = ["Strong Signal", "Weak Signal", "Latent Signal", "Well-known Signal"]
+
+                for group_name in groups:
+                    group_checkboxes = [
+                        cb for cb in self.checkboxes if cb.parentWidget().title() == group_name
+                    ]
+                    selected_words = [cb.text() for cb in group_checkboxes if cb.isChecked()]
+                    selected_words_by_group.append(selected_words)
+
+                self.selected_words = selected_words_by_group
                 self.selected_option = self.radio_button_group.checkedButton().text()
+
                 # 선택된 단어를 메시지 박스로 출력
-                QMessageBox.information(self, '선택한 단어', ', '.join(self.selected_words))
+                selected_words_str = '\n'.join(
+                    f"{group}: {', '.join(words)}" for group, words in zip(groups, self.selected_words))
+                QMessageBox.information(self, '선택한 단어', selected_words_str)
                 self.accept()
 
         try:
@@ -938,7 +952,8 @@ class Manager_Analysis:
             self.main.printStatus("CSV 데이터 키워드 필터링 중...")
             self.word_selector = WordSelector(all_keyword)
             if self.word_selector.exec_() == QDialog.Accepted:  # show() 대신 exec_() 사용
-                selected_words = self.word_selector.selected_words
+                selected_words_2dim = self.word_selector.selected_words
+                selected_words = [word for group in selected_words_2dim for word in group]
                 selected_option = self.word_selector.selected_option
             else:
                 self.main.printStatus()
@@ -970,19 +985,25 @@ class Manager_Analysis:
 
             if selected_option == "모두 포함":
                 filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: all(word in str(x) for word in selected_words))]
-                selected_words_str = f"({'+'.join(selected_words)})"
             else:
                 filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: any(word in str(x) for word in selected_words))]
-                selected_words_str = f"({'or'.join(selected_words)})"
-            
+
             if filtered_object_csv_df.shape[0] < 1:
                 QMessageBox.information(self.main, "Information", "필터링 키워드를 포함하는 데이터가 존재하지 않습니다")
                 return
 
             analyze_directory = os.path.join(os.path.dirname(result_directory), f'Analyze_{datetime.now().strftime('%m%d%H%M')}')
             os.makedirs(analyze_directory, exist_ok=True)
+            selected_words_dic = {
+                'Filter Option': selected_option,
+                'Strong Signal': ','.join(selected_words_2dim[0]),
+                'Weak Signal': ','.join(selected_words_2dim[1]),
+                'Latent Signal': ','.join(selected_words_2dim[2]),
+                'Well-known Signal': ','.join(selected_words_2dim[3]),
+            }
+            filtered_object_csv_df.to_csv(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option}).csv"), index = False, encoding='utf-8-sig')
+            pd.DataFrame([selected_words_dic]).to_csv(os.path.join(analyze_directory, f"filtered_words.csv"), index = False, encoding='utf-8-sig')
 
-            filtered_object_csv_df.to_csv(os.path.join(analyze_directory, f"{object_csv_name}{selected_words_str}.csv"), index = False, encoding='utf-8-sig')
             if any('Title' in word for word in list(filtered_object_csv_df.keys())):
                 reply = QMessageBox.question(self.main, 'Confirm Delete', f'CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n인공지능 분석을 진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
