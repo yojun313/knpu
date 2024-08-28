@@ -878,6 +878,9 @@ class KimKem:
         return sorted_lst[threshold_index]  # 상위 n%에 가장 가까운 요소 반환
 
     def calculate_statistics(self, data):
+        data = [x for x in data if isinstance(x, (int, float)) and not np.isnan(x)]
+
+        print(data)
         # 평균 계산
         mean_value = round(np.mean(data), 3)
         
@@ -892,10 +895,7 @@ class KimKem:
         
          # 데이터를 내림차순으로 정렬
         sorted_data = np.sort(data)[::-1]
-        
-        # 10분위값 계산 (내림차순 데이터 기준)
-        deciles = {f"{i*10}%": round(np.percentile(sorted_data, i*10), 3) for i in range(1, 10)}
-        
+
         # 결과를 딕셔너리로 정리
         result = {
             "mean": mean_value,
@@ -903,10 +903,12 @@ class KimKem:
             "skewness": skewness_value,
             "kurtosis": kurtosis_value
         }
-        
+
+        # 10분위값 계산 (내림차순 데이터 기준)
+        deciles = {f"{i*10}%": round(np.percentile(sorted_data, i*10), 3) for i in range(1, 10)}
         # 딕셔너리에 10분위값 추가
         result.update(deciles)
-        
+
         return result
     
     def DoV_draw_graph(self, avg_DoV_increase_rate=None, avg_term_frequency=None, graph_folder=None, final_signal_list = [], graph_name = '', redraw_option = False, coordinates=False):
