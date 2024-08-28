@@ -880,7 +880,6 @@ class KimKem:
     def calculate_statistics(self, data):
         data = [x for x in data if isinstance(x, (int, float)) and not np.isnan(x)]
 
-        print(data)
         # 평균 계산
         mean_value = round(np.mean(data), 3)
         
