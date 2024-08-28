@@ -610,6 +610,7 @@ class Manager_Analysis:
                 groups = ["Strong Signal", "Weak Signal", "Latent Signal", "Well-known Signal"]
 
                 self.checkboxes = []
+                self.select_all_checkboxes = {}
                 for group_name, words in zip(groups, self.words):
                     group_box = QGroupBox(group_name)
                     group_layout = QVBoxLayout()
@@ -618,6 +619,7 @@ class Manager_Analysis:
                     select_all_checkbox = QCheckBox("모두 선택", self)
                     select_all_checkbox.stateChanged.connect(self.create_select_all_handler(group_name))
                     group_layout.addWidget(select_all_checkbox)
+                    self.select_all_checkboxes[group_name] = select_all_checkbox
 
                     sorted_words = sorted(words)
                     num_columns = 10  # 한 행에 최대 10개의 체크박스
@@ -632,6 +634,7 @@ class Manager_Analysis:
 
                     for i, word in enumerate(sorted_words):
                         checkbox = QCheckBox(word, self)
+                        checkbox.stateChanged.connect(self.create_individual_handler(group_name))
                         self.checkboxes.append(checkbox)
                         row = i // num_columns
                         col = i % num_columns
@@ -660,16 +663,32 @@ class Manager_Analysis:
                 self.setWindowTitle('제외할 키워드를 선택하세요')
                 self.setGeometry(300, 300, 800, 600)
                 self.show()
-                
+
             def create_select_all_handler(self, group_name):
                 def select_all_handler(state):
                     group_checkboxes = [
                         cb for cb in self.checkboxes if cb.parentWidget().title() == group_name
                     ]
                     for checkbox in group_checkboxes:
+                        checkbox.blockSignals(True)  # 시그널을 일시적으로 비활성화
                         checkbox.setChecked(state == Qt.Checked)
+                        checkbox.blockSignals(False)  # 시그널 다시 활성화
+                    # 모두 선택/해제 시, 다른 개별 체크박스 핸들러의 영향 없이 동작하게 하기 위해 시그널을 임시로 막아둠
 
                 return select_all_handler
+
+            def create_individual_handler(self, group_name):
+                def individual_handler():
+                    group_checkboxes = [
+                        cb for cb in self.checkboxes if cb.parentWidget().title() == group_name
+                    ]
+                    all_checked = all(cb.isChecked() for cb in group_checkboxes)
+                    if not all_checked:
+                        self.select_all_checkboxes[group_name].blockSignals(True)
+                        self.select_all_checkboxes[group_name].setChecked(False)
+                        self.select_all_checkboxes[group_name].blockSignals(False)
+
+                return individual_handler
             def show_selected_words(self):
                 # 선택된 단어를 리스트에 추가
                 self.selected_words = [cb.text() for cb in self.checkboxes if cb.isChecked()]
@@ -801,6 +820,7 @@ class Manager_Analysis:
                 groups = ["Strong Signal", "Weak Signal", "Latent Signal", "Well-known Signal"]
 
                 self.checkboxes = []
+                self.select_all_checkboxes = {}
                 for group_name, words in zip(groups, self.words):
                     group_box = QGroupBox(group_name)
                     group_layout = QVBoxLayout()
@@ -809,6 +829,7 @@ class Manager_Analysis:
                     select_all_checkbox = QCheckBox("모두 선택", self)
                     select_all_checkbox.stateChanged.connect(self.create_select_all_handler(group_name))
                     group_layout.addWidget(select_all_checkbox)
+                    self.select_all_checkboxes[group_name] = select_all_checkbox
 
                     sorted_words = sorted(words)
                     num_columns = 10  # 한 행에 최대 10개의 체크박스
@@ -823,6 +844,7 @@ class Manager_Analysis:
 
                     for i, word in enumerate(sorted_words):
                         checkbox = QCheckBox(word, self)
+                        checkbox.stateChanged.connect(self.create_individual_handler(group_name))
                         self.checkboxes.append(checkbox)
                         row = i // num_columns
                         col = i % num_columns
@@ -873,9 +895,25 @@ class Manager_Analysis:
                         cb for cb in self.checkboxes if cb.parentWidget().title() == group_name
                     ]
                     for checkbox in group_checkboxes:
+                        checkbox.blockSignals(True)  # 시그널을 일시적으로 비활성화
                         checkbox.setChecked(state == Qt.Checked)
+                        checkbox.blockSignals(False)  # 시그널 다시 활성화
+                    # 모두 선택/해제 시, 다른 개별 체크박스 핸들러의 영향 없이 동작하게 하기 위해 시그널을 임시로 막아둠
 
                 return select_all_handler
+
+            def create_individual_handler(self, group_name):
+                def individual_handler():
+                    group_checkboxes = [
+                        cb for cb in self.checkboxes if cb.parentWidget().title() == group_name
+                    ]
+                    all_checked = all(cb.isChecked() for cb in group_checkboxes)
+                    if not all_checked:
+                        self.select_all_checkboxes[group_name].blockSignals(True)
+                        self.select_all_checkboxes[group_name].setChecked(False)
+                        self.select_all_checkboxes[group_name].blockSignals(False)
+
+                return individual_handler
 
             def show_selected_words(self):
                 # 선택된 단어들을 그룹별로 분류하여 2차원 리스트로 저장
@@ -993,7 +1031,6 @@ class Manager_Analysis:
                 return
 
             analyze_directory = os.path.join(os.path.dirname(result_directory), f'Analysis_{datetime.now().strftime('%m%d%H%M')}')
-            os.makedirs(analyze_directory, exist_ok=True)
             selected_words_dic = {
                 'Filter Option': selected_option,
                 'Strong Signal': ','.join(selected_words_2dim[0]),
@@ -1001,11 +1038,18 @@ class Manager_Analysis:
                 'Latent Signal': ','.join(selected_words_2dim[2]),
                 'Well-known Signal': ','.join(selected_words_2dim[3]),
             }
-            filtered_object_csv_df.to_csv(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option}).csv"), index = False, encoding='utf-8-sig')
-            pd.DataFrame([selected_words_dic]).to_csv(os.path.join(analyze_directory, f"filtered_words.csv"), index = False, encoding='utf-8-sig')
+
+            reply = QMessageBox.question(self.main, 'Confirm Delete', f'CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n데이터를 저장하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                os.makedirs(analyze_directory, exist_ok=True)
+                filtered_object_csv_df.to_csv(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option}).csv"), index = False, encoding='utf-8-sig')
+                pd.DataFrame([selected_words_dic]).to_csv(os.path.join(analyze_directory, f"filtered_words.csv"), index = False, encoding='utf-8-sig')
+            else:
+                self.main.printStatus()
+                return
 
             if any('Title' in word for word in list(filtered_object_csv_df.keys())):
-                reply = QMessageBox.question(self.main, 'Confirm Delete', f'CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n인공지능 분석을 진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                reply = QMessageBox.question(self.main, 'Confirm Delete', f'키워드 필터링 데이터 저장이 완료되었습니다\n\nAI 분석을 진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     def gpt_start():
                         for column in filtered_object_csv_df.columns.tolist():
@@ -1030,10 +1074,10 @@ class Manager_Analysis:
                         )
                         gpt_response = self.main.chatgpt_generate(gpt_query)
 
-                        with open(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option})_GPT_analyze.txt"), 'w+') as gpt_txt:
+                        with open(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option})_AI_analyze.txt"), 'w+') as gpt_txt:
                             gpt_txt.write(gpt_response)
 
-                        QMessageBox.information(self.main, "인공지능 분석 결과", gpt_response)
+                        QMessageBox.information(self.main, "AI 분석 결과", gpt_response)
                         self.main.printStatus()
                         self.main.openFileExplorer(analyze_directory)
 
