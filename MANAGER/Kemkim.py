@@ -85,7 +85,7 @@ class KimKem:
             self.period_divided_group = self.period_divided_group.groupby('period_group')
 
             # 폴더 이름 20230101 -> 2023으로 startyear, endyear 형식으로 변경
-            self.folder_name = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startyear}~{self.endyear}_{period}', self.folder_name)
+            self.folder_name = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startyear}~{self.endyear}_{period}m', self.folder_name)
             self.kimkem_folder_path = os.path.join(
                 self.save_path,
                 f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
@@ -231,6 +231,7 @@ class KimKem:
             self.write_status("완료")
             return 1
         except Exception as e:
+            self.write_status("오류 중단")
             return traceback.format_exc()
 
     def filter_dic_empty_list(self, dictionary):
@@ -677,8 +678,12 @@ class KimKem:
         for value in final_signal.values():
             final_signal_list.extend(value)
 
-        self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, folder_path, final_signal_list=final_signal_list, graph_name='KEM_graph.png')
-        self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path, final_signal_list=final_signal_list, graph_name='KIM_graph.png')
+        if len(final_signal_list) == 0:
+            with open(os.path.join(folder_path, 'No_Signal.txt'), 'w') as f:
+                f.write("Final Signal이 존재하지 않습니다")
+        else:
+            self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, folder_path, final_signal_list=final_signal_list, graph_name='KEM_graph.png')
+            self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path, final_signal_list=final_signal_list, graph_name='KIM_graph.png')
 
         return DoV_signal, DoD_signal, DoV_coordinates, DoD_coordinates
     
@@ -878,7 +883,6 @@ class KimKem:
         return sorted_lst[threshold_index]  # 상위 n%에 가장 가까운 요소 반환
 
     def calculate_statistics(self, data):
-        data = [x for x in data if isinstance(x, (int, float)) and not np.isnan(x)]
 
         # 평균 계산
         mean_value = round(np.mean(data), 3)

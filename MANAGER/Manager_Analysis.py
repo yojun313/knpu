@@ -1261,6 +1261,9 @@ class Manager_Analysis:
                     except_yes_selected = dialog.data['except_yes_selected']
                     split_option = dialog.data['split_option']
                     split_custom = dialog.data['split_custom']
+                    if (12 / period) * (endyear-startyear+1) * weight >= 1:
+                        QMessageBox.information(self.main, "Warning", "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작연도~종료연도 사이의 간격을 줄이십시오")
+                        continue
                     if split_option in ['평균(Mean)', '중앙값(Median)'] and split_custom is None:
                         pass
                     else:
@@ -1268,6 +1271,7 @@ class Manager_Analysis:
                     break
                 except:
                     QMessageBox.information(self.main, "Warning", "입력 형식이 올바르지 않습니다")
+
 
             if except_yes_selected == True:
                 QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
