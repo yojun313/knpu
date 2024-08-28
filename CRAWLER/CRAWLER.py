@@ -98,7 +98,7 @@ class Crawler(CrawlerModule):
 
     # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
-        if self.DBname in self.mySQL.showAllDB():
+        if self.DBname.lower() in self.mySQL.showAllDB():
             self.running = True
         else:
             print('\rStopped by BIGMACLAB MANAGER PROGRAM', end='')
