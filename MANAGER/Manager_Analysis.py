@@ -1299,7 +1299,7 @@ class Manager_Analysis:
             else:
                 self.main.printStatus()
                 QMessageBox.information(self.main, "Warning", f"치명적 오류가 발생하였습니다. 버그 리포트에 오류 작성 부탁드립니다\n\nlog:{result}")
-
+                self.main.program_bug_log(result)
             del kimkem_obj
             gc.collect()
         except Exception as e:
