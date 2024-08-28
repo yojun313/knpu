@@ -1030,7 +1030,7 @@ class Manager_Analysis:
                         )
                         gpt_response = self.main.chatgpt_generate(gpt_query)
 
-                        with open(os.path.join(analyze_directory, f"{object_csv_name}{selected_words_str}_GPT_analyze.txt"), 'w+') as gpt_txt:
+                        with open(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option})_GPT_analyze.txt"), 'w+') as gpt_txt:
                             gpt_txt.write(gpt_response)
 
                         QMessageBox.information(self.main, "인공지능 분석 결과", gpt_response)
