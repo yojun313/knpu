@@ -725,13 +725,13 @@ class KimKem:
 
         # 새로운 열을 추가하여 주기 단위로 기간을 그룹화
         if period == '1m':  # 월
-            csv_data['period_group'] = csv_data['period_month'].dt.to_timestamp().dt.to_period('M').astype(str)
+            csv_data['period_group'] = csv_data['period_month'].dt.to_period('M').astype(str)
         elif period == '3m':  # 분기
-            csv_data['period_group'] = (csv_data['period_month'].dt.period.astype(str) + 'Q' + ((csv_data['period_month'].dt.month - 1) // 3 + 1).astype(str))
+            csv_data['period_group'] = (csv_data['period_month'].dt.year.astype(str) + 'Q' + ((csv_data['period_month'].dt.month - 1) // 3 + 1).astype(str))
         elif period == '6m':  # 반기
-            csv_data['period_group'] = (csv_data['period_month'].dt.period.astype(str) + 'H' + ((csv_data['period_month'].dt.month - 1) // 6 + 1).astype(str))
-        elif period == '12m':  # 연도
-            csv_data['period_group'] = csv_data['period_month'].dt.period.astype(str)
+            csv_data['period_group'] = (csv_data['period_month'].dt.year.astype(str) + 'H' + ((csv_data['period_month'].dt.month - 1) // 6 + 1).astype(str))
+        elif period == '1y':  # 연도
+            csv_data['period_group'] = csv_data['period_month'].dt.year.astype(str)
         elif period == '1w':  # 주
             csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period('W').apply(
                 lambda x: f"{x.start_time.strftime('%Y%m%d')}-{x.end_time.strftime('%Y%m%d')}"
