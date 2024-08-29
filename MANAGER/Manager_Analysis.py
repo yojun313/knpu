@@ -1042,6 +1042,7 @@ class Manager_Analysis:
             reply = QMessageBox.question(self.main, 'Confirm Delete', f'CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n데이터를 저장하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 os.makedirs(analyze_directory, exist_ok=True)
+                os.makedirs(os.path.join(analyze_directory, 'keyword_context'), exist_ok=True)
                 filtered_object_csv_df.to_csv(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option}).csv"), index = False, encoding='utf-8-sig')
                 pd.DataFrame([selected_words_dic]).to_csv(os.path.join(analyze_directory, f"filtered_words.csv"), index = False, encoding='utf-8-sig')
 
@@ -1067,12 +1068,15 @@ class Manager_Analysis:
                 for keyword in selected_words:
                     extracted_texts = filtered_object_csv_df[textColumn_name].apply(lambda x: extract_surrounding_text(x, keyword))
                     keyword_texts = extracted_texts.dropna().tolist()
+                    add_text = "\n\n".join(keyword_texts)
                     if keyword_texts:
-                        context_dict[keyword] = "\n\n".join(keyword_texts)
+                        context_dict[keyword] = add_text
+                    with open(os.path.join(analyze_directory,  'keyword_context', f'{keyword}_context.txt'), 'w') as context:
+                        context.write(add_text)
 
                 context_df = pd.DataFrame(list(context_dict.items()), columns=['Keyword', 'Context Text'])
                 # 데이터프레임을 CSV 파일로 저장
-                context_df.to_csv(os.path.join(analyze_directory, 'keyword_context.csv'), index=False, encoding='utf-8-sig')
+                context_df.to_csv(os.path.join(analyze_directory,  'keyword_context', 'keyword_context.csv'), index=False, encoding='utf-8-sig')
             else:
                 self.main.printStatus()
                 return
@@ -1161,7 +1165,7 @@ class Manager_Analysis:
                 layout.addWidget(self.period_option_label)
                 
                 self.period_option_menu = QComboBox()
-                self.period_option_menu.addItem('12개월 (Yearly)')
+                self.period_option_menu.addItem('1년 (Yearly)')
                 self.period_option_menu.addItem('6개월 (Half-Yearly)')
                 self.period_option_menu.addItem('3개월 (Quarterly)')
                 self.period_option_menu.addItem('1개월 (Monthly)')
@@ -1273,7 +1277,7 @@ class Manager_Analysis:
 
             def update_weight(self):
                 period = self.period_option_menu.currentText()
-                if period == '12개월 (Yearly)':
+                if period == '1 (Yearly)':
                     self.weight_input.setText('0.1')
                 elif period == '6개월 (Half-Yearly)':
                     self.weight_input.setText('0.05')
@@ -1292,8 +1296,8 @@ class Manager_Analysis:
                 enddate = self.enddate_input.text()
                 period = self.period_option_menu.currentText()
                 match period:
-                    case '12개월 (Yearly)':
-                        period = '12m'
+                    case '1년 (Yearly)':
+                        period = '1y'
                     case '6개월 (Half-Yearly)':
                         period = '6m'
                     case '3개월 (Quarterly)':
@@ -1351,11 +1355,20 @@ class Manager_Analysis:
                     split_option = dialog.data['split_option']
                     split_custom = dialog.data['split_custom']
                     # Calculate total periods based on the input period
-                    if period in ['12m', '6m', '3m', '1m']:
+
+                    if period == '1y':
+                        total_periods = (1 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
+                    elif period in ['6m', '3m', '1m']:
                         total_periods = (12 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
                     elif period == '1w':
                         total_days = (datetime.strptime(str(enddate), '%Y%m%d') - datetime.strptime(str(startdate),'%Y%m%d')).days
                         total_periods = total_days // 7
+                        if datetime.strptime(startdate, '%Y%m%d').strftime('%A') != 'Monday':
+                            QMessageBox.information(self.main, "Warning", "분석 시작일이 월요일이 아닙니다\n\n1주 단위 분석에서는 분석 시작일을 월요일, 분석 종료일을 일요일로 설정하십시오")
+                            continue
+                        if datetime.strptime(enddate, '%Y%m%d').strftime('%A') != 'Sunday':
+                            QMessageBox.information(self.main, "Warning", "분석 종료일이 일요일이 아닙니다\n\n1주 단위 분석에서는 분석 시작일을 월요일, 분석 종료일을 일요일로 설정하십시오")
+                            continue
                     else:  # assuming '1d' or similar daily period
                         total_days = (datetime.strptime(str(enddate), '%Y%m%d') - datetime.strptime(str(startdate),'%Y%m%d')).days
                         total_periods = total_days
