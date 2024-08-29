@@ -1374,7 +1374,7 @@ class Manager_Analysis:
                         total_periods = total_days
 
                     # Check if the total periods exceed the limit when multiplied by the weight
-                    if total_periods * weight > 1:
+                    if total_periods * weight >= 1:
                         QMessageBox.information(self.main, "Warning", "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
                         continue
 
@@ -1414,6 +1414,9 @@ class Manager_Analysis:
             elif result == 0:
                 self.main.printStatus()
                 QMessageBox.information(self.main, "Information", f"Keyword가 존재하지 않아 KEM KIM 분석이 진행되지 않았습니다")
+            elif result == 2:
+                self.main.printStatus()
+                QMessageBox.information(self.main, "Information", "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
             else:
                 self.main.printStatus()
                 QMessageBox.information(self.main, "Warning", f"치명적 오류가 발생하였습니다. 버그 리포트에 오류 작성 부탁드립니다\n\nlog:{result}")

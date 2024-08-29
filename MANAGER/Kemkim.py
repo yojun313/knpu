@@ -62,6 +62,7 @@ class KimKem:
             self.split_option = split_option
             self.split_custom = split_custom
             self.now = datetime.now()
+            self.weighterror = False
 
             # Text Column Name 지정
             for column in token_data.columns.tolist():
@@ -73,14 +74,19 @@ class KimKem:
             # Step 1: 데이터 분할 및 초기화
             self.period_divided_group = self.divide_period(self.token_data, period)
             period_list = list(self.period_divided_group.groups.keys())
+            
+            if (len(period_list) - 1) * self.weight >= 1:
+                self.write_status("시간 가중치 오류")
+                self.weighterror = True
 
-            self.folder_name = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startdate}~{self.enddate}_{period}', self.folder_name)
-            self.kimkem_folder_path = os.path.join(
-                self.save_path,
-                f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
-            )
-            os.makedirs(self.kimkem_folder_path, exist_ok=True)
-            self.write_status()
+            else:
+                self.folder_name = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startdate}~{self.enddate}_{period}', self.folder_name)
+                self.kimkem_folder_path = os.path.join(
+                    self.save_path,
+                    f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
+                )
+                os.makedirs(self.kimkem_folder_path, exist_ok=True)
+                self.write_status()
 
     def write_status(self, msg=''):
         info = (
@@ -106,6 +112,9 @@ class KimKem:
         
     def make_kimkem(self):
         try:
+            if self.weighterror == True:
+                return 2
+            
             self.write_status("토큰 데이터 분할 중...")
             # Step 2: 연도별 단어 리스트 생성 (딕셔너리)
             period_divided_dic_raw = self._initialize_period_divided_dic(self.period_divided_group)#

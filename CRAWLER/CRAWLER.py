@@ -178,6 +178,7 @@ class Crawler(CrawlerModule):
     def FinalOperator(self):
         self.mySQL.connectDB(self.DBname)
         tablelist = [table for table in self.mySQL.showAllTable(self.DBname) if 'info' not in table]
+        
         for table in tablelist:
             data_df = self.mySQL.TableToDataframe(table)
 
@@ -189,10 +190,12 @@ class Crawler(CrawlerModule):
 
                 # 날짜 형식 변환 및 그룹화 후 정렬
                 data_df[date_column] = pd.to_datetime(data_df[date_column], format='%Y-%m-%d').dt.date
-                data_df = data_df.groupby('Article URL').agg({
+                grouped = data_df.groupby('Article URL')
+                data_df = grouped.agg({
                     text_column: ' '.join,
-                    date_column: 'min'
+                    'Article Day': 'first'
                 }).reset_index()
+                data_df = data_df.rename(columns={'Article Day': date_column})
                 data_df = data_df.sort_values(by=date_column)
 
             token_df = self.tokenization(data_df)
@@ -282,8 +285,8 @@ class Crawler(CrawlerModule):
 
         article_column     = ["Article Press", "Article Type", "Article URL", "Article Title", "Article Text", "Article Date", "Article ReplyCnt"]
         statistiscs_column = ["Article Press", "Article Type", "Article URL", "Article Title", "Article Text", "Article Date", "Article ReplyCnt", "Male", "Female", "10Y", "20Y", "30Y", "40Y", "50Y", "60Y"]
-        reply_column       = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID']
-        rereply_column     = ["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "Article URL"]
+        reply_column       = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID', 'Article Day']
+        rereply_column     = ["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "Article URL", 'Article Day']
 
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
         self.mySQL.newTable(tableName=self.statisticsDB, column_list=statistiscs_column)
@@ -334,6 +337,8 @@ class Crawler(CrawlerModule):
                         article_returnData = returnData['articleData']
                         if self.ReturnChecker(article_returnData) == True:
                             articleStatus = True
+                        else:
+                            continue
 
                         replyList_returnData = returnData['replyData']
                         # replyData 정상 확인
@@ -345,13 +350,15 @@ class Crawler(CrawlerModule):
                                     self.mySQL.insertToTable(tableName=self.statisticsDB, data_list=article_returnData['articleData'] + replyList_returnData['statisticsData'])
 
                             if replyList_returnData['replyList'] != []:
-                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=replyList_returnData['replyList'])
+                                data_list = [sublist + [article_returnData['articleData'][5]] for sublist in replyList_returnData['replyList']]
+                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
 
                         if option == 2:
                             # rereplyData 정상확인
                             rereplyList_returnData = returnData['rereplyData']
                             if self.ReturnChecker(rereplyList_returnData) == True and rereplyList_returnData['rereplyList'] != []:
-                                self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=rereplyList_returnData['rereplyList'])
+                                data_list = [sublist + [article_returnData['articleData'][5]] for sublist in rereplyList_returnData['rereplyList']]
+                                self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=data_list)
 
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
@@ -377,7 +384,7 @@ class Crawler(CrawlerModule):
         self.urlList         = []
 
         article_column = ["Article ID", "Article URL", "Article Text", "Article Date"]
-        reply_column   = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID']
+        reply_column   = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID', 'Article Day']
 
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
         if option == 2:
@@ -422,11 +429,14 @@ class Crawler(CrawlerModule):
                         article_returnData = returnData['articleData']
                         if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
                             self.mySQL.insertToTable(tableName=self.articleDB, data_list=article_returnData['articleData'])
+                        else:
+                            continue
 
                         if option == 2:
                             replyList_returnData = returnData['replyData']
                             if self.ReturnChecker(replyList_returnData) == True and replyList_returnData['replyList'] != []:
-                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=replyList_returnData['replyList'])
+                                data_list = [sublist + [article_returnData['articleData'][3]] for sublist in replyList_returnData['replyList']]
+                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
 
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
@@ -452,7 +462,7 @@ class Crawler(CrawlerModule):
         self.urlList         = []
 
         article_column = ["NaverCafe Name", "NaverCafe MemberCount", "Article Writer", "Article Title", "Article Text", "Article Date", "Article ReadCount", "Article ReplyCount", "Article URL"]
-        reply_column   = ["Reply Num", "Reply Writer", "Reply Date", 'Reply Text', 'Article URL']
+        reply_column   = ["Reply Num", "Reply Writer", "Reply Date", 'Reply Text', 'Article URL', 'Article Day']
 
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
         if option == 2:
@@ -497,11 +507,14 @@ class Crawler(CrawlerModule):
                         article_returnData = returnData['articleData']
                         if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
                             self.mySQL.insertToTable(tableName=self.articleDB, data_list=article_returnData['articleData'])
+                        else:
+                            continue
 
                         if option == 2:
                             replyList_returnData = returnData['replyData']
                             if self.ReturnChecker(replyList_returnData) == True and replyList_returnData['replyList'] != []:
-                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=replyList_returnData['replyList'])
+                                data_list = [sublist + [article_returnData['articleData'][5]] for sublist in replyList_returnData['replyList']]
+                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
 
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
@@ -530,8 +543,8 @@ class Crawler(CrawlerModule):
         self.urlList = []
 
         article_column = ['YouTube Channel', 'Article URL', 'Article Title', 'Article Text', 'Article Date', 'Article ViewCount', 'Article Like', 'Article ReplyCount']
-        reply_column = ['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Article URL']
-        rereply_column = ['Rereply Num', 'Rereply Writer', 'Rereply Date', 'Rereply Text', 'Rereply Like', 'Article URL']
+        reply_column = ['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Article URL', 'Article Day']
+        rereply_column = ['Rereply Num', 'Rereply Writer', 'Rereply Date', 'Rereply Text', 'Rereply Like', 'Article URL', 'Article Day']
 
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
         self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
@@ -577,13 +590,17 @@ class Crawler(CrawlerModule):
                         article_returnData = returnData['articleData']
                         if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
                             self.mySQL.insertToTable(tableName=self.articleDB, data_list=article_returnData['articleData'])
+                        else:
+                            continue
 
                         replyList_returnData = returnData['replyData']
                         if self.ReturnChecker(replyList_returnData) == True:
                             if replyList_returnData['replyList'] != []:
-                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=replyList_returnData['replyList'])
+                                data_list = [sublist + [article_returnData['articleData'][4]] for sublist in replyList_returnData['replyList']]
+                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
                             if replyList_returnData['rereplyList'] != []:
-                                self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=replyList_returnData['rereplyList'])
+                                data_list = [sublist + [article_returnData['articleData'][4]] for sublist in replyList_returnData['rereplyList']]
+                                self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=data_list)
 
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
@@ -657,7 +674,7 @@ class Crawler(CrawlerModule):
         
 
         article_column = ['Article Title', 'Article Text', 'Article Date', 'Article URL']
-        reply_column = ['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Article URL']
+        reply_column = ['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Article URL', 'Article Day']
 
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
         if option == 2:
@@ -707,11 +724,14 @@ class Crawler(CrawlerModule):
                         article_returnData = returnData['articleData']
                         if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != 0:
                             articleList.append(article_returnData['articleData'])
+                        else:
+                            continue
 
                         if option == 2:
                             replyList_returnData = returnData['replyData']
                             if self.ReturnChecker(replyList_returnData) == True and replyList_returnData['replyList'] != []:
-                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=replyList_returnData['replyList'])
+                                data_list = [sublist + [article_returnData['articleData'][2]] for sublist in replyList_returnData['replyList']]
+                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
 
                     self.mySQL.insertToTable(tableName=self.articleDB, data_list=sorted(articleList, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d")))
 
