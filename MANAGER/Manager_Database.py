@@ -514,7 +514,7 @@ class Manager_Database:
                             continue
 
                         # reply 테이블 처리
-                        if 'reply' in tableName and 'statisticsURL' in locals():
+                        if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in target_db:
                             filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
                             save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
                             filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
