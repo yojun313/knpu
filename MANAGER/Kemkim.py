@@ -30,8 +30,8 @@ class KimKem:
                  token_data=None, 
                  csv_name=None, 
                  save_path=None, 
-                 startyear=None, 
-                 endyear=None,
+                 startdate=None,
+                 enddate=None,
                  period=None,
                  topword=None, 
                  weight=None, 
@@ -49,8 +49,8 @@ class KimKem:
             self.save_path = save_path
             self.token_data = token_data
             self.folder_name = csv_name.replace('.csv', '').replace('token_', '')
-            self.startyear = startyear
-            self.endyear = endyear
+            self.startdate = startdate
+            self.enddate = enddate
             self.period = period
             self.topword = topword
             self.weight = weight
@@ -74,18 +74,7 @@ class KimKem:
             self.period_divided_group = self.divide_period(self.token_data, period)
             period_list = list(self.period_divided_group.groups.keys())
 
-            # 사용자가 실제 데이터보다 연도를 작게 입력한 경우 또는 크게 입력한 경우 자동으로 조정
-            if self.startyear < self.year_extractor(period_list[0]):
-                self.startyear = self.year_extractor(period_list[0])
-            if self.endyear > self.year_extractor(period_list[-1]):
-                self.endyear = self.year_extractor(period_list[-1])
-
-            # 시작 연도, 종료 연도에 맞게 데이터 추출
-            self.period_divided_group = self.period_divided_group.filter(lambda x: self.endyear >= self.year_extractor(x.name) >= self.startyear)
-            self.period_divided_group = self.period_divided_group.groupby('period_group')
-
-            # 폴더 이름 20230101 -> 2023으로 startyear, endyear 형식으로 변경
-            self.folder_name = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startyear}~{self.endyear}_{period}m', self.folder_name)
+            self.folder_name = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startdate}~{self.enddate}_{period}', self.folder_name)
             self.kimkem_folder_path = os.path.join(
                 self.save_path,
                 f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
@@ -98,9 +87,9 @@ class KimKem:
             f"===================================================================================================================\n"
             f"{'분석 데이터:':<15} {self.csv_name}\n"
             f"{'분석 시각:':<15} {self.now.strftime('%Y.%m.%d %H:%M')}\n"
-            f"{'분석 시작 연도:':<15} {self.startyear}\n"
-            f"{'분석 종료 연도:':<15} {self.endyear}\n"
-            f"{'분석 기간 단위:':<15} {self.period}개월\n"
+            f"{'분석 시작일:':<15} {self.startdate}\n"
+            f"{'분석 종료일:':<15} {self.enddate}\n"
+            f"{'분석 기간 단위:':<15} {self.period}\n"
             f"{'상위 단어 개수:':<15} {self.topword}\n"
             f"{'계산 가중치:':<15} {self.weight}\n"
             f"{'애니메이션 여부:':<15} {self.ani_option_display}\n"
@@ -221,12 +210,12 @@ class KimKem:
                 self.animate_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_animation.gif'), 'DF', 'Increasing Rate')
 
             self.write_status("최종 KEM KIM 생성 중...")
+            pd.DataFrame(self.exception_word_list, columns=['word']).to_csv(os.path.join(self.result_folder, 'filtered_words.csv'), index=False, encoding='utf-8-sig')
             DoV_dict, DoD_dict = self.cal_DoV(keyword_list, period_divided_dic, tf_counts, trace=False), self.cal_DoD(keyword_list, period_divided_dic, df_counts, trace=False)
             self._save_kimkem_results(tf_counts, df_counts, DoV_dict, DoD_dict)
             avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, self.period_list[0], self.period_list[-1])
             DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(self.result_folder, 'Graph'))
             Final_signal_record = self._save_final_signals(DoV_signal_record, DoD_signal_record, os.path.join(self.result_folder, 'Signal'))
-            pd.DataFrame(self.exception_word_list, columns=['word']).to_csv(os.path.join(self.result_folder, 'filtered_words.csv'), index = False, encoding='utf-8-sig')
 
             self.write_status("완료")
             return 1
@@ -249,43 +238,38 @@ class KimKem:
 
         return dictionary
 
-    def year_extractor(self, text):
-
-        # 정규 표현식을 사용하여 첫 번째 네 자리 숫자 찾기
-        return int(text[:4])
-
     def find_key_position(self, dic, target_key):
         try:
             return list(dic.keys()).index(target_key)
         except ValueError:
             return None  # 키가 없을 경우 None 반환
 
-    def trace_keyword_positions(self, yearly_data):
+    def trace_keyword_positions(self, period_data):
         
         # 모든 단어를 수집하기 위한 집합
         all_keywords = set()
 
         # 연도를 정렬하여 순차적으로 처리
-        years = sorted(yearly_data.keys())
+        periods = sorted(period_data.keys())
 
         # 각 연도별로 단어의 위치를 추적할 딕셔너리
         keyword_positions = {}
 
-        for year in years:
-            year_positions = {}
-            for key, words in yearly_data[year].items():
+        for period in periods:
+            period_positions = {}
+            for key, words in period_data[period].items():
                 for word in words:
                     all_keywords.add(word)
-                    year_positions[word] = f"{key}"
+                    period_positions[word] = f"{key}"
             
-            keyword_positions[year] = year_positions
+            keyword_positions[period] = period_positions
 
         # set을 list로 변환하여 인덱스로 사용
         df = pd.DataFrame(index=list(all_keywords))
         df.index.name = 'Keyword'
         
-        for year in years:
-            df[str(year)] = df.index.map(keyword_positions[year].get)
+        for period in periods:
+            df[str(period)] = df.index.map(keyword_positions[period].get)
         
         return df
     
@@ -309,8 +293,8 @@ class KimKem:
         # 연도별 키워드의 위치를 계산
         for idx, keyword in enumerate(df.index):
             size = base_size + (idx * size_increment)  # 크기 증가를 반영
-            for year in df.columns:
-                quadrant = df.loc[keyword, year]
+            for period in df.columns:
+                quadrant = df.loc[keyword, period]
                 position = get_position(quadrant, size)  # 크기를 포지션에 반영
                 keyword_trajectories[keyword].append(position)
 
@@ -325,7 +309,7 @@ class KimKem:
         plt.axhline(0, color='black', linewidth=1)
         plt.axvline(0, color='black', linewidth=1)
 
-        position_years = {}
+        position_periods = {}
         
         # 각 키워드의 포인트를 시각화
         for i, (keyword, trajectory) in enumerate(keyword_trajectories.items()):
@@ -337,13 +321,13 @@ class KimKem:
             # 각 위치에 연도 표시
             for j, (x, y) in enumerate(trajectory):
                 # 해당 위치에 이미 연도가 기록되어 있는지 확인
-                if (x, y) in position_years:
-                    position_years[(x, y)].append(df.columns[j])
+                if (x, y) in position_periods:
+                    position_periods[(x, y)].append(df.columns[j])
                 else:
-                    position_years[(x, y)] = [df.columns[j]]
+                    position_periods[(x, y)] = [df.columns[j]]
 
         # 모든 연도를 한 번에 표시
-        for (x, y), years in position_years.items():
+        for (x, y), periods in position_periods.items():
             keyword_at_position = None
             for keyword, trajectory in keyword_trajectories.items():
                 if (x, y) in trajectory:
@@ -351,7 +335,7 @@ class KimKem:
                     break
             
             # 키워드와 연도를 함께 표시
-            label = f"{keyword_at_position}: " + ', '.join(map(str, years))
+            label = f"{keyword_at_position}: " + ', '.join(map(str, periods))
             plt.text(x, y, label, fontsize=6, ha='center', va='center')
 
         # 각 사분면의 이름을 그래프 바깥쪽에 설정
@@ -380,7 +364,7 @@ class KimKem:
 
         plt.close()
     
-    def animate_keyword_movements(self, df,  gif_filename='keyword_movements.gif', x_axis_name='X-Axis', y_axis_name='Y-Axis', base_size=2, size_increment=2, frames_between_years=3, duration = 1000):
+    def animate_keyword_movements(self, df,  gif_filename='keyword_movements.gif', x_axis_name='X-Axis', y_axis_name='Y-Axis', base_size=2, size_increment=2, frames_between_periods=3, duration = 1000):
         # 포지션 매핑: 각 사분면에 위치를 계산
         def get_position(quadrant, size):
             if quadrant == 'strong_signal':   # 1사분면
@@ -400,8 +384,8 @@ class KimKem:
         # 연도별 키워드의 위치를 계산
         for idx, keyword in enumerate(df.index):
             size = base_size + (idx * size_increment)  # 크기 증가를 반영
-            for year in df.columns:
-                quadrant = df.loc[keyword, year]
+            for period in df.columns:
+                quadrant = df.loc[keyword, period]
                 position = get_position(quadrant, size)  # 크기를 포지션에 반영
                 keyword_positions[keyword].append(position)
 
@@ -414,10 +398,10 @@ class KimKem:
         
         # 중간 프레임 생성
         for t in range(len(df.columns) - 1):
-            year = df.columns[t]
-            next_year = df.columns[t + 1]
+            period = df.columns[t]
+            next_period = df.columns[t + 1]
             
-            for frame in range(frames_between_years):
+            for frame in range(frames_between_periods):
                 plt.figure(figsize=(18, 18))  # 그래프 크기를 더 크게 설정
                 
                 # 4분면의 선 그리기
@@ -430,11 +414,11 @@ class KimKem:
                     x_end, y_end = keyword_positions[keyword][t + 1]
                     
                     # 중간 위치 계산
-                    x = x_start + (x_end - x_start) * (frame / frames_between_years)
-                    y = y_start + (y_end - y_start) * (frame / frames_between_years)
+                    x = x_start + (x_end - x_start) * (frame / frames_between_periods)
+                    y = y_start + (y_end - y_start) * (frame / frames_between_periods)
                     
                     plt.scatter(x, y, label=keyword, color=colors[i], alpha=0.75)
-                    label = f"{keyword} ({year})"
+                    label = f"{keyword} ({period})"
                     plt.text(x, y, label, fontsize=6, ha='center', va='center')
 
                 # 각 사분면의 이름을 그래프 바깥쪽에 설정
@@ -444,7 +428,7 @@ class KimKem:
                 plt.text(max_size * 1.1, -max_size * 1.1, 'Well-Known Signal', fontsize=14, ha='center', va='center', color='black')
 
                 # 그래프 설정
-                plt.title(f'KEMKIM Keyword Movements ({year})', fontsize=18)
+                plt.title(f'KEMKIM Keyword Movements ({period})', fontsize=18)
                 plt.xlabel(x_axis_name, fontsize=14)
                 plt.ylabel(y_axis_name, fontsize=14)
                 plt.xlim(-max_size * 1.2, max_size * 1.2)  # 최대 크기에 따라 축 설정
@@ -545,9 +529,6 @@ class KimKem:
         for group_name, group_data in period_divided_group:
             period_divided_dic[str(group_name)] = group_data[self.textColumn_name].tolist()
 
-        # 시작 연도와 종료 연도에 따라 필터링 (필요한 경우)
-        period_divided_dic = {key: value for key, value in period_divided_dic.items() if self.endyear >= int(key[:4]) >= self.startyear}
-
         return period_divided_dic
 
     def _generate_period_divided_dic(self, period_divided_dic_raw):
@@ -615,17 +596,17 @@ class KimKem:
         os.makedirs(self.trace_DOD_folder, exist_ok=True)
 
         for period in self.period_list:
-            year_path = os.path.join(self.trace_result_folder, period)
-            os.makedirs(year_path, exist_ok=True)
-            os.makedirs(os.path.join(year_path, 'Graph'), exist_ok=True)
-            os.makedirs(os.path.join(year_path, 'Signal'), exist_ok=True)
+            period_path = os.path.join(self.trace_result_folder, period)
+            os.makedirs(period_path, exist_ok=True)
+            os.makedirs(os.path.join(period_path, 'Graph'), exist_ok=True)
+            os.makedirs(os.path.join(period_path, 'Signal'), exist_ok=True)
 
     def _save_kimkem_results(self, tf_counts, df_counts, DoV_dict, DoD_dict):
-        for year in tf_counts:
-            self._save_period_data(self.tf_folder, year, tf_counts, 'TF')
-            self._save_period_data(self.df_folder, year, df_counts, 'DF')
-            self._save_period_data(self.DoV_folder, year, DoV_dict, 'DoV')
-            self._save_period_data(self.DoD_folder, year, DoD_dict, 'DoD')
+        for period in tf_counts:
+            self._save_period_data(self.tf_folder, period, tf_counts, 'TF')
+            self._save_period_data(self.df_folder, period, df_counts, 'DF')
+            self._save_period_data(self.DoV_folder, period, DoV_dict, 'DoV')
+            self._save_period_data(self.DoD_folder, period, DoD_dict, 'DoD')
 
         if self.ani_option == True:
             self.create_top_words_animation(tf_counts, os.path.join(self.tf_folder, 'tf_counts_animation.gif'), self.graph_wordcnt)
@@ -663,9 +644,9 @@ class KimKem:
         return (((data_dict[max_period][word] / data_dict[min_period][word]) ** (1 / (self.period_list.index(max_period) - self.period_list.index(min_period)))) - 1) * 100
 
     def _calculate_average_frequency(self, counts_dict, word, max_period, min_period):
-        relevant_years = [period for period in counts_dict.keys() if period == max_period or period == min_period]
-        total_frequency = sum([counts_dict[year][word] for year in relevant_years])
-        return total_frequency / len(relevant_years) if relevant_years else 0
+        relevant_periods = [period for period in counts_dict.keys() if period == max_period or period == min_period]
+        total_frequency = sum([counts_dict[period][word] for period in relevant_periods])
+        return total_frequency / len(relevant_periods) if relevant_periods else 0
 
     # 그래프 생성 / 시그널 분석
     def _analyze_signals(self, avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, folder_path):
@@ -717,28 +698,50 @@ class KimKem:
         csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
 
         # 날짜 열을 datetime 형식으로 변환
-        csv_data[self.dateColumn_name] = pd.to_datetime(csv_data[self.dateColumn_name].str.split().str[0],
-                                                        format='%Y-%m-%d', errors='coerce')
+        csv_data[self.dateColumn_name] = pd.to_datetime(csv_data[self.dateColumn_name].str.split().str[0], format='%Y-%m-%d', errors='coerce')
 
-        # 'year_month' 열 추가 (월 단위 기간으로 변환)
-        csv_data['year_month'] = csv_data[self.dateColumn_name].dt.to_period('M')
+        # 'YYYYMMDD' 형식의 문자열을 datetime 형식으로 변환
+        start_date = pd.to_datetime(str(self.startdate), format='%Y%m%d')
+        end_date = pd.to_datetime(str(self.enddate), format='%Y%m%d')
+
+        # 날짜 범위 필터링
+        csv_data = csv_data[csv_data[self.dateColumn_name].between(start_date, end_date)]
+
+        if start_date < csv_data[self.dateColumn_name].min():
+            self.startdate = int(csv_data[self.dateColumn_name].min().strftime('%Y%m%d'))
+
+        if end_date > csv_data[self.dateColumn_name].max():
+            self.enddate = int(csv_data[self.dateColumn_name].max().strftime('%Y%m%d'))
+
+        # 'period_month' 열 추가 (월 단위 기간으로 변환)
+        csv_data['period_month'] = csv_data[self.dateColumn_name].dt.to_period('M')
 
         # 필요한 전체 기간 생성
-        full_range = pd.period_range(start=csv_data['year_month'].min(), end=csv_data['year_month'].max(), freq='M')
-        full_df = pd.DataFrame(full_range, columns=['year_month'])
+        full_range = pd.period_range(start=csv_data['period_month'].min(), end=csv_data['period_month'].max(), freq='M')
+        full_df = pd.DataFrame(full_range, columns=['period_month'])
 
         # 원본 데이터와 병합하여 빈 기간도 포함하도록 함
-        csv_data = pd.merge(full_df, csv_data, on='year_month', how='left')
+        csv_data = pd.merge(full_df, csv_data, on='period_month', how='left')
 
         # 새로운 열을 추가하여 주기 단위로 기간을 그룹화
-        if period == 1:  # 월
-            csv_data['period_group'] = csv_data['year_month'].dt.to_timestamp().dt.to_period('M').astype(str)
-        elif period == 3:  # 분기
-            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'Q' + ((csv_data['year_month'].dt.month - 1) // 3 + 1).astype(str))
-        elif period == 6:  # 반기
-            csv_data['period_group'] = (csv_data['year_month'].dt.year.astype(str) + 'H' + ((csv_data['year_month'].dt.month - 1) // 6 + 1).astype(str))
-        elif period == 12:  # 연도
-            csv_data['period_group'] = csv_data['year_month'].dt.year.astype(str)
+        if period == '1m':  # 월
+            csv_data['period_group'] = csv_data['period_month'].dt.to_timestamp().dt.to_period('M').astype(str)
+        elif period == '3m':  # 분기
+            csv_data['period_group'] = (csv_data['period_month'].dt.period.astype(str) + 'Q' + ((csv_data['period_month'].dt.month - 1) // 3 + 1).astype(str))
+        elif period == '6m':  # 반기
+            csv_data['period_group'] = (csv_data['period_month'].dt.period.astype(str) + 'H' + ((csv_data['period_month'].dt.month - 1) // 6 + 1).astype(str))
+        elif period == '12m':  # 연도
+            csv_data['period_group'] = csv_data['period_month'].dt.period.astype(str)
+        elif period == '1w':  # 주
+            csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period('W').apply(
+                lambda x: f"{x.start_time.strftime('%Y%m%d')}-{x.end_time.strftime('%Y%m%d')}"
+            )
+            first_date = csv_data['period_group'].iloc[0].split('-')[0]
+            end_date = csv_data['period_group'].iloc[-1].split('-')[1]
+            self.startdate = first_date
+            self.enddate = end_date
+        elif period == '1d':  # 일
+            csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period('D').astype(str)
 
         # 주기별로 그룹화하여 결과 반환
         period_divided_group = csv_data.groupby('period_group')
@@ -749,9 +752,9 @@ class KimKem:
         df = pd.DataFrame(dataframe).fillna(0)
     
         # 연도별로 상위 word_cnt개 단어를 추출
-        top_words_per_year = {}
-        for year in df.columns:
-            top_words_per_year[year] = df[year].nlargest(word_cnt).sort_values(ascending=True)
+        top_words_per_period = {}
+        for period in df.columns:
+            top_words_per_period[period] = df[period].nlargest(word_cnt).sort_values(ascending=True)
 
         # 색상 팔레트 설정 (세련된 색상)
         colors = sns.color_palette("husl", word_cnt)
@@ -764,13 +767,13 @@ class KimKem:
             return np.linspace(start, end, num_steps)
 
         def animate(i):
-            year_idx = i // frames_per_transition
-            year = list(top_words_per_year.keys())[year_idx]
-            next_year_idx = year_idx + 1 if year_idx + 1 < len(top_words_per_year) else year_idx
-            next_year = list(top_words_per_year.keys())[next_year_idx]
+            period_idx = i // frames_per_transition
+            period = list(top_words_per_period.keys())[period_idx]
+            next_period_idx = period_idx + 1 if period_idx + 1 < len(top_words_per_period) else period_idx
+            next_period = list(top_words_per_period.keys())[next_period_idx]
 
-            start_data = top_words_per_year[year]
-            end_data = top_words_per_year[next_year]
+            start_data = top_words_per_period[period]
+            end_data = top_words_per_period[next_period]
 
             # 데이터를 정렬하여 순위를 유지하게끔 보간
             combined_data = pd.concat([start_data, end_data], axis=1).fillna(0)
@@ -791,7 +794,7 @@ class KimKem:
             ax.clear()
             ax.barh(sorted_words, sorted_values, color=colors[:len(sorted_words)])  # 색상도 word_cnt에 맞게 제한
             ax.set_xlim(0, (df.max().max() * scale_factor) + 500)  # 최대 빈도수를 기준으로 x축 설정
-            ax.set_title(f'Top {word_cnt} Keywords in {year}', fontsize=16)
+            ax.set_title(f'Top {word_cnt} Keywords in {period}', fontsize=16)
             ax.set_xlabel('Frequency', fontsize=14)
             ax.set_ylabel('Keywords', fontsize=14)
             plt.box(False)
@@ -799,7 +802,7 @@ class KimKem:
         # GIF로 저장 (메모리 내에서 처리하여 속도 향상)
         frames = []
         
-        for i in range((len(top_words_per_year) - 1) * frames_per_transition):
+        for i in range((len(top_words_per_period) - 1) * frames_per_transition):
             animate(i)
             buf = io.BytesIO()
             plt.savefig(buf, format='png')
@@ -828,18 +831,18 @@ class KimKem:
     # 연도별 keyword df 딕셔너리 반환
     def cal_df(self, keyword_list, period_divided_dic):
         df_counts = {}
-        for year in period_divided_dic:
+        for period in period_divided_dic:
             keyword_counts = {}
             for keyword in keyword_list:  # keyword는 keyword_list의 keyword
                 count = 0
-                for doc in period_divided_dic[year]:
+                for doc in period_divided_dic[period]:
                     if keyword in doc:
                         count += 1
                 keyword_counts[keyword] = count
 
             keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
 
-            df_counts[year] = keyword_counts
+            df_counts[period] = keyword_counts
         return df_counts
 
     # 연도별 keyword DoV 딕셔너리 반환
@@ -1070,13 +1073,13 @@ class KimKem:
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
 
 if __name__=='__main__':
-    token_data = pd.read_csv("C:/BIGMACLAB_MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/token_data/token_navernews_바이오의료_20100101_20240731_0815_2036_statistics.csv", low_memory=False, encoding='utf-8-sig')
+    token_data = pd.read_csv("/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/token_data/token_navernews_바이오의료_20100101_20240731_0815_2036_article.csv", low_memory=False, encoding='utf-8-sig')
     kimkem_obj = KimKem(token_data=token_data, 
                         csv_name='navernews_바이오의료_20100101_20240731_0815_2036_article.csv', 
                         save_path='C:/BIGMACLAB_MANAGER/바이오의료 KIMKEM 데이터',
-                        startyear=2010,
-                        endyear=2024,
-                        period=12,
+                        startdate=20240301,
+                        enddate=20240331,
+                        period='1d',
                         topword=500,
                         weight=0.05,
                         graph_wordcnt=20,
