@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox, QComboBox, \
     QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout, QGroupBox, QScrollArea,\
-    QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton
-from PyQt5.QtCore import QTimer, QStringListModel, Qt
+    QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton, QDateEdit
+from PyQt5.QtCore import QTimer, QStringListModel, Qt, QDate
 import copy
 import pandas as pd
 import os
@@ -968,14 +968,14 @@ class Manager_Analysis:
                         # '분석 데이터:' 뒤에 오는 값을 파싱
                         recommend_csv_name = line.split('분석 데이터:')[-1].strip().replace('token_', '')
                         topic = recommend_csv_name.split('_')[1]
-                    if line.startswith('분석 시작 연도:'):
+                    if line.startswith('분석 시작일:'):
                         # '분석 데이터:' 뒤에 오는 값을 파싱
-                        startyear = line.split('분석 시작 연도:')[-1].strip().replace('token_', '')
-                        startyear = int(startyear)
-                    if line.startswith('분석 종료 연도:'):
+                        startdate = line.split('분석 시작일:')[-1].strip().replace('token_', '')
+                        startdate = int(startdate)
+                    if line.startswith('분석 종료일:'):
                         # '분석 데이터:' 뒤에 오는 값을 파싱
-                        endyear = line.split('분석 종료 연도:')[-1].strip().replace('token_', '')
-                        endyear = int(endyear)
+                        enddate = line.split('분석 종료일:')[-1].strip().replace('token_', '')
+                        enddate = int(enddate)
             except:
                 recommend_csv_name = 'KemKim 생성 시 사용한 크롤링 데이터'
                 topic = ""
@@ -1014,12 +1014,12 @@ class Manager_Analysis:
                 elif 'Date' in column:
                     dateColumn_name = column
 
-            # 연도 범위 설정
+            # 날짜 범위 설정
             object_csv_df[dateColumn_name] = pd.to_datetime(object_csv_df[dateColumn_name], format='%Y-%m-%d', errors='coerce')
-            object_csv_df = object_csv_df[
-                (object_csv_df[dateColumn_name].dt.year >= startyear) &
-                (object_csv_df[dateColumn_name].dt.year <= endyear)
-            ]
+            start_date = pd.to_datetime(str(startdate), format='%Y%m%d')
+            end_date = pd.to_datetime(str(enddate), format='%Y%m%d')
+            # 날짜 범위 필터링
+            object_csv_df = object_csv_df[object_csv_df[dateColumn_name].between(start_date, end_date)]
 
             if selected_option == "모두 포함":
                 filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(lambda x: all(word in str(x) for word in selected_words))]
@@ -1131,17 +1131,6 @@ class Manager_Analysis:
                 self.data = None  # 데이터를 저장할 속성 추가
 
             def initUI(self):
-                def extract_years(text):
-                        # 정규 표현식을 사용하여 연도 패턴 추출
-                    match = re.search(r'_(\d{4})(\d{2})(\d{2})_(\d{4})(\d{2})(\d{2})_', text)
-                    if match:
-                        # 시작 연도와 종료 연도 추출
-                        start_year = match.group(1)
-                        end_year = match.group(4)
-                        return start_year, end_year
-                    return None
-                
-                startyear, endyear = extract_years(tokenfile_name)
                 
                 self.setWindowTitle('KEM KIM OPTION')
                 self.setGeometry(100, 100, 300, 250)  # 창 크기를 조정
@@ -1152,18 +1141,20 @@ class Manager_Analysis:
                 layout.setContentsMargins(10, 10, 10, 10)  # (left, top, right, bottom) 여백 설정
                 layout.setSpacing(10)  # 위젯 간 간격 설정
 
-                # 각 입력 필드를 위한 QLabel 및 QTextEdit 생성
-                self.startyear_label = QLabel('분석 시작 연도를 입력하세요: ')
-                self.startyear_input = QLineEdit()
-                self.startyear_input.setText(startyear)  # 기본값 설정
-                layout.addWidget(self.startyear_label)
-                layout.addWidget(self.startyear_input)
-                
-                self.endyear_label = QLabel('분석 종료 연도를 입력하세요: ')
-                self.endyear_input = QLineEdit()
-                self.endyear_input.setText(endyear)  # 기본값 설정
-                layout.addWidget(self.endyear_label)
-                layout.addWidget(self.endyear_input)
+                # 각 입력 필드를 위한 QLabel 및 QDateEdit 생성
+                self.startdate_label = QLabel('분석 시작 일자를 선택하세요: ')
+                self.startdate_input = QDateEdit(calendarPopup=True)
+                self.startdate_input.setDisplayFormat('yyyyMMdd')
+                self.startdate_input.setDate(QDate.currentDate())
+                layout.addWidget(self.startdate_label)
+                layout.addWidget(self.startdate_input)
+
+                self.enddate_label = QLabel('분석 종료 일자를 선택하세요: ')
+                self.enddate_input = QDateEdit(calendarPopup=True)
+                self.enddate_input.setDisplayFormat('yyyyMMdd')
+                self.enddate_input.setDate(QDate.currentDate())
+                layout.addWidget(self.enddate_label)
+                layout.addWidget(self.enddate_input)
                 
                 # 새로운 드롭다운 메뉴(QComboBox) 생성
                 self.period_option_label = QLabel('분석 주기 선택: ')
@@ -1174,6 +1165,8 @@ class Manager_Analysis:
                 self.period_option_menu.addItem('6개월 (Half-Yearly)')
                 self.period_option_menu.addItem('3개월 (Quarterly)')
                 self.period_option_menu.addItem('1개월 (Monthly)')
+                self.period_option_menu.addItem('1주 (Weekly)')
+                self.period_option_menu.addItem('1일 (Daily)')
                 layout.addWidget(self.period_option_menu)
 
                 self.topword_label = QLabel('상위 단어 개수를 입력하세요: ')
@@ -1182,11 +1175,15 @@ class Manager_Analysis:
                 layout.addWidget(self.topword_label)
                 layout.addWidget(self.topword_input)
 
+                # Time Weight 입력 필드 생성 및 레이아웃에 추가
                 self.weight_label = QLabel('시간 가중치(tw)를 입력하세요: ')
                 self.weight_input = QLineEdit()
-                self.weight_input.setText('0.05')  # 기본값 설정
+                self.weight_input.setText('0.1')  # 기본값 설정
                 layout.addWidget(self.weight_label)
                 layout.addWidget(self.weight_input)
+
+                # Period Option Menu 선택 시 시간 가중치 변경 함수 연결
+                self.period_option_menu.currentIndexChanged.connect(self.update_weight)
 
                 self.wordcnt_label = QLabel('그래프 애니메이션에 띄울 단어의 개수를 입력하세요: ')
                 self.wordcnt_input = QLineEdit()
@@ -1274,20 +1271,39 @@ class Manager_Analysis:
                     self.additional_input_label.hide()
                     self.additional_input.hide()
 
+            def update_weight(self):
+                period = self.period_option_menu.currentText()
+                if period == '12개월 (Yearly)':
+                    self.weight_input.setText('0.1')
+                elif period == '6개월 (Half-Yearly)':
+                    self.weight_input.setText('0.05')
+                elif period == '3개월 (Quarterly)':
+                    self.weight_input.setText('0.025')
+                elif period == '1개월 (Monthly)':
+                    self.weight_input.setText('0.008')
+                elif period == '1주 (Weekly)':
+                    self.weight_input.setText('0.002')
+                elif period == '1일 (Daily)':
+                    self.weight_input.setText('0.0003')
+
             def submit(self):
                 # 입력된 데이터를 확인하고 처리
-                startyear = self.startyear_input.text()
-                endyear = self.endyear_input.text()
+                startdate = self.startdate_input.text()
+                enddate = self.enddate_input.text()
                 period = self.period_option_menu.currentText()
                 match period:
                     case '12개월 (Yearly)':
-                        period = 12
+                        period = '12m'
                     case '6개월 (Half-Yearly)':
-                        period = 6
+                        period = '6m'
                     case '3개월 (Quarterly)':
-                        period = 3
+                        period = '3m'
                     case '1개월 (Monthly)':
-                        period = 1
+                        period = '1m'
+                    case '1주 (Weekly)':
+                        period = '1w'
+                    case '1일 (Daily)':
+                        period = '1d'
 
                 topword = self.topword_input.text()
                 weight = self.weight_input.text()
@@ -1298,8 +1314,8 @@ class Manager_Analysis:
                 split_custom = self.additional_input.text() if self.additional_input.isVisible() else None
 
                 self.data = {
-                    'startyear': startyear,
-                    'endyear': endyear,
+                    'startdate': startdate,
+                    'enddate': enddate,
                     'period': period,
                     'topword': topword,
                     'weight': weight,
@@ -1324,9 +1340,9 @@ class Manager_Analysis:
                 try:
                     if dialog.data == None:
                         return
-                    startyear = int(dialog.data['startyear'])
-                    endyear = int(dialog.data['endyear'])
-                    period = int(dialog.data['period'])
+                    startdate = dialog.data['startdate']
+                    enddate = dialog.data['enddate']
+                    period = dialog.data['period']
                     topword = int(dialog.data['topword'])
                     weight = float(dialog.data['weight'])
                     graph_wordcnt = int(dialog.data['graph_wordcnt'])
@@ -1334,9 +1350,21 @@ class Manager_Analysis:
                     except_yes_selected = dialog.data['except_yes_selected']
                     split_option = dialog.data['split_option']
                     split_custom = dialog.data['split_custom']
-                    if (12 / period) * (endyear-startyear+1) * weight >= 1:
-                        QMessageBox.information(self.main, "Warning", "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작연도~종료연도 사이의 간격을 줄이십시오")
+                    # Calculate total periods based on the input period
+                    if period in ['12m', '6m', '3m', '1m']:
+                        total_periods = (12 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
+                    elif period == '1w':
+                        total_days = (datetime.strptime(str(enddate), '%Y%m%d') - datetime.strptime(str(startdate),'%Y%m%d')).days
+                        total_periods = total_days // 7
+                    else:  # assuming '1d' or similar daily period
+                        total_days = (datetime.strptime(str(enddate), '%Y%m%d') - datetime.strptime(str(startdate),'%Y%m%d')).days
+                        total_periods = total_days
+
+                    # Check if the total periods exceed the limit when multiplied by the weight
+                    if total_periods * weight > 1:
+                        QMessageBox.information(self.main, "Warning", "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
                         continue
+
                     if split_option in ['평균(Mean)', '중앙값(Median)'] and split_custom is None:
                         pass
                     else:
@@ -1363,7 +1391,7 @@ class Manager_Analysis:
                 exception_word_list = []
                 exception_word_list_path = 'N'
 
-            kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startyear, endyear, period, topword, weight, graph_wordcnt, split_option, split_custom, ani_yes_selected, exception_word_list, exception_word_list_path)
+            kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startdate, enddate, period, topword, weight, graph_wordcnt, split_option, split_custom, ani_yes_selected, exception_word_list, exception_word_list_path)
             self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
             result = kimkem_obj.make_kimkem()
 
