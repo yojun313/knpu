@@ -193,18 +193,19 @@ class Manager_Database:
         crawlType = DBdata[1]
         crawlOption_int = int(DBdata[4])
 
+        json_str = DBinfo[2]
+        numbers = re.findall(r'\d+', json_str)
         try:
-            json_str = DBinfo[2].replace("'", '"')
-            IntegratedDB = json.loads(json_str)
             CountText = (
-                f"Article Count: {IntegratedDB['TotalArticleCnt']}\n"
-                f"Reply Count: {IntegratedDB['TotalReplyCnt']}\n"
-                f"Rereply Count: {IntegratedDB['TotalRereplyCnt']}\n"
+                f"Article Count: {numbers[1]}\n"
+                f"Reply Count: {numbers[2]}\n"
+                f"Rereply Count: {numbers[3]}\n"
             )
-            if IntegratedDB['TotalArticleCnt'] == 0 and IntegratedDB['TotalReplyCnt'] == 0 and IntegratedDB['TotalRereplyCnt'] == 0:
+            if numbers[1] == '0' and numbers[2] == '0' and numbers[3] == '0':
                 CountText = "크롤링 중..."
-        except Exception as e:
+        except:
             CountText = "크롤링 중..."
+
 
         match crawlType:
             case 'navernews':
