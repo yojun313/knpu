@@ -1114,7 +1114,7 @@ class Manager_Analysis:
                         self.main.printStatus()
                         self.main.openFileExplorer(analyze_directory)
 
-                    self.main.printStatus("인공지능 분석 중...")
+                    self.main.printStatus("AI 분석 중...")
                     QTimer.singleShot(1000, gpt_start)
                 else:
                     self.main.printStatus()
