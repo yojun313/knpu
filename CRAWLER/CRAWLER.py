@@ -335,7 +335,7 @@ class Crawler(CrawlerModule):
                         # articleData 정상 확인
                         articleStatus = False
                         article_returnData = returnData['articleData']
-                        if self.ReturnChecker(article_returnData) == True:
+                        if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
                             articleStatus = True
                         else:
                             continue
@@ -722,7 +722,7 @@ class Crawler(CrawlerModule):
                     for returnData in FullreturnData:
 
                         article_returnData = returnData['articleData']
-                        if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != 0:
+                        if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
                             articleList.append(article_returnData['articleData'])
                         else:
                             continue
