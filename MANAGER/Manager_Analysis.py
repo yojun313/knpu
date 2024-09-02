@@ -958,27 +958,32 @@ class Manager_Analysis:
                 word_list = ast.literal_eval(word_list_str)
                 all_keyword.append(word_list)
 
-            try:
-                infotxt_path = os.path.join(os.path.dirname(result_directory), "kemkim_info.txt")
-                with open(infotxt_path, 'r') as info_txt:
-                    lines = info_txt.readlines()
+            startdate = 0
+            enddate = 0
+            topic = 0
 
-                for line in lines:
-                    if line.startswith('분석 데이터:'):
-                        # '분석 데이터:' 뒤에 오는 값을 파싱
-                        recommend_csv_name = line.split('분석 데이터:')[-1].strip().replace('token_', '')
-                        topic = recommend_csv_name.split('_')[1]
-                    if line.startswith('분석 시작일:'):
-                        # '분석 데이터:' 뒤에 오는 값을 파싱
-                        startdate = line.split('분석 시작일:')[-1].strip().replace('token_', '')
-                        startdate = int(startdate)
-                    if line.startswith('분석 종료일:'):
-                        # '분석 데이터:' 뒤에 오는 값을 파싱
-                        enddate = line.split('분석 종료일:')[-1].strip().replace('token_', '')
-                        enddate = int(enddate)
-            except:
-                recommend_csv_name = 'KemKim 생성 시 사용한 크롤링 데이터'
-                topic = ""
+            infotxt_path = os.path.join(os.path.dirname(result_directory), "kemkim_info.txt")
+            with open(infotxt_path, 'r') as info_txt:
+                lines = info_txt.readlines()
+
+            for line in lines:
+                if line.startswith('분석 데이터:'):
+                    # '분석 데이터:' 뒤에 오는 값을 파싱
+                    recommend_csv_name = line.split('분석 데이터:')[-1].strip().replace('token_', '')
+                    topic = recommend_csv_name.split('_')[1]
+                if line.startswith('분석 시작일:'):
+                    # '분석 데이터:' 뒤에 오는 값을 파싱
+                    startdate = line.split('분석 시작일:')[-1].strip().replace('token_', '')
+                    startdate = int(startdate)
+                if line.startswith('분석 종료일:'):
+                    # '분석 데이터:' 뒤에 오는 값을 파싱
+                    enddate = line.split('분석 종료일:')[-1].strip().replace('token_', '')
+                    enddate = int(enddate)
+
+            if startdate == 0 or enddate == 0 or topic == 0:
+                QMessageBox.information(self.main, 'Information', 'kemkim_info.txt 파일에서 정보를 불러오는데 실패했습니다\n\nResult 디렉토리 선택 유무와 수정되지 않은 info.txt 원본 파일이 올바른 위치에 있는지 확인하여 주십시오')
+                self.main.printStatus()
+                return
 
             QMessageBox.information(self.main, "Information", f'Keyword를 추출할 CSV 파일을 선택하세요\n\n"{recommend_csv_name}"를 선택하세요')
             object_csv_path = QFileDialog.getOpenFileName(self.main, "Keyword 추출 대상 CSV 파일을 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
@@ -1071,7 +1076,7 @@ class Manager_Analysis:
                     add_text = "\n\n".join(keyword_texts)
                     if keyword_texts:
                         context_dict[keyword] = add_text
-                    with open(os.path.join(analyze_directory,  'keyword_context', f'{keyword}_context.txt'), 'w') as context:
+                    with open(os.path.join(analyze_directory, 'keyword_context', f'{keyword}_context.txt'), 'w', encoding='utf-8-sig') as context:
                         context.write(add_text)
 
                 context_df = pd.DataFrame(list(context_dict.items()), columns=['Keyword', 'Context Text'])
