@@ -951,6 +951,12 @@ class Manager_Analysis:
 
             result_directory = result_directory[0]
             final_signal_csv_path = os.path.join(result_directory, "Signal", "Final_signal.csv")
+
+            if not os.path.exists(final_signal_csv_path):
+                QMessageBox.information(self.main, 'Information', 'Final_signal.csv 파일을 불러오는데 실패했습니다\n\nResult/Signal 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                self.main.printStatus()
+                return
+
             final_signal_df = pd.read_csv(final_signal_csv_path, low_memory=False)
             words = final_signal_df['word'].tolist()
             all_keyword = []
@@ -963,6 +969,11 @@ class Manager_Analysis:
             topic = 0
 
             infotxt_path = os.path.join(os.path.dirname(result_directory), "kemkim_info.txt")
+            if not os.path.exists(final_signal_csv_path):
+                QMessageBox.information(self.main, 'Information', 'kemkim_info.txt 파일을 불러오는데 실패했습니다\n\nResult 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                self.main.printStatus()
+                return
+
             with open(infotxt_path, 'r') as info_txt:
                 lines = info_txt.readlines()
 
