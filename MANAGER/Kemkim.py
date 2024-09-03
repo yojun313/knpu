@@ -734,7 +734,7 @@ class KimKem:
 
         # 새로운 열을 추가하여 주기 단위로 기간을 그룹화
         if period == '1m':  # 월
-            csv_data['period_group'] = csv_data['period_month'].dt.to_period('M').astype(str)
+            csv_data['period_group'] = csv_data['period_month'].astype(str)
         elif period == '3m':  # 분기
             csv_data['period_group'] = (csv_data['period_month'].dt.year.astype(str) + 'Q' + ((csv_data['period_month'].dt.month - 1) // 3 + 1).astype(str))
         elif period == '6m':  # 반기
