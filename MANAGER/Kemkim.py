@@ -972,11 +972,17 @@ class KimKem:
             plt.figure(figsize=(100, 100))
             fontsize = 50
             dotsize = 20
+            labelsize = 12
+            gradesize = 10
+
         else:
             plt.figure(figsize=(graph_size[0], graph_size[1]))
             fontsize = graph_size[2]
             dotsize = graph_size[3]
+            labelsize = graph_size[4]
+            gradesize = graph_size[5]
 
+        plt.tick_params(axis='both', which='major', labelsize=gradesize)  # 눈금 글자 크기를 30으로 설정 (원하는 크기로 조정 가능)
         plt.axvline(x=graph_term, color='k', linestyle='--')  # x축 수직선
         plt.axhline(y=graph_DoV, color='k', linestyle='--')  # y축 수평선
 
@@ -999,9 +1005,9 @@ class KimKem:
                 plt.text(value[0], value[1], key, fontsize=fontsize)
 
         # 그래프 제목 및 레이블 설정
-        plt.title("Keyword Emergence Map", fontsize=fontsize)
-        plt.xlabel("Average Term Frequency(TF)", fontsize=fontsize)
-        plt.ylabel("Time-Weighted increasing rate", fontsize=fontsize)
+        plt.title("Keyword Emergence Map", fontsize=labelsize)
+        plt.xlabel("Average Term Frequency(TF)", fontsize=labelsize)
+        plt.ylabel("Time-Weighted increasing rate", fontsize=labelsize)
 
         # 그래프 표시
         if graph_name == '':
@@ -1061,11 +1067,17 @@ class KimKem:
             plt.figure(figsize=(100, 100))
             fontsize = 50
             dotsize = 20
+            labelsize = 12
+            gradesize = 10
+
         else:
             plt.figure(figsize=(graph_size[0], graph_size[1]))
             fontsize = graph_size[2]
             dotsize = graph_size[3]
+            labelsize = graph_size[4]
+            gradesize = graph_size[5]
 
+        plt.tick_params(axis='both', which='major', labelsize=gradesize)  # 눈금 글자 크기를 30으로 설정 (원하는 크기로 조정 가능)
         plt.axvline(x=graph_doc, color='k', linestyle='--')  # x축 중앙값 수직선
         plt.axhline(y=graph_DoD, color='k', linestyle='--')  # y축 중앙값 수평선
 
@@ -1088,9 +1100,9 @@ class KimKem:
                 plt.text(value[0], value[1], key, fontsize=fontsize)
 
         # 그래프 제목 및 레이블 설정
-        plt.title("Keyword Issue Map", fontsize=fontsize)
-        plt.xlabel("Average Document Frequency(DF)", fontsize=fontsize)
-        plt.ylabel("Time-Weighted increasing rate", fontsize=fontsize)
+        plt.title("Keyword Issue Map", fontsize=labelsize)
+        plt.xlabel("Average Document Frequency(DF)", fontsize=labelsize)
+        plt.ylabel("Time-Weighted increasing rate", fontsize=labelsize)
 
         # 그래프 표시
         if graph_name == '':
