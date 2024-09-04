@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.5.6'
+        self.versionNum = '1.6.0'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -472,6 +472,19 @@ class MainWindow(QtWidgets.QMainWindow):
         input_dialog = QInputDialog(self)
         input_dialog.setWindowTitle('Admin Mode')
         input_dialog.setLabelText('Enter admin password:')
+        input_dialog.setTextEchoMode(QLineEdit.Password)
+        input_dialog.resize(300, 200)  # 원하는 크기로 설정
+
+        # 비밀번호 입력 창 띄우기
+        ok = input_dialog.exec_()
+        password = input_dialog.textValue()
+
+        return ok, password
+
+    def pw_check(self):
+        input_dialog = QInputDialog(self)
+        input_dialog.setWindowTitle('Password')
+        input_dialog.setLabelText('Enter password:')
         input_dialog.setTextEchoMode(QLineEdit.Password)
         input_dialog.resize(300, 200)  # 원하는 크기로 설정
 

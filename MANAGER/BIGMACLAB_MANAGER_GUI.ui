@@ -382,6 +382,13 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_5">
               <item>
+               <widget class="QPushButton" name="board_addversion_button">
+                <property name="text">
+                 <string>추가</string>
+                </property>
+               </widget>
+              </item>
+              <item>
                <widget class="QPushButton" name="board_deleteversion_button">
                 <property name="text">
                  <string>삭제</string>
@@ -392,13 +399,6 @@
                <widget class="QPushButton" name="board_detailversion_button">
                 <property name="text">
                  <string>자세히</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="board_addversion_button">
-                <property name="text">
-                 <string>추가</string>
                 </property>
                </widget>
               </item>
@@ -417,6 +417,13 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_8">
               <item>
+               <widget class="QPushButton" name="board_addbug_button">
+                <property name="text">
+                 <string>추가</string>
+                </property>
+               </widget>
+              </item>
+              <item>
                <widget class="QPushButton" name="board_deletebug_button">
                 <property name="text">
                  <string>삭제</string>
@@ -430,10 +437,45 @@
                 </property>
                </widget>
               </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tab_post">
+           <attribute name="title">
+            <string>자유게시판</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
+            <item>
+             <widget class="QTableWidget" name="board_post_tableWidget"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
               <item>
-               <widget class="QPushButton" name="board_addbug_button">
+               <widget class="QPushButton" name="board_addpost_button">
                 <property name="text">
                  <string>추가</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="board_deletepost_button">
+                <property name="text">
+                 <string>삭제</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="board_detailpost_button">
+                <property name="text">
+                 <string>자세히</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="board_editpost_button">
+                <property name="text">
+                 <string>수정</string>
                 </property>
                </widget>
               </item>
