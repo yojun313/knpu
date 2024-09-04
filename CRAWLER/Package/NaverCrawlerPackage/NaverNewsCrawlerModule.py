@@ -218,9 +218,11 @@ class NaverNewsCrawler(CrawlerModule):
                 response = await self.asyncRequester('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers=headers, params=params, session=session)
                 if self.RequesterChecker(response) == False:
                     return response
-                res               = response.replace("_callback(","")[:-2]
-                temp              = json.loads(res)    
-
+                try:
+                    res = response.replace("_callback(", "")[:-2]
+                    temp              = json.loads(res)
+                except:
+                    return returnData
 
                 # parentCommentNo_list PART
                 for comment_json in temp.get("result", {}).get("commentList", []):
