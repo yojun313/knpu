@@ -408,5 +408,7 @@ class mySQL:
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
-    mySQL_obj.updateTableCell('free_board', 0, 'ViewCount', 1)
+    mySQL_obj.connectDB('navernews_현대차_20200101_20240630_0903_2357')
+    mySQL_obj.insertToTable('navernews_현대차_20200101_20240630_0903_2357' + '_info',
+                             [1, '09/03 23:57', '09/04 22:31', '노승국', '현대차', 'HP OMEN', 3, "{'UrlCnt': 230545, 'TotalArticleCnt': 230545, 'TotalReplyCnt': 2758214, 'TotalRereplyCnt': 0}"])
     mySQL_obj.commit()

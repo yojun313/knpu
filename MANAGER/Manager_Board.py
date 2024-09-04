@@ -669,8 +669,9 @@ class Manager_Board:
 
                     viewcount = int(post_data[3])
                     viewcount += 1
+
                     self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                    self.main.mySQL_obj.updateTableCell('free_board', selected_row, 'ViewCount', viewcount)
+                    self.main.mySQL_obj.updateTableCell('free_board', len(self.post_data)-selected_row-1, 'ViewCount', viewcount)
 
                     # 다이얼로그 생성
                     dialog = QDialog(self.main)
@@ -752,7 +753,7 @@ class Manager_Board:
                 selected_row = self.main.board_post_tableWidget.currentRow()
                 if selected_row >= 0:
                     ok, password = self.main.pw_check()
-                    if password == self.post_data[selected_row][5]:
+                    if ok and password == self.post_data[selected_row][5]:
                         self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
                         self.main.mySQL_obj.deleteTableRowByColumn('free_board', self.post_title_list[selected_row], 'Title')
                         self.board_post_refresh()
@@ -831,7 +832,7 @@ class Manager_Board:
             selected_row = self.main.board_post_tableWidget.currentRow()
             if selected_row >= 0:
                 ok, password = self.main.pw_check()
-                if password == self.post_data[selected_row][5]:
+                if ok and password == self.post_data[selected_row][5]:
                     prev_post_data = self.post_data[selected_row]
 
                     dialog = PostInputDialog(prev_post_data)
@@ -842,8 +843,8 @@ class Manager_Board:
                         post_data = dialog.data
                         post_data = list(post_data.values())
                         self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                        self.main.mySQL_obj.updateTableCell('free_board', selected_row, 'Title', post_data[0])
-                        self.main.mySQL_obj.updateTableCell('free_board', selected_row, 'Text', post_data[1])
+                        self.main.mySQL_obj.updateTableCell('free_board', len(self.post_data)-selected_row-1, 'Title', post_data[0])
+                        self.main.mySQL_obj.updateTableCell('free_board', len(self.post_data)-selected_row-1, 'Text', post_data[1])
                         self.board_post_refresh()
                         QMessageBox.information(self.main, "Information", f"게시물이 수정되었습니다")
                 else:
