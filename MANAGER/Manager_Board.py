@@ -1,5 +1,6 @@
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QRegExp
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QTextEdit, QScrollArea, QWidget
+from PyQt5.QtGui import QRegExpValidator
 from datetime import datetime
 import warnings
 import os
@@ -11,7 +12,9 @@ class Manager_Board:
         self.main = main_window
         self.board_version_refresh()
         self.board_bug_refresh()
+        self.board_post_refresh()
         self.board_buttonMatch()
+
 
     def board_buttonMatch(self):
         self.main.board_deleteversion_button.clicked.connect(self.board_delete_version)
@@ -21,6 +24,12 @@ class Manager_Board:
         self.main.board_addbug_button.clicked.connect(self.board_add_bug)
         self.main.board_deletebug_button.clicked.connect(self.board_delete_bug)
         self.main.board_detailbug_button.clicked.connect(self.board_view_bug)
+
+        self.main.board_addpost_button.clicked.connect(self.board_add_post)
+        self.main.board_detailpost_button.clicked.connect(self.board_view_post)
+        self.main.board_deletepost_button.clicked.connect(self.board_delete_post)
+        self.main.board_editpost_button.clicked.connect(self.board_edit_post)
+
     def board_version_refresh(self):
         try:
             def sort_by_version(two_dim_list):
@@ -485,4 +494,358 @@ class Manager_Board:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
+    def board_post_refresh(self):
+        try:
+            def sort_by_date(two_dim_list):
+                # 날짜 문자열을 파싱하여 비교하는 함수
+                def date_key(date_str):
+                    return datetime.strptime(date_str, "%Y.%m.%d %H:%M")
 
+                sorted_list = sorted(two_dim_list, key=lambda x: date_key(x[2]), reverse=True)
+                return sorted_list
+
+            self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+            self.post_data = sort_by_date(self.main.mySQL_obj.TableToList('free_board'))
+            self.post_data_for_table = [sub_list[:-1] for sub_list in self.post_data]
+            self.post_table_column = ['User', 'Title', 'DateTime', 'ViewCount']
+            self.main.table_maker(self.main.board_post_tableWidget, self.post_data_for_table,
+                                  self.post_table_column)
+            self.post_title_list = [post_data[1] for post_data in self.post_data_for_table]
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
+
+    def board_add_post(self):
+        try:
+            # QDialog를 상속받은 클래스 생성
+            class PostInputDialog(QDialog):
+                def __init__(self):
+                    super().__init__()
+                    self.initUI()
+                    self.data = None  # 데이터를 저장할 속성 추가
+
+                def initUI(self):
+                    self.setWindowTitle('Add Post')
+                    self.setGeometry(100, 100, 400, 400)
+
+                    # 컨테이너 위젯 생성
+                    container_widget = QWidget()
+                    layout = QVBoxLayout(container_widget)
+
+                    # 사용자 이름 입력 필드
+                    self.user_label = QLabel('User Name:')
+                    self.user_input = QLineEdit()
+                    layout.addWidget(self.user_label)
+                    layout.addWidget(self.user_input)
+
+                    # 비밀번호 입력 필드
+                    self.password_label = QLabel('Password (수정 및 삭제용):')
+                    self.password_input = QLineEdit()
+                    self.password_input.setEchoMode(QLineEdit.Password)  # 비밀번호 입력 필드로 설정
+
+                    # 영어 알파벳만 입력 가능하도록 제한 (영문 대소문자 포함)
+                    reg_exp = QRegExp("[a-zA-Z]*")
+                    validator = QRegExpValidator(reg_exp, self.password_input)
+                    self.password_input.setValidator(validator)
+
+                    layout.addWidget(self.password_label)
+                    layout.addWidget(self.password_input)
+
+                    # 비밀번호 확인 입력 필드
+                    self.confirm_password_label = QLabel('Confirm Password:')
+                    self.confirm_password_input = QLineEdit()
+                    self.confirm_password_input.setEchoMode(QLineEdit.Password)  # 비밀번호 확인 입력 필드로 설정
+
+                    # 영어 알파벳만 입력 가능하도록 제한 (영문 대소문자 포함)
+                    self.confirm_password_input.setValidator(validator)
+
+                    layout.addWidget(self.confirm_password_label)
+                    layout.addWidget(self.confirm_password_input)
+
+                    # 비밀번호 불일치 경고 메시지
+                    self.password_warning_label = QLabel('')
+                    self.password_warning_label.setStyleSheet('color: red')  # 경고 메시지를 빨간색으로 설정
+                    layout.addWidget(self.password_warning_label)
+
+                    # 비밀번호 필드 변경 시 일치 여부 확인
+                    self.password_input.textChanged.connect(self.check_password_match)
+                    self.confirm_password_input.textChanged.connect(self.check_password_match)
+
+                    # 게시물 제목 입력 필드
+                    self.post_title_label = QLabel('Post Title:')
+                    self.post_title_input = QLineEdit()
+                    layout.addWidget(self.post_title_label)
+                    layout.addWidget(self.post_title_input)
+
+                    # 게시물 내용 입력 필드
+                    self.post_text_label = QLabel('Post Text:')
+                    self.post_text_input = QTextEdit()
+                    layout.addWidget(self.post_text_label)
+                    layout.addWidget(self.post_text_input)
+
+                    # 확인 버튼 생성 및 클릭 시 동작 연결
+                    self.submit_button = QPushButton('Post')
+                    self.submit_button.clicked.connect(self.submit)
+                    layout.addWidget(self.submit_button)
+
+                    # QScrollArea 설정
+                    scroll_area = QScrollArea()
+                    scroll_area.setWidgetResizable(True)
+                    scroll_area.setWidget(container_widget)  # 컨테이너 위젯을 스크롤 영역에 추가
+
+                    # 최종 레이아웃 설정
+                    final_layout = QVBoxLayout()
+                    final_layout.addWidget(scroll_area)
+                    self.setLayout(final_layout)
+
+                def check_password_match(self):
+                    password = self.password_input.text()
+                    confirm_password = self.confirm_password_input.text()
+
+                    if password != confirm_password:
+                        self.password_warning_label.setText('Passwords do not match.')
+                        self.submit_button.setEnabled(False)  # 제출 버튼 비활성화
+                    else:
+                        self.password_warning_label.setText('')
+                        self.submit_button.setEnabled(True)  # 제출 버튼 활성화
+
+                def submit(self):
+                    # 입력된 데이터를 확인하고 처리
+                    user_name = self.user_input.text()
+                    pw = self.password_input.text()
+                    post_title = self.post_title_input.text()
+                    post_date = datetime.now().strftime("%Y.%m.%d %H:%M")
+                    post_text = self.post_text_input.toPlainText()
+
+
+                    self.data = {
+                        'user_name': user_name,
+                        'post_title': post_title,
+                        'post_date': post_date,
+                        'ViewCount': 0,
+                        'post_text': post_text,
+                        'pw': pw,
+                    }
+
+                    QMessageBox.information(self, 'Input Data',
+                                            f'User Name: {user_name}\nPost Title: {post_title}\nPost Date: {post_date}\nPost Text: {post_text}')
+                    self.accept()
+
+            dialog = PostInputDialog()
+            dialog.exec_()
+
+            # 데이터를 board_add_version 함수에서 사용
+            if dialog.data:
+                post_data = dialog.data
+                post_data = list(post_data.values())
+                self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                self.main.mySQL_obj.insertToTable('free_board', post_data)
+                self.main.mySQL_obj.commit()
+                self.board_post_refresh()
+
+                msg = (
+                    "[BIGMACLAB MANAGER] New Post Added!\n"
+                    f"User: {post_data[0]}\n"
+                    f"Post Title: {post_data[1]}\n"
+                    f"Post Date: {post_data[2]}\n"
+                    f"Post Text: {post_data[4]}\n"
+                )
+                self.main.send_pushOver(msg, self.main.admin_pushoverkey)
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
+
+    def board_view_post(self):
+        try:
+            self.main.printStatus("불러오는 중...")
+            def view_post():
+                selected_row = self.main.board_post_tableWidget.currentRow()
+                if selected_row >= 0:
+                    post_data = self.post_data[selected_row]
+
+                    viewcount = int(post_data[3])
+                    viewcount += 1
+                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                    self.main.mySQL_obj.updateTableCell('free_board', selected_row, 'ViewCount', viewcount)
+
+                    # 다이얼로그 생성
+                    dialog = QDialog(self.main)
+                    dialog.setWindowTitle(f'Post View')
+                    dialog.setGeometry(100, 100, 400, 600)
+
+                    layout = QVBoxLayout()
+
+                    # HTML을 사용하여 디테일 표시
+                    details_html = f"""
+                    <style>
+                        h2 {{
+                            color: #2c3e50;
+                            text-align: center;
+                        }}
+                        p {{
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                            line-height: 1.5;
+                            margin: 5px 0;
+                        }}
+                        b {{
+                            color: #34495e;
+                        }}
+                        .post-details {{
+                            padding: 10px;
+                            border: 1px solid #bdc3c7;
+                            border-radius: 5px;
+                            background-color: #ecf0f1;
+                        }}
+                        .detail-content {{
+                            white-space: pre-wrap;
+                            margin-top: 5px;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                            color: #34495e;
+                        }}
+                    </style>
+                    <div class="post-details">
+                        <h2>Post View</h2>
+                        <p><b>User Name:</b> {post_data[0]}</p>
+                        <p><b>Post Title:</b> {post_data[1]}</p>
+                        <p><b>DateTime:</b> {post_data[2]}</p>
+                        <p><b>Post Text:</b></p>
+                        <p class="detail-content">{post_data[4]}</p>
+                    </div>
+                    """
+                    detail_label = QLabel(details_html)
+                    detail_label.setWordWrap(True)
+
+                    # QScrollArea를 사용하여 스크롤 가능하게 설정
+                    scroll_area = QScrollArea()
+                    scroll_area.setWidgetResizable(True)
+                    scroll_area.setWidget(detail_label)
+
+                    layout.addWidget(scroll_area)
+
+                    # 닫기 버튼 추가
+                    close_button = QPushButton('Close')
+                    close_button.clicked.connect(dialog.accept)
+                    layout.addWidget(close_button)
+
+                    dialog.setLayout(layout)
+
+                    # 다이얼로그 실행
+                    dialog.exec_()
+                    self.board_post_refresh()
+
+            QTimer.singleShot(1, view_post)
+            QTimer.singleShot(1, self.main.printStatus)
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
+
+    def board_delete_post(self):
+        try:
+            self.main.printStatus("삭제 중...")
+            def delete_post():
+                selected_row = self.main.board_post_tableWidget.currentRow()
+                if selected_row >= 0:
+                    ok, password = self.main.pw_check()
+                    if password == self.post_data[selected_row][5]:
+                        self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                        self.main.mySQL_obj.deleteTableRowByColumn('free_board', self.post_title_list[selected_row], 'Title')
+                        self.board_post_refresh()
+                        QMessageBox.information(self.main, "Information", f"게시물이 삭제되었습니다")
+                    else:
+                        QMessageBox.information(self.main, "Information", f"비밀번호가 일치하지 않습니다")
+                        self.main.printStatus()
+                        return
+
+            QTimer.singleShot(1, delete_post)
+            QTimer.singleShot(1, self.main.printStatus)
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
+            self.main.program_bug_log(traceback.format_exc())
+
+    def board_edit_post(self):
+        try:
+            # QDialog를 상속받은 클래스 생성
+            class PostInputDialog(QDialog):
+                def __init__(self, post_data):
+                    super().__init__()
+                    self.post_data = post_data
+                    self.initUI()
+                    self.data = None  # 데이터를 저장할 속성 추가
+                def initUI(self):
+                    self.setWindowTitle('Edit Post')
+                    self.setGeometry(100, 100, 400, 400)
+
+                    # 컨테이너 위젯 생성
+                    container_widget = QWidget()
+                    layout = QVBoxLayout(container_widget)
+
+                    # 게시물 제목 입력 필드
+                    self.post_title_label = QLabel('Post Title:')
+                    self.post_title_input = QLineEdit()
+                    self.post_title_input.setText(self.post_data[1])
+                    layout.addWidget(self.post_title_label)
+                    layout.addWidget(self.post_title_input)
+
+                    # 게시물 내용 입력 필드
+                    self.post_text_label = QLabel('Post Text:')
+                    self.post_text_input = QTextEdit()
+                    self.post_text_input.setText(self.post_data[4])
+                    layout.addWidget(self.post_text_label)
+                    layout.addWidget(self.post_text_input)
+
+                    # 확인 버튼 생성 및 클릭 시 동작 연결
+                    self.submit_button = QPushButton('Edit')
+                    self.submit_button.clicked.connect(self.submit)
+                    layout.addWidget(self.submit_button)
+
+                    # QScrollArea 설정
+                    scroll_area = QScrollArea()
+                    scroll_area.setWidgetResizable(True)
+                    scroll_area.setWidget(container_widget)  # 컨테이너 위젯을 스크롤 영역에 추가
+
+                    # 최종 레이아웃 설정
+                    final_layout = QVBoxLayout()
+                    final_layout.addWidget(scroll_area)
+                    self.setLayout(final_layout)
+
+                def submit(self):
+                    # 입력된 데이터를 확인하고 처리
+                    post_title = self.post_title_input.text()
+                    post_text = self.post_text_input.toPlainText()
+
+                    self.data = {
+                        'post_title': post_title,
+                        'post_text': post_text,
+                    }
+
+                    QMessageBox.information(self, 'Input Data',
+                                            f'Post Title: {post_title}\nPost Text: {post_text}')
+                    self.accept()
+
+            selected_row = self.main.board_post_tableWidget.currentRow()
+            if selected_row >= 0:
+                ok, password = self.main.pw_check()
+                if password == self.post_data[selected_row][5]:
+                    prev_post_data = self.post_data[selected_row]
+
+                    dialog = PostInputDialog(prev_post_data)
+                    dialog.exec_()
+
+                    # 데이터를 board_add_version 함수에서 사용
+                    if dialog.data:
+                        post_data = dialog.data
+                        post_data = list(post_data.values())
+                        self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                        self.main.mySQL_obj.updateTableCell('free_board', selected_row, 'Title', post_data[0])
+                        self.main.mySQL_obj.updateTableCell('free_board', selected_row, 'Text', post_data[1])
+                        self.board_post_refresh()
+                        QMessageBox.information(self.main, "Information", f"게시물이 수정되었습니다")
+                else:
+                    QMessageBox.information(self.main, "Information", f"비밀번호가 일치하지 않습니다")
+                    self.main.printStatus()
+                    return
+        except Exception as e:
+            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
