@@ -606,7 +606,7 @@ class Manager_Analysis:
                 container_widget = QWidget()
                 main_layout = QVBoxLayout(container_widget)
 
-                self.info_label = QLabel('제외할 키워드를 선택하세요\n\n')
+                self.info_label = QLabel('제외할 키워드를 선택하세요\n')
                 main_layout.addWidget(self.info_label)
 
                 # 체크박스를 배치할 각 그룹 박스 생성
