@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.6.0'
+        self.versionNum = '1.6.1'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -126,8 +126,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def login_program(self):
         self.mySQL_obj.connectDB('bigmaclab_manager_db')
         self.device_list = [item[0] for item in self.mySQL_obj.TableToList('device_list')]
+        self.name_list = [item[1] for item in self.mySQL_obj.TableToList('device_list')]
         current_device = socket.gethostname()
         if current_device in self.device_list:
+            self.user = self.name_list[self.device_list.index(current_device)]
             return
         else:
             input_dialog_id = QInputDialog(self)
@@ -143,7 +145,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 QMessageBox.warning(self, 'Error', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
                 return False
 
-            ok, password = self.admin_check()
+            ok, password = self.pw_check()
             if ok and password == 'bigmaclab2022!':
                 reply = QMessageBox.question(self, 'Confirm Delete', f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
@@ -467,19 +469,6 @@ class MainWindow(QtWidgets.QMainWindow):
             pass
             
         gc.collect()
-
-    def admin_check(self):
-        input_dialog = QInputDialog(self)
-        input_dialog.setWindowTitle('Admin Mode')
-        input_dialog.setLabelText('Enter admin password:')
-        input_dialog.setTextEchoMode(QLineEdit.Password)
-        input_dialog.resize(300, 200)  # 원하는 크기로 설정
-
-        # 비밀번호 입력 창 띄우기
-        ok = input_dialog.exec_()
-        password = input_dialog.textValue()
-
-        return ok, password
 
     def pw_check(self):
         input_dialog = QInputDialog(self)

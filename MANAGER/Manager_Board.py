@@ -51,7 +51,7 @@ class Manager_Board:
             self.main.program_bug_log(traceback.format_exc())
     def board_add_version(self):
         try:
-            ok, password = self.main.admin_check()
+            ok, password = self.main.pw_check()
 
             # 비밀번호 검증
             if ok and password == self.main.admin_password:
@@ -168,7 +168,7 @@ class Manager_Board:
             self.main.program_bug_log(traceback.format_exc())
     def board_delete_version(self):
         try:
-            ok, password = self.main.admin_check()
+            ok, password = self.main.pw_check()
             # 비밀번호 검증
             if ok and password == self.main.admin_password:
                 self.main.printStatus("삭제 중...")
@@ -294,8 +294,9 @@ class Manager_Board:
         try:
             # QDialog를 상속받은 클래스 생성
             class BugInputDialog(QDialog):
-                def __init__(self, version):
+                def __init__(self, main_window, version):
                     super().__init__()
+                    self.main = main_window
                     self.initUI()
                     self.data = None  # 데이터를 저장할 속성 추가
                     self.version = version
@@ -311,6 +312,7 @@ class Manager_Board:
                     # 각 입력 필드를 위한 QLabel 및 QLineEdit, QTextEdit 생성
                     self.user_label = QLabel('User Name:')
                     self.user_input = QLineEdit()
+                    self.user_input.setText(self.main.user)
                     layout.addWidget(self.user_label)
                     layout.addWidget(self.user_input)
 
@@ -360,7 +362,7 @@ class Manager_Board:
                                             f'User Name: {user_name}\nVersion Num: {version_num}\nBug Title: {bug_title}\nDateTime: {bug_date}\nBug Detail: {bug_detail}')
                     self.accept()
 
-            dialog = BugInputDialog(self.main.versionNum)
+            dialog = BugInputDialog(self.main, self.main.versionNum)
             dialog.exec_()
 
             # 데이터를 board_add_version 함수에서 사용
@@ -519,8 +521,9 @@ class Manager_Board:
         try:
             # QDialog를 상속받은 클래스 생성
             class PostInputDialog(QDialog):
-                def __init__(self):
+                def __init__(self, main_window):
                     super().__init__()
+                    self.main = main_window
                     self.initUI()
                     self.data = None  # 데이터를 저장할 속성 추가
 
@@ -535,6 +538,7 @@ class Manager_Board:
                     # 사용자 이름 입력 필드
                     self.user_label = QLabel('User Name:')
                     self.user_input = QLineEdit()
+                    self.user_input.setText(self.main.user)
                     layout.addWidget(self.user_label)
                     layout.addWidget(self.user_input)
 
@@ -631,7 +635,7 @@ class Manager_Board:
                                             f'User Name: {user_name}\nPost Title: {post_title}\nPost Date: {post_date}\nPost Text: {post_text}')
                     self.accept()
 
-            dialog = PostInputDialog()
+            dialog = PostInputDialog(self.main)
             dialog.exec_()
 
             # 데이터를 board_add_version 함수에서 사용

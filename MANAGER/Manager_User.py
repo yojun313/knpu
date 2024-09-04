@@ -45,7 +45,7 @@ class Manager_User:
             email = self.main.user_email_lineinput.text()
             key = self.main.user_key_lineinput.text()
 
-            ok, password = self.main.admin_check()
+            ok, password = self.main.pw_check()
 
             # 비밀번호 검증
             if ok and password == self.main.admin_password:
@@ -88,7 +88,7 @@ class Manager_User:
 
     def user_delete_user(self):
         try:
-            ok, password = self.main.admin_check()
+            ok, password = self.main.pw_check()
 
             if ok and password == self.main.admin_password:
                 selected_row = self.main.user_tablewidget.currentRow()
