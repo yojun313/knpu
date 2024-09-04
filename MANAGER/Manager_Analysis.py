@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox, QComboBox, \
     QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout, QGroupBox, QScrollArea,\
-    QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton, QDateEdit
+    QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton, QDateEdit, QFormLayout
 from PyQt5.QtCore import QTimer, QStringListModel, Qt, QDate
 import copy
 import pandas as pd
@@ -644,29 +644,48 @@ class Manager_Analysis:
                     group_box.setLayout(group_layout)
                     main_layout.addWidget(group_box)
 
-                self.x_size_label = QLabel('그래프 가로 길이를 입력하세요: ')
+                # 그리드 레이아웃 사용
+                grid_layout = QGridLayout()
+
+                # 첫 번째 열 (왼쪽)
+                self.x_size_label = QLabel('그래프 가로 스케일: ')
                 self.x_size_input = QLineEdit()
                 self.x_size_input.setText('100')  # 기본값 설정
-                main_layout.addWidget(self.x_size_label)
-                main_layout.addWidget(self.x_size_input)
+                grid_layout.addWidget(self.x_size_label, 0, 0)
+                grid_layout.addWidget(self.x_size_input, 0, 1)
 
-                self.y_size_label = QLabel('그래프 세로 길이를 입력하세요: ')
+                self.y_size_label = QLabel('그래프 세로 스케일: ')
                 self.y_size_input = QLineEdit()
                 self.y_size_input.setText('100')  # 기본값 설정
-                main_layout.addWidget(self.y_size_label)
-                main_layout.addWidget(self.y_size_input)
+                grid_layout.addWidget(self.y_size_label, 0, 2)
+                grid_layout.addWidget(self.y_size_input, 0, 3)
 
-                self.font_size_label = QLabel('그래프 폰트 사이즈를 입력하세요: ')
+                self.font_size_label = QLabel('그래프 폰트 크기: ')
                 self.font_size_input = QLineEdit()
                 self.font_size_input.setText('50')  # 기본값 설정
-                main_layout.addWidget(self.font_size_label)
-                main_layout.addWidget(self.font_size_input)
+                grid_layout.addWidget(self.font_size_label, 1, 0)
+                grid_layout.addWidget(self.font_size_input, 1, 1)
 
-                self.dot_size_label = QLabel('그래프 점 사이즈를 입력하세요: ')
+                # 두 번째 열 (오른쪽)
+                self.dot_size_label = QLabel('그래프 점 크기: ')
                 self.dot_size_input = QLineEdit()
                 self.dot_size_input.setText('20')  # 기본값 설정
-                main_layout.addWidget(self.dot_size_label)
-                main_layout.addWidget(self.dot_size_input)
+                grid_layout.addWidget(self.dot_size_label, 1, 2)
+                grid_layout.addWidget(self.dot_size_input, 1, 3)
+
+                self.label_size_label = QLabel('그래프 레이블 글자 크기: ')
+                self.label_size_input = QLineEdit()
+                self.label_size_input.setText('12')  # 기본값 설정
+                grid_layout.addWidget(self.label_size_label, 2, 0)
+                grid_layout.addWidget(self.label_size_input, 2, 1)
+
+                self.grade_size_label = QLabel('그래프 눈금 글자 크기: ')
+                self.grade_size_input = QLineEdit()
+                self.grade_size_input.setText('10')  # 기본값 설정
+                grid_layout.addWidget(self.grade_size_label, 2, 2)
+                grid_layout.addWidget(self.grade_size_input, 2, 3)
+
+                main_layout.addLayout(grid_layout)
 
                 # 애니메이션 체크박스 생성
                 self.eng_checkbox_label = QLabel('키워드를 영어로 변환하시겠습니까? ')
@@ -737,7 +756,7 @@ class Manager_Analysis:
             def show_selected_words(self):
                 # 선택된 단어를 리스트에 추가
                 self.selected_words = [cb.text() for cb in self.checkboxes if cb.isChecked()]
-                self.size_input = (self.x_size_input.text(), self.y_size_input.text(), self.font_size_input.text(), self.dot_size_input.text())
+                self.size_input = (self.x_size_input.text(), self.y_size_input.text(), self.font_size_input.text(), self.dot_size_input.text(), self.label_size_input.text(), self.grade_size_input.text())
                 self.eng_checked = self.eng_yes_checkbox.isChecked()
                 # 선택된 단어를 메시지 박스로 출력
                 if self.selected_words == []:
@@ -797,8 +816,7 @@ class Manager_Analysis:
                 try:
                     size_input = tuple(map(int, size_input))
                 except:
-                    QMessageBox.information(self.main, "Information",
-                                            "그래프 사이즈를 숫자로 입력하여 주십시오")
+                    QMessageBox.information(self.main, "Information", "그래프 사이즈를 숫자로 입력하여 주십시오")
                     self.main.printStatus()
                     return
             else:
@@ -807,9 +825,7 @@ class Manager_Analysis:
 
             if eng_option == True:
                 QMessageBox.information(self.main, "Information", f"키워드-영단어 사전(CSV)를 선택하세요")
-                eng_keyword_list_path = QFileDialog.getOpenFileName(self.main, "키워드-영단어 사전(CSV)를 선택하세요",
-                                                                       self.main.default_directory,
-                                                                       "CSV Files (*.csv);;All Files (*)")
+                eng_keyword_list_path = QFileDialog.getOpenFileName(self.main, "키워드-영단어 사전(CSV)를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
                 eng_keyword_list_path = eng_keyword_list_path[0]
                 if eng_keyword_list_path == "":
                     return
@@ -825,8 +841,7 @@ class Manager_Analysis:
 
             DoV_coordinates_path = os.path.join(result_directory, "Graph", "DOV_coordinates.csv")
             if not os.path.exists(DoV_coordinates_path):
-                QMessageBox.information(self.main, 'Information',
-                                        'DOV_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                QMessageBox.information(self.main, 'Information', 'DOV_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오')
                 self.main.printStatus()
                 return
             DoV_coordinates_df = pd.read_csv(DoV_coordinates_path)
@@ -838,8 +853,7 @@ class Manager_Analysis:
 
             DoD_coordinates_path = os.path.join(result_directory, "Graph", "DOD_coordinates.csv")
             if not os.path.exists(DoD_coordinates_path):
-                QMessageBox.information(self.main, 'Information',
-                                        'DOD_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                QMessageBox.information(self.main, 'Information', 'DOD_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오')
                 self.main.printStatus()
                 return
             DoD_coordinates_df = pd.read_csv(os.path.join(result_directory, "Graph", "DOD_coordinates.csv"))
