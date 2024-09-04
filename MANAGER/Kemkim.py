@@ -926,7 +926,7 @@ class KimKem:
 
         return result
     
-    def DoV_draw_graph(self, avg_DoV_increase_rate=None, avg_term_frequency=None, graph_folder=None, final_signal_list = [], graph_name = '', redraw_option = False, coordinates=False, graph_size=None):
+    def DoV_draw_graph(self, avg_DoV_increase_rate=None, avg_term_frequency=None, graph_folder=None, final_signal_list = [], graph_name = '', redraw_option = False, coordinates=False, graph_size=None, eng_keyword_list = []):
         if redraw_option == False:
             x_data = self.calculate_statistics(list(avg_term_frequency.values()))
             y_data = self.calculate_statistics(list(avg_DoV_increase_rate.values()))
@@ -964,12 +964,18 @@ class KimKem:
         coordinates = {k: v for k, v in coordinates.items() if k not in self.exception_word_list}
         coordinates = {key: coordinates[key] for key in sorted(coordinates)}
 
+        if eng_keyword_list != []:
+            korean_to_english = {korean: english for korean, english in eng_keyword_list}
+            coordinates = {korean_to_english.get(k, k): v for k, v in coordinates.items()}
+
         if graph_size == None:
             plt.figure(figsize=(100, 100))
             fontsize = 50
+            dotsize = 20
         else:
             plt.figure(figsize=(graph_size[0], graph_size[1]))
             fontsize = graph_size[2]
+            dotsize = graph_size[3]
 
         plt.axvline(x=graph_term, color='k', linestyle='--')  # x축 수직선
         plt.axhline(y=graph_DoV, color='k', linestyle='--')  # y축 수평선
@@ -989,7 +995,7 @@ class KimKem:
             if key != 'axis':
                 if final_signal_list != [] and key not in final_signal_list:
                     continue
-                plt.scatter(value[0], value[1])
+                plt.scatter(value[0], value[1], s=dotsize)
                 plt.text(value[0], value[1], key, fontsize=fontsize)
 
         # 그래프 제목 및 레이블 설정
@@ -1009,7 +1015,7 @@ class KimKem:
 
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
 
-    def DoD_draw_graph(self, avg_DoD_increase_rate=None, avg_doc_frequency=None, graph_folder=None, final_signal_list = [], graph_name='', redraw_option=False, coordinates=None, graph_size=None):
+    def DoD_draw_graph(self, avg_DoD_increase_rate=None, avg_doc_frequency=None, graph_folder=None, final_signal_list = [], graph_name='', redraw_option=False, coordinates=None, graph_size=None, eng_keyword_list = []):
         if redraw_option == False:
             x_data = self.calculate_statistics(list(avg_doc_frequency.values()))
             y_data = self.calculate_statistics(list(avg_DoD_increase_rate.values()))
@@ -1047,12 +1053,18 @@ class KimKem:
         coordinates = {k: v for k, v in coordinates.items() if k not in self.exception_word_list}
         coordinates = {key: coordinates[key] for key in sorted(coordinates)}
 
+        if eng_keyword_list != []:
+            korean_to_english = {korean: english for korean, english in eng_keyword_list}
+            coordinates = {korean_to_english.get(k, k): v for k, v in coordinates.items()}
+
         if graph_size == None:
             plt.figure(figsize=(100, 100))
             fontsize = 50
+            dotsize = 20
         else:
             plt.figure(figsize=(graph_size[0], graph_size[1]))
             fontsize = graph_size[2]
+            dotsize = graph_size[3]
 
         plt.axvline(x=graph_doc, color='k', linestyle='--')  # x축 중앙값 수직선
         plt.axhline(y=graph_DoD, color='k', linestyle='--')  # y축 중앙값 수평선
@@ -1072,7 +1084,7 @@ class KimKem:
             if key != 'axis':
                 if final_signal_list != [] and key not in final_signal_list:
                     continue
-                plt.scatter(value[0], value[1])
+                plt.scatter(value[0], value[1], s=dotsize)
                 plt.text(value[0], value[1], key, fontsize=fontsize)
 
         # 그래프 제목 및 레이블 설정
