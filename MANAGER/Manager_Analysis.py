@@ -606,6 +606,9 @@ class Manager_Analysis:
                 container_widget = QWidget()
                 main_layout = QVBoxLayout(container_widget)
 
+                self.info_label = QLabel('제외할 키워드를 선택하세요\n\n')
+                main_layout.addWidget(self.info_label)
+
                 # 체크박스를 배치할 각 그룹 박스 생성
                 groups = ["Strong Signal", "Weak Signal", "Latent Signal", "Well-known Signal"]
 
@@ -709,7 +712,7 @@ class Manager_Analysis:
                 main_layout.addLayout(checkbox_layout)
 
                 # 선택된 단어 출력 버튼 추가
-                btn = QPushButton('제외 단어 결정', self)
+                btn = QPushButton('그래프 설정 완료', self)
                 btn.clicked.connect(self.show_selected_words)
                 main_layout.addWidget(btn)
 
@@ -724,7 +727,7 @@ class Manager_Analysis:
 
                 # 창 설정
                 self.setLayout(final_layout)
-                self.setWindowTitle('제외할 키워드를 선택하세요')
+                self.setWindowTitle('KEMKIM 그래프 조정')
                 self.setGeometry(300, 300, 800, 600)
                 self.show()
 
