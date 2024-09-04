@@ -383,7 +383,30 @@ class mySQL:
             print(f"Failed to delete row with {columnName} = {target} from table {tableName}")
             print(str(e))
 
+    def updateTableCell(self, tableName, row_number, column_name, new_value):
+        try:
+            with self.conn.cursor() as cursor:
+                # OFFSET을 이용해서 n번째 행의 id를 찾음
+                query_get_id = f"SELECT id FROM `{tableName}` ORDER BY id ASC LIMIT 1 OFFSET %s"
+                cursor.execute(query_get_id, (row_number,))
+                result = cursor.fetchone()
+
+                row_id = result[0]  # 해당 row_number의 실제 id
+
+                # 해당 id로 업데이트
+                query_update = f"UPDATE `{tableName}` SET `{column_name}` = %s WHERE id = %s"
+                cursor.execute(query_update, (new_value, row_id))
+                self.conn.commit()
+
+        except pymysql.MySQLError as e:
+            print(f"Failed to update row {row_number} in column {column_name} of table {tableName}")
+            print(f"MySQL Error: {str(e)}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {str(e)}")
+
+
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
-    mySQL_obj.newTable('version_bug', ['User', 'Version Num', 'Bug Title', 'DateTime', 'Bug Detail', 'Program Log'])
+    mySQL_obj.updateTableCell('free_board', 0, 'ViewCount', 1)
+    mySQL_obj.commit()
