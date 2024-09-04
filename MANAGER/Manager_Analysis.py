@@ -901,10 +901,12 @@ class Manager_Analysis:
 
             with open(os.path.join(new_graph_folder, 'graph_size.txt'),'w+') as graph_size:
                 info = (
-                    f'X Size: {size_input[0]}\n'
-                    f'Y Size: {size_input[1]}\n'
+                    f'X Scale: {size_input[0]}\n'
+                    f'Y Scale: {size_input[1]}\n'
                     f'Font Size: {size_input[2]}\n'
-                    f'Dot Size: {size_input[3]}'
+                    f'Dot Size: {size_input[3]}\n'
+                    f'Label Size: {size_input[4]}\n'
+                    f'Grade Size: {size_input[5]}'
                 )
                 graph_size.write(info)
             del kimkem_obj

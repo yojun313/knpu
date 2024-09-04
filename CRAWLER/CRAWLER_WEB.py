@@ -13,6 +13,7 @@ end          = sys.argv[4]
 option       = int(sys.argv[5])
 keyword      = sys.argv[6]
 upload       = sys.argv[7]
+upload       = 0
 weboption    = 1
 speed        = 3
 
