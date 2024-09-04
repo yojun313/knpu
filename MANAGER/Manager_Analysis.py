@@ -691,7 +691,7 @@ class Manager_Analysis:
                 main_layout.addLayout(grid_layout)
 
                 # 애니메이션 체크박스 생성
-                self.eng_checkbox_label = QLabel('키워드를 영어로 변환하시겠습니까? ')
+                self.eng_checkbox_label = QLabel('\n키워드를 영어로 변환하시겠습니까? ')
                 main_layout.addWidget(self.eng_checkbox_label)
 
                 checkbox_layout = QHBoxLayout()
