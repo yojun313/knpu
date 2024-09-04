@@ -662,6 +662,33 @@ class Manager_Analysis:
                 main_layout.addWidget(self.font_size_label)
                 main_layout.addWidget(self.font_size_input)
 
+                self.dot_size_label = QLabel('그래프 점 사이즈를 입력하세요: ')
+                self.dot_size_input = QLineEdit()
+                self.dot_size_input.setText('20')  # 기본값 설정
+                main_layout.addWidget(self.dot_size_label)
+                main_layout.addWidget(self.dot_size_input)
+
+                # 애니메이션 체크박스 생성
+                self.eng_checkbox_label = QLabel('키워드를 영어로 변환하시겠습니까? ')
+                main_layout.addWidget(self.eng_checkbox_label)
+
+                checkbox_layout = QHBoxLayout()
+                self.eng_yes_checkbox = QCheckBox('Yes')
+                self.eng_no_checkbox = QCheckBox('No')
+
+                self.eng_yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
+                self.eng_no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
+
+                # 서로 배타적으로 선택되도록 설정
+                self.eng_yes_checkbox.toggled.connect(
+                    lambda: self.eng_no_checkbox.setChecked(False) if self.eng_yes_checkbox.isChecked() else None)
+                self.eng_no_checkbox.toggled.connect(
+                    lambda: self.eng_yes_checkbox.setChecked(False) if self.eng_no_checkbox.isChecked() else None)
+
+                checkbox_layout.addWidget(self.eng_yes_checkbox)
+                checkbox_layout.addWidget(self.eng_no_checkbox)
+                main_layout.addLayout(checkbox_layout)
+
                 # 선택된 단어 출력 버튼 추가
                 btn = QPushButton('제외 단어 결정', self)
                 btn.clicked.connect(self.show_selected_words)
@@ -710,7 +737,8 @@ class Manager_Analysis:
             def show_selected_words(self):
                 # 선택된 단어를 리스트에 추가
                 self.selected_words = [cb.text() for cb in self.checkboxes if cb.isChecked()]
-                self.size_input = (self.x_size_input.text(), self.y_size_input.text(), self.font_size_input.text())
+                self.size_input = (self.x_size_input.text(), self.y_size_input.text(), self.font_size_input.text(), self.dot_size_input.text())
+                self.eng_checked = self.eng_yes_checkbox.isChecked()
                 # 선택된 단어를 메시지 박스로 출력
                 if self.selected_words == []:
                     QMessageBox.information(self, '선택한 단어', '선택된 단어가 없습니다')
@@ -765,6 +793,7 @@ class Manager_Analysis:
             if self.word_selector.exec_() == QDialog.Accepted:  # show() 대신 exec_() 사용
                 selected_words = self.word_selector.selected_words
                 size_input = self.word_selector.size_input
+                eng_option = self.word_selector.eng_checked
                 try:
                     size_input = tuple(map(int, size_input))
                 except:
@@ -775,6 +804,24 @@ class Manager_Analysis:
             else:
                 self.main.printStatus()
                 return
+
+            if eng_option == True:
+                QMessageBox.information(self.main, "Information", f"키워드-영단어 사전(CSV)를 선택하세요")
+                eng_keyword_list_path = QFileDialog.getOpenFileName(self.main, "키워드-영단어 사전(CSV)를 선택하세요",
+                                                                       self.main.default_directory,
+                                                                       "CSV Files (*.csv);;All Files (*)")
+                eng_keyword_list_path = eng_keyword_list_path[0]
+                if eng_keyword_list_path == "":
+                    return
+                with open(eng_keyword_list_path, 'rb') as f:
+                    codec = chardet.detect(f.read())['encoding']
+                df = pd.read_csv(eng_keyword_list_path, low_memory=False, encoding=codec)
+                if 'english' not in list(df.keys()) or 'korean' not in list(df.keys()):
+                    QMessageBox.information(self.main, "Warning", "키워드-영단어 사전 형식과 일치하지 않습니다")
+                    return
+                eng_keyword_tupleList = list(zip(df['korean'], df['english']))
+            else:
+                eng_keyword_tupleList = []
 
             DoV_coordinates_path = os.path.join(result_directory, "Graph", "DOV_coordinates.csv")
             if not os.path.exists(DoV_coordinates_path):
@@ -820,16 +867,16 @@ class Manager_Analysis:
             copy_csv(os.path.join(result_directory, "Graph", "DOD_statistics.csv"), os.path.join(new_graph_folder, "DOD_statistics.csv"))
             copy_csv(os.path.join(result_directory, "Graph", "DOD_statistics.csv"), os.path.join(new_graph_folder, "DOD_statistics.csv"))
             
-            DoV_signal, DoV_coordinates = kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict, graph_size=size_input)
-            DoD_signal, DoD_coordinates = kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict, graph_size=size_input)
+            DoV_signal, DoV_coordinates = kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict, graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
+            DoD_signal, DoD_coordinates = kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict, graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
 
             final_signal = kimkem_obj._get_communal_signals(DoV_signal, DoD_signal)
             final_signal_list = []
             for value in final_signal.values():
                 final_signal_list.extend(value)
 
-            kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict, final_signal_list=final_signal_list, graph_name='KEM_graph.png', graph_size=size_input)
-            kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict, final_signal_list=final_signal_list, graph_name='KIM_graph.png', graph_size=size_input)
+            kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict, final_signal_list=final_signal_list, graph_name='KEM_graph.png', graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
+            kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict, final_signal_list=final_signal_list, graph_name='KIM_graph.png', graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
             kimkem_obj._save_final_signals(DoV_signal, DoD_signal, new_signal_folder)
             
             delete_word_list.extend(selected_words)
@@ -839,12 +886,13 @@ class Manager_Analysis:
                 info = (
                     f'X Size: {size_input[0]}\n'
                     f'Y Size: {size_input[1]}\n'
-                    f'Font Size: {size_input[2]}'
+                    f'Font Size: {size_input[2]}\n'
+                    f'Dot Size: {size_input[3]}'
                 )
                 graph_size.write(info)
             del kimkem_obj
             gc.collect()
-            
+
             self.main.printStatus()
             QMessageBox.information(self.main, 'Information', 'KEMKIM 재분석이 완료되었습니다')
         
