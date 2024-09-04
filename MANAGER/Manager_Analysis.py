@@ -530,9 +530,9 @@ class Manager_Analysis:
                 layout = QVBoxLayout()
 
                 # 버튼 생성
-                btn1 = QPushButton('새로운 KEMKIM 분석 (Token CSV 선택 필요)', self)
-                btn2 = QPushButton('KEMKIM 키워드 필터링 (Result 폴더 선택 필요)', self)
-                btn3 = QPushButton('KEMKIM 키워드 해석 (Result 폴더 선택 필요)', self)
+                btn1 = QPushButton('새로운 KEMKIM 분석', self)
+                btn2 = QPushButton('KEMKIM 그래프 조정', self)
+                btn3 = QPushButton('KEMKIM 키워드 해석', self)
                 
                 # 버튼에 이벤트 연결
                 btn1.clicked.connect(self.run_kimkem_file)
@@ -644,6 +644,24 @@ class Manager_Analysis:
                     group_box.setLayout(group_layout)
                     main_layout.addWidget(group_box)
 
+                self.x_size_label = QLabel('그래프 가로 길이를 입력하세요: ')
+                self.x_size_input = QLineEdit()
+                self.x_size_input.setText('100')  # 기본값 설정
+                main_layout.addWidget(self.x_size_label)
+                main_layout.addWidget(self.x_size_input)
+
+                self.y_size_label = QLabel('그래프 세로 길이를 입력하세요: ')
+                self.y_size_input = QLineEdit()
+                self.y_size_input.setText('100')  # 기본값 설정
+                main_layout.addWidget(self.y_size_label)
+                main_layout.addWidget(self.y_size_input)
+
+                self.font_size_label = QLabel('그래프 폰트 사이즈를 입력하세요: ')
+                self.font_size_input = QLineEdit()
+                self.font_size_input.setText('50')  # 기본값 설정
+                main_layout.addWidget(self.font_size_label)
+                main_layout.addWidget(self.font_size_input)
+
                 # 선택된 단어 출력 버튼 추가
                 btn = QPushButton('제외 단어 결정', self)
                 btn.clicked.connect(self.show_selected_words)
@@ -692,8 +710,12 @@ class Manager_Analysis:
             def show_selected_words(self):
                 # 선택된 단어를 리스트에 추가
                 self.selected_words = [cb.text() for cb in self.checkboxes if cb.isChecked()]
+                self.size_input = (self.x_size_input.text(), self.y_size_input.text(), self.font_size_input.text())
                 # 선택된 단어를 메시지 박스로 출력
-                QMessageBox.information(self, '선택한 단어', ', '.join(self.selected_words))
+                if self.selected_words == []:
+                    QMessageBox.information(self, '선택한 단어', '선택된 단어가 없습니다')
+                else:
+                    QMessageBox.information(self, '선택한 단어', ', '.join(self.selected_words))
                 self.accept()
 
         def copy_csv(input_file_path, output_file_path):
@@ -728,6 +750,10 @@ class Manager_Analysis:
             
             result_directory = result_directory[0]
             final_signal_csv_path = os.path.join(result_directory, "Signal", "Final_signal.csv")
+            if not os.path.exists(final_signal_csv_path):
+                QMessageBox.information(self.main, 'Information', 'Final_signal.csv 파일을 불러오는데 실패했습니다\n\nResult/Signal 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                self.main.printStatus()
+                return
             final_signal_df = pd.read_csv(final_signal_csv_path, low_memory=False)
             words = final_signal_df['word'].tolist()
             all_keyword = []
@@ -738,21 +764,37 @@ class Manager_Analysis:
             self.word_selector = WordSelector(all_keyword)
             if self.word_selector.exec_() == QDialog.Accepted:  # show() 대신 exec_() 사용
                 selected_words = self.word_selector.selected_words
+                size_input = self.word_selector.size_input
+                try:
+                    size_input = tuple(map(int, size_input))
+                except:
+                    QMessageBox.information(self.main, "Information",
+                                            "그래프 사이즈를 숫자로 입력하여 주십시오")
+                    self.main.printStatus()
+                    return
             else:
                 self.main.printStatus()
                 return
-            
-            if len(selected_words) == 0:
-                QMessageBox.information(self.main, 'Information', '선택된 제외 단어가 없습니다')
+
+            DoV_coordinates_path = os.path.join(result_directory, "Graph", "DOV_coordinates.csv")
+            if not os.path.exists(DoV_coordinates_path):
+                QMessageBox.information(self.main, 'Information',
+                                        'DOV_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                self.main.printStatus()
                 return
-            
-            DoV_coordinates_df = pd.read_csv(os.path.join(result_directory, "Graph", "DOV_coordinates.csv"))
+            DoV_coordinates_df = pd.read_csv(DoV_coordinates_path)
             DoV_coordinates_dict = {}
             for index, row in DoV_coordinates_df.iterrows():
                 key = row['key']
                 value = ast.literal_eval(row['value'])  # 문자열을 튜플로 변환
                 DoV_coordinates_dict[key] = value
-                
+
+            DoD_coordinates_path = os.path.join(result_directory, "Graph", "DOD_coordinates.csv")
+            if not os.path.exists(DoD_coordinates_path):
+                QMessageBox.information(self.main, 'Information',
+                                        'DOD_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                self.main.printStatus()
+                return
             DoD_coordinates_df = pd.read_csv(os.path.join(result_directory, "Graph", "DOD_coordinates.csv"))
             DoD_coordinates_dict = {}
             for index, row in DoD_coordinates_df.iterrows():
@@ -778,21 +820,28 @@ class Manager_Analysis:
             copy_csv(os.path.join(result_directory, "Graph", "DOD_statistics.csv"), os.path.join(new_graph_folder, "DOD_statistics.csv"))
             copy_csv(os.path.join(result_directory, "Graph", "DOD_statistics.csv"), os.path.join(new_graph_folder, "DOD_statistics.csv"))
             
-            DoV_signal, DoV_coordinates = kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict)
-            DoD_signal, DoD_coordinates = kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict)
+            DoV_signal, DoV_coordinates = kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict, graph_size=size_input)
+            DoD_signal, DoD_coordinates = kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict, graph_size=size_input)
 
             final_signal = kimkem_obj._get_communal_signals(DoV_signal, DoD_signal)
             final_signal_list = []
             for value in final_signal.values():
                 final_signal_list.extend(value)
 
-            kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict, final_signal_list=final_signal_list, graph_name='KEM_graph.png')
-            kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict, final_signal_list=final_signal_list, graph_name='KIM_graph.png')
+            kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict, final_signal_list=final_signal_list, graph_name='KEM_graph.png', graph_size=size_input)
+            kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict, final_signal_list=final_signal_list, graph_name='KIM_graph.png', graph_size=size_input)
             kimkem_obj._save_final_signals(DoV_signal, DoD_signal, new_signal_folder)
             
             delete_word_list.extend(selected_words)
             pd.DataFrame(delete_word_list, columns=['word']).to_csv(os.path.join(new_result_folder, 'filtered_words.csv'), index = False, encoding='utf-8-sig')
-            
+
+            with open(os.path.join(new_graph_folder, 'graph_size.txt'),'w+') as graph_size:
+                info = (
+                    f'X Size: {size_input[0]}\n'
+                    f'Y Size: {size_input[1]}\n'
+                    f'Font Size: {size_input[2]}'
+                )
+                graph_size.write(info)
             del kimkem_obj
             gc.collect()
             
