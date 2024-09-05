@@ -247,6 +247,16 @@ class Manager_Database:
                         crawlOption = '기사'
                     case 2:
                         crawlOption = '기사 + 댓글'
+
+            case 'dcinside':
+                match crawlOption_int:
+                    case 1:
+                        crawlOption = '게시글'
+                    case 2:
+                        crawlOption = '게시글 + 댓글'
+            case _:
+                crawlOption = crawlOption_int
+
         try:
             ElapsedTime = datetime.strptime(DBdata[6], "%m/%d %H:%M") - datetime.strptime(DBdata[5], "%m/%d %H:%M")
         except:
