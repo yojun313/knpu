@@ -654,7 +654,13 @@ class Manager_Board:
                     f"Post Date: {post_data[2]}\n"
                     f"Post Text: {post_data[4]}\n"
                 )
-                self.main.send_pushOver(msg, self.main.admin_pushoverkey)
+                reply = QMessageBox.question(self.main, 'Confirm Delete', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?\n\nYes: 게시글 전체 알림\nNo: Admin에게만 알림", QMessageBox.Yes | QMessageBox.No,
+                                             QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    for key in self.main.userPushOverKeyList:
+                        self.main.send_pushOver(msg, key)
+                else:
+                    self.main.send_pushOver(msg, self.main.admin_pushoverkey)
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
