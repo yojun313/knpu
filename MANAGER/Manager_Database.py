@@ -570,13 +570,14 @@ class Manager_Database:
                     tableList = sorted(tableList, key=lambda x: ('statistics' not in x, 'article' not in x, x))
 
                     self.main.openFileExplorer(dbpath)
-                    with open(os.path.join(dbpath, 'DB_info.txt'), 'w+') as info:
-                        text = (
-                            f"Filter Option: {filterOption}\n"
-                            f"Include Words: {', '.join(incl_words)}\n"
-                            f"Exclude Words: {', '.join(excl_words)}"
-                        )
-                        info.write(text)
+                    if filterOption == True:
+                        with open(os.path.join(dbpath, 'DB_info.txt'), 'w+') as info:
+                            text = (
+                                f"Filter Option: {filterOption}\n"
+                                f"Include Words: {', '.join(incl_words)}\n"
+                                f"Exclude Words: {', '.join(excl_words)}"
+                            )
+                            info.write(text)
 
                     for tableName in tableList:
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
