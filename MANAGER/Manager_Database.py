@@ -595,24 +595,29 @@ class Manager_Database:
                         else:
                             tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
 
-                        if filterOption == True and ('article' in tableName or 'statistics' in tableName):
+                        if filterOption == True and 'article' in tableName:
                             tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
                             tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
-                            if 'article' in tableName:
-                                articleURL = tableDF['Article URL'].tolist()
+                            articleURL = tableDF['Article URL'].tolist()
 
                         # statistics 테이블 처리
                         if 'statistics' in tableName:
+                            if filterOption == True:
+                                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
                             statisticsURL = tableDF['Article URL'].tolist()
                             save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
                             tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
                             continue
 
+                        if 'reply' in tableName:
+                            if filterOption == True:
+                                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+
                         # reply 테이블 처리
                         if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in target_db:
-                            filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
                             if filterOption == True:
                                 filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+                            filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
                             save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
                             filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
 
