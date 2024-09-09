@@ -574,7 +574,7 @@ class Manager_Database:
                     self.main.mySQL_obj.connectDB(target_db)
                     tableList = self.main.mySQL_obj.showAllTable(target_db)
                     tableList = [table for table in tableList if 'info' not in table]
-                    tableList = sorted(tableList, key=lambda x: ('statistics' not in x, 'article' not in x, x))
+                    tableList = sorted(tableList, key=lambda x: ('article' not in x, 'statistics' not in x, x))
 
                     self.main.openFileExplorer(dbpath)
                     if filterOption == True:
