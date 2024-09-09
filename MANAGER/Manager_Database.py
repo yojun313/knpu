@@ -572,11 +572,11 @@ class Manager_Database:
                     self.main.openFileExplorer(dbpath)
                     with open(os.path.join(dbpath, 'DB_info.txt'), 'w+') as info:
                         text = (
-                            f"Period: {start_date_formed} ~ {end_date_formed}\n"
                             f"Filter Option: {filterOption}\n"
                             f"Include Words: {', '.join(incl_words)}\n"
                             f"Exclude Words: {', '.join(excl_words)}"
                         )
+                        info.write(text)
 
                     for tableName in tableList:
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
