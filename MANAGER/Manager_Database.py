@@ -1,7 +1,7 @@
 import json
 import os
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QPushButton, QVBoxLayout, QScrollArea, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QDialog, QInputDialog, QDialogButtonBox, QRadioButton, QLabel, QFormLayout, QLineEdit
+from PyQt5.QtWidgets import QTableWidget, QButtonGroup, QTableWidgetItem, QWidget, QPushButton, QVBoxLayout, QScrollArea, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QDialog, QInputDialog, QDialogButtonBox, QRadioButton, QLabel, QFormLayout, QLineEdit
 from PyQt5.QtCore import QTimer, QDate
 import pandas as pd
 import copy
@@ -374,6 +374,9 @@ class Manager_Database:
                     self.setWindowTitle('Select Options')
                     self.resize(250, 150)  # 너비 400, 높이 300
 
+                    self.incl_word_list = []
+                    self.excl_word_list = []
+
                     # 다이얼로그 레이아웃
                     self.layout = QVBoxLayout()
 
@@ -382,7 +385,7 @@ class Manager_Database:
                     self.radio_custom = QRadioButton('기간 설정')
                     self.radio_all.setChecked(True)  # 기본으로 "전체 저장" 선택
 
-                    self.layout.addWidget(QLabel('Choose Option:'))
+                    self.layout.addWidget(QLabel('Choose Date Option:'))
                     self.layout.addWidget(self.radio_all)
                     self.layout.addWidget(self.radio_custom)
 
@@ -402,6 +405,36 @@ class Manager_Database:
 
                     self.layout.addWidget(self.date_input_form)
 
+                    # 라디오 버튼 그룹 생성
+                    self.radio_nofliter = QRadioButton('필터링 안함')
+                    self.radio_filter = QRadioButton('필터링 설정')
+                    self.radio_nofliter.setChecked(True)  # 기본으로 "전체 저장" 선택
+
+                    self.layout.addWidget(QLabel('Choose Filter Option:'))
+                    self.layout.addWidget(self.radio_nofliter)
+                    self.layout.addWidget(self.radio_filter)
+
+                    # QButtonGroup 생성하여 라디오 버튼 그룹화
+                    self.filter_group = QButtonGroup()
+                    self.filter_group.addButton(self.radio_nofliter)
+                    self.filter_group.addButton(self.radio_filter)
+
+                    # 단어 입력 폼 (처음엔 숨김)
+                    self.word_input_form = QWidget()
+                    self.word_input_form_layout = QFormLayout()
+
+                    self.incl_word_input = QLineEdit()
+                    self.incl_word_input.setPlaceholderText('ex) 사과, 바나나')
+                    self.excl_word_input = QLineEdit()
+                    self.excl_word_input.setPlaceholderText('ex) 당근, 오이')
+
+                    self.word_input_form_layout.addRow('포함 문자:', self.incl_word_input)
+                    self.word_input_form_layout.addRow('제외 문자:', self.excl_word_input)
+                    self.word_input_form.setLayout(self.word_input_form_layout)
+                    self.word_input_form.setVisible(False)
+
+                    self.layout.addWidget(self.word_input_form)
+
                     # 다이얼로그의 OK/Cancel 버튼
                     self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
                     self.button_box.accepted.connect(self.accept)
@@ -413,10 +446,15 @@ class Manager_Database:
 
                     # 신호 연결
                     self.radio_custom.toggled.connect(self.toggle_date_input)
+                    self.radio_filter.toggled.connect(self.toggle_word_input)
 
                 def toggle_date_input(self, checked):
                     # "기간 설정" 라디오 버튼이 선택되면 날짜 입력 필드 표시
                     self.date_input_form.setVisible(checked)
+
+                def toggle_word_input(self, checked):
+                    # "기간 설정" 라디오 버튼이 선택되면 날짜 입력 필드 표시
+                    self.word_input_form.setVisible(checked)
 
                 def accept(self):
                     # 확인 버튼을 눌렀을 때 데이터 유효성 검사
@@ -427,6 +465,17 @@ class Manager_Database:
 
                         if not (start_date.isValid() and end_date.isValid()):
                             QMessageBox.warning(self, '날짜 오류', '잘못된 날짜 형식입니다.')
+                            return  # 확인 동작을 취소함
+
+                    if self.radio_filter.isChecked():
+                        try:
+                            incl_word_str = self.incl_word_input.text()
+                            excl_word_str = self.excl_word_input.text()
+
+                            self.incl_word_list = incl_word_str.split(', ')
+                            self.excl_word_list = excl_word_str.split(', ')
+                        except:
+                            QMessageBox.warning(self, '입력 오류', '잘못된 필터링 입력입니다')
                             return  # 확인 동작을 취소함
 
                     super().accept()  # 정상적인 경우에만 다이얼로그를 종료함
@@ -449,7 +498,13 @@ class Manager_Database:
                 if folder_path:
                     dialog = OptionDialog()
                     selected_options = {}
+
                     if dialog.exec_() == QDialog.Accepted:
+
+                        filter_options = {}
+                        filter_options['incl_words'] = dialog.incl_word_list
+                        filter_options['excl_words'] = dialog.excl_word_list
+
                         # 선택된 라디오 버튼 확인
                         if dialog.radio_all.isChecked():
                             selected_options['option'] = 'all'
@@ -476,11 +531,12 @@ class Manager_Database:
                         self.main.printStatus(f"{replace_dates_in_filename(target_db, selected_options['start_date'], selected_options['end_date'])} 저장 중...")
                     else:
                         self.main.printStatus(f"{target_db} 저장 중...")
-                    QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options))
+                    QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options, filter_options))
                     QTimer.singleShot(1000, self.main.printStatus)
 
-            def save_database(target_db, folder_path, selected_options):
+            def save_database(target_db, folder_path, selected_options, filter_options):
 
+                filterOption = False
                 dbpath = os.path.join(folder_path, target_db)
                 dbname = target_db
                 if selected_options['option'] == 'part':
@@ -491,6 +547,12 @@ class Manager_Database:
                     end_date_formed = datetime.strptime(end_date, "%Y%m%d").strftime("%Y-%m-%d")
                     dbname = replace_dates_in_filename(target_db, start_date, end_date)
                     dbpath = os.path.join(folder_path, dbname)
+
+                if filter_options['incl_words'] != [] or filter_options['excl_words'] != []:
+                    filterOption = True
+                    incl_words = filter_options['incl_words']
+                    excl_words = filter_options['excl_words']
+
                 try:
                     while True:
                         try:
@@ -505,9 +567,17 @@ class Manager_Database:
                     self.main.mySQL_obj.connectDB(target_db)
                     tableList = self.main.mySQL_obj.showAllTable(target_db)
                     tableList = [table for table in tableList if 'info' not in table]
-                    tableList = sorted(tableList, key=lambda x: ('statistics' not in x, x))
+                    tableList = sorted(tableList, key=lambda x: ('statistics' not in x, 'article' not in x, x))
 
                     self.main.openFileExplorer(dbpath)
+                    with open(os.path.join(dbpath, 'DB_info.txt'), 'w+') as info:
+                        text = (
+                            f"Period: {start_date_formed} ~ {end_date_formed}\n"
+                            f"Filter Option: {filterOption}\n"
+                            f"Include Words: {', '.join(incl_words)}\n"
+                            f"Exclude Words: {', '.join(excl_words)}"
+                        )
+
                     for tableName in tableList:
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
 
@@ -516,6 +586,12 @@ class Manager_Database:
                             tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
                         else:
                             tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
+
+                        if filterOption == True and ('article' in tableName or 'statistics' in tableName):
+                            tableDF = tableDF[tableDF['Article URL'].apply(lambda cell: any(word in cell for word in incl_words))]
+                            tableDF = tableDF[tableDF['Article URL'].apply(lambda cell: all(word not in cell for word in excl_words))]
+                            if 'article' in tableName:
+                                articleURL = tableDF['Article URL'].tolist()
 
                         # statistics 테이블 처리
                         if 'statistics' in tableName:
@@ -527,6 +603,8 @@ class Manager_Database:
                         # reply 테이블 처리
                         if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in target_db:
                             filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
+                            if filterOption == True:
+                                filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
                             save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
                             filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
 

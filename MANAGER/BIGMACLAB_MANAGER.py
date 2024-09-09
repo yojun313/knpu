@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.6.6'
+        self.versionNum = '1.6.7'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -448,24 +448,30 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stackedWidget.setCurrentIndex(index)
         # DATABASE
         if index == 0:
+            self.printStatus()
             self.Manager_Database_obj.database_refresh_DB()
         # CRAWLER
         elif index == 1:
+            self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr', self.Manager_Web_obj.crawler_web_layout)
         # ANALYSIS
         elif index == 2:
+            self.printStatus()
             if self.Manager_Analysis_generate == False:
                 self.Manager_Analysis_obj = Manager_Analysis(self)
                 self.Manager_Analysis_generate = True
             self.Manager_Analysis_obj.dataprocess_refresh_DB()
         # BOARD
         elif index == 3:
+            self.printStatus()
             pass
         # WEB
         elif index == 4:
+            self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
         # USER
         elif index == 5:
+            self.printStatus()
             pass
             
         gc.collect()
