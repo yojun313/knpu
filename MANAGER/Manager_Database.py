@@ -472,8 +472,15 @@ class Manager_Database:
                             incl_word_str = self.incl_word_input.text()
                             excl_word_str = self.excl_word_input.text()
 
-                            self.incl_word_list = incl_word_str.split(', ')
-                            self.excl_word_list = excl_word_str.split(', ')
+                            if incl_word_str == '':
+                                self.incl_word_list = []
+                            else:
+                                self.incl_word_list = incl_word_str.split(', ')
+
+                            if excl_word_str == '':
+                                self.excl_word_list = []
+                            else:
+                                self.excl_word_list = excl_word_str.split(', ')
                         except:
                             QMessageBox.warning(self, '입력 오류', '잘못된 필터링 입력입니다')
                             return  # 확인 동작을 취소함
