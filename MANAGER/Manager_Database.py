@@ -588,8 +588,8 @@ class Manager_Database:
                             tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
 
                         if filterOption == True and ('article' in tableName or 'statistics' in tableName):
-                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in cell for word in incl_words))]
-                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in cell for word in excl_words))]
+                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
+                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
                             if 'article' in tableName:
                                 articleURL = tableDF['Article URL'].tolist()
 
