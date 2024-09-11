@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.7.2'
+        self.versionNum = '1.7.3'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -36,7 +36,6 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi(ui_path, self)
 
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
-        #self.setGeometry(0, 0, 1400, 1000)
         if platform.system() == "Windows":
             self.showMaximized()  # 전체 화면으로 창 열기
         else:
@@ -65,7 +64,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     FILE_ATTRIBUTE_HIDDEN = 0x02
                     ctypes.windll.kernel32.SetFileAttributesW(self.program_log_path, FILE_ATTRIBUTE_HIDDEN)
                 else:
-                    self.program_bug_log(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
+                    self.program_bug_log(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}", boot=True)
 
             else:
                 self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
@@ -75,7 +74,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     with open(self.program_log_path, "w") as log:
                         log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
                 else:
-                    self.program_bug_log(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
+                    self.program_bug_log(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}", boot=True)
 
             if os.path.isdir(self.default_directory) == False:
                 os.mkdir(self.default_directory)
@@ -563,10 +562,15 @@ class MainWindow(QtWidgets.QMainWindow):
         content = response.choices[0].message.content
         return content
 
-    def program_bug_log(self, text):
+    def program_bug_log(self, text, boot=False):
         with open(self.program_log_path, "a") as file:
             # 이어서 기록할 내용
             file.write(f"\n\n{text}")
+        if boot == True:
+            return
+        reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.Manager_Board_obj.board_add_bug(auto=True)
 
 class InfoDialog(QDialog):
     def __init__(self, version):

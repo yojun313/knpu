@@ -151,7 +151,7 @@ class Manager_Board:
                     self.board_version_refresh()
 
                     msg = (
-                        "[BIGMACLAB MANAGER] New Version Added!\n\n"
+                        "[ New Version Released! ]\n\n"
                         f"Version Num: {version_data[0]}\n"
                         f"Release Date: {version_data[1]}\n"
                         f"ChangeLog: {version_data[2]}\n"
@@ -290,7 +290,7 @@ class Manager_Board:
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
-    def board_add_bug(self):
+    def board_add_bug(self, auto=False):
         try:
             # QDialog를 상속받은 클래스 생성
             class BugInputDialog(QDialog):
@@ -372,24 +372,24 @@ class Manager_Board:
                 with open(self.main.program_log_path, 'r') as log:
                     log_record = log.read()
                 bug_data.append(log_record)
-                self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                self.main.mySQL_obj.insertToTable('version_bug', bug_data)
-                self.main.mySQL_obj.commit()
-                self.board_bug_refresh()
 
-                if os.path.exists(self.main.program_log_path):
-                    os.remove(self.main.program_log_path)
+                if auto == False:
+                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                    self.main.mySQL_obj.insertToTable('version_bug', bug_data)
+                    self.main.mySQL_obj.commit()
+                    self.board_bug_refresh()
+
                 with open(self.main.program_log_path, "w") as log:
                     log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
 
                 msg = (
-                    "[BIGMACLAB MANAGER] New Bug Added!\n"
+                    "[ New Bug Added! ]\n"
                     f"User: {bug_data[0]}\n"
                     f"Version: {bug_data[1]}\n"
                     f"Title: {bug_data[2]}\n"
                     f"Datetime: {bug_data[3]}\n"
                     f"Detail: \n{bug_data[4]}\n"
-                    f"log: \n{bug_data[5]}\n"
+                    f"log: \n\n{bug_data[5]}\n"
                 )
                 self.main.send_pushOver(msg, self.main.admin_pushoverkey)
         except Exception as e:
@@ -648,7 +648,7 @@ class Manager_Board:
                 self.board_post_refresh()
 
                 msg = (
-                    "[BIGMACLAB MANAGER] New Post Added!\n"
+                    "[ New Post Added! ]\n"
                     f"User: {post_data[0]}\n"
                     f"Post Title: {post_data[1]}\n"
                     f"Post Date: {post_data[2]}\n"
