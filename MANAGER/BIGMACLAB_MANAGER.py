@@ -120,7 +120,7 @@ class MainWindow(QtWidgets.QMainWindow):
             current_version = version.parse(self.versionNum)
             new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
             if current_version < new_version:
-                reply = QMessageBox.question(self, 'Confirm Update', f"새로운 {new_version} 버전이 존재합니다.\n다운로드 받으시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                reply = QMessageBox.question(self, 'Confirm Update', f"새로운 {new_version} 버전이 존재합니다\n\n업데이트하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     import subprocess
                     download_file_path = os.path.join(self.default_directory, f"BIGMACLAB_MANAGER_{new_version}.exe")
