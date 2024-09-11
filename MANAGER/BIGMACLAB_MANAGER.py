@@ -111,6 +111,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.Manager_Web_obj = Manager_Web(self)
                     self.Manager_Board_obj = Manager_Board(self)
                     self.Manager_Analysis_generate = False
+                    break
                 except:
                     reply = QMessageBox.question(self, 'Confirm Delete', "DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if reply == QMessageBox.Yes:
