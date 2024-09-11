@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.7.1'
+        self.versionNum = '1.7.2'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -104,11 +104,19 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.login_program() == False:
                 sys.exit()
 
-            self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
-            self.Manager_Database_obj = Manager_Database(self)
-            self.Manager_Web_obj = Manager_Web(self)
-            self.Manager_Board_obj = Manager_Board(self)
-            self.Manager_Analysis_generate = False
+            while True:
+                try:
+                    self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
+                    self.Manager_Database_obj = Manager_Database(self)
+                    self.Manager_Web_obj = Manager_Web(self)
+                    self.Manager_Board_obj = Manager_Board(self)
+                    self.Manager_Analysis_generate = False
+                except:
+                    reply = QMessageBox.question(self, 'Confirm Delete', "DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                       continue
+                    else:
+                        sys.exit()
 
             def download_file(download_url, local_filename):
                 response = requests.get(download_url, stream=True)
@@ -122,14 +130,15 @@ class MainWindow(QtWidgets.QMainWindow):
             if current_version < new_version:
                 reply = QMessageBox.question(self, 'Confirm Update', f"새로운 {new_version} 버전이 존재합니다\n\n업데이트하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
-                    import subprocess
-                    download_file_path = os.path.join(self.default_directory, f"BIGMACLAB_MANAGER_{new_version}.exe")
-                    self.printStatus("프로그램 업데이트 중...")
-                    download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{new_version}.exe", download_file_path)
                     if platform.system() == "Windows":
+                        QMessageBox.information(self, "Information", "업데이트 후 새로운 버전의 프로그램으로 재실행됩니다\n\n잠시만 기다려주십시오")
+                        self.printStatus("프로그램 업데이트 중...")
+                        import subprocess
+                        download_file_path = os.path.join(self.default_directory, f"BIGMACLAB_MANAGER_{new_version}.exe")
+                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{new_version}.exe", download_file_path)
                         subprocess.Popen([download_file_path], shell=True)
-                    self.openFileExplorer(self.default_directory)
-                    sys.exit()
+                        self.openFileExplorer(self.default_directory)
+                        sys.exit()
 
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")
