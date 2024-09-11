@@ -110,13 +110,25 @@ class MainWindow(QtWidgets.QMainWindow):
             self.Manager_Board_obj = Manager_Board(self)
             self.Manager_Analysis_generate = False
 
+            def download_file(download_url, local_filename):
+                response = requests.get(download_url, stream=True)
+                with open(local_filename, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+
             # New version check
             current_version = version.parse(self.versionNum)
             new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
             if current_version < new_version:
                 reply = QMessageBox.question(self, 'Confirm Update', f"새로운 {new_version} 버전이 존재합니다.\n다운로드 받으시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
-                    self.Manager_Web_obj.web_open_downloadbrowser('https://knpu.re.kr:90')
+                    import subprocess
+                    download_file_path = os.path.join(self.default_directory, f"BIGMACLAB_MANAGER_{new_version}.exe")
+                    self.printStatus("프로그램 업데이트 중...")
+                    download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{new_version}.exe", download_file_path)
+                    if platform.system() == "Windows":
+                        subprocess.Popen([download_file_path], shell=True)
+                    sys.exit()
 
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")
