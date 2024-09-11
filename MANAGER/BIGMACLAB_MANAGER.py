@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.7.0'
+        self.versionNum = '1.7.1'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -128,6 +128,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{new_version}.exe", download_file_path)
                     if platform.system() == "Windows":
                         subprocess.Popen([download_file_path], shell=True)
+                    self.openFileExplorer(self.default_directory)
                     sys.exit()
 
         self.listWidget.setCurrentRow(0)
