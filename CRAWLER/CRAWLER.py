@@ -108,7 +108,7 @@ class Crawler(CrawlerModule):
         print('\rStopped by BIGMACLAB MANAGER PROGRAM', end='')
 
         log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a')
-        log.write(f"\n\n{datetime.fromtimestamp(self.startTime).strftime('%m/%d %H:%M')}에 중단됨")
+        log.write(f"\n\nDB Check --> {datetime.fromtimestamp(self.startTime).strftime('%m/%d %H:%M')}에 중단됨")
         log.close()
 
         self.localDBRemover()
