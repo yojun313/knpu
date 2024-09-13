@@ -98,17 +98,21 @@ class Crawler(CrawlerModule):
 
     # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
-        if self.DBname.lower() in self.mySQL.showAllDB():
-            self.running = True
-        else:
-            print('\rStopped by BIGMACLAB MANAGER PROGRAM', end='')
+        for i in range(5):
+            DBlist = self.mySQL.showAllDB()
+            if self.DBname.lower() in DBlist:
+                self.running = True
+                return
 
-            log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a')
-            log.write(f"\n\n{datetime.fromtimestamp(self.startTime).strftime('%m/%d %H:%M')}에 중단됨")
-            log.close()
+        self.running = False
+        print('\rStopped by BIGMACLAB MANAGER PROGRAM', end='')
 
-            self.localDBRemover()
-            sys.exit()
+        log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a')
+        log.write(f"\n\n{datetime.fromtimestamp(self.startTime).strftime('%m/%d %H:%M')}에 중단됨")
+        log.close()
+
+        self.localDBRemover()
+        sys.exit()
 
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
