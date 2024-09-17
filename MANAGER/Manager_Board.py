@@ -44,7 +44,7 @@ class Manager_Board:
             self.version_data = sort_by_version(self.main.mySQL_obj.TableToList('version_info'))
             self.version_data_for_table = [sub_list[:-1] for sub_list in self.version_data]
             self.version_table_column = ['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status']
-            self.main.table_maker(self.main.board_version_tableWidget, self.version_data_for_table,self.version_table_column)
+            self.main.table_maker(self.main.board_version_tableWidget, self.version_data_for_table, self.version_table_column)
             self.version_name_list = [version_data[0] for version_data in self.version_data_for_table]
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
@@ -323,7 +323,7 @@ class Manager_Board:
 
                     self.bug_detail_label = QLabel('Bug Detail:')
                     self.bug_detail_input = QTextEdit()
-                    self.bug_detail_input.setPlaceholderText('버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해주세요')
+                    self.bug_detail_input.setPlaceholderText('버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해주세요\n오류 로그는 자동으로 전송됩니다')
                     layout.addWidget(self.bug_detail_label)
                     layout.addWidget(self.bug_detail_input)
 

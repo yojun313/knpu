@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.7.3'
+        self.versionNum = '1.7.4'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -51,6 +51,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # 사이드바 연결
         def load_program():
+            self.menubar_init()
             self.listWidget.currentRowChanged.connect(self.display)
 
             if platform.system() == "Windows":
@@ -128,7 +129,14 @@ class MainWindow(QtWidgets.QMainWindow):
             current_version = version.parse(self.versionNum)
             new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
             if current_version < new_version:
-                reply = QMessageBox.question(self, 'Confirm Update', f"새로운 {new_version} 버전이 존재합니다\n\n업데이트하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                version_info = (
+                    f"Version Num: {self.Manager_Board_obj.version_data_for_table[0][0]}\n"
+                    f"Release Date: {self.Manager_Board_obj.version_data_for_table[0][1]}\n"
+                    f"ChangeLog: {self.Manager_Board_obj.version_data_for_table[0][2]}\n"
+                    f"Version Features: {self.Manager_Board_obj.version_data_for_table[0][3]}\n"
+                    f"Version Status: {self.Manager_Board_obj.version_data_for_table[0][4]}"
+                )
+                reply = QMessageBox.question(self, 'Confirm Update', f"새로운 {new_version} 버전이 존재합니다\n\n업데이트하시겠습니까?\n\n{version_info}", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     if platform.system() == "Windows":
                         QMessageBox.information(self, "Information", "업데이트 후 새로운 버전의 프로그램으로 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
@@ -595,19 +603,6 @@ class InfoDialog(QDialog):
         info_label = QLabel(long_text, self)
         info_label.setAlignment(Qt.AlignCenter)
 
-        # 이미지 추가
-        pixmap = QPixmap(os.path.join(os.path.dirname(__file__), 'exe_icon.png'))  # 이미지 경로를 적절히 변경
-        if pixmap.isNull():
-            print("Failed to load image!")
-        else:
-            scaled_pixmap = pixmap.scaled(100, 100, Qt.KeepAspectRatio)  # 이미지 크기 조정
-
-        image_label = QLabel(self)
-        image_label.setPixmap(scaled_pixmap)
-        image_label.setAlignment(Qt.AlignCenter)
-
-        # 레이아웃에 라벨 추가
-        layout.addWidget(image_label)
         layout.addWidget(info_label)
 
         self.setLayout(layout)
