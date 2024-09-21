@@ -82,7 +82,7 @@ class monitoring:
             print("접속 실패")
             status = (False, 1)
         else:
-            print("접속 성공")
+            print("접속 정상")
         print('--------------------------------------------------------------')
 
         # Z8 CRAWLER
@@ -92,9 +92,9 @@ class monitoring:
             response = requests.get(url, timeout=10)
             # 상태 코드가 200번대면 성공
             if response.status_code == 200:
-                print("접속 성공")
+                print("접속 정상")
             else:
-                print("접속 실패")
+                print("접속 정상")
                 status = (False, 2)
 
         except requests.exceptions.RequestException as e:
@@ -110,7 +110,7 @@ class monitoring:
             response = requests.get(url, timeout=10)
             # 상태 코드가 200번대면 성공
             if response.status_code == 200:
-                print("접속 성공")
+                print("접속 정")
             else:
                 print("접속 실패")
                 status = (False, 3)
