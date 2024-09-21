@@ -110,7 +110,7 @@ class monitoring:
             response = requests.get(url, timeout=10)
             # 상태 코드가 200번대면 성공
             if response.status_code == 200:
-                print("접속 정")
+                print("접속 정상")
             else:
                 print("접속 실패")
                 status = (False, 3)
