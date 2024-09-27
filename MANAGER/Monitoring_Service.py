@@ -3,127 +3,123 @@ import requests
 from mySQL import mySQL
 from datetime import datetime
 
-class monitoring:
+
+class Monitoring:
     def __init__(self):
         self.app_key = "a2x6qmtaup9a3upmupiftv2fqfu8sz"
-        self.user_key = ['uvz7oczixno7daxvgxmq65g2gbnsd5', 'uqkbhuy1e1752ryxnjp3hy5g67467m']
+        self.user_keys = ['uvz7oczixno7daxvgxmq65g2gbnsd5', 'uqkbhuy1e1752ryxnjp3hy5g67467m']
+        self.z8_status = {"db": True, "crawler": True}
+        self.omen_status = True
 
     def main(self):
         while True:
-            status = self.check_servers()  # 작업 실행
-            msg = (
-                "PROBLEMS DETECTED IN SERVER\n"
-                f"\nDateTime: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n\n"
-            )
+            status = self.check_servers()
 
-            if status == True:
-                pass
-            else:
-                error_num = status[1]
-                if error_num == 1:
-                    msg += (
-                        "Computer: Z8\n"
-                        "Object: DB Server\n"
-                        "Solution:\n"
-                        "1. Check Z8 if it is online\n"
-                        "2. Check Z8 network"
-                    )
-                elif error_num == 2:
-                    msg += (
-                        "Computer: Z8\n"
-                        "Object: CRAWLER\n"
-                        "Solution:\n"
-                        "1. Check Z8 if it is online\n"
-                        "2. Check Z8 network"
-                    )
+            if status is not True:
+                error_num, computer, server_type = status
+                msg = self.create_error_message(error_num, computer, server_type)
 
-                elif error_num == 3:
-                    msg += (
-                        "Computer: OMEN\n"
-                        "Object: CRAWLER\n"
-                        "Solution:\n"
-                        "1. Check OMEN if it is online\n"
-                        "2. Check OMEN network"
-                    )
-                for key in self.user_key:
-                    self.send_pushOver(msg, key)
-                return
+                for key in self.user_keys:
+                    self.send_pushover(msg, key)
 
-            time.sleep(1800)  # 1시간(3600초) 대기
+            time.sleep(1800)
 
-    def send_pushOver(self, msg, user_key):
+    def create_error_message(self, error_num, computer, server_type):
+        return (
+            f"PROBLEMS DETECTED IN SERVER\n\n"
+            f"DateTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            f"Computer: {computer}\n"
+            f"Object: {server_type.upper()}\n"
+            f"Solution:\n"
+            f"1. Check {computer} if it is online\n"
+            f"2. Check {computer} network"
+        )
+
+    def send_pushover(self, msg, user_key):
+        url = 'https://api.pushover.net/1/messages.json'
+        message = {
+            'token': self.app_key,
+            'user': user_key,
+            'message': msg
+        }
+
         while True:
             try:
-                # Pushover API 설정
-                url = 'https://api.pushover.net/1/messages.json'
-                # 메시지 내용
-                message = {
-                    'token': self.app_key,
-                    'user': user_key,
-                    'message': msg
-                }
-                # Pushover에 요청을 보냄
-                response = requests.post(url, data=message)
+                requests.post(url, data=message)
                 return
             except:
                 continue
 
     def check_servers(self):
-        status = True
-        # Z8 DB
         print('\n\n==============================================================')
-        print("DateTime: ", end='')
-        print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        print()
+        print("DateTime: ", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
+        if not self.check_z8_db():
+            return (1, "Z8", "DB Server")
+
+        if not self.check_z8_crawler():
+            return (2, "Z8", "Crawler")
+
+        if not self.check_omen_crawler():
+            return (3, "OMEN", "Crawler")
+
+        return True
+
+    def check_z8_db(self):
         print("[ Z8 DATABASE SERVER TEST ]")
         mysql_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
-        if mysql_obj.showAllDB() == []:
+
+        if not mysql_obj.showAllDB():
             print("접속 실패")
-            status = (False, 1)
+            if self.z8_status["db"]:
+                self.z8_status["db"] = False
+            return False
         else:
+            if not self.z8_status["db"]:
+                self.notify_recovery("Z8", "DB Server")
+                self.z8_status["db"] = True
             print("접속 정상")
-        print('--------------------------------------------------------------')
+        return True
 
-        # Z8 CRAWLER
-        print("[ Z8 CRAWLER SERVER TEST ]")
-        url = 'http://bigmaclab-crawler.kro.kr:81'
+    def check_z8_crawler(self):
+        return self.check_crawler_server("Z8", "http://bigmaclab-crawler.kro.kr:81", "crawler")
+
+    def check_omen_crawler(self):
+        return self.check_crawler_server("OMEN", "http://bigmaclab-crawler.kro.kr:80", "crawler")
+
+    def check_crawler_server(self, computer, url, server_type):
+        print(f"[ {computer.upper()} {server_type.upper()} SERVER TEST ]")
         try:
             response = requests.get(url, timeout=10)
-            # 상태 코드가 200번대면 성공
             if response.status_code == 200:
-                print("접속 정상")
-            else:
-                print("접속 정상")
-                status = (False, 2)
-
-        except requests.exceptions.RequestException as e:
-            # 요청이 실패했을 때의 예외 처리
-            print("접속 실패")
-            status = (False, 2)
-        print('--------------------------------------------------------------')
-
-        # Z8 CRAWLER
-        print("[ OMEN CRAWLER SERVER TEST ]")
-        url = 'http://bigmaclab-crawler.kro.kr:80'
-        try:
-            response = requests.get(url, timeout=10)
-            # 상태 코드가 200번대면 성공
-            if response.status_code == 200:
+                if computer == "Z8" and not self.z8_status[server_type]:
+                    self.notify_recovery(computer, server_type)
+                    self.z8_status[server_type] = True
+                elif computer == "OMEN" and not self.omen_status:
+                    self.notify_recovery(computer, server_type)
+                    self.omen_status = True
                 print("접속 정상")
             else:
                 print("접속 실패")
-                status = (False, 3)
-
-        except requests.exceptions.RequestException as e:
-            # 요청이 실패했을 때의 예외 처리
+                if computer == "Z8" and self.z8_status[server_type]:
+                    self.z8_status[server_type] = False
+                elif computer == "OMEN" and self.omen_status:
+                    self.omen_status = False
+                return False
+        except requests.exceptions.RequestException:
             print("접속 실패")
-            status = (False, 3)
-        print('\n==============================================================')
+            return False
+        return True
 
-        return status
+    def notify_recovery(self, computer, server_type):
+        recovery_msg = (
+            f"SERVER RECOVERED\n\n"
+            f"DateTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            f"{computer} {server_type.upper()} server is stable now"
+        )
+        for key in self.user_keys:
+            self.send_pushover(recovery_msg, key)
 
 
-
-monitoring_obj = monitoring()
+monitoring_obj = Monitoring()
 monitoring_obj.main()
