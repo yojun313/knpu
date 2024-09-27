@@ -22,6 +22,8 @@ class Monitoring:
                 for key in self.user_keys:
                     self.send_pushover(msg, key)
 
+            print('\n==============================================================')
+
             time.sleep(1800)
 
     def create_error_message(self, error_num, computer, server_type):
@@ -51,7 +53,7 @@ class Monitoring:
                 continue
 
     def check_servers(self):
-        print('\n\n==============================================================')
+        print('\n\n==============================================================\n')
         print("DateTime: ", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
         if not self.check_z8_db():
