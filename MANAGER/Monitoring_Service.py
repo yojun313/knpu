@@ -8,8 +8,8 @@ class Monitoring:
     def __init__(self):
         self.app_key = "a2x6qmtaup9a3upmupiftv2fqfu8sz"
         self.user_keys = ['uvz7oczixno7daxvgxmq65g2gbnsd5', 'uqkbhuy1e1752ryxnjp3hy5g67467m']
-        self.z8_status = {"db": True, "crawler": True}
-        self.omen_status = True
+        self.z8_status = {"db": True, "crawler": True}  # True는 정상 상태를 의미
+        self.omen_status = True  # OMEN 크롤러의 상태
 
     def main(self):
         while True:
@@ -24,7 +24,7 @@ class Monitoring:
 
             print('\n==============================================================')
 
-            time.sleep(1800)
+            time.sleep(1800)  # 30분 대기
 
     def create_error_message(self, error_num, computer, server_type):
         return (
@@ -73,11 +73,11 @@ class Monitoring:
 
         if not mysql_obj.showAllDB():
             print("접속 실패")
-            if self.z8_status["db"]:
+            if self.z8_status["db"]:  # 이전에 정상이었다면 (즉, 상태 변화가 있을 때만 알림 전송)
                 self.z8_status["db"] = False
-            return False
+                return False
         else:
-            if not self.z8_status["db"]:
+            if not self.z8_status["db"]:  # 복구되었을 때만 알림
                 self.notify_recovery("Z8", "DB Server")
                 self.z8_status["db"] = True
             print("접속 정상")
@@ -94,7 +94,7 @@ class Monitoring:
         try:
             response = requests.get(url, timeout=10)
             if response.status_code == 200:
-                if computer == "Z8" and not self.z8_status[server_type]:
+                if computer == "Z8" and not self.z8_status[server_type]:  # 복구될 때만 알림 전송
                     self.notify_recovery(computer, server_type)
                     self.z8_status[server_type] = True
                 elif computer == "OMEN" and not self.omen_status:
@@ -103,11 +103,12 @@ class Monitoring:
                 print("접속 정상")
             else:
                 print("접속 실패")
-                if computer == "Z8" and self.z8_status[server_type]:
+                if computer == "Z8" and self.z8_status[server_type]:  # 상태가 변할 때만 알림 전송
                     self.z8_status[server_type] = False
+                    return False
                 elif computer == "OMEN" and self.omen_status:
                     self.omen_status = False
-                return False
+                    return False
         except requests.exceptions.RequestException:
             print("접속 실패")
             return False
