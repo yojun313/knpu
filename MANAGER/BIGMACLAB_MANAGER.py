@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.7.4'
+        self.versionNum = '1.8.0'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -42,6 +42,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.resize(1400, 1000)
 
         self.statusBar_init()
+        self.fullstorage = 0
+        self.boot_success = False
         self.admin_password = 'kingsman'
         self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
         self.gpt_api_key = "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"
@@ -84,6 +86,12 @@ class MainWindow(QtWidgets.QMainWindow):
             if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
                 DB_ip = '192.168.0.3'
 
+            network_text = (
+                "\n\n[ DB 접속 반복 실패 시... ]\n"
+                "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 작동하는지 확인하십시오"
+                "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
+            )
+
             while True:
                 try:
                     self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='bigmaclab2022!', port=3306)
@@ -95,9 +103,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.userPushOverKeyList = self.Manager_User_obj.userKeyList
                     break
                 except:
-                    reply = QMessageBox.question(self, 'Confirm Delete', "DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if reply == QMessageBox.Yes:
-                       continue
+                        continue
                     else:
                         sys.exit()
 
@@ -111,11 +119,12 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.Manager_Web_obj = Manager_Web(self)
                     self.Manager_Board_obj = Manager_Board(self)
                     self.Manager_Analysis_generate = False
+                    self.boot_success = True
                     break
                 except:
-                    reply = QMessageBox.question(self, 'Confirm Delete', "DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if reply == QMessageBox.Yes:
-                       continue
+                        continue
                     else:
                         sys.exit()
 
@@ -151,7 +160,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
-        QTimer.singleShot(1, self.printStatus)
+        if self.boot_success == True:
+            QTimer.singleShot(1, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
    
     def login_program(self):
         self.mySQL_obj.connectDB('bigmaclab_manager_db')
@@ -270,6 +280,10 @@ class MainWindow(QtWidgets.QMainWindow):
             if endtime == '-':
                 endtime = '크롤링 중'
             requester = db_info[4]
+            size = self.mySQL_obj.showDBSize(DB_name)
+            self.fullstorage += float(size[0])
+            size = f"{size[1]} MB" if size[0] < 1 else f"{size[0]} GB"
+
             try:
                 keyword = db_info[5]
                 crawlcom = db_info[6]
@@ -280,7 +294,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 keyword = db_split[1]
                 currentDB['DBinfo'].append(('', '', ''))
 
-            currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester))
+            currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester, size))
 
         db_data = currentDB['DBdata']
         db_list = currentDB['DBlist']
@@ -293,6 +307,8 @@ class MainWindow(QtWidgets.QMainWindow):
         sorted_db_data = [db_data[i] for i in sorted_indices]
         sorted_db_list = [db_list[i] for i in sorted_indices]
         sorted_db_info = [db_info[i] for i in sorted_indices]
+
+        self.fullstorage = round(self.fullstorage, 2)
 
         return {'DBdata': sorted_db_data, 'DBlist': sorted_db_list, 'DBinfo': sorted_db_info}
 
@@ -478,8 +494,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stackedWidget.setCurrentIndex(index)
         # DATABASE
         if index == 0:
-            self.printStatus()
             self.Manager_Database_obj.database_refresh_DB()
+            QTimer.singleShot(1, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+
         # CRAWLER
         elif index == 1:
             self.printStatus()
