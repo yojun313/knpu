@@ -158,7 +158,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
-        QTimer.singleShot(1, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+        QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
    
     def login_program(self):
         self.mySQL_obj.connectDB('bigmaclab_manager_db')
