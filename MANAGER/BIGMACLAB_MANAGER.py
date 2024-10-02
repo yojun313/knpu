@@ -43,7 +43,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.statusBar_init()
         self.fullstorage = 0
-        self.boot_success = False
         self.admin_password = 'kingsman'
         self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
         self.gpt_api_key = "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"
@@ -119,7 +118,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.Manager_Web_obj = Manager_Web(self)
                     self.Manager_Board_obj = Manager_Board(self)
                     self.Manager_Analysis_generate = False
-                    self.boot_success = True
                     break
                 except:
                     reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -160,8 +158,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
-        if self.boot_success == True:
-            QTimer.singleShot(1, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+        QTimer.singleShot(1, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
    
     def login_program(self):
         self.mySQL_obj.connectDB('bigmaclab_manager_db')
