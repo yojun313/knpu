@@ -16,7 +16,7 @@ class Manager_Database:
     def __init__(self, main_window):
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
-        self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester']
+        self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester', 'Size']
         self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column, self.database_dbinfo_viewer)
         self.database_buttonMatch()
 
@@ -294,6 +294,7 @@ class Manager_Database:
             </style>
             <div class="version-details">
                 <p><b>DB Name:</b> {DBdata[0]}</p>
+                <p><b>DB Size:</b> {DBdata[8]}</p>
                 <p><b>Crawl Type:</b> {DBdata[1]}</p>
                 <p><b>Crawl Keyword:</b> {DBdata[2]}</p>
                 <p><b>Crawl Period:</b> {DBdata[3]}</p>
@@ -492,17 +493,50 @@ class Manager_Database:
                 new_filename = re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
                 return new_filename
 
+            def calculate_download_time_with_speedtest(file_size_mb):
+                def measure_download_speed():
+                    import speedtest
+                    try:
+                        st = speedtest.Speedtest()
+                        st.download()  # 서버 목록 로드
+                        download_speed_mbps = st.results.download / 1_000_000  # 비트/초에서 메가비트/초로 변환
+                        return download_speed_mbps
+                    except Exception as e:
+                        print("Failed to measure download speed")
+                        print(str(e))
+                        return None
+
+                download_speed_mbps = measure_download_speed()
+
+                if download_speed_mbps is None:
+                    return "측정 오류"
+
+                # 다운로드 속도를 기반으로 예상 다운로드 시간 계산 (Mbps -> MB/s)
+                download_speed_mb_per_sec = download_speed_mbps * 0.125  # 1 Mbps = 0.125 MB/s
+
+                # 예상 다운로드 시간 계산 (초 단위)
+                download_time_sec = file_size_mb / download_speed_mb_per_sec
+
+                # 예상 다운로드 시간을 분 단위로 변환
+                download_time_min = round(download_time_sec / 60, 1)
+
+                return download_time_min
+
             def select_database():
                 selected_row = self.main.database_tablewidget.currentRow()
                 if not selected_row >= 0:
                     return
-                self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
+                self.main.printStatus("DB를 저장할 위치를 선택하여 주십시오")
+
                 target_db = self.DB['DBlist'][selected_row]
+
+                QMessageBox.information(self.main, "Information", f"DB를 저장할 위치를 선택하여 주십시오")
                 folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
                 if folder_path == '':
                     self.main.printStatus()
                     return
                 if folder_path:
+                    self.main.printStatus("DB 저장 옵션을 설정하여 주십시오")
                     dialog = OptionDialog()
                     selected_options = {}
 
@@ -534,12 +568,22 @@ class Manager_Database:
                     if selected_options == {}:
                         self.main.printStatus()
                         return
-                    if selected_options['option'] == 'part':
-                        self.main.printStatus(f"{replace_dates_in_filename(target_db, selected_options['start_date'], selected_options['end_date'])} 저장 중...")
-                    else:
-                        self.main.printStatus(f"{target_db} 저장 중...")
-                    QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options, filter_options))
-                    QTimer.singleShot(1000, self.main.printStatus)
+
+                    self.main.printStatus("예상 소요시간 측정 중...")
+
+                    QTimer.singleShot(1000, lambda: funcstep())
+                    def funcstep():
+                        dbsize = int(self.main.mySQL_obj.showDBSize(target_db)[1])
+                        saveminutes = calculate_download_time_with_speedtest(dbsize)
+                        savetime = f"{int(saveminutes)}분 {round((saveminutes - int(saveminutes)) * 60)}초"
+
+                        if selected_options['option'] == 'part':
+                            self.main.printStatus(f"{replace_dates_in_filename(target_db, selected_options['start_date'], selected_options['end_date'])} 저장 중... (예상 시간: {savetime})")
+                        else:
+                            self.main.printStatus(f"{target_db} 저장 중... (예상 시간: {savetime})")
+
+                        QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options, filter_options))
+                        QTimer.singleShot(1000, self.main.printStatus)
 
             def save_database(target_db, folder_path, selected_options, filter_options):
 

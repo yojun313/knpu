@@ -127,6 +127,33 @@ class mySQL:
             print(str(e))
             return []
 
+    def showDBSize(self, database_name):
+        try:
+            with self.conn.cursor() as cursor:
+                query = """
+                    SELECT 
+                        ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS `SizeMB`
+                    FROM 
+                        information_schema.tables 
+                    WHERE 
+                        table_schema = %s
+                    """
+                cursor.execute(query, (database_name,))
+                size_mb = cursor.fetchone()[0]  # MB 단위로 반환된 크기
+
+                # 기가바이트로 변환 (GB = MB / 1024)
+                size_gb = float(round(size_mb / 1024, 2))  # 기가바이트로 변환하여 소수점 두 자리까지
+
+                # 메가바이트는 정수로 변환 (소수점 표시 X)
+                size_mb_int = int(size_mb)
+
+                # 리스트로 반환 [기가단위, 메가단위]
+                return [size_gb, size_mb_int]
+        except Exception as e:
+            print(f"Failed to retrieve size for database {database_name}")
+            print(str(e))
+            return None
+
     def insertToTable(self, tableName, data_list):
         try:
             with self.conn.cursor() as cursor:
@@ -408,7 +435,5 @@ class mySQL:
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
-    mySQL_obj.connectDB('navernews_현대차_20200101_20240630_0903_2357')
-    mySQL_obj.insertToTable('navernews_현대차_20200101_20240630_0903_2357' + '_info',
-                             [1, '09/03 23:57', '09/04 22:31', '노승국', '현대차', 'HP OMEN', 3, "{'UrlCnt': 230545, 'TotalArticleCnt': 230545, 'TotalReplyCnt': 2758214, 'TotalRereplyCnt': 0}"])
-    mySQL_obj.commit()
+    mySQL_obj.connectDB('navernews_대리모_20010101_20240930_1001_2014')
+    print(mySQL_obj.showDBSize('navernews_대리모_20010101_20240930_1001_2014'))
