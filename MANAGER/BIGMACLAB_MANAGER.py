@@ -492,7 +492,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # DATABASE
         if index == 0:
             self.Manager_Database_obj.database_refresh_DB()
-            QTimer.singleShot(1, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+            QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
 
         # CRAWLER
         elif index == 1:
