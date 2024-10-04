@@ -92,7 +92,7 @@ class Monitoring:
     def check_crawler_server(self, computer, url, server_type):
         print(f"[ {computer.upper()} {server_type.upper()} SERVER TEST ]")
         try:
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=3)
             if response.status_code == 200:
                 if computer == "Z8" and not self.z8_status[server_type]:  # 복구될 때만 알림 전송
                     self.notify_recovery(computer, server_type)
@@ -111,7 +111,12 @@ class Monitoring:
                     return False
         except requests.exceptions.RequestException:
             print("접속 실패")
-            return False
+            if computer == "Z8" and self.z8_status[server_type]:  # 상태가 변할 때만 알림 전송
+                self.z8_status[server_type] = False
+                return False
+            elif computer == "OMEN" and self.omen_status:
+                self.omen_status = False
+                return False
         return True
 
     def notify_recovery(self, computer, server_type):
