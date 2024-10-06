@@ -5,6 +5,7 @@ from datetime import datetime
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
+from rich.live import Live
 
 class Monitoring:
     def __init__(self):
@@ -15,18 +16,17 @@ class Monitoring:
         self.omen_status = True
 
     def main(self):
-        while True:
-            status = self.check_servers()
+        with Live(refresh_per_second=1, console=self.console) as live:
+            while True:
+                status = self.check_servers(live)
+                if status is not True:
+                    error_num, computer, server_type = status
+                    msg = self.create_error_message(error_num, computer, server_type)
 
-            if status is not True:
-                error_num, computer, server_type = status
-                msg = self.create_error_message(error_num, computer, server_type)
+                    for key in self.user_keys:
+                        self.send_pushover(msg, key)
 
-                for key in self.user_keys:
-                    self.send_pushover(msg, key)
-
-            time.sleep(1800)  # 30분 대기
-            print('\n')
+                time.sleep(5)  # 30분 대기
 
     def create_error_message(self, error_num, computer, server_type):
         return (
@@ -54,8 +54,7 @@ class Monitoring:
             except:
                 continue
 
-    def check_servers(self):
-        self.console.print(Panel(f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", expand=False))
+    def check_servers(self, live):
         table = Table(show_header=True, header_style="bold magenta")
         table.add_column("Component", justify="left", style="cyan", no_wrap=True)
         table.add_column("Status", justify="center", style="green")
@@ -68,13 +67,12 @@ class Monitoring:
         table.add_row("Z8 Crawler", z8_crawler_status)
         table.add_row("OMEN Crawler", omen_crawler_status)
 
-        self.console.print(table)
+        live.update(Panel(table, title=f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"))
 
         if "Offline" in [z8_db_status, z8_crawler_status, omen_crawler_status]:
             return False
 
         return True
-
     def check_z8_db(self):
         mysql_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
         if not mysql_obj.showAllDB():
