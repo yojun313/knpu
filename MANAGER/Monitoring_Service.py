@@ -26,7 +26,7 @@ class Monitoring:
                     for key in self.user_keys:
                         self.send_pushover(msg, key)
 
-                time.sleep(5)  # 30분 대기
+                time.sleep(1800)  # 30분 대기
 
     def create_error_message(self, error_num, computer, server_type):
         return (
