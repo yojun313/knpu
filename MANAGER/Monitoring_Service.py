@@ -2,14 +2,17 @@ import time
 import requests
 from mySQL import mySQL
 from datetime import datetime
-
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
 
 class Monitoring:
     def __init__(self):
+        self.console = Console()  # Rich Console 인스턴스 생성
         self.app_key = "a2x6qmtaup9a3upmupiftv2fqfu8sz"
         self.user_keys = ['uvz7oczixno7daxvgxmq65g2gbnsd5', 'uqkbhuy1e1752ryxnjp3hy5g67467m']
-        self.z8_status = {"db": True, "crawler": True}  # True는 정상 상태를 의미
-        self.omen_status = True  # OMEN 크롤러의 상태
+        self.z8_status = {"db": True, "crawler": True}
+        self.omen_status = True
 
     def main(self):
         while True:
@@ -22,9 +25,8 @@ class Monitoring:
                 for key in self.user_keys:
                     self.send_pushover(msg, key)
 
-            print('\n==============================================================')
-
             time.sleep(1800)  # 30분 대기
+            print('\n')
 
     def create_error_message(self, error_num, computer, server_type):
         return (
@@ -53,34 +55,36 @@ class Monitoring:
                 continue
 
     def check_servers(self):
-        print('\n\n==============================================================\n')
-        print("DateTime: ", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        self.console.print(Panel(f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", expand=False))
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Component", justify="left", style="cyan", no_wrap=True)
+        table.add_column("Status", justify="center", style="green")
 
-        if not self.check_z8_db():
-            return (1, "Z8", "DB Server")
+        z8_db_status = "Online" if self.check_z8_db() else "Offline"
+        z8_crawler_status = "Online" if self.check_z8_crawler() else "Offline"
+        omen_crawler_status = "Online" if self.check_omen_crawler() else "Offline"
 
-        if not self.check_z8_crawler():
-            return (2, "Z8", "Crawler")
+        table.add_row("Z8 Database", z8_db_status)
+        table.add_row("Z8 Crawler", z8_crawler_status)
+        table.add_row("OMEN Crawler", omen_crawler_status)
 
-        if not self.check_omen_crawler():
-            return (3, "OMEN", "Crawler")
+        self.console.print(table)
+
+        if "Offline" in [z8_db_status, z8_crawler_status, omen_crawler_status]:
+            return False
 
         return True
 
     def check_z8_db(self):
-        print("[ Z8 DATABASE SERVER TEST ]")
         mysql_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
-
         if not mysql_obj.showAllDB():
-            print("접속 실패")
-            if self.z8_status["db"]:  # 이전에 정상이었다면 (즉, 상태 변화가 있을 때만 알림 전송)
+            if self.z8_status["db"]:
                 self.z8_status["db"] = False
                 return False
         else:
-            if not self.z8_status["db"]:  # 복구되었을 때만 알림
+            if not self.z8_status["db"]:
                 self.notify_recovery("Z8", "DB Server")
                 self.z8_status["db"] = True
-            print("접속 정상")
         return True
 
     def check_z8_crawler(self):
@@ -90,28 +94,24 @@ class Monitoring:
         return self.check_crawler_server("OMEN", "http://bigmaclab-crawler.kro.kr:80", "crawler")
 
     def check_crawler_server(self, computer, url, server_type):
-        print(f"[ {computer.upper()} {server_type.upper()} SERVER TEST ]")
         try:
             response = requests.get(url, timeout=3)
             if response.status_code == 200:
-                if computer == "Z8" and not self.z8_status[server_type]:  # 복구될 때만 알림 전송
+                if computer == "Z8" and not self.z8_status[server_type]:
                     self.notify_recovery(computer, server_type)
                     self.z8_status[server_type] = True
                 elif computer == "OMEN" and not self.omen_status:
                     self.notify_recovery(computer, server_type)
                     self.omen_status = True
-                print("접속 정상")
             else:
-                print("접속 실패")
-                if computer == "Z8" and self.z8_status[server_type]:  # 상태가 변할 때만 알림 전송
+                if computer == "Z8" and self.z8_status[server_type]:
                     self.z8_status[server_type] = False
                     return False
                 elif computer == "OMEN" and self.omen_status:
                     self.omen_status = False
                     return False
         except requests.exceptions.RequestException:
-            print("접속 실패")
-            if computer == "Z8" and self.z8_status[server_type]:  # 상태가 변할 때만 알림 전송
+            if computer == "Z8" and self.z8_status[server_type]:
                 self.z8_status[server_type] = False
                 return False
             elif computer == "OMEN" and self.omen_status:
