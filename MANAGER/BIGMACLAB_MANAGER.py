@@ -85,7 +85,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
                 DB_ip = '192.168.0.3'
 
-            network_text = (
+            self.network_text = (
                 "\n\n[ DB 접속 반복 실패 시... ]\n"
                 "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 작동하는지 확인하십시오"
                 "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
@@ -102,7 +102,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.userPushOverKeyList = self.Manager_User_obj.userKeyList
                     break
                 except:
-                    reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if reply == QMessageBox.Yes:
                         continue
                     else:
@@ -120,7 +120,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.Manager_Analysis_generate = False
                     break
                 except:
-                    reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if reply == QMessageBox.Yes:
                         continue
                     else:
@@ -161,13 +161,26 @@ class MainWindow(QtWidgets.QMainWindow):
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
    
     def login_program(self):
-        self.mySQL_obj.connectDB('bigmaclab_manager_db')
-        self.device_list = [item[0] for item in self.mySQL_obj.TableToList('device_list')]
-        self.name_list = [item[1] for item in self.mySQL_obj.TableToList('device_list')]
+        while True:
+            try:
+                self.mySQL_obj.connectDB('bigmaclab_manager_db')
+                self.device_list = [item[0] for item in self.mySQL_obj.TableToList('device_list')]
+                self.name_list = [item[1] for item in self.mySQL_obj.TableToList('device_list')]
+                if len(self.device_list) > 5:
+                    break
+            except:
+                reply = QMessageBox.question(self, 'Confirm Delete',
+                                             f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    continue
+                else:
+                    return False
+
         current_device = socket.gethostname()
         if current_device in self.device_list:
             self.user = self.name_list[self.device_list.index(current_device)]
-            return
+            return True
         else:
             input_dialog_id = QInputDialog(self)
             input_dialog_id.setWindowTitle('Login')
