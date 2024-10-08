@@ -2,7 +2,6 @@ import os
 import sys
 from PyQt5 import QtWidgets, uic, QtGui
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy
-from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication
 from openai import OpenAI
 import shutil
@@ -24,11 +23,12 @@ import socket
 import gc
 import ctypes
 import warnings
+import traceback
 warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.8.2'
+        self.versionNum = '1.8.3'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -146,7 +146,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 reply = QMessageBox.question(self, 'Confirm Update', f"새로운 {new_version} 버전이 존재합니다\n\n업데이트하시겠습니까?\n\n{version_info}", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     if platform.system() == "Windows":
-                        QMessageBox.information(self, "Information", "업데이트 후 새로운 버전의 프로그램으로 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
+                        QMessageBox.information(self, "Information", "새로운 버전의 프로그램은 C:BIGMACLAB_MANAGER에 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
                         self.printStatus("프로그램 업데이트 중...")
                         import subprocess
                         download_file_path = os.path.join(self.default_directory, f"BIGMACLAB_MANAGER_{new_version}.exe")
@@ -161,57 +161,67 @@ class MainWindow(QtWidgets.QMainWindow):
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
    
     def login_program(self):
-        while True:
-            try:
-                self.mySQL_obj.connectDB('bigmaclab_manager_db')
-                self.device_list = [item[0] for item in self.mySQL_obj.TableToList('device_list')]
-                self.name_list = [item[1] for item in self.mySQL_obj.TableToList('device_list')]
-                if len(self.device_list) > 5:
-                    break
-            except:
-                reply = QMessageBox.question(self, 'Confirm Delete',
-                                             f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if reply == QMessageBox.Yes:
-                    continue
-                else:
+        try:
+            while True:
+                try:
+                    self.mySQL_obj.connectDB('bigmaclab_manager_db')
+                    self.device_list = [item[0] for item in self.mySQL_obj.TableToList('device_list')]
+                    self.name_list = [item[1] for item in self.mySQL_obj.TableToList('device_list')]
+                    if len(self.device_list) > 5:
+                        break
+                except:
+                    reply = QMessageBox.question(self, 'Confirm Delete',
+                                                 f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",
+                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        continue
+                    else:
+                        return False
+
+            current_device = socket.gethostname()
+            if current_device in self.device_list:
+                self.user = self.name_list[self.device_list.index(current_device)]
+                return True
+            else:
+                input_dialog_id = QInputDialog(self)
+                input_dialog_id.setWindowTitle('Login')
+                input_dialog_id.setLabelText('User Name:')
+                input_dialog_id.resize(300, 200)  # 원하는 크기로 설정
+                ok_id = input_dialog_id.exec_()
+                user_name = input_dialog_id.textValue()
+                if not ok_id:
+                    QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
+                    return False
+                elif  user_name not in self.userNameList:
+                    QMessageBox.warning(self, 'Error', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
                     return False
 
-        current_device = socket.gethostname()
-        if current_device in self.device_list:
-            self.user = self.name_list[self.device_list.index(current_device)]
-            return True
-        else:
-            input_dialog_id = QInputDialog(self)
-            input_dialog_id.setWindowTitle('Login')
-            input_dialog_id.setLabelText('User Name:')
-            input_dialog_id.resize(300, 200)  # 원하는 크기로 설정
-            ok_id = input_dialog_id.exec_()
-            user_name = input_dialog_id.textValue()
-            if not ok_id:
-                QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
-                return False
-            elif  user_name not in self.userNameList:
-                QMessageBox.warning(self, 'Error', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
-                return False
-
-            ok, password = self.pw_check()
-            if ok and password == 'bigmaclab2022!':
-                reply = QMessageBox.question(self, 'Confirm Delete', f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if reply == QMessageBox.Yes:
-                    self.mySQL_obj.insertToTable('device_list', [[current_device, user_name]])
-                    self.mySQL_obj.commit()
-                    QMessageBox.information(self, "Information", "디바이스가 등록되었습니다\n\n다음 실행 시 추가적인 로그인이 필요하지 않습니다")
-                    return True
+                ok, password = self.pw_check()
+                if ok and password == 'bigmaclab2022!':
+                    reply = QMessageBox.question(self, 'Confirm Delete', f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        self.mySQL_obj.insertToTable('device_list', [[current_device, user_name]])
+                        self.mySQL_obj.commit()
+                        QMessageBox.information(self, "Information", "디바이스가 등록되었습니다\n\n다음 실행 시 추가적인 로그인이 필요하지 않습니다")
+                        msg = (
+                            "[ New Device Added! ]\n\n"
+                            f"User: {user_name}\n"
+                            f"Device: {current_device}\n"
+                        )
+                        self.send_pushOver(msg, self.admin_pushoverkey)
+                        return True
+                    else:
+                        QMessageBox.information(self, "Information", "디바이스가 등록되지 않았습니다\n\n다음 실행 시 추가적인 로그인이 필요합니다")
+                        return True
+                elif ok:
+                    QMessageBox.warning(self, 'Error', '비밀번호가 올바르지 않습니다\n\n프로그램을 종료합니다')
+                    return False
                 else:
-                    QMessageBox.information(self, "Information", "디바이스가 등록되지 않았습니다\n\n다음 실행 시 추가적인 로그인이 필요합니다")
-                    return True
-            elif ok:
-                QMessageBox.warning(self, 'Error', '비밀번호가 올바르지 않습니다\n\n프로그램을 종료합니다')
-                return False
-            else:
-                QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
-                return False
+                    QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
+                    return False
+        except Exception as e:
+            QMessageBox.information(self, "Information", f"오류가 발생했습니다. 프로그램을 종료합니다\nError Log: {traceback.format_exc()}")
+            return False
 
     def statusBar_init(self):
         # 상태 표시줄 생성
