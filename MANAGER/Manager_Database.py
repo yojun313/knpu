@@ -546,7 +546,6 @@ class Manager_Database:
                     else:
                         self.main.printStatus(f"{target_db} 저장 중...")
                     QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options, filter_options))
-                    QTimer.singleShot(1000, self.main.printStatus)
 
             def save_database(target_db, folder_path, selected_options, filter_options):
 
