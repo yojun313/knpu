@@ -111,6 +111,13 @@ class Crawler(CrawlerModule):
         log.write(f"\n\nDB Check --> {datetime.fromtimestamp(self.startTime).strftime('%m/%d %H:%M')}에 중단됨")
         log.close()
 
+        msg_text = (
+            "[ CRAWLER STOPPED ]\n\n"
+            f"DB 저장소 삭제 또는 인식 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+            f"의도된 크롤링 중단이 아니라면 Admin에게 연락 부탁드립니다"
+        )
+        self.send_pushOver(msg_text, user_key=self.pushoverKey)
+
         self.localDBRemover()
         sys.exit()
 
@@ -326,6 +333,12 @@ class Crawler(CrawlerModule):
                     urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
                         if dayCount == 0:
+                            msg_text = (
+                                "[ CRAWLER STOPPED ]\n\n"
+                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+                                f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
+                            )
+                            self.send_pushOver(msg_text, user_key=self.pushoverKey)
                             self.DBinfoRecorder(False, True)
                             self.localDBRemover()
                             os._exit(1)
@@ -419,6 +432,12 @@ class Crawler(CrawlerModule):
                     urlList_returnData = NaverBlogCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
                         if dayCount == 0:
+                            msg_text = (
+                                "[ CRAWLER STOPPED ]\n\n"
+                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+                                f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
+                            )
+                            self.send_pushOver(msg_text, user_key=self.pushoverKey)
                             self.DBinfoRecorder(False, True)
                             self.localDBRemover()
                             os._exit(1)
@@ -497,6 +516,12 @@ class Crawler(CrawlerModule):
                     urlList_returnData = NaverCafeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
                         if dayCount == 0:
+                            msg_text = (
+                                "[ CRAWLER STOPPED ]\n\n"
+                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+                                f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
+                            )
+                            self.send_pushOver(msg_text, user_key=self.pushoverKey)
                             self.DBinfoRecorder(False, True)
                             self.localDBRemover()
                             os._exit(1)
@@ -580,6 +605,12 @@ class Crawler(CrawlerModule):
                     urlList_returnData = YouTubeCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
                         if dayCount == 0:
+                            msg_text = (
+                                "[ CRAWLER STOPPED ]\n\n"
+                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+                                f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
+                            )
+                            self.send_pushOver(msg_text, user_key=self.pushoverKey)
                             self.DBinfoRecorder(False, True)
                             self.localDBRemover()
                             os._exit(1)
