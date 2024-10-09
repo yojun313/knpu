@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox, QComboBox, \
     QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout, QGroupBox, QScrollArea,\
-    QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton, QDateEdit, QFormLayout
+    QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton, QDateEdit
 from PyQt5.QtCore import QTimer, QStringListModel, Qt, QDate
 import copy
 import pandas as pd

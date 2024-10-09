@@ -1,4 +1,3 @@
-import json
 import os
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QTableWidget, QButtonGroup, QTableWidgetItem, QWidget, QPushButton, QVBoxLayout, QScrollArea, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QDialog, QInputDialog, QDialogButtonBox, QRadioButton, QLabel, QFormLayout, QLineEdit
