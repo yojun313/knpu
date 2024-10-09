@@ -635,6 +635,7 @@ class Manager_Database:
                         gc.collect()
 
                     QMessageBox.information(self.main, "Information", f"{dbname}이 성공적으로 저장되었습니다")
+                    self.main.printStatus()
                 except Exception as e:
                     QMessageBox.critical(self.main, "Error", f"Failed to save database: {traceback.format_exc()}")
 
