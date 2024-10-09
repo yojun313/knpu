@@ -540,8 +540,6 @@ class Manager_Database:
                         self.main.printStatus()
                         return
 
-                    self.main.printStatus("예상 소요시간 측정 중...")
-
                     QTimer.singleShot(1000, lambda: funcstep())
                     def funcstep():
                         if selected_options['option'] == 'part':
