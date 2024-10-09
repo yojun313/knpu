@@ -540,15 +540,13 @@ class Manager_Database:
                         self.main.printStatus()
                         return
 
-                    QTimer.singleShot(1000, lambda: funcstep())
-                    def funcstep():
-                        if selected_options['option'] == 'part':
-                            self.main.printStatus(f"{replace_dates_in_filename(target_db, selected_options['start_date'], selected_options['end_date'])} 저장 중...")
-                        else:
-                            self.main.printStatus(f"{target_db} 저장 중...")
-
-                        QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options, filter_options))
-                        QTimer.singleShot(1000, self.main.printStatus)
+                    if selected_options['option'] == 'part':
+                        self.main.printStatus(
+                            f"{replace_dates_in_filename(target_db, selected_options['start_date'], selected_options['end_date'])} 저장 중...")
+                    else:
+                        self.main.printStatus(f"{target_db} 저장 중...")
+                    QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options, filter_options))
+                    QTimer.singleShot(1000, self.main.printStatus)
 
             def save_database(target_db, folder_path, selected_options, filter_options):
 
