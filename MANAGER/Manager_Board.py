@@ -3,7 +3,6 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton
 from PyQt5.QtGui import QRegExpValidator
 from datetime import datetime
 import warnings
-import os
 import traceback
 warnings.filterwarnings("ignore")
 
