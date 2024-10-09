@@ -2,7 +2,6 @@ import pymysql
 import csv
 import os
 import pandas as pd
-import gc
 
 class mySQL:
     def __init__(self, host, user, password, port, database=None):
