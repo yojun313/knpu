@@ -70,7 +70,12 @@ class Monitoring:
         live.update(Panel(table, title=f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"))
 
         if "Offline" in [z8_db_status, z8_crawler_status, omen_crawler_status]:
-            return False
+            if z8_db_status == "Offline":
+                return (1, 'Z8', 'DB SERVER')
+            elif z8_crawler_status == "Offline":
+                return (1, 'Z8', 'CRAWLER')
+            else:
+                return (1, 'OMEN', 'CRAWLER')
 
         return True
     def check_z8_db(self):
