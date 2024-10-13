@@ -113,6 +113,7 @@ class Crawler(CrawlerModule):
 
         msg_text = (
             "[ CRAWLER STOPPED ]\n\n"
+            f"Object : {self.DBname}\n\n"
             f"DB 저장소 삭제 또는 인식 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
             f"의도된 크롤링 중단이 아니라면 Admin에게 연락 부탁드립니다"
         )
@@ -335,7 +336,7 @@ class Crawler(CrawlerModule):
                         if dayCount == 0:
                             msg_text = (
                                 "[ CRAWLER STOPPED ]\n\n"
-                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n\n"
                                 f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
                             )
                             self.send_pushOver(msg_text, user_key=self.pushoverKey)
@@ -434,7 +435,7 @@ class Crawler(CrawlerModule):
                         if dayCount == 0:
                             msg_text = (
                                 "[ CRAWLER STOPPED ]\n\n"
-                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n\n"
                                 f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
                             )
                             self.send_pushOver(msg_text, user_key=self.pushoverKey)
@@ -518,7 +519,7 @@ class Crawler(CrawlerModule):
                         if dayCount == 0:
                             msg_text = (
                                 "[ CRAWLER STOPPED ]\n\n"
-                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n\n"
                                 f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
                             )
                             self.send_pushOver(msg_text, user_key=self.pushoverKey)
@@ -607,7 +608,7 @@ class Crawler(CrawlerModule):
                         if dayCount == 0:
                             msg_text = (
                                 "[ CRAWLER STOPPED ]\n\n"
-                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n\n g"
                                 f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
                             )
                             self.send_pushOver(msg_text, user_key=self.pushoverKey)
