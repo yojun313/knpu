@@ -42,6 +42,7 @@ class Manager_Database:
                     if reply == QMessageBox.Yes:
                         self.main.mySQL_obj.dropDB(target_db)
                         self.database_refresh_DB()
+                        QMessageBox.information(self.main, "Information", f"크롤러 서버에 중단 요청을 전송했습니다")
 
             QTimer.singleShot(1, delete_database)
             QTimer.singleShot(1, self.main.printStatus)
