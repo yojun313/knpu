@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.8.5'
+        self.versionNum = '1.8.6'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -259,8 +259,11 @@ class MainWindow(QtWidgets.QMainWindow):
         #editMenu.addAction(pasteAct)
 
     def update_DB(self, currentDB):
+
         def parse_date(date_str):
-            for fmt in ('%m-%d %H:%M', '%m/%d %H:%M'):
+            if len(date_str) < 14:
+                date_str = '2024/'+date_str
+            for fmt in ('%m-%d %H:%M',  '%Y/%m/%d %H:%M'):
                 try:
                     return datetime.strptime(date_str, fmt)
                 except ValueError:
@@ -297,6 +300,7 @@ class MainWindow(QtWidgets.QMainWindow):
             option = db_info[1]
             starttime = db_info[2]
             endtime = db_info[3]
+
             if endtime == '-':
                 endtime = '크롤링 중'
             requester = db_info[4]
