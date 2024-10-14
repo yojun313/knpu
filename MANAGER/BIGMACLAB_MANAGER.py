@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.8.6'
+        self.versionNum = '1.9.0'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -263,7 +263,7 @@ class MainWindow(QtWidgets.QMainWindow):
         def parse_date(date_str):
             if len(date_str) < 14:
                 date_str = '2024/'+date_str
-            for fmt in ('%m-%d %H:%M',  '%Y/%m/%d %H:%M'):
+            for fmt in ('%m-%d %H:%M',  '%Y/%m/%d %H:%M', '%Y-%m-%d %H:%M'):
                 try:
                     return datetime.strptime(date_str, fmt)
                 except ValueError:
@@ -299,10 +299,13 @@ class MainWindow(QtWidgets.QMainWindow):
             db_info = db_info_df.iloc[-1].tolist()
             option = db_info[1]
             starttime = db_info[2]
+            starttime = parse_date(starttime).strftime('%Y-%m-%d %H:%M')
             endtime = db_info[3]
 
             if endtime == '-':
                 endtime = '크롤링 중'
+            else:
+                endtime = parse_date(endtime).strftime('%Y-%m-%d %H:%M')
             requester = db_info[4]
             size = self.mySQL_obj.showDBSize(DB_name)
             self.fullstorage += float(size[0])

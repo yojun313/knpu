@@ -261,15 +261,10 @@ class Manager_Database:
         starttime = DBdata[5]
         endtime = DBdata[6]
 
-        if len(starttime) < 14:
-            starttime = '2024/' + starttime
-        if len(endtime) < 14 and endtime != '크롤링 중':
-            endtime = '2024/' + endtime
-
         try:
-            ElapsedTime = datetime.strptime(endtime, "%Y/%m/%d %H:%M") - datetime.strptime(starttime, "%Y/%m/%d %H:%M")
+            ElapsedTime = datetime.strptime(endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
         except:
-            ElapsedTime = datetime.now() - datetime.strptime(starttime, "%Y/%m/%d %H:%M")
+            ElapsedTime = datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
 
         starttime = starttime.replace('/', '-')
         endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
