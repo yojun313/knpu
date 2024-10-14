@@ -81,7 +81,7 @@ class Crawler(CrawlerModule):
     # DB에 크롤링 상태 기록
     def DBinfoRecorder(self, endoption = False, error = False):
         option = self.option
-        starttime = datetime.fromtimestamp(self.startTime).strftime('%m/%d %H:%M')
+        starttime = datetime.fromtimestamp(self.startTime).strftime('%Y%m/%d %H:%M')
         endtime = '-'
         keyword = self.keyword
         crawlcom = self.crawlcom
@@ -90,7 +90,7 @@ class Crawler(CrawlerModule):
         if error == True:
             endtime = 'ip 오류 중단'
         elif endoption == True:
-            endtime = datetime.fromtimestamp(time.time()).strftime('%m/%d %H:%M')
+            endtime = datetime.fromtimestamp(time.time()).strftime('%Y%m/%d %H:%M')
         user = self.user
         self.mySQL.connectDB(self.DBname)
         self.mySQL.insertToTable(self.DBname + '_info', [option, starttime, endtime, user, keyword, crawlcom, crawlspeed, IntegratedDB])
@@ -108,7 +108,7 @@ class Crawler(CrawlerModule):
         print('\rStopped by BIGMACLAB MANAGER PROGRAM', end='')
 
         log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a')
-        log.write(f"\n\nDB Check --> {datetime.fromtimestamp(self.startTime).strftime('%m/%d %H:%M')}에 중단됨")
+        log.write(f"\n\nDB Check --> {datetime.fromtimestamp(self.startTime).strftime('%Y%m/%d %H:%M')}에 중단됨")
         log.close()
 
         msg_text = (
