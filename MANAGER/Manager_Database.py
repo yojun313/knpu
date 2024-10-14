@@ -179,6 +179,7 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_dbinfo_viewer(self, row):
+
         DBdata = self.DB['DBdata'][row]
         DBname = self.DB['DBlist'][row]
         DBinfo = self.DB['DBinfo'][row]
@@ -257,10 +258,21 @@ class Manager_Database:
             case _:
                 crawlOption = crawlOption_int
 
+        starttime = DBdata[5]
+        endtime = DBdata[6]
+
+        if len(starttime) < 14:
+            starttime = '2024/' + starttime
+        if len(endtime) < 14 and endtime != '크롤링 중':
+            endtime = '2024/' + endtime
+
         try:
-            ElapsedTime = datetime.strptime(DBdata[6], "%m/%d %H:%M") - datetime.strptime(DBdata[5], "%m/%d %H:%M")
+            ElapsedTime = datetime.strptime(endtime, "%Y/%m/%d %H:%M") - datetime.strptime(starttime, "%Y/%m/%d %H:%M")
         except:
-            ElapsedTime = "크롤링 중..."
+            ElapsedTime = datetime.now() - datetime.strptime(starttime, "%Y/%m/%d %H:%M")
+
+        starttime = starttime.replace('/', '-')
+        endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
             
         # HTML을 사용하여 디테일 표시
         details_html = f"""
@@ -299,8 +311,8 @@ class Manager_Database:
                 <p><b>Crawl Keyword:</b> {DBdata[2]}</p>
                 <p><b>Crawl Period:</b> {DBdata[3]}</p>
                 <p><b>Crawl Option:</b> {crawlOption}</p>
-                <p><b>Crawl Start:</b> {DBdata[5]}</p>
-                <p><b>Crawl End:</b> {DBdata[6]}</p>
+                <p><b>Crawl Start:</b> {starttime}</p>
+                <p><b>Crawl End:</b> {endtime}</p>
                 <p><b>Crawl ElapsedTime:</b> {ElapsedTime}</p>
                 <p><b>Crawl Requester:</b> {DBdata[7]}</p>
                 <p><b>Crawl Server:</b> {DBinfo[0]}</p>
