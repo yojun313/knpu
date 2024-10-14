@@ -378,8 +378,13 @@ class Manager_Board:
                     self.main.mySQL_obj.commit()
                     self.board_bug_refresh()
 
-                with open(self.main.program_log_path, "w") as log:
-                    log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
+                try:
+                    with open(self.main.program_log_path, "w") as log:
+                        log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
+                except:
+                    with open(self.main.program_log_path, "a") as log:
+                        log.write("[ Report Submission Complete ]\n\n")
+                        log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
 
                 msg = (
                     "[ New Bug Added! ]\n"
