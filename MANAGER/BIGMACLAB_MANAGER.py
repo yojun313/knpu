@@ -520,7 +520,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # CRAWLER
         elif index == 1:
             self.printStatus()
-            self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr', self.Manager_Web_obj.crawler_web_layout)
+            self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr:81', self.Manager_Web_obj.crawler_web_layout)
         # ANALYSIS
         elif index == 2:
             self.printStatus()
