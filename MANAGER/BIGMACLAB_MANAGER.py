@@ -52,7 +52,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # 사이드바 연결
         def load_program():
-            self.menubar_init()
+            #self.menubar_init()
             self.listWidget.currentRowChanged.connect(self.display)
 
             if platform.system() == "Windows":
@@ -309,6 +309,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar.addPermanentWidget(self.right_label, 1)
 
     def menubar_init(self):
+        import webbrowser
         def showInfoDialog():
             dialog = InfoDialog(self.version)
             dialog.exec_()
@@ -317,18 +318,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # 파일 메뉴 생성
         infoMenu = menubar.addMenu('&Info')
-        #editMenu = menubar.addMenu('&Edit')
-
         # 액션 생성
-        infoAct = QAction('Info', self)
-        copyAct = QAction('Copy', self)
-        pasteAct = QAction('Paste', self)
-
-        infoAct = QAction('Info', self)
+        infoAct = QAction('About MANAGER', self)
         infoAct.triggered.connect(showInfoDialog)
-
-        # 편집 메뉴에 액션 추가
         infoMenu.addAction(infoAct)
+
+        helpMenu = menubar.addMenu('&Help')
+        helpAct = QAction('Help', self)
+        helpAct.triggered.connect(lambda: webbrowser.open('https://knpu.re.kr/tool'))
+
+
+        helpMenu.addAction(helpAct)
         #editMenu.addAction(copyAct)
         #editMenu.addAction(pasteAct)
 
