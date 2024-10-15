@@ -1,7 +1,7 @@
 import os
 import sys
-from PyQt5 import QtWidgets, uic, QtGui
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QHeaderView, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy
+from PyQt5 import QtWidgets, uic, QtGui, QtCore
+from PyQt5.QtWidgets import QTableWidget, QScrollArea, QTableWidgetItem, QVBoxLayout, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication
 from openai import OpenAI
 import shutil
@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.9.0'
+        self.versionNum = '1.9.1'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -136,24 +136,98 @@ class MainWindow(QtWidgets.QMainWindow):
             current_version = version.parse(self.versionNum)
             new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
             if current_version < new_version:
-                version_info = (
-                    f"Version Num: {self.Manager_Board_obj.version_data_for_table[0][0]}\n"
-                    f"Release Date: {self.Manager_Board_obj.version_data_for_table[0][1]}\n"
-                    f"ChangeLog: {self.Manager_Board_obj.version_data_for_table[0][2]}\n"
-                    f"Version Features: {self.Manager_Board_obj.version_data_for_table[0][3]}\n"
-                    f"Version Status: {self.Manager_Board_obj.version_data_for_table[0][4]}"
-                )
-                reply = QMessageBox.question(self, 'Confirm Update', f"새로운 {new_version} 버전이 존재합니다\n\n업데이트하시겠습니까?\n\n{version_info}", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if reply == QMessageBox.Yes:
+                version_info_html = f"""
+                    <style>
+                        table {{
+                            width: 100%;
+                            border-collapse: collapse;
+                        }}
+                        th, td {{
+                            border: 1px solid #bdc3c7;
+                            padding: 8px;
+                            text-align: left;
+                            font-family: Arial, sans-serif;
+                        }}
+                        th {{
+                            background-color: #34495e;
+                            color: white;
+                        }}
+                        td {{
+                            color: #34495e;
+                        }}
+                        h4 {{
+                            text-align: center;
+                        }}
+                    </style>
+                    <table>
+                        <tr><th>Item</th><th>Details</th></tr>
+                        <tr><td><b>Version Num:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][0]}</td></tr>
+                        <tr><td><b>Release Date:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][1]}</td></tr>
+                        <tr><td><b>ChangeLog:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][2]}</td></tr>
+                        <tr><td><b>Version Features:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][3]}</td></tr>
+                        <tr><td><b>Version Status:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][4]}</td></tr>
+                    </table>
+                """
+
+                dialog = QDialog(self)
+                dialog.setWindowTitle(f"New Version Update")
+                dialog.resize(350, 250)
+
+                layout = QVBoxLayout()
+
+                label = QLabel()
+                label.setText(version_info_html)
+                label.setWordWrap(True)
+                label.setTextFormat(QtCore.Qt.RichText)  # HTML 렌더링
+
+                # QScrollArea를 사용하여 스크롤 가능하게 설정
+                scroll_area = QScrollArea()
+                scroll_area.setWidgetResizable(True)
+                scroll_area.setWidget(label)
+
+                layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
+
+                button_layout = QHBoxLayout()  # 수평 레이아웃
+
+                # confirm_button과 cancel_button의 크기가 창의 너비에 맞게 비례하도록 설정
+                confirm_button = QPushButton("Update")
+                cancel_button = QPushButton("Cancel")
+
+                # 두 버튼이 창의 가로 너비를 가득 채우도록 크기 정책 설정
+                confirm_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+                cancel_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+
+                confirm_button.setFixedHeight(40)  # 버튼 높이 조정
+                cancel_button.setFixedHeight(40)  # 버튼 높이 조정
+
+                # 버튼 클릭 이벤트 연결
+                confirm_button.clicked.connect(dialog.accept)
+                cancel_button.clicked.connect(dialog.reject)
+
+                # 버튼 사이에 간격 추가
+                button_layout.addWidget(confirm_button)
+                button_layout.addWidget(cancel_button)
+
+                layout.addLayout(button_layout)  # 버튼 레이아웃을 메인 레이아웃에 추가
+
+                dialog.setLayout(layout)
+
+                # 대화상자 실행
+                if dialog.exec_() == QDialog.Accepted:
                     if platform.system() == "Windows":
-                        QMessageBox.information(self, "Information", "새로운 버전의 프로그램은 C:BIGMACLAB_MANAGER에 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
+                        QMessageBox.information(self, "Information",
+                                                "새로운 버전의 프로그램은 C:BIGMACLAB_MANAGER에 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
                         self.printStatus("프로그램 업데이트 중...")
                         import subprocess
-                        download_file_path = os.path.join(self.default_directory, f"BIGMACLAB_MANAGER_{new_version}.exe")
-                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{new_version}.exe", download_file_path)
+                        download_file_path = os.path.join(self.default_directory,
+                                                          f"BIGMACLAB_MANAGER_{new_version}.exe")
+                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{new_version}.exe",
+                                      download_file_path)
                         subprocess.Popen([download_file_path], shell=True)
                         self.openFileExplorer(self.default_directory)
                         sys.exit()
+                else:
+                    pass
 
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")

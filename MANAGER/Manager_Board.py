@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QTimer, QRegExp
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QTextEdit, QScrollArea, QWidget
 from PyQt5.QtGui import QRegExpValidator
+from PyQt5 import QtCore
 from datetime import datetime
 import warnings
 import traceback
@@ -63,7 +64,7 @@ class Manager_Board:
 
                     def initUI(self):
                         self.setWindowTitle('Add Version')
-                        self.setGeometry(100, 100, 400, 400)
+                        self.resize(400, 400)
 
                         # 컨테이너 위젯 생성
                         container_widget = QWidget()
@@ -197,63 +198,85 @@ class Manager_Board:
                     # 다이얼로그 생성
                     dialog = QDialog(self.main)
                     dialog.setWindowTitle(f'Version {version_data[0]} Details')
-                    dialog.setGeometry(100, 100, 400, 600)
+                    dialog.resize(400, 400)
 
                     layout = QVBoxLayout()
 
                     # HTML을 사용하여 디테일 표시
                     details_html = f"""
-                    <style>
-                        h2 {{
-                            color: #2c3e50;
-                            text-align: center;
-                        }}
-                        p {{
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            line-height: 1.5;
-                            margin: 5px 0;
-                        }}
-                        b {{
-                            color: #34495e;
-                        }}
-                        .version-details {{
-                            padding: 10px;
-                            border: 1px solid #bdc3c7;
-                            border-radius: 5px;
-                            background-color: #ecf0f1;
-                        }}
-                        .detail-content {{
-                            white-space: pre-wrap;
-                            margin-top: 5px;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            color: #34495e;
-                        }}
-                    </style>
-                    <div class="version-details">
-                        <h2>Version Details</h2>
-                        <p><b>Version Num:</b> {version_data[0]}</p>
-                        <p><b>Release Date:</b> {version_data[1]}</p>
-                        <p><b>ChangeLog:</b> {version_data[2]}</p>
-                        <p><b>Version Features:</b> {version_data[3]}</p>
-                        <p><b>Version Status:</b> {version_data[4]}</p>
-                        <p><b>Detail:</b></p>
-                        <p class="detail-content">{version_data[5]}</p>
-                    </div>
-                    """
-
-                    # QLabel을 QTextEdit으로 변경하여 HTML을 설정하고 스크롤 가능하게 설정
-                    detail_text_edit = QTextEdit()
-                    detail_text_edit.setReadOnly(True)
-                    detail_text_edit.setHtml(details_html)
+                        <style>
+                            h2 {{
+                                color: #2c3e50;
+                                text-align: center;
+                            }}
+                            table {{
+                                width: 100%;
+                                border-collapse: collapse;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                            }}
+                            th, td {{
+                                border: 1px solid #bdc3c7;
+                                padding: 8px;
+                                text-align: left;
+                            }}
+                            th {{
+                                background-color: #34495e;
+                                color: white;
+                            }}
+                            td {{
+                                color: #34495e;
+                            }}
+                            .detail-content {{
+                                white-space: pre-wrap;
+                                margin-top: 5px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                color: #34495e;
+                            }}
+                        </style>
+                        <div class="version-details">
+                            <table>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Details</th>
+                                </tr>
+                                <tr>
+                                    <td><b>Version Num:</b></td>
+                                    <td>{version_data[0]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Release Date:</b></td>
+                                    <td>{version_data[1]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>ChangeLog:</b></td>
+                                    <td>{version_data[2]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Version Features:</b></td>
+                                    <td>{version_data[3]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Version Status:</b></td>
+                                    <td>{version_data[4]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Detail:</b></td>
+                                    <td class="detail-content">{version_data[5]}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        """
+                    detail_label = QLabel(details_html)
+                    detail_label.setWordWrap(True)
 
                     # QScrollArea를 사용하여 스크롤 가능하게 설정
                     scroll_area = QScrollArea()
                     scroll_area.setWidgetResizable(True)
-                    scroll_area.setWidget(detail_text_edit)
+                    scroll_area.setWidget(detail_label)
 
-                    layout.addWidget(scroll_area)
+                    layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
 
                     # 닫기 버튼 추가
                     close_button = QPushButton('Close')
@@ -302,7 +325,7 @@ class Manager_Board:
 
                 def initUI(self):
                     self.setWindowTitle('Add Bug')
-                    self.setGeometry(100, 100, 400, 400)
+                    self.resize(400, 400)
 
                     # 컨테이너 위젯 생성
                     container_widget = QWidget()
@@ -427,53 +450,78 @@ class Manager_Board:
 
                     # 다이얼로그 생성
                     dialog = QDialog(self.main)
-                    dialog.setWindowTitle(f'Bug {bug_data[1]} Details')
-                    dialog.setGeometry(100, 100, 400, 600)
+                    dialog.setWindowTitle(f'Version {bug_data[1]} Bug Details')
+                    dialog.resize(400, 600)
 
                     layout = QVBoxLayout()
 
                     # HTML을 사용하여 디테일 표시
                     details_html = f"""
-                    <style>
-                        h2 {{
-                            color: #2c3e50;
-                            text-align: center;
-                        }}
-                        p {{
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            line-height: 1.5;
-                            margin: 5px 0;
-                        }}
-                        b {{
-                            color: #34495e;
-                        }}
-                        .bug-details {{
-                            padding: 10px;
-                            border: 1px solid #bdc3c7;
-                            border-radius: 5px;
-                            background-color: #ecf0f1;
-                        }}
-                        .detail-content {{
-                            white-space: pre-wrap;
-                            margin-top: 5px;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            color: #34495e;
-                        }}
-                    </style>
-                    <div class="bug-details">
-                        <h2>Bug Details</h2>
-                        <p><b>User Name:</b> {bug_data[0]}</p>
-                        <p><b>Version Num:</b> {bug_data[1]}</p>
-                        <p><b>Bug Title:</b> {bug_data[2]}</p>
-                        <p><b>DateTime:</b> {bug_data[3]}</p>
-                        <p><b>Bug Detail:</b></p>
-                        <p class="detail-content">{bug_data[4]}</p>
-                        <p><b>Program Log:</b></p>
-                        <p class="detail-content">{bug_data[5]}</p>
-                    </div>
-                    """
+                        <style>
+                            h2 {{
+                                color: #2c3e50;
+                                text-align: center;
+                            }}
+                            table {{
+                                width: 100%;
+                                border-collapse: collapse;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                            }}
+                            th, td {{
+                                border: 1px solid #bdc3c7;
+                                padding: 8px;
+                                text-align: left;
+                            }}
+                            th {{
+                                background-color: #34495e;
+                                color: white;
+                            }}
+                            td {{
+                                color: #34495e;
+                            }}
+                            .detail-content {{
+                                white-space: pre-wrap;
+                                margin-top: 5px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                color: #34495e;
+                            }}
+                        </style>
+                        <div class="bug-details">
+                            <table>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Details</th>
+                                </tr>
+                                <tr>
+                                    <td><b>User Name:</b></td>
+                                    <td>{bug_data[0]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Version Num:</b></td>
+                                    <td>{bug_data[1]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Bug Title:</b></td>
+                                    <td>{bug_data[2]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>DateTime:</b></td>
+                                    <td>{bug_data[3]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Bug Detail:</b></td>
+                                    <td class="detail-content">{bug_data[4]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Program Log:</b></td>
+                                    <td class="detail-content">{bug_data[5]}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        """
+
                     detail_label = QLabel(details_html)
                     detail_label.setWordWrap(True)
 
@@ -482,7 +530,7 @@ class Manager_Board:
                     scroll_area.setWidgetResizable(True)
                     scroll_area.setWidget(detail_label)
 
-                    layout.addWidget(scroll_area)
+                    layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
 
                     # 닫기 버튼 추가
                     close_button = QPushButton('Close')
@@ -533,7 +581,7 @@ class Manager_Board:
 
                 def initUI(self):
                     self.setWindowTitle('Add Post')
-                    self.setGeometry(100, 100, 400, 400)
+                    self.resize(400, 400)
 
                     # 컨테이너 위젯 생성
                     container_widget = QWidget()
@@ -686,49 +734,69 @@ class Manager_Board:
                     # 다이얼로그 생성
                     dialog = QDialog(self.main)
                     dialog.setWindowTitle(f'Post View')
-                    dialog.setGeometry(100, 100, 400, 600)
+                    dialog.resize(400, 400)
 
                     layout = QVBoxLayout()
 
                     # HTML을 사용하여 디테일 표시
                     details_html = f"""
-                    <style>
-                        h2 {{
-                            color: #2c3e50;
-                            text-align: center;
-                        }}
-                        p {{
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            line-height: 1.5;
-                            margin: 5px 0;
-                        }}
-                        b {{
-                            color: #34495e;
-                        }}
-                        .post-details {{
-                            padding: 10px;
-                            border: 1px solid #bdc3c7;
-                            border-radius: 5px;
-                            background-color: #ecf0f1;
-                        }}
-                        .detail-content {{
-                            white-space: pre-wrap;
-                            margin-top: 5px;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            color: #34495e;
-                        }}
-                    </style>
-                    <div class="post-details">
-                        <h2>Post View</h2>
-                        <p><b>User Name:</b> {post_data[0]}</p>
-                        <p><b>Post Title:</b> {post_data[1]}</p>
-                        <p><b>DateTime:</b> {post_data[2]}</p>
-                        <p><b>Post Text:</b></p>
-                        <p class="detail-content">{post_data[4]}</p>
-                    </div>
-                    """
+                        <style>
+                            h2 {{
+                                color: #2c3e50;
+                                text-align: center;
+                            }}
+                            table {{
+                                width: 100%;
+                                border-collapse: collapse;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                            }}
+                            th, td {{
+                                border: 1px solid #bdc3c7;
+                                padding: 8px;
+                                text-align: left;
+                            }}
+                            th {{
+                                background-color: #34495e;
+                                color: white;
+                            }}
+                            td {{
+                                color: #34495e;
+                            }}
+                            .detail-content {{
+                                white-space: pre-wrap;
+                                margin-top: 5px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                color: #34495e;
+                            }}
+                        </style>
+                        <div class="post-details">
+                            <table>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Details</th>
+                                </tr>
+                                <tr>
+                                    <td><b>User Name:</b></td>
+                                    <td>{post_data[0]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Post Title:</b></td>
+                                    <td>{post_data[1]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>DateTime:</b></td>
+                                    <td>{post_data[2]}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Post Text:</b></td>
+                                    <td class="detail-content">{post_data[4]}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        """
+
                     detail_label = QLabel(details_html)
                     detail_label.setWordWrap(True)
 
@@ -737,7 +805,7 @@ class Manager_Board:
                     scroll_area.setWidgetResizable(True)
                     scroll_area.setWidget(detail_label)
 
-                    layout.addWidget(scroll_area)
+                    layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
 
                     # 닫기 버튼 추가
                     close_button = QPushButton('Close')
@@ -790,7 +858,7 @@ class Manager_Board:
                     self.data = None  # 데이터를 저장할 속성 추가
                 def initUI(self):
                     self.setWindowTitle('Edit Post')
-                    self.setGeometry(100, 100, 400, 400)
+                    self.resize(400, 400)
 
                     # 컨테이너 위젯 생성
                     container_widget = QWidget()

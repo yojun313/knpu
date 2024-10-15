@@ -728,7 +728,7 @@ class Manager_Analysis:
                 # 창 설정
                 self.setLayout(final_layout)
                 self.setWindowTitle('KEMKIM 그래프 조정')
-                self.setGeometry(300, 300, 800, 600)
+                self.resize(800, 600)
                 self.show()
 
             def create_select_all_handler(self, group_name):
@@ -1002,7 +1002,7 @@ class Manager_Analysis:
                 # 창 설정
                 self.setLayout(final_layout)
                 self.setWindowTitle('크롤링 데이터 CSV 필터링 기준 단어를 선택하세요')
-                self.setGeometry(300, 300, 800, 600)
+                self.resize(800, 600)
                 self.show()
 
             def create_select_all_handler(self, group_name):
@@ -1269,7 +1269,7 @@ class Manager_Analysis:
             def initUI(self):
                 
                 self.setWindowTitle('KEM KIM OPTION')
-                self.setGeometry(100, 100, 300, 250)  # 창 크기를 조정
+                self.resize(300, 250)  # 창 크기를 조정
 
                 layout = QVBoxLayout()
 

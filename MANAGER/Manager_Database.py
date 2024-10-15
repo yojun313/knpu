@@ -1,5 +1,5 @@
 import os
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QTableWidget, QButtonGroup, QTableWidgetItem, QWidget, QPushButton, QVBoxLayout, QScrollArea, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QDialog, QInputDialog, QDialogButtonBox, QRadioButton, QLabel, QFormLayout, QLineEdit
 from PyQt5.QtCore import QTimer, QDate
 import pandas as pd
@@ -55,7 +55,7 @@ class Manager_Database:
             def __init__(self, parent=None, target_db=None):
                 super(TableWindow, self).__init__(parent)
                 self.setWindowTitle(target_db)
-                self.setGeometry(100, 100, 1600, 1200)
+                self.resize(1600, 1200)
 
                 self.parent = parent  # 부모 객체를 저장하여 나중에 사용
                 self.target_db = target_db  # target_db를 저장하여 나중에 사용
@@ -187,7 +187,7 @@ class Manager_Database:
         # 다이얼로그 생성
         dialog = QDialog(self.main)
         dialog.setWindowTitle(f'{DBname}_Info')
-        dialog.setGeometry(100, 100, 500, 600)
+        dialog.resize(540, 600)
 
         layout = QVBoxLayout()
 
@@ -264,7 +264,7 @@ class Manager_Database:
         try:
             ElapsedTime = datetime.strptime(endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
         except:
-            ElapsedTime = datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
+            ElapsedTime = str(datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M"))[:-7]
 
         starttime = starttime.replace('/', '-')
         endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
@@ -276,20 +276,23 @@ class Manager_Database:
                     color: #2c3e50;
                     text-align: center;
                 }}
-                p {{
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
                     font-family: Arial, sans-serif;
                     font-size: 14px;
-                    line-height: 1.5;
-                    margin: 5px 0;
                 }}
-                b {{
-                    color: #34495e;
-                }}
-                .version-details {{
-                    padding: 10px;
+                th, td {{
                     border: 1px solid #bdc3c7;
-                    border-radius: 5px;
-                    background-color: #ecf0f1;
+                    padding: 8px;
+                    text-align: left;
+                }}
+                th {{
+                    background-color: #34495e;
+                    color: white;
+                }}
+                td {{
+                    color: #34495e;
                 }}
                 .detail-content {{
                     white-space: pre-wrap;
@@ -300,20 +303,64 @@ class Manager_Database:
                 }}
             </style>
             <div class="version-details">
-                <p><b>DB Name:</b> {DBdata[0]}</p>
-                <p><b>DB Size:</b> {DBdata[8]}</p>
-                <p><b>Crawl Type:</b> {DBdata[1]}</p>
-                <p><b>Crawl Keyword:</b> {DBdata[2]}</p>
-                <p><b>Crawl Period:</b> {DBdata[3]}</p>
-                <p><b>Crawl Option:</b> {crawlOption}</p>
-                <p><b>Crawl Start:</b> {starttime}</p>
-                <p><b>Crawl End:</b> {endtime}</p>
-                <p><b>Crawl ElapsedTime:</b> {ElapsedTime}</p>
-                <p><b>Crawl Requester:</b> {DBdata[7]}</p>
-                <p><b>Crawl Server:</b> {DBinfo[0]}</p>
-                <p><b>Crawl Speed:</b> {DBinfo[1]}</p>
-                <p><b>Crawl Result</b></p>
-                <p class="detail-content">{CountText}</p>                
+                <table>
+                    <tr>
+                        <th>Item</th>
+                        <th>Details</th>
+                    </tr>
+                    <tr>
+                        <td><b>DB Name:</b></td>
+                        <td>{DBdata[0]}</td>
+                    </tr>
+                    <tr>
+                        <td><b>DB Size:</b></td>
+                        <td>{DBdata[8]}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Crawl Type:</b></td>
+                        <td>{DBdata[1]}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Crawl Keyword:</b></td>
+                        <td>{DBdata[2]}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Crawl Period:</b></td>
+                        <td>{DBdata[3]}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Crawl Option:</b></td>
+                        <td>{crawlOption}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Crawl Start:</b></td>
+                        <td>{starttime}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Crawl End:</b></td>
+                        <td>{endtime}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Crawl ElapsedTime:</b></td>
+                        <td>{ElapsedTime}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Crawl Requester:</b></td>
+                        <td>{DBdata[7]}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Crawl Server:</b></td>
+                        <td>{DBinfo[0]}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Crawl Speed:</b></td>
+                        <td>{DBinfo[1]}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Crawl Result:</b></td>
+                        <td class="detail-content">{CountText}</td>
+                    </tr>
+                </table>
             </div>
         """
 
@@ -325,7 +372,7 @@ class Manager_Database:
         scroll_area.setWidgetResizable(True)
         scroll_area.setWidget(detail_label)
 
-        layout.addWidget(scroll_area)
+        layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
 
         # 닫기 버튼 추가
         close_button = QPushButton('Close')
