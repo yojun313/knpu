@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.9.1'
+        self.versionNum = '1.9.2'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -676,17 +676,20 @@ class MainWindow(QtWidgets.QMainWindow):
         return csv_data
 
     def chatgpt_generate(self, query):
-        client = OpenAI(api_key=self.gpt_api_key)
-        model = "gpt-4"
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": query},
-            ]
-        )
-        content = response.choices[0].message.content
-        return content
+        try:
+            client = OpenAI(api_key=self.gpt_api_key)
+            model = "gpt-4"
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": query},
+                ]
+            )
+            content = response.choices[0].message.content
+            return content
+        except:
+            return (0, "AI 분석에 오류가 발생하였습니다\n\nadmin에게 문의바랍니다")
 
     def program_bug_log(self, text, boot=False):
         with open(self.program_log_path, "a") as file:

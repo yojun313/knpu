@@ -1238,6 +1238,10 @@ class Manager_Analysis:
                             "토픽 5. ~~: (여기에 내용 기입)"
                         )
                         gpt_response = self.main.chatgpt_generate(gpt_query)
+                        if type(gpt_response) != str:
+                            QMessageBox.information(self.main, "Information", f"{gpt_response[0]}")
+                            self.main.printStatus()
+                            return
 
                         with open(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option})_AI_analyze.txt"), 'w+') as gpt_txt:
                             gpt_txt.write(gpt_response)
