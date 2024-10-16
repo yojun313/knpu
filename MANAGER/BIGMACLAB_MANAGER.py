@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.9.1'
+        self.versionNum = '1.9.2'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -696,7 +696,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.Manager_Board_obj.board_add_bug(auto=True)
+            self.Manager_Board_obj.board_add_bug()
 
 class InfoDialog(QDialog):
     def __init__(self, version):
