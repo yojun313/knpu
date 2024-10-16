@@ -731,6 +731,13 @@ class Manager_Board:
                     self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
                     self.main.mySQL_obj.updateTableCell('free_board', len(self.post_data)-selected_row-1, 'ViewCount', viewcount)
 
+                    if post_data[0] == 'admin':
+                        msg = (
+                            "[ Admin Notification ]\n\n"
+                            f"{self.main.user} has read post [ {post_data[1]} ]"
+                        )
+                        self.main.send_pushOver(msg, self.main.admin_pushoverkey)
+
                     # 다이얼로그 생성
                     dialog = QDialog(self.main)
                     dialog.setWindowTitle(f'Post View')
