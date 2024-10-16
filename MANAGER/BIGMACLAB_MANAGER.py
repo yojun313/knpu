@@ -21,14 +21,13 @@ from os import environ
 from pathlib import Path
 import socket
 import gc
-import ctypes
 import warnings
 import traceback
 warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.9.2'
+        self.versionNum = '1.9.3'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -62,12 +61,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 if not Path(self.program_log_path).exists():
                     with open(self.program_log_path, "w") as log:
                         log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
-                    # 파일을 숨김 처리
-                    FILE_ATTRIBUTE_HIDDEN = 0x02
-                    ctypes.windll.kernel32.SetFileAttributesW(self.program_log_path, FILE_ATTRIBUTE_HIDDEN)
                 else:
                     self.program_bug_log(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}", boot=True)
-
             else:
                 self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
                 self.program_log_path = os.path.join(self.default_directory, '.manager_log.txt')
@@ -77,6 +72,20 @@ class MainWindow(QtWidgets.QMainWindow):
                         log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
                 else:
                     self.program_bug_log(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}", boot=True)
+
+            self.readme_path = os.path.join(self.default_directory, 'README.txt')
+            if not Path(self.readme_path).exists():
+                with open(self.readme_path, "w") as txt:
+                    text = (
+                        "[ BIGMACLAB MANAGER README ]\n\n\n"
+                        "C:/BIGMACLAB_MANAGER is default directory folder of this program. This folder is automatically built by program.\n\n"
+                        "All files made in this program will be saved in this folder without any change.\n\n"
+                        "manager_log.txt is VERY IMPORTANT FILE for bug tracking and logging, so I strongly recommend you to keep this file.\n\n\n\n"
+                        "< Instructions >\n\n"
+                        "- MANAGER: https://knpu.re.kr/tool\n"
+                        "- KEMKIM: https://knpu.re.kr/kemkim"
+                    )
+                    txt.write(text)
 
             if os.path.isdir(self.default_directory) == False:
                 os.mkdir(self.default_directory)
@@ -215,8 +224,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 # 대화상자 실행
                 if dialog.exec_() == QDialog.Accepted:
                     if platform.system() == "Windows":
-                        QMessageBox.information(self, "Information",
-                                                "새로운 버전의 프로그램은 C:BIGMACLAB_MANAGER에 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
+                        QMessageBox.information(self, "Information", "새로운 버전의 프로그램은 C:/BIGMACLAB_MANAGER에 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
+                        msg = (
+                            "[ Admin Notification ]\n\n"
+                            f"{self.user} updated to {new_version} from {current_version}"
+                        )
+                        self.send_pushOver(msg, self.admin_pushoverkey)
+
                         self.printStatus("프로그램 업데이트 중...")
                         import subprocess
                         download_file_path = os.path.join(self.default_directory,
