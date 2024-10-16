@@ -699,7 +699,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.Manager_Board_obj.board_add_bug(auto=True)
+            self.Manager_Board_obj.board_add_bug()
 
 class InfoDialog(QDialog):
     def __init__(self, version):
