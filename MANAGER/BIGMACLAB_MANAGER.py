@@ -60,18 +60,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 if not Path(self.program_log_path).exists():
                     with open(self.program_log_path, "w") as log:
-                        log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
-                else:
-                    self.program_bug_log(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}", boot=True)
+                        log.write(f"[ BIGMACLAB MANAGER LOG ]\n")
             else:
                 self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
                 self.program_log_path = os.path.join(self.default_directory, '.manager_log.txt')
 
                 if not Path(self.program_log_path).exists():
                     with open(self.program_log_path, "w") as log:
-                        log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
-                else:
-                    self.program_bug_log(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}", boot=True)
+                        log.write(f"[ BIGMACLAB MANAGER LOG ]\n")
 
             self.readme_path = os.path.join(self.default_directory, 'README.txt')
             if not Path(self.readme_path).exists():
@@ -708,7 +704,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def program_bug_log(self, text, boot=False):
         with open(self.program_log_path, "a") as file:
             # 이어서 기록할 내용
-            file.write(f"\n\n{text}")
+            file.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n")
+            file.write(f"\n{text}")
         if boot == True:
             return
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
