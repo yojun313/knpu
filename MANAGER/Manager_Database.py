@@ -367,12 +367,7 @@ class Manager_Database:
         detail_label = QLabel(details_html)
         detail_label.setWordWrap(True)
 
-        # QScrollArea를 사용하여 스크롤 가능하게 설정
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setWidget(detail_label)
-
-        layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
+        layout.addWidget(detail_label)
 
         # 닫기 버튼 추가
         close_button = QPushButton('Close')
