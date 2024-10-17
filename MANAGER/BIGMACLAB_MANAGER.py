@@ -105,6 +105,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.Manager_User_obj = Manager_User(self)
                     self.userNameList = self.Manager_User_obj.userNameList
                     self.userPushOverKeyList = self.Manager_User_obj.userKeyList
+
+
                     break
                 except:
                     reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
