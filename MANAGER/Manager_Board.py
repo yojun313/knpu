@@ -403,11 +403,11 @@ class Manager_Board:
 
                 try:
                     with open(self.main.program_log_path, "w") as log:
-                        log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
+                        log.write(f"[ BIGMACLAB MANAGER LOG ]\n")
                 except:
                     with open(self.main.program_log_path, "a") as log:
-                        log.write("[ Report Submission Complete ]\n\n")
-                        log.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
+                        log.write("[ Report Submission Complete ]\n")
+
 
                 msg = (
                     "[ New Bug Added! ]\n"
@@ -416,7 +416,7 @@ class Manager_Board:
                     f"Title: {bug_data[2]}\n"
                     f"Datetime: {bug_data[3]}\n"
                     f"Detail: \n{bug_data[4]}\n"
-                    f"log: \n\n{bug_data[5]}\n"
+                    f"log: \n\n{bug_data[5][:-1000]}\n"
                 )
                 self.main.send_pushOver(msg, self.main.admin_pushoverkey)
         except Exception as e:
