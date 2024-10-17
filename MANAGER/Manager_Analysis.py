@@ -1239,8 +1239,9 @@ class Manager_Analysis:
                         )
                         gpt_response = self.main.chatgpt_generate(gpt_query)
                         if type(gpt_response) != str:
-                            QMessageBox.information(self.main, "Information", f"{gpt_response[0]}")
+                            QMessageBox.information(self.main, "Information", f"{gpt_response[1]}")
                             self.main.printStatus()
+                            self.main.openFileExplorer(analyze_directory)
                             return
 
                         with open(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option})_AI_analyze.txt"), 'w+') as gpt_txt:
