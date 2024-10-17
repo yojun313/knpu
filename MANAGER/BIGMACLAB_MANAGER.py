@@ -56,6 +56,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if platform.system() == "Windows":
                 self.default_directory = 'C:/BIGMACLAB_MANAGER'
+                if not os.path.exists(self.default_directory):
+                    os.makedirs(self.default_directory)
+
                 self.program_log_path = os.path.join(self.default_directory, 'manager_log.txt')
 
                 if not Path(self.program_log_path).exists():
