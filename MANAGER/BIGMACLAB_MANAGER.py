@@ -36,7 +36,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
         if platform.system() == "Windows":
-            self.showMaximized()  # 전체 화면으로 창 열기
+            self.resize(1400, 1000)
+            #self.showMaximized()  # 전체 화면으로 창 열기
         else:
             self.resize(1400, 1000)
 
