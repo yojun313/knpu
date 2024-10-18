@@ -159,8 +159,13 @@ class Manager_Board:
                         f"Version Status: {version_data[4]}\n"
                         f"Version Detail: \n{version_data[5]}\n"
                     )
-                    for key in self.main.userPushOverKeyList:
-                        self.main.send_pushOver(msg, key)
+                    reply = QMessageBox.question(self.main, 'Confirm Delete',
+                                                 "업데이트 알림을 전송하시겠습니까?",
+                                                 QMessageBox.Yes | QMessageBox.No,
+                                                 QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        for key in self.main.userPushOverKeyList:
+                            self.main.send_pushOver(msg, key)
             elif ok:
                 QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:
