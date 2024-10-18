@@ -27,7 +27,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.9.4'
+        self.versionNum = '1.9.5'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -667,7 +667,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:  # Linux and other OS
             os.system(f"xdg-open '{path}'")
 
-    def send_pushOver(self, msg, user_key):
+    def send_pushOver(self, msg, user_key, image_path = False):
         app_key_list  = ["a22qabchdf25zzkd1vjn12exjytsjx"]
 
         for app_key in app_key_list:
@@ -681,7 +681,14 @@ class MainWindow(QtWidgets.QMainWindow):
                     'message': msg
                 }
                 # Pushover에 요청을 보냄
-                response = requests.post(url, data=message)
+                if image_path == False:
+                    response = requests.post(url, data=message)
+                else:
+                    response = requests.post(url, data=message, files={
+                        "attachment": (
+                        "image.png", open(image_path, "rb"),
+                        "image/png")
+                    })
                 break
             except:
                 continue
