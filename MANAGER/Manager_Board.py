@@ -731,7 +731,7 @@ class Manager_Board:
                     self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
                     self.main.mySQL_obj.updateTableCell('free_board', len(self.post_data)-selected_row-1, 'ViewCount', viewcount)
 
-                    if post_data[0] == 'admin':
+                    if post_data[0] == 'admin' and self.main.user != 'admin':
                         msg = (
                             "[ Admin Notification ]\n\n"
                             f"{self.main.user} has read post [ {post_data[1]} ]"
