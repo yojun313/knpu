@@ -29,7 +29,7 @@ class Manager_Database:
             if not self.console_open:
                 ctypes.windll.kernel32.AllocConsole()  # 새로운 콘솔 창 할당
                 sys.stdout = open("CONOUT$", "w")  # 표준 출력을 콘솔로 리다이렉트
-                print("콘솔이 열렸습니다!")  # 테스트 출력
+                print('msg')  # 테스트 출력
                 self.console_open = True
 
     def close_console(self):
@@ -39,6 +39,10 @@ class Manager_Database:
                 sys.stdout.close()  # 콘솔 창 출력 닫기
                 ctypes.windll.kernel32.FreeConsole()  # 콘솔 창 해제
                 self.console_open = False
+
+    def print_console(self, msg = ''):
+        print(f'\n{msg}\n')
+
     def database_delete_DB(self):
         try:
             self.main.printStatus("삭제 중...")
@@ -665,7 +669,7 @@ class Manager_Database:
 
                     for tableName in tableList:
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
-                        print(f"{edited_tableName} 저장 중...")
+                        self.print_console(f"{edited_tableName} 저장 중...")
                         # 테이블 데이터를 DataFrame으로 변환
                         if selected_options['option'] == 'part':
                             tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
@@ -703,7 +707,7 @@ class Manager_Database:
                         tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
                         tableDF = None
                         gc.collect()
-                        print(f"{edited_tableName} 저장 완료\n\n")
+                        self.print_console(f"{edited_tableName} 저장 완료")
 
                     self.close_console()
                     QMessageBox.information(self.main, "Information", f"{dbname}이 성공적으로 저장되었습니다")
