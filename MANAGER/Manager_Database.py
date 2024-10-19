@@ -669,7 +669,7 @@ class Manager_Database:
 
                     for tableName in tableList:
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
-                        self.print_console(f"{edited_tableName} 저장 중...")
+                        self.print_console(f"{edited_tableName} 저장 중... ({tableList.index(tableName)} / {len(tableList)})")
                         # 테이블 데이터를 DataFrame으로 변환
                         if selected_options['option'] == 'part':
                             tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
@@ -688,6 +688,7 @@ class Manager_Database:
                             statisticsURL = tableDF['Article URL'].tolist()
                             save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
                             tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
+                            self.print_console(f"{edited_tableName} 저장 완료")
                             continue
 
                         if 'reply' in tableName:
