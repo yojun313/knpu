@@ -14,7 +14,7 @@ import warnings
 import re
 import platform
 import scipy.stats as stats
-import tqdm
+from tqdm import tqdm
 warnings.filterwarnings("ignore")
 
 # 운영체제에 따라 한글 폰트를 설정
