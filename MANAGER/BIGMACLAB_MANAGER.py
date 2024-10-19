@@ -23,6 +23,7 @@ import socket
 import gc
 import warnings
 import traceback
+import subprocess
 import atexit
 warnings.filterwarnings("ignore")
 
@@ -725,6 +726,14 @@ class MainWindow(QtWidgets.QMainWindow):
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.Manager_Board_obj.board_add_bug()
+
+    def run_function_in_console(self, message):
+        if platform.system() == "Windows":
+            cmd = [
+                'cmd.exe', '/k',
+                f'python -c "import sys; print(sys.argv[1]); sys.exit(0)" "{message}"'
+            ]
+            subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 class InfoDialog(QDialog):
     def __init__(self, version):
