@@ -9,7 +9,7 @@ class Console():
         """콘솔 창을 열고 프로세스를 유지"""
         if self.console_process is None:  # 콘솔이 열려있지 않다면
             self.console_process = subprocess.Popen(
-                'cmd.exe',
+                'cmd.exe /k',  # 명령을 실행한 후에도 종료하지 않음
                 stdin=subprocess.PIPE,
                 creationflags=subprocess.CREATE_NEW_CONSOLE,
                 text=True  # 텍스트 모드 사용
