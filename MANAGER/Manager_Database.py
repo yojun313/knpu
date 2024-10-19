@@ -51,7 +51,8 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_view_DB(self):
-        self.main.send_message_to_console("실행됨")
+        if self.main.console_process is not None:
+            self.main.send_message_to_console("실행됨")
         class TableWindow(QMainWindow):
             def __init__(self, parent=None, target_db=None):
                 super(TableWindow, self).__init__(parent)
