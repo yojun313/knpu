@@ -21,6 +21,6 @@ class Console():
 
         # 콘솔에 메시지 출력 명령 전달
         if self.console_process is not None:
-            self.console_process.stdin.write(f'echo {message}\n')
+            self.console_process.stdin.write(f'echo {message} & pause\n')  # 메시지를 출력하고 대기
             self.console_process.stdin.flush()  # 파이프에 강제로 보내기
 
