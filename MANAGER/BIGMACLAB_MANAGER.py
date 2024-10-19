@@ -738,12 +738,11 @@ class MainWindow(QtWidgets.QMainWindow):
             )
 
     def send_message_to_console(self, message):
-        if self.console_process is not None:
-            # 보낼 메시지 정의
+        # 보낼 메시지 정의
 
-            # 콘솔 창에 메시지 출력
-            self.console_process.stdin.write(f'echo {message}\n')
-            self.console_process.stdin.flush()  # 강제로 파이프에 쓰기
+        # 콘솔 창에 메시지 출력
+        self.console_process.stdin.write(f'echo {message}\n')
+        self.console_process.stdin.flush()  # 강제로 파이프에 쓰기
 
 class InfoDialog(QDialog):
     def __init__(self, version):
