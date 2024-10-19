@@ -15,12 +15,26 @@ warnings.filterwarnings("ignore")
 from Manager_Console import Console
 class Manager_Database:
     def __init__(self, main_window):
+        self.console_open = False
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
         self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester', 'Size']
         self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column, self.database_dbinfo_viewer)
         self.database_buttonMatch()
+    def open_console(self):
+        """콘솔 창을 열어 print 출력을 가능하게"""
+        if not self.console_open:
+            ctypes.windll.kernel32.AllocConsole()  # 새로운 콘솔 창 할당
+            sys.stdout = open("CONOUT$", "w")  # 표준 출력을 콘솔로 리다이렉트
+            print("콘솔이 열렸습니다!")  # 테스트 출력
+            self.console_open = True
 
+    def close_console(self):
+        """콘솔 창을 닫음"""
+        if self.console_open:
+            sys.stdout.close()  # 콘솔 창 출력 닫기
+            ctypes.windll.kernel32.FreeConsole()  # 콘솔 창 해제
+            self.console_open = False
     def database_delete_DB(self):
         try:
             self.main.printStatus("삭제 중...")
@@ -54,8 +68,7 @@ class Manager_Database:
 
     def database_view_DB(self):
 
-
-        self.main.open_console()
+        self.open_console()
         print("hello")
 
         class TableWindow(QMainWindow):
