@@ -727,13 +727,23 @@ class MainWindow(QtWidgets.QMainWindow):
         if reply == QMessageBox.Yes:
             self.Manager_Board_obj.board_add_bug()
 
-    def run_function_in_console(self, message):
-        if platform.system() == "Windows":
-            cmd = [
-                'cmd.exe', '/k',
-                f'python -c "import sys; print(sys.argv[1]); sys.exit(0)" "{message}"'
-            ]
-            subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+    def open_console(self):
+        if sys.platform == "win32" and self.console_process is None:
+            # 콘솔 창을 처음에 한 번만 생성
+            self.console_process = subprocess.Popen(
+                'cmd.exe',
+                stdin=subprocess.PIPE,
+                creationflags=subprocess.CREATE_NEW_CONSOLE,
+                text=True  # 텍스트 모드로 설정
+            )
+
+    def send_message_to_console(self, message):
+        if self.console_process is not None:
+            # 보낼 메시지 정의
+
+            # 콘솔 창에 메시지 출력
+            self.console_process.stdin.write(f'echo {message}\n')
+            self.console_process.stdin.flush()  # 강제로 파이프에 쓰기
 
 class InfoDialog(QDialog):
     def __init__(self, version):
