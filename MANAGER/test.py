@@ -25,6 +25,6 @@ class Console():
         if self.console_process is not None:
             self.console_process.stdin.write(f'echo {message}\n')
             self.console_process.stdin.flush()  # 파이프에 강제로 보내기
-            
+
 console = Console()  # Console 객체 생성
 console.run_function_in_console('Hello from PyQt')  # 콘솔 창에 메시지 출력
