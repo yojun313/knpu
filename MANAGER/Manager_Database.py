@@ -10,7 +10,7 @@ from datetime import datetime
 import warnings
 import traceback
 warnings.filterwarnings("ignore")
-
+from Manager_Console import Console
 class Manager_Database:
     def __init__(self, main_window):
         self.main = main_window
@@ -51,8 +51,9 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_view_DB(self):
-        if self.main.console_process is not None:
-            self.main.send_message_to_console("실행됨")
+        self.console = Console()
+        self.console.run_function_in_console('실행됨')
+
         class TableWindow(QMainWindow):
             def __init__(self, parent=None, target_db=None):
                 super(TableWindow, self).__init__(parent)

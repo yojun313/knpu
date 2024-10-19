@@ -23,7 +23,6 @@ import socket
 import gc
 import warnings
 import traceback
-import subprocess
 import atexit
 warnings.filterwarnings("ignore")
 
@@ -727,23 +726,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if reply == QMessageBox.Yes:
             self.Manager_Board_obj.board_add_bug()
 
-    def open_console(self):
-        if sys.platform == "win32" and self.console_process is None:
-            # 콘솔 창을 처음에 한 번만 생성
-            self.console_process = subprocess.Popen(
-                'cmd.exe',
-                stdin=subprocess.PIPE,
-                creationflags=subprocess.CREATE_NEW_CONSOLE,
-                text=True  # 텍스트 모드로 설정
-            )
-
-    def send_message_to_console(self, message):
-        # 보낼 메시지 정의
-
-        # 콘솔 창에 메시지 출력
-        self.console_process.stdin.write(f'echo {message}\n')
-        self.console_process.stdin.flush()  # 강제로 파이프에 쓰기
-
 class InfoDialog(QDialog):
     def __init__(self, version):
         super().__init__()
@@ -771,27 +753,10 @@ class InfoDialog(QDialog):
 
         self.setLayout(layout)
 
+
 if __name__ == '__main__':
     def cleanup_temp_dir():
-        temp_dir = "C:/Temp"
-        if os.path.exists(temp_dir):
-            # 파일과 빈 디렉토리 삭제
-            for root, dirs, files in os.walk(temp_dir):
-                # 파일 삭제
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    try:
-                        os.remove(file_path)
-                        pass
-                    except Exception as e:
-                        pass
-                # 빈 디렉토리 삭제
-                for dir in dirs:
-                    dir_path = os.path.join(root, dir)
-                    try:
-                        shutil.rmtree(dir_path)  # 폴더가 비어 있으면 삭제
-                    except Exception as e:
-                        pass
+       pass
 
     atexit.register(cleanup_temp_dir)
 
