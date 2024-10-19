@@ -670,7 +670,6 @@ class Manager_Database:
                     tableList = [table for table in tableList if 'info' not in table]
                     tableList = sorted(tableList, key=lambda x: ('article' not in x, 'statistics' not in x, x))
 
-                    self.main.openFileExplorer(dbpath)
                     if filterOption == True:
                         with open(os.path.join(dbpath, 'DB_info.txt'), 'w+') as info:
                             text = (
@@ -723,6 +722,7 @@ class Manager_Database:
 
                     self.close_console()
                     QMessageBox.information(self.main, "Information", f"{dbname}이 성공적으로 저장되었습니다")
+                    self.main.openFileExplorer(dbpath)
                     self.main.printStatus()
                 except Exception as e:
                     QMessageBox.critical(self.main, "Error", f"Failed to save database: {traceback.format_exc()}")
