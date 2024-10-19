@@ -29,7 +29,7 @@ class Manager_Database:
             if not self.console_open:
                 ctypes.windll.kernel32.AllocConsole()  # 새로운 콘솔 창 할당
                 sys.stdout = open("CONOUT$", "w")  # 표준 출력을 콘솔로 리다이렉트
-                print('msg')  # 테스트 출력
+                print(msg)  # 테스트 출력
                 self.console_open = True
 
     def close_console(self):
@@ -40,8 +40,11 @@ class Manager_Database:
                 ctypes.windll.kernel32.FreeConsole()  # 콘솔 창 해제
                 self.console_open = False
 
-    def print_console(self, msg = ''):
-        print(f'\n{msg}\n')
+    def print_console(self, msg = '', delete = False):
+        if delete == False:
+            print(f'\n{msg}\n')
+        else:
+            print(f'\r{msg}', end = '')
 
     def database_delete_DB(self):
         try:
@@ -669,7 +672,7 @@ class Manager_Database:
 
                     for tableName in tableList:
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
-                        self.print_console(f"{edited_tableName} 저장 중... ({tableList.index(tableName)} / {len(tableList)})")
+                        self.print_console(f"{edited_tableName} 저장 중... ({tableList.index(tableName)+1} / {len(tableList)})", True)
                         # 테이블 데이터를 DataFrame으로 변환
                         if selected_options['option'] == 'part':
                             tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
@@ -688,7 +691,7 @@ class Manager_Database:
                             statisticsURL = tableDF['Article URL'].tolist()
                             save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
                             tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
-                            self.print_console(f"{edited_tableName} 저장 완료")
+                            self.print_console(f"{edited_tableName} 저장 완료", True)
                             continue
 
                         if 'reply' in tableName:
@@ -708,7 +711,7 @@ class Manager_Database:
                         tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
                         tableDF = None
                         gc.collect()
-                        self.print_console(f"{edited_tableName} 저장 완료")
+                        self.print_console(f"{edited_tableName} 저장 완료", True)
 
                     self.close_console()
                     QMessageBox.information(self.main, "Information", f"{dbname}이 성공적으로 저장되었습니다")
