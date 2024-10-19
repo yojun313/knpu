@@ -23,6 +23,7 @@ import socket
 import gc
 import warnings
 import traceback
+import atexit
 warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -752,8 +753,30 @@ class InfoDialog(QDialog):
 
         self.setLayout(layout)
 
-
 if __name__ == '__main__':
+    def cleanup_temp_dir():
+        temp_dir = "C:/Temp"
+        if os.path.exists(temp_dir):
+            # 파일과 빈 디렉토리 삭제
+            for root, dirs, files in os.walk(temp_dir):
+                # 파일 삭제
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    try:
+                        os.remove(file_path)
+                        pass
+                    except Exception as e:
+                        pass
+                # 빈 디렉토리 삭제
+                for dir in dirs:
+                    dir_path = os.path.join(root, dir)
+                    try:
+                        shutil.rmtree(dir_path)  # 폴더가 비어 있으면 삭제
+                    except Exception as e:
+                        pass
+
+    atexit.register(cleanup_temp_dir)
+
     temp_dir = tempfile.mkdtemp()
     shutil.rmtree(temp_dir, ignore_errors=True)
     environ["QT_DEVICE_PIXEL_RATIO"] = "0"
@@ -776,4 +799,5 @@ if __name__ == '__main__':
     application = MainWindow()
     application.show()
     sys.exit(app.exec_())
+
 
