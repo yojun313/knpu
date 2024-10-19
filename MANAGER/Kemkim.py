@@ -14,7 +14,6 @@ import warnings
 import re
 import platform
 import scipy.stats as stats
-from tqdm import tqdm
 warnings.filterwarnings("ignore")
 
 # 운영체제에 따라 한글 폰트를 설정
@@ -856,13 +855,13 @@ class KimKem:
     # 연도별 keyword tf 딕셔너리 반환
     def cal_tf(self, keyword_list, period_divided_dic_merged):
         tf_counts = {}
-        # tqdm을 사용하여 진행 상황을 출력
-        for key, value in tqdm(period_divided_dic_merged.items(), desc="Processing Periods", unit="period"):
+        for key, value in period_divided_dic_merged.items():
             keyword_counts = {}
             for keyword in keyword_list:
                 keyword_counts[keyword] = value.count(keyword)
 
             keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
+
             tf_counts[key] = keyword_counts
         return tf_counts
     # 연도별 keyword df 딕셔너리 반환
