@@ -10,31 +10,35 @@ from datetime import datetime
 import warnings
 import traceback
 import sys
+import platform
 import ctypes
 warnings.filterwarnings("ignore")
 from Manager_Console import Console
 class Manager_Database:
     def __init__(self, main_window):
-        self.console_open = False
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
         self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester', 'Size']
         self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column, self.database_dbinfo_viewer)
         self.database_buttonMatch()
-    def open_console(self):
-        """콘솔 창을 열어 print 출력을 가능하게"""
-        if not self.console_open:
-            ctypes.windll.kernel32.AllocConsole()  # 새로운 콘솔 창 할당
-            sys.stdout = open("CONOUT$", "w")  # 표준 출력을 콘솔로 리다이렉트
-            print("콘솔이 열렸습니다!")  # 테스트 출력
-            self.console_open = True
+        self.console_open = False
+
+    def open_console(self, msg = ''):
+        if platform.system() == 'Windows':
+            """콘솔 창을 열어 print 출력을 가능하게"""
+            if not self.console_open:
+                ctypes.windll.kernel32.AllocConsole()  # 새로운 콘솔 창 할당
+                sys.stdout = open("CONOUT$", "w")  # 표준 출력을 콘솔로 리다이렉트
+                print("콘솔이 열렸습니다!")  # 테스트 출력
+                self.console_open = True
 
     def close_console(self):
-        """콘솔 창을 닫음"""
-        if self.console_open:
-            sys.stdout.close()  # 콘솔 창 출력 닫기
-            ctypes.windll.kernel32.FreeConsole()  # 콘솔 창 해제
-            self.console_open = False
+        if platform.system() == 'Windows':
+            """콘솔 창을 닫음"""
+            if self.console_open:
+                sys.stdout.close()  # 콘솔 창 출력 닫기
+                ctypes.windll.kernel32.FreeConsole()  # 콘솔 창 해제
+                self.console_open = False
     def database_delete_DB(self):
         try:
             self.main.printStatus("삭제 중...")
@@ -67,9 +71,6 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_view_DB(self):
-
-        self.open_console()
-        print("hello")
 
         class TableWindow(QMainWindow):
             def __init__(self, parent=None, target_db=None):
@@ -618,7 +619,7 @@ class Manager_Database:
                     QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options, filter_options))
 
             def save_database(target_db, folder_path, selected_options, filter_options):
-
+                self.open_console('CSV로 저장 PROGRESS')
                 filterOption = False
                 dbpath = os.path.join(folder_path, target_db)
                 dbname = target_db
@@ -664,7 +665,7 @@ class Manager_Database:
 
                     for tableName in tableList:
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
-
+                        print(f"{edited_tableName} 저장 중...")
                         # 테이블 데이터를 DataFrame으로 변환
                         if selected_options['option'] == 'part':
                             tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
@@ -702,7 +703,9 @@ class Manager_Database:
                         tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
                         tableDF = None
                         gc.collect()
+                        print(f"{edited_tableName} 저장 완료\n\n")
 
+                    self.close_console()
                     QMessageBox.information(self.main, "Information", f"{dbname}이 성공적으로 저장되었습니다")
                     self.main.printStatus()
                 except Exception as e:
