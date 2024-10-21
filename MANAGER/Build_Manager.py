@@ -30,7 +30,6 @@ def build_exe_from_spec(spec_file, output_directory, version):
         # Run pyinstaller with the new spec file
         subprocess.run([
             'pyinstaller',
-            '--onedir',
             '--distpath', output_directory,
             '--workpath', os.path.join(output_directory, 'build'),
             new_spec_file
