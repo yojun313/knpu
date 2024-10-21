@@ -4,7 +4,7 @@ import socket
 import shutil
 
 def create_spec_file(original_spec_file, new_spec_file, exe_name):
-    with open(original_spec_file, 'r') as file:
+    with open(original_spec_file, 'r', encoding='utf-8') as file:
         spec_content = file.read()
 
     spec_content = spec_content.replace('name=\'BIGMACLAB_MANAGER\'', f'name=\'{exe_name}\'')
