@@ -29,7 +29,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '1.10.0'
+        self.versionNum = '1.11.0'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -228,7 +228,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # 대화상자 실행
                 if dialog.exec_() == QDialog.Accepted:
                     if platform.system() == "Windows":
-                        QMessageBox.information(self, "Information", "새로운 버전의 프로그램은 C:/BIGMACLAB_MANAGER에 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
+                        QMessageBox.information(self, "Information", "새로운 설치 프로그램은 C:/BIGMACLAB_MANAGER에 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
                         msg = (
                             "[ Admin Notification ]\n\n"
                             f"{self.user} updated to {new_version} from {current_version}"
@@ -238,8 +238,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.printStatus("프로그램 업데이트 중...")
                         import subprocess
                         download_file_path = os.path.join(self.default_directory,
-                                                          f"BIGMACLAB_MANAGER_{new_version}.exe")
-                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{new_version}.exe",
+                                                          f"MANAGER_setup_{new_version}.exe")
+                        download_file(f"https://knpu.re.kr:90/download/MANAGER_setup_{new_version}.exe",
                                       download_file_path)
                         subprocess.Popen([download_file_path], shell=True)
                         self.openFileExplorer(self.default_directory)
