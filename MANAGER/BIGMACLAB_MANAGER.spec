@@ -29,8 +29,6 @@ exe = EXE(
     console=False,
     icon='C:/GitHub/BIGMACLAB/MANAGER/exe_icon.ico'
 )
-
-# COLLECT 블록 추가
 coll = COLLECT(
     exe,
     a.binaries,
