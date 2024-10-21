@@ -19,21 +19,25 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
+    exclude_binaries=True,  # 이 부분 추가하여 EXE에서 바이너리를 제외
     name='BIGMACLAB_MANAGER',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    upx_exclude=[],
-    runtime_tmpdir='C:/Temp',
     console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon= 'C:/GitHub/BIGMACLAB/MANAGER/exe_icon.ico'
+    icon='C:/GitHub/BIGMACLAB/MANAGER/exe_icon.ico'
+)
+
+# COLLECT 블록 추가
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='BIGMACLAB_MANAGER'
 )
