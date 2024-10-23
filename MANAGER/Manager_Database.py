@@ -687,8 +687,12 @@ class Manager_Database:
                         print("완료")
 
                     close_console()
-                    QMessageBox.information(self.main, "Information", f"{dbname}이 성공적으로 저장되었습니다")
-                    self.main.openFileExplorer(dbpath)
+                    QMessageBox.information(self.main, "Information", f"")
+                    reply = QMessageBox.question(self.main, 'Information', f"{dbname} 저장이 \n\n파일 탐색기에서 확인하시겠습니까?",
+                                                 QMessageBox.Yes | QMessageBox.No,
+                                                 QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        self.main.openFileExplorer(dbpath)
                     self.main.printStatus()
                 except Exception as e:
                     QMessageBox.critical(self.main, "Error", f"Failed to save database: {traceback.format_exc()}")
