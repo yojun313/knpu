@@ -140,7 +140,7 @@ class KimKem:
             # Step 3: 상위 공통 단어 추출 및 키워드 리스트 생성
             top_common_words = self._extract_top_common_words(period_divided_dic_merged)#
             keyword_list = self._get_keyword_list(top_common_words)#
-            print("완료")
+            print("완료\n")
 
             # 추출된 공통 키워드 존재하지 않으면 프로그램 종료
             if keyword_list == []:
@@ -855,7 +855,7 @@ class KimKem:
         tf_counts = {}
 
         # tqdm을 사용하여 진행 바 추가
-        for key, value in tqdm(period_divided_dic_merged.items(), desc="TF 계산 중...", file=sys.stdout):
+        for key, value in tqdm(period_divided_dic_merged.items(), desc="TF 계산 중...", file=sys.stdout, ncols=100, bar_format="{l_bar}{bar}| {percentage:3.0f}%"):
             keyword_counts = {}
             for keyword in keyword_list:
                 keyword_counts[keyword] = value.count(keyword)
@@ -871,11 +871,11 @@ class KimKem:
         df_counts = {}
 
         # tqdm을 사용하여 전체 기간에 대한 진행 상태 표시
-        for period in tqdm(period_divided_dic, desc="DF 계산 중...", file=sys.stdout):
+        for period in tqdm(period_divided_dic, desc="DF 계산 중...", file=sys.stdout, ncols=100, bar_format="{l_bar}{bar}| {percentage:3.0f}%"):
             keyword_counts = {}
 
             # 각 키워드에 대한 진행 상태 표시
-            for keyword in tqdm(keyword_list, file=sys.stdout, leave=False):
+            for keyword in keyword_list:
                 count = 0
                 for doc in period_divided_dic[period]:
                     if keyword in doc:
