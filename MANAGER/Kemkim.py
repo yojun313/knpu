@@ -852,9 +852,11 @@ class KimKem:
 
         # tqdm을 사용하여 진행 바 추가
         for key, value in tqdm(period_divided_dic_merged.items(), desc="TF ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
-            keyword_counts = {}
-            for keyword in keyword_list:
-                keyword_counts[keyword] = value.count(keyword)
+            # Counter로 각 키워드의 빈도를 한 번에 계산
+            value_counter = Counter(value)
+
+            # keyword_list의 키워드에 대해서만 계산하여 딕셔너리에 저장
+            keyword_counts = {keyword: value_counter[keyword] for keyword in keyword_list}
 
             # 내림차순으로 정렬
             keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
@@ -870,13 +872,10 @@ class KimKem:
         for period in tqdm(period_divided_dic, desc="DF ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
             keyword_counts = {}
 
-            # 각 키워드에 대한 진행 상태 표시
+            # 문서들을 하나의 리스트로 합치고, Counter로 각 키워드가 포함된 문서 수를 셈
+            docs = period_divided_dic[period]
             for keyword in keyword_list:
-                count = 0
-                for doc in period_divided_dic[period]:
-                    if keyword in doc:
-                        count += 1
-                keyword_counts[keyword] = count
+                keyword_counts[keyword] = sum(1 for doc in docs if keyword in doc)
 
             # 내림차순으로 정렬
             keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
