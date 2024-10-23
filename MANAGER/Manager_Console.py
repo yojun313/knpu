@@ -10,9 +10,6 @@ def open_console(msg=''):
 
         # 콘솔 창 크기 설정
         hConsole = ctypes.windll.kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE = -11
-        # 콘솔 버퍼 크기 설정 (80x50)
-        buffer_size = ctypes.wintypes._COORD(80, 300)  # 가로 80, 세로 300
-        ctypes.windll.kernel32.SetConsoleScreenBufferSize(hConsole, buffer_size)
 
         # 콘솔 창 크기 설정 (가로 80, 세로 30)
         rect = ctypes.wintypes.SMALL_RECT(0, 0, 79, 29)  # 왼쪽, 위쪽, 오른쪽, 아래쪽
