@@ -48,6 +48,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.admin_password = 'kingsman'
         self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
         self.gpt_api_key = "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"
+        self.console_open = False
 
         # 스타일시트 적용
         self.setStyle()
