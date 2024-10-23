@@ -242,7 +242,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         )
                         self.send_pushOver(msg, self.admin_pushoverkey)
 
-                        self.printStatus("프로그램 업데이트 중...")
+                        self.printStatus("버전 업데이트 중...")
                         import subprocess
                         download_file_path = os.path.join('C:/Temp',
                                                           f"BIGMACLAB_MANAGER_{new_version}.exe")

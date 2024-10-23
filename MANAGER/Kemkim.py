@@ -16,7 +16,6 @@ import re
 import platform
 import scipy.stats as stats
 from tqdm import tqdm
-import multiprocessing as mp
 
 warnings.filterwarnings("ignore")
 
@@ -173,9 +172,22 @@ class KimKem:
             Final_signal_record = {}
 
             print("")
+            for index, period in enumerate(tqdm(self.period_list, desc="연도별 KEMKIM 데이터 생성 중", file=sys.stdout)):
+                # Step 7: 평균 증가율 및 빈도 계산
 
-            DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record, Final_signal_record = self.process_all_periods(
-                keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts)
+                if index == 0:
+                    continue
+
+                result_folder = os.path.join(self.trace_result_folder, period)
+
+                self.write_status(f"{period} KEMKIM 증가율 계산 중...")
+                avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[index-1], period)
+
+                self.write_status(f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
+                # Step 8: 신호 분석 및 그래프 생성
+                DoV_signal_record[period], DoD_signal_record[period], DoV_coordinates_record[period], DoD_coordinates_record[period] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
+                Final_signal_record[period] = self._save_final_signals(DoV_signal_record[period], DoD_signal_record[period], os.path.join(result_folder, 'Signal'))
+
             # Trace 데이터에서 키워드별로 Signal 변화를 추적
             self.write_status("키워드 추적 데이터 생성 및 필터링 중...")
             print("\n키워드 추적 데이터 생성 및 필터링 중...")
@@ -239,38 +251,6 @@ class KimKem:
         except Exception as e:
             self.write_status("오류 중단")
             return traceback.format_exc()
-
-    def process_all_periods(self, keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts):
-
-        DoV_signal_record = {}
-        DoD_signal_record = {}
-        DoV_coordinates_record = {}
-        DoD_coordinates_record = {}
-        Final_signal_record = {}
-
-        # 데이터 인자를 튜플로 준비 (index, period, 이전 period 등)
-        period_data = [
-            (index, self.period_list[index], self.period_list[index - 1], keyword_list, trace_DoV_dict,
-             trace_DoD_dict, tf_counts, df_counts, self.trace_result_folder, self._calculate_averages,
-             self._analyze_signals, self._save_final_signals)
-            for index in range(1, len(self.period_list))
-        ]
-
-        # 병렬 처리를 위한 Pool 생성
-        with mp.Pool(processes=mp.cpu_count()) as pool:
-            # 병렬 처리 진행 상태를 tqdm으로 표시
-            results = list(tqdm(pool.imap(process_period_data, period_data), total=len(period_data),
-                                desc="연도별 KEMKIM 데이터 생성 중", file=sys.stdout))
-
-        # 결과를 병합
-        for period, DoV_signal, DoD_signal, DoV_coordinates, DoD_coordinates, Final_signal in results:
-            DoV_signal_record[period] = DoV_signal
-            DoD_signal_record[period] = DoD_signal
-            DoV_coordinates_record[period] = DoV_coordinates
-            DoD_coordinates_record[period] = DoD_coordinates
-            Final_signal_record[period] = Final_signal
-
-        return DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record, Final_signal_record
 
     def filter_dic_empty_list(self, dictionary):
 
@@ -1173,26 +1153,6 @@ class KimKem:
             coordinates_df.to_csv(os.path.join(graph_folder, "DOD_coordinates.csv"), index=False, encoding='utf-8-sig')
 
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
-
-def process_period_data(args):
-    index, period, prev_period, keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, trace_result_folder, calculate_averages, analyze_signals, save_final_signals = args
-
-    result_folder = os.path.join(trace_result_folder, period)
-
-    # 평균 증가율 및 빈도 계산
-    avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = calculate_averages(
-        keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, prev_period, period)
-
-    # 신호 분석 및 그래프 생성
-    DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record = analyze_signals(
-        avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency,
-        os.path.join(result_folder, 'Graph'))
-
-    # 최종 신호 저장
-    Final_signal_record = save_final_signals(DoV_signal_record, DoD_signal_record,
-                                             os.path.join(result_folder, 'Signal'))
-
-    return period, DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record, Final_signal_record
 
 if __name__=='__main__':
     token_data = pd.read_csv("/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/token_data/token_navernews_바이오의료_20100101_20240731_0815_2036_article.csv", low_memory=False, encoding='utf-8-sig')
