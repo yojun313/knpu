@@ -2,6 +2,11 @@ import platform
 import sys
 import ctypes
 import os
+from colorama import init, Fore, Style
+
+# colorama 초기화
+init(autoreset=True)
+
 def open_console(msg=''):
     if platform.system() == 'Windows':
         """콘솔 창을 열어 print 출력을 가능하게"""
@@ -15,8 +20,9 @@ def open_console(msg=''):
         rect = ctypes.wintypes.SMALL_RECT(0, 0, 79, 29)  # 왼쪽, 위쪽, 오른쪽, 아래쪽
         ctypes.windll.kernel32.SetConsoleWindowInfo(hConsole, True, ctypes.byref(rect))
 
-        print("[ BIGMACLAB MANAGER ]")
-        print(f'\n< {msg} >\n')  # 테스트 출력
+        # 컬러와 스타일 적용
+        print(Fore.GREEN + Style.BRIGHT + "[ BIGMACLAB MANAGER ]")
+        print(Fore.YELLOW + f'\n< {msg} >\n')  # 테스트 출력
 
 def close_console():
     if platform.system() == 'Windows':
