@@ -88,15 +88,6 @@ class KimKem:
                 os.makedirs(self.kimkem_folder_path, exist_ok=True)
                 self.write_status()
 
-    def print_console(self, msg = '', delete = False, end = False):
-        if delete == False:
-            if end == False:
-                print(f'\n{msg}\n')
-            else:
-                print(f'{msg}', end = '')
-        else:
-            print(f'\r{msg}', end = '')
-
     def clear_console(self):
         if platform.system() == "Windows":
             os.system("cls")
