@@ -851,7 +851,7 @@ class KimKem:
         tf_counts = {}
 
         # tqdm을 사용하여 진행 바 추가
-        for key, value in tqdm(period_divided_dic_merged.items(), desc="TF 계산 ", file=sys.stdout, ncols=100, bar_format="{l_bar}{bar}|", ascii='='):
+        for key, value in tqdm(period_divided_dic_merged.items(), desc="TF 계산 ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii='='):
             keyword_counts = {}
             for keyword in keyword_list:
                 keyword_counts[keyword] = value.count(keyword)
@@ -867,7 +867,7 @@ class KimKem:
         df_counts = {}
 
         # tqdm을 사용하여 전체 기간에 대한 진행 상태 표
-        for period in tqdm(period_divided_dic, desc="DF 계산 ", file=sys.stdout, ncols=100, bar_format="{l_bar}{bar}|", ascii='='):
+        for period in tqdm(period_divided_dic, desc="DF 계산 ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii='='):
             keyword_counts = {}
 
             # 각 키워드에 대한 진행 상태 표시
@@ -888,7 +888,7 @@ class KimKem:
     # 연도별 keyword DoV 딕셔너리 반환
     def cal_DoV(self, keyword_list, period_divided_dic, tf_counts, trace=True):
         DoV_dict = {}
-        for period in tqdm(period_divided_dic, desc="DOV 계산 ", file=sys.stdout, ncols=100, bar_format="{l_bar}{bar}|", ascii='='):
+        for period in tqdm(period_divided_dic, desc="DOV 계산 ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii='='):
             keyword_DoV_dic = {}
             
             n_j = 1 if trace else self.find_key_position(period_divided_dic, period) - self.find_key_position(period_divided_dic, self.startperiod)
@@ -902,7 +902,7 @@ class KimKem:
     # 연도별 keyword DoD 딕셔너리 반환
     def cal_DoD(self, keyword_list, period_divided_dic, df_counts, trace=True):
         DoD_dict = {}
-        for period in tqdm(period_divided_dic, desc="DOD 계산 ", file=sys.stdout, ncols=100, bar_format="{l_bar}{bar}|", ascii='='):
+        for period in tqdm(period_divided_dic, desc="DOD 계산 ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii='='):
             keyword_DoV_dic = {}
             
             n_j = 1 if trace else self.find_key_position(period_divided_dic, period) - self.find_key_position(period_divided_dic, self.startperiod)
