@@ -14,6 +14,8 @@ import warnings
 import re
 import platform
 import scipy.stats as stats
+from tqdm import tqdm
+
 warnings.filterwarnings("ignore")
 
 # 운영체제에 따라 한글 폰트를 설정
@@ -111,6 +113,7 @@ class KimKem:
             f"{'분할 상위%:':<15} {self.split_custom}\n"
             f"===================================================================================================================\n"
         )
+        print(info)
         info += f'\n진행 상황: {msg}'
         
         with open(os.path.join(self.kimkem_folder_path, 'kemkim_info.txt'),'w+') as info_txt:
@@ -122,7 +125,7 @@ class KimKem:
                 return 2
             
             self.write_status("토큰 데이터 분할 중...")
-            self.print_console("토큰 데이터 분할 중...")
+            print("\n토큰 데이터 분할 중... ", end='')
             # Step 2: 연도별 단어 리스트 생성 (딕셔너리)
             period_divided_dic_raw = self._initialize_period_divided_dic(self.period_divided_group)#
             period_divided_dic_raw = self.filter_dic_empty_list(period_divided_dic_raw)
@@ -136,6 +139,7 @@ class KimKem:
             # Step 3: 상위 공통 단어 추출 및 키워드 리스트 생성
             top_common_words = self._extract_top_common_words(period_divided_dic_merged)#
             keyword_list = self._get_keyword_list(top_common_words)#
+            print("완료")
 
             # 추출된 공통 키워드 존재하지 않으면 프로그램 종료
             if keyword_list == []:
@@ -143,9 +147,11 @@ class KimKem:
                 return 0
 
             self.write_status("TF/DF 계산 중...")
-            self.print_console("TF/DF 계산 중...")
+
             # Step 4: TF, DF, DoV, DoD 계산 -> 결과: {key: 키워드, value: 계산값} 형식의 딕셔너리
-            tf_counts, df_counts = self.cal_tf(keyword_list, period_divided_dic_merged), self.cal_df(keyword_list, period_divided_dic)
+            tf_counts = self.cal_tf(keyword_list, period_divided_dic_merged)
+            df_counts = self.cal_df(keyword_list, period_divided_dic)
+
             self.period_list = list(tf_counts.keys())
             self.startperiod = self.period_list[0]
 
@@ -846,14 +852,19 @@ class KimKem:
     # 연도별 keyword tf 딕셔너리 반환
     def cal_tf(self, keyword_list, period_divided_dic_merged):
         tf_counts = {}
-        for key, value in period_divided_dic_merged.items():
+        total_num = len(period_divided_dic_merged)  # 총 작업 개수
+
+        # tqdm을 사용하여 진행 바 추가
+        for key, value in tqdm(period_divided_dic_merged.items(), desc="Calculating TF", total=total_num):
             keyword_counts = {}
             for keyword in keyword_list:
                 keyword_counts[keyword] = value.count(keyword)
 
+            # 내림차순으로 정렬
             keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
 
             tf_counts[key] = keyword_counts
+
         return tf_counts
     # 연도별 keyword df 딕셔너리 반환
     def cal_df(self, keyword_list, period_divided_dic):
