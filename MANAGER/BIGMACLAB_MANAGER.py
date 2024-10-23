@@ -12,6 +12,7 @@ from Manager_Web import Manager_Web
 from Manager_Board import Manager_Board
 from Manager_User import Manager_User
 from Manager_Analysis import Manager_Analysis
+from Manager_Console import open_console, close_console, clear_console
 from datetime import datetime
 import platform
 import requests
@@ -24,7 +25,6 @@ import gc
 import warnings
 import traceback
 import atexit
-import ctypes
 warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -48,7 +48,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.admin_password = 'kingsman'
         self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
         self.gpt_api_key = "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"
-        self.console_open = False
 
         # 스타일시트 적용
         self.setStyle()
@@ -56,7 +55,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # 사이드바 연결
         def load_program():
             #self.menubar_init()
-            self.open_console("Booting Process")
+            open_console("Booting Process")
             self.listWidget.currentRowChanged.connect(self.display)
 
             if platform.system() == "Windows":
@@ -152,7 +151,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         f.write(chunk)
 
             print(f"\nWelcome {self.user}!")
-            self.close_console()
+            close_console()
             # New version check
             current_version = version.parse(self.versionNum)
             new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
@@ -258,25 +257,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
-
-
-    def open_console(self, msg = ''):
-        if platform.system() == 'Windows':
-            """콘솔 창을 열어 print 출력을 가능하게"""
-            if not self.console_open:
-                ctypes.windll.kernel32.AllocConsole()  # 새로운 콘솔 창 할당
-                sys.stdout = open("CONOUT$", "w")  # 표준 출력을 콘솔로 리다이렉트
-                print("[ BIGMACLAB MANAGER ]")
-                print(f'\n< {msg} >\n')  # 테스트 출력
-                self.console_open = True
-
-    def close_console(self):
-        if platform.system() == 'Windows':
-            """콘솔 창을 닫음"""
-            if self.console_open:
-                sys.stdout.close()  # 콘솔 창 출력 닫기
-                ctypes.windll.kernel32.FreeConsole()  # 콘솔 창 해제
-                self.console_open = False
    
     def login_program(self):
         try:
@@ -302,7 +282,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.user = self.name_list[self.device_list.index(current_device)]
                 return True
             else:
-                self.close_console()
+                close_console()
                 input_dialog_id = QInputDialog(self)
                 input_dialog_id.setWindowTitle('Login')
                 input_dialog_id.setLabelText('User Name:')
