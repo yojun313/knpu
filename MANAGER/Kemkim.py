@@ -140,9 +140,6 @@ class KimKem:
             # TF 계산을 위해서 각 연도마다 모든 token 할당
             period_divided_dic_merged = self._merge_period_divided_dic(period_divided_dic)#
 
-            del period_divided_dic
-            gc.collect()
-
             # Step 3: 상위 공통 단어 추출 및 키워드 리스트 생성
             top_common_words = self._extract_top_common_words(period_divided_dic_merged)#
             keyword_list = self._get_keyword_list(top_common_words)#
