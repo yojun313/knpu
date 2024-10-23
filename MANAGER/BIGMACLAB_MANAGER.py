@@ -55,6 +55,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # 사이드바 연결
         def load_program():
             #self.menubar_init()
+            self.open_console("Booting Process")
             self.listWidget.currentRowChanged.connect(self.display)
 
             if platform.system() == "Windows":
@@ -105,14 +106,15 @@ class MainWindow(QtWidgets.QMainWindow):
             while True:
                 try:
                     self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='bigmaclab2022!', port=3306)
+                    print("\nLoading User Info from DB... ", end = '')
                     if self.mySQL_obj.showAllDB() == []:
+                        print("Failed")
                         raise
                     # DB 불러오기
                     self.Manager_User_obj = Manager_User(self)
                     self.userNameList = self.Manager_User_obj.userNameList
                     self.userPushOverKeyList = self.Manager_User_obj.userKeyList
-
-
+                    print("Done")
                     break
                 except:
                     reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -120,19 +122,22 @@ class MainWindow(QtWidgets.QMainWindow):
                         continue
                     else:
                         sys.exit()
-
+            print("\nChecking User... ", end='')
             if self.login_program() == False:
                 sys.exit()
 
             while True:
                 try:
+                    print("\nLoading Data from DB... ", end='')
                     self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
                     self.Manager_Database_obj = Manager_Database(self)
                     self.Manager_Web_obj = Manager_Web(self)
                     self.Manager_Board_obj = Manager_Board(self)
                     self.Manager_Analysis_generate = False
+                    print("Done")
                     break
                 except:
+                    print("Failed")
                     reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if reply == QMessageBox.Yes:
                         continue
@@ -145,6 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
 
+            print(f"\nWelcome {self.user}!")
             # New version check
             current_version = version.parse(self.versionNum)
             new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
@@ -250,6 +256,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+
+    def open_console(self, msg = ''):
+        if platform.system() == 'Windows':
+            """콘솔 창을 열어 print 출력을 가능하게"""
+            if not self.console_open:
+                ctypes.windll.kernel32.AllocConsole()  # 새로운 콘솔 창 할당
+                sys.stdout = open("CONOUT$", "w")  # 표준 출력을 콘솔로 리다이렉트
+                print("[ BIGMACLAB MANAGER ]")
+                print(f'\n< {msg} >\n')  # 테스트 출력
+                self.console_open = True
+
+    def close_console(self):
+        if platform.system() == 'Windows':
+            """콘솔 창을 닫음"""
+            if self.console_open:
+                sys.stdout.close()  # 콘솔 창 출력 닫기
+                ctypes.windll.kernel32.FreeConsole()  # 콘솔 창 해제
+                self.console_open = False
    
     def login_program(self):
         try:
@@ -271,9 +295,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
             current_device = socket.gethostname()
             if current_device in self.device_list:
+                print("Done")
                 self.user = self.name_list[self.device_list.index(current_device)]
                 return True
             else:
+                self.close_console()
                 input_dialog_id = QInputDialog(self)
                 input_dialog_id.setWindowTitle('Login')
                 input_dialog_id.setLabelText('User Name:')
