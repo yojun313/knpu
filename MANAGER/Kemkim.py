@@ -853,10 +853,9 @@ class KimKem:
     # 연도별 keyword tf 딕셔너리 반환
     def cal_tf(self, keyword_list, period_divided_dic_merged):
         tf_counts = {}
-        total_num = len(period_divided_dic_merged)  # 총 작업 개수
 
         # tqdm을 사용하여 진행 바 추가
-        for key, value in tqdm(period_divided_dic_merged.items(), desc="Calculating TF", total=total_num, file=sys.stdout):
+        for key, value in tqdm(period_divided_dic_merged.items(), desc="TF 계산 중...", file=sys.stdout):
             keyword_counts = {}
             for keyword in keyword_list:
                 keyword_counts[keyword] = value.count(keyword)
@@ -870,18 +869,24 @@ class KimKem:
     # 연도별 keyword df 딕셔너리 반환
     def cal_df(self, keyword_list, period_divided_dic):
         df_counts = {}
-        for period in period_divided_dic:
+
+        # tqdm을 사용하여 전체 기간에 대한 진행 상태 표시
+        for period in tqdm(period_divided_dic, desc="DF 계산 중...", file=sys.stdout):
             keyword_counts = {}
-            for keyword in keyword_list:  # keyword는 keyword_list의 keyword
+
+            # 각 키워드에 대한 진행 상태 표시
+            for keyword in tqdm(keyword_list, file=sys.stdout, leave=False):
                 count = 0
                 for doc in period_divided_dic[period]:
                     if keyword in doc:
                         count += 1
                 keyword_counts[keyword] = count
 
+            # 내림차순으로 정렬
             keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
 
             df_counts[period] = keyword_counts
+
         return df_counts
 
     # 연도별 keyword DoV 딕셔너리 반환
