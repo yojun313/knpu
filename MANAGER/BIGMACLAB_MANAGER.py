@@ -152,6 +152,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         f.write(chunk)
 
             print(f"\nWelcome {self.user}!")
+            self.close_console()
             # New version check
             current_version = version.parse(self.versionNum)
             new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
@@ -257,7 +258,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
-        self.close_console()
+
 
     def open_console(self, msg = ''):
         if platform.system() == 'Windows':
