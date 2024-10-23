@@ -48,6 +48,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.admin_password = '***REMOVED***'
         self.admin_pushoverkey = '***REMOVED***'
         self.gpt_api_key = "***REMOVED***"
+        self.console_open = False
 
         # 스타일시트 적용
         self.setStyle()
