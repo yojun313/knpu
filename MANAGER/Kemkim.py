@@ -16,7 +16,6 @@ import re
 import platform
 import scipy.stats as stats
 from tqdm import tqdm
-import gc
 
 warnings.filterwarnings("ignore")
 
@@ -131,9 +130,6 @@ class KimKem:
             period_divided_dic_raw = self._initialize_period_divided_dic(self.period_divided_group)#
             period_divided_dic_raw = self.filter_dic_empty_list(period_divided_dic_raw)
 
-            del period_divided_dic_raw
-            gc.collect()
-
             # DF 계산을 위해서 각 연도(key)마다 2차원 리스트 할당 -> 요소 리스트 하나 = 문서 하나
             period_divided_dic = self._generate_period_divided_dic(period_divided_dic_raw)#
 
@@ -143,10 +139,6 @@ class KimKem:
             # Step 3: 상위 공통 단어 추출 및 키워드 리스트 생성
             top_common_words = self._extract_top_common_words(period_divided_dic_merged)#
             keyword_list = self._get_keyword_list(top_common_words)#
-
-            # 불필요한 데이터 삭제 후 가비지 컬렉터 호출
-            del top_common_words
-            gc.collect()
 
             # 추출된 공통 키워드 존재하지 않으면 프로그램 종료
             if keyword_list == []:
@@ -159,11 +151,6 @@ class KimKem:
             tf_counts = self.cal_tf(keyword_list, period_divided_dic_merged)
             df_counts = self.cal_df(keyword_list, period_divided_dic)
 
-            # 불필요한 데이터 삭제 후 가비지 컬렉터 호출
-            del period_divided_dic_merged
-            del period_divided_dic
-            gc.collect()
-
             self.period_list = list(tf_counts.keys())
             self.startperiod = self.period_list[0]
 
@@ -171,10 +158,6 @@ class KimKem:
             print("\n추적 데이터 DOV/DOD 계산 중...")
             trace_DoV_dict = self.cal_DoV(keyword_list, period_divided_dic, tf_counts)
             trace_DoD_dict = self.cal_DoD(keyword_list, period_divided_dic, df_counts)
-
-            del tf_counts
-            del df_counts
-            gc.collect()
 
             # Step 5: 결과 저장 디렉토리 설정
             self._create_output_directories()
@@ -205,16 +188,6 @@ class KimKem:
                 DoV_signal_record[period], DoD_signal_record[period], DoV_coordinates_record[period], DoD_coordinates_record[period] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
                 Final_signal_record[period] = self._save_final_signals(DoV_signal_record[period], DoD_signal_record[period], os.path.join(result_folder, 'Signal'))
 
-                del avg_DoV_increase_rate
-                del avg_DoD_increase_rate
-                del avg_term_frequency
-                del avg_doc_frequency
-                gc.collect()
-
-            del trace_DoV_dict
-            del trace_DoD_dict
-            gc.collect()
-
             # Trace 데이터에서 키워드별로 Signal 변화를 추적
             self.write_status("키워드 추적 데이터 생성 및 필터링 중...")
             print("\n키워드 추적 데이터 생성 및 필터링 중...")
@@ -239,10 +212,6 @@ class KimKem:
                 for keyword in add_list:
                     del DoV_coordinates_record[period][keyword]
                     del DoD_coordinates_record[period][keyword]
-
-            # 불필요한 데이터 삭제 후 가비지 컬렉터 호출
-            del add_list
-            gc.collect()
 
             # 좌표 추적 csv 저장
             DoV_coordinates_record_df = pd.DataFrame(DoV_coordinates_record)
