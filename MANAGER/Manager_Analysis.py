@@ -1546,13 +1546,13 @@ class Manager_Analysis:
 
             open_console('KEMKIM 분석')
             kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startdate, enddate, period, topword, weight, graph_wordcnt, split_option, split_custom, ani_yes_selected, exception_word_list, exception_word_list_path)
-            self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
             result = kimkem_obj.make_kimkem()
             close_console()
 
             if result == 1:
                 self.main.printStatus()
                 QMessageBox.information(self.main, "Information", f"KEM KIM 분석 데이터가 성공적으로 저장되었습니다")
+                self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
             elif result == 0:
                 self.main.printStatus()
                 QMessageBox.information(self.main, "Information", f"Keyword가 존재하지 않아 KEM KIM 분석이 진행되지 않았습니다")
