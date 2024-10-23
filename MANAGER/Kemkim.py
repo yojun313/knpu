@@ -656,27 +656,34 @@ class KimKem:
 
     # DOV/DOD 평균 증가율(y값), TF/DF 평균값(x값) 계산
     def _calculate_averages(self, keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, min_period, max_period):
-        
+        period_diff = self.period_list.index(max_period) - self.period_list.index(min_period)
+
         avg_DoV_increase_rate = {}
         avg_DoD_increase_rate = {}
         avg_term_frequency = {}
         avg_doc_frequency = {}
 
         for word in keyword_list:
-            avg_DoV_increase_rate[word] = self._calculate_average_increase(DoV_dict, word, max_period, min_period)
-            avg_DoD_increase_rate[word] = self._calculate_average_increase(DoD_dict, word, max_period, min_period)
-            avg_term_frequency[word] = self._calculate_average_frequency(tf_counts, word, max_period, min_period)
-            avg_doc_frequency[word] = self._calculate_average_frequency(df_counts, word, max_period, min_period)
+            # 미리 필요한 계산들을 변수로 저장
+            min_DoV, max_DoV = DoV_dict[min_period].get(word, 0), DoV_dict[max_period].get(word, 0)
+            min_DoD, max_DoD = DoD_dict[min_period].get(word, 0), DoD_dict[max_period].get(word, 0)
+
+            avg_DoV_increase_rate[word] = self._calculate_average_increase(min_DoV, max_DoV, period_diff)
+            avg_DoD_increase_rate[word] = self._calculate_average_increase(min_DoD, max_DoD, period_diff)
+            avg_term_frequency[word] = self._calculate_average_frequency(tf_counts, word, min_period, max_period)
+            avg_doc_frequency[word] = self._calculate_average_frequency(df_counts, word, min_period, max_period)
 
         return avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency
 
-    def _calculate_average_increase(self, data_dict, word, max_period, min_period):
-        return (((data_dict[max_period][word] / data_dict[min_period][word]) ** (1 / (self.period_list.index(max_period) - self.period_list.index(min_period)))) - 1) * 100
+    def _calculate_average_increase(self, min_value, max_value, period_diff):
+        if min_value == 0 or max_value == 0:  # division by zero 방지
+            return 0
+        return (((max_value / min_value) ** (1 / period_diff)) - 1) * 100
 
-    def _calculate_average_frequency(self, counts_dict, word, max_period, min_period):
-        relevant_periods = [period for period in counts_dict.keys() if period == max_period or period == min_period]
-        total_frequency = sum([counts_dict[period][word] for period in relevant_periods])
-        return total_frequency / len(relevant_periods) if relevant_periods else 0
+    def _calculate_average_frequency(self, counts_dict, word, min_period, max_period):
+        min_count = counts_dict[min_period].get(word, 0)
+        max_count = counts_dict[max_period].get(word, 0)
+        return (min_count + max_count) / 2
 
     # 그래프 생성 / 시그널 분석
     def _analyze_signals(self, avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, folder_path):
