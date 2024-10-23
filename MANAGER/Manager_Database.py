@@ -2,6 +2,7 @@ import os
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QTableWidget, QButtonGroup, QTableWidgetItem, QWidget, QPushButton, QVBoxLayout, QScrollArea, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QDialog, QInputDialog, QDialogButtonBox, QRadioButton, QLabel, QFormLayout, QLineEdit
 from PyQt5.QtCore import QTimer, QDate
+from Manager_Console import open_console, close_console, clear_console
 import pandas as pd
 import copy
 import re
@@ -9,9 +10,6 @@ import gc
 from datetime import datetime
 import warnings
 import traceback
-import sys
-import platform
-import ctypes
 warnings.filterwarnings("ignore")
 class Manager_Database:
     def __init__(self, main_window):
@@ -21,29 +19,6 @@ class Manager_Database:
         self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column, self.database_dbinfo_viewer)
         self.database_buttonMatch()
         self.console_open = False
-
-    def open_console(self, msg = ''):
-        if platform.system() == 'Windows':
-            """콘솔 창을 열어 print 출력을 가능하게"""
-            if not self.console_open:
-                ctypes.windll.kernel32.AllocConsole()  # 새로운 콘솔 창 할당
-                sys.stdout = open("CONOUT$", "w")  # 표준 출력을 콘솔로 리다이렉트
-                print("[ BIGMACLAB MANAGER ]")
-                print(f'\n< {msg} >\n')  # 테스트 출력
-                self.console_open = True
-
-    def close_console(self):
-        if platform.system() == 'Windows':
-            """콘솔 창을 닫음"""
-            if self.console_open:
-                sys.stdout.close()  # 콘솔 창 출력 닫기
-                ctypes.windll.kernel32.FreeConsole()  # 콘솔 창 해제
-                self.console_open = False
-    def clear_console(self):
-        if platform.system() == "Windows":
-            os.system("cls")
-        else:
-            os.system("clear")
 
     def database_delete_DB(self):
         try:
@@ -197,7 +172,7 @@ class Manager_Database:
                         self.DBtable_window = TableWindow(self.main, target_DB)
                         self.DBtable_window.destroyed.connect(destory_table)
                         self.DBtable_window.show()
-                    self.close_console()
+                    close_console()
 
                 QTimer.singleShot(1, load_database)
                 QTimer.singleShot(1, self.main.printStatus)
@@ -625,7 +600,7 @@ class Manager_Database:
                     QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options, filter_options))
 
             def save_database(target_db, folder_path, selected_options, filter_options):
-                self.open_console('CSV로 저장')
+                open_console('CSV로 저장')
                 filterOption = False
                 dbpath = os.path.join(folder_path, target_db)
                 dbname = target_db
@@ -711,7 +686,7 @@ class Manager_Database:
                         gc.collect()
                         print("완료")
 
-                    self.close_console()
+                    close_console()
                     QMessageBox.information(self.main, "Information", f"{dbname}이 성공적으로 저장되었습니다")
                     self.main.openFileExplorer(dbpath)
                     self.main.printStatus()

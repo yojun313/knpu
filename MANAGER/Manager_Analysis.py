@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHB
     QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout, QGroupBox, QScrollArea,\
     QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton, QDateEdit
 from PyQt5.QtCore import QTimer, QStringListModel, Qt, QDate
+from Manager_Console import open_console, close_console, clear_console
 import copy
 import pandas as pd
 import os
@@ -45,37 +46,6 @@ class Manager_Analysis:
         self.dataprocess_filefinder_maker()
         self.anaylsis_buttonMatch()
         self.console_open = False
-    def open_console(self, msg = ''):
-        if platform.system() == 'Windows':
-            """콘솔 창을 열어 print 출력을 가능하게"""
-            if not self.console_open:
-                ctypes.windll.kernel32.AllocConsole()  # 새로운 콘솔 창 할당
-                sys.stdout = open("CONOUT$", "w")  # 표준 출력을 콘솔로 리다이렉트
-                print("[ BIGMACLAB MANAGER ]")
-                print(f'\n< {msg} >\n')  # 테스트 출력
-                self.console_open = True
-
-    def close_console(self):
-        if platform.system() == 'Windows':
-            """콘솔 창을 닫음"""
-            if self.console_open:
-                sys.stdout.close()  # 콘솔 창 출력 닫기
-                ctypes.windll.kernel32.FreeConsole()  # 콘솔 창 해제
-                self.console_open = False
-    def print_console(self, msg = '', delete = False, end = False):
-        if delete == False:
-            if end == False:
-                print(f'\n{msg}\n')
-            else:
-                print(f'{msg}', end = '')
-        else:
-            print(f'\r{msg}', end = '')
-
-    def clear_console(self):
-        if platform.system() == "Windows":
-            os.system("cls")
-        else:
-            os.system("clear")
 
     def anaylsis_buttonMatch(self):
         self.main.dataprocess_tab1_refreshDB_button.clicked.connect(self.dataprocess_refresh_DB)
@@ -1574,11 +1544,11 @@ class Manager_Analysis:
                 exception_word_list = []
                 exception_word_list_path = 'N'
 
-            self.open_console('KEMKIM 분석')
+            open_console('KEMKIM 분석')
             kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startdate, enddate, period, topword, weight, graph_wordcnt, split_option, split_custom, ani_yes_selected, exception_word_list, exception_word_list_path)
             self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
             result = kimkem_obj.make_kimkem()
-            self.close_console()
+            close_console()
 
             if result == 1:
                 self.main.printStatus()
