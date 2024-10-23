@@ -257,6 +257,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+        self.close_console()
 
     def open_console(self, msg = ''):
         if platform.system() == 'Windows':
