@@ -1,5 +1,4 @@
 import sys
-
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
@@ -17,6 +16,7 @@ import re
 import platform
 import scipy.stats as stats
 from tqdm import tqdm
+import multiprocessing as mp
 
 warnings.filterwarnings("ignore")
 
@@ -173,22 +173,10 @@ class KimKem:
             Final_signal_record = {}
 
             print("")
-            for index, period in enumerate(tqdm(self.period_list, desc="연도별 KEMKIM 데이터 생성 중", file=sys.stdout)):
-                # Step 7: 평균 증가율 및 빈도 계산
 
-                if index == 0:
-                    continue
 
-                result_folder = os.path.join(self.trace_result_folder, period)
-
-                self.write_status(f"{period} KEMKIM 증가율 계산 중...")
-                avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[index-1], period)
-
-                self.write_status(f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
-                # Step 8: 신호 분석 및 그래프 생성
-                DoV_signal_record[period], DoD_signal_record[period], DoV_coordinates_record[period], DoD_coordinates_record[period] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
-                Final_signal_record[period] = self._save_final_signals(DoV_signal_record[period], DoD_signal_record[period], os.path.join(result_folder, 'Signal'))
-
+            DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record, Final_signal_record = self.process_all_periods(
+                keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts)
             # Trace 데이터에서 키워드별로 Signal 변화를 추적
             self.write_status("키워드 추적 데이터 생성 및 필터링 중...")
             print("\n키워드 추적 데이터 생성 및 필터링 중...")
@@ -252,6 +240,56 @@ class KimKem:
         except Exception as e:
             self.write_status("오류 중단")
             return traceback.format_exc()
+
+    def process_all_periods(self, keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts):
+        def process_period_data(args):
+            index, period, prev_period, keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, trace_result_folder, calculate_averages, analyze_signals, save_final_signals = args
+
+            result_folder = os.path.join(trace_result_folder, period)
+
+            # 평균 증가율 및 빈도 계산
+            avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = calculate_averages(
+                keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, prev_period, period)
+
+            # 신호 분석 및 그래프 생성
+            DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record = analyze_signals(
+                avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency,
+                os.path.join(result_folder, 'Graph'))
+
+            # 최종 신호 저장
+            Final_signal_record = save_final_signals(DoV_signal_record, DoD_signal_record,
+                                                     os.path.join(result_folder, 'Signal'))
+
+            return period, DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record, Final_signal_record
+        DoV_signal_record = {}
+        DoD_signal_record = {}
+        DoV_coordinates_record = {}
+        DoD_coordinates_record = {}
+        Final_signal_record = {}
+
+        # 데이터 인자를 튜플로 준비 (index, period, 이전 period 등)
+        period_data = [
+            (index, self.period_list[index], self.period_list[index - 1], keyword_list, trace_DoV_dict,
+             trace_DoD_dict, tf_counts, df_counts, self.trace_result_folder, self._calculate_averages,
+             self._analyze_signals, self._save_final_signals)
+            for index in range(1, len(self.period_list))
+        ]
+
+        # 병렬 처리를 위한 Pool 생성
+        with mp.Pool(processes=mp.cpu_count()) as pool:
+            # 병렬 처리 진행 상태를 tqdm으로 표시
+            results = list(tqdm(pool.imap(process_period_data, period_data), total=len(period_data),
+                                desc="연도별 KEMKIM 데이터 생성 중", file=sys.stdout))
+
+        # 결과를 병합
+        for period, DoV_signal, DoD_signal, DoV_coordinates, DoD_coordinates, Final_signal in results:
+            DoV_signal_record[period] = DoV_signal
+            DoD_signal_record[period] = DoD_signal
+            DoV_coordinates_record[period] = DoV_coordinates
+            DoD_coordinates_record[period] = DoD_coordinates
+            Final_signal_record[period] = Final_signal
+
+        return DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record, Final_signal_record
 
     def filter_dic_empty_list(self, dictionary):
 
@@ -858,15 +896,13 @@ class KimKem:
         tf_counts = {}
 
         # tqdm을 사용하여 진행 바 추가
-        for key, value in tqdm(period_divided_dic_merged.items(), desc="TF ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
-            # Counter로 각 키워드의 빈도를 한 번에 계산
-            value_counter = Counter(value)
-
-            # keyword_list의 키워드에 대해서만 계산하여 딕셔너리에 저장
-            keyword_counts = {keyword: value_counter[keyword] for keyword in keyword_list}
+        keyword_set = set(keyword_list)  # 키워드 리스트를 set으로 변환하여 검색 시간 단축
+        for key, value in tqdm(period_divided_dic_merged.items(), desc="TF ", file=sys.stdout,
+                               bar_format="{l_bar}{bar}|", ascii=' ='):
+            value_counter = Counter([word for word in value if word in keyword_set])  # 키워드만 카운팅
 
             # 내림차순으로 정렬
-            keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
+            keyword_counts = dict(sorted(value_counter.items(), key=lambda x: x[1], reverse=True))
 
             tf_counts[key] = keyword_counts
 
@@ -874,18 +910,18 @@ class KimKem:
     # 연도별 keyword df 딕셔너리 반환
     def cal_df(self, keyword_list, period_divided_dic):
         df_counts = {}
+        keyword_set = set(keyword_list)  # 키워드 리스트를 set으로 변환하여 검색 시간 단축
 
         # tqdm을 사용하여 전체 기간에 대한 진행 상태 표
         for period in tqdm(period_divided_dic, desc="DF ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
-            # 문서들을 하나의 리스트로 합치고, 모든 문서를 하나의 큰 텍스트로 만들어 검색
             docs = period_divided_dic[period]
 
             # 각 키워드가 문서에 등장하는지 여부를 저장하는 Counter 사용
             doc_counter = Counter()
             for doc in docs:
-                for keyword in keyword_list:
-                    if keyword in doc:
-                        doc_counter[keyword] += 1
+                found_keywords = keyword_set.intersection(doc)  # 키워드 목록에 있는 단어들만 찾음
+                for keyword in found_keywords:
+                    doc_counter[keyword] += 1
 
             # 내림차순으로 정렬
             keyword_counts = dict(sorted(doc_counter.items(), key=lambda x: x[1], reverse=True))
