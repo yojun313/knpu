@@ -877,15 +877,18 @@ class KimKem:
 
         # tqdm을 사용하여 전체 기간에 대한 진행 상태 표
         for period in tqdm(period_divided_dic, desc="DF ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
-            keyword_counts = {}
-
-            # 문서들을 하나의 리스트로 합치고, Counter로 각 키워드가 포함된 문서 수를 셈
+            # 문서들을 하나의 리스트로 합치고, 모든 문서를 하나의 큰 텍스트로 만들어 검색
             docs = period_divided_dic[period]
-            for keyword in keyword_list:
-                keyword_counts[keyword] = sum(1 for doc in docs if keyword in doc)
+
+            # 각 키워드가 문서에 등장하는지 여부를 저장하는 Counter 사용
+            doc_counter = Counter()
+            for doc in docs:
+                for keyword in keyword_list:
+                    if keyword in doc:
+                        doc_counter[keyword] += 1
 
             # 내림차순으로 정렬
-            keyword_counts = dict(sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True))
+            keyword_counts = dict(sorted(doc_counter.items(), key=lambda x: x[1], reverse=True))
 
             df_counts[period] = keyword_counts
 
