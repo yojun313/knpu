@@ -174,7 +174,6 @@ class KimKem:
 
             print("")
 
-
             DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record, Final_signal_record = self.process_all_periods(
                 keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts)
             # Trace 데이터에서 키워드별로 Signal 변화를 추적
@@ -242,25 +241,7 @@ class KimKem:
             return traceback.format_exc()
 
     def process_all_periods(self, keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts):
-        def process_period_data(args):
-            index, period, prev_period, keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, trace_result_folder, calculate_averages, analyze_signals, save_final_signals = args
 
-            result_folder = os.path.join(trace_result_folder, period)
-
-            # 평균 증가율 및 빈도 계산
-            avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = calculate_averages(
-                keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, prev_period, period)
-
-            # 신호 분석 및 그래프 생성
-            DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record = analyze_signals(
-                avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency,
-                os.path.join(result_folder, 'Graph'))
-
-            # 최종 신호 저장
-            Final_signal_record = save_final_signals(DoV_signal_record, DoD_signal_record,
-                                                     os.path.join(result_folder, 'Signal'))
-
-            return period, DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record, Final_signal_record
         DoV_signal_record = {}
         DoD_signal_record = {}
         DoV_coordinates_record = {}
@@ -1192,6 +1173,26 @@ class KimKem:
             coordinates_df.to_csv(os.path.join(graph_folder, "DOD_coordinates.csv"), index=False, encoding='utf-8-sig')
 
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
+
+def process_period_data(args):
+    index, period, prev_period, keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, trace_result_folder, calculate_averages, analyze_signals, save_final_signals = args
+
+    result_folder = os.path.join(trace_result_folder, period)
+
+    # 평균 증가율 및 빈도 계산
+    avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = calculate_averages(
+        keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, prev_period, period)
+
+    # 신호 분석 및 그래프 생성
+    DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record = analyze_signals(
+        avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency,
+        os.path.join(result_folder, 'Graph'))
+
+    # 최종 신호 저장
+    Final_signal_record = save_final_signals(DoV_signal_record, DoD_signal_record,
+                                             os.path.join(result_folder, 'Signal'))
+
+    return period, DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record, Final_signal_record
 
 if __name__=='__main__':
     token_data = pd.read_csv("/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/token_data/token_navernews_바이오의료_20100101_20240731_0815_2036_article.csv", low_memory=False, encoding='utf-8-sig')
