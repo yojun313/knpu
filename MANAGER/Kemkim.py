@@ -16,6 +16,7 @@ import re
 import platform
 import scipy.stats as stats
 from tqdm import tqdm
+import gc
 
 warnings.filterwarnings("ignore")
 
@@ -150,6 +151,10 @@ class KimKem:
             # Step 4: TF, DF, DoV, DoD 계산 -> 결과: {key: 키워드, value: 계산값} 형식의 딕셔너리
             tf_counts = self.cal_tf(keyword_list, period_divided_dic_merged)
             df_counts = self.cal_df(keyword_list, period_divided_dic)
+
+            del top_common_words
+            del period_divided_dic_merged
+            gc.collect()
 
             self.period_list = list(tf_counts.keys())
             self.startperiod = self.period_list[0]
