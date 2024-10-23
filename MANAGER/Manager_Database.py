@@ -12,7 +12,6 @@ import traceback
 import sys
 import platform
 import ctypes
-from rich import print
 warnings.filterwarnings("ignore")
 class Manager_Database:
     def __init__(self, main_window):
@@ -671,7 +670,7 @@ class Manager_Database:
 
                     for tableName in tableList:
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
-                        print(f"\n[bold blue]({tableList.index(tableName)+1} / {len(tableList)})[/bold blue] [bold green]{edited_tableName}[/bold green] 저장 중... ", end='')
+                        print(f"\n({tableList.index(tableName)+1} / {len(tableList)}) {edited_tableName} 저장 중... ", end = '')
                         # 테이블 데이터를 DataFrame으로 변환
                         if selected_options['option'] == 'part':
                             tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
@@ -690,7 +689,7 @@ class Manager_Database:
                             statisticsURL = tableDF['Article URL'].tolist()
                             save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
                             tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
-                            print("[bold green]완료[/bold green]")
+                            print("완료")
                             continue
 
                         if 'reply' in tableName:
@@ -710,7 +709,7 @@ class Manager_Database:
                         tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
                         tableDF = None
                         gc.collect()
-                        print("[bold green]완료[/bold green]")
+                        print("완료")
 
                     self.close_console()
                     QMessageBox.information(self.main, "Information", f"{dbname}이 성공적으로 저장되었습니다")
