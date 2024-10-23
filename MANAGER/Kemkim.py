@@ -157,7 +157,7 @@ class KimKem:
 
             self.write_status("추적 데이터 DOV/DOD 계산 중...")
             print("\n추적 데이터 DOV/DOD 계산 중...")
-            trace_DoV_dict = self.cal_DoV(keyword_list, period_divided_dic, tf_counts),
+            trace_DoV_dict = self.cal_DoV(keyword_list, period_divided_dic, tf_counts)
             trace_DoD_dict = self.cal_DoD(keyword_list, period_divided_dic, df_counts)
 
             # Step 5: 결과 저장 디렉토리 설정
