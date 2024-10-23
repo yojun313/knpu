@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
@@ -97,7 +99,7 @@ class KimKem:
             os.system("clear")
 
     def write_status(self, msg=''):
-        info = (
+        self.info = (
             f"===================================================================================================================\n"
             f"{'분석 데이터:':<15} {self.csv_name}\n"
             f"{'분석 시각:':<15} {self.now.strftime('%Y.%m.%d %H:%M')}\n"
@@ -113,17 +115,16 @@ class KimKem:
             f"{'분할 상위%:':<15} {self.split_custom}\n"
             f"===================================================================================================================\n"
         )
-        print(info)
-        info += f'\n진행 상황: {msg}'
+        self.info += f'\n진행 상황: {msg}'
         
         with open(os.path.join(self.kimkem_folder_path, 'kemkim_info.txt'),'w+') as info_txt:
-            info_txt.write(info)
+            info_txt.write(self.info)
         
     def make_kimkem(self):
         try:
             if self.weighterror == True:
                 return 2
-            
+            print(self.info + '\n')
             self.write_status("토큰 데이터 분할 중...")
             print("\n토큰 데이터 분할 중... ", end='')
             # Step 2: 연도별 단어 리스트 생성 (딕셔너리)
@@ -855,7 +856,7 @@ class KimKem:
         total_num = len(period_divided_dic_merged)  # 총 작업 개수
 
         # tqdm을 사용하여 진행 바 추가
-        for key, value in tqdm(period_divided_dic_merged.items(), desc="Calculating TF", total=total_num):
+        for key, value in tqdm(period_divided_dic_merged.items(), desc="Calculating TF", total=total_num, file=sys.stdout):
             keyword_counts = {}
             for keyword in keyword_list:
                 keyword_counts[keyword] = value.count(keyword)
