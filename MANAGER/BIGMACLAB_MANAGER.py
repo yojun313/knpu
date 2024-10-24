@@ -156,7 +156,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             f.write(chunk)
                             downloaded_size += len(chunk)
                             percent_complete = (downloaded_size / total_size) * 100
-                            print(f"\r{self.new_version} Download: {percent_complete:.2f}%", end='')  # 퍼센트 출력
+                            print(f"\r{self.new_version} Download: {percent_complete:}%", end='')  # 퍼센트 출력
 
                 print("\nDownload Complete")
 
@@ -244,7 +244,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # 대화상자 실행
                 if dialog.exec_() == QDialog.Accepted:
-                    open_console()
+                    open_console("Version Download Process")
                     if platform.system() == "Windows":
                         QMessageBox.information(self, "Information", "새로운 설치 프로그램은 C:/Temp 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
                         msg = (
