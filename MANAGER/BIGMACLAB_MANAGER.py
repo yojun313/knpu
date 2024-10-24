@@ -156,7 +156,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             f.write(chunk)
                             downloaded_size += len(chunk)
                             percent_complete = (downloaded_size / total_size) * 100
-                            print(f"\r{self.new_version} Download: {percent_complete:}%", end='')  # 퍼센트 출력
+                            print(f"\r{self.new_version} Download: {percent_complete:.0f}%", end='')  # 퍼센트 출력
 
                 print("\nDownload Complete")
 
