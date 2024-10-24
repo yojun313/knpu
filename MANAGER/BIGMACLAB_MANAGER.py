@@ -29,7 +29,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '2.0.1'
+        self.versionNum = '2.0.0'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -146,16 +146,26 @@ class MainWindow(QtWidgets.QMainWindow):
 
             def download_file(download_url, local_filename):
                 response = requests.get(download_url, stream=True)
+                total_size = int(response.headers.get('content-length', 0))  # 파일의 총 크기 가져오기
+                chunk_size = 8192  # 8KB씩 다운로드
+                downloaded_size = 0  # 다운로드된 크기 초기화
+
                 with open(local_filename, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
+                    for chunk in response.iter_content(chunk_size=chunk_size):
+                        if chunk:  # 빈 데이터 확인
+                            f.write(chunk)
+                            downloaded_size += len(chunk)
+                            percent_complete = (downloaded_size / total_size) * 100
+                            print(f"\r{self.new_version} Download: {percent_complete:.2f}%", end='')  # 퍼센트 출력
+
+                print("\nDownload Complete")
 
             print(f"\nWelcome {self.user}!")
             close_console()
             # New version check
             current_version = version.parse(self.versionNum)
-            new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
-            if current_version < new_version:
+            self.new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
+            if current_version < self.new_version:
                 version_info_html = f"""
                     <style>
                         table {{
@@ -234,21 +244,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # 대화상자 실행
                 if dialog.exec_() == QDialog.Accepted:
+                    open_console()
                     if platform.system() == "Windows":
                         QMessageBox.information(self, "Information", "새로운 설치 프로그램은 C:/Temp 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
                         msg = (
                             "[ Admin Notification ]\n\n"
-                            f"{self.user} updated to {new_version} from {current_version}"
+                            f"{self.user} updated to {self.new_version} from {current_version}"
                         )
                         self.send_pushOver(msg, self.admin_pushoverkey)
 
                         self.printStatus("버전 업데이트 중...")
                         import subprocess
-                        download_file_path = os.path.join('C:/Temp',
-                                                          f"BIGMACLAB_MANAGER_{new_version}.exe")
-                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{new_version}.exe",
-                                      download_file_path)
+                        download_file_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.new_version}.exe")
+                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe", download_file_path)
                         subprocess.Popen([download_file_path], shell=True)
+                        close_console()
                         sys.exit()
                 else:
                     pass
