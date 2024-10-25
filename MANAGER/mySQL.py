@@ -412,17 +412,28 @@ class mySQL:
     def updateTableCell(self, tableName, row_number, column_name, new_value):
         try:
             with self.conn.cursor() as cursor:
+                # row_number가 -1이면 마지막 행을 가리키게 설정
+                if row_number == -1:
+                    # 전체 행 개수 가져오기
+                    cursor.execute(f"SELECT COUNT(*) FROM `{tableName}`")
+                    total_rows = cursor.fetchone()[0]
+                    # 마지막 행의 OFFSET을 total_rows - 1로 설정
+                    row_number = total_rows - 1
+
                 # OFFSET을 이용해서 n번째 행의 id를 찾음
                 query_get_id = f"SELECT id FROM `{tableName}` ORDER BY id ASC LIMIT 1 OFFSET %s"
                 cursor.execute(query_get_id, (row_number,))
                 result = cursor.fetchone()
 
-                row_id = result[0]  # 해당 row_number의 실제 id
+                if result:
+                    row_id = result[0]  # 해당 row_number의 실제 id
 
-                # 해당 id로 업데이트
-                query_update = f"UPDATE `{tableName}` SET `{column_name}` = %s WHERE id = %s"
-                cursor.execute(query_update, (new_value, row_id))
-                self.conn.commit()
+                    # 해당 id로 업데이트
+                    query_update = f"UPDATE `{tableName}` SET `{column_name}` = %s WHERE id = %s"
+                    cursor.execute(query_update, (new_value, row_id))
+                    self.conn.commit()
+                else:
+                    print(f"No row found at position {row_number} in table {tableName}")
 
         except pymysql.MySQLError as e:
             print(f"Failed to update row {row_number} in column {column_name} of table {tableName}")
@@ -434,5 +445,13 @@ class mySQL:
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
-    mySQL_obj.connectDB('navernews_대리모_20010101_20240930_1001_2014')
-    print(mySQL_obj.showDBSize('navernews_대리모_20010101_20240930_1001_2014'))
+    '''
+    for name in ['admin', '노승국', '이진원', '한승혁', '이정우', '최우철', '배시웅']:
+        mySQL_obj.connectDB(f'{name}_db')
+        mySQL_obj.newTable('manager_record', ['Date', 'Log'])
+        mySQL_obj.commit()
+    '''
+    mySQL_obj.connectDB('admin_db')
+    mySQL_obj.dropTable('manager_record')
+    mySQL_obj.newTable('manager_record', ['Date', 'Log'])
+    mySQL_obj.commit()

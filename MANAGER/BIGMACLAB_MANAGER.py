@@ -29,7 +29,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '2.0.1'
+        self.versionNum = '2.0.2'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -48,6 +48,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.admin_password = 'kingsman'
         self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
         self.gpt_api_key = "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"
+        self.log_text = ''
 
         # 스타일시트 적용
         self.setStyle()
@@ -161,6 +162,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 print("\nDownload Complete")
 
             print(f"\nWelcome {self.user}!")
+            self.user_logging('Booting')
+
             close_console()
             # New version check
             current_version = version.parse(self.versionNum)
@@ -267,7 +270,32 @@ class MainWindow(QtWidgets.QMainWindow):
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
-   
+
+    def user_logging(self, text=''):
+        self.mySQL_obj.connectDB(f'{self.user}_db')
+
+        record_df = self.mySQL_obj.TableToDataframe('manager_record')
+
+        # 'Date' 열을 datetime 형식으로 변환
+        if not record_df.empty:
+            record_df['Date'] = pd.to_datetime(record_df['Date'])
+
+        # 오늘 날짜 가져오기
+        today = pd.to_datetime(datetime.now().date())
+
+        # record_df가 비어 있거나 마지막 날짜가 오늘 날짜와 일치하지 않으면 오늘 날짜 추가
+        if record_df.empty or record_df['Date'].iloc[-1] != today:
+            new_row = pd.DataFrame({'Date': [today]})
+            self.mySQL_obj.insertToTable('manager_record', [datetime.now().date(), ''])
+            self.mySQL_obj.commit()
+            self.log_text = ''
+        else:
+            if self.log_text == '':
+                self.log_text = record_df['Log'].iloc[-1]
+
+        self.log_text += f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
+        self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', self.log_text)
+
     def login_program(self):
         try:
             while True:

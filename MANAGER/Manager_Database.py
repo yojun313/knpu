@@ -47,6 +47,8 @@ class Manager_Database:
                         self.database_refresh_DB()
                         QMessageBox.information(self.main, "Information", f"크롤러 서버에 중단 요청을 전송했습니다")
 
+                        self.main.user_logging(f'DATABASE -> delete_DB({target_db})')
+
             QTimer.singleShot(1, delete_database)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
@@ -171,6 +173,7 @@ class Manager_Database:
                     selected_row = self.main.database_tablewidget.currentRow()
                     if selected_row >= 0:
                         target_DB = self.DB['DBlist'][selected_row]
+                        self.main.user_logging(f'DATABASE -> view_DB({target_DB})')
                         self.DBtable_window = TableWindow(self.main, target_DB)
                         self.DBtable_window.destroyed.connect(destory_table)
                         self.DBtable_window.show()
@@ -188,6 +191,8 @@ class Manager_Database:
         DBdata = self.DB['DBdata'][row]
         DBname = self.DB['DBlist'][row]
         DBinfo = self.DB['DBinfo'][row]
+
+        self.main.user_logging(f'DATABASE -> dbinfo_viewer({DBname})')
 
         # 다이얼로그 생성
         dialog = QDialog(self.main)
@@ -630,6 +635,8 @@ class Manager_Database:
                             dbpath += "_copy"
 
                     statisticsURL = []
+
+                    self.main.user_logging(f'DATABASE -> save_DB({target_db})')
 
                     self.main.mySQL_obj.connectDB(target_db)
                     tableList = self.main.mySQL_obj.showAllTable(target_db)
