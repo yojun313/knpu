@@ -411,7 +411,12 @@ class Manager_Analysis:
                 return
 
             self.main.printStatus("데이터 병합 중...")
+
             open_console("데이터 병합")
+            print("Target Files\n")
+            for directory in selected_directory:
+                print(directory)
+            print("")
 
             mergedfiledir      = os.path.dirname(selected_directory[0])
             if ok and mergedfilename:
