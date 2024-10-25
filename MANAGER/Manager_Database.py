@@ -644,8 +644,8 @@ class Manager_Database:
                                 f"Exclude Words: {', '.join(excl_words)}"
                             )
                             info.write(text)
-
-                    for tableName in tqdm(tableList, desc="CSV로 저장", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+                    print(f"DB: {target_db}\n")
+                    for tableName in tqdm(tableList, desc="Process", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
                         # 테이블 데이터를 DataFrame으로 변환
                         if selected_options['option'] == 'part':
