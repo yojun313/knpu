@@ -194,6 +194,7 @@ class Manager_Board:
             self.main.program_bug_log(traceback.format_exc())
     def board_view_version(self):
         try:
+            self.main.user_logging(f'BOARD -> board_view_version')
             self.main.printStatus("불러오는 중...")
             def view_version():
                 selected_row = self.main.board_version_tableWidget.currentRow()
@@ -447,6 +448,7 @@ class Manager_Board:
             self.main.program_bug_log(traceback.format_exc())
     def board_view_bug(self):
         try:
+            self.main.user_logging(f'BOARD -> board_view_bug')
             self.main.printStatus("불러오는 중...")
             def view_bug():
                 selected_row = self.main.board_bug_tableWidget.currentRow()
@@ -577,6 +579,7 @@ class Manager_Board:
     def board_add_post(self):
         try:
             # QDialog를 상속받은 클래스 생성
+            self.main.user_logging(f'BOARD -> board_add_post')
             class PostInputDialog(QDialog):
                 def __init__(self, main_window):
                     super().__init__()

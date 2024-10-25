@@ -129,6 +129,7 @@ class Manager_Analysis:
                 if not selected_row >= 0:
                     return 0 ,0, 0
                 target_db = self.DB['DBlist'][selected_row]
+                self.main.user_logging(f'ANALYSIS -> timesplit_DB({target_db})')
 
                 folder_path  = QFileDialog.getExistingDirectory(self.main, "분할 데이터를 저장할 폴더를 선택하세요", self.main.default_directory)
                 if folder_path:
@@ -209,6 +210,7 @@ class Manager_Analysis:
                 if not selected_row >= 0:
                     return 0 ,0, 0
                 target_db = self.DB['DBlist'][selected_row]
+                self.main.user_logging(f'ANALYSIS -> analysis_DB({target_db})')
 
                 folder_path  = QFileDialog.getExistingDirectory(self.main, "분석 데이터를 저장할 폴더를 선택하세요", self.main.default_directory)
                 if folder_path:
@@ -350,6 +352,7 @@ class Manager_Analysis:
                 self.dataprocess_obj.TimeSplitToCSV(1, self.year_divided_group, table_path, tablename)
                 self.dataprocess_obj.TimeSplitToCSV(2, self.month_divided_group, table_path, tablename)
             def main(directory_list):
+                self.main.user_logging(f'ANALYSIS -> timesplit_file({directory_list[0]})')
                 for csv_path in directory_list:
                     table_path = split_table(csv_path)
                     if table_path == 0:
@@ -399,6 +402,7 @@ class Manager_Analysis:
                 return
 
             mergedfilename, ok = QInputDialog.getText(None, '파일명 입력', '병합 파일명을 입력하세요:', text='merged_file')
+            self.main.user_logging(f'ANALYSIS -> merge_file({mergedfilename})')
             all_df = [self.main.csvReader(directory) for directory in selected_directory]
             all_columns = [df.columns.tolist() for df in all_df]
             same_check_result = find_different_element_index(all_columns)
@@ -499,6 +503,8 @@ class Manager_Analysis:
 
             csv_path = selected_directory[0]
             csv_data = pd.read_csv(csv_path, low_memory=False)
+
+            self.main.user_logging(f'ANALYSIS -> analysis_file({csv_path})')
 
             selected_options = []
             dialog = OptionDialog()
@@ -821,7 +827,8 @@ class Manager_Analysis:
             elif 'Result' not in os.path.basename(result_directory[0]):
                 QMessageBox.warning(self.main, f"Warning", f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
                 return
-            
+
+            self.main.user_logging(f'ANALYSIS -> rekimkem_file({result_directory[0]})')
             self.main.printStatus("KEMKIM 재분석 중...")
             
             result_directory = result_directory[0]
@@ -1092,6 +1099,8 @@ class Manager_Analysis:
                 return
 
             result_directory = result_directory[0]
+            self.main.user_logging(f'ANALYSIS -> interpret_kimkem_file({result_directory})')
+
             final_signal_csv_path = os.path.join(result_directory, "Signal", "Final_signal.csv")
 
             if not os.path.exists(final_signal_csv_path):
@@ -1494,6 +1503,7 @@ class Manager_Analysis:
                 }
                 self.accept()
         try:
+            self.main.user_logging(f'ANALYSIS -> kimkem_kimkemStart({tokenfile_name})')
             self.main.printStatus("KEM KIM 데이터를 저장할 위치를 선택하세요")
             save_path = QFileDialog.getExistingDirectory(self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요", self.main.default_directory)
             if save_path == '':
@@ -1822,6 +1832,11 @@ class Manager_Analysis:
             if not self.selected_DBlistItems or self.selected_DBlistItems == []:
                 self.main.printStatus()
                 return
+
+            if 'manager_record' in self.selected_DBlistItems:
+                ok, password = self.main.pw_check()
+                if ok and password != self.main.admin_password:
+                    return
 
             self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
             folder_path = QFileDialog.getExistingDirectory(self.main, "데이터를 저장할 위치를 선택하세요", self.main.default_directory)

@@ -37,8 +37,6 @@ class Manager_User:
             if key != 'n':
                 self.userKeyList.append(key)
 
-
-
     def user_add_user(self):
         try:
             name = self.main.user_name_lineinput.text()
@@ -57,9 +55,10 @@ class Manager_User:
                 if reply == QMessageBox.Yes:
                     self.main.mySQL_obj.connectDB('user_db')
                     self.main.mySQL_obj.insertToTable(tableName='user_info', data_list=[[name, email, key]])
-                    self.main.mySQL_obj.commit()
                     self.userNameList.append(name)
                     self.main.mySQL_obj.newDB(name+'_db')
+                    self.main.mySQL_obj.newTable('manager_record')
+                    self.main.mySQL_obj.commit()
 
                     row_position = self.main.user_tablewidget.rowCount()
                     self.main.user_tablewidget.insertRow(row_position)
