@@ -174,7 +174,7 @@ class Manager_Analysis:
                 self.dataprocess_obj.TimeSplitToCSV(2, self.month_divided_group, table_path, tablename)
             def main(tableList, splitdata_path):
                 open_console("데이터 분할")
-                for table in tqdm(tableList, desc="데이터 분할 ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+                for table in tqdm(tableList, desc="Download(split) ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     table_path = splitTable(table, splitdata_path)
                     saveTable(table, table_path)
 
@@ -235,15 +235,13 @@ class Manager_Analysis:
                     return 0,0,0
             def main(tableList, analysisdata_path, targetDB):
 
-                open_console('Data Analysis')
+                open_console('데이터 분석')
                 print(f"DB: {targetDB}\n")
-                for index, table in tqdm(enumerate(tableList), desc="Process ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+                for index, table in tqdm(enumerate(tableList), desc="Analysis ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     if 'token' in table:
                         continue
                     tablename = table.split('_')
                     tabledf = self.main.mySQL_obj.TableToDataframe(table)
-
-
 
                     match tablename[0]:
                         case 'navernews':
