@@ -10,6 +10,8 @@ import gc
 from datetime import datetime
 import warnings
 import traceback
+from tqdm import tqdm
+import sys
 warnings.filterwarnings("ignore")
 class Manager_Database:
     def __init__(self, main_window):
@@ -643,9 +645,8 @@ class Manager_Database:
                             )
                             info.write(text)
 
-                    for tableName in tableList:
+                    for tableName in tqdm(tableList, desc="CSV로 저장", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
-                        print(f"\n({tableList.index(tableName)+1} / {len(tableList)}) {edited_tableName} 저장 중... ", end = '')
                         # 테이블 데이터를 DataFrame으로 변환
                         if selected_options['option'] == 'part':
                             tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
@@ -664,7 +665,6 @@ class Manager_Database:
                             statisticsURL = tableDF['Article URL'].tolist()
                             save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
                             tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
-                            print("완료")
                             continue
 
                         if 'reply' in tableName:
@@ -684,7 +684,6 @@ class Manager_Database:
                         tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
                         tableDF = None
                         gc.collect()
-                        print("완료")
 
                     close_console()
                     reply = QMessageBox.question(self.main, 'Information', f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
