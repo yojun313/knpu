@@ -173,12 +173,10 @@ class Manager_Analysis:
                 self.dataprocess_obj.TimeSplitToCSV(1, self.year_divided_group, table_path, tablename)
                 self.dataprocess_obj.TimeSplitToCSV(2, self.month_divided_group, table_path, tablename)
             def main(tableList, splitdata_path):
-                open_console()
-                for table in tableList:
-                    print(f"\n({tableList.index(table) + 1} / {len(tableList)}) {table} 분할 중... ", end='')
+                open_console("데이터 분할")
+                for table in tqdm(tableList, desc="데이터 분할 ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     table_path = splitTable(table, splitdata_path)
                     saveTable(table, table_path)
-                    print("완료")
 
                     del self.year_divided_group
                     del self.month_divided_group
@@ -430,9 +428,7 @@ class Manager_Analysis:
             self.main.printStatus()
             close_console()
 
-            reply = QMessageBox.question(self.main, 'Information', f"데이터 병합 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                                         QMessageBox.Yes | QMessageBox.No,
-                                         QMessageBox.No)
+            reply = QMessageBox.question(self.main, 'Information', f"데이터 병합 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 self.main.openFileExplorer(mergedfiledir)
 

@@ -653,7 +653,7 @@ class Manager_Database:
                         print(f'Exclude Words: {', '.join(excl_words)}')
                         print('')
 
-                    for tableName in tqdm(tableList, desc="Process", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+                    for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
                         # 테이블 데이터를 DataFrame으로 변환
                         if selected_options['option'] == 'part':
