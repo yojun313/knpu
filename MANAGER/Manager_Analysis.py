@@ -409,7 +409,7 @@ class Manager_Analysis:
             self.main.printStatus("데이터 병합 중...")
 
             open_console("데이터 병합")
-            print("Target Files\n")
+            print("Target Files *\n")
             for directory in selected_directory:
                 print(directory)
             print("")
@@ -418,7 +418,7 @@ class Manager_Analysis:
             if ok and mergedfilename:
                 merged_df = pd.DataFrame()
 
-                for df in tqdm(all_df, desc="Process ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+                for df in tqdm(all_df, desc="Merge ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     merged_df = pd.concat([merged_df, df], ignore_index=True)
 
                 merged_df.to_csv(os.path.join(mergedfiledir, mergedfilename)+'.csv', index=False, encoding='utf-8-sig')
