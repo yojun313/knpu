@@ -20,6 +20,7 @@ import re
 import chardet
 import sys
 import ctypes
+from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
 
@@ -172,24 +173,30 @@ class Manager_Analysis:
                 self.dataprocess_obj.TimeSplitToCSV(1, self.year_divided_group, table_path, tablename)
                 self.dataprocess_obj.TimeSplitToCSV(2, self.month_divided_group, table_path, tablename)
             def main(tableList, splitdata_path):
+                open_console()
                 for table in tableList:
+                    print(f"\n({tableList.index(table) + 1} / {len(tableList)}) {table} 분할 중... ", end='')
                     table_path = splitTable(table, splitdata_path)
                     saveTable(table, table_path)
+                    print("완료")
 
                     del self.year_divided_group
                     del self.month_divided_group
                     del self.week_divided_group
                     gc.collect()
-
-                QMessageBox.information(self.main, "Information", f"{targetDB}가 성공적으로 분할 저장되었습니다")
+                close_console()
+                reply = QMessageBox.question(self.main, 'Information', f"{targetDB} 분할 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No,
+                                             QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.main.openFileExplorer(splitdata_path)
 
             self.main.printStatus("분할 데이터를 저장할 위치를 선택하세요...")
             targetDB, tableList, splitdata_path = selectDB()
             if targetDB == 0:
                 self.main.printStatus()
                 return
-            QTimer.singleShot(1, lambda: self.main.printStatus(f"{targetDB} 변환 및 저장 중..."))
-            self.main.openFileExplorer(splitdata_path)
+            QTimer.singleShot(1, lambda: self.main.printStatus(f"{targetDB} 분할 및 저장 중..."))
             QTimer.singleShot(1000, lambda: main(tableList, splitdata_path))
             QTimer.singleShot(1000, self.main.printStatus)
 
@@ -228,13 +235,16 @@ class Manager_Analysis:
                         self.main.program_bug_log(traceback.format_exc())
                 else:
                     return 0,0,0
-            def main(tableList, analysisdata_path):
+            def main(tableList, analysisdata_path, targetDB):
 
                 for index, table in enumerate(tableList):
                     if 'token' in table:
                         continue
+                    print(f"\n({tableList.index(table) + 1} / {len([table for table in tableList if 'token' not in table])}) {table} 분석 중... ", end='')
                     tablename = table.split('_')
                     tabledf = self.main.mySQL_obj.TableToDataframe(table)
+
+                    open_console('Data Analysis')
 
                     match tablename[0]:
                         case 'navernews':
@@ -265,9 +275,19 @@ class Manager_Analysis:
                         case _:
                                 QMessageBox.warning(self.main, "Warning", f"{tablename[0]} {tablename[6]} 분석은 지원되지 않는 기능입니다")
                                 break
+
+                    print("완료")
+
                     del tabledf
                     gc.collect()
 
+                print("\n분석 완료")
+                close_console()
+                reply = QMessageBox.question(self.main, 'Information', f"{targetDB} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No,
+                                             QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.main.openFileExplorer(analysisdata_path)
 
             self.main.printStatus("분석 데이터를 저장할 위치를 선택하세요...")
             targetDB, tableList, analysisdata_path = selectDB()
@@ -275,8 +295,7 @@ class Manager_Analysis:
                 self.main.printStatus()
                 return
             QTimer.singleShot(1, lambda: self.main.printStatus(f"{targetDB} 분석 및 저장 중..."))
-            self.main.openFileExplorer(analysisdata_path)
-            QTimer.singleShot(1000, lambda: main(tableList, analysisdata_path))
+            QTimer.singleShot(1000, lambda: main(tableList, analysisdata_path, targetDB))
             QTimer.singleShot(1000, self.main.printStatus)
 
         except Exception as e:
@@ -394,18 +413,25 @@ class Manager_Analysis:
                 return
 
             self.main.printStatus("데이터 병합 중...")
+            open_console()
 
             mergedfiledir      = os.path.dirname(selected_directory[0])
-            self.main.openFileExplorer(mergedfiledir)
             if ok and mergedfilename:
                 merged_df = pd.DataFrame()
 
-                for df in all_df:
+                for df in tqdm(all_df, desc="데이터 병합 ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     merged_df = pd.concat([merged_df, df], ignore_index=True)
 
                 merged_df.to_csv(os.path.join(mergedfiledir, mergedfilename)+'.csv', index=False, encoding='utf-8-sig')
 
             self.main.printStatus()
+            close_console()
+
+            reply = QMessageBox.question(self.main, 'Information', f"데이터 병합 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                                         QMessageBox.Yes | QMessageBox.No,
+                                         QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.main.openFileExplorer(mergedfiledir)
 
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
