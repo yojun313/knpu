@@ -645,6 +645,14 @@ class Manager_Database:
                             )
                             info.write(text)
                     print(f"DB: {target_db}\n")
+
+                    if selected_options['option'] == 'part' or filterOption == True:
+                        print('< Option >\n')
+                        print(f'Period: {start_date_formed} ~ {end_date_formed}')
+                        print(f'Include Words: {incl_words.join(', ')}')
+                        print(f'Exclude Words: {excl_words.join(', ')}')
+                        print('')
+
                     for tableName in tqdm(tableList, desc="Process", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
                         # 테이블 데이터를 DataFrame으로 변환
