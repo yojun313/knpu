@@ -649,8 +649,8 @@ class Manager_Database:
                     if selected_options['option'] == 'part' or filterOption == True:
                         print('< Option >\n')
                         print(f'Period: {start_date_formed} ~ {end_date_formed}')
-                        print(f'Include Words: {incl_words.join(', ')}')
-                        print(f'Exclude Words: {excl_words.join(', ')}')
+                        print(f'Include Words: {', '.join(incl_words)}')
+                        print(f'Exclude Words: {', '.join(excl_words)}')
                         print('')
 
                     for tableName in tqdm(tableList, desc="Process", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
