@@ -237,14 +237,15 @@ class Manager_Analysis:
                     return 0,0,0
             def main(tableList, analysisdata_path, targetDB):
 
-                for index, table in enumerate(tableList):
+                open_console('Data Analysis')
+                print(f"DB: {targetDB}\n")
+                for index, table in tqdm(enumerate(tableList), desc="Process ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     if 'token' in table:
                         continue
-                    print(f"\n({tableList.index(table) + 1} / {len([table for table in tableList if 'token' not in table])}) {table} 분석 중... ", end='')
                     tablename = table.split('_')
                     tabledf = self.main.mySQL_obj.TableToDataframe(table)
 
-                    open_console('Data Analysis')
+
 
                     match tablename[0]:
                         case 'navernews':
@@ -276,12 +277,9 @@ class Manager_Analysis:
                                 QMessageBox.warning(self.main, "Warning", f"{tablename[0]} {tablename[6]} 분석은 지원되지 않는 기능입니다")
                                 break
 
-                    print("완료")
-
                     del tabledf
                     gc.collect()
 
-                print("\n분석 완료")
                 close_console()
                 reply = QMessageBox.question(self.main, 'Information', f"{targetDB} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No,
@@ -413,13 +411,13 @@ class Manager_Analysis:
                 return
 
             self.main.printStatus("데이터 병합 중...")
-            open_console()
+            open_console("데이터 병합")
 
             mergedfiledir      = os.path.dirname(selected_directory[0])
             if ok and mergedfilename:
                 merged_df = pd.DataFrame()
 
-                for df in tqdm(all_df, desc="데이터 병합 ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+                for df in tqdm(all_df, desc="Process ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     merged_df = pd.concat([merged_df, df], ignore_index=True)
 
                 merged_df.to_csv(os.path.join(mergedfiledir, mergedfilename)+'.csv', index=False, encoding='utf-8-sig')
