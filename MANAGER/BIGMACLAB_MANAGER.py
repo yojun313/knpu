@@ -329,7 +329,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.user = self.name_list[self.device_list.index(current_device)]
                 return True
             else:
-                close_console()
                 input_dialog_id = QInputDialog(self)
                 input_dialog_id.setWindowTitle('Login')
                 input_dialog_id.setLabelText('User Name:')
