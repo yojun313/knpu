@@ -318,7 +318,7 @@ class Manager_Board:
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
-    def board_add_bug(self, auto=False):
+    def board_add_bug(self):
         try:
             # QDialog를 상속받은 클래스 생성
             class BugInputDialog(QDialog):
@@ -397,23 +397,15 @@ class Manager_Board:
             if dialog.data:
                 bug_data = dialog.data
                 bug_data = list(bug_data.values())
-                with open(self.main.program_log_path, 'r') as log:
-                    log_record = log.read()
-                bug_data.append(log_record)
+                self.main.mySQL_obj.connectDB(f"{self.main.user}_db")
+                bug_log = self.main.mySQL_obj.TableToDataframe('manager_record')['Bug'].iloc[-1]
 
-                if auto == False:
-                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                    self.main.mySQL_obj.insertToTable('version_bug', bug_data)
-                    self.main.mySQL_obj.commit()
-                    self.board_bug_refresh()
+                bug_data.append(bug_log)
 
-                try:
-                    with open(self.main.program_log_path, "w") as log:
-                        log.write(f"[ BIGMACLAB MANAGER LOG ]\n")
-                except:
-                    with open(self.main.program_log_path, "a") as log:
-                        log.write("[ Report Submission Complete ]\n")
-
+                self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                self.main.mySQL_obj.insertToTable('version_bug', bug_data)
+                self.main.mySQL_obj.commit()
+                self.board_bug_refresh()
 
                 msg = (
                     "[ New Bug Added! ]\n"

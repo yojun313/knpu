@@ -57,7 +57,7 @@ class Manager_User:
                     self.main.mySQL_obj.insertToTable(tableName='user_info', data_list=[[name, email, key]])
                     self.userNameList.append(name)
                     self.main.mySQL_obj.newDB(name+'_db')
-                    self.main.mySQL_obj.newTable('manager_record')
+                    self.main.mySQL_obj.newTable('manager_record', ['Date', 'Log', 'Bug'])
                     self.main.mySQL_obj.commit()
 
                     row_position = self.main.user_tablewidget.rowCount()

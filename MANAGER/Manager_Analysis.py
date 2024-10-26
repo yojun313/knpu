@@ -1664,6 +1664,10 @@ class Manager_Analysis:
             if not self.selected_DBlistItems or self.selected_DBlistItems == []:
                 self.main.printStatus()
                 return
+            if 'manager_record' in self.selected_DBlistItems:
+                ok, password = self.main.pw_check()
+                if not ok or password != self.main.admin_password:
+                    return
 
             reply = QMessageBox.question(self.main, 'Confirm Delete', "테이블을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
@@ -1773,34 +1777,21 @@ class Manager_Analysis:
             def init_table_view(self, mySQL_obj, target_db, target_table):
                 # target_db에 연결
                 mySQL_obj.connectDB(target_db)
+                tableDF = mySQL_obj.TableToDataframe(target_table)
 
-                tableDF_begin = mySQL_obj.TableToDataframe(target_table, ':50')
-                tableDF_end = mySQL_obj.TableToDataframe(target_table, ':-50')
-                tableDF = pd.concat([tableDF_begin, tableDF_end], axis=0)
-
-                # 데이터프레임 값을 튜플 형태의 리스트로 변환
-                self.tuple_list = [tuple(row) for row in tableDF.itertuples(index=False, name=None)]
+                # 데이터프레임 값을 문자열로 변환하여 튜플 형태의 리스트로 저장
+                self.tuple_list = [tuple(str(cell) for cell in row) for row in
+                                   tableDF.itertuples(index=False, name=None)]
 
                 # 테이블 위젯 생성
                 new_table = QTableWidget(self.central_widget)
                 self.layout.addWidget(new_table)
 
-                # 테이블 데이터 설정
-                new_table.setRowCount(len(self.tuple_list))
-                new_table.setColumnCount(len(tableDF.columns))
-                new_table.setHorizontalHeaderLabels(tableDF.columns)
+                # column 정보를 리스트로 저장
+                columns = list(tableDF.columns)
 
-                # 열 너비 조정
-                header = new_table.horizontalHeader()
-                header.setSectionResizeMode(QHeaderView.Stretch)
-
-                # 행 전체 선택 설정 및 단일 선택 모드
-                new_table.setSelectionBehavior(QTableWidget.SelectRows)
-                new_table.setSelectionMode(QTableWidget.SingleSelection)
-
-                for row_idx, row_data in enumerate(self.tuple_list):
-                    for col_idx, col_data in enumerate(row_data):
-                        new_table.setItem(row_idx, col_idx, QTableWidgetItem(str(col_data)))
+                # table_maker 함수를 호출하여 테이블 설정
+                self.parent.table_maker(new_table, self.tuple_list, columns)
 
         try:
             if not self.selected_DBlistItems or self.selected_DBlistItems == []:
@@ -1809,6 +1800,10 @@ class Manager_Analysis:
             if len(self.selected_DBlistItems) > 1:
                 QMessageBox.information(self.main, "Information", f"선택 가능한 테이블 수는 1개입니다")
                 return
+            if self.selected_DBlistItems[0] == 'manager_record':
+                ok, password = self.main.pw_check()
+                if not ok or password != self.main.admin_password:
+                    return
 
             def destory_table():
                 del self.DBtable_window
@@ -1835,7 +1830,7 @@ class Manager_Analysis:
 
             if 'manager_record' in self.selected_DBlistItems:
                 ok, password = self.main.pw_check()
-                if ok and password != self.main.admin_password:
+                if not ok or password != self.main.admin_password:
                     return
 
             self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
