@@ -488,12 +488,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def table_maker(self, widgetname, data, column, right_click_function=None):
         def show_details(item):
+            # 이미 창이 열려있는지 확인
+            if hasattr(self, "details_dialog") and self.details_dialog.isVisible():
+                return  # 창이 열려있다면 새로 열지 않음
+
             # 팝업 창 생성
-            dialog = QDialog()
-            dialog.setWindowTitle("상세 정보")
+            self.details_dialog = QDialog()
+            self.details_dialog.setWindowTitle("상세 정보")
 
             # 레이아웃 설정
-            layout = QVBoxLayout(dialog)
+            layout = QVBoxLayout(self.details_dialog)
 
             # 스크롤 가능한 QTextEdit 위젯 생성
             text_edit = QTextEdit()
@@ -503,11 +507,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # 확인 버튼 생성
             ok_button = QPushButton("확인")
-            ok_button.clicked.connect(dialog.accept)  # 버튼 클릭 시 다이얼로그 닫기
+            ok_button.clicked.connect(self.details_dialog.accept)  # 버튼 클릭 시 다이얼로그 닫기
             layout.addWidget(ok_button)
 
             # 다이얼로그 실행
-            dialog.exec_()
+            self.details_dialog.exec_()
 
         widgetname.setRowCount(len(data))
         widgetname.setColumnCount(len(column))
@@ -524,6 +528,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 widgetname.setItem(i, j, item)
 
         # 셀을 더블 클릭하면 show_details 함수를 호출
+        try:
+            widgetname.itemDoubleClicked.disconnect()
+        except TypeError:
+            # 연결이 안 되어 있을 경우 발생하는 오류를 무시
+            pass
         widgetname.itemDoubleClicked.connect(show_details)
 
         if right_click_function:

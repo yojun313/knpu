@@ -163,7 +163,6 @@ class Manager_Database:
                 self.init_table_view(self.parent.mySQL_obj, self.target_db)
 
         try:
-            raise
             reply = QMessageBox.question(self.main, 'Confirm Delete', 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 self.main.printStatus("불러오는 중...")
