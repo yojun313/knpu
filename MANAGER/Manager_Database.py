@@ -126,6 +126,7 @@ class Manager_Database:
                     tableDF_begin = mySQL_obj.TableToDataframe(tableName, ':50')
                     tableDF_end = mySQL_obj.TableToDataframe(tableName, ':-50')
                     tableDF = pd.concat([tableDF_begin, tableDF_end], axis=0)
+                    tableDF = tableDF.drop(columns=['id'])
 
                     # 데이터프레임 값을 튜플 형태의 리스트로 변환
                     self.tuple_list = [tuple(row) for row in tableDF.itertuples(index=False, name=None)]
@@ -136,25 +137,13 @@ class Manager_Database:
                     new_table = QTableWidget(new_tab)
                     new_tab_layout.addWidget(new_table)
 
-                    # 테이블 데이터 설정
-                    new_table.setRowCount(len(self.tuple_list))
-                    new_table.setColumnCount(len(tableDF.columns))
-                    new_table.setHorizontalHeaderLabels(tableDF.columns)
+                    # table_maker 함수를 호출하여 테이블 설정
+                    self.parent.table_maker(new_table, self.tuple_list, list(tableDF.columns))
 
-                    # 열 너비 조정
-                    header = new_table.horizontalHeader()
-                    header.setSectionResizeMode(QHeaderView.Stretch)
-
-                    # 행 전체 선택 설정 및 단일 선택 모드
-                    new_table.setSelectionBehavior(QTableWidget.SelectRows)
-                    new_table.setSelectionMode(QTableWidget.SingleSelection)
-
-                    for row_idx, row_data in enumerate(self.tuple_list):
-                        for col_idx, col_data in enumerate(row_data):
-                            new_table.setItem(row_idx, col_idx, QTableWidgetItem(str(col_data)))
-
+                    # 탭 위젯에 추가
                     self.tabWidget_tables.addTab(new_tab, tableName.split('_')[-1])
 
+                    # 메모리 해제
                     new_tab = None
                     new_table = None
 

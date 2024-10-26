@@ -524,7 +524,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for j, cell_data in enumerate(row_data):
                 item = QTableWidgetItem(cell_data)
                 item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
-                item.setToolTip(cell_data)  # Tooltip 설정
+                item.setToolTip(str(cell_data))  # Tooltip 설정
                 widgetname.setItem(i, j, item)
 
         # 셀을 더블 클릭하면 show_details 함수를 호출
