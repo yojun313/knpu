@@ -45,8 +45,10 @@ class Manager_Database:
                     if reply == QMessageBox.Yes:
                         self.main.mySQL_obj.dropDB(target_db)
                         self.database_refresh_DB()
-                        QMessageBox.information(self.main, "Information", f"크롤러 서버에 중단 요청을 전송했습니다")
-
+                        if endtime == '-':
+                            QMessageBox.information(self.main, "Information", f"크롤러 서버에 중단 요청을 전송했습니다")
+                        else:
+                            QMessageBox.information(self.main, "Information", f"'{target_db}'가 삭제되었습니다")
                         self.main.user_logging(f'DATABASE -> delete_DB({target_db})')
 
             QTimer.singleShot(1, delete_database)
@@ -161,6 +163,7 @@ class Manager_Database:
                 self.init_table_view(self.parent.mySQL_obj, self.target_db)
 
         try:
+            raise
             reply = QMessageBox.question(self.main, 'Confirm Delete', 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 self.main.printStatus("불러오는 중...")
