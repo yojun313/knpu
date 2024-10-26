@@ -1,7 +1,7 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic, QtGui, QtCore
-from PyQt5.QtWidgets import QTableWidget, QScrollArea, QTableWidgetItem, QVBoxLayout, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
+from PyQt5.QtWidgets import QTableWidget, QScrollArea, QTableWidgetItem, QVBoxLayout, QTextEdit, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication
 from openai import OpenAI
 import shutil
@@ -29,7 +29,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '2.0.2'
+        self.versionNum = '2.0.3'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -49,222 +49,216 @@ class MainWindow(QtWidgets.QMainWindow):
         self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
         self.gpt_api_key = "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"
         self.log_text = ''
+        self.bug_text = ''
 
         # 스타일시트 적용
         self.setStyle()
 
         # 사이드바 연결
         def load_program():
-            #self.menubar_init()
-            open_console("Booting Process")
-            self.listWidget.currentRowChanged.connect(self.display)
+            try:
+                open_console("Booting Process")
+                self.listWidget.currentRowChanged.connect(self.display)
 
-            if platform.system() == "Windows":
-                self.default_directory = 'C:/BIGMACLAB_MANAGER'
-                if not os.path.exists(self.default_directory):
-                    os.makedirs(self.default_directory)
-
-                self.program_log_path = os.path.join(self.default_directory, 'manager_log.txt')
-
-                if not Path(self.program_log_path).exists():
-                    with open(self.program_log_path, "w") as log:
-                        log.write(f"[ BIGMACLAB MANAGER LOG ]\n")
-            else:
-                self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
-                self.program_log_path = os.path.join(self.default_directory, '.manager_log.txt')
-
-                if not Path(self.program_log_path).exists():
-                    with open(self.program_log_path, "w") as log:
-                        log.write(f"[ BIGMACLAB MANAGER LOG ]\n")
-
-            self.readme_path = os.path.join(self.default_directory, 'README.txt')
-            if not Path(self.readme_path).exists():
-                with open(self.readme_path, "w") as txt:
-                    text = (
-                        "[ BIGMACLAB MANAGER README ]\n\n\n"
-                        "C:/BIGMACLAB_MANAGER is default directory folder of this program. This folder is automatically built by program.\n\n"
-                        "All files made in this program will be saved in this folder without any change.\n\n"
-                        "manager_log.txt is VERY IMPORTANT FILE for bug tracking and logging, so I strongly recommend you to keep this file.\n\n\n\n"
-                        "< Instructions >\n\n"
-                        "- MANAGER: https://knpu.re.kr/tool\n"
-                        "- KEMKIM: https://knpu.re.kr/kemkim"
-                    )
-                    txt.write(text)
-
-            if os.path.isdir(self.default_directory) == False:
-                os.mkdir(self.default_directory)
-
-            DB_ip = '121.152.225.232'
-            if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
-                DB_ip = '192.168.0.3'
-
-            self.network_text = (
-                "\n\n[ DB 접속 반복 실패 시... ]\n"
-                "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 작동하는지 확인하십시오"
-                "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
-            )
-
-            while True:
-                try:
-                    self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='bigmaclab2022!', port=3306)
-                    print("\nLoading User Info from DB... ", end = '')
-                    if self.mySQL_obj.showAllDB() == []:
-                        print("Failed")
-                        raise
-                    # DB 불러오기
-                    self.Manager_User_obj = Manager_User(self)
-                    self.userNameList = self.Manager_User_obj.userNameList
-                    self.userPushOverKeyList = self.Manager_User_obj.userKeyList
-                    print("Done")
-                    break
-                except:
-                    reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                    if reply == QMessageBox.Yes:
-                        continue
-                    else:
-                        sys.exit()
-            print("\nChecking User... ", end='')
-            if self.login_program() == False:
-                sys.exit()
-
-            while True:
-                try:
-                    print("\nLoading Data from DB... ", end='')
-                    self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
-                    self.Manager_Database_obj = Manager_Database(self)
-                    self.Manager_Web_obj = Manager_Web(self)
-                    self.Manager_Board_obj = Manager_Board(self)
-                    self.Manager_Analysis_generate = False
-                    print("Done")
-                    break
-                except:
-                    print("Failed")
-                    reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                    if reply == QMessageBox.Yes:
-                        continue
-                    else:
-                        sys.exit()
-
-            def download_file(download_url, local_filename):
-                response = requests.get(download_url, stream=True)
-                total_size = int(response.headers.get('content-length', 0))  # 파일의 총 크기 가져오기
-                chunk_size = 8192  # 8KB씩 다운로드
-                downloaded_size = 0  # 다운로드된 크기 초기화
-
-                with open(local_filename, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=chunk_size):
-                        if chunk:  # 빈 데이터 확인
-                            f.write(chunk)
-                            downloaded_size += len(chunk)
-                            percent_complete = (downloaded_size / total_size) * 100
-                            print(f"\r{self.new_version} Download: {percent_complete:.0f}%", end='')  # 퍼센트 출력
-
-                print("\nDownload Complete")
-
-            print(f"\nWelcome {self.user}!")
-            self.user_logging('Booting')
-
-            close_console()
-            # New version check
-            current_version = version.parse(self.versionNum)
-            self.new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
-            if current_version < self.new_version:
-                version_info_html = f"""
-                    <style>
-                        table {{
-                            width: 100%;
-                            border-collapse: collapse;
-                        }}
-                        th, td {{
-                            border: 1px solid #bdc3c7;
-                            padding: 8px;
-                            text-align: left;
-                            font-family: Arial, sans-serif;
-                        }}
-                        th {{
-                            background-color: #34495e;
-                            color: white;
-                        }}
-                        td {{
-                            color: #34495e;
-                        }}
-                        h4 {{
-                            text-align: center;
-                        }}
-                    </style>
-                    <table>
-                        <tr><th>Item</th><th>Details</th></tr>
-                        <tr><td><b>Version Num:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][0]}</td></tr>
-                        <tr><td><b>Release Date:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][1]}</td></tr>
-                        <tr><td><b>ChangeLog:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][2]}</td></tr>
-                        <tr><td><b>Version Features:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][3]}</td></tr>
-                        <tr><td><b>Version Status:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][4]}</td></tr>
-                    </table>
-                """
-
-                dialog = QDialog(self)
-                dialog.setWindowTitle(f"New Version Update")
-                dialog.resize(350, 250)
-
-                layout = QVBoxLayout()
-
-                label = QLabel()
-                label.setText(version_info_html)
-                label.setWordWrap(True)
-                label.setTextFormat(QtCore.Qt.RichText)  # HTML 렌더링
-
-                # QScrollArea를 사용하여 스크롤 가능하게 설정
-                scroll_area = QScrollArea()
-                scroll_area.setWidgetResizable(True)
-                scroll_area.setWidget(label)
-
-                layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
-
-                button_layout = QHBoxLayout()  # 수평 레이아웃
-
-                # confirm_button과 cancel_button의 크기가 창의 너비에 맞게 비례하도록 설정
-                confirm_button = QPushButton("Update")
-                cancel_button = QPushButton("Cancel")
-
-                # 두 버튼이 창의 가로 너비를 가득 채우도록 크기 정책 설정
-                confirm_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-                cancel_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-
-                confirm_button.setFixedHeight(40)  # 버튼 높이 조정
-                cancel_button.setFixedHeight(40)  # 버튼 높이 조정
-
-                # 버튼 클릭 이벤트 연결
-                confirm_button.clicked.connect(dialog.accept)
-                cancel_button.clicked.connect(dialog.reject)
-
-                # 버튼 사이에 간격 추가
-                button_layout.addWidget(confirm_button)
-                button_layout.addWidget(cancel_button)
-
-                layout.addLayout(button_layout)  # 버튼 레이아웃을 메인 레이아웃에 추가
-
-                dialog.setLayout(layout)
-
-                # 대화상자 실행
-                if dialog.exec_() == QDialog.Accepted:
-                    open_console("Version Download Process")
-                    if platform.system() == "Windows":
-                        QMessageBox.information(self, "Information", "새로운 설치 프로그램은 C:/Temp 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
-                        msg = (
-                            "[ Admin Notification ]\n\n"
-                            f"{self.user} updated to {self.new_version} from {current_version}"
-                        )
-                        self.send_pushOver(msg, self.admin_pushoverkey)
-
-                        self.printStatus("버전 업데이트 중...")
-                        import subprocess
-                        download_file_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.new_version}.exe")
-                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe", download_file_path)
-                        subprocess.Popen([download_file_path], shell=True)
-                        close_console()
-                        sys.exit()
+                if platform.system() == "Windows":
+                    self.default_directory = 'C:/BIGMACLAB_MANAGER'
+                    if not os.path.exists(self.default_directory):
+                        os.makedirs(self.default_directory)
                 else:
-                    pass
+                    self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
+
+                self.readme_path = os.path.join(self.default_directory, 'README.txt')
+                if not Path(self.readme_path).exists():
+                    with open(self.readme_path, "w") as txt:
+                        text = (
+                            "[ BIGMACLAB MANAGER README ]\n\n\n"
+                            "C:/BIGMACLAB_MANAGER is default directory folder of this program. This folder is automatically built by program.\n\n"
+                            "All files made in this program will be saved in this folder without any change.\n\n\n\n"
+                            "< Instructions >\n\n"
+                            "- MANAGER: https://knpu.re.kr/tool\n"
+                            "- KEMKIM: https://knpu.re.kr/kemkim"
+                        )
+                        txt.write(text)
+
+                if os.path.isdir(self.default_directory) == False:
+                    os.mkdir(self.default_directory)
+
+                DB_ip = '121.152.225.232'
+                if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
+                    DB_ip = '192.168.0.3'
+
+                self.network_text = (
+                    "\n\n[ DB 접속 반복 실패 시... ]\n"
+                    "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 작동하는지 확인하십시오"
+                    "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
+                )
+
+                while True:
+                    try:
+                        self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='bigmaclab2022!', port=3306)
+                        print("\nLoading User Info from DB... ", end = '')
+                        if self.mySQL_obj.showAllDB() == []:
+                            print("Failed")
+                            raise
+                        # DB 불러오기
+                        self.Manager_User_obj = Manager_User(self)
+                        self.userNameList = self.Manager_User_obj.userNameList
+                        self.userPushOverKeyList = self.Manager_User_obj.userKeyList
+                        print("Done")
+                        break
+                    except:
+                        reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                        if reply == QMessageBox.Yes:
+                            continue
+                        else:
+                            sys.exit()
+                print("\nChecking User... ", end='')
+                if self.login_program() == False:
+                    sys.exit()
+
+                while True:
+                    try:
+                        print("\nLoading Data from DB... ", end='')
+                        self.DB = self.update_DB({'DBlist':[], 'DBdata': [], 'DBinfo': []})
+                        self.Manager_Database_obj = Manager_Database(self)
+                        self.Manager_Web_obj = Manager_Web(self)
+                        self.Manager_Board_obj = Manager_Board(self)
+                        self.Manager_Analysis_generate = False
+                        print("Done")
+                        break
+                    except:
+                        print("Failed")
+                        reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                        if reply == QMessageBox.Yes:
+                            continue
+                        else:
+                            sys.exit()
+
+                def download_file(download_url, local_filename):
+                    response = requests.get(download_url, stream=True)
+                    total_size = int(response.headers.get('content-length', 0))  # 파일의 총 크기 가져오기
+                    chunk_size = 8192  # 8KB씩 다운로드
+                    downloaded_size = 0  # 다운로드된 크기 초기화
+
+                    with open(local_filename, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size=chunk_size):
+                            if chunk:  # 빈 데이터 확인
+                                f.write(chunk)
+                                downloaded_size += len(chunk)
+                                percent_complete = (downloaded_size / total_size) * 100
+                                print(f"\r{self.new_version} Download: {percent_complete:.0f}%", end='')  # 퍼센트 출력
+
+                    print("\nDownload Complete")
+
+                print(f"\nWelcome {self.user}!")
+                self.user_logging('Booting')
+
+                close_console()
+                # New version check
+                current_version = version.parse(self.versionNum)
+                self.new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
+                if current_version < self.new_version:
+                    version_info_html = f"""
+                        <style>
+                            table {{
+                                width: 100%;
+                                border-collapse: collapse;
+                            }}
+                            th, td {{
+                                border: 1px solid #bdc3c7;
+                                padding: 8px;
+                                text-align: left;
+                                font-family: Arial, sans-serif;
+                            }}
+                            th {{
+                                background-color: #34495e;
+                                color: white;
+                            }}
+                            td {{
+                                color: #34495e;
+                            }}
+                            h4 {{
+                                text-align: center;
+                            }}
+                        </style>
+                        <table>
+                            <tr><th>Item</th><th>Details</th></tr>
+                            <tr><td><b>Version Num:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][0]}</td></tr>
+                            <tr><td><b>Release Date:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][1]}</td></tr>
+                            <tr><td><b>ChangeLog:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][2]}</td></tr>
+                            <tr><td><b>Version Features:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][3]}</td></tr>
+                            <tr><td><b>Version Status:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][4]}</td></tr>
+                        </table>
+                    """
+
+                    dialog = QDialog(self)
+                    dialog.setWindowTitle(f"New Version Update")
+                    dialog.resize(350, 250)
+
+                    layout = QVBoxLayout()
+
+                    label = QLabel()
+                    label.setText(version_info_html)
+                    label.setWordWrap(True)
+                    label.setTextFormat(QtCore.Qt.RichText)  # HTML 렌더링
+
+                    # QScrollArea를 사용하여 스크롤 가능하게 설정
+                    scroll_area = QScrollArea()
+                    scroll_area.setWidgetResizable(True)
+                    scroll_area.setWidget(label)
+
+                    layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
+
+                    button_layout = QHBoxLayout()  # 수평 레이아웃
+
+                    # confirm_button과 cancel_button의 크기가 창의 너비에 맞게 비례하도록 설정
+                    confirm_button = QPushButton("Update")
+                    cancel_button = QPushButton("Cancel")
+
+                    # 두 버튼이 창의 가로 너비를 가득 채우도록 크기 정책 설정
+                    confirm_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+                    cancel_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+
+                    confirm_button.setFixedHeight(40)  # 버튼 높이 조정
+                    cancel_button.setFixedHeight(40)  # 버튼 높이 조정
+
+                    # 버튼 클릭 이벤트 연결
+                    confirm_button.clicked.connect(dialog.accept)
+                    cancel_button.clicked.connect(dialog.reject)
+
+                    # 버튼 사이에 간격 추가
+                    button_layout.addWidget(confirm_button)
+                    button_layout.addWidget(cancel_button)
+
+                    layout.addLayout(button_layout)  # 버튼 레이아웃을 메인 레이아웃에 추가
+
+                    dialog.setLayout(layout)
+
+                    # 대화상자 실행
+                    if dialog.exec_() == QDialog.Accepted:
+                        open_console("Version Download Process")
+                        if platform.system() == "Windows":
+                            QMessageBox.information(self, "Information", "새로운 설치 프로그램은 C:/Temp 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
+                            msg = (
+                                "[ Admin Notification ]\n\n"
+                                f"{self.user} updated to {self.new_version} from {current_version}"
+                            )
+                            self.send_pushOver(msg, self.admin_pushoverkey)
+
+                            self.printStatus("버전 업데이트 중...")
+                            import subprocess
+                            download_file_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.new_version}.exe")
+                            download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe", download_file_path)
+                            subprocess.Popen([download_file_path], shell=True)
+                            close_console()
+                            sys.exit()
+                    else:
+                        pass
+
+            except Exception as e:
+                QMessageBox.information(self, "Information", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
+                QMessageBox.information(self, "Information", f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
+                sys.exit()
 
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")
@@ -272,29 +266,44 @@ class MainWindow(QtWidgets.QMainWindow):
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
 
     def user_logging(self, text=''):
-        self.mySQL_obj.connectDB(f'{self.user}_db')
+        try:
+            self.mySQL_obj.connectDB(f'{self.user}_db')
 
-        record_df = self.mySQL_obj.TableToDataframe('manager_record')
+            record_df = self.mySQL_obj.TableToDataframe('manager_record')
 
-        # 'Date' 열을 datetime 형식으로 변환
-        if not record_df.empty:
-            record_df['Date'] = pd.to_datetime(record_df['Date'])
+            # 'Date' 열을 datetime 형식으로 변환
+            if not record_df.empty:
+                record_df['Date'] = pd.to_datetime(record_df['Date'])
 
-        # 오늘 날짜 가져오기
-        today = pd.to_datetime(datetime.now().date())
+            # 오늘 날짜 가져오기
+            today = pd.to_datetime(datetime.now().date())
 
-        # record_df가 비어 있거나 마지막 날짜가 오늘 날짜와 일치하지 않으면 오늘 날짜 추가
-        if record_df.empty or record_df['Date'].iloc[-1] != today:
-            new_row = pd.DataFrame({'Date': [today]})
-            self.mySQL_obj.insertToTable('manager_record', [datetime.now().date(), ''])
-            self.mySQL_obj.commit()
-            self.log_text = ''
-        else:
-            if self.log_text == '':
-                self.log_text = record_df['Log'].iloc[-1]
+            # record_df가 비어 있거나 마지막 날짜가 오늘 날짜와 일치하지 않으면 오늘 날짜 추가
+            if record_df.empty or record_df['Date'].iloc[-1] != today:
+                self.mySQL_obj.insertToTable('manager_record', [datetime.now().date(), ''])
+                self.mySQL_obj.commit()
+                self.log_text = ''
+            else:
+                if self.log_text == '':
+                    self.log_text = record_df['Log'].iloc[-1]
 
-        self.log_text += f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
-        self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', self.log_text)
+            self.log_text += f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
+            self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', self.log_text)
+        except Exception as e:
+            pass
+    def user_bugging(self, text=''):
+        try:
+            if self.bug_text == '':
+                self.mySQL_obj.connectDB(f'{self.user}_db')
+                record_df = self.mySQL_obj.TableToDataframe('manager_record')
+                self.bug_text = record_df['Bug'].iloc[-1]
+                if self.bug_text == None:
+                    self.bug_text = ''
+
+            self.bug_text += f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
+            self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', self.bug_text)
+        except Exception as e:
+            pass
 
     def login_program(self):
         try:
@@ -330,10 +339,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 if not ok_id:
                     QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
                     return False
-                elif  user_name not in self.userNameList:
+                elif user_name not in self.userNameList:
                     QMessageBox.warning(self, 'Error', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
                     return False
 
+                self.user = user_name
                 ok, password = self.pw_check()
                 if ok and password == 'bigmaclab2022!':
                     reply = QMessageBox.question(self, 'Confirm Delete', f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -477,7 +487,29 @@ class MainWindow(QtWidgets.QMainWindow):
 
         return {'DBdata': sorted_db_data, 'DBlist': sorted_db_list, 'DBinfo': sorted_db_info}
 
-    def table_maker(self, widgetname, data, column, right_click_function = None):
+    def table_maker(self, widgetname, data, column, right_click_function=None):
+        def show_details(item):
+            # 팝업 창 생성
+            dialog = QDialog()
+            dialog.setWindowTitle("상세 정보")
+
+            # 레이아웃 설정
+            layout = QVBoxLayout(dialog)
+
+            # 스크롤 가능한 QTextEdit 위젯 생성
+            text_edit = QTextEdit()
+            text_edit.setText(item.text())
+            text_edit.setReadOnly(True)  # 텍스트 편집 불가로 설정
+            layout.addWidget(text_edit)
+
+            # 확인 버튼 생성
+            ok_button = QPushButton("확인")
+            ok_button.clicked.connect(dialog.accept)  # 버튼 클릭 시 다이얼로그 닫기
+            layout.addWidget(ok_button)
+
+            # 다이얼로그 실행
+            dialog.exec_()
+
         widgetname.setRowCount(len(data))
         widgetname.setColumnCount(len(column))
         widgetname.setHorizontalHeaderLabels(column)
@@ -489,7 +521,11 @@ class MainWindow(QtWidgets.QMainWindow):
             for j, cell_data in enumerate(row_data):
                 item = QTableWidgetItem(cell_data)
                 item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
+                item.setToolTip(cell_data)  # Tooltip 설정
                 widgetname.setItem(i, j, item)
+
+        # 셀을 더블 클릭하면 show_details 함수를 호출
+        widgetname.itemDoubleClicked.connect(show_details)
 
         if right_click_function:
             widgetname.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -762,13 +798,8 @@ class MainWindow(QtWidgets.QMainWindow):
         except:
             return (0, "AI 분석에 오류가 발생하였습니다\n\nadmin에게 문의바랍니다")
 
-    def program_bug_log(self, text, boot=False):
-        with open(self.program_log_path, "a") as file:
-            # 이어서 기록할 내용
-            file.write(f"Recorded in {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n")
-            file.write(f"\n{text}")
-        if boot == True:
-            return
+    def program_bug_log(self, text):
+        self.user_bugging(text)
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.Manager_Board_obj.board_add_bug()
