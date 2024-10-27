@@ -241,7 +241,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             QMessageBox.information(self, "Information", "새로운 설치 프로그램은 C:/Temp 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
                             msg = (
                                 "[ Admin Notification ]\n\n"
-                                f"{self.user} updated to {self.new_version} from {current_version}"
+                                f"{self.user} updated {current_version} -> {self.new_version}"
                             )
                             self.send_pushOver(msg, self.admin_pushoverkey)
 
@@ -280,17 +280,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # record_df가 비어 있거나 마지막 날짜가 오늘 날짜와 일치하지 않으면 오늘 날짜 추가
             if record_df.empty or record_df['Date'].iloc[-1] != today:
-                self.mySQL_obj.insertToTable('manager_record', [datetime.now().date(), ''])
+                self.mySQL_obj.insertToTable('manager_record', [datetime.now().date(), '', ''])
                 self.mySQL_obj.commit()
                 self.log_text = ''
             else:
                 if self.log_text == '':
                     self.log_text = record_df['Log'].iloc[-1]
 
-            self.log_text += f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
+            self.log_text += f'[{str(datetime.now().time())[:-7]}] : {text}\n\n'
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', self.log_text)
         except Exception as e:
             pass
+
     def user_bugging(self, text=''):
         try:
             if self.bug_text == '':
