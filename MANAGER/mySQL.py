@@ -453,5 +453,5 @@ if __name__ == "__main__":
     '''
     mySQL_obj.connectDB('admin_db')
     mySQL_obj.dropTable('manager_record')
-    mySQL_obj.newTable('manager_record', ['Date', 'Log'])
+    mySQL_obj.newTable('manager_record', ['Date', 'Log', 'Bug'])
     mySQL_obj.commit()

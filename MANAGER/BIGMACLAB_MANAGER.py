@@ -301,7 +301,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if self.bug_text == None:
                     self.bug_text = ''
 
-            self.bug_text += f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
+            self.bug_text += f'[{str(datetime.now().time())[:-7]}] : {text}\n\n'
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', self.bug_text)
         except Exception as e:
             pass
