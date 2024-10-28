@@ -36,7 +36,8 @@ class RealTimeCRAWLER(CrawlerModule):
         self.RealTimeCrawler_DBpath = self.pathFinder()['RealTimeCrawler_DBPath']
         self.crawlcom = self.pathFinder()['computer_name']
         self.keyword = keyword
-        print(self.RealTimeCrawler_DBpath)
+        self.RealTimeCrawler_DBpath = "C:/RealTimeCrawler_DB"
+        print(f"저장 경로: {self.RealTimeCrawler_DBpath}")
         self.startTime = time.time()
         self.now = datetime.now()
 
