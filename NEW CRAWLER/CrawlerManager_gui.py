@@ -2,10 +2,13 @@ import os
 import sys
 import subprocess
 import threading
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QComboBox, QScrollArea, QMessageBox, QDialog, QGridLayout, QFileDialog)
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
+                             QLineEdit, QComboBox, QScrollArea, QMessageBox, QDialog, QGridLayout, QFileDialog)
 from PyQt5.QtCore import Qt, QTimer
 from datetime import datetime
 import danger_analyzer
+from console import open_console, close_console
+from RealTimeCRAWLER import RealTimeCRAWLER
 
 
 class CrawlerManagerGUI(QMainWindow):
@@ -17,7 +20,7 @@ class CrawlerManagerGUI(QMainWindow):
         # 실행 중인 크롤러 관리
         self.processes = {}
         self.output_buffers = {}
-        
+
         # 현재 EXE 실행 파일의 디렉토리 위치를 가져옴
         if getattr(sys, 'frozen', False):
             self.base_path = os.path.dirname(sys.executable)
@@ -47,7 +50,8 @@ class CrawlerManagerGUI(QMainWindow):
         # 설정 버튼 추가
         self.settings_button = QPushButton("설정", self)
         self.settings_button.setFixedSize(100, 40)
-        self.settings_button.setStyleSheet("background-color: #FFD700; color: black; font-weight: bold; font-family: '맑은 고딕';")
+        self.settings_button.setStyleSheet(
+            "background-color: #FFD700; color: black; font-weight: bold; font-family: '맑은 고딕';")
         self.settings_button.clicked.connect(self.show_settings_popup)
         top_layout.addWidget(self.settings_button)
 
@@ -58,21 +62,24 @@ class CrawlerManagerGUI(QMainWindow):
         # 크롤러 시작 버튼
         self.start_button = QPushButton("크롤러 시작", self)
         self.start_button.setFixedSize(200, 50)
-        self.start_button.setStyleSheet("background-color: #416BBF; color: white; font-weight: bold; font-family: '맑은 고딕';")
+        self.start_button.setStyleSheet(
+            "background-color: #416BBF; color: white; font-weight: bold; font-family: '맑은 고딕';")
         self.start_button.clicked.connect(self.show_start_popup)
         button_layout.addWidget(self.start_button)
 
         # 모델 생성 버튼 (기존 크롤러 중지 버튼 대체)
         self.train_button = QPushButton("모델 생성", self)
         self.train_button.setFixedSize(200, 50)
-        self.train_button.setStyleSheet("background-color: #05AFF2; color: white; font-weight: bold; font-family: '맑은 고딕';")
+        self.train_button.setStyleSheet(
+            "background-color: #05AFF2; color: white; font-weight: bold; font-family: '맑은 고딕';")
         self.train_button.clicked.connect(self.train_model_popup)
         button_layout.addWidget(self.train_button)
 
         # 모든 크롤러 종료 버튼
         self.stop_all_button = QPushButton("모든 크롤러 종료", self)
         self.stop_all_button.setFixedSize(200, 50)
-        self.stop_all_button.setStyleSheet("background-color: #2D4473; color: white; font-weight: bold; font-family: '맑은 고딕';")
+        self.stop_all_button.setStyleSheet(
+            "background-color: #2D4473; color: white; font-weight: bold; font-family: '맑은 고딕';")
         self.stop_all_button.clicked.connect(self.stop_all_crawlers)
         button_layout.addWidget(self.stop_all_button)
 
@@ -113,7 +120,8 @@ class CrawlerManagerGUI(QMainWindow):
     def show_settings_popup(self):
         # 새로 추가된 설정 창에서 word_list_path를 설정할 수 있도록 함
         options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getOpenFileName(self, "RealTime_wordList.txt 파일 선택", "", "Text Files (*.txt);;All Files (*)", options=options)
+        file_path, _ = QFileDialog.getOpenFileName(self, "RealTime_wordList.txt 파일 선택", "",
+                                                   "Text Files (*.txt);;All Files (*)", options=options)
 
         if file_path:
             self.word_list_path = file_path
@@ -185,36 +193,25 @@ class CrawlerManagerGUI(QMainWindow):
         speed = int(speed)
         page = int(page)
 
-        # EXE 환경에서는 EXE 파일이 아닌 Python 인터프리터를 명시적으로 사용하여 중복 실행 문제를 방지
-        if getattr(sys, 'frozen', False):
-            # EXE로 패키징된 경우, Python 스크립트를 직접 실행할 수 없으므로 명령어 경로를 지정
-            command = [sys.executable, os.path.join(self.base_path, 'RealTimeCRAWLER.py'), crawler_type, keyword, str(speed), str(page)]
+        open_console("New Crawler")
+
+        # RealTimeCRAWLER 객체 생성 및 크롤링 시작
+        crawler = RealTimeCRAWLER(keyword, speed=speed, checkPage=page, word_list_path=self.word_list_path)
+
+        # 크롤러 유형에 따라 올바른 메서드 호출
+        if crawler_type == "NaverCafe":
+            crawler.RealTimeNaverCafeCrawler()
+        elif crawler_type == "NaverBlog":
+            crawler.RealTimeNaverBlogCrawler()
+        elif crawler_type == "NaverNews":
+            crawler.RealTimeNaverNewsCrawler()
+        elif crawler_type == "DCinside":
+            crawler.RealTimeDCinsideCrawler()
         else:
-            # Python으로 실행되는 경우
-            command = [sys.executable, 'RealTimeCRAWLER.py', crawler_type, keyword, str(speed), str(page)]
+            print(f"잘못된 크롤러 유형: {crawler_type}")
+            sys.exit(1)
 
-        # 위험 단어 목록 파일이 설정되었는지 확인
-        if self.word_list_path:
-            command.append(self.word_list_path)  # 파일 경로를 인자로 추가
-
-        try:
-            # subprocess를 통해 새로운 프로세스를 시작 (stdout과 stderr를 파이프 처리)
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
-
-            # 실행된 프로세스를 관리하는 딕셔너리에 추가
-            self.processes[process.pid] = process
-            self.output_buffers[process.pid] = []
-
-            # 새로운 스레드를 시작하여 출력 결과를 비동기적으로 읽기
-            thread = threading.Thread(target=self._read_process_output, args=(process, crawler_type, keyword), daemon=True)
-            thread.start()
-
-        except Exception as e:
-            # 오류 발생 시 메시지 출력
-            QMessageBox.critical(self, "오류", f"크롤러 실행 중 오류가 발생했습니다: {str(e)}")
-
-        # 팝업 닫기
-        popup.close()
+        close_console()
 
     def _read_process_output(self, process, crawler_type, keyword):
         try:
@@ -263,7 +260,7 @@ class CrawlerManagerGUI(QMainWindow):
             QMessageBox.information(self, "알림", f"PID {pid}의 크롤러가 중지되었습니다.")
         else:
             QMessageBox.critical(self, "오류", f"PID {pid}를 찾을 수 없습니다.")
-        
+
         popup.close()
 
     def stop_all_crawlers(self):
@@ -276,9 +273,9 @@ class CrawlerManagerGUI(QMainWindow):
 
     def update_crawler_list(self):
         # 스크롤 영역 초기화
-        for i in reversed(range(self.scroll_layout.count())): 
+        for i in reversed(range(self.scroll_layout.count())):
             widget = self.scroll_layout.itemAt(i).widget()
-            if widget is not None: 
+            if widget is not None:
                 widget.deleteLater()
 
         # 크롤러 목록 표시
@@ -289,7 +286,8 @@ class CrawlerManagerGUI(QMainWindow):
             no_crawler_layout.setAlignment(Qt.AlignCenter)
 
             no_crawler_label = QLabel("현재 실행 중인 크롤러가 없습니다.")
-            no_crawler_label.setStyleSheet("color: black; background-color: #E0E0E0; font-size: 16px; padding: 20px; border-radius: 10px;")
+            no_crawler_label.setStyleSheet(
+                "color: black; background-color: #E0E0E0; font-size: 16px; padding: 20px; border-radius: 10px;")
             no_crawler_layout.addWidget(no_crawler_label)
             self.scroll_layout.addWidget(no_crawler_widget)
         else:
@@ -312,7 +310,8 @@ class CrawlerManagerGUI(QMainWindow):
                 ]
 
                 for i, label in enumerate(labels):
-                    label.setStyleSheet(f"color: white; font-size: 12px; background-color: #2D4473; padding: 5px; border-radius: 5px;")
+                    label.setStyleSheet(
+                        f"color: white; font-size: 12px; background-color: #2D4473; padding: 5px; border-radius: 5px;")
                     label.setAlignment(Qt.AlignCenter)
                     banner_layout.addWidget(label, 0, i)
 
@@ -322,7 +321,8 @@ class CrawlerManagerGUI(QMainWindow):
 
                 # 종료 버튼 추가
                 stop_button = QPushButton("종료", self)
-                stop_button.setStyleSheet("background-color: #f44336; color: white; font-weight: bold; font-family: '맑은 고딕';")
+                stop_button.setStyleSheet(
+                    "background-color: #f44336; color: white; font-weight: bold; font-family: '맑은 고딕';")
                 stop_button.clicked.connect(lambda checked, pid=pid: self.stop_crawler_by_pid(pid))  # PID를 전달하도록 수정
                 banner_layout.addWidget(stop_button, 0, 5)
 
