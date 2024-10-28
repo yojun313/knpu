@@ -238,7 +238,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     if dialog.exec_() == QDialog.Accepted:
                         open_console("Version Download Process")
                         if platform.system() == "Windows":
-                            QMessageBox.information(self, "Information", "새로운 설치 프로그램은 C:/Temp 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
+                            QMessageBox.information(self, "Information", "새로운 설치 프로그램은 C:/Temp에 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
                             msg = (
                                 "[ Admin Notification ]\n\n"
                                 f"{self.user} updated {current_version} -> {self.new_version}"
