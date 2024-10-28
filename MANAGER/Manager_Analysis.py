@@ -1801,9 +1801,10 @@ class Manager_Analysis:
                 QMessageBox.information(self.main, "Information", f"선택 가능한 테이블 수는 1개입니다")
                 return
             if self.selected_DBlistItems[0] == 'manager_record':
-                ok, password = self.main.pw_check()
-                if not ok or password != self.main.admin_password:
-                    return
+                if self.main.user != 'admin':
+                    ok, password = self.main.pw_check()
+                    if not ok or password != self.main.admin_password:
+                        return
 
             def destory_table():
                 del self.DBtable_window
@@ -1829,9 +1830,10 @@ class Manager_Analysis:
                 return
 
             if 'manager_record' in self.selected_DBlistItems:
-                ok, password = self.main.pw_check()
-                if not ok or password != self.main.admin_password:
-                    return
+                if self.main.user != 'admin':
+                    ok, password = self.main.pw_check()
+                    if not ok or password != self.main.admin_password:
+                        return
 
             self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
             folder_path = QFileDialog.getExistingDirectory(self.main, "데이터를 저장할 위치를 선택하세요", self.main.default_directory)
