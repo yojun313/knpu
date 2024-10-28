@@ -47,7 +47,7 @@ class CrawlerModule(ToolModule):
         
         self.socketnum = 1
         
-        self.mySQL = self.pathFinder()['MYSQL']
+        #self.mySQL = self.pathFinder()['MYSQL']
 
         self.PrintData = {
             'currentDate': '',

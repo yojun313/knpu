@@ -30,7 +30,7 @@ class ToolModule:
         token_path = crawler_folder_path
         computer_name = "Woochul's Laptop"
         RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
-        mySQL_obj = pymysql.connect(host='localhost', user='root', password='0000', database='database')
+        #mySQL_obj = pymysql.connect(host='localhost', user='root', password='0000', database='database')
 
         returnData = {
             'crawler_folder_path': crawler_folder_path,
@@ -38,7 +38,7 @@ class ToolModule:
             'token_path': token_path,
             'computer_name': computer_name,
             'RealTimeCrawler_DBPath': RealTimeCrawler_DBPath,
-            'MYSQL': mySQL_obj
+            #'MYSQL': mySQL_obj
         }
         return returnData
     
