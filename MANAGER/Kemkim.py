@@ -680,14 +680,17 @@ class KimKem:
         return avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency
 
     def _calculate_average_increase(self, min_value, max_value, period_diff):
-        if min_value == 0 or max_value == 0:  # division by zero 방지
+        if min_value <= 0 or max_value <= 0:  # 방어적 조건 검사 강화
             return 0
-        return (((max_value / min_value) ** (1 / period_diff)) - 1) * 100
+        exponent = 1 / period_diff
+        growth_rate = (max_value / min_value) ** exponent
+        return (growth_rate - 1) * 100
 
     def _calculate_average_frequency(self, counts_dict, word, min_period, max_period):
+        # 딕셔너리 접근 횟수를 줄이기 위해 중복 get 호출을 제거
         min_count = counts_dict[min_period].get(word, 0)
         max_count = counts_dict[max_period].get(word, 0)
-        return (min_count + max_count) / 2
+        return (min_count + max_count) * 0.5  # / 2 대신 * 0.5로 연산 최적화
 
     # 그래프 생성 / 시그널 분석
     def _analyze_signals(self, avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, folder_path):
