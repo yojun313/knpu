@@ -1,31 +1,31 @@
-from PyQt5.QtWidgets import QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox, QComboBox, \
-    QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout, QGroupBox, QScrollArea,\
-    QListView, QMainWindow, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton, QDateEdit
-from PyQt5.QtCore import QTimer, QStringListModel, Qt, QDate
-from Manager_Console import open_console, close_console, clear_console
-import copy
-import pandas as pd
 import os
-import matplotlib.pyplot as plt
-import platform
-from datetime import datetime
+import sys
 import gc
-from PIL import Image
-Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
+import copy
+import re
 import ast
 import csv
-import traceback
+import platform
 import warnings
-import re
-import chardet
-import sys
-import ctypes
+import traceback
+import pandas as pd
+import matplotlib.pyplot as plt
 from tqdm import tqdm
+from datetime import datetime
+from PyQt5.QtCore import QTimer, QStringListModel, Qt, QDate
+from PyQt5.QtWidgets import (
+    QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox,
+    QComboBox, QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout,
+    QGroupBox, QScrollArea, QListView, QMainWindow, QVBoxLayout, QTableWidget,
+    QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton, QDateEdit
+)
+from Manager_Console import open_console, close_console
+import chardet
+from DataProcess import DataProcess
+from Kemkim import KimKem
 
 warnings.filterwarnings("ignore")
 
-from DataProcess import DataProcess
-from Kemkim import KimKem
 
 # 운영체제에 따라 한글 폰트를 설정
 if platform.system() == 'Darwin':  # macOS
@@ -1778,6 +1778,8 @@ class Manager_Analysis:
                 # target_db에 연결
                 mySQL_obj.connectDB(target_db)
                 tableDF = mySQL_obj.TableToDataframe(target_table)
+                if target_table == 'manager_record':
+                    tableDF = tableDF.iloc[::-1].reset_index(drop=True)
 
                 # 데이터프레임 값을 문자열로 변환하여 튜플 형태의 리스트로 저장
                 self.tuple_list = [tuple(str(cell) for cell in row) for row in

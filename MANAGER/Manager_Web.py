@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QVBoxLayout, QMessageBox
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-import PyQt5.QtCore as QtCore
+from PyQt5.QtCore import QUrl
 from functools import partial
 import webbrowser
 import warnings
@@ -32,7 +32,7 @@ class Manager_Web:
 
             # 새로운 브라우저 생성 및 추가
             self.browser = QWebEngineView()
-            self.browser.setUrl(QtCore.QUrl(url))
+            self.browser.setUrl(QUrl(url))
             widget.addWidget(self.browser)
             self.browser.show()
         except Exception as e:

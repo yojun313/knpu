@@ -1,6 +1,6 @@
 import os
 import sys
-from PyQt5 import QtWidgets, uic, QtGui, QtCore
+from PyQt5 import QtWidgets, uic, QtGui
 from PyQt5.QtWidgets import QTableWidget, QScrollArea, QTableWidgetItem, QVBoxLayout, QTextEdit, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication
 from openai import OpenAI
@@ -29,7 +29,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '2.0.4'
+        self.versionNum = '2.0.3'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -151,7 +151,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     print("\nDownload Complete")
 
                 print(f"\nWelcome {self.user}!")
-                self.user_logging('Booting')
+                self.user_logging('Program Booting')
 
                 close_console()
                 # New version check
@@ -200,14 +200,14 @@ class MainWindow(QtWidgets.QMainWindow):
                     label = QLabel()
                     label.setText(version_info_html)
                     label.setWordWrap(True)
-                    label.setTextFormat(QtCore.Qt.RichText)  # HTML 렌더링
+                    label.setTextFormat(Qt.RichText)  # HTML 렌더링
 
                     # QScrollArea를 사용하여 스크롤 가능하게 설정
                     scroll_area = QScrollArea()
                     scroll_area.setWidgetResizable(True)
                     scroll_area.setWidget(label)
 
-                    layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
+                    layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
 
                     button_layout = QHBoxLayout()  # 수평 레이아웃
 
@@ -704,18 +704,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stackedWidget.setCurrentIndex(index)
         # DATABASE
         if index == 0:
-            self.user_logging("move to DISPLAY")
             self.Manager_Database_obj.database_refresh_DB()
             QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
 
         # CRAWLER
         elif index == 1:
-            self.user_logging("move to CRAWLER")
             self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr:81', self.Manager_Web_obj.crawler_web_layout)
         # ANALYSIS
         elif index == 2:
-            self.user_logging("move to ANALYSIS")
             self.printStatus()
             if self.Manager_Analysis_generate == False:
                 self.Manager_Analysis_obj = Manager_Analysis(self)
@@ -723,17 +720,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.Manager_Analysis_obj.dataprocess_refresh_DB()
         # BOARD
         elif index == 3:
-            self.user_logging("move to BOARD")
             self.printStatus()
             pass
         # WEB
         elif index == 4:
-            self.user_logging("move to WEB")
             self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
         # USER
         elif index == 5:
-            self.user_logging("move to USER")
             self.printStatus()
             pass
             

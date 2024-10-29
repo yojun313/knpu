@@ -445,13 +445,15 @@ class mySQL:
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
-    '''
+
     for name in ['admin', '노승국', '이진원', '한승혁', '이정우', '최우철', '배시웅']:
         mySQL_obj.connectDB(f'{name}_db')
-        mySQL_obj.newTable('manager_record', ['Date', 'Log'])
+        mySQL_obj.dropTable(tableName=f'manager_record')
+        mySQL_obj.newTable('manager_record', ['Date', 'Log', 'Bug'])
         mySQL_obj.commit()
     '''
     mySQL_obj.connectDB('admin_db')
     mySQL_obj.dropTable('manager_record')
     mySQL_obj.newTable('manager_record', ['Date', 'Log', 'Bug'])
     mySQL_obj.commit()
+    '''
