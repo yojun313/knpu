@@ -151,7 +151,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     print("\nDownload Complete")
 
                 print(f"\nWelcome {self.user}!")
-                self.user_logging('Program Booting')
+                self.user_logging('Booting')
 
                 close_console()
                 # New version check
@@ -815,7 +815,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         # 프로그램 종료 시 실행할 코드
-        self.user_logging('Program Shutdown')
+        self.user_logging('Shutdown')
         event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
 
 
