@@ -29,7 +29,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '2.0.3'
+        self.versionNum = '2.0.4'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -704,15 +704,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stackedWidget.setCurrentIndex(index)
         # DATABASE
         if index == 0:
+            self.user_logging("move to DISPLAY")
             self.Manager_Database_obj.database_refresh_DB()
             QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
 
         # CRAWLER
         elif index == 1:
+            self.user_logging("move to CRAWLER")
             self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr:81', self.Manager_Web_obj.crawler_web_layout)
         # ANALYSIS
         elif index == 2:
+            self.user_logging("move to ANALYSIS")
             self.printStatus()
             if self.Manager_Analysis_generate == False:
                 self.Manager_Analysis_obj = Manager_Analysis(self)
@@ -720,14 +723,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.Manager_Analysis_obj.dataprocess_refresh_DB()
         # BOARD
         elif index == 3:
+            self.user_logging("move to BOARD")
             self.printStatus()
             pass
         # WEB
         elif index == 4:
+            self.user_logging("move to WEB")
             self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
         # USER
         elif index == 5:
+            self.user_logging("move to USER")
             self.printStatus()
             pass
             
@@ -813,6 +819,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if reply == QMessageBox.Yes:
             self.Manager_Board_obj.board_add_bug()
 
+    def closeEvent(self, event):
+        # 프로그램 종료 시 실행할 코드
+        self.user_logging('Program Shutdown')
+        event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
 
 
 class InfoDialog(QDialog):
