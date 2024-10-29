@@ -1,17 +1,21 @@
 import os
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QTableWidget, QButtonGroup, QTableWidgetItem, QWidget, QPushButton, QVBoxLayout, QScrollArea, QMainWindow, QHeaderView, QMessageBox, QFileDialog, QDialog, QInputDialog, QDialogButtonBox, QRadioButton, QLabel, QFormLayout, QLineEdit
-from PyQt5.QtCore import QTimer, QDate
-from Manager_Console import open_console, close_console, clear_console
-import pandas as pd
+import sys
+import gc
 import copy
 import re
-import gc
-from datetime import datetime
 import warnings
 import traceback
+import pandas as pd
 from tqdm import tqdm
-import sys
+from datetime import datetime
+from PyQt5.QtCore import QTimer, QDate
+from PyQt5.QtWidgets import (
+    QWidget, QMainWindow, QDialog, QVBoxLayout, QFormLayout, QTableWidget,
+    QButtonGroup, QPushButton, QDialogButtonBox, QRadioButton, QLabel, QTabWidget,
+    QLineEdit, QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout
+)
+from Manager_Console import open_console, close_console
+
 warnings.filterwarnings("ignore")
 class Manager_Database:
     def __init__(self, main_window):
@@ -68,26 +72,26 @@ class Manager_Database:
                 self.parent = parent  # 부모 객체를 저장하여 나중에 사용
                 self.target_db = target_db  # target_db를 저장하여 나중에 사용
 
-                self.central_widget = QtWidgets.QWidget(self)
+                self.central_widget = QWidget(self)
                 self.setCentralWidget(self.central_widget)
 
                 self.layout = QVBoxLayout(self.central_widget)
 
                 # 상단 버튼 레이아웃
-                self.button_layout = QtWidgets.QHBoxLayout()
+                self.button_layout = QHBoxLayout()
 
                 # spacer 아이템 추가 (버튼들을 오른쪽 끝에 배치하기 위해 앞에 추가)
-                spacer = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+                spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
                 self.button_layout.addItem(spacer)
 
                 # 새로고침 버튼 추가
-                self.refresh_button = QtWidgets.QPushButton("새로고침", self)
+                self.refresh_button = QPushButton("새로고침", self)
                 self.refresh_button.setFixedWidth(80)  # 가로 길이 조정
                 self.refresh_button.clicked.connect(self.refresh_table)
                 self.button_layout.addWidget(self.refresh_button)
 
                 # 닫기 버튼 추가
-                self.close_button = QtWidgets.QPushButton("닫기", self)
+                self.close_button = QPushButton("닫기", self)
                 self.close_button.setFixedWidth(80)  # 가로 길이 조정
                 self.close_button.clicked.connect(self.closeWindow)
                 self.button_layout.addWidget(self.close_button)
@@ -95,7 +99,7 @@ class Manager_Database:
                 # 버튼 레이아웃을 메인 레이아웃에 추가
                 self.layout.addLayout(self.button_layout)
 
-                self.tabWidget_tables = QtWidgets.QTabWidget(self)
+                self.tabWidget_tables = QTabWidget(self)
                 self.layout.addWidget(self.tabWidget_tables)
 
                 # target_db가 주어지면 테이블 뷰를 초기화
@@ -716,6 +720,7 @@ class Manager_Database:
 
             QTimer.singleShot(1, refresh_database)
             QTimer.singleShot(1, self.main.printStatus)
+            QTimer.singleShot(1000, lambda: self.main.printStatus(f"{self.main.fullstorage} GB / 8 TB"))
         except Exception as e:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())

@@ -1,10 +1,13 @@
-from PyQt5.QtCore import QTimer, QRegExp
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QTextEdit, QScrollArea, QWidget
-from PyQt5.QtGui import QRegExpValidator
-from PyQt5 import QtCore
-from datetime import datetime
-import warnings
 import traceback
+import warnings
+from datetime import datetime
+from PyQt5.QtCore import QTimer, QRegExp, Qt
+from PyQt5.QtGui import QRegExpValidator
+from PyQt5.QtWidgets import (
+    QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton,
+    QMessageBox, QTextEdit, QScrollArea, QWidget
+)
+
 warnings.filterwarnings("ignore")
 
 class Manager_Board:
@@ -282,7 +285,7 @@ class Manager_Board:
                     scroll_area.setWidgetResizable(True)
                     scroll_area.setWidget(detail_label)
 
-                    layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
+                    layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
 
                     # 닫기 버튼 추가
                     close_button = QPushButton('Close')
@@ -529,7 +532,7 @@ class Manager_Board:
                     scroll_area.setWidgetResizable(True)
                     scroll_area.setWidget(detail_label)
 
-                    layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
+                    layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
 
                     # 닫기 버튼 추가
                     close_button = QPushButton('Close')
@@ -812,7 +815,7 @@ class Manager_Board:
                     scroll_area.setWidgetResizable(True)
                     scroll_area.setWidget(detail_label)
 
-                    layout.addWidget(scroll_area, alignment=QtCore.Qt.AlignHCenter)
+                    layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
 
                     # 닫기 버튼 추가
                     close_button = QPushButton('Close')
