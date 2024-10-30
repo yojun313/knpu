@@ -245,6 +245,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                 f"{self.user} updated {current_version} -> {self.new_version}"
                             )
                             self.send_pushOver(msg, self.admin_pushoverkey)
+                            self.user_logging(f'Program Update ({current_version} -> {self.new_version})')
 
                             self.printStatus("버전 업데이트 중...")
                             import subprocess
