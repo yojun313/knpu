@@ -12,7 +12,7 @@ from Manager_Web import Manager_Web
 from Manager_Board import Manager_Board
 from Manager_User import Manager_User
 from Manager_Analysis import Manager_Analysis
-from Manager_Console import open_console, close_console, clear_console
+from Manager_Console import open_console, close_console
 from datetime import datetime
 import platform
 import requests
@@ -149,6 +149,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                 print(f"\r{self.new_version} Download: {percent_complete:.0f}%", end='')  # 퍼센트 출력
 
                     print("\nDownload Complete")
+                    close_console()
 
                 print(f"\nWelcome {self.user}!")
                 self.user_logging('Booting')
