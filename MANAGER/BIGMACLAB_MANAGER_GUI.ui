@@ -296,67 +296,6 @@
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="tab_userDB">
-           <attribute name="title">
-            <string>User DB</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_9">
-              <item>
-               <layout class="QVBoxLayout" name="tab3_userDB_explorerlayout">
-                <item>
-                 <layout class="QVBoxLayout" name="tab3_userDB_fileexplorerlayout"/>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_10">
-                <item>
-                 <layout class="QVBoxLayout" name="tab3_userDB_buttonlayout"/>
-                </item>
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_8">
-                  <item>
-                   <layout class="QHBoxLayout" name="horizontalLayout_10">
-                    <item>
-                     <widget class="QPushButton" name="userDB_list_add_button">
-                      <property name="text">
-                       <string>추가</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="userDB_list_delete_button">
-                      <property name="text">
-                       <string>삭제</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="userDB_list_view_button">
-                      <property name="text">
-                       <string>조회</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="userDB_list_save_button">
-                      <property name="text">
-                       <string>다운</string>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                 </layout>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
          </widget>
         </item>
        </layout>
@@ -519,62 +458,140 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="page_user">
-       <layout class="QVBoxLayout" name="verticalLayout">
+      <widget class="QWidget" name="page_board">
+       <layout class="QVBoxLayout" name="verticalLayout_data_process">
         <item>
-         <widget class="QTableWidget" name="user_tablewidget"/>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_input">
-          <item>
-           <widget class="QLabel" name="label_name">
-            <property name="text">
-             <string>이름:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="user_name_lineinput"/>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_email">
-            <property name="text">
-             <string>이메일:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="user_email_lineinput"/>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_key">
-            <property name="text">
-             <string>Key:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="user_key_lineinput"/>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout">
-          <item>
-           <widget class="QPushButton" name="user_deleteuser_button">
-            <property name="text">
-             <string>사용자 삭제</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="user_adduser_button">
-            <property name="text">
-             <string>사용자 추가</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
+         <widget class="QTabWidget" name="tabWidget_user">
+          <property name="tabPosition">
+           <enum>QTabWidget::North</enum>
+          </property>
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="tab_userlist">
+           <attribute name="title">
+            <string>User List</string>
+           </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout">
+             <item>
+              <widget class="QTableWidget" name="user_tablewidget"/>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_input">
+               <item>
+                <widget class="QLabel" name="label_name">
+                 <property name="text">
+                  <string>이름:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="user_name_lineinput"/>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_email">
+                 <property name="text">
+                  <string>이메일:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="user_email_lineinput"/>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_key">
+                 <property name="text">
+                  <string>Key:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="user_key_lineinput"/>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout">
+               <item>
+                <widget class="QPushButton" name="user_deleteuser_button">
+                 <property name="text">
+                  <string>사용자 삭제</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="user_adduser_button">
+                 <property name="text">
+                  <string>사용자 추가</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tab_userDB">
+           <attribute name="title">
+            <string>User DB</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_9">
+              <item>
+               <layout class="QVBoxLayout" name="tab3_userDB_explorerlayout">
+                <item>
+                 <layout class="QVBoxLayout" name="tab3_userDB_fileexplorerlayout"/>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_10">
+                <item>
+                 <layout class="QVBoxLayout" name="tab3_userDB_buttonlayout"/>
+                </item>
+                <item>
+                 <layout class="QVBoxLayout" name="verticalLayout_8">
+                  <item>
+                   <layout class="QHBoxLayout" name="horizontalLayout_10">
+                    <item>
+                     <widget class="QPushButton" name="userDB_list_add_button">
+                      <property name="text">
+                       <string>추가</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="userDB_list_delete_button">
+                      <property name="text">
+                       <string>삭제</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="userDB_list_view_button">
+                      <property name="text">
+                       <string>조회</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="userDB_list_save_button">
+                      <property name="text">
+                       <string>다운</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </widget>
         </item>
        </layout>
       </widget>
