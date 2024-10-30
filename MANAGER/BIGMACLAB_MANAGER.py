@@ -29,7 +29,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '2.0.3'
+        self.versionNum = '2.0.4'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -106,7 +106,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.userPushOverKeyList = self.Manager_User_obj.userKeyList
                         print("Done")
                         break
-                    except:
+                    except Exception as e:
+                        print(traceback.format_exc())
                         reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                         if reply == QMessageBox.Yes:
                             continue
