@@ -12,12 +12,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from datetime import datetime
-from PyQt5.QtCore import QTimer, QStringListModel, Qt, QDate
+from PyQt5.QtCore import QTimer, Qt, QDate
 from PyQt5.QtWidgets import (
     QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox,
-    QComboBox, QLineEdit, QLabel, QDialogButtonBox, QWidget, QToolBox, QGridLayout,
-    QGroupBox, QScrollArea, QListView, QMainWindow, QVBoxLayout, QTableWidget,
-    QPushButton, QSpacerItem, QSizePolicy, QButtonGroup, QRadioButton, QDateEdit
+    QComboBox, QLineEdit, QLabel, QDialogButtonBox, QWidget, QGridLayout,
+    QGroupBox, QScrollArea, QVBoxLayout,
+    QPushButton, QButtonGroup, QRadioButton, QDateEdit
 )
 from Manager_Console import open_console, close_console
 import chardet
