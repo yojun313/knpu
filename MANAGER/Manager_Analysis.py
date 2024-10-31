@@ -95,7 +95,6 @@ class Manager_Analysis:
                     self.main.dataprocess_tab1_tablewidget.selectRow(row)
                     return
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_refresh_DB(self):
@@ -109,7 +108,6 @@ class Manager_Analysis:
             QTimer.singleShot(1, refresh_database)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_timesplit_DB(self):
@@ -191,7 +189,7 @@ class Manager_Analysis:
 
 
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
+            self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_analysis_DB(self):
         try:
@@ -285,7 +283,6 @@ class Manager_Analysis:
             QTimer.singleShot(1000, self.main.printStatus)
 
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_filefinder_maker(self):
@@ -360,7 +357,6 @@ class Manager_Analysis:
             QTimer.singleShot(1000, self.main.printStatus)
 
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_merge_file(self):
@@ -425,7 +421,6 @@ class Manager_Analysis:
                 self.main.openFileExplorer(mergedfiledir)
 
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_analysis_file(self):
@@ -532,7 +527,6 @@ class Manager_Analysis:
             del csv_data
             gc.collect()
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def kimkem_kimkem(self):
@@ -611,7 +605,6 @@ class Manager_Analysis:
             QTimer.singleShot(1000, start)
 
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
     
     def kimkem_rekimkem_file(self):
@@ -939,7 +932,6 @@ class Manager_Analysis:
             QMessageBox.information(self.main, 'Information', 'KEMKIM 재분석이 완료되었습니다')
         
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def kimkem_interpretkimkem_file(self):
@@ -1286,7 +1278,6 @@ class Manager_Analysis:
                 self.main.openFileExplorer(analyze_directory)
 
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def kimkem_kimkemStart(self, token_data, tokenfile_name):
@@ -1591,6 +1582,5 @@ class Manager_Analysis:
             del kimkem_obj
             gc.collect()
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
