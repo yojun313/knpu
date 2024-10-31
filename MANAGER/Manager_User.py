@@ -20,31 +20,22 @@ class Manager_User:
         self.userDB_layout_maker()
 
     def user_init_table(self):
+        # 데이터베이스 연결 및 데이터 가져오기
         self.main.mySQL_obj.connectDB('user_db')
-
-        self.userNameList = []
-        self.userKeyList  = []
         userDF = self.main.mySQL_obj.TableToDataframe('user_info')
-        user_data = [tuple(row) for row in userDF.itertuples(index=False, name=None)]
+        user_data = [(name, email, key) for _, name, email, key in userDF.itertuples(index=False, name=None)]
 
-        self.main.user_tablewidget.setRowCount(len(user_data))
-        self.main.user_tablewidget.setColumnCount(3)
-        self.main.user_tablewidget.setHorizontalHeaderLabels(['Name', 'Email', 'PushOverKey'])
-        self.main.user_tablewidget.setSelectionBehavior(QTableWidget.SelectRows)
-        self.main.user_tablewidget.setSelectionMode(QTableWidget.SingleSelection)
+        # userNameList 및 userKeyList 업데이트
+        self.userNameList = [name for name, _, key in user_data]
+        self.userKeyList = [key for _, _, key in user_data if key != 'n']
 
-        header = self.main.user_tablewidget.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Stretch)
-
-        for i, (id, name, email, key) in enumerate(user_data):
-            for j, cell_data in enumerate((name, email, key)):
-                item = QTableWidgetItem(cell_data)
-                item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
-                self.main.user_tablewidget.setItem(i, j, item)
-
-            self.userNameList.append(name)
-            if key != 'n':
-                self.userKeyList.append(key)
+        # 테이블 설정
+        columns = ['Name', 'Email', 'PushOverKey']
+        self.main.table_maker(
+            widgetname=self.main.user_tablewidget,
+            data=user_data,
+            column=columns,
+        )
 
     def user_add_user(self):
         try:
@@ -119,6 +110,7 @@ class Manager_User:
     def user_buttonMatch(self):
         self.main.user_adduser_button.clicked.connect(self.user_add_user)
         self.main.user_deleteuser_button.clicked.connect(self.user_delete_user)
+        self.main.user_log_button.clicked.connect(lambda: self.toolbox_DBlistItem_view(True))
 
         self.selected_userDB = 'admin_db'
         self.selected_DBlistItem = None
@@ -127,6 +119,7 @@ class Manager_User:
         self.main.userDB_list_add_button.clicked.connect(self.toolbox_DBlistItem_add)
         self.main.userDB_list_view_button.clicked.connect(self.toolbox_DBlistItem_view)
         self.main.userDB_list_save_button.clicked.connect(self.toolbox_DBlistItem_save)
+
 
     def userDB_layout_maker(self):
         # File Explorer를 탭 레이아웃에 추가
@@ -252,7 +245,12 @@ class Manager_User:
             QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
-    def toolbox_DBlistItem_view(self):
+    def toolbox_DBlistItem_view(self, row=False):
+        if row != False:
+            row = self.main.user_tablewidget.currentRow()
+            self.selected_DBlistItems = ['manager_record']
+            self.selected_userDB = self.userNameList[row] + '_db'
+
         class SingleTableWindow(QMainWindow):
             def __init__(self, parent=None, target_db=None, target_table=None):
                 super(SingleTableWindow, self).__init__(parent)
