@@ -50,7 +50,6 @@ class Manager_Board:
             self.main.table_maker(self.main.board_version_tableWidget, self.version_data_for_table, self.version_table_column)
             self.version_name_list = [version_data[0] for version_data in self.version_data_for_table]
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
     def board_add_version(self):
         try:
@@ -172,7 +171,6 @@ class Manager_Board:
             elif ok:
                 QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
     def board_delete_version(self):
         try:
@@ -193,7 +191,6 @@ class Manager_Board:
             elif ok:
                 QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
     def board_view_version(self):
         try:
@@ -299,7 +296,6 @@ class Manager_Board:
             QTimer.singleShot(1, view_version)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
     def board_bug_refresh(self):
         try:
@@ -319,7 +315,6 @@ class Manager_Board:
                                   self.bug_table_column)
             self.bug_title_list = [bug_data[2] for bug_data in self.bug_data_for_table]
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
     def board_add_bug(self):
         try:
@@ -421,7 +416,6 @@ class Manager_Board:
                 )
                 self.main.send_pushOver(msg, self.main.admin_pushoverkey)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
     def board_delete_bug(self):
         try:
@@ -547,7 +541,6 @@ class Manager_Board:
             QTimer.singleShot(1, view_bug)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def board_post_refresh(self):
@@ -568,7 +561,6 @@ class Manager_Board:
                                   self.post_table_column)
             self.post_title_list = [post_data[1] for post_data in self.post_data_for_table]
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def board_add_post(self):
@@ -717,7 +709,6 @@ class Manager_Board:
                 else:
                     self.main.send_pushOver(msg, self.main.admin_pushoverkey)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def board_view_post(self):
@@ -831,7 +822,6 @@ class Manager_Board:
             QTimer.singleShot(1, view_post)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def board_delete_post(self):
@@ -940,5 +930,4 @@ class Manager_Board:
                     self.main.printStatus()
                     return
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
