@@ -254,7 +254,7 @@ class Manager_User:
         class SingleTableWindow(QMainWindow):
             def __init__(self, parent=None, target_db=None, target_table=None):
                 super(SingleTableWindow, self).__init__(parent)
-                self.setWindowTitle(target_table)
+                self.setWindowTitle(f"{target_db[:-3]}의 {target_table}")
                 self.setGeometry(100, 100, 1600, 1200)
 
                 self.parent = parent  # 부모 객체 저장
