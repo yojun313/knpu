@@ -58,7 +58,6 @@ class Manager_Database:
             QTimer.singleShot(1, delete_database)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def database_view_DB(self):
@@ -178,7 +177,6 @@ class Manager_Database:
                 QTimer.singleShot(1, self.main.printStatus)
 
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def database_dbinfo_viewer(self, row):
@@ -418,7 +416,6 @@ class Manager_Database:
                     self.main.database_tablewidget.selectRow(row)
                     return
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def database_save_DB(self):
@@ -708,7 +705,6 @@ class Manager_Database:
             select_database()
 
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def database_refresh_DB(self):
@@ -722,7 +718,6 @@ class Manager_Database:
             QTimer.singleShot(1, self.main.printStatus)
             QTimer.singleShot(1000, lambda: self.main.printStatus(f"{self.main.fullstorage} GB / 8 TB"))
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {traceback.format_exc()}")
             self.main.program_bug_log(traceback.format_exc())
 
     def database_buttonMatch(self):

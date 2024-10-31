@@ -810,6 +810,10 @@ class MainWindow(QtWidgets.QMainWindow):
             return (0, "AI 분석에 오류가 발생하였습니다\n\nadmin에게 문의바랍니다")
 
     def program_bug_log(self, text):
+        if self.user == 'admin':
+            QMessageBox.information(self, "Information", f"오류가 발생했습니다\nError Log: {text}")
+        else:
+            QMessageBox.information(self, "Information", f"오류가 발생했습니다")
         self.user_bugging(text)
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
