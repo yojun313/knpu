@@ -16,6 +16,7 @@ class Manager_User:
     def __init__(self, main_window):
         self.main = main_window
         self.user_init_table()
+        self.device_init_table()
         self.user_buttonMatch()
 
     def user_init_table(self):
@@ -33,6 +34,25 @@ class Manager_User:
         self.main.table_maker(
             widgetname=self.main.user_tablewidget,
             data=user_data,
+            column=columns,
+        )
+
+    def device_init_table(self):
+        # 데이터베이스 연결 및 데이터 가져오기
+        self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+        userDF = self.main.mySQL_obj.TableToDataframe('device_list')
+        device_data = [(user, device) for _, device, user in userDF.itertuples(index=False, name=None)]
+        device_data = sorted(device_data, key=lambda x: (not x[0][0].isalpha(), x[0]))
+
+        # userNameList 및 userKeyList 업데이트
+        self.device_list = [device for name, device in device_data]
+        self.user_list = [name for name, device in device_data]
+
+        # 테이블 설정
+        columns = ['User', 'Device']
+        self.main.table_maker(
+            widgetname=self.main.device_tablewidget,
+            data=device_data,
             column=columns,
         )
 
@@ -114,6 +134,28 @@ class Manager_User:
         self.main.userDB_list_add_button.clicked.connect(self.toolbox_DBlistItem_add)
         self.main.userDB_list_view_button.clicked.connect(self.toolbox_DBlistItem_view)
         self.main.userDB_list_save_button.clicked.connect(self.toolbox_DBlistItem_save)
+        self.main.device_delete_button.clicked.connect(self.user_delete_device)
+
+    def user_delete_device(self):
+        try:
+            if self.main.user != 'admin':
+                ok, password = self.main.pw_check()
+                if not ok or password != self.main.admin_password:
+                    return
+
+            selected_row = self.main.device_tablewidget.currentRow()
+            if selected_row >= 0:
+                reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.device_list[selected_row]}를 삭제하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                    self.main.mySQL_obj.deleteTableRowByColumn('device_list', self.device_list[selected_row], 'device_name')
+                    self.device_list.pop(selected_row)
+                    self.main.user_tablewidget.removeRow(selected_row)
+                    self.device_init_table()
+
+        except Exception as e:
+            self.main.program_bug_log(traceback.format_exc())
 
     def userDB_layout_maker(self):
         # File Explorer를 탭 레이아웃에 추가
