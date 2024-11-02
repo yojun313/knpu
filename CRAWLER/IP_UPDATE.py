@@ -12,10 +12,7 @@ proxy_list = ToolModule_obj.read_txt(proxy_path)
 proxy_list = [[proxy] for proxy in proxy_list]
 
 mysql_obj.connectDB('crawler_db')
-try:
-    mysql_obj.droptable('proxy_list')
-except:
-    pass
+mysql_obj.droptable('proxy_list')
 mysql_obj.newTable('proxy_list', ['proxy'])
 mysql_obj.insertToTable('proxy_list', proxy_list)
 mysql_obj.commit()
