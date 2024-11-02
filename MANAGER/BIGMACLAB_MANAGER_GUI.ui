@@ -459,7 +459,7 @@
        </layout>
       </widget>
       <widget class="QWidget" name="page_user">
-       <layout class="QVBoxLayout" name="verticalLayout_data_process">
+       <layout class="QVBoxLayout" name="verticalLayout_user">
         <item>
          <widget class="QTabWidget" name="tabWidget_user">
           <property name="tabPosition">
@@ -593,6 +593,27 @@
                  </layout>
                 </item>
                </layout>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tab_devicelist">
+           <attribute name="title">
+            <string>Device List</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout">
+            <item>
+             <widget class="QTableWidget" name="device_tablewidget"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <item>
+               <widget class="QPushButton" name="device_delete_button">
+                <property name="text">
+                 <string>디바이스 삭제</string>
+                </property>
+               </widget>
               </item>
              </layout>
             </item>
