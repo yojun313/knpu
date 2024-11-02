@@ -1,7 +1,7 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic, QtGui
-from PyQt5.QtWidgets import QTableWidget, QScrollArea, QTableWidgetItem, QVBoxLayout, QTextEdit, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QTextEdit, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication
 from openai import OpenAI
 import shutil
@@ -25,6 +25,7 @@ import gc
 import warnings
 import traceback
 import atexit
+import re
 warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -105,7 +106,9 @@ class MainWindow(QtWidgets.QMainWindow):
                             raise
                         # DB 불러오기
                         self.Manager_User_obj = Manager_User(self)
-                        self.userNameList = self.Manager_User_obj.userNameList
+                        self.userNameList = self.Manager_User_obj.userNameList # User Table 유저 리스트
+                        self.user_list = self.Manager_User_obj.user_list # Device Table 유저 리스트
+                        self.device_list = self.Manager_User_obj.device_list
                         self.userPushOverKeyList = self.Manager_User_obj.userKeyList
                         print("Done")
                         break
@@ -131,7 +134,6 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.Manager_Board_obj = Manager_Board(self)
                         self.Manager_Analysis_obj = Manager_Analysis(self)
                         self.Manager_userDB_generate = False
-
                         print("Done")
                         break
                     except:
@@ -201,26 +203,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def login_program(self):
         try:
-            while True:
-                try:
-                    self.mySQL_obj.connectDB('bigmaclab_manager_db')
-                    self.device_list = [item[0] for item in self.mySQL_obj.TableToList('device_list')]
-                    self.name_list = [item[1] for item in self.mySQL_obj.TableToList('device_list')]
-                    if len(self.device_list) > 5:
-                        break
-                except:
-                    reply = QMessageBox.question(self, 'Confirm Delete',
-                                                 f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",
-                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                    if reply == QMessageBox.Yes:
-                        continue
-                    else:
-                        return False
-
             current_device = socket.gethostname()
             if current_device in self.device_list:
                 print("Done")
-                self.user = self.name_list[self.device_list.index(current_device)]
+                self.user = self.user_list[self.device_list.index(current_device)]
                 return True
             else:
                 input_dialog_id = QInputDialog(self)
@@ -236,9 +222,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     QMessageBox.warning(self, 'Error', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
                     return False
 
+                answer_password = 'kingsman' if user_name == 'admin' else 'bigmaclab2022!'
+
                 self.user = user_name
                 ok, password = self.pw_check()
-                if ok and password == 'bigmaclab2022!':
+                if ok and password == answer_password:
                     reply = QMessageBox.question(self, 'Confirm Delete', f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if reply == QMessageBox.Yes:
                         self.mySQL_obj.insertToTable('device_list', [[current_device, user_name]])
@@ -250,6 +238,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             f"Device: {current_device}\n"
                         )
                         self.send_pushOver(msg, self.admin_pushoverkey)
+                        self.Manager_User_obj.device_init_table()
                         return True
                     else:
                         QMessageBox.information(self, "Information", "디바이스가 등록되지 않았습니다\n\n다음 실행 시 추가적인 로그인이 필요합니다")
@@ -749,17 +738,24 @@ class MainWindow(QtWidgets.QMainWindow):
         gc.collect()
 
     def pw_check(self):
-        input_dialog = QInputDialog(self)
-        input_dialog.setWindowTitle('Password')
-        input_dialog.setLabelText('Enter password:')
-        input_dialog.setTextEchoMode(QLineEdit.Password)
-        input_dialog.resize(300, 200)  # 원하는 크기로 설정
+        while True:
+            input_dialog = QInputDialog(self)
+            input_dialog.setWindowTitle('Password')
+            input_dialog.setLabelText('Enter password:')
+            input_dialog.setTextEchoMode(QLineEdit.Password)
+            input_dialog.resize(300, 200)  # 원하는 크기로 설정
 
-        # 비밀번호 입력 창 띄우기
-        ok = input_dialog.exec_()
-        password = input_dialog.textValue()
+            # 비밀번호 입력 창 띄우기
+            ok = input_dialog.exec_()
+            password = input_dialog.textValue()
 
-        return ok, password
+            # 영어 알파벳만 있는지 확인
+            if re.match("^[a-zA-Z]*$", password):
+                return ok, password
+            else:
+                # 오류 메시지 표시
+                QMessageBox.warning(self, "Invalid Input", "영어로만 입력 가능합니다")
+
 
     def printStatus(self, msg=''):
         msg += ' '
