@@ -29,7 +29,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '2.0.4'
+        self.versionNum = '2.0.5'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -50,6 +50,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.gpt_api_key = "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"
         self.log_text = ''
         self.bug_text = ''
+        self.update_check = False
 
         # 스타일시트 적용
         self.setStyle()
@@ -93,6 +94,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
                 )
 
+
+                # Loading User info from DB
                 while True:
                     try:
                         self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='bigmaclab2022!', port=3306)
@@ -112,10 +115,13 @@ class MainWindow(QtWidgets.QMainWindow):
                             continue
                         else:
                             sys.exit()
+
+                # User Checking & Login Process
                 print("\nChecking User... ", end='')
                 if self.login_program() == False:
                     sys.exit()
 
+                # Loading Data from DB & Making object
                 while True:
                     try:
                         print("\nLoading Data from DB... ", end='')
@@ -123,7 +129,9 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.Manager_Database_obj = Manager_Database(self)
                         self.Manager_Web_obj = Manager_Web(self)
                         self.Manager_Board_obj = Manager_Board(self)
-                        self.Manager_Analysis_generate = False
+                        self.Manager_Analysis_obj = Manager_Analysis(self)
+                        self.Manager_userDB_generate = False
+
                         print("Done")
                         break
                     except:
@@ -134,128 +142,10 @@ class MainWindow(QtWidgets.QMainWindow):
                         else:
                             sys.exit()
 
-                def download_file(download_url, local_filename):
-                    response = requests.get(download_url, stream=True)
-                    total_size = int(response.headers.get('content-length', 0))  # 파일의 총 크기 가져오기
-                    chunk_size = 8192  # 8KB씩 다운로드
-                    downloaded_size = 0  # 다운로드된 크기 초기화
-
-                    with open(local_filename, 'wb') as f:
-                        for chunk in response.iter_content(chunk_size=chunk_size):
-                            if chunk:  # 빈 데이터 확인
-                                f.write(chunk)
-                                downloaded_size += len(chunk)
-                                percent_complete = (downloaded_size / total_size) * 100
-                                print(f"\r{self.new_version} Download: {percent_complete:.0f}%", end='')  # 퍼센트 출력
-
-                    print("\nDownload Complete")
-                    close_console()
-
                 print(f"\nWelcome {self.user}!")
                 self.user_logging('Booting')
-
                 close_console()
-                # New version check
-                current_version = version.parse(self.versionNum)
-                self.new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
-                if current_version < self.new_version:
-                    version_info_html = f"""
-                        <style>
-                            table {{
-                                width: 100%;
-                                border-collapse: collapse;
-                            }}
-                            th, td {{
-                                border: 1px solid #bdc3c7;
-                                padding: 8px;
-                                text-align: left;
-                                font-family: Arial, sans-serif;
-                            }}
-                            th {{
-                                background-color: #34495e;
-                                color: white;
-                            }}
-                            td {{
-                                color: #34495e;
-                            }}
-                            h4 {{
-                                text-align: center;
-                            }}
-                        </style>
-                        <table>
-                            <tr><th>Item</th><th>Details</th></tr>
-                            <tr><td><b>Version Num:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][0]}</td></tr>
-                            <tr><td><b>Release Date:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][1]}</td></tr>
-                            <tr><td><b>ChangeLog:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][2]}</td></tr>
-                            <tr><td><b>Version Features:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][3]}</td></tr>
-                            <tr><td><b>Version Status:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][4]}</td></tr>
-                        </table>
-                    """
-
-                    dialog = QDialog(self)
-                    dialog.setWindowTitle(f"New Version Update")
-                    dialog.resize(350, 250)
-
-                    layout = QVBoxLayout()
-
-                    label = QLabel()
-                    label.setText(version_info_html)
-                    label.setWordWrap(True)
-                    label.setTextFormat(Qt.RichText)  # HTML 렌더링
-
-                    # QScrollArea를 사용하여 스크롤 가능하게 설정
-                    scroll_area = QScrollArea()
-                    scroll_area.setWidgetResizable(True)
-                    scroll_area.setWidget(label)
-
-                    layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
-
-                    button_layout = QHBoxLayout()  # 수평 레이아웃
-
-                    # confirm_button과 cancel_button의 크기가 창의 너비에 맞게 비례하도록 설정
-                    confirm_button = QPushButton("Update")
-                    cancel_button = QPushButton("Cancel")
-
-                    # 두 버튼이 창의 가로 너비를 가득 채우도록 크기 정책 설정
-                    confirm_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-                    cancel_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-
-                    confirm_button.setFixedHeight(40)  # 버튼 높이 조정
-                    cancel_button.setFixedHeight(40)  # 버튼 높이 조정
-
-                    # 버튼 클릭 이벤트 연결
-                    confirm_button.clicked.connect(dialog.accept)
-                    cancel_button.clicked.connect(dialog.reject)
-
-                    # 버튼 사이에 간격 추가
-                    button_layout.addWidget(confirm_button)
-                    button_layout.addWidget(cancel_button)
-
-                    layout.addLayout(button_layout)  # 버튼 레이아웃을 메인 레이아웃에 추가
-
-                    dialog.setLayout(layout)
-
-                    # 대화상자 실행
-                    if dialog.exec_() == QDialog.Accepted:
-                        open_console("Version Download Process")
-                        if platform.system() == "Windows":
-                            QMessageBox.information(self, "Information", "새로운 설치 프로그램은 C:/Temp에 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
-                            msg = (
-                                "[ Admin Notification ]\n\n"
-                                f"{self.user} updated {current_version} -> {self.new_version}"
-                            )
-                            self.send_pushOver(msg, self.admin_pushoverkey)
-                            self.user_logging(f'Program Update ({current_version} -> {self.new_version})')
-
-                            self.printStatus("버전 업데이트 중...")
-                            import subprocess
-                            download_file_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.new_version}.exe")
-                            download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe", download_file_path)
-                            subprocess.Popen([download_file_path], shell=True)
-                            close_console()
-                            sys.exit()
-                    else:
-                        pass
+                self.update_program()
 
             except Exception as e:
                 QMessageBox.information(self, "Information", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
@@ -266,6 +156,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+
 
     def user_logging(self, text=''):
         try:
@@ -372,6 +263,122 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             QMessageBox.information(self, "Information", f"오류가 발생했습니다. 프로그램을 종료합니다\nError Log: {traceback.format_exc()}")
             return False
+
+    def update_program(self):
+        try:
+            if self.update_check == True:
+                return
+            def download_file(download_url, local_filename):
+                response = requests.get(download_url, stream=True)
+                total_size = int(response.headers.get('content-length', 0))  # 파일의 총 크기 가져오기
+                chunk_size = 8192  # 8KB씩 다운로드
+                downloaded_size = 0  # 다운로드된 크기 초기화
+
+                with open(local_filename, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=chunk_size):
+                        if chunk:  # 빈 데이터 확인
+                            f.write(chunk)
+                            downloaded_size += len(chunk)
+                            percent_complete = (downloaded_size / total_size) * 100
+                            print(f"\r{self.new_version} Download: {percent_complete:.0f}%", end='')  # 퍼센트 출력
+
+                print("\nDownload Complete")
+                close_console()
+
+            # New version check
+            current_version = version.parse(self.versionNum)
+            self.new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
+            if current_version < self.new_version:
+                self.update_check = True
+                version_info_html = f"""
+                    <style>
+                        table {{
+                            width: 100%;
+                            border-collapse: collapse;
+                        }}
+                        th, td {{
+                            border: 1px solid #bdc3c7;
+                            padding: 8px;
+                            text-align: left;
+                            font-family: Arial, sans-serif;
+                        }}
+                        th {{
+                            background-color: #34495e;
+                            color: white;
+                        }}
+                        td {{
+                            color: #34495e;
+                        }}
+                        h4 {{
+                            text-align: center;
+                        }}
+                    </style>
+                    <table>
+                        <tr><th>Item</th><th>Details</th></tr>
+                        <tr><td><b>Version Num:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][0]}</td></tr>
+                        <tr><td><b>Release Date:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][1]}</td></tr>
+                        <tr><td><b>ChangeLog:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][2]}</td></tr>
+                        <tr><td><b>Version Features:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][3]}</td></tr>
+                        <tr><td><b>Version Status:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][4]}</td></tr>
+                    </table>
+                """
+
+                dialog = QDialog(self)
+                dialog.setWindowTitle(f"New Version Released")
+                dialog.resize(350, 250)
+
+                layout = QVBoxLayout()
+
+                label = QLabel()
+                label.setText(version_info_html)
+                label.setWordWrap(True)
+                label.setTextFormat(Qt.RichText)  # HTML 렌더링
+
+                layout.addWidget(label, alignment=Qt.AlignHCenter)
+
+                button_layout = QHBoxLayout()  # 수평 레이아웃
+
+                # confirm_button과 cancel_button의 크기가 창의 너비에 맞게 비례하도록 설정
+                confirm_button = QPushButton("Update")
+                cancel_button = QPushButton("Cancel")
+
+                # 버튼 클릭 이벤트 연결
+                confirm_button.clicked.connect(dialog.accept)
+                cancel_button.clicked.connect(dialog.reject)
+
+                # 버튼 사이에 간격 추가
+                button_layout.addWidget(confirm_button)
+                button_layout.addWidget(cancel_button)
+
+                layout.addLayout(button_layout)  # 버튼 레이아웃을 메인 레이아웃에 추가
+
+                dialog.setLayout(layout)
+
+                # 대화상자 실행
+                if dialog.exec_() == QDialog.Accepted:
+                    open_console("Version Download Process")
+                    if platform.system() == "Windows":
+                        QMessageBox.information(self, "Information",
+                                                "새로운 설치 프로그램은 C:/Temp에 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
+                        msg = (
+                            "[ Admin Notification ]\n\n"
+                            f"{self.user} updated {current_version} -> {self.new_version}"
+                        )
+                        self.send_pushOver(msg, self.admin_pushoverkey)
+                        self.user_logging(f'Program Update ({current_version} -> {self.new_version})')
+
+                        self.printStatus("버전 업데이트 중...")
+                        import subprocess
+                        download_file_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.new_version}.exe")
+                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe",
+                                      download_file_path)
+                        subprocess.Popen([download_file_path], shell=True)
+                        close_console()
+                        sys.exit()
+                else:
+                    pass
+        except:
+            pass
 
     def statusBar_init(self):
         # 상태 표시줄 생성
@@ -706,31 +713,37 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stackedWidget.setCurrentIndex(index)
         # DATABASE
         if index == 0:
+            self.update_program()
             self.Manager_Database_obj.database_refresh_DB()
             QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
 
         # CRAWLER
         elif index == 1:
+            self.update_program()
             self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr:81', self.Manager_Web_obj.crawler_web_layout)
         # ANALYSIS
         elif index == 2:
+            self.update_program()
             self.printStatus()
-            if self.Manager_Analysis_generate == False:
-                self.Manager_Analysis_obj = Manager_Analysis(self)
-                self.Manager_Analysis_generate = True
             self.Manager_Analysis_obj.dataprocess_refresh_DB()
         # BOARD
         elif index == 3:
+            self.update_program()
             self.printStatus()
             pass
         # WEB
         elif index == 4:
+            self.update_program()
             self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
         # USER
         elif index == 5:
+            self.update_program()
             self.printStatus()
+            if self.Manager_userDB_generate == False:
+                self.Manager_User_obj.userDB_layout_maker()
+                self.Manager_userDB_generate = True
             pass
             
         gc.collect()
