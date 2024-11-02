@@ -750,7 +750,7 @@ class MainWindow(QtWidgets.QMainWindow):
             password = input_dialog.textValue()
 
             # 영어 알파벳만 있는지 확인
-            if re.match("^[a-zA-Z]*$", password):
+            if re.match("^[a-zA-Z0-9!@#$%^&*()_+=-]*$", password):
                 return ok, password
             else:
                 # 오류 메시지 표시
