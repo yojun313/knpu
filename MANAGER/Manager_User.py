@@ -17,7 +17,6 @@ class Manager_User:
         self.main = main_window
         self.user_init_table()
         self.user_buttonMatch()
-        self.userDB_layout_maker()
 
     def user_init_table(self):
         # 데이터베이스 연결 및 데이터 가져오기
@@ -43,65 +42,63 @@ class Manager_User:
             email = self.main.user_email_lineinput.text()
             key = self.main.user_key_lineinput.text()
 
-            ok, password = self.main.pw_check()
+            if self.main.user != 'admin':
+                ok, password = self.main.pw_check()
+                if not ok or password != self.main.admin_password:
+                    return
 
-            # 비밀번호 검증
-            if ok and password == self.main.admin_password:
+            self.main.mySQL_obj.connectDB('user_db')
 
+            reply = QMessageBox.question(self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?",
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Yes:
                 self.main.mySQL_obj.connectDB('user_db')
+                self.main.mySQL_obj.insertToTable(tableName='user_info', data_list=[[name, email, key]])
+                self.userNameList.append(name)
+                self.main.mySQL_obj.newDB(name+'_db')
+                self.main.mySQL_obj.newTable('manager_record', ['Date', 'Log', 'Bug'])
+                self.main.mySQL_obj.commit()
 
-                reply = QMessageBox.question(self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if reply == QMessageBox.Yes:
-                    self.main.mySQL_obj.connectDB('user_db')
-                    self.main.mySQL_obj.insertToTable(tableName='user_info', data_list=[[name, email, key]])
-                    self.userNameList.append(name)
-                    self.main.mySQL_obj.newDB(name+'_db')
-                    self.main.mySQL_obj.newTable('manager_record', ['Date', 'Log', 'Bug'])
-                    self.main.mySQL_obj.commit()
+                row_position = self.main.user_tablewidget.rowCount()
+                self.main.user_tablewidget.insertRow(row_position)
 
-                    row_position = self.main.user_tablewidget.rowCount()
-                    self.main.user_tablewidget.insertRow(row_position)
+                name_item = QTableWidgetItem(name)
+                email_item = QTableWidgetItem(email)
+                key_item = QTableWidgetItem(key)
 
-                    name_item = QTableWidgetItem(name)
-                    email_item = QTableWidgetItem(email)
-                    key_item = QTableWidgetItem(key)
+                name_item.setTextAlignment(Qt.AlignCenter)
+                email_item.setTextAlignment(Qt.AlignCenter)
+                key_item.setTextAlignment(Qt.AlignCenter)
 
-                    name_item.setTextAlignment(Qt.AlignCenter)
-                    email_item.setTextAlignment(Qt.AlignCenter)
-                    key_item.setTextAlignment(Qt.AlignCenter)
+                self.main.user_tablewidget.setItem(row_position, 0, name_item)
+                self.main.user_tablewidget.setItem(row_position, 1, email_item)
+                self.main.user_tablewidget.setItem(row_position, 2, key_item)
 
-                    self.main.user_tablewidget.setItem(row_position, 0, name_item)
-                    self.main.user_tablewidget.setItem(row_position, 1, email_item)
-                    self.main.user_tablewidget.setItem(row_position, 2, key_item)
+                self.main.user_name_lineinput.clear()
+                self.main.user_email_lineinput.clear()
+                self.main.user_key_lineinput.clear()
 
-                    self.main.user_name_lineinput.clear()
-                    self.main.user_email_lineinput.clear()
-                    self.main.user_key_lineinput.clear()
-
-            elif ok:
-                QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
     def user_delete_user(self):
         try:
-            ok, password = self.main.pw_check()
+            if self.main.user != 'admin':
+                ok, password = self.main.pw_check()
+                if not ok or password != self.main.admin_password:
+                    return
 
-            if ok and password == self.main.admin_password:
-                selected_row = self.main.user_tablewidget.currentRow()
-                if selected_row >= 0:
-                    reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.userNameList[selected_row]}님을 삭제하시겠습니까?",
-                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                    if reply == QMessageBox.Yes:
-                        self.main.mySQL_obj.connectDB('user_db')
-                        self.main.mySQL_obj.deleteTableRowByColumn('user_info', self.userNameList[selected_row], 'Name')
-                        self.main.mySQL_obj.dropDB(self.userNameList[selected_row]+'_db')
-                        self.userNameList.pop(selected_row)
-                        self.main.user_tablewidget.removeRow(selected_row)
+            selected_row = self.main.user_tablewidget.currentRow()
+            if selected_row >= 0:
+                reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.userNameList[selected_row]}님을 삭제하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.main.mySQL_obj.connectDB('user_db')
+                    self.main.mySQL_obj.deleteTableRowByColumn('user_info', self.userNameList[selected_row], 'Name')
+                    self.main.mySQL_obj.dropDB(self.userNameList[selected_row]+'_db')
+                    self.userNameList.pop(selected_row)
+                    self.main.user_tablewidget.removeRow(selected_row)
 
-            elif ok:
-                QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
@@ -118,7 +115,6 @@ class Manager_User:
         self.main.userDB_list_view_button.clicked.connect(self.toolbox_DBlistItem_view)
         self.main.userDB_list_save_button.clicked.connect(self.toolbox_DBlistItem_save)
 
-
     def userDB_layout_maker(self):
         # File Explorer를 탭 레이아웃에 추가
         self.userDBfiledialog = self.main.filefinder_maker(self.main)
@@ -134,6 +130,8 @@ class Manager_User:
         def create_list(DBname):
             # 데이터베이스에서 테이블 목록 가져오기
             data = self.main.mySQL_obj.showAllTable(database_name=DBname)
+            if self.main.user != 'admin':
+                data.remove('manager_record')
 
             # QListView 생성
             list_view = QListView()
@@ -347,12 +345,6 @@ class Manager_User:
             if not self.selected_DBlistItems or self.selected_DBlistItems == []:
                 self.main.printStatus()
                 return
-
-            if 'manager_record' in self.selected_DBlistItems:
-                if self.main.user != 'admin':
-                    ok, password = self.main.pw_check()
-                    if not ok or password != self.main.admin_password:
-                        return
 
             self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
             folder_path = QFileDialog.getExistingDirectory(self.main, "데이터를 저장할 위치를 선택하세요", self.main.default_directory)
