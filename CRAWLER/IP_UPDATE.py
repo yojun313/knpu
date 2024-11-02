@@ -13,6 +13,7 @@ proxy_list = [[proxy] for proxy in proxy_list]
 
 mysql_obj.connectDB('crawler_db')
 mysql_obj.droptable('proxy_list')
+mysql_obj.commit()
 mysql_obj.newTable('proxy_list', ['proxy'])
 mysql_obj.insertToTable('proxy_list', proxy_list)
 mysql_obj.commit()
