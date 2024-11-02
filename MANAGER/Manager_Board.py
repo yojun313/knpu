@@ -1,7 +1,7 @@
 import traceback
 import warnings
 from datetime import datetime
-from PyQt5.QtCore import QTimer, QRegExp, Qt
+from PyQt5.QtCore import QTimer, QRegExp, Qt, QDate
 from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton,
@@ -53,143 +53,147 @@ class Manager_Board:
             self.main.program_bug_log(traceback.format_exc())
     def board_add_version(self):
         try:
-            ok, password = self.main.pw_check()
+            if self.main.user != 'admin':
+                ok, password = self.main.pw_check()
+                if not ok or password != self.main.admin_password:
+                    return
 
-            # 비밀번호 검증
-            if ok and password == self.main.admin_password:
-                # QDialog를 상속받은 클래스 생성
-                class VersionInputDialog(QDialog):
-                    def __init__(self):
-                        super().__init__()
-                        self.initUI()
-                        self.data = None  # 데이터를 저장할 속성 추가
+            # QDialog를 상속받은 클래스 생성
+            class VersionInputDialog(QDialog):
+                def __init__(self):
+                    super().__init__()
+                    self.initUI()
+                    self.data = None  # 데이터를 저장할 속성 추가
 
-                    def initUI(self):
-                        self.setWindowTitle('Add Version')
-                        self.resize(400, 400)
+                def initUI(self):
+                    self.setWindowTitle('Add Version')
+                    self.resize(400, 400)
 
-                        # 컨테이너 위젯 생성
-                        container_widget = QWidget()
-                        layout = QVBoxLayout(container_widget)
+                    # 컨테이너 위젯 생성
+                    container_widget = QWidget()
+                    layout = QVBoxLayout(container_widget)
 
-                        # 각 입력 필드를 위한 QLabel 및 QTextEdit 생성
-                        self.version_num_label = QLabel('Version Num:')
-                        self.version_num_input = QLineEdit()
-                        layout.addWidget(self.version_num_label)
-                        layout.addWidget(self.version_num_input)
+                    # 각 입력 필드를 위한 QLabel 및 QTextEdit 생성
+                    self.version_num_label = QLabel('Version Num:')
+                    self.version_num_input = QLineEdit()
+                    layout.addWidget(self.version_num_label)
+                    layout.addWidget(self.version_num_input)
 
-                        self.release_date_label = QLabel('Release Date:')
-                        self.release_date_input = QLineEdit()
-                        layout.addWidget(self.release_date_label)
-                        layout.addWidget(self.release_date_input)
+                    self.release_date_label = QLabel('Release Date:')
+                    self.release_date_input = QLineEdit()
+                    current_date = QDate.currentDate()
+                    formatted_date = current_date.toString("yyyy.MM.dd")
+                    self.release_date_input.setText(formatted_date)
+                    layout.addWidget(self.release_date_label)
+                    layout.addWidget(self.release_date_input)
 
-                        self.changelog_label = QLabel('ChangeLog:')
-                        self.changelog_input = QTextEdit()
-                        layout.addWidget(self.changelog_label)
-                        layout.addWidget(self.changelog_input)
+                    self.changelog_label = QLabel('ChangeLog:')
+                    self.changelog_input = QTextEdit()
+                    layout.addWidget(self.changelog_label)
+                    layout.addWidget(self.changelog_input)
 
-                        self.version_features_label = QLabel('Version Features:')
-                        self.version_features_input = QTextEdit()
-                        layout.addWidget(self.version_features_label)
-                        layout.addWidget(self.version_features_input)
+                    self.version_features_label = QLabel('Version Features:')
+                    self.version_features_input = QTextEdit()
+                    layout.addWidget(self.version_features_label)
+                    layout.addWidget(self.version_features_input)
 
-                        self.version_status_label = QLabel('Version Status:')
-                        self.version_status_input = QLineEdit()
-                        layout.addWidget(self.version_status_label)
-                        layout.addWidget(self.version_status_input)
+                    self.version_status_label = QLabel('Version Status:')
+                    self.version_status_input = QLineEdit()
+                    layout.addWidget(self.version_status_label)
+                    layout.addWidget(self.version_status_input)
 
-                        self.detail_label = QLabel('Detail:')
-                        self.detail_input = QTextEdit()
-                        layout.addWidget(self.detail_label)
-                        layout.addWidget(self.detail_input)
+                    self.detail_label = QLabel('Detail:')
+                    self.detail_input = QTextEdit()
+                    layout.addWidget(self.detail_label)
+                    layout.addWidget(self.detail_input)
 
-                        # 확인 버튼 생성 및 클릭 시 동작 연결
-                        self.submit_button = QPushButton('Submit')
-                        self.submit_button.clicked.connect(self.submit)
-                        layout.addWidget(self.submit_button)
+                    # 확인 버튼 생성 및 클릭 시 동작 연결
+                    self.submit_button = QPushButton('Submit')
+                    self.submit_button.clicked.connect(self.submit)
+                    layout.addWidget(self.submit_button)
 
-                        # QScrollArea 설정
-                        scroll_area = QScrollArea()
-                        scroll_area.setWidgetResizable(True)
-                        scroll_area.setWidget(container_widget)  # 컨테이너 위젯을 스크롤 영역에 추가
+                    # QScrollArea 설정
+                    scroll_area = QScrollArea()
+                    scroll_area.setWidgetResizable(True)
+                    scroll_area.setWidget(container_widget)  # 컨테이너 위젯을 스크롤 영역에 추가
 
-                        # 최종 레이아웃 설정
-                        final_layout = QVBoxLayout()
-                        final_layout.addWidget(scroll_area)
-                        self.setLayout(final_layout)
+                    # 최종 레이아웃 설정
+                    final_layout = QVBoxLayout()
+                    final_layout.addWidget(scroll_area)
+                    self.setLayout(final_layout)
 
-                    def submit(self):
-                        # 입력된 데이터를 확인하고 처리
-                        version_num = self.version_num_input.text()
-                        release_date = self.release_date_input.text()
-                        changelog = self.changelog_input.toPlainText()
-                        version_features = self.version_features_input.toPlainText()
-                        version_status = self.version_status_input.text()
-                        detail = self.detail_input.toPlainText()
+                def submit(self):
+                    # 입력된 데이터를 확인하고 처리
+                    version_num = self.version_num_input.text()
+                    release_date = self.release_date_input.text()
+                    changelog = self.changelog_input.toPlainText()
+                    version_features = self.version_features_input.toPlainText()
+                    version_status = self.version_status_input.text()
+                    detail = self.detail_input.toPlainText()
 
-                        self.data = {
-                            'version_num': version_num,
-                            'release_date': release_date,
-                            'changelog': changelog,
-                            'version_features': version_features,
-                            'version_status': version_status,
-                            'detail': detail
-                        }
+                    self.data = {
+                        'version_num': version_num,
+                        'release_date': release_date,
+                        'changelog': changelog,
+                        'version_features': version_features,
+                        'version_status': version_status,
+                        'detail': detail
+                    }
 
-                        QMessageBox.information(self, 'Input Data',
-                                                f'Version Num: {version_num}\nRelease Date: {release_date}\nChangeLog: {changelog}\nVersion Features: {version_features}\nVersion Status: {version_status}\nDetail: {detail}')
-                        self.accept()
+                    QMessageBox.information(self, 'Input Data',
+                                            f'Version Num: {version_num}\nRelease Date: {release_date}\nChangeLog: {changelog}\nVersion Features: {version_features}\nVersion Status: {version_status}\nDetail: {detail}')
+                    self.accept()
 
-                dialog = VersionInputDialog()
-                dialog.exec_()
+            dialog = VersionInputDialog()
+            dialog.exec_()
 
-                # 데이터를 board_add_version 함수에서 사용
-                if dialog.data:
-                    version_data = dialog.data
-                    version_data = list(version_data.values())
-                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                    self.main.mySQL_obj.insertToTable('version_info', version_data)
-                    self.main.mySQL_obj.commit()
-                    self.board_version_refresh()
+            # 데이터를 board_add_version 함수에서 사용
+            if dialog.data:
+                version_data = dialog.data
+                version_data = list(version_data.values())
+                self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                self.main.mySQL_obj.insertToTable('version_info', version_data)
+                self.main.mySQL_obj.commit()
+                self.board_version_refresh()
 
-                    msg = (
-                        "[ New Version Released! ]\n\n"
-                        f"Version Num: {version_data[0]}\n"
-                        f"Release Date: {version_data[1]}\n"
-                        f"ChangeLog: {version_data[2]}\n"
-                        f"Version Features: {version_data[3]}\n"
-                        f"Version Status: {version_data[4]}\n"
-                        f"Version Detail: \n{version_data[5]}\n"
-                    )
-                    reply = QMessageBox.question(self.main, 'Confirm Delete',
-                                                 "업데이트 알림을 전송하시겠습니까?",
-                                                 QMessageBox.Yes | QMessageBox.No,
-                                                 QMessageBox.No)
-                    if reply == QMessageBox.Yes:
-                        for key in self.main.userPushOverKeyList:
-                            self.main.send_pushOver(msg, key)
-            elif ok:
-                QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
+                msg = (
+                    "[ New Version Released! ]\n\n"
+                    f"Version Num: {version_data[0]}\n"
+                    f"Release Date: {version_data[1]}\n"
+                    f"ChangeLog: {version_data[2]}\n"
+                    f"Version Features: {version_data[3]}\n"
+                    f"Version Status: {version_data[4]}\n"
+                    f"Version Detail: \n{version_data[5]}\n"
+                )
+                reply = QMessageBox.question(self.main, 'Confirm Delete',
+                                             "업데이트 알림을 전송하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No,
+                                             QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    for key in self.main.userPushOverKeyList:
+                        self.main.send_pushOver(msg, key)
+
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
     def board_delete_version(self):
         try:
-            ok, password = self.main.pw_check()
-            # 비밀번호 검증
-            if ok and password == self.main.admin_password:
-                self.main.printStatus("삭제 중...")
-                def delete_version():
-                    selected_row = self.main.board_version_tableWidget.currentRow()
-                    if selected_row >= 0:
-                        print(self.version_name_list[selected_row])
+            if self.main.user != 'admin':
+                ok, password = self.main.pw_check()
+                if not ok or password != self.main.admin_password:
+                    return
+            self.main.printStatus("삭제 중...")
+            def delete_version():
+                selected_row = self.main.board_version_tableWidget.currentRow()
+                if selected_row >= 0:
+                    reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?",
+                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
                         self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
                         self.main.mySQL_obj.deleteTableRowByColumn('version_info', self.version_name_list[selected_row], 'Version Num')
                         self.board_version_refresh()
 
-                QTimer.singleShot(1, delete_version)
-                QTimer.singleShot(1, self.main.printStatus)
-            elif ok:
-                QMessageBox.warning(self.main, 'Error', 'Incorrect password. Please try again.')
+            QTimer.singleShot(1, delete_version)
+            QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
     def board_view_version(self):
@@ -582,13 +586,6 @@ class Manager_Board:
                     container_widget = QWidget()
                     layout = QVBoxLayout(container_widget)
 
-                    # 사용자 이름 입력 필드
-                    self.user_label = QLabel('User Name:')
-                    self.user_input = QLineEdit()
-                    self.user_input.setText(self.main.user)
-                    layout.addWidget(self.user_label)
-                    layout.addWidget(self.user_input)
-
                     # 비밀번호 입력 필드
                     self.password_label = QLabel('Password (수정 및 삭제용):')
                     self.password_input = QLineEdit()
@@ -662,7 +659,7 @@ class Manager_Board:
 
                 def submit(self):
                     # 입력된 데이터를 확인하고 처리
-                    user_name = self.user_input.text()
+                    user_name = self.main.user
                     pw = self.password_input.text()
                     post_title = self.post_title_input.text()
                     post_date = datetime.now().strftime("%Y.%m.%d %H:%M")
