@@ -705,27 +705,31 @@ class MainWindow(QtWidgets.QMainWindow):
             self.update_program()
             self.Manager_Database_obj.database_refresh_DB()
             QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
-
+            gc.collect()
         # CRAWLER
         elif index == 1:
             self.update_program()
             self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr:81', self.Manager_Web_obj.crawler_web_layout)
+            gc.collect()
         # ANALYSIS
         elif index == 2:
             self.update_program()
             self.printStatus()
             self.Manager_Analysis_obj.dataprocess_refresh_DB()
+            gc.collect()
         # BOARD
         elif index == 3:
             self.update_program()
             self.printStatus()
+            gc.collect()
             pass
         # WEB
         elif index == 4:
             self.update_program()
             self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
+            gc.collect()
         # USER
         elif index == 5:
             self.update_program()
@@ -733,6 +737,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.Manager_userDB_generate == False:
                 self.Manager_User_obj.userDB_layout_maker()
                 self.Manager_userDB_generate = True
+                gc.collect()
             pass
             
         gc.collect()
