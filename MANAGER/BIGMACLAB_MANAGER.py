@@ -37,7 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
         uic.loadUi(ui_path, self)
 
-        self.setWindowTitle("BIGMACLAB MANAGER")  # 창의 제목 설정
+        self.setWindowTitle("MANAGER")  # 창의 제목 설정
         if platform.system() == "Windows":
             self.resize(1400, 1000)
             #self.showMaximized()  # 전체 화면으로 창 열기
