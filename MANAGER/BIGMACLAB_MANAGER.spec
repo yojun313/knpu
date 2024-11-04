@@ -5,14 +5,17 @@ a = Analysis(
     ['C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER_GUI.ui', 'encrypted_env', '.')],
+    datas=[
+        ('C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER_GUI.ui', '.'),
+        ('C:/GitHub/BIGMACLAB/MANAGER/encrypted_env', '.')
+    ],
     hiddenimports=['seaborn.external.kde'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
-    optimize=0,
+    optimize=0,a
 )
 pyz = PYZ(a.pure)
 
