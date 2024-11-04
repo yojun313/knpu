@@ -13,6 +13,8 @@ from Manager_Board import Manager_Board
 from Manager_User import Manager_User
 from Manager_Analysis import Manager_Analysis
 from Manager_Console import open_console, close_console
+from dotenv import load_dotenv
+from cryptography.fernet import Fernet
 from datetime import datetime
 import platform
 import requests
@@ -46,9 +48,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.statusBar_init()
         self.fullstorage = 0
-        self.admin_password = 'kingsman'
-        self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
-        self.gpt_api_key = "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"
+        self.decrypt_process()
         self.log_text = ''
         self.bug_text = ''
         self.update_check = False
@@ -85,7 +85,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if os.path.isdir(self.default_directory) == False:
                     os.mkdir(self.default_directory)
 
-                DB_ip = '121.152.225.232'
+                DB_ip = self.db_ip
                 if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
                     DB_ip = '192.168.0.3'
 
@@ -99,7 +99,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # Loading User info from DB
                 while True:
                     try:
-                        self.mySQL_obj = mySQL(host=DB_ip, user='admin', password='bigmaclab2022!', port=3306)
+                        self.mySQL_obj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
                         print("\nLoading User Info from DB... ", end = '')
                         if self.mySQL_obj.showAllDB() == []:
                             print("Failed")
@@ -145,7 +145,9 @@ class MainWindow(QtWidgets.QMainWindow):
                             os._exit(0)
 
                 print(f"\nWelcome {self.user}!")
-                self.user_logging('Booting')
+
+                location = self.user_location()
+                self.user_logging(f'Booting ({location})')
                 close_console()
                 self.update_program()
 
@@ -159,6 +161,36 @@ class MainWindow(QtWidgets.QMainWindow):
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
 
+    def decrypt_process(self):
+        # 암호화 키 로드
+        def load_key():
+            with open("env.key", "rb") as key_file:
+                return key_file.read()
+
+        def decrypt_env_file(encrypted_file_path):
+            key = load_key()
+            fernet = Fernet(key)
+
+            # 암호화된 파일 읽기
+            with open(encrypted_file_path, "rb") as file:
+                encrypted_data = file.read()
+
+            # 파일 복호화 및 .decrypted_env 파일로 저장
+            decrypted_data = fernet.decrypt(encrypted_data).decode()
+            with open(".decrypted_env", "w") as dec_file:
+                dec_file.write(decrypted_data)
+
+        decrypt_env_file("encrypted_env")
+        load_dotenv(".decrypted_env")
+
+        self.admin_password = os.getenv('ADMIN_PASSWORD')
+        self.public_password = os.getenv('PUBLIC_PASSWORD')
+        self.admin_pushoverkey = os.getenv('ADMIN_PUSHOVER')
+        self.gpt_api_key = os.getenv('GPT_APIKEY')
+        self.db_ip = os.getenv('DB_IP')
+
+        if os.path.exists(".decrypted_env"):
+            os.remove(".decrypted_env")
 
     def user_logging(self, text=''):
         try:
@@ -201,7 +233,22 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             pass
 
+    def user_location(self, detail=False):
+        try:
+            response = requests.get("https://ipinfo.io")
+            data = response.json()
+            returnData = f"ip: {data.get("ip")} | location: {data.get("city")} / {data.get('region')} / {data.get('country')}"
+            if detail == True:
+                returnData = f"ip: {data.get("ip")} | location: {data.get("city")} / {data.get('region')} / {data.get('country')} / {data.get('loc')}"
+            return returnData
+        except requests.RequestException as e:
+            return ""
+
     def login_program(self):
+        def admin_notify():
+            msg = f'[ Admin Notification ]\n\nUnknown tried to connect\n\nLocation: {self.user_location(True)}'
+            self.send_pushOver(msg, self.admin_pushoverkey)
+
         try:
             current_device = socket.gethostname()
             if current_device in self.device_list:
@@ -219,10 +266,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     QMessageBox.warning(self, 'Program Shutdown', '프로그램을 종료합니다')
                     return False
                 elif user_name not in self.userNameList:
+                    admin_notify()
                     QMessageBox.warning(self, 'Unknown User', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
                     return False
 
-                answer_password = 'kingsman' if user_name == 'admin' else 'bigmaclab2022!'
+                answer_password = self.admin_password if user_name == 'admin' else self.public_password
 
                 self.user = user_name
                 ok, password = self.pw_check()
@@ -236,6 +284,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             "[ New Device Added! ]\n\n"
                             f"User: {user_name}\n"
                             f"Device: {current_device}\n"
+                            f"Location: {self.user_location()}"
                         )
                         self.send_pushOver(msg, self.admin_pushoverkey)
                         self.Manager_User_obj.device_init_table()
@@ -245,12 +294,14 @@ class MainWindow(QtWidgets.QMainWindow):
                         return True
                 elif ok:
                     QMessageBox.warning(self, 'Wrong Password', '비밀번호가 올바르지 않습니다\n\n프로그램을 종료합니다')
+                    admin_notify()
                     return False
                 else:
                     QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
                     return False
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"오류가 발생했습니다. 프로그램을 종료합니다\nError Log: {traceback.format_exc()}")
+            QMessageBox.critical(self, "Error", f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
+            QMessageBox.information(self, "Information", f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
             return False
 
     def update_program(self):
