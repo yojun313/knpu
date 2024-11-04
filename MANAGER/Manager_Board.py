@@ -401,7 +401,6 @@ class Manager_Board:
                 bug_data = list(bug_data.values())
                 self.main.mySQL_obj.connectDB(f"{self.main.user}_db")
                 bug_log = self.main.mySQL_obj.TableToDataframe('manager_record')['Bug'].iloc[-1]
-
                 bug_data.append(bug_log)
 
                 self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
@@ -416,7 +415,7 @@ class Manager_Board:
                     f"Title: {bug_data[2]}\n"
                     f"Datetime: {bug_data[3]}\n"
                     f"Detail: \n{bug_data[4]}\n"
-                    f"log: \n\n{bug_data[5][:-1000]}\n"
+                    f"log: \n\n{bug_log}\n"
                 )
                 self.main.send_pushOver(msg, self.main.admin_pushoverkey)
         except Exception as e:
