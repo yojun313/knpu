@@ -30,7 +30,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '2.0.5'
+        self.versionNum = '2.0.6'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
