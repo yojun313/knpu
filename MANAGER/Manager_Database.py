@@ -181,7 +181,6 @@ class Manager_Database:
 
     def database_dbinfo_viewer(self, row):
         try:
-            raise
             DBdata = self.DB['DBdata'][row]
             DBname = self.DB['DBlist'][row]
             DBinfo = self.DB['DBinfo'][row]
