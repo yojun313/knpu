@@ -162,10 +162,11 @@ class MainWindow(QtWidgets.QMainWindow):
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
 
     def decrypt_process(self):
+        current_position = os.path.dirname(__file__)
         # 암호화 키 로드
         def load_key():
             try:
-                with open("env.key", "rb") as key_file:
+                with open(os.path.join(current_position, 'env.key'), "rb") as key_file:
                     return key_file.read()
             except:
                 secret_key = os.getenv("SECRET_KEY")
@@ -180,12 +181,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 encrypted_data = file.read()
 
             # 파일 복호화 및 .decrypted_env 파일로 저장
-            decrypted_data = fernet.decrypt(encrypted_data).decode()
-            with open(".decrypted_env", "w") as dec_file:
+            decrypted_data = fernet.decrypt(encrypted_data).decode("utf-8")
+            with open(os.path.join(current_position, 'decrypted_env'), "w", encoding="utf-8") as dec_file:
                 dec_file.write(decrypted_data)
 
-        decrypt_env_file("encrypted_env")
-        load_dotenv(".decrypted_env")
+        decrypt_env_file(os.path.join(current_position, 'encrypted_env'))
+        load_dotenv(os.path.join(current_position, 'decrypted_env'))
 
         self.admin_password = os.getenv('ADMIN_PASSWORD')
         self.public_password = os.getenv('PUBLIC_PASSWORD')
@@ -193,8 +194,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.gpt_api_key = os.getenv('GPT_APIKEY')
         self.db_ip = os.getenv('DB_IP')
 
-        if os.path.exists(".decrypted_env"):
-            os.remove(".decrypted_env")
+        if os.path.exists(os.path.join(current_position, 'decrypted_env')):
+            os.remove(os.path.join(current_position, 'decrypted_env'))
 
     def user_logging(self, text=''):
         try:
