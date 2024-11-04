@@ -66,7 +66,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     local_appdata_path = os.getenv("LOCALAPPDATA")
                     desktop_path = os.path.join(os.getenv("USERPROFILE"), "Desktop")
 
-                    self.default_directory = os.path.join(desktop_path, "MANAGER_FILES")
+                    self.default_directory = "C:/BIGMACLAB_MANAGER"
                     if not os.path.exists(self.default_directory):
                         os.makedirs(self.default_directory)
                 else:
