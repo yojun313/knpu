@@ -12,7 +12,7 @@ from Manager_Web import Manager_Web
 from Manager_Board import Manager_Board
 from Manager_User import Manager_User
 from Manager_Analysis import Manager_Analysis
-from Manager_Console import open_console, close_console, open_resource_console
+from Manager_Console import open_console, close_console
 from datetime import datetime
 import platform
 import requests
@@ -154,7 +154,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 QMessageBox.information(self, "Information", f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
                 sys.exit()
 
-        open_resource_console()
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
