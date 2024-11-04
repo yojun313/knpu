@@ -1,30 +1,24 @@
-import subprocess
+from cryptography.fernet import Fernet
 
-class Console():
-    def __init__(self):
-        self.console_process = None
+# 암호화 키 로드
+def load_key():
+    with open("env.key", "rb") as key_file:
+        return key_file.read()
 
-    def open_console(self):
-        """콘솔 창을 열고 프로세스를 유지"""
-        if self.console_process is None:  # 콘솔이 열려있지 않다면
-            # /K 옵션을 사용해서 명령어가 실행된 후에도 콘솔 창을 유지
-            self.console_process = subprocess.Popen(
-                ['cmd.exe', '/K'],  # /K를 통해 콘솔이 종료되지 않도록 유지
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                creationflags=subprocess.CREATE_NEW_CONSOLE
-            )
+# .env 파일 암호화
+def encrypt_env_file(env_file_path):
+    key = load_key()
+    fernet = Fernet(key)
 
-    def run_function_in_console(self, message):
-        """콘솔 창에 메시지를 전달하는 함수"""
-        self.open_console()  # 콘솔이 열려있지 않으면 열기
+    with open(env_file_path, "rb") as file:
+        original_data = file.read()
 
-        # 콘솔에 메시지 출력 명령 전달
-        if self.console_process is not None:
-            self.console_process.stdin.write(f'echo {message}\n')
-            self.console_process.stdin.flush()  # 파이프에 강제로 보내기
+    encrypted_data = fernet.encrypt(original_data)
 
-console = Console()  # Console 객체 생성
-console.run_function_in_console('Hello from PyQt')  # 콘솔 창에 메시지 출력
+    # 암호화된 데이터를 새로운 파일에 저장
+    with open("encrypted_env", "wb") as encrypted_file:
+        encrypted_file.write(encrypted_data)
+
+# .env 파일 암호화
+encrypt_env_file("lock.env")
+print(".env 파일이 암호화되어 'encrypted_env_file'로 저장되었습니다.")
