@@ -155,7 +155,7 @@ class Manager_Database:
                 self.init_table_view(self.parent.mySQL_obj, self.target_db)
 
         try:
-            reply = QMessageBox.question(self.main, 'Confirm Delete', 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self.main, 'Confirm View', 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 self.main.printStatus("불러오는 중...")
 
@@ -180,207 +180,211 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_dbinfo_viewer(self, row):
-
-        DBdata = self.DB['DBdata'][row]
-        DBname = self.DB['DBlist'][row]
-        DBinfo = self.DB['DBinfo'][row]
-
-        self.main.user_logging(f'DATABASE -> dbinfo_viewer({DBname})')
-
-        # 다이얼로그 생성
-        dialog = QDialog(self.main)
-        dialog.setWindowTitle(f'{DBname}_Info')
-        dialog.resize(540, 600)
-
-        layout = QVBoxLayout()
-
-        crawlType = DBdata[1]
-        crawlOption_int = int(DBdata[4])
-
-        json_str = DBinfo[2]
-        numbers = re.findall(r'\d+', json_str)
         try:
-            CountText = (
-                f"Article Count: {numbers[1]}\n"
-                f"Reply Count: {numbers[2]}\n"
-                f"Rereply Count: {numbers[3]}\n"
-            )
-            if numbers[1] == '0' and numbers[2] == '0' and numbers[3] == '0':
+            raise
+            DBdata = self.DB['DBdata'][row]
+            DBname = self.DB['DBlist'][row]
+            DBinfo = self.DB['DBinfo'][row]
+
+            self.main.user_logging(f'DATABASE -> dbinfo_viewer({DBname})')
+
+            # 다이얼로그 생성
+            dialog = QDialog(self.main)
+            dialog.setWindowTitle(f'{DBname}_Info')
+            dialog.resize(540, 600)
+
+            layout = QVBoxLayout()
+
+            crawlType = DBdata[1]
+            crawlOption_int = int(DBdata[4])
+
+            json_str = DBinfo[2]
+            numbers = re.findall(r'\d+', json_str)
+            try:
+                CountText = (
+                    f"Article Count: {numbers[1]}\n"
+                    f"Reply Count: {numbers[2]}\n"
+                    f"Rereply Count: {numbers[3]}\n"
+                )
+                if numbers[1] == '0' and numbers[2] == '0' and numbers[3] == '0':
+                    CountText = "크롤링 중..."
+            except:
                 CountText = "크롤링 중..."
-        except:
-            CountText = "크롤링 중..."
 
 
-        match crawlType:
-            case 'navernews':
-                match crawlOption_int:
-                    case 1:
-                        crawlOption = '기사 + 댓글'
-                    case 2:
-                        crawlOption = '기사 + 댓글/대댓글'
+            match crawlType:
+                case 'navernews':
+                    match crawlOption_int:
+                        case 1:
+                            crawlOption = '기사 + 댓글'
+                        case 2:
+                            crawlOption = '기사 + 댓글/대댓글'
 
-            case 'naverblog':
-                match crawlOption_int:
-                    case 1:
-                        crawlOption = '블로그 본문'
-                    case 2:
-                        crawlOption = '블로그 본문 + 댓글/대댓글'
+                case 'naverblog':
+                    match crawlOption_int:
+                        case 1:
+                            crawlOption = '블로그 본문'
+                        case 2:
+                            crawlOption = '블로그 본문 + 댓글/대댓글'
 
-            case 'navercafe':
-                match crawlOption_int:
-                    case 1:
-                        crawlOption = '카페 본문'
-                    case 2:
-                        crawlOption = '카페 본문 + 댓글/대댓글'
+                case 'navercafe':
+                    match crawlOption_int:
+                        case 1:
+                            crawlOption = '카페 본문'
+                        case 2:
+                            crawlOption = '카페 본문 + 댓글/대댓글'
 
-            case 'youtube':
-                match crawlOption_int:
-                    case 1:
-                        crawlOption = '영상 정보 + 댓글/대댓글 (100개 제한)'
-                    case 2:
-                        crawlOption = '영상 정보 + 댓글/대댓글(무제한)'
+                case 'youtube':
+                    match crawlOption_int:
+                        case 1:
+                            crawlOption = '영상 정보 + 댓글/대댓글 (100개 제한)'
+                        case 2:
+                            crawlOption = '영상 정보 + 댓글/대댓글(무제한)'
 
-            case 'chinadaily':
-                match crawlOption_int:
-                    case 1:
-                        crawlOption = '기사 + 댓글'
+                case 'chinadaily':
+                    match crawlOption_int:
+                        case 1:
+                            crawlOption = '기사 + 댓글'
 
-            case 'chinasina':
-                match crawlOption_int:
-                    case 1:
-                        crawlOption = '기사'
-                    case 2:
-                        crawlOption = '기사 + 댓글'
+                case 'chinasina':
+                    match crawlOption_int:
+                        case 1:
+                            crawlOption = '기사'
+                        case 2:
+                            crawlOption = '기사 + 댓글'
 
-            case 'dcinside':
-                match crawlOption_int:
-                    case 1:
-                        crawlOption = '게시글'
-                    case 2:
-                        crawlOption = '게시글 + 댓글'
-            case _:
-                crawlOption = crawlOption_int
+                case 'dcinside':
+                    match crawlOption_int:
+                        case 1:
+                            crawlOption = '게시글'
+                        case 2:
+                            crawlOption = '게시글 + 댓글'
+                case _:
+                    crawlOption = crawlOption_int
 
-        starttime = DBdata[5]
-        endtime = DBdata[6]
+            starttime = DBdata[5]
+            endtime = DBdata[6]
 
-        try:
-            ElapsedTime = datetime.strptime(endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
-        except:
-            ElapsedTime = str(datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M"))[:-7]
+            try:
+                ElapsedTime = datetime.strptime(endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
+            except:
+                ElapsedTime = str(datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M"))[:-7]
 
-        starttime = starttime.replace('/', '-')
-        endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
-            
-        # HTML을 사용하여 디테일 표시
-        details_html = f"""
-            <style>
-                h2 {{
-                    color: #2c3e50;
-                    text-align: center;
-                }}
-                table {{
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-family: Arial, sans-serif;
-                    font-size: 14px;
-                }}
-                th, td {{
-                    border: 1px solid #bdc3c7;
-                    padding: 8px;
-                    text-align: left;
-                }}
-                th {{
-                    background-color: #34495e;
-                    color: white;
-                }}
-                td {{
-                    color: #34495e;
-                }}
-                .detail-content {{
-                    white-space: pre-wrap;
-                    margin-top: 5px;
-                    font-family: Arial, sans-serif;
-                    font-size: 14px;
-                    color: #34495e;
-                }}
-            </style>
-            <div class="version-details">
-                <table>
-                    <tr>
-                        <th>Item</th>
-                        <th>Details</th>
-                    </tr>
-                    <tr>
-                        <td><b>DB Name:</b></td>
-                        <td>{DBdata[0]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>DB Size:</b></td>
-                        <td>{DBdata[8]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Crawl Type:</b></td>
-                        <td>{DBdata[1]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Crawl Keyword:</b></td>
-                        <td>{DBdata[2]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Crawl Period:</b></td>
-                        <td>{DBdata[3]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Crawl Option:</b></td>
-                        <td>{crawlOption}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Crawl Start:</b></td>
-                        <td>{starttime}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Crawl End:</b></td>
-                        <td>{endtime}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Crawl ElapsedTime:</b></td>
-                        <td>{ElapsedTime}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Crawl Requester:</b></td>
-                        <td>{DBdata[7]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Crawl Server:</b></td>
-                        <td>{DBinfo[0]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Crawl Speed:</b></td>
-                        <td>{DBinfo[1]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Crawl Result:</b></td>
-                        <td class="detail-content">{CountText}</td>
-                    </tr>
-                </table>
-            </div>
-        """
+            starttime = starttime.replace('/', '-')
+            endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
 
-        detail_label = QLabel(details_html)
-        detail_label.setWordWrap(True)
+            # HTML을 사용하여 디테일 표시
+            details_html = f"""
+                <style>
+                    h2 {{
+                        color: #2c3e50;
+                        text-align: center;
+                    }}
+                    table {{
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-family: Arial, sans-serif;
+                        font-size: 14px;
+                    }}
+                    th, td {{
+                        border: 1px solid #bdc3c7;
+                        padding: 8px;
+                        text-align: left;
+                    }}
+                    th {{
+                        background-color: #34495e;
+                        color: white;
+                    }}
+                    td {{
+                        color: #34495e;
+                    }}
+                    .detail-content {{
+                        white-space: pre-wrap;
+                        margin-top: 5px;
+                        font-family: Arial, sans-serif;
+                        font-size: 14px;
+                        color: #34495e;
+                    }}
+                </style>
+                <div class="version-details">
+                    <table>
+                        <tr>
+                            <th>Item</th>
+                            <th>Details</th>
+                        </tr>
+                        <tr>
+                            <td><b>DB Name:</b></td>
+                            <td>{DBdata[0]}</td>
+                        </tr>
+                        <tr>
+                            <td><b>DB Size:</b></td>
+                            <td>{DBdata[8]}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crawl Type:</b></td>
+                            <td>{DBdata[1]}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crawl Keyword:</b></td>
+                            <td>{DBdata[2]}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crawl Period:</b></td>
+                            <td>{DBdata[3]}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crawl Option:</b></td>
+                            <td>{crawlOption}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crawl Start:</b></td>
+                            <td>{starttime}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crawl End:</b></td>
+                            <td>{endtime}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crawl ElapsedTime:</b></td>
+                            <td>{ElapsedTime}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crawl Requester:</b></td>
+                            <td>{DBdata[7]}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crawl Server:</b></td>
+                            <td>{DBinfo[0]}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crawl Speed:</b></td>
+                            <td>{DBinfo[1]}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Crawl Result:</b></td>
+                            <td class="detail-content">{CountText}</td>
+                        </tr>
+                    </table>
+                </div>
+            """
 
-        layout.addWidget(detail_label)
+            detail_label = QLabel(details_html)
+            detail_label.setWordWrap(True)
 
-        # 닫기 버튼 추가
-        close_button = QPushButton('Close')
-        close_button.clicked.connect(dialog.accept)
-        layout.addWidget(close_button)
+            layout.addWidget(detail_label)
 
-        dialog.setLayout(layout)
+            # 닫기 버튼 추가
+            close_button = QPushButton('Close')
+            close_button.clicked.connect(dialog.accept)
+            layout.addWidget(close_button)
 
-        # 다이얼로그 실행
-        dialog.show()
+            dialog.setLayout(layout)
+
+            # 다이얼로그 실행
+            dialog.show()
+
+        except Exception as e:
+            self.main.program_bug_log(traceback.format_exc())
 
     def database_search_DB(self):
         try:
@@ -516,7 +520,7 @@ class Manager_Database:
                         end_date = QDate.fromString(self.end_date_input.text(), date_format)
 
                         if not (start_date.isValid() and end_date.isValid()):
-                            QMessageBox.warning(self, '날짜 오류', '잘못된 날짜 형식입니다.')
+                            QMessageBox.warning(self, 'Wrong Form', '잘못된 날짜 형식입니다.')
                             return  # 확인 동작을 취소함
 
                     if self.radio_filter.isChecked():
@@ -534,7 +538,7 @@ class Manager_Database:
                             else:
                                 self.excl_word_list = excl_word_str.split(', ')
                         except:
-                            QMessageBox.warning(self, '입력 오류', '잘못된 필터링 입력입니다')
+                            QMessageBox.warning(self, 'Wrong Input', '잘못된 필터링 입력입니다')
                             return  # 확인 동작을 취소함
 
                     super().accept()  # 정상적인 경우에만 다이얼로그를 종료함
@@ -552,7 +556,7 @@ class Manager_Database:
 
                 target_db = self.DB['DBlist'][selected_row]
 
-                QMessageBox.information(self.main, "Information", f"DB를 저장할 위치를 선택하여 주십시오")
+                QMessageBox.information(self.main, "Directory Setting", f"DB를 저장할 위치를 선택하여 주십시오")
                 folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
                 if folder_path == '':
                     self.main.printStatus()
@@ -584,7 +588,7 @@ class Manager_Database:
                                 selected_options['start_date'] = start_date.toString(date_format)
                                 selected_options['end_date'] = end_date.toString(date_format)
                             else:
-                                QMessageBox.warning(dialog, '날짜 오류', '잘못된 날짜 형식입니다.')
+                                QMessageBox.warning(dialog, 'Wrong Form', '잘못된 날짜 형식입니다.')
                                 selected_options['option'] = None  # 잘못된 날짜가 입력된 경우 선택 옵션을 None으로 설정
 
                     if selected_options == {}:
@@ -693,14 +697,14 @@ class Manager_Database:
                         gc.collect()
 
                     close_console()
-                    reply = QMessageBox.question(self.main, 'Information', f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                    reply = QMessageBox.question(self.main, 'Notification', f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
                                                  QMessageBox.Yes | QMessageBox.No,
                                                  QMessageBox.No)
                     if reply == QMessageBox.Yes:
                         self.main.openFileExplorer(dbpath)
                     self.main.printStatus()
                 except Exception as e:
-                    QMessageBox.critical(self.main, "Error", f"Failed to save database: {traceback.format_exc()}")
+                    QMessageBox.warning(self.main, "Error", f"Failed to save database: {traceback.format_exc()}")
 
             select_database()
 
