@@ -1563,7 +1563,7 @@ class Manager_Analysis:
 
             if result == 1:
                 self.main.printStatus()
-                reply = QMessageBox.question(self.main, 'Notification' "KEM KIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
+                reply = QMessageBox.question(self.main, 'Notification', "KEM KIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
                                              QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
