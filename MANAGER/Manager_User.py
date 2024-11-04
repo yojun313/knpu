@@ -256,7 +256,7 @@ class Manager_User:
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
-                QMessageBox.warning(self.main, f"Warning", f"{selected_directory[1]}는 CSV 파일이 아닙니다")
+                QMessageBox.warning(self.main, f"Wrong Format", f"{selected_directory[1]}는 CSV 파일이 아닙니다")
                 return
             self.main.printStatus()
 
@@ -358,7 +358,7 @@ class Manager_User:
                 self.main.printStatus()
                 return
             if len(self.selected_DBlistItems) > 1:
-                QMessageBox.information(self.main, "Information", f"선택 가능한 테이블 수는 1개입니다")
+                QMessageBox.warning(self.main, "Wrong Selection", f"선택 가능한 테이블 수는 1개입니다")
                 return
             if self.selected_DBlistItems[0] == 'manager_record':
                 if self.main.user != 'admin':

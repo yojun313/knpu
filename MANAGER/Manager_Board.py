@@ -165,7 +165,7 @@ class Manager_Board:
                     f"Version Status: {version_data[4]}\n"
                     f"Version Detail: \n{version_data[5]}\n"
                 )
-                reply = QMessageBox.question(self.main, 'Confirm Delete',
+                reply = QMessageBox.question(self.main, 'Confirm Notification',
                                              "업데이트 알림을 전송하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No,
                                              QMessageBox.No)
@@ -332,7 +332,7 @@ class Manager_Board:
                     self.version = version
 
                 def initUI(self):
-                    self.setWindowTitle('Add Bug')
+                    self.setWindowTitle('Bug Report')
                     self.resize(400, 400)
 
                     # 컨테이너 위젯 생성
@@ -437,7 +437,6 @@ class Manager_Board:
             QTimer.singleShot(1, delete_bug)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
             self.main.program_bug_log(traceback.format_exc())
     def board_view_bug(self):
         try:
@@ -698,7 +697,7 @@ class Manager_Board:
                     f"Post Date: {post_data[2]}\n"
                     f"Post Text: {post_data[4]}\n"
                 )
-                reply = QMessageBox.question(self.main, 'Confirm Delete', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?\n\nYes: 게시글 전체 알림\nNo: Admin에게만 알림", QMessageBox.Yes | QMessageBox.No,
+                reply = QMessageBox.question(self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?\n\nYes: 게시글 전체 알림\nNo: Admin에게만 알림", QMessageBox.Yes | QMessageBox.No,
                                              QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     for key in self.main.userPushOverKeyList:
@@ -834,14 +833,13 @@ class Manager_Board:
                         self.board_post_refresh()
                         QMessageBox.information(self.main, "Information", f"게시물이 삭제되었습니다")
                     else:
-                        QMessageBox.information(self.main, "Information", f"비밀번호가 일치하지 않습니다")
+                        QMessageBox.warning(self.main, "Wrong Password", f"비밀번호가 일치하지 않습니다")
                         self.main.printStatus()
                         return
 
             QTimer.singleShot(1, delete_post)
             QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
-            QMessageBox.information(self.main, "Information", f"오류가 발생했습니다\nError Log: {e}")
             self.main.program_bug_log(traceback.format_exc())
 
     def board_edit_post(self):
@@ -923,7 +921,7 @@ class Manager_Board:
                         self.board_post_refresh()
                         QMessageBox.information(self.main, "Information", f"게시물이 수정되었습니다")
                 else:
-                    QMessageBox.information(self.main, "Information", f"비밀번호가 일치하지 않습니다")
+                    QMessageBox.warning(self.main, "Wrong Password", f"비밀번호가 일치하지 않습니다")
                     self.main.printStatus()
                     return
         except Exception as e:
