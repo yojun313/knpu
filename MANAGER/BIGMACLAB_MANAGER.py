@@ -63,9 +63,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.listWidget.currentRowChanged.connect(self.display)
 
                 if platform.system() == "Windows":
-                    self.default_directory = 'C:/BIGMACLAB_MANAGER'
+                    import win32com.client
+                    local_appdata_path = os.getenv("LOCALAPPDATA")
+                    desktop_path = os.path.join(os.getenv("USERPROFILE"), "Desktop")
+
+                    self.default_directory = os.path.join(local_appdata_path, "MANAGER_FILES")
                     if not os.path.exists(self.default_directory):
                         os.makedirs(self.default_directory)
+
+                    shortcut_path = os.path.join(desktop_path, 'MANAGER_FILES.lnk')
+                    if not os.path.exists(shortcut_path):
+                        target_path = self.default_directory
+                        shell = win32com.client.Dispatch("WScript.Shell")
+                        shortcut = shell.CreateShortcut(shortcut_path)
+                        shortcut.TargetPath = target_path
+                        shortcut.WorkingDirectory = os.path.dirname(target_path)
+                        shortcut.Save()
                 else:
                     self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
 
