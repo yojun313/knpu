@@ -117,12 +117,12 @@ class MainWindow(QtWidgets.QMainWindow):
                         if reply == QMessageBox.Yes:
                             continue
                         else:
-                            sys.exit()
+                            os._exit(0)
 
                 # User Checking & Login Process
                 print("\nChecking User... ", end='')
                 if self.login_program() == False:
-                    sys.exit()
+                    os._exit(0)
 
                 # Loading Data from DB & Making object
                 while True:
@@ -142,7 +142,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         if reply == QMessageBox.Yes:
                             continue
                         else:
-                            sys.exit()
+                            os._exit(0)
 
                 print(f"\nWelcome {self.user}!")
                 self.user_logging('Booting')
@@ -152,7 +152,7 @@ class MainWindow(QtWidgets.QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
                 QMessageBox.information(self, "Information", f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
-                sys.exit()
+                os._exit(0)
 
         self.listWidget.setCurrentRow(0)
         self.printStatus("프로그램 시작 중...")
