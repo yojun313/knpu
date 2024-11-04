@@ -30,7 +30,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '2.0.6'
+        self.versionNum = '2.0.5'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -363,7 +363,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                       download_file_path)
                         subprocess.Popen([download_file_path], shell=True)
                         close_console()
-                        sys.exit()
+                        os._exit(0)
                 else:
                     pass
         except:
