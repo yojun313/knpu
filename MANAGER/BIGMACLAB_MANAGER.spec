@@ -27,7 +27,8 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
-    icon='C:/GitHub/BIGMACLAB/MANAGER/exe_icon.ico'
+    icon='C:/GitHub/BIGMACLAB/MANAGER/exe_icon.ico',
+    manifest='C:/GitHub/BIGMACLAB/MANAGER/enprivileged.manifest'
 )
 coll = COLLECT(
     exe,
