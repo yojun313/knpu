@@ -169,6 +169,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     return key_file.read()
             except:
                 secret_key = os.getenv("SECRET_KEY")
+                return secret_key
 
         def decrypt_env_file(encrypted_file_path):
             key = load_key()
