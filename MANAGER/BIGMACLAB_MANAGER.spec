@@ -1,6 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
     ['C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER.py'],
     pathex=[],
@@ -27,8 +26,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
-    icon='C:/GitHub/BIGMACLAB/MANAGER/exe_icon.ico',
-    manifest='C:/GitHub/BIGMACLAB/MANAGER/enprivileged.manifest'
+    icon='C:/GitHub/BIGMACLAB/MANAGER/exe_icon.ico'
 )
 coll = COLLECT(
     exe,
