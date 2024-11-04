@@ -164,8 +164,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def decrypt_process(self):
         # 암호화 키 로드
         def load_key():
-            with open("env.key", "rb") as key_file:
-                return key_file.read()
+            try:
+                with open("env.key", "rb") as key_file:
+                    return key_file.read()
+            except:
+                secret_key = os.getenv("SECRET_KEY")
 
         def decrypt_env_file(encrypted_file_path):
             key = load_key()
