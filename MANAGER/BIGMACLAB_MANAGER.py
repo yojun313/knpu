@@ -113,7 +113,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         print("Done")
                         break
                     except Exception as e:
-                        reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                        reply = QMessageBox.warning(self, 'Connection Failed', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                         if reply == QMessageBox.Yes:
                             continue
                         else:
@@ -138,7 +138,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         break
                     except:
                         print("Failed")
-                        reply = QMessageBox.question(self, 'Confirm Delete', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                        reply = QMessageBox.warning(self, 'Connection Failed', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                         if reply == QMessageBox.Yes:
                             continue
                         else:
@@ -150,7 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.update_program()
 
             except Exception as e:
-                QMessageBox.information(self, "Information", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
+                QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
                 QMessageBox.information(self, "Information", f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
                 sys.exit()
 
@@ -216,10 +216,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 ok_id = input_dialog_id.exec_()
                 user_name = input_dialog_id.textValue()
                 if not ok_id:
-                    QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
+                    QMessageBox.warning(self, 'Program Shutdown', '프로그램을 종료합니다')
                     return False
                 elif user_name not in self.userNameList:
-                    QMessageBox.warning(self, 'Error', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
+                    QMessageBox.warning(self, 'Unknown User', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
                     return False
 
                 answer_password = 'kingsman' if user_name == 'admin' else 'bigmaclab2022!'
@@ -227,7 +227,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.user = user_name
                 ok, password = self.pw_check()
                 if ok and password == answer_password:
-                    reply = QMessageBox.question(self, 'Confirm Delete', f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    reply = QMessageBox.question(self, 'Device Registration', f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if reply == QMessageBox.Yes:
                         self.mySQL_obj.insertToTable('device_list', [[current_device, user_name]])
                         self.mySQL_obj.commit()
@@ -244,13 +244,13 @@ class MainWindow(QtWidgets.QMainWindow):
                         QMessageBox.information(self, "Information", "디바이스가 등록되지 않았습니다\n\n다음 실행 시 추가적인 로그인이 필요합니다")
                         return True
                 elif ok:
-                    QMessageBox.warning(self, 'Error', '비밀번호가 올바르지 않습니다\n\n프로그램을 종료합니다')
+                    QMessageBox.warning(self, 'Wrong Password', '비밀번호가 올바르지 않습니다\n\n프로그램을 종료합니다')
                     return False
                 else:
                     QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
                     return False
         except Exception as e:
-            QMessageBox.information(self, "Information", f"오류가 발생했습니다. 프로그램을 종료합니다\nError Log: {traceback.format_exc()}")
+            QMessageBox.critical(self, "Error", f"오류가 발생했습니다. 프로그램을 종료합니다\nError Log: {traceback.format_exc()}")
             return False
 
     def update_program(self):
@@ -825,9 +825,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def program_bug_log(self, text):
         if self.user == 'admin':
-            QMessageBox.information(self, "Information", f"오류가 발생했습니다\nError Log: {text}")
+            QMessageBox.critical(self, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
         else:
-            QMessageBox.information(self, "Information", f"오류가 발생했습니다")
+            QMessageBox.critical(self, "Error", f"오류가 발생했습니다")
         self.user_bugging(text)
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
