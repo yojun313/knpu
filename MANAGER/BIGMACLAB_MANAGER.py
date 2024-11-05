@@ -48,6 +48,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.statusBar_init()
         self.fullstorage = 0
+        self.activate_crawl = 0
         self.decrypt_process()
         self.log_text = ''
         self.bug_text = ''
@@ -59,6 +60,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # 사이드바 연결
         def load_program():
             try:
+                self.check_internet_connection()
                 open_console("Booting Process")
                 self.listWidget.currentRowChanged.connect(self.display)
 
@@ -541,9 +543,24 @@ class MainWindow(QtWidgets.QMainWindow):
         sorted_db_list = [db_list[i] for i in sorted_indices]
         sorted_db_info = [db_info[i] for i in sorted_indices]
 
+        self.activate_crawl = len([item for item in currentDB['DBdata'] if item[6] == "크롤링 중"])
         self.fullstorage = round(self.fullstorage, 2)
 
         return {'DBdata': sorted_db_data, 'DBlist': sorted_db_list, 'DBinfo': sorted_db_info}
+
+    def check_internet_connection(self):
+        while True:
+            try:
+                # Google을 기본으로 확인 (URL은 다른 사이트로 변경 가능)
+                response = requests.get("http://www.google.com", timeout=5)
+                return response.status_code == 200
+            except requests.ConnectionError:
+                reply = QMessageBox.question(self, "Internet Connection Error", "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
+                                             QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    continue
+                else:
+                    os._exit(0)
 
     def table_maker(self, widgetname, data, column, right_click_function=None):
         def show_details(item):
@@ -585,6 +602,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 item = QTableWidgetItem(cell_data)
                 item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
                 item.setToolTip(str(cell_data))  # Tooltip 설정
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # 수정 불가능 설정
                 widgetname.setItem(i, j, item)
 
         # 셀을 더블 클릭하면 show_details 함수를 호출
@@ -761,39 +779,34 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
+        self.update_program()
         # DATABASE
         if index == 0:
-            self.update_program()
             self.Manager_Database_obj.database_refresh_DB()
-            QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+            QTimer.singleShot(100, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
             gc.collect()
         # CRAWLER
         elif index == 1:
-            self.update_program()
-            self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr:81', self.Manager_Web_obj.crawler_web_layout)
+            QTimer.singleShot(100, lambda: self.printStatus(f"활성 크롤러 수: {self.activate_crawl}"))
             gc.collect()
         # ANALYSIS
         elif index == 2:
-            self.update_program()
             self.printStatus()
             self.Manager_Analysis_obj.dataprocess_refresh_DB()
             gc.collect()
         # BOARD
         elif index == 3:
-            self.update_program()
             self.printStatus()
             gc.collect()
             pass
         # WEB
         elif index == 4:
-            self.update_program()
             self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
             gc.collect()
         # USER
         elif index == 5:
-            self.update_program()
             self.printStatus()
             if self.Manager_userDB_generate == False:
                 self.Manager_User_obj.userDB_layout_maker()
@@ -895,8 +908,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         # 프로그램 종료 시 실행할 코드
-        self.user_logging('Shutdown')
-        event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
+        reply = QMessageBox.question(self, 'Program Shutdown', "정말 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.user_logging('Shutdown')
+            event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
+        else:
+            event.ignore()
 
 
 class InfoDialog(QDialog):
