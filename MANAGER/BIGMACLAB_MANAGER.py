@@ -54,7 +54,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.activate_crawl = 0
         self.log_text = ''
         self.bug_text = ''
-        self.update_check = False
 
         def load_program():
             try:
@@ -319,8 +318,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_program(self, sc=False):
         try:
-            if self.update_check == True:
-                return
             def download_file(download_url, local_filename):
                 response = requests.get(download_url, stream=True)
                 total_size = int(response.headers.get('content-length', 0))  # 파일의 총 크기 가져오기
@@ -342,7 +339,6 @@ class MainWindow(QtWidgets.QMainWindow):
             current_version = version.parse(self.versionNum)
             self.new_version = version.parse(self.Manager_Board_obj.board_version_newcheck())
             if current_version < self.new_version:
-                self.update_check = True
                 version_info_html = f"""
                     <style>
                         table {{
