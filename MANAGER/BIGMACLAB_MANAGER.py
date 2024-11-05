@@ -40,6 +40,7 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi(ui_path, self)
 
         self.setWindowTitle("MANAGER")  # 창의 제목 설정
+        self.setAttribute(Qt.WA_TranslucentBackground)  # 배경을 투명하게 설정
         if platform.system() == "Windows":
             self.resize(1400, 1000)
             #self.showMaximized()  # 전체 화면으로 창 열기
@@ -115,6 +116,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         print("Done")
                         break
                     except Exception as e:
+                        self.close_bootscreen()
                         print("Failed")
                         reply = QMessageBox.warning(self, 'Connection Failed', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                         if reply == QMessageBox.Yes:
@@ -140,6 +142,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         print("Done")
                         break
                     except Exception as e:
+                        self.close_bootscreen()
                         print("Failed")
                         reply = QMessageBox.warning(self, 'Connection Failed', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                         if reply == QMessageBox.Yes:
@@ -147,9 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         else:
                             os._exit(0)
 
-                # 부팅 프로세스 로직이 완료되었을 때 InfoDialog를 닫고 MainWindow를 표시합니다
-                self.info_dialog.accept()  # InfoDialog 닫기
-                self.show()  # MainWindow 표시
+                self.close_bootscreen()
 
                 print(f"\n{self.user}님 환영합니다!")
 
@@ -166,9 +167,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 os._exit(0)
 
         self.listWidget.setCurrentRow(0)
-        self.printStatus("프로그램 시작 중...")
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+
+    def close_bootscreen(self):
+        try:
+            self.info_dialog.accept()  # InfoDialog 닫기
+            self.show()  # MainWindow 표시
+        except:
+            pass
 
     def decrypt_process(self):
         current_position = os.path.dirname(__file__)
@@ -274,6 +281,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.user = self.user_list[self.device_list.index(current_device)]
                 return True
             else:
+                self.close_bootscreen()
                 input_dialog_id = QInputDialog(self)
                 input_dialog_id.setWindowTitle('Login')
                 input_dialog_id.setLabelText('User Name:')
@@ -816,6 +824,16 @@ class MainWindow(QtWidgets.QMainWindow):
             """
         )
 
+    def paintEvent(self, event):
+        # 둥근 모서리를 위한 QPainter 설정
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        rect = self.rect()
+        color = QColor(255, 255, 255)  # 창의 배경색 설정 (흰색)
+        painter.setBrush(QBrush(color))
+        painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
+        painter.drawRoundedRect(rect, 15, 15)  # 모서리를 둥글게 그리기 (15px radius)
+
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
         #self.update_program()
@@ -1012,6 +1030,7 @@ class InfoDialog(QDialog):
         painter.setBrush(QBrush(color))
         painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
         painter.drawRoundedRect(rect, 15, 15)  # 모서리를 둥글게 그리기 (15px radius)
+
 
 
 if __name__ == '__main__':
