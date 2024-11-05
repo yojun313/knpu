@@ -59,6 +59,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         def load_program():
             try:
+                self.info_dialog.update_status("Checking internet connection...")
+                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
                 self.check_internet_connection()
                 #open_console("Booting Process")
                 self.listWidget.currentRowChanged.connect(self.display)
@@ -99,6 +101,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
                 )
 
+                self.info_dialog.update_status("Loading User Info from database...")
+                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
                 # Loading User info from DB
                 while True:
                     try:
@@ -124,11 +128,15 @@ class MainWindow(QtWidgets.QMainWindow):
                         else:
                             os._exit(0)
 
+                self.info_dialog.update_status("Checking User...")
+                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
                 # User Checking & Login Process
                 print("\nChecking User... ", end='')
                 if self.login_program() == False:
                     os._exit(0)
 
+                self.info_dialog.update_status("Loading data from database...")
+                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
                 # Loading Data from DB & Making object
                 while True:
                     try:
@@ -150,7 +158,11 @@ class MainWindow(QtWidgets.QMainWindow):
                             continue
                         else:
                             os._exit(0)
+                self.info_dialog.update_status("Loading data from database...")
+                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
 
+                self.info_dialog.update_status('Initializing')
+                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
                 self.close_bootscreen()
                 self.shortcut_init()
                 self.Manager_Database_obj.database_shortcut_setting()
@@ -982,7 +994,7 @@ class InfoDialog(QDialog):
     def __init__(self, version, booting=True):
         super().__init__()
         self.version = version
-        if booting == True:
+        if booting:
             self.setWindowFlags(Qt.FramelessWindowHint)  # 제목 표시줄 제거
         self.setAttribute(Qt.WA_TranslucentBackground)  # 배경을 투명하게 설정
         self.initUI()
@@ -1012,15 +1024,24 @@ class InfoDialog(QDialog):
         version_label.setStyleSheet("font-size: 14px; margin-top: 1px;")
         layout.addWidget(version_label)
 
+        # 상태 메시지 라벨
+        self.status_label = QLabel("Initializing...")
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setStyleSheet("font-size: 12px; color: gray; margin-top: 5px;")
+        layout.addWidget(self.status_label)
+
         # 저작권 정보 라벨
         copyright_label = QLabel("Copyright © 2024 KNPU BIGMACLAB\nAll rights reserved.")
         copyright_label.setAlignment(Qt.AlignCenter)
         copyright_label.setStyleSheet("font-size: 10px; color: gray; margin-top: 3px;")
         layout.addWidget(copyright_label)
 
-        # 전체 레이아웃 설정
         layout.setSpacing(5)
         self.setLayout(layout)
+
+    def update_status(self, message):
+        self.status_label.setText(message)
+        QtWidgets.QApplication.processEvents()  # UI를 즉시 갱신
 
     def paintEvent(self, event):
         # 둥근 모서리를 위한 QPainter 설정
