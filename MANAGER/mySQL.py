@@ -267,6 +267,24 @@ class mySQL:
             print(str(e))
             return None
 
+    def TableLastRow(self, tableName):
+        try:
+            with self.conn.cursor() as cursor:
+                # 테이블의 전체 행 개수를 구합니다.
+                cursor.execute(f"SELECT COUNT(*) FROM `{tableName}`")
+                row_count = cursor.fetchone()[0]
+
+                # 마지막 행을 가져오기 위해 OFFSET을 사용합니다.
+                query = f"SELECT * FROM `{tableName}` LIMIT 1 OFFSET {row_count - 1}"
+                cursor.execute(query)
+                last_row = cursor.fetchone()
+                return last_row
+
+        except Exception as e:
+            print(f"Failed to fetch the last row from table {tableName}")
+            print(str(e))
+            return None
+
     def TableToDataframeByDate(self, tableName, start_date, end_date):
         try:
             with self.conn.cursor() as cursor:
