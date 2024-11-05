@@ -31,7 +31,7 @@ warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        self.versionNum = '2.1.0'
+        self.versionNum = '2.1.1'
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -443,6 +443,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setStatusBar(self.statusbar)
         self.left_label = QLabel('  ' + self.version)
         self.right_label = QLabel('')
+        self.left_label.setToolTip("새 버전 확인을 위해 Ctrl+U")
+        self.right_label.setToolTip("상태표시줄")
         self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         self.right_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.statusbar.addPermanentWidget(self.left_label, 1)
