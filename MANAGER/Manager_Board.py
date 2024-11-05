@@ -157,10 +157,7 @@ class Manager_Board:
                     f"Version Status: {version_data[4]}\n"
                     f"Version Detail: \n{version_data[5]}\n"
                 )
-                reply = QMessageBox.question(self.main, 'Confirm Notification',
-                                             "업데이트 알림을 전송하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No,
-                                             QMessageBox.No)
+                reply = QMessageBox.question(self.main, 'Confirm Notification', "업데이트 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     for key in self.main.userPushOverKeyList:
                         self.main.send_pushOver(msg, key)
@@ -177,8 +174,7 @@ class Manager_Board:
             def delete_version():
                 selected_row = self.main.board_version_tableWidget.currentRow()
                 if selected_row >= 0:
-                    reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?",
-                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
                         self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
                         self.main.mySQL_obj.deleteTableRowByColumn('version_info', self.version_name_list[selected_row], 'Version Num')
@@ -416,8 +412,7 @@ class Manager_Board:
         try:
             self.main.printStatus("삭제 중...")
             def delete_bug():
-                reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
-                                             QMessageBox.No)
+                reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     selected_row = self.main.board_bug_tableWidget.currentRow()
                     if selected_row >= 0:
@@ -688,8 +683,7 @@ class Manager_Board:
                     f"Post Date: {post_data[2]}\n"
                     f"Post Text: {post_data[4]}\n"
                 )
-                reply = QMessageBox.question(self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?\n\nYes: 게시글 전체 알림\nNo: Admin에게만 알림", QMessageBox.Yes | QMessageBox.No,
-                                             QMessageBox.No)
+                reply = QMessageBox.question(self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?\n\nYes: 게시글 전체 알림\nNo: Admin에게만 알림", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     for key in self.main.userPushOverKeyList:
                         self.main.send_pushOver(msg, key)
