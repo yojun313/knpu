@@ -51,6 +51,12 @@ class Manager_Board:
             self.version_name_list = [version_data[0] for version_data in self.version_data_for_table]
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
+
+    def board_version_newcheck(self):
+        self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+        latest_version = self.main.mySQL_obj.TableLastRow("version_info")[1]
+        return latest_version
+
     def board_add_version(self):
         try:
             if self.main.user != 'admin':

@@ -337,8 +337,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # New version check
             current_version = version.parse(self.versionNum)
-            self.Manager_Board_obj.board_version_refresh()
-            self.new_version = version.parse(self.Manager_Board_obj.version_name_list[0])
+            self.new_version = version.parse(self.Manager_Board_obj.board_version_newcheck())
             if current_version < self.new_version:
                 self.update_check = True
                 version_info_html = f"""
