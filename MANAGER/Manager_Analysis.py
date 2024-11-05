@@ -47,20 +47,6 @@ class Manager_Analysis:
         self.anaylsis_buttonMatch()
         self.console_open = False
 
-    def anaylsis_buttonMatch(self):
-        self.main.dataprocess_tab1_refreshDB_button.clicked.connect(self.dataprocess_refresh_DB)
-        self.main.dataprocess_tab1_searchDB_lineinput.returnPressed.connect(self.dataprocess_search_DB)
-        self.main.dataprocess_tab1_searchDB_button.clicked.connect(self.dataprocess_search_DB)
-        self.main.dataprocess_tab1_timesplit_button.clicked.connect(self.dataprocess_timesplit_DB)
-        self.main.dataprocess_tab1_analysis_button.clicked.connect(self.dataprocess_analysis_DB)
-
-        self.main.dataprocess_tab2_timesplit_button.clicked.connect(self.dataprocess_timesplit_file)
-        self.main.dataprocess_tab2_analysis_button.clicked.connect(self.dataprocess_analysis_file)
-        self.main.dataprocess_tab2_merge_button.clicked.connect(self.dataprocess_merge_file)
-
-        #self.main.kimkem_tab2_tokenization_button.clicked.connect(self.kimkem_tokenization_file)
-        self.main.kimkem_tab2_kimkem_button.clicked.connect(self.kimkem_kimkem)
-
     def dataprocess_search_DB(self):
         try:
             search_text = self.main.dataprocess_tab1_searchDB_lineinput.text().lower()
@@ -386,6 +372,8 @@ class Manager_Analysis:
                 return
 
             mergedfilename, ok = QInputDialog.getText(None, '파일명 입력', '병합 파일명을 입력하세요:', text='merged_file')
+            if not ok or not mergedfilename:
+                return
             self.main.user_logging(f'ANALYSIS -> merge_file({mergedfilename})')
             all_df = [self.main.csvReader(directory) for directory in selected_directory]
             all_columns = [df.columns.tolist() for df in all_df]
@@ -402,7 +390,7 @@ class Manager_Analysis:
                 print(directory)
             print("")
 
-            mergedfiledir      = os.path.dirname(selected_directory[0])
+            mergedfiledir = os.path.dirname(selected_directory[0])
             if ok and mergedfilename:
                 merged_df = pd.DataFrame()
 
@@ -410,7 +398,6 @@ class Manager_Analysis:
                     merged_df = pd.concat([merged_df, df], ignore_index=True)
 
                 merged_df.to_csv(os.path.join(mergedfiledir, mergedfilename)+'.csv', index=False, encoding='utf-8-sig')
-
             self.main.printStatus()
             close_console()
 
@@ -1581,3 +1568,42 @@ class Manager_Analysis:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
+    def anaylsis_buttonMatch(self):
+        self.main.dataprocess_tab1_refreshDB_button.clicked.connect(self.dataprocess_refresh_DB)
+        self.main.dataprocess_tab1_searchDB_lineinput.returnPressed.connect(self.dataprocess_search_DB)
+        self.main.dataprocess_tab1_searchDB_button.clicked.connect(self.dataprocess_search_DB)
+        self.main.dataprocess_tab1_timesplit_button.clicked.connect(self.dataprocess_timesplit_DB)
+        self.main.dataprocess_tab1_analysis_button.clicked.connect(self.dataprocess_analysis_DB)
+
+        self.main.dataprocess_tab2_timesplit_button.clicked.connect(self.dataprocess_timesplit_file)
+        self.main.dataprocess_tab2_analysis_button.clicked.connect(self.dataprocess_analysis_file)
+        self.main.dataprocess_tab2_merge_button.clicked.connect(self.dataprocess_merge_file)
+        self.main.kimkem_tab2_kimkem_button.clicked.connect(self.kimkem_kimkem)
+
+        self.main.dataprocess_tab1_refreshDB_button.setToolTip("Ctrl+R")
+        self.main.dataprocess_tab1_timesplit_button.setToolTip("Ctrl+D")
+        self.main.dataprocess_tab1_analysis_button.setToolTip("Ctrl+A")
+        self.main.dataprocess_tab2_timesplit_button.setToolTip("Ctrl+D")
+        self.main.dataprocess_tab2_analysis_button.setToolTip("Ctrl+A")
+        self.main.dataprocess_tab2_merge_button.setToolTip("Ctrl+M")
+        self.main.kimkem_tab2_kimkem_button.setToolTip("Ctrl+K")
+
+    def analysis_shortcut_setting(self):
+        self.update_shortcuts_based_on_tab(0)
+        self.main.tabWidget_data_process.currentChanged.connect(self.update_shortcuts_based_on_tab)
+
+    def update_shortcuts_based_on_tab(self, index):
+        self.main.shortcut_initialize()
+
+        # 파일 불러오기
+        if index == 0:
+            self.main.ctrld.activated.connect(self.dataprocess_timesplit_file)
+            self.main.ctrlm.activated.connect(self.dataprocess_merge_file)
+            self.main.ctrla.activated.connect(self.dataprocess_analysis_file)
+            self.main.ctrlk.activated.connect(self.kimkem_kimkem)
+
+        # DB 불러오기
+        if index == 1:
+            self.main.ctrld.activated.connect(self.dataprocess_timesplit_DB)
+            self.main.ctrla.activated.connect(self.dataprocess_analysis_DB)
+            self.main.ctrlr.activated.connect(self.dataprocess_refresh_DB)

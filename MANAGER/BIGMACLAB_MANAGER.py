@@ -1,11 +1,10 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic, QtGui
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QTextEdit, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication
+from PyQt5.QtGui import QKeySequence
 from openai import OpenAI
-import shutil
-import tempfile
 from mySQL import mySQL
 from Manager_Database import Manager_Database
 from Manager_Web import Manager_Web
@@ -139,7 +138,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.Manager_userDB_generate = False
                         print("Done")
                         break
-                    except:
+                    except Exception as e:
                         print("Failed")
                         reply = QMessageBox.warning(self, 'Connection Failed', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                         if reply == QMessageBox.Yes:
@@ -153,6 +152,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.user_logging(f'Booting ({location})')
                 close_console()
                 self.update_program()
+                self.shortcut_init()
+                self.Manager_Database_obj.database_shortcut_setting()
 
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
@@ -202,9 +203,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def user_logging(self, text=''):
         try:
+            self.mySQL_obj.disconnectDB()
+            self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
             if self.log_text == '':  # 처음 프로그램을 켰을 때
-                self.mySQL_obj.connectDB(f'{self.user}_db') # userDB 접속
-
                 latest_record = self.mySQL_obj.TableLastRow('manager_record') # log의 마지막 행 불러옴
 
                 # 'Date' 열을 datetime 형식으로 변환
@@ -316,7 +317,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QMessageBox.information(self, "Information", f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
             return False
 
-    def update_program(self):
+    def update_program(self, sc=False):
         try:
             if self.update_check == True:
                 return
@@ -428,7 +429,11 @@ class MainWindow(QtWidgets.QMainWindow):
                         close_console()
                         os._exit(0)
                 else:
+                    QMessageBox.information(self, "Information", 'Ctrl+U 단축어로 프로그램 실행 중 업데이트 가능합니다')
                     pass
+            else:
+                if sc == True:
+                    QMessageBox.information(self, "Information", "현재 버전이 최신 버전입니다")
         except:
             pass
 
@@ -466,6 +471,34 @@ class MainWindow(QtWidgets.QMainWindow):
         helpMenu.addAction(helpAct)
         #editMenu.addAction(copyAct)
         #editMenu.addAction(pasteAct)
+
+    def shortcut_init(self):
+        self.ctrld = QShortcut(QKeySequence("Ctrl+D"), self)
+        self.ctrls = QShortcut(QKeySequence("Ctrl+S"), self)
+        self.ctrlv = QShortcut(QKeySequence("Ctrl+V"), self)
+        self.ctrlu = QShortcut(QKeySequence("Ctrl+U"), self)
+        self.ctrll = QShortcut(QKeySequence("Ctrl+L"), self)
+        self.ctrla = QShortcut(QKeySequence("Ctrl+A"), self)
+        self.ctrli = QShortcut(QKeySequence("Ctrl+I"), self)
+        self.ctrle = QShortcut(QKeySequence("Ctrl+E"), self)
+        self.ctrlr = QShortcut(QKeySequence("Ctrl+R"), self)
+        self.ctrlk = QShortcut(QKeySequence("Ctrl+K"), self)
+        self.ctrlm = QShortcut(QKeySequence("Ctrl+M"), self)
+        self.ctrlt = QShortcut(QKeySequence("Ctrl+T"), self)
+        self.ctrltt = QShortcut(QKeySequence("Ctrl+Shift+T"), self)
+
+        self.ctrlu.activated.connect(lambda: self.update_program(True))
+        self.ctrlt.activated.connect(lambda: open_console("DEVELOPER TERMINAL"))
+        self.ctrltt.activated.connect(lambda: close_console)
+
+    def shortcut_initialize(self):
+        shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrli, self.ctrle, self.ctrlr, self.ctrlk, self.ctrlm]
+        for shortcut in shortcuts:
+            try:
+                shortcut.activated.disconnect()
+            except TypeError:
+                # 연결된 슬롯이 없는 경우 발생하는 에러를 무시
+                pass
 
     def update_DB(self, currentDB):
 
@@ -783,37 +816,35 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.update_program()
         # DATABASE
         if index == 0:
+            self.Manager_Database_obj.database_shortcut_setting()
             self.Manager_Database_obj.database_refresh_DB()
-            QTimer.singleShot(100, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
-            gc.collect()
+            QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
         # CRAWLER
         elif index == 1:
+            self.shortcut_initialize()
             self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr:81', self.Manager_Web_obj.crawler_web_layout)
             QTimer.singleShot(1000, lambda: self.printStatus(f"활성 크롤러 수: {self.activate_crawl}"))
-            gc.collect()
         # ANALYSIS
         elif index == 2:
+            self.Manager_Analysis_obj.analysis_shortcut_setting()
             self.printStatus()
             self.Manager_Analysis_obj.dataprocess_refresh_DB()
-            gc.collect()
         # BOARD
         elif index == 3:
+            self.Manager_Board_obj.board_shortcut_setting()
             self.printStatus()
-            gc.collect()
-            pass
         # WEB
         elif index == 4:
+            self.shortcut_initialize()
             self.printStatus()
             self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
-            gc.collect()
         # USER
         elif index == 5:
             self.printStatus()
             if self.Manager_userDB_generate == False:
                 self.Manager_User_obj.userDB_layout_maker()
                 self.Manager_userDB_generate = True
-                gc.collect()
-            pass
+            self.Manager_User_obj.user_shortcut_setting()
             
         gc.collect()
 

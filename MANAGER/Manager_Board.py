@@ -17,21 +17,7 @@ class Manager_Board:
         self.board_bug_refresh()
         self.board_post_refresh()
         self.board_buttonMatch()
-
-
-    def board_buttonMatch(self):
-        self.main.board_deleteversion_button.clicked.connect(self.board_delete_version)
-        self.main.board_addversion_button.clicked.connect(self.board_add_version)
-        self.main.board_detailversion_button.clicked.connect(self.board_view_version)
-
-        self.main.board_addbug_button.clicked.connect(self.board_add_bug)
-        self.main.board_deletebug_button.clicked.connect(self.board_delete_bug)
-        self.main.board_detailbug_button.clicked.connect(self.board_view_bug)
-
-        self.main.board_addpost_button.clicked.connect(self.board_add_post)
-        self.main.board_detailpost_button.clicked.connect(self.board_view_post)
-        self.main.board_deletepost_button.clicked.connect(self.board_delete_post)
-        self.main.board_editpost_button.clicked.connect(self.board_edit_post)
+        self.main.tabWidget_board.currentChanged.connect(self.update_shortcuts_based_on_tab)
 
     def board_version_refresh(self):
         try:
@@ -931,3 +917,56 @@ class Manager_Board:
                     return
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
+
+    def board_buttonMatch(self):
+        self.main.board_deleteversion_button.clicked.connect(self.board_delete_version)
+        self.main.board_addversion_button.clicked.connect(self.board_add_version)
+        self.main.board_detailversion_button.clicked.connect(self.board_view_version)
+
+        self.main.board_addbug_button.clicked.connect(self.board_add_bug)
+        self.main.board_deletebug_button.clicked.connect(self.board_delete_bug)
+        self.main.board_detailbug_button.clicked.connect(self.board_view_bug)
+
+        self.main.board_addpost_button.clicked.connect(self.board_add_post)
+        self.main.board_detailpost_button.clicked.connect(self.board_view_post)
+        self.main.board_deletepost_button.clicked.connect(self.board_delete_post)
+        self.main.board_editpost_button.clicked.connect(self.board_edit_post)
+
+        self.main.board_deleteversion_button.setToolTip("Ctrl+D")
+        self.main.board_addversion_button.setToolTip("Ctrl+A")
+        self.main.board_detailversion_button.setToolTip("Ctrl+V")
+        self.main.board_addbug_button.setToolTip("Ctrl+A")
+        self.main.board_deletebug_button.setToolTip("Ctrl+D")
+        self.main.board_detailbug_button.setToolTip("Ctrl+V")
+        self.main.board_addpost_button.setToolTip("Ctrl+A")
+        self.main.board_detailpost_button.setToolTip("Ctrl+V")
+        self.main.board_deletepost_button.setToolTip("Ctrl+D")
+        self.main.board_editpost_button.setToolTip("Ctrl+E")
+
+
+    def board_shortcut_setting(self):
+        self.update_shortcuts_based_on_tab(0)
+        self.main.tabWidget_board.currentChanged.connect(self.update_shortcuts_based_on_tab)
+
+    def update_shortcuts_based_on_tab(self, index):
+        self.main.shortcut_initialize()
+
+        # 패치 노트 탭
+        if index == 0:
+            self.main.ctrld.activated.connect(self.board_delete_version)
+            self.main.ctrlv.activated.connect(self.board_view_version)
+            self.main.ctrla.activated.connect(self.board_add_version)
+
+        # 버그 리포트 탭
+        if index == 1:
+            self.main.ctrld.activated.connect(self.board_delete_bug)
+            self.main.ctrlv.activated.connect(self.board_view_bug)
+            self.main.ctrla.activated.connect(self.board_add_bug)
+
+        # 자유 게시판 탭
+        if index == 2:
+            self.main.ctrld.activated.connect(self.board_delete_post)
+            self.main.ctrlv.activated.connect(self.board_view_post)
+            self.main.ctrla.activated.connect(self.board_add_post)
+            self.main.ctrle.activated.connect(self.board_edit_post)
+

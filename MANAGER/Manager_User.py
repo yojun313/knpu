@@ -122,20 +122,6 @@ class Manager_User:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def user_buttonMatch(self):
-        self.main.user_adduser_button.clicked.connect(self.user_add_user)
-        self.main.user_deleteuser_button.clicked.connect(self.user_delete_user)
-        self.main.user_log_button.clicked.connect(lambda: self.toolbox_DBlistItem_view(True))
-
-        self.selected_userDB = 'admin_db'
-        self.selected_DBlistItem = None
-        self.selected_DBlistItems = []
-        self.main.userDB_list_delete_button.clicked.connect(self.toolbox_DBlistItem_delete)
-        self.main.userDB_list_add_button.clicked.connect(self.toolbox_DBlistItem_add)
-        self.main.userDB_list_view_button.clicked.connect(self.toolbox_DBlistItem_view)
-        self.main.userDB_list_save_button.clicked.connect(self.toolbox_DBlistItem_save)
-        self.main.device_delete_button.clicked.connect(self.user_delete_device)
-
     def user_delete_device(self):
         try:
             if self.main.user != 'admin':
@@ -252,7 +238,7 @@ class Manager_User:
 
     def toolbox_DBlistItem_add(self):
         try:
-            selected_directory = self.dataprocess_getfiledirectory(self.userDBfiledialog)
+            selected_directory = self.toolbox_getfiledirectory(self.userDBfiledialog)
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
@@ -407,3 +393,66 @@ class Manager_User:
             self.main.printStatus()
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
+
+    def toolbox_getfiledirectory(self, file_dialog):
+        selected_directory = file_dialog.selectedFiles()
+        if selected_directory == []:
+            return selected_directory
+        selected_directory = selected_directory[0].split(', ')
+
+        for directory in selected_directory:
+            if not directory.endswith('.csv'):
+                return [False, directory]
+
+        for index, directory in enumerate(selected_directory):
+            if index != 0:
+                selected_directory[index] = os.path.join(os.path.dirname(selected_directory[0]), directory)
+
+        return selected_directory
+
+    def user_buttonMatch(self):
+        self.main.user_adduser_button.clicked.connect(self.user_add_user)
+        self.main.user_deleteuser_button.clicked.connect(self.user_delete_user)
+        self.main.user_log_button.clicked.connect(lambda: self.toolbox_DBlistItem_view(True))
+
+        self.selected_userDB = 'admin_db'
+        self.selected_DBlistItem = None
+        self.selected_DBlistItems = []
+        self.main.userDB_list_delete_button.clicked.connect(self.toolbox_DBlistItem_delete)
+        self.main.userDB_list_add_button.clicked.connect(self.toolbox_DBlistItem_add)
+        self.main.userDB_list_view_button.clicked.connect(self.toolbox_DBlistItem_view)
+        self.main.userDB_list_save_button.clicked.connect(self.toolbox_DBlistItem_save)
+        self.main.device_delete_button.clicked.connect(self.user_delete_device)
+
+        self.main.user_adduser_button.setToolTip("Ctrl+A")
+        self.main.user_deleteuser_button.setToolTip("Ctrl+D")
+        self.main.user_log_button.setToolTip("Ctrl+L")
+        self.main.userDB_list_delete_button.setToolTip("Ctrl+D")
+        self.main.userDB_list_add_button.setToolTip("Ctrl+A")
+        self.main.userDB_list_view_button.setToolTip("Ctrl+V")
+        self.main.userDB_list_save_button.setToolTip("Ctrl+S")
+        self.main.device_delete_button.setToolTip("Ctrl+D")
+
+    def user_shortcut_setting(self):
+        self.update_shortcuts_based_on_tab(0)
+        self.main.tabWidget_user.currentChanged.connect(self.update_shortcuts_based_on_tab)
+
+    def update_shortcuts_based_on_tab(self, index):
+        self.main.shortcut_initialize()
+
+        # User List
+        if index == 0:
+            self.main.ctrld.activated.connect(self.user_delete_user)
+            self.main.ctrll.activated.connect(lambda: self.toolbox_DBlistItem_view(True))
+            self.main.ctrla.activated.connect(self.user_add_user)
+
+        # User DB
+        if index == 1:
+            self.main.ctrld.activated.connect(self.toolbox_DBlistItem_delete)
+            self.main.ctrlv.activated.connect(self.toolbox_DBlistItem_view)
+            self.main.ctrla.activated.connect(self.toolbox_DBlistItem_add)
+            self.main.ctrls.activated.connect(self.toolbox_DBlistItem_save)
+
+        # Device List
+        if index == 2:
+            self.main.ctrld.activated.connect(self.user_delete_device)
