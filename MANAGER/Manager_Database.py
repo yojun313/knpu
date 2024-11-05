@@ -24,7 +24,10 @@ class Manager_Database:
         self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester', 'Size']
         self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column, self.database_dbinfo_viewer)
         self.database_buttonMatch()
+
         self.console_open = False
+
+
 
     def database_delete_DB(self):
         try:
@@ -732,3 +735,17 @@ class Manager_Database:
         self.main.database_saveDB_button.clicked.connect(self.database_save_DB)
         self.main.database_deleteDB_button.clicked.connect(self.database_delete_DB)
         self.main.database_viewDB_button.clicked.connect(self.database_view_DB)
+
+        self.main.database_saveDB_button.setToolTip("Ctrl+S")
+        self.main.database_viewDB_button.setToolTip("Ctrl+V")
+        self.main.database_deleteDB_button.setToolTip("Ctrl+D")
+        self.main.database_refreshDB_button.setToolTip("Ctrl+R")
+
+    def database_shortcut_setting(self):
+        self.main.shortcut_initialize()
+        self.main.ctrld.activated.connect(self.database_delete_DB)
+        self.main.ctrls.activated.connect(self.database_save_DB)
+        self.main.ctrlv.activated.connect(self.database_view_DB)
+        self.main.ctrli.activated.connect(self.database_dbinfo_viewer)
+        self.main.ctrlr.activated.connect(self.database_refresh_DB)
+
