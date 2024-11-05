@@ -28,7 +28,7 @@ import traceback
 import re
 warnings.filterwarnings("ignore")
 
-VERSION_NUM = '2.1.1'
+VERSION_NUM = '2.1.2'
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, info_dialog):
@@ -56,9 +56,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.activate_crawl = 0
         self.log_text = ''
         self.bug_text = ''
-
-        self.console_shortcut = QShortcut(QKeySequence("Ctrl+Shift+C"), self)
-        self.console_shortcut.activated.connect(lambda: open_console("Developer Console"))
 
         def load_program():
             try:
@@ -118,8 +115,9 @@ class MainWindow(QtWidgets.QMainWindow):
                         print("Done")
                         break
                     except Exception as e:
-                        self.close_bootscreen()
                         print("Failed")
+                        self.close_bootscreen()
+                        self.printStatus()
                         reply = QMessageBox.warning(self, 'Connection Failed', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                         if reply == QMessageBox.Yes:
                             continue
@@ -144,8 +142,9 @@ class MainWindow(QtWidgets.QMainWindow):
                         print("Done")
                         break
                     except Exception as e:
-                        self.close_bootscreen()
                         print("Failed")
+                        self.close_bootscreen()
+                        self.printStatus()
                         reply = QMessageBox.warning(self, 'Connection Failed', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                         if reply == QMessageBox.Yes:
                             continue
@@ -153,18 +152,19 @@ class MainWindow(QtWidgets.QMainWindow):
                             os._exit(0)
 
                 self.close_bootscreen()
-
-                print(f"\n{self.user}님 환영합니다!")
-
-                location = self.user_location()
-                self.user_logging(f'Booting ({location})')
-                #close_console()
-                self.update_program()
                 self.shortcut_init()
                 self.Manager_Database_obj.database_shortcut_setting()
 
+                print(f"\n{self.user}님 환영합니다!")
+
+                self.user_logging(f'Booting ({self.user_location()})')
+                self.update_program()
+
+                # close_console()
+
             except Exception as e:
                 self.close_bootscreen()
+                self.printStatus()
                 msg = f'[ Admin Notification ]\n\nThere is Error in MANAGER Booting\n\nError Log: {traceback.format_exc()}'
                 self.send_pushOver(msg, self.admin_pushoverkey)
                 QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
@@ -287,6 +287,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 return True
             else:
                 self.close_bootscreen()
+                self.printStatus()
                 input_dialog_id = QInputDialog(self)
                 input_dialog_id.setWindowTitle('Login')
                 input_dialog_id.setLabelText('User Name:')
@@ -445,12 +446,13 @@ class MainWindow(QtWidgets.QMainWindow):
                         os._exit(0)
                 else:
                     QMessageBox.information(self, "Information", 'Ctrl+U 단축어로 프로그램 실행 중 업데이트 가능합니다')
-                    pass
+                    return
             else:
                 if sc == True:
                     QMessageBox.information(self, "Information", "현재 버전이 최신 버전입니다")
+                    return
         except:
-            pass
+           return
 
     def statusBar_init(self):
         # 상태 표시줄 생성
@@ -608,6 +610,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 response = requests.get("http://www.google.com", timeout=5)
                 return response.status_code == 200
             except requests.ConnectionError:
+                self.printStatus()
                 self.close_bootscreen()
                 reply = QMessageBox.question(self, "Internet Connection Error", "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
@@ -968,17 +971,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def show_info_dialog(self):
         try:
-            dialog = InfoDialog(self.versionNum)
+            dialog = InfoDialog(self.versionNum, False)
             dialog.exec_()
         except Exception as e:
             print(str(e))
 
 
 class InfoDialog(QDialog):
-    def __init__(self, version):
+    def __init__(self, version, booting=True):
         super().__init__()
         self.version = version
-        self.setWindowFlags(Qt.FramelessWindowHint)  # 제목 표시줄 제거
+        if booting == True:
+            self.setWindowFlags(Qt.FramelessWindowHint)  # 제목 표시줄 제거
         self.setAttribute(Qt.WA_TranslucentBackground)  # 배경을 투명하게 설정
         self.initUI()
 
@@ -988,7 +992,7 @@ class InfoDialog(QDialog):
         layout = QVBoxLayout()
 
         # 프로그램 이름 라벨
-        title_label = QLabel("BIGMACLAB MANAGER")
+        title_label = QLabel("MANAGER")
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("font-size: 16px; font-weight: bold;")
         layout.addWidget(title_label)
@@ -1025,7 +1029,7 @@ class InfoDialog(QDialog):
         color = QColor(255, 255, 255)  # 배경색 설정 (흰색)
         painter.setBrush(QBrush(color))
         painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
-        painter.drawRoundedRect(rect, 15, 15)  # 모서리를 둥글게 그리기 (15px radius)
+        painter.drawRoundedRect(rect, 20, 20)  # 모서리를 둥글게 그리기 (15px radius)
 
 if __name__ == '__main__':
 
