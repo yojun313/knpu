@@ -40,7 +40,6 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi(ui_path, self)
 
         self.setWindowTitle("MANAGER")  # 창의 제목 설정
-        self.setAttribute(Qt.WA_TranslucentBackground)  # 배경을 투명하게 설정
         if platform.system() == "Windows":
             self.resize(1400, 1000)
             #self.showMaximized()  # 전체 화면으로 창 열기
@@ -57,6 +56,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.activate_crawl = 0
         self.log_text = ''
         self.bug_text = ''
+
+        self.console_shortcut = QShortcut(QKeySequence("Ctrl+Shift+C"), self)
+        self.console_shortcut.activated.connect(lambda: open_console("Developer Console"))
 
         def load_program():
             try:
@@ -162,8 +164,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.Manager_Database_obj.database_shortcut_setting()
 
             except Exception as e:
+                self.close_bootscreen()
+                msg = f'[ Admin Notification ]\n\nThere is Error in MANAGER Booting\n\nError Log: {traceback.format_exc()}'
+                self.send_pushOver(msg, self.admin_pushoverkey)
                 QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
-                QMessageBox.information(self, "Information", f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
+                QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
                 os._exit(0)
 
         self.listWidget.setCurrentRow(0)
@@ -603,6 +608,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 response = requests.get("http://www.google.com", timeout=5)
                 return response.status_code == 200
             except requests.ConnectionError:
+                self.close_bootscreen()
                 reply = QMessageBox.question(self, "Internet Connection Error", "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     continue
@@ -824,16 +830,6 @@ class MainWindow(QtWidgets.QMainWindow):
             """
         )
 
-    def paintEvent(self, event):
-        # 둥근 모서리를 위한 QPainter 설정
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-        rect = self.rect()
-        color = QColor(255, 255, 255)  # 창의 배경색 설정 (흰색)
-        painter.setBrush(QBrush(color))
-        painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
-        painter.drawRoundedRect(rect, 15, 15)  # 모서리를 둥글게 그리기 (15px radius)
-
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
         #self.update_program()
@@ -1030,8 +1026,6 @@ class InfoDialog(QDialog):
         painter.setBrush(QBrush(color))
         painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
         painter.drawRoundedRect(rect, 15, 15)  # 모서리를 둥글게 그리기 (15px radius)
-
-
 
 if __name__ == '__main__':
 
