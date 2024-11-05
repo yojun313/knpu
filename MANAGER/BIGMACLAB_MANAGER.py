@@ -332,6 +332,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
                     return False
         except Exception as e:
+            self.close_bootscreen()
             QMessageBox.critical(self, "Error", f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
             QMessageBox.information(self, "Information", f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
             return False
