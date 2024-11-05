@@ -1,9 +1,9 @@
 import os
 import sys
-from PyQt5 import QtWidgets, uic, QtGui
+from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QKeySequence, QPixmap, QFont, QPainter, QBrush, QColor
 from openai import OpenAI
 from mySQL import mySQL
 from Manager_Database import Manager_Database
@@ -25,12 +25,11 @@ import socket
 import gc
 import warnings
 import traceback
-import atexit
 import re
 warnings.filterwarnings("ignore")
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self, info_dialog):
         self.versionNum = '2.1.1'
         self.version = 'Version ' + self.versionNum
          
@@ -45,6 +44,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.resize(1400, 1000)
 
+        self.info_dialog = info_dialog  # InfoDialog 객체를 받아옵니다
         self.setStyle()
         self.statusBar_init()
         self.decrypt_process()
@@ -144,6 +144,10 @@ class MainWindow(QtWidgets.QMainWindow):
                             continue
                         else:
                             os._exit(0)
+
+                # 부팅 프로세스 로직이 완료되었을 때 InfoDialog를 닫고 MainWindow를 표시합니다
+                self.info_dialog.accept()  # InfoDialog 닫기
+                self.show()  # MainWindow 표시
 
                 print(f"\n{self.user}님 환영합니다!")
 
@@ -287,7 +291,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.user = user_name
                 ok, password = self.pw_check()
                 if ok and password == answer_password:
-                    reply = QMessageBox.question(self, 'Device Registration', f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    reply = QMessageBox.question(self, 'Device Registration', f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
                         self.mySQL_obj.insertToTable('device_list', [[current_device, user_name]])
                         self.mySQL_obj.commit()
@@ -485,12 +489,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ctrlt = QShortcut(QKeySequence("Ctrl+T"), self)
         self.ctrltt = QShortcut(QKeySequence("Ctrl+Shift+T"), self)
 
+        self.ctrli.activated.connect(self.show_info_dialog)
         self.ctrlu.activated.connect(lambda: self.update_program(True))
         self.ctrlt.activated.connect(lambda: open_console("DEVELOPER TERMINAL"))
         self.ctrltt.activated.connect(close_console)
 
+
     def shortcut_initialize(self):
-        shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrli, self.ctrle, self.ctrlr, self.ctrlk, self.ctrlm]
+        shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrle, self.ctrlr, self.ctrlk, self.ctrlm]
         for shortcut in shortcuts:
             try:
                 shortcut.activated.disconnect()
@@ -587,8 +593,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 response = requests.get("http://www.google.com", timeout=5)
                 return response.status_code == 200
             except requests.ConnectionError:
-                reply = QMessageBox.question(self, "Internet Connection Error", "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
-                                             QMessageBox.No)
+                reply = QMessageBox.question(self, "Internet Connection Error", "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     continue
                 else:
@@ -932,46 +937,79 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             QMessageBox.critical(self, "Error", f"오류가 발생했습니다")
         self.user_bugging(text)
-        reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             self.Manager_Board_obj.board_add_bug()
 
     def closeEvent(self, event):
         # 프로그램 종료 시 실행할 코드
-        reply = QMessageBox.question(self, 'Program Shutdown', "정말 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(self, 'Program Shutdown', "정말 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             self.user_logging('Shutdown')
             event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
         else:
             event.ignore()
 
+    def show_info_dialog(self):
+        try:
+            dialog = InfoDialog(self.versionNum)
+            dialog.exec_()
+        except Exception as e:
+            print(str(e))
+
 
 class InfoDialog(QDialog):
     def __init__(self, version):
         super().__init__()
         self.version = version
+        self.setWindowFlags(Qt.FramelessWindowHint)  # 제목 표시줄 제거
+        self.setAttribute(Qt.WA_TranslucentBackground)  # 배경을 투명하게 설정
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle('Info')
-        self.resize(300, 250)
+        self.resize(300, 300)
 
         layout = QVBoxLayout()
 
-        # 긴 문자열
-        long_text = """
-        <p align="center">BIGMACLAB MANAGER</p>
-        <p align="center">{version}</p>
-        <p align="center">Copyright © 2024 KNPU BIGMACLAB<br>all rights reserved.</p>
-        """.format(version=self.version)
+        # 프로그램 이름 라벨
+        title_label = QLabel("BIGMACLAB MANAGER")
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        layout.addWidget(title_label)
 
-        # QLabel에 HTML 형식으로 긴 문자열 추가
-        info_label = QLabel(long_text, self)
-        info_label.setAlignment(Qt.AlignCenter)
+        # 이미지 라벨
+        image_label = QLabel(self)
+        pixmap = QPixmap(os.path.join(os.path.dirname(__file__), 'exe_icon.png'))
+        pixmap = pixmap.scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        image_label.setPixmap(pixmap)
+        image_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(image_label)
 
-        layout.addWidget(info_label)
+        # 버전 정보 라벨
+        version_label = QLabel(f"Version {self.version}")
+        version_label.setAlignment(Qt.AlignCenter)
+        version_label.setStyleSheet("font-size: 14px; margin-top: 1px;")
+        layout.addWidget(version_label)
 
+        # 저작권 정보 라벨
+        copyright_label = QLabel("Copyright © 2024 KNPU BIGMACLAB\nAll rights reserved.")
+        copyright_label.setAlignment(Qt.AlignCenter)
+        copyright_label.setStyleSheet("font-size: 10px; color: gray; margin-top: 3px;")
+        layout.addWidget(copyright_label)
+
+        # 전체 레이아웃 설정
+        layout.setSpacing(5)
         self.setLayout(layout)
+
+    def paintEvent(self, event):
+        # 둥근 모서리를 위한 QPainter 설정
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)  # 안티앨리어싱 적용
+        rect = self.rect()
+        color = QColor(255, 255, 255)  # 배경색 설정 (흰색)
+        painter.setBrush(QBrush(color))
+        painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
+        painter.drawRoundedRect(rect, 15, 15)  # 모서리를 둥글게 그리기 (15px radius)
 
 
 if __name__ == '__main__':
@@ -988,13 +1026,17 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication([])
 
     # 기본 폰트 설정 및 힌팅 설정
-    font = QtGui.QFont()
-    font.setHintingPreference(QtGui.QFont.PreferNoHinting)
+    font = QFont()
+    font.setHintingPreference(QFont.PreferNoHinting)
     app.setFont(font)
 
+    # 로딩 다이얼로그 표시
+    info_dialog = InfoDialog(version="2.1.1")
+    info_dialog.show()
+
     # 메인 윈도우 실행
-    application = MainWindow()
-    application.show()
+    application = MainWindow(info_dialog)
+    #application.show()
     sys.exit(app.exec_())
 
 

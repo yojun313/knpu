@@ -69,8 +69,7 @@ class Manager_User:
 
             self.main.mySQL_obj.connectDB('user_db')
 
-            reply = QMessageBox.question(self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?",
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 self.main.mySQL_obj.connectDB('user_db')
                 self.main.mySQL_obj.insertToTable(tableName='user_info', data_list=[[name, email, key]])
@@ -110,8 +109,7 @@ class Manager_User:
 
             selected_row = self.main.user_tablewidget.currentRow()
             if selected_row >= 0:
-                reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.userNameList[selected_row]}님을 삭제하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.userNameList[selected_row]}님을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.mySQL_obj.connectDB('user_db')
                     self.main.mySQL_obj.deleteTableRowByColumn('user_info', self.userNameList[selected_row], 'Name')
@@ -131,8 +129,7 @@ class Manager_User:
 
             selected_row = self.main.device_tablewidget.currentRow()
             if selected_row >= 0:
-                reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.device_list[selected_row]}를 삭제하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.device_list[selected_row]}를 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
                     self.main.mySQL_obj.deleteTableRowByColumn('device_list', self.device_list[selected_row], 'device_name')
@@ -210,7 +207,7 @@ class Manager_User:
                 if not ok or password != self.main.admin_password:
                     return
 
-            reply = QMessageBox.question(self.main, 'Confirm Delete', "테이블을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self.main, 'Confirm Delete', "테이블을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
 
             if reply == QMessageBox.Yes:
                 self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 삭제 중...")

@@ -48,7 +48,7 @@ class Manager_Database:
                     else:
                         confirm_msg = f"'{target_db}'를 삭제하시겠습니까?"
 
-                    reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
                         self.main.mySQL_obj.dropDB(target_db)
                         self.database_refresh_DB()
@@ -159,7 +159,7 @@ class Manager_Database:
                 self.init_table_view(self.parent.mySQL_obj, self.target_db)
 
         try:
-            reply = QMessageBox.question(self.main, 'Confirm View', 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self.main, 'Confirm View', 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 self.main.printStatus("불러오는 중...")
 
@@ -700,9 +700,7 @@ class Manager_Database:
                         gc.collect()
 
                     close_console()
-                    reply = QMessageBox.question(self.main, 'Notification', f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                                                 QMessageBox.Yes | QMessageBox.No,
-                                                 QMessageBox.No)
+                    reply = QMessageBox.question(self.main, 'Notification', f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
                         self.main.openFileExplorer(dbpath)
                     self.main.printStatus()
@@ -746,6 +744,5 @@ class Manager_Database:
         self.main.ctrld.activated.connect(self.database_delete_DB)
         self.main.ctrls.activated.connect(self.database_save_DB)
         self.main.ctrlv.activated.connect(self.database_view_DB)
-        self.main.ctrli.activated.connect(self.database_dbinfo_viewer)
         self.main.ctrlr.activated.connect(self.database_refresh_DB)
 
