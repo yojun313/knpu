@@ -778,7 +778,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
-        self.update_program()
+        #self.update_program()
         # DATABASE
         if index == 0:
             self.Manager_Database_obj.database_refresh_DB()
