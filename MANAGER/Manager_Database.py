@@ -50,6 +50,7 @@ class Manager_Database:
                         self.main.mySQL_obj.dropDB(target_db)
                         self.database_refresh_DB()
                         if endtime == '-':
+                            self.main.activate_crawl -= 1
                             QMessageBox.information(self.main, "Information", f"크롤러 서버에 중단 요청을 전송했습니다")
                         else:
                             QMessageBox.information(self.main, "Information", f"'{target_db}'가 삭제되었습니다")

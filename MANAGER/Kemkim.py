@@ -14,7 +14,6 @@ import traceback
 import warnings
 import re
 import platform
-import scipy.stats as stats
 from tqdm import tqdm
 import gc
 
@@ -941,17 +940,35 @@ class KimKem:
 
     def calculate_statistics(self, data):
 
+        def calculate_skewness(data):
+            n = len(data)
+            mean = sum(data) / n
+            std_dev = (sum((x - mean) ** 2 for x in data) / n) ** 0.5
+
+            skewness = (n / ((n - 1) * (n - 2))) * sum(((x - mean) / std_dev) ** 3 for x in data)
+            return round(skewness, 3)
+
+        def calculate_kurtosis(data):
+            n = len(data)
+            mean = sum(data) / n
+            std_dev = (sum((x - mean) ** 2 for x in data) / n) ** 0.5
+
+            kurtosis = ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3)) *
+                        sum(((x - mean) / std_dev) ** 4 for x in data)) - (3 * (n - 1) ** 2 / ((n - 2) * (n - 3)))
+            return round(kurtosis, 3)
+
         # 평균 계산
         mean_value = round(np.mean(data), 3)
         
         # 중위값 계산
         median_value = round(np.median(data), 3)
-        
-        # 왜도 계산
-        skewness_value = round(stats.skew(data), 3)
-        
-        # 첨도 계산
-        kurtosis_value = round(stats.kurtosis(data), 3)
+
+        try:
+            skewness_value = calculate_skewness(data)
+            kurtosis_value = calculate_kurtosis(data)
+        except:
+            skewness_value = 0
+            kurtosis_value = 0
         
          # 데이터를 내림차순으로 정렬
         sorted_data = np.sort(data)[::-1]
