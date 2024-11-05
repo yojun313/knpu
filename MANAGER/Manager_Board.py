@@ -158,7 +158,7 @@ class Manager_Board:
                 version_data = dialog.data
                 version_data = list(version_data.values())
                 self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                self.main.mySQL_obj.insertToTable('version_info', version_data)
+                self.main.mySQL_obj.insertToTable('version_info', [version_data])
                 self.main.mySQL_obj.commit()
                 self.board_version_refresh()
 
