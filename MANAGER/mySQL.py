@@ -274,6 +274,10 @@ class mySQL:
                 cursor.execute(f"SELECT COUNT(*) FROM `{tableName}`")
                 row_count = cursor.fetchone()[0]
 
+                # 테이블이 비어 있는지 확인합니다.
+                if row_count == 0:
+                    return ()  # 테이블이 비어 있을 경우 빈 튜플 반환
+
                 # 마지막 행을 가져오기 위해 OFFSET을 사용합니다.
                 query = f"SELECT * FROM `{tableName}` LIMIT 1 OFFSET {row_count - 1}"
                 cursor.execute(query)
@@ -463,15 +467,18 @@ class mySQL:
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
-
+    '''
     for name in ['admin', '노승국', '이진원', '한승혁', '이정우', '최우철', '배시웅']:
         mySQL_obj.connectDB(f'{name}_db')
         mySQL_obj.dropTable(tableName=f'manager_record')
         mySQL_obj.newTable('manager_record', ['Date', 'Log', 'Bug'])
         mySQL_obj.commit()
     '''
+    '''
     mySQL_obj.connectDB('admin_db')
     mySQL_obj.dropTable('manager_record')
     mySQL_obj.newTable('manager_record', ['Date', 'Log', 'Bug'])
     mySQL_obj.commit()
     '''
+    mySQL_obj.connectDB('admin_db')
+    print(mySQL_obj.TableLastRow('manager_record'))
