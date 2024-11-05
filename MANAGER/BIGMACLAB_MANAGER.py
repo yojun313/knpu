@@ -28,9 +28,11 @@ import traceback
 import re
 warnings.filterwarnings("ignore")
 
+VERSION_NUM = '2.1.1'
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, info_dialog):
-        self.versionNum = '2.1.1'
+        self.versionNum = VERSION_NUM
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -58,7 +60,7 @@ class MainWindow(QtWidgets.QMainWindow):
         def load_program():
             try:
                 self.check_internet_connection()
-                open_console("Booting Process")
+                #open_console("Booting Process")
                 self.listWidget.currentRowChanged.connect(self.display)
 
                 if platform.system() == "Windows":
@@ -153,7 +155,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 location = self.user_location()
                 self.user_logging(f'Booting ({location})')
-                close_console()
+                #close_console()
                 self.update_program()
                 self.shortcut_init()
                 self.Manager_Database_obj.database_shortcut_setting()
@@ -1031,7 +1033,7 @@ if __name__ == '__main__':
     app.setFont(font)
 
     # 로딩 다이얼로그 표시
-    info_dialog = InfoDialog(version="2.1.1")
+    info_dialog = InfoDialog(version=VERSION_NUM)
     info_dialog.show()
 
     # 메인 윈도우 실행
