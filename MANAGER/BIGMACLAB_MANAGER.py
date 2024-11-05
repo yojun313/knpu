@@ -46,18 +46,17 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.resize(1400, 1000)
 
+        self.setStyle()
         self.statusBar_init()
+        self.decrypt_process()
+
+        # default setting
         self.fullstorage = 0
         self.activate_crawl = 0
-        self.decrypt_process()
         self.log_text = ''
         self.bug_text = ''
         self.update_check = False
 
-        # 스타일시트 적용
-        self.setStyle()
-
-        # 사이드바 연결
         def load_program():
             try:
                 self.check_internet_connection()
@@ -100,14 +99,12 @@ class MainWindow(QtWidgets.QMainWindow):
                     "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
                 )
 
-
                 # Loading User info from DB
                 while True:
                     try:
                         self.mySQL_obj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
                         print("\nLoading User Info from DB... ", end = '')
                         if self.mySQL_obj.showAllDB() == []:
-                            print("Failed")
                             raise
                         # DB 불러오기
                         self.Manager_User_obj = Manager_User(self)
@@ -118,6 +115,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         print("Done")
                         break
                     except Exception as e:
+                        print("Failed")
                         reply = QMessageBox.warning(self, 'Connection Failed', f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                         if reply == QMessageBox.Yes:
                             continue
@@ -149,7 +147,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         else:
                             os._exit(0)
 
-                print(f"\nWelcome {self.user}!")
+                print(f"\n{self.user}님 환영합니다!")
 
                 location = self.user_location()
                 self.user_logging(f'Booting ({location})')
@@ -204,25 +202,31 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def user_logging(self, text=''):
         try:
-            self.mySQL_obj.connectDB(f'{self.user}_db')
+            if self.log_text == '':  # 처음 프로그램을 켰을 때
+                self.mySQL_obj.connectDB(f'{self.user}_db') # userDB 접속
 
-            record_df = self.mySQL_obj.TableToDataframe('manager_record')
+                latest_record = self.mySQL_obj.TableLastRow('manager_record') # log의 마지막 행 불러옴
 
-            # 'Date' 열을 datetime 형식으로 변환
-            if not record_df.empty:
-                record_df['Date'] = pd.to_datetime(record_df['Date'])
+                # 'Date' 열을 datetime 형식으로 변환
+                if latest_record != (): # 테이블에 데이터가 있는 경우
+                    # 테이블의 가장 마지막 행 데이터를 불러옴
+                    latest_date = pd.to_datetime(latest_record[1])
 
-            # 오늘 날짜 가져오기
-            today = pd.to_datetime(datetime.now().date())
+                # 만약 테이블이 비어있는 경우
+                else:
+                    latest_date = None # 최근 날짜를 None으로 설정
 
-            # record_df가 비어 있거나 마지막 날짜가 오늘 날짜와 일치하지 않으면 오늘 날짜 추가
-            if record_df.empty or record_df['Date'].iloc[-1] != today:
-                self.mySQL_obj.insertToTable('manager_record', [datetime.now().date(), '', ''])
-                self.mySQL_obj.commit()
-                self.log_text = ''
-            else:
-                if self.log_text == '':
-                    self.log_text = record_df['Log'].iloc[-1]
+                # 오늘 날짜 가져오기
+                today = pd.to_datetime(datetime.now().date())
+
+                # 가장 최근 로그 날짜와 현재 날짜와 같은 경우
+                if latest_date == today:
+                    # 테이블에 날짜를 추가하지 않고 log_text 초기화
+                    self.log_text = latest_record[2]
+                # 날짜를 추가해야하는 경우
+                else:
+                    self.mySQL_obj.insertToTable('manager_record', [datetime.now().date(), '', ''])
+                    self.mySQL_obj.commit()
 
             self.log_text += f'[{str(datetime.now().time())[:-7]}] : {text}\n\n'
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', self.log_text)
@@ -233,10 +237,8 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             if self.bug_text == '':
                 self.mySQL_obj.connectDB(f'{self.user}_db')
-                record_df = self.mySQL_obj.TableToDataframe('manager_record')
-                self.bug_text = record_df['Bug'].iloc[-1]
-                if self.bug_text == None:
-                    self.bug_text = ''
+                latest_record = self.mySQL_obj.TableLastRow('manager_record')
+                self.bug_text = latest_record[3]
 
             self.bug_text += f'[{str(datetime.now().time())[:-7]}] : {text}\n\n'
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', self.bug_text)
@@ -787,7 +789,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # CRAWLER
         elif index == 1:
             self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr:81', self.Manager_Web_obj.crawler_web_layout)
-            QTimer.singleShot(100, lambda: self.printStatus(f"활성 크롤러 수: {self.activate_crawl}"))
+            QTimer.singleShot(1000, lambda: self.printStatus(f"활성 크롤러 수: {self.activate_crawl}"))
             gc.collect()
         # ANALYSIS
         elif index == 2:
@@ -944,13 +946,7 @@ class InfoDialog(QDialog):
 
 
 if __name__ == '__main__':
-    def cleanup_temp_dir():
-       pass
 
-    atexit.register(cleanup_temp_dir)
-
-    temp_dir = tempfile.mkdtemp()
-    shutil.rmtree(temp_dir, ignore_errors=True)
     environ["QT_DEVICE_PIXEL_RATIO"] = "0"
     environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     environ["QT_SCREEN_SCALE_FACTORS"] = "1"
