@@ -157,9 +157,7 @@ class Manager_Analysis:
                     del self.week_divided_group
                     gc.collect()
                 close_console()
-                reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분할 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No,
-                                             QMessageBox.No)
+                reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분할 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.openFileExplorer(splitdata_path)
 
@@ -251,9 +249,7 @@ class Manager_Analysis:
                     gc.collect()
 
                 close_console()
-                reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No,
-                                             QMessageBox.No)
+                reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.openFileExplorer(analysisdata_path)
 
@@ -401,7 +397,7 @@ class Manager_Analysis:
             self.main.printStatus()
             close_console()
 
-            reply = QMessageBox.question(self.main, 'Notification', f"데이터 병합 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self.main, 'Notification', f"데이터 병합 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 self.main.openFileExplorer(mergedfiledir)
 
@@ -1173,7 +1169,7 @@ class Manager_Analysis:
                 'Well-known Signal': ','.join(selected_words_2dim[3]),
             }
 
-            reply = QMessageBox.question(self.main, 'Notification', f'CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n데이터를 저장하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self.main, 'Notification', f'CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n데이터를 저장하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 os.makedirs(analyze_directory, exist_ok=True)
                 os.makedirs(os.path.join(analyze_directory, 'keyword_context'), exist_ok=True)
@@ -1216,7 +1212,7 @@ class Manager_Analysis:
                 return
 
             if any('Title' in word for word in list(filtered_object_csv_df.keys())):
-                reply = QMessageBox.question(self.main, 'Notification', f'키워드 필터링 데이터 저장이 완료되었습니다\n\nAI 분석을 진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                reply = QMessageBox.question(self.main, 'Notification', f'키워드 필터링 데이터 저장이 완료되었습니다\n\nAI 분석을 진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     def gpt_start():
                         for column in filtered_object_csv_df.columns.tolist():
@@ -1550,8 +1546,7 @@ class Manager_Analysis:
 
             if result == 1:
                 self.main.printStatus()
-                reply = QMessageBox.question(self.main, 'Notification', "KEM KIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
-                                             QMessageBox.No)
+                reply = QMessageBox.question(self.main, 'Notification', "KEM KIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
             elif result == 0:

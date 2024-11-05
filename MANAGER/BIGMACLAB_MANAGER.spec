@@ -4,7 +4,7 @@ a = Analysis(
     ['C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER_GUI.ui', '.'),('C:/GitHub/BIGMACLAB/MANAGER/encrypted_env', '.'),('C:/GitHub/BIGMACLAB/MANAGER/env.key', '.')],
+    datas=[('C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER_GUI.ui', '.'),('C:/GitHub/BIGMACLAB/MANAGER/encrypted_env', '.'),('C:/GitHub/BIGMACLAB/MANAGER/env.key', '.'), ('C:/GitHub/BIGMACLAB/MANAGER/exe_icon.png', '.')],
     hiddenimports=['seaborn.external.kde'],
     hookspath=[],
     hooksconfig={},
