@@ -489,7 +489,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ctrlu.activated.connect(lambda: self.update_program(True))
         self.ctrlt.activated.connect(lambda: open_console("DEVELOPER TERMINAL"))
-        self.ctrly.activated.connect(lambda: close_console)
+        self.ctrly.activated.connect(close_console)
 
     def shortcut_initialize(self):
         shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrli, self.ctrle, self.ctrlr, self.ctrlk, self.ctrlm]
