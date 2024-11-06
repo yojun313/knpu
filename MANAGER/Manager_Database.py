@@ -175,7 +175,6 @@ class Manager_Database:
                         self.DBtable_window = TableWindow(self.main, target_DB)
                         self.DBtable_window.destroyed.connect(destory_table)
                         self.DBtable_window.show()
-                    close_console()
 
                 QTimer.singleShot(1, load_database)
                 QTimer.singleShot(1, self.main.printStatus)
