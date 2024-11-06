@@ -18,6 +18,7 @@ from Manager_Console import open_console, close_console
 
 warnings.filterwarnings("ignore")
 class Manager_Database:
+    
     def __init__(self, main_window):
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
@@ -25,8 +26,6 @@ class Manager_Database:
         self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column, self.database_dbinfo_viewer)
         self.database_buttonMatch()
         self.console_open = False
-
-
 
     def database_delete_DB(self):
         try:
@@ -183,7 +182,6 @@ class Manager_Database:
 
     def database_dbinfo_viewer(self, row):
         try:
-            raise
             DBdata = self.DB['DBdata'][row]
             DBname = self.DB['DBlist'][row]
             DBinfo = self.DB['DBinfo'][row]
