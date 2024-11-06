@@ -242,7 +242,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # 가장 최근 로그 날짜와 현재 날짜와 같은 경우
                 if latest_date != today:
-                    self.mySQL_obj.insertToTable('manager_record', [datetime.now().date(), '', '', ''])
+                    self.mySQL_obj.insertToTable('manager_record', [[datetime.now().date(), '', '', '']])
                     self.mySQL_obj.commit()
 
             text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
