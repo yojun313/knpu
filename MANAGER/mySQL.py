@@ -431,7 +431,9 @@ class mySQL:
             print(f"Failed to delete row with {columnName} = {target} from table {tableName}")
             print(str(e))
 
-    def updateTableCell(self, tableName, row_number, column_name, new_value):
+    import pymysql
+
+    def updateTableCell(self, tableName, row_number, column_name, new_value, add=False):
         try:
             with self.conn.cursor() as cursor:
                 # row_number가 -1이면 마지막 행을 가리키게 설정
@@ -450,7 +452,14 @@ class mySQL:
                 if result:
                     row_id = result[0]  # 해당 row_number의 실제 id
 
-                    # 해당 id로 업데이트
+                    # add=True인 경우 기존 값을 가져와 추가
+                    if add:
+                        query_get_current_value = f"SELECT `{column_name}` FROM `{tableName}` WHERE id = %s"
+                        cursor.execute(query_get_current_value, (row_id,))
+                        current_value = cursor.fetchone()[0] or ""  # None일 경우 빈 문자열로 처리
+                        new_value = current_value + str(new_value)  # 기존 값에 새 값을 추가
+
+                    # 업데이트 쿼리 실행
                     query_update = f"UPDATE `{tableName}` SET `{column_name}` = %s WHERE id = %s"
                     cursor.execute(query_update, (new_value, row_id))
                     self.conn.commit()
@@ -467,18 +476,9 @@ class mySQL:
 if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
-    '''
+
     for name in ['admin', '노승국', '이진원', '한승혁', '이정우', '최우철', '배시웅']:
         mySQL_obj.connectDB(f'{name}_db')
-        mySQL_obj.dropTable(tableName=f'manager_record')
-        mySQL_obj.newTable('manager_record', ['Date', 'Log', 'Bug'])
-        mySQL_obj.commit()
-    '''
-    '''
-    mySQL_obj.connectDB('admin_db')
-    mySQL_obj.dropTable('manager_record')
-    mySQL_obj.newTable('manager_record', ['Date', 'Log', 'Bug'])
-    mySQL_obj.commit()
-    '''
-    mySQL_obj.connectDB('admin_db')
-    print(mySQL_obj.TableLastRow('manager_record'))
+
+
+
