@@ -1,8 +1,8 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
-from PyQt5.QtCore import Qt, QTimer, QCoreApplication
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
+from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent
 from PyQt5.QtGui import QKeySequence, QPixmap, QFont, QPainter, QBrush, QColor
 from openai import OpenAI
 from mySQL import mySQL
@@ -26,6 +26,7 @@ import gc
 import warnings
 import traceback
 import re
+import logging
 warnings.filterwarnings("ignore")
 
 VERSION_NUM = '2.1.2'
@@ -51,11 +52,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusBar_init()
         self.decrypt_process()
 
+        setup_logging()
+        self.event_logger = EventLogger()
+        self.install_event_filter_all_widgets(self)
+
         # default setting
         self.fullstorage = 0
         self.activate_crawl = 0
-        self.log_text = ''
-        self.bug_text = ''
 
         def load_program():
             try:
@@ -157,7 +160,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 print(f"\n{self.user}님 환영합니다!")
 
-                self.user_logging(f'Booting ({self.user_location()})')
+                self.user_logging(f'Booting ({self.user_location()})', booting=True)
                 self.update_program()
 
                 # close_console()
@@ -218,11 +221,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if os.path.exists(os.path.join(current_position, 'decrypted_env')):
             os.remove(os.path.join(current_position, 'decrypted_env'))
 
-    def user_logging(self, text=''):
+    def user_logging(self, text='', booting=False):
         try:
             self.mySQL_obj.disconnectDB()
             self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
-            if self.log_text == '':  # 처음 프로그램을 켰을 때
+            if booting == True:
                 latest_record = self.mySQL_obj.TableLastRow('manager_record') # log의 마지막 행 불러옴
 
                 # 'Date' 열을 datetime 형식으로 변환
@@ -238,28 +241,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 today = pd.to_datetime(datetime.now().date())
 
                 # 가장 최근 로그 날짜와 현재 날짜와 같은 경우
-                if latest_date == today:
-                    # 테이블에 날짜를 추가하지 않고 log_text 초기화
-                    self.log_text = latest_record[2]
-                # 날짜를 추가해야하는 경우
-                else:
-                    self.mySQL_obj.insertToTable('manager_record', [datetime.now().date(), '', ''])
+                if latest_date != today:
+                    self.mySQL_obj.insertToTable('manager_record', [datetime.now().date(), '', '', ''])
                     self.mySQL_obj.commit()
 
-            self.log_text += f'[{str(datetime.now().time())[:-7]}] : {text}\n\n'
-            self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', self.log_text)
+            text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
+            self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', text, add=True)
         except Exception as e:
             pass
 
     def user_bugging(self, text=''):
         try:
-            if self.bug_text == '':
-                self.mySQL_obj.connectDB(f'{self.user}_db')
-                latest_record = self.mySQL_obj.TableLastRow('manager_record')
-                self.bug_text = latest_record[3]
-
-            self.bug_text += f'[{str(datetime.now().time())[:-7]}] : {text}\n\n'
-            self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', self.bug_text)
+            self.mySQL_obj.disconnectDB()
+            self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
+            text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
+            self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', text, add=True)
         except Exception as e:
             pass
 
@@ -510,8 +506,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ctrli.activated.connect(self.show_info_dialog)
         self.ctrlu.activated.connect(lambda: self.update_program(True))
-        self.ctrlt.activated.connect(lambda: open_console("DEVELOPER TERMINAL"))
-        self.ctrltt.activated.connect(close_console)
+        self.ctrlt.activated.connect(lambda: self.developer_mode(True))
+        self.ctrltt.activated.connect(lambda: self.developer_mode(False))
 
 
     def shortcut_initialize(self):
@@ -967,6 +963,11 @@ class MainWindow(QtWidgets.QMainWindow):
         reply = QMessageBox.question(self, 'Shutdown', "프로그램을 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             self.user_logging('Shutdown')
+            try:
+                self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
+                self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
+            except:
+                pass
             event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
         else:
             event.ignore()
@@ -978,6 +979,77 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             print(str(e))
 
+#################### DEVELOPER MODE ###################
+
+    def developer_mode(self, toggle):
+        try:
+            if toggle == True:
+                open_console("DEVELOPER MODE")
+                toggle_logging(True)
+            else:
+                close_console()
+                toggle_logging(False)
+        except:
+            pass
+
+    def install_event_filter_all_widgets(self, widget):
+        """재귀적으로 모든 자식 위젯에 EventLogger를 설치하는 함수"""
+        widget.installEventFilter(self.event_logger)
+        for child in widget.findChildren(QWidget):
+            child.installEventFilter(self.event_logger)
+
+
+# 로그 출력 제어 변수와 로그 저장 변수
+logging_enabled = False  # 콘솔 출력 여부를 조절
+log_text = ""  # 모든 로그 메시지를 저장하는 변수
+
+def setup_logging():
+    """로그 설정 초기화"""
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[logging.StreamHandler()]
+    )
+    logging.getLogger().setLevel(logging.CRITICAL)  # 초기에는 콘솔 출력 방지
+
+
+def toggle_logging(enable):
+    """
+    콘솔에 로그를 출력할지 여부를 결정.
+    인자로 True 또는 False를 받아 INFO 레벨과 CRITICAL 레벨로 전환.
+    """
+    global logging_enabled
+    logging_enabled = enable
+    logging.getLogger().setLevel(logging.INFO if logging_enabled else logging.CRITICAL)
+
+
+def log_to_text(message):
+    """
+    모든 로그 메시지를 log_text에 저장하고, logging_enabled가 True일 경우 콘솔에도 출력.
+    """
+    global log_text
+    timestamped_message = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {message}"  # 타임스탬프 추가
+    log_text += f"{timestamped_message}\n"  # 모든 로그를 log_text에 기록
+    if logging_enabled:
+        logging.info(timestamped_message)  # logging_enabled가 True일 때만 콘솔에 출력
+
+
+class EventLogger(QObject):
+    """이벤트 로그를 생성하고 log_text에 모든 로그를 쌓아두는 클래스"""
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.MouseButtonPress:
+            log_to_text(f"MouseButtonPress on {obj}")
+        elif event.type() == QEvent.KeyPress:
+            log_to_text(f"KeyPress: {event.key()} on {obj}")
+        elif event.type() == QEvent.FocusIn:
+            log_to_text(f"FocusIn on {obj}")
+        elif event.type() == QEvent.MouseButtonDblClick:
+            log_to_text(f"Double-click on {obj}")
+
+        return super().eventFilter(obj, event)
+
+#######################################################
 
 class InfoDialog(QDialog):
     def __init__(self, version, booting=True):
