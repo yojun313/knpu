@@ -29,7 +29,7 @@ import re
 import logging
 warnings.filterwarnings("ignore")
 
-VERSION = '2.1.2'
+VERSION = '2.1.3'
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, info_dialog):
