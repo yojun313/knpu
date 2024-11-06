@@ -477,8 +477,33 @@ if __name__ == "__main__":
     # 사용 예제
     mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
 
-    for name in ['admin', '노승국', '이진원', '한승혁', '이정우', '최우철', '배시웅']:
-        mySQL_obj.connectDB(f'{name}_db')
 
+    def add_column_to_manager_record(db_name, column_name='D_Log', column_type='LONGTEXT'):
+        try:
+            # 사용자 DB에 연결
+            mySQL_obj.connectDB(db_name)
+
+            # `manager_record` 테이블에 `D_Log` 열이 있는지 확인하고, 없다면 추가
+            with mySQL_obj.conn.cursor() as cursor:
+                cursor.execute(f"SHOW COLUMNS FROM `manager_record` LIKE '{column_name}'")
+                result = cursor.fetchone()
+
+                # 열이 없으면 추가
+                if not result:
+                    cursor.execute(f"ALTER TABLE `manager_record` ADD COLUMN `{column_name}` {column_type}")
+                    mySQL_obj.conn.commit()
+                    print(f"Column '{column_name}' added to 'manager_record' table in {db_name}")
+                else:
+                    print(f"Column '{column_name}' already exists in 'manager_record' table in {db_name}")
+
+        except pymysql.MySQLError as e:
+            print(f"Failed to add column '{column_name}' in '{db_name}.manager_record'")
+            print(f"MySQL Error: {str(e)}")
+
+
+    # 각 사용자 데이터베이스에 대해 열 추가 실행
+    for name in ['public']:
+        db_name = f'{name}_db'
+        add_column_to_manager_record(db_name)
 
 
