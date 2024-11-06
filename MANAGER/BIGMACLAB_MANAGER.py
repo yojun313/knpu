@@ -59,8 +59,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         def load_program():
             try:
-                self.info_dialog.update_status("Checking internet connection...")
-                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
                 self.check_internet_connection()
                 #open_console("Booting Process")
                 self.listWidget.currentRowChanged.connect(self.display)
@@ -101,8 +99,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
                 )
 
-                self.info_dialog.update_status("Loading User Info from database...")
-                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
                 # Loading User info from DB
                 while True:
                     try:
@@ -128,15 +124,11 @@ class MainWindow(QtWidgets.QMainWindow):
                         else:
                             os._exit(0)
 
-                self.info_dialog.update_status("Checking User...")
-                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
                 # User Checking & Login Process
                 print("\nChecking User... ", end='')
                 if self.login_program() == False:
                     os._exit(0)
 
-                self.info_dialog.update_status("Loading data from database...")
-                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
                 # Loading Data from DB & Making object
                 while True:
                     try:
@@ -158,11 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             continue
                         else:
                             os._exit(0)
-                self.info_dialog.update_status("Loading data from database...")
-                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
 
-                self.info_dialog.update_status('Initializing')
-                QtWidgets.QApplication.processEvents()  # UI 즉시 업데이트
                 self.close_bootscreen()
                 self.shortcut_init()
                 self.Manager_Database_obj.database_shortcut_setting()
@@ -1000,48 +988,46 @@ class InfoDialog(QDialog):
         self.initUI()
 
     def initUI(self):
-        self.resize(300, 300)
+        # 창 크기 설정
+        self.resize(450, 450)
 
-        layout = QVBoxLayout()
+        # 전체 레이아웃을 중앙 정렬로 설정
+        main_layout = QVBoxLayout(self)
+        main_layout.setAlignment(Qt.AlignCenter)
+        main_layout.setContentsMargins(30, 30, 30, 30)  # 전체 여백 설정
+        main_layout.setSpacing(15)  # 위젯 간격 확대
 
         # 프로그램 이름 라벨
         title_label = QLabel("MANAGER")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("font-size: 16px; font-weight: bold;")
-        layout.addWidget(title_label)
+        title_label.setStyleSheet("font-size: 24px; font-weight: bold;")  # 폰트 크기 확대
+        main_layout.addWidget(title_label)
 
         # 이미지 라벨
         image_label = QLabel(self)
         pixmap = QPixmap(os.path.join(os.path.dirname(__file__), 'exe_icon.png'))
-        pixmap = pixmap.scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmap = pixmap.scaled(180, 180, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # 이미지 크기 유지
         image_label.setPixmap(pixmap)
         image_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(image_label)
+        main_layout.addWidget(image_label)
 
         # 버전 정보 라벨
         version_label = QLabel(f"Version {self.version}")
         version_label.setAlignment(Qt.AlignCenter)
-        version_label.setStyleSheet("font-size: 14px; margin-top: 1px;")
-        layout.addWidget(version_label)
+        version_label.setStyleSheet("font-size: 21px; margin-top: 5px;")  # 폰트 크기 유지
+        main_layout.addWidget(version_label)
 
         # 상태 메시지 라벨
-        self.status_label = QLabel("Initializing...")
+        self.status_label = QLabel("Loading...")
         self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet("font-size: 12px; color: gray; margin-top: 5px;")
-        layout.addWidget(self.status_label)
+        self.status_label.setStyleSheet("font-size: 17px; color: gray; margin-top: 8px;")
+        main_layout.addWidget(self.status_label)
 
         # 저작권 정보 라벨
         copyright_label = QLabel("Copyright © 2024 KNPU BIGMACLAB\nAll rights reserved.")
         copyright_label.setAlignment(Qt.AlignCenter)
-        copyright_label.setStyleSheet("font-size: 10px; color: gray; margin-top: 3px;")
-        layout.addWidget(copyright_label)
-
-        layout.setSpacing(5)
-        self.setLayout(layout)
-
-    def update_status(self, message):
-        self.status_label.setText(message)
-        QtWidgets.QApplication.processEvents()  # UI를 즉시 갱신
+        copyright_label.setStyleSheet("font-size: 15px; color: gray; margin-top: 10px;")
+        main_layout.addWidget(copyright_label)
 
     def paintEvent(self, event):
         # 둥근 모서리를 위한 QPainter 설정
@@ -1051,7 +1037,8 @@ class InfoDialog(QDialog):
         color = QColor(255, 255, 255)  # 배경색 설정 (흰색)
         painter.setBrush(QBrush(color))
         painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
-        painter.drawRoundedRect(rect, 20, 20)  # 모서리를 둥글게 그리기 (15px radius)
+        painter.drawRoundedRect(rect, 30, 30)  # 모서리를 둥글게 그리기 (30px radius)
+
 
 if __name__ == '__main__':
 
