@@ -323,7 +323,7 @@ class Manager_User:
                     tableDF = tableDF.iloc[::-1].reset_index(drop=True)
 
                 # 데이터프레임 값을 문자열로 변환하여 튜플 형태의 리스트로 저장
-                self.tuple_list = [tuple(str(cell) for cell in row) for row in
+                self.tuple_list = [tuple(str(cell) for cell in row[1:]) for row in
                                    tableDF.itertuples(index=False, name=None)]
 
                 # 테이블 위젯 생성
@@ -332,7 +332,8 @@ class Manager_User:
 
                 # column 정보를 리스트로 저장
                 columns = list(tableDF.columns)
-
+                columns.pop(0)
+                
                 # table_maker 함수를 호출하여 테이블 설정
                 self.parent.table_maker(new_table, self.tuple_list, columns)
 
