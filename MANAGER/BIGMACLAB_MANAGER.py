@@ -29,11 +29,11 @@ import re
 import logging
 warnings.filterwarnings("ignore")
 
-VERSION_NUM = '2.1.2'
+VERSION = '2.1.2'
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, info_dialog):
-        self.versionNum = VERSION_NUM
+        self.versionNum = VERSION
         self.version = 'Version ' + self.versionNum
          
         super(MainWindow, self).__init__()
@@ -952,6 +952,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QMessageBox.critical(self, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
         else:
             QMessageBox.critical(self, "Error", f"오류가 발생했습니다")
+        log_to_text(f"Exception: {text}")
         self.user_bugging(text)
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if reply == QMessageBox.Yes:
@@ -1020,7 +1021,7 @@ def toggle_logging(enable):
     """
     global logging_enabled
     logging_enabled = enable
-    logging.getLogger().setLevel(logging.INFO if logging_enabled else logging.CRITICAL)
+    logging.getLogger().setLevel(logging.DEBUG if logging_enabled else logging.CRITICAL)
 
 
 def log_to_text(message):
@@ -1047,12 +1048,22 @@ class EventLogger(QObject):
     def eventFilter(self, obj, event):
         if event.type() == QEvent.MouseButtonPress:
             log_to_text(f"MouseButtonPress on {obj}")
+        elif event.type() == QEvent.MouseButtonRelease:
+            log_to_text(f"MouseButtonRelease on {obj}")
         elif event.type() == QEvent.KeyPress:
             log_to_text(f"KeyPress: {event.key()} on {obj}")
+        elif event.type() == QEvent.KeyRelease:
+            log_to_text(f"KeyRelease: {event.key()} on {obj}")
         elif event.type() == QEvent.FocusIn:
             log_to_text(f"FocusIn on {obj}")
+        elif event.type() == QEvent.FocusOut:
+            log_to_text(f"FocusOut on {obj}")
         elif event.type() == QEvent.MouseButtonDblClick:
             log_to_text(f"Double-click on {obj}")
+        elif event.type() == QEvent.Resize:
+            log_to_text(f"{obj} resized")
+        elif event.type() == QEvent.Close:
+            log_to_text(f"{obj} closed")
 
         return super().eventFilter(obj, event)
 
@@ -1139,12 +1150,11 @@ if __name__ == '__main__':
     app.setFont(font)
 
     # 로딩 다이얼로그 표시
-    info_dialog = InfoDialog(version=VERSION_NUM)
+    info_dialog = InfoDialog(version=VERSION)
     info_dialog.show()
 
     # 메인 윈도우 실행
     application = MainWindow(info_dialog)
-    #application.show()
     sys.exit(app.exec_())
 
 
