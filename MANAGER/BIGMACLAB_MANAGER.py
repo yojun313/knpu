@@ -963,7 +963,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         # 프로그램 종료 시 실행할 코드
-        reply = QMessageBox.question(self, 'Program Shutdown', "정말 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        reply = QMessageBox.question(self, 'Shutdown', "프로그램을 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             self.user_logging('Shutdown')
             event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
