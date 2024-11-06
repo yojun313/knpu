@@ -1031,8 +1031,7 @@ def log_to_text(message):
     timestamped_message = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {message}"  # 타임스탬프 추가
     log_text += f"{timestamped_message}\n"  # 모든 로그를 log_text에 기록
     if logging_enabled:
-        logging.info(timestamped_message)  # logging_enabled가 True일 때만 콘솔에 출력
-
+        print(timestamped_message)  # logging_enabled가 True일 때만 콘솔에 출력
 
 class EventLogger(QObject):
     """이벤트 로그를 생성하고 log_text에 모든 로그를 쌓아두는 클래스"""
