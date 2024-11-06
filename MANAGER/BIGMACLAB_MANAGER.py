@@ -504,7 +504,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ctrlt = QShortcut(QKeySequence("Ctrl+T"), self)
         self.ctrltt = QShortcut(QKeySequence("Ctrl+Shift+T"), self)
 
-        self.ctrli.activated.connect(self.show_info_dialog)
         self.ctrlu.activated.connect(lambda: self.update_program(True))
         self.ctrlt.activated.connect(lambda: self.developer_mode(True))
         self.ctrltt.activated.connect(lambda: self.developer_mode(False))
@@ -986,6 +985,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if toggle == True:
                 open_console("DEVELOPER MODE")
                 toggle_logging(True)
+                print(log_text)
             else:
                 close_console()
                 toggle_logging(False)
@@ -1032,6 +1032,14 @@ def log_to_text(message):
     log_text += f"{timestamped_message}\n"  # 모든 로그를 log_text에 기록
     if logging_enabled:
         print(timestamped_message)  # logging_enabled가 True일 때만 콘솔에 출력
+
+# 예외 발생 시 log_to_text에 기록하는 함수
+def exception_handler(exc_type, exc_value, exc_traceback):
+    error_message = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    log_to_text(f"Exception: {error_message}")
+
+# 전역 예외 처리기를 설정하여 모든 예외를 log_to_text에 기록
+sys.excepthook = exception_handler
 
 class EventLogger(QObject):
     """이벤트 로그를 생성하고 log_text에 모든 로그를 쌓아두는 클래스"""
