@@ -24,7 +24,6 @@ class Manager_Database:
         self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester', 'Size']
         self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column, self.database_dbinfo_viewer)
         self.database_buttonMatch()
-
         self.console_open = False
 
 
