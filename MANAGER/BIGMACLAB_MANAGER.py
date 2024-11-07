@@ -1,7 +1,9 @@
 import os
 import sys
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
+from PyQt5.QtWidgets import (QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit,
+                             QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog,
+                             QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton, QGraphicsDropShadowEffect)
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent
 from PyQt5.QtGui import QKeySequence, QPixmap, QFont, QPainter, QBrush, QColor, QIcon
 from openai import OpenAI
@@ -66,7 +68,7 @@ class MainWindow(QtWidgets.QMainWindow):
         def load_program():
             try:
                 self.check_internet_connection()
-                #open_console("Booting Process")
+                self.listWidget.setCurrentRow(0)
                 self.listWidget.currentRowChanged.connect(self.display)
 
                 if platform.system() == "Windows":
@@ -166,8 +168,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.user_logging(f'Booting ({self.user_location()})', booting=True)
                 self.update_program()
 
-                # close_console()
-
             except Exception as e:
                 self.close_bootscreen()
                 self.printStatus()
@@ -177,9 +177,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
                 os._exit(0)
 
-        self.listWidget.setCurrentRow(0)
+        self.add_shadow_effect()
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+
+    def add_shadow_effect(self):
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(20)  # 그림자 블러 처리
+        shadow.setXOffset(0)  # 그림자의 X축 오프셋
+        shadow.setYOffset(0)  # 그림자의 Y축 오프셋
+        shadow.setColor(QColor(0, 0, 0, 150))  # 그림자의 색상 (검정, 투명도 조절)
+        self.setGraphicsEffect(shadow)
 
     def close_bootscreen(self):
         try:
@@ -478,7 +486,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def menubar_init(self):
         import webbrowser
         def showInfoDialog():
-            dialog = InfoDialog(self.version)
+            dialog = SplashDialog(self.version)
             dialog.exec_()
 
         menubar = self.menuBar()
@@ -517,7 +525,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ctrlu.activated.connect(lambda: self.update_program(True))
         self.ctrlp.activated.connect(lambda: self.developer_mode(True))
         self.ctrlpp.activated.connect(lambda: self.developer_mode(False))
-
 
     def shortcut_initialize(self):
         shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrle, self.ctrlr, self.ctrlk, self.ctrlm]
@@ -1037,7 +1044,6 @@ def setup_logging():
     )
     logging.getLogger().setLevel(logging.CRITICAL)  # 초기에는 콘솔 출력 방지
 
-
 def toggle_logging(enable):
     """
     콘솔에 로그를 출력할지 여부를 결정.
@@ -1046,7 +1052,6 @@ def toggle_logging(enable):
     global logging_enabled
     logging_enabled = enable
     logging.getLogger().setLevel(logging.DEBUG if logging_enabled else logging.CRITICAL)
-
 
 def log_to_text(message):
     """
