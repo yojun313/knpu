@@ -1076,8 +1076,6 @@ class EventLogger(QObject):
             log_to_text(f"MouseButtonRelease on {obj}")
         elif event.type() == QEvent.KeyPress:
             log_to_text(f"KeyPress: {event.key()} on {obj}")
-        elif event.type() == QEvent.KeyRelease:
-            log_to_text(f"KeyRelease: {event.key()} on {obj}")
         elif event.type() == QEvent.FocusIn:
             log_to_text(f"FocusIn on {obj}")
         elif event.type() == QEvent.FocusOut:
