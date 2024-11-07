@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 VERSION = '2.1.3'
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, info_dialog):
+    def __init__(self, splash_dialog):
         self.versionNum = VERSION
         self.version = 'Version ' + self.versionNum
          
@@ -47,7 +47,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.resize(1400, 1000)
 
-        self.info_dialog = info_dialog  # InfoDialog 객체를 받아옵니다
+        self.splash_dialog = splash_dialog  # InfoDialog 객체를 받아옵니다
         self.setStyle()
         self.statusBar_init()
         self.decrypt_process()
@@ -180,7 +180,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def close_bootscreen(self):
         try:
-            self.info_dialog.accept()  # InfoDialog 닫기
+            self.splash_dialog.accept()  # InfoDialog 닫기
             self.show()  # MainWindow 표시
         except:
             pass
@@ -500,12 +500,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ctrlr = QShortcut(QKeySequence("Ctrl+R"), self)
         self.ctrlk = QShortcut(QKeySequence("Ctrl+K"), self)
         self.ctrlm = QShortcut(QKeySequence("Ctrl+M"), self)
-        self.ctrlt = QShortcut(QKeySequence("Ctrl+T"), self)
-        self.ctrltt = QShortcut(QKeySequence("Ctrl+Shift+T"), self)
+        self.ctrlp = QShortcut(QKeySequence("Ctrl+P"), self)
+        self.ctrlpp = QShortcut(QKeySequence("Ctrl+Shift+P"), self)
 
         self.ctrlu.activated.connect(lambda: self.update_program(True))
-        self.ctrlt.activated.connect(lambda: self.developer_mode(True))
-        self.ctrltt.activated.connect(lambda: self.developer_mode(False))
+        self.ctrlp.activated.connect(lambda: self.developer_mode(True))
+        self.ctrlpp.activated.connect(lambda: self.developer_mode(False))
 
 
     def shortcut_initialize(self):
@@ -971,7 +971,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             event.ignore()
 
-    def show_info_dialog(self):
+    def show_splash_dialog(self):
         try:
             dialog = InfoDialog(self.versionNum, False)
             dialog.exec_()
@@ -1068,7 +1068,7 @@ class EventLogger(QObject):
 
 #######################################################
 
-class InfoDialog(QDialog):
+class SplashDialog(QDialog):
     def __init__(self, version, booting=True):
         super().__init__()
         self.version = version
@@ -1149,11 +1149,11 @@ if __name__ == '__main__':
     app.setFont(font)
 
     # 로딩 다이얼로그 표시
-    info_dialog = InfoDialog(version=VERSION)
-    info_dialog.show()
+    splash_dialog = SplashDialog(version=VERSION)
+    splash_dialog.show()
 
     # 메인 윈도우 실행
-    application = MainWindow(info_dialog)
+    application = MainWindow(splash_dialog)
     sys.exit(app.exec_())
 
 
