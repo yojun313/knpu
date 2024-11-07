@@ -634,7 +634,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # 팝업 창 생성
             self.details_dialog = QDialog()
             self.details_dialog.setWindowTitle("상세 정보")
-            self.details_dialog.resize(500, 300)
+            self.details_dialog.resize(600, 300)
 
             # 레이아웃 설정
             layout = QVBoxLayout(self.details_dialog)
