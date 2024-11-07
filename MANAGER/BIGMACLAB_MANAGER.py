@@ -227,7 +227,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
             if booting == True:
                 latest_record = self.mySQL_obj.TableLastRow('manager_record') # log의 마지막 행 불러옴
-
                 # 'Date' 열을 datetime 형식으로 변환
                 if latest_record != (): # 테이블에 데이터가 있는 경우
                     # 테이블의 가장 마지막 행 데이터를 불러옴
@@ -241,8 +240,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 today = pd.to_datetime(datetime.now().date())
 
                 # 가장 최근 로그 날짜와 현재 날짜와 같은 경우
-                if latest_date != today:
-                    self.mySQL_obj.insertToTable('manager_record', [[datetime.now().date(), '', '', '']])
+                if latest_date != today or latest_date is None:
+                    self.mySQL_obj.insertToTable('manager_record', [[str(datetime.now().date()), '', '', '']])
                     self.mySQL_obj.commit()
 
             text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
@@ -962,8 +961,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # 프로그램 종료 시 실행할 코드
         reply = QMessageBox.question(self, 'Shutdown', "프로그램을 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if reply == QMessageBox.Yes:
-            self.user_logging('Shutdown')
             try:
+                self.user_logging('Shutdown')
                 self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
                 self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
             except:
