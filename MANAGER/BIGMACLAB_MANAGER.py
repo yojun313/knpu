@@ -438,8 +438,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.printStatus("버전 업데이트 중...")
                         import subprocess
                         download_file_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.new_version}.exe")
-                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe",
-                                      download_file_path)
+                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe", download_file_path)
                         subprocess.Popen([download_file_path], shell=True)
                         close_console()
                         os._exit(0)
@@ -447,9 +446,20 @@ class MainWindow(QtWidgets.QMainWindow):
                     QMessageBox.information(self, "Information", 'Ctrl+U 단축어로 프로그램 실행 중 업데이트 가능합니다')
                     return
             else:
-                if sc == True:
-                    QMessageBox.information(self, "Information", "현재 버전이 최신 버전입니다")
-                    return
+                if sc == True and platform.system() == "Windows":
+                    reply = QMessageBox.question(self, "Reinstall", "현재 버전이 최신 버전입니다\n\n현재 버전을 재설치하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        self.printStatus("버전 재설치 중...")
+                        open_console("Version Reinstall Process")
+                        import subprocess
+                        download_file_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.new_version}.exe")
+                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe", download_file_path)
+                        subprocess.Popen([download_file_path], shell=True)
+                        close_console()
+                        os._exit(0)
+                    else:
+                        return
+                return
         except:
            return
 
