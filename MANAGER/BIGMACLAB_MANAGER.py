@@ -3,7 +3,7 @@ import sys
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, QPushButton
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent
-from PyQt5.QtGui import QKeySequence, QPixmap, QFont, QPainter, QBrush, QColor
+from PyQt5.QtGui import QKeySequence, QPixmap, QFont, QPainter, QBrush, QColor, QIcon
 from openai import OpenAI
 from mySQL import mySQL
 from Manager_Database import Manager_Database
@@ -38,9 +38,11 @@ class MainWindow(QtWidgets.QMainWindow):
          
         super(MainWindow, self).__init__()
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
+        icon_path = os.path.join(os.path.dirname(__file__), 'exe_icon.ico')
         uic.loadUi(ui_path, self)
 
         self.setWindowTitle("MANAGER")  # 창의 제목 설정
+        self.setWindowIcon(QIcon(icon_path))
         if platform.system() == "Windows":
             self.resize(1400, 1000)
             #self.showMaximized()  # 전체 화면으로 창 열기
