@@ -504,9 +504,13 @@ class Manager_Analysis:
                     QMessageBox.warning(self.main, "Not Supported", f"{selected_options[1]} {selected_options[0]} 분석은 지원되지 않는 기능입니다")
                     return
 
-            self.main.openFileExplorer(os.path.dirname(csv_path))
             del csv_data
             gc.collect()
+
+            reply = QMessageBox.question(self.main, 'Notification', f"{os.path.basename(csv_path)} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                self.main.openFileExplorer(os.path.join(os.path.dirname(csv_path), os.path.basename(csv_path).replace('.csv', '') + '_analysis'))
+
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 

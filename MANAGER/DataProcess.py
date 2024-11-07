@@ -108,8 +108,9 @@ class DataProcess:
             return
 
         # 'Article Date'를 datetime 형식으로 변환
-        data['Article Date'] = pd.to_datetime(data['Article Date'])
-        data['Article ReplyCnt'] = pd.to_numeric(data['Article ReplyCnt'], errors='coerce')
+        data['Article Date'] = pd.to_datetime(data['Article Date'], errors='coerce')
+        # 'Article ReplyCnt' 열을 숫자로 변환하고, 변환이 안 되는 값은 NaN으로 처리
+        data['Article ReplyCnt'] = pd.to_numeric(data['Article ReplyCnt'], errors='coerce').fillna(0)
 
         # 기본 통계 분석
         basic_stats = data.describe(include='all')
@@ -118,23 +119,25 @@ class DataProcess:
         time_analysis = data.groupby(data['Article Date'].dt.to_period("M")).agg({
             'id': 'count',
             'Article ReplyCnt': 'sum'
-        }).rename(columns={'id': 'Article Count'})
+        }).rename(columns={'id': 'Article Count'}).reset_index()
+        time_analysis['Article Date'] = time_analysis['Article Date'].dt.to_timestamp()
 
         # 기사 유형별 분석
         article_type_analysis = data.groupby('Article Type').agg({
             'id': 'count',
             'Article ReplyCnt': 'sum'
-        }).rename(columns={'id': 'Article Count'})
+        }).rename(columns={'id': 'Article Count'}).reset_index()
 
         # 언론사별 분석 (상위 10개 언론사만)
         top_10_press = data['Article Press'].value_counts().head(10).index
         press_analysis = data[data['Article Press'].isin(top_10_press)].groupby('Article Press').agg({
             'id': 'count',
             'Article ReplyCnt': 'sum'
-        }).rename(columns={'id': 'Article Count'})
+        }).rename(columns={'id': 'Article Count'}).reset_index()
 
-        # 상관관계 분석
-        correlation_matrix = data[['Article ReplyCnt']].corr()
+        # 상관관계 분석 (숫자형 컬럼만 선택)
+        numeric_columns = ['Article ReplyCnt']
+        correlation_matrix = data[numeric_columns].corr()
 
         # 시각화 및 분석 결과 저장 디렉토리 설정
         output_dir = os.path.join(os.path.dirname(file_path),
@@ -146,33 +149,28 @@ class DataProcess:
 
         # 결과를 CSV로 저장
         basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
-        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig')
-        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig')
-        #correlation_matrix.to_csv(os.path.join(output_dir, "correlation_matrix.csv"))
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
+        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig',
+                                     index=False)
+        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig', index=False)
+        # correlation_matrix.to_csv(os.path.join(output_dir, "correlation_matrix.csv"), encoding='utf-8-sig', index=False)
 
         # For time_analysis graph
-        data_length = len(time_analysis)
-        plt.figure(figsize=self.calculate_figsize(data_length))
-        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article Count', label='Article Count')
-        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article ReplyCnt',
-                     label='Reply Count')
+        plt.figure(figsize=self.calculate_figsize(len(time_analysis)))
+        sns.lineplot(data=time_analysis, x='Article Date', y='Article Count', label='Article Count')
+        sns.lineplot(data=time_analysis, x='Article Date', y='Article ReplyCnt', label='Reply Count')
         plt.title('Monthly Article and Reply Count Over Time')
         plt.xlabel('Date')
         plt.ylabel('Count')
         plt.xticks(rotation=45)
-        plt.yticks([])
-        plt.ylabel('')
-        plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "monthly_article_reply_count.png"))
         plt.close()
 
         # For article_type_analysis graph
-        data_length = len(article_type_analysis)
-        plt.figure(figsize=self.calculate_figsize(data_length))
+        plt.figure(figsize=self.calculate_figsize(len(article_type_analysis)))
         article_type_analysis = article_type_analysis.sort_values('Article Count', ascending=False)
-        sns.barplot(x=article_type_analysis.index, y=article_type_analysis['Article Count'], palette="viridis")
+        sns.barplot(x='Article Type', y='Article Count', data=article_type_analysis, palette="viridis")
         plt.title('Article Count by Type')
         plt.xlabel('Article Type')
         plt.ylabel('Count')
@@ -182,10 +180,9 @@ class DataProcess:
         plt.close()
 
         # For press_analysis graph
-        data_length = len(press_analysis)
-        plt.figure(figsize=self.calculate_figsize(data_length))
+        plt.figure(figsize=self.calculate_figsize(len(press_analysis)))
         press_analysis = press_analysis.sort_values('Article Count', ascending=False)
-        sns.barplot(x=press_analysis.index, y=press_analysis['Article Count'], palette="plasma")
+        sns.barplot(x='Article Press', y='Article Count', data=press_analysis, palette="plasma")
         plt.title('Top 10 Press by Article Count')
         plt.xlabel('Press')
         plt.ylabel('Count')
@@ -193,16 +190,6 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "press_article_count.png"))
         plt.close()
-
-        '''
-        # 4. 상관관계 행렬 히트맵 (현재는 댓글 수에 대한 상관관계만 존재)
-        plt.figure(figsize=(8, 6))
-        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
-        plt.title('Correlation Matrix of Key Metrics')
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, "correlation_matrix.png"))
-        plt.close()
-        '''
 
         # 그래프 설명 작성 (한국어)
         description_text = """
@@ -234,13 +221,15 @@ class DataProcess:
             QMessageBox.warning(self.main, f"Warning", f"NaverNews Statistics CSV 형태와 일치하지 않습니다")
             return
 
-        # 'Article Date'를 datetime 형식으로 변환
-        data['Article Date'] = pd.to_datetime(data['Article Date'])
-        data['Article ReplyCnt'] = pd.to_numeric(data['Article ReplyCnt'], errors='coerce')
+        # 'Article Date'를 datetime 형식으로 변환 (오류 발생 시 NaT로 변환)
+        data['Article Date'] = pd.to_datetime(data['Article Date'], errors='coerce')
 
-        # 백분율 값을 실제 댓글 수로 변환하기 전에 숫자(float)로 변환
+        # 'Article ReplyCnt'를 숫자(float)로 변환
+        data['Article ReplyCnt'] = pd.to_numeric(data['Article ReplyCnt'], errors='coerce').fillna(0)
+
+        # 백분율 값을 실제 댓글 수로 변환하기 전에 각 열을 숫자로 변환하고, 변환 불가 시 0으로 채움
         for col in ['Male', 'Female', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y']:
-            data[col] = pd.to_numeric(data[col], errors='coerce')  # 각 열을 숫자로 변환
+            data[col] = pd.to_numeric(data[col], errors='coerce').fillna(0)
             data[col] = (data[col] / 100.0) * data['Article ReplyCnt']
 
         # 분석 결과 저장 디렉토리 설정
@@ -258,41 +247,41 @@ class DataProcess:
         time_analysis = data.groupby(data['Article Date'].dt.to_period("M")).agg({
             'id': 'count',
             'Article ReplyCnt': 'sum'
-        }).rename(columns={'id': 'Article Count'})
+        }).rename(columns={'id': 'Article Count'}).reset_index()
+        time_analysis['Article Date'] = time_analysis['Article Date'].dt.to_timestamp()
 
         # 기사 유형별 분석
         article_type_analysis = data.groupby('Article Type').agg({
             'id': 'count',
             'Article ReplyCnt': 'sum'
-        }).rename(columns={'id': 'Article Count'})
+        }).rename(columns={'id': 'Article Count'}).reset_index()
 
         # 언론사별 분석 (상위 10개 언론사만)
         top_10_press = data['Article Press'].value_counts().head(10).index
-        press_analysis = data[data['Article Press'].isin(top_10_press)].groupby(
-            'Article Press').agg({
+        press_analysis = data[data['Article Press'].isin(top_10_press)].groupby('Article Press').agg({
             'id': 'count',
             'Article ReplyCnt': 'sum'
-        }).rename(columns={'id': 'Article Count'})
+        }).rename(columns={'id': 'Article Count'}).reset_index()
 
-        # 상관관계 분석
-        correlation_matrix = data[
-            ['Article ReplyCnt', 'Male', 'Female', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y']].corr()
+        # 상관관계 분석 (숫자형 컬럼만 선택)
+        numeric_columns = ['Article ReplyCnt', 'Male', 'Female', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y']
+        correlation_matrix = data[numeric_columns].corr()
 
         # 결과를 CSV로 저장
         basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
-        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig')
-        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig')
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
+        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig',
+                                     index=False)
+        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig', index=False)
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig',
+                                  index=False)
 
         # 시각화 그래프를 이미지 파일로 저장
 
         # 1. 월별 기사 및 댓글 수 추세
-        data_length = len(time_analysis)
-        plt.figure(figsize=self.calculate_figsize(data_length))
-        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article Count', label='Article Count')
-        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article ReplyCnt',
-                     label='Reply Count')
+        plt.figure(figsize=self.calculate_figsize(len(time_analysis)))
+        sns.lineplot(data=time_analysis, x='Article Date', y='Article Count', label='Article Count')
+        sns.lineplot(data=time_analysis, x='Article Date', y='Article ReplyCnt', label='Reply Count')
         plt.title('Monthly Article and Reply Count Over Time')
         plt.xlabel('Date')
         plt.ylabel('Count')
@@ -303,10 +292,9 @@ class DataProcess:
         plt.close()
 
         # 2. 기사 유형별 기사 및 댓글 수
-        data_length = len(article_type_analysis)
-        plt.figure(figsize=self.calculate_figsize(data_length))
+        plt.figure(figsize=self.calculate_figsize(len(article_type_analysis)))
         article_type_analysis = article_type_analysis.sort_values('Article Count', ascending=False)
-        sns.barplot(x=article_type_analysis.index, y=article_type_analysis['Article Count'], palette="viridis")
+        sns.barplot(x='Article Type', y='Article Count', data=article_type_analysis, palette="viridis")
         plt.title('Article Count by Type')
         plt.xlabel('Article Type')
         plt.ylabel('Count')
@@ -316,10 +304,9 @@ class DataProcess:
         plt.close()
 
         # 3. 상위 10개 언론사별 기사 및 댓글 수
-        data_length = len(press_analysis)
-        plt.figure(figsize=self.calculate_figsize(data_length))
+        plt.figure(figsize=self.calculate_figsize(len(press_analysis)))
         press_analysis = press_analysis.sort_values('Article Count', ascending=False)
-        sns.barplot(x=press_analysis.index, y=press_analysis['Article Count'], palette="plasma")
+        sns.barplot(x='Article Press', y='Article Count', data=press_analysis, palette="plasma")
         plt.title('Top 10 Press by Article Count')
         plt.xlabel('Press')
         plt.ylabel('Count')
@@ -329,22 +316,17 @@ class DataProcess:
         plt.close()
 
         # 4. 상관관계 행렬 히트맵
-        data_length = len(correlation_matrix)
-        plt.figure(figsize=self.calculate_figsize(data_length, height=8))
+        plt.figure(figsize=self.calculate_figsize(len(correlation_matrix), height=8))
         sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
         plt.title('Correlation Matrix of Key Metrics')
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
         plt.close()
 
-        # 5. 성별 댓글 수 분석 및 시각화
-        gender_reply_count = {
-            'Male': data['Male'].sum(),
-            'Female': data['Female'].sum()
-        }
+        # 5. 성별 댓글 수 분석
+        gender_reply_count = {'Male': data['Male'].sum(), 'Female': data['Female'].sum()}
         gender_reply_df = pd.DataFrame(list(gender_reply_count.items()), columns=['Gender', 'Reply Count'])
-        data_length = len(gender_reply_df)
-        plt.figure(figsize=self.calculate_figsize(data_length, base_width=8))
+        plt.figure(figsize=self.calculate_figsize(len(gender_reply_df), base_width=8))
         sns.barplot(x='Gender', y='Reply Count', data=gender_reply_df, palette="pastel")
         plt.title('Total Number of Replies by Gender')
         plt.xlabel('Gender')
@@ -352,20 +334,13 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "gender_reply_count.png"))
         plt.close()
-        gender_reply_df.to_csv(os.path.join(csv_output_dir, "gender_reply_count.csv"), index=False, encoding='utf-8-sig')
+        gender_reply_df.to_csv(os.path.join(csv_output_dir, "gender_reply_count.csv"), index=False,
+                               encoding='utf-8-sig')
 
-        # 6. 연령대별 댓글 수 분석 및 시각화
-        age_group_reply_count = {
-            '10Y': data['10Y'].sum(),
-            '20Y': data['20Y'].sum(),
-            '30Y': data['30Y'].sum(),
-            '40Y': data['40Y'].sum(),
-            '50Y': data['50Y'].sum(),
-            '60Y': data['60Y'].sum()
-        }
+        # 6. 연령대별 댓글 수 분석
+        age_group_reply_count = {age: data[age].sum() for age in ['10Y', '20Y', '30Y', '40Y', '50Y', '60Y']}
         age_group_reply_df = pd.DataFrame(list(age_group_reply_count.items()), columns=['Age Group', 'Reply Count'])
-        data_length = len(age_group_reply_df)
-        plt.figure(figsize=self.calculate_figsize(data_length, base_width=10))
+        plt.figure(figsize=self.calculate_figsize(len(age_group_reply_df), base_width=10))
         sns.barplot(x='Age Group', y='Reply Count', data=age_group_reply_df, palette="coolwarm")
         plt.title('Total Number of Replies by Age Group')
         plt.xlabel('Age Group')
@@ -373,65 +348,30 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "age_group_reply_count.png"))
         plt.close()
-        age_group_reply_df.to_csv(os.path.join(csv_output_dir, "age_group_reply_count.csv"), index=False, encoding='utf-8-sig')
-
-        # 7. 연령대별 성별 댓글 비율 분석
-        age_gender_df = data.groupby(['Article Date', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y'])[
-            ['Male', 'Female']].sum().reset_index()
-        age_gender_df = age_gender_df.melt(id_vars=['Article Date', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y'],
-                                           value_vars=['Male', 'Female'],
-                                           var_name='Gender',
-                                           value_name='Reply Count')
-        data_length = len(age_gender_df)
-        plt.figure(figsize=self.calculate_figsize(data_length, base_width=12, height=8))
-        sns.lineplot(data=age_gender_df, x='Article Date', y='Reply Count', hue='Gender')
-        plt.title('Reply Count by Gender Over Time')
-        plt.xlabel('Date')
-        plt.ylabel('Reply Count')
-        plt.legend(title='Gender')
-        plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "age_gender_reply_count.png"))
-        plt.close()
-        age_gender_df.to_csv(os.path.join(csv_output_dir, "age_gender_reply_count.csv"), index=False, encoding='utf-8-sig')
+        age_group_reply_df.to_csv(os.path.join(csv_output_dir, "age_group_reply_count.csv"), index=False,
+                                  encoding='utf-8-sig')
 
         # 그래프 설명 작성 (한국어)
         description_text = """
         그래프 설명:
 
         1. 월별 기사 및 댓글 수 추세 (monthly_article_reply_count.png):
-           - 이 그래프는 월별 기사 수와 댓글 수의 변화를 보여줍니다.
-           - x축은 날짜를, y축은 기사 수와 댓글 수를 나타냅니다.
-           - 이를 통해 특정 시기에 기사와 댓글의 변동 추이를 확인할 수 있습니다.
+           - 월별 기사 수와 댓글 수의 변화를 보여줍니다.
 
         2. 기사 유형별 기사 및 댓글 수 (article_type_count.png):
-           - 이 그래프는 기사 유형별로 기사의 수를 나타냅니다.
-           - x축은 기사 유형을, y축은 기사 수를 나타냅니다.
-           - 이를 통해 어떤 유형의 기사가 많이 작성되었는지 알 수 있습니다.
+           - 기사 유형별 기사의 수를 나타냅니다.
 
         3. 상위 10개 언론사별 기사 및 댓글 수 (press_article_count.png):
-           - 이 그래프는 상위 10개 언론사에서 작성한 기사 수를 나타냅니다.
-           - x축은 언론사명을, y축은 기사 수를 나타냅니다.
-           - 이 그래프는 가장 많은 기사를 작성한 언론사를 보여줍니다.
+           - 상위 10개 언론사에서 작성한 기사 수를 나타냅니다.
 
         4. 상관관계 행렬 히트맵 (correlation_matrix.png):
-           - 이 히트맵은 주요 지표들 간의 상관관계를 시각화한 것입니다.
-           - 색상이 진할수록 상관관계가 높음을 나타내며, 음수는 음의 상관관계를 의미합니다.
-           - 이를 통해 변수들 간의 관계를 파악할 수 있습니다.
+           - 주요 지표들 간의 상관관계를 시각화한 히트맵입니다.
 
         5. 성별 댓글 수 분석 (gender_reply_count.png):
-           - 이 그래프는 남성과 여성의 총 댓글 수를 보여줍니다.
-           - x축은 성별을, y축은 댓글 수를 나타냅니다.
-           - 성별에 따른 댓글 수의 차이를 확인할 수 있습니다.
+           - 남성과 여성의 총 댓글 수를 보여줍니다.
 
         6. 연령대별 댓글 수 분석 (age_group_reply_count.png):
-           - 이 그래프는 각 연령대별 총 댓글 수를 나타냅니다.
-           - x축은 연령대를, y축은 댓글 수를 나타냅니다.
-           - 이를 통해 어떤 연령대가 댓글을 많이 남겼는지 알 수 있습니다.
-
-        7. 연령대별 성별 댓글 비율 분석 (age_gender_reply_count.png):
-           - 이 그래프는 시간에 따른 성별 댓글 비율을 연령대별로 보여줍니다.
-           - x축은 날짜를, y축은 댓글 수를 나타내며, 성별에 따라 분리됩니다.
-           - 이를 통해 특정 시기와 연령대에서 남성 또는 여성이 얼마나 댓글을 많이 달았는지 알 수 있습니다.
+           - 각 연령대별 총 댓글 수를 나타냅니다.
         """
 
         # 설명을 txt 파일로 저장
@@ -443,16 +383,22 @@ class DataProcess:
         if 'Reply Date' not in list(data.columns):
             QMessageBox.warning(self.main, f"Warning", f"NaverNews Reply CSV 형태와 일치하지 않습니다")
             return
+
         # 'Reply Date'를 datetime 형식으로 변환
-        data['Reply Date'] = pd.to_datetime(data['Reply Date'])
+        data['Reply Date'] = pd.to_datetime(data['Reply Date'], errors='coerce')
+
+        # 각 열을 숫자로 변환
         for col in ['Rereply Count', 'Reply Like', 'Reply Bad', 'Reply LikeRatio', 'Reply Sentiment']:
-            data[col] = pd.to_numeric(data[col], errors='coerce')  # 각 열을 숫자로 변환
+            data[col] = pd.to_numeric(data[col], errors='coerce')
+
+        # Reply Text 열이 문자열이 아닌 값이 있거나 NaN일 경우 대비
+        data['Reply Text'] = data['Reply Text'].astype(str).fillna('')
+
+        # 댓글 길이 추가
+        data['Reply Length'] = data['Reply Text'].apply(lambda x: len(x) if isinstance(x, str) else 0)
 
         # 기본 통계 분석
         basic_stats = data.describe(include='all')
-
-        # 댓글 길이 추가
-        data['Reply Length'] = data['Reply Text'].apply(len)
 
         # 날짜별 댓글 수 분석
         time_analysis = data.groupby(data['Reply Date'].dt.date).agg({
@@ -465,8 +411,8 @@ class DataProcess:
         sentiment_counts = data['Reply Sentiment'].value_counts()
 
         # 상관관계 분석
-        correlation_matrix = data[['Reply Like', 'Reply Bad', 'Rereply Count', 'Reply LikeRatio', 'Reply Sentiment',
-                                   'Reply Length']].corr()
+        correlation_matrix = data[
+            ['Reply Like', 'Reply Bad', 'Rereply Count', 'Reply LikeRatio', 'Reply Sentiment', 'Reply Length']].corr()
 
         # 작성자별 댓글 수 계산
         writer_reply_count = data['Reply Writer'].value_counts()
@@ -567,15 +513,16 @@ class DataProcess:
         if 'Rereply Date' not in list(data.columns):
             QMessageBox.warning(self.main, f"Warning", f"NaverNews Rereply CSV 형태와 일치하지 않습니다")
             return
-        # 'Reply Date'를 datetime 형식으로 변환
-        data['Rereply Date'] = pd.to_datetime(data['Rereply Date'])
+
+        # 'Rereply Date'를 datetime 형식으로 변환 (오류 발생 시 NaT로 변환)
+        data['Rereply Date'] = pd.to_datetime(data['Rereply Date'], errors='coerce')
+
+        # 숫자형 컬럼을 숫자(float)로 변환, 변환 불가 시 0으로 채움
         for col in ['Rereply Like', 'Rereply Bad', 'Rereply LikeRatio', 'Rereply Sentiment']:
-            data[col] = pd.to_numeric(data[col], errors='coerce')  # 각 열을 숫자로 변환
+            data[col] = pd.to_numeric(data[col], errors='coerce').fillna(0)
 
-        # 기본 통계 분석
-        basic_stats = data.describe(include='all')
-
-        # 댓글 길이 추가
+        # 'Rereply Text'가 결측값이 아닌지 확인하고 길이를 계산
+        data['Rereply Text'] = data['Rereply Text'].fillna('')
         data['Rereply Length'] = data['Rereply Text'].apply(len)
 
         # 날짜별 댓글 수 분석
@@ -583,14 +530,14 @@ class DataProcess:
             'id': 'count',
             'Rereply Like': 'sum',
             'Rereply Bad': 'sum'
-        }).rename(columns={'id': 'Rereply Count'})
+        }).rename(columns={'id': 'Rereply Count'}).reset_index()
 
         # 댓글 감성 분석 결과 빈도
         sentiment_counts = data['Rereply Sentiment'].value_counts()
 
-        # 상관관계 분석
-        correlation_matrix = data[['Rereply Like', 'Rereply Bad', 'Rereply Count', 'Rereply LikeRatio', 'Rereply Sentiment',
-                                   'Rereply Length']].corr()
+        # 상관관계 분석 (숫자형 컬럼만 선택)
+        numeric_columns = ['Rereply Like', 'Rereply Bad', 'Rereply Length', 'Rereply LikeRatio', 'Rereply Sentiment']
+        correlation_matrix = data[numeric_columns].corr()
 
         # 작성자별 댓글 수 계산
         writer_reply_count = data['Rereply Writer'].value_counts()
@@ -604,8 +551,9 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
+        basic_stats = data.describe(include='all')
         basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
         sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"), encoding='utf-8-sig')
         correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
         writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_rereply_count.csv"), encoding='utf-8-sig')
@@ -613,9 +561,8 @@ class DataProcess:
         # 시각화 그래프를 이미지 파일로 저장
 
         # 1. 날짜별 댓글 수 추세
-        data_length = len(time_analysis)
-        plt.figure(figsize=self.calculate_figsize(data_length))
-        sns.lineplot(data=time_analysis, x=time_analysis.index, y='Rereply Count')
+        plt.figure(figsize=self.calculate_figsize(len(time_analysis)))
+        sns.lineplot(data=time_analysis, x='Rereply Date', y='Rereply Count')
         plt.title('Daily Rereply Count Over Time')
         plt.xlabel('Date')
         plt.ylabel('Number of Rereplies')
@@ -627,7 +574,7 @@ class DataProcess:
         # 2. 댓글 감성 분석 결과 분포
         data_length = len(sentiment_counts)
         plt.figure(figsize=self.calculate_figsize(data_length, base_width=8))
-        sns.countplot(x='Rereply Sentiment', data=data)
+        sns.countplot(x='Rereply Sentiment', data=data.fillna(''))
         plt.title('Rereply Sentiment Distribution')
         plt.xlabel('Sentiment')
         plt.ylabel('Count')
@@ -645,9 +592,8 @@ class DataProcess:
         plt.close()
 
         # 5. 작성자별 댓글 수 분포 (상위 10명)
-        top_10_writers = writer_reply_count.head(10)  # 상위 10명 작성자 선택
-        data_length = len(top_10_writers)
-        plt.figure(figsize=self.calculate_figsize(data_length))
+        top_10_writers = writer_reply_count.head(10)
+        plt.figure(figsize=self.calculate_figsize(len(top_10_writers)))
         sns.barplot(x=top_10_writers.index, y=top_10_writers.values, palette="viridis")
         plt.title('Top 10 Writers by Number of Rereplies')
         plt.xlabel('Writer')
