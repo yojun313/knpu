@@ -38,7 +38,7 @@ class MainWindow(QtWidgets.QMainWindow):
          
         super(MainWindow, self).__init__()
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
-        icon_path = os.path.join(os.path.dirname(__file__), 'exe_icon.ico')
+        icon_path = os.path.join(os.path.dirname(__file__), 'exe_icon.png')
         uic.loadUi(ui_path, self)
 
         self.setWindowTitle("MANAGER")  # 창의 제목 설정
