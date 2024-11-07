@@ -467,11 +467,6 @@ class Manager_Analysis:
                 QMessageBox.warning(self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
                 return
 
-            csv_path = selected_directory[0]
-            csv_data = pd.read_csv(csv_path, low_memory=False)
-
-            self.main.user_logging(f'ANALYSIS -> analysis_file({csv_path})')
-
             selected_options = []
             dialog = OptionDialog()
             if dialog.exec_() == QDialog.Accepted:
@@ -485,6 +480,15 @@ class Manager_Analysis:
                 # 콤보박스에서 선택된 옵션 추가
                 selected_options.append(dialog.combobox.currentText())
 
+            open_console('데이터 분석')
+
+            print("CSV 파일 읽는 중...")
+            csv_path = selected_directory[0]
+            csv_data = pd.read_csv(csv_path, low_memory=False)
+
+            self.main.user_logging(f'ANALYSIS -> analysis_file({csv_path})')
+
+            print(f"\n{os.path.basename(csv_path).replace('.csv', '')} 데이터 분석 중...")
             match selected_options:
                 case ['article 분석', 'Naver News']:
                     self.dataprocess_obj.NaverNewsArticleAnalysis(csv_data, csv_path)
@@ -499,19 +503,23 @@ class Manager_Analysis:
                 case ['reply 분석', 'Naver Cafe']:
                     self.dataprocess_obj.NaverCafeReplyAnalysis(csv_data, csv_path)
                 case []:
+                    close_console()
                     return
                 case _:
+                    close_console()
                     QMessageBox.warning(self.main, "Not Supported", f"{selected_options[1]} {selected_options[0]} 분석은 지원되지 않는 기능입니다")
                     return
 
             del csv_data
             gc.collect()
+            close_console()
 
             reply = QMessageBox.question(self.main, 'Notification', f"{os.path.basename(csv_path)} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 self.main.openFileExplorer(os.path.join(os.path.dirname(csv_path), os.path.basename(csv_path).replace('.csv', '') + '_analysis'))
 
         except Exception as e:
+            close_console()
             self.main.program_bug_log(traceback.format_exc())
 
     def kimkem_kimkem(self):
