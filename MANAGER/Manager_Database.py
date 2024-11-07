@@ -564,145 +564,144 @@ class Manager_Database:
                 if folder_path:
                     self.main.printStatus("DB 저장 옵션을 설정하여 주십시오")
                     dialog = OptionDialog()
-                    selected_options = {}
+                    date_options = {}
 
                     if dialog.exec_() == QDialog.Accepted:
 
-                        filter_options = {}
-                        filter_options['incl_words'] = dialog.incl_word_list
-                        filter_options['excl_words'] = dialog.excl_word_list
+                        filter_options = {
+                            'incl_words': dialog.incl_word_list,
+                            'excl_words': dialog.excl_word_list,
+                        }
 
-                        # 선택된 라디오 버튼 확인
+                        # 선택된 라디오 버튼 확인 날짜 범위 부분
                         if dialog.radio_all.isChecked():
-                            selected_options['option'] = 'all'
+                            date_options['option'] = 'all'
                         elif dialog.radio_custom.isChecked():
-                            selected_options['option'] = 'part'
+                            date_options['option'] = 'part'
 
                         # 기간 설정이 선택된 경우, 입력된 날짜 가져오기
-                        if selected_options['option'] == 'part':
+                        if date_options['option'] == 'part':
                             date_format = "yyyyMMdd"
                             start_date = QDate.fromString(dialog.start_date_input.text(), date_format)
                             end_date = QDate.fromString(dialog.end_date_input.text(), date_format)
 
                             if start_date.isValid() and end_date.isValid():
-                                selected_options['start_date'] = start_date.toString(date_format)
-                                selected_options['end_date'] = end_date.toString(date_format)
+                                date_options['start_date'] = start_date.toString(date_format)
+                                date_options['end_date'] = end_date.toString(date_format)
                             else:
                                 QMessageBox.warning(dialog, 'Wrong Form', '잘못된 날짜 형식입니다.')
-                                selected_options['option'] = None  # 잘못된 날짜가 입력된 경우 선택 옵션을 None으로 설정
+                                date_options['option'] = None  # 잘못된 날짜가 입력된 경우 선택 옵션을 None으로 설정
 
-                    if selected_options == {}:
+                    if date_options == {}:
                         self.main.printStatus()
                         return
 
-                    if selected_options['option'] == 'part':
-                        self.main.printStatus(
-                            f"{replace_dates_in_filename(target_db, selected_options['start_date'], selected_options['end_date'])} 저장 중...")
+                    if date_options['option'] == 'part':
+                        self.main.printStatus(f"{replace_dates_in_filename(target_db, date_options['start_date'], date_options['end_date'])} 저장 중...")
                     else:
                         self.main.printStatus(f"{target_db} 저장 중...")
-                    QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, selected_options, filter_options))
+                    QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, date_options, filter_options))
 
-            def save_database(target_db, folder_path, selected_options, filter_options):
+            def save_database(target_db, folder_path, date_options, filter_options):
                 open_console('CSV로 저장')
-                filterOption = False
-                dbpath = os.path.join(folder_path, target_db)
                 dbname = target_db
-                if selected_options['option'] == 'part':
-                    start_date = selected_options['start_date']
-                    end_date = selected_options['end_date']
+                dbpath = os.path.join(folder_path, dbname)
 
+                # 선택된 옵션에 따라 날짜를 형식화하고 DB 이름과 경로 수정
+                if date_options.get('option') == 'part':
+                    start_date = date_options['start_date']
+                    end_date = date_options['end_date']
                     start_date_formed = datetime.strptime(start_date, "%Y%m%d").strftime("%Y-%m-%d")
                     end_date_formed = datetime.strptime(end_date, "%Y%m%d").strftime("%Y-%m-%d")
                     dbname = replace_dates_in_filename(target_db, start_date, end_date)
                     dbpath = os.path.join(folder_path, dbname)
 
-                if filter_options['incl_words'] != [] or filter_options['excl_words'] != []:
-                    filterOption = True
-                    incl_words = filter_options['incl_words']
-                    excl_words = filter_options['excl_words']
+                # 필터 옵션 설정 확인
+                filterOption = bool(filter_options['incl_words'] != [] or filter_options['excl_words'] != [])
+                incl_words = filter_options.get('incl_words', [])
+                excl_words = filter_options.get('excl_words', [])
 
-                try:
-                    while True:
-                        try:
-                            os.mkdir(dbpath)
-                            os.mkdir(os.path.join(dbpath, 'token_data'))
-                            break
-                        except:
-                            dbpath += "_copy"
+                # 폴더 생성 로직 최적화
+                while True:
+                    try:
+                        os.makedirs(os.path.join(dbpath, 'token_data'), exist_ok=False)
+                        break
+                    except FileExistsError:
+                        dbpath += "_copy"
 
-                    statisticsURL = []
+                statisticsURL = []
+                self.main.user_logging(f'DATABASE -> save_DB({target_db})')
+                self.main.mySQL_obj.connectDB(target_db)
 
-                    self.main.user_logging(f'DATABASE -> save_DB({target_db})')
+                # 불필요한 정렬 조건 제거
+                tableList = [table for table in sorted(self.main.mySQL_obj.showAllTable(target_db)) if 'info' not in table]
 
-                    self.main.mySQL_obj.connectDB(target_db)
-                    tableList = self.main.mySQL_obj.showAllTable(target_db)
-                    tableList = [table for table in tableList if 'info' not in table]
-                    tableList = sorted(tableList, key=lambda x: ('article' not in x, 'statistics' not in x, x))
+                # 필터 옵션이 있는 경우 DB_info.txt 작성
+                if filterOption:
+                    with open(os.path.join(dbpath, 'DB_info.txt'), 'w+') as info:
+                        info.write(
+                            f"Filter Option: {filterOption}\n"
+                            f"Include Words: {', '.join(incl_words)}\n"
+                            f"Exclude Words: {', '.join(excl_words)}"
+                        )
 
-                    if filterOption == True:
-                        with open(os.path.join(dbpath, 'DB_info.txt'), 'w+') as info:
-                            text = (
-                                f"Filter Option: {filterOption}\n"
-                                f"Include Words: {', '.join(incl_words)}\n"
-                                f"Exclude Words: {', '.join(excl_words)}"
-                            )
-                            info.write(text)
-                    print(f"DB: {target_db}\n")
+                print(f"DB: {target_db}\n")
 
-                    if selected_options['option'] == 'part' or filterOption == True:
-                        print('< Option >\n')
+                # 옵션 출력
+                if date_options.get('option') == 'part' or filterOption:
+                    print('< Option >\n')
+                    if date_options.get('option') == 'part':
                         print(f'Period: {start_date_formed} ~ {end_date_formed}')
-                        print(f'Include Words: {', '.join(incl_words)}')
-                        print(f'Exclude Words: {', '.join(excl_words)}')
-                        print('')
+                    if filterOption:
+                        print(f'Include Words: {", ".join(incl_words)}')
+                        print(f'Exclude Words: {", ".join(excl_words)}')
+                    print('')
 
-                    for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
-                        edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if selected_options['option'] == 'part' else tableName
-                        # 테이블 데이터를 DataFrame으로 변환
-                        if selected_options['option'] == 'part':
-                            tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
-                        else:
-                            tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
+                for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+                    edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if date_options['option'] == 'part' else tableName
+                    # 테이블 데이터를 DataFrame으로 변환
+                    if date_options['option'] == 'part':
+                        tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
+                    else:
+                        tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
 
-                        if filterOption == True and 'article' in tableName:
-                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
-                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
-                            articleURL = tableDF['Article URL'].tolist()
+                    if filterOption == True and 'article' in tableName:
+                        tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
+                        tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
+                        articleURL = tableDF['Article URL'].tolist()
 
-                        # statistics 테이블 처리
-                        if 'statistics' in tableName:
-                            if filterOption == True:
-                                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
-                            statisticsURL = tableDF['Article URL'].tolist()
-                            save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
-                            tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
-                            continue
+                    # statistics 테이블 처리
+                    if 'statistics' in tableName:
+                        if filterOption == True:
+                            tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+                        statisticsURL = tableDF['Article URL'].tolist()
+                        save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
+                        tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
+                        continue
 
-                        if 'reply' in tableName:
-                            if filterOption == True:
-                                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+                    if 'reply' in tableName:
+                        if filterOption == True:
+                            tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
 
-                        # reply 테이블 처리
-                        if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in target_db:
-                            if filterOption == True:
-                                filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
-                            filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
-                            save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
-                            filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
+                    # reply 테이블 처리
+                    if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in target_db:
+                        if filterOption == True:
+                            filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+                        filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
+                        save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
+                        filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
 
-                        # 기타 테이블 처리
-                        save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
-                        tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
-                        tableDF = None
-                        gc.collect()
+                    # 기타 테이블 처리
+                    save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
+                    tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
+                    tableDF = None
+                    gc.collect()
 
-                    close_console()
-                    reply = QMessageBox.question(self.main, 'Notification', f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                    if reply == QMessageBox.Yes:
-                        self.main.openFileExplorer(dbpath)
-                    self.main.printStatus()
-                except Exception as e:
-                    QMessageBox.warning(self.main, "Error", f"Failed to save database: {traceback.format_exc()}")
+                close_console()
+                reply = QMessageBox.question(self.main, 'Notification', f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    self.main.openFileExplorer(dbpath)
+                self.main.printStatus()
 
             select_database()
 

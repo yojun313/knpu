@@ -30,7 +30,7 @@ import logging
 import shutil
 warnings.filterwarnings("ignore")
 
-VERSION = '2.1.3'
+VERSION = '2.1.4'
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, splash_dialog):
