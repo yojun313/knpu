@@ -27,6 +27,7 @@ import warnings
 import traceback
 import re
 import logging
+import shutil
 warnings.filterwarnings("ignore")
 
 VERSION = '2.1.3'
@@ -426,8 +427,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 if dialog.exec_() == QDialog.Accepted:
                     open_console("Version Download Process")
                     if platform.system() == "Windows":
-                        QMessageBox.information(self, "Information",
-                                                "새로운 설치 프로그램은 C:/Temp에 설치되며, 업데이트 후 자동 실행됩니다\n\n프로그램 재실행까지 잠시만 기다려주십시오")
                         msg = (
                             "[ Admin Notification ]\n\n"
                             f"{self.user} updated {current_version} -> {self.new_version}"
@@ -977,18 +976,32 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.user_logging('Shutdown')
                 self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
                 self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
+                self.temp_cleanup()
             except:
                 pass
             event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
         else:
             event.ignore()
-
-    def show_splash_dialog(self):
+    def temp_cleanup(self):
+        if platform.system() != "Windows":
+            return
         try:
-            dialog = InfoDialog(self.versionNum, False)
-            dialog.exec_()
+            folder_path = 'C:/Temp'
+
+            # BIGMACLAB 또는 _MEI로 시작하는 파일 및 폴더 삭제
+            for file_name in os.listdir(folder_path):
+                if file_name.startswith('BIGMACLAB') or file_name.startswith('_MEI'):
+                    file_path = os.path.join(folder_path, file_name)
+
+                    # 폴더인지 파일인지 확인하고 삭제
+                    if os.path.isdir(file_path):
+                        shutil.rmtree(file_path)  # 폴더 삭제
+                        print(f"Deleted folder: {file_path}")
+                    else:
+                        os.remove(file_path)  # 파일 삭제
+                        print(f"Deleted file: {file_path}")
         except Exception as e:
-            print(str(e))
+            print(e)
 
 #################### DEVELOPER MODE ###################
 
