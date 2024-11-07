@@ -32,7 +32,7 @@ import logging
 import shutil
 warnings.filterwarnings("ignore")
 
-VERSION = '2.1.4'
+VERSION = '2.1.5'
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, splash_dialog):
@@ -177,17 +177,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
                 os._exit(0)
 
-        self.add_shadow_effect()
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
-
-    def add_shadow_effect(self):
-        shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(20)  # 그림자 블러 처리
-        shadow.setXOffset(0)  # 그림자의 X축 오프셋
-        shadow.setYOffset(0)  # 그림자의 Y축 오프셋
-        shadow.setColor(QColor(0, 0, 0, 150))  # 그림자의 색상 (검정, 투명도 조절)
-        self.setGraphicsEffect(shadow)
 
     def close_bootscreen(self):
         try:
@@ -742,9 +733,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 background-color: #f7f7f7;
                 font-family: 'Tahoma';
                 font-size: 14px;
-                border-radius: 15px;
-                background-color: #f2f2f2;
-                border: 1px solid #d1d1d1;
             }
             QPushButton {
                 background-color: #2c3e50;
@@ -766,7 +754,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 font-size: 14px;
             }
             QTableWidget {
-                
                 border: 1px solid #bdc3c7;
                 font-family: 'Tahoma';
                 font-size: 14px;
@@ -787,6 +774,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 border: none;
                 min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
                 max-width: 150px;
+            }
+            QListWidget::item:hover {
+                background-color: #34495e;
             }
             QListWidget::item {
                 height: 40px;  /* 각 아이템의 높이를 조정 */
@@ -824,31 +814,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 border-color: #9B9B9B;
                 border-bottom-color: #f7f7f7;
             }
-            QPushButton#pushButton_divide_DB {
-                background-color: #2c3e50;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                padding: 10px;
-                font-family: 'Tahoma';
-                font-size: 14px;
-                min-width: 70px;  /* 최소 가로 길이 설정 */
-                max-width: 100px;  /* 최대 가로 길이 설정 */
-            }
-            QPushButton#pushButton_divide_DB:hover {
-                background-color: #34495e;
-            }
-            QLabel#label_status_divide_DB {
-                background-color: #f7f7f7;
-                color: #2c3e50;
-                border: 1px solid #bdc3c7;
-                border-radius: 5px;
-                padding: 8px;
-                font-family: 'Tahoma';
-                font-size: 14px;
-            }
             """
         )
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(100)  # 그림자 블러 처리
+        shadow.setXOffset(0)  # 그림자의 X축 오프셋
+        shadow.setYOffset(0)  # 그림자의 Y축 오프셋
+        shadow.setColor(QColor(0, 0, 0, 150))  # 그림자의 색상 (검정, 투명도 조절)
+        self.setGraphicsEffect(shadow)
 
     def display(self, index):
         self.stackedWidget.setCurrentIndex(index)
