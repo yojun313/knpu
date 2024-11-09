@@ -3,6 +3,8 @@ import csv
 import os
 import pandas as pd
 
+DB_IP = '121.152.225.232'
+
 class mySQL:
     def __init__(self, host, user, password, port, database=None):
         self.host = host
@@ -472,38 +474,58 @@ class mySQL:
         except Exception as e:
             print(f"An unexpected error occurred: {str(e)}")
 
+    # DB 데이터가 날아갔을 때를 대비한 셋업 코드
+    def manager_setup(self):
+
+        self.newDB('bigmaclab_manager_db_test')
+        self.newTable('device_list', ['device_name', 'user_name'])
+        self.newTable('free_board', ['User', 'Title', 'DateTime', 'ViewCount', 'Text', 'PW'])
+        self.newTable('version_bug', ['User', 'Version Num', 'Bug Title', 'DateTime', 'Bug Detail', 'Program Log'])
+        self.newTable('version_info',['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status', 'Version Detail'])
+        self.commit()
+
+        self.newDB('crawler_db_test')
+
+        self.newDB('user_db_test')
+        self.newTable('user_info', ['Name', 'Email', 'PushOver'])
+        self.insertToTable('user_info', [
+            ['admin', 'moonyojun@naver.com', 'uvz7oczixno7daxvgxmq65g2gbnsd5'],
+            ['4', '노승국', 'science2200@naver.com', 'uxjkfr6cjx6bpcdx4oybq9xi51fjhz'],
+            ['이정우', 'wjddn_1541@naver.com', 'uqkbhuy1e1752ryxnjp3hy5g67467m'],
+            ['최우철', 'woc0633@gmail.com', 'uz9rj99t6a4fnb8euqsxez3z79sxyc'],
+            ['한승혁', 'hankyeul80@naver.com', 'ugxc5xrg2jmhm85uuymsam2ge1uhyv'],
+            ['배시웅', 'silverwolves0415@gmail.com', 'uryj88brmquqmtmm6c2ouwpzxtpdy9'],
+            ['public', 'moonyojun@naver.com', 'n'],
+            ['이진원', 'nevermean@empas.com', 'n']
+        ])
+        self.commit()
+
+        self.newTable('youtube_api', ['API code'])
+        self.insertToTable('youtube_api', [
+            ['AIzaSyBP90vCq6xn3Og4N4EFqODcmti-F74rYXU'],
+            ['AIzaSyCkOqcZlTING7t6XqZV9M-aoTR8jHBDPTs'],
+            ['AIzaSyCf6Ud2qaXsnAJ1zYw-2sbYNCoBvNjQ1Io'],
+            ['AIzaSyDpjsooOwgSk2tkq4GJ30jKFmyTFgpWfLs'],
+            ['AIzaSyAGVnvf-u0rGWtaaKMU_vUo6CN0QTHklC4'],
+            ['AIzaSyD1pTe0tevj1WhzbsC8NO6sXC6X4ztF7a0'],
+            ['AIzaSyDz8NVKiTkQVzJf-eCloKEfL6DWxjInYjo'],
+            ['AIzaSyByxep-pVr7eM5Z-wvL1u-Iy_6q7iUrtWk'],
+            ['AIzaSyC5i2IcG0ntpD0ZbO_8sRomMq8LbHEWnGk'],
+            ['AIzaSyAmO8mi1lX1KwUsMRQl6fI6YFp7Gxy2eLk'],
+            ['AIzaSyAzh54hQhYQK-qsLJBVAp1SPyGXcntGn1M'],
+            ['AIzaSyBGISnI-0eBKuNYBeUko-Jj_avVSbdXLrU'],
+            ['AIzaSyAE0vxDo2CUIn0SsTYeCaV2HzdCJfhO4l4']
+        ])
+        self.commit()
+
+        for name in ['admin', '노승국', '이정우', '최우철', '한승혁', '배시웅', 'public', '이진원']:
+            mySQL_obj.newDB(name+'_db_test')
+            mySQL_obj.newTable('manager_record', ['Date', 'Bug', 'Log', 'D_Log'])
+            mySQL_obj.newTable('keyword_eng', ['korean', 'english'])
+            mySQL_obj.newTable('제외어 사전', ['word'])
+
 
 if __name__ == "__main__":
-    # 사용 예제
-    mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='bigmaclab_manager_db')
-
-
-    def add_column_to_manager_record(db_name, column_name='D_Log', column_type='LONGTEXT'):
-        try:
-            # 사용자 DB에 연결
-            mySQL_obj.connectDB(db_name)
-
-            # `manager_record` 테이블에 `D_Log` 열이 있는지 확인하고, 없다면 추가
-            with mySQL_obj.conn.cursor() as cursor:
-                cursor.execute(f"SHOW COLUMNS FROM `manager_record` LIKE '{column_name}'")
-                result = cursor.fetchone()
-
-                # 열이 없으면 추가
-                if not result:
-                    cursor.execute(f"ALTER TABLE `manager_record` ADD COLUMN `{column_name}` {column_type}")
-                    mySQL_obj.conn.commit()
-                    print(f"Column '{column_name}' added to 'manager_record' table in {db_name}")
-                else:
-                    print(f"Column '{column_name}' already exists in 'manager_record' table in {db_name}")
-
-        except pymysql.MySQLError as e:
-            print(f"Failed to add column '{column_name}' in '{db_name}.manager_record'")
-            print(f"MySQL Error: {str(e)}")
-
-
-    # 각 사용자 데이터베이스에 대해 열 추가 실행
-    for name in ['public']:
-        db_name = f'{name}_db'
-        add_column_to_manager_record(db_name)
+    mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
 
 
