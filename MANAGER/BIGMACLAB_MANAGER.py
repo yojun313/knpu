@@ -806,6 +806,9 @@ class MainWindow(QtWidgets.QMainWindow):
             QListWidget::item:selected {
                 background-color: #34495e;
             }
+            QListWidget::item:hover {
+                background-color: #34495e;
+            }
             QTabWidget::pane {
                 border-top: 2px solid #bdc3c7;
                 background-color: #f7f7f7;  /* Matches QMainWindow background */
