@@ -42,15 +42,14 @@ class Manager_Web:
 
     def web_buttonMatch(self):
         self.main.crawler_omen_button.clicked.connect(
-            partial(self.web_open_webbrowser, self.main.DB_ip+':81', self.crawler_web_layout))
+            partial(self.web_open_webbrowser, "http://bigmaclab-crawler.kro.kr:81", self.crawler_web_layout))
         self.main.crawler_z_button.clicked.connect(
-            partial(self.web_open_webbrowser, self.main.DB_ip+':80', self.crawler_web_layout))
+            partial(self.web_open_webbrowser, "http://bigmaclab-crawler.kro.kr:80", self.crawler_web_layout))
 
         self.main.web_downloadpage_button.clicked.connect(self.web_open_downloadbrowser)
         self.main.web_homepage_button.clicked.connect(
             partial(self.web_open_webbrowser, "https://knpu.re.kr", self.web_web_layout))
         self.main.web_github_button.clicked.connect(
             partial(self.web_open_webbrowser, "https://github.com/yojun313", self.web_web_layout))
-
 
 
