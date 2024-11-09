@@ -33,6 +33,8 @@ import shutil
 warnings.filterwarnings("ignore")
 
 VERSION = '2.1.5'
+DB_IP = '121.152.225.232'
+LOCAL_IP = '192.168.0.3'
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, splash_dialog):
@@ -97,9 +99,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 if os.path.isdir(self.default_directory) == False:
                     os.mkdir(self.default_directory)
 
-                DB_ip = self.db_ip
+                self.DB_ip = DB_IP
                 if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
-                    DB_ip = '192.168.0.3'
+                    self.DB_ip = LOCAL_IP
 
                 self.network_text = (
                     "\n\n[ DB 접속 반복 실패 시... ]\n"
@@ -110,7 +112,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # Loading User info from DB
                 while True:
                     try:
-                        self.mySQL_obj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
+                        self.mySQL_obj = mySQL(host=self.DB_ip, user='admin', password=self.public_password, port=3306)
                         print("\nLoading User Info from DB... ", end = '')
                         if self.mySQL_obj.showAllDB() == []:
                             raise
@@ -218,7 +220,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.public_password = os.getenv('PUBLIC_PASSWORD')
         self.admin_pushoverkey = os.getenv('ADMIN_PUSHOVER')
         self.gpt_api_key = os.getenv('GPT_APIKEY')
-        self.db_ip = os.getenv('DB_IP')
 
         if os.path.exists(os.path.join(current_position, 'decrypted_env')):
             os.remove(os.path.join(current_position, 'decrypted_env'))
@@ -511,9 +512,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ctrlk = QShortcut(QKeySequence("Ctrl+K"), self)
         self.ctrlm = QShortcut(QKeySequence("Ctrl+M"), self)
         self.ctrlp = QShortcut(QKeySequence("Ctrl+P"), self)
+        self.ctrlf = QShortcut(QKeySequence("Ctrl+F"), self)
         self.ctrlpp = QShortcut(QKeySequence("Ctrl+Shift+P"), self)
 
         self.ctrlu.activated.connect(lambda: self.update_program(True))
+        if platform.system() == "Windows":
+            self.ctrlf.activated.connect(lambda: self.openFileExplorer('C:/BIGMACLAB_MANAGER'))
+        else:
+            self.ctrlf.activated.connect(lambda: self.openFileExplorer('/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'))
         self.ctrlp.activated.connect(lambda: self.developer_mode(True))
         self.ctrlpp.activated.connect(lambda: self.developer_mode(False))
 
