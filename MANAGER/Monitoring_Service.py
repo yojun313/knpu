@@ -11,7 +11,7 @@ class Monitoring:
     def __init__(self):
         self.console = Console()  # Rich Console 인스턴스 생성
         self.app_key = "a2x6qmtaup9a3upmupiftv2fqfu8sz"
-        self.user_keys = ['uvz7oczixno7daxvgxmq65g2gbnsd5', 'uqkbhuy1e1752ryxnjp3hy5g67467m']
+        self.user_keys = ['uvz7oczixno7daxvgxmq65g2gbnsd5']
         self.z8_status = {"db": True, "crawler": True}
         self.omen_status = True
 
