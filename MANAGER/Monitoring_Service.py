@@ -7,8 +7,6 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.live import Live
 
-DB_IP = '121.152.225.232'
-
 class Monitoring:
     def __init__(self):
         self.console = Console()  # Rich Console 인스턴스 생성
@@ -81,7 +79,7 @@ class Monitoring:
 
         return True
     def check_z8_db(self):
-        mysql_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
+        mysql_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
         if not mysql_obj.showAllDB():
             if self.z8_status["db"]:
                 self.z8_status["db"] = False
@@ -93,10 +91,10 @@ class Monitoring:
         return True
 
     def check_z8_crawler(self):
-        return self.check_crawler_server("Z8", f"{DB_IP}:81", "crawler")
+        return self.check_crawler_server("Z8", "http://bigmaclab-crawler.kro.kr:81", "crawler")
 
     def check_omen_crawler(self):
-        return self.check_crawler_server("OMEN", f"{DB_IP}:80", "crawler")
+        return self.check_crawler_server("OMEN", "http://bigmaclab-crawler.kro.kr:80", "crawler")
 
     def check_crawler_server(self, computer, url, server_type):
         try:
