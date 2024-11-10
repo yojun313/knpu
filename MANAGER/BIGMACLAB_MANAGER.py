@@ -496,7 +496,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def menubar_init(self):
         import webbrowser
         def showInfoDialog():
-            dialog = InfoDialog(self.version)
+            dialog = SplashDialog(self.version)
             dialog.exec_()
 
         menubar = self.menuBar()
