@@ -577,7 +577,7 @@ class MainWindow(QtWidgets.QMainWindow):
             keyword = DBdata[5]
             size = float(DBdata[6])
             self.fullstorage += float(size)
-            size = f"{size * 1024} MB" if size < 1 else f"{size} GB"
+            size = f"{round(size * 1024, 0)} MB" if size < 1 else f"{size} GB"
             crawlcom = DBdata[7]
             crawlspeed = DBdata[8]
             datainfo = DBdata[9]
@@ -585,6 +585,9 @@ class MainWindow(QtWidgets.QMainWindow):
             currentDB['DBlist'].append(DB_name)
             currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester, size))
             currentDB['DBinfo'].append((crawlcom, crawlspeed, datainfo))
+
+        for key in currentDB:
+            currentDB[key].reverse()
 
         self.activate_crawl = len([item for item in currentDB['DBdata'] if item[6] == "크롤링 중"])
         self.fullstorage = round(self.fullstorage, 2)

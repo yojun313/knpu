@@ -91,7 +91,7 @@ class Crawler(CrawlerModule):
             self.mySQL.connectDB('crawler_db')
             self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Endtime', endtime)
             self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'DBSize', size)
-            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Datainfo', datainfo)
+            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Datainfo', str(datainfo))
             self.mySQL.commit()
 
     # 크롤링 중단 검사
