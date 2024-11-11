@@ -140,6 +140,9 @@ class Crawler(CrawlerModule):
 
         self.mySQL.insertToTable('db_list', [self.DBname, option, starttime, endtime, requester, keyword, dbsize, crawlcom, crawlspeed, datainfo])
 
+        self.mySQL.disconnectDB()
+        self.mySQL.connectDB(self.DBname)
+
         self.articleDB    = self.DBname + '_article'
         self.statisticsDB = self.DBname + '_statistics'
         self.replyDB      = self.DBname + '_reply'
