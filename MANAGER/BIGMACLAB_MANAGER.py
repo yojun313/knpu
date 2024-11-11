@@ -33,7 +33,7 @@ import shutil
 
 warnings.filterwarnings("ignore")
 
-VERSION = '2.1.6'
+VERSION = '2.2.0'
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
@@ -64,10 +64,6 @@ class MainWindow(QtWidgets.QMainWindow):
         setup_logging()
         self.event_logger = EventLogger()
         self.install_event_filter_all_widgets(self)
-
-        # default setting
-        self.fullstorage = 0
-        self.activate_crawl = 0
 
         def load_program():
             try:
@@ -546,10 +542,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 pass
 
     def update_DB(self):
+        self.fullstorage = 0
+        self.activate_crawl = 0
 
-        mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
-        mySQL_obj.connectDB('crawler_db')
-        db_list = mySQL_obj.TableToList('db_list')
+        self.mySQL_obj.connectDB('crawler_db')
+        db_list = self.mySQL_obj.TableToList('db_list')
 
         currentDB = {
             'DBdata': [],
@@ -577,7 +574,12 @@ class MainWindow(QtWidgets.QMainWindow):
             keyword = DBdata[5]
             size = float(DBdata[6])
             self.fullstorage += float(size)
-            size = f"{round(size * 1024, 0)} MB" if size < 1 else f"{size} GB"
+            if size == 0:
+                size = self.mySQL_obj.showDBSize(DB_name)
+                self.fullstorage += float(size[0])
+                size = f"{size[1]} MB" if size[0] < 1 else f"{size[0]} GB"
+            else:
+                size = f"{int(size * 1024)} MB" if size < 1 else f"{size} GB"
             crawlcom = DBdata[7]
             crawlspeed = DBdata[8]
             datainfo = DBdata[9]
