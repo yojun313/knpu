@@ -553,6 +553,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mySQL_obj.connectDB('crawler_db')
         db_list = self.mySQL_obj.TableToList('db_list')
 
+        # 속도 개선용 --> 크롤링 완료 여부 검사 불가
         if self.DBcnt == len(db_list):
             return
 
