@@ -447,7 +447,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     if platform.system() == "Windows":
                         msg = (
                             "[ Admin Notification ]\n\n"
-                            f"{self.user} updated {current_version} -> {self.new_version}"
+                            f"{self.user} updated {current_version} -> {self.new_version}\n\n{self.user_location()}"
                         )
                         self.send_pushOver(msg, self.admin_pushoverkey)
                         self.user_logging(f'Program Update ({current_version} -> {self.new_version})')
