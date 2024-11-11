@@ -37,9 +37,7 @@ class Manager_Database:
                     self.main.mySQL_obj.connectDB()
                     target_db = self.DB['DBlist'][selected_row]
                     self.main.mySQL_obj.connectDB(target_db)
-                    db_info_df = self.main.mySQL_obj.TableToDataframe(target_db + '_info')
-                    db_info = db_info_df.iloc[-1].tolist()
-                    endtime = db_info[3]
+                    endtime = self.DB['DBdata'][selected_row][6]
 
                     if endtime == '-':
                         confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하시겠습니까?"
