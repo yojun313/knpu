@@ -517,6 +517,9 @@ class mySQL:
         self.commit()
 
         self.newDB('crawler_db_test')
+        self.newTable('db_list',
+                           ['DBname', 'Option', 'Starttime', 'Endtime', 'Requester', 'Keyword', 'DBSize', 'Crawlcom',
+                            'CrawlSpeed', 'Datainfo'])
 
         self.newDB('user_db_test')
         self.newTable('user_info', ['Name', 'Email', 'PushOver'])
@@ -551,111 +554,21 @@ class mySQL:
         self.commit()
 
         for name in ['admin', '노승국', '이정우', '최우철', '한승혁', '배시웅', 'public', '이진원']:
-            mySQL_obj.newDB(name+'_db_test')
-            mySQL_obj.newTable('manager_record', ['Date', 'Bug', 'Log', 'D_Log'])
-            mySQL_obj.newTable('keyword_eng', ['korean', 'english'])
-            mySQL_obj.newTable('제외어 사전', ['word'])
+            self.newDB(name+'_db_test')
+            self.newTable('manager_record', ['Date', 'Bug', 'Log', 'D_Log'])
+            self.newTable('keyword_eng', ['korean', 'english'])
+            self.newTable('제외어 사전', ['word'])
 
-    def setup(self):
+
+
+if __name__ == "__main__":
+
+    def setup():
         from datetime import datetime
         mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
 
         newDB_list = mySQL_obj.showAllDB()
         newDB_list = [DB for DB in newDB_list if DB.count('_') == 5]
-
-        mySQL_obj.connectDB('crawler_db')
-        mySQL_obj.dropTable('db_list')
-        mySQL_obj.newTable('db_list',
-                           ['DBname', 'Option', 'Starttime', 'Endtime', 'Requester', 'Keyword', 'DBSize', 'Crawlcom',
-                            'CrawlSpeed', 'Datainfo'])
-
-        def parse_date(date_str):
-            if len(date_str) < 14:
-                date_str = '2024/' + date_str
-            for fmt in ('%m-%d %H:%M', '%Y/%m/%d %H:%M', '%Y-%m-%d %H:%M'):
-                try:
-                    return datetime.strptime(date_str, fmt)
-                except ValueError:
-                    pass
-            raise ValueError(f"time data '{date_str}' does not match any known format")
-
-        full_data = []
-        for DB in newDB_list:
-            mySQL_obj.connectDB(DB)
-            db_info = mySQL_obj.TableLastRow(f'{DB}_info')
-            Option = db_info[1]
-            Starttime = db_info[2]
-            Starttime = parse_date(Starttime).strftime('%Y-%m-%d %H:%M')
-            Endtime = db_info[3]
-            Endtime = parse_date(Endtime).strftime('%Y-%m-%d %H:%M')
-            Requester = db_info[4]
-            DBSize = mySQL_obj.showDBSize(DB)
-            DBSize = DBSize[0]
-            Keyword = db_info[5]
-            Crawlcom = db_info[6]
-            CrawlSpeed = db_info[7]
-            Datainfo = db_info[8]
-            data = [DB, Option, Starttime, Endtime, Requester, Keyword, DBSize, Crawlcom, CrawlSpeed, Datainfo]
-            print(data)
-            full_data.append(data)
-
-        # 세 번째 요소를 datetime 객체로 변환하여 정렬
-        data_sorted = sorted(full_data, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d %H:%M"))
-        print('\n\n\n\n\n')
-        print(data_sorted)
-
-        mySQL_obj.connectDB('crawler_db')
-        mySQL_obj.insertToTable('db_list', data_sorted)
-        mySQL_obj.commit()
-
-if __name__ == "__main__":
-
-    def update_DB():
-
-        mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
-        mySQL_obj.connectDB('crawler_db')
-        db_list = mySQL_obj.TableToList('db_list')
-
-        currentDB = {
-            'DBdata': [],
-            'DBlist': []
-        }
-
-        for DBdata in enumerate(db_list):
-
-            DB_name = DBdata[0]
-            db_split = DB_name.split('_')
-            crawltype = db_split[0]
-            keyword = db_split[1]
-            date = f"{db_split[2]}~{db_split[3]}"
-
-            option = DBdata[1]
-            starttime = DBdata[2]
-            endtime = DBdata[3]
-
-            if endtime == '-':
-                endtime = '크롤링 중'
-
-            requester = DBdata[4]
-            keyword = DBdata[5]
-            size = DBdata[6]
-            self.fullstorage += float(size)
-            size = f"{size*1024} MB" if size < 1 else f"{size} GB"
-            crawlcom = DBdata[7]
-            crawlspeed = DBdata[8]
-            datainfo = DBdata[9]
-
-            currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester, size))
-
-        self.activate_crawl = len([item for item in currentDB['DBdata'] if item[6] == "크롤링 중"])
-        self.fullstorage = round(self.fullstorage, 2)
-
-        return {'DBdata': sorted_db_data, 'DBlist': sorted_db_list, 'DBinfo': sorted_db_info}
-
-
-
-    update_DB()
-
 
 
 

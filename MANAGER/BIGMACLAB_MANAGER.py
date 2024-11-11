@@ -37,7 +37,6 @@ VERSION = '2.2.0'
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, splash_dialog):
         self.versionNum = VERSION
@@ -50,6 +49,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("MANAGER")  # 창의 제목 설정
         self.setWindowIcon(QIcon(icon_path))
+
         if platform.system() == "Windows":
             self.resize(1400, 1000)
             # self.showMaximized()  # 전체 화면으로 창 열기
@@ -124,6 +124,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         break
                     except Exception as e:
                         print("Failed")
+                        print(traceback.format_exc())
                         self.close_bootscreen()
                         self.printStatus()
                         reply = QMessageBox.warning(self, 'Connection Failed',
@@ -143,6 +144,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 while True:
                     try:
                         print("\nLoading Data from DB... ", end='')
+                        self.DBcnt = 0
+                        self.fullstorage = 0
+                        self.activate_crawl = 0
+
                         self.DB = self.update_DB()
                         self.Manager_Database_obj = Manager_Database(self)
                         self.Manager_Web_obj = Manager_Web(self)
@@ -152,8 +157,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         print("Done")
                         break
                     except Exception as e:
-                        print(str(e))
                         print("Failed")
+                        print(traceback.format_exc())
                         self.close_bootscreen()
                         self.printStatus()
                         reply = QMessageBox.warning(self, 'Connection Failed',
@@ -176,9 +181,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 # close_console()
 
             except Exception as e:
+                print(traceback.format_exc())
                 self.close_bootscreen()
                 self.printStatus()
-                msg = f'[ Admin Notification ]\n\nThere is Error in MANAGER Booting\n\nError Log: {traceback.format_exc()}'
+                msg = f'[ Admin CRITICAL Notification ]\n\nThere is Error in MANAGER Booting\n\nError Log: {traceback.format_exc()}'
                 self.send_pushOver(msg, self.admin_pushoverkey)
                 QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
                 QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
@@ -193,7 +199,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.splash_dialog.accept()  # InfoDialog 닫기
             self.show()  # MainWindow 표시
         except:
-            pass
+            print(traceback.format_exc())
 
     def decrypt_process(self):
         current_position = os.path.dirname(__file__)
@@ -258,7 +264,7 @@ class MainWindow(QtWidgets.QMainWindow):
             text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', text, add=True)
         except Exception as e:
-            pass
+            print(traceback.format_exc())
 
     def user_bugging(self, text=''):
         try:
@@ -267,15 +273,15 @@ class MainWindow(QtWidgets.QMainWindow):
             text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', text, add=True)
         except Exception as e:
-            pass
+            print(traceback.format_exc())
 
     def user_location(self, detail=False):
         try:
             response = requests.get("https://ipinfo.io")
             data = response.json()
-            returnData = f"ip: {data.get("ip")} | location: {data.get("city")} / {data.get('region')} / {data.get('country')}"
+            returnData = f"{self.version} | {self.user_device} | {data.get("ip")} | {data.get("city")}"
             if detail == True:
-                returnData = f"ip: {data.get("ip")} | location: {data.get("city")} / {data.get('region')} / {data.get('country')} / {data.get('loc')}"
+                returnData = f"{data.get("ip")} | {data.get("city")} | {data.get('region')} | {data.get('country')} | {data.get('loc')} | {self.versionNum}"
             return returnData
         except requests.RequestException as e:
             return ""
@@ -287,6 +293,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         try:
             current_device = socket.gethostname()
+            self.user_device = current_device
             if current_device in self.device_list:
                 print("Done")
                 self.user = self.user_list[self.device_list.index(current_device)]
@@ -474,6 +481,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         return
                 return
         except:
+            print(traceback.format_exc())
             return
 
     def statusBar_init(self):
@@ -542,11 +550,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 pass
 
     def update_DB(self):
-        self.fullstorage = 0
-        self.activate_crawl = 0
-
         self.mySQL_obj.connectDB('crawler_db')
         db_list = self.mySQL_obj.TableToList('db_list')
+
+        if self.DBcnt == len(db_list):
+            return
 
         currentDB = {
             'DBdata': [],
@@ -588,6 +596,7 @@ class MainWindow(QtWidgets.QMainWindow):
             currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester, size))
             currentDB['DBinfo'].append((crawlcom, crawlspeed, datainfo))
 
+        self.DBcnt = len(currentDB['DBlist'])
         for key in currentDB:
             currentDB[key].reverse()
 
@@ -847,8 +856,8 @@ class MainWindow(QtWidgets.QMainWindow):
             QTimer.singleShot(1000, lambda: self.printStatus(f"활성 크롤러 수: {self.activate_crawl}"))
         # ANALYSIS
         elif index == 2:
-            self.Manager_Analysis_obj.analysis_shortcut_setting()
             self.printStatus()
+            self.Manager_Analysis_obj.analysis_shortcut_setting()
             self.Manager_Analysis_obj.dataprocess_refresh_DB()
         # BOARD
         elif index == 3:
@@ -950,6 +959,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return (0, "AI 분석에 오류가 발생하였습니다\n\nadmin에게 문의바랍니다")
 
     def program_bug_log(self, text):
+        print(text)
         if self.user == 'admin':
             QMessageBox.critical(self, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
         else:
@@ -971,8 +981,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
                 self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
                 self.temp_cleanup()
-            except:
-                pass
+            except Exception as e:
+                print(traceback.format_exc())
             event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
         else:
             event.ignore()
@@ -1071,8 +1081,6 @@ class EventLogger(QObject):
     def eventFilter(self, obj, event):
         if event.type() == QEvent.MouseButtonPress:
             log_to_text(f"MouseButtonPress on {obj}")
-        elif event.type() == QEvent.MouseButtonRelease:
-            log_to_text(f"MouseButtonRelease on {obj}")
         elif event.type() == QEvent.KeyPress:
             log_to_text(f"KeyPress: {event.key()} on {obj}")
         elif event.type() == QEvent.FocusIn:
