@@ -265,7 +265,10 @@ class Manager_Database:
             starttime = DBdata[5]
             endtime = DBdata[6]
 
-            ElapsedTime = datetime.strptime(endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
+            try:
+                ElapsedTime = datetime.strptime(endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime,"%Y-%m-%d %H:%M")
+            except:
+                ElapsedTime = str(datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M"))[:-7]
             endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
 
             # HTML을 사용하여 디테일 표시
