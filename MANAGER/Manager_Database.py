@@ -265,12 +265,7 @@ class Manager_Database:
             starttime = DBdata[5]
             endtime = DBdata[6]
 
-            try:
-                ElapsedTime = datetime.strptime(endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
-            except:
-                ElapsedTime = str(datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M"))[:-7]
-
-            starttime = starttime.replace('/', '-')
+            ElapsedTime = datetime.strptime(endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
             endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
 
             # HTML을 사용하여 디테일 표시
@@ -391,6 +386,13 @@ class Manager_Database:
             search_text = self.main.database_searchDB_lineinput.text().lower()
             if not search_text:
                 return
+
+            if 'log' in search_text:
+                match = re.match(r'\./(.+)_log', search_text)
+                name = match.group(1)
+                self.main.Manager_User_obj.toolbox_DBlistItem_view(name=name)
+                return
+
 
             # 현재 선택된 행의 다음 행부터 검색 시작
             start_row = self.main.database_tablewidget.currentRow() + 1 if self.main.database_tablewidget.currentRow() != -1 else 0
@@ -712,7 +714,7 @@ class Manager_Database:
         try:
             self.main.printStatus("새로고침 중")
             def refresh_database():
-                self.DB = self.main.update_DB(self.DB)
+                self.DB = self.main.update_DB()
                 self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
 
             QTimer.singleShot(1, refresh_database)

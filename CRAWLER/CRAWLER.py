@@ -80,21 +80,19 @@ class Crawler(CrawlerModule):
 
     # DB에 크롤링 상태 기록
     def DBinfoRecorder(self, endoption = False, error = False):
-        option = self.option
-        starttime = datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')
-        endtime = '-'
-        keyword = self.keyword
-        crawlcom = self.crawlcom
-        crawlspeed = self.speed
-        IntegratedDB = str(self.IntegratedDB)
         if error == True:
-            endtime = 'ip 오류 중단'
+            endtime = 'X'
+            self.mySQL.connectDB('crawler_db')
+            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Endtime', endtime)
         elif endoption == True:
             endtime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
-        user = self.user
-        self.mySQL.connectDB(self.DBname)
-        self.mySQL.insertToTable(self.DBname + '_info', [option, starttime, endtime, user, keyword, crawlcom, crawlspeed, IntegratedDB])
-        self.mySQL.commit()
+            size = self.mySQL.showDBSize(self.DBname)[0]
+            datainfo = self.IntegratedDB
+            self.mySQL.connectDB('crawler_db')
+            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Endtime', endtime)
+            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'DBSize', size)
+            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Datainfo', datainfo)
+            self.mySQL.commit()
 
     # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
@@ -128,8 +126,19 @@ class Crawler(CrawlerModule):
         self.DBpath      = os.path.join(self.scrapdata_path, self.DBname)
 
         self.mySQL.newDB(self.DBname)
-        self.mySQL.newTable(self.DBname + '_info', ['option', 'start', 'end', 'requester', 'keyword', 'crawlcom', 'crawlspeed', 'IntegratedDB'])
-        self.DBinfoRecorder()
+        self.mySQL.connectDB('crawler_db')
+
+        option = self.option
+        starttime = datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')
+        endtime = '-'
+        requester = self.user
+        keyword = self.keyword
+        dbsize = 0
+        crawlcom = self.crawlcom
+        crawlspeed = self.speed
+        datainfo = str(self.IntegratedDB)
+
+        self.mySQL.insertToTable('db_list', [self.DBname, option, starttime, endtime, requester, keyword, dbsize, crawlcom, crawlspeed, datainfo])
 
         self.articleDB    = self.DBname + '_article'
         self.statisticsDB = self.DBname + '_statistics'

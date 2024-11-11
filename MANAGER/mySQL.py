@@ -474,6 +474,38 @@ class mySQL:
         except Exception as e:
             print(f"An unexpected error occurred: {str(e)}")
 
+    def updateTableCellByCondition(self, tableName, search_column, search_value, target_column, new_value, add=False):
+        try:
+            with self.conn.cursor() as cursor:
+                # search_column에서 search_value를 가진 행을 찾음
+                query_get_id = f"SELECT id FROM `{tableName}` WHERE `{search_column}` = %s LIMIT 1"
+                cursor.execute(query_get_id, (search_value,))
+                result = cursor.fetchone()
+
+                if result:
+                    row_id = result[0]  # 해당 조건을 만족하는 행의 id
+
+                    # add=True인 경우 기존 값을 가져와 추가
+                    if add:
+                        query_get_current_value = f"SELECT `{target_column}` FROM `{tableName}` WHERE id = %s"
+                        cursor.execute(query_get_current_value, (row_id,))
+                        current_value = cursor.fetchone()[0] or ""  # None일 경우 빈 문자열로 처리
+                        new_value = current_value + str(new_value)  # 기존 값에 새 값을 추가
+
+                    # 업데이트 쿼리 실행
+                    query_update = f"UPDATE `{tableName}` SET `{target_column}` = %s WHERE id = %s"
+                    cursor.execute(query_update, (new_value, row_id))
+                    self.conn.commit()
+                else:
+                    print(f"No row found with {search_column} = {search_value} in table {tableName}")
+
+        except pymysql.MySQLError as e:
+            print(
+                f"Failed to update row where {search_column} = {search_value} in column {target_column} of table {tableName}")
+            print(f"MySQL Error: {str(e)}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {str(e)}")
+
     # DB 데이터가 날아갔을 때를 대비한 셋업 코드
     def manager_setup(self):
 
@@ -524,8 +556,108 @@ class mySQL:
             mySQL_obj.newTable('keyword_eng', ['korean', 'english'])
             mySQL_obj.newTable('제외어 사전', ['word'])
 
+    def setup(self):
+        from datetime import datetime
+        mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
+
+        newDB_list = mySQL_obj.showAllDB()
+        newDB_list = [DB for DB in newDB_list if DB.count('_') == 5]
+
+        mySQL_obj.connectDB('crawler_db')
+        mySQL_obj.dropTable('db_list')
+        mySQL_obj.newTable('db_list',
+                           ['DBname', 'Option', 'Starttime', 'Endtime', 'Requester', 'Keyword', 'DBSize', 'Crawlcom',
+                            'CrawlSpeed', 'Datainfo'])
+
+        def parse_date(date_str):
+            if len(date_str) < 14:
+                date_str = '2024/' + date_str
+            for fmt in ('%m-%d %H:%M', '%Y/%m/%d %H:%M', '%Y-%m-%d %H:%M'):
+                try:
+                    return datetime.strptime(date_str, fmt)
+                except ValueError:
+                    pass
+            raise ValueError(f"time data '{date_str}' does not match any known format")
+
+        full_data = []
+        for DB in newDB_list:
+            mySQL_obj.connectDB(DB)
+            db_info = mySQL_obj.TableLastRow(f'{DB}_info')
+            Option = db_info[1]
+            Starttime = db_info[2]
+            Starttime = parse_date(Starttime).strftime('%Y-%m-%d %H:%M')
+            Endtime = db_info[3]
+            Endtime = parse_date(Endtime).strftime('%Y-%m-%d %H:%M')
+            Requester = db_info[4]
+            DBSize = mySQL_obj.showDBSize(DB)
+            DBSize = DBSize[0]
+            Keyword = db_info[5]
+            Crawlcom = db_info[6]
+            CrawlSpeed = db_info[7]
+            Datainfo = db_info[8]
+            data = [DB, Option, Starttime, Endtime, Requester, Keyword, DBSize, Crawlcom, CrawlSpeed, Datainfo]
+            print(data)
+            full_data.append(data)
+
+        # 세 번째 요소를 datetime 객체로 변환하여 정렬
+        data_sorted = sorted(full_data, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d %H:%M"))
+        print('\n\n\n\n\n')
+        print(data_sorted)
+
+        mySQL_obj.connectDB('crawler_db')
+        mySQL_obj.insertToTable('db_list', data_sorted)
+        mySQL_obj.commit()
 
 if __name__ == "__main__":
-    mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
+
+    def update_DB():
+
+        mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
+        mySQL_obj.connectDB('crawler_db')
+        db_list = mySQL_obj.TableToList('db_list')
+
+        currentDB = {
+            'DBdata': [],
+            'DBlist': []
+        }
+
+        for DBdata in enumerate(db_list):
+
+            DB_name = DBdata[0]
+            db_split = DB_name.split('_')
+            crawltype = db_split[0]
+            keyword = db_split[1]
+            date = f"{db_split[2]}~{db_split[3]}"
+
+            option = DBdata[1]
+            starttime = DBdata[2]
+            endtime = DBdata[3]
+
+            if endtime == '-':
+                endtime = '크롤링 중'
+
+            requester = DBdata[4]
+            keyword = DBdata[5]
+            size = DBdata[6]
+            self.fullstorage += float(size)
+            size = f"{size*1024} MB" if size < 1 else f"{size} GB"
+            crawlcom = DBdata[7]
+            crawlspeed = DBdata[8]
+            datainfo = DBdata[9]
+
+            currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester, size))
+
+        self.activate_crawl = len([item for item in currentDB['DBdata'] if item[6] == "크롤링 중"])
+        self.fullstorage = round(self.fullstorage, 2)
+
+        return {'DBdata': sorted_db_data, 'DBlist': sorted_db_list, 'DBinfo': sorted_db_info}
+
+
+
+    update_DB()
+
+
+
+
 
 

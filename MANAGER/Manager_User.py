@@ -264,11 +264,14 @@ class Manager_User:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def toolbox_DBlistItem_view(self, row=False):
+    def toolbox_DBlistItem_view(self, row=False, name=''):
         if row != False:
             row = self.main.user_tablewidget.currentRow()
             self.selected_DBlistItems = ['manager_record']
             self.selected_userDB = self.userNameList[row] + '_db'
+        if name != '':
+            self.selected_DBlistItems = ['manager_record']
+            self.selected_userDB = name + '_db'
 
         class SingleTableWindow(QMainWindow):
             def __init__(self, parent=None, target_db=None, target_table=None):
@@ -411,7 +414,7 @@ class Manager_User:
     def user_buttonMatch(self):
         self.main.user_adduser_button.clicked.connect(self.user_add_user)
         self.main.user_deleteuser_button.clicked.connect(self.user_delete_user)
-        self.main.user_log_button.clicked.connect(lambda: self.toolbox_DBlistItem_view(True))
+        self.main.user_log_button.clicked.connect(lambda: self.toolbox_DBlistItem_view(row=True))
 
         self.selected_userDB = 'admin_db'
         self.selected_DBlistItem = None
