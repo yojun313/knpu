@@ -555,7 +555,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # 속도 개선용 --> 크롤링 완료 여부 검사 불가
         if self.DBcnt == len(db_list):
-            return
+            return self.DB
 
         currentDB = {
             'DBdata': [],
