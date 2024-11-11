@@ -139,6 +139,7 @@ class Crawler(CrawlerModule):
         datainfo = str(self.IntegratedDB)
 
         self.mySQL.insertToTable('db_list', [self.DBname, option, starttime, endtime, requester, keyword, dbsize, crawlcom, crawlspeed, datainfo])
+        self.mySQL.commit()
 
         self.mySQL.disconnectDB()
         self.mySQL.connectDB(self.DBname)
