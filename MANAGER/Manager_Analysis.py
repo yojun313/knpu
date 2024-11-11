@@ -88,7 +88,7 @@ class Manager_Analysis:
             self.main.printStatus("새로고침 중...")
 
             def refresh_database():
-                self.DB = self.main.update_DB(self.DB)
+                self.DB = self.main.update_DB()
                 self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBdata'], self.DB_table_column)
 
             QTimer.singleShot(1, refresh_database)
