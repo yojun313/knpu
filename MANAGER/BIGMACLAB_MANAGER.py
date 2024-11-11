@@ -147,7 +147,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 while True:
                     try:
                         print("\nLoading Data from DB... ", end='')
-                        self.DB = self.update_DB({'DBlist': [], 'DBdata': [], 'DBinfo': []})
+                        self.DB = self.update_DB()
                         self.Manager_Database_obj = Manager_Database(self)
                         self.Manager_Web_obj = Manager_Web(self)
                         self.Manager_Board_obj = Manager_Board(self)
@@ -545,87 +545,51 @@ class MainWindow(QtWidgets.QMainWindow):
                 # 연결된 슬롯이 없는 경우 발생하는 에러를 무시
                 pass
 
-    def update_DB(self, currentDB):
-
-        def parse_date(date_str):
-            if len(date_str) < 14:
-                date_str = '2024/' + date_str
-            for fmt in ('%m-%d %H:%M', '%Y/%m/%d %H:%M', '%Y-%m-%d %H:%M'):
-                try:
-                    return datetime.strptime(date_str, fmt)
-                except ValueError:
-                    pass
-            raise ValueError(f"time data '{date_str}' does not match any known format")
+    def update_DB(self):
 
         mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
-        currentDB_list = currentDB['DBlist']
-        newDB_list = mySQL_obj.showAllDB()
-        newDB_list = [DB for DB in newDB_list if DB.count('_') == 5]
+        mySQL_obj.connectDB('crawler_db')
+        db_list = mySQL_obj.TableToList('db_list')
 
-        delete_target_list = list(set(currentDB_list) - set(newDB_list))
-        add_target_list = list(set(newDB_list) - set(currentDB_list))
+        currentDB = {
+            'DBdata': [],
+            'DBlist': [],
+            'DBinfo': []
+        }
 
-        # Delete
-        currentDB_list_copy = currentDB_list.copy()
-        for i in range(len(currentDB_list_copy)):
-            DB_name = currentDB_list_copy[i]
-            if DB_name in delete_target_list:
-                index_to_remove = currentDB_list.index(DB_name)
-                currentDB['DBlist'].pop(index_to_remove)
-                currentDB['DBdata'].pop(index_to_remove)
-
-        for i, DB_name in enumerate(add_target_list):
-            currentDB['DBlist'].append(DB_name)
-
+        for DBdata in db_list:
+            DB_name = DBdata[0]
             db_split = DB_name.split('_')
             crawltype = db_split[0]
+            keyword = db_split[1]
             date = f"{db_split[2]}~{db_split[3]}"
 
-            self.mySQL_obj.connectDB(DB_name)
-            db_info_df = self.mySQL_obj.TableToDataframe(DB_name + '_info')
-            db_info = db_info_df.iloc[-1].tolist()
-            option = db_info[1]
-            starttime = db_info[2]
-            starttime = parse_date(starttime).strftime('%Y-%m-%d %H:%M')
-            endtime = db_info[3]
+            option = DBdata[1]
+            starttime = DBdata[2]
+            endtime = DBdata[3]
 
             if endtime == '-':
                 endtime = '크롤링 중'
-            else:
-                endtime = parse_date(endtime).strftime('%Y-%m-%d %H:%M')
-            requester = db_info[4]
-            size = self.mySQL_obj.showDBSize(DB_name)
-            self.fullstorage += float(size[0])
-            size = f"{size[1]} MB" if size[0] < 1 else f"{size[0]} GB"
+            elif endtime == 'X':
+                endtime = '오류 중단'
 
-            try:
-                keyword = db_info[5]
-                crawlcom = db_info[6]
-                crawlspeed = db_info[7]
-                IntegratedDB = db_info[8]
-                currentDB['DBinfo'].append((crawlcom, crawlspeed, IntegratedDB))
-            except:
-                keyword = db_split[1]
-                currentDB['DBinfo'].append(('', '', ''))
+            requester = DBdata[4]
+            keyword = DBdata[5]
+            size = float(DBdata[6])
+            self.fullstorage += float(size)
+            size = f"{size * 1024} MB" if size < 1 else f"{size} GB"
+            crawlcom = DBdata[7]
+            crawlspeed = DBdata[8]
+            datainfo = DBdata[9]
 
+            currentDB['DBlist'].append(DB_name)
             currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester, size))
-
-        db_data = currentDB['DBdata']
-        db_list = currentDB['DBlist']
-        db_info = currentDB['DBinfo']
-
-        # 다섯 번째 요소를 datetime 객체로 변환하여 정렬
-        sorted_indices = sorted(range(len(db_data)), key=lambda i: parse_date(db_data[i][5]), reverse=True)
-
-        # 정렬된 순서대로 새로운 리스트 생성
-        sorted_db_data = [db_data[i] for i in sorted_indices]
-        sorted_db_list = [db_list[i] for i in sorted_indices]
-        sorted_db_info = [db_info[i] for i in sorted_indices]
+            currentDB['DBinfo'].append((crawlcom, crawlspeed, datainfo))
 
         self.activate_crawl = len([item for item in currentDB['DBdata'] if item[6] == "크롤링 중"])
         self.fullstorage = round(self.fullstorage, 2)
 
-        return {'DBdata': sorted_db_data, 'DBlist': sorted_db_list, 'DBinfo': sorted_db_info}
+        return currentDB
 
     def check_internet_connection(self):
         while True:
@@ -1158,7 +1122,7 @@ class SplashDialog(QDialog):
         # 버전 정보 라벨
         version_label = QLabel(f"Version {self.version}")
         version_label.setAlignment(Qt.AlignCenter)
-        version_label.setStyleSheet("font-size: 21px; margin-top: 5px;")  # 폰트 크기 유지
+        version_label.setStyleSheet("font-size: 21px; color: black; margin-top: 5px;")  # 폰트 크기 유지
         main_layout.addWidget(version_label)
 
         # 상태 메시지 라벨
