@@ -138,7 +138,7 @@ class Crawler(CrawlerModule):
             self.send_pushOver(msg_text, user_key=self.admin_pushoverkey)
             start_time = time.time()
             self.running = True
-            timeout = 15 * 60  # 15분을 초로 변환
+            timeout = 20  # 15분을 초로 변환
 
             while time.time() - start_time < timeout:
                 elapsed_time = int(time.time() - start_time)
