@@ -147,7 +147,7 @@ class Crawler(CrawlerModule):
 
             self.mySQL = self.pathFinder(self.user)['MYSQL']
             self.running = True
-            return
+            return False
 
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
@@ -421,7 +421,10 @@ class Crawler(CrawlerModule):
                                 data_list = [sublist + [article_returnData['articleData'][5]] for sublist in rereplyList_returnData['rereplyList']]
                                 self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=data_list)
 
-                    self.webCrawlerRunCheck()
+                    if self.webCrawlerRunCheck() == False:
+                        dayCount -= 1
+                        continue
+
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()
@@ -505,7 +508,9 @@ class Crawler(CrawlerModule):
                                 data_list = [sublist + [article_returnData['articleData'][3]] for sublist in replyList_returnData['replyList']]
                                 self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
 
-                    self.webCrawlerRunCheck()
+                    if self.webCrawlerRunCheck() == False:
+                        dayCount -= 1
+                        continue
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverBlogCrawler_obj.CountReturn()
@@ -589,7 +594,9 @@ class Crawler(CrawlerModule):
                                 data_list = [sublist + [article_returnData['articleData'][5]] for sublist in replyList_returnData['replyList']]
                                 self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
 
-                    self.webCrawlerRunCheck()
+                    if self.webCrawlerRunCheck() == False:
+                        dayCount -= 1
+                        continue
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverCafeCrawler_obj.CountReturn()
@@ -681,7 +688,9 @@ class Crawler(CrawlerModule):
                                 data_list = [sublist + [article_returnData['articleData'][4]] for sublist in replyList_returnData['rereplyList']]
                                 self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=data_list)
 
-                    self.webCrawlerRunCheck()
+                    if self.webCrawlerRunCheck() == False:
+                        dayCount -= 1
+                        continue
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
                     self.IntegratedDB = YouTubeCrawler_obj.CountReturn()
@@ -731,7 +740,9 @@ class Crawler(CrawlerModule):
                     if articleCnt != 0:
                         self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
 
-                    self.webCrawlerRunCheck()
+                    if self.webCrawlerRunCheck() == False:
+                        dayCount -= 1
+                        continue
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
                     self.IntegratedDB = ChinaDailyCrawler_obj.CountReturn()
