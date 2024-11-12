@@ -1171,8 +1171,10 @@ if __name__ == '__main__':
             f.write("This file is a lock.")
         return False
 
+
+    app = QtWidgets.QApplication([])
     if is_already_running():
-        print("이미 실행 중입니다.")
+        QMessageBox.warning(None, "MANAGER", "이미 실행 중입니다.")
         sys.exit(0)
     else:
         try:
@@ -1184,8 +1186,6 @@ if __name__ == '__main__':
             # High DPI 스케일링 활성화 (QApplication 생성 전 설정)
             QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
             QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
-
-            app = QtWidgets.QApplication([])
 
             # 기본 폰트 설정 및 힌팅 설정
             font = QFont()
