@@ -144,7 +144,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 while True:
                     try:
                         print("\nLoading Data from DB... ", end='')
-                        self.DBcnt = 0
                         self.DB = self.update_DB()
                         self.Manager_Database_obj = Manager_Database(self)
                         self.Manager_Web_obj = Manager_Web(self)
@@ -546,13 +545,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 # 연결된 슬롯이 없는 경우 발생하는 에러를 무시
                 pass
 
-    def update_DB(self, run=False):
+    def update_DB(self):
         self.mySQL_obj.connectDB('crawler_db')
         db_list = self.mySQL_obj.TableToList('db_list')
-
-        # 속도 개선용 --> 크롤링 완료 여부 검사 불가
-        if self.DBcnt == len(db_list) and run != True:
-            return self.DB
 
         currentDB = {
             'DBdata': [],
@@ -583,7 +578,10 @@ class MainWindow(QtWidgets.QMainWindow):
             size = float(DBdata[6])
             self.fullstorage += float(size)
             if size == 0:
-                size = self.mySQL_obj.showDBSize(DB_name)
+                try:
+                    size = self.mySQL_obj.showDBSize(DB_name)
+                except:
+                    size = 0
                 self.fullstorage += float(size[0])
                 size = f"{size[1]} MB" if size[0] < 1 else f"{size[0]} GB"
             else:
@@ -596,7 +594,6 @@ class MainWindow(QtWidgets.QMainWindow):
             currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester, size))
             currentDB['DBinfo'].append((crawlcom, crawlspeed, datainfo))
 
-        self.DBcnt = len(currentDB['DBlist'])
         for key in currentDB:
             currentDB[key].reverse()
 
