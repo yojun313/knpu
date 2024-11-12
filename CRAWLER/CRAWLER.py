@@ -136,7 +136,15 @@ class Crawler(CrawlerModule):
                 f"10분 내에 Z8에 접속하여 DB 서버의 정상 작동 여부를 확인해주십시오"
             )
             self.send_pushOver(msg_text, user_key=self.admin_pushoverkey)
-            time.sleep(10)
+            start_time = time.time()
+            self.running = True
+            timeout = 15 * 60  # 15분을 초로 변환
+
+            while time.time() - start_time < timeout:
+                elapsed_time = int(time.time() - start_time)
+                print(f"DB 복구 중... 경과 시간: {elapsed_time // 60}분 {elapsed_time % 60}초")
+                time.sleep(1)
+
             self.mySQL = self.pathFinder(self.user)['MYSQL']
             self.running = True
             return
