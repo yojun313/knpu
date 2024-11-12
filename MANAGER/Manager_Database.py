@@ -727,11 +727,11 @@ class Manager_Database:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def database_refresh_DB(self, run=False):
+    def database_refresh_DB(self):
         try:
             self.main.printStatus("새로고침 중")
             def refresh_database():
-                self.DB = self.main.update_DB(run)
+                self.DB = self.main.update_DB()
                 self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
 
             QTimer.singleShot(1, refresh_database)
@@ -741,7 +741,7 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_buttonMatch(self):
-        self.main.database_refreshDB_button.clicked.connect(lambda : self.database_refresh_DB(True))
+        self.main.database_refreshDB_button.clicked.connect(self.database_refresh_DB)
         self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
         self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_DB)
 
@@ -759,5 +759,5 @@ class Manager_Database:
         self.main.ctrld.activated.connect(self.database_delete_DB)
         self.main.ctrls.activated.connect(self.database_save_DB)
         self.main.ctrlv.activated.connect(self.database_view_DB)
-        self.main.ctrlr.activated.connect(lambda : self.database_refresh_DB(True))
+        self.main.ctrlr.activated.connect(self.database_refresh_DB)
 
