@@ -210,6 +210,8 @@ class Manager_Database:
                     CountText = "크롤링 중..."
             except:
                 CountText = "크롤링 중..."
+                if DBdata[6] == '오류 중단':
+                    CountText = '오류 중단'
 
 
             match crawlType:
@@ -269,7 +271,11 @@ class Manager_Database:
                 ElapsedTime = datetime.strptime(endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime,"%Y-%m-%d %H:%M")
             except:
                 ElapsedTime = str(datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M"))[:-7]
-            endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
+                if endtime == '오류 중단':
+                    ElapsedTime = '오류 중단'
+
+            if endtime != '오류 중단':
+                endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
 
             # HTML을 사용하여 디테일 표시
             details_html = f"""
@@ -395,7 +401,15 @@ class Manager_Database:
                 name = match.group(1)
                 self.main.Manager_User_obj.toolbox_DBlistItem_view(name=name)
                 return
-
+            if 'error' in search_text:
+                # 패턴 매칭
+                match = re.search(r"(?<=./error_)(.*)", search_text)
+                dbname = match.group(1)
+                self.main.mySQL_obj.connectDB('crawler_db')
+                self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Endtime', '오류 중단')
+                self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Datainfo', '오류 중단')
+                self.main.mySQL_obj.commit()
+                QMessageBox.information(self.main, "Information", f"{dbname} 상태를 변경했습니다")
 
             # 현재 선택된 행의 다음 행부터 검색 시작
             start_row = self.main.database_tablewidget.currentRow() + 1 if self.main.database_tablewidget.currentRow() != -1 else 0
@@ -713,11 +727,11 @@ class Manager_Database:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def database_refresh_DB(self):
+    def database_refresh_DB(self, run=False):
         try:
             self.main.printStatus("새로고침 중")
             def refresh_database():
-                self.DB = self.main.update_DB()
+                self.DB = self.main.update_DB(run)
                 self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
 
             QTimer.singleShot(1, refresh_database)
@@ -727,7 +741,7 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_buttonMatch(self):
-        self.main.database_refreshDB_button.clicked.connect(self.database_refresh_DB)
+        self.main.database_refreshDB_button.clicked.connect(lambda : self.database_refresh_DB(True))
         self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
         self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_DB)
 
@@ -745,5 +759,5 @@ class Manager_Database:
         self.main.ctrld.activated.connect(self.database_delete_DB)
         self.main.ctrls.activated.connect(self.database_save_DB)
         self.main.ctrlv.activated.connect(self.database_view_DB)
-        self.main.ctrlr.activated.connect(self.database_refresh_DB)
+        self.main.ctrlr.activated.connect(lambda : self.database_refresh_DB(True))
 
