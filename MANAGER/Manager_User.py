@@ -445,7 +445,7 @@ class Manager_User:
         if index == 0:
             self.main.ctrld.activated.connect(self.user_delete_user)
             self.main.ctrll.activated.connect(lambda: self.toolbox_DBlistItem_view(True))
-            self.main.ctrla.activated.connect(self.user_add_user)
+            self.main.ctrla.activated.connect(lambda: self.toolbox_DBlistItem_view(True))
 
         # User DB
         if index == 1:
