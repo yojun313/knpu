@@ -176,6 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 print(f"\n{self.user}님 환영합니다!")
 
                 self.user_logging(f'Booting ({self.user_location()})', booting=True)
+                os.remove(os.path.join(os.path.dirname(__file__), 'MANAGER.lock'))
                 self.update_program()
 
                 # close_console()
@@ -979,7 +980,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if reply == QMessageBox.Yes:
             try:
                 event.accept()
-                os.remove(os.path.join(os.path.dirname(__file__), 'MANAGER.lock'))
+                if os.path.exists(os.path.join(os.path.dirname(__file__), 'MANAGER.lock')):
+                    os.remove(os.path.join(os.path.dirname(__file__), 'MANAGER.lock'))
                 self.user_logging('Shutdown')
                 self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
                 self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
