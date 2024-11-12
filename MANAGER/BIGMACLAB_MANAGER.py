@@ -145,9 +145,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     try:
                         print("\nLoading Data from DB... ", end='')
                         self.DBcnt = 0
-                        self.fullstorage = 0
-                        self.activate_crawl = 0
-
                         self.DB = self.update_DB()
                         self.Manager_Database_obj = Manager_Database(self)
                         self.Manager_Web_obj = Manager_Web(self)
@@ -563,6 +560,8 @@ class MainWindow(QtWidgets.QMainWindow):
             'DBinfo': []
         }
 
+        self.fullstorage = 0
+        self.activate_crawl = 0
         for DBdata in db_list:
             DB_name = DBdata[0]
             db_split = DB_name.split('_')
