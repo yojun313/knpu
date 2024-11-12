@@ -108,7 +108,6 @@ class Crawler(CrawlerModule):
                     user_stop = True
                 else:
                     user_stop = False
-                    break
 
         if user_stop == True:
             self.running = False
@@ -137,7 +136,7 @@ class Crawler(CrawlerModule):
                 f"10분 내에 Z8에 접속하여 DB 서버의 정상 작동 여부를 확인해주십시오"
             )
             self.send_pushOver(msg_text, user_key=self.admin_pushoverkey)
-            time.sleep(1800)
+            time.sleep(10)
             self.running = True
             return
 
