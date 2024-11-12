@@ -137,6 +137,7 @@ class Crawler(CrawlerModule):
             )
             self.send_pushOver(msg_text, user_key=self.admin_pushoverkey)
             time.sleep(10)
+            self.mySQL = self.pathFinder(self.user)['MYSQL']
             self.running = True
             return
 
