@@ -1163,21 +1163,37 @@ class SplashDialog(QDialog):
 
 
 if __name__ == '__main__':
-    environ["QT_DEVICE_PIXEL_RATIO"] = "0"
-    environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-    environ["QT_SCREEN_SCALE_FACTORS"] = "1"
-    environ["QT_SCALE_FACTOR"] = "1"
+    def is_already_running():
+        try:
+            # 포트 번호를 고유하게 지정하세요 (예: 12345)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.bind(("127.0.0.1", 12345))
+        except socket.error:
+            return True
+        return False
 
-    # High DPI 스케일링 활성화 (QApplication 생성 전 설정)
-    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
-    app = QtWidgets.QApplication([])
+    if is_already_running():
+        print("이미 실행 중입니다.")
+        sys.exit(0)
+    else:
+        print("응용프로그램 실행 중...")
+        
+        environ["QT_DEVICE_PIXEL_RATIO"] = "0"
+        environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+        environ["QT_SCREEN_SCALE_FACTORS"] = "1"
+        environ["QT_SCALE_FACTOR"] = "1"
 
-    # 기본 폰트 설정 및 힌팅 설정
-    font = QFont()
-    font.setHintingPreference(QFont.PreferNoHinting)
-    app.setFont(font)
+        # High DPI 스케일링 활성화 (QApplication 생성 전 설정)
+        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+        QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+
+        app = QtWidgets.QApplication([])
+
+        # 기본 폰트 설정 및 힌팅 설정
+        font = QFont()
+        font.setHintingPreference(QFont.PreferNoHinting)
+        app.setFont(font)
 
     # 로딩 다이얼로그 표시
     splash_dialog = SplashDialog(version=VERSION)
