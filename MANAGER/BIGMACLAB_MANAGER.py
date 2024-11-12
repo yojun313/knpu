@@ -972,22 +972,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if reply == QMessageBox.Yes:
             self.Manager_Board_obj.board_add_bug()
 
-    def closeEvent(self, event):
-        # 프로그램 종료 시 실행할 코드
-        reply = QMessageBox.question(self, 'Shutdown', "프로그램을 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
-                                     QMessageBox.Yes)
-        if reply == QMessageBox.Yes:
-            try:
-                self.user_logging('Shutdown')
-                self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
-                self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
-                self.temp_cleanup()
-            except Exception as e:
-                print(traceback.format_exc())
-            event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
-        else:
-            event.ignore()
-
     def temp_cleanup(self):
         if platform.system() != "Windows":
             return
@@ -1008,6 +992,16 @@ class MainWindow(QtWidgets.QMainWindow):
                         print(f"Deleted file: {file_path}")
         except Exception as e:
             print(e)
+
+    def closeEvent(self, event):
+        # 프로그램 종료 시 실행할 코드
+        reply = QMessageBox.question(self, 'Shutdown', "프로그램을 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
+                                     QMessageBox.Yes)
+        if reply == QMessageBox.Yes:
+            os.remove(os.path.join(os.path.dirname(__file__), 'MANAGER.lock'))
+            event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
+        else:
+            event.ignore()
 
     #################### DEVELOPER MODE ###################
 
@@ -1173,6 +1167,7 @@ if __name__ == '__main__':
 
 
     app = QtWidgets.QApplication([])
+
     if is_already_running():
         QMessageBox.warning(None, "MANAGER", "이미 실행 중입니다.")
         sys.exit(0)
@@ -1200,7 +1195,19 @@ if __name__ == '__main__':
             application = MainWindow(splash_dialog)
             sys.exit(app.exec_())
         finally:
-            os.remove(lock_file)
+            if os.path.exists(lock_file):
+                os.remove(lock_file)
+            if application is not None:
+                try:
+                    application.user_logging('Shutdown')
+                    application.mySQL_obj.connectDB(f'{application.user}_db')  # userDB 접속
+                    application.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
+                    application.temp_cleanup()
+                    print("정상 종료")
+                except Exception as e:
+                    print(traceback.format_exc())
+
+
 
 
 
