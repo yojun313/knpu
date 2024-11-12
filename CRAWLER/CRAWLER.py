@@ -43,6 +43,7 @@ class Crawler(CrawlerModule):
         self.saveInterval = 90
         self.GooglePackage_obj = GoogleModule(self.pathFinder()['token_path'])
         self.kiwi = Kiwi(num_workers=8)
+        self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
 
         # Computer Info
         self.scrapdata_path = self.pathFinder(user)['scrapdata_path']
@@ -96,29 +97,49 @@ class Crawler(CrawlerModule):
 
     # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
+        user_stop = False
         for i in range(5):
             DBlist = self.mySQL.showAllDB()
             if self.DBname.lower() in DBlist:
                 self.running = True
                 return
+            else:
+                if len(DBlist) > 50:
+                    user_stop = True
+                else:
+                    user_stop = False
+                    break
 
-        self.running = False
-        print('\rStopped by BIGMACLAB MANAGER PROGRAM', end='')
+        if user_stop == True:
+            self.running = False
+            print('\rStopped by BIGMACLAB MANAGER PROGRAM', end='')
 
-        log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a')
-        log.write(f"\n\nDB Check --> {datetime.fromtimestamp(self.startTime).strftime('%Y%m/%d %H:%M')}에 중단됨")
-        log.close()
+            log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a')
+            log.write(f"\n\nDB Check --> {datetime.fromtimestamp(self.startTime).strftime('%Y%m/%d %H:%M')}에 중단됨")
+            log.close()
 
-        msg_text = (
-            "[ CRAWLER STOPPED ]\n\n"
-            f"Object : {self.DBname}\n\n"
-            f"DB 저장소 삭제 또는 인식 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
-            f"의도된 크롤링 중단이 아니라면 Admin에게 연락 부탁드립니다"
-        )
-        self.send_pushOver(msg_text, user_key=self.pushoverKey)
+            msg_text = (
+                "[ CRAWLER STOPPED ]\n\n"
+                f"Object DB : {self.DBname}\n\n"
+                f"DB 저장소 삭제 또는 인식 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+                f"의도된 크롤링 중단이 아니라면 Admin에게 연락 부탁드립니다"
+            )
+            self.send_pushOver(msg_text, user_key=self.pushoverKey)
 
-        self.localDBRemover()
-        sys.exit()
+            self.localDBRemover()
+            sys.exit()
+
+        else:
+            msg_text = (
+                "[ DB ALERT ]\n\n"
+                f"Object DB : {self.DBname}\n\n"
+                f"크롤링 중 현재 DB 서버의 정상 동작 여부가 의심됩니다\n"
+                f"10분 내에 Z8에 접속하여 DB 서버의 정상 작동 여부를 확인해주십시오"
+            )
+            self.send_pushOver(msg_text, user_key=self.admin_pushoverkey)
+            time.sleep(600)
+            self.running = True
+            return
 
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)

@@ -569,8 +569,9 @@ if __name__ == "__main__":
 
         newDB_list = mySQL_obj.showAllDB()
         newDB_list = [DB for DB in newDB_list if DB.count('_') == 5]
+        print(len(newDB_list))
 
-
+    setup()
 
 
 

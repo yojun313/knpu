@@ -546,12 +546,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 # 연결된 슬롯이 없는 경우 발생하는 에러를 무시
                 pass
 
-    def update_DB(self):
+    def update_DB(self, run=False):
         self.mySQL_obj.connectDB('crawler_db')
         db_list = self.mySQL_obj.TableToList('db_list')
 
         # 속도 개선용 --> 크롤링 완료 여부 검사 불가
-        if self.DBcnt == len(db_list):
+        if self.DBcnt == len(db_list) and run != True:
             return self.DB
 
         currentDB = {
