@@ -146,6 +146,7 @@ class Crawler(CrawlerModule):
                 time.sleep(1)
 
             self.mySQL = self.pathFinder(self.user)['MYSQL']
+            self.mySQL.connectDB(self.DBname)
             self.running = True
             return False
 
