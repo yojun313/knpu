@@ -978,6 +978,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                      QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             try:
+                event.accept()
                 os.remove(os.path.join(os.path.dirname(__file__), 'MANAGER.lock'))
                 self.user_logging('Shutdown')
                 self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
@@ -985,7 +986,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.temp_cleanup()
             except Exception as e:
                 print(traceback.format_exc())
-            event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
+                # 창을 닫을지 결정 (accept는 창을 닫음)
         else:
             event.ignore()
 
