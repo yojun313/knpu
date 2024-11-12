@@ -137,7 +137,7 @@ class Crawler(CrawlerModule):
                 f"10분 내에 Z8에 접속하여 DB 서버의 정상 작동 여부를 확인해주십시오"
             )
             self.send_pushOver(msg_text, user_key=self.admin_pushoverkey)
-            time.sleep(600)
+            time.sleep(1800)
             self.running = True
             return
 
