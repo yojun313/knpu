@@ -176,7 +176,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 print(f"\n{self.user}님 환영합니다!")
 
                 self.user_logging(f'Booting ({self.user_location()})', booting=True)
-                os.remove(os.path.join(os.path.dirname(__file__), 'MANAGER.lock'))
                 self.update_program()
 
                 # close_console()
@@ -979,16 +978,13 @@ class MainWindow(QtWidgets.QMainWindow):
                                      QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             try:
-                event.accept()
-                if os.path.exists(os.path.join(os.path.dirname(__file__), 'MANAGER.lock')):
-                    os.remove(os.path.join(os.path.dirname(__file__), 'MANAGER.lock'))
                 self.user_logging('Shutdown')
                 self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
                 self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
                 self.temp_cleanup()
             except Exception as e:
                 print(traceback.format_exc())
-                # 창을 닫을지 결정 (accept는 창을 닫음)
+            event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
         else:
             event.ignore()
 
@@ -1167,44 +1163,26 @@ class SplashDialog(QDialog):
 
 
 if __name__ == '__main__':
-    lock_file = os.path.join(os.path.dirname(__file__), 'MANAGER.lock')
-    def is_already_running():
-        if os.path.exists(lock_file):
-            return True
-        with open(lock_file, "w") as f:
-            f.write("This file is a lock.")
-        return False
+    environ["QT_DEVICE_PIXEL_RATIO"] = "0"
+    environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+    environ["QT_SCREEN_SCALE_FACTORS"] = "1"
+    environ["QT_SCALE_FACTOR"] = "1"
 
+    # High DPI 스케일링 활성화 (QApplication 생성 전 설정)
+    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     app = QtWidgets.QApplication([])
-    if is_already_running():
-        QMessageBox.warning(None, "MANAGER", "이미 실행 중입니다.")
-        sys.exit(0)
-    else:
-        try:
-            environ["QT_DEVICE_PIXEL_RATIO"] = "0"
-            environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-            environ["QT_SCREEN_SCALE_FACTORS"] = "1"
-            environ["QT_SCALE_FACTOR"] = "1"
 
-            # High DPI 스케일링 활성화 (QApplication 생성 전 설정)
-            QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-            QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+    # 기본 폰트 설정 및 힌팅 설정
+    font = QFont()
+    font.setHintingPreference(QFont.PreferNoHinting)
+    app.setFont(font)
 
-            # 기본 폰트 설정 및 힌팅 설정
-            font = QFont()
-            font.setHintingPreference(QFont.PreferNoHinting)
-            app.setFont(font)
+    # 로딩 다이얼로그 표시
+    splash_dialog = SplashDialog(version=VERSION)
+    splash_dialog.show()
 
-            # 로딩 다이얼로그 표시
-            splash_dialog = SplashDialog(version=VERSION)
-            splash_dialog.show()
-
-            # 메인 윈도우 실행
-            application = MainWindow(splash_dialog)
-            sys.exit(app.exec_())
-        finally:
-            if os.path.exists(lock_file):
-                os.remove(lock_file)
-
-
+    # 메인 윈도우 실행
+    application = MainWindow(splash_dialog)
+    sys.exit(app.exec_())
