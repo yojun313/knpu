@@ -1163,43 +1163,44 @@ class SplashDialog(QDialog):
 
 
 if __name__ == '__main__':
+    lock_file = os.path.join(os.path.dirname(__file__), 'MANAGER.lock')
     def is_already_running():
-        try:
-            # 포트 번호를 고유하게 지정하세요 (예: 12345)
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.bind(("127.0.0.1", 12345))
-        except socket.error:
+        if os.path.exists(lock_file):
             return True
+        with open(lock_file, "w") as f:
+            f.write("This file is a lock.")
         return False
-
 
     if is_already_running():
         print("이미 실행 중입니다.")
         sys.exit(0)
     else:
-        print("응용프로그램 실행 중...")
-        
-        environ["QT_DEVICE_PIXEL_RATIO"] = "0"
-        environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-        environ["QT_SCREEN_SCALE_FACTORS"] = "1"
-        environ["QT_SCALE_FACTOR"] = "1"
+        try:
+            environ["QT_DEVICE_PIXEL_RATIO"] = "0"
+            environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+            environ["QT_SCREEN_SCALE_FACTORS"] = "1"
+            environ["QT_SCALE_FACTOR"] = "1"
 
-        # High DPI 스케일링 활성화 (QApplication 생성 전 설정)
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-        QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+            # High DPI 스케일링 활성화 (QApplication 생성 전 설정)
+            QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+            QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
-        app = QtWidgets.QApplication([])
+            app = QtWidgets.QApplication([])
 
-        # 기본 폰트 설정 및 힌팅 설정
-        font = QFont()
-        font.setHintingPreference(QFont.PreferNoHinting)
-        app.setFont(font)
+            # 기본 폰트 설정 및 힌팅 설정
+            font = QFont()
+            font.setHintingPreference(QFont.PreferNoHinting)
+            app.setFont(font)
 
-    # 로딩 다이얼로그 표시
-    splash_dialog = SplashDialog(version=VERSION)
-    splash_dialog.show()
+            # 로딩 다이얼로그 표시
+            splash_dialog = SplashDialog(version=VERSION)
+            splash_dialog.show()
 
-    # 메인 윈도우 실행
-    application = MainWindow(splash_dialog)
-    sys.exit(app.exec_())
+            # 메인 윈도우 실행
+            application = MainWindow(splash_dialog)
+            sys.exit(app.exec_())
+        finally:
+            os.remove(lock_file)
+
+
 
