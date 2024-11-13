@@ -38,6 +38,11 @@ class Manager_Database:
                     target_db = self.DB['DBlist'][selected_row]
                     self.main.mySQL_obj.connectDB(target_db)
                     endtime = self.DB['DBdata'][selected_row][6]
+                    owner = self.DB['DBdata'][selected_row][7]
+
+                    if owner != self.main.user and self.main.user != 'admin':
+                        QMessageBox.warning(self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
+                        return
 
                     if endtime == '-':
                         confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하시겠습니까?"
