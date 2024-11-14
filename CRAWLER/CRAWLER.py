@@ -359,7 +359,6 @@ class Crawler(CrawlerModule):
         while self.running == True:
             for dayCount in range(self.date_range + 1):
                 try:
-                    NaverNewsCrawler_obj.ip_update()
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
                     percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
@@ -519,7 +518,6 @@ class Crawler(CrawlerModule):
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverBlogCrawler_obj.CountReturn()
-                    NaverBlogCrawler_obj.ip_update()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -606,7 +604,6 @@ class Crawler(CrawlerModule):
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverCafeCrawler_obj.CountReturn()
-                    NaverCafeCrawler_obj.ip_update()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -701,7 +698,6 @@ class Crawler(CrawlerModule):
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
                     self.IntegratedDB = YouTubeCrawler_obj.CountReturn()
-                    YouTubeCrawler_obj.ip_update()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -754,7 +750,6 @@ class Crawler(CrawlerModule):
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
                     self.IntegratedDB = ChinaDailyCrawler_obj.CountReturn()
-                    ChinaDailyCrawler_obj.ip_update()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -838,7 +833,6 @@ class Crawler(CrawlerModule):
                     self.webCrawlerRunCheck()
                     self.mySQL.commit()
                     self.IntegratedDB = ChinaSinaCrawler_obj.CountReturn()
-                    ChinaSinaCrawler_obj.ip_update()
 
                 except Exception as e:
                     error_msg = self.error_detector()
