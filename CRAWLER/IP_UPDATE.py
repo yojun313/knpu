@@ -1,9 +1,12 @@
 import os
+import sys
 import chardet
 
 CRAWLER_PATH = os.path.dirname(os.path.abspath(__file__))
 BIGMACLAB_PATH      = os.path.dirname(CRAWLER_PATH)
 MANAGER_PATH          = os.path.join(BIGMACLAB_PATH, 'MANAGER')
+
+sys.path.append(MANAGER_PATH)
 
 from mySQL import mySQL
 
