@@ -66,6 +66,11 @@ class CrawlerModule(ToolModule):
             'TotalRereplyCnt' : 0
         }
 
+    def ip_update(self):
+        self.mySQL.connectDB('crawler_db')
+        self.proxy_list = self.mySQL.TableToList('proxy_list')
+        self.proxy_list = [proxy[0] for proxy in self.proxy_list]
+
     def setCrawlSpeed(self, speed):
         self.socketnum = speed
 
@@ -225,7 +230,7 @@ class CrawlerModule(ToolModule):
                         main_page = requests.get(url, proxies = proxies, headers = headers, params = params, cookies = cookies, verify = False, timeout = 3)
                         return main_page
                     except Exception as e:
-                        if trynum >= 100:
+                        if trynum >= 2:
                             return self.error_dump(1001, self.error_detector(), url)
                         trynum += 1
             else:
@@ -242,7 +247,7 @@ class CrawlerModule(ToolModule):
         else:
             return None
     async def asyncRequester(self, url, headers={}, params={}, proxies='', cookies={}, session=None):
-        timeout = aiohttp.ClientTimeout(total=300)
+        timeout = aiohttp.ClientTimeout(total=3)
         trynum = 0
         while True:
             try:
@@ -251,7 +256,7 @@ class CrawlerModule(ToolModule):
                 async with session.get(url, headers=headers, params=params, proxy=proxies, cookies=cookies, ssl=False, timeout=timeout) as response:
                     return await response.text()
             except (aiohttp.ClientError, asyncio.TimeoutError, Exception) as e:
-                if trynum >= 100:
+                if trynum >= 2:
                     return self.error_dump(1003, self.error_detector(), url)
                 trynum += 1
 
