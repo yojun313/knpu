@@ -60,6 +60,7 @@ class Crawler(CrawlerModule):
 
         # For Web Version
         self.weboption = int(weboption)
+        self.localArchive = False
         
         self.startTime = time.time()
         self.now       = datetime.now()
@@ -180,7 +181,8 @@ class Crawler(CrawlerModule):
         self.rereplyDB    = self.DBname + '_rereply'
         
         try:
-            os.mkdir(self.DBpath)
+            if self.localArchive == True:
+                os.mkdir(self.DBpath)
             log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'),'w+')
 
             self.msg = (
@@ -204,7 +206,8 @@ class Crawler(CrawlerModule):
             sys.exit()
 
     def localDBRemover(self):
-        shutil.rmtree(self.DBpath)
+        if self.localArchive == True:
+            shutil.rmtree(self.DBpath)
 
     def infoPrinter(self):
         print(self.msg)
@@ -360,8 +363,8 @@ class Crawler(CrawlerModule):
                     percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
-                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
 
+                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
                         self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
                         self.mySQL.TableToCSV(tableName=self.statisticsDB, csv_path=self.DBpath)
                         self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
@@ -466,7 +469,7 @@ class Crawler(CrawlerModule):
                     percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     NaverBlogCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
-                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
+                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
                         self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
                         if option == 2:
                             self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
@@ -553,7 +556,7 @@ class Crawler(CrawlerModule):
                     percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     NaverCafeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
-                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
+                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
                         self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
                         if option == 2:
                             self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
@@ -644,7 +647,7 @@ class Crawler(CrawlerModule):
                     percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     YouTubeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption, self.api_num)
 
-                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
+                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
                         # option 1 & 2
                         self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
                         self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
@@ -727,7 +730,7 @@ class Crawler(CrawlerModule):
                     percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     ChinaDailyCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
-                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range:
+                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
                         # option 1 & 2
                         self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
 
@@ -796,9 +799,10 @@ class Crawler(CrawlerModule):
 
                     ChinaSinaCrawler_obj.setPrintData(f"{currentDate_str_start.strftime('%Y.%m.%d')} ~ {currentDate_str_end.strftime('%Y.%m.%d')}", percent, self.weboption)
 
-                    self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
-                    if option == 2:
-                        self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
+                    if self.localArchive == True:
+                        self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
+                        if option == 2:
+                            self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
 
                     if DateRangeCnt == len(DateRangeList):
                         self.FinalOperator()
