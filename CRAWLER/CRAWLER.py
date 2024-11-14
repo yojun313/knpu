@@ -134,7 +134,7 @@ class Crawler(CrawlerModule):
                 "[ DB ALERT ]\n\n"
                 f"Object DB : {self.DBname}\n\n"
                 f"크롤링 중 현재 DB 서버의 정상 동작 여부가 의심됩니다\n"
-                f"10분 내에 Z8에 접속하여 DB 서버의 정상 작동 여부를 확인해주십시오"
+                f"15분 내에 Z8에 접속하여 DB 서버의 정상 작동 여부를 확인해주십시오"
             )
             self.send_pushOver(msg_text, user_key=self.admin_pushoverkey)
             start_time = time.time()
