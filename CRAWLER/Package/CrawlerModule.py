@@ -227,7 +227,7 @@ class CrawlerModule(ToolModule):
                 while True:
                     proxies = self.random_proxy()
                     try:
-                        main_page = requests.get(url, proxies = proxies, headers = headers, params = params, cookies = cookies, verify = False, timeout = 3)
+                        main_page = requests.get(url, proxies = proxies, headers = headers, params = params, cookies = cookies, verify = False, timeout = 30)
                         return main_page
                     except Exception as e:
                         if trynum >= 2:
@@ -247,7 +247,7 @@ class CrawlerModule(ToolModule):
         else:
             return None
     async def asyncRequester(self, url, headers={}, params={}, proxies='', cookies={}, session=None):
-        timeout = aiohttp.ClientTimeout(total=3)
+        timeout = aiohttp.ClientTimeout(total=30)
         trynum = 0
         while True:
             try:
