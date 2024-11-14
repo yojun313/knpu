@@ -33,6 +33,8 @@ def read_txt(filepath):
 mysql_obj = mySQL(host='REDACTED_IP', user='admin', password='***REMOVED***', port=3306)
 proxy_path = os.path.join("D:/BIGMACLAB/CRAWLER", '아이피샵(유동프록시).txt')
 
+print("MYSQL 접속 완료\n")
+
 proxy_list = read_txt(proxy_path)
 proxy_list = [[proxy] for proxy in proxy_list]
 
