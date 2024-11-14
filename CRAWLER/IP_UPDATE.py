@@ -1,14 +1,36 @@
-from Package.ToolModule import ToolModule
 import os
+import chardet
 
-ToolModule_obj = ToolModule()
+CRAWLER_PATH = os.path.dirname(os.path.abspath(__file__))
+BIGMACLAB_PATH      = os.path.dirname(CRAWLER_PATH)
+MANAGER_PATH          = os.path.join(BIGMACLAB_PATH, 'MANAGER')
 
-pathfinder_obj = ToolModule_obj.pathFinder()
+from mySQL import mySQL
 
-mysql_obj = pathfinder_obj['MYSQL']
-proxy_path = os.path.join(pathfinder_obj['crawler_folder_path'], '아이피샵(유동프록시).txt')
+def read_txt(filepath):
+    txt_path = filepath
+    result_list = []
 
-proxy_list = ToolModule_obj.read_txt(proxy_path)
+    # 파일을 바이너리 모드로 열어 raw 데이터 읽기
+    with open(txt_path, 'rb') as file:
+        raw_data = file.read()
+        result = chardet.detect(raw_data)
+        charenc = result['encoding']
+
+    # 감지된 인코딩을 사용하여 파일을 텍스트 모드로 읽기
+    with open(txt_path, 'r', encoding=charenc) as f:
+        lines = f.readlines()
+
+    for element in lines:
+        element = element.replace('\n', '')
+        result_list.append(element)
+
+    return result_list
+
+mysql_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
+proxy_path = os.path.join("D:/BIGMACLAB/CRAWLER", '아이피샵(유동프록시).txt')
+
+proxy_list = read_txt(proxy_path)
 proxy_list = [[proxy] for proxy in proxy_list]
 
 print("IP 리스트 초기화 중... ", end='')
