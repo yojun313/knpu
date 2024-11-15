@@ -415,6 +415,7 @@ class Manager_Database:
                 self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Datainfo', '오류 중단')
                 self.main.mySQL_obj.commit()
                 QMessageBox.information(self.main, "Information", f"{dbname} 상태를 변경했습니다")
+                self.database_refresh_DB()
 
             # 현재 선택된 행의 다음 행부터 검색 시작
             start_row = self.main.database_tablewidget.currentRow() + 1 if self.main.database_tablewidget.currentRow() != -1 else 0
