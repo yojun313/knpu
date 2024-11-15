@@ -46,7 +46,7 @@ class Manager_Board:
     def board_add_version(self):
         try:
             if self.main.user != 'admin':
-                ok, password = self.main.pw_check()
+                ok, password = self.main.pw_check(True)
                 if not ok or password != self.main.admin_password:
                     return
 
@@ -167,7 +167,7 @@ class Manager_Board:
     def board_delete_version(self):
         try:
             if self.main.user != 'admin':
-                ok, password = self.main.pw_check()
+                ok, password = self.main.pw_check(True)
                 if not ok or password != self.main.admin_password:
                     return
             self.main.printStatus("삭제 중...")
