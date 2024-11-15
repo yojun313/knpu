@@ -312,9 +312,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     return False
 
                 answer_password = self.admin_password if user_name == 'admin' else self.public_password
+                admin_mode = True if user_name == 'admin' else False
 
                 self.user = user_name
-                ok, password = self.pw_check()
+                ok, password = self.pw_check(admin_mode)
                 if ok and password == answer_password:
                     reply = QMessageBox.question(self, 'Device Registration',
                                                  f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?",
@@ -875,10 +876,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         gc.collect()
 
-    def pw_check(self):
+    def pw_check(self, admin=False):
         while True:
             input_dialog = QInputDialog(self)
-            input_dialog.setWindowTitle('Password')
+            if admin == False:
+                input_dialog.setWindowTitle('Password')
+            else:
+                input_dialog.setWindowTitle('Admin Mode')
             input_dialog.setLabelText('Enter password:')
             input_dialog.setTextEchoMode(QLineEdit.Password)
             input_dialog.resize(300, 200)  # 원하는 크기로 설정

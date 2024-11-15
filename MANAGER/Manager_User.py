@@ -63,7 +63,7 @@ class Manager_User:
             key = self.main.user_key_lineinput.text()
 
             if self.main.user != 'admin':
-                ok, password = self.main.pw_check()
+                ok, password = self.main.pw_check(True)
                 if not ok or password != self.main.admin_password:
                     return
 
@@ -103,7 +103,7 @@ class Manager_User:
     def user_delete_user(self):
         try:
             if self.main.user != 'admin':
-                ok, password = self.main.pw_check()
+                ok, password = self.main.pw_check(True)
                 if not ok or password != self.main.admin_password:
                     return
 
@@ -123,7 +123,7 @@ class Manager_User:
     def user_delete_device(self):
         try:
             if self.main.user != 'admin':
-                ok, password = self.main.pw_check()
+                ok, password = self.main.pw_check(True)
                 if not ok or password != self.main.admin_password:
                     return
 
@@ -203,7 +203,7 @@ class Manager_User:
                 self.main.printStatus()
                 return
             if 'manager_record' in self.selected_DBlistItems:
-                ok, password = self.main.pw_check()
+                ok, password = self.main.pw_check(True)
                 if not ok or password != self.main.admin_password:
                     return
 
@@ -349,7 +349,7 @@ class Manager_User:
                 return
             if self.selected_DBlistItems[0] == 'manager_record':
                 if self.main.user != 'admin':
-                    ok, password = self.main.pw_check()
+                    ok, password = self.main.pw_check(True)
                     if not ok or password != self.main.admin_password:
                         return
 
