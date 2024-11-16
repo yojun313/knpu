@@ -391,11 +391,7 @@ class Crawler(CrawlerModule):
                             os._exit(1)
                         self.currentDate += self.deltaD
                         continue
-                    self.urlList = urlList_returnData['urlList']
-
-                    FullreturnData = asyncio.run(NaverNewsCrawler_obj.asyncMultiCollector(self.urlList, option))
-
-                    for returnData in FullreturnData:
+                    self.urlList = urlList_returnData['u                    for returnData in FullreturnData:
 
                         # articleData 정상 확인
                         articleStatus = False
@@ -431,7 +427,11 @@ class Crawler(CrawlerModule):
 
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
-                    self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()
+                    self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()rlList']
+
+                    FullreturnData = asyncio.run(NaverNewsCrawler_obj.asyncMultiCollector(self.urlList, option))
+
+
 
                 except Exception as e:
                     error_msg = self.error_detector()
