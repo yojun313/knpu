@@ -59,6 +59,10 @@ class Monitoring:
         table.add_column("Component", justify="left", style="cyan", no_wrap=True)
         table.add_column("Status", justify="center", style="green")
 
+        self.check_z8_db()
+        self.check_z8_crawler()
+        self.check_omen_crawler()
+
         z8_db_status = 'Online' if self.z8_status['db'] == True else 'Offline'
         z8_crawler_status = 'Online' if self.z8_status['crawler'] == True else 'Offline'
         omen_crawler_status = 'Online' if self.omen_status == True else 'Offline'
