@@ -440,7 +440,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # 대화상자 실행
                 if dialog.exec_() == QDialog.Accepted:
-                    open_console("Version Download Process")
+                    open_console("Version Update Process")
                     if platform.system() == "Windows":
                         msg = (
                             "[ Admin Notification ]\n\n"
