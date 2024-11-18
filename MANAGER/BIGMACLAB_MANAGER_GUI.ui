@@ -441,6 +441,13 @@
            </widget>
           </item>
           <item>
+           <widget class="QPushButton" name="web_sue_button">
+            <property name="text">
+             <string>GPT 고소장</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="web_downloadpage_button">
             <property name="text">
              <string>Download Page</string>
