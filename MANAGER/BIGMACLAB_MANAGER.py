@@ -188,7 +188,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.listWidget.setCurrentRow(0)
         QTimer.singleShot(1, load_program)
-        QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+        QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
 
     def close_bootscreen(self):
         try:
@@ -845,7 +845,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if index == 0:
             self.Manager_Database_obj.database_shortcut_setting()
             self.Manager_Database_obj.database_refresh_DB()
-            QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 8 TB"))
+            QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
         # CRAWLER
         elif index == 1:
             self.shortcut_initialize()
