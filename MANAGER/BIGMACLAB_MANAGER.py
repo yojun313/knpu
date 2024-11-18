@@ -25,6 +25,7 @@ from os import environ
 from pathlib import Path
 import socket
 import gc
+import random
 import warnings
 import traceback
 import re
@@ -283,8 +284,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return ""
 
     def login_program(self):
-        def admin_notify():
-            msg = f'[ Admin Notification ]\n\nUnknown tried to connect\n\nLocation: {self.user_location(True)}'
+        def admin_notify(username):
+            msg = f'[ Admin Notification ]\n\nUnknown tried to connect\n\nName: {username}\n\nLocation: {self.user_location(True)}'
             self.send_pushOver(msg, self.admin_pushoverkey)
 
         try:
@@ -307,16 +308,26 @@ class MainWindow(QtWidgets.QMainWindow):
                     QMessageBox.warning(self, 'Program Shutdown', '프로그램을 종료합니다')
                     return False
                 elif user_name not in self.userNameList:
-                    admin_notify()
+                    admin_notify(user_name)
                     QMessageBox.warning(self, 'Unknown User', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
                     return False
 
-                answer_password = self.admin_password if user_name == 'admin' else self.public_password
-                admin_mode = True if user_name == 'admin' else False
-
                 self.user = user_name
-                ok, password = self.pw_check(admin_mode)
-                if ok and password == answer_password:
+
+                random_pw = ''.join(random.choices('0123456789', k=6))
+                msg = (
+                    "[ Admin Notification]\n\n"
+                    f"<디바이스 등록 요청>\n\n"
+                    f"User: {self.user}\n"
+                    f"Device: {current_device}\n"
+                    f"Location: {self.user_location()}\n\n"
+                    f"PW: {random_pw}"
+                )
+                self.send_pushOver(msg, self.admin_pushoverkey)
+                QMessageBox.information(self, "Information", "관리자에게 인증번호가 전송되었습니다\n\n관리자에게 인증번호를 요청하십시오\n\nTel: 010-4072-9190\nEmail: yojun313@postech.ac.kr")
+
+                ok, password = self.pw_check(string="관리자 인증번호")
+                if ok and password == random_pw:
                     reply = QMessageBox.question(self, 'Device Registration',
                                                  f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?",
                                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -337,8 +348,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         QMessageBox.information(self, "Information", "디바이스가 등록되지 않았습니다\n\n다음 실행 시 추가적인 로그인이 필요합니다")
                         return True
                 elif ok:
-                    QMessageBox.warning(self, 'Wrong Password', '비밀번호가 올바르지 않습니다\n\n프로그램을 종료합니다')
-                    admin_notify()
+                    QMessageBox.warning(self, 'Wrong Password', '인증번호가 올바르지 않습니다\n\n프로그램을 종료합니다')
+                    admin_notify(self.user)
                     return False
                 else:
                     QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
@@ -876,11 +887,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         gc.collect()
 
-    def pw_check(self, admin=False):
+    def pw_check(self, admin=False, string=""):
         while True:
             input_dialog = QInputDialog(self)
             if admin == False:
-                input_dialog.setWindowTitle('Password')
+                if string == "":
+                    input_dialog.setWindowTitle('Password')
+                else:
+                    input_dialog.setWindowTitle(string)
             else:
                 input_dialog.setWindowTitle('Admin Mode')
             input_dialog.setLabelText('Enter password:')
