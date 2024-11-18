@@ -49,6 +49,9 @@ class Manager_Web:
         self.main.web_downloadpage_button.clicked.connect(self.web_open_downloadbrowser)
         self.main.web_homepage_button.clicked.connect(
             partial(self.web_open_webbrowser, "https://knpu.re.kr", self.web_web_layout))
+        self.main.web_sue_button.clicked.connect(
+            partial(self.web_open_webbrowser, "http://bigmaclab-crawler.kro.kr:112", self.web_web_layout))
+
         self.main.web_github_button.clicked.connect(
             partial(self.web_open_webbrowser, "https://github.com/yojun313", self.web_web_layout))
 
