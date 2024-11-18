@@ -1105,7 +1105,7 @@ class SplashDialog(QDialog):
         super().__init__()
         self.version = version
         if booting:
-            self.setWindowFlags(Qt.FramelessWindowHint)  # 제목 표시줄 제거
+            self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 최상위 창 설정
         self.setAttribute(Qt.WA_TranslucentBackground)  # 배경을 투명하게 설정
         self.initUI()
 
