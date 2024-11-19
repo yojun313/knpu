@@ -14,7 +14,9 @@ from Manager_Board import Manager_Board
 from Manager_User import Manager_User
 from Manager_Analysis import Manager_Analysis
 from Manager_Console import open_console, close_console
-from GoogleModule import GoogleModule
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import smtplib
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from datetime import datetime
@@ -322,10 +324,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     f"사용자: {self.user}\n"
                     f"디바이스: {current_device}\n"
                     f"인증 위치: {self.user_location()}\n\n"
-                    f"인증 번호 {random_pw}를 입력하십시오"
+                    f"인증 번호 '{random_pw}'를 입력하십시오"
                 )
-                googlemodule_obj = GoogleModule()
-                googlemodule_obj.SendMail(self.usermail, "[MANAGER] 디바이스 등록 인증번호", msg)
+                self.send_email(self.usermail, "[MANAGER] 디바이스 등록 인증번호", msg)
                 QMessageBox.information(self, "Information", f"{self.user}님의 메일 {self.usermail}로 인증번호가 전송되었습니다\n\n인증번호를 확인 후 다음 창에서 입력하십시오")
 
                 ok, password = self.pw_check(string="메일 인증번호")
@@ -953,6 +954,26 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
             except:
                 continue
+
+    def send_email(self, receiver, title, text):
+        sender = "knpubigmac2024@gmail.com"
+        MailPassword = 'vygn nrmh erpf trji'
+
+        msg = MIMEMultipart()
+        msg['Subject'] = title
+        msg['From'] = sender
+        msg['To'] = receiver
+
+        msg.attach(MIMEText(text, 'plain'))
+
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+
+        # SMTP 연결 및 메일 보내기
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender, MailPassword)
+            server.sendmail(sender, receiver, msg.as_string())
 
     def csvReader(self, csvPath):
         csv_data = pd.read_csv(csvPath, low_memory=False, index_col=0)
