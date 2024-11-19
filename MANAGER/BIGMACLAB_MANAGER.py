@@ -319,7 +319,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 random_pw = ''.join(random.choices('0123456789', k=6))
                 msg = (
-                    f"<MANAGER 디바이스 등록>\n\n"
                     f"사용자: {self.user}\n"
                     f"디바이스: {current_device}\n"
                     f"인증 위치: {self.user_location()}\n\n"
