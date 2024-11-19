@@ -115,8 +115,10 @@ class Manager_User:
                     self.main.mySQL_obj.connectDB('user_db')
                     self.main.mySQL_obj.deleteTableRowByColumn('user_info', self.userNameList[selected_row], 'Name')
                     self.main.mySQL_obj.dropDB(self.userNameList[selected_row]+'_db')
+                    QMessageBox.information(self.main, "Information", f"'{self.userNameList[selected_row]}'님이 삭제되었습니다")
                     self.userNameList.pop(selected_row)
                     self.main.user_tablewidget.removeRow(selected_row)
+
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
@@ -134,9 +136,11 @@ class Manager_User:
                 if reply == QMessageBox.Yes:
                     self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
                     self.main.mySQL_obj.deleteTableRowByColumn('device_list', self.device_list[selected_row], 'device_name')
+                    QMessageBox.information(self.main, "Information", f"'{self.device_list[selected_row]}'가 삭제되었습니다")
                     self.device_list.pop(selected_row)
                     self.main.user_tablewidget.removeRow(selected_row)
                     self.device_init_table()
+
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
