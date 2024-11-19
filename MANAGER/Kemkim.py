@@ -157,6 +157,7 @@ class KimKem:
 
             self.period_list = list(tf_counts.keys())
             self.startperiod = self.period_list[0]
+            self.lastperiod = self.period_list[-1]
 
             self.write_status("추적 데이터 DOV/DOD 계산 중...")
             print("\n추적 데이터 DOV/DOD 계산 중...")
@@ -904,7 +905,7 @@ class KimKem:
         for period in tqdm(period_divided_dic, desc="DOV ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
             keyword_DoV_dic = {}
             
-            n_j = 1 if trace else self.find_key_position(period_divided_dic, period) - self.find_key_position(period_divided_dic, self.startperiod)
+            n_j = 1 if trace else self.find_key_position(period_divided_dic, self.lastperiod) - self.find_key_position(period_divided_dic, period)
 
             for keyword in keyword_list:
                 value = (tf_counts[period][keyword] / len(period_divided_dic[period])) * (1 - self.weight * n_j)
@@ -918,7 +919,7 @@ class KimKem:
         for period in tqdm(period_divided_dic, desc="DOD ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
             keyword_DoV_dic = {}
             
-            n_j = 1 if trace else self.find_key_position(period_divided_dic, period) - self.find_key_position(period_divided_dic, self.startperiod)
+            n_j = 1 if trace else self.find_key_position(period_divided_dic, self.lastperiod) - self.find_key_position(period_divided_dic, period)
             
             for keyword in keyword_list:
                 value = (df_counts[period][keyword] / len(period_divided_dic[period])) * (1 - self.weight * n_j)
