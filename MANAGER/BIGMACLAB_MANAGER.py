@@ -14,6 +14,7 @@ from Manager_Board import Manager_Board
 from Manager_User import Manager_User
 from Manager_Analysis import Manager_Analysis
 from Manager_Console import open_console, close_console
+from GoogleModule import GoogleModule
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from datetime import datetime
@@ -118,6 +119,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         # DB 불러오기
                         self.Manager_User_obj = Manager_User(self)
                         self.userNameList = self.Manager_User_obj.userNameList  # User Table 유저 리스트
+                        self.userMailList = self.Manager_User_obj.userMailList
                         self.user_list = self.Manager_User_obj.user_list  # Device Table 유저 리스트
                         self.device_list = self.Manager_User_obj.device_list
                         self.userPushOverKeyList = self.Manager_User_obj.userKeyList
@@ -313,20 +315,21 @@ class MainWindow(QtWidgets.QMainWindow):
                     return False
 
                 self.user = user_name
+                self.usermail = self.userMailList[self.userNameList.index(user_name)]
 
                 random_pw = ''.join(random.choices('0123456789', k=6))
                 msg = (
-                    "[ Admin Notification]\n\n"
-                    f"<디바이스 등록 요청>\n\n"
-                    f"User: {self.user}\n"
-                    f"Device: {current_device}\n"
-                    f"Location: {self.user_location()}\n\n"
-                    f"PW: {random_pw}"
+                    f"<MANAGER 디바이스 등록>\n\n"
+                    f"사용자: {self.user}\n"
+                    f"디바이스: {current_device}\n"
+                    f"인증 위치: {self.user_location()}\n\n"
+                    f"인증 번호 {random_pw}를 입력하십시오"
                 )
-                self.send_pushOver(msg, self.admin_pushoverkey)
-                QMessageBox.information(self, "Information", "관리자에게 인증번호가 전송되었습니다\n\n관리자에게 인증번호를 요청하십시오\n\nTel: 010-4072-9190\nEmail: yojun313@postech.ac.kr")
+                googlemodule_obj = GoogleModule()
+                googlemodule_obj.SendMail(self.usermail, "[MANAGER] 디바이스 등록 인증번호", msg)
+                QMessageBox.information(self, "Information", f"{self.user}님의 메일 {self.usermail}로 인증번호가 전송되었습니다\n\n인증번호를 확인 후 다음 창에서 입력하십시오")
 
-                ok, password = self.pw_check(string="관리자 인증번호")
+                ok, password = self.pw_check(string="메일 인증번호")
                 if ok and password == random_pw:
                     reply = QMessageBox.question(self, 'Device Registration',
                                                  f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?",

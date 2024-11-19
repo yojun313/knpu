@@ -28,6 +28,7 @@ class Manager_User:
         # userNameList 및 userKeyList 업데이트
         self.userNameList = [name for name, _, key in user_data]
         self.userKeyList = [key for _, _, key in user_data if key != 'n']
+        self.userMailList = [email for _, email, key in user_data]
 
         # 테이블 설정
         columns = ['Name', 'Email', 'PushOverKey']
