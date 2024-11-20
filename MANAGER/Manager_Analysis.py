@@ -293,6 +293,11 @@ class Manager_Analysis:
             elif selected_directory[0] == False:
                 QMessageBox.warning(self.main, f"Wrong Format", f"{selected_directory[1]}는 CSV 파일이 아닙니다")
                 return
+            reply = QMessageBox.question(self.main, 'Notification', f"선택하신 파일을 시간 분할하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply != QMessageBox.Yes:
+                return
+            open_console("데이터 분할")
+
             def split_table(csv_path):
                 table_path = os.path.join(os.path.dirname(csv_path), os.path.basename(csv_path).replace('.csv', '') + '_split')
                 while True:
@@ -306,8 +311,9 @@ class Manager_Analysis:
 
                 if any('Date' in element for element in table_df.columns.tolist()) == False or table_df.columns.tolist() == []:
                     QMessageBox.information(self.main, "Wrong File", f"시간 분할할 수 없는 파일입니다")
+                    close_console()
                     return 0
-
+                print("\n진행 중...")
                 table_df = self.dataprocess_obj.TimeSplitter(table_df)
 
                 self.year_divided_group = table_df.groupby('year')
@@ -330,9 +336,12 @@ class Manager_Analysis:
                     del self.month_divided_group
                     del self.week_divided_group
                     gc.collect()
-
+                close_console()
+                reply = QMessageBox.question(self.main, 'Notification', f"데이터 분할이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    self.main.openFileExplorer(os.path.dirname(selected_directory[0]))
+                    
             QTimer.singleShot(1, lambda: self.main.printStatus("데이터 분할 및 저장 중..."))
-            self.main.openFileExplorer(os.path.dirname(selected_directory[0]))
             QTimer.singleShot(1000, lambda: main(selected_directory))
             QTimer.singleShot(1000, self.main.printStatus)
 
@@ -479,6 +488,9 @@ class Manager_Analysis:
 
                 # 콤보박스에서 선택된 옵션 추가
                 selected_options.append(dialog.combobox.currentText())
+            else:
+                self.main.printStatus()
+                return
 
             open_console('데이터 분석')
 
