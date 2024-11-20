@@ -160,7 +160,7 @@ class KimKem:
             self.lastperiod = self.period_list[-1]
 
             self.write_status("추적 데이터 DOV/DOD 계산 중...")
-            print("\n추적 데이터 DOV/DOD 계산 중...")
+            print("\추적 데이터 DOV/DOD 계산 중...")
             trace_DoV_dict = self.cal_DoV(keyword_list, period_divided_dic, tf_counts)
             trace_DoD_dict = self.cal_DoD(keyword_list, period_divided_dic, df_counts)
 
@@ -177,7 +177,7 @@ class KimKem:
             Final_signal_record = {}
 
             print("")
-            for index, period in enumerate(tqdm(self.period_list, desc="연도별 KEMKIM 데이터 생성 중", file=sys.stdout)):
+            for index, period in enumerate(tqdm(self.period_list, desc="기간별 추적 KEMKIM 데이터 생성 중", file=sys.stdout)):
                 # Step 7: 평균 증가율 및 빈도 계산
 
                 if index == 0:
