@@ -313,7 +313,7 @@ class Manager_Analysis:
                     QMessageBox.information(self.main, "Wrong File", f"시간 분할할 수 없는 파일입니다")
                     close_console()
                     return 0
-                print("\n진행 중...")
+                print("진행 중...")
                 table_df = self.dataprocess_obj.TimeSplitter(table_df)
 
                 self.year_divided_group = table_df.groupby('year')
