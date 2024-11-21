@@ -1353,6 +1353,27 @@ class Manager_Analysis:
                 layout.addWidget(self.wordcnt_label)
                 layout.addWidget(self.wordcnt_input)
 
+                # 비일관 필터링 체크박스 생성
+                self.filter_checkbox_label = QLabel('비일관 데이터를 필터링하시겠습니까?? ')
+                layout.addWidget(self.filter_checkbox_label)
+
+                checkbox_layout = QHBoxLayout()
+                self.filter_yes_checkbox = QCheckBox('Yes')
+                self.filter_no_checkbox = QCheckBox('No')
+
+                self.filter_yes_checkbox.setChecked(True)  # Yes 체크박스 기본 체크
+                self.filter_no_checkbox.setChecked(False)  # No 체크박스 기본 체크 해제
+
+                # 서로 배타적으로 선택되도록 설정
+                self.filter_yes_checkbox.toggled.connect(
+                    lambda: self.filter_no_checkbox.setChecked(False) if self.filter_yes_checkbox.isChecked() else None)
+                self.filter_no_checkbox.toggled.connect(
+                    lambda: self.filter_yes_checkbox.setChecked(False) if self.filter_no_checkbox.isChecked() else None)
+
+                checkbox_layout.addWidget(self.filter_yes_checkbox)
+                checkbox_layout.addWidget(self.filter_no_checkbox)
+                layout.addLayout(checkbox_layout)
+
                 # 애니메이션 체크박스 생성
                 self.ani_checkbox_label = QLabel('추적 데이터를 시각화하시겠습니까? ')
                 layout.addWidget(self.ani_checkbox_label)
@@ -1470,6 +1491,7 @@ class Manager_Analysis:
                 topword = self.topword_input.text()
                 weight = self.weight_input.text()
                 graph_wordcnt = self.wordcnt_input.text()
+                filter_yes_selected = self.filter_yes_checkbox.isChecked()
                 ani_yes_selected = self.ani_yes_checkbox.isChecked()
                 except_yes_selected = self.except_yes_checkbox.isChecked()
                 split_option = self.dropdown_menu.currentText()
@@ -1482,6 +1504,7 @@ class Manager_Analysis:
                     'topword': topword,
                     'weight': weight,
                     'graph_wordcnt': graph_wordcnt,
+                    'filter_yes_selected': filter_yes_selected,
                     'ani_yes_selected': ani_yes_selected,
                     'except_yes_selected': except_yes_selected,
                     'split_option': split_option,
@@ -1509,6 +1532,7 @@ class Manager_Analysis:
                     topword = int(dialog.data['topword'])
                     weight = float(dialog.data['weight'])
                     graph_wordcnt = int(dialog.data['graph_wordcnt'])
+                    filter_yes_selected = dialog.data['filter_yes_selected']
                     ani_yes_selected = dialog.data['ani_yes_selected']
                     except_yes_selected = dialog.data['except_yes_selected']
                     split_option = dialog.data['split_option']
@@ -1567,7 +1591,7 @@ class Manager_Analysis:
                 exception_word_list_path = 'N'
 
             open_console('KEMKIM 분석')
-            kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startdate, enddate, period, topword, weight, graph_wordcnt, split_option, split_custom, ani_yes_selected, exception_word_list, exception_word_list_path)
+            kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startdate, enddate, period, topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected, ani_yes_selected, exception_word_list, exception_word_list_path)
             result = kimkem_obj.make_kimkem()
             close_console()
 

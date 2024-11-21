@@ -41,6 +41,7 @@ class KimKem:
                  graph_wordcnt=None, 
                  split_option=None, 
                  split_custom=None,
+                 filter_option=None,
                  ani_option = None,
                  exception_word_list=[],
                  exception_filename = 'N',
@@ -58,7 +59,9 @@ class KimKem:
             self.topword = topword
             self.weight = weight
             self.graph_wordcnt = graph_wordcnt
+            self.filter_option = filter_option
             self.ani_option = ani_option
+            self.filter_option_display = 'Y' if ani_option == True else 'N'
             self.ani_option_display = 'Y' if ani_option == True else 'N'
             self.except_option_display = 'Y' if exception_word_list else 'N'
             self.exception_filename = exception_filename
@@ -107,6 +110,7 @@ class KimKem:
             f"{'분석 기간 단위:'} {self.period}\n"
             f"{'상위 단어 개수:'} {self.topword}\n"
             f"{'계산 가중치:'} {self.weight}\n"
+            f"{'비일관 단어 필터링 여부:'} {self.filter_option_display}\n"
             f"{'애니메이션 여부:'} {self.ani_option_display}\n"
             f"{'제외 단어 여부:'} {self.except_option_display}\n"
             f"{'제외 단어 파일:'} {self.exception_filename}\n"
@@ -177,66 +181,68 @@ class KimKem:
             Final_signal_record = {}
 
             print("")
-            for index, period in enumerate(tqdm(self.period_list, desc="기간별 추적 KEMKIM 데이터 생성 중", file=sys.stdout)):
-                # Step 7: 평균 증가율 및 빈도 계산
 
-                if index == 0:
-                    continue
+            if self.filter_option == True:
+                for index, period in enumerate(tqdm(self.period_list, desc="기간별 추적 KEMKIM 데이터 생성 중", file=sys.stdout)):
+                    # Step 7: 평균 증가율 및 빈도 계산
 
-                result_folder = os.path.join(self.trace_result_folder, period)
+                    if index == 0:
+                        continue
 
-                self.write_status(f"{period} KEMKIM 증가율 계산 중...")
-                avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[index-1], period)
+                    result_folder = os.path.join(self.trace_result_folder, period)
 
-                self.write_status(f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
-                # Step 8: 신호 분석 및 그래프 생성
-                DoV_signal_record[period], DoD_signal_record[period], DoV_coordinates_record[period], DoD_coordinates_record[period] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
-                Final_signal_record[period] = self._save_final_signals(DoV_signal_record[period], DoD_signal_record[period], os.path.join(result_folder, 'Signal'))
+                    self.write_status(f"{period} KEMKIM 증가율 계산 중...")
+                    avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[index-1], period)
 
-            # Trace 데이터에서 키워드별로 Signal 변화를 추적
-            self.write_status("키워드 추적 데이터 생성 및 필터링 중...")
-            print("\n키워드 추적 데이터 생성 및 필터링 중...")
-            DoV_signal_trace = self.trace_keyword_positions(DoV_signal_record)
-            DoD_signal_trace = self.trace_keyword_positions(DoD_signal_record)
-            Final_signal_trace = self.trace_keyword_positions(Final_signal_record)
+                    self.write_status(f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
+                    # Step 8: 신호 분석 및 그래프 생성
+                    DoV_signal_record[period], DoD_signal_record[period], DoV_coordinates_record[period], DoD_coordinates_record[period] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
+                    Final_signal_record[period] = self._save_final_signals(DoV_signal_record[period], DoD_signal_record[period], os.path.join(result_folder, 'Signal'))
 
-            signal_column_list = list(DoV_signal_trace.columns)
-            signal_column_list = [f'period_{column}' for column in signal_column_list]
+                # Trace 데이터에서 키워드별로 Signal 변화를 추적
+                self.write_status("키워드 추적 데이터 생성 및 필터링 중...")
+                print("\n키워드 추적 데이터 생성 및 필터링 중...")
+                DoV_signal_trace = self.trace_keyword_positions(DoV_signal_record)
+                DoD_signal_trace = self.trace_keyword_positions(DoD_signal_record)
+                Final_signal_trace = self.trace_keyword_positions(Final_signal_record)
 
-            DoV_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoV_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
-            DoD_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoD_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
-            Final_signal_trace.to_csv(os.path.join(self.trace_folder, 'Final_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
+                signal_column_list = list(DoV_signal_trace.columns)
+                signal_column_list = [f'period_{column}' for column in signal_column_list]
 
-            # Signal 추적 데이터에서 시계 방향으로 시그널 이동하지 않은 키워드들을 걸러냄
-            DoV_signal_trace, DoV_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
-            DoV_signal_trace, DoD_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
-            add_list = sorted(list(set(DoV_signal_deletewords+DoD_signal_deletewords)))
+                DoV_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoV_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
+                DoD_signal_trace.to_csv(os.path.join(self.trace_folder, 'DoD_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
+                Final_signal_trace.to_csv(os.path.join(self.trace_folder, 'Final_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
 
-            # 좌표 추적에서 키워드 필터링
-            for period in DoV_coordinates_record:
-                for keyword in add_list:
-                    del DoV_coordinates_record[period][keyword]
-                    del DoD_coordinates_record[period][keyword]
+                # Signal 추적 데이터에서 시계 방향으로 시그널 이동하지 않은 키워드들을 걸러냄
+                DoV_signal_trace, DoV_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
+                DoV_signal_trace, DoD_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
+                add_list = sorted(list(set(DoV_signal_deletewords+DoD_signal_deletewords)))
 
-            # 좌표 추적 csv 저장
-            DoV_coordinates_record_df = pd.DataFrame(DoV_coordinates_record)
-            DoD_coordinates_record_df = pd.DataFrame(DoD_coordinates_record)
-            DoV_coordinates_record_df.index.name = 'Keyword'
-            DoD_coordinates_record_df.index.name = 'Keyword'
-            DoV_coordinates_record_df.to_csv(os.path.join(self.trace_folder, 'DoV_coordinates_trace.csv'), encoding='utf-8-sig', header = signal_column_list)
-            DoD_coordinates_record_df.to_csv(os.path.join(self.trace_folder, 'DoD_coordinates_trace.csv'), encoding='utf-8-sig', header = signal_column_list)
+                # 좌표 추적에서 키워드 필터링
+                for period in DoV_coordinates_record:
+                    for keyword in add_list:
+                        del DoV_coordinates_record[period][keyword]
+                        del DoD_coordinates_record[period][keyword]
 
-            self.exception_word_list = self.exception_word_list + ['@@@'] + add_list if self.exception_word_list else add_list
+                # 좌표 추적 csv 저장
+                DoV_coordinates_record_df = pd.DataFrame(DoV_coordinates_record)
+                DoD_coordinates_record_df = pd.DataFrame(DoD_coordinates_record)
+                DoV_coordinates_record_df.index.name = 'Keyword'
+                DoD_coordinates_record_df.index.name = 'Keyword'
+                DoV_coordinates_record_df.to_csv(os.path.join(self.trace_folder, 'DoV_coordinates_trace.csv'), encoding='utf-8-sig', header = signal_column_list)
+                DoD_coordinates_record_df.to_csv(os.path.join(self.trace_folder, 'DoD_coordinates_trace.csv'), encoding='utf-8-sig', header = signal_column_list)
 
-            if self.ani_option == True:
-                self.write_status("키워드 추적 그래프 생성 중...")
-                print("\n키워드 추적 그래프 생성 중...")
-                self.visualize_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_graph.png'), 'TF','Increasing Rate')
-                self.visualize_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_graph.png'), 'DF', 'Increasing Rate')
-                self.write_status("키워드 추적 애니메이션 생성 중...")
-                print("\n키워드 추적 애니메이션 생성 중...")
-                self.animate_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_animation.gif'), 'TF', 'Increasing Rate')
-                self.animate_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_animation.gif'), 'DF', 'Increasing Rate')
+                self.exception_word_list = self.exception_word_list + ['@@@'] + add_list if self.exception_word_list else add_list
+
+                if self.ani_option == True:
+                    self.write_status("키워드 추적 그래프 생성 중...")
+                    print("\n키워드 추적 그래프 생성 중...")
+                    self.visualize_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_graph.png'), 'TF','Increasing Rate')
+                    self.visualize_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_graph.png'), 'DF', 'Increasing Rate')
+                    self.write_status("키워드 추적 애니메이션 생성 중...")
+                    print("\n키워드 추적 애니메이션 생성 중...")
+                    self.animate_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_animation.gif'), 'TF', 'Increasing Rate')
+                    self.animate_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_animation.gif'), 'DF', 'Increasing Rate')
 
             self.write_status("최종 KEM KIM 생성 중...")
             print("\n[ 최종 KEM KIM 계산 ]\n")
@@ -624,16 +630,17 @@ class KimKem:
 
         # Trace
         os.makedirs(self.trace_folder, exist_ok=True)
-        os.makedirs(self.trace_result_folder, exist_ok=True)
         os.makedirs(self.trace_data_folder, exist_ok=True)
         os.makedirs(self.trace_DOV_folder, exist_ok=True)
         os.makedirs(self.trace_DOD_folder, exist_ok=True)
 
-        for period in self.period_list:
-            period_path = os.path.join(self.trace_result_folder, period)
-            os.makedirs(period_path, exist_ok=True)
-            os.makedirs(os.path.join(period_path, 'Graph'), exist_ok=True)
-            os.makedirs(os.path.join(period_path, 'Signal'), exist_ok=True)
+        if self.filter_option == True:
+            os.makedirs(self.trace_result_folder, exist_ok=True)
+            for period in self.period_list:
+                period_path = os.path.join(self.trace_result_folder, period)
+                os.makedirs(period_path, exist_ok=True)
+                os.makedirs(os.path.join(period_path, 'Graph'), exist_ok=True)
+                os.makedirs(os.path.join(period_path, 'Signal'), exist_ok=True)
 
     def _save_kimkem_results(self, tf_counts, df_counts, DoV_dict, DoD_dict):
         for period in tf_counts:
