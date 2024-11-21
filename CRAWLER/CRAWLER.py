@@ -340,12 +340,12 @@ class Crawler(CrawlerModule):
         self.DBMaker(self.DBtype)
 
         # initial list
-        self.urlList         = []
+        self.urlList = []
 
-        article_column     = ["Article Press", "Article Type", "Article URL", "Article Title", "Article Text", "Article Date", "Article ReplyCnt"]
+        article_column = ["Article Press", "Article Type", "Article URL", "Article Title", "Article Text", "Article Date", "Article ReplyCnt"]
         statistiscs_column = ["Article Press", "Article Type", "Article URL", "Article Title", "Article Text", "Article Date", "Article ReplyCnt", "Male", "Female", "10Y", "20Y", "30Y", "40Y", "50Y", "60Y"]
-        reply_column       = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID', 'Article Day']
-        rereply_column     = ["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "Article URL", 'Article Day']
+        reply_column = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID', 'Article Day']
+        rereply_column = ["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "Article URL", 'Article Day']
 
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
         self.mySQL.newTable(tableName=self.statisticsDB, column_list=statistiscs_column)
@@ -360,9 +360,8 @@ class Crawler(CrawlerModule):
             for dayCount in range(self.date_range + 1):
                 try:
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-                    percent = str(round(((dayCount+1)/self.date_range)*100, 1))
+                    percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
                     NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
-
 
                     if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
                         self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
@@ -391,8 +390,10 @@ class Crawler(CrawlerModule):
                             os._exit(1)
                         self.currentDate += self.deltaD
                         continue
-                    self.urlList = urlList_returnData['u                    for returnData in FullreturnData:
+                    self.urlList = urlList_returnData['urlList']
 
+                    FullreturnData = asyncio.run(NaverNewsCrawler_obj.asyncMultiCollector(self.urlList, option))
+                    for returnData in FullreturnData:
                         # articleData 정상 확인
                         articleStatus = False
                         article_returnData = returnData['articleData']
@@ -405,20 +406,27 @@ class Crawler(CrawlerModule):
                         # replyData 정상 확인
                         if self.ReturnChecker(replyList_returnData) == True:
                             if articleStatus == True and article_returnData['articleData'] != []:
-                                self.mySQL.insertToTable(tableName=self.articleDB, data_list=article_returnData['articleData'] + [replyList_returnData['replyCnt']])
+                                self.mySQL.insertToTable(tableName=self.articleDB,
+                                                         data_list=article_returnData['articleData'] + [
+                                                             replyList_returnData['replyCnt']])
 
                                 if replyList_returnData['statisticsData'] != []:
-                                    self.mySQL.insertToTable(tableName=self.statisticsDB, data_list=article_returnData['articleData'] + replyList_returnData['statisticsData'])
+                                    self.mySQL.insertToTable(tableName=self.statisticsDB,
+                                                             data_list=article_returnData['articleData'] +
+                                                                       replyList_returnData['statisticsData'])
 
                             if replyList_returnData['replyList'] != []:
-                                data_list = [sublist + [article_returnData['articleData'][5]] for sublist in replyList_returnData['replyList']]
+                                data_list = [sublist + [article_returnData['articleData'][5]] for sublist in
+                                             replyList_returnData['replyList']]
                                 self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
 
                         if option == 2:
                             # rereplyData 정상확인
                             rereplyList_returnData = returnData['rereplyData']
-                            if self.ReturnChecker(rereplyList_returnData) == True and rereplyList_returnData['rereplyList'] != []:
-                                data_list = [sublist + [article_returnData['articleData'][5]] for sublist in rereplyList_returnData['rereplyList']]
+                            if self.ReturnChecker(rereplyList_returnData) == True and rereplyList_returnData[
+                                'rereplyList'] != []:
+                                data_list = [sublist + [article_returnData['articleData'][5]] for sublist in
+                                             rereplyList_returnData['rereplyList']]
                                 self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=data_list)
 
                     if self.webCrawlerRunCheck() == False:
@@ -427,11 +435,7 @@ class Crawler(CrawlerModule):
 
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
-                    self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()rlList']
-
-                    FullreturnData = asyncio.run(NaverNewsCrawler_obj.asyncMultiCollector(self.urlList, option))
-
-
+                    self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()
 
                 except Exception as e:
                     error_msg = self.error_detector()
