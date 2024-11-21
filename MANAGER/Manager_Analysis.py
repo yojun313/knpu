@@ -1518,7 +1518,10 @@ class Manager_Analysis:
                     if period == '1y':
                         total_periods = (1 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
                     elif period in ['6m', '3m', '1m']:
-                        total_periods = (12 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
+                        if startdate[:-4] == enddate[:-4]:  # 같은 연도일 경우
+                            total_periods = ((int(enddate[4:6]) - int(startdate[4:6])) + 1) / int(period[:-1])
+                        else:  # 다른 연도일 경우
+                            total_periods = (12 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
                     elif period == '1w':
                         total_days = (datetime.strptime(str(enddate), '%Y%m%d') - datetime.strptime(str(startdate),'%Y%m%d')).days
                         total_periods = total_days // 7
