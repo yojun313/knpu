@@ -1290,9 +1290,16 @@ class Manager_Analysis:
             def __init__(self, tokenfile_name):
                 super().__init__()
                 self.initUI()
+                self.tokenfile_name = tokenfile_name
                 self.data = None  # 데이터를 저장할 속성 추가
 
             def initUI(self):
+                try:
+                    self.startdate = QDate.fromString(tokenfile_name.split('_')[3], "yyyyMMdd")
+                    self.enddate = QDate.fromString(tokenfile_name.split('_')[4], "yyyyMMdd")
+                except:
+                    self.startdate = QDate.currentDate()
+                    self.enddate = QDate.currentDate()
                 
                 self.setWindowTitle('KEM KIM OPTION')
                 self.resize(300, 250)  # 창 크기를 조정
@@ -1307,14 +1314,14 @@ class Manager_Analysis:
                 self.startdate_label = QLabel('분석 시작 일자를 선택하세요: ')
                 self.startdate_input = QDateEdit(calendarPopup=True)
                 self.startdate_input.setDisplayFormat('yyyyMMdd')
-                self.startdate_input.setDate(QDate.currentDate())
+                self.startdate_input.setDate(self.startdate)
                 layout.addWidget(self.startdate_label)
                 layout.addWidget(self.startdate_input)
 
                 self.enddate_label = QLabel('분석 종료 일자를 선택하세요: ')
                 self.enddate_input = QDateEdit(calendarPopup=True)
                 self.enddate_input.setDisplayFormat('yyyyMMdd')
-                self.enddate_input.setDate(QDate.currentDate())
+                self.enddate_input.setDate(self.enddate)
                 layout.addWidget(self.enddate_label)
                 layout.addWidget(self.enddate_input)
                 
@@ -1590,6 +1597,7 @@ class Manager_Analysis:
                 exception_word_list = []
                 exception_word_list_path = 'N'
 
+            print(filter_yes_selected)
             open_console('KEMKIM 분석')
             kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startdate, enddate, period, topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected, ani_yes_selected, exception_word_list, exception_word_list_path)
             result = kimkem_obj.make_kimkem()

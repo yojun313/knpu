@@ -61,7 +61,7 @@ class KimKem:
             self.graph_wordcnt = graph_wordcnt
             self.filter_option = filter_option
             self.ani_option = ani_option
-            self.filter_option_display = 'Y' if ani_option == True else 'N'
+            self.filter_option_display = 'Y' if filter_option == True else 'N'
             self.ani_option_display = 'Y' if ani_option == True else 'N'
             self.except_option_display = 'Y' if exception_word_list else 'N'
             self.exception_filename = exception_filename
