@@ -1137,6 +1137,20 @@ class MainWindow(QMainWindow):
                     else:
                         os.remove(file_path)  # 파일 삭제
                         print(f"Deleted file: {file_path}")
+
+            pattern = re.compile(r"BIGMACLAB_MANAGER_(\d+\.\d+\.\d+)\.exe")
+            exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER')
+            current_version = version.Version(self.versionNum)
+
+            for file_name in os.listdir(exe_file_path):
+                match = pattern.match(file_name)
+                if match:
+                    file_version = version.Version(match.group(1))  # 버전 추출 및 비교를 위해 Version 객체로 변환
+                    # 현재 버전을 제외한 파일 삭제
+                    if file_version != current_version:
+                        file_path = os.path.join(exe_file_path, file_name)
+                        os.remove(file_path)
+
         except Exception as e:
             print(e)
 
