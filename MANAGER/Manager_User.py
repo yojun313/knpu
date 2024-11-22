@@ -269,81 +269,11 @@ class Manager_User:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def toolbox_DBlistItem_view(self, row=False, name=''):
+    def toolbox_DBlistItem_view(self, row=False):
         if row != False:
             row = self.main.user_tablewidget.currentRow()
             self.selected_DBlistItems = ['manager_record']
             self.selected_userDB = self.userNameList[row] + '_db'
-        if name != '':
-            self.selected_DBlistItems = ['manager_record']
-            self.selected_userDB = name + '_db'
-
-        class SingleTableWindow(QMainWindow):
-            def __init__(self, parent=None, target_db=None, target_table=None):
-                super(SingleTableWindow, self).__init__(parent)
-                self.setWindowTitle(f"{target_db[:-3]}의 {target_table}")
-                self.setGeometry(100, 100, 1600, 1200)
-
-                self.parent = parent  # 부모 객체 저장
-                self.target_db = target_db  # 대상 데이터베이스 이름 저장
-                self.target_table = target_table  # 대상 테이블 이름 저장
-
-                self.central_widget = QWidget(self)
-                self.setCentralWidget(self.central_widget)
-
-                self.layout = QVBoxLayout(self.central_widget)
-
-                # 상단 버튼 레이아웃
-                self.button_layout = QHBoxLayout()
-
-                # spacer 아이템 추가 (버튼을 오른쪽 끝에 배치)
-                spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-                self.button_layout.addItem(spacer)
-
-                # 닫기 버튼 추가
-                self.close_button = QPushButton("닫기", self)
-                self.close_button.setFixedWidth(80)
-                self.close_button.clicked.connect(self.closeWindow)
-                self.button_layout.addWidget(self.close_button)
-
-                # 버튼 레이아웃을 메인 레이아웃에 추가
-                self.layout.addLayout(self.button_layout)
-
-                # target_db와 target_table이 주어지면 테이블 뷰를 초기화
-                if target_db is not None and target_table is not None:
-                    self.init_table_view(parent.mySQL_obj, target_db, target_table)
-
-            def closeWindow(self):
-                self.close()  # 창 닫기
-                self.deleteLater()  # 객체 삭제
-                gc.collect()
-
-            def closeEvent(self, event):
-                # 윈도우 창이 닫힐 때 closeWindow 메서드 호출
-                self.closeWindow()
-                event.accept()  # 창 닫기 이벤트 허용
-
-            def init_table_view(self, mySQL_obj, target_db, target_table):
-                # target_db에 연결
-                mySQL_obj.connectDB(target_db)
-                tableDF = mySQL_obj.TableToDataframe(target_table)
-                if target_table == 'manager_record':
-                    tableDF = tableDF.iloc[::-1].reset_index(drop=True)
-
-                # 데이터프레임 값을 문자열로 변환하여 튜플 형태의 리스트로 저장
-                self.tuple_list = [tuple(str(cell) for cell in row[1:]) for row in
-                                   tableDF.itertuples(index=False, name=None)]
-
-                # 테이블 위젯 생성
-                new_table = QTableWidget(self.central_widget)
-                self.layout.addWidget(new_table)
-
-                # column 정보를 리스트로 저장
-                columns = list(tableDF.columns)
-                columns.pop(0)
-                
-                # table_maker 함수를 호출하여 테이블 설정
-                self.parent.table_maker(new_table, self.tuple_list, columns)
 
         try:
             if not self.selected_DBlistItems or self.selected_DBlistItems == []:
@@ -358,18 +288,7 @@ class Manager_User:
                     if not ok or password != self.main.admin_password:
                         return
 
-            def destory_table():
-                del self.DBtable_window
-                gc.collect()
-
-            def load_database():
-                self.DBtable_window = SingleTableWindow(self.main, self.selected_userDB, self.selected_DBlistItems[0])
-                self.DBtable_window.destroyed.connect(destory_table)
-                self.DBtable_window.show()
-
-            self.main.printStatus(f"{self.selected_DBlistItems[0]} 조회 중...")
-            QTimer.singleShot(1, load_database)
-            QTimer.singleShot(1, self.main.printStatus)
+            self.main.table_view(self.selected_userDB, self.selected_DBlistItems[0])
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
