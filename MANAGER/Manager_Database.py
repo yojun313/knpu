@@ -401,10 +401,13 @@ class Manager_Database:
             if not search_text:
                 return
 
+            if search_text == './crawllog':
+                self.main.table_view('crawler_db', 'crawl_log')
+                return
             if 'log' in search_text:
                 match = re.match(r'\./(.+)_log', search_text)
                 name = match.group(1)
-                self.main.Manager_User_obj.toolbox_DBlistItem_view(name=name)
+                self.main.table_view(f'{name}_db', 'manager_record')
                 return
             if 'error' in search_text:
                 # 패턴 매칭
