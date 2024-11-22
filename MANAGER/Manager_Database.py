@@ -8,6 +8,7 @@ import traceback
 import pandas as pd
 from tqdm import tqdm
 from datetime import datetime
+import platform
 from PyQt5.QtCore import QTimer, QDate
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import (
@@ -407,6 +408,10 @@ class Manager_Database:
 
             # ADMIN MODE
             try:
+                if search_text == './pr_delete' and platform.system() == 'Windows':
+                    exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'Local', 'MANAGER', 'unins000.exe')
+                    print(exe_file_path)
+
                 if self.main.user != 'admin' and (search_text in ['./crawllog', './dblist'] or 'log' in search_text or 'error' in search_text):
                     ok, password = self.main.pw_check(True)
                     if not ok or password != self.main.admin_password:
@@ -432,6 +437,7 @@ class Manager_Database:
                     self.main.mySQL_obj.commit()
                     QMessageBox.information(self.main, "Information", f"{dbname} 상태를 변경했습니다")
                     self.database_refresh_DB()
+
             except:
                 pass
 
