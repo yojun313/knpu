@@ -215,9 +215,8 @@ class CrawlerModule(ToolModule):
             return False
         return True
 
-    
-    # 프록시 기반 반복 요청 기능 / self.proxy_option으로 ON/OFF / header, parameter 전달 가능
-    def Requester(self, url, headers = {}, params = {}, proxies = {}, cookies = {}):
+        # 프록시 기반 반복 요청 기능 / self.proxy_option으로 ON/OFF / header, parameter 전달 가능
+    def Requester(self, url, headers={}, params={}, proxies={}, cookies={}):
         try:
             if headers == {}:
                 headers = self.random_heador()
@@ -227,14 +226,15 @@ class CrawlerModule(ToolModule):
                 while True:
                     proxies = self.random_proxy()
                     try:
-                        main_page = requests.get(url, proxies = proxies, headers = headers, params = params, cookies = cookies, verify = False, timeout = 30)
+                        main_page = requests.get(url, proxies=proxies, headers=headers, params=params,
+                                                 cookies=cookies, verify=False, timeout=3)
                         return main_page
                     except Exception as e:
-                        if trynum >= 2:
+                        if trynum >= 100:
                             return self.error_dump(1001, self.error_detector(), url)
                         trynum += 1
             else:
-                return requests.get(url, headers = headers, params = params, verify = False)
+                return requests.get(url, headers=headers, params=params, verify=False)
 
         except Exception as e:
             return self.error_dump(1001, self.error_detector(), url)
@@ -246,17 +246,19 @@ class CrawlerModule(ToolModule):
             return 'http://' + str(proxy_server)
         else:
             return None
+
     async def asyncRequester(self, url, headers={}, params={}, proxies='', cookies={}, session=None):
-        timeout = aiohttp.ClientTimeout(total=30)
+        timeout = aiohttp.ClientTimeout(total=300)
         trynum = 0
         while True:
             try:
                 if self.proxy_option:
                     proxies = self.async_proxy()
-                async with session.get(url, headers=headers, params=params, proxy=proxies, cookies=cookies, ssl=False, timeout=timeout) as response:
+                async with session.get(url, headers=headers, params=params, proxy=proxies, cookies=cookies,
+                                       ssl=False, timeout=timeout) as response:
                     return await response.text()
             except (aiohttp.ClientError, asyncio.TimeoutError, Exception) as e:
-                if trynum >= 2:
+                if trynum >= 100:
                     return self.error_dump(1003, self.error_detector(), url)
                 trynum += 1
 
