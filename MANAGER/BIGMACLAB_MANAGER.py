@@ -37,7 +37,7 @@ import shutil
 
 warnings.filterwarnings("ignore")
 
-VERSION = '2.3.1'
+VERSION = '2.3.0'
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
