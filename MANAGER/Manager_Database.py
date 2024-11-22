@@ -410,10 +410,14 @@ class Manager_Database:
             try:
                 if search_text == './remove_all' and platform.system() == 'Windows':
                     reply = QMessageBox.question(self.main, 'Program Delete',
-                                                 f"MANAGER를 완전히 삭제하시겠습니까?",
+                                                 f"'C:/BIGMACLAB_MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
                                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
                         import subprocess
+                        import shutil
+                        if os.path.exists(self.main.default_directory):
+                            # 폴더 삭제
+                            shutil.rmtree(self.main.default_directory)
                         exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
                         subprocess.Popen([exe_file_path], shell=True)
                         os._exit(0)
