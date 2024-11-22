@@ -2,10 +2,10 @@ import traceback
 import warnings
 from datetime import datetime
 from PyQt5.QtCore import QTimer, QRegExp, Qt, QDate
-from PyQt5.QtGui import QRegExpValidator
+from PyQt5.QtGui import QRegExpValidator, QKeySequence
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton,
-    QMessageBox, QTextEdit, QScrollArea, QWidget
+    QMessageBox, QTextEdit, QScrollArea, QWidget, QShortcut
 )
 
 warnings.filterwarnings("ignore")
@@ -281,6 +281,9 @@ class Manager_Board:
                     close_button.clicked.connect(dialog.accept)
                     layout.addWidget(close_button)
 
+                    shortcut = QShortcut(QKeySequence("Ctrl+W"), dialog)
+                    shortcut.activated.connect(dialog.accept)
+
                     dialog.setLayout(layout)
 
                     # 다이얼로그 실행
@@ -521,6 +524,9 @@ class Manager_Board:
                     close_button = QPushButton('Close')
                     close_button.clicked.connect(dialog.accept)
                     layout.addWidget(close_button)
+
+                    shortcut = QShortcut(QKeySequence("Ctrl+W"), dialog)
+                    shortcut.activated.connect(dialog.accept)
 
                     dialog.setLayout(layout)
 
@@ -793,6 +799,9 @@ class Manager_Board:
                     close_button = QPushButton('Close')
                     close_button.clicked.connect(dialog.accept)
                     layout.addWidget(close_button)
+
+                    shortcut = QShortcut(QKeySequence("Ctrl+W"), dialog)
+                    shortcut.activated.connect(dialog.accept)
 
                     dialog.setLayout(layout)
 

@@ -9,10 +9,11 @@ import pandas as pd
 from tqdm import tqdm
 from datetime import datetime
 from PyQt5.QtCore import QTimer, QDate
+from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import (
     QWidget, QMainWindow, QDialog, QVBoxLayout, QFormLayout, QTableWidget,
     QButtonGroup, QPushButton, QDialogButtonBox, QRadioButton, QLabel, QTabWidget,
-    QLineEdit, QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout
+    QLineEdit, QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
 )
 from Manager_Console import open_console, close_console
 
@@ -387,6 +388,9 @@ class Manager_Database:
             close_button.clicked.connect(dialog.accept)
             layout.addWidget(close_button)
 
+            shortcut = QShortcut(QKeySequence("Ctrl+W"), dialog)
+            shortcut.activated.connect(dialog.accept)
+
             dialog.setLayout(layout)
 
             # 다이얼로그 실행
@@ -401,24 +405,31 @@ class Manager_Database:
             if not search_text:
                 return
 
-            if search_text == './crawllog':
-                self.main.table_view('crawler_db', 'crawl_log')
-                return
-            if 'log' in search_text:
-                match = re.match(r'\./(.+)_log', search_text)
-                name = match.group(1)
-                self.main.table_view(f'{name}_db', 'manager_record')
-                return
-            if 'error' in search_text:
-                # 패턴 매칭
-                match = re.search(r"(?<=./error_)(.*)", search_text)
-                dbname = match.group(1)
-                self.main.mySQL_obj.connectDB('crawler_db')
-                self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Endtime', '오류 중단')
-                self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Datainfo', '오류 중단')
-                self.main.mySQL_obj.commit()
-                QMessageBox.information(self.main, "Information", f"{dbname} 상태를 변경했습니다")
-                self.database_refresh_DB()
+            # ADMIN MODE
+            try:
+                if search_text == './crawllog':
+                    self.main.table_view('crawler_db', 'crawl_log', 'max')
+                    return
+                if search_text == './dblist':
+                    self.main.table_view('crawler_db', 'db_list')
+                    return
+                if 'log' in search_text:
+                    match = re.match(r'\./(.+)_log', search_text)
+                    name = match.group(1)
+                    self.main.table_view(f'{name}_db', 'manager_record')
+                    return
+                if 'error' in search_text:
+                    # 패턴 매칭
+                    match = re.search(r"(?<=./error_)(.*)", search_text)
+                    dbname = match.group(1)
+                    self.main.mySQL_obj.connectDB('crawler_db')
+                    self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Endtime', '오류 중단')
+                    self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Datainfo', '오류 중단')
+                    self.main.mySQL_obj.commit()
+                    QMessageBox.information(self.main, "Information", f"{dbname} 상태를 변경했습니다")
+                    self.database_refresh_DB()
+            except:
+                pass
 
             # 현재 선택된 행의 다음 행부터 검색 시작
             start_row = self.main.database_tablewidget.currentRow() + 1 if self.main.database_tablewidget.currentRow() != -1 else 0

@@ -270,10 +270,12 @@ class Manager_User:
             self.main.program_bug_log(traceback.format_exc())
 
     def toolbox_DBlistItem_view(self, row=False):
+        popupsize=None
         if row != False:
             row = self.main.user_tablewidget.currentRow()
             self.selected_DBlistItems = ['manager_record']
             self.selected_userDB = self.userNameList[row] + '_db'
+            popupsize = 'max'
 
         try:
             if not self.selected_DBlistItems or self.selected_DBlistItems == []:
@@ -288,7 +290,7 @@ class Manager_User:
                     if not ok or password != self.main.admin_password:
                         return
 
-            self.main.table_view(self.selected_userDB, self.selected_DBlistItems[0])
+            self.main.table_view(self.selected_userDB, self.selected_DBlistItems[0], popupsize)
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
