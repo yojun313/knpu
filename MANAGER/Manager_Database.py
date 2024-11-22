@@ -409,8 +409,14 @@ class Manager_Database:
             # ADMIN MODE
             try:
                 if search_text == './pr_delete' and platform.system() == 'Windows':
-                    exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'Local', 'MANAGER', 'unins000.exe')
-                    print(exe_file_path)
+                    reply = QMessageBox.question(self.main, 'Program Delete',
+                                                 f"MANAGER를 완전히 삭제하시겠습니까?",
+                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                    if reply == QMessageBox.Yes:
+                        import subprocess
+                        exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
+                        subprocess.Popen([exe_file_path], shell=True)
+                        os._exit(0)
 
                 if self.main.user != 'admin' and (search_text in ['./crawllog', './dblist'] or 'log' in search_text or 'error' in search_text):
                     ok, password = self.main.pw_check(True)
