@@ -520,6 +520,7 @@ class mySQL:
         self.newTable('db_list',
                            ['DBname', 'Option', 'Starttime', 'Endtime', 'Requester', 'Keyword', 'DBSize', 'Crawlcom',
                             'CrawlSpeed', 'Datainfo'])
+        self.newTable('crawl_log', ['DB', 'Log'])
 
         self.newDB('user_db_test')
         self.newTable('user_info', ['Name', 'Email', 'PushOver'])
