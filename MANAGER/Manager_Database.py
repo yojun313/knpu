@@ -407,6 +407,10 @@ class Manager_Database:
 
             # ADMIN MODE
             try:
+                if self.main.user != 'admin' and (search_text in ['./crawllog', './dblist'] or 'log' in search_text or 'error' in search_text):
+                    ok, password = self.main.pw_check(True)
+                    if not ok or password != self.main.admin_password:
+                        return
                 if search_text == './crawllog':
                     self.main.table_view('crawler_db', 'crawl_log', 'max')
                     return
