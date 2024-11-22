@@ -82,10 +82,12 @@ class Crawler(CrawlerModule):
 
     # DB에 크롤링 상태 기록
     def DBinfoRecorder(self, endoption = False, error = False):
+
         if error == True:
             endtime = 'X'
             self.mySQL.connectDB('crawler_db')
             self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Endtime', endtime)
+
         elif endoption == True:
             endtime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
             size = self.mySQL.showDBSize(self.DBname)[0]
@@ -94,6 +96,11 @@ class Crawler(CrawlerModule):
             self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Endtime', endtime)
             self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'DBSize', size)
             self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Datainfo', str(datainfo))
+            self.mySQL.commit()
+
+            with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a') as log:
+                log_content = log.read()
+            self.mySQL.insertToTable('crawl_log', [[self.DBname, log_content]])
             self.mySQL.commit()
 
     # 크롤링 중단 검사
@@ -287,12 +294,16 @@ class Crawler(CrawlerModule):
             f"| 종료: {endtime} "
             f"| 소요시간: {crawltime} ||"
         )
+
+        with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a') as log:
+            log.write('\n\n'+end_msg)
+            log_content = log.read()
+
         self.DBinfoRecorder(endoption=True)
         self.localDBRemover()
 
-        log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a')
-        log.write('\n\n'+end_msg)
-        log.close()
+
+
 
         self.clear_screen()
 
