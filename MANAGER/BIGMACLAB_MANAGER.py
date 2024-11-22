@@ -589,6 +589,9 @@ class MainWindow(QMainWindow):
                 endtime = '오류 중단'
 
             requester = DBdata[4]
+            if requester == 'admin' and self.user != 'admin':
+                continue
+
             keyword = DBdata[5]
             size = float(DBdata[6])
             self.fullstorage += float(size)
@@ -634,16 +637,20 @@ class MainWindow(QMainWindow):
                 else:
                     os._exit(0)
 
-    def table_maker(self, widgetname, data, column, right_click_function=None):
+    def table_maker(self, widgetname, data, column, right_click_function=None, popupsize=None):
         def show_details(item):
             # 이미 창이 열려있는지 확인
             if hasattr(self, "details_dialog") and self.details_dialog.isVisible():
                 return  # 창이 열려있다면 새로 열지 않음
-
             # 팝업 창 생성
             self.details_dialog = QDialog()
             self.details_dialog.setWindowTitle("상세 정보")
-            self.details_dialog.resize(600, 300)
+            if popupsize == None:
+                self.details_dialog.resize(200, 150)
+            elif popupsize == 'max':
+                self.details_dialog.showMaximized()
+            else:
+                self.details_dialog.resize(popupsize[0], popupsize[1])
 
             # 레이아웃 설정
             layout = QVBoxLayout(self.details_dialog)
@@ -658,6 +665,9 @@ class MainWindow(QMainWindow):
             ok_button = QPushButton("확인")
             ok_button.clicked.connect(self.details_dialog.accept)  # 버튼 클릭 시 다이얼로그 닫기
             layout.addWidget(ok_button)
+
+            shortcut = QShortcut(QKeySequence("Ctrl+W"), self.details_dialog)
+            shortcut.activated.connect(self.details_dialog.close)
 
             # 다이얼로그 실행
             self.details_dialog.exec_()
@@ -691,16 +701,18 @@ class MainWindow(QMainWindow):
                 lambda pos: right_click_function(widgetname.rowAt(pos.y()))
             )
 
-    def table_view(self, dbname, tablename):
+    def table_view(self, dbname, tablename, popupsize=None):
         class SingleTableWindow(QMainWindow):
-            def __init__(self, parent=None, target_db=None, target_table=None):
+            def __init__(self, parent=None, target_db=None, target_table=None, popupsize=None):
                 super(SingleTableWindow, self).__init__(parent)
-                self.setWindowTitle(f"{target_db[:-3]}의 {target_table}")
+                self.setWindowTitle(f"{target_db} -> {target_table}")
                 self.setGeometry(100, 100, 1600, 1200)
 
                 self.parent = parent  # 부모 객체 저장
                 self.target_db = target_db  # 대상 데이터베이스 이름 저장
                 self.target_table = target_table  # 대상 테이블 이름 저장
+
+                self.popupsize = popupsize
 
                 self.central_widget = QWidget(self)
                 self.setCentralWidget(self.central_widget)
@@ -719,6 +731,10 @@ class MainWindow(QMainWindow):
                 self.close_button.setFixedWidth(80)
                 self.close_button.clicked.connect(self.closeWindow)
                 self.button_layout.addWidget(self.close_button)
+
+                # Ctrl+W 단축키 추가
+                shortcut = QShortcut(QKeySequence("Ctrl+W"), self)  # 현재 창(self)에 단축키 연결
+                shortcut.activated.connect(self.closeWindow)  # 단축키 동작 연결
 
                 # 버튼 레이아웃을 메인 레이아웃에 추가
                 self.layout.addLayout(self.button_layout)
@@ -755,16 +771,14 @@ class MainWindow(QMainWindow):
                 # column 정보를 리스트로 저장
                 columns = list(tableDF.columns)
                 columns.pop(0)
-
                 # table_maker 함수를 호출하여 테이블 설정
-                self.parent.table_maker(new_table, self.tuple_list, columns)
+                self.parent.table_maker(new_table, self.tuple_list, columns, popupsize=self.popupsize)
 
         try:
             def destory_table():
                 del self.DBtable_window
                 gc.collect()
-
-            self.DBtable_window = SingleTableWindow(self, dbname, tablename)
+            self.DBtable_window = SingleTableWindow(self, dbname, tablename, popupsize)
             self.DBtable_window.destroyed.connect(destory_table)
             self.DBtable_window.show()
 
