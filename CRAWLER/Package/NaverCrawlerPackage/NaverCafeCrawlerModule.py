@@ -36,8 +36,11 @@ class NaverCafeCrawler(CrawlerModule):
     async def _cafeIDExtractor(self, cafeURL, session):
     
         response = await self.asyncRequester(cafeURL, session=session)
+        if type(response) == dict:
+            return response
         if response.startswith('\ufeff'):
             response= response[1:]
+
 
         soup     = BeautifulSoup(response, "html.parser")
         script_tags = soup.find_all('script')
@@ -169,6 +172,8 @@ class NaverCafeCrawler(CrawlerModule):
 
             articleID = self.articleIDExtractor(cafeURL)
             cafeID = await self._cafeIDExtractor(cafeURL, session)
+            if type(cafeID) == dict:
+                return cafeID
             artID = self._artExtractor(cafeURL)
             api_url = "https://apis.naver.com/cafe-web/cafe-articleapi/v2.1/cafes/{}/articles/{}?query=&art={}&useCafeId=true&requestFrom=A".format(cafeID, articleID, artID)
             response = await self.asyncRequester(api_url, session=session)
