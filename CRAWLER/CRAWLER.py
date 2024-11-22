@@ -98,7 +98,7 @@ class Crawler(CrawlerModule):
             self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Datainfo', str(datainfo))
             self.mySQL.commit()
 
-            with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a') as log:
+            with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'r') as log:
                 log_content = log.read()
             self.mySQL.insertToTable('crawl_log', [[self.DBname, log_content]])
             self.mySQL.commit()
