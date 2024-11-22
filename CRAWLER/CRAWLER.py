@@ -297,13 +297,9 @@ class Crawler(CrawlerModule):
 
         with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a') as log:
             log.write('\n\n'+end_msg)
-            log_content = log.read()
 
         self.DBinfoRecorder(endoption=True)
         self.localDBRemover()
-
-
-
 
         self.clear_screen()
 
