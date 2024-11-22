@@ -52,8 +52,9 @@ class Manager_Board:
 
             # QDialog를 상속받은 클래스 생성
             class VersionInputDialog(QDialog):
-                def __init__(self):
+                def __init__(self, version):
                     super().__init__()
+                    self.version = version
                     self.initUI()
                     self.data = None  # 데이터를 저장할 속성 추가
 
@@ -68,6 +69,7 @@ class Manager_Board:
                     # 각 입력 필드를 위한 QLabel 및 QTextEdit 생성
                     self.version_num_label = QLabel('Version Num:')
                     self.version_num_input = QLineEdit()
+                    self.version_num_input.setText(self.version)
                     layout.addWidget(self.version_num_label)
                     layout.addWidget(self.version_num_input)
 
@@ -136,7 +138,7 @@ class Manager_Board:
                                             f'Version Num: {version_num}\nRelease Date: {release_date}\nChangeLog: {changelog}\nVersion Features: {version_features}\nVersion Status: {version_status}\nDetail: {detail}')
                     self.accept()
 
-            dialog = VersionInputDialog()
+            dialog = VersionInputDialog(self.main.versionNum)
             dialog.exec_()
 
             # 데이터를 board_add_version 함수에서 사용
