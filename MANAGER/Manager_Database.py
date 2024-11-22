@@ -408,7 +408,7 @@ class Manager_Database:
 
             # ADMIN MODE
             try:
-                if search_text == './pr_delete' and platform.system() == 'Windows':
+                if search_text == './remove_all' and platform.system() == 'Windows':
                     reply = QMessageBox.question(self.main, 'Program Delete',
                                                  f"MANAGER를 완전히 삭제하시겠습니까?",
                                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
