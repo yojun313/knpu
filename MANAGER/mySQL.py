@@ -566,10 +566,9 @@ if __name__ == "__main__":
     def setup():
         from datetime import datetime
         mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
-
-        newDB_list = mySQL_obj.showAllDB()
-        newDB_list = [DB for DB in newDB_list if DB.count('_') == 5]
-        print(len(newDB_list))
+        mySQL_obj.connectDB('crawler_db')
+        mySQL_obj.dropTable('crawllog')
+        mySQL_obj.newTable('crawl_log', ['DB', 'Log'])
 
     setup()
 
