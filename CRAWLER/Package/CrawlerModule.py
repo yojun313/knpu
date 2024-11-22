@@ -29,6 +29,9 @@ from rich.table import Table
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+TIMEOUT = 30
+TRYNUM = 5
+
 # 옵션 유무는 True(yes) 또는 False(no)
 class CrawlerModule(ToolModule):
     
@@ -227,10 +230,10 @@ class CrawlerModule(ToolModule):
                     proxies = self.random_proxy()
                     try:
                         main_page = requests.get(url, proxies=proxies, headers=headers, params=params,
-                                                 cookies=cookies, verify=False, timeout=60)
+                                                 cookies=cookies, verify=False, timeout=TIMEOUT)
                         return main_page
                     except Exception as e:
-                        if trynum >= 3:
+                        if trynum >= TRYNUM:
                             return self.error_dump(1001, self.error_detector(), url)
                         trynum += 1
             else:
@@ -255,10 +258,10 @@ class CrawlerModule(ToolModule):
                 if self.proxy_option:
                     proxies = self.async_proxy()
                 async with session.get(url, headers=headers, params=params, proxy=proxies, cookies=cookies,
-                                       ssl=False, timeout=timeout) as response:
+                                       ssl=False, timeout=TIMEOUT) as response:
                     return await response.text()
             except (aiohttp.ClientError, asyncio.TimeoutError, Exception) as e:
-                if trynum >= 3:
+                if trynum >= TRYNUM:
                     return self.error_dump(1003, self.error_detector(), url)
                 trynum += 1
 
