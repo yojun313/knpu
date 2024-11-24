@@ -546,13 +546,31 @@ class MainWindow(QMainWindow):
         self.ctrlp = QShortcut(QKeySequence("Ctrl+P"), self)
         self.ctrlpp = QShortcut(QKeySequence("Ctrl+Shift+P"), self)
 
+        self.cmdd = QShortcut(QKeySequence("Ctrl+ㅇ"), self)
+        self.cmds = QShortcut(QKeySequence("Ctrl+ㄴ"), self)
+        self.cmdv = QShortcut(QKeySequence("Ctrl+ㅍ"), self)
+        self.cmdu = QShortcut(QKeySequence("Ctrl+ㅕ"), self)
+        self.cmdl = QShortcut(QKeySequence("Ctrl+ㅣ"), self)
+        self.cmda = QShortcut(QKeySequence("Ctrl+ㅁ"), self)
+        self.cmdi = QShortcut(QKeySequence("Ctrl+ㅑ"), self)
+        self.cmde = QShortcut(QKeySequence("Ctrl+ㄷ"), self)
+        self.cmdr = QShortcut(QKeySequence("Ctrl+ㄱ"), self)
+        self.cmdk = QShortcut(QKeySequence("Ctrl+ㅏ"), self)
+        self.cmdm = QShortcut(QKeySequence("Ctrl+ㅡ"), self)
+        self.cmdp = QShortcut(QKeySequence("Ctrl+ㅔ"), self)
+        self.cmdpp = QShortcut(QKeySequence("Ctrl+Shift+ㅔ"), self)
+
         self.ctrlu.activated.connect(lambda: self.update_program(True))
         self.ctrlp.activated.connect(lambda: self.developer_mode(True))
         self.ctrlpp.activated.connect(lambda: self.developer_mode(False))
 
+        self.cmdu.activated.connect(lambda: self.update_program(True))
+        self.cmdp.activated.connect(lambda: self.developer_mode(True))
+        self.cmdpp.activated.connect(lambda: self.developer_mode(False))
+
     def shortcut_initialize(self):
-        shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrle, self.ctrlr, self.ctrlk,
-                     self.ctrlm]
+        shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrle, self.ctrlr, self.ctrlk, self.ctrlm,
+                     self.cmdd, self.cmds, self.cmdv, self.cmda, self.cmdl, self.cmde, self.cmdr, self.cmdk, self.cmdm]
         for shortcut in shortcuts:
             try:
                 shortcut.activated.disconnect()
@@ -666,8 +684,11 @@ class MainWindow(QMainWindow):
             ok_button.clicked.connect(self.details_dialog.accept)  # 버튼 클릭 시 다이얼로그 닫기
             layout.addWidget(ok_button)
 
-            shortcut = QShortcut(QKeySequence("Ctrl+W"), self.details_dialog)
-            shortcut.activated.connect(self.details_dialog.close)
+            ctrlw = QShortcut(QKeySequence("Ctrl+W"), self.details_dialog)
+            ctrlw.activated.connect(self.details_dialog.accept)
+
+            cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), self.details_dialog)
+            cmdw.activated.connect(self.details_dialog.accept)
 
             # 다이얼로그 실행
             self.details_dialog.exec_()
@@ -733,8 +754,11 @@ class MainWindow(QMainWindow):
                 self.button_layout.addWidget(self.close_button)
 
                 # Ctrl+W 단축키 추가
-                shortcut = QShortcut(QKeySequence("Ctrl+W"), self)  # 현재 창(self)에 단축키 연결
-                shortcut.activated.connect(self.closeWindow)  # 단축키 동작 연결
+                ctrlw = QShortcut(QKeySequence("Ctrl+W"), self)
+                ctrlw.activated.connect(self.closeWindow)
+
+                cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), self)
+                cmdw.activated.connect(self.closeWindow)
 
                 # 버튼 레이아웃을 메인 레이아웃에 추가
                 self.layout.addLayout(self.button_layout)
@@ -1216,10 +1240,8 @@ def exception_handler(exc_type, exc_value, exc_traceback):
     error_message = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     log_to_text(f"Exception: {error_message}")
 
-
 # 전역 예외 처리기를 설정하여 모든 예외를 log_to_text에 기록
 sys.excepthook = exception_handler
-
 
 class EventLogger(QObject):
     """이벤트 로그를 생성하고 log_text에 모든 로그를 쌓아두는 클래스"""

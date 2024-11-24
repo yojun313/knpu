@@ -1656,8 +1656,17 @@ class Manager_Analysis:
             self.main.ctrla.activated.connect(self.dataprocess_analysis_file)
             self.main.ctrlk.activated.connect(self.kimkem_kimkem)
 
+            self.main.cmdd.activated.connect(self.dataprocess_timesplit_file)
+            self.main.cmdm.activated.connect(self.dataprocess_merge_file)
+            self.main.cmda.activated.connect(self.dataprocess_analysis_file)
+            self.main.cmdk.activated.connect(self.kimkem_kimkem)
+
         # DB 불러오기
         if index == 1:
             self.main.ctrld.activated.connect(self.dataprocess_timesplit_DB)
             self.main.ctrla.activated.connect(self.dataprocess_analysis_DB)
             self.main.ctrlr.activated.connect(self.dataprocess_refresh_DB)
+
+            self.main.cmdd.activated.connect(self.dataprocess_timesplit_DB)
+            self.main.cmda.activated.connect(self.dataprocess_analysis_DB)
+            self.main.cmdr.activated.connect(self.dataprocess_refresh_DB)

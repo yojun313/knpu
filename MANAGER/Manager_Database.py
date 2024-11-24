@@ -389,8 +389,11 @@ class Manager_Database:
             close_button.clicked.connect(dialog.accept)
             layout.addWidget(close_button)
 
-            shortcut = QShortcut(QKeySequence("Ctrl+W"), dialog)
-            shortcut.activated.connect(dialog.accept)
+            ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
+            ctrlw.activated.connect(dialog.accept)
+
+            cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
+            cmdw.activated.connect(dialog.accept)
 
             dialog.setLayout(layout)
 
@@ -800,4 +803,9 @@ class Manager_Database:
         self.main.ctrls.activated.connect(self.database_save_DB)
         self.main.ctrlv.activated.connect(self.database_view_DB)
         self.main.ctrlr.activated.connect(self.database_refresh_DB)
+
+        self.main.cmdd.activated.connect(self.database_delete_DB)
+        self.main.cmds.activated.connect(self.database_save_DB)
+        self.main.cmdv.activated.connect(self.database_view_DB)
+        self.main.cmdr.activated.connect(self.database_refresh_DB)
 
