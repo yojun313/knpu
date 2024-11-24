@@ -283,8 +283,11 @@ class Manager_Board:
                     close_button.clicked.connect(dialog.accept)
                     layout.addWidget(close_button)
 
-                    shortcut = QShortcut(QKeySequence("Ctrl+W"), dialog)
-                    shortcut.activated.connect(dialog.accept)
+                    ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
+                    ctrlw.activated.connect(dialog.accept)
+
+                    cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
+                    cmdw.activated.connect(dialog.accept)
 
                     dialog.setLayout(layout)
 
@@ -527,8 +530,11 @@ class Manager_Board:
                     close_button.clicked.connect(dialog.accept)
                     layout.addWidget(close_button)
 
-                    shortcut = QShortcut(QKeySequence("Ctrl+W"), dialog)
-                    shortcut.activated.connect(dialog.accept)
+                    ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
+                    ctrlw.activated.connect(dialog.accept)
+
+                    cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
+                    cmdw.activated.connect(dialog.accept)
 
                     dialog.setLayout(layout)
 
@@ -802,8 +808,11 @@ class Manager_Board:
                     close_button.clicked.connect(dialog.accept)
                     layout.addWidget(close_button)
 
-                    shortcut = QShortcut(QKeySequence("Ctrl+W"), dialog)
-                    shortcut.activated.connect(dialog.accept)
+                    ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
+                    ctrlw.activated.connect(dialog.accept)
+
+                    cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
+                    cmdw.activated.connect(dialog.accept)
 
                     dialog.setLayout(layout)
 
@@ -962,11 +971,19 @@ class Manager_Board:
             self.main.ctrlv.activated.connect(self.board_view_version)
             self.main.ctrla.activated.connect(self.board_add_version)
 
+            self.main.cmdd.activated.connect(self.board_delete_version)
+            self.main.cmdv.activated.connect(self.board_view_version)
+            self.main.cmda.activated.connect(self.board_add_version)
+
         # 버그 리포트 탭
         if index == 1:
             self.main.ctrld.activated.connect(self.board_delete_bug)
             self.main.ctrlv.activated.connect(self.board_view_bug)
             self.main.ctrla.activated.connect(self.board_add_bug)
+
+            self.main.cmdd.activated.connect(self.board_delete_bug)
+            self.main.cmdv.activated.connect(self.board_view_bug)
+            self.main.cmda.activated.connect(self.board_add_bug)
 
         # 자유 게시판 탭
         if index == 2:
@@ -974,4 +991,9 @@ class Manager_Board:
             self.main.ctrlv.activated.connect(self.board_view_post)
             self.main.ctrla.activated.connect(self.board_add_post)
             self.main.ctrle.activated.connect(self.board_edit_post)
+
+            self.main.cmdd.activated.connect(self.board_delete_post)
+            self.main.cmdv.activated.connect(self.board_view_post)
+            self.main.cmda.activated.connect(self.board_add_post)
+            self.main.cmde.activated.connect(self.board_edit_post)
 

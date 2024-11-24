@@ -373,6 +373,10 @@ class Manager_User:
             self.main.ctrll.activated.connect(lambda: self.toolbox_DBlistItem_view(True))
             self.main.ctrla.activated.connect(lambda: self.toolbox_DBlistItem_view(True))
 
+            self.main.cmdd.activated.connect(self.user_delete_user)
+            self.main.cmdl.activated.connect(lambda: self.toolbox_DBlistItem_view(True))
+            self.main.cmda.activated.connect(lambda: self.toolbox_DBlistItem_view(True))
+
         # User DB
         if index == 1:
             self.main.ctrld.activated.connect(self.toolbox_DBlistItem_delete)
@@ -380,6 +384,13 @@ class Manager_User:
             self.main.ctrla.activated.connect(self.toolbox_DBlistItem_add)
             self.main.ctrls.activated.connect(self.toolbox_DBlistItem_save)
 
+            self.main.cmdd.activated.connect(self.toolbox_DBlistItem_delete)
+            self.main.cmdv.activated.connect(self.toolbox_DBlistItem_view)
+            self.main.cmda.activated.connect(self.toolbox_DBlistItem_add)
+            self.main.cmds.activated.connect(self.toolbox_DBlistItem_save)
+
         # Device List
         if index == 2:
             self.main.ctrld.activated.connect(self.user_delete_device)
+
+            self.main.cmdd.activated.connect(self.user_delete_device)
