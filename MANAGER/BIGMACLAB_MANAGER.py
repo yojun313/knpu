@@ -1421,68 +1421,10 @@ class SplashDialog(QDialog):
     def __init__(self, version, booting=True):
         super().__init__()
         self.version = version
-
         if booting:
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 최상위 창 설정
         self.setAttribute(Qt.WA_TranslucentBackground)  # 배경을 투명하게 설정
-
-        self.applyStyleBasedOnSystemTheme()
         self.initUI()
-
-    def applyStyleBasedOnSystemTheme(self):
-        """Apply styles based on the system theme."""
-        if self.isDarkModeEnabled() and platform.system() == "Darwin":
-            self.setDarkStyle()
-        else:
-            pass
-            #self.setLightStyle()
-
-    def isDarkModeEnabled(self):
-        """Detect if the system is using dark mode."""
-        import platform
-
-        if platform.system() == "Windows":
-            settings = QSettings(
-                "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-                QSettings.NativeFormat
-            )
-            return settings.value("AppsUseLightTheme", 1, type=int) == 0
-
-        elif platform.system() == "Darwin":
-            from PyQt5.QtGui import QPalette
-            palette = self.palette()
-            return palette.color(QPalette.Window).lightness() < 128
-
-        # Default to light mode for other platforms
-        return False
-
-    def setLightStyle(self):
-        """Set styles for light mode."""
-        self.setStyleSheet("""
-            QLabel {
-                color: black;
-            }
-            QLabel#status_label {
-                color: gray;
-            }
-            QLabel#copyright_label {
-                color: gray;
-            }
-        """)
-
-    def setDarkStyle(self):
-        """Set styles for dark mode."""
-        self.setStyleSheet("""
-            QLabel {
-                color: white;
-            }
-            QLabel#status_label {
-                color: lightgray;
-            }
-            QLabel#copyright_label {
-                color: lightgray;
-            }
-        """)
 
     def initUI(self):
         # 창 크기 설정
@@ -1497,13 +1439,13 @@ class SplashDialog(QDialog):
         # 프로그램 이름 라벨
         title_label = QLabel("MANAGER")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("font-size: 24px; font-weight: bold;")
+        title_label.setStyleSheet("font-size: 24px; font-weight: bold;")  # 폰트 크기 확대
         main_layout.addWidget(title_label)
 
         # 이미지 라벨
         image_label = QLabel(self)
         pixmap = QPixmap(os.path.join(os.path.dirname(__file__), 'exe_icon.png'))
-        pixmap = pixmap.scaled(180, 180, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmap = pixmap.scaled(180, 180, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # 이미지 크기 유지
         image_label.setPixmap(pixmap)
         image_label.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(image_label)
@@ -1511,34 +1453,30 @@ class SplashDialog(QDialog):
         # 버전 정보 라벨
         version_label = QLabel(f"Version {self.version}")
         version_label.setAlignment(Qt.AlignCenter)
-        version_label.setStyleSheet("font-size: 21px; margin-top: 5px;")
+        version_label.setStyleSheet("font-size: 21px; color: black; margin-top: 5px;")  # 폰트 크기 유지
         main_layout.addWidget(version_label)
 
         # 상태 메시지 라벨
         self.status_label = QLabel("Loading...")
-        self.status_label.setObjectName("status_label")
         self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet("font-size: 17px; margin-top: 8px;")
+        self.status_label.setStyleSheet("font-size: 17px; color: gray; margin-top: 8px;")
         main_layout.addWidget(self.status_label)
 
         # 저작권 정보 라벨
         copyright_label = QLabel("Copyright © 2024 KNPU BIGMACLAB\nAll rights reserved.")
-        copyright_label.setObjectName("copyright_label")
         copyright_label.setAlignment(Qt.AlignCenter)
-        copyright_label.setStyleSheet("font-size: 15px; margin-top: 10px;")
+        copyright_label.setStyleSheet("font-size: 15px; color: gray; margin-top: 10px;")
         main_layout.addWidget(copyright_label)
 
     def paintEvent(self, event):
         # 둥근 모서리를 위한 QPainter 설정
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.Antialiasing)  # 안티앨리어싱 적용
         rect = self.rect()
-
-        # 배경색 설정
-        color = QColor(255, 255, 255) if not self.isDarkModeEnabled() else QColor(43, 43, 43)
+        color = QColor(255, 255, 255)  # 배경색 설정 (흰색)
         painter.setBrush(QBrush(color))
-        painter.setPen(Qt.NoPen)
-        painter.drawRoundedRect(rect, 30, 30)
+        painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
+        painter.drawRoundedRect(rect, 30, 30)  # 모서리를 둥글게 그리기 (30px radius)
 
 if __name__ == '__main__':
     environ["QT_DEVICE_PIXEL_RATIO"] = "0"
