@@ -881,9 +881,12 @@ class MainWindow(QMainWindow):
             palette = QApplication.palette()
             return palette.color(QPalette.Window).lightness() < 128
 
-        # Detect system theme (dark or light)
-        if isDarkModeEnabled():
-            self.setDarkStyle()
+        if platform.system() != "Darwin":
+            # Detect system theme (dark or light)
+            if isDarkModeEnabled():
+                self.setDarkStyle()
+            else:
+                self.setLightStyle()
         else:
             self.setLightStyle()
 
