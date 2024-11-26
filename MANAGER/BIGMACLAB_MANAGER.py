@@ -887,7 +887,6 @@ class MainWindow(QMainWindow):
         else:
             self.setLightStyle()
 
-
     def setLightStyle(self):
         self.setStyleSheet(
             """
@@ -1432,8 +1431,11 @@ class SplashDialog(QDialog):
 
     def applyStyleBasedOnSystemTheme(self):
         """Apply styles based on the system theme."""
-
-        self.setLightStyle()
+        if self.isDarkModeEnabled() and platform.system() == "Darwin":
+            self.setDarkStyle()
+        else:
+            pass
+            #self.setLightStyle()
 
     def isDarkModeEnabled(self):
         """Detect if the system is using dark mode."""
