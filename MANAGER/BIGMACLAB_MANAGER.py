@@ -1432,10 +1432,8 @@ class SplashDialog(QDialog):
 
     def applyStyleBasedOnSystemTheme(self):
         """Apply styles based on the system theme."""
-        if self.isDarkModeEnabled() and platform.system() == "Darwin":
-            self.setDarkStyle()
-        else:
-            self.setLightStyle()
+
+        self.setLightStyle()
 
     def isDarkModeEnabled(self):
         """Detect if the system is using dark mode."""
