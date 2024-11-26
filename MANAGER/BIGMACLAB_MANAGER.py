@@ -1439,7 +1439,7 @@ class SplashDialog(QDialog):
         # 프로그램 이름 라벨
         title_label = QLabel("MANAGER")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("font-size: 24px; font-weight: bold;")  # 폰트 크기 확대
+        title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: black;")  # 폰트 크기 확대
         main_layout.addWidget(title_label)
 
         # 이미지 라벨
