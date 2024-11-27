@@ -205,7 +205,7 @@ class MainWindow(QMainWindow):
             if not os.path.exists(self.setting_path):
                 env_content = """
                 # Application Settings
-                APP_THEME=light
+                APP_THEME=default
 
                 # Booting Settings
                 SCREEN_SIZE=default
