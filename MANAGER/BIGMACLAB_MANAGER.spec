@@ -7,7 +7,7 @@ a = Analysis(
     datas=[('C:/GitHub/BIGMACLAB/MANAGER/source/BIGMACLAB_MANAGER_GUI.ui', 'source'),
         ('C:/GitHub/BIGMACLAB/MANAGER/source/encrypted_env', 'source'),
         ('C:/GitHub/BIGMACLAB/MANAGER/source/env.key', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/exe_icon.png', 'source')
+        ('C:/GitHub/BIGMACLAB/MANAGER/source/exe_icon.png', 'source'),
         ('C:/GitHub/BIGMACLAB/MANAGER/source/setting.png', 'source')
     ],
     hiddenimports=['seaborn.external.kde'],
