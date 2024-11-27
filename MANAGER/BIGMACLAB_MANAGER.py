@@ -891,30 +891,6 @@ class MainWindow(QMainWindow):
         return EmbeddedFileDialog(self, self.default_directory)
 
     def setStyle(self):
-        def isDarkModeEnabled():
-            """Detect if the system is using dark mode."""
-            import platform
-
-            # Windows-specific dark mode detection
-            if platform.system() == "Windows":
-                settings = QSettings(
-                    "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-                    QSettings.NativeFormat
-                )
-                return settings.value("AppsUseLightTheme", 1, type=int) == 0
-
-            # MacOS-specific dark mode detection
-            elif platform.system() == "Darwin":
-                return isMacDarkMode()
-
-            # Default to light mode for other platforms
-            return False
-
-        def isMacDarkMode():
-            """Detect dark mode on MacOS."""
-            from PyQt5.QtGui import QPalette
-            palette = QApplication.palette()
-            return palette.color(QPalette.Window).lightness() < 128
 
         if self.SETTING['Theme'] == 'default':
             self.setLightStyle()
