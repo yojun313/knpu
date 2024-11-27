@@ -1070,6 +1070,7 @@ class MainWindow(QMainWindow):
                 self.rejected.connect(self.on_rejected)
                 self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
                 self.main = main_window
+                self.set_theme()
                 if default_directory:
                     self.setDirectory(default_directory)
 
@@ -1084,11 +1085,6 @@ class MainWindow(QMainWindow):
                         QTreeView, QListView {
                             background-color: #2e2e2e;
                             color: #ffffff;
-                        }
-                        QHeaderView::section {
-                            background-color: #3a3a3a;
-                            color: #ffffff;
-                            border: 1px solid #3a3a3a;
                         }
                         QLineEdit {
                             background-color: #3a3a3a;
@@ -1125,11 +1121,6 @@ class MainWindow(QMainWindow):
                         QTreeView, QListView {
                             background-color: #f8f8f8;
                             color: #000000;
-                        }
-                        QHeaderView::section {
-                            background-color: #e8e8e8;
-                            color: #000000;
-                            border: 1px solid #d0d0d0;
                         }
                         QLineEdit {
                             background-color: #ffffff;
@@ -1511,7 +1502,7 @@ class MainWindow(QMainWindow):
         elif index == 4:
             self.shortcut_initialize()
             self.printStatus()
-            self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
+            #self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
         # USER
         elif index == 5:
             self.printStatus()

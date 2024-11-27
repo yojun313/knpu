@@ -438,7 +438,7 @@ class Manager_Database:
                 if 'log' in search_text:
                     match = re.match(r'\./(.+)_log', search_text)
                     name = match.group(1)
-                    self.main.table_view(f'{name}_db', 'manager_record')
+                    self.main.table_view(f'{name}_db', 'manager_record', 'max')
                     return
                 if 'error' in search_text:
                     # 패턴 매칭
