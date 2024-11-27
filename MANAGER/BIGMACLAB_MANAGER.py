@@ -940,13 +940,11 @@ class MainWindow(QMainWindow):
                 font-size: 14px;
             }
             QTableWidget {
-            background-color: #2b2b2b;  /* 테이블 배경색 */
-            gridline-color: #5a5a5a;  /* 셀 간격선 색상 */
-            color: #eaeaea;  /* 텍스트 색상 */
-            font-family: 'Tahoma';
-            font-size: 14px;
-            border: none;
 
+                border: 1px solid #bdc3c7;
+                font-family: 'Tahoma';
+                font-size: 14px;
+            }
             QHeaderView::section {
                 background-color: #2c3e50;
                 color: white;
@@ -1028,7 +1026,7 @@ class MainWindow(QMainWindow):
             }
             """
         )
-
+        
     def setDarkStyle(self):
         self.setStyleSheet(
             """
