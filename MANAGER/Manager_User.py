@@ -228,10 +228,10 @@ class Manager_User:
 
                 lines = []
                 if self.setting_path and os.path.exists(self.setting_path):
-                    with open(self.setting_path, "r", encoding="utf-8-sig") as file:
+                    with open(self.setting_path, "r", encoding="utf-8") as file:
                         lines = file.readlines()
 
-                with open(self.setting_path, "w", encoding="utf-8-sig") as file:
+                with open(self.setting_path, "w", encoding="utf-8") as file:
                     keys_updated = set()
 
                     # 기존 파일 수정
