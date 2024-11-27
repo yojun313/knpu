@@ -1387,6 +1387,56 @@ class MainWindow(QMainWindow):
             QMessageBox QPushButton:hover {
                 background-color: #3a539b;  /* 버튼 hover 효과 */
             }
+            QScrollBar:vertical {
+                background: #2e2e2e;
+                width: 16px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: #5e5e5e;
+                min-height: 20px;
+                border-radius: 4px;
+            }
+            QScrollBar::add-line:vertical {
+                background: #3a3a3a;
+                height: 16px;
+                subcontrol-position: bottom;
+                subcontrol-origin: margin;
+            }
+            QScrollBar::sub-line:vertical {
+                background: #3a3a3a;
+                height: 16px;
+                subcontrol-position: top;
+                subcontrol-origin: margin;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: #2e2e2e;
+            }
+            QScrollBar:horizontal {
+                background: #2e2e2e;
+                height: 16px;
+                margin: 0px;
+            }
+            QScrollBar::handle:horizontal {
+                background: #5e5e5e;
+                min-width: 20px;
+                border-radius: 4px;
+            }
+            QScrollBar::add-line:horizontal {
+                background: #3a3a3a;
+                width: 16px;
+                subcontrol-position: right;
+                subcontrol-origin: margin;
+            }
+            QScrollBar::sub-line:horizontal {
+                background: #3a3a3a;
+                width: 16px;
+                subcontrol-position: left;
+                subcontrol-origin: margin;
+            }
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+                background: #2e2e2e;
+            }
             """
         )
 
