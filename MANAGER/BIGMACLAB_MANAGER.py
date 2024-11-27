@@ -204,11 +204,8 @@ class MainWindow(QMainWindow):
             self.setting_path = os.path.join(setting_folder_path, 'settings.env')
             if not os.path.exists(self.setting_path):
                 env_content = """
-                # Application Settings
-                APP_THEME=default
-
-                # Booting Settings
-                SCREEN_SIZE=default
+                OPTION_1=default # Color Theme
+                OPTION_2=default # Screen Size
                 """
                 # 파일 쓰기
                 with open(self.setting_path, "w") as env_file:
