@@ -701,16 +701,16 @@ class Manager_Board:
                 if reply == QMessageBox.Yes:
                     for key in self.main.userPushOverKeyList:
                         self.main.send_pushOver(msg, key)
-                else:
-                    self.main.send_pushOver(msg, self.main.admin_pushoverkey)
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def board_view_post(self):
+    def board_view_post(self, row=None):
         try:
             self.main.printStatus("불러오는 중...")
             def view_post():
                 selected_row = self.main.board_post_tableWidget.currentRow()
+                if row is not None:
+                    selected_row = row
                 if selected_row >= 0:
                     post_data = self.post_data[selected_row]
 
