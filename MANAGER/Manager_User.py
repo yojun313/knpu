@@ -1,14 +1,14 @@
 import os
-import gc
+import sys
 import warnings
 import traceback
 from datetime import datetime
-from PyQt5.QtCore import QTimer, QStringListModel, Qt
+from PyQt5.QtCore import QStringListModel, Qt
 from PyQt5.QtWidgets import (
     QMessageBox, QFileDialog, QHBoxLayout, QTableWidgetItem,
-    QWidget, QToolBox, QHeaderView,
-    QListView, QMainWindow, QVBoxLayout, QTableWidget,
-    QPushButton, QSpacerItem, QSizePolicy
+    QWidget, QToolBox,
+    QListView, QVBoxLayout,
+    QPushButton, QDialog, QLabel, QCheckBox
 )
 warnings.filterwarnings("ignore")
 
@@ -141,6 +141,122 @@ class Manager_User:
                     self.main.user_tablewidget.removeRow(selected_row)
                     self.device_init_table()
 
+
+        except Exception as e:
+            self.main.program_bug_log(traceback.format_exc())
+
+    def user_settings(self):
+        class SettingsDialog(QDialog):
+            def __init__(self, setting):
+                super().__init__()
+                self.setting_path = setting['path']
+                self.setWindowTitle("Settings")
+                self.resize(400, 200)
+
+                # 단일 레이아웃 생성
+                main_layout = QVBoxLayout()
+
+                # 앱 테마 설정 섹션
+                theme_label = QLabel("앱 테마 설정:")
+                self.light_mode_radio = QCheckBox("라이트 모드")
+                self.dark_mode_radio = QCheckBox("다크 모드")
+                if setting['Theme'] == 'default':
+                    self.light_mode_radio.setChecked(True)  # 기본값
+                else:
+                    self.dark_mode_radio.setChecked(True)
+                    # 서로 배타적으로 선택되도록 설정
+                self.light_mode_radio.toggled.connect(lambda: self.dark_mode_radio.setChecked(False) if self.light_mode_radio.isChecked() else None)
+                self.dark_mode_radio.toggled.connect(lambda: self.light_mode_radio.setChecked(False) if self.dark_mode_radio.isChecked() else None)
+
+                main_layout.addWidget(theme_label)
+                main_layout.addWidget(self.light_mode_radio)
+                main_layout.addWidget(self.dark_mode_radio)
+
+                # 부팅 스크린 사이즈 설정 섹션
+                screen_size_label = QLabel("부팅 시 창 크기:")
+                self.default_size_radio = QCheckBox("기본값")
+                self.maximized_radio = QCheckBox("최대화")
+                if setting['ScreenSize'] == 'default':
+                    self.default_size_radio.setChecked(True)  # 기본값
+                else:
+                    self.maximized_radio.setChecked(True)
+                self.default_size_radio.toggled.connect(lambda: self.maximized_radio.setChecked(False) if self.default_size_radio.isChecked() else None)
+                self.maximized_radio.toggled.connect(lambda: self.default_size_radio.setChecked(False) if self.maximized_radio.isChecked() else None)
+
+                main_layout.addWidget(screen_size_label)
+                main_layout.addWidget(self.default_size_radio)
+                main_layout.addWidget(self.maximized_radio)
+
+                # 확인 및 취소 버튼 섹션
+                save_button = QPushButton("Save")
+                save_button.clicked.connect(self.save_settings)  # 저장 버튼 클릭 이벤트 연결
+                cancel_button = QPushButton("Cancel")
+                cancel_button.clicked.connect(self.reject)  # 취소 버튼 클릭 이벤트 연결
+
+                # 버튼을 하나의 가로 레이아웃으로 추가
+                button_layout = QHBoxLayout()
+                button_layout.addWidget(save_button)
+                button_layout.addWidget(cancel_button)
+
+                main_layout.addLayout(button_layout)
+
+                # 메인 레이아웃을 창에 설정
+                self.setLayout(main_layout)
+
+            def save_settings(self):
+                # 선택된 설정 가져오기
+                self.theme = "default" if self.light_mode_radio.isChecked() else "dark"
+                self.screen_size = "default" if self.default_size_radio.isChecked() else "max"
+
+                # 설정 저장 로직 (예: .env 파일 업데이트)
+                self.update_env_file()
+                self.accept()
+
+            def update_env_file(self):
+                """
+                .env 파일에 설정 업데이트
+                """
+                # 설정 키-값 딕셔너리 관리
+                options = {
+                    "theme": {"key": "OPTION_1", "value": self.theme},  # 테마 설정
+                    "screensize": {"key": "OPTION_2", "value": self.screen_size}  # 스크린 사이즈 설정
+                }
+
+                # .env 파일 읽기 및 쓰기
+                if not options:
+                    return
+
+                lines = []
+                if self.setting_path and os.path.exists(self.setting_path):
+                    with open(self.setting_path, "r") as file:
+                        lines = file.readlines()
+
+                with open(self.setting_path, "w") as file:
+                    keys_updated = set()
+
+                    # 기존 파일 수정
+                    for line in lines:
+                        key, sep, value = line.partition("=")
+                        key = key.strip()
+
+                        # 기존 키 업데이트
+                        for option in options.values():
+                            if key == option["key"]:
+                                file.write(f"{key}={option['value']}\n")
+                                keys_updated.add(key)
+                                break
+                        else:
+                            file.write(line)
+
+                    # 새 설정 추가
+                    for option in options.values():
+                        if option["key"] not in keys_updated:
+                            file.write(f"{option['key']}={option['value']}\n")
+
+        try:
+            dialog = SettingsDialog(self.main.SETTING)
+            if dialog.exec_() == QDialog.Accepted:
+                QMessageBox.information(self.main, "Information", f"설정이 완료되었습니다\n\n프로그램 재부팅 시 설정이 반영됩니다")
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
@@ -340,6 +456,7 @@ class Manager_User:
     def user_buttonMatch(self):
         self.main.user_adduser_button.clicked.connect(self.user_add_user)
         self.main.user_deleteuser_button.clicked.connect(self.user_delete_user)
+        self.main.user_setting_button.clicked.connect(self.user_settings)
         self.main.user_log_button.clicked.connect(lambda: self.toolbox_DBlistItem_view(row=True))
 
         self.selected_userDB = 'admin_db'

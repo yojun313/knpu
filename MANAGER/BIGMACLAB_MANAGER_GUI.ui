@@ -540,6 +540,13 @@
                 </property>
                </widget>
               </item>
+              <item>
+               <widget class="QPushButton" name="user_setting_button">
+                <property name="text">
+                 <string>환경설정</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </item>
            </layout>
