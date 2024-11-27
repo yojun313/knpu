@@ -697,7 +697,7 @@ class Manager_Board:
                     f"Post Date: {post_data[2]}\n"
                     f"Post Text: {post_data[4]}\n"
                 )
-                reply = QMessageBox.question(self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?\n\nYes: 게시글 전체 알림\nNo: Admin에게만 알림", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                reply = QMessageBox.question(self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     for key in self.main.userPushOverKeyList:
                         self.main.send_pushOver(msg, key)
