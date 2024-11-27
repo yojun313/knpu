@@ -1036,7 +1036,7 @@ class MainWindow(QMainWindow):
                 background-color: #2b2b2b;
                 font-family: 'Tahoma';
                 font-size: 14px;
-                color: #eaeaea;  /* 기본 텍스트 색상 설정 */
+                color: #eaeaea;  /* 기본 텍스트 색상 */
             }
             QPushButton {
                 background-color: #34495e;
@@ -1065,12 +1065,12 @@ class MainWindow(QMainWindow):
                 font-size: 14px;
             }
             QTableWidget {
-                background-color: #2b2b2b;  /* 테이블 배경색 */
+                background-color: #2b2b2b;  /* 테이블 전체 배경 */
                 gridline-color: #5a5a5a;  /* 셀 간격선 색상 */
-                color: #eaeaea;  /* 텍스트 색상 */
+                color: #eaeaea;  /* 셀 텍스트 색상 */
                 font-family: 'Tahoma';
                 font-size: 14px;
-                border: none;
+                border: 1px solid #5a5a5a;  /* 테두리 설정 */
             }
             QTableWidget::item {
                 background-color: #3c3c3c;  /* 셀 배경색 */
@@ -1078,15 +1078,19 @@ class MainWindow(QMainWindow):
             }
             QTableWidget::item:selected {
                 background-color: #34495e;  /* 선택된 셀 배경색 */
-                color: #eaeaea;  /* 선택된 셀 텍스트 색상 */
+                color: #ffffff;  /* 선택된 셀 텍스트 색상 */
             }
             QHeaderView::section {
                 background-color: #3c3c3c;
                 color: #eaeaea;  /* 헤더 텍스트 색상 */
                 padding: 8px;
-                border: none;
+                border: 1px solid #5a5a5a;
                 font-family: 'Tahoma';
                 font-size: 14px;
+            }
+            QHeaderView {
+                background-color: #2b2b2b;  /* 헤더 전체 배경 */
+                border: none;
             }
             QListWidget {
                 background-color: #3c3c3c;
@@ -1094,8 +1098,6 @@ class MainWindow(QMainWindow):
                 font-family: 'Tahoma';
                 font-size: 14px;
                 border: none;
-                min-width: 150px;
-                max-width: 150px;
             }
             QListWidget::item {
                 height: 40px;
@@ -1105,6 +1107,7 @@ class MainWindow(QMainWindow):
             }
             QListWidget::item:selected {
                 background-color: #34495e;
+                color: #ffffff;
             }
             QListWidget::item:hover {
                 background-color: #3a539b;
@@ -1122,42 +1125,40 @@ class MainWindow(QMainWindow):
                 border: 1px solid #5a5a5a;
                 border-bottom-color: #2b2b2b;
                 border-radius: 4px;
-                border-top-right-radius: 4px;
                 padding: 10px;
                 font-family: 'Tahoma';
                 font-size: 14px;
-                min-width: 100px;
-                max-width: 200px;
             }
             QTabBar::tab:selected, QTabBar::tab:hover {
                 background: #34495e;
+                color: #ffffff;
             }
-            QTabBar::tab:selected {
-                border-color: #3a539b;
-                border-bottom-color: #2b2b2b;
-            }
-            QPushButton#pushButton_divide_DB {
-                background-color: #34495e;
+            QDialog {
+                background-color: #2b2b2b;  /* 다이얼로그 배경색 */
                 color: #eaeaea;
+                border: 1px solid #5a5a5a;
+                font-family: 'Tahoma';
+                font-size: 14px;
+            }
+            QMessageBox {
+                background-color: #2b2b2b;  /* 메시지 박스 배경색 */
+                color: #eaeaea;  /* 메시지 텍스트 색상 */
+                font-family: 'Tahoma';
+                font-size: 14px;
+                border: 1px solid #5a5a5a;
+            }
+            QMessageBox QLabel {
+                color: #eaeaea;  /* 메시지 박스 라벨 색상 */
+            }
+            QMessageBox QPushButton {
+                background-color: #34495e;  /* 버튼 배경색 */
+                color: #eaeaea;  /* 버튼 텍스트 색상 */
                 border: none;
                 border-radius: 5px;
                 padding: 10px;
-                font-family: 'Tahoma';
-                font-size: 14px;
-                min-width: 70px;
-                max-width: 100px;
             }
-            QPushButton#pushButton_divide_DB:hover {
-                background-color: #3a539b;
-            }
-            QLabel#label_status_divide_DB {
-                background-color: #2b2b2b;
-                color: #5dade2;
-                border: 1px solid #5a5a5a;
-                border-radius: 5px;
-                padding: 8px;
-                font-family: 'Tahoma';
-                font-size: 14px;
+            QMessageBox QPushButton:hover {
+                background-color: #3a539b;  /* 버튼 hover 효과 */
             }
             """
         )
