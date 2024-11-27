@@ -49,14 +49,15 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
         ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
         icon_path = os.path.join(os.path.dirname(__file__), 'exe_icon.png')
-        uic.loadUi(ui_path, self)
 
+        uic.loadUi(ui_path, self)
+        self.initialize_settings()
         self.setWindowTitle("MANAGER")  # 창의 제목 설정
         self.setWindowIcon(QIcon(icon_path))
 
-        if platform.system() == "Windows":
-            self.resize(1400, 1000)
-            # self.showMaximized()  # 전체 화면으로 창 열기
+        if self.SETTING['ScreenSize'] == 'max':
+            self.close_bootscreen()
+            self.showMaximized()
         else:
             self.resize(1400, 1000)
 
@@ -194,6 +195,37 @@ class MainWindow(QMainWindow):
         self.listWidget.setCurrentRow(0)
         QTimer.singleShot(1, load_program)
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
+
+    def initialize_settings(self):
+        if platform.system() == 'Windows':
+            self.setting_path = os.path.join(os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER'), 'settings.env')
+            if not os.path.exists(self.setting_path):
+                env_content = """
+                # Application Settings
+                APP_THEME=light
+
+                # Booting Settings
+                SCREEN_SIZE=default
+                """
+                # 파일 쓰기
+                with open(self.setting_path, "w") as env_file:
+                    env_file.write(env_content)
+
+            load_dotenv(self.setting_path)
+            self.SETTING = {
+                'path': self.setting_path,
+                'Theme': os.getenv("OPTION_1"),
+                'ScreenSize': os.getenv("OPTION_2")
+            }
+        else:
+            self.setting_path = os.path.join(os.path.dirname(__file__), 'settings.env')
+            load_dotenv(self.setting_path)
+            self.SETTING = {
+                'path': self.setting_path,
+                'Theme': os.getenv("OPTION_1"),
+                'ScreenSize': os.getenv("OPTION_2")
+            }
+
 
     def close_bootscreen(self):
         try:
@@ -881,11 +913,10 @@ class MainWindow(QMainWindow):
             palette = QApplication.palette()
             return palette.color(QPalette.Window).lightness() < 128
 
-        # Detect system theme (dark or light)
-        if isDarkModeEnabled() and platform.system() == "Darwin":
-            self.setDarkStyle()
-        else:
+        if self.SETTING['Theme'] == 'default':
             self.setLightStyle()
+        else:
+            self.setDarkStyle()
 
     def setLightStyle(self):
         self.setStyleSheet(
@@ -1418,8 +1449,21 @@ class EventLogger(QObject):
 #######################################################
 
 class SplashDialog(QDialog):
-    def __init__(self, version, booting=True):
+    def __init__(self, version, theme="light", booting=True):
         super().__init__()
+
+        if platform.system() == 'Windows':
+            setting_path = os.path.join(os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER'), 'settings.env')
+            if os.path.exists(setting_path):
+                load_dotenv(setting_path)
+                self.theme = os.getenv("OPTION_1")
+            else:
+                self.theme = 'default'
+        else:
+            setting_path = os.path.join(os.path.dirname(__file__), 'settings.env')
+            load_dotenv(setting_path)
+            self.theme = os.getenv("OPTION_1")
+
         self.version = version
         if booting:
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 최상위 창 설정
@@ -1430,6 +1474,16 @@ class SplashDialog(QDialog):
         # 창 크기 설정
         self.resize(450, 450)
 
+        # 테마 색상 설정
+        if self.theme == "dark":
+            bg_color = QColor(45, 45, 45)  # 다크 배경색
+            text_color = "white"
+            gray_color = "lightgray"
+        else:
+            bg_color = QColor(255, 255, 255)  # 디폴트 배경색 (흰색)
+            text_color = "black"
+            gray_color = "gray"
+
         # 전체 레이아웃을 중앙 정렬로 설정
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignCenter)
@@ -1439,7 +1493,7 @@ class SplashDialog(QDialog):
         # 프로그램 이름 라벨
         title_label = QLabel("MANAGER")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: black;")  # 폰트 크기 확대
+        title_label.setStyleSheet(f"font-size: 24px; font-weight: bold; color: {text_color};")  # 폰트 크기 확대
         main_layout.addWidget(title_label)
 
         # 이미지 라벨
@@ -1453,30 +1507,33 @@ class SplashDialog(QDialog):
         # 버전 정보 라벨
         version_label = QLabel(f"Version {self.version}")
         version_label.setAlignment(Qt.AlignCenter)
-        version_label.setStyleSheet("font-size: 21px; color: black; margin-top: 5px;")  # 폰트 크기 유지
+        version_label.setStyleSheet(f"font-size: 21px; color: {text_color}; margin-top: 5px;")  # 폰트 크기 유지
         main_layout.addWidget(version_label)
 
         # 상태 메시지 라벨
         self.status_label = QLabel("Loading...")
         self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet("font-size: 17px; color: gray; margin-top: 8px;")
+        self.status_label.setStyleSheet(f"font-size: 17px; color: {gray_color}; margin-top: 8px;")
         main_layout.addWidget(self.status_label)
 
         # 저작권 정보 라벨
         copyright_label = QLabel("Copyright © 2024 KNPU BIGMACLAB\nAll rights reserved.")
         copyright_label.setAlignment(Qt.AlignCenter)
-        copyright_label.setStyleSheet("font-size: 15px; color: gray; margin-top: 10px;")
+        copyright_label.setStyleSheet(f"font-size: 15px; color: {gray_color}; margin-top: 10px;")
         main_layout.addWidget(copyright_label)
+
+        # 배경 색상 저장
+        self.bg_color = bg_color
 
     def paintEvent(self, event):
         # 둥근 모서리를 위한 QPainter 설정
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)  # 안티앨리어싱 적용
         rect = self.rect()
-        color = QColor(255, 255, 255)  # 배경색 설정 (흰색)
-        painter.setBrush(QBrush(color))
+        painter.setBrush(QBrush(self.bg_color))
         painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
         painter.drawRoundedRect(rect, 30, 30)  # 모서리를 둥글게 그리기 (30px radius)
+
 
 if __name__ == '__main__':
     environ["QT_DEVICE_PIXEL_RATIO"] = "0"
