@@ -59,6 +59,11 @@
         <string>USER</string>
        </property>
       </item>
+      <item>
+       <property name="text">
+        <string>SETTING</string>
+       </property>
+      </item>
      </widget>
     </item>
     <item>

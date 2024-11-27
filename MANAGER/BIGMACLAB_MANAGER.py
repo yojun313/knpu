@@ -3,8 +3,8 @@ import sys
 from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
     QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
-    QPushButton, QMainWindow, QApplication, QSpacerItem
-from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSettings
+    QPushButton, QMainWindow, QApplication, QSpacerItem, QListWidgetItem, QCheckBox
+from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSettings, QSize
 from PyQt5.QtGui import QKeySequence, QPixmap, QFont, QPainter, QBrush, QColor, QIcon
 from openai import OpenAI
 from mySQL import mySQL
@@ -44,159 +44,182 @@ LOCAL_IP = '192.168.0.3'
 
 class MainWindow(QMainWindow):
     def __init__(self, splash_dialog):
-        self.versionNum = VERSION
-        self.version = 'Version ' + self.versionNum
+        try:
+            self.versionNum = VERSION
+            self.version = 'Version ' + self.versionNum
 
-        super(MainWindow, self).__init__()
-        ui_path = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER_GUI.ui')
-        icon_path = os.path.join(os.path.dirname(__file__), 'exe_icon.png')
+            super(MainWindow, self).__init__()
+            ui_path = os.path.join(os.path.dirname(__file__), 'source', 'BIGMACLAB_MANAGER_GUI.ui')
+            icon_path = os.path.join(os.path.dirname(__file__), 'source', 'exe_icon.png')
 
-        uic.loadUi(ui_path, self)
-        self.initialize_settings()
-        self.setWindowTitle("MANAGER")  # 창의 제목 설정
-        self.setWindowIcon(QIcon(icon_path))
+            uic.loadUi(ui_path, self)
+            self.initialize_settings()
+            self.initialize_listwidget()
+            self.setWindowTitle("MANAGER")  # 창의 제목 설정
+            self.setWindowIcon(QIcon(icon_path))
 
-        if self.SETTING['ScreenSize'] == 'max':
-            self.close_bootscreen()
-            self.showMaximized()
-        else:
-            self.resize(1400, 1000)
+            if self.SETTING['ScreenSize'] == 'max':
+                self.close_bootscreen()
+                self.showMaximized()
+            else:
+                self.resize(1400, 1000)
 
-        self.splash_dialog = splash_dialog  # InfoDialog 객체를 받아옵니다
-        self.setStyle()
-        self.statusBar_init()
-        self.decrypt_process()
+            self.splash_dialog = splash_dialog  # InfoDialog 객체를 받아옵니다
+            self.setStyle()
+            self.statusBar_init()
+            self.decrypt_process()
 
-        setup_logging()
-        self.event_logger = EventLogger()
-        self.install_event_filter_all_widgets(self)
+            setup_logging()
+            self.event_logger = EventLogger()
+            self.install_event_filter_all_widgets(self)
 
-        def load_program():
-            try:
-                self.check_internet_connection()
-                # open_console("Booting Process")
-                self.listWidget.currentRowChanged.connect(self.display)
+            def load_program():
+                try:
+                    self.check_internet_connection()
+                    # open_console("Booting Process")
+                    self.listWidget.currentRowChanged.connect(self.display)
 
-                if platform.system() == "Windows":
-                    local_appdata_path = os.getenv("LOCALAPPDATA")
-                    desktop_path = os.path.join(os.getenv("USERPROFILE"), "Desktop")
+                    if platform.system() == "Windows":
+                        local_appdata_path = os.getenv("LOCALAPPDATA")
+                        desktop_path = os.path.join(os.getenv("USERPROFILE"), "Desktop")
 
-                    self.default_directory = "C:/BIGMACLAB_MANAGER"
-                    if not os.path.exists(self.default_directory):
-                        os.makedirs(self.default_directory)
-                else:
-                    self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
+                        self.default_directory = "C:/BIGMACLAB_MANAGER"
+                        if not os.path.exists(self.default_directory):
+                            os.makedirs(self.default_directory)
+                    else:
+                        self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
 
-                self.readme_path = os.path.join(self.default_directory, 'README.txt')
-                if not Path(self.readme_path).exists():
-                    with open(self.readme_path, "w") as txt:
-                        text = (
-                            "[ BIGMACLAB MANAGER README ]\n\n\n"
-                            "C:/BIGMACLAB_MANAGER is default directory folder of this program. This folder is automatically built by program.\n\n"
-                            "All files made in this program will be saved in this folder without any change.\n\n\n\n"
-                            "< Instructions >\n\n"
-                            "- MANAGER: https://knpu.re.kr/tool\n"
-                            "- KEMKIM: https://knpu.re.kr/kemkim"
-                        )
-                        txt.write(text)
+                    self.readme_path = os.path.join(self.default_directory, 'README.txt')
+                    if not Path(self.readme_path).exists():
+                        with open(self.readme_path, "w") as txt:
+                            text = (
+                                "[ BIGMACLAB MANAGER README ]\n\n\n"
+                                "C:/BIGMACLAB_MANAGER is default directory folder of this program. This folder is automatically built by program.\n\n"
+                                "All files made in this program will be saved in this folder without any change.\n\n\n\n"
+                                "< Instructions >\n\n"
+                                "- MANAGER: https://knpu.re.kr/tool\n"
+                                "- KEMKIM: https://knpu.re.kr/kemkim"
+                            )
+                            txt.write(text)
 
-                if os.path.isdir(self.default_directory) == False:
-                    os.mkdir(self.default_directory)
+                    if os.path.isdir(self.default_directory) == False:
+                        os.mkdir(self.default_directory)
 
-                DB_ip = DB_IP
-                if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
-                    DB_ip = LOCAL_IP
+                    DB_ip = DB_IP
+                    if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
+                        DB_ip = LOCAL_IP
 
-                self.network_text = (
-                    "\n\n[ DB 접속 반복 실패 시... ]\n"
-                    "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 작동하는지 확인하십시오"
-                    "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
-                )
+                    self.network_text = (
+                        "\n\n[ DB 접속 반복 실패 시... ]\n"
+                        "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 작동하는지 확인하십시오"
+                        "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
+                    )
 
-                # Loading User info from DB
-                while True:
-                    try:
-                        self.mySQL_obj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
-                        print("\nLoading User Info from DB... ", end='')
-                        if self.mySQL_obj.showAllDB() == []:
-                            raise
-                        # DB 불러오기
-                        self.Manager_User_obj = Manager_User(self)
-                        self.userNameList = self.Manager_User_obj.userNameList  # User Table 유저 리스트
-                        self.userMailList = self.Manager_User_obj.userMailList
-                        self.user_list = self.Manager_User_obj.user_list  # Device Table 유저 리스트
-                        self.device_list = self.Manager_User_obj.device_list
-                        self.userPushOverKeyList = self.Manager_User_obj.userKeyList
-                        print("Done")
-                        break
-                    except Exception as e:
-                        print("Failed")
-                        print(traceback.format_exc())
-                        self.close_bootscreen()
-                        self.printStatus()
-                        reply = QMessageBox.warning(self, 'Connection Failed',
-                                                    f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",
-                                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                        if reply == QMessageBox.Yes:
-                            continue
-                        else:
-                            os._exit(0)
+                    # Loading User info from DB
+                    while True:
+                        try:
+                            self.mySQL_obj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
+                            print("\nLoading User Info from DB... ", end='')
+                            if self.mySQL_obj.showAllDB() == []:
+                                raise
+                            # DB 불러오기
+                            self.Manager_User_obj = Manager_User(self)
+                            self.userNameList = self.Manager_User_obj.userNameList  # User Table 유저 리스트
+                            self.userMailList = self.Manager_User_obj.userMailList
+                            self.user_list = self.Manager_User_obj.user_list  # Device Table 유저 리스트
+                            self.device_list = self.Manager_User_obj.device_list
+                            self.userPushOverKeyList = self.Manager_User_obj.userKeyList
+                            print("Done")
+                            break
+                        except Exception as e:
+                            print("Failed")
+                            print(traceback.format_exc())
+                            self.close_bootscreen()
+                            self.printStatus()
+                            reply = QMessageBox.warning(self, 'Connection Failed',
+                                                        f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",
+                                                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                            if reply == QMessageBox.Yes:
+                                continue
+                            else:
+                                os._exit(0)
 
-                # User Checking & Login Process
-                print("\nChecking User... ", end='')
-                if self.login_program() == False:
+                    # User Checking & Login Process
+                    print("\nChecking User... ", end='')
+                    if self.login_program() == False:
+                        os._exit(0)
+
+                    # Loading Data from DB & Making object
+                    while True:
+                        try:
+                            print("\nLoading Data from DB... ", end='')
+                            self.DB = self.update_DB()
+                            self.Manager_Database_obj = Manager_Database(self)
+                            self.Manager_Web_obj = Manager_Web(self)
+                            self.Manager_Board_obj = Manager_Board(self)
+                            self.Manager_Analysis_obj = Manager_Analysis(self)
+                            self.Manager_userDB_generate = False
+                            print("Done")
+                            break
+                        except Exception as e:
+                            print("Failed")
+                            print(traceback.format_exc())
+                            self.close_bootscreen()
+                            self.printStatus()
+                            reply = QMessageBox.warning(self, 'Connection Failed',
+                                                        f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",
+                                                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                            if reply == QMessageBox.Yes:
+                                continue
+                            else:
+                                os._exit(0)
+
+                    self.close_bootscreen()
+                    self.shortcut_init()
+                    self.Manager_Database_obj.database_shortcut_setting()
+
+                    print(f"\n{self.user}님 환영합니다!")
+
+                    self.user_logging(f'Booting ({self.user_location()})', booting=True)
+                    self.update_program()
+                    self.newpost_check()
+
+                    # close_console()
+
+                except Exception as e:
+                    print(traceback.format_exc())
+                    self.close_bootscreen()
+                    self.printStatus()
+                    msg = f'[ Admin CRITICAL Notification ]\n\nThere is Error in MANAGER Booting\n\nError Log: {traceback.format_exc()}'
+                    self.send_pushOver(msg, self.admin_pushoverkey)
+                    QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
+                    QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
                     os._exit(0)
 
-                # Loading Data from DB & Making object
-                while True:
-                    try:
-                        print("\nLoading Data from DB... ", end='')
-                        self.DB = self.update_DB()
-                        self.Manager_Database_obj = Manager_Database(self)
-                        self.Manager_Web_obj = Manager_Web(self)
-                        self.Manager_Board_obj = Manager_Board(self)
-                        self.Manager_Analysis_obj = Manager_Analysis(self)
-                        self.Manager_userDB_generate = False
-                        print("Done")
-                        break
-                    except Exception as e:
-                        print("Failed")
-                        print(traceback.format_exc())
-                        self.close_bootscreen()
-                        self.printStatus()
-                        reply = QMessageBox.warning(self, 'Connection Failed',
-                                                    f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",
-                                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                        if reply == QMessageBox.Yes:
-                            continue
-                        else:
-                            os._exit(0)
+            self.listWidget.setCurrentRow(0)
+            QTimer.singleShot(1, load_program)
+            QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
+        except:
+            print(traceback.format_exc())
 
-                self.close_bootscreen()
-                self.shortcut_init()
-                self.Manager_Database_obj.database_shortcut_setting()
+    def initialize_listwidget(self):
+        try:
+            """리스트 위젯의 특정 항목에만 아이콘 추가 및 텍스트 제거"""
 
-                print(f"\n{self.user}님 환영합니다!")
+            icon_path = os.path.join(os.path.dirname(__file__), 'source', 'setting.png')
 
-                self.user_logging(f'Booting ({self.user_location()})', booting=True)
-                self.update_program()
-                self.newpost_check()
+            # 리스트 위젯의 모든 항목 가져오기
+            for index in range(self.listWidget.count()):
+                item = self.listWidget.item(index)
+                if item.text() == "SETTING":
+                    # SETTING 항목에 아이콘 추가 및 텍스트 제거
+                    item.setIcon(QIcon(icon_path))
+                    item.setText("")  # 텍스트 제거
 
-                # close_console()
-
-            except Exception as e:
-                print(traceback.format_exc())
-                self.close_bootscreen()
-                self.printStatus()
-                msg = f'[ Admin CRITICAL Notification ]\n\nThere is Error in MANAGER Booting\n\nError Log: {traceback.format_exc()}'
-                self.send_pushOver(msg, self.admin_pushoverkey)
-                QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
-                QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
-                os._exit(0)
-
-        self.listWidget.setCurrentRow(0)
-        QTimer.singleShot(1, load_program)
-        QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
+            # 아이콘 크기 설정
+            self.listWidget.setIconSize(QSize(25, 25))  # 아이콘 크기를 64x64로 설정
+        except Exception as e:
+            print(traceback.format_exc())
 
     def initialize_settings(self):
         try:
@@ -263,12 +286,6 @@ class MainWindow(QMainWindow):
                         env_file.write(env_content)
 
                 load_dotenv(self.setting_path)
-                self.SETTING = {
-                    'path': self.setting_path,
-                    'Theme': os.getenv("OPTION_1"),
-                    'ScreenSize': os.getenv("OPTION_2"),
-                    'OldPostTitle': os.getenv("OPTION_3")
-                }
             else:
                 self.setting_path = os.path.join(os.path.dirname(__file__), 'settings.env')
                 if not os.path.exists(self.setting_path):
@@ -276,12 +293,12 @@ class MainWindow(QMainWindow):
                     with open(self.setting_path, "w", encoding="utf-8") as env_file:
                         env_file.write(env_content)
                 load_dotenv(self.setting_path)
-                self.SETTING = {
-                    'path': self.setting_path,
-                    'Theme': os.getenv("OPTION_1"),
-                    'ScreenSize': os.getenv("OPTION_2"),
-                    'OldPostTitle': os.getenv("OPTION_3")
-                }
+            self.SETTING = {
+                'path': self.setting_path,
+                'Theme': os.getenv("OPTION_1"),
+                'ScreenSize': os.getenv("OPTION_2"),
+                'OldPostTitle': os.getenv("OPTION_3")
+            }
         except Exception as e:
             print(traceback.format_exc())
             self.SETTING = {
@@ -334,7 +351,7 @@ class MainWindow(QMainWindow):
         # 암호화 키 로드
         def load_key():
             try:
-                with open(os.path.join(current_position, 'env.key'), "rb") as key_file:
+                with open(os.path.join(current_position, 'source', 'env.key'), "rb") as key_file:
                     return key_file.read()
             except:
                 secret_key = os.getenv("SECRET_KEY")
@@ -353,7 +370,7 @@ class MainWindow(QMainWindow):
             with open(os.path.join(current_position, 'decrypted_env'), "w", encoding="utf-8") as dec_file:
                 dec_file.write(decrypted_data)
 
-        decrypt_env_file(os.path.join(current_position, 'encrypted_env'))
+        decrypt_env_file(os.path.join(current_position, 'source', 'encrypted_env'))
         load_dotenv(os.path.join(current_position, 'decrypted_env'))
 
         self.admin_password = os.getenv('ADMIN_PASSWORD')
@@ -401,6 +418,121 @@ class MainWindow(QMainWindow):
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', text, add=True)
         except Exception as e:
             print(traceback.format_exc())
+    def user_settings(self):
+        class SettingsDialog(QDialog):
+            def __init__(self, setting):
+                super().__init__()
+                self.setting_path = setting['path']
+                self.setWindowTitle("Settings")
+                self.resize(400, 200)
+
+                # 단일 레이아웃 생성
+                main_layout = QVBoxLayout()
+
+                # 앱 테마 설정 섹션
+                theme_label = QLabel("앱 테마 설정:")
+                self.light_mode_radio = QCheckBox("라이트 모드")
+                self.dark_mode_radio = QCheckBox("다크 모드")
+                if setting['Theme'] == 'default':
+                    self.light_mode_radio.setChecked(True)  # 기본값
+                else:
+                    self.dark_mode_radio.setChecked(True)
+                    # 서로 배타적으로 선택되도록 설정
+                self.light_mode_radio.toggled.connect(lambda: self.dark_mode_radio.setChecked(False) if self.light_mode_radio.isChecked() else None)
+                self.dark_mode_radio.toggled.connect(lambda: self.light_mode_radio.setChecked(False) if self.dark_mode_radio.isChecked() else None)
+
+                main_layout.addWidget(theme_label)
+                main_layout.addWidget(self.light_mode_radio)
+                main_layout.addWidget(self.dark_mode_radio)
+
+                # 부팅 스크린 사이즈 설정 섹션
+                screen_size_label = QLabel("부팅 시 창 크기:")
+                self.default_size_radio = QCheckBox("기본값")
+                self.maximized_radio = QCheckBox("최대화")
+                if setting['ScreenSize'] == 'default':
+                    self.default_size_radio.setChecked(True)  # 기본값
+                else:
+                    self.maximized_radio.setChecked(True)
+                self.default_size_radio.toggled.connect(lambda: self.maximized_radio.setChecked(False) if self.default_size_radio.isChecked() else None)
+                self.maximized_radio.toggled.connect(lambda: self.default_size_radio.setChecked(False) if self.maximized_radio.isChecked() else None)
+
+                main_layout.addWidget(screen_size_label)
+                main_layout.addWidget(self.default_size_radio)
+                main_layout.addWidget(self.maximized_radio)
+
+                # 확인 및 취소 버튼 섹션
+                save_button = QPushButton("Save")
+                save_button.clicked.connect(self.save_settings)  # 저장 버튼 클릭 이벤트 연결
+                cancel_button = QPushButton("Cancel")
+                cancel_button.clicked.connect(self.reject)  # 취소 버튼 클릭 이벤트 연결
+
+                # 버튼을 하나의 가로 레이아웃으로 추가
+                button_layout = QHBoxLayout()
+                button_layout.addWidget(save_button)
+                button_layout.addWidget(cancel_button)
+
+                main_layout.addLayout(button_layout)
+
+                # 메인 레이아웃을 창에 설정
+                self.setLayout(main_layout)
+
+            def save_settings(self):
+                # 선택된 설정 가져오기
+                self.theme = "default" if self.light_mode_radio.isChecked() else "dark"
+                self.screen_size = "default" if self.default_size_radio.isChecked() else "max"
+
+                # 설정 저장 로직 (예: .env 파일 업데이트)
+                self.update_env_file()
+                self.accept()
+
+            def update_env_file(self):
+                """
+                .env 파일에 설정 업데이트
+                """
+                # 설정 키-값 딕셔너리 관리
+                options = {
+                    "theme": {"key": "OPTION_1", "value": self.theme},  # 테마 설정
+                    "screensize": {"key": "OPTION_2", "value": self.screen_size}  # 스크린 사이즈 설정
+                }
+
+                # .env 파일 읽기 및 쓰기
+                if not options:
+                    return
+
+                lines = []
+                if self.setting_path and os.path.exists(self.setting_path):
+                    with open(self.setting_path, "r", encoding="utf-8") as file:
+                        lines = file.readlines()
+
+                with open(self.setting_path, "w", encoding="utf-8") as file:
+                    keys_updated = set()
+
+                    # 기존 파일 수정
+                    for line in lines:
+                        key, sep, value = line.partition("=")
+                        key = key.strip()
+
+                        # 기존 키 업데이트
+                        for option in options.values():
+                            if key == option["key"]:
+                                file.write(f"{key}={option['value']}\n")
+                                keys_updated.add(key)
+                                break
+                        else:
+                            file.write(line)
+
+                    # 새 설정 추가
+                    for option in options.values():
+                        if option["key"] not in keys_updated:
+                            file.write(f"{option['key']}={option['value']}\n")
+
+        try:
+            dialog = SettingsDialog(self.SETTING)
+            if dialog.exec_() == QDialog.Accepted:
+                QMessageBox.information(self, "Information", f"설정이 완료되었습니다\n\n프로그램 재부팅 시 설정이 반영됩니다")
+
+        except Exception as e:
+            self.program_bug_log(traceback.format_exc())
 
     def user_location(self, detail=False):
         try:
@@ -855,7 +987,6 @@ class MainWindow(QMainWindow):
         except TypeError:
             # 연결이 안 되어 있을 경우 발생하는 오류를 무시
             pass
-        widgetname.itemDoubleClicked.connect(show_details)
 
         if right_click_function:
             widgetname.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -1255,7 +1386,8 @@ class MainWindow(QMainWindow):
         )
 
     def display(self, index):
-        self.stackedWidget.setCurrentIndex(index)
+        if index != 6:
+            self.stackedWidget.setCurrentIndex(index)
         # self.update_program()
         # DATABASE
         if index == 0:
@@ -1289,6 +1421,11 @@ class MainWindow(QMainWindow):
                 self.Manager_User_obj.userDB_layout_maker()
                 self.Manager_userDB_generate = True
             self.Manager_User_obj.user_shortcut_setting()
+
+        elif index == 6:
+            self.user_settings()
+            previous_index = self.stackedWidget.currentIndex()  # 현재 활성 화면의 인덱스
+            self.listWidget.setCurrentRow(previous_index)  # 선택 상태를 이전 인덱스로 변경
 
         gc.collect()
 
@@ -1601,7 +1738,7 @@ class SplashDialog(QDialog):
 
         # 이미지 라벨
         image_label = QLabel(self)
-        pixmap = QPixmap(os.path.join(os.path.dirname(__file__), 'exe_icon.png'))
+        pixmap = QPixmap(os.path.join(os.path.dirname(__file__), 'source', 'exe_icon.png'))
         pixmap = pixmap.scaled(180, 180, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # 이미지 크기 유지
         image_label.setPixmap(pixmap)
         image_label.setAlignment(Qt.AlignCenter)

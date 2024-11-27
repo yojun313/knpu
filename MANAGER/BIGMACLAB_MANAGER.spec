@@ -4,7 +4,12 @@ a = Analysis(
     ['C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER_GUI.ui', '.'),('C:/GitHub/BIGMACLAB/MANAGER/encrypted_env', '.'),('C:/GitHub/BIGMACLAB/MANAGER/env.key', '.'), ('C:/GitHub/BIGMACLAB/MANAGER/exe_icon.png', '.')],
+    datas=[('C:/GitHub/BIGMACLAB/MANAGER/source/BIGMACLAB_MANAGER_GUI.ui', 'source'),
+        ('C:/GitHub/BIGMACLAB/MANAGER/source/encrypted_env', 'source'),
+        ('C:/GitHub/BIGMACLAB/MANAGER/source/env.key', 'source'),
+        ('C:/GitHub/BIGMACLAB/MANAGER/source/exe_icon.png', 'source')
+        ('C:/GitHub/BIGMACLAB/MANAGER/source/setting.png', 'source')
+    ],
     hiddenimports=['seaborn.external.kde'],
     hookspath=[],
     hooksconfig={},
@@ -26,7 +31,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
-    icon='C:/GitHub/BIGMACLAB/MANAGER/exe_icon.ico'
+    icon='C:/GitHub/BIGMACLAB/MANAGER/source/exe_icon.ico'
 )
 coll = COLLECT(
     exe,
