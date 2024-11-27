@@ -198,6 +198,9 @@ class MainWindow(QMainWindow):
 
     def initialize_settings(self):
         if platform.system() == 'Windows':
+            self.setting_folder_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER')
+            if not os.path.exists(self.setting_path):
+                os.makedirs(self.setting_folder_path)
             self.setting_path = os.path.join(os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER'), 'settings.env')
             if not os.path.exists(self.setting_path):
                 env_content = """
