@@ -507,6 +507,7 @@ class MainWindow(QMainWindow):
                     self.setLightStyle()
                 else:
                     self.setDarkStyle()
+                self.Manager_Analysis_obj.file_dialog.set_theme()
 
 
         except Exception as e:
@@ -1072,6 +1073,7 @@ class MainWindow(QMainWindow):
                 if default_directory:
                     self.setDirectory(default_directory)
 
+            def set_theme(self):
                 if self.main.SETTING['Theme'] == 'dark':
                     # 스타일 시트를 추가하여 다크 테마 적용
                     self.setStyleSheet("""
@@ -1114,6 +1116,48 @@ class MainWindow(QMainWindow):
                             background: #2a2a2a;
                         }
                     """)
+                else:
+                    self.setStyleSheet("""
+                        QFileDialog {
+                            background-color: #ffffff;
+                            color: #000000;
+                        }
+                        QTreeView, QListView {
+                            background-color: #f8f8f8;
+                            color: #000000;
+                        }
+                        QHeaderView::section {
+                            background-color: #e8e8e8;
+                            color: #000000;
+                            border: 1px solid #d0d0d0;
+                        }
+                        QLineEdit {
+                            background-color: #ffffff;
+                            color: #000000;
+                            border: 1px solid #d0d0d0;
+                        }
+                        QPushButton {
+                            background-color: #e0e0e0;
+                            color: #000000;
+                            border: 1px solid #d0d0d0;
+                            padding: 5px;
+                        }
+                        QPushButton:hover {
+                            background-color: #d8d8d8;
+                        }
+                        QScrollBar:vertical, QScrollBar:horizontal {
+                            background: #f0f0f0;
+                            border: 1px solid #d0d0d0;
+                        }
+                        QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+                            background: #d0d0d0;
+                            border-radius: 4px;
+                        }
+                        QScrollBar::add-line, QScrollBar::sub-line {
+                            background: #f0f0f0;
+                        }
+                    """)
+
             def on_directory_change(self, path):
                 self.main.printStatus(f"{os.path.basename(path)} 선택됨")
 
@@ -1459,7 +1503,6 @@ class MainWindow(QMainWindow):
         elif index == 2:
             self.printStatus()
             self.Manager_Analysis_obj.analysis_shortcut_setting()
-            self.Manager_Analysis_obj.dataprocess_refresh_DB()
         # BOARD
         elif index == 3:
             self.Manager_Board_obj.board_shortcut_setting()
