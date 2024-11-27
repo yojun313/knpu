@@ -206,6 +206,24 @@ class MainWindow(QMainWindow):
                 env_content = """
                 OPTION_1=default # Color Theme
                 OPTION_2=default # Screen Size
+                OPTION_3=default
+                OPTION_4=default
+                OPTION_5=default
+                OPTION_6=default
+                OPTION_7=default
+                OPTION_8=default
+                OPTION_9=default
+                OPTION_10=default
+                OPTION_11=default
+                OPTION_12=default
+                OPTION_13=default
+                OPTION_14=default
+                OPTION_15=default
+                OPTION_16=default
+                OPTION_17=default
+                OPTION_18=default
+                OPTION_19=default
+                OPTION_20=default 
                 """
                 # 파일 쓰기
                 with open(self.setting_path, "w") as env_file:
