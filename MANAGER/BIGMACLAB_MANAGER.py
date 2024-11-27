@@ -946,15 +946,7 @@ class MainWindow(QMainWindow):
             font-family: 'Tahoma';
             font-size: 14px;
             border: none;
-            }
-            QTableWidget::item {
-                background-color: #3c3c3c;  /* 셀 배경색 */
-                color: #eaeaea;  /* 셀 텍스트 색상 */
-            }
-            QTableWidget::item:selected {
-                background-color: #34495e;  /* 선택된 셀 배경색 */
-                color: #eaeaea;  /* 선택된 셀 텍스트 색상 */
-            }
+
             QHeaderView::section {
                 background-color: #2c3e50;
                 color: white;
@@ -1073,11 +1065,20 @@ class MainWindow(QMainWindow):
                 font-size: 14px;
             }
             QTableWidget {
-                border: 1px solid #5a5a5a;
-                background-color: #2b2b2b;
-                color: #eaeaea;  /* 테이블 셀 텍스트 색상 */
+                background-color: #2b2b2b;  /* 테이블 배경색 */
+                gridline-color: #5a5a5a;  /* 셀 간격선 색상 */
+                color: #eaeaea;  /* 텍스트 색상 */
                 font-family: 'Tahoma';
                 font-size: 14px;
+                border: none;
+            }
+            QTableWidget::item {
+                background-color: #3c3c3c;  /* 셀 배경색 */
+                color: #eaeaea;  /* 셀 텍스트 색상 */
+            }
+            QTableWidget::item:selected {
+                background-color: #34495e;  /* 선택된 셀 배경색 */
+                color: #eaeaea;  /* 선택된 셀 텍스트 색상 */
             }
             QHeaderView::section {
                 background-color: #3c3c3c;
