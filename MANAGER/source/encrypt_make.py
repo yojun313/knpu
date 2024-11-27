@@ -2,7 +2,7 @@ from cryptography.fernet import Fernet
 
 # 암호화 키 로드
 def load_key():
-    with open("source/env.key", "rb") as key_file:
+    with open("env.key", "rb") as key_file:
         return key_file.read()
 
 # .env 파일 암호화
@@ -16,7 +16,7 @@ def encrypt_env_file(env_file_path):
     encrypted_data = fernet.encrypt(original_data)
 
     # 암호화된 데이터를 새로운 파일에 저장
-    with open("source/encrypted_env", "wb") as encrypted_file:
+    with open("encrypted_env", "wb") as encrypted_file:
         encrypted_file.write(encrypted_data)
 
 # .env 파일 암호화
