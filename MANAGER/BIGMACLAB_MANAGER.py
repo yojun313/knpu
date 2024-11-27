@@ -1072,6 +1072,48 @@ class MainWindow(QMainWindow):
                 if default_directory:
                     self.setDirectory(default_directory)
 
+                if self.main.SETTING['Theme'] == 'dark':
+                    # 스타일 시트를 추가하여 다크 테마 적용
+                    self.setStyleSheet("""
+                        QFileDialog {
+                            background-color: #2e2e2e;
+                            color: #ffffff;
+                        }
+                        QTreeView, QListView {
+                            background-color: #2e2e2e;
+                            color: #ffffff;
+                        }
+                        QHeaderView::section {
+                            background-color: #3a3a3a;
+                            color: #ffffff;
+                            border: 1px solid #3a3a3a;
+                        }
+                        QLineEdit {
+                            background-color: #3a3a3a;
+                            color: #ffffff;
+                            border: 1px solid #3a3a3a;
+                        }
+                        QPushButton {
+                            background-color: #444444;
+                            color: #ffffff;
+                            border: 1px solid #3a3a3a;
+                            padding: 5px;
+                        }
+                        QPushButton:hover {
+                            background-color: #555555;
+                        }
+                        QScrollBar:vertical, QScrollBar:horizontal {
+                            background: #2a2a2a;
+                            border: 1px solid #3a3a3a;
+                        }
+                        QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+                            background: #3a3a3a;
+                            border-radius: 4px;
+                        }
+                        QScrollBar::add-line, QScrollBar::sub-line {
+                            background: #2a2a2a;
+                        }
+                    """)
             def on_directory_change(self, path):
                 self.main.printStatus(f"{os.path.basename(path)} 선택됨")
 
@@ -1252,6 +1294,10 @@ class MainWindow(QMainWindow):
                 background-color: #34495e;  /* 선택된 셀 배경색 */
                 color: #ffffff;  /* 선택된 셀 텍스트 색상 */
             }
+            QTableCornerButton::section {  /* 좌측 상단 정사각형 부분 스타일 */
+                background-color: #3c3c3c;
+                border: 1px solid #5a5a5a;
+            }
             QHeaderView::section {
                 background-color: #3c3c3c;
                 color: #eaeaea;  /* 헤더 텍스트 색상 */
@@ -1259,6 +1305,10 @@ class MainWindow(QMainWindow):
                 border: 1px solid #5a5a5a;
                 font-family: 'Tahoma';
                 font-size: 14px;
+            }
+            QHeaderView::corner {  /* 좌측 상단 정사각형 부분 */
+                background-color: #3c3c3c; /* 테이블 배경과 동일한 색상 */
+                border: 1px solid #5a5a5a;
             }
             QHeaderView {
                 background-color: #2b2b2b;  /* 헤더 전체 배경 */
