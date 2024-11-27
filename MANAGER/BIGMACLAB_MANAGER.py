@@ -3,8 +3,8 @@ import sys
 from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
     QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
-    QPushButton, QMainWindow, QApplication, QSpacerItem, QListWidgetItem, QCheckBox
-from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSettings, QSize
+    QPushButton, QMainWindow, QApplication, QSpacerItem, QCheckBox
+from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSize
 from PyQt5.QtGui import QKeySequence, QPixmap, QFont, QPainter, QBrush, QColor, QIcon
 from openai import OpenAI
 from mySQL import mySQL
@@ -38,7 +38,7 @@ import textwrap
 
 warnings.filterwarnings("ignore")
 
-VERSION = '2.3.0'
+VERSION = '2.3.1'
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
@@ -418,10 +418,12 @@ class MainWindow(QMainWindow):
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', text, add=True)
         except Exception as e:
             print(traceback.format_exc())
+
     def user_settings(self):
         class SettingsDialog(QDialog):
-            def __init__(self, setting):
+            def __init__(self, main, setting):
                 super().__init__()
+                self.main = main
                 self.setting_path = setting['path']
                 self.setWindowTitle("Settings")
                 self.resize(400, 200)
@@ -481,55 +483,31 @@ class MainWindow(QMainWindow):
                 self.theme = "default" if self.light_mode_radio.isChecked() else "dark"
                 self.screen_size = "default" if self.default_size_radio.isChecked() else "max"
 
+                self.main.SETTING['Theme'] = self.theme
+                self.main.SETTING['ScreenSize'] = self.screen_size
+
                 # 설정 저장 로직 (예: .env 파일 업데이트)
                 self.update_env_file()
                 self.accept()
 
             def update_env_file(self):
-                """
-                .env 파일에 설정 업데이트
-                """
                 # 설정 키-값 딕셔너리 관리
                 options = {
-                    "theme": {"key": "OPTION_1", "value": self.theme},  # 테마 설정
-                    "screensize": {"key": "OPTION_2", "value": self.screen_size}  # 스크린 사이즈 설정
+                    "theme": {"key": 1, "value": self.theme},  # 테마 설정
+                    "screensize": {"key": 2, "value": self.screen_size}  # 스크린 사이즈 설정
                 }
-
-                # .env 파일 읽기 및 쓰기
-                if not options:
-                    return
-
-                lines = []
-                if self.setting_path and os.path.exists(self.setting_path):
-                    with open(self.setting_path, "r", encoding="utf-8") as file:
-                        lines = file.readlines()
-
-                with open(self.setting_path, "w", encoding="utf-8") as file:
-                    keys_updated = set()
-
-                    # 기존 파일 수정
-                    for line in lines:
-                        key, sep, value = line.partition("=")
-                        key = key.strip()
-
-                        # 기존 키 업데이트
-                        for option in options.values():
-                            if key == option["key"]:
-                                file.write(f"{key}={option['value']}\n")
-                                keys_updated.add(key)
-                                break
-                        else:
-                            file.write(line)
-
-                    # 새 설정 추가
-                    for option in options.values():
-                        if option["key"] not in keys_updated:
-                            file.write(f"{option['key']}={option['value']}\n")
-
+                for option in options.values():
+                    self.main.update_settings(option['key'], option['value'])
         try:
-            dialog = SettingsDialog(self.SETTING)
+            self.user_logging(f'User Setting')
+            dialog = SettingsDialog(self, self.SETTING)
             if dialog.exec_() == QDialog.Accepted:
-                QMessageBox.information(self, "Information", f"설정이 완료되었습니다\n\n프로그램 재부팅 시 설정이 반영됩니다")
+                QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
+                if self.SETTING['Theme'] == 'default':
+                    self.setLightStyle()
+                else:
+                    self.setDarkStyle()
+
 
         except Exception as e:
             self.program_bug_log(traceback.format_exc())
@@ -957,11 +935,8 @@ class MainWindow(QMainWindow):
             ok_button.clicked.connect(self.details_dialog.accept)  # 버튼 클릭 시 다이얼로그 닫기
             layout.addWidget(ok_button)
 
-            ctrlw = QShortcut(QKeySequence("Ctrl+W"), self.details_dialog)
-            ctrlw.activated.connect(self.details_dialog.accept)
-
-            cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), self.details_dialog)
-            cmdw.activated.connect(self.details_dialog.accept)
+            shortcut = QShortcut(QKeySequence("Ctrl+W"), self.details_dialog)
+            shortcut.activated.connect(self.details_dialog.close)
 
             # 다이얼로그 실행
             self.details_dialog.exec_()
@@ -987,6 +962,7 @@ class MainWindow(QMainWindow):
         except TypeError:
             # 연결이 안 되어 있을 경우 발생하는 오류를 무시
             pass
+        widgetname.itemDoubleClicked.connect(show_details)
 
         if right_click_function:
             widgetname.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -1162,7 +1138,6 @@ class MainWindow(QMainWindow):
                 font-size: 14px;
             }
             QTableWidget {
-
                 border: 1px solid #bdc3c7;
                 font-family: 'Tahoma';
                 font-size: 14px;
@@ -1222,29 +1197,6 @@ class MainWindow(QMainWindow):
             QTabBar::tab:selected {
                 border-color: #9B9B9B;
                 border-bottom-color: #f7f7f7;
-            }
-            QPushButton#pushButton_divide_DB {
-                background-color: #2c3e50;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                padding: 10px;
-                font-family: 'Tahoma';
-                font-size: 14px;
-                min-width: 70px;  /* 최소 가로 길이 설정 */
-                max-width: 100px;  /* 최대 가로 길이 설정 */
-            }
-            QPushButton#pushButton_divide_DB:hover {
-                background-color: #34495e;
-            }
-            QLabel#label_status_divide_DB {
-                background-color: #f7f7f7;
-                color: #2c3e50;
-                border: 1px solid #bdc3c7;
-                border-radius: 5px;
-                padding: 8px;
-                font-family: 'Tahoma';
-                font-size: 14px;
             }
             """
         )
@@ -1318,6 +1270,9 @@ class MainWindow(QMainWindow):
                 font-family: 'Tahoma';
                 font-size: 14px;
                 border: none;
+                min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
+                max-width: 150px;
+                
             }
             QListWidget::item {
                 height: 40px;
