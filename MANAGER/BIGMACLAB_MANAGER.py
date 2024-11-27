@@ -34,6 +34,7 @@ import traceback
 import re
 import logging
 import shutil
+import textwrap
 
 warnings.filterwarnings("ignore")
 
@@ -179,6 +180,7 @@ class MainWindow(QMainWindow):
 
                 self.user_logging(f'Booting ({self.user_location()})', booting=True)
                 self.update_program()
+                self.newpost_check()
 
                 # close_console()
 
@@ -197,15 +199,11 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
 
     def initialize_settings(self):
-        if platform.system() == 'Windows':
-            setting_folder_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER')
-            if not os.path.exists(setting_folder_path):
-                os.makedirs(setting_folder_path)
-            self.setting_path = os.path.join(setting_folder_path, 'settings.env')
-            if not os.path.exists(self.setting_path):
-                env_content = """
-                OPTION_1=default # Color Theme
-                OPTION_2=default # Screen Size
+        try:
+            env_content = textwrap.dedent("""\
+                #Setting
+                OPTION_1=default
+                OPTION_2=default
                 OPTION_3=default
                 OPTION_4=default
                 OPTION_5=default
@@ -223,27 +221,105 @@ class MainWindow(QMainWindow):
                 OPTION_17=default
                 OPTION_18=default
                 OPTION_19=default
-                OPTION_20=default 
-                """
-                # 파일 쓰기
-                with open(self.setting_path, "w") as env_file:
-                    env_file.write(env_content)
+                OPTION_21=default 
+                OPTION_22=default 
+                OPTION_23=default 
+                OPTION_24=default 
+                OPTION_25=default 
+                OPTION_26=default 
+                OPTION_27=default 
+                OPTION_28=default 
+                OPTION_29=default 
+                OPTION_30=default 
+                OPTION_31=default 
+                OPTION_32=default 
+                OPTION_33=default 
+                OPTION_34=default 
+                OPTION_35=default 
+                OPTION_36=default 
+                OPTION_37=default 
+                OPTION_38=default 
+                OPTION_39=default 
+                OPTION_40=default 
+                OPTION_41=default 
+                OPTION_42=default 
+                OPTION_43=default 
+                OPTION_44=default 
+                OPTION_45=default 
+                OPTION_46=default 
+                OPTION_47=default 
+                OPTION_48=default
+                OPTION_49=default 
+                OPTION_50=default
+            """)
+            if platform.system() == 'Windows':
+                setting_folder_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER')
+                if not os.path.exists(setting_folder_path):
+                    os.makedirs(setting_folder_path)
+                self.setting_path = os.path.join(setting_folder_path, 'settings.env')
+                if not os.path.exists(self.setting_path):
+                    # 파일 쓰기
+                    with open(self.setting_path, "w", encoding="utf-8") as env_file:
+                        env_file.write(env_content)
 
-            load_dotenv(self.setting_path)
+                load_dotenv(self.setting_path)
+                self.SETTING = {
+                    'path': self.setting_path,
+                    'Theme': os.getenv("OPTION_1"),
+                    'ScreenSize': os.getenv("OPTION_2"),
+                    'OldPostTitle': os.getenv("OPTION_3")
+                }
+            else:
+                self.setting_path = os.path.join(os.path.dirname(__file__), 'settings.env')
+                if not os.path.exists(self.setting_path):
+                    # 파일 쓰기
+                    with open(self.setting_path, "w", encoding="utf-8") as env_file:
+                        env_file.write(env_content)
+                load_dotenv(self.setting_path)
+                self.SETTING = {
+                    'path': self.setting_path,
+                    'Theme': os.getenv("OPTION_1"),
+                    'ScreenSize': os.getenv("OPTION_2"),
+                    'OldPostTitle': os.getenv("OPTION_3")
+                }
+        except Exception as e:
+            print(traceback.format_exc())
             self.SETTING = {
-                'path': self.setting_path,
-                'Theme': os.getenv("OPTION_1"),
-                'ScreenSize': os.getenv("OPTION_2")
-            }
-        else:
-            self.setting_path = os.path.join(os.path.dirname(__file__), 'settings.env')
-            load_dotenv(self.setting_path)
-            self.SETTING = {
-                'path': self.setting_path,
-                'Theme': os.getenv("OPTION_1"),
-                'ScreenSize': os.getenv("OPTION_2")
+                'path': 'default',
+                'Theme': 'default',
+                'ScreenSize': 'default',
+                'OldPostTitle': 'default'
             }
 
+    def update_settings(self, option_key, new_value):
+        try:
+            option_key = f"OPTION_{option_key}"
+            file_path = self.SETTING['path']
+            # .env 파일 읽기
+            lines = []
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding="utf-8") as file:
+                    lines = file.readlines()
+
+            # 변경된 내용을 다시 작성
+            with open(file_path, 'w', encoding="utf-8") as file:
+                key_found = False
+                for line in lines:
+                    key, sep, value = line.partition("=")
+                    key = key.strip()
+                    if key == option_key:  # 키가 존재하면 값을 변경
+                        file.write(f"{option_key}={new_value}\n")
+                        key_found = True
+                    else:  # 키가 다르면 기존 내용 유지
+                        file.write(line)
+
+                if not key_found:  # 키가 없으면 새로 추가
+                    file.write(f"{option_key}={new_value}\n")
+
+            return True
+        except Exception as e:
+            print(traceback.format_exc())
+            return False
 
     def close_bootscreen(self):
         try:
@@ -544,6 +620,21 @@ class MainWindow(QMainWindow):
         except:
             print(traceback.format_exc())
             return
+
+    def newpost_check(self):
+        new_post_text = self.Manager_Board_obj.post_data[0][1]
+        new_post_writer = self.Manager_Board_obj.post_data[0][0]
+        old_post_text = self.SETTING['OldPostTitle']
+        if new_post_text == old_post_text:
+            return
+        elif old_post_text == 'default':
+            self.update_settings(3, new_post_text)
+        elif new_post_text != old_post_text:
+            if self.user != new_post_writer:
+                reply = QMessageBox.question(self, "Internet Connection Error", "새로운 게시물이 올라왔습니다\n\n확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    self.Manager_Board_obj.board_view_post(0)
+            self.update_settings(3, new_post_text)
 
     def statusBar_init(self):
         # 상태 표시줄 생성
@@ -1026,7 +1117,7 @@ class MainWindow(QMainWindow):
             }
             """
         )
-        
+
     def setDarkStyle(self):
         self.setStyleSheet(
             """
@@ -1126,6 +1217,8 @@ class MainWindow(QMainWindow):
                 padding: 10px;
                 font-family: 'Tahoma';
                 font-size: 14px;
+                min-width: 100px;  /* 최소 가로 길이 설정 */
+                max-width: 200px;  /* 최대 가로 길이 설정 */
             }
             QTabBar::tab:selected, QTabBar::tab:hover {
                 background: #34495e;
@@ -1465,13 +1558,13 @@ class SplashDialog(QDialog):
         if platform.system() == 'Windows':
             setting_path = os.path.join(os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER'), 'settings.env')
             if os.path.exists(setting_path):
-                load_dotenv(setting_path)
+                load_dotenv(setting_path, encoding='utf-8')
                 self.theme = os.getenv("OPTION_1")
             else:
                 self.theme = 'default'
         else:
             setting_path = os.path.join(os.path.dirname(__file__), 'settings.env')
-            load_dotenv(setting_path)
+            load_dotenv(setting_path, encoding='utf-8')
             self.theme = os.getenv("OPTION_1")
 
         self.version = version
