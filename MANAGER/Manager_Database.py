@@ -697,6 +697,7 @@ class Manager_Database:
 
                 # 불필요한 정렬 조건 제거
                 tableList = [table for table in sorted(self.main.mySQL_obj.showAllTable(target_db)) if 'info' not in table]
+                tableList = sorted(tableList, key=lambda x: ('article' not in x, 'statistics' not in x, x))
 
                 # 필터 옵션이 있는 경우 DB_info.txt 작성
                 if filterOption:
@@ -718,7 +719,6 @@ class Manager_Database:
                         print(f'Include Words: {", ".join(incl_words)}')
                         print(f'Exclude Words: {", ".join(excl_words)}')
                     print('')
-
                 for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if date_options['option'] == 'part' else tableName
                     # 테이블 데이터를 DataFrame으로 변환
