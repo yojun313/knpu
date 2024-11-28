@@ -2070,16 +2070,19 @@ class SettingsDialog(QDialog):
 
     def create_info_settings_page(self, setting):
         def wrap_text_by_words(text, max_line_length):
+            split = '/'
+            if platform.system() == 'Windows':
+                split = '\\'
             """
             문자열을 '/' 단위로 나누고 줄바꿈(\n)을 추가하는 함수.
             '/'를 유지합니다.
             """
-            words = text.split('/')  # '/'를 기준으로 나누기
+            words = text.split(split)  # '/'를 기준으로 나누기
             current_line = ""
             lines = []
 
             for word in words:
-                word_with_slash = word + "/"  # '/'를 다시 추가
+                word_with_slash = word + split  # '/'를 다시 추가
                 if len(current_line) + len(word_with_slash) <= max_line_length:
                     current_line += word_with_slash
                 else:
