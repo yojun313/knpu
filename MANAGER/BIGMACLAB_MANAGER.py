@@ -153,10 +153,11 @@ class MainWindow(QMainWindow):
                     while True:
                         try:
                             print("\nLoading Data from DB... ", end='')
+                            self.Manager_Board_obj = Manager_Board(self)
+                            self.update_program(auto = self.SETTING['AutoUpdate'])
                             self.DB = self.update_DB()
                             self.Manager_Database_obj = Manager_Database(self)
                             self.Manager_Web_obj = Manager_Web(self)
-                            self.Manager_Board_obj = Manager_Board(self)
                             self.Manager_Analysis_obj = Manager_Analysis(self)
                             self.Manager_userDB_generate = False
                             print("Done")
@@ -297,7 +298,8 @@ class MainWindow(QMainWindow):
                 'path': self.setting_path,
                 'Theme': os.getenv("OPTION_1"),
                 'ScreenSize': os.getenv("OPTION_2"),
-                'OldPostTitle': os.getenv("OPTION_3")
+                'OldPostTitle': os.getenv("OPTION_3"),
+                'AutoUpdate': os.getenv("OPTION_4"),
             }
         except Exception as e:
             print(traceback.format_exc())
@@ -305,7 +307,8 @@ class MainWindow(QMainWindow):
                 'path': 'default',
                 'Theme': 'default',
                 'ScreenSize': 'default',
-                'OldPostTitle': 'default'
+                'OldPostTitle': 'default',
+                'AutoUpdate': 'default'
             }
 
     def update_settings(self, option_key, new_value):
@@ -428,39 +431,90 @@ class MainWindow(QMainWindow):
                 self.setWindowTitle("Settings")
                 self.resize(400, 200)
 
-                # 단일 레이아웃 생성
+                # 메인 레이아웃 생성
                 main_layout = QVBoxLayout()
 
+                ##########################################################################################
                 # 앱 테마 설정 섹션
                 theme_label = QLabel("앱 테마 설정:")
-                self.light_mode_radio = QCheckBox("라이트 모드")
-                self.dark_mode_radio = QCheckBox("다크 모드")
-                if setting['Theme'] == 'default':
-                    self.light_mode_radio.setChecked(True)  # 기본값
-                else:
-                    self.dark_mode_radio.setChecked(True)
-                    # 서로 배타적으로 선택되도록 설정
-                self.light_mode_radio.toggled.connect(lambda: self.dark_mode_radio.setChecked(False) if self.light_mode_radio.isChecked() else None)
-                self.dark_mode_radio.toggled.connect(lambda: self.light_mode_radio.setChecked(False) if self.dark_mode_radio.isChecked() else None)
+                theme_label.setAlignment(Qt.AlignCenter)
+                self.light_mode_toggle = QPushButton("라이트 모드")
+                self.dark_mode_toggle = QPushButton("다크 모드")
+
+                # 버튼 스타일 초기화
+                self.init_toggle_style(self.light_mode_toggle, setting['Theme'] == 'default')
+                self.init_toggle_style(self.dark_mode_toggle, setting['Theme'] != 'default')
+
+                # 토글 버튼 클릭 이벤트
+                self.light_mode_toggle.clicked.connect(
+                    lambda: self.update_toggle(self.light_mode_toggle, self.dark_mode_toggle)
+                )
+                self.dark_mode_toggle.clicked.connect(
+                    lambda: self.update_toggle(self.dark_mode_toggle, self.light_mode_toggle)
+                )
+
+                theme_layout = QHBoxLayout()
+                theme_layout.addWidget(self.light_mode_toggle)
+                theme_layout.addWidget(self.dark_mode_toggle)
 
                 main_layout.addWidget(theme_label)
-                main_layout.addWidget(self.light_mode_radio)
-                main_layout.addWidget(self.dark_mode_radio)
+                main_layout.addLayout(theme_layout)
+                ##########################################################################################
 
+                ##########################################################################################
                 # 부팅 스크린 사이즈 설정 섹션
                 screen_size_label = QLabel("부팅 시 창 크기:")
-                self.default_size_radio = QCheckBox("기본값")
-                self.maximized_radio = QCheckBox("최대화")
-                if setting['ScreenSize'] == 'default':
-                    self.default_size_radio.setChecked(True)  # 기본값
-                else:
-                    self.maximized_radio.setChecked(True)
-                self.default_size_radio.toggled.connect(lambda: self.maximized_radio.setChecked(False) if self.default_size_radio.isChecked() else None)
-                self.maximized_radio.toggled.connect(lambda: self.default_size_radio.setChecked(False) if self.maximized_radio.isChecked() else None)
+                screen_size_label.setAlignment(Qt.AlignCenter)
+                self.default_size_toggle = QPushButton("기본값")
+                self.maximized_toggle = QPushButton("최대화")
+
+                # 버튼 스타일 초기화
+                print(setting['ScreenSize'])
+                self.init_toggle_style(self.default_size_toggle, setting['ScreenSize'] == 'default')
+                self.init_toggle_style(self.maximized_toggle, setting['ScreenSize'] != 'default')
+
+                # 토글 버튼 클릭 이벤트
+                self.default_size_toggle.clicked.connect(
+                    lambda: self.update_toggle(self.default_size_toggle, self.maximized_toggle)
+                )
+                self.maximized_toggle.clicked.connect(
+                    lambda: self.update_toggle(self.maximized_toggle, self.default_size_toggle)
+                )
+
+                screen_layout = QHBoxLayout()
+                screen_layout.addWidget(self.default_size_toggle)
+                screen_layout.addWidget(self.maximized_toggle)
 
                 main_layout.addWidget(screen_size_label)
-                main_layout.addWidget(self.default_size_radio)
-                main_layout.addWidget(self.maximized_radio)
+                main_layout.addLayout(screen_layout)
+                ##########################################################################################
+
+                ##########################################################################################
+                # 자동업데이트 설정 섹션
+                update_size_label = QLabel("자동 업데이트:")
+                update_size_label.setAlignment(Qt.AlignCenter)
+                self.default_update_toggle = QPushButton("끄기")
+                self.auto_update_toggle = QPushButton("켜기")
+
+                # 버튼 스타일 초기화
+                self.init_toggle_style(self.default_update_toggle, setting['AutoUpdate'] == 'default')
+                self.init_toggle_style(self.auto_update_toggle, setting['AutoUpdate'] != 'default')
+
+                # 토글 버튼 클릭 이벤트
+                self.default_update_toggle.clicked.connect(
+                    lambda: self.update_toggle(self.default_update_toggle, self.auto_update_toggle)
+                )
+                self.auto_update_toggle.clicked.connect(
+                    lambda: self.update_toggle(self.auto_update_toggle, self.default_update_toggle)
+                )
+
+                update_layout = QHBoxLayout()
+                update_layout.addWidget(self.default_update_toggle)
+                update_layout.addWidget(self.auto_update_toggle)
+
+                main_layout.addWidget(update_size_label)
+                main_layout.addLayout(update_layout)
+                ##########################################################################################
 
                 # 확인 및 취소 버튼 섹션
                 save_button = QPushButton("Save")
@@ -468,36 +522,51 @@ class MainWindow(QMainWindow):
                 cancel_button = QPushButton("Cancel")
                 cancel_button.clicked.connect(self.reject)  # 취소 버튼 클릭 이벤트 연결
 
-                # 버튼을 하나의 가로 레이아웃으로 추가
                 button_layout = QHBoxLayout()
                 button_layout.addWidget(save_button)
                 button_layout.addWidget(cancel_button)
 
                 main_layout.addLayout(button_layout)
 
-                # 메인 레이아웃을 창에 설정
+                # 메인 레이아웃 설정
                 self.setLayout(main_layout)
+
+            def init_toggle_style(self, button, is_selected):
+                """
+                토글 버튼 스타일 초기화
+                """
+                if is_selected:
+                    button.setStyleSheet("background-color: #2c3e50; font-weight: bold; color: #eaeaea;")
+                else:
+                    button.setStyleSheet("background-color: lightgray;")
+
+            def update_toggle(self, selected_button, other_button):
+                """
+                선택된 버튼과 비선택 버튼 스타일 업데이트
+                """
+                self.init_toggle_style(selected_button, True)
+                self.init_toggle_style(other_button, False)
 
             def save_settings(self):
                 # 선택된 설정 가져오기
-                self.theme = "default" if self.light_mode_radio.isChecked() else "dark"
-                self.screen_size = "default" if self.default_size_radio.isChecked() else "max"
+                theme = 'default' if self.light_mode_toggle.styleSheet().find("#2c3e50") != -1 else 'dark'
+                screen_size = 'default' if self.default_size_toggle.styleSheet().find("#2c3e50") != -1 else 'max'
+                auto_update = 'default' if self.default_update_toggle.styleSheet().find("#2c3e50") != -1 else 'auto'
 
-                self.main.SETTING['Theme'] = self.theme
-                self.main.SETTING['ScreenSize'] = self.screen_size
+                self.main.SETTING['Theme'] = theme
+                self.main.SETTING['ScreenSize'] = screen_size
+                self.main.SETTING['AutoUpdate'] = auto_update
 
-                # 설정 저장 로직 (예: .env 파일 업데이트)
-                self.update_env_file()
-                self.accept()
-
-            def update_env_file(self):
-                # 설정 키-값 딕셔너리 관리
                 options = {
-                    "theme": {"key": 1, "value": self.theme},  # 테마 설정
-                    "screensize": {"key": 2, "value": self.screen_size}  # 스크린 사이즈 설정
+                    "theme": {"key": 1, "value": theme},             # 테마 설정
+                    "screensize": {"key": 2, "value": screen_size},  # 스크린 사이즈 설정
+                    "autoupdate": {"key": 4, "value": auto_update},  # 자동 업데이트 설정
                 }
                 for option in options.values():
                     self.main.update_settings(option['key'], option['value'])
+
+                self.accept()
+
         try:
             self.user_logging(f'User Setting')
             dialog = SettingsDialog(self, self.SETTING)
@@ -601,8 +670,10 @@ class MainWindow(QMainWindow):
                                     f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
             return False
 
-    def update_program(self, sc=False):
+    def update_program(self, sc=False, auto=False):
         try:
+            if platform.system() != "Windows":
+                return
             def download_file(download_url, local_filename):
                 response = requests.get(download_url, stream=True)
                 total_size = int(response.headers.get('content-length', 0))  # 파일의 총 크기 가져오기
@@ -620,10 +691,33 @@ class MainWindow(QMainWindow):
                 print("\nDownload Complete")
                 close_console()
 
+            def update_process():
+                open_console("Version Update Process")
+                msg = (
+                    "[ Admin Notification ]\n\n"
+                    f"{self.user} updated {current_version} -> {self.new_version}\n\n{self.user_location()}"
+                )
+                self.send_pushOver(msg, self.admin_pushoverkey)
+                self.user_logging(f'Program Update ({current_version} -> {self.new_version})')
+
+                self.printStatus("버전 업데이트 중...")
+                import subprocess
+                download_file_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.new_version}.exe")
+                download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe",
+                              download_file_path)
+                subprocess.Popen([download_file_path], shell=True)
+                close_console()
+                os._exit(0)
+
             # New version check
             current_version = version.parse(self.versionNum)
             self.new_version = version.parse(self.Manager_Board_obj.board_version_newcheck())
             if current_version < self.new_version:
+                if auto == 'auto':
+                    self.close_bootscreen()
+                    update_process()
+                elif auto == 'default':
+                    return
                 self.Manager_Board_obj.board_version_refresh()
                 version_info_html = f"""
                     <style>
@@ -691,23 +785,7 @@ class MainWindow(QMainWindow):
 
                 # 대화상자 실행
                 if dialog.exec_() == QDialog.Accepted:
-                    open_console("Version Update Process")
-                    if platform.system() == "Windows":
-                        msg = (
-                            "[ Admin Notification ]\n\n"
-                            f"{self.user} updated {current_version} -> {self.new_version}\n\n{self.user_location()}"
-                        )
-                        self.send_pushOver(msg, self.admin_pushoverkey)
-                        self.user_logging(f'Program Update ({current_version} -> {self.new_version})')
-
-                        self.printStatus("버전 업데이트 중...")
-                        import subprocess
-                        download_file_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.new_version}.exe")
-                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe",
-                                      download_file_path)
-                        subprocess.Popen([download_file_path], shell=True)
-                        close_console()
-                        os._exit(0)
+                    update_process()
                 else:
                     QMessageBox.information(self, "Information", 'Ctrl+U 단축어로 프로그램 실행 중 업데이트 가능합니다')
                     return
