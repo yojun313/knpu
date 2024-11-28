@@ -421,6 +421,8 @@ class Manager_Database:
                         if os.path.exists(self.main.default_directory):
                             # 폴더 삭제
                             shutil.rmtree(self.main.default_directory)
+                        if os.path.exists(self.main.SETTING['path']):
+                            os.remove(self.main.SETTING['path'])
                         exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
                         subprocess.Popen([exe_file_path], shell=True)
                         os._exit(0)
