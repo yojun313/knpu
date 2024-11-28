@@ -1456,6 +1456,8 @@ class MainWindow(QMainWindow):
 
         elif index == 6:
             self.user_settings()
+            previous_index = self.stackedWidget.currentIndex()  # 현재 활성 화면의 인덱스
+            self.listWidget.setCurrentRow(previous_index)  # 선택 상태를 이전 인덱스로 변경
 
         gc.collect()
 
