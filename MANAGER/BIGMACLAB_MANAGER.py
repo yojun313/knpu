@@ -47,6 +47,7 @@ class MainWindow(QMainWindow):
         try:
             self.versionNum = VERSION
             self.version = 'Version ' + self.versionNum
+            self.splash_dialog = splash_dialog
 
             super(MainWindow, self).__init__()
             ui_path = os.path.join(os.path.dirname(__file__), 'source', 'BIGMACLAB_MANAGER_GUI.ui')
@@ -62,9 +63,8 @@ class MainWindow(QMainWindow):
                 self.close_bootscreen()
                 self.showMaximized()
             else:
-                self.resize(1400, 1000)
+                self.resize(1600, 900)
 
-            self.splash_dialog = splash_dialog  # InfoDialog 객체를 받아옵니다
             self.setStyle()
             self.statusBar_init()
             self.decrypt_process()
@@ -203,7 +203,9 @@ class MainWindow(QMainWindow):
             self.listWidget.setCurrentRow(0)
             QTimer.singleShot(1, load_program)
             QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
-        except:
+        except Exception as e:
+            self.close_bootscreen()
+            open_console()
             print(traceback.format_exc())
 
     def initialize_listwidget(self):
