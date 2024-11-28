@@ -38,7 +38,7 @@ import textwrap
 
 warnings.filterwarnings("ignore")
 
-VERSION = '2.3.2'
+VERSION = '2.3.1'
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
@@ -438,6 +438,7 @@ class MainWindow(QMainWindow):
                 # 앱 테마 설정 섹션
                 theme_label = QLabel("앱 테마 설정:")
                 theme_label.setAlignment(Qt.AlignCenter)
+                theme_label.setToolTip("프로그램의 색 테마를 설정합니다")
                 self.light_mode_toggle = QPushButton("라이트 모드")
                 self.dark_mode_toggle = QPushButton("다크 모드")
 
@@ -465,6 +466,7 @@ class MainWindow(QMainWindow):
                 # 부팅 스크린 사이즈 설정 섹션
                 screen_size_label = QLabel("부팅 시 창 크기:")
                 screen_size_label.setAlignment(Qt.AlignCenter)
+                screen_size_label.setToolTip("프로그램을 처음 켰을 때 창의 크기를 설정합니다")
                 self.default_size_toggle = QPushButton("기본값")
                 self.maximized_toggle = QPushButton("최대화")
 
@@ -493,6 +495,7 @@ class MainWindow(QMainWindow):
                 # 자동업데이트 설정 섹션
                 update_size_label = QLabel("자동 업데이트:")
                 update_size_label.setAlignment(Qt.AlignCenter)
+                screen_size_label.setToolTip("프로그램을 처음 켰을 때 자동 업데이트 여부를 설정합니다")
                 self.default_update_toggle = QPushButton("끄기")
                 self.auto_update_toggle = QPushButton("켜기")
 
