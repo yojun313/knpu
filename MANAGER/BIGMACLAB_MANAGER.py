@@ -3,7 +3,7 @@ import sys
 from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
     QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
-    QPushButton, QMainWindow, QApplication, QSpacerItem, QCheckBox
+    QPushButton, QMainWindow, QApplication, QSpacerItem, QStackedWidget, QListWidget
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSize
 from PyQt5.QtGui import QKeySequence, QPixmap, QFont, QPainter, QBrush, QColor, QIcon
 from openai import OpenAI
@@ -300,6 +300,7 @@ class MainWindow(QMainWindow):
                 'ScreenSize': os.getenv("OPTION_2"),
                 'OldPostTitle': os.getenv("OPTION_3"),
                 'AutoUpdate': os.getenv("OPTION_4"),
+                'MyDB': os.getenv("OPTION_5"),
             }
         except Exception as e:
             print(traceback.format_exc())
@@ -308,7 +309,8 @@ class MainWindow(QMainWindow):
                 'Theme': 'default',
                 'ScreenSize': 'default',
                 'OldPostTitle': 'default',
-                'AutoUpdate': 'default'
+                'AutoUpdate': 'default',
+                'MyDB': 'default'
             }
 
     def update_settings(self, option_key, new_value):
@@ -423,153 +425,6 @@ class MainWindow(QMainWindow):
             print(traceback.format_exc())
 
     def user_settings(self):
-        class SettingsDialog(QDialog):
-            def __init__(self, main, setting):
-                super().__init__()
-                self.main = main
-                self.setting_path = setting['path']
-                self.setWindowTitle("Settings")
-                self.resize(400, 200)
-
-                # 메인 레이아웃 생성
-                main_layout = QVBoxLayout()
-
-                ##########################################################################################
-                # 앱 테마 설정 섹션
-                theme_label = QLabel("앱 테마 설정:")
-                theme_label.setAlignment(Qt.AlignCenter)
-                theme_label.setToolTip("프로그램의 색 테마를 설정합니다")
-                self.light_mode_toggle = QPushButton("라이트 모드")
-                self.dark_mode_toggle = QPushButton("다크 모드")
-
-                # 버튼 스타일 초기화
-                self.init_toggle_style(self.light_mode_toggle, setting['Theme'] == 'default')
-                self.init_toggle_style(self.dark_mode_toggle, setting['Theme'] != 'default')
-
-                # 토글 버튼 클릭 이벤트
-                self.light_mode_toggle.clicked.connect(
-                    lambda: self.update_toggle(self.light_mode_toggle, self.dark_mode_toggle)
-                )
-                self.dark_mode_toggle.clicked.connect(
-                    lambda: self.update_toggle(self.dark_mode_toggle, self.light_mode_toggle)
-                )
-
-                theme_layout = QHBoxLayout()
-                theme_layout.addWidget(self.light_mode_toggle)
-                theme_layout.addWidget(self.dark_mode_toggle)
-
-                main_layout.addWidget(theme_label)
-                main_layout.addLayout(theme_layout)
-                ##########################################################################################
-
-                ##########################################################################################
-                # 부팅 스크린 사이즈 설정 섹션
-                screen_size_label = QLabel("부팅 시 창 크기:")
-                screen_size_label.setAlignment(Qt.AlignCenter)
-                screen_size_label.setToolTip("프로그램을 처음 켰을 때 창의 크기를 설정합니다")
-                self.default_size_toggle = QPushButton("기본값")
-                self.maximized_toggle = QPushButton("최대화")
-
-                # 버튼 스타일 초기화
-                print(setting['ScreenSize'])
-                self.init_toggle_style(self.default_size_toggle, setting['ScreenSize'] == 'default')
-                self.init_toggle_style(self.maximized_toggle, setting['ScreenSize'] != 'default')
-
-                # 토글 버튼 클릭 이벤트
-                self.default_size_toggle.clicked.connect(
-                    lambda: self.update_toggle(self.default_size_toggle, self.maximized_toggle)
-                )
-                self.maximized_toggle.clicked.connect(
-                    lambda: self.update_toggle(self.maximized_toggle, self.default_size_toggle)
-                )
-
-                screen_layout = QHBoxLayout()
-                screen_layout.addWidget(self.default_size_toggle)
-                screen_layout.addWidget(self.maximized_toggle)
-
-                main_layout.addWidget(screen_size_label)
-                main_layout.addLayout(screen_layout)
-                ##########################################################################################
-
-                ##########################################################################################
-                # 자동업데이트 설정 섹션
-                update_size_label = QLabel("자동 업데이트:")
-                update_size_label.setAlignment(Qt.AlignCenter)
-                screen_size_label.setToolTip("프로그램을 처음 켰을 때 자동 업데이트 여부를 설정합니다")
-                self.default_update_toggle = QPushButton("끄기")
-                self.auto_update_toggle = QPushButton("켜기")
-
-                # 버튼 스타일 초기화
-                self.init_toggle_style(self.default_update_toggle, setting['AutoUpdate'] == 'default')
-                self.init_toggle_style(self.auto_update_toggle, setting['AutoUpdate'] != 'default')
-
-                # 토글 버튼 클릭 이벤트
-                self.default_update_toggle.clicked.connect(
-                    lambda: self.update_toggle(self.default_update_toggle, self.auto_update_toggle)
-                )
-                self.auto_update_toggle.clicked.connect(
-                    lambda: self.update_toggle(self.auto_update_toggle, self.default_update_toggle)
-                )
-
-                update_layout = QHBoxLayout()
-                update_layout.addWidget(self.default_update_toggle)
-                update_layout.addWidget(self.auto_update_toggle)
-
-                main_layout.addWidget(update_size_label)
-                main_layout.addLayout(update_layout)
-                ##########################################################################################
-
-                # 확인 및 취소 버튼 섹션
-                save_button = QPushButton("Save")
-                save_button.clicked.connect(self.save_settings)  # 저장 버튼 클릭 이벤트 연결
-                cancel_button = QPushButton("Cancel")
-                cancel_button.clicked.connect(self.reject)  # 취소 버튼 클릭 이벤트 연결
-
-                button_layout = QHBoxLayout()
-                button_layout.addWidget(save_button)
-                button_layout.addWidget(cancel_button)
-
-                main_layout.addLayout(button_layout)
-
-                # 메인 레이아웃 설정
-                self.setLayout(main_layout)
-
-            def init_toggle_style(self, button, is_selected):
-                """
-                토글 버튼 스타일 초기화
-                """
-                if is_selected:
-                    button.setStyleSheet("background-color: #2c3e50; font-weight: bold; color: #eaeaea;")
-                else:
-                    button.setStyleSheet("background-color: lightgray;")
-
-            def update_toggle(self, selected_button, other_button):
-                """
-                선택된 버튼과 비선택 버튼 스타일 업데이트
-                """
-                self.init_toggle_style(selected_button, True)
-                self.init_toggle_style(other_button, False)
-
-            def save_settings(self):
-                # 선택된 설정 가져오기
-                theme = 'default' if self.light_mode_toggle.styleSheet().find("#2c3e50") != -1 else 'dark'
-                screen_size = 'default' if self.default_size_toggle.styleSheet().find("#2c3e50") != -1 else 'max'
-                auto_update = 'default' if self.default_update_toggle.styleSheet().find("#2c3e50") != -1 else 'auto'
-
-                self.main.SETTING['Theme'] = theme
-                self.main.SETTING['ScreenSize'] = screen_size
-                self.main.SETTING['AutoUpdate'] = auto_update
-
-                options = {
-                    "theme": {"key": 1, "value": theme},             # 테마 설정
-                    "screensize": {"key": 2, "value": screen_size},  # 스크린 사이즈 설정
-                    "autoupdate": {"key": 4, "value": auto_update},  # 자동 업데이트 설정
-                }
-                for option in options.values():
-                    self.main.update_settings(option['key'], option['value'])
-
-                self.accept()
-
         try:
             self.user_logging(f'User Setting')
             dialog = SettingsDialog(self, self.SETTING)
@@ -941,6 +796,9 @@ class MainWindow(QMainWindow):
 
             requester = DBdata[4]
             if requester == 'admin' and self.user != 'admin':
+                continue
+
+            if self.SETTING['MyDB'] == 'mydb' and requester != self.user:
                 continue
 
             keyword = DBdata[5]
@@ -1944,6 +1802,307 @@ class SplashDialog(QDialog):
         painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
         painter.drawRoundedRect(rect, 30, 30)  # 모서리를 둥글게 그리기 (30px radius)
 
+class SettingsDialog(QDialog):
+    def __init__(self, main, setting):
+        super().__init__()
+        self.main = main
+        self.setting_path = setting['path']
+        self.setWindowTitle("Settings")
+        self.resize(600, 400)
+
+        # 메인 레이아웃 생성
+        main_layout = QVBoxLayout()  # QVBoxLayout으로 변경하여 아래쪽에 버튼 섹션 추가 가능
+
+        # 상단 레이아웃 (카테고리 목록과 설정 페이지)
+        content_layout = QHBoxLayout()
+
+        # 왼쪽: 카테고리 목록
+        self.category_list = QListWidget()
+        self.category_list.addItem("앱 설정")
+        self.category_list.addItem("DB 설정")
+        self.category_list.setStyleSheet("""
+            QListWidget {
+                border: 1px solid #ccc;
+                font-size: 14px;
+                background-color: #f4f4f4; /* 리스트 전체 배경색 */
+                border-radius: 8px; /* 둥근 모서리 */
+            }
+            QListWidget::item {
+                padding: 10px;
+                margin: 5px; /* 항목 간 간격 */
+                background-color: #ffffff; /* 항목 기본 배경색 */
+                border: 1px solid #ddd; /* 항목 테두리 */
+                border-radius: 6px; /* 항목 둥근 모서리 */
+            }
+            QListWidget::item:hover {
+                background-color: #34495e; /* 항목에 호버했을 때 배경색 */
+                color: white;
+            }
+            QListWidget::item:selected {
+                background-color: #34495e; /* 선택된 항목 배경색 */
+                color: white; /* 선택된 항목 텍스트 색상 */
+            }
+        """)
+        self.category_list.currentRowChanged.connect(self.display_category)
+        self.category_list.setCurrentRow(0)  # 첫 번째 항목을 기본 선택
+
+        # 오른쪽: 설정 내용 (Stacked Widget)
+        self.stacked_widget = QStackedWidget()
+
+        # 앱 설정 페이지 추가
+        self.app_settings_page = self.create_app_settings_page(setting)
+        self.stacked_widget.addWidget(self.app_settings_page)
+
+        # DB 설정 페이지 추가
+        self.db_settings_page = self.create_db_settings_page(setting)
+        self.stacked_widget.addWidget(self.db_settings_page)
+
+        # 콘텐츠 레이아웃 구성
+        content_layout.addWidget(self.category_list, 2)
+        content_layout.addWidget(self.stacked_widget, 6)
+
+        # 저장 및 취소 버튼 섹션
+        button_layout = QHBoxLayout()
+        save_button = QPushButton("Save")
+        save_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2c3e50; /* 기본 배경색 */
+                color: white; /* 텍스트 색상 */
+                font-size: 14px; /* 폰트 크기 */
+                padding: 10px 20px; /* 내부 여백 */
+                border-radius: 8px; /* 둥근 모서리 */
+                border: none; /* 테두리 제거 */
+            }
+            QPushButton:hover {
+                background-color: #34495e; /* 호버 시 배경색 */
+            }
+        """)
+        save_button.clicked.connect(self.save_settings)  # 저장 버튼 클릭 이벤트 연결
+
+        # 취소 버튼
+        cancel_button = QPushButton("Cancel")
+        cancel_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2c3e50; /* 기본 배경색 */
+                color: white; /* 텍스트 색상 */
+                font-size: 14px; /* 폰트 크기 */
+                padding: 10px 20px; /* 내부 여백 */
+                border-radius: 8px; /* 둥근 모서리 */
+                border: none; /* 테두리 제거 */
+            }
+            QPushButton:hover {
+                background-color: #34495e; /* 호버 시 배경색 */
+            }
+        """)
+        cancel_button.clicked.connect(self.reject)  # 취소 버튼 클릭 이벤트 연결
+
+        button_layout.addStretch()  # 버튼을 오른쪽으로 정렬
+        button_layout.addWidget(save_button)
+        button_layout.addWidget(cancel_button)
+
+        # 메인 레이아웃 구성
+        main_layout.addLayout(content_layout)
+        main_layout.addLayout(button_layout)
+
+        self.setLayout(main_layout)
+
+    def create_app_settings_page(self, setting):
+        """
+        앱 설정 페이지 생성
+        """
+        app_layout = QVBoxLayout()
+        app_layout.setSpacing(10)  # 섹션 간 간격
+        app_layout.setContentsMargins(10, 10, 10, 10)  # 여백 설정
+
+        ################################################################################
+        # 앱 테마 설정 섹션
+        theme_layout = QHBoxLayout()
+        theme_label = QLabel("앱 테마 설정:")
+        theme_label.setAlignment(Qt.AlignLeft)
+        theme_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+
+        self.light_mode_toggle = QPushButton("라이트 모드")
+        self.dark_mode_toggle = QPushButton("다크 모드")
+
+        self.init_toggle_style(self.light_mode_toggle, setting['Theme'] == 'default')
+        self.init_toggle_style(self.dark_mode_toggle, setting['Theme'] != 'default')
+
+        self.light_mode_toggle.clicked.connect(
+            lambda: self.update_toggle(self.light_mode_toggle, self.dark_mode_toggle)
+        )
+        self.dark_mode_toggle.clicked.connect(
+            lambda: self.update_toggle(self.dark_mode_toggle, self.light_mode_toggle)
+        )
+
+        theme_buttons_layout = QHBoxLayout()
+        theme_buttons_layout.setSpacing(10)
+        theme_buttons_layout.addWidget(self.light_mode_toggle)
+        theme_buttons_layout.addWidget(self.dark_mode_toggle)
+
+        theme_layout.addWidget(theme_label, 1)
+        theme_layout.addLayout(theme_buttons_layout, 2)
+
+        app_layout.addLayout(theme_layout)
+        ################################################################################
+
+        ################################################################################
+        # 부팅 스크린 사이즈 설정 섹션
+        screen_size_layout = QHBoxLayout()
+        screen_size_label = QLabel("부팅 시 창 크기:")
+        screen_size_label.setAlignment(Qt.AlignLeft)
+        screen_size_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+
+        self.default_size_toggle = QPushButton("기본값")
+        self.maximized_toggle = QPushButton("최대화")
+
+        self.init_toggle_style(self.default_size_toggle, setting['ScreenSize'] == 'default')
+        self.init_toggle_style(self.maximized_toggle, setting['ScreenSize'] != 'default')
+
+        self.default_size_toggle.clicked.connect(
+            lambda: self.update_toggle(self.default_size_toggle, self.maximized_toggle)
+        )
+        self.maximized_toggle.clicked.connect(
+            lambda: self.update_toggle(self.maximized_toggle, self.default_size_toggle)
+        )
+
+        screen_size_buttons_layout = QHBoxLayout()
+        screen_size_buttons_layout.setSpacing(10)
+        screen_size_buttons_layout.addWidget(self.default_size_toggle)
+        screen_size_buttons_layout.addWidget(self.maximized_toggle)
+
+        screen_size_layout.addWidget(screen_size_label, 1)
+        screen_size_layout.addLayout(screen_size_buttons_layout, 2)
+
+        app_layout.addLayout(screen_size_layout)
+        ################################################################################
+
+        ################################################################################
+        # 자동 업데이트 설정 섹션
+        auto_update_layout = QHBoxLayout()
+        auto_update_label = QLabel("자동 업데이트:")
+        auto_update_label.setAlignment(Qt.AlignLeft)
+        auto_update_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+
+        self.default_update_toggle = QPushButton("끄기")
+        self.auto_update_toggle = QPushButton("켜기")
+
+        self.init_toggle_style(self.default_update_toggle, setting['AutoUpdate'] == 'default')
+        self.init_toggle_style(self.auto_update_toggle, setting['AutoUpdate'] != 'default')
+
+        self.default_update_toggle.clicked.connect(
+            lambda: self.update_toggle(self.default_update_toggle, self.auto_update_toggle)
+        )
+        self.auto_update_toggle.clicked.connect(
+            lambda: self.update_toggle(self.auto_update_toggle, self.default_update_toggle)
+        )
+
+        auto_update_buttons_layout = QHBoxLayout()
+        auto_update_buttons_layout.setSpacing(10)
+        auto_update_buttons_layout.addWidget(self.default_update_toggle)
+        auto_update_buttons_layout.addWidget(self.auto_update_toggle)
+
+        auto_update_layout.addWidget(auto_update_label, 1)
+        auto_update_layout.addLayout(auto_update_buttons_layout, 2)
+
+        app_layout.addLayout(auto_update_layout)
+        ################################################################################
+
+        # 아래쪽 여유 공간 추가
+        app_layout.addStretch()
+
+        app_settings_widget = QWidget()
+        app_settings_widget.setLayout(app_layout)
+        return app_settings_widget
+
+    def create_db_settings_page(self, setting):
+
+        ################################################################################
+        # DB 설정 페이지 생성
+        db_layout = QVBoxLayout()
+        db_layout.setSpacing(10)  # 섹션 간 간격 설정
+        db_layout.setContentsMargins(10, 10, 10, 10)  # 여백 설정
+
+        # 내 DB만 표시 설정 섹션
+        db_display_layout = QHBoxLayout()
+        mydb_label = QLabel("내 DB만 표시:")
+        mydb_label.setAlignment(Qt.AlignLeft)
+        mydb_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+
+        self.default_mydb_toggle = QPushButton("끄기")
+        self.auto_mydb_toggle = QPushButton("켜기")
+
+        self.init_toggle_style(self.default_mydb_toggle, setting['MyDB'] == 'default')
+        self.init_toggle_style(self.auto_mydb_toggle, setting['MyDB'] != 'default')
+
+        self.default_mydb_toggle.clicked.connect(
+            lambda: self.update_toggle(self.default_mydb_toggle, self.auto_mydb_toggle)
+        )
+        self.auto_mydb_toggle.clicked.connect(
+            lambda: self.update_toggle(self.auto_mydb_toggle, self.default_mydb_toggle)
+        )
+
+        db_display_buttons_layout = QHBoxLayout()
+        db_display_buttons_layout.setSpacing(10)  # 버튼 간 간격 설정
+        db_display_buttons_layout.addWidget(self.default_mydb_toggle)
+        db_display_buttons_layout.addWidget(self.auto_mydb_toggle)
+
+        db_display_layout.addWidget(mydb_label, 1)
+        db_display_layout.addLayout(db_display_buttons_layout, 2)
+
+        db_layout.addLayout(db_display_layout)
+        ################################################################################
+
+        # 아래쪽 여유 공간 추가
+        db_layout.addStretch()
+
+        db_settings_widget = QWidget()
+        db_settings_widget.setLayout(db_layout)
+        return db_settings_widget
+
+    def display_category(self, index):
+        """
+        카테고리에 따라 해당 설정 페이지 표시
+        """
+        self.stacked_widget.setCurrentIndex(index)
+
+    def init_toggle_style(self, button, is_selected):
+        """
+        토글 버튼 스타일 초기화
+        """
+        if is_selected:
+            button.setStyleSheet("background-color: #2c3e50; font-weight: bold; color: #eaeaea;")
+        else:
+            button.setStyleSheet("background-color: lightgray;")
+
+    def update_toggle(self, selected_button, other_button):
+        """
+        선택된 버튼과 비선택 버튼 스타일 업데이트
+        """
+        self.init_toggle_style(selected_button, True)
+        self.init_toggle_style(other_button, False)
+
+    def save_settings(self):
+        # 선택된 설정 가져오기
+        theme = 'default' if self.light_mode_toggle.styleSheet().find("#2c3e50") != -1 else 'dark'
+        screen_size = 'default' if self.default_size_toggle.styleSheet().find("#2c3e50") != -1 else 'max'
+        auto_update = 'default' if self.default_update_toggle.styleSheet().find("#2c3e50") != -1 else 'auto'
+        my_db = 'default' if self.default_mydb_toggle.styleSheet().find("#2c3e50") != -1 else 'mydb'
+
+        self.main.SETTING['Theme'] = theme
+        self.main.SETTING['ScreenSize'] = screen_size
+        self.main.SETTING['AutoUpdate'] = auto_update
+        self.main.SETTING['MyDB'] = my_db
+
+        options = {
+            "theme": {"key": 1, "value": theme},  # 테마 설정
+            "screensize": {"key": 2, "value": screen_size},  # 스크린 사이즈 설정
+            "autoupdate": {"key": 4, "value": auto_update},  # 자동 업데이트 설정
+            "mydb": {"key": 5, "value": my_db}  # 내 DB만 보기 설정
+        }
+        for option in options.values():
+            self.main.update_settings(option['key'], option['value'])
+
+        self.accept()
 
 if __name__ == '__main__':
     environ["QT_DEVICE_PIXEL_RATIO"] = "0"
