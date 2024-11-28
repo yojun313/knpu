@@ -52,4 +52,9 @@ if __name__ == "__main__":
     # Get the version from the user
     version = input("Enter the program version: ")
 
+    same_version = os.path.join(output_directory, f"BIGMACLAB_MANAGER_{version}")
+    if os.path.exists(same_version):
+        shutil.rmtree(same_version)
+        print(f"\n이전 동일 버전({version}) 삭제됨\n")
+
     build_exe_from_spec(spec_file, output_directory, version)
