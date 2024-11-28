@@ -2171,12 +2171,7 @@ class SettingsDialog(QDialog):
         manager_info_section.addWidget(manager_location_label)
         manager_info_section.addWidget(self.manager_time_label)
 
-        # 구분선 추가
-        manager_info_separator = QLabel()
-        manager_info_separator.setStyleSheet("border: 1px solid #E0E0E0; margin: 15px 0;")
-
         info_layout.addLayout(manager_info_section)
-        info_layout.addWidget(manager_info_separator)
         ################################################################################
 
         # 아래쪽 여유 공간 추가
