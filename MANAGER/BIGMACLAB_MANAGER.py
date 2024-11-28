@@ -75,6 +75,7 @@ class MainWindow(QMainWindow):
 
             def load_program():
                 try:
+                    self.startTime = datetime.now()
                     self.check_internet_connection()
                     # open_console("Booting Process")
                     self.listWidget.currentRowChanged.connect(self.display)
@@ -83,10 +84,12 @@ class MainWindow(QMainWindow):
                         local_appdata_path = os.getenv("LOCALAPPDATA")
                         desktop_path = os.path.join(os.getenv("USERPROFILE"), "Desktop")
 
+                        self.program_directory = os.path.join(local_appdata_path, "MANAGER")
                         self.default_directory = "C:/BIGMACLAB_MANAGER"
                         if not os.path.exists(self.default_directory):
                             os.makedirs(self.default_directory)
                     else:
+                        self.program_directory = os.path.dirname(__file__)
                         self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
 
                     self.readme_path = os.path.join(self.default_directory, 'README.txt')
@@ -462,6 +465,7 @@ class MainWindow(QMainWindow):
             if current_device in self.device_list:
                 print("Done")
                 self.user = self.user_list[self.device_list.index(current_device)]
+                self.usermail = self.userMailList[self.userNameList.index(self.user)]
                 return True
             else:
                 self.close_bootscreen()
@@ -1452,8 +1456,6 @@ class MainWindow(QMainWindow):
 
         elif index == 6:
             self.user_settings()
-            previous_index = self.stackedWidget.currentIndex()  # 현재 활성 화면의 인덱스
-            self.listWidget.setCurrentRow(previous_index)  # 선택 상태를 이전 인덱스로 변경
 
         gc.collect()
 
@@ -1820,6 +1822,7 @@ class SettingsDialog(QDialog):
         self.category_list = QListWidget()
         self.category_list.addItem("앱 설정")
         self.category_list.addItem("DB 설정")
+        self.category_list.addItem("정보")
         self.category_list.setStyleSheet("""
             QListWidget {
                 border: 1px solid #ccc;
@@ -1856,6 +1859,10 @@ class SettingsDialog(QDialog):
         # DB 설정 페이지 추가
         self.db_settings_page = self.create_db_settings_page(setting)
         self.stacked_widget.addWidget(self.db_settings_page)
+
+        # info 설정 페이지 추가
+        self.info_settings_page = self.create_info_settings_page(setting)
+        self.stacked_widget.addWidget(self.info_settings_page)
 
         # 콘텐츠 레이아웃 구성
         content_layout.addWidget(self.category_list, 2)
@@ -2058,6 +2065,133 @@ class SettingsDialog(QDialog):
         db_settings_widget = QWidget()
         db_settings_widget.setLayout(db_layout)
         return db_settings_widget
+
+    def create_info_settings_page(self, setting):
+        def wrap_text_by_words(text, max_line_length):
+            """
+            문자열을 '/' 단위로 나누고 줄바꿈(\n)을 추가하는 함수.
+            '/'를 유지합니다.
+            """
+            words = text.split('/')  # '/'를 기준으로 나누기
+            current_line = ""
+            lines = []
+
+            for word in words:
+                word_with_slash = word + "/"  # '/'를 다시 추가
+                if len(current_line) + len(word_with_slash) <= max_line_length:
+                    current_line += word_with_slash
+                else:
+                    lines.append(current_line.strip())
+                    current_line = word_with_slash
+            if current_line:
+                lines.append(current_line.strip())
+
+            return "\n".join(lines)
+
+        def update_runtime():
+            """실시간으로 구동 시간을 정수 형식으로 업데이트하는 메서드"""
+            elapsed_time = datetime.now() - self.main.startTime
+            total_seconds = int(elapsed_time.total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            self.manager_time_label.setText(f"구동 시간: {hours}시간 {minutes}분 {seconds}초")
+
+        ################################################################################
+        # 사용자 정보 페이지 레이아웃 생성
+        info_layout = QVBoxLayout()
+        info_layout.setSpacing(20)
+        info_layout.setContentsMargins(20, 20, 20, 20)
+
+        ################################################################################
+        # 사용자 정보 표시 섹션
+        user_info_section = QVBoxLayout()
+        user_title_label = QLabel("사용자 정보")
+        user_title_label.setStyleSheet(
+            """
+            font-size: 18px; 
+            font-weight: bold; 
+            color: #2C3E50; 
+            margin-bottom: 10px;
+            """
+        )
+        user_title_label.setAlignment(Qt.AlignLeft)
+
+        # 사용자 정보 추가 (예: 이름, 이메일, 디바이스)
+        user_name_label = QLabel(f"이름: {self.main.user}")
+        user_name_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
+
+        user_email_label = QLabel(f"이메일: {self.main.usermail}")
+        user_email_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
+
+        user_device_label = QLabel(f"디바이스: {self.main.user_device}")
+        user_device_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
+
+        # 사용자 정보 섹션 레이아웃 구성
+        user_info_section.addWidget(user_title_label)
+        user_info_section.addWidget(user_name_label)
+        user_info_section.addWidget(user_email_label)
+        user_info_section.addWidget(user_device_label)
+
+        # 사용자 정보 섹션에 구분선 추가
+        user_info_separator = QLabel()
+        user_info_separator.setStyleSheet("border: 1px solid #E0E0E0; margin: 15px 0;")
+
+        info_layout.addLayout(user_info_section)
+        info_layout.addWidget(user_info_separator)
+        ################################################################################
+
+        ################################################################################
+        # MANAGER 정보 표시 섹션
+        manager_info_section = QVBoxLayout()
+        manager_title_label = QLabel("MANAGER 정보")
+        manager_title_label.setStyleSheet(
+            """
+            font-size: 18px; 
+            font-weight: bold; 
+            color: #2C3E50; 
+            margin-bottom: 10px;
+            """
+        )
+        manager_title_label.setAlignment(Qt.AlignLeft)
+
+        # MANAGER 정보 추가
+        manager_version_label = QLabel(f"버전: {self.main.versionNum}")
+        manager_version_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
+
+        manager_location_label = QLabel(f"앱 경로: {wrap_text_by_words(self.main.program_directory, 40)}")
+        manager_location_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
+
+        # 실시간 업데이트를 위한 구동 시간 라벨
+        self.manager_time_label = QLabel("구동 시간: 계산 중...")
+        self.manager_time_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
+
+        # MANAGER 정보 섹션 레이아웃 구성
+        manager_info_section.addWidget(manager_title_label)
+        manager_info_section.addWidget(manager_version_label)
+        manager_info_section.addWidget(manager_location_label)
+        manager_info_section.addWidget(self.manager_time_label)
+
+        # 구분선 추가
+        manager_info_separator = QLabel()
+        manager_info_separator.setStyleSheet("border: 1px solid #E0E0E0; margin: 15px 0;")
+
+        info_layout.addLayout(manager_info_section)
+        info_layout.addWidget(manager_info_separator)
+        ################################################################################
+
+        # 아래쪽 여유 공간 추가
+        info_layout.addStretch()
+
+        # 위젯 설정
+        info_settings_widget = QWidget()
+        info_settings_widget.setLayout(info_layout)
+
+        # 타이머 설정: 1초마다 구동 시간 업데이트
+        self.timer = QTimer()
+        self.timer.timeout.connect(update_runtime)
+        self.timer.start(1000)
+
+        return info_settings_widget
 
     def display_category(self, index):
         """
