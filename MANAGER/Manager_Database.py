@@ -525,6 +525,7 @@ class Manager_Database:
         search_text = self.main.database_searchDB_lineinput.text().lower()
         if self.console_open == False:
             open_console("MANAGER ChatGPT")
+            self.console_open = True
         if search_text == '닫기' or search_text == 'quit':
             close_console()
             return
