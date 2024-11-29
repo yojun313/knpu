@@ -354,7 +354,7 @@ class Crawler(CrawlerModule):
         rereply_column = ["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "Article URL", 'Article Day']
 
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
-        
+
         if option in [1, 2]:
             self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
             self.mySQL.newTable(tableName=self.statisticsDB, column_list=statistiscs_column)
