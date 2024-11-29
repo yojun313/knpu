@@ -92,14 +92,7 @@
           <item>
            <widget class="QPushButton" name="database_chatgpt_button">
             <property name="text">
-             <string>GPT</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="database_refreshDB_button">
-            <property name="text">
-             <string>새로고침</string>
+             <string>ChatGPT</string>
             </property>
            </widget>
           </item>
