@@ -76,6 +76,7 @@ class MainWindow(QMainWindow):
             def load_program():
                 try:
                     self.startTime = datetime.now()
+                    self.gpt_api_key = self.SETTING['GPT_Key']
                     self.check_internet_connection()
                     # open_console("Booting Process")
                     self.listWidget.currentRowChanged.connect(self.display)
@@ -306,6 +307,7 @@ class MainWindow(QMainWindow):
                 'OldPostTitle': os.getenv("OPTION_3"),
                 'AutoUpdate': os.getenv("OPTION_4"),
                 'MyDB': os.getenv("OPTION_5"),
+                'GPT_Key': os.getenv("OPTION_6")
             }
         except Exception as e:
             print(traceback.format_exc())
@@ -315,7 +317,8 @@ class MainWindow(QMainWindow):
                 'ScreenSize': 'default',
                 'OldPostTitle': 'default',
                 'AutoUpdate': 'default',
-                'MyDB': 'default'
+                'MyDB': 'default',
+                'GPT_Key': os.getenv("OPTION_6")
             }
 
     def update_settings(self, option_key, new_value):
@@ -386,7 +389,6 @@ class MainWindow(QMainWindow):
         self.admin_password = os.getenv('ADMIN_PASSWORD')
         self.public_password = os.getenv('PUBLIC_PASSWORD')
         self.admin_pushoverkey = os.getenv('ADMIN_PUSHOVER')
-        self.gpt_api_key = os.getenv('GPT_APIKEY')
         self.db_ip = os.getenv('DB_IP')
 
         if os.path.exists(os.path.join(current_position, 'decrypted_env')):
@@ -1555,8 +1557,13 @@ class MainWindow(QMainWindow):
 
     def chatgpt_generate(self, query):
         try:
+            # OpenAI 클라이언트 초기화
             client = OpenAI(api_key=self.gpt_api_key)
-            model = "gpt-4"
+
+            # 모델 이름 수정: gpt-4-turbo
+            model = "gpt-4-turbo"
+
+            # ChatGPT API 요청
             response = client.chat.completions.create(
                 model=model,
                 messages=[
@@ -1564,10 +1571,14 @@ class MainWindow(QMainWindow):
                     {"role": "user", "content": query},
                 ]
             )
+
+            # 응답 메시지 내용 추출
             content = response.choices[0].message.content
             return content
-        except:
-            return (0, "AI 분석에 오류가 발생하였습니다\n\nadmin에게 문의바랍니다")
+
+        except Exception as e:
+            # 예외 발생 시 에러 메시지 반환
+            return (0, traceback.format_exc())
 
     def program_bug_log(self, text):
         print(text)
@@ -1814,7 +1825,7 @@ class SettingsDialog(QDialog):
         self.main = main
         self.setting_path = setting['path']
         self.setWindowTitle("Settings")
-        self.resize(600, 400)
+        self.resize(800, 400)
 
         # 메인 레이아웃 생성
         main_layout = QVBoxLayout()  # QVBoxLayout으로 변경하여 아래쪽에 버튼 섹션 추가 가능
@@ -2016,6 +2027,77 @@ class SettingsDialog(QDialog):
         auto_update_layout.addLayout(auto_update_buttons_layout, 2)
 
         app_layout.addLayout(auto_update_layout)
+        ################################################################################
+
+        ################################################################################
+        # ChatGPT API Key 입력 섹션
+        def open_details_url():
+            """자세히 버튼 클릭 시 URL 열기"""
+            import webbrowser
+            url = "https://hyunicecream.tistory.com/78"  # 원하는 URL 입력
+            webbrowser.open(url)
+
+        def disable_api_key_input():
+            """API Key 입력창 비활성화"""
+            api_key = self.api_key_input.text()
+            if api_key:
+                self.api_key_input.setDisabled(True)  # 입력창 비활성화
+                self.save_api_key_button.setEnabled(False)  # 저장 버튼 비활성화
+                self.edit_api_key_button.setEnabled(True)  # 수정 버튼 활성화
+                setting['APIKey'] = api_key  # 설정에 저장
+                QMessageBox.information(self, "성공", "API Key가 저장되었습니다.")
+            else:
+                QMessageBox.warning(self, "경고", "API Key를 입력하세요.")
+
+        def enable_api_key_input():
+            """API Key 입력창 활성화"""
+            self.api_key_input.setDisabled(False)  # 입력창 활성화
+            self.save_api_key_button.setEnabled(True)  # 저장 버튼 활성화
+            self.edit_api_key_button.setEnabled(False)  # 수정 버튼 비활성화
+
+        api_key_layout = QHBoxLayout()
+        api_key_label = QLabel("ChatGPT API:")
+        api_key_label.setAlignment(Qt.AlignLeft)
+        api_key_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+
+        self.api_key_input = QLineEdit()
+        self.api_key_input.setPlaceholderText("Enter your Key")
+        self.api_key_input.setStyleSheet("font-size: 14px; padding: 5px;")
+        print(setting['GPT_Key'])
+        if setting['GPT_Key'] != 'default':
+            self.api_key_input.setText(setting['GPT_Key'])  # 기존 값이 있으면 표시
+            self.api_key_input.setDisabled(True)
+
+        # 저장 버튼
+        self.save_api_key_button = QPushButton("저장")
+        self.save_api_key_button.clicked.connect(disable_api_key_input)
+
+        # 수정 버튼
+        self.edit_api_key_button = QPushButton("수정")
+        self.edit_api_key_button.clicked.connect(enable_api_key_input)
+
+        # 자세히 버튼
+        self.details_button = QPushButton("자세히")
+        self.details_button.clicked.connect(open_details_url)
+
+        # 버튼 레이아웃
+        api_key_buttons_layout = QHBoxLayout()
+        api_key_buttons_layout.setSpacing(10)
+        api_key_buttons_layout.addWidget(self.save_api_key_button, 1)
+        api_key_buttons_layout.addWidget(self.edit_api_key_button, 1)
+        api_key_buttons_layout.addWidget(self.details_button, 1)
+
+        # 전체 레이아웃
+        api_key_input_layout = QHBoxLayout()
+        api_key_input_layout.setSpacing(10)
+        api_key_input_layout.addWidget(self.api_key_input, 3)
+        api_key_input_layout.addLayout(api_key_buttons_layout, 1)
+
+        api_key_layout.addWidget(api_key_label, 1)
+        api_key_layout.addLayout(api_key_input_layout, 2)
+
+        app_layout.addLayout(api_key_layout)
+
         ################################################################################
 
         # 아래쪽 여유 공간 추가
@@ -2223,17 +2305,22 @@ class SettingsDialog(QDialog):
         screen_size = 'default' if self.default_size_toggle.styleSheet().find("#2c3e50") != -1 else 'max'
         auto_update = 'default' if self.default_update_toggle.styleSheet().find("#2c3e50") != -1 else 'auto'
         my_db = 'default' if self.default_mydb_toggle.styleSheet().find("#2c3e50") != -1 else 'mydb'
+        api_key = self.api_key_input.text()
+        api_key.replace('\n', '').replace(' ', '')
 
         self.main.SETTING['Theme'] = theme
         self.main.SETTING['ScreenSize'] = screen_size
         self.main.SETTING['AutoUpdate'] = auto_update
         self.main.SETTING['MyDB'] = my_db
+        self.main.SETTING['GPT_Key'] = api_key
+        self.main.gpt_api_key = api_key
 
         options = {
             "theme": {"key": 1, "value": theme},  # 테마 설정
             "screensize": {"key": 2, "value": screen_size},  # 스크린 사이즈 설정
             "autoupdate": {"key": 4, "value": auto_update},  # 자동 업데이트 설정
-            "mydb": {"key": 5, "value": my_db}  # 내 DB만 보기 설정
+            "mydb": {"key": 5, "value": my_db},  # 내 DB만 보기 설정
+            "GPT_Key": {"key": 6, "value": api_key}
         }
         for option in options.values():
             self.main.update_settings(option['key'], option['value'])
