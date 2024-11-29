@@ -532,14 +532,14 @@ class Manager_Database:
         self.main.database_searchDB_lineinput.clear()
         if self.console_open == False:
             open_console("MANAGER ChatGPT")
-            print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 ChatGPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오\n\n'저장'을 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
+            print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 ChatGPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오. '저장' 또는 'save'를 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
             self.console_open = True
             self.log = ''
-        if search_text == '닫기' or search_text == 'quit':
+        if search_text == '닫기' or search_text.lower() == 'quit':
             close_console()
             self.console_open = False
             return
-        if search_text == "저장":
+        if search_text == "저장" or search_text.lower() == 'save':
             reply = QMessageBox.question(self.main, 'Notification', f"ChatGPT 프롬프트를 저장하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
