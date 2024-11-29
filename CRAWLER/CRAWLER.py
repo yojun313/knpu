@@ -355,9 +355,11 @@ class Crawler(CrawlerModule):
 
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
         self.mySQL.newTable(tableName=self.statisticsDB, column_list=statistiscs_column)
-        self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
-        if option == 2:
-            self.mySQL.newTable(tableName=self.rereplyDB, column_list=rereply_column)
+
+        if option in [1, 2]:
+            self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
+            if option == 2:
+                self.mySQL.newTable(tableName=self.rereplyDB, column_list=rereply_column)
 
         if self.weboption == 0:
             self.infoPrinter()
@@ -408,42 +410,44 @@ class Crawler(CrawlerModule):
                         else:
                             continue
 
-                        replyList_returnData = returnData['replyData']
-                        # replyData 정상 확인
-                        if self.ReturnChecker(replyList_returnData) == True:
-                            if articleStatus == True and article_returnData['articleData'] != []:
-                                self.mySQL.insertToTable(tableName=self.articleDB,
-                                                         data_list=article_returnData['articleData'] + [
-                                                             replyList_returnData['replyCnt']])
+                        if option == 3:
+                            self.mySQL.insertToTable(tableName=self.articleDB, data_list=article_returnData['articleData'] + [0])
 
-                                if replyList_returnData['statisticsData'] != []:
-                                    self.mySQL.insertToTable(tableName=self.statisticsDB,
-                                                             data_list=article_returnData['articleData'] +
-                                                                       replyList_returnData['statisticsData'])
+                        else:
+                            replyList_returnData = returnData['replyData']
+                            # replyData 정상 확인
+                            if self.ReturnChecker(replyList_returnData) == True:
+                                if articleStatus == True and article_returnData['articleData'] != []:
+                                    self.mySQL.insertToTable(tableName=self.articleDB,
+                                                             data_list=article_returnData['articleData'] + [
+                                                                 replyList_returnData['replyCnt']])
 
-                            if replyList_returnData['replyList'] != []:
-                                data_list = [sublist + [article_returnData['articleData'][5]] for sublist in
-                                             replyList_returnData['replyList']]
-                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
+                                    if replyList_returnData['statisticsData'] != []:
+                                        self.mySQL.insertToTable(tableName=self.statisticsDB,
+                                                                 data_list=article_returnData['articleData'] +
+                                                                           replyList_returnData['statisticsData'])
 
-                        if option == 2:
-                            # rereplyData 정상확인
-                            rereplyList_returnData = returnData['rereplyData']
-                            if self.ReturnChecker(rereplyList_returnData) == True and rereplyList_returnData[
-                                'rereplyList'] != []:
-                                data_list = [sublist + [article_returnData['articleData'][5]] for sublist in
-                                             rereplyList_returnData['rereplyList']]
-                                self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=data_list)
+                                if replyList_returnData['replyList'] != []:
+                                    data_list = [sublist + [article_returnData['articleData'][5]] for sublist in
+                                                 replyList_returnData['replyList']]
+                                    self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
+
+                            if option == 2:
+                                # rereplyData 정상확인
+                                rereplyList_returnData = returnData['rereplyData']
+                                if self.ReturnChecker(rereplyList_returnData) == True and rereplyList_returnData[
+                                    'rereplyList'] != []:
+                                    data_list = [sublist + [article_returnData['articleData'][5]] for sublist in
+                                                 rereplyList_returnData['rereplyList']]
+                                    self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=data_list)
 
                     if self.webCrawlerRunCheck() == False:
                         dayCount -= 1
                         continue
 
-                    NaverNewsCrawler_obj.ip_update()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()
-                    self.mySQL.connectDB(self.DBname)
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -854,7 +858,7 @@ class Crawler(CrawlerModule):
 
 def controller():
     option_dic = {
-        1 : "\n1. 기사 + 댓글\n2. 기사 + 댓글/대댓글\n",
+        1 : "\n1. 기사 + 댓글\n2. 기사 + 댓글/대댓글\n3. 기사\n",
         2 : "\n1. 블로그 본문\n2. 블로그 본문 + 댓글/대댓글\n",
         3 : "\n1. 카페 본문\n2. 카페 본문 + 댓글/대댓글\n",
         4 : "\n1. 영상 정보 + 댓글/대댓글 (100개 제한)\n2. 영상 정보 + 댓글/대댓글(무제한)\n",
