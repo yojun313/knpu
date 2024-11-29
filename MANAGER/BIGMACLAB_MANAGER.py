@@ -63,7 +63,7 @@ class MainWindow(QMainWindow):
                 self.close_bootscreen()
                 self.showMaximized()
             else:
-                self.resize(1400, 800)
+                self.resize(1400, 1000)
 
             self.setStyle()
             self.statusBar_init()
