@@ -530,8 +530,9 @@ class Manager_Database:
         self.main.database_searchDB_lineinput.clear()
         if self.console_open == False:
             open_console("MANAGER ChatGPT")
-            print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 ChatGPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오\n'저장'을 입력하면 프롬프트 기록을 저장할 수 있습니다")
+            print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 ChatGPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오\n\n'저장'을 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
             self.console_open = True
+            self.log = ''
         if search_text == '닫기' or search_text == 'quit':
             close_console()
             self.console_open = False
@@ -548,7 +549,7 @@ class Manager_Database:
                         f.write(self.log)
                     reply = QMessageBox.question(self.main, 'Notification', f"프롬프트 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
-                        self.main.openFileExplorer(file_path)
+                        self.main.openFileExplorer(os.path.dirname(file_path))
             else:
                 return
 
