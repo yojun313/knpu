@@ -460,7 +460,7 @@ class Manager_Database:
                     subprocess.Popen([exe_file_path], shell=True)
                     os._exit(0)
 
-            if search_text == './admin-mode' and self.user != 'admin':
+            if search_text == './admin-mode' and self.main.user != 'admin':
                 ok, password = self.main.pw_check(True)
                 if ok or password == self.main.admin_password:
                     self.user = 'admin'
