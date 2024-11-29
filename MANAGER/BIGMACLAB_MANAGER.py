@@ -2216,11 +2216,18 @@ class SettingsDialog(QDialog):
         user_device_label = QLabel(f"디바이스: {self.main.user_device}")
         user_device_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
 
+        if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20:
+            GPT_key_label = QLabel(f"ChatGPT API Key: 없음")
+        else:
+            GPT_key_label = QLabel(f"ChatGPT Key: {self.main.gpt_api_key}")
+        GPT_key_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
+
         # 사용자 정보 섹션 레이아웃 구성
         user_info_section.addWidget(user_title_label)
         user_info_section.addWidget(user_name_label)
         user_info_section.addWidget(user_email_label)
         user_info_section.addWidget(user_device_label)
+        user_info_section.addWidget(GPT_key_label)
 
         # 사용자 정보 섹션에 구분선 추가
         user_info_separator = QLabel()
