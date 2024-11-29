@@ -92,7 +92,7 @@
           <item>
            <widget class="QPushButton" name="database_chatgpt_button">
             <property name="text">
-             <string>ChatGPT</string>
+             <string>GPT</string>
             </property>
            </widget>
           </item>
