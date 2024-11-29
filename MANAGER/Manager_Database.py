@@ -525,7 +525,7 @@ class Manager_Database:
         search_text = self.main.database_searchDB_lineinput.text().lower()
         if self.console_open == False:
             open_console("MANAGER ChatGPT")
-            print("INFO: 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 GPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오")
+            print("SYSTEM > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 GPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오\n")
             self.console_open = True
         if search_text == '닫기' or search_text == 'quit':
             close_console()
