@@ -2219,7 +2219,7 @@ class SettingsDialog(QDialog):
         if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20:
             GPT_key_label = QLabel(f"ChatGPT API Key: 없음")
         else:
-            GPT_key_label = QLabel(f"ChatGPT Key: {self.main.gpt_api_key}")
+            GPT_key_label = QLabel(f"ChatGPT Key: {self.main.gpt_api_key[:40]}...")
         GPT_key_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
 
         # 사용자 정보 섹션 레이아웃 구성
