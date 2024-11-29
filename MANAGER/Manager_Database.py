@@ -527,25 +527,18 @@ class Manager_Database:
         if self.console_open == False:
             open_console("MANAGER ChatGPT")
             print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 GPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오\n")
-            print(f"{self.main.user} > ", end='')
             self.console_open = True
         if search_text == '닫기' or search_text == 'quit':
             close_console()
             self.console_open = False
             return
-        print(f"User > {search_text}")
 
+        print(f"User > {search_text}\n")
         # "ChatGPT > 답변 생성 중..." 출력
         print("ChatGPT > 답변 생성 중...", end='\r')
-
-        # ChatGPT 함수 호출
         answer = self.main.chatgpt_generate(search_text)
-
-        # "답변 생성 중..."을 덮어쓰고 결과 출력
-        print(f"ChatGPT > {answer}")
-
-        # 다음 사용자 입력 대기
-        print("User > ", end='')
+        print(f"ChatGPT > {answer}\n")
+        print("User > ", end='\r')
 
     def database_save_DB(self):
         try:
