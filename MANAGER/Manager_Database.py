@@ -533,10 +533,19 @@ class Manager_Database:
             close_console()
             self.console_open = False
             return
-        print(f"{search_text}\n")
+        print(f"User > {search_text}")
+
+        # "ChatGPT > 답변 생성 중..." 출력
+        print("ChatGPT > 답변 생성 중...", end='\r')
+
+        # ChatGPT 함수 호출
         answer = self.main.chatgpt_generate(search_text)
-        print(f"ChatGPT > {answer}\n")
-        print(f"{self.main.user} > ", end='')
+
+        # "답변 생성 중..."을 덮어쓰고 결과 출력
+        print(f"ChatGPT > {answer}")
+
+        # 다음 사용자 입력 대기
+        print("User > ", end='')
 
     def database_save_DB(self):
         try:
