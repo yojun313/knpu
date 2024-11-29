@@ -2067,6 +2067,8 @@ class SettingsDialog(QDialog):
         if setting['GPT_Key'] != 'default':
             self.api_key_input.setText(setting['GPT_Key'])  # 기존 값이 있으면 표시
             self.api_key_input.setDisabled(True)
+        else:
+            self.api_key_input.setEnabled(True)
 
         # 저장 버튼
         self.save_api_key_button = QPushButton("저장")
