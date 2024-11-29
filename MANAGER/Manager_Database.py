@@ -502,6 +502,7 @@ class Manager_Database:
             if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20:
                 QMessageBox.information(self.main, 'Notification', f'API Key가 설정되지 않았습니다\n\n환경설정에서 ChatGPT API Key를 입력해주십시오')
                 return
+            self.main.user_logging(f'User --> ChatGPT Mode ON')
             self.chatgpt_mode = True
             self.main.database_searchDB_button.clicked.disconnect()
             self.main.database_searchDB_lineinput.returnPressed.disconnect()
@@ -514,6 +515,7 @@ class Manager_Database:
             if self.console_open == True:
                 close_console()
             self.chatgpt_mode = False
+            self.main.user_logging(f'User --> ChatGPT Mode OFF')
             self.main.database_searchDB_button.clicked.disconnect()
             self.main.database_searchDB_lineinput.returnPressed.disconnect()
             self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
