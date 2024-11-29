@@ -438,6 +438,9 @@ class NaverNewsCrawler(CrawlerModule):
         semaphore = asyncio.Semaphore(10)
         async with semaphore:
             articleData = await self.articleCollector(newsURL, session)
+            if option == 3:
+                return {'articleData': articleData}
+
             replyData = await self.replyCollector(newsURL, session)
             if option == 1:
                 return {'articleData': articleData, 'replyData': replyData}
