@@ -439,9 +439,11 @@ class Crawler(CrawlerModule):
                         dayCount -= 1
                         continue
 
+                    NaverNewsCrawler_obj.ip_update()
                     self.mySQL.commit()
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()
+                    self.mySQL.connectDB(self.DBname)
 
                 except Exception as e:
                     error_msg = self.error_detector()
