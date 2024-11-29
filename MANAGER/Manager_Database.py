@@ -499,7 +499,7 @@ class Manager_Database:
 
     def database_search_chatgpt_toggle(self):
         if self.chatgpt_mode == False:
-            if self.main.gpt_api_key == 'default':
+            if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key['GPT_Key']) < 20:
                 QMessageBox.information(self.main, 'Notification', f'API Key가 설정되지 않았습니다\n\n환경설정에서 ChatGPT API Key를 입력해주십시오')
                 return
             self.chatgpt_mode = True
