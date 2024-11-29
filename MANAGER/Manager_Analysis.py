@@ -1237,6 +1237,12 @@ class Manager_Analysis:
             if any('Title' in word for word in list(filtered_object_csv_df.keys())):
                 reply = QMessageBox.question(self.main, 'Notification', f'키워드 필터링 데이터 저장이 완료되었습니다\n\nAI 분석을 진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
+                    if self.main.gpt_api_key == 'default':
+                        QMessageBox.information(self.main, 'Notification', f'API Key가 설정되지 않았습니다\n\n환경설정에서 ChatGPT API Key를 입력해주십시오')
+                        self.main.printStatus()
+                        self.main.openFileExplorer(analyze_directory)
+                        return
+
                     def gpt_start():
                         for column in filtered_object_csv_df.columns.tolist():
                             if 'Title' in column:

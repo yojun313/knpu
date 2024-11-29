@@ -27,6 +27,7 @@ class Manager_Database:
         self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester', 'Size']
         self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column, self.database_dbinfo_viewer)
         self.database_buttonMatch()
+        self.chatgpt_mode = False
         self.console_open = False
 
     def database_delete_DB(self):
@@ -406,56 +407,10 @@ class Manager_Database:
     def database_search_DB(self):
         try:
             search_text = self.main.database_searchDB_lineinput.text().lower()
-            if not search_text:
+            if not search_text or search_text == "":
                 return
 
-            # ADMIN MODE
-            try:
-                if search_text == './remove_all' and platform.system() == 'Windows':
-                    reply = QMessageBox.question(self.main, 'Program Delete',
-                                                 f"'C:/BIGMACLAB_MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
-                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                    if reply == QMessageBox.Yes:
-                        import subprocess
-                        import shutil
-                        if os.path.exists(self.main.default_directory):
-                            # 폴더 삭제
-                            shutil.rmtree(self.main.default_directory)
-                        if os.path.exists(self.main.SETTING['path']):
-                            os.remove(self.main.SETTING['path'])
-                        exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
-                        subprocess.Popen([exe_file_path], shell=True)
-                        os._exit(0)
-
-                if self.main.user != 'admin' and (search_text in ['./crawllog', './dblist'] or 'log' in search_text or 'error' in search_text):
-                    ok, password = self.main.pw_check(True)
-                    if not ok or password != self.main.admin_password:
-                        return
-                if search_text == './crawllog':
-                    self.main.table_view('crawler_db', 'crawl_log', 'max')
-                    return
-                if search_text == './dblist':
-                    self.main.table_view('crawler_db', 'db_list')
-                    return
-                if 'log' in search_text:
-                    match = re.match(r'\./(.+)_log', search_text)
-                    name = match.group(1)
-                    self.main.table_view(f'{name}_db', 'manager_record', 'max')
-                    return
-                if 'error' in search_text:
-                    # 패턴 매칭
-                    match = re.search(r"(?<=./error_)(.*)", search_text)
-                    dbname = match.group(1)
-                    self.main.mySQL_obj.connectDB('crawler_db')
-                    self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Endtime', '오류 중단')
-                    self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Datainfo', '오류 중단')
-                    self.main.mySQL_obj.commit()
-                    QMessageBox.information(self.main, "Information", f"{dbname} 상태를 변경했습니다")
-                    self.database_refresh_DB()
-
-            except:
-                pass
-
+            self.database_search_admin_mode(search_text)
             # 현재 선택된 행의 다음 행부터 검색 시작
             start_row = self.main.database_tablewidget.currentRow() + 1 if self.main.database_tablewidget.currentRow() != -1 else 0
 
@@ -485,6 +440,99 @@ class Manager_Database:
                     return
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
+
+    def database_search_admin_mode(self, search_text):
+        # ADMIN MODE
+        try:
+            if search_text == './remove_all' and platform.system() == 'Windows':
+                reply = QMessageBox.question(self.main, 'Program Delete',
+                                             f"'C:/BIGMACLAB_MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    import subprocess
+                    import shutil
+                    if os.path.exists(self.main.default_directory):
+                        # 폴더 삭제
+                        shutil.rmtree(self.main.default_directory)
+                    if os.path.exists(self.main.SETTING['path']):
+                        os.remove(self.main.SETTING['path'])
+                    exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
+                    subprocess.Popen([exe_file_path], shell=True)
+                    os._exit(0)
+
+            if search_text == './admin-mode' and self.user != 'admin':
+                ok, password = self.main.pw_check(True)
+                if ok or password == self.main.admin_password:
+                    self.user = 'admin'
+                    QMessageBox.information(self.main, "Admin Mode", f"관리자 권한이 부여되었습니다")
+                else:
+                    QMessageBox.warning(self.main, 'Wrong Password', "비밀번호가 올바르지 않습니다")
+
+            if self.main.user != 'admin' and (
+                    search_text in ['./crawllog', './dblist'] or 'log' in search_text or 'error' in search_text):
+                ok, password = self.main.pw_check(True)
+                if not ok or password != self.main.admin_password:
+                    return
+            if search_text == './crawllog':
+                self.main.table_view('crawler_db', 'crawl_log', 'max')
+                return
+            if search_text == './dblist':
+                self.main.table_view('crawler_db', 'db_list')
+                return
+            if 'log' in search_text:
+                match = re.match(r'\./(.+)_log', search_text)
+                name = match.group(1)
+                self.main.table_view(f'{name}_db', 'manager_record', 'max')
+                return
+            if 'error' in search_text:
+                # 패턴 매칭
+                match = re.search(r"(?<=./error_)(.*)", search_text)
+                dbname = match.group(1)
+                self.main.mySQL_obj.connectDB('crawler_db')
+                self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Endtime', '오류 중단')
+                self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Datainfo', '오류 중단')
+                self.main.mySQL_obj.commit()
+                QMessageBox.information(self.main, "Information", f"{dbname} 상태를 변경했습니다")
+                self.database_refresh_DB()
+        except:
+            pass
+
+    def database_search_chatgpt_toggle(self):
+        if self.chatgpt_mode == False:
+            if self.main.gpt_api_key == 'default':
+                QMessageBox.information(self.main, 'Notification', f'API Key가 설정되지 않았습니다\n\n환경설정에서 ChatGPT API Key를 입력해주십시오')
+                return
+            self.chatgpt_mode = True
+            self.main.database_searchDB_button.clicked.disconnect()
+            self.main.database_searchDB_lineinput.returnPressed.disconnect()
+            self.main.database_searchDB_button.clicked.connect(self.datbase_search_chatgpt)
+            self.main.database_searchDB_lineinput.returnPressed.connect(self.datbase_search_chatgpt)
+            self.main.database_searchDB_lineinput.setPlaceholderText("ChatGPT 에게 질문을 입력하고 Enter키나 검색 버튼을 누르세요...")
+            QMessageBox.information(self.main, "ChatGPT Mode", f"입력란이 ChatGPT 프롬프트로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
+            return
+        if self.chatgpt_mode == True:
+            if self.console_open == True:
+                close_console()
+            self.chatgpt_mode = False
+            self.main.database_searchDB_button.clicked.disconnect()
+            self.main.database_searchDB_lineinput.returnPressed.disconnect()
+            self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
+            self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_DB)
+            self.main.database_searchDB_lineinput.setPlaceholderText("검색어를 입력하고 Enter키나 검색 버튼을 누르세요...")
+            QMessageBox.information(self.main, "Search Mode", f"입력란이 DB 검색으로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
+            return
+    def datbase_search_chatgpt(self):
+        search_text = self.main.database_searchDB_lineinput.text().lower()
+        if self.console_open == False:
+            open_console("MANAGER ChatGPT")
+        if search_text == '닫기' or search_text == 'quit':
+            close_console()
+            return
+        print(f"{self.main.user} > {search_text}\n")
+        answer = self.main.chatgpt_generate(search_text)
+        print(f"ChatGPT > {answer}\n")
+
+
 
     def database_save_DB(self):
         try:
@@ -788,7 +836,9 @@ class Manager_Database:
     def database_buttonMatch(self):
         self.main.database_refreshDB_button.clicked.connect(self.database_refresh_DB)
         self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
+        self.main.database_chatgpt_button.clicked.connect(self.database_search_chatgpt_toggle)
         self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_DB)
+        self.main.database_searchDB_lineinput.setPlaceholderText("검색어를 입력하고 Enter키나 검색 버튼을 누르세요...")
 
         self.main.database_saveDB_button.clicked.connect(self.database_save_DB)
         self.main.database_deleteDB_button.clicked.connect(self.database_delete_DB)
