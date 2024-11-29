@@ -73,6 +73,7 @@ class CrawlerModule(ToolModule):
         self.mySQL.connectDB('crawler_db')
         self.proxy_list = self.mySQL.TableToList('proxy_list')
         self.proxy_list = [proxy[0] for proxy in self.proxy_list]
+        self.mySQL.disconnectDB()
 
     def setCrawlSpeed(self, speed):
         self.socketnum = speed
