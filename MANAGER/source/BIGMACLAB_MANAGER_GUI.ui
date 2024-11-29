@@ -80,15 +80,19 @@
          <layout class="QHBoxLayout" name="horizontalLayout_search">
           <item>
            <widget class="QLineEdit" name="database_searchDB_lineinput">
-            <property name="placeholderText">
-             <string>검색어를 입력하고 Enter키나 검색 버튼을 누르세요...</string>
-            </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="database_searchDB_button">
             <property name="text">
              <string>검색</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="database_chatgpt_button">
+            <property name="text">
+             <string>ChatGPT</string>
             </property>
            </widget>
           </item>
