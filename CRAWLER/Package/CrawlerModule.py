@@ -29,7 +29,7 @@ from rich.table import Table
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-TIMEOUT = 10
+TIMEOUT = 30
 TRYNUM = 10
 
 # 옵션 유무는 True(yes) 또는 False(no)
