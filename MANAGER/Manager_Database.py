@@ -522,22 +522,43 @@ class Manager_Database:
             QMessageBox.information(self.main, "Search Mode", f"입력란이 DB 검색으로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
             return
     def datbase_search_chatgpt(self):
+        def add_to_log(message):
+            """출력 메시지를 로그에 추가"""
+            self.log += message + "\n"
+
         search_text = self.main.database_searchDB_lineinput.text().lower()
         self.main.database_searchDB_lineinput.clear()
         if self.console_open == False:
             open_console("MANAGER ChatGPT")
-            print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 GPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오\n")
+            print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 ChatGPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오\n'저장'을 입력하면 프롬프트 기록을 저장할 수 있습니다")
             self.console_open = True
         if search_text == '닫기' or search_text == 'quit':
             close_console()
             self.console_open = False
             return
+        if search_text == "저장":
+            reply = QMessageBox.question(self.main, 'Notification', f"ChatGPT 프롬프트를 저장하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
+                if folder_path == '':
+                    return
+                if folder_path:
+                    file_path = os.path.join(folder_path, f"{datetime.now().strftime("%Y%m%d_%H%M")}_GPT_log.txt")
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        f.write(self.log)
+                    reply = QMessageBox.question(self.main, 'Notification', f"프롬프트 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                    if reply == QMessageBox.Yes:
+                        self.main.openFileExplorer(file_path)
+            else:
+                return
 
         print(f"User > {search_text}\n")
+        add_to_log(f"User > {search_text}\n")
         # "ChatGPT > 답변 생성 중..." 출력
         print("ChatGPT > 답변 생성 중...", end='\r')
         answer = self.main.chatgpt_generate(search_text)
         print(f"ChatGPT > {answer}\n")
+        add_to_log(f"ChatGPT > {answer}\n")
         print("User > ", end='\r')
 
     def database_save_DB(self):
