@@ -523,9 +523,10 @@ class Manager_Database:
             return
     def datbase_search_chatgpt(self):
         search_text = self.main.database_searchDB_lineinput.text().lower()
+        self.main.database_searchDB_lineinput.clear()
         if self.console_open == False:
             open_console("MANAGER ChatGPT")
-            print("SYSTEM > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 GPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오\n")
+            print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 GPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오\n")
             self.console_open = True
         if search_text == '닫기' or search_text == 'quit':
             close_console()
@@ -534,8 +535,6 @@ class Manager_Database:
         print(f"{self.main.user} > {search_text}\n")
         answer = self.main.chatgpt_generate(search_text)
         print(f"ChatGPT > {answer}\n")
-
-
 
     def database_save_DB(self):
         try:
@@ -847,6 +846,7 @@ class Manager_Database:
         self.main.database_deleteDB_button.clicked.connect(self.database_delete_DB)
         self.main.database_viewDB_button.clicked.connect(self.database_view_DB)
 
+        self.main.database_chatgpt_button.setToolTip("ChatGPT Mode")
         self.main.database_saveDB_button.setToolTip("Ctrl+S")
         self.main.database_viewDB_button.setToolTip("Ctrl+V")
         self.main.database_deleteDB_button.setToolTip("Ctrl+D")
