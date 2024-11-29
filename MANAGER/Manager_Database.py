@@ -552,6 +552,7 @@ class Manager_Database:
                         self.main.openFileExplorer(os.path.dirname(file_path))
             else:
                 return
+            return
 
         print(f"User > {search_text}\n")
         add_to_log(f"User > {search_text}\n")
