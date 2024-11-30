@@ -563,8 +563,13 @@ class Manager_Database:
         # "ChatGPT > 답변 생성 중..." 출력
         print("ChatGPT > 답변 생성 중...", end='\r')
         answer = self.main.chatgpt_generate(search_text)
-        print(f"ChatGPT > {answer}\n")
-        add_to_log(f"ChatGPT > {answer}\n")
+        if type(answer) != str:
+            print(f"ChatGPT > 답변 생성 중 오류 발생\n")
+            print(f"System > {answer[1]}\n")
+            add_to_log(f"System > {answer[1]}\n")
+        else:
+            print(f"ChatGPT > {answer}\n")
+            add_to_log(f"ChatGPT > {answer}\n")
         print("User > ", end='\r')
 
     def database_save_DB(self):
