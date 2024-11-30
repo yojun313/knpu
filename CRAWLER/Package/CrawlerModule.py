@@ -252,7 +252,7 @@ class CrawlerModule(ToolModule):
             return None
 
     async def asyncRequester(self, url, headers={}, params={}, proxies='', cookies={}, session=None):
-        timeout = aiohttp.ClientTimeout(total=60)
+        timeout = aiohttp.ClientTimeout(total=TIMEOUT)
         trynum = 0
         while True:
             try:

@@ -373,10 +373,11 @@ class Crawler(CrawlerModule):
 
                     if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
                         self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
-                        self.mySQL.TableToCSV(tableName=self.statisticsDB, csv_path=self.DBpath)
-                        self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
-                        if option == 2:
-                            self.mySQL.TableToCSV(tableName=self.rereplyDB, csv_path=self.DBpath)
+                        if option in [1, 2]:
+                            self.mySQL.TableToCSV(tableName=self.statisticsDB, csv_path=self.DBpath)
+                            self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
+                            if option == 2:
+                                self.mySQL.TableToCSV(tableName=self.rereplyDB, csv_path=self.DBpath)
 
                     # finish line
                     if dayCount == self.date_range:
