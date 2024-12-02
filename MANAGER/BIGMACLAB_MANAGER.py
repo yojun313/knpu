@@ -38,7 +38,7 @@ import textwrap
 
 warnings.filterwarnings("ignore")
 
-VERSION = '2.3.2'
+VERSION = '2.3.3'
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
@@ -77,6 +77,9 @@ class MainWindow(QMainWindow):
                 try:
                     self.startTime = datetime.now()
                     self.gpt_api_key = self.SETTING['GPT_Key']
+                    self.CONFIG = {
+                        'Logging': 'On'
+                    }
                     self.check_internet_connection()
                     # open_console("Booting Process")
                     self.listWidget.currentRowChanged.connect(self.display)
@@ -186,6 +189,7 @@ class MainWindow(QMainWindow):
                     print(f"\n{self.user}님 환영합니다!")
 
                     self.user_logging(f'Booting ({self.user_location()})', booting=True)
+                    self.check_configuration()
                     self.update_program()
                     self.newpost_check()
 
@@ -396,6 +400,8 @@ class MainWindow(QMainWindow):
 
     def user_logging(self, text='', booting=False):
         try:
+            if self.CONFIG['Logging'] == 'Off':
+                return
             self.mySQL_obj.disconnectDB()
             self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
             if booting == True:
@@ -421,6 +427,13 @@ class MainWindow(QMainWindow):
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', text, add=True)
         except Exception as e:
             print(traceback.format_exc())
+
+    def check_configuration(self):
+        self.mySQL_obj.connectDB('bigmaclab_manager_db')
+        configDF = self.mySQL_obj.TableToDataframe('configuration')
+        self.CONFIG = dict(zip(configDF[configDF.columns[1]], configDF[configDF.columns[2]]))
+
+        return self.CONFIG
 
     def user_bugging(self, text=''):
         try:
@@ -885,6 +898,9 @@ class MainWindow(QMainWindow):
 
             shortcut = QShortcut(QKeySequence("Ctrl+W"), self.details_dialog)
             shortcut.activated.connect(self.details_dialog.close)
+
+            shortcut2 = QShortcut(QKeySequence("Ctrl+ㅈ"), self.details_dialog)
+            shortcut2.activated.connect(self.details_dialog.close)
 
             # 다이얼로그 실행
             self.details_dialog.exec_()
@@ -1599,9 +1615,10 @@ class MainWindow(QMainWindow):
                                      QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             try:
-                self.user_logging('Shutdown')
-                self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
-                self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
+                if self.CONFIG['Logging'] == 'On':
+                    self.user_logging('Shutdown')
+                    self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
+                    self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
                 self.temp_cleanup()
             except Exception as e:
                 print(traceback.format_exc())

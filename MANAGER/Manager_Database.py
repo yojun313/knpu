@@ -465,7 +465,7 @@ class Manager_Database:
             if search_text == './admin-mode' and self.main.user != 'admin':
                 ok, password = self.main.pw_check(True)
                 if ok or password == self.main.admin_password:
-                    self.user = 'admin'
+                    self.main.user = 'admin'
                     QMessageBox.information(self.main, "Admin Mode", f"관리자 권한이 부여되었습니다")
                 else:
                     QMessageBox.warning(self.main, 'Wrong Password', "비밀번호가 올바르지 않습니다")
@@ -475,6 +475,14 @@ class Manager_Database:
                 ok, password = self.main.pw_check(True)
                 if not ok or password != self.main.admin_password:
                     return
+            if search_text == './toggle-logging':
+                mode_changed = 'On' if self.main.CONFIG['Logging'] == 'Off' else 'Off'
+                self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                self.main.mySQL_obj.updateTableCellByCondition('configuration', 'Setting', 'Logging', 'Config', mode_changed)
+                self.main.mySQL_obj.commit()
+                self.main.CONFIG['Logging'] = 'On' if self.main.CONFIG['Logging'] == 'Off' else 'Off'
+                QMessageBox.information(self.main, "Information", f"Logging 설정을 '{mode_changed}'으로 변경했습니다")
+                return
             if search_text == './crawllog':
                 self.main.table_view('crawler_db', 'crawl_log', 'max')
                 return
@@ -486,7 +494,7 @@ class Manager_Database:
                 name = match.group(1)
                 self.main.table_view(f'{name}_db', 'manager_record', 'max')
                 return
-            if 'error' in search_text:
+            if 'error' in search_text:  # ./error_db 이름
                 # 패턴 매칭
                 match = re.search(r"(?<=./error_)(.*)", search_text)
                 dbname = match.group(1)
@@ -530,7 +538,7 @@ class Manager_Database:
             """출력 메시지를 로그에 추가"""
             self.log += message + "\n"
 
-        search_text = self.main.database_searchDB_lineinput.text().lower()
+        search_text = self.main.database_searchDB_lineinput.text()
         self.main.database_searchDB_lineinput.clear()
         if self.console_open == False:
             open_console("MANAGER ChatGPT")
@@ -867,7 +875,7 @@ class Manager_Database:
 
             QTimer.singleShot(1, refresh_database)
             QTimer.singleShot(1, self.main.printStatus)
-            QTimer.singleShot(1000, lambda: self.main.printStatus(f"{self.main.fullstorage} GB / 8 TB"))
+            QTimer.singleShot(1000, lambda: self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB"))
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
