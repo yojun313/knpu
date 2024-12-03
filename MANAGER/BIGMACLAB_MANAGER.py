@@ -813,7 +813,7 @@ class MainWindow(QMainWindow):
             starttime = DBdata[2]
             endtime = DBdata[3]
 
-            if endtime == '-':
+            if endtime == '-' or endtime == '크롤링 중':
                 endtime = '크롤링 중'
             elif endtime == 'X':
                 endtime = '오류 중단'
