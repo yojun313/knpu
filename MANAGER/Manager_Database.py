@@ -47,8 +47,8 @@ class Manager_Database:
                         QMessageBox.warning(self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
                         return
 
-                    if endtime == '-':
-                        confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하시겠습니까?"
+                    if endtime == '크롤링 중':
+                        confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하고 DB를 삭제하시겠습니까?"
                     else:
                         confirm_msg = f"'{target_db}'를 삭제하시겠습니까?"
 

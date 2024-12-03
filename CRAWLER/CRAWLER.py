@@ -168,7 +168,7 @@ class Crawler(CrawlerModule):
 
         option = self.option
         starttime = datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')
-        endtime = '-'
+        endtime = '크롤링 중'
         requester = self.user
         keyword = self.keyword
         dbsize = 0
