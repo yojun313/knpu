@@ -160,13 +160,13 @@ class MainWindow(QMainWindow):
                     while True:
                         try:
                             print("\nLoading Data from DB... ", end='')
+                            self.Manager_User_obj.userDB_layout_maker()
                             self.Manager_Board_obj = Manager_Board(self)
                             self.update_program(auto = self.SETTING['AutoUpdate'])
                             self.DB = self.update_DB()
                             self.Manager_Database_obj = Manager_Database(self)
                             self.Manager_Web_obj = Manager_Web(self)
                             self.Manager_Analysis_obj = Manager_Analysis(self)
-                            self.Manager_userDB_generate = False
                             print("Done")
                             break
                         except Exception as e:
@@ -429,11 +429,14 @@ class MainWindow(QMainWindow):
             print(traceback.format_exc())
 
     def check_configuration(self):
-        self.mySQL_obj.connectDB('bigmaclab_manager_db')
-        configDF = self.mySQL_obj.TableToDataframe('configuration')
-        self.CONFIG = dict(zip(configDF[configDF.columns[1]], configDF[configDF.columns[2]]))
+        try:
+            self.mySQL_obj.connectDB('bigmaclab_manager_db')
+            configDF = self.mySQL_obj.TableToDataframe('configuration')
+            self.CONFIG = dict(zip(configDF[configDF.columns[1]], configDF[configDF.columns[2]]))
 
-        return self.CONFIG
+            return self.CONFIG
+        except Exception as e:
+            print(traceback.format_exc())
 
     def user_bugging(self, text=''):
         try:
@@ -1450,8 +1453,6 @@ class MainWindow(QMainWindow):
         # CRAWLER
         elif index == 1:
             self.shortcut_initialize()
-            self.Manager_Web_obj.web_open_webbrowser('http://bigmaclab-crawler.kro.kr:81',
-                                                     self.Manager_Web_obj.crawler_web_layout)
             QTimer.singleShot(1000, lambda: self.printStatus(f"활성 크롤러 수: {self.activate_crawl}"))
         # ANALYSIS
         elif index == 2:
@@ -1469,9 +1470,6 @@ class MainWindow(QMainWindow):
         # USER
         elif index == 5:
             self.printStatus()
-            if self.Manager_userDB_generate == False:
-                self.Manager_User_obj.userDB_layout_maker()
-                self.Manager_userDB_generate = True
             self.Manager_User_obj.user_shortcut_setting()
 
         elif index == 6:
