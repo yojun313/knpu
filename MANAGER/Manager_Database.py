@@ -470,11 +470,6 @@ class Manager_Database:
                 else:
                     QMessageBox.warning(self.main, 'Wrong Password', "비밀번호가 올바르지 않습니다")
 
-            if self.main.user != 'admin' and (
-                    search_text in ['./crawllog', './dblist'] or 'log' in search_text or 'error' in search_text):
-                ok, password = self.main.pw_check(True)
-                if not ok or password != self.main.admin_password:
-                    return
             if search_text == './toggle-logging':
                 mode_changed = 'On' if self.main.CONFIG['Logging'] == 'Off' else 'Off'
                 self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
@@ -488,6 +483,9 @@ class Manager_Database:
                 return
             if search_text == './dblist':
                 self.main.table_view('crawler_db', 'db_list')
+                return
+            if search_text == './configure':
+                self.main.table_view('bigmaclab_manager_db', 'configuration')
                 return
             if 'log' in search_text:
                 match = re.match(r'\./(.+)_log', search_text)
