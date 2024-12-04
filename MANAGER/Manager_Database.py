@@ -544,10 +544,10 @@ class Manager_Database:
         if speech == True:
             if self.console_open == False:
                 open_console("MANAGER ChatGPT")
-                print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 ChatGPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오. '저장' 또는 'save'를 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
+                print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 ChatGPT 버튼을 클릭하거나 입력란에 '닫기' 또는 'quit'을 입력하여 주십시오. '저장' 또는 'save'를 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
                 self.console_open = True
                 self.log = ''
-            print("음성 인식 중...", end='\r')
+            print("System > 음성 인식 중...\n")
             search_text = self.main.microphone()
         else:
             search_text = self.main.database_searchDB_lineinput.text()
@@ -577,6 +577,8 @@ class Manager_Database:
             else:
                 return
             return
+        if search_text == "음성 인식 실패":
+            return
 
         print(f"User > {search_text}\n")
         add_to_log(f"User > {search_text}\n")
@@ -590,7 +592,7 @@ class Manager_Database:
         else:
             print(f"ChatGPT > {answer}\n")
             add_to_log(f"ChatGPT > {answer}\n")
-        if speech == True:
+        if speech == True and self.main.SETTING['GPT_TTS'] == 'default':
             self.main.speecher(answer)
 
         print("User > ", end='\r')
