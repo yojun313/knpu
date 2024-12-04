@@ -44,7 +44,7 @@ import tempfile
 
 warnings.filterwarnings("ignore")
 
-VERSION = '2.3.3'
+VERSION = '2.3.4'
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
