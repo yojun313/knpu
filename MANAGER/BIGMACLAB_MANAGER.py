@@ -1608,16 +1608,23 @@ class MainWindow(QMainWindow):
 
     def speecher(self, text):
         try:
-            # 임시 파일 생성
-            with tempfile.NamedTemporaryFile(delete=True, suffix=".mp3") as temp_file:
+            # 임시 파일 생성 (delete=False로 설정)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
+                temp_file_name = temp_file.name  # 파일 경로 저장
                 # gTTS를 사용해 텍스트를 음성으로 변환
                 tts = gTTS(text=text, lang='ko')
-                tts.save(temp_file.name)  # 임시 파일에 저장
+                tts.save(temp_file_name)  # 임시 파일에 저장
 
-                # 음성 파일 재생
-                playsound(temp_file.name)
+            # 음성 파일 재생
+            playsound(temp_file_name)
+
         except Exception as e:
             print(f"오류가 발생했습니다: {e}")
+
+        finally:
+            # 임시 파일 삭제
+            if os.path.exists(temp_file_name):
+                os.remove(temp_file_name)
         
     def program_bug_log(self, text):
         print(text)
