@@ -2,7 +2,7 @@ import os
 import sys
 from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
-    QHBoxLayout, QAction, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
+    QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
     QPushButton, QMainWindow, QApplication, QSpacerItem, QStackedWidget, QListWidget
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSize
 from PyQt5.QtGui import QKeySequence, QPixmap, QFont, QPainter, QBrush, QColor, QIcon
@@ -78,10 +78,9 @@ class MainWindow(QMainWindow):
                     self.startTime = datetime.now()
                     self.gpt_api_key = self.SETTING['GPT_Key']
                     self.CONFIG = {
-                        'Logging': 'On'
+                        'Logging': 'Off'
                     }
                     self.check_internet_connection()
-                    # open_console("Booting Process")
                     self.listWidget.currentRowChanged.connect(self.display)
 
                     if platform.system() == "Windows":
@@ -118,7 +117,7 @@ class MainWindow(QMainWindow):
 
                     self.network_text = (
                         "\n\n[ DB 접속 반복 실패 시... ]\n"
-                        "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 작동하는지 확인하십시오"
+                        "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 동작하는지 확인하십시오"
                         "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
                     )
 
@@ -193,9 +192,8 @@ class MainWindow(QMainWindow):
                     self.update_program()
                     self.newpost_check()
 
-                    # close_console()
-
                 except Exception as e:
+                    print("Failed")
                     print(traceback.format_exc())
                     self.close_bootscreen()
                     self.printStatus()
@@ -722,29 +720,6 @@ class MainWindow(QMainWindow):
         self.statusbar.addPermanentWidget(self.left_label, 1)
         self.statusbar.addPermanentWidget(self.right_label, 1)
 
-    def menubar_init(self):
-        import webbrowser
-        def showInfoDialog():
-            dialog = SplashDialog(self.version)
-            dialog.exec_()
-
-        menubar = self.menuBar()
-
-        # 파일 메뉴 생성
-        infoMenu = menubar.addMenu('&Info')
-        # 액션 생성
-        infoAct = QAction('About MANAGER', self)
-        infoAct.triggered.connect(showInfoDialog)
-        infoMenu.addAction(infoAct)
-
-        helpMenu = menubar.addMenu('&Help')
-        helpAct = QAction('Help', self)
-        helpAct.triggered.connect(lambda: webbrowser.open('https://knpu.re.kr/tool'))
-
-        helpMenu.addAction(helpAct)
-        # editMenu.addAction(copyAct)
-        # editMenu.addAction(pasteAct)
-
     def shortcut_init(self):
         self.ctrld = QShortcut(QKeySequence("Ctrl+D"), self)
         self.ctrls = QShortcut(QKeySequence("Ctrl+S"), self)
@@ -758,6 +733,7 @@ class MainWindow(QMainWindow):
         self.ctrlk = QShortcut(QKeySequence("Ctrl+K"), self)
         self.ctrlm = QShortcut(QKeySequence("Ctrl+M"), self)
         self.ctrlp = QShortcut(QKeySequence("Ctrl+P"), self)
+        self.ctrlc = QShortcut(QKeySequence("Ctrl+C"), self)
         self.ctrlpp = QShortcut(QKeySequence("Ctrl+Shift+P"), self)
 
         self.cmdd = QShortcut(QKeySequence("Ctrl+ㅇ"), self)
@@ -772,6 +748,7 @@ class MainWindow(QMainWindow):
         self.cmdk = QShortcut(QKeySequence("Ctrl+ㅏ"), self)
         self.cmdm = QShortcut(QKeySequence("Ctrl+ㅡ"), self)
         self.cmdp = QShortcut(QKeySequence("Ctrl+ㅔ"), self)
+        self.cmdc = QShortcut(QKeySequence("Ctrl+ㅊ"), self)
         self.cmdpp = QShortcut(QKeySequence("Ctrl+Shift+ㅔ"), self)
 
         self.ctrlu.activated.connect(lambda: self.update_program(True))
@@ -783,8 +760,8 @@ class MainWindow(QMainWindow):
         self.cmdpp.activated.connect(lambda: self.developer_mode(False))
 
     def shortcut_initialize(self):
-        shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrle, self.ctrlr, self.ctrlk, self.ctrlm,
-                     self.cmdd, self.cmds, self.cmdv, self.cmda, self.cmdl, self.cmde, self.cmdr, self.cmdk, self.cmdm]
+        shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrle, self.ctrlr, self.ctrlk, self.ctrlm, self.ctrlc,
+                     self.cmdd, self.cmds, self.cmdv, self.cmda, self.cmdl, self.cmde, self.cmdr, self.cmdk, self.cmdm, self.cmdc]
         for shortcut in shortcuts:
             try:
                 shortcut.activated.disconnect()
@@ -1936,6 +1913,17 @@ class SettingsDialog(QDialog):
         """)
         cancel_button.clicked.connect(self.reject)  # 취소 버튼 클릭 이벤트 연결
 
+        close_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
+        close_shortcut.activated.connect(self.reject)
+        close_shortcut_mac = QShortcut(QKeySequence("Ctrl+ㅈ"), self)
+        close_shortcut_mac.activated.connect(self.reject)
+        save_shortcut = QShortcut(QKeySequence("Ctrl+S"), self)
+        save_shortcut.activated.connect(self.save_settings)
+        save_shortcut_mac = QShortcut(QKeySequence("Ctrl+ㄴ"), self)
+        save_shortcut_mac.activated.connect(self.save_settings)
+
+
+
         button_layout.addStretch()  # 버튼을 오른쪽으로 정렬
         button_layout.addWidget(save_button)
         button_layout.addWidget(cancel_button)
@@ -2175,7 +2163,7 @@ class SettingsDialog(QDialog):
         db_refresh_label = QLabel("DB 자동 새로고침:")
         db_refresh_label.setAlignment(Qt.AlignLeft)
         db_refresh_label.setStyleSheet("font-size: 14px; font-weight: bold;")
-        db_refresh_label.setToolTip("DATABASE 섹션으로 이동 시 자동으로 DB 목록을 새로고침할지 여부를 설정합니다")
+        db_refresh_label.setToolTip("DATABASE 섹션으로 이동 시 자동으로 DB 목록을 새로고침할지 여부를 설정합니다\n'Ctrl+R'로 수동 새로고침 가능합니다")
 
         self.default_dbrefresh_toggle = QPushButton("켜기")
         self.off_dbrefresh_toggle = QPushButton("끄기")
