@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, 
     QPushButton, QMainWindow, QApplication, QSpacerItem, QStackedWidget, QListWidget
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSize
 from PyQt5.QtGui import QKeySequence, QPixmap, QFont, QPainter, QBrush, QColor, QIcon
+import speech_recognition as sr
+import sounddevice as sd
 from openai import OpenAI
 from mySQL import mySQL
 from Manager_Database import Manager_Database
@@ -35,6 +37,10 @@ import re
 import logging
 import shutil
 import textwrap
+from gtts import gTTS
+from playsound import playsound
+import os
+import tempfile
 
 warnings.filterwarnings("ignore")
 
@@ -48,6 +54,7 @@ class MainWindow(QMainWindow):
             self.versionNum = VERSION
             self.version = 'Version ' + self.versionNum
             self.splash_dialog = splash_dialog
+            self.recognizer = sr.Recognizer()
 
             super(MainWindow, self).__init__()
             ui_path = os.path.join(os.path.dirname(__file__), 'source', 'BIGMACLAB_MANAGER_GUI.ui')
@@ -785,6 +792,17 @@ class MainWindow(QMainWindow):
             DB_name = DBdata[0]
             db_split = DB_name.split('_')
             crawltype = db_split[0]
+
+            match crawltype:
+                case 'navernews':
+                    crawltype = 'Naver News'
+                case 'naverblog':
+                    crawltype = 'Naver Blog'
+                case 'navercafe':
+                    crawltype = 'Naver Cafe'
+                case 'youtube':
+                    crawltype = 'YouTube'
+
             keyword = db_split[1]
             date = f"{db_split[2]}~{db_split[3]}"
 
@@ -898,7 +916,7 @@ class MainWindow(QMainWindow):
             for j, cell_data in enumerate(row_data):
                 item = QTableWidgetItem(cell_data)
                 item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
-                item.setToolTip(str(cell_data))  # Tooltip 설정
+                item.setToolTip(str(cell_data)+"\n\n더블클릭 시 상세보기")  # Tooltip 설정
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # 수정 불가능 설정
                 widgetname.setItem(i, j, item)
 
@@ -1574,6 +1592,31 @@ class MainWindow(QMainWindow):
             # 예외 발생 시 에러 메시지 반환
             return (0, traceback.format_exc())
 
+    def microphone(self):
+        with sr.Microphone() as source:
+            audio = self.recognizer.listen(source)
+
+        # Google Web Speech API를 사용하여 음성 인식
+        try:
+            return self.recognizer.recognize_google(audio, language='ko-KR')
+        except sr.UnknownValueError:
+            return f"오류 발생\n{traceback.format_exc()}"
+        except sr.RequestError as e:
+            return f"오류 발생\n{traceback.format_exc()}"
+
+    def speecher(self, text):
+        try:
+            # 임시 파일 생성
+            with tempfile.NamedTemporaryFile(delete=True, suffix=".mp3") as temp_file:
+                # gTTS를 사용해 텍스트를 음성으로 변환
+                tts = gTTS(text=text, lang='ko')
+                tts.save(temp_file.name)  # 임시 파일에 저장
+
+                # 음성 파일 재생
+                playsound(temp_file.name)
+        except Exception as e:
+            print(f"오류가 발생했습니다: {e}")
+        
     def program_bug_log(self, text):
         print(text)
         if self.user == 'admin':

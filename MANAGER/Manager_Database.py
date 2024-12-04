@@ -9,8 +9,8 @@ import pandas as pd
 from tqdm import tqdm
 from datetime import datetime
 import platform
-from PyQt5.QtCore import QTimer, QDate
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtCore import QTimer, QDate, QSize
+from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
     QWidget, QMainWindow, QDialog, QVBoxLayout, QFormLayout, QTableWidget,
     QButtonGroup, QPushButton, QDialogButtonBox, QRadioButton, QLabel, QTabWidget,
@@ -514,9 +514,11 @@ class Manager_Database:
             self.chatgpt_mode = True
             self.main.database_searchDB_button.clicked.disconnect()
             self.main.database_searchDB_lineinput.returnPressed.disconnect()
-            self.main.database_searchDB_button.clicked.connect(self.datbase_search_chatgpt)
-            self.main.database_searchDB_lineinput.returnPressed.connect(self.datbase_search_chatgpt)
-            self.main.database_searchDB_lineinput.setPlaceholderText("ChatGPT 에게 질문을 입력하고 Enter키나 검색 버튼을 누르세요...")
+            self.main.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'source', 'microphone.png')))  # 아이콘 설정 (이미지 경로 지정)
+            self.main.database_searchDB_button.setIconSize(QSize(18, 18))  # 아이콘 크기 조정 (원하는 크기로 설정)
+            self.main.database_searchDB_button.clicked.connect(lambda: self.database_search_chatgpt(True))
+            self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_chatgpt)
+            self.main.database_searchDB_lineinput.setPlaceholderText("ChatGPT 에게 질문을 입력하고 Enter키를 누르세요 / 음성인식 버튼을 클릭하고 음성으로 질문하세요...")
             QMessageBox.information(self.main, "ChatGPT Mode", f"입력란이 ChatGPT 프롬프트로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
             return
         if self.chatgpt_mode == True:
@@ -526,17 +528,29 @@ class Manager_Database:
             self.main.user_logging(f'User --> ChatGPT Mode OFF')
             self.main.database_searchDB_button.clicked.disconnect()
             self.main.database_searchDB_lineinput.returnPressed.disconnect()
+            self.main.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'source', 'search.png')))  # 아이콘 설정 (이미지 경로 지정)
+            self.main.database_searchDB_button.setIconSize(QSize(18, 18))  # 아이콘 크기 조정 (원하는 크기로 설정)
             self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
             self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_DB)
             self.main.database_searchDB_lineinput.setPlaceholderText("검색어를 입력하고 Enter키나 검색 버튼을 누르세요...")
             QMessageBox.information(self.main, "Search Mode", f"입력란이 DB 검색으로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
             return
-    def datbase_search_chatgpt(self):
+
+    def database_search_chatgpt(self, speech=False):
         def add_to_log(message):
             """출력 메시지를 로그에 추가"""
             self.log += message + "\n"
 
-        search_text = self.main.database_searchDB_lineinput.text()
+        if speech == True:
+            if self.console_open == False:
+                open_console("MANAGER ChatGPT")
+                print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 ChatGPT 버튼을 클릭하거나 입렵란에 '닫기' 또는 'quit'을 입력하여 주십시오. '저장' 또는 'save'를 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
+                self.console_open = True
+                self.log = ''
+            print("음성 인식 중...", end='\r')
+            search_text = self.main.microphone()
+        else:
+            search_text = self.main.database_searchDB_lineinput.text()
         self.main.database_searchDB_lineinput.clear()
         if self.console_open == False:
             open_console("MANAGER ChatGPT")
@@ -576,6 +590,9 @@ class Manager_Database:
         else:
             print(f"ChatGPT > {answer}\n")
             add_to_log(f"ChatGPT > {answer}\n")
+        if speech == True:
+            self.main.speecher(answer)
+
         print("User > ", end='\r')
 
     def database_save_DB(self):
@@ -891,6 +908,10 @@ class Manager_Database:
         self.main.database_saveDB_button.setToolTip("Ctrl+S")
         self.main.database_viewDB_button.setToolTip("Ctrl+V")
         self.main.database_deleteDB_button.setToolTip("Ctrl+D")
+
+        self.main.database_searchDB_button.setText("")  # 텍스트 제거
+        self.main.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'source', 'search.png')))  # 아이콘 설정 (이미지 경로 지정)
+        self.main.database_searchDB_button.setIconSize(QSize(18, 18))  # 아이콘 크기 조정 (원하는 크기로 설정)
 
     def database_shortcut_setting(self):
         self.main.shortcut_initialize()
