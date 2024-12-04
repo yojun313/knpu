@@ -1,17 +1,28 @@
-import speech_recognition as sr
-import sounddevice as sd
-# 음성 인식 객체 생성
-recognizer = sr.Recognizer()
+import pyttsx3
 
-# 마이크에서 입력받기
-with sr.Microphone() as source:
-    print("말하세요...")
-    audio = recognizer.listen(source)
+def speecher(text):
+    try:
+        # pyttsx3 엔진 초기화
+        engine = pyttsx3.init()
 
-# Google Web Speech API를 사용하여 음성 인식
-try:
-    print("인식된 텍스트: " + recognizer.recognize_google(audio, language='ko-KR'))
-except sr.UnknownValueError:
-    print("Google Web Speech API가 당신의 말을 이해하지 못했습니다.")
-except sr.RequestError as e:
-    print(f"Google Web Speech API 서비스에 문제가 발생했습니다; {e}")
+        # 사용 가능한 음성 확인 및 설정
+        voices = engine.getProperty('voices')
+        for voice in voices:
+            print(f"Available voice: {voice.name} - {voice.languages}")
+
+        # 적절한 음성 선택 (여기서는 첫 번째 음성 선택)
+        engine.setProperty('voice', voices[0].id)  # 필요한 경우 index 변경
+
+        # 속도와 볼륨 설정
+        engine.setProperty('rate', 150)  # 속도
+        engine.setProperty('volume', 1.0)  # 볼륨
+
+        # 텍스트 음성 변환 및 출력
+        engine.say(text)
+        engine.runAndWait()
+
+    except Exception as e:
+        print(f"오류가 발생했습니다: {e}")
+
+# 테스트
+speecher("안녕하세요. 테스트입니다.")
