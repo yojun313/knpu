@@ -1600,9 +1600,11 @@ class MainWindow(QMainWindow):
         try:
             return self.recognizer.recognize_google(audio, language='ko-KR')
         except sr.UnknownValueError:
-            return f"오류 발생\n{traceback.format_exc()}"
+            print(f"오류 발생\n{traceback.format_exc()}")
+            return "음성 인식 실패"
         except sr.RequestError as e:
-            return f"오류 발생\n{traceback.format_exc()}"
+            print(f"오류 발생\n{traceback.format_exc()}")
+            return "음성 인식 실패"
 
     def speecher(self, text):
         try:
