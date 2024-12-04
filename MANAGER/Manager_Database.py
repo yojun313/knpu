@@ -878,7 +878,6 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_buttonMatch(self):
-        #self.main.database_refreshDB_button.clicked.connect(self.database_refresh_DB)
         self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
         self.main.database_chatgpt_button.clicked.connect(self.database_search_chatgpt_toggle)
         self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_DB)
@@ -892,7 +891,6 @@ class Manager_Database:
         self.main.database_saveDB_button.setToolTip("Ctrl+S")
         self.main.database_viewDB_button.setToolTip("Ctrl+V")
         self.main.database_deleteDB_button.setToolTip("Ctrl+D")
-        #self.main.database_refreshDB_button.setToolTip("Ctrl+R")
 
     def database_shortcut_setting(self):
         self.main.shortcut_initialize()
@@ -900,9 +898,11 @@ class Manager_Database:
         self.main.ctrls.activated.connect(self.database_save_DB)
         self.main.ctrlv.activated.connect(self.database_view_DB)
         self.main.ctrlr.activated.connect(self.database_refresh_DB)
+        self.main.ctrlc.activated.connect(self.database_search_chatgpt_toggle)
 
         self.main.cmdd.activated.connect(self.database_delete_DB)
         self.main.cmds.activated.connect(self.database_save_DB)
         self.main.cmdv.activated.connect(self.database_view_DB)
         self.main.cmdr.activated.connect(self.database_refresh_DB)
+        self.main.cmdc.activated.connect(self.database_search_chatgpt_toggle)
 
