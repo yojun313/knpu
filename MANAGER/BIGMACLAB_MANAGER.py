@@ -311,7 +311,8 @@ class MainWindow(QMainWindow):
                 'OldPostTitle': os.getenv("OPTION_3"),
                 'AutoUpdate': os.getenv("OPTION_4"),
                 'MyDB': os.getenv("OPTION_5"),
-                'GPT_Key': os.getenv("OPTION_6")
+                'GPT_Key': os.getenv("OPTION_6"),
+                'DB_Refresh': os.getenv("OPTION_7"),
             }
         except Exception as e:
             print(traceback.format_exc())
@@ -322,7 +323,8 @@ class MainWindow(QMainWindow):
                 'OldPostTitle': 'default',
                 'AutoUpdate': 'default',
                 'MyDB': 'default',
-                'GPT_Key': os.getenv("OPTION_6")
+                'GPT_Key': 'default',
+                'DB_Refresh': 'default',
             }
 
     def update_settings(self, option_key, new_value):
@@ -1448,7 +1450,8 @@ class MainWindow(QMainWindow):
         # DATABASE
         if index == 0:
             self.Manager_Database_obj.database_shortcut_setting()
-            self.Manager_Database_obj.database_refresh_DB()
+            if self.SETTING['DB_Refresh'] == 'default':
+                self.Manager_Database_obj.database_refresh_DB()
             QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
         # CRAWLER
         elif index == 1:
@@ -1957,6 +1960,7 @@ class SettingsDialog(QDialog):
         theme_label = QLabel("앱 테마 설정:")
         theme_label.setAlignment(Qt.AlignLeft)
         theme_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        theme_label.setToolTip("MANAGER의 색 테마를 설정합니다")
 
         self.light_mode_toggle = QPushButton("라이트 모드")
         self.dark_mode_toggle = QPushButton("다크 모드")
@@ -1988,6 +1992,7 @@ class SettingsDialog(QDialog):
         screen_size_label = QLabel("부팅 시 창 크기:")
         screen_size_label.setAlignment(Qt.AlignLeft)
         screen_size_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        screen_size_label.setToolTip("MANAGER 부팅 시 기본 창 크기를 설정합니다")
 
         self.default_size_toggle = QPushButton("기본값")
         self.maximized_toggle = QPushButton("최대화")
@@ -2019,6 +2024,7 @@ class SettingsDialog(QDialog):
         auto_update_label = QLabel("자동 업데이트:")
         auto_update_label.setAlignment(Qt.AlignLeft)
         auto_update_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        auto_update_label.setToolTip("MANAGER 부팅 시 자동 업데이트 여부를 설정합니다")
 
         self.default_update_toggle = QPushButton("끄기")
         self.auto_update_toggle = QPushButton("켜기")
@@ -2074,6 +2080,7 @@ class SettingsDialog(QDialog):
         api_key_label = QLabel("ChatGPT API:")
         api_key_label.setAlignment(Qt.AlignLeft)
         api_key_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        api_key_label.setToolTip("ChatGPT 기능을 사용하기 위한 API Key를 설정합니다")
 
         self.api_key_input = QLineEdit()
         self.api_key_input.setPlaceholderText("Enter your Key")
@@ -2125,17 +2132,18 @@ class SettingsDialog(QDialog):
 
     def create_db_settings_page(self, setting):
 
-        ################################################################################
         # DB 설정 페이지 생성
         db_layout = QVBoxLayout()
         db_layout.setSpacing(10)  # 섹션 간 간격 설정
         db_layout.setContentsMargins(10, 10, 10, 10)  # 여백 설정
 
+        ################################################################################
         # 내 DB만 표시 설정 섹션
         db_display_layout = QHBoxLayout()
         mydb_label = QLabel("내 DB만 표시:")
         mydb_label.setAlignment(Qt.AlignLeft)
         mydb_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        mydb_label.setToolTip("DB 목록에서 자신이 크롤링한 DB만 표시할지 여부를 설정합니다")
 
         self.default_mydb_toggle = QPushButton("끄기")
         self.auto_mydb_toggle = QPushButton("켜기")
@@ -2159,6 +2167,38 @@ class SettingsDialog(QDialog):
         db_display_layout.addLayout(db_display_buttons_layout, 2)
 
         db_layout.addLayout(db_display_layout)
+        ################################################################################
+
+        ################################################################################
+        # 내 DB만 표시 설정 섹션
+        db_refresh_layout = QHBoxLayout()
+        db_refresh_label = QLabel("DB 자동 새로고침:")
+        db_refresh_label.setAlignment(Qt.AlignLeft)
+        db_refresh_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        db_refresh_label.setToolTip("DATABASE 섹션으로 이동 시 자동으로 DB 목록을 새로고침할지 여부를 설정합니다")
+
+        self.default_dbrefresh_toggle = QPushButton("켜기")
+        self.off_dbrefresh_toggle = QPushButton("끄기")
+
+        self.init_toggle_style(self.default_dbrefresh_toggle, setting['DB_Refresh'] == 'default')
+        self.init_toggle_style(self.off_dbrefresh_toggle, setting['DB_Refresh'] != 'default')
+
+        self.default_dbrefresh_toggle.clicked.connect(
+            lambda: self.update_toggle(self.default_dbrefresh_toggle, self.off_dbrefresh_toggle)
+        )
+        self.off_dbrefresh_toggle.clicked.connect(
+            lambda: self.update_toggle(self.off_dbrefresh_toggle, self.default_dbrefresh_toggle)
+        )
+
+        db_refresh_buttons_layout = QHBoxLayout()
+        db_refresh_buttons_layout.setSpacing(10)  # 버튼 간 간격 설정
+        db_refresh_buttons_layout.addWidget(self.default_dbrefresh_toggle)
+        db_refresh_buttons_layout.addWidget(self.off_dbrefresh_toggle)
+
+        db_refresh_layout.addWidget(db_refresh_label, 1)
+        db_refresh_layout.addLayout(db_refresh_buttons_layout, 2)
+
+        db_layout.addLayout(db_refresh_layout)
         ################################################################################
 
         # 아래쪽 여유 공간 추가
@@ -2328,6 +2368,7 @@ class SettingsDialog(QDialog):
         screen_size = 'default' if self.default_size_toggle.styleSheet().find("#2c3e50") != -1 else 'max'
         auto_update = 'default' if self.default_update_toggle.styleSheet().find("#2c3e50") != -1 else 'auto'
         my_db = 'default' if self.default_mydb_toggle.styleSheet().find("#2c3e50") != -1 else 'mydb'
+        db_refresh = 'default' if self.default_dbrefresh_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
         api_key = self.api_key_input.text()
         api_key.replace('\n', '').replace(' ', '')
 
@@ -2336,6 +2377,7 @@ class SettingsDialog(QDialog):
         self.main.SETTING['AutoUpdate'] = auto_update
         self.main.SETTING['MyDB'] = my_db
         self.main.SETTING['GPT_Key'] = api_key
+        self.main.SETTING['DB_Refresh'] = db_refresh
         self.main.gpt_api_key = api_key
 
         options = {
@@ -2343,7 +2385,8 @@ class SettingsDialog(QDialog):
             "screensize": {"key": 2, "value": screen_size},  # 스크린 사이즈 설정
             "autoupdate": {"key": 4, "value": auto_update},  # 자동 업데이트 설정
             "mydb": {"key": 5, "value": my_db},  # 내 DB만 보기 설정
-            "GPT_Key": {"key": 6, "value": api_key}
+            "GPT_Key": {"key": 6, "value": api_key},
+            "DB_Refresh": {"key": 7, "value": db_refresh}
         }
         for option in options.values():
             self.main.update_settings(option['key'], option['value'])
