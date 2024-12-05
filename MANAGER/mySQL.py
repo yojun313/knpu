@@ -566,7 +566,7 @@ class mySQL:
         from kiwipiepy import Kiwi
         import time
 
-        def tokenization(data):
+        def tokenization(data):  # 갱신 간격 추가
             kiwi = Kiwi(num_workers=0)
             for column in data.columns.tolist():
                 if 'Text' in column:
@@ -607,12 +607,14 @@ class mySQL:
                 remaining_minutes = int(remaining_time // 60)
                 remaining_seconds = int(remaining_time % 60)
 
-                # 진행 상황 및 예상 남은 시간 출력
-                progress_value = round((index + 1) / total_texts * 100, 2)
-                print(
-                    f'\r{textColumn_name.split(" ")[0]} Tokenization Progress: {progress_value}% | '
-                    f'예상 남은 시간: {remaining_minutes}분 {remaining_seconds}초', end=''
-                )
+                update_interval = 100
+                # N개마다 한 번 갱신
+                if (index + 1) % update_interval == 0 or index + 1 == total_texts:
+                    progress_value = round((index + 1) / total_texts * 100, 2)
+                    print(
+                        f'\r{textColumn_name.split(" ")[0]} Tokenization Progress: {progress_value}% | '
+                        f'예상 남은 시간: {remaining_minutes}분 {remaining_seconds}초', end=''
+                    )
 
             data[textColumn_name] = tokenized_data
             return data
