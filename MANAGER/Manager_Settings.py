@@ -202,6 +202,38 @@ class Manager_Setting(QDialog):
         ################################################################################
 
         ################################################################################
+        # 부팅 스크린 사이즈 설정 섹션
+        boot_terminal_layout = QHBoxLayout()
+        boot_terminal_label = QLabel("부팅 시 터미널:")
+        boot_terminal_label.setAlignment(Qt.AlignLeft)
+        boot_terminal_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        boot_terminal_label.setToolTip("MANAGER 부팅 시 터미널 창 여부를 설정합니다")
+
+        self.default_bootterminal_toggle = QPushButton("끄기")
+        self.on_bootterminal_toggle = QPushButton("켜기")
+
+        self.init_toggle_style(self.default_bootterminal_toggle, setting['BootTerminal'] == 'default')
+        self.init_toggle_style(self.on_bootterminal_toggle, setting['BootTerminal'] != 'default')
+
+        self.default_bootterminal_toggle.clicked.connect(
+            lambda: self.update_toggle(self.default_bootterminal_toggle, self.on_bootterminal_toggle)
+        )
+        self.on_bootterminal_toggle.clicked.connect(
+            lambda: self.update_toggle(self.on_bootterminal_toggle, self.default_bootterminal_toggle)
+        )
+
+        boot_terminal_buttons_layout = QHBoxLayout()
+        boot_terminal_buttons_layout.setSpacing(10)
+        boot_terminal_buttons_layout.addWidget(self.default_bootterminal_toggle)
+        boot_terminal_buttons_layout.addWidget(self.on_bootterminal_toggle)
+
+        boot_terminal_layout.addWidget(boot_terminal_label, 1)
+        boot_terminal_layout.addLayout(boot_terminal_buttons_layout, 2)
+
+        app_layout.addLayout(boot_terminal_layout)
+        ################################################################################
+
+        ################################################################################
         # 자동 업데이트 설정 섹션
         auto_update_layout = QHBoxLayout()
         auto_update_label = QLabel("자동 업데이트:")
@@ -586,6 +618,7 @@ class Manager_Setting(QDialog):
         my_db = 'default' if self.default_mydb_toggle.styleSheet().find("#2c3e50") != -1 else 'mydb'
         db_refresh = 'default' if self.default_dbrefresh_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
         gpt_tts = 'default' if self.default_gpttts_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
+        boot_terminal = 'default' if self.default_bootterminal_toggle.styleSheet().find("#2c3e50") != -1 else 'on'
         api_key = self.api_key_input.text()
         api_key.replace('\n', '').replace(' ', '')
 
@@ -596,6 +629,7 @@ class Manager_Setting(QDialog):
         self.main.SETTING['GPT_Key'] = api_key
         self.main.SETTING['DB_Refresh'] = db_refresh
         self.main.SETTING['GPT_TTS'] = gpt_tts
+        self.main.SETTING['BootTerminal'] = boot_terminal
         self.main.gpt_api_key = api_key
 
         options = {
@@ -605,7 +639,8 @@ class Manager_Setting(QDialog):
             "mydb": {"key": 5, "value": my_db},  # 내 DB만 보기 설정
             "GPT_Key": {"key": 6, "value": api_key},
             "DB_Refresh": {"key": 7, "value": db_refresh},
-            "GPT_TTS": {"key": 8, "value": gpt_tts}
+            "GPT_TTS": {"key": 8, "value": gpt_tts},
+            "BootTerminal": {"key": 9, "value": boot_terminal}
         }
         for option in options.values():
             self.main.update_settings(option['key'], option['value'])
