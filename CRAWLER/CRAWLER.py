@@ -90,7 +90,10 @@ class Crawler(CrawlerModule):
 
         elif endoption == True:
             endtime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
-            size = self.mySQL.showDBSize(self.DBname)[0]
+            try:
+                size = self.mySQL.showDBSize(self.DBname)[0]
+            except:
+                size = 0
             datainfo = self.IntegratedDB
             self.mySQL.connectDB('crawler_db')
             self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Endtime', endtime)
