@@ -4,6 +4,7 @@ import os
 import pandas as pd
 
 DB_IP = '121.152.225.232'
+LOCAL_IP = '192.168.0.3'
 
 class mySQL:
     def __init__(self, host, user, password, port, database=None):
@@ -567,7 +568,7 @@ if __name__ == "__main__":
     from kiwipiepy import Kiwi
 
     def test():
-        mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
+        mySQL_obj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
         DBname = "navernews_문재인_20170510_20220509_1201_0022"
 
         def tokenization(data):
