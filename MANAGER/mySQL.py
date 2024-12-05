@@ -595,21 +595,20 @@ class mySQL:
                 except:
                     tokenized_data.append([])
 
-                # 처리 완료 후 시간 측정
-                end_time = time.time()
-                total_time += end_time - start_time
-
-                # 평균 처리 시간 계산
-                avg_time_per_text = total_time / (index + 1)
-                remaining_time = avg_time_per_text * (total_texts - (index + 1))  # 남은 시간 추정
-
-                # 남은 시간을 시간과 분으로 변환
-                remaining_minutes = int(remaining_time // 60)
-                remaining_seconds = int(remaining_time % 60)
-
-                update_interval = 100
+                update_interval = 1000
                 # N개마다 한 번 갱신
                 if (index + 1) % update_interval == 0 or index + 1 == total_texts:
+                    # 처리 완료 후 시간 측정
+                    end_time = time.time()
+                    total_time += end_time - start_time
+
+                    # 평균 처리 시간 계산
+                    avg_time_per_text = total_time / (index + 1)
+                    remaining_time = avg_time_per_text * (total_texts - (index + 1))  # 남은 시간 추정
+
+                    # 남은 시간을 시간과 분으로 변환
+                    remaining_minutes = int(remaining_time // 60)
+                    remaining_seconds = int(remaining_time % 60)
                     progress_value = round((index + 1) / total_texts * 100, 2)
                     print(
                         f'\r{textColumn_name.split(" ")[0]} Tokenization Progress: {progress_value}% | '
