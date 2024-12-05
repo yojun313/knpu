@@ -81,6 +81,8 @@ class MainWindow(QMainWindow):
 
             def load_program():
                 try:
+                    if self.SETTING['BootTerminal'] == 'on':
+                        open_console("Boot Process")
                     self.startTime = datetime.now()
                     self.gpt_api_key = self.SETTING['GPT_Key']
                     self.CONFIG = {
@@ -187,16 +189,17 @@ class MainWindow(QMainWindow):
                             else:
                                 os._exit(0)
 
-                    self.close_bootscreen()
+                    
                     self.shortcut_init()
                     self.Manager_Database_obj.database_shortcut_setting()
-
-                    print(f"\n{self.user}님 환영합니다!")
-
                     self.user_logging(f'Booting ({self.user_location()})', booting=True)
                     self.check_configuration()
                     self.update_program()
                     self.newpost_check()
+
+                    print(f"\n{self.user}님 환영합니다!")   
+                    self.close_bootscreen()
+                    close_console()
 
                 except Exception as e:
                     print("Failed")
@@ -317,7 +320,8 @@ class MainWindow(QMainWindow):
                 'MyDB': os.getenv("OPTION_5"),
                 'GPT_Key': os.getenv("OPTION_6"),
                 'DB_Refresh': os.getenv("OPTION_7"),
-                'GPT_TTS': os.getenv("OPTION_8")
+                'GPT_TTS': os.getenv("OPTION_8"),
+                'BootTerminal': os.getenv("OPTION_9")
             }
         except Exception as e:
             print(traceback.format_exc())
@@ -330,7 +334,8 @@ class MainWindow(QMainWindow):
                 'MyDB': 'default',
                 'GPT_Key': 'default',
                 'DB_Refresh': 'default',
-                'GPT_TTS': 'default'
+                'GPT_TTS': 'default',
+                'BootTerminal': 'default'
             }
 
     def update_settings(self, option_key, new_value):
