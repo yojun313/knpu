@@ -603,11 +603,15 @@ class mySQL:
                 avg_time_per_text = total_time / (index + 1)
                 remaining_time = avg_time_per_text * (total_texts - (index + 1))  # 남은 시간 추정
 
+                # 남은 시간을 시간과 분으로 변환
+                remaining_minutes = int(remaining_time // 60)
+                remaining_seconds = int(remaining_time % 60)
+
                 # 진행 상황 및 예상 남은 시간 출력
                 progress_value = round((index + 1) / total_texts * 100, 2)
                 print(
                     f'\r{textColumn_name.split(" ")[0]} Tokenization Progress: {progress_value}% | '
-                    f'예상 남은 시간: {round(remaining_time, 2)} seconds', end=''
+                    f'예상 남은 시간: {remaining_minutes}분 {remaining_seconds}초', end=''
                 )
 
             data[textColumn_name] = tokenized_data
@@ -618,6 +622,22 @@ class mySQL:
 
         for table in tablelist:
             data_df = self.TableToDataframe(table)
+
+            if 'reply' in table or 'rereply' in table:
+                # 열 이름 설정
+                date_column = 'Rereply Date' if 'rereply' in table else 'Reply Date'
+                text_column = 'Rereply Text' if 'rereply' in table else 'Reply Text'
+
+                # 날짜 형식 변환 및 그룹화 후 정렬
+                data_df[date_column] = pd.to_datetime(data_df[date_column], format='%Y-%m-%d').dt.date
+                grouped = data_df.groupby('Article URL')
+                data_df = grouped.agg({
+                    text_column: ' '.join,
+                    'Article Day': 'first'
+                }).reset_index()
+                data_df = data_df.rename(columns={'Article Day': date_column})
+                data_df = data_df.sort_values(by=date_column)
+
             token_df = tokenization(data_df)
             print(f'\r{table} DB Inserting...', end='')
             self.DataframeToTable(token_df, 'token_' + table)
