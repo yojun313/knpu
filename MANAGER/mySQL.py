@@ -567,7 +567,7 @@ if __name__ == "__main__":
     def setup():
         from datetime import datetime
         mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
-        mySQL_obj.connectDB('crawler_db')
+
 
     setup()
 
