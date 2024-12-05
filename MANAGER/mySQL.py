@@ -564,6 +564,7 @@ class mySQL:
     def tokenization(self, DBname):
         import re
         from kiwipiepy import Kiwi
+        import time
 
         def tokenization(data):
             kiwi = Kiwi(num_workers=0)
@@ -574,7 +575,11 @@ class mySQL:
             text_list = list(data[textColumn_name])
             tokenized_data = []
 
+            total_texts = len(text_list)
+            total_time = 0  # 전체 소요시간을 계산하기 위한 변수
+
             for index, text in enumerate(text_list):
+                start_time = time.time()  # 처리 시작 시간 기록
                 try:
                     if not isinstance(text, str):
                         tokenized_data.append([])
@@ -587,11 +592,23 @@ class mySQL:
                     # 리스트를 쉼표로 구분된 문자열로 변환
                     tokenized_text_str = ", ".join(tokenized_text)
                     tokenized_data.append(tokenized_text_str)
-
-                    progress_value = round((index + 1) / len(text_list) * 100, 2)
-                    print(f'\r{textColumn_name.split(' ')[0]} Tokenization Progress: {progress_value}%', end='')
                 except:
                     tokenized_data.append([])
+
+                # 처리 완료 후 시간 측정
+                end_time = time.time()
+                total_time += end_time - start_time
+
+                # 평균 처리 시간 계산
+                avg_time_per_text = total_time / (index + 1)
+                remaining_time = avg_time_per_text * (total_texts - (index + 1))  # 남은 시간 추정
+
+                # 진행 상황 및 예상 남은 시간 출력
+                progress_value = round((index + 1) / total_texts * 100, 2)
+                print(
+                    f'\r{textColumn_name.split(" ")[0]} Tokenization Progress: {progress_value}% | '
+                    f'예상 남은 시간: {round(remaining_time, 2)} seconds', end=''
+                )
 
             data[textColumn_name] = tokenized_data
             return data
