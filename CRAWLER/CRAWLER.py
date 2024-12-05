@@ -42,7 +42,7 @@ class Crawler(CrawlerModule):
         self.speed = int(speed)
         self.saveInterval = 90
         self.GooglePackage_obj = GoogleModule(self.pathFinder()['token_path'])
-        self.kiwi = Kiwi(num_workers=8)
+        self.kiwi = Kiwi(num_workers=0)
         self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
 
         # Computer Info
