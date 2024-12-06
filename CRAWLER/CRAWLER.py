@@ -243,70 +243,75 @@ class Crawler(CrawlerModule):
                 return True
 
     def FinalOperator(self):
-        self.mySQL.connectDB(self.DBname)
-        tablelist = [table for table in self.mySQL.showAllTable(self.DBname) if 'info' not in table]
-
-        for table in tablelist:
-            data_df = self.mySQL.TableToDataframe(table)
-
-            if 'reply' in table or 'rereply' in table:
-                # 열 이름 설정
-                date_column = 'Rereply Date' if 'rereply' in table else 'Reply Date'
-                text_column = 'Rereply Text' if 'rereply' in table else 'Reply Text'
-
-                # 날짜 형식 변환 및 그룹화 후 정렬
-                data_df[date_column] = pd.to_datetime(data_df[date_column], format='%Y-%m-%d').dt.date
-                grouped = data_df.groupby('Article URL')
-                data_df = grouped.agg({
-                    text_column: ' '.join,
-                    'Article Day': 'first'
-                }).reset_index()
-                data_df = data_df.rename(columns={'Article Day': date_column})
-                data_df = data_df.sort_values(by=date_column)
-
-            token_df = self.tokenization(data_df)
-            print(f'\r{table} DB Inserting...', end='')
+        try:
             self.mySQL.connectDB(self.DBname)
-            self.mySQL.DataframeToTable(token_df, 'token_' + table)
+            tablelist = [table for table in self.mySQL.showAllTable(self.DBname) if 'info' not in table]
 
-        self.clear_screen()
-        print('\r업로드 및 알림 전송 중...', end='')
+            for table in tablelist:
+                data_df = self.mySQL.TableToDataframe(table)
 
-        title = '[크롤링 완료] ' + self.DBname
+                if 'reply' in table or 'rereply' in table:
+                    # 열 이름 설정
+                    date_column = 'Rereply Date' if 'rereply' in table else 'Reply Date'
+                    text_column = 'Rereply Text' if 'rereply' in table else 'Reply Text'
 
-        starttime = datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')
-        endtime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
-        crawltime = str(timedelta(seconds=int(time.time() - self.startTime)))
+                    # 날짜 형식 변환 및 그룹화 후 정렬
+                    data_df[date_column] = pd.to_datetime(data_df[date_column], format='%Y-%m-%d').dt.date
+                    grouped = data_df.groupby('Article URL')
+                    data_df = grouped.agg({
+                        text_column: ' '.join,
+                        'Article Day': 'first'
+                    }).reset_index()
+                    data_df = data_df.rename(columns={'Article Day': date_column})
+                    data_df = data_df.sort_values(by=date_column)
 
-        text = f'\n크롤링 시작: {starttime}' + f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
-        text += f'\n\nArticle: {self.IntegratedDB['TotalArticleCnt']}' + f'\nReply: {self.IntegratedDB['TotalReplyCnt']}' + f'\nRereply: {self.IntegratedDB['TotalRereplyCnt']}'
+                token_df = self.tokenization(data_df)
+                print(f'\r{table} DB Inserting...', end='')
+                self.mySQL.connectDB(self.DBname)
+                self.mySQL.DataframeToTable(token_df, 'token_' + table)
 
-        if self.upload == True:
-            driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
-            text += f'\n\n크롤링 데이터: {driveURL}'
+            self.clear_screen()
+            print('\r업로드 및 알림 전송 중...', end='')
 
-        if self.pushoverKey == 'n':
-            self.GooglePackage_obj.SendMail(self.userEmail, title, text)
-        else:
-            self.send_pushOver(msg=title + '\n' + text, user_key=self.pushoverKey)
+            title = '[크롤링 완료] ' + self.DBname
 
-        end_msg = (
-            f"|| 크롤링 종료 | 시작: {starttime} "
-            f"| 종료: {endtime} "
-            f"| 소요시간: {crawltime} ||"
-        )
+            starttime = datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')
+            endtime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
+            crawltime = str(timedelta(seconds=int(time.time() - self.startTime)))
 
-        with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a') as log:
-            log.write('\n\n' + end_msg)
+            text = f'\n크롤링 시작: {starttime}' + f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
+            text += f'\n\nArticle: {self.IntegratedDB['TotalArticleCnt']}' + f'\nReply: {self.IntegratedDB['TotalReplyCnt']}' + f'\nRereply: {self.IntegratedDB['TotalRereplyCnt']}'
 
-        self.DBinfoRecorder(endoption=True)
-        self.localDBRemover()
+            if self.upload == True:
+                driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
+                text += f'\n\n크롤링 데이터: {driveURL}'
 
-        self.clear_screen()
+            if self.pushoverKey == 'n':
+                self.GooglePackage_obj.SendMail(self.userEmail, title, text)
+            else:
+                self.send_pushOver(msg=title + '\n' + text, user_key=self.pushoverKey)
 
-        if self.weboption == False:
-            self.infoPrinter()
-        print(f'{end_msg}')
+            end_msg = (
+                f"|| 크롤링 종료 | 시작: {starttime} "
+                f"| 종료: {endtime} "
+                f"| 소요시간: {crawltime} ||"
+            )
+
+            with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a') as log:
+                log.write('\n\n' + end_msg)
+
+            self.DBinfoRecorder(endoption=True)
+            self.localDBRemover()
+
+            self.clear_screen()
+
+            if self.weboption == False:
+                self.infoPrinter()
+            print(f'{end_msg}')
+        except:
+            error_msg = self.error_detector()
+            error_data = self.error_dump(1002, error_msg, self.currentDate_str)
+            self.ReturnChecker(error_data)
 
     def tokenization(self, data):  # 갱신 간격 추가
         kiwi = Kiwi(num_workers=0)
