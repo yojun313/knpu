@@ -194,11 +194,11 @@ class MainWindow(QMainWindow):
                     self.Manager_Database_obj.database_shortcut_setting()
                     self.user_logging(f'Booting ({self.user_location()})', booting=True)
                     self.check_configuration()
+                    print(f"\n{self.user}님 환영합니다!")
+
+                    self.close_bootscreen()
                     self.update_program()
                     self.newpost_check()
-
-                    print(f"\n{self.user}님 환영합니다!")   
-                    self.close_bootscreen()
                     close_console()
 
                 except Exception as e:
@@ -603,6 +603,7 @@ class MainWindow(QMainWindow):
                 os._exit(0)
 
             # New version check
+            print("Checking New Version...")
             current_version = version.parse(self.versionNum)
             self.new_version = version.parse(self.Manager_Board_obj.board_version_newcheck())
             if current_version < self.new_version:
@@ -704,6 +705,7 @@ class MainWindow(QMainWindow):
             return
 
     def newpost_check(self):
+        print("Checking New Post...")
         new_post_text = self.Manager_Board_obj.post_data[0][1]
         new_post_writer = self.Manager_Board_obj.post_data[0][0]
         old_post_text = self.SETTING['OldPostTitle']
