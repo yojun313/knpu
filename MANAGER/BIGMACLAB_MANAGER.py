@@ -692,7 +692,7 @@ class MainWindow(QMainWindow):
                     QMessageBox.information(self, "Information", 'Ctrl+U 단축어로 프로그램 실행 중 업데이트 가능합니다')
                     return
             else:
-                if sc == True and platform.system() == "Windows":
+                if sc == True:
                     reply = QMessageBox.question(self, "Reinstall", "현재 버전이 최신 버전입니다\n\n현재 버전을 재설치하시겠습니까?",
                                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if reply == QMessageBox.Yes:
@@ -781,11 +781,11 @@ class MainWindow(QMainWindow):
         self.cmdc = QShortcut(QKeySequence("Ctrl+ㅊ"), self)
         self.cmdpp = QShortcut(QKeySequence("Ctrl+Shift+ㅔ"), self)
 
-        self.ctrlu.activated.connect(lambda: self.update_program(True))
+        self.ctrlu.activated.connect(lambda: self.update_program(sc=True))
         self.ctrlp.activated.connect(lambda: self.developer_mode(True))
         self.ctrlpp.activated.connect(lambda: self.developer_mode(False))
 
-        self.cmdu.activated.connect(lambda: self.update_program(True))
+        self.cmdu.activated.connect(lambda: self.update_program(sc=True))
         self.cmdp.activated.connect(lambda: self.developer_mode(True))
         self.cmdpp.activated.connect(lambda: self.developer_mode(False))
 
