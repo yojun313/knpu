@@ -175,6 +175,10 @@ class MainWindow(QMainWindow):
                             self.Manager_Web_obj = Manager_Web(self)
                             self.Manager_Analysis_obj = Manager_Analysis(self)
                             print("Done")
+
+                            self.newpost = self.newpost_check()
+                            self.newversion = self.newversion_check()
+
                             break
                         except Exception as e:
                             print("Failed")
@@ -195,11 +199,18 @@ class MainWindow(QMainWindow):
                     self.user_logging(f'Booting ({self.user_location()})', booting=True)
                     self.check_configuration()
                     print(f"\n{self.user}님 환영합니다!")
+                    close_console()
 
                     self.close_bootscreen()
-                    self.update_program()
-                    self.newpost_check()
-                    close_console()
+                    if self.newpost == True:
+                        reply = QMessageBox.question(self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?",
+                                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                        if reply == QMessageBox.Yes:
+                            self.Manager_Board_obj.board_view_post(0)
+                    if self.newversion == True:
+                        self.update_program()
+
+
 
                 except Exception as e:
                     print("Failed")
@@ -704,21 +715,29 @@ class MainWindow(QMainWindow):
             print(traceback.format_exc())
             return
 
+    def newversion_check(self):
+        print("\nChecking New Version...")
+        current_version = version.parse(self.versionNum)
+        self.new_version = version.parse(self.Manager_Board_obj.board_version_newcheck())
+        if current_version < self.new_version:
+            return True
+        else:
+            return False
+
     def newpost_check(self):
-        print("Checking New Post...")
+        print("\nChecking New Post...")
         new_post_text = self.Manager_Board_obj.post_data[0][1]
         new_post_writer = self.Manager_Board_obj.post_data[0][0]
         old_post_text = self.SETTING['OldPostTitle']
+
         if new_post_text == old_post_text:
-            return
+            return False
         elif old_post_text == 'default':
             self.update_settings(3, new_post_text)
-        elif new_post_text != old_post_text:
-            if self.user != new_post_writer:
-                reply = QMessageBox.question(self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
-                    self.Manager_Board_obj.board_view_post(0)
+            return False
+        elif new_post_text != old_post_text and self.user != new_post_writer:
             self.update_settings(3, new_post_text)
+            return True
 
     def statusBar_init(self):
         # 상태 표시줄 생성
