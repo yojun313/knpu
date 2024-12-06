@@ -165,6 +165,16 @@ class Crawler(CrawlerModule):
         self.DBname      = f"{DBtype}_{self.DBkeyword}{dbname_date}_{self.now.strftime('%m%d_%H%M')}"
         self.DBpath      = os.path.join(self.scrapdata_path, self.DBname)
 
+        if self.DBname in self.mySQL.showAllDB():
+            msg_text = (
+                "[ 크롤러 활성화 불가 안내 ]\n\n"
+                f"Object DB : {self.DBname}\n\n"
+                f"같은 키워드의 연속된 크롤러로, DB 이름이 동일해 크롤러 활성화가 불가합니다\n"
+                f"1분 뒤에 재시도해주십시오"
+            )
+            self.send_pushOver(msg_text, user_key=self.pushoverKey)
+            os._exit(0)
+
         self.mySQL.newDB(self.DBname)
         self.mySQL.connectDB('crawler_db')
 
