@@ -449,6 +449,38 @@ class Manager_Setting(QDialog):
         db_layout.addLayout(db_refresh_layout)
         ################################################################################
 
+        ################################################################################
+        # DB 키워드 정렬 설정 섹션
+        db_keywordsort_layout = QHBoxLayout()
+        db_keywordsort_label = QLabel("DB 목록 정렬:")
+        db_keywordsort_label.setAlignment(Qt.AlignLeft)
+        db_keywordsort_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        db_keywordsort_label.setToolTip("DATABASE 섹션에서 DB 목록의 정렬 기준을 설정힙니다")
+
+        self.default_dbkeywordsort_toggle = QPushButton("최신순")
+        self.on_dbkeywordsort_toggle = QPushButton("키워드순")
+
+        self.init_toggle_style(self.default_dbkeywordsort_toggle, setting['DBKeywordSort'] == 'default')
+        self.init_toggle_style(self.on_dbkeywordsort_toggle, setting['DBKeywordSort'] != 'default')
+
+        self.default_dbkeywordsort_toggle.clicked.connect(
+            lambda: self.update_toggle(self.default_dbkeywordsort_toggle, self.on_dbkeywordsort_toggle)
+        )
+        self.on_dbkeywordsort_toggle.clicked.connect(
+            lambda: self.update_toggle(self.on_dbkeywordsort_toggle, self.default_dbkeywordsort_toggle)
+        )
+
+        db_keywordsort_buttons_layout = QHBoxLayout()
+        db_keywordsort_buttons_layout.setSpacing(10)  # 버튼 간 간격 설정
+        db_keywordsort_buttons_layout.addWidget(self.default_dbkeywordsort_toggle)
+        db_keywordsort_buttons_layout.addWidget(self.on_dbkeywordsort_toggle)
+
+        db_keywordsort_layout.addWidget(db_keywordsort_label, 1)
+        db_keywordsort_layout.addLayout(db_keywordsort_buttons_layout, 2)
+
+        db_layout.addLayout(db_keywordsort_layout)
+        ################################################################################
+
         # 아래쪽 여유 공간 추가
         db_layout.addStretch()
 
@@ -619,6 +651,7 @@ class Manager_Setting(QDialog):
         db_refresh = 'default' if self.default_dbrefresh_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
         gpt_tts = 'default' if self.default_gpttts_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
         boot_terminal = 'default' if self.default_bootterminal_toggle.styleSheet().find("#2c3e50") != -1 else 'on'
+        db_keywordsort =  'default' if self.default_dbkeywordsort_toggle.styleSheet().find("#2c3e50") != -1 else 'on'
         api_key = self.api_key_input.text()
         api_key.replace('\n', '').replace(' ', '')
 
@@ -630,6 +663,7 @@ class Manager_Setting(QDialog):
         self.main.SETTING['DB_Refresh'] = db_refresh
         self.main.SETTING['GPT_TTS'] = gpt_tts
         self.main.SETTING['BootTerminal'] = boot_terminal
+        self.main.SETTING['DBKeywordSort'] = db_keywordsort
         self.main.gpt_api_key = api_key
 
         options = {
@@ -640,7 +674,8 @@ class Manager_Setting(QDialog):
             "GPT_Key": {"key": 6, "value": api_key},
             "DB_Refresh": {"key": 7, "value": db_refresh},
             "GPT_TTS": {"key": 8, "value": gpt_tts},
-            "BootTerminal": {"key": 9, "value": boot_terminal}
+            "BootTerminal": {"key": 9, "value": boot_terminal},
+            'DBKeywordSort': {'key': 10, "value": db_keywordsort},
         }
         for option in options.values():
             self.main.update_settings(option['key'], option['value'])
