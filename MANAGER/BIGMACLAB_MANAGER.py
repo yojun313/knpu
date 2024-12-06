@@ -43,7 +43,7 @@ import tempfile
 
 warnings.filterwarnings("ignore")
 
-VERSION = '2.3.4'
+VERSION = '2.3.5'
 DB_IP = 'REDACTED_IP'
 LOCAL_IP = '192.168.0.3'
 
