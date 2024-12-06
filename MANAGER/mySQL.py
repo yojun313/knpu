@@ -640,6 +640,8 @@ class mySQL:
                 data_df = data_df.rename(columns={'Article Day': date_column})
                 data_df = data_df.sort_values(by=date_column)
 
+            self.disconnectDB()
+            self.connectDB(DBname)
             token_df = tokenization(data_df)
             print(f'\r{table} DB Inserting...', end='')
             self.DataframeToTable(token_df, 'token_' + table)
