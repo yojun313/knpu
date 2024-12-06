@@ -17,6 +17,7 @@ class mySQL:
 
     def connectDB(self, database_name=None):
         try:
+            self.disconnectDB()
             self.conn = pymysql.connect(
                 host=self.host,
                 user=self.user,

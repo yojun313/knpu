@@ -268,9 +268,10 @@ class Crawler(CrawlerModule):
 
                 token_df = self.tokenization(data_df)
                 print(f'\r{table} DB Inserting...', end='')
+                self.mySQL.connectDB()
                 self.mySQL.DataframeToTable(token_df, 'token_'+table)
             except:
-                error_msg = self.error_detector()
+                error_msg = self.error_detector(self.DBname)
                 error_data = self.error_dump(1002, error_msg, self.currentDate_str)
                 self.ReturnChecker(error_data)
 
