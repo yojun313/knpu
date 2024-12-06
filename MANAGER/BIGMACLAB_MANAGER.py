@@ -65,11 +65,7 @@ class MainWindow(QMainWindow):
             self.setWindowTitle("MANAGER")  # 창의 제목 설정
             self.setWindowIcon(QIcon(icon_path))
 
-            if self.SETTING['ScreenSize'] == 'max':
-                self.close_bootscreen()
-                self.showMaximized()
-            else:
-                self.resize(1400, 1000)
+            self.resize(1400, 1000)
 
             self.setStyle()
             self.statusBar_init()
@@ -201,6 +197,9 @@ class MainWindow(QMainWindow):
 
                     close_console()
                     self.close_bootscreen()
+
+                    if self.SETTING['ScreenSize'] == 'max':
+                        self.showMaximized()
 
                     # After Booting
 
