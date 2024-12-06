@@ -13,7 +13,13 @@ class mySQL:
         self.password = password
         self.port = port
         self.database = database
-        self.connectDB(database)
+        self.conn = pymysql.connect(
+            host=self.host,
+            user=self.user,
+            password=self.password,
+            port=self.port,
+            database=database  # 데이터베이스 지정
+        )
 
     def connectDB(self, database_name=None):
         try:
