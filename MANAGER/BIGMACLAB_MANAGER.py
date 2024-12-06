@@ -175,10 +175,6 @@ class MainWindow(QMainWindow):
                             self.Manager_Web_obj = Manager_Web(self)
                             self.Manager_Analysis_obj = Manager_Analysis(self)
                             print("Done")
-
-                            self.newpost = self.newpost_check()
-                            self.newversion = self.newversion_check()
-
                             break
                         except Exception as e:
                             print("Failed")
@@ -193,24 +189,26 @@ class MainWindow(QMainWindow):
                             else:
                                 os._exit(0)
 
-                    
+                    newpost = self.newpost_check()
+                    newversion = self.newversion_check()
+
                     self.shortcut_init()
                     self.Manager_Database_obj.database_shortcut_setting()
                     self.user_logging(f'Booting ({self.user_location()})', booting=True)
                     self.check_configuration()
                     print(f"\n{self.user}님 환영합니다!")
                     close_console()
-
                     self.close_bootscreen()
-                    if self.newpost == True:
+
+                    # After Booting
+
+                    if newpost == True:
                         reply = QMessageBox.question(self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?",
                                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                         if reply == QMessageBox.Yes:
                             self.Manager_Board_obj.board_view_post(0)
-                    if self.newversion == True:
+                    if newversion == True:
                         self.update_program()
-
-
 
                 except Exception as e:
                     print("Failed")
