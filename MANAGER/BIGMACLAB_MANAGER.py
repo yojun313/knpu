@@ -133,7 +133,7 @@ class MainWindow(QMainWindow):
                     while True:
                         try:
                             self.mySQL_obj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
-                            print("\nLoading User Info from DB... ", end='')
+                            print("\nI. Loading User Info from DB... ", end='')
                             if self.mySQL_obj.showAllDB() == []:
                                 raise
                             # DB 불러오기
@@ -159,17 +159,16 @@ class MainWindow(QMainWindow):
                                 os._exit(0)
 
                     # User Checking & Login Process
-                    print("\nChecking User... ", end='')
+                    print("\nII. Checking User... ", end='')
                     if self.login_program() == False:
                         os._exit(0)
 
                     # Loading Data from DB & Making object
                     while True:
                         try:
-                            print("\nLoading Data from DB... ", end='')
+                            print("\nIII. Loading Data from DB... ", end='')
                             self.Manager_User_obj.userDB_layout_maker()
                             self.Manager_Board_obj = Manager_Board(self)
-                            self.update_program(auto = self.SETTING['AutoUpdate'])
                             self.DB = self.update_DB()
                             self.Manager_Database_obj = Manager_Database(self)
                             self.Manager_Web_obj = Manager_Web(self)
@@ -189,9 +188,11 @@ class MainWindow(QMainWindow):
                             else:
                                 os._exit(0)
 
-                    print(f"\n{self.user}님 환영합니다!")
+
                     newpost = self.newpost_check()
                     newversion = self.newversion_check()
+
+                    print(f"\n{self.user}님 환영합니다!")
 
                     self.shortcut_init()
                     self.Manager_Database_obj.database_shortcut_setting()
@@ -209,7 +210,7 @@ class MainWindow(QMainWindow):
                         if reply == QMessageBox.Yes:
                             self.Manager_Board_obj.board_view_post(0)
                     if newversion == True:
-                        self.update_program()
+                        self.update_program(self.SETTING['AutoUpdate'])
 
                 except Exception as e:
                     print("Failed")
@@ -613,15 +614,12 @@ class MainWindow(QMainWindow):
                 os._exit(0)
 
             # New version check
-            print("Checking New Version...")
             current_version = version.parse(self.versionNum)
             self.new_version = version.parse(self.Manager_Board_obj.board_version_newcheck())
             if current_version < self.new_version:
                 if auto == 'auto':
                     self.close_bootscreen()
                     update_process()
-                elif auto == 'default':
-                    return
                 self.Manager_Board_obj.board_version_refresh()
                 version_info_html = f"""
                     <style>
@@ -715,18 +713,21 @@ class MainWindow(QMainWindow):
             return
 
     def newversion_check(self):
+        print("\nV. Checking New Version...", end='')
         current_version = version.parse(self.versionNum)
         self.new_version = version.parse(self.Manager_Board_obj.board_version_newcheck())
+        print("Done")
         if current_version < self.new_version:
             return True
         else:
             return False
 
     def newpost_check(self):
+        print("\nIV. Checking New Post... ", end='')
         new_post_text = self.Manager_Board_obj.post_data[0][1]
         new_post_writer = self.Manager_Board_obj.post_data[0][0]
         old_post_text = self.SETTING['OldPostTitle']
-
+        print("Done")
         if new_post_text == old_post_text:
             return False
         elif old_post_text == 'default':
