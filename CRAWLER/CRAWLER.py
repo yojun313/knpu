@@ -266,6 +266,7 @@ class Crawler(CrawlerModule):
 
             token_df = self.tokenization(data_df)
             print(f'\r{table} DB Inserting...', end='')
+            self.mySQL.connectDB(self.DBname)
             self.mySQL.DataframeToTable(token_df, 'token_' + table)
 
         self.clear_screen()
