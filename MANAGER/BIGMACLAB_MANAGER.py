@@ -332,7 +332,8 @@ class MainWindow(QMainWindow):
                 'GPT_Key': os.getenv("OPTION_6"),
                 'DB_Refresh': os.getenv("OPTION_7"),
                 'GPT_TTS': os.getenv("OPTION_8"),
-                'BootTerminal': os.getenv("OPTION_9")
+                'BootTerminal': os.getenv("OPTION_9"),
+                'DBKeywordSort': os.getenv("OPTION_10")
             }
         except Exception as e:
             print(traceback.format_exc())
@@ -346,7 +347,8 @@ class MainWindow(QMainWindow):
                 'GPT_Key': 'default',
                 'DB_Refresh': 'default',
                 'GPT_TTS': 'default',
-                'BootTerminal': 'default'
+                'BootTerminal': 'default',
+                'DBKeywordSort': 'default'
             }
 
     def update_settings(self, option_key, new_value):
@@ -481,6 +483,8 @@ class MainWindow(QMainWindow):
                     self.setDarkStyle()
                 self.Manager_Analysis_obj.file_dialog.set_theme()
 
+                if self.SETTING['MyDB'] != 'default' or self.SETTING['DBKeywordSort'] != 'default':
+                    self.Manager_Database_obj.database_refresh_DB()
 
         except Exception as e:
             self.program_bug_log(traceback.format_exc())
@@ -800,6 +804,23 @@ class MainWindow(QMainWindow):
                 pass
 
     def update_DB(self):
+        def sort_currentDB_by_keyword(currentDB):
+            # 세 리스트를 묶어서 keyword에서 따옴표를 제거한 기준으로 정렬
+            sorted_data = sorted(
+                zip(currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo']),
+                key=lambda x: x[1][2].replace('"', '')  # x[1][2]는 keyword, 따옴표 제거 후 정렬
+            )
+
+            # 정렬된 결과를 각각의 리스트로 풀어서 저장
+            currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo'] = zip(*sorted_data)
+
+            # zip 결과를 tuple로 반환하므로 list로 변환
+            currentDB['DBlist'] = list(currentDB['DBlist'])
+            currentDB['DBdata'] = list(currentDB['DBdata'])
+            currentDB['DBinfo'] = list(currentDB['DBinfo'])
+
+            return currentDB
+
         self.mySQL_obj.connectDB('crawler_db')
         db_list = self.mySQL_obj.TableToList('db_list')
 
@@ -870,6 +891,9 @@ class MainWindow(QMainWindow):
 
         self.activate_crawl = len([item for item in currentDB['DBdata'] if item[6] == "크롤링 중"])
         self.fullstorage = round(self.fullstorage, 2)
+
+        if self.SETTING['DBKeywordSort'] != 'default':
+            currentDB = sort_currentDB_by_keyword(currentDB)
 
         return currentDB
 
