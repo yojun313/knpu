@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import (
 )
 from Manager_Console import open_console, close_console
 import chardet
+import subprocess
 from DataProcess import DataProcess
 from Kemkim import KimKem
 
@@ -283,6 +284,28 @@ class Manager_Analysis:
                 selected_directory[index] = os.path.join(os.path.dirname(selected_directory[0]), directory)
 
         return selected_directory
+
+    def dataprocess_opencsv_file(self):
+        try:
+            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
+            if len(selected_directory) == 0:
+                return
+            elif selected_directory[0] == False:
+                QMessageBox.warning(self.main, f"Wrong Format", f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
+                return
+            elif len(selected_directory) != 1:
+                QMessageBox.warning(self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
+                return
+            csv_path = selected_directory[0]
+            if sys.platform == "win32":  # Windows
+                os.startfile(csv_path)
+            elif sys.platform == "darwin":  # macOS
+                subprocess.run(["open", csv_path])
+            else:  # Linux/Unix
+                subprocess.run(["xdg-open", csv_path])
+
+        except Exception as e:
+            self.main.program_bug_log(traceback.format_exc())
 
     def dataprocess_timesplit_file(self):
         try:
@@ -1637,6 +1660,7 @@ class Manager_Analysis:
         self.main.dataprocess_tab2_timesplit_button.clicked.connect(self.dataprocess_timesplit_file)
         self.main.dataprocess_tab2_analysis_button.clicked.connect(self.dataprocess_analysis_file)
         self.main.dataprocess_tab2_merge_button.clicked.connect(self.dataprocess_merge_file)
+        self.main.dataprocess_tab2_opencsv_button.clicked.connect(self.dataprocess_opencsv_file)
         self.main.kimkem_tab2_kimkem_button.clicked.connect(self.kimkem_kimkem)
 
         self.main.dataprocess_tab1_refreshDB_button.setToolTip("Ctrl+R")

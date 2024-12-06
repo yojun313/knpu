@@ -182,6 +182,13 @@
               <item>
                <layout class="QVBoxLayout" name="verticalLayout_5">
                 <item>
+                 <widget class="QPushButton" name="dataprocess_tab2_opencsv_button">
+                  <property name="text">
+                   <string>CSV 열기</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <widget class="QPushButton" name="dataprocess_tab2_timesplit_button">
                   <property name="text">
                    <string>분할(년/월)</string>
