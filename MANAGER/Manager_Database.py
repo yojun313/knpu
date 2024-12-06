@@ -36,8 +36,6 @@ class Manager_Database:
             def delete_database():
                 selected_row = self.main.database_tablewidget.currentRow()
                 if selected_row >= 0:
-                    self.main.mySQL_obj.disconnectDB()
-                    self.main.mySQL_obj.connectDB()
                     target_db = self.DB['DBlist'][selected_row]
                     self.main.mySQL_obj.connectDB(target_db)
                     endtime = self.DB['DBdata'][selected_row][6]
