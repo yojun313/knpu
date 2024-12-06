@@ -415,7 +415,6 @@ class MainWindow(QMainWindow):
         try:
             if self.CONFIG['Logging'] == 'Off':
                 return
-            self.mySQL_obj.disconnectDB()
             self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
             if booting == True:
                 latest_record = self.mySQL_obj.TableLastRow('manager_record')  # log의 마지막 행 불러옴
@@ -453,7 +452,6 @@ class MainWindow(QMainWindow):
 
     def user_bugging(self, text=''):
         try:
-            self.mySQL_obj.disconnectDB()
             self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
             text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', text, add=True)
