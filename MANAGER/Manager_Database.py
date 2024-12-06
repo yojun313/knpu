@@ -476,6 +476,9 @@ class Manager_Database:
                 self.main.CONFIG['Logging'] = 'On' if self.main.CONFIG['Logging'] == 'Off' else 'Off'
                 QMessageBox.information(self.main, "Information", f"Logging 설정을 '{mode_changed}'으로 변경했습니다")
                 return
+            if search_text == './reinstall':
+                self.main.update_program(sc=True)
+                return
             if search_text == './crawllog':
                 self.main.table_view('crawler_db', 'crawl_log', 'max')
                 return
