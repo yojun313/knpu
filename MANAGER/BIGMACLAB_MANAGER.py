@@ -3,13 +3,14 @@ import sys
 from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
     QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
-    QPushButton, QMainWindow, QApplication, QSpacerItem
-from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSize
+    QPushButton, QMainWindow, QApplication, QSpacerItem, QAbstractItemView
+from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSize, QModelIndex
 from PyQt5.QtGui import QKeySequence, QFont, QIcon
 import speech_recognition as sr
-import sounddevice as sd
+import subprocess
 from openai import OpenAI
 from mySQL import mySQL
+from Manager_ToolModule import ToolModule
 from Manager_Database import Manager_Database
 from Manager_Web import Manager_Web
 from Manager_Board import Manager_Board
@@ -17,11 +18,7 @@ from Manager_User import Manager_User
 from Manager_Analysis import Manager_Analysis
 from Manager_Settings import Manager_Setting, SplashDialog
 from Manager_Console import open_console, close_console
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-import smtplib
 from dotenv import load_dotenv
-from cryptography.fernet import Fernet
 from datetime import datetime
 import platform
 import requests
@@ -37,23 +34,24 @@ import re
 import logging
 import shutil
 import textwrap
-from gtts import gTTS
-from playsound import playsound
-import tempfile
 
 warnings.filterwarnings("ignore")
 
-VERSION = '2.3.5'
+VERSION = '2.3.6'
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
 class MainWindow(QMainWindow):
+
     def __init__(self, splash_dialog):
         try:
             self.versionNum = VERSION
             self.version = 'Version ' + self.versionNum
             self.splash_dialog = splash_dialog
             self.recognizer = sr.Recognizer()
+
+            self.toolmodule = ToolModule()
+
 
             super(MainWindow, self).__init__()
             ui_path = os.path.join(os.path.dirname(__file__), 'source', 'BIGMACLAB_MANAGER_GUI.ui')
@@ -68,7 +66,7 @@ class MainWindow(QMainWindow):
             self.resize(1400, 1000)
 
             self.setStyle()
-            self.statusBar_init()
+            self.initialize_statusBar()
             self.decrypt_process()
 
             setup_logging()
@@ -193,7 +191,7 @@ class MainWindow(QMainWindow):
                     self.shortcut_init()
                     self.Manager_Database_obj.database_shortcut_setting()
                     self.user_logging(f'Booting ({self.user_location()})', booting=True)
-                    self.check_configuration()
+                    self.initialize_configuration()
 
                     close_console()
                     self.close_bootscreen()
@@ -229,6 +227,12 @@ class MainWindow(QMainWindow):
             self.close_bootscreen()
             open_console()
             print(traceback.format_exc())
+
+    def __getattr__(self, name):
+        # ClassA에 속성이 있으면 반환
+        return getattr(self.toolmodule, name)
+
+    ################################## Booting ##################################
 
     def initialize_listwidget(self):
         try:
@@ -350,109 +354,7 @@ class MainWindow(QMainWindow):
                 'DBKeywordSort': 'default'
             }
 
-    def update_settings(self, option_key, new_value):
-        try:
-            option_key = f"OPTION_{option_key}"
-            file_path = self.SETTING['path']
-            # .env 파일 읽기
-            lines = []
-            if os.path.exists(file_path):
-                with open(file_path, 'r', encoding="utf-8") as file:
-                    lines = file.readlines()
-
-            # 변경된 내용을 다시 작성
-            with open(file_path, 'w', encoding="utf-8") as file:
-                key_found = False
-                for line in lines:
-                    key, sep, value = line.partition("=")
-                    key = key.strip()
-                    if key == option_key:  # 키가 존재하면 값을 변경
-                        file.write(f"{option_key}={new_value}\n")
-                        key_found = True
-                    else:  # 키가 다르면 기존 내용 유지
-                        file.write(line)
-
-                if not key_found:  # 키가 없으면 새로 추가
-                    file.write(f"{option_key}={new_value}\n")
-
-            return True
-        except Exception as e:
-            print(traceback.format_exc())
-            return False
-
-    def close_bootscreen(self):
-        try:
-            self.splash_dialog.accept()  # InfoDialog 닫기
-            self.show()  # MainWindow 표시
-        except:
-            print(traceback.format_exc())
-
-    def decrypt_process(self):
-        current_position = os.path.dirname(__file__)
-
-        # 암호화 키 로드
-        def load_key():
-            try:
-                with open(os.path.join(current_position, 'source', 'env.key'), "rb") as key_file:
-                    return key_file.read()
-            except:
-                secret_key = os.getenv("SECRET_KEY")
-                return secret_key
-
-        def decrypt_env_file(encrypted_file_path):
-            key = load_key()
-            fernet = Fernet(key)
-
-            # 암호화된 파일 읽기
-            with open(encrypted_file_path, "rb") as file:
-                encrypted_data = file.read()
-
-            # 파일 복호화 및 .decrypted_env 파일로 저장
-            decrypted_data = fernet.decrypt(encrypted_data).decode("utf-8")
-            with open(os.path.join(current_position, 'decrypted_env'), "w", encoding="utf-8") as dec_file:
-                dec_file.write(decrypted_data)
-
-        decrypt_env_file(os.path.join(current_position, 'source', 'encrypted_env'))
-        load_dotenv(os.path.join(current_position, 'decrypted_env'))
-
-        self.admin_password = os.getenv('ADMIN_PASSWORD')
-        self.public_password = os.getenv('PUBLIC_PASSWORD')
-        self.admin_pushoverkey = os.getenv('ADMIN_PUSHOVER')
-        self.db_ip = os.getenv('DB_IP')
-
-        if os.path.exists(os.path.join(current_position, 'decrypted_env')):
-            os.remove(os.path.join(current_position, 'decrypted_env'))
-
-    def user_logging(self, text='', booting=False):
-        try:
-            if self.CONFIG['Logging'] == 'Off':
-                return
-            self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
-            if booting == True:
-                latest_record = self.mySQL_obj.TableLastRow('manager_record')  # log의 마지막 행 불러옴
-                # 'Date' 열을 datetime 형식으로 변환
-                if latest_record != ():  # 테이블에 데이터가 있는 경우
-                    # 테이블의 가장 마지막 행 데이터를 불러옴
-                    latest_date = pd.to_datetime(latest_record[1])
-
-                # 만약 테이블이 비어있는 경우
-                else:
-                    latest_date = None  # 최근 날짜를 None으로 설정
-
-                # 오늘 날짜 가져오기
-                today = pd.to_datetime(datetime.now().date())
-
-                # 가장 최근 로그 날짜와 현재 날짜와 같은 경우
-                if latest_date != today or latest_date is None:
-                    self.mySQL_obj.insertToTable('manager_record', [[str(datetime.now().date()), '', '', '']])
-                    self.mySQL_obj.commit()
-
-            text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
-            self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', text, add=True)
-        except Exception as e:
-            print(traceback.format_exc())
-
-    def check_configuration(self):
+    def initialize_configuration(self):
         try:
             self.mySQL_obj.connectDB('bigmaclab_manager_db')
             configDF = self.mySQL_obj.TableToDataframe('configuration')
@@ -462,42 +364,64 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(traceback.format_exc())
 
-    def user_bugging(self, text=''):
+    def initialize_statusBar(self):
+        # 상태 표시줄 생성
+        self.statusbar = QStatusBar()
+        self.setStatusBar(self.statusbar)
+        self.left_label = QLabel('  ' + self.version)
+        self.right_label = QLabel('')
+        self.left_label.setToolTip("새 버전 확인을 위해 Ctrl+U")
+        self.right_label.setToolTip("상태표시줄")
+        self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.right_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.statusbar.addPermanentWidget(self.left_label, 1)
+        self.statusbar.addPermanentWidget(self.right_label, 1)
+
+    def shortcut_init(self):
+        self.ctrld = QShortcut(QKeySequence("Ctrl+D"), self)
+        self.ctrls = QShortcut(QKeySequence("Ctrl+S"), self)
+        self.ctrlv = QShortcut(QKeySequence("Ctrl+V"), self)
+        self.ctrlu = QShortcut(QKeySequence("Ctrl+U"), self)
+        self.ctrll = QShortcut(QKeySequence("Ctrl+L"), self)
+        self.ctrla = QShortcut(QKeySequence("Ctrl+A"), self)
+        self.ctrli = QShortcut(QKeySequence("Ctrl+I"), self)
+        self.ctrle = QShortcut(QKeySequence("Ctrl+E"), self)
+        self.ctrlr = QShortcut(QKeySequence("Ctrl+R"), self)
+        self.ctrlk = QShortcut(QKeySequence("Ctrl+K"), self)
+        self.ctrlm = QShortcut(QKeySequence("Ctrl+M"), self)
+        self.ctrlp = QShortcut(QKeySequence("Ctrl+P"), self)
+        self.ctrlc = QShortcut(QKeySequence("Ctrl+C"), self)
+        self.ctrlpp = QShortcut(QKeySequence("Ctrl+Shift+P"), self)
+
+        self.cmdd = QShortcut(QKeySequence("Ctrl+ㅇ"), self)
+        self.cmds = QShortcut(QKeySequence("Ctrl+ㄴ"), self)
+        self.cmdv = QShortcut(QKeySequence("Ctrl+ㅍ"), self)
+        self.cmdu = QShortcut(QKeySequence("Ctrl+ㅕ"), self)
+        self.cmdl = QShortcut(QKeySequence("Ctrl+ㅣ"), self)
+        self.cmda = QShortcut(QKeySequence("Ctrl+ㅁ"), self)
+        self.cmdi = QShortcut(QKeySequence("Ctrl+ㅑ"), self)
+        self.cmde = QShortcut(QKeySequence("Ctrl+ㄷ"), self)
+        self.cmdr = QShortcut(QKeySequence("Ctrl+ㄱ"), self)
+        self.cmdk = QShortcut(QKeySequence("Ctrl+ㅏ"), self)
+        self.cmdm = QShortcut(QKeySequence("Ctrl+ㅡ"), self)
+        self.cmdp = QShortcut(QKeySequence("Ctrl+ㅔ"), self)
+        self.cmdc = QShortcut(QKeySequence("Ctrl+ㅊ"), self)
+        self.cmdpp = QShortcut(QKeySequence("Ctrl+Shift+ㅔ"), self)
+
+        self.ctrlu.activated.connect(lambda: self.update_program(sc=True))
+        self.ctrlp.activated.connect(lambda: self.developer_mode(True))
+        self.ctrlpp.activated.connect(lambda: self.developer_mode(False))
+
+        self.cmdu.activated.connect(lambda: self.update_program(sc=True))
+        self.cmdp.activated.connect(lambda: self.developer_mode(True))
+        self.cmdpp.activated.connect(lambda: self.developer_mode(False))
+
+    def close_bootscreen(self):
         try:
-            self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
-            text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
-            self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', text, add=True)
-        except Exception as e:
+            self.splash_dialog.accept()  # InfoDialog 닫기
+            self.show()  # MainWindow 표시
+        except:
             print(traceback.format_exc())
-
-    def user_settings(self):
-        try:
-            self.user_logging(f'User Setting')
-            dialog = Manager_Setting(self, self.SETTING)
-            if dialog.exec_() == QDialog.Accepted:
-                QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
-                if self.SETTING['Theme'] == 'default':
-                    self.setLightStyle()
-                else:
-                    self.setDarkStyle()
-                self.Manager_Analysis_obj.file_dialog.set_theme()
-
-                if self.SETTING['MyDB'] != 'default' or self.SETTING['DBKeywordSort'] != 'default':
-                    self.Manager_Database_obj.database_refresh_DB()
-
-        except Exception as e:
-            self.program_bug_log(traceback.format_exc())
-
-    def user_location(self, detail=False):
-        try:
-            response = requests.get("https://ipinfo.io")
-            data = response.json()
-            returnData = f"{self.version} | {self.user_device} | {data.get("ip")} | {data.get("city")}"
-            if detail == True:
-                returnData = f"{data.get("ip")} | {data.get("city")} | {data.get('region')} | {data.get('country')} | {data.get('loc')} | {self.versionNum}"
-            return returnData
-        except requests.RequestException as e:
-            return ""
 
     def login_program(self):
         def admin_notify(username):
@@ -740,57 +664,304 @@ class MainWindow(QMainWindow):
             self.update_settings(3, new_post_text)
             return True
 
-    def statusBar_init(self):
-        # 상태 표시줄 생성
-        self.statusbar = QStatusBar()
-        self.setStatusBar(self.statusbar)
-        self.left_label = QLabel('  ' + self.version)
-        self.right_label = QLabel('')
-        self.left_label.setToolTip("새 버전 확인을 위해 Ctrl+U")
-        self.right_label.setToolTip("상태표시줄")
-        self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.right_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.statusbar.addPermanentWidget(self.left_label, 1)
-        self.statusbar.addPermanentWidget(self.right_label, 1)
+    def check_internet_connection(self):
+        while True:
+            try:
+                # Google을 기본으로 확인 (URL은 다른 사이트로 변경 가능)
+                response = requests.get("http://www.google.com", timeout=5)
+                return response.status_code == 200
+            except requests.ConnectionError:
+                self.printStatus()
+                self.close_bootscreen()
+                reply = QMessageBox.question(self, "Internet Connection Error",
+                                             "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    continue
+                else:
+                    os._exit(0)
 
-    def shortcut_init(self):
-        self.ctrld = QShortcut(QKeySequence("Ctrl+D"), self)
-        self.ctrls = QShortcut(QKeySequence("Ctrl+S"), self)
-        self.ctrlv = QShortcut(QKeySequence("Ctrl+V"), self)
-        self.ctrlu = QShortcut(QKeySequence("Ctrl+U"), self)
-        self.ctrll = QShortcut(QKeySequence("Ctrl+L"), self)
-        self.ctrla = QShortcut(QKeySequence("Ctrl+A"), self)
-        self.ctrli = QShortcut(QKeySequence("Ctrl+I"), self)
-        self.ctrle = QShortcut(QKeySequence("Ctrl+E"), self)
-        self.ctrlr = QShortcut(QKeySequence("Ctrl+R"), self)
-        self.ctrlk = QShortcut(QKeySequence("Ctrl+K"), self)
-        self.ctrlm = QShortcut(QKeySequence("Ctrl+M"), self)
-        self.ctrlp = QShortcut(QKeySequence("Ctrl+P"), self)
-        self.ctrlc = QShortcut(QKeySequence("Ctrl+C"), self)
-        self.ctrlpp = QShortcut(QKeySequence("Ctrl+Shift+P"), self)
+    def display(self, index):
+        if index != 6:
+            self.stackedWidget.setCurrentIndex(index)
+        # self.update_program()
+        # DATABASE
+        if index == 0:
+            self.Manager_Database_obj.database_shortcut_setting()
+            if self.SETTING['DB_Refresh'] == 'default':
+                self.Manager_Database_obj.database_refresh_DB()
+            QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
+        # CRAWLER
+        elif index == 1:
+            self.shortcut_initialize()
+            QTimer.singleShot(1000, lambda: self.printStatus(f"활성 크롤러 수: {self.activate_crawl}"))
+        # ANALYSIS
+        elif index == 2:
+            self.printStatus()
+            self.Manager_Analysis_obj.analysis_shortcut_setting()
+        # BOARD
+        elif index == 3:
+            self.Manager_Board_obj.board_shortcut_setting()
+            self.printStatus()
+        # WEB
+        elif index == 4:
+            self.shortcut_initialize()
+            self.printStatus()
+            #self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
+        # USER
+        elif index == 5:
+            self.printStatus()
+            self.Manager_User_obj.user_shortcut_setting()
 
-        self.cmdd = QShortcut(QKeySequence("Ctrl+ㅇ"), self)
-        self.cmds = QShortcut(QKeySequence("Ctrl+ㄴ"), self)
-        self.cmdv = QShortcut(QKeySequence("Ctrl+ㅍ"), self)
-        self.cmdu = QShortcut(QKeySequence("Ctrl+ㅕ"), self)
-        self.cmdl = QShortcut(QKeySequence("Ctrl+ㅣ"), self)
-        self.cmda = QShortcut(QKeySequence("Ctrl+ㅁ"), self)
-        self.cmdi = QShortcut(QKeySequence("Ctrl+ㅑ"), self)
-        self.cmde = QShortcut(QKeySequence("Ctrl+ㄷ"), self)
-        self.cmdr = QShortcut(QKeySequence("Ctrl+ㄱ"), self)
-        self.cmdk = QShortcut(QKeySequence("Ctrl+ㅏ"), self)
-        self.cmdm = QShortcut(QKeySequence("Ctrl+ㅡ"), self)
-        self.cmdp = QShortcut(QKeySequence("Ctrl+ㅔ"), self)
-        self.cmdc = QShortcut(QKeySequence("Ctrl+ㅊ"), self)
-        self.cmdpp = QShortcut(QKeySequence("Ctrl+Shift+ㅔ"), self)
+        elif index == 6:
+            self.user_settings()
+            previous_index = self.stackedWidget.currentIndex()  # 현재 활성 화면의 인덱스
+            self.listWidget.setCurrentRow(previous_index)  # 선택 상태를 이전 인덱스로 변경
 
-        self.ctrlu.activated.connect(lambda: self.update_program(sc=True))
-        self.ctrlp.activated.connect(lambda: self.developer_mode(True))
-        self.ctrlpp.activated.connect(lambda: self.developer_mode(False))
+        gc.collect()
 
-        self.cmdu.activated.connect(lambda: self.update_program(sc=True))
-        self.cmdp.activated.connect(lambda: self.developer_mode(True))
-        self.cmdpp.activated.connect(lambda: self.developer_mode(False))
+    def filefinder_maker(self, main_window):
+        class EmbeddedFileDialog(QFileDialog):
+            def __init__(self, parent=None, default_directory=None):
+                super().__init__(parent)
+                self.setFileMode(QFileDialog.ExistingFiles)
+                self.setOptions(QFileDialog.DontUseNativeDialog)
+                self.setNameFilters(["All Files (*.*)", "CSV Files (*.csv)", "Text Files (*.txt)", "Images (*.png *.jpg *.jpeg)"])
+                self.currentChanged.connect(self.on_directory_change)
+                self.accepted.connect(self.on_accepted)
+                self.rejected.connect(self.on_rejected)
+                self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                self.main = parent
+                self.set_theme()
+                if default_directory:
+                    self.setDirectory(default_directory)
+
+                # 더블 클릭 이벤트 연결
+                self.setup_double_click_event()
+
+            def setup_double_click_event(self):
+                def handle_double_click(index: QModelIndex):
+                    # 더블 클릭된 파일 경로 가져오기
+                    file_path = self.selectedFiles()[0]  # 현재 선택된 파일
+                    if file_path and os.path.isfile(file_path):  # 파일인지 확인
+                        self.open_in_external_app(file_path)
+
+                # QListView 또는 QTreeView 중 하나를 찾아서 더블 클릭 이벤트 연결
+                for view in self.findChildren(QAbstractItemView):
+                    view.doubleClicked.connect(handle_double_click)
+
+            def set_theme(self):
+                if self.main.SETTING['Theme'] == 'dark':
+                    # 다크 테마 적용
+                    self.setStyleSheet("""
+                        QFileDialog {
+                            background-color: #2e2e2e;
+                            color: #ffffff;
+                        }
+                        QTreeView, QListView {
+                            background-color: #2e2e2e;
+                            color: #ffffff;
+                        }
+                        QLineEdit {
+                            background-color: #3a3a3a;
+                            color: #ffffff;
+                            border: 1px solid #3a3a3a;
+                        }
+                        QPushButton {
+                            background-color: #444444;
+                            color: #ffffff;
+                            border: 1px solid #3a3a3a;
+                            padding: 5px;
+                        }
+                        QPushButton:hover {
+                            background-color: #555555;
+                        }
+                        QScrollBar:vertical, QScrollBar:horizontal {
+                            background: #2a2a2a;
+                            border: 1px solid #3a3a3a;
+                        }
+                        QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+                            background: #3a3a3a;
+                            border-radius: 4px;
+                        }
+                        QScrollBar::add-line, QScrollBar::sub-line {
+                            background: #2a2a2a;
+                        }
+                    """)
+                else:
+                    self.setStyleSheet("""
+                        QFileDialog {
+                            background-color: #ffffff;
+                            color: #000000;
+                        }
+                        QTreeView, QListView {
+                            background-color: #f8f8f8;
+                            color: #000000;
+                        }
+                        QLineEdit {
+                            background-color: #ffffff;
+                            color: #000000;
+                            border: 1px solid #d0d0d0;
+                        }
+                        QPushButton {
+                            background-color: #e0e0e0;
+                            color: #000000;
+                            border: 1px solid #d0d0d0;
+                            padding: 5px;
+                        }
+                        QPushButton:hover {
+                            background-color: #d8d8d8;
+                        }
+                        QScrollBar:vertical, QScrollBar:horizontal {
+                            background: #f0f0f0;
+                            border: 1px solid #d0d0d0;
+                        }
+                        QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+                            background: #d0d0d0;
+                            border-radius: 4px;
+                        }
+                        QScrollBar::add-line, QScrollBar::sub-line {
+                            background: #f0f0f0;
+                        }
+                    """)
+
+            def open_in_external_app(self, file_path):
+                try:
+                    if os.name == 'nt':  # Windows
+                        os.startfile(file_path)
+                    elif os.name == 'posix':  # macOS, Linux
+                        subprocess.run(["open" if os.uname().sysname == "Darwin" else "xdg-open", file_path])
+                except Exception as e:
+                    self.main.printStatus(f"파일 열기 실패: {e}")
+
+            def on_directory_change(self, path):
+                self.main.printStatus(f"{os.path.basename(path)} 선택됨")
+
+            def on_accepted(self):
+                selected_files = self.selectedFiles()
+                if selected_files:
+                    self.selectFile(', '.join([os.path.basename(file) for file in selected_files]))
+                if len(selected_files) == 0:
+                    self.main.printStatus()
+                else:
+                    self.main.printStatus(f"파일 {len(selected_files)}개 선택됨")
+                self.show()
+
+            def on_rejected(self):
+                self.show()
+
+            def accept(self):
+                selected_files = self.selectedFiles()
+                if selected_files:
+                    self.selectFile(', '.join([os.path.basename(file) for file in selected_files]))
+                if len(selected_files) == 0:
+                    self.main.printStatus()
+                else:
+                    self.main.printStatus(f"파일 {len(selected_files)}개 선택됨")
+                self.show()
+
+            def reject(self):
+                self.show()
+
+        return EmbeddedFileDialog(self, self.default_directory)
+
+    #############################################################################
+
+    def update_settings(self, option_key, new_value):
+        try:
+            option_key = f"OPTION_{option_key}"
+            file_path = self.SETTING['path']
+            # .env 파일 읽기
+            lines = []
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding="utf-8") as file:
+                    lines = file.readlines()
+
+            # 변경된 내용을 다시 작성
+            with open(file_path, 'w', encoding="utf-8") as file:
+                key_found = False
+                for line in lines:
+                    key, sep, value = line.partition("=")
+                    key = key.strip()
+                    if key == option_key:  # 키가 존재하면 값을 변경
+                        file.write(f"{option_key}={new_value}\n")
+                        key_found = True
+                    else:  # 키가 다르면 기존 내용 유지
+                        file.write(line)
+
+                if not key_found:  # 키가 없으면 새로 추가
+                    file.write(f"{option_key}={new_value}\n")
+
+            return True
+        except Exception as e:
+            print(traceback.format_exc())
+            return False
+
+    def user_logging(self, text='', booting=False):
+        try:
+            if self.CONFIG['Logging'] == 'Off':
+                return
+            self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
+            if booting == True:
+                latest_record = self.mySQL_obj.TableLastRow('manager_record')  # log의 마지막 행 불러옴
+                # 'Date' 열을 datetime 형식으로 변환
+                if latest_record != ():  # 테이블에 데이터가 있는 경우
+                    # 테이블의 가장 마지막 행 데이터를 불러옴
+                    latest_date = pd.to_datetime(latest_record[1])
+
+                # 만약 테이블이 비어있는 경우
+                else:
+                    latest_date = None  # 최근 날짜를 None으로 설정
+
+                # 오늘 날짜 가져오기
+                today = pd.to_datetime(datetime.now().date())
+
+                # 가장 최근 로그 날짜와 현재 날짜와 같은 경우
+                if latest_date != today or latest_date is None:
+                    self.mySQL_obj.insertToTable('manager_record', [[str(datetime.now().date()), '', '', '']])
+                    self.mySQL_obj.commit()
+
+            text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
+            self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', text, add=True)
+        except Exception as e:
+            print(traceback.format_exc())
+
+    def user_bugging(self, text=''):
+        try:
+            self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
+            text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
+            self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', text, add=True)
+        except Exception as e:
+            print(traceback.format_exc())
+
+    def user_settings(self):
+        try:
+            self.user_logging(f'User Setting')
+            dialog = Manager_Setting(self, self.SETTING)
+            if dialog.exec_() == QDialog.Accepted:
+                QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
+                if self.SETTING['Theme'] == 'default':
+                    self.setLightStyle()
+                else:
+                    self.setDarkStyle()
+                self.Manager_Analysis_obj.file_dialog.set_theme()
+
+                if self.SETTING['MyDB'] != 'default' or self.SETTING['DBKeywordSort'] != 'default':
+                    self.Manager_Database_obj.database_refresh_DB()
+
+        except Exception as e:
+            self.program_bug_log(traceback.format_exc())
+
+    def user_location(self, detail=False):
+        try:
+            response = requests.get("https://ipinfo.io")
+            data = response.json()
+            returnData = f"{self.version} | {self.user_device} | {data.get("ip")} | {data.get("city")}"
+            if detail == True:
+                returnData = f"{data.get("ip")} | {data.get("city")} | {data.get('region')} | {data.get('country')} | {data.get('loc')} | {self.versionNum}"
+            return returnData
+        except requests.RequestException as e:
+            return ""
 
     def shortcut_initialize(self):
         shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrle, self.ctrlr, self.ctrlk, self.ctrlm, self.ctrlc,
@@ -895,23 +1066,6 @@ class MainWindow(QMainWindow):
             currentDB = sort_currentDB_by_keyword(currentDB)
 
         return currentDB
-
-    def check_internet_connection(self):
-        while True:
-            try:
-                # Google을 기본으로 확인 (URL은 다른 사이트로 변경 가능)
-                response = requests.get("http://www.google.com", timeout=5)
-                return response.status_code == 200
-            except requests.ConnectionError:
-                self.printStatus()
-                self.close_bootscreen()
-                reply = QMessageBox.question(self, "Internet Connection Error",
-                                             "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
-                    continue
-                else:
-                    os._exit(0)
 
     def table_maker(self, widgetname, data, column, right_click_function=None, popupsize=None):
         def show_details(item):
@@ -1066,128 +1220,6 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
-
-    def filefinder_maker(self, main_window):
-        class EmbeddedFileDialog(QFileDialog):
-            def __init__(self, parent=None, default_directory=None):
-                super().__init__(parent)
-                self.setFileMode(QFileDialog.ExistingFiles)
-                self.setOptions(QFileDialog.DontUseNativeDialog)
-                self.setNameFilters(["CSV Files (*.csv)"])  # 파일 필터 설정
-                self.currentChanged.connect(self.on_directory_change)
-                self.accepted.connect(self.on_accepted)
-                self.rejected.connect(self.on_rejected)
-                self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-                self.main = main_window
-                self.set_theme()
-                if default_directory:
-                    self.setDirectory(default_directory)
-
-            def set_theme(self):
-                if self.main.SETTING['Theme'] == 'dark':
-                    # 스타일 시트를 추가하여 다크 테마 적용
-                    self.setStyleSheet("""
-                        QFileDialog {
-                            background-color: #2e2e2e;
-                            color: #ffffff;
-                        }
-                        QTreeView, QListView {
-                            background-color: #2e2e2e;
-                            color: #ffffff;
-                        }
-                        QLineEdit {
-                            background-color: #3a3a3a;
-                            color: #ffffff;
-                            border: 1px solid #3a3a3a;
-                        }
-                        QPushButton {
-                            background-color: #444444;
-                            color: #ffffff;
-                            border: 1px solid #3a3a3a;
-                            padding: 5px;
-                        }
-                        QPushButton:hover {
-                            background-color: #555555;
-                        }
-                        QScrollBar:vertical, QScrollBar:horizontal {
-                            background: #2a2a2a;
-                            border: 1px solid #3a3a3a;
-                        }
-                        QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
-                            background: #3a3a3a;
-                            border-radius: 4px;
-                        }
-                        QScrollBar::add-line, QScrollBar::sub-line {
-                            background: #2a2a2a;
-                        }
-                    """)
-                else:
-                    self.setStyleSheet("""
-                        QFileDialog {
-                            background-color: #ffffff;
-                            color: #000000;
-                        }
-                        QTreeView, QListView {
-                            background-color: #f8f8f8;
-                            color: #000000;
-                        }
-                        QLineEdit {
-                            background-color: #ffffff;
-                            color: #000000;
-                            border: 1px solid #d0d0d0;
-                        }
-                        QPushButton {
-                            background-color: #e0e0e0;
-                            color: #000000;
-                            border: 1px solid #d0d0d0;
-                            padding: 5px;
-                        }
-                        QPushButton:hover {
-                            background-color: #d8d8d8;
-                        }
-                        QScrollBar:vertical, QScrollBar:horizontal {
-                            background: #f0f0f0;
-                            border: 1px solid #d0d0d0;
-                        }
-                        QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
-                            background: #d0d0d0;
-                            border-radius: 4px;
-                        }
-                        QScrollBar::add-line, QScrollBar::sub-line {
-                            background: #f0f0f0;
-                        }
-                    """)
-
-            def on_directory_change(self, path):
-                self.main.printStatus(f"{os.path.basename(path)} 선택됨")
-
-            def on_accepted(self):
-                selected_files = self.selectedFiles()
-                if selected_files:
-                    self.selectFile(', '.join([os.path.basename(file) for file in selected_files]))
-                if len(selected_files) == 0:
-                    self.main.printStatus()
-                else:
-                    self.main.printStatus(f"파일 {len(selected_files)}개 선택됨")
-                self.show()
-
-            def on_rejected(self):
-                self.show()
-
-            def accept(self):
-                selected_files = self.selectedFiles()
-                if selected_files:
-                    self.selectFile(', '.join([os.path.basename(file) for file in selected_files]))
-                if len(selected_files) == 0:
-                    self.main.printStatus()
-                else:
-                    self.main.printStatus(f"파일 {len(selected_files)}개 선택됨")
-                self.show()
-
-            def reject(self):
-                self.show()
-
-        return EmbeddedFileDialog(self, self.default_directory)
 
     def setStyle(self):
 
@@ -1484,45 +1516,6 @@ class MainWindow(QMainWindow):
             """
         )
 
-    def display(self, index):
-        if index != 6:
-            self.stackedWidget.setCurrentIndex(index)
-        # self.update_program()
-        # DATABASE
-        if index == 0:
-            self.Manager_Database_obj.database_shortcut_setting()
-            if self.SETTING['DB_Refresh'] == 'default':
-                self.Manager_Database_obj.database_refresh_DB()
-            QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
-        # CRAWLER
-        elif index == 1:
-            self.shortcut_initialize()
-            QTimer.singleShot(1000, lambda: self.printStatus(f"활성 크롤러 수: {self.activate_crawl}"))
-        # ANALYSIS
-        elif index == 2:
-            self.printStatus()
-            self.Manager_Analysis_obj.analysis_shortcut_setting()
-        # BOARD
-        elif index == 3:
-            self.Manager_Board_obj.board_shortcut_setting()
-            self.printStatus()
-        # WEB
-        elif index == 4:
-            self.shortcut_initialize()
-            self.printStatus()
-            #self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
-        # USER
-        elif index == 5:
-            self.printStatus()
-            self.Manager_User_obj.user_shortcut_setting()
-
-        elif index == 6:
-            self.user_settings()
-            previous_index = self.stackedWidget.currentIndex()  # 현재 활성 화면의 인덱스
-            self.listWidget.setCurrentRow(previous_index)  # 선택 상태를 이전 인덱스로 변경
-
-        gc.collect()
-
     def pw_check(self, admin=False, string=""):
         while True:
             input_dialog = QInputDialog(self)
@@ -1561,116 +1554,6 @@ class MainWindow(QMainWindow):
             os.system(f"open '{path}'")
         else:  # Linux and other OS
             os.system(f"xdg-open '{path}'")
-
-    def send_pushOver(self, msg, user_key, image_path=False):
-        app_key_list = ["a22qabchdf25zzkd1vjn12exjytsjx"]
-
-        for app_key in app_key_list:
-            try:
-                # Pushover API 설정
-                url = 'https://api.pushover.net/1/messages.json'
-                # 메시지 내용
-                message = {
-                    'token': app_key,
-                    'user': user_key,
-                    'message': msg
-                }
-                # Pushover에 요청을 보냄
-                if image_path == False:
-                    response = requests.post(url, data=message)
-                else:
-                    response = requests.post(url, data=message, files={
-                        "attachment": (
-                            "image.png", open(image_path, "rb"),
-                            "image/png")
-                    })
-                break
-            except:
-                continue
-
-    def send_email(self, receiver, title, text):
-        sender = "knpubigmac2024@gmail.com"
-        MailPassword = 'vygn nrmh erpf trji'
-
-        msg = MIMEMultipart()
-        msg['Subject'] = title
-        msg['From'] = sender
-        msg['To'] = receiver
-
-        msg.attach(MIMEText(text, 'plain'))
-
-        smtp_server = "smtp.gmail.com"
-        smtp_port = 587
-
-        # SMTP 연결 및 메일 보내기
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(sender, MailPassword)
-            server.sendmail(sender, receiver, msg.as_string())
-
-    def csvReader(self, csvPath): 
-        csv_data = pd.read_csv(csvPath, low_memory=False, index_col=0)
-        csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
-        return csv_data
-
-    def chatgpt_generate(self, query):
-        try:
-            # OpenAI 클라이언트 초기화
-            client = OpenAI(api_key=self.gpt_api_key)
-
-            # 모델 이름 수정: gpt-4-turbo
-            model = "gpt-4-turbo"
-
-            # ChatGPT API 요청
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": query},
-                ]
-            )
-
-            # 응답 메시지 내용 추출
-            content = response.choices[0].message.content
-            return content
-
-        except Exception as e:
-            # 예외 발생 시 에러 메시지 반환
-            return (0, traceback.format_exc())
-
-    def microphone(self):
-        with sr.Microphone() as source:
-            audio = self.recognizer.listen(source)
-
-        # Google Web Speech API를 사용하여 음성 인식
-        try:
-            return self.recognizer.recognize_google(audio, language='ko-KR')
-        except sr.UnknownValueError:
-            print(f"오류 발생\n{traceback.format_exc()}")
-            return "음성 인식 실패"
-        except sr.RequestError as e:
-            print(f"오류 발생\n{traceback.format_exc()}")
-            return "음성 인식 실패"
-
-    def speecher(self, text):
-        try:
-            # 임시 파일 생성 (delete=False로 설정)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
-                temp_file_name = temp_file.name  # 파일 경로 저장
-                # gTTS를 사용해 텍스트를 음성으로 변환
-                tts = gTTS(text=text, lang='ko')
-                tts.save(temp_file_name)  # 임시 파일에 저장
-
-            # 음성 파일 재생
-            playsound(temp_file_name)
-
-        except Exception as e:
-            print(f"오류가 발생했습니다: {e}")
-
-        finally:
-            # 임시 파일 삭제
-            if os.path.exists(temp_file_name):
-                os.remove(temp_file_name)
         
     def program_bug_log(self, text):
         print(text)
@@ -1737,6 +1620,31 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(e)
 
+    def chatgpt_generate(self, query):
+        try:
+            # OpenAI 클라이언트 초기화
+            client = OpenAI(api_key=self.gpt_api_key)
+
+            # 모델 이름 수정: gpt-4-turbo
+            model = "gpt-4-turbo"
+
+            # ChatGPT API 요청
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": query},
+                ]
+            )
+
+            # 응답 메시지 내용 추출
+            content = response.choices[0].message.content
+            return content
+
+        except Exception as e:
+            # 예외 발생 시 에러 메시지 반환
+            return (0, traceback.format_exc())
+
     #################### DEVELOPER MODE ###################
 
     def developer_mode(self, toggle):
@@ -1761,7 +1669,6 @@ class MainWindow(QMainWindow):
 # 로그 출력 제어 변수와 로그 저장 변수
 logging_enabled = False  # 콘솔 출력 여부를 조절
 log_text = ""  # 모든 로그 메시지를 저장하는 변수
-
 
 def setup_logging():
     """로그 설정 초기화"""
@@ -1824,9 +1731,6 @@ class EventLogger(QObject):
         return super().eventFilter(obj, event)
 
 #######################################################
-
-
-
 
 if __name__ == '__main__':
     os.environ["QT_DEVICE_PIXEL_RATIO"] = "0"
