@@ -209,7 +209,7 @@ class MainWindow(QMainWindow):
                         if reply == QMessageBox.Yes:
                             self.Manager_Board_obj.board_view_post(0)
                     if newversion == True:
-                        self.update_program(self.SETTING['AutoUpdate'])
+                        self.update_program(auto=self.SETTING['AutoUpdate'])
 
                 except Exception as e:
                     print("Failed")
