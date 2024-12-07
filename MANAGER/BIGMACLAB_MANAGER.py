@@ -185,7 +185,7 @@ class MainWindow(QMainWindow):
                             else:
                                 os._exit(0)
 
-                    self.splash_dialog.update_status(f"Welcome {self.user}!")
+                    self.splash_dialog.update_status(f"안녕하세요, {self.user}님!")
                     newpost = self.newpost_check()
                     newversion = self.newversion_check()
                     print(f"\n{self.user}님 환영합니다!")
