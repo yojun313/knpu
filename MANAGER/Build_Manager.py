@@ -1,6 +1,7 @@
 import os
 import subprocess
 import socket
+from datetime import datetime
 import shutil
 
 def create_spec_file(original_spec_file, new_spec_file, exe_name):
@@ -49,12 +50,18 @@ if __name__ == "__main__":
     # Spec file path
     spec_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'BIGMACLAB_MANAGER.spec')
 
-    # Get the version from the user
-    version = input("Enter the program version: ")
+    while True:
+        # Get the version from the user
+        version = input("Enter the program version: ")
 
-    same_version = os.path.join(output_directory, f"BIGMACLAB_MANAGER_{version}")
-    if os.path.exists(same_version):
-        shutil.rmtree(same_version)
-        print(f"\n이전 동일 버전({version}) 삭제됨\n")
+        same_version = os.path.join(output_directory, f"BIGMACLAB_MANAGER_{version}")
+        if os.path.exists(same_version):
+            shutil.rmtree(same_version)
+            print(f"\n이전 동일 버전({version}) 삭제됨\n")
 
-    build_exe_from_spec(spec_file, output_directory, version)
+        build_exe_from_spec(spec_file, output_directory, version)
+        os.system("cls")
+
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M")
+        print(f"{current_time} BIGMACLAB_MANAGER_{version} built successfully\n")
