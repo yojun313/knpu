@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, \
     QHBoxLayout, QLabel, QDialog, QLineEdit, QMessageBox, \
-    QPushButton, QStackedWidget, QListWidget
-from PyQt5.QtCore import Qt, QTimer
+    QPushButton, QStackedWidget, QListWidget, QApplication
+from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QEventLoop
 from PyQt5.QtGui import QKeySequence, QPixmap, QPainter, QBrush, QColor
 from dotenv import load_dotenv
 from datetime import datetime
@@ -780,7 +780,7 @@ class SplashDialog(QDialog):
         # 프로그램 이름 라벨
         title_label = QLabel("MANAGER")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet(f"font-size: 24px; font-weight: bold; color: {text_color};")  # 폰트 크기 확대
+        title_label.setStyleSheet(f"font-size: 24px; font-weight: bold; color: {text_color};")
         main_layout.addWidget(title_label)
 
         # 이미지 라벨
@@ -794,13 +794,13 @@ class SplashDialog(QDialog):
         # 버전 정보 라벨
         version_label = QLabel(f"Version {self.version}")
         version_label.setAlignment(Qt.AlignCenter)
-        version_label.setStyleSheet(f"font-size: 21px; color: {text_color}; margin-top: 5px;")  # 폰트 크기 유지
+        version_label.setStyleSheet(f"font-size: 21px; color: {text_color}; margin-top: 5px;")
         main_layout.addWidget(version_label)
 
         # 상태 메시지 라벨
         self.status_label = QLabel("Loading...")
         self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet(f"font-size: 17px; color: {gray_color}; margin-top: 8px;")
+        self.status_label.setStyleSheet(f"font-size: 15px; color: {gray_color}; margin-top: 8px;")
         main_layout.addWidget(self.status_label)
 
         # 저작권 정보 라벨
@@ -819,4 +819,11 @@ class SplashDialog(QDialog):
         rect = self.rect()
         painter.setBrush(QBrush(self.bg_color))
         painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
-        painter.drawRoundedRect(rect, 30, 30)  # 모서리를 둥글게 그리기 (30px radius)
+        painter.drawRoundedRect(rect, 30, 30)  # 모서리를 둥글게 (30px radius)
+
+    def update_status(self, message):
+        """
+        SplashDialog의 상태 메시지를 업데이트하고 UI를 즉시 새로고침하는 메서드
+        """
+        self.status_label.setText(message)
+        QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
