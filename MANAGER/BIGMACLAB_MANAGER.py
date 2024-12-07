@@ -128,6 +128,7 @@ class MainWindow(QMainWindow):
                         try:
                             self.mySQL_obj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
                             print("\nI. Loading User Info from DB... ", end='')
+                            self.splash_dialog.update_status("Loading User Info from DB")
                             if self.mySQL_obj.showAllDB() == []:
                                 raise
                             # DB 불러오기
@@ -154,6 +155,7 @@ class MainWindow(QMainWindow):
 
                     # User Checking & Login Process
                     print("\nII. Checking User... ", end='')
+                    self.splash_dialog.update_status("Checking User")
                     if self.login_program() == False:
                         os._exit(0)
 
@@ -161,6 +163,7 @@ class MainWindow(QMainWindow):
                     while True:
                         try:
                             print("\nIII. Loading Data from DB... ", end='')
+                            self.splash_dialog.update_status("Loading Data from DB")
                             self.Manager_User_obj.userDB_layout_maker()
                             self.Manager_Board_obj = Manager_Board(self)
                             self.DB = self.update_DB()
@@ -182,10 +185,9 @@ class MainWindow(QMainWindow):
                             else:
                                 os._exit(0)
 
-
+                    self.splash_dialog.update_status(f"Welcome {self.user}!")
                     newpost = self.newpost_check()
                     newversion = self.newversion_check()
-
                     print(f"\n{self.user}님 환영합니다!")
 
                     self.shortcut_init()
