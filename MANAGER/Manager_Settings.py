@@ -28,6 +28,7 @@ class Manager_Setting(QDialog):
         self.category_list.addItem("앱 설정")
         self.category_list.addItem("DB 설정")
         self.category_list.addItem("정보")
+        self.category_list.addItem("도움말")  # Help 섹션 추가
         self.category_list.setStyleSheet("""
             QListWidget {
                 border: 1px solid #ccc;
@@ -68,6 +69,9 @@ class Manager_Setting(QDialog):
         # info 설정 페이지 추가
         self.info_settings_page = self.create_info_settings_page(setting)
         self.stacked_widget.addWidget(self.info_settings_page)
+
+        self.help_page = self.create_help_page()
+        self.stacked_widget.addWidget(self.help_page)
 
         # 콘텐츠 레이아웃 구성
         content_layout.addWidget(self.category_list, 2)
@@ -619,6 +623,55 @@ class Manager_Setting(QDialog):
         self.timer.start(1000)
 
         return info_settings_widget
+
+    def create_help_page(self):
+        """
+        Help 페이지 생성
+        """
+        help_layout = QVBoxLayout()
+        help_layout.setSpacing(10)
+        help_layout.setContentsMargins(20, 20, 20, 20)
+
+        # 제목
+        help_title_label = QLabel("Instructions\n")
+        help_title_label.setAlignment(Qt.AlignLeft)
+        help_title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #2C3E50;")
+
+        # 설명 텍스트
+        help_text_label = QLabel("아래 링크를 클릭하여 사용 설명서를 확인하세요.")
+        help_text_label.setAlignment(Qt.AlignLeft)
+        help_text_label.setStyleSheet("font-size: 15px; color: #34495E;")
+
+        # 첫 번째 하이퍼링크
+        link1_label = QLabel('<a href="https://knpu.re.kr/tool">BIGMACLAB MANAGER</a>')
+        link1_label.setOpenExternalLinks(True)
+        link1_label.setAlignment(Qt.AlignLeft)
+        link1_label.setStyleSheet("font-size: 14px; color: #2C3E50;")
+
+        # 두 번째 하이퍼링크
+        link2_label = QLabel('<a href="https://knpu.re.kr/kemkim">KEM KIM</a>')
+        link2_label.setOpenExternalLinks(True)
+        link2_label.setAlignment(Qt.AlignLeft)
+        link2_label.setStyleSheet("font-size: 14px; color: #2C3E50;")
+
+        # 레이아웃 구성
+        help_layout.addWidget(help_title_label)
+        help_layout.addWidget(help_text_label)
+        help_layout.addWidget(link1_label)
+        help_layout.addWidget(link2_label)
+        help_layout.addStretch()
+
+        help_widget = QWidget()
+        help_widget.setLayout(help_layout)
+        return help_widget
+
+    def open_help_url(self):
+        """
+        Help 페이지에서 URL 열기
+        """
+        import webbrowser
+        url = "https://example.com/manual"  # 사용 설명서 URL
+        webbrowser.open(url)
 
     def display_category(self, index):
         """
