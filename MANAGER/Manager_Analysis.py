@@ -21,7 +21,6 @@ from PyQt5.QtWidgets import (
 )
 from Manager_Console import open_console, close_console
 import chardet
-import subprocess
 from DataProcess import DataProcess
 from Kemkim import KimKem
 
@@ -44,11 +43,11 @@ class Manager_Analysis:
         self.DB = copy.deepcopy(self.main.DB)
         self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester', 'Size']
         self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBdata'], self.DB_table_column)
-        self.dataprocess_filefinder_maker()
+        self.analysis_filefinder_maker()
         self.anaylsis_buttonMatch()
         self.console_open = False
 
-    def dataprocess_search_DB(self):
+    def analysis_search_DB(self):
         try:
             search_text = self.main.dataprocess_tab1_searchDB_lineinput.text().lower()
             if not search_text:
@@ -84,7 +83,7 @@ class Manager_Analysis:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def dataprocess_refresh_DB(self):
+    def analysis_refresh_DB(self):
         try:
             self.main.printStatus("새로고침 중...")
             def refresh_database():
@@ -96,7 +95,7 @@ class Manager_Analysis:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def dataprocess_timesplit_DB(self):
+    def analysis_timesplit_DB(self):
         try:
             def selectDB():
                 selected_row = self.main.dataprocess_tab1_tablewidget.currentRow()
@@ -174,7 +173,7 @@ class Manager_Analysis:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def dataprocess_analysis_DB(self):
+    def analysis_analysis_DB(self):
         try:
             def selectDB():
                 selected_row = self.main.dataprocess_tab1_tablewidget.currentRow()
@@ -265,11 +264,11 @@ class Manager_Analysis:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def dataprocess_filefinder_maker(self):
+    def analysis_filefinder_maker(self):
         self.file_dialog = self.main.filefinder_maker(self.main)
-        self.main.tab2_fileexplorer_layout.addWidget(self.file_dialog)
+        self.main.analysis_filefinder_layout.addWidget(self.file_dialog)
 
-    def dataprocess_getfiledirectory(self, file_dialog):
+    def analysis_getfiledirectory(self, file_dialog):
         selected_directory = file_dialog.selectedFiles()
         if selected_directory == []:
             return selected_directory
@@ -285,31 +284,9 @@ class Manager_Analysis:
 
         return selected_directory
 
-    def dataprocess_opencsv_file(self):
+    def analysis_timesplit_file(self):
         try:
-            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
-            if len(selected_directory) == 0:
-                return
-            elif selected_directory[0] == False:
-                QMessageBox.warning(self.main, f"Wrong Format", f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
-                return
-            elif len(selected_directory) != 1:
-                QMessageBox.warning(self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
-                return
-            csv_path = selected_directory[0]
-            if sys.platform == "win32":  # Windows
-                os.startfile(csv_path)
-            elif sys.platform == "darwin":  # macOS
-                subprocess.run(["open", csv_path])
-            else:  # Linux/Unix
-                subprocess.run(["xdg-open", csv_path])
-
-        except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
-
-    def dataprocess_timesplit_file(self):
-        try:
-            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
+            selected_directory = self.analysis_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
@@ -370,7 +347,7 @@ class Manager_Analysis:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def dataprocess_merge_file(self):
+    def analysis_merge_file(self):
         try:
             def find_different_element_index(lst):
                 # 리스트가 비어있으면 None을 반환
@@ -388,7 +365,7 @@ class Manager_Analysis:
 
                 return None  # 모든 요소가 같다면 None을 반환
 
-            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
+            selected_directory = self.analysis_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
@@ -435,7 +412,7 @@ class Manager_Analysis:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def dataprocess_analysis_file(self):
+    def analysis_analysis_file(self):
         try:
             class OptionDialog(QDialog):
                 def __init__(self):
@@ -488,7 +465,7 @@ class Manager_Analysis:
                         self.checkbox_group.append(checkbox)
                         self.layout().insertWidget(self.layout().count() - 1, checkbox)  # 버튼 위에 체크박스 추가
 
-            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
+            selected_directory = self.analysis_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
@@ -611,7 +588,7 @@ class Manager_Analysis:
     
     def kimkem_kimkem_file(self):
         try:
-            selected_directory = self.dataprocess_getfiledirectory(self.file_dialog)
+            selected_directory = self.analysis_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
                 QMessageBox.warning(self.main, f"Wrong Selection", f"선택된 CSV 토큰 파일이 없습니다")
                 return
@@ -1651,25 +1628,24 @@ class Manager_Analysis:
             self.main.program_bug_log(traceback.format_exc())
 
     def anaylsis_buttonMatch(self):
-        self.main.dataprocess_tab1_refreshDB_button.clicked.connect(self.dataprocess_refresh_DB)
-        self.main.dataprocess_tab1_searchDB_lineinput.returnPressed.connect(self.dataprocess_search_DB)
-        self.main.dataprocess_tab1_searchDB_button.clicked.connect(self.dataprocess_search_DB)
-        self.main.dataprocess_tab1_timesplit_button.clicked.connect(self.dataprocess_timesplit_DB)
-        self.main.dataprocess_tab1_analysis_button.clicked.connect(self.dataprocess_analysis_DB)
+        self.main.analysis_refreshDB_btn.clicked.connect(self.analysis_refresh_DB)
+        self.main.analysis_searchDB_lineinput.returnPressed.connect(self.analysis_search_DB)
+        self.main.analysis_searchDB_btn.clicked.connect(self.analysis_search_DB)
+        self.main.analysis_timesplitDB_btn.clicked.connect(self.analysis_timesplit_DB)
+        self.main.analysis_dataanalysisDB_btn.clicked.connect(self.analysis_analysis_DB)
 
-        self.main.dataprocess_tab2_timesplit_button.clicked.connect(self.dataprocess_timesplit_file)
-        self.main.dataprocess_tab2_analysis_button.clicked.connect(self.dataprocess_analysis_file)
-        self.main.dataprocess_tab2_merge_button.clicked.connect(self.dataprocess_merge_file)
-        self.main.dataprocess_tab2_opencsv_button.clicked.connect(self.dataprocess_opencsv_file)
-        self.main.kimkem_tab2_kimkem_button.clicked.connect(self.kimkem_kimkem)
+        self.main.analysis_timesplitfile_btn.clicked.connect(self.analysis_timesplit_file)
+        self.main.analysis_dataanalysisfile_btn.clicked.connect(self.analysis_analysis_file)
+        self.main.analysis_mergefile_btn.clicked.connect(self.analysis_merge_file)
+        self.main.analysis_kemkim_btn.clicked.connect(self.kimkem_kimkem)
 
-        self.main.dataprocess_tab1_refreshDB_button.setToolTip("Ctrl+R")
-        self.main.dataprocess_tab1_timesplit_button.setToolTip("Ctrl+D")
-        self.main.dataprocess_tab1_analysis_button.setToolTip("Ctrl+A")
-        self.main.dataprocess_tab2_timesplit_button.setToolTip("Ctrl+D")
-        self.main.dataprocess_tab2_analysis_button.setToolTip("Ctrl+A")
-        self.main.dataprocess_tab2_merge_button.setToolTip("Ctrl+M")
-        self.main.kimkem_tab2_kimkem_button.setToolTip("Ctrl+K")
+        self.main.analysis_refreshDB_btn.setToolTip("Ctrl+R")
+        self.main.analysis_timesplitDB_btn.setToolTip("Ctrl+D")
+        self.main.analysis_dataanalysisDB_btn.setToolTip("Ctrl+A")
+        self.main.analysis_timesplitfile_btn.setToolTip("Ctrl+D")
+        self.main.analysis_dataanalysisfile_btn.setToolTip("Ctrl+A")
+        self.main.analysis_mergefile_btn.setToolTip("Ctrl+M")
+        self.main.analysis_kemkim_btn.setToolTip("Ctrl+K")
 
     def analysis_shortcut_setting(self):
         self.update_shortcuts_based_on_tab(0)
@@ -1680,22 +1656,22 @@ class Manager_Analysis:
 
         # 파일 불러오기
         if index == 0:
-            self.main.ctrld.activated.connect(self.dataprocess_timesplit_file)
-            self.main.ctrlm.activated.connect(self.dataprocess_merge_file)
-            self.main.ctrla.activated.connect(self.dataprocess_analysis_file)
+            self.main.ctrld.activated.connect(self.analysis_timesplit_file)
+            self.main.ctrlm.activated.connect(self.analysis_merge_file)
+            self.main.ctrla.activated.connect(self.analysis_analysis_file)
             self.main.ctrlk.activated.connect(self.kimkem_kimkem)
 
-            self.main.cmdd.activated.connect(self.dataprocess_timesplit_file)
-            self.main.cmdm.activated.connect(self.dataprocess_merge_file)
-            self.main.cmda.activated.connect(self.dataprocess_analysis_file)
+            self.main.cmdd.activated.connect(self.analysis_timesplit_file)
+            self.main.cmdm.activated.connect(self.analysis_merge_file)
+            self.main.cmda.activated.connect(self.analysis_analysis_file)
             self.main.cmdk.activated.connect(self.kimkem_kimkem)
 
         # DB 불러오기
         if index == 1:
-            self.main.ctrld.activated.connect(self.dataprocess_timesplit_DB)
-            self.main.ctrla.activated.connect(self.dataprocess_analysis_DB)
-            self.main.ctrlr.activated.connect(self.dataprocess_refresh_DB)
+            self.main.ctrld.activated.connect(self.analysis_timesplit_DB)
+            self.main.ctrla.activated.connect(self.analysis_analysis_DB)
+            self.main.ctrlr.activated.connect(self.analysis_refresh_DB)
 
-            self.main.cmdd.activated.connect(self.dataprocess_timesplit_DB)
-            self.main.cmda.activated.connect(self.dataprocess_analysis_DB)
-            self.main.cmdr.activated.connect(self.dataprocess_refresh_DB)
+            self.main.cmdd.activated.connect(self.analysis_timesplit_DB)
+            self.main.cmda.activated.connect(self.analysis_analysis_DB)
+            self.main.cmdr.activated.connect(self.analysis_refresh_DB)

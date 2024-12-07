@@ -177,40 +177,33 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_9">
               <item>
-               <layout class="QHBoxLayout" name="tab2_fileexplorer_layout"/>
+               <layout class="QHBoxLayout" name="analysis_filefinder_layout"/>
               </item>
               <item>
                <layout class="QVBoxLayout" name="verticalLayout_5">
                 <item>
-                 <widget class="QPushButton" name="dataprocess_tab2_opencsv_button">
-                  <property name="text">
-                   <string>CSV 열기</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="dataprocess_tab2_timesplit_button">
+                 <widget class="QPushButton" name="analysis_timesplitfile_btn">
                   <property name="text">
                    <string>분할(년/월)</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="dataprocess_tab2_merge_button">
+                 <widget class="QPushButton" name="analysis_mergefile_btn">
                   <property name="text">
                    <string>CSV 병합</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="dataprocess_tab2_analysis_button">
+                 <widget class="QPushButton" name="analysis_dataanalysisfile_btn">
                   <property name="text">
                    <string>데이터 분석</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="kimkem_tab2_kimkem_button">
+                 <widget class="QPushButton" name="analysis_kemkim_btn">
                   <property name="text">
                    <string>KEM KIM</string>
                   </property>
@@ -250,17 +243,17 @@
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_7">
                   <item>
-                   <widget class="QLineEdit" name="dataprocess_tab1_searchDB_lineinput"/>
+                   <widget class="QLineEdit" name="analysis_searchDB_lineinput"/>
                   </item>
                   <item>
-                   <widget class="QPushButton" name="dataprocess_tab1_searchDB_button">
+                   <widget class="QPushButton" name="analysis_searchDB_btn">
                     <property name="text">
                      <string>검색</string>
                     </property>
                    </widget>
                   </item>
                   <item>
-                   <widget class="QPushButton" name="dataprocess_tab1_refreshDB_button">
+                   <widget class="QPushButton" name="analysis_refreshDB_btn">
                     <property name="text">
                      <string>새로고침</string>
                     </property>
@@ -273,14 +266,14 @@
               <item>
                <layout class="QVBoxLayout" name="verticalLayout_7">
                 <item>
-                 <widget class="QPushButton" name="dataprocess_tab1_timesplit_button">
+                 <widget class="QPushButton" name="analysis_timesplitDB_btn">
                   <property name="text">
                    <string>분할(년/월)</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="dataprocess_tab1_analysis_button">
+                 <widget class="QPushButton" name="analysis_dataanalysisDB_btn">
                   <property name="text">
                    <string>데이터 분석</string>
                   </property>
