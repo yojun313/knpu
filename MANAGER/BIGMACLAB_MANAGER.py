@@ -30,7 +30,7 @@ QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
 app = QApplication([])
 # 기본 폰트 설정 및 힌팅 설정
-font = QFont()
+font = QFont("맑은 고딕")
 font.setHintingPreference(QFont.PreferNoHinting)
 font.setStyleStrategy(QFont.PreferAntialias)  # 안티앨리어싱 활성화
 app.setFont(font)
@@ -605,7 +605,6 @@ class MainWindow(QMainWindow):
                             border: 1px solid #bdc3c7;
                             padding: 8px;
                             text-align: left;
-                            font-family: Arial, sans-serif;
                         }}
                         th {{
                             background-color: #34495e;
@@ -1288,7 +1287,6 @@ class MainWindow(QMainWindow):
             """
             QMainWindow {
                 background-color: #f7f7f7;
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
                 -webkit-font-smoothing: antialiased;  /* 텍스트 부드럽게 렌더링 */
                 -moz-osx-font-smoothing: grayscale;   /* macOS에서 텍스트 렌더링 개선 */
@@ -1300,7 +1298,6 @@ class MainWindow(QMainWindow):
                 border: none;
                 border-radius: 5px;
                 padding: 13px;
-                font-family: 'Malgun Gothic';
                 font-size: 15px;
                 -webkit-font-smoothing: antialiased;
                 -moz-osx-font-smoothing: grayscale;
@@ -1313,7 +1310,6 @@ class MainWindow(QMainWindow):
                 border: 1px solid #bdc3c7;
                 border-radius: 5px;
                 padding: 8px;
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
                 -webkit-font-smoothing: antialiased;
                 -moz-osx-font-smoothing: grayscale;
@@ -1321,7 +1317,6 @@ class MainWindow(QMainWindow):
             }
             QTableWidget {
                 border: 1px solid #bdc3c7;
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
                 -webkit-font-smoothing: antialiased;
                 -moz-osx-font-smoothing: grayscale;
@@ -1332,7 +1327,6 @@ class MainWindow(QMainWindow):
                 color: white;
                 padding: 8px;
                 border: none;
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
                 -webkit-font-smoothing: antialiased;
                 -moz-osx-font-smoothing: grayscale;
@@ -1341,7 +1335,7 @@ class MainWindow(QMainWindow):
             QListWidget {
                 background-color: #2c3e50;
                 color: white;
-                font-family: 'Tahoma;
+                font-family: 'Tahoma';
                 font-size: 14px;
                 border: none;
                 min-width: 150px;
@@ -1380,7 +1374,6 @@ class MainWindow(QMainWindow):
                 border-radius: 4px;
                 border-top-right-radius: 4px;
                 padding: 10px;
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
                 min-width: 100px;
                 max-width: 200px;
@@ -1403,7 +1396,6 @@ class MainWindow(QMainWindow):
             """
             QMainWindow {
                 background-color: #2b2b2b;
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
                 color: #eaeaea;  /* 기본 텍스트 색상 */
                 -webkit-font-smoothing: antialiased;
@@ -1416,7 +1408,6 @@ class MainWindow(QMainWindow):
                 border: none;
                 border-radius: 5px;
                 padding: 13px;
-                font-family: 'Malgun Gothic';
                 font-size: 15px;
                 -webkit-font-smoothing: antialiased;
                 -moz-osx-font-smoothing: grayscale;
@@ -1431,7 +1422,6 @@ class MainWindow(QMainWindow):
                 padding: 8px;
                 background-color: #3c3c3c;
                 color: #eaeaea;  /* 입력 텍스트 색상 */
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
                 -webkit-font-smoothing: antialiased;
                 -moz-osx-font-smoothing: grayscale;
@@ -1439,14 +1429,12 @@ class MainWindow(QMainWindow):
             }
             QLabel {
                 color: #eaeaea;  /* 라벨 기본 텍스트 색상 */
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
             }
             QTableWidget {
                 background-color: #2b2b2b;  /* 테이블 전체 배경 */
                 gridline-color: #5a5a5a;  /* 셀 간격선 색상 */
                 color: #eaeaea;  /* 셀 텍스트 색상 */
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
                 border: 1px solid #5a5a5a;  /* 테두리 설정 */
                 -webkit-font-smoothing: antialiased;
@@ -1470,7 +1458,6 @@ class MainWindow(QMainWindow):
                 color: #eaeaea;  /* 헤더 텍스트 색상 */
                 padding: 8px;
                 border: 1px solid #5a5a5a;
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
             }
             QHeaderView::corner {  /* 좌측 상단 정사각형 부분 */
@@ -1523,7 +1510,6 @@ class MainWindow(QMainWindow):
                 border-bottom-color: #2b2b2b;
                 border-radius: 4px;
                 padding: 10px;
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
                 min-width: 100px;  /* 최소 가로 길이 설정 */
                 max-width: 200px;  /* 최대 가로 길이 설정 */
@@ -1536,13 +1522,11 @@ class MainWindow(QMainWindow):
                 background-color: #2b2b2b;  /* 다이얼로그 배경색 */
                 color: #eaeaea;
                 border: 1px solid #5a5a5a;
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
             }
             QMessageBox {
                 background-color: #2b2b2b;  /* 메시지 박스 배경색 */
                 color: #eaeaea;  /* 메시지 텍스트 색상 */
-                font-family: 'Malgun Gothic';
                 font-size: 14px;
                 border: 1px solid #5a5a5a;
             }
