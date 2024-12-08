@@ -3,7 +3,7 @@
 # Version: 2.X.X
 # Developer: Moon Yo Jun (POSTECH, Computer Science and Engineering)
 # Date Created: 2024-12-09
-# Affiliation: BIGMACLAB, Korean National Police University, Asan, Chungcheongnam-do
+# Affiliation: BIGMACLAB, Korean National Police University, Asan, Chungcheongnam-do / knpu.re.kr
 #
 # Contact:
 # - Email: yojun313@postech.ac.kr / moonyojun@gmail.com
