@@ -1,3 +1,15 @@
+##################################################################
+# Project Name: BIGMACLAB MANAGER
+# Version: 2.X.X
+# Developer: Moon Yo Jun (POSTECH, Computer Science and Engineering)
+# Date Created: 2024-12-09
+# Affiliation: BIGMACLAB, Korean National Police University, Asan, Chungcheongnam-do
+#
+# Contact:
+# - Email: yojun313@postech.ac.kr / moonyojun@gmail.com
+# - Phone: +82-10-4072-9190
+##################################################################
+
 VERSION = '2.4.3'
 
 from PyQt5.QtWidgets import QApplication
@@ -25,12 +37,10 @@ app.setFont(font)
 # 로딩 다이얼로그 표시
 splash_dialog = SplashDialog(version=VERSION)
 splash_dialog.show()
-QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
 
 splash_dialog.update_status("Loading System Libraries")
 import os
 import sys
-import speech_recognition as sr
 import subprocess
 from openai import OpenAI
 from mySQL import mySQL
@@ -76,12 +86,10 @@ class MainWindow(QMainWindow):
     def __init__(self, splash_dialog):
         try:
             self.versionNum = VERSION
-            self.version = 'Version ' + self.versionNum
+            self.version = f'Version {self.versionNum}'
             self.splash_dialog = splash_dialog
-            self.recognizer = sr.Recognizer()
 
             self.toolmodule = ToolModule()
-
 
             super(MainWindow, self).__init__()
             ui_path = os.path.join(os.path.dirname(__file__), 'source', 'BIGMACLAB_MANAGER_GUI.ui')
@@ -254,7 +262,7 @@ class MainWindow(QMainWindow):
                     QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
                     os._exit(0)
 
-            QTimer.singleShot(1, load_program)
+            load_program()
 
         except Exception as e:
             self.close_bootscreen()

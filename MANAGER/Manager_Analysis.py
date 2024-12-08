@@ -1177,7 +1177,6 @@ class Manager_Analysis:
                 QMessageBox.warning(self.main, "No Data", "필터링 키워드를 포함하는 데이터가 존재하지 않습니다")
                 return
 
-
             selected_words_dic = {
                 'Filter Option': selected_option,
                 'Strong Signal': ','.join(selected_words_2dim[0]),
