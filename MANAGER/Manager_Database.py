@@ -820,8 +820,7 @@ class Manager_Database:
                 self.main.mySQL_obj.connectDB(target_db)
 
                 # 불필요한 정렬 조건 제거
-                tableList = [table for table in sorted(self.main.mySQL_obj.showAllTable(target_db)) if
-                             'info' not in table]
+                tableList = [table for table in sorted(self.main.mySQL_obj.showAllTable(target_db)) if 'info' not in table]
                 tableList = sorted(tableList, key=lambda x: ('article' not in x, 'statistics' not in x, x))
 
                 # 필터 옵션이 있는 경우 DB_info.txt 작성
@@ -844,22 +843,17 @@ class Manager_Database:
                         print(f'Include Words: {", ".join(incl_words)}')
                         print(f'Exclude Words: {", ".join(excl_words)}')
                     print('')
-                for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|",
-                                      ascii=' ='):
-                    edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if date_options[
-                                                                                                         'option'] == 'part' else tableName
+                for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+                    edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if date_options['option'] == 'part' else tableName
                     # 테이블 데이터를 DataFrame으로 변환
                     if date_options['option'] == 'part':
-                        tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed,
-                                                                             end_date_formed)
+                        tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
                     else:
                         tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
 
-                    if filterOption == True and 'article' in tableName:
-                        tableDF = tableDF[tableDF['Article Text'].apply(
-                            lambda cell: any(word in str(cell) for word in incl_words))]
-                        tableDF = tableDF[tableDF['Article Text'].apply(
-                            lambda cell: all(word not in str(cell) for word in excl_words))]
+                    if filterOption == True and 'article' in tableName and 'token' not in tableName:
+                        tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
+                        tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
                         articleURL = tableDF['Article URL'].tolist()
 
                     # statistics 테이블 처리
@@ -867,8 +861,7 @@ class Manager_Database:
                         if filterOption == True:
                             tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
                         statisticsURL = tableDF['Article URL'].tolist()
-                        save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '',
-                                                 f"{edited_tableName}.csv")
+                        save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
                         tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
                         continue
 
@@ -881,14 +874,12 @@ class Manager_Database:
                         if filterOption == True:
                             filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
                         filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
-                        save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '',
-                                                 f"{edited_tableName + '_statistics'}.csv")
+                        save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
                         filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
 
                     # 기타 테이블 처리
                     save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
-                    tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False,
-                                   encoding='utf-8-sig', header=True)
+                    tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
                     tableDF = None
                     gc.collect()
 
