@@ -862,6 +862,7 @@ class Manager_Database:
                             tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
                         statisticsURL = tableDF['Article URL'].tolist()
                         save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
+                        self.main.printStatus(f"{os.path.basename(save_path)} 저장 중...")
                         tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
                         continue
 
@@ -875,10 +876,12 @@ class Manager_Database:
                             filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
                         filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
                         save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
+                        self.main.printStatus(f"{os.path.basename(save_path)} 저장 중...")
                         filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
 
                     # 기타 테이블 처리
                     save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
+                    self.main.printStatus(f"{edited_tableName} 저장 중...")
                     tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
                     tableDF = None
                     gc.collect()
