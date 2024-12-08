@@ -1,13 +1,11 @@
+VERSION = '2.4.0'
+
 from PyQt5.QtWidgets import QApplication
 from Manager_SplashDialog import SplashDialog
 from PyQt5.QtCore import QEventLoop, QCoreApplication, Qt
 from PyQt5.QtGui import QFont
 import os
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-
-VERSION = '2.4.0'
-DB_IP = '121.152.225.232'
-LOCAL_IP = '192.168.0.3'
 
 os.environ["QT_DEVICE_PIXEL_RATIO"] = "0"
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
@@ -68,6 +66,8 @@ import shutil
 import textwrap
 
 warnings.filterwarnings("ignore")
+DB_IP = '121.152.225.232'
+LOCAL_IP = '192.168.0.3'
 
 class MainWindow(QMainWindow):
 
