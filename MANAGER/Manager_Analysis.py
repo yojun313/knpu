@@ -1516,7 +1516,6 @@ class Manager_Analysis:
                 }
                 self.accept()
         try:
-            self.main.user_logging(f'ANALYSIS -> kimkem_kimkemStart({tokenfile_name})')
             self.main.printStatus("KEM KIM 데이터를 저장할 위치를 선택하세요")
             save_path = QFileDialog.getExistingDirectory(self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요", self.main.default_directory)
             if save_path == '':
@@ -1594,8 +1593,9 @@ class Manager_Analysis:
                 exception_word_list = []
                 exception_word_list_path = 'N'
 
-            print(filter_yes_selected)
             open_console('KEMKIM 분석')
+
+            self.main.user_logging(f'ANALYSIS -> KEMKIM({tokenfile_name})-({startdate},{startdate},{topword},{weight},{filter_yes_selected})')
             kimkem_obj = KimKem(self.main, token_data, tokenfile_name, save_path, startdate, enddate, period, topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected, ani_yes_selected, exception_word_list, exception_word_list_path)
             result = kimkem_obj.make_kimkem()
             close_console()
