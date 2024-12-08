@@ -1747,6 +1747,7 @@ if __name__ == '__main__':
     # 로딩 다이얼로그 표시
     splash_dialog = SplashDialog(version=VERSION)
     splash_dialog.show()
+    QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
 
     # 메인 윈도우 실행
     application = MainWindow(splash_dialog)
