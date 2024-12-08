@@ -731,64 +731,60 @@ class Manager_Database:
                 new_filename = re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
                 return new_filename
 
-            def select_database():
-                selected_row = self.main.database_tablewidget.currentRow()
-                if not selected_row >= 0:
-                    return
-                self.main.printStatus("DB를 저장할 위치를 선택하여 주십시오")
+            selected_row = self.main.database_tablewidget.currentRow()
+            if not selected_row >= 0:
+                return
+            self.main.printStatus("DB를 저장할 위치를 선택하여 주십시오")
 
-                target_db = self.DB['DBlist'][selected_row]
+            target_db = self.DB['DBlist'][selected_row]
 
-                QMessageBox.information(self.main, "Directory Setting", f"DB를 저장할 위치를 선택하여 주십시오")
-                folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory",
-                                                               self.main.default_directory)
-                if folder_path == '':
+            QMessageBox.information(self.main, "Directory Setting", f"DB를 저장할 위치를 선택하여 주십시오")
+            folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory",
+                                                           self.main.default_directory)
+            if folder_path == '':
+                self.main.printStatus()
+                return
+            if folder_path:
+                self.main.printStatus("DB 저장 옵션을 설정하여 주십시오")
+                dialog = OptionDialog()
+                date_options = {}
+
+                if dialog.exec_() == QDialog.Accepted:
+
+                    filter_options = {
+                        'incl_words': dialog.incl_word_list,
+                        'excl_words': dialog.excl_word_list,
+                    }
+
+                    # 선택된 라디오 버튼 확인 날짜 범위 부분
+                    if dialog.radio_all.isChecked():
+                        date_options['option'] = 'all'
+                    elif dialog.radio_custom.isChecked():
+                        date_options['option'] = 'part'
+
+                    # 기간 설정이 선택된 경우, 입력된 날짜 가져오기
+                    if date_options['option'] == 'part':
+                        date_format = "yyyyMMdd"
+                        start_date = QDate.fromString(dialog.start_date_input.text(), date_format)
+                        end_date = QDate.fromString(dialog.end_date_input.text(), date_format)
+
+                        if start_date.isValid() and end_date.isValid():
+                            date_options['start_date'] = start_date.toString(date_format)
+                            date_options['end_date'] = end_date.toString(date_format)
+                        else:
+                            QMessageBox.warning(dialog, 'Wrong Form', '잘못된 날짜 형식입니다.')
+                            date_options['option'] = None  # 잘못된 날짜가 입력된 경우 선택 옵션을 None으로 설정
+
+                if date_options == {}:
                     self.main.printStatus()
                     return
-                if folder_path:
-                    self.main.printStatus("DB 저장 옵션을 설정하여 주십시오")
-                    dialog = OptionDialog()
-                    date_options = {}
 
-                    if dialog.exec_() == QDialog.Accepted:
+                if date_options['option'] == 'part':
+                    self.main.printStatus(
+                        f"{replace_dates_in_filename(target_db, date_options['start_date'], date_options['end_date'])} 저장 중...")
+                else:
+                    self.main.printStatus(f"{target_db} 저장 중...")
 
-                        filter_options = {
-                            'incl_words': dialog.incl_word_list,
-                            'excl_words': dialog.excl_word_list,
-                        }
-
-                        # 선택된 라디오 버튼 확인 날짜 범위 부분
-                        if dialog.radio_all.isChecked():
-                            date_options['option'] = 'all'
-                        elif dialog.radio_custom.isChecked():
-                            date_options['option'] = 'part'
-
-                        # 기간 설정이 선택된 경우, 입력된 날짜 가져오기
-                        if date_options['option'] == 'part':
-                            date_format = "yyyyMMdd"
-                            start_date = QDate.fromString(dialog.start_date_input.text(), date_format)
-                            end_date = QDate.fromString(dialog.end_date_input.text(), date_format)
-
-                            if start_date.isValid() and end_date.isValid():
-                                date_options['start_date'] = start_date.toString(date_format)
-                                date_options['end_date'] = end_date.toString(date_format)
-                            else:
-                                QMessageBox.warning(dialog, 'Wrong Form', '잘못된 날짜 형식입니다.')
-                                date_options['option'] = None  # 잘못된 날짜가 입력된 경우 선택 옵션을 None으로 설정
-
-                    if date_options == {}:
-                        self.main.printStatus()
-                        return
-
-                    if date_options['option'] == 'part':
-                        self.main.printStatus(
-                            f"{replace_dates_in_filename(target_db, date_options['start_date'], date_options['end_date'])} 저장 중...")
-                    else:
-                        self.main.printStatus(f"{target_db} 저장 중...")
-                    QTimer.singleShot(1000,
-                                      lambda: save_database(target_db, folder_path, date_options, filter_options))
-
-            def save_database(target_db, folder_path, date_options, filter_options):
                 open_console('CSV로 저장')
                 dbname = target_db
                 dbpath = os.path.join(folder_path, dbname)
@@ -852,9 +848,15 @@ class Manager_Database:
                         tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
 
                     if filterOption == True and 'article' in tableName:
+                        recover_columns = tableDF.columns
                         tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
                         tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
-                        articleURL = tableDF['Article URL'].tolist()
+
+                        if tableDF.empty:
+                            tableDF = pd.DataFrame(columns=recover_columns)  # 기존 열만 유지
+
+                        if 'token' not in tableName:
+                            articleURL = tableDF['Article URL'].tolist()
 
                     # statistics 테이블 처리
                     if 'statistics' in tableName:
@@ -893,8 +895,6 @@ class Manager_Database:
                 if reply == QMessageBox.Yes:
                     self.main.openFileExplorer(dbpath)
                 self.main.printStatus()
-
-            select_database()
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
