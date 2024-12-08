@@ -819,14 +819,23 @@ class Manager_Database:
                     end_date_formed = datetime.strptime(end_date, "%Y%m%d").strftime("%Y-%m-%d")
                     dbname = replace_dates_in_filename(target_db, start_date, end_date)
 
-                dbname = dbname[:-10]
-                dbpath = os.path.join(folder_path, dbname) + f"_{datetime.now().strftime("%m%d")}_{datetime.now().strftime("%H%M")}"
-
                 # 필터 옵션 설정 확인
                 filterOption = bool(filter_options['incl_words'] != [] or filter_options['excl_words'] != [])
                 incl_words = filter_options.get('incl_words', [])
                 excl_words = filter_options.get('excl_words', [])
                 include_all = filter_options['include_all']
+
+                dbname = dbname[:-10] + f"_{datetime.now().strftime("%m%d")}_{datetime.now().strftime("%H%M")}"
+
+                if filterOption == True:
+                    inclexcl = 'all' if include_all else 'any'
+                    add_keyword = f"(+{','.join(incl_words)} | -{','.join(excl_words)} | {inclexcl})"
+                    parts = dbname.split('_', 2)
+                    old_keyword = parts[1]
+                    parts[1] = old_keyword + add_keyword
+                    dbname = '_'.join(parts)
+
+                dbpath = os.path.join(folder_path,dbname)
 
                 # 폴더 생성 로직 최적화
                 while True:
@@ -837,7 +846,7 @@ class Manager_Database:
                         dbpath += "_copy"
 
                 statisticsURL = []
-                self.main.user_logging(f'DATABASE -> save_DB({target_db})')
+                self.main.user_logging(f'DATABASE -> save_DB({dbname})')
                 self.main.mySQL_obj.connectDB(target_db)
 
                 # 불필요한 정렬 조건 제거
