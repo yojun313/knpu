@@ -1,4 +1,4 @@
-VERSION = '2.4.2'
+VERSION = '2.4.3'
 
 from PyQt5.QtWidgets import QApplication
 from Manager_SplashDialog import SplashDialog
@@ -959,16 +959,20 @@ class MainWindow(QMainWindow):
                     self.mySQL_obj.insertToTable('manager_record', [[str(datetime.now().date()), '', '', '']])
                     self.mySQL_obj.commit()
 
+            self.printStatus("Loading...")
             text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', text, add=True)
+            self.printStatus()
         except Exception as e:
             print(traceback.format_exc())
 
     def user_bugging(self, text=''):
         try:
+            self.printStatus("Loading...")
             self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
             text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
             self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', text, add=True)
+            self.printStatus()
         except Exception as e:
             print(traceback.format_exc())
 
