@@ -760,9 +760,7 @@ class Manager_Database:
 
             target_db = self.DB['DBlist'][selected_row]
 
-            QMessageBox.information(self.main, "Directory Setting", f"DB를 저장할 위치를 선택하여 주십시오")
-            folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory",
-                                                           self.main.default_directory)
+            folder_path = QFileDialog.getExistingDirectory(self.main, "DB를 저장할 위치를 선택하여 주십시오", self.main.default_directory)
             if folder_path == '':
                 self.main.printStatus()
                 return
@@ -802,12 +800,6 @@ class Manager_Database:
                     self.main.printStatus()
                     return
 
-                if date_options['option'] == 'part':
-                    self.main.printStatus(
-                        f"{replace_dates_in_filename(target_db, date_options['start_date'], date_options['end_date'])} 저장 중...")
-                else:
-                    self.main.printStatus(f"{target_db} 저장 중...")
-
                 open_console('CSV로 저장')
                 dbname = target_db
 
@@ -846,6 +838,8 @@ class Manager_Database:
                         dbpath += "_copy"
 
                 statisticsURL = []
+
+                self.main.printStatus(f"{dbname} 불러오는 중...")
                 self.main.user_logging(f'DATABASE -> save_DB({dbname})')
                 self.main.mySQL_obj.connectDB(target_db)
 
