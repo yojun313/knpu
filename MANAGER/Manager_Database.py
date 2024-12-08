@@ -677,6 +677,8 @@ class Manager_Database:
                     self.include_option_group = QButtonGroup()
                     self.include_all = QRadioButton('모두 포함/제외 (All)')
                     self.include_any = QRadioButton('개별 포함/제외 (Any)')
+                    self.include_all.setToolTip("입력한 단어를 모두 포함/제외한 행을 선택")
+                    self.include_any.setToolTip("입력한 단어를 개별 포함/제외한 행을 선택")
                     self.include_all.setChecked(True)  # 기본 선택: Any 포함
 
                     self.word_input_form_layout.addRow(QLabel('포함 옵션:'))
