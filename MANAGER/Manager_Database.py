@@ -810,7 +810,6 @@ class Manager_Database:
 
                 open_console('CSV로 저장')
                 dbname = target_db
-                dbpath = os.path.join(folder_path, dbname)
 
                 # 선택된 옵션에 따라 날짜를 형식화하고 DB 이름과 경로 수정
                 if date_options.get('option') == 'part':
@@ -819,7 +818,9 @@ class Manager_Database:
                     start_date_formed = datetime.strptime(start_date, "%Y%m%d").strftime("%Y-%m-%d")
                     end_date_formed = datetime.strptime(end_date, "%Y%m%d").strftime("%Y-%m-%d")
                     dbname = replace_dates_in_filename(target_db, start_date, end_date)
-                    dbpath = os.path.join(folder_path, dbname)
+
+                dbname = dbname[:-10]
+                dbpath = os.path.join(folder_path, dbname) + f"_{datetime.now().strftime("%m%d")}_{datetime.now().strftime("%H%M")}"
 
                 # 필터 옵션 설정 확인
                 filterOption = bool(filter_options['incl_words'] != [] or filter_options['excl_words'] != [])
@@ -921,6 +922,7 @@ class Manager_Database:
                         save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
                         filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
 
+                    self.main.printStatus()
                     # 기타 테이블 처리
                     save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
 
