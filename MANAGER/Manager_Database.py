@@ -851,7 +851,7 @@ class Manager_Database:
                     else:
                         tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
 
-                    if filterOption == True and 'article' in tableName and 'token' not in tableName:
+                    if filterOption == True and 'article' in tableName:
                         tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
                         tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
                         articleURL = tableDF['Article URL'].tolist()
