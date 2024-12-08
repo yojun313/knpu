@@ -839,6 +839,7 @@ class Manager_Database:
                     print('')
                 for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if date_options['option'] == 'part' else tableName
+                    self.main.printStatus(f"{edited_tableName} 저장 중...")
                     # 테이블 데이터를 DataFrame으로 변환
                     if date_options['option'] == 'part':
                         tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
@@ -856,6 +857,7 @@ class Manager_Database:
                             tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
                         statisticsURL = tableDF['Article URL'].tolist()
                         save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
+                        self.main.printStatus(f"{edited_tableName} 저장 중...")
                         tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
                         continue
 
@@ -869,19 +871,22 @@ class Manager_Database:
                             filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
                         filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
                         save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
+                        self.main.printStatus(f"{edited_tableName}_statistics 저장 중...")
                         filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
 
                     # 기타 테이블 처리
                     save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
+                    self.main.printStatus(f"{edited_tableName} 저장 중...")
                     tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
                     tableDF = None
+                    self.main.printStatus()
                     gc.collect()
 
                 close_console()
                 reply = QMessageBox.question(self.main, 'Notification', f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.openFileExplorer(dbpath)
-                self.main.printStatus()
+
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
