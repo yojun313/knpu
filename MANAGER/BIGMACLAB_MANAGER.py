@@ -224,7 +224,7 @@ class MainWindow(QMainWindow):
                     QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
                     os._exit(0)
 
-            load_program()
+            QTimer.singleShot(1, load_program)
 
         except Exception as e:
             self.close_bootscreen()
@@ -1742,21 +1742,7 @@ class EventLogger(QObject):
 #######################################################
 
 if __name__ == '__main__':
-    os.environ["QT_DEVICE_PIXEL_RATIO"] = "0"
-    os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-    os.environ["QT_SCREEN_SCALE_FACTORS"] = "1"
-    os.environ["QT_SCALE_FACTOR"] = "1"
-
-    # High DPI 스케일링 활성화 (QApplication 생성 전 설정)
-    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
-
     app = QApplication([])
-
-    # 기본 폰트 설정 및 힌팅 설정
-    font = QFont()
-    font.setHintingPreference(QFont.PreferNoHinting)
-    app.setFont(font)
 
     # 로딩 다이얼로그 표시
     splash_dialog = SplashDialog(version=VERSION)
