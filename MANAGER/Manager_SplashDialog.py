@@ -50,7 +50,7 @@ class SplashDialog(QDialog):
         # 프로그램 이름 라벨
         title_label = QLabel("MANAGER")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet(f"font-size: 24px; font-weight: bold; color: {text_color};")
+        title_label.setStyleSheet(f"font-size: 24px; font-family: 'Arial'; font-weight: bold; color: {text_color};")
         main_layout.addWidget(title_label)
 
         # 이미지 라벨
@@ -64,19 +64,19 @@ class SplashDialog(QDialog):
         # 버전 정보 라벨
         version_label = QLabel(f"Version {self.version}")
         version_label.setAlignment(Qt.AlignCenter)
-        version_label.setStyleSheet(f"font-size: 21px; color: {text_color}; margin-top: 5px;")
+        version_label.setStyleSheet(f"font-size: 21px; font-family: 'Arial'; color: {text_color}; margin-top: 5px;")
         main_layout.addWidget(version_label)
 
         # 상태 메시지 라벨
         self.status_label = QLabel("Booting")
         self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet(f"font-size: 15px; color: {gray_color}; margin-top: 8px;")
+        self.status_label.setStyleSheet(f"font-size: 15px; font-family: 'Arial'; color: {gray_color}; margin-top: 8px;")
         main_layout.addWidget(self.status_label)
 
         # 저작권 정보 라벨
         copyright_label = QLabel("Copyright © 2024 KNPU BIGMACLAB\nAll rights reserved.")
         copyright_label.setAlignment(Qt.AlignCenter)
-        copyright_label.setStyleSheet(f"font-size: 15px; color: {gray_color}; margin-top: 10px;")
+        copyright_label.setStyleSheet(f"font-size: 15px; font-family: 'Arial'; color: {gray_color}; margin-top: 10px;")
         main_layout.addWidget(copyright_label)
 
         # 배경 색상 저장
