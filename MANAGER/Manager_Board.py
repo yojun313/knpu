@@ -173,128 +173,126 @@ class Manager_Board:
                 if not ok or password != self.main.admin_password:
                     return
             self.main.printStatus("삭제 중...")
-            def delete_version():
-                selected_row = self.main.board_version_tableWidget.currentRow()
-                if selected_row >= 0:
-                    reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                    if reply == QMessageBox.Yes:
-                        self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                        self.main.mySQL_obj.deleteTableRowByColumn('version_info', self.version_name_list[selected_row], 'Version Num')
-                        self.board_version_refresh()
 
-            QTimer.singleShot(1, delete_version)
-            QTimer.singleShot(1, self.main.printStatus)
+            selected_row = self.main.board_version_tableWidget.currentRow()
+            if selected_row >= 0:
+                reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                    self.main.mySQL_obj.deleteTableRowByColumn('version_info', self.version_name_list[selected_row], 'Version Num')
+                    self.main.printStatus()
+                    self.board_version_refresh()
+
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
     def board_view_version(self):
         try:
             self.main.user_logging(f'BOARD -> board_view_version')
-            self.main.printStatus("불러오는 중...")
-            def view_version():
-                selected_row = self.main.board_version_tableWidget.currentRow()
-                if selected_row >= 0:
-                    version_data = self.version_data[selected_row]
 
-                    # 다이얼로그 생성
-                    dialog = QDialog(self.main)
-                    dialog.setWindowTitle(f'Version {version_data[0]} Details')
-                    dialog.resize(400, 400)
+            selected_row = self.main.board_version_tableWidget.currentRow()
+            if selected_row >= 0:
+                self.main.printStatus("불러오는 중...")
+                version_data = self.version_data[selected_row]
 
-                    layout = QVBoxLayout()
+                # 다이얼로그 생성
+                dialog = QDialog(self.main)
+                dialog.setWindowTitle(f'Version {version_data[0]} Details')
+                dialog.resize(400, 400)
 
-                    # HTML을 사용하여 디테일 표시
-                    details_html = f"""
-                        <style>
-                            h2 {{
-                                color: #2c3e50;
-                                text-align: center;
-                            }}
-                            table {{
-                                width: 100%;
-                                border-collapse: collapse;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                            }}
-                            th, td {{
-                                border: 1px solid #bdc3c7;
-                                padding: 8px;
-                                text-align: left;
-                            }}
-                            th {{
-                                background-color: #34495e;
-                                color: white;
-                            }}
-                            td {{
-                                color: #34495e;
-                            }}
-                            .detail-content {{
-                                white-space: pre-wrap;
-                                margin-top: 5px;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                color: #34495e;
-                            }}
-                        </style>
-                        <div class="version-details">
-                            <table>
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Details</th>
-                                </tr>
-                                <tr>
-                                    <td><b>Version Num:</b></td>
-                                    <td>{version_data[0]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Release Date:</b></td>
-                                    <td>{version_data[1]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>ChangeLog:</b></td>
-                                    <td>{version_data[2]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Version Features:</b></td>
-                                    <td>{version_data[3]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Version Status:</b></td>
-                                    <td>{version_data[4]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Detail:</b></td>
-                                    <td class="detail-content">{version_data[5]}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        """
-                    detail_label = QLabel(details_html)
-                    detail_label.setWordWrap(True)
+                layout = QVBoxLayout()
 
-                    # QScrollArea를 사용하여 스크롤 가능하게 설정
-                    scroll_area = QScrollArea()
-                    scroll_area.setWidgetResizable(True)
-                    scroll_area.setWidget(detail_label)
+                # HTML을 사용하여 디테일 표시
+                details_html = f"""
+                    <style>
+                        h2 {{
+                            color: #2c3e50;
+                            text-align: center;
+                        }}
+                        table {{
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                        }}
+                        th, td {{
+                            border: 1px solid #bdc3c7;
+                            padding: 8px;
+                            text-align: left;
+                        }}
+                        th {{
+                            background-color: #34495e;
+                            color: white;
+                        }}
+                        td {{
+                            color: #34495e;
+                        }}
+                        .detail-content {{
+                            white-space: pre-wrap;
+                            margin-top: 5px;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                            color: #34495e;
+                        }}
+                    </style>
+                    <div class="version-details">
+                        <table>
+                            <tr>
+                                <th>Item</th>
+                                <th>Details</th>
+                            </tr>
+                            <tr>
+                                <td><b>Version Num:</b></td>
+                                <td>{version_data[0]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Release Date:</b></td>
+                                <td>{version_data[1]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>ChangeLog:</b></td>
+                                <td>{version_data[2]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Version Features:</b></td>
+                                <td>{version_data[3]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Version Status:</b></td>
+                                <td>{version_data[4]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Detail:</b></td>
+                                <td class="detail-content">{version_data[5]}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    """
+                detail_label = QLabel(details_html)
+                detail_label.setWordWrap(True)
 
-                    layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
+                # QScrollArea를 사용하여 스크롤 가능하게 설정
+                scroll_area = QScrollArea()
+                scroll_area.setWidgetResizable(True)
+                scroll_area.setWidget(detail_label)
 
-                    # 닫기 버튼 추가
-                    close_button = QPushButton('Close')
-                    close_button.clicked.connect(dialog.accept)
-                    layout.addWidget(close_button)
+                layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
 
-                    ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
-                    ctrlw.activated.connect(dialog.accept)
+                # 닫기 버튼 추가
+                close_button = QPushButton('Close')
+                close_button.clicked.connect(dialog.accept)
+                layout.addWidget(close_button)
 
-                    cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
-                    cmdw.activated.connect(dialog.accept)
+                ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
+                ctrlw.activated.connect(dialog.accept)
 
-                    dialog.setLayout(layout)
+                cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
+                cmdw.activated.connect(dialog.accept)
 
-                    # 다이얼로그 실행
-                    dialog.exec_()
-            QTimer.singleShot(1, view_version)
-            QTimer.singleShot(1, self.main.printStatus)
+                dialog.setLayout(layout)
+                self.main.printStatus()
+                # 다이얼로그 실행
+                dialog.exec_()
+
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
     def board_bug_refresh(self):
@@ -419,130 +417,129 @@ class Manager_Board:
     def board_delete_bug(self):
         try:
             self.main.printStatus("삭제 중...")
-            def delete_bug():
-                reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
-                    selected_row = self.main.board_bug_tableWidget.currentRow()
-                    if selected_row >= 0:
-                        self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                        self.main.mySQL_obj.deleteTableRowByColumn('version_bug', self.bug_title_list[selected_row], 'Bug Title')
-                        self.board_bug_refresh()
 
-            QTimer.singleShot(1, delete_bug)
-            QTimer.singleShot(1, self.main.printStatus)
+            reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                selected_row = self.main.board_bug_tableWidget.currentRow()
+                if selected_row >= 0:
+                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                    self.main.mySQL_obj.deleteTableRowByColumn('version_bug', self.bug_title_list[selected_row], 'Bug Title')
+                    self.board_bug_refresh()
+
+            self.main.printStatus()
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
     def board_view_bug(self):
         try:
             self.main.user_logging(f'BOARD -> board_view_bug')
-            self.main.printStatus("불러오는 중...")
-            def view_bug():
-                selected_row = self.main.board_bug_tableWidget.currentRow()
-                if selected_row >= 0:
-                    bug_data = self.bug_data[selected_row]
 
-                    # 다이얼로그 생성
-                    dialog = QDialog(self.main)
-                    dialog.setWindowTitle(f'Version {bug_data[1]} Bug Details')
-                    dialog.resize(400, 600)
+            selected_row = self.main.board_bug_tableWidget.currentRow()
+            if selected_row >= 0:
+                self.main.printStatus("불러오는 중...")
+                bug_data = self.bug_data[selected_row]
+                self.main.printStatus()
 
-                    layout = QVBoxLayout()
+                # 다이얼로그 생성
+                dialog = QDialog(self.main)
+                dialog.setWindowTitle(f'Version {bug_data[1]} Bug Details')
+                dialog.resize(400, 600)
 
-                    # HTML을 사용하여 디테일 표시
-                    details_html = f"""
-                        <style>
-                            h2 {{
-                                color: #2c3e50;
-                                text-align: center;
-                            }}
-                            table {{
-                                width: 100%;
-                                border-collapse: collapse;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                            }}
-                            th, td {{
-                                border: 1px solid #bdc3c7;
-                                padding: 8px;
-                                text-align: left;
-                            }}
-                            th {{
-                                background-color: #34495e;
-                                color: white;
-                            }}
-                            td {{
-                                color: #34495e;
-                            }}
-                            .detail-content {{
-                                white-space: pre-wrap;
-                                margin-top: 5px;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                color: #34495e;
-                            }}
-                        </style>
-                        <div class="bug-details">
-                            <table>
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Details</th>
-                                </tr>
-                                <tr>
-                                    <td><b>User Name:</b></td>
-                                    <td>{bug_data[0]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Version Num:</b></td>
-                                    <td>{bug_data[1]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Bug Title:</b></td>
-                                    <td>{bug_data[2]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>DateTime:</b></td>
-                                    <td>{bug_data[3]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Bug Detail:</b></td>
-                                    <td class="detail-content">{bug_data[4]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Program Log:</b></td>
-                                    <td class="detail-content">{bug_data[5]}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        """
+                layout = QVBoxLayout()
 
-                    detail_label = QLabel(details_html)
-                    detail_label.setWordWrap(True)
+                # HTML을 사용하여 디테일 표시
+                details_html = f"""
+                    <style>
+                        h2 {{
+                            color: #2c3e50;
+                            text-align: center;
+                        }}
+                        table {{
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                        }}
+                        th, td {{
+                            border: 1px solid #bdc3c7;
+                            padding: 8px;
+                            text-align: left;
+                        }}
+                        th {{
+                            background-color: #34495e;
+                            color: white;
+                        }}
+                        td {{
+                            color: #34495e;
+                        }}
+                        .detail-content {{
+                            white-space: pre-wrap;
+                            margin-top: 5px;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                            color: #34495e;
+                        }}
+                    </style>
+                    <div class="bug-details">
+                        <table>
+                            <tr>
+                                <th>Item</th>
+                                <th>Details</th>
+                            </tr>
+                            <tr>
+                                <td><b>User Name:</b></td>
+                                <td>{bug_data[0]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Version Num:</b></td>
+                                <td>{bug_data[1]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Bug Title:</b></td>
+                                <td>{bug_data[2]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>DateTime:</b></td>
+                                <td>{bug_data[3]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Bug Detail:</b></td>
+                                <td class="detail-content">{bug_data[4]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Program Log:</b></td>
+                                <td class="detail-content">{bug_data[5]}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    """
 
-                    # QScrollArea를 사용하여 스크롤 가능하게 설정
-                    scroll_area = QScrollArea()
-                    scroll_area.setWidgetResizable(True)
-                    scroll_area.setWidget(detail_label)
+                detail_label = QLabel(details_html)
+                detail_label.setWordWrap(True)
 
-                    layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
+                # QScrollArea를 사용하여 스크롤 가능하게 설정
+                scroll_area = QScrollArea()
+                scroll_area.setWidgetResizable(True)
+                scroll_area.setWidget(detail_label)
 
-                    # 닫기 버튼 추가
-                    close_button = QPushButton('Close')
-                    close_button.clicked.connect(dialog.accept)
-                    layout.addWidget(close_button)
+                layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
 
-                    ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
-                    ctrlw.activated.connect(dialog.accept)
+                # 닫기 버튼 추가
+                close_button = QPushButton('Close')
+                close_button.clicked.connect(dialog.accept)
+                layout.addWidget(close_button)
 
-                    cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
-                    cmdw.activated.connect(dialog.accept)
+                ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
+                ctrlw.activated.connect(dialog.accept)
 
-                    dialog.setLayout(layout)
+                cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
+                cmdw.activated.connect(dialog.accept)
 
-                    # 다이얼로그 실행
-                    dialog.exec_()
+                dialog.setLayout(layout)
+                self.main.printStatus()
 
-            QTimer.singleShot(1, view_bug)
-            QTimer.singleShot(1, self.main.printStatus)
+                # 다이얼로그 실행
+                dialog.exec_()
+
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
@@ -706,144 +703,141 @@ class Manager_Board:
 
     def board_view_post(self, row=None):
         try:
-            self.main.printStatus("불러오는 중...")
-            def view_post():
-                selected_row = self.main.board_post_tableWidget.currentRow()
-                if row is not None:
-                    selected_row = row
-                if selected_row >= 0:
-                    post_data = self.post_data[selected_row]
+            selected_row = self.main.board_post_tableWidget.currentRow()
+            if row is not None:
+                selected_row = row
+            if selected_row >= 0:
+                self.main.printStatus("불러오는 중...")
+                post_data = self.post_data[selected_row]
 
-                    viewcount = int(post_data[3])
-                    viewcount += 1
+                viewcount = int(post_data[3])
+                viewcount += 1
 
-                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                    self.main.mySQL_obj.updateTableCell('free_board', len(self.post_data)-selected_row-1, 'ViewCount', viewcount)
+                self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                self.main.mySQL_obj.updateTableCell('free_board', len(self.post_data)-selected_row-1, 'ViewCount', viewcount)
 
-                    if post_data[0] == 'admin' and self.main.user != 'admin':
-                        msg = (
-                            "[ Admin Notification ]\n\n"
-                            f"{self.main.user} has read post [ {post_data[1]} ]"
-                        )
-                        self.main.send_pushOver(msg, self.main.admin_pushoverkey)
+                if post_data[0] == 'admin' and self.main.user != 'admin':
+                    msg = (
+                        "[ Admin Notification ]\n\n"
+                        f"{self.main.user} has read post [ {post_data[1]} ]"
+                    )
+                    self.main.send_pushOver(msg, self.main.admin_pushoverkey)
 
-                    # 다이얼로그 생성
-                    dialog = QDialog(self.main)
-                    dialog.setWindowTitle(f'Post View')
-                    dialog.resize(400, 400)
+                self.main.printStatus()
+                # 다이얼로그 생성
+                dialog = QDialog(self.main)
+                dialog.setWindowTitle(f'Post View')
+                dialog.resize(400, 400)
 
-                    layout = QVBoxLayout()
+                layout = QVBoxLayout()
 
-                    # HTML을 사용하여 디테일 표시
-                    details_html = f"""
-                        <style>
-                            h2 {{
-                                color: #2c3e50;
-                                text-align: center;
-                            }}
-                            table {{
-                                width: 100%;
-                                border-collapse: collapse;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                            }}
-                            th, td {{
-                                border: 1px solid #bdc3c7;
-                                padding: 8px;
-                                text-align: left;
-                            }}
-                            th {{
-                                background-color: #34495e;
-                                color: white;
-                            }}
-                            td {{
-                                color: #34495e;
-                            }}
-                            .detail-content {{
-                                white-space: pre-wrap;
-                                margin-top: 5px;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                color: #34495e;
-                            }}
-                        </style>
-                        <div class="post-details">
-                            <table>
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Details</th>
-                                </tr>
-                                <tr>
-                                    <td><b>User Name:</b></td>
-                                    <td>{post_data[0]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Post Title:</b></td>
-                                    <td>{post_data[1]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>DateTime:</b></td>
-                                    <td>{post_data[2]}</td>
-                                </tr>
-                                <tr>
-                                    <td><b>Post Text:</b></td>
-                                    <td class="detail-content">{post_data[4]}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        """
+                # HTML을 사용하여 디테일 표시
+                details_html = f"""
+                    <style>
+                        h2 {{
+                            color: #2c3e50;
+                            text-align: center;
+                        }}
+                        table {{
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                        }}
+                        th, td {{
+                            border: 1px solid #bdc3c7;
+                            padding: 8px;
+                            text-align: left;
+                        }}
+                        th {{
+                            background-color: #34495e;
+                            color: white;
+                        }}
+                        td {{
+                            color: #34495e;
+                        }}
+                        .detail-content {{
+                            white-space: pre-wrap;
+                            margin-top: 5px;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                            color: #34495e;
+                        }}
+                    </style>
+                    <div class="post-details">
+                        <table>
+                            <tr>
+                                <th>Item</th>
+                                <th>Details</th>
+                            </tr>
+                            <tr>
+                                <td><b>User Name:</b></td>
+                                <td>{post_data[0]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Post Title:</b></td>
+                                <td>{post_data[1]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>DateTime:</b></td>
+                                <td>{post_data[2]}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Post Text:</b></td>
+                                <td class="detail-content">{post_data[4]}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    """
 
-                    detail_label = QLabel(details_html)
-                    detail_label.setWordWrap(True)
+                detail_label = QLabel(details_html)
+                detail_label.setWordWrap(True)
 
-                    # QScrollArea를 사용하여 스크롤 가능하게 설정
-                    scroll_area = QScrollArea()
-                    scroll_area.setWidgetResizable(True)
-                    scroll_area.setWidget(detail_label)
+                # QScrollArea를 사용하여 스크롤 가능하게 설정
+                scroll_area = QScrollArea()
+                scroll_area.setWidgetResizable(True)
+                scroll_area.setWidget(detail_label)
 
-                    layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
+                layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
 
-                    # 닫기 버튼 추가
-                    close_button = QPushButton('Close')
-                    close_button.clicked.connect(dialog.accept)
-                    layout.addWidget(close_button)
+                # 닫기 버튼 추가
+                close_button = QPushButton('Close')
+                close_button.clicked.connect(dialog.accept)
+                layout.addWidget(close_button)
 
-                    ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
-                    ctrlw.activated.connect(dialog.accept)
+                ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
+                ctrlw.activated.connect(dialog.accept)
 
-                    cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
-                    cmdw.activated.connect(dialog.accept)
+                cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
+                cmdw.activated.connect(dialog.accept)
 
-                    dialog.setLayout(layout)
+                dialog.setLayout(layout)
+                self.main.printStatus()
+                # 다이얼로그 실행
+                dialog.exec_()
+                self.board_post_refresh()
 
-                    # 다이얼로그 실행
-                    dialog.exec_()
-                    self.board_post_refresh()
-
-            QTimer.singleShot(1, view_post)
-            QTimer.singleShot(1, self.main.printStatus)
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
     def board_delete_post(self):
         try:
             self.main.printStatus("삭제 중...")
-            def delete_post():
-                selected_row = self.main.board_post_tableWidget.currentRow()
-                if selected_row >= 0:
-                    ok, password = self.main.pw_check()
-                    if ok and password == self.post_data[selected_row][5]:
-                        self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                        self.main.mySQL_obj.deleteTableRowByColumn('free_board', self.post_title_list[selected_row], 'Title')
-                        self.board_post_refresh()
-                        QMessageBox.information(self.main, "Information", f"게시물이 삭제되었습니다")
-                    else:
-                        QMessageBox.warning(self.main, "Wrong Password", f"비밀번호가 일치하지 않습니다")
-                        self.main.printStatus()
-                        return
 
-            QTimer.singleShot(1, delete_post)
-            QTimer.singleShot(1, self.main.printStatus)
+            selected_row = self.main.board_post_tableWidget.currentRow()
+            if selected_row >= 0:
+                ok, password = self.main.pw_check()
+                if ok and password == self.post_data[selected_row][5]:
+                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                    self.main.mySQL_obj.deleteTableRowByColumn('free_board', self.post_title_list[selected_row], 'Title')
+                    self.board_post_refresh()
+                    self.main.printStatus()
+                    QMessageBox.information(self.main, "Information", f"게시물이 삭제되었습니다")
+                else:
+                    QMessageBox.warning(self.main, "Wrong Password", f"비밀번호가 일치하지 않습니다")
+                    self.main.printStatus()
+                    return
+
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 

@@ -16,7 +16,7 @@ import sounddevice as sd
 
 class ToolModule:
     def __init__(self):
-        pass
+        self.recognizer = sr.Recognizer()
     def decrypt_process(self):
         current_position = os.path.dirname(__file__)
 
@@ -105,6 +105,7 @@ class ToolModule:
         return csv_data
 
     def microphone(self):
+
         with sr.Microphone() as source:
             audio = self.recognizer.listen(source)
 
