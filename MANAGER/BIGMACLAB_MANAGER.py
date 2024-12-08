@@ -111,7 +111,7 @@ class MainWindow(QMainWindow):
                     self.startTime = datetime.now()
                     self.gpt_api_key = self.SETTING['GPT_Key']
                     self.CONFIG = {
-                        'Logging': 'Off'
+                        'Logging': 'On'
                     }
                     self.check_internet_connection()
                     self.listWidget.currentRowChanged.connect(self.display)
