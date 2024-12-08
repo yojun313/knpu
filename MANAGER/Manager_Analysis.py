@@ -86,12 +86,11 @@ class Manager_Analysis:
     def analysis_refresh_DB(self):
         try:
             self.main.printStatus("새로고침 중...")
-            def refresh_database():
-                self.DB = self.main.update_DB()
-                self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBdata'], self.DB_table_column)
 
-            QTimer.singleShot(1, refresh_database)
-            QTimer.singleShot(1, self.main.printStatus)
+            self.DB = self.main.update_DB()
+            self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBdata'], self.DB_table_column)
+
+            self.main.printStatus()
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
@@ -126,7 +125,16 @@ class Manager_Analysis:
                         self.main.program_bug_log(traceback.format_exc())
                 else:
                     return 0,0,0
-            def splitTable(table, splitdata_path):
+
+            self.main.printStatus("분할 데이터를 저장할 위치를 선택하세요...")
+            targetDB, tableList, splitdata_path = selectDB()
+
+            if targetDB == 0:
+                self.main.printStatus()
+                return
+            self.main.printStatus(f"{targetDB} 분할 및 저장 중...")
+            open_console("데이터 분할")
+            for table in tqdm(tableList, desc="Download(split) ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                 table_path = os.path.join(splitdata_path, table + '_split')
                 try:
                     os.mkdir(table_path)
@@ -137,38 +145,23 @@ class Manager_Analysis:
                 table_df = self.main.mySQL_obj.TableToDataframe(table)
                 table_df = self.dataprocess_obj.TimeSplitter(table_df)
 
-                self.year_divided_group = table_df.groupby('year')
-                self.month_divided_group = table_df.groupby('year_month')
-                self.week_divided_group = table_df.groupby('week')
+                year_divided_group = table_df.groupby('year')
+                month_divided_group = table_df.groupby('year_month')
+                week_divided_group = table_df.groupby('week')
 
-                return table_path
-            def saveTable(tablename, table_path):
-                self.dataprocess_obj.TimeSplitToCSV(1, self.year_divided_group, table_path, tablename)
-                self.dataprocess_obj.TimeSplitToCSV(2, self.month_divided_group, table_path, tablename)
-            def main(tableList, splitdata_path):
-                open_console("데이터 분할")
-                for table in tqdm(tableList, desc="Download(split) ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
-                    table_path = splitTable(table, splitdata_path)
-                    saveTable(table, table_path)
+                self.dataprocess_obj.TimeSplitToCSV(1, year_divided_group, table_path, table)
+                self.dataprocess_obj.TimeSplitToCSV(2, month_divided_group, table_path, table)
 
-                    del self.year_divided_group
-                    del self.month_divided_group
-                    del self.week_divided_group
-                    gc.collect()
-                close_console()
-                reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분할 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
-                    self.main.openFileExplorer(splitdata_path)
-
-            self.main.printStatus("분할 데이터를 저장할 위치를 선택하세요...")
-            targetDB, tableList, splitdata_path = selectDB()
-            if targetDB == 0:
-                self.main.printStatus()
-                return
-            QTimer.singleShot(1, lambda: self.main.printStatus(f"{targetDB} 분할 및 저장 중..."))
-            QTimer.singleShot(1000, lambda: main(tableList, splitdata_path))
-            QTimer.singleShot(1000, self.main.printStatus)
-
+                del year_divided_group
+                del month_divided_group
+                del week_divided_group
+                gc.collect()
+            self.main.printStatus()
+            close_console()
+            reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분할 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                self.main.openFileExplorer(splitdata_path)
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
@@ -204,62 +197,64 @@ class Manager_Analysis:
                         self.main.program_bug_log(traceback.format_exc())
                 else:
                     return 0,0,0
-            def main(tableList, analysisdata_path, targetDB):
-
-                open_console('데이터 분석')
-                print(f"DB: {targetDB}\n")
-                for index, table in tqdm(enumerate(tableList), desc="Analysis ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
-                    if 'token' in table:
-                        continue
-                    tablename = table.split('_')
-                    tabledf = self.main.mySQL_obj.TableToDataframe(table)
-
-                    match tablename[0]:
-                        case 'navernews':
-                            match tablename[6]:
-                                case 'article':
-                                    self.dataprocess_obj.NaverNewsArticleAnalysis(tabledf,
-                                                                                  os.path.join(analysisdata_path, table))
-                                case 'statistics':
-                                    statisticsURL = tabledf['Article URL'].tolist()
-                                    self.dataprocess_obj.NaverNewsStatisticsAnalysis(tabledf,
-                                                                                     os.path.join(analysisdata_path, table))
-                                case 'reply':
-                                    self.dataprocess_obj.NaverNewsReplyAnalysis(tabledf,
-                                                                                os.path.join(analysisdata_path, table))
-                                case 'rereply':
-                                    self.dataprocess_obj.NaverNewsRereplyAnalysis(tabledf,
-                                                                                os.path.join(analysisdata_path, table))
-
-                        case 'navercafe':
-                            match tablename[6]:
-                                case 'article':
-                                    self.dataprocess_obj.NaverCafeArticleAnalysis(tabledf,
-                                                                                  os.path.join(analysisdata_path, table))
-                                case 'reply':
-                                    self.dataprocess_obj.NaverCafeReplyAnalysis(tabledf,
-                                                                                os.path.join(analysisdata_path, table))
-
-                        case _:
-                                QMessageBox.warning(self.main, "Not Supported", f"{tablename[0]} {tablename[6]} 분석은 지원되지 않는 기능입니다")
-                                break
-
-                    del tabledf
-                    gc.collect()
-
-                close_console()
-                reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
-                    self.main.openFileExplorer(analysisdata_path)
 
             self.main.printStatus("분석 데이터를 저장할 위치를 선택하세요...")
             targetDB, tableList, analysisdata_path = selectDB()
             if targetDB == 0:
                 self.main.printStatus()
                 return
-            QTimer.singleShot(1, lambda: self.main.printStatus(f"{targetDB} 분석 및 저장 중..."))
-            QTimer.singleShot(1000, lambda: main(tableList, analysisdata_path, targetDB))
-            QTimer.singleShot(1000, self.main.printStatus)
+
+            self.main.printStatus(f"{targetDB} 분석 및 저장 중...")
+            open_console('데이터 분석')
+            print(f"DB: {targetDB}\n")
+            for index, table in tqdm(enumerate(tableList), desc="Analysis ", file=sys.stdout,
+                                     bar_format="{l_bar}{bar}|", ascii=' ='):
+                if 'token' in table:
+                    continue
+                tablename = table.split('_')
+                tabledf = self.main.mySQL_obj.TableToDataframe(table)
+
+                match tablename[0]:
+                    case 'navernews':
+                        match tablename[6]:
+                            case 'article':
+                                self.dataprocess_obj.NaverNewsArticleAnalysis(tabledf,
+                                                                              os.path.join(analysisdata_path, table))
+                            case 'statistics':
+                                statisticsURL = tabledf['Article URL'].tolist()
+                                self.dataprocess_obj.NaverNewsStatisticsAnalysis(tabledf,
+                                                                                 os.path.join(analysisdata_path, table))
+                            case 'reply':
+                                self.dataprocess_obj.NaverNewsReplyAnalysis(tabledf,
+                                                                            os.path.join(analysisdata_path, table))
+                            case 'rereply':
+                                self.dataprocess_obj.NaverNewsRereplyAnalysis(tabledf,
+                                                                              os.path.join(analysisdata_path, table))
+
+                    case 'navercafe':
+                        match tablename[6]:
+                            case 'article':
+                                self.dataprocess_obj.NaverCafeArticleAnalysis(tabledf,
+                                                                              os.path.join(analysisdata_path, table))
+                            case 'reply':
+                                self.dataprocess_obj.NaverCafeReplyAnalysis(tabledf,
+                                                                            os.path.join(analysisdata_path, table))
+
+                    case _:
+                        QMessageBox.warning(self.main, "Not Supported",
+                                            f"{tablename[0]} {tablename[6]} 분석은 지원되지 않는 기능입니다")
+                        break
+
+                del tabledf
+                gc.collect()
+
+            close_console()
+            self.main.printStatus()
+
+            reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                self.main.openFileExplorer(analysisdata_path)
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
@@ -340,9 +335,9 @@ class Manager_Analysis:
                 if reply == QMessageBox.Yes:
                     self.main.openFileExplorer(os.path.dirname(selected_directory[0]))
                     
-            QTimer.singleShot(1, lambda: self.main.printStatus("데이터 분할 및 저장 중..."))
-            QTimer.singleShot(1000, lambda: main(selected_directory))
-            QTimer.singleShot(1000, self.main.printStatus)
+            self.main.printStatus("데이터 분할 및 저장 중...")
+            main(selected_directory)
+            self.main.printStatus()
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
@@ -601,12 +596,11 @@ class Manager_Analysis:
             elif 'token' not in selected_directory[0]:
                 QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
                 return
-            def start():
-                token_data = pd.read_csv(selected_directory[0], low_memory=False)
-                self.kimkem_kimkemStart(token_data, os.path.basename(selected_directory[0]))
 
             self.main.printStatus("파일 읽는 중...")
-            QTimer.singleShot(1000, start)
+            token_data = pd.read_csv(selected_directory[0], low_memory=False)
+            self.kimkem_kimkemStart(token_data, os.path.basename(selected_directory[0]))
+            self.main.printStatus()
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
@@ -888,7 +882,7 @@ class Manager_Analysis:
                 
             delete_word_list = pd.read_csv(os.path.join(result_directory, 'filtered_words.csv'))['word'].tolist()
             
-            kimkem_obj = KimKem(exception_word_list=selected_words, rekemkim=True)
+            kimkem_obj = KimKem(self.main, exception_word_list=selected_words, rekemkim=True)
             
             new_result_folder = os.path.join(os.path.dirname(result_directory), f'Result_{datetime.now().strftime('%m%d%H%M')}')
             new_graph_folder = os.path.join(new_result_folder, 'Graph')
@@ -1243,43 +1237,41 @@ class Manager_Analysis:
                         self.main.openFileExplorer(analyze_directory)
                         return
 
-                    def gpt_start():
-                        for column in filtered_object_csv_df.columns.tolist():
-                            if 'Title' in column:
-                                titleColumn_name = column
-                                
-                        if filtered_object_csv_df[titleColumn_name].count() > 50:
-                            random_titles = filtered_object_csv_df[titleColumn_name].sample(n=50, random_state=42)
-                        else:
-                            random_titles = filtered_object_csv_df[titleColumn_name]
-                        
-                        merged_title = ' '.join(random_titles.tolist())
-                        gpt_query = (
-                            "한국어로 대답해. 지금 밑에 있는 텍스트는 신문기사의 제목들을 모아놓은거야\n\n"
-                            f"{merged_title}\n\n"
-                            f"이 신문기사 제목들은 검색창에 {topic}이라고 검색했을 때 나온 신문기사 제목이야"
-                            "제시된 여러 개의 뉴스기사 제목을 바탕으로 관련된 토픽(주제)를 추출 및 요약해줘. 토픽은 최소 1개에서 최대 5개를 제시해줘. 토픽 추출 및 요약 방식, 너의 응답 형식은 다음과 같아\n"
-                            "토픽 1. ~~: (여기에 내용 기입)\n"
-                            "토픽 2. ~~: (여기에 내용 기입)\n"
-                            "...\n"
-                            "토픽 5. ~~: (여기에 내용 기입)"
-                        )
-                        gpt_response = self.main.chatgpt_generate(gpt_query)
-                        if type(gpt_response) != str:
-                            QMessageBox.warning(self.main, "Error", f"{gpt_response[1]}")
-                            self.main.printStatus()
-                            self.main.openFileExplorer(analyze_directory)
-                            return
+                    self.main.printStatus("AI 분석 중...")
+                    for column in filtered_object_csv_df.columns.tolist():
+                        if 'Title' in column:
+                            titleColumn_name = column
 
-                        with open(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option})_AI_analyze.txt"), 'w+') as gpt_txt:
-                            gpt_txt.write(gpt_response)
+                    if filtered_object_csv_df[titleColumn_name].count() > 50:
+                        random_titles = filtered_object_csv_df[titleColumn_name].sample(n=50, random_state=42)
+                    else:
+                        random_titles = filtered_object_csv_df[titleColumn_name]
 
-                        QMessageBox.information(self.main, "AI 분석 결과", gpt_response)
+                    merged_title = ' '.join(random_titles.tolist())
+                    gpt_query = (
+                        "한국어로 대답해. 지금 밑에 있는 텍스트는 신문기사의 제목들을 모아놓은거야\n\n"
+                        f"{merged_title}\n\n"
+                        f"이 신문기사 제목들은 검색창에 {topic}이라고 검색했을 때 나온 신문기사 제목이야"
+                        "제시된 여러 개의 뉴스기사 제목을 바탕으로 관련된 토픽(주제)를 추출 및 요약해줘. 토픽은 최소 1개에서 최대 5개를 제시해줘. 토픽 추출 및 요약 방식, 너의 응답 형식은 다음과 같아\n"
+                        "토픽 1. ~~: (여기에 내용 기입)\n"
+                        "토픽 2. ~~: (여기에 내용 기입)\n"
+                        "...\n"
+                        "토픽 5. ~~: (여기에 내용 기입)"
+                    )
+                    gpt_response = self.main.chatgpt_generate(gpt_query)
+                    if type(gpt_response) != str:
+                        QMessageBox.warning(self.main, "Error", f"{gpt_response[1]}")
                         self.main.printStatus()
                         self.main.openFileExplorer(analyze_directory)
+                        return
 
-                    self.main.printStatus("AI 분석 중...")
-                    QTimer.singleShot(1000, gpt_start)
+                    with open(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option})_AI_analyze.txt"), 'w+') as gpt_txt:
+                        gpt_txt.write(gpt_response)
+
+                    QMessageBox.information(self.main, "AI 분석 결과", gpt_response)
+                    self.main.printStatus()
+                    self.main.openFileExplorer(analyze_directory)
+
                 else:
                     self.main.printStatus()
                     self.main.openFileExplorer(analyze_directory)
@@ -1604,24 +1596,22 @@ class Manager_Analysis:
 
             print(filter_yes_selected)
             open_console('KEMKIM 분석')
-            kimkem_obj = KimKem(token_data, tokenfile_name, save_path, startdate, enddate, period, topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected, ani_yes_selected, exception_word_list, exception_word_list_path)
+            kimkem_obj = KimKem(self.main, token_data, tokenfile_name, save_path, startdate, enddate, period, topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected, ani_yes_selected, exception_word_list, exception_word_list_path)
             result = kimkem_obj.make_kimkem()
             close_console()
+            self.main.printStatus()
 
             if result == 1:
-                self.main.printStatus()
                 reply = QMessageBox.question(self.main, 'Notification', "KEM KIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
             elif result == 0:
-                self.main.printStatus()
                 QMessageBox.information(self.main, "Notification", f"Keyword가 존재하지 않아 KEM KIM 분석이 진행되지 않았습니다")
             elif result == 2:
-                self.main.printStatus()
                 QMessageBox.warning(self.main, "Wrong Range", "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
             else:
-                self.main.printStatus()
                 self.main.program_bug_log(result)
+
             del kimkem_obj
             gc.collect()
         except Exception as e:
