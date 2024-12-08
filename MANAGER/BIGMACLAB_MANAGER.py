@@ -1,4 +1,4 @@
-VERSION = '2.4.0'
+VERSION = '2.4.1'
 
 from PyQt5.QtWidgets import QApplication
 from Manager_SplashDialog import SplashDialog
