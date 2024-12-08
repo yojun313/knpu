@@ -951,7 +951,7 @@ class Manager_Database:
             self.DB = self.main.update_DB()
             self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
 
-            self.main.printStatus()
+            self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
