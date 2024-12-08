@@ -848,10 +848,10 @@ class Manager_Database:
                     filteropt = "모두 포함/제외" if include_all else "개별 포함/제외"
                     with open(os.path.join(dbpath, 'DB_info.txt'), 'w+') as info:
                         info.write(
-                            f"필터링 옵션: {filterOption}\n"
-                            f"포함 단어 목록: {', '.join(incl_words)}\n"
-                            f"제외 단어 목록: {', '.join(excl_words)}\n"
-                            f"옵션: {filteropt}"
+                            f"- 필터링 옵션: {filterOption}\n"
+                            f"- 포함 단어 목록: {', '.join(incl_words)}\n"
+                            f"- 제외 단어 목록: {', '.join(excl_words)}\n"
+                            f"- 옵션: {filteropt}"
                         )
 
                 print(f"DB: {target_db}\n")
@@ -860,14 +860,14 @@ class Manager_Database:
                 if date_options.get('option') == 'part' or filterOption:
                     print('< Option >\n')
                     if date_options.get('option') == 'part':
-                        print(f'Period: {start_date_formed} ~ {end_date_formed}')
+                        print(f'Period: {start_date_formed} ~ {end_date_formed}\n')
                     if filterOption:
                         print(f'Include Words: {", ".join(incl_words)}')
                         print(f'Exclude Words: {", ".join(excl_words)}')
                         if include_all == True:
-                            print("Include/Exclude Option: All")
+                            print("\nInclude/Exclude Option: All")
                         else:
-                            print("Include/Exclude Option: Any")
+                            print("\nInclude/Exclude Option: Any")
                     print('')
 
                 for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
