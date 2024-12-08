@@ -676,7 +676,7 @@ class Manager_Database:
                     self.include_option_group = QButtonGroup()
                     self.include_all = QRadioButton('모두 포함 (All)')
                     self.include_any = QRadioButton('개별 포함 (Any)')
-                    self.include_any.setChecked(True)  # 기본 선택: Any 포함
+                    self.include_all.setChecked(True)  # 기본 선택: Any 포함
 
                     self.word_input_form_layout.addRow(QLabel('포함 옵션:'))
                     self.word_input_form_layout.addWidget(self.include_all)
