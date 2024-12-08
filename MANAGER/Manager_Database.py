@@ -872,6 +872,7 @@ class Manager_Database:
 
                 for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if date_options['option'] == 'part' else tableName
+                    self.main.printStatus(f"{edited_tableName} 저장 중...")
                     # 테이블 데이터를 DataFrame으로 변환
                     if date_options['option'] == 'part':
                         tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
@@ -905,7 +906,6 @@ class Manager_Database:
                             tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
                         statisticsURL = tableDF['Article URL'].tolist()
                         save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
-                        self.main.printStatus(f"{os.path.basename(save_path)} 저장 중...")
                         tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
                         continue
 
@@ -913,18 +913,17 @@ class Manager_Database:
                         if filterOption == True:
                             tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
 
-                    # reply 테이블 처리
+                    # reply_statistics 테이블 처리
                     if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in target_db:
                         if filterOption == True:
                             filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
                         filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
                         save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
-                        self.main.printStatus(f"{os.path.basename(save_path)} 저장 중...")
                         filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
 
                     # 기타 테이블 처리
                     save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
-                    self.main.printStatus(f"{edited_tableName} 저장 중...")
+
                     tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
                     tableDF = None
                     gc.collect()
