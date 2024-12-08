@@ -50,7 +50,7 @@ class SplashDialog(QDialog):
         # 프로그램 이름 라벨
         title_label = QLabel("MANAGER")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet(f"font-size: 24px; font-family: 'Tahoma'; font-weight: bold; color: {text_color};")
+        title_label.setStyleSheet(f"font-size: 24px; font-family: 'Tahoma'; color: {text_color};")
         main_layout.addWidget(title_label)
 
         # 이미지 라벨
@@ -64,7 +64,7 @@ class SplashDialog(QDialog):
         # 버전 정보 라벨
         version_label = QLabel(f"Version {self.version}")
         version_label.setAlignment(Qt.AlignCenter)
-        version_label.setStyleSheet(f"font-size: 21px; font-family: 'Tahoma'; color: {text_color}; margin-top: 5px;")
+        version_label.setStyleSheet(f"font-size: 18px; font-family: 'Tahoma'; color: {text_color}; margin-top: 5px;")
         main_layout.addWidget(version_label)
 
         # 상태 메시지 라벨
