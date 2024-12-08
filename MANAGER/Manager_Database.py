@@ -675,8 +675,8 @@ class Manager_Database:
 
                     # 포함 옵션 선택 (All 포함 vs Any 포함)
                     self.include_option_group = QButtonGroup()
-                    self.include_all = QRadioButton('모두 포함 (All)')
-                    self.include_any = QRadioButton('개별 포함 (Any)')
+                    self.include_all = QRadioButton('모두 포함/제외 (All)')
+                    self.include_any = QRadioButton('개별 포함/제외 (Any)')
                     self.include_all.setChecked(True)  # 기본 선택: Any 포함
 
                     self.word_input_form_layout.addRow(QLabel('포함 옵션:'))
@@ -843,12 +843,13 @@ class Manager_Database:
 
                 # 필터 옵션이 있는 경우 DB_info.txt 작성
                 if filterOption:
+                    filteropt = "모두 포함/제외" if include_all else "개별 포함/제외"
                     with open(os.path.join(dbpath, 'DB_info.txt'), 'w+') as info:
                         info.write(
-                            f"Filter Option: {filterOption}\n"
-                            f"Include Words: {', '.join(incl_words)}\n"
-                            f"Exclude Words: {', '.join(excl_words)}\n"
-                            f"Include/Exclude All {include_all}"
+                            f"필터링 옵션: {filterOption}\n"
+                            f"포함 단어 목록: {', '.join(incl_words)}\n"
+                            f"제외 단어 목록: {', '.join(excl_words)}\n"
+                            f"옵션: {filteropt}"
                         )
 
                 print(f"DB: {target_db}\n")
