@@ -893,7 +893,7 @@ class Manager_Database:
 
     def database_refresh_DB(self):
         try:
-            self.main.printStatus("새로고침 중")
+            self.main.printStatus("새로고침 중...")
 
             self.DB = self.main.update_DB()
             self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
