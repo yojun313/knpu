@@ -1,13 +1,29 @@
 from PyQt5.QtWidgets import QApplication
 from Manager_SplashDialog import SplashDialog
-from PyQt5.QtCore import QEventLoop, QCoreApplication
+from PyQt5.QtCore import QEventLoop, QCoreApplication, Qt
+from PyQt5.QtGui import QFont
+import os
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 VERSION = '2.4.0'
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
+os.environ["QT_DEVICE_PIXEL_RATIO"] = "0"
+os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+os.environ["QT_SCREEN_SCALE_FACTORS"] = "1"
+os.environ["QT_SCALE_FACTOR"] = "1"
+
+# High DPI 스케일링 활성화 (QApplication 생성 전 설정)
+QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+
 app = QApplication([])
+# 기본 폰트 설정 및 힌팅 설정
+font = QFont()
+font.setHintingPreference(QFont.PreferNoHinting)
+app.setFont(font)
+
 # 로딩 다이얼로그 표시
 splash_dialog = SplashDialog(version=VERSION)
 splash_dialog.show()
