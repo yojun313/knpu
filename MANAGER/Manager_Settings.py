@@ -826,4 +826,5 @@ class SplashDialog(QDialog):
         SplashDialog의 상태 메시지를 업데이트하고 UI를 즉시 새로고침하는 메서드
         """
         self.status_label.setText(message)
-        QCoreApplication.processEvents(QEventLoop.AllEvents, 100)
+        for i in range(2):
+            QCoreApplication.processEvents(QEventLoop.AllEvents, 0)

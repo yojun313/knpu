@@ -4,7 +4,7 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
     QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
     QPushButton, QMainWindow, QApplication, QSpacerItem, QAbstractItemView
-from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSize, QModelIndex
+from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSize, QModelIndex, QEventLoop
 from PyQt5.QtGui import QKeySequence, QFont, QIcon
 import speech_recognition as sr
 import subprocess
@@ -75,6 +75,7 @@ class MainWindow(QMainWindow):
 
             def load_program():
                 try:
+                    self.listWidget.setCurrentRow(0)
                     if self.SETTING['BootTerminal'] == 'on':
                         open_console("Boot Process")
                     self.startTime = datetime.now()
@@ -200,6 +201,7 @@ class MainWindow(QMainWindow):
 
                     if self.SETTING['ScreenSize'] == 'max':
                         self.showMaximized()
+                    self.printStatus(f"{self.fullstorage} GB / 2 TB")
 
                     # After Booting
 
@@ -222,9 +224,8 @@ class MainWindow(QMainWindow):
                     QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
                     os._exit(0)
 
-            self.listWidget.setCurrentRow(0)
-            QTimer.singleShot(1, load_program)
-            QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
+            load_program()
+
         except Exception as e:
             self.close_bootscreen()
             open_console()
@@ -692,11 +693,11 @@ class MainWindow(QMainWindow):
             self.Manager_Database_obj.database_shortcut_setting()
             if self.SETTING['DB_Refresh'] == 'default':
                 self.Manager_Database_obj.database_refresh_DB()
-            QTimer.singleShot(1000, lambda: self.printStatus(f"{self.fullstorage} GB / 2 TB"))
+            self.printStatus(f"{self.fullstorage} GB / 2 TB")
         # CRAWLER
         elif index == 1:
             self.shortcut_initialize()
-            QTimer.singleShot(1000, lambda: self.printStatus(f"활성 크롤러 수: {self.activate_crawl}"))
+            self.printStatus(f"활성 크롤러 수: {self.activate_crawl}")
         # ANALYSIS
         elif index == 2:
             self.printStatus()
@@ -829,15 +830,17 @@ class MainWindow(QMainWindow):
 
             def open_in_external_app(self, file_path):
                 try:
+                    self.main.printStatus(f"{os.path.basename(file_path)} 여는 중...")
                     if os.name == 'nt':  # Windows
                         os.startfile(file_path)
                     elif os.name == 'posix':  # macOS, Linux
                         subprocess.run(["open" if os.uname().sysname == "Darwin" else "xdg-open", file_path])
+                    self.main.printStatus()
                 except Exception as e:
-                    self.main.printStatus(f"파일 열기 실패: {e}")
+                    self.main.printStatus(f"파일 열기 실패")
 
             def on_directory_change(self, path):
-                self.main.printStatus(f"{os.path.basename(path)} 선택됨")
+                self.main.printStatus()
 
             def on_accepted(self):
                 selected_files = self.selectedFiles()
@@ -942,6 +945,7 @@ class MainWindow(QMainWindow):
             dialog = Manager_Setting(self, self.SETTING)
             if dialog.exec_() == QDialog.Accepted:
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
+                self.printStatus("설정 반영 중...")
                 if self.SETTING['Theme'] == 'default':
                     self.setLightStyle()
                 else:
@@ -950,6 +954,7 @@ class MainWindow(QMainWindow):
 
                 if self.SETTING['MyDB'] != 'default' or self.SETTING['DBKeywordSort'] != 'default':
                     self.Manager_Database_obj.database_refresh_DB()
+                self.printStatus()
 
         except Exception as e:
             self.program_bug_log(traceback.format_exc())
@@ -1544,9 +1549,9 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Invalid Input", "영어로만 입력 가능합니다")
 
     def printStatus(self, msg=''):
-        msg += ' '
-        self.right_label.setText(msg)
-        QApplication.processEvents()
+        for i in range(3):
+            self.right_label.setText(msg)
+            QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
 
     def openFileExplorer(self, path):
         # 저장된 폴더를 파일 탐색기로 열기
@@ -1559,6 +1564,7 @@ class MainWindow(QMainWindow):
         
     def program_bug_log(self, text):
         print(text)
+        self.printStatus("오류 발생")
         if self.user == 'admin':
             QMessageBox.critical(self, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
         else:
@@ -1569,6 +1575,7 @@ class MainWindow(QMainWindow):
                                      QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             self.Manager_Board_obj.board_add_bug()
+        self.printStatus()
 
     def closeEvent(self, event):
         # 프로그램 종료 시 실행할 코드

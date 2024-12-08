@@ -32,39 +32,37 @@ class Manager_Database:
 
     def database_delete_DB(self):
         try:
-            self.main.printStatus("삭제 중...")
-            def delete_database():
-                selected_row = self.main.database_tablewidget.currentRow()
-                if selected_row >= 0:
-                    target_db = self.DB['DBlist'][selected_row]
-                    self.main.mySQL_obj.connectDB(target_db)
-                    endtime = self.DB['DBdata'][selected_row][6]
-                    owner = self.DB['DBdata'][selected_row][7]
+            selected_row = self.main.database_tablewidget.currentRow()
+            if selected_row >= 0:
+                target_db = self.DB['DBlist'][selected_row]
+                self.main.mySQL_obj.connectDB(target_db)
+                endtime = self.DB['DBdata'][selected_row][6]
+                owner = self.DB['DBdata'][selected_row][7]
 
-                    if owner != self.main.user and self.main.user != 'admin':
-                        QMessageBox.warning(self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
-                        return
+                if owner != self.main.user and self.main.user != 'admin':
+                    QMessageBox.warning(self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
+                    return
 
-                    if endtime == '크롤링 중':
-                        confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하고 DB를 삭제하시겠습니까?"
+                if endtime == '크롤링 중':
+                    confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하고 DB를 삭제하시겠습니까?"
+                else:
+                    confirm_msg = f"'{target_db}'를 삭제하시겠습니까?"
+
+                reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    self.main.printStatus("삭제 중...")
+                    self.main.mySQL_obj.dropDB(target_db)
+                    self.main.mySQL_obj.connectDB('crawler_db')
+                    self.main.mySQL_obj.deleteTableRowByColumn('db_list', target_db, 'DBname')
+                    self.database_refresh_DB()       
+                    if endtime == '-':
+                        self.main.activate_crawl -= 1
+                        QMessageBox.information(self.main, "Information", f"크롤러 서버에 중단 요청을 전송했습니다")
                     else:
-                        confirm_msg = f"'{target_db}'를 삭제하시겠습니까?"
+                        QMessageBox.information(self.main, "Information", f"'{target_db}'가 삭제되었습니다")
+                    self.main.user_logging(f'DATABASE -> delete_DB({target_db})')
 
-                    reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                    if reply == QMessageBox.Yes:
-                        self.main.mySQL_obj.dropDB(target_db)
-                        self.database_refresh_DB()
-                        self.main.mySQL_obj.connectDB('crawler_db')
-                        self.main.mySQL_obj.deleteTableRowByColumn('db_list', target_db, 'DBname')
-                        if endtime == '-':
-                            self.main.activate_crawl -= 1
-                            QMessageBox.information(self.main, "Information", f"크롤러 서버에 중단 요청을 전송했습니다")
-                        else:
-                            QMessageBox.information(self.main, "Information", f"'{target_db}'가 삭제되었습니다")
-                        self.main.user_logging(f'DATABASE -> delete_DB({target_db})')
-
-            QTimer.singleShot(1, delete_database)
-            QTimer.singleShot(1, self.main.printStatus)
+            self.main.printStatus()
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
@@ -188,6 +186,7 @@ class Manager_Database:
 
     def database_dbinfo_viewer(self, row):
         try:
+            self.main.printStatus("불러오는 중...")
             DBdata = self.DB['DBdata'][row]
             DBname = self.DB['DBlist'][row]
             DBinfo = self.DB['DBinfo'][row]
@@ -397,7 +396,7 @@ class Manager_Database:
             cmdw.activated.connect(dialog.accept)
 
             dialog.setLayout(layout)
-
+            self.main.printStatus()
             # 다이얼로그 실행
             dialog.show()
 
@@ -511,6 +510,7 @@ class Manager_Database:
             if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20:
                 QMessageBox.information(self.main, 'Notification', f'API Key가 설정되지 않았습니다\n\n환경설정에서 ChatGPT API Key를 입력해주십시오')
                 return
+            self.main.printStatus()
             self.main.user_logging(f'User --> ChatGPT Mode ON')
             self.chatgpt_mode = True
             self.main.database_searchDB_button.clicked.disconnect()
@@ -525,6 +525,7 @@ class Manager_Database:
         if self.chatgpt_mode == True:
             if self.console_open == True:
                 close_console()
+            self.main.printStatus()
             self.chatgpt_mode = False
             self.main.user_logging(f'User --> ChatGPT Mode OFF')
             self.main.database_searchDB_button.clicked.disconnect()
@@ -549,7 +550,9 @@ class Manager_Database:
                 self.console_open = True
                 self.log = ''
             print("System > 음성 인식 중...\n")
+            self.main.printStatus("음성 인식 중...")
             search_text = self.main.microphone()
+            self.main.printStatus()
         else:
             search_text = self.main.database_searchDB_lineinput.text()
         self.main.database_searchDB_lineinput.clear()
@@ -584,8 +587,12 @@ class Manager_Database:
         print(f"User > {search_text}\n")
         add_to_log(f"User > {search_text}\n")
         # "ChatGPT > 답변 생성 중..." 출력
+
         print("ChatGPT > 답변 생성 중...", end='\r')
+        self.main.printStatus("ChatGPT 답변 생성 중...")
         answer = self.main.chatgpt_generate(search_text)
+        self.main.printStatus()
+
         if type(answer) != str:
             print(f"ChatGPT > 답변 생성 중 오류 발생\n")
             print(f"System > {answer[1]}\n")
@@ -724,61 +731,58 @@ class Manager_Database:
                 new_filename = re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
                 return new_filename
 
-            def select_database():
-                selected_row = self.main.database_tablewidget.currentRow()
-                if not selected_row >= 0:
-                    return
-                self.main.printStatus("DB를 저장할 위치를 선택하여 주십시오")
+            selected_row = self.main.database_tablewidget.currentRow()
+            if not selected_row >= 0:
+                return
+            self.main.printStatus("DB를 저장할 위치를 선택하여 주십시오")
 
-                target_db = self.DB['DBlist'][selected_row]
+            target_db = self.DB['DBlist'][selected_row]
 
-                QMessageBox.information(self.main, "Directory Setting", f"DB를 저장할 위치를 선택하여 주십시오")
-                folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
-                if folder_path == '':
+            QMessageBox.information(self.main, "Directory Setting", f"DB를 저장할 위치를 선택하여 주십시오")
+            folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
+            if folder_path == '':
+                self.main.printStatus()
+                return
+            if folder_path:
+                self.main.printStatus("DB 저장 옵션을 설정하여 주십시오")
+                dialog = OptionDialog()
+                date_options = {}
+
+                if dialog.exec_() == QDialog.Accepted:
+
+                    filter_options = {
+                        'incl_words': dialog.incl_word_list,
+                        'excl_words': dialog.excl_word_list,
+                    }
+
+                    # 선택된 라디오 버튼 확인 날짜 범위 부분
+                    if dialog.radio_all.isChecked():
+                        date_options['option'] = 'all'
+                    elif dialog.radio_custom.isChecked():
+                        date_options['option'] = 'part'
+
+                    # 기간 설정이 선택된 경우, 입력된 날짜 가져오기
+                    if date_options['option'] == 'part':
+                        date_format = "yyyyMMdd"
+                        start_date = QDate.fromString(dialog.start_date_input.text(), date_format)
+                        end_date = QDate.fromString(dialog.end_date_input.text(), date_format)
+
+                        if start_date.isValid() and end_date.isValid():
+                            date_options['start_date'] = start_date.toString(date_format)
+                            date_options['end_date'] = end_date.toString(date_format)
+                        else:
+                            QMessageBox.warning(dialog, 'Wrong Form', '잘못된 날짜 형식입니다.')
+                            date_options['option'] = None  # 잘못된 날짜가 입력된 경우 선택 옵션을 None으로 설정
+
+                if date_options == {}:
                     self.main.printStatus()
                     return
-                if folder_path:
-                    self.main.printStatus("DB 저장 옵션을 설정하여 주십시오")
-                    dialog = OptionDialog()
-                    date_options = {}
 
-                    if dialog.exec_() == QDialog.Accepted:
+                if date_options['option'] == 'part':
+                    self.main.printStatus(f"{replace_dates_in_filename(target_db, date_options['start_date'], date_options['end_date'])} 저장 중...")
+                else:
+                    self.main.printStatus(f"{target_db} 저장 중...")
 
-                        filter_options = {
-                            'incl_words': dialog.incl_word_list,
-                            'excl_words': dialog.excl_word_list,
-                        }
-
-                        # 선택된 라디오 버튼 확인 날짜 범위 부분
-                        if dialog.radio_all.isChecked():
-                            date_options['option'] = 'all'
-                        elif dialog.radio_custom.isChecked():
-                            date_options['option'] = 'part'
-
-                        # 기간 설정이 선택된 경우, 입력된 날짜 가져오기
-                        if date_options['option'] == 'part':
-                            date_format = "yyyyMMdd"
-                            start_date = QDate.fromString(dialog.start_date_input.text(), date_format)
-                            end_date = QDate.fromString(dialog.end_date_input.text(), date_format)
-
-                            if start_date.isValid() and end_date.isValid():
-                                date_options['start_date'] = start_date.toString(date_format)
-                                date_options['end_date'] = end_date.toString(date_format)
-                            else:
-                                QMessageBox.warning(dialog, 'Wrong Form', '잘못된 날짜 형식입니다.')
-                                date_options['option'] = None  # 잘못된 날짜가 입력된 경우 선택 옵션을 None으로 설정
-
-                    if date_options == {}:
-                        self.main.printStatus()
-                        return
-
-                    if date_options['option'] == 'part':
-                        self.main.printStatus(f"{replace_dates_in_filename(target_db, date_options['start_date'], date_options['end_date'])} 저장 중...")
-                    else:
-                        self.main.printStatus(f"{target_db} 저장 중...")
-                    QTimer.singleShot(1000, lambda: save_database(target_db, folder_path, date_options, filter_options))
-
-            def save_database(target_db, folder_path, date_options, filter_options):
                 open_console('CSV로 저장')
                 dbname = target_db
                 dbpath = os.path.join(folder_path, dbname)
@@ -879,21 +883,17 @@ class Manager_Database:
                     self.main.openFileExplorer(dbpath)
                 self.main.printStatus()
 
-            select_database()
-
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_refresh_DB(self):
         try:
             self.main.printStatus("새로고침 중")
-            def refresh_database():
-                self.DB = self.main.update_DB()
-                self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
 
-            QTimer.singleShot(1, refresh_database)
-            QTimer.singleShot(1, self.main.printStatus)
-            QTimer.singleShot(1000, lambda: self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB"))
+            self.DB = self.main.update_DB()
+            self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
+
+            self.main.printStatus()
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
