@@ -3,7 +3,7 @@ from Manager_SplashDialog import SplashDialog
 from PyQt5.QtCore import QEventLoop, QCoreApplication
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
-VERSION = '2.3.6'
+VERSION = '2.4.0'
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
