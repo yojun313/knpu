@@ -488,6 +488,7 @@ class MainWindow(QMainWindow):
 
                 self.user = user_name
                 self.usermail = self.userMailList[self.userNameList.index(user_name)]
+                self.printStatus("인증번호 전송 중...")
 
                 random_pw = ''.join(random.choices('0123456789', k=6))
                 msg = (
@@ -497,6 +498,7 @@ class MainWindow(QMainWindow):
                     f"인증 번호 '{random_pw}'를 입력하십시오"
                 )
                 self.send_email(self.usermail, "[MANAGER] 디바이스 등록 인증번호", msg)
+                self.printStatus()
                 QMessageBox.information(self, "Information", f"{self.user}님의 메일 {self.usermail}로 인증번호가 전송되었습니다\n\n인증번호를 확인 후 다음 창에서 입력하십시오")
 
                 ok, password = self.pw_check(string="메일 인증번호")
@@ -521,6 +523,7 @@ class MainWindow(QMainWindow):
                         QMessageBox.information(self, "Information", "디바이스가 등록되지 않았습니다\n\n다음 실행 시 추가적인 로그인이 필요합니다")
                         return True
                 elif ok:
+                    self.printStatus("인증 실패")
                     QMessageBox.warning(self, 'Wrong Password', '인증번호가 올바르지 않습니다\n\n프로그램을 종료합니다')
                     admin_notify(self.user)
                     return False
