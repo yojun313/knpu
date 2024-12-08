@@ -1,5 +1,4 @@
-from PyQt5.QtWidgets import QVBoxLayout, \
-    QLabel, QDialog
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QDialog
 from PyQt5.QtCore import Qt, QCoreApplication, QEventLoop
 from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
 from dotenv import load_dotenv
