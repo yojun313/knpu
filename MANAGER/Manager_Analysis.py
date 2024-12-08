@@ -1177,7 +1177,7 @@ class Manager_Analysis:
                 QMessageBox.warning(self.main, "No Data", "필터링 키워드를 포함하는 데이터가 존재하지 않습니다")
                 return
 
-            analyze_directory = os.path.join(os.path.dirname(result_directory), f'Analysis_{datetime.now().strftime('%m%d%H%M')}')
+
             selected_words_dic = {
                 'Filter Option': selected_option,
                 'Strong Signal': ','.join(selected_words_2dim[0]),
@@ -1185,6 +1185,13 @@ class Manager_Analysis:
                 'Latent Signal': ','.join(selected_words_2dim[2]),
                 'Well-known Signal': ','.join(selected_words_2dim[3]),
             }
+            # 존재 여부에 따라 파일명에 S, W, L, W를 추가
+            signals = ["strong", "weak", "latent", "wellknown"]  # 각 신호의 약자
+            included_signals = ','.join([signals[i] for i in range(len(selected_words_2dim)) if selected_words_2dim[i]])
+
+            # 파일명 생성
+            analysis_directory_name = f'Analysis_({included_signals})_{datetime.now().strftime("%m%d%H%M")}'
+            analyze_directory = os.path.join(os.path.dirname(result_directory), analysis_directory_name)
 
             reply = QMessageBox.question(self.main, 'Notification', f'CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n데이터를 저장하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
