@@ -223,7 +223,7 @@ class MainWindow(QMainWindow):
 
                     self.shortcut_init()
                     self.Manager_Database_obj.database_shortcut_setting()
-                    self.user_logging(f'Booting ({self.user_location()})', booting=True)
+                    self.user_logging(f'Booting ({self.user_location()})', booting=True, force=True)
                     self.initialize_configuration()
 
                     close_console()
@@ -565,7 +565,7 @@ class MainWindow(QMainWindow):
                     f"{self.user} updated {current_version} -> {self.new_version}\n\n{self.user_location()}"
                 )
                 self.send_pushOver(msg, self.admin_pushoverkey)
-                self.user_logging(f'Program Update ({current_version} -> {self.new_version})')
+                self.user_logging(f'Program Update ({current_version} -> {self.new_version})', force=True)
 
                 self.printStatus("버전 업데이트 중...")
                 import subprocess
@@ -935,9 +935,9 @@ class MainWindow(QMainWindow):
             print(traceback.format_exc())
             return False
 
-    def user_logging(self, text='', booting=False):
+    def user_logging(self, text='', booting=False, force=False):
         try:
-            if self.CONFIG['Logging'] == 'Off':
+            if self.CONFIG['Logging'] == 'Off' and force == False:
                 return
             self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
             if booting == True:
@@ -1621,7 +1621,7 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.Yes:
             try:
                 if self.CONFIG['Logging'] == 'On':
-                    self.user_logging('Shutdown')
+                    self.user_logging('Shutdown', force=True)
                     self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
                     self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
                 self.temp_cleanup()
