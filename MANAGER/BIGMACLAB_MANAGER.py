@@ -1,22 +1,38 @@
+from PyQt5.QtWidgets import QApplication
+from Manager_SplashDialog import SplashDialog
+from PyQt5.QtCore import QEventLoop, QCoreApplication
+from PyQt5.QtWebEngineWidgets import QWebEngineView
+
+VERSION = '2.3.6'
+DB_IP = '121.152.225.232'
+LOCAL_IP = '192.168.0.3'
+
+app = QApplication([])
+# 로딩 다이얼로그 표시
+splash_dialog = SplashDialog(version=VERSION)
+splash_dialog.show()
+QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
+
+splash_dialog.update_status("Importing Libraries")
 import os
 import sys
 from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
     QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
-    QPushButton, QMainWindow, QApplication, QSpacerItem, QAbstractItemView
+    QPushButton, QMainWindow, QSpacerItem, QAbstractItemView
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSize, QModelIndex, QEventLoop
 from PyQt5.QtGui import QKeySequence, QFont, QIcon
 import speech_recognition as sr
 import subprocess
 from openai import OpenAI
 from mySQL import mySQL
+from Manager_Settings import Manager_Setting
 from Manager_ToolModule import ToolModule
 from Manager_Database import Manager_Database
 from Manager_Web import Manager_Web
 from Manager_Board import Manager_Board
 from Manager_User import Manager_User
 from Manager_Analysis import Manager_Analysis
-from Manager_Settings import Manager_Setting, SplashDialog
 from Manager_Console import open_console, close_console
 from dotenv import load_dotenv
 from datetime import datetime
@@ -36,10 +52,6 @@ import shutil
 import textwrap
 
 warnings.filterwarnings("ignore")
-
-VERSION = '2.3.6'
-DB_IP = '121.152.225.232'
-LOCAL_IP = '192.168.0.3'
 
 class MainWindow(QMainWindow):
 
@@ -1742,12 +1754,6 @@ class EventLogger(QObject):
 #######################################################
 
 if __name__ == '__main__':
-    app = QApplication([])
-
-    # 로딩 다이얼로그 표시
-    splash_dialog = SplashDialog(version=VERSION)
-    splash_dialog.show()
-    QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
 
     # 메인 윈도우 실행
     application = MainWindow(splash_dialog)
