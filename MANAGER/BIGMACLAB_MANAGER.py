@@ -1288,8 +1288,6 @@ class MainWindow(QMainWindow):
             QMainWindow {
                 background-color: #f7f7f7;
                 font-size: 14px;
-                -webkit-font-smoothing: antialiased;  /* 텍스트 부드럽게 렌더링 */
-                -moz-osx-font-smoothing: grayscale;   /* macOS에서 텍스트 렌더링 개선 */
                 text-rendering: optimizeLegibility;   /* 렌더링 품질 최적화 */
             }
             QPushButton {
@@ -1299,8 +1297,6 @@ class MainWindow(QMainWindow):
                 border-radius: 5px;
                 padding: 13px;
                 font-size: 15px;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QPushButton:hover {
@@ -1311,15 +1307,11 @@ class MainWindow(QMainWindow):
                 border-radius: 5px;
                 padding: 8px;
                 font-size: 14px;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QTableWidget {
                 border: 1px solid #bdc3c7;
                 font-size: 14px;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QHeaderView::section {
@@ -1328,8 +1320,6 @@ class MainWindow(QMainWindow):
                 padding: 8px;
                 border: none;
                 font-size: 14px;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QListWidget {
@@ -1340,8 +1330,6 @@ class MainWindow(QMainWindow):
                 border: none;
                 min-width: 150px;
                 max-width: 150px;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QListWidget::item {
@@ -1349,8 +1337,6 @@ class MainWindow(QMainWindow):
                 padding: 10px;
                 font-family: 'Tahoma';
                 font-size: 14px;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QListWidget::item:selected {
@@ -1377,8 +1363,6 @@ class MainWindow(QMainWindow):
                 font-size: 14px;
                 min-width: 100px;
                 max-width: 200px;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QTabBar::tab:selected, QTabBar::tab:hover {
@@ -1398,8 +1382,6 @@ class MainWindow(QMainWindow):
                 background-color: #2b2b2b;
                 font-size: 14px;
                 color: #eaeaea;  /* 기본 텍스트 색상 */
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QPushButton {
@@ -1409,8 +1391,6 @@ class MainWindow(QMainWindow):
                 border-radius: 5px;
                 padding: 13px;
                 font-size: 15px;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QPushButton:hover {
@@ -1423,8 +1403,6 @@ class MainWindow(QMainWindow):
                 background-color: #3c3c3c;
                 color: #eaeaea;  /* 입력 텍스트 색상 */
                 font-size: 14px;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QLabel {
@@ -1437,8 +1415,6 @@ class MainWindow(QMainWindow):
                 color: #eaeaea;  /* 셀 텍스트 색상 */
                 font-size: 14px;
                 border: 1px solid #5a5a5a;  /* 테두리 설정 */
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QTableWidget::item {
@@ -1476,8 +1452,6 @@ class MainWindow(QMainWindow):
                 border: none;
                 min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
                 max-width: 150px;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QListWidget::item {
@@ -1485,8 +1459,6 @@ class MainWindow(QMainWindow):
                 padding: 10px;
                 font-family: 'Tahoma';
                 font-size: 14px;
-                -webkit-font-smoothing: antialiased;
-                -moz-osx-font-smoothing: grayscale;
                 text-rendering: optimizeLegibility;
             }
             QListWidget::item:selected {
