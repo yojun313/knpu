@@ -672,6 +672,19 @@ class Manager_Database:
                     self.word_input_form.setLayout(self.word_input_form_layout)
                     self.word_input_form.setVisible(False)
 
+                    # 포함 옵션 선택 (All 포함 vs Any 포함)
+                    self.include_option_group = QButtonGroup()
+                    self.include_all = QRadioButton('모두 포함 (All)')
+                    self.include_any = QRadioButton('개별 포함 (Any)')
+                    self.include_any.setChecked(True)  # 기본 선택: Any 포함
+
+                    self.word_input_form_layout.addRow(QLabel('포함 옵션:'))
+                    self.word_input_form_layout.addWidget(self.include_all)
+                    self.word_input_form_layout.addWidget(self.include_any)
+
+                    self.word_input_form.setLayout(self.word_input_form_layout)
+                    self.word_input_form.setVisible(False)
+
                     self.layout.addWidget(self.word_input_form)
 
                     # 다이얼로그의 OK/Cancel 버튼
@@ -720,6 +733,12 @@ class Manager_Database:
                                 self.excl_word_list = []
                             else:
                                 self.excl_word_list = excl_word_str.split(', ')
+
+                            if self.include_all.isChecked():
+                                self.include_all_option = True
+                            else:
+                                self.include_all_option = False
+
                         except:
                             QMessageBox.warning(self, 'Wrong Input', '잘못된 필터링 입력입니다')
                             return  # 확인 동작을 취소함
@@ -754,6 +773,7 @@ class Manager_Database:
                     filter_options = {
                         'incl_words': dialog.incl_word_list,
                         'excl_words': dialog.excl_word_list,
+                        'include_all': dialog.include_all_option
                     }
 
                     # 선택된 라디오 버튼 확인 날짜 범위 부분
@@ -802,6 +822,7 @@ class Manager_Database:
                 filterOption = bool(filter_options['incl_words'] != [] or filter_options['excl_words'] != [])
                 incl_words = filter_options.get('incl_words', [])
                 excl_words = filter_options.get('excl_words', [])
+                include_all = filter_options['include_all']
 
                 # 폴더 생성 로직 최적화
                 while True:
@@ -849,8 +870,12 @@ class Manager_Database:
 
                     if filterOption == True and 'article' in tableName:
                         recover_columns = tableDF.columns
-                        tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
-                        tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
+                        if include_all == True:
+                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word in str(cell) for word in incl_words))]
+                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
+                        else:
+                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
+                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word not in str(cell) for word in excl_words))]
 
                         if tableDF.empty:
                             tableDF = pd.DataFrame(columns=recover_columns)  # 기존 열만 유지
