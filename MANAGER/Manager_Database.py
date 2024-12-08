@@ -615,6 +615,7 @@ class Manager_Database:
 
                     self.incl_word_list = []
                     self.excl_word_list = []
+                    self.include_all_option = False
 
                     # 다이얼로그 레이아웃
                     self.layout = QVBoxLayout()
@@ -865,6 +866,7 @@ class Manager_Database:
                         else:
                             print("Include/Exclude Option: Any")
                     print('')
+
                 for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if date_options['option'] == 'part' else tableName
                     # 테이블 데이터를 DataFrame으로 변환
@@ -873,24 +875,26 @@ class Manager_Database:
                     else:
                         tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
 
+                    # 단어 필터링 옵션이 켜져있을 때
                     if filterOption == True and 'article' in tableName:
-                        recover_columns = tableDF.columns
-                        if include_all == True:
-                            if incl_words != []:
-                                tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word in str(cell) for word in incl_words))]
-                            if excl_words != []:
-                                tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
-                        else:
-                            if incl_words != []:
-                                tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
-                            if excl_words != []:
-                                tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word not in str(cell) for word in excl_words))]
-
-                        if tableDF.empty:
-                            tableDF = pd.DataFrame(columns=recover_columns)  # 기존 열만 유지
-
                         if 'token' not in tableName:
+                            recover_columns = tableDF.columns
+                            if include_all == True:
+                                if incl_words != []:
+                                    tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word in str(cell) for word in incl_words))]
+                                if excl_words != []:
+                                    tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
+                            else:
+                                if incl_words != []:
+                                    tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
+                                if excl_words != []:
+                                    tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word not in str(cell) for word in excl_words))]
+
+                            if tableDF.empty:
+                                tableDF = pd.DataFrame(columns=recover_columns)  # 기존 열만 유지
                             articleURL = tableDF['Article URL'].tolist()
+                        else:
+                            tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
 
                     # statistics 테이블 처리
                     if 'statistics' in tableName:
