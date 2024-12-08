@@ -861,9 +861,9 @@ class Manager_Database:
                         print(f'Include Words: {", ".join(incl_words)}')
                         print(f'Exclude Words: {", ".join(excl_words)}')
                         if include_all == True:
-                            print("Filter Option: Include/Exclude) All")
+                            print("Include/Exclude Option: All")
                         else:
-                            print("Filter Option: Include/Exclude) Any")
+                            print("Include/Exclude Option: Any")
                     print('')
                 for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                     edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if date_options['option'] == 'part' else tableName
