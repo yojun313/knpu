@@ -76,7 +76,7 @@ from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, 
     QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
     QPushButton, QMainWindow, QSpacerItem, QAbstractItemView
 from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSize, QModelIndex, QEventLoop
-from PyQt5.QtGui import QKeySequence, QFont, QIcon
+from PyQt5.QtGui import QKeySequence, QFont, QIcon, QPainter
 
 warnings.filterwarnings("ignore")
 DB_IP = '121.152.225.232'
@@ -275,6 +275,8 @@ class MainWindow(QMainWindow):
         return getattr(self.toolmodule, name)
 
     ################################## Booting ##################################
+
+
 
     def initialize_listwidget(self):
         try:
@@ -1339,7 +1341,7 @@ class MainWindow(QMainWindow):
             QListWidget {
                 background-color: #2c3e50;
                 color: white;
-                font-family: 'Malgun Gothic';
+                font-family: 'Tahoma;
                 font-size: 14px;
                 border: none;
                 min-width: 150px;
@@ -1351,7 +1353,7 @@ class MainWindow(QMainWindow):
             QListWidget::item {
                 height: 40px;
                 padding: 10px;
-                font-family: 'Malgun Gothic';
+                font-family: 'Tahoma';
                 font-size: 14px;
                 -webkit-font-smoothing: antialiased;
                 -moz-osx-font-smoothing: grayscale;
@@ -1404,6 +1406,9 @@ class MainWindow(QMainWindow):
                 font-family: 'Malgun Gothic';
                 font-size: 14px;
                 color: #eaeaea;  /* 기본 텍스트 색상 */
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QPushButton {
                 background-color: #34495e;
@@ -1413,6 +1418,9 @@ class MainWindow(QMainWindow):
                 padding: 13px;
                 font-family: 'Malgun Gothic';
                 font-size: 15px;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QPushButton:hover {
                 background-color: #3a539b;
@@ -1425,6 +1433,9 @@ class MainWindow(QMainWindow):
                 color: #eaeaea;  /* 입력 텍스트 색상 */
                 font-family: 'Malgun Gothic';
                 font-size: 14px;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QLabel {
                 color: #eaeaea;  /* 라벨 기본 텍스트 색상 */
@@ -1438,6 +1449,9 @@ class MainWindow(QMainWindow):
                 font-family: 'Malgun Gothic';
                 font-size: 14px;
                 border: 1px solid #5a5a5a;  /* 테두리 설정 */
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QTableWidget::item {
                 background-color: #3c3c3c;  /* 셀 배경색 */
@@ -1470,18 +1484,23 @@ class MainWindow(QMainWindow):
             QListWidget {
                 background-color: #3c3c3c;
                 color: #eaeaea;  /* 리스트 아이템 텍스트 색상 */
-                font-family: 'Malgun Gothic';
+                font-family: 'Tahoma';
                 font-size: 14px;
                 border: none;
                 min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
                 max-width: 150px;
-                
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QListWidget::item {
                 height: 40px;
                 padding: 10px;
-                font-family: 'Malgun Gothic';
+                font-family: 'Tahoma';
                 font-size: 14px;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QListWidget::item:selected {
                 background-color: #34495e;
