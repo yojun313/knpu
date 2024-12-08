@@ -68,7 +68,7 @@ class SplashDialog(QDialog):
         main_layout.addWidget(version_label)
 
         # 상태 메시지 라벨
-        self.status_label = QLabel("Loading...")
+        self.status_label = QLabel("Booting")
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setStyleSheet(f"font-size: 15px; color: {gray_color}; margin-top: 8px;")
         main_layout.addWidget(self.status_label)
