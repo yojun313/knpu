@@ -876,11 +876,15 @@ class Manager_Database:
                     if filterOption == True and 'article' in tableName:
                         recover_columns = tableDF.columns
                         if include_all == True:
-                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word in str(cell) for word in incl_words))]
-                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
+                            if incl_words != []:
+                                tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word in str(cell) for word in incl_words))]
+                            if excl_words != []:
+                                tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
                         else:
-                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
-                            tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word not in str(cell) for word in excl_words))]
+                            if incl_words != []:
+                                tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
+                            if excl_words != []:
+                                tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word not in str(cell) for word in excl_words))]
 
                         if tableDF.empty:
                             tableDF = pd.DataFrame(columns=recover_columns)  # 기존 열만 유지
