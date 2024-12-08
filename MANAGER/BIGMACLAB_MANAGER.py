@@ -12,11 +12,11 @@
 
 VERSION = '2.4.3'
 
+import os
 from PyQt5.QtWidgets import QApplication
 from Manager_SplashDialog import SplashDialog
-from PyQt5.QtCore import QEventLoop, QCoreApplication, Qt
+from PyQt5.QtCore import QCoreApplication, Qt
 from PyQt5.QtGui import QFont
-import os
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 os.environ["QT_DEVICE_PIXEL_RATIO"] = "0"
@@ -32,6 +32,7 @@ app = QApplication([])
 # 기본 폰트 설정 및 힌팅 설정
 font = QFont()
 font.setHintingPreference(QFont.PreferNoHinting)
+font.setStyleStrategy(QFont.PreferAntialias)  # 안티앨리어싱 활성화
 app.setFont(font)
 
 # 로딩 다이얼로그 표시
@@ -1287,6 +1288,9 @@ class MainWindow(QMainWindow):
                 background-color: #f7f7f7;
                 font-family: 'Tahoma';
                 font-size: 14px;
+                -webkit-font-smoothing: antialiased;  /* 텍스트 부드럽게 렌더링 */
+                -moz-osx-font-smoothing: grayscale;   /* macOS에서 텍스트 렌더링 개선 */
+                text-rendering: optimizeLegibility;   /* 렌더링 품질 최적화 */
             }
             QPushButton {
                 background-color: #2c3e50;
@@ -1296,6 +1300,9 @@ class MainWindow(QMainWindow):
                 padding: 13px;
                 font-family: 'Tahoma';
                 font-size: 15px;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QPushButton:hover {
                 background-color: #34495e;
@@ -1306,11 +1313,17 @@ class MainWindow(QMainWindow):
                 padding: 8px;
                 font-family: 'Tahoma';
                 font-size: 14px;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QTableWidget {
                 border: 1px solid #bdc3c7;
                 font-family: 'Tahoma';
                 font-size: 14px;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QHeaderView::section {
                 background-color: #2c3e50;
@@ -1319,6 +1332,9 @@ class MainWindow(QMainWindow):
                 border: none;
                 font-family: 'Tahoma';
                 font-size: 14px;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QListWidget {
                 background-color: #2c3e50;
@@ -1326,14 +1342,20 @@ class MainWindow(QMainWindow):
                 font-family: 'Tahoma';
                 font-size: 14px;
                 border: none;
-                min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
+                min-width: 150px;
                 max-width: 150px;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QListWidget::item {
-                height: 40px;  /* 각 아이템의 높이를 조정 */
+                height: 40px;
                 padding: 10px;
                 font-family: 'Tahoma';
                 font-size: 14px;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QListWidget::item:selected {
                 background-color: #34495e;
@@ -1343,26 +1365,29 @@ class MainWindow(QMainWindow):
             }
             QTabWidget::pane {
                 border-top: 2px solid #bdc3c7;
-                background-color: #f7f7f7;  /* Matches QMainWindow background */
+                background-color: #f7f7f7;
             }
             QTabWidget::tab-bar {
                 left: 5px;
             }
             QTabBar::tab {
-                background: #2c3e50;  /* Matches QPushButton background */
-                color: white;  /* Matches QPushButton text color */
+                background: #2c3e50;
+                color: white;
                 border: 1px solid #bdc3c7;
-                border-bottom-color: #f7f7f7;  /* Matches QMainWindow background */
+                border-bottom-color: #f7f7f7;
                 border-radius: 4px;
                 border-top-right-radius: 4px;
                 padding: 10px;
                 font-family: 'Tahoma';
                 font-size: 14px;
-                min-width: 100px;  /* 최소 가로 길이 설정 */
-                max-width: 200px;  /* 최대 가로 길이 설정 */
+                min-width: 100px;
+                max-width: 200px;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
             }
             QTabBar::tab:selected, QTabBar::tab:hover {
-                background: #34495e;  /* Matches QPushButton hover background */
+                background: #34495e;
             }
             QTabBar::tab:selected {
                 border-color: #9B9B9B;
