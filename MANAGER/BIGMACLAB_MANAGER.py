@@ -1288,7 +1288,6 @@ class MainWindow(QMainWindow):
             QMainWindow {
                 background-color: #f7f7f7;
                 font-size: 14px;
-                text-rendering: optimizeLegibility;   /* 렌더링 품질 최적화 */
             }
             QPushButton {
                 background-color: #2c3e50;
@@ -1297,7 +1296,6 @@ class MainWindow(QMainWindow):
                 border-radius: 5px;
                 padding: 13px;
                 font-size: 15px;
-                text-rendering: optimizeLegibility;
             }
             QStatusBar {
                 font-family: 'Tahoma';
@@ -1310,12 +1308,10 @@ class MainWindow(QMainWindow):
                 border-radius: 5px;
                 padding: 8px;
                 font-size: 14px;
-                text-rendering: optimizeLegibility;
             }
             QTableWidget {
                 border: 1px solid #bdc3c7;
                 font-size: 14px;
-                text-rendering: optimizeLegibility;
             }
             QHeaderView::section {
                 background-color: #2c3e50;
@@ -1323,7 +1319,6 @@ class MainWindow(QMainWindow):
                 padding: 8px;
                 border: none;
                 font-size: 14px;
-                text-rendering: optimizeLegibility;
             }
             QListWidget {
                 background-color: #2c3e50;
@@ -1333,14 +1328,12 @@ class MainWindow(QMainWindow):
                 border: none;
                 min-width: 150px;
                 max-width: 150px;
-                text-rendering: optimizeLegibility;
             }
             QListWidget::item {
                 height: 40px;
                 padding: 10px;
                 font-family: 'Tahoma';
                 font-size: 14px;
-                text-rendering: optimizeLegibility;
             }
             QListWidget::item:selected {
                 background-color: #34495e;
@@ -1366,7 +1359,6 @@ class MainWindow(QMainWindow):
                 font-size: 14px;
                 min-width: 100px;
                 max-width: 200px;
-                text-rendering: optimizeLegibility;
             }
             QTabBar::tab:selected, QTabBar::tab:hover {
                 background: #34495e;
@@ -1385,7 +1377,6 @@ class MainWindow(QMainWindow):
                 background-color: #2b2b2b;
                 font-size: 14px;
                 color: #eaeaea;  /* 기본 텍스트 색상 */
-                text-rendering: optimizeLegibility;
             }
             QPushButton {
                 background-color: #34495e;
@@ -1394,7 +1385,6 @@ class MainWindow(QMainWindow):
                 border-radius: 5px;
                 padding: 13px;
                 font-size: 15px;
-                text-rendering: optimizeLegibility;
             }
             QStatusBar {
                 font-family: 'Tahoma';
@@ -1409,7 +1399,6 @@ class MainWindow(QMainWindow):
                 background-color: #3c3c3c;
                 color: #eaeaea;  /* 입력 텍스트 색상 */
                 font-size: 14px;
-                text-rendering: optimizeLegibility;
             }
             QLabel {
                 color: #eaeaea;  /* 라벨 기본 텍스트 색상 */
@@ -1421,7 +1410,6 @@ class MainWindow(QMainWindow):
                 color: #eaeaea;  /* 셀 텍스트 색상 */
                 font-size: 14px;
                 border: 1px solid #5a5a5a;  /* 테두리 설정 */
-                text-rendering: optimizeLegibility;
             }
             QTableWidget::item {
                 background-color: #3c3c3c;  /* 셀 배경색 */
@@ -1458,14 +1446,12 @@ class MainWindow(QMainWindow):
                 border: none;
                 min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
                 max-width: 150px;
-                text-rendering: optimizeLegibility;
             }
             QListWidget::item {
                 height: 40px;
                 padding: 10px;
                 font-family: 'Tahoma';
                 font-size: 14px;
-                text-rendering: optimizeLegibility;
             }
             QListWidget::item:selected {
                 background-color: #34495e;
