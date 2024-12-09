@@ -772,7 +772,9 @@ class MainWindow(QMainWindow):
                 super().__init__(parent)
                 self.setFileMode(QFileDialog.ExistingFiles)
                 self.setOptions(QFileDialog.DontUseNativeDialog)
-                self.setNameFilters(["All Files (*.*)", "CSV Files (*.csv)", "Text Files (*.txt)", "Images (*.png *.jpg *.jpeg)"])
+                self.setViewMode(QFileDialog.Detail)  # <-- 상세보기 모드 설정
+                self.setNameFilters(
+                    ["All Files (*.*)", "CSV Files (*.csv)", "Text Files (*.txt)", "Images (*.png *.jpg *.jpeg)"])
                 self.currentChanged.connect(self.on_directory_change)
                 self.accepted.connect(self.on_accepted)
                 self.rejected.connect(self.on_rejected)
@@ -781,8 +783,6 @@ class MainWindow(QMainWindow):
                 self.set_theme()
                 if default_directory:
                     self.setDirectory(default_directory)
-
-                # 더블 클릭 이벤트 연결
                 self.setup_double_click_event()
 
             def setup_double_click_event(self):
