@@ -412,8 +412,20 @@ class MainWindow(QMainWindow):
         # 상태 표시줄 생성
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
+
         self.left_label = QLabel('  ' + self.version)
         self.right_label = QLabel('')
+
+        # 스타일시트로 폰트, 사이즈 지정 (Malgun Gothic, 12pt)
+        style = """
+        QLabel {
+            font-family: 'Tahoma';
+            font-size: 10pt;
+        }
+        """
+        self.left_label.setStyleSheet(style)
+        self.right_label.setStyleSheet(style)
+
         self.left_label.setToolTip("새 버전 확인을 위해 Ctrl+U")
         self.right_label.setToolTip("상태표시줄")
         self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
@@ -1296,9 +1308,6 @@ class MainWindow(QMainWindow):
                 border-radius: 5px;
                 padding: 13px;
                 font-size: 15px;
-            }
-            QStatusBar {
-                font-family: 'Tahoma';
             }
             QPushButton:hover {
                 background-color: #34495e;
