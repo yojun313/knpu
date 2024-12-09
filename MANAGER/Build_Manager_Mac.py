@@ -71,7 +71,7 @@ def build_dmg(output_directory, version, script_path):
 
 if __name__ == "__main__":
     if socket.gethostname() == "BigMacServer":
-        output_directory = "/Users/BigMac/BIGMACLAB_MANAGER/exe"
+        output_directory = "/Users/BigMac/BIGMACLAB_MANAGER/dmg"
     elif socket.gethostname() == "Yojuns-MacBook-Pro.local":
         output_directory = "/Users/yojunsmacbookprp/Documents/GitHub/dmg"
 
