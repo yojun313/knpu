@@ -13,6 +13,7 @@
 VERSION = '2.4.4'
 
 import os
+import platform
 from PyQt5.QtWidgets import QApplication
 from Manager_SplashDialog import SplashDialog
 from PyQt5.QtCore import QCoreApplication, Qt
@@ -30,10 +31,11 @@ QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
 app = QApplication([])
 # 기본 폰트 설정 및 힌팅 설정
-font = QFont("Malgun Gothic")
-font.setHintingPreference(QFont.PreferNoHinting)
-font.setStyleStrategy(QFont.PreferAntialias)  # 안티앨리어싱 활성화
-app.setFont(font)
+if platform.system() == 'Windows':
+    font = QFont("Malgun Gothic")
+    font.setHintingPreference(QFont.PreferNoHinting)
+    font.setStyleStrategy(QFont.PreferAntialias)  # 안티앨리어싱 활성화
+    app.setFont(font)
 
 # 로딩 다이얼로그 표시
 splash_dialog = SplashDialog(version=VERSION)
@@ -47,7 +49,6 @@ from openai import OpenAI
 from mySQL import mySQL
 from dotenv import load_dotenv
 from datetime import datetime
-import platform
 import requests
 from packaging import version
 import pandas as pd
@@ -75,8 +76,8 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
     QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
     QPushButton, QMainWindow, QSpacerItem, QAbstractItemView
-from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QObject, QEvent, QSize, QModelIndex, QEventLoop
-from PyQt5.QtGui import QKeySequence, QFont, QIcon, QPainter
+from PyQt5.QtCore import Qt, QCoreApplication, QObject, QEvent, QSize, QModelIndex, QEventLoop
+from PyQt5.QtGui import QKeySequence, QIcon
 
 warnings.filterwarnings("ignore")
 DB_IP = '121.152.225.232'
@@ -416,15 +417,16 @@ class MainWindow(QMainWindow):
         self.left_label = QLabel('  ' + self.version)
         self.right_label = QLabel('')
 
-        # 스타일시트로 폰트, 사이즈 지정 (Malgun Gothic, 12pt)
-        style = """
-        QLabel {
-            font-family: 'Tahoma';
-            font-size: 10pt;
-        }
-        """
-        self.left_label.setStyleSheet(style)
-        self.right_label.setStyleSheet(style)
+        if platform.system() == 'Windows':
+            # 스타일시트로 폰트, 사이즈 지정 (Malgun Gothic, 12pt)
+            style = """
+            QLabel {
+                font-family: 'Tahoma';
+                font-size: 10pt;
+            }
+            """
+            self.left_label.setStyleSheet(style)
+            self.right_label.setStyleSheet(style)
 
         self.left_label.setToolTip("새 버전 확인을 위해 Ctrl+U")
         self.right_label.setToolTip("상태표시줄")
@@ -784,7 +786,6 @@ class MainWindow(QMainWindow):
                 super().__init__(parent)
                 self.setFileMode(QFileDialog.ExistingFiles)
                 self.setOptions(QFileDialog.DontUseNativeDialog)
-                self.setViewMode(QFileDialog.Detail)  # <-- 상세보기 모드 설정
                 self.setNameFilters(
                     ["All Files (*.*)", "CSV Files (*.csv)", "Text Files (*.txt)", "Images (*.png *.jpg *.jpeg)"])
                 self.currentChanged.connect(self.on_directory_change)
@@ -796,6 +797,20 @@ class MainWindow(QMainWindow):
                 if default_directory:
                     self.setDirectory(default_directory)
                 self.setup_double_click_event()
+
+                # QTreeView 찾아서 헤더뷰 리사이즈 모드 설정
+                # QFileDialog가 Detail 모드일 때 내부적으로 QTreeView를 사용하므로 findChildren 사용
+                from PyQt5.QtWidgets import QTreeView, QHeaderView
+                for treeview in self.findChildren(QTreeView):
+                    # Size(1번 열)와 Kind(2번 열) 숨기기
+                    treeview.setColumnHidden(1, True)  # Size 숨기기
+                    treeview.setColumnHidden(2, True)  # Kind 숨기기
+                    header = treeview.header()
+                    # 파일명 컬럼(일반적으로 첫 번째 컬럼)만 크기 자동 조정
+                    header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+                    # 나머지 컬럼들은 창 크기에 따라 비례적으로 늘어나도록 설정
+                    for col in range(1, header.count()):
+                        header.setSectionResizeMode(col, QHeaderView.Stretch)
 
             def setup_double_click_event(self):
                 def handle_double_click(index: QModelIndex):
