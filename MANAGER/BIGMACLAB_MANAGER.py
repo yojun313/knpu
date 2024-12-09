@@ -10,7 +10,7 @@
 # - Phone: +82-10-4072-9190
 ##################################################################
 
-VERSION = '2.4.3'
+VERSION = '2.4.4'
 
 import os
 from PyQt5.QtWidgets import QApplication
@@ -30,7 +30,7 @@ QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
 app = QApplication([])
 # 기본 폰트 설정 및 힌팅 설정
-font = QFont("맑은 고딕")
+font = QFont("Malgun Gothic")
 font.setHintingPreference(QFont.PreferNoHinting)
 font.setStyleStrategy(QFont.PreferAntialias)  # 안티앨리어싱 활성화
 app.setFont(font)
