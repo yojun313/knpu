@@ -1299,6 +1299,9 @@ class MainWindow(QMainWindow):
                 font-size: 15px;
                 text-rendering: optimizeLegibility;
             }
+            QStatusBar {
+                font-family: 'Tahoma';
+            }
             QPushButton:hover {
                 background-color: #34495e;
             }
@@ -1392,6 +1395,9 @@ class MainWindow(QMainWindow):
                 padding: 13px;
                 font-size: 15px;
                 text-rendering: optimizeLegibility;
+            }
+            QStatusBar {
+                font-family: 'Tahoma';
             }
             QPushButton:hover {
                 background-color: #3a539b;
