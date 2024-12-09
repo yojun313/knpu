@@ -802,9 +802,6 @@ class MainWindow(QMainWindow):
                 # QFileDialog가 Detail 모드일 때 내부적으로 QTreeView를 사용하므로 findChildren 사용
                 from PyQt5.QtWidgets import QTreeView, QHeaderView
                 for treeview in self.findChildren(QTreeView):
-                    # Size(1번 열)와 Kind(2번 열) 숨기기
-                    treeview.setColumnHidden(1, True)  # Size 숨기기
-                    treeview.setColumnHidden(2, True)  # Kind 숨기기
                     header = treeview.header()
                     # 파일명 컬럼(일반적으로 첫 번째 컬럼)만 크기 자동 조정
                     header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
