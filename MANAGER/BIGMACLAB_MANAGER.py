@@ -65,7 +65,7 @@ import textwrap
 
 splash_dialog.update_status("Loading GUI Libraries")
 from Manager_Settings import Manager_Setting
-from Manager_ToolModule import ToolModule, LoadingDialog
+from Manager_ToolModule import ToolModule
 from Manager_Database import Manager_Database
 from Manager_Web import Manager_Web
 from Manager_Board import Manager_Board
@@ -90,7 +90,6 @@ class MainWindow(QMainWindow):
             self.versionNum = VERSION
             self.version = f'Version {self.versionNum}'
             self.splash_dialog = splash_dialog
-            self.loading_dialog = LoadingDialog()  # 로딩 다이얼로그 생성
 
             self.toolmodule = ToolModule()
 
