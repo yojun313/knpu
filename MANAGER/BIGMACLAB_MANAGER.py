@@ -1650,7 +1650,7 @@ class MainWindow(QMainWindow):
                                      QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             try:
-                if self.CONFIG['Logging'] == 'On':
+                if self.CONFIG['Logging'] == 'On' and self.user != 'admin':
                     self.user_logging('Shutdown', force=True)
                     self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
                     self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
