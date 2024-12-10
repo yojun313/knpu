@@ -79,7 +79,10 @@ class Monitoring:
         return True
 
     def check_z8_db(self):
-        mysql_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
+        try:
+            mysql_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
+        except:
+            return False
         if mysql_obj.showAllDB() == []:
             if self.z8_status["db"]:
                 self.z8_status["db"] = False
