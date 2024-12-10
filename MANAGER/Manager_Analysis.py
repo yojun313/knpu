@@ -135,7 +135,13 @@ class Manager_Analysis:
             self.main.printStatus(f"{targetDB} 분할 및 저장 중...")
             if self.main.SETTING['ProcessConsole'] == 'default':
                 open_console("데이터 분할")
-            for table in tqdm(tableList, desc="Download(split) ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                iterator = tqdm(tableList, desc="Download(split) ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+            else:
+                iterator = tableList
+
+            for table in iterator:
                 table_path = os.path.join(splitdata_path, table + '_split')
                 try:
                     os.mkdir(table_path)
@@ -210,8 +216,13 @@ class Manager_Analysis:
             if self.main.SETTING['ProcessConsole'] == 'default':
                 open_console('데이터 분석')
             print(f"DB: {targetDB}\n")
-            for index, table in tqdm(enumerate(tableList), desc="Analysis ", file=sys.stdout,
-                                     bar_format="{l_bar}{bar}|", ascii=' ='):
+
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                iterator = tqdm(enumerate(tableList), desc="Analysis ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+            else:
+                iterator = enumerate(tableList)
+
+            for index, table in iterator:
                 if 'token' in table:
                     continue
                 tablename = table.split('_')
@@ -400,7 +411,12 @@ class Manager_Analysis:
             if ok and mergedfilename:
                 merged_df = pd.DataFrame()
 
-                for df in tqdm(all_df, desc="Merge ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+                if self.main.SETTING['ProcessConsole'] == 'default':
+                    iterator = tqdm(all_df, desc="Merge ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+                else:
+                    iterator = all_df
+
+                for df in iterator:
                     merged_df = pd.concat([merged_df, df], ignore_index=True)
 
                 merged_df.to_csv(os.path.join(mergedfiledir, mergedfilename)+'.csv', index=False, encoding='utf-8-sig')
