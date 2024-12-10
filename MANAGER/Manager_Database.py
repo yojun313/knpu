@@ -543,7 +543,12 @@ class Manager_Database:
             print("\n병합 DB 생성 중...")
             self.main.mySQL_obj.renameDB(target_db_name, updated_target_db_name)
 
-            for target_table, selected_table in tqdm(list(zip(target_tables, selected_tables)), desc="Merging", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                iterator = tqdm(list(zip(target_tables, selected_tables)), desc="Merging", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+            else:
+                iterator = list(zip(target_tables, selected_tables))
+
+            for target_table, selected_table in iterator:
                 self.main.printStatus(f"{target_table} 병합 중...")
                 # 테이블 병합
                 self.main.mySQL_obj.mergeTable(updated_target_db_name, target_table, selected_db_name, selected_table)
@@ -1023,7 +1028,12 @@ class Manager_Database:
                             print("\nInclude/Exclude Option: Any")
                     print('')
 
-                for tableName in tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+                if self.main.SETTING['ProcessConsole'] == 'default':
+                    iterator = tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+                else:
+                    iterator = tableList
+
+                for tableName in iterator:
                     edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if date_options['option'] == 'part' else tableName
                     self.main.printStatus(f"{edited_tableName} 저장 중...")
                     # 테이블 데이터를 DataFrame으로 변환
