@@ -471,7 +471,9 @@ class Manager_Database:
             ]
 
             if not merge_candidates:
-                QMessageBox.information(self.main, "Information", "병합 가능한 DB가 없습니다")
+                QMessageBox.information(self.main, "Information",
+                    "병합 가능한 DB가 없습니다\n\n<병합 가능 조건>\n\n1. 키워드 동일\n2. 크롤링 옵션 동일\n3. 크롤링 기간 연속적\n(ex. 12/01~12/14 & 12/15~12/31)"
+                )
                 return
 
             # 병합할 DB 선택
@@ -508,7 +510,7 @@ class Manager_Database:
             reply = QMessageBox.question(
                 self.main,
                 'DB 병합',
-                f"'{target_db_name[:-10]}'에 {selected_db_name[:-10]}를 병합하시겠습니까?",
+                f"'{updated_target_db_name[:-10]}'로 병합하시겠습니까?",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.Yes
             )
@@ -519,13 +521,13 @@ class Manager_Database:
             open_console("DB 병합")
 
             print('\n실행 중 프로그램 종료되면 DB 시스템에 큰 문제를 일으킬 수 있습니다')
-            print("프로그램이 종료될 때까지 대기해주시기 바랍니다")
+            print("프로그램이 종료될 때까지 대기해주시기 바랍니다\n\n")
 
             target_tables = sorted(self.main.mySQL_obj.showAllTable(target_db_name))
             selected_tables = sorted(self.main.mySQL_obj.showAllTable(selected_db_name))
 
             self.main.printStatus(f"병합 DB 생성 중...")
-            print("병합 DB 생성 중...")
+            print("\n병합 DB 생성 중...")
             self.main.mySQL_obj.renameDB(target_db_name, updated_target_db_name)
 
             for target_table, selected_table in tqdm(zip(target_tables, selected_tables), desc="Merging", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
@@ -544,7 +546,7 @@ class Manager_Database:
                 self.main.mySQL_obj.renameTable(target_db_name, target_table, new_target_table)
 
             self.main.printStatus(f"DB 목록 업데이트 중...")
-            print("DB 목록 업데이트 중...")
+            print("\nDB 목록 업데이트 중...")
             self.main.mySQL_obj.connectDB('crawler_db')
             self.main.mySQL_obj.insertToTable('db_list', [[updated_target_db_name, target_db_info[4], target_db_info[5], selected_db_info[6], target_db_info[7], target_db_info[2], self.main.mySQL_obj.showDBSize(updated_target_db_name)[0], target_db_stats[0], target_db_stats[1], merged_count_data]])
             self.main.mySQL_obj.commit()
@@ -552,7 +554,7 @@ class Manager_Database:
 
             # DB 새로고침
             self.database_refresh_DB()
-            print("DB 병합 완료")
+            print("\nDB 병합 완료")
 
             close_console()
 
