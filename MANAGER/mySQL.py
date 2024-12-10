@@ -44,10 +44,7 @@ class mySQL:
             if self.conn:
                 self.conn.close()
         except Exception as e:
-            print(f"Failed to close the connection to database {self.database}")
-            print(str(e))
-        finally:
-            self.conn = None
+            pass
 
     def resetServer(self):
         DBlist = self.showAllDB()
@@ -113,6 +110,95 @@ class mySQL:
             print(f"Failed to create table {tableName}")
             print(str(e))
 
+    def renameDB(self, old_db_name, new_db_name):
+        try:
+
+            # 기존 데이터베이스의 테이블 목록 가져오기
+            tables = self.showAllTable(old_db_name)
+
+            if not tables:
+                print(f"기존 데이터베이스 '{old_db_name}'에 테이블이 없습니다.")
+                return
+
+            # 새 데이터베이스 생성
+            self.newDB(new_db_name)
+
+            # 모든 테이블 복사
+            for table in tables:
+                # 기존 테이블 구조 가져오기
+                self.connectDB(old_db_name)
+                with self.conn.cursor() as cursor:
+                    cursor.execute(f"SHOW CREATE TABLE `{table}`")
+                    create_table_query = cursor.fetchone()[1]
+
+                # 새로운 데이터베이스에 테이블 생성
+                self.connectDB(new_db_name)
+                with self.conn.cursor() as cursor:
+                    cursor.execute(create_table_query)
+                    self.conn.commit()
+
+                # 기존 테이블 데이터 가져오기
+                self.connectDB(old_db_name)
+                with self.conn.cursor() as cursor:
+                    cursor.execute(f"SELECT * FROM `{table}`")
+                    rows = cursor.fetchall()
+                    columns = [desc[0] for desc in cursor.description]
+
+                # 새로운 테이블에 데이터 삽입
+                self.connectDB(new_db_name)
+                with self.conn.cursor() as cursor:
+                    column_str = ", ".join([f"`{col}`" for col in columns])
+                    placeholders = ", ".join(["%s"] * len(columns))
+                    insert_query = f"INSERT INTO `{table}` ({column_str}) VALUES ({placeholders})"
+                    cursor.executemany(insert_query, rows)
+                    self.conn.commit()
+
+        except Exception as e:
+            print("데이터베이스 이름 변경 중 오류 발생")
+            print(str(e))
+
+    def renameTable(self, database_name, old_table_name, new_table_name):
+        try:
+            self.connectDB(database_name)
+            # 데이터베이스 연결
+            with self.conn.cursor() as cursor:
+                # 데이터베이스 선택
+                cursor.execute(f"USE `{database_name}`")
+
+                # 테이블 이름 변경
+                rename_query = f"RENAME TABLE `{old_table_name}` TO `{new_table_name}`"
+                cursor.execute(rename_query)
+
+        except pymysql.Error as e:
+            print(f"테이블 이름 변경 중 오류 발생: {e}")
+
+    def mergeTable(self, db1_name, table1_name, db2_name, table2_name):
+        try:
+            # DB2에서 데이터 가져오기
+            self.connectDB(db2_name)
+            with self.conn.cursor() as cursor:
+                cursor.execute(f"SELECT * FROM `{table2_name}`")
+                rows = cursor.fetchall()
+
+            # DB1에 데이터 삽입
+            self.connectDB(db1_name)
+            with self.conn.cursor() as cursor:
+                if rows:  # DB2의 테이블에 데이터가 있을 경우
+                    placeholders = ", ".join(["%s"] * len(rows[0]))
+                    query = (
+                        f"INSERT INTO `{table1_name}` VALUES ({placeholders}) "
+                        f"ON DUPLICATE KEY UPDATE id=id"  # 중복 방지 기본 처리
+                    )
+                    cursor.executemany(query, rows)
+                    self.conn.commit()
+                else:  # DB2의 테이블이 비어있을 경우
+                    pass
+            self.disconnectDB()
+
+        except Exception as e:
+            print(f"테이블 병합 중 오류 발생: {e}")
+            self.conn.rollback()  # 오류 발생 시 트랜잭션 롤백
+
     def dropTable(self, tableName):
         try:
             with self.conn.cursor() as cursor:
@@ -125,6 +211,7 @@ class mySQL:
 
     def showAllTable(self, database_name):
         try:
+            self.connectDB(database_name)
             with self.conn.cursor() as cursor:
                 cursor.execute(f"SHOW TABLES FROM `{database_name}`")
                 tables = cursor.fetchall()
@@ -657,10 +744,8 @@ class mySQL:
 if __name__ == "__main__":
 
     def test():
-        mySQL_obj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
-        DBname = "navernews_문재인_20170510_20220509_1201_0022"
-        mySQL_obj.tokenization(DBname)
-
+        mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
+        print(mySQL_obj.showAllTable('navernews_포항공대_20230101_20230102_1210_0424'))
 
     test()
 

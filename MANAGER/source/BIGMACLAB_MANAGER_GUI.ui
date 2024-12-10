@@ -116,6 +116,13 @@
              <string>DB 조회</string>
             </property>
            </widget>
+           <item>
+           <widget class="QPushButton" name="database_mergeDB_button">
+            <property name="text">
+             <string>DB 병합</string>
+            </property>
+           </widget>
+          </item>
           </item>
           <item>
            <widget class="QPushButton" name="database_saveDB_button">
