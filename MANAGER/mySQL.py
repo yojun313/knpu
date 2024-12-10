@@ -164,6 +164,32 @@ class mySQL:
             print("데이터베이스 이름 변경 중 오류 발생")
             print(str(e))
 
+    def copyDB(self, old_db_name, new_db_name):
+        try:
+            # 새 데이터베이스 생성
+            self.newDB(new_db_name)
+
+            # 기존 데이터베이스의 테이블 이름 가져오기
+            tables = self.showAllTable(old_db_name)
+
+            if not tables:
+                print(f"기존 데이터베이스 '{old_db_name}'에 테이블이 없습니다.")
+                return
+
+            with self.conn.cursor() as cursor:
+                for table in tables:
+                    # 테이블 구조 복사
+                    cursor.execute(f"CREATE TABLE `{new_db_name}`.`{table}` LIKE `{old_db_name}`.`{table}`")
+
+                    # 테이블 데이터 복사
+                    cursor.execute(f"INSERT INTO `{new_db_name}`.`{table}` SELECT * FROM `{old_db_name}`.`{table}`")
+
+                self.conn.commit()
+
+        except Exception as e:
+            print("데이터베이스 복사 중 오류 발생")
+            print(str(e))
+
     def renameTable(self, database_name, old_table_name, new_table_name):
         try:
             self.connectDB(database_name)

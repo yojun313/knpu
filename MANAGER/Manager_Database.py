@@ -539,7 +539,7 @@ class Manager_Database:
 
             self.main.printStatus(f"병합 DB 생성 중...")
             print("\n병합 DB 생성 중...")
-            self.main.mySQL_obj.renameDB(target_db_name, updated_target_db_name)
+            self.main.mySQL_obj.copyDB(target_db_name, updated_target_db_name)
 
             if self.main.SETTING['ProcessConsole'] == 'default':
                 iterator = tqdm(list(zip(target_tables, selected_tables)), desc="Merging", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
