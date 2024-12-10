@@ -43,6 +43,13 @@ class mySQL:
         try:
             if self.conn:
                 self.conn.close()
+
+            self.conn = pymysql.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                port=self.port
+            )
         except Exception as e:
             pass
 

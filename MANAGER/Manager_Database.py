@@ -34,7 +34,6 @@ class Manager_Database:
             selected_row = self.main.database_tablewidget.currentRow()
             if selected_row >= 0:
                 target_db = self.DB['DBlist'][selected_row]
-                self.main.mySQL_obj.connectDB(target_db)
                 endtime = self.DB['DBdata'][selected_row][6]
                 owner = self.DB['DBdata'][selected_row][7]
 
