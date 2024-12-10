@@ -133,7 +133,8 @@ class Manager_Analysis:
                 self.main.printStatus()
                 return
             self.main.printStatus(f"{targetDB} 분할 및 저장 중...")
-            open_console("데이터 분할")
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                open_console("데이터 분할")
             for table in tqdm(tableList, desc="Download(split) ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                 table_path = os.path.join(splitdata_path, table + '_split')
                 try:
@@ -157,7 +158,8 @@ class Manager_Analysis:
                 del week_divided_group
                 gc.collect()
             self.main.printStatus()
-            close_console()
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                close_console()
             reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분할 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
@@ -205,7 +207,8 @@ class Manager_Analysis:
                 return
 
             self.main.printStatus(f"{targetDB} 분석 및 저장 중...")
-            open_console('데이터 분석')
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                open_console('데이터 분석')
             print(f"DB: {targetDB}\n")
             for index, table in tqdm(enumerate(tableList), desc="Analysis ", file=sys.stdout,
                                      bar_format="{l_bar}{bar}|", ascii=' ='):
@@ -248,7 +251,8 @@ class Manager_Analysis:
                 del tabledf
                 gc.collect()
 
-            close_console()
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                close_console()
             self.main.printStatus()
 
             reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
@@ -290,7 +294,8 @@ class Manager_Analysis:
             reply = QMessageBox.question(self.main, 'Notification', f"선택하신 파일을 시간 분할하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply != QMessageBox.Yes:
                 return
-            open_console("데이터 분할")
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                open_console("데이터 분할")
 
             def split_table(csv_path):
                 table_path = os.path.join(os.path.dirname(csv_path), os.path.basename(csv_path).replace('.csv', '') + '_split')
@@ -305,7 +310,8 @@ class Manager_Analysis:
 
                 if any('Date' in element for element in table_df.columns.tolist()) == False or table_df.columns.tolist() == []:
                     QMessageBox.information(self.main, "Wrong File", f"시간 분할할 수 없는 파일입니다")
-                    close_console()
+                    if self.main.SETTING['ProcessConsole'] == 'default':
+                        close_console()
                     return 0
                 print("진행 중...")
                 table_df = self.dataprocess_obj.TimeSplitter(table_df)
@@ -330,7 +336,8 @@ class Manager_Analysis:
                     del self.month_divided_group
                     del self.week_divided_group
                     gc.collect()
-                close_console()
+                if self.main.SETTING['ProcessConsole'] == 'default':
+                    close_console()
                 reply = QMessageBox.question(self.main, 'Notification', f"데이터 분할이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.openFileExplorer(os.path.dirname(selected_directory[0]))
@@ -382,8 +389,8 @@ class Manager_Analysis:
                 return
 
             self.main.printStatus("데이터 병합 중...")
-
-            open_console("데이터 병합")
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                open_console("데이터 병합")
             print("Target Files *\n")
             for directory in selected_directory:
                 print(directory)
@@ -398,7 +405,8 @@ class Manager_Analysis:
 
                 merged_df.to_csv(os.path.join(mergedfiledir, mergedfilename)+'.csv', index=False, encoding='utf-8-sig')
             self.main.printStatus()
-            close_console()
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                close_console()
 
             reply = QMessageBox.question(self.main, 'Notification', f"데이터 병합 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
@@ -485,8 +493,8 @@ class Manager_Analysis:
             else:
                 self.main.printStatus()
                 return
-
-            open_console('데이터 분석')
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                open_console('데이터 분석')
 
             print("CSV 파일 읽는 중...")
             csv_path = selected_directory[0]
@@ -509,23 +517,27 @@ class Manager_Analysis:
                 case ['reply 분석', 'Naver Cafe']:
                     self.dataprocess_obj.NaverCafeReplyAnalysis(csv_data, csv_path)
                 case []:
-                    close_console()
+                    if self.main.SETTING['ProcessConsole'] == 'default':
+                        close_console()
                     return
                 case _:
-                    close_console()
+                    if self.main.SETTING['ProcessConsole'] == 'default':
+                        close_console()
                     QMessageBox.warning(self.main, "Not Supported", f"{selected_options[1]} {selected_options[0]} 분석은 지원되지 않는 기능입니다")
                     return
 
             del csv_data
             gc.collect()
-            close_console()
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                close_console()
 
             reply = QMessageBox.question(self.main, 'Notification', f"{os.path.basename(csv_path)} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 self.main.openFileExplorer(os.path.join(os.path.dirname(csv_path), os.path.basename(csv_path).replace('.csv', '') + '_analysis'))
 
         except Exception as e:
-            close_console()
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                close_console()
             self.main.program_bug_log(traceback.format_exc())
 
     def kimkem_kimkem(self):
@@ -1599,12 +1611,14 @@ class Manager_Analysis:
                 exception_word_list = []
                 exception_word_list_path = 'N'
 
-            open_console('KEMKIM 분석')
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                open_console('KEMKIM 분석')
 
             self.main.user_logging(f'ANALYSIS -> KEMKIM({tokenfile_name})-({startdate},{startdate},{topword},{weight},{filter_yes_selected})')
             kimkem_obj = KimKem(self.main, token_data, tokenfile_name, save_path, startdate, enddate, period, topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected, ani_yes_selected, exception_word_list, exception_word_list_path)
             result = kimkem_obj.make_kimkem()
-            close_console()
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                close_console()
             self.main.printStatus()
 
             if result == 1:
