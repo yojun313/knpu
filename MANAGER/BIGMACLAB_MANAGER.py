@@ -1337,11 +1337,23 @@ class MainWindow(QMainWindow):
                 border: 1px solid #bdc3c7;
                 border-radius: 5px;
                 padding: 8px;
+                background-color: white;
+                font-size: 14px;
+                color: black;
+            }
+            QLabel {
+                color: black;  /* 라벨 기본 텍스트 색상 */
                 font-size: 14px;
             }
             QTableWidget {
+                background-color: white;
                 border: 1px solid #bdc3c7;
                 font-size: 14px;
+                color: black;
+            }
+            QTableCornerButton::section {  /* 좌측 상단 정사각형 부분 스타일 */
+                background-color: #2c3e50;
+                border: 1px solid #2c3e50;
             }
             QHeaderView::section {
                 background-color: #2c3e50;
@@ -1450,8 +1462,8 @@ class MainWindow(QMainWindow):
                 color: #ffffff;  /* 선택된 셀 텍스트 색상 */
             }
             QTableCornerButton::section {  /* 좌측 상단 정사각형 부분 스타일 */
-                background-color: #3c3c3c;
-                border: 1px solid #5a5a5a;
+                background-color: #2c3e50;
+                border: 1px solid #2c3e50;
             }
             QHeaderView::section {
                 background-color: #3c3c3c;
