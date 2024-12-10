@@ -452,6 +452,12 @@ class Manager_Database:
             target_db_stats = self.DB['DBinfo'][selected_row]
             target_db_parts = target_db_name.split('_')
 
+            owner = target_db_info[7]
+
+            if owner != self.main.user and self.main.user != 'admin':
+                QMessageBox.warning(self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
+                return
+
             target_keyword = target_db_info[2]
             target_crawl_type = target_db_info[4]
             target_count_data = eval(target_db_stats[2])  # 통계 데이터 (딕셔너리 형태)
@@ -466,13 +472,16 @@ class Manager_Database:
             # 병합 가능한 DB 필터링
             merge_candidates = [
                 db_info[0] for db_info in self.DB['DBdata']
-                if db_info[2] == target_keyword and db_info[4] == target_crawl_type
-                   and db_info[0].split('_')[2] == next_start_date and db_info[6] != "크롤링 중"
+                if db_info[2] == target_keyword
+                   and db_info[4] == target_crawl_type
+                   and db_info[0].split('_')[2] == next_start_date
+                   and db_info[6] != "크롤링 중"
+                   and db_info[7] == owner
             ]
 
             if not merge_candidates:
                 QMessageBox.information(self.main, "Information",
-                    "병합 가능한 DB가 없습니다\n\n<병합 가능 조건>\n\n1. 키워드 동일\n2. 크롤링 옵션 동일\n3. 크롤링 기간 연속적\n(ex. 12/01~12/14 & 12/15~12/31)"
+                    "병합 가능한 DB가 없습니다\n\n<병합 가능 조건>\n\n1. 키워드 동일\n2. 크롤링 옵션 동일\n3. 사용자 동일\n4. 크롤링 기간 연속적\n(ex. 12/01~12/14 & 12/15~12/31)"
                 )
                 return
 
