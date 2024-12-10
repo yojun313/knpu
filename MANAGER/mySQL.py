@@ -758,11 +758,11 @@ class mySQL:
             data[textColumn_name] = tokenized_data
             return data
 
-        self.connectDB(DBname)
         tablelist = [table for table in self.showAllTable(DBname) if 'info' not in table]
 
         for table in tablelist:
             print(f"{table} 다운로드 중...")
+            self.connectDB(DBname)
             data_df = self.TableToDataframe(table)
 
             if 'reply' in table or 'rereply' in table:
