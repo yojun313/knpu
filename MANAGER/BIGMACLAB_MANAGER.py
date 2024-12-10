@@ -155,7 +155,7 @@ class MainWindow(QMainWindow):
                         os.mkdir(self.default_directory)
 
                     DB_ip = DB_IP
-                    if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer']:
+                    if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer', 'BIGMACLAB-Z8']:
                         DB_ip = LOCAL_IP
 
                     self.network_text = (
