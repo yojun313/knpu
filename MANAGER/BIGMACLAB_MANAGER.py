@@ -449,6 +449,7 @@ class MainWindow(QMainWindow):
         self.ctrlm = QShortcut(QKeySequence("Ctrl+M"), self)
         self.ctrlp = QShortcut(QKeySequence("Ctrl+P"), self)
         self.ctrlc = QShortcut(QKeySequence("Ctrl+C"), self)
+        self.ctrlq = QShortcut(QKeySequence("Ctrl+Q"), self)
         self.ctrlpp = QShortcut(QKeySequence("Ctrl+Shift+P"), self)
 
         self.cmdd = QShortcut(QKeySequence("Ctrl+ㅇ"), self)
@@ -464,13 +465,16 @@ class MainWindow(QMainWindow):
         self.cmdm = QShortcut(QKeySequence("Ctrl+ㅡ"), self)
         self.cmdp = QShortcut(QKeySequence("Ctrl+ㅔ"), self)
         self.cmdc = QShortcut(QKeySequence("Ctrl+ㅊ"), self)
+        self.cmdq = QShortcut(QKeySequence("Ctrl+ㅂ"), self)
         self.cmdpp = QShortcut(QKeySequence("Ctrl+Shift+ㅔ"), self)
 
         self.ctrlu.activated.connect(lambda: self.update_program(sc=True))
+        self.ctrlq.activated.connect(lambda: self.close())
         self.ctrlp.activated.connect(lambda: self.developer_mode(True))
         self.ctrlpp.activated.connect(lambda: self.developer_mode(False))
 
         self.cmdu.activated.connect(lambda: self.update_program(sc=True))
+        self.cmdq.activated.connect(lambda: self.close())
         self.cmdp.activated.connect(lambda: self.developer_mode(True))
         self.cmdpp.activated.connect(lambda: self.developer_mode(False))
 
