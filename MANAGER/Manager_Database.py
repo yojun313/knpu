@@ -1032,6 +1032,7 @@ class Manager_Database:
                     iterator = tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
                 else:
                     iterator = tableList
+                self.main.loading_dialog.start()
 
                 for tableName in iterator:
                     edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if date_options['option'] == 'part' else tableName
@@ -1093,6 +1094,7 @@ class Manager_Database:
                     gc.collect()
                 if self.main.SETTING['ProcessConsole'] == 'default':
                     close_console()
+                self.main.loading_dialog.stop()
                 reply = QMessageBox.question(self.main, 'Notification',
                                              f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
