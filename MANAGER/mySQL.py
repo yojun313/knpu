@@ -764,7 +764,7 @@ class mySQL:
 if __name__ == "__main__":
 
     def test():
-        mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
+        mySQL_obj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
         mySQL_obj.tokenization('navernews_문재인_20170510_20220509_1201_0022')
 
     test()
