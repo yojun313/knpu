@@ -41,7 +41,7 @@ class ToolModule:
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
             mySQL_obj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
 
-        elif socket.gethostname() == "DESKTOP-0I9OM9K":
+        elif socket.gethostname() == "BIGMACLAB-Z8":
             crawler_folder_path = 'D:/BIGMACLAB/CRAWLER'
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
             token_path          = crawler_folder_path

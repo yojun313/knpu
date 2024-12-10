@@ -475,7 +475,6 @@ class Manager_Database:
                    and db_info[4] == target_crawl_type
                    and db_info[0].split('_')[2] == next_start_date
                    and db_info[6] != "크롤링 중"
-                   and db_info[7] == owner
             ]
 
             if not merge_candidates:
