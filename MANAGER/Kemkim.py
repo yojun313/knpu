@@ -191,7 +191,11 @@ class KimKem:
             print("")
 
             if self.filter_option == True:
-                for index, period in enumerate(tqdm(self.period_list, desc="기간별 추적 KEMKIM 데이터 생성 중", file=sys.stdout)):
+                if self.main.SETTING['ProcessConsole'] == 'default':
+                    iterator = tqdm(enumerate(self.period_list), desc="기간별 추적 KEMKIM 데이터 생성 중", file=sys.stdout)
+                else:
+                    iterator = enumerate(self.period_list)
+                for index, period in iterator:
                     # Step 7: 평균 증가율 및 빈도 계산
 
                     if index == 0:
@@ -896,8 +900,12 @@ class KimKem:
 
         # tqdm을 사용하여 진행 바 추가
         keyword_set = set(keyword_list)  # 키워드 리스트를 set으로 변환하여 검색 시간 단축
-        for key, value in tqdm(period_divided_dic_merged.items(), desc="TF ", file=sys.stdout,
-                               bar_format="{l_bar}{bar}|", ascii=' ='):
+        if self.main.SETTING['ProcessConsole'] == 'default':
+            iterator = tqdm(period_divided_dic_merged.items(), desc="TF ", file=sys.stdout,bar_format="{l_bar}{bar}|", ascii=' =')
+        else:
+            iterator = period_divided_dic_merged.items()
+
+        for key, value in iterator:
             value_counter = Counter([word for word in value if word in keyword_set])  # 키워드만 카운팅
 
             # 내림차순으로 정렬
@@ -912,7 +920,11 @@ class KimKem:
         keyword_set = set(keyword_list)  # 키워드 리스트를 set으로 변환하여 검색 시간 단축
 
         # tqdm을 사용하여 전체 기간에 대한 진행 상태 표
-        for period in tqdm(period_divided_dic, desc="DF ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+        if self.main.SETTING['ProcessConsole'] == 'default':
+            iterator = tqdm(period_divided_dic, desc="DF ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+        else:
+            iterator = period_divided_dic
+        for period in iterator:
             docs = period_divided_dic[period]
 
             # 각 키워드가 문서에 등장하는지 여부를 저장하는 Counter 사용
@@ -932,7 +944,11 @@ class KimKem:
     # 연도별 keyword DoV 딕셔너리 반환
     def cal_DoV(self, keyword_list, period_divided_dic, tf_counts, trace=True):
         DoV_dict = {}
-        for period in tqdm(period_divided_dic, desc="DOV ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+        if self.main.SETTING['ProcessConsole'] == 'default':
+            iterator = tqdm(period_divided_dic, desc="DOV ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+        else:
+            iterator = period_divided_dic
+        for period in iterator:
             keyword_DoV_dic = {}
             
             n_j = 1 if trace else self.find_key_position(period_divided_dic, self.lastperiod) - self.find_key_position(period_divided_dic, period)
@@ -946,7 +962,11 @@ class KimKem:
     # 연도별 keyword DoD 딕셔너리 반환
     def cal_DoD(self, keyword_list, period_divided_dic, df_counts, trace=True):
         DoD_dict = {}
-        for period in tqdm(period_divided_dic, desc="DOD ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+        if self.main.SETTING['ProcessConsole'] == 'default':
+            iterator = tqdm(period_divided_dic, desc="DOV ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+        else:
+            iterator = period_divided_dic
+        for period in iterator:
             keyword_DoV_dic = {}
             
             n_j = 1 if trace else self.find_key_position(period_divided_dic, self.lastperiod) - self.find_key_position(period_divided_dic, period)
