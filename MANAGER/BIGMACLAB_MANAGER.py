@@ -379,7 +379,8 @@ class MainWindow(QMainWindow):
                 'DB_Refresh': os.getenv("OPTION_7"),
                 'GPT_TTS': os.getenv("OPTION_8"),
                 'BootTerminal': os.getenv("OPTION_9"),
-                'DBKeywordSort': os.getenv("OPTION_10")
+                'DBKeywordSort': os.getenv("OPTION_10"),
+                'ProcessConsole': os.getenv("OPTION_11"),
             }
         except Exception as e:
             print(traceback.format_exc())
@@ -394,7 +395,8 @@ class MainWindow(QMainWindow):
                 'DB_Refresh': 'default',
                 'GPT_TTS': 'default',
                 'BootTerminal': 'default',
-                'DBKeywordSort': 'default'
+                'DBKeywordSort': 'default',
+                'ProcessConsole': 'default'
             }
 
     def initialize_configuration(self):
