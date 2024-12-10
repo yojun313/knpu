@@ -527,6 +527,7 @@ class Manager_Database:
             if reply != QMessageBox.Yes:
                 return
 
+            self.main.user_logging(f'DATABASE -> Merge_DB({target_db_name} + {selected_db_name} = {updated_target_db_name})')
             open_console("DB 병합")
 
             print('\n실행 중 프로그램 종료되면 DB 시스템에 큰 문제를 일으킬 수 있습니다')
@@ -629,7 +630,7 @@ class Manager_Database:
             if search_text == './dblist':
                 self.main.table_view('crawler_db', 'db_list')
                 return
-            if search_text == './configure':
+            if search_text == './config':
                 self.main.table_view('bigmaclab_manager_db', 'configuration')
                 return
             if 'log' in search_text:
