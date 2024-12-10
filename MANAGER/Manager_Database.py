@@ -3,7 +3,6 @@ import sys
 import gc
 import copy
 import re
-import json
 import warnings
 import traceback
 import pandas as pd
@@ -21,7 +20,6 @@ from Manager_Console import open_console, close_console
 
 warnings.filterwarnings("ignore")
 class Manager_Database:
-    
     def __init__(self, main_window):
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
@@ -532,7 +530,8 @@ class Manager_Database:
                 return
 
             self.main.user_logging(f'DATABASE -> Merge_DB({target_db_name} + {selected_db_name} = {updated_target_db_name})')
-            open_console("DB 병합")
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                open_console("DB 병합")
 
             print('\n실행 중 프로그램 종료되면 DB 시스템에 큰 문제를 일으킬 수 있습니다')
             print("프로그램이 종료될 때까지 대기해주시기 바랍니다\n\n")
@@ -569,8 +568,8 @@ class Manager_Database:
             # DB 새로고침
             self.database_refresh_DB()
             print("\nDB 병합 완료")
-
-            close_console()
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                close_console()
 
             reply = QMessageBox.question(self.main, 'Merge Finished', f"DB 병합이 완료되었습니다\n\n기존 DB를 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
@@ -949,8 +948,8 @@ class Manager_Database:
                 if date_options == {}:
                     self.main.printStatus()
                     return
-
-                open_console('CSV로 저장')
+                if self.main.SETTING['ProcessConsole'] == 'default':
+                    open_console('CSV로 저장')
                 dbname = target_db
 
                 # 선택된 옵션에 따라 날짜를 형식화하고 DB 이름과 경로 수정
@@ -1082,8 +1081,8 @@ class Manager_Database:
                     tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
                     tableDF = None
                     gc.collect()
-
-                close_console()
+                if self.main.SETTING['ProcessConsole'] == 'default':
+                    close_console()
                 reply = QMessageBox.question(self.main, 'Notification',
                                              f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
