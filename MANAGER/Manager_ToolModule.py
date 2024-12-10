@@ -13,6 +13,9 @@ from playsound import playsound
 import tempfile
 import sounddevice as sd
 
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel
+from PyQt5.QtGui import QMovie
+from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QEventLoop
 
 class ToolModule:
     def __init__(self):
@@ -138,3 +141,69 @@ class ToolModule:
             # 임시 파일 삭제
             if os.path.exists(temp_file_name):
                 os.remove(temp_file_name)
+
+
+class LoadingDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Loading...")
+        self.setModal(True)
+        self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)  # 창 테두리 제거
+        self.setAttribute(Qt.WA_TranslucentBackground)  # 배경 투명
+        self.setFixedSize(200, 200)  # 크기 설정
+
+        # 레이아웃 설정
+        layout = QVBoxLayout(self)
+
+        # 로딩 애니메이션 (GIF)
+        self.label = QLabel(self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.movie = QMovie(os.path.join(os.path.dirname(__file__), 'source', 'loading.gif'))  # 여기에 로딩 GIF 경로를 입력
+        self.label.setMovie(self.movie)
+
+        layout.addWidget(self.label)
+        self.setLayout(layout)
+
+        # 타이머 설정: 애니메이션 업데이트를 위한 주기적 이벤트 처리
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.process_events)
+
+    def start(self):
+        self.movie.start()  # GIF 재생 시작
+        self.timer.start(50)  # 50ms마다 이벤트 처리
+        self.show()
+
+    def stop(self):
+        self.timer.stop()  # 타이머 중지
+        self.movie.stop()  # GIF 재생 중단
+        self.close()
+
+    def process_events(self):
+        """이벤트 루프를 주기적으로 처리하여 애니메이션을 멈추지 않도록 함."""
+        QCoreApplication.processEvents(QEventLoop.AllEvents, 50)
+
+import sys
+import time
+from PyQt5.QtWidgets import QApplication
+
+def long_running_task(dialog):
+    """시간이 오래 걸리는 작업"""
+    dialog.start()  # 로딩 다이얼로그 표시
+    try:
+        for i in range(10):
+            print(f"Working... {i+1}")
+            time.sleep(0.5)  # 작업 수행
+            QCoreApplication.processEvents()  # 이벤트 루프 처리
+    finally:
+        dialog.stop()  # 로딩 다이얼로그 닫기
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+
+    # 로딩 다이얼로그 생성
+    loading_dialog = LoadingDialog()
+
+    # 작업 수행
+    long_running_task(loading_dialog)
+
+    sys.exit(app.exec_())
