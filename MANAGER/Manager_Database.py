@@ -3,6 +3,7 @@ import sys
 import gc
 import copy
 import re
+import json
 import warnings
 import traceback
 import pandas as pd
@@ -510,10 +511,13 @@ class Manager_Database:
             # 대상 DB 이름 업데이트 및 병합된 통계 데이터 계산
             target_db_parts[3] = selected_db_end_date
             updated_target_db_name = '_'.join(target_db_parts)
-            merged_count_data = str({
-                key: target_count_data.get(key, 0) + selected_count_data.get(key, 0)
-                for key in set(target_count_data) | set(selected_count_data)
-            })
+
+            merged_count_data = {
+                'UrlCnt': target_count_data['UrlCnt'] + selected_count_data['UrlCnt'],
+                'TotalArticleCnt': target_count_data['TotalArticleCnt'] + selected_count_data['TotalArticleCnt'],
+                'TotalReplyCnt': target_count_data['TotalReplyCnt'] + selected_count_data['TotalReplyCnt'],
+                'TotalRereplyCnt': target_count_data['TotalRereplyCnt'] + selected_count_data['TotalRereplyCnt']
+            }
 
             # 병합 여부 확인
             reply = QMessageBox.question(
@@ -540,7 +544,7 @@ class Manager_Database:
             print("\n병합 DB 생성 중...")
             self.main.mySQL_obj.renameDB(target_db_name, updated_target_db_name)
 
-            for target_table, selected_table in tqdm(zip(target_tables, selected_tables), desc="Merging", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+            for target_table, selected_table in tqdm(list(zip(target_tables, selected_tables)), desc="Merging", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
                 self.main.printStatus(f"{target_table} 병합 중...")
                 # 테이블 병합
                 self.main.mySQL_obj.mergeTable(updated_target_db_name, target_table, selected_db_name, selected_table)
@@ -553,12 +557,12 @@ class Manager_Database:
                     target_table_parts[3] = selected_db_end_date
 
                 new_target_table = '_'.join(target_table_parts)
-                self.main.mySQL_obj.renameTable(target_db_name, target_table, new_target_table)
+                self.main.mySQL_obj.renameTable(updated_target_db_name, target_table, new_target_table)
 
             self.main.printStatus(f"DB 목록 업데이트 중...")
             print("\nDB 목록 업데이트 중...")
             self.main.mySQL_obj.connectDB('crawler_db')
-            self.main.mySQL_obj.insertToTable('db_list', [[updated_target_db_name, target_db_info[4], target_db_info[5], selected_db_info[6], target_db_info[7], target_db_info[2], self.main.mySQL_obj.showDBSize(updated_target_db_name)[0], target_db_stats[0], target_db_stats[1], merged_count_data]])
+            self.main.mySQL_obj.insertToTable('db_list', [[updated_target_db_name, target_db_info[4], target_db_info[5], selected_db_info[6], target_db_info[7], target_db_info[2], self.main.mySQL_obj.showDBSize(updated_target_db_name)[0], target_db_stats[0], target_db_stats[1], str(merged_count_data)]])
             self.main.mySQL_obj.commit()
             self.main.printStatus()
 
@@ -1125,12 +1129,14 @@ class Manager_Database:
         self.main.shortcut_initialize()
         self.main.ctrld.activated.connect(self.database_delete_DB)
         self.main.ctrls.activated.connect(self.database_save_DB)
+        self.main.ctrlm.activated.connect(self.database_merge_DB)
         self.main.ctrlv.activated.connect(self.database_view_DB)
         self.main.ctrlr.activated.connect(self.database_refresh_DB)
         self.main.ctrlc.activated.connect(self.database_search_chatgpt_toggle)
 
         self.main.cmdd.activated.connect(self.database_delete_DB)
         self.main.cmds.activated.connect(self.database_save_DB)
+        self.main.cmdm.activated.connect(self.database_merge_DB)
         self.main.cmdv.activated.connect(self.database_view_DB)
         self.main.cmdr.activated.connect(self.database_refresh_DB)
         self.main.cmdc.activated.connect(self.database_search_chatgpt_toggle)

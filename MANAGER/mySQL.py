@@ -174,25 +174,37 @@ class mySQL:
 
     def mergeTable(self, db1_name, table1_name, db2_name, table2_name):
         try:
+            # DB1에 연결 및 table1의 마지막 ID 가져오기
+            self.connectDB(db1_name)
+            with self.conn.cursor() as cursor:
+                cursor.execute(f"SELECT MAX(id) FROM `{table1_name}`")
+                last_id = cursor.fetchone()[0] or 0  # 마지막 ID 가져오기 (없으면 0)
+
             # DB2에서 데이터 가져오기
             self.connectDB(db2_name)
             with self.conn.cursor() as cursor:
                 cursor.execute(f"SELECT * FROM `{table2_name}`")
                 rows = cursor.fetchall()
 
-            # DB1에 데이터 삽입
-            self.connectDB(db1_name)
-            with self.conn.cursor() as cursor:
-                if rows:  # DB2의 테이블에 데이터가 있을 경우
-                    placeholders = ", ".join(["%s"] * len(rows[0]))
-                    query = (
-                        f"INSERT INTO `{table1_name}` VALUES ({placeholders}) "
-                        f"ON DUPLICATE KEY UPDATE id=id"  # 중복 방지 기본 처리
-                    )
-                    cursor.executemany(query, rows)
+            # DB1에 데이터 삽입 준비
+            if rows:  # DB2의 테이블에 데이터가 있는 경우
+                new_rows = []
+                for i, row in enumerate(rows, start=1):
+                    new_id = last_id + i  # 기존 ID에 이어 새로운 ID 생성
+                    new_row = (new_id, *row[1:])  # 새 ID와 나머지 데이터를 합침
+                    new_rows.append(new_row)
+
+                # 새로운 데이터 DB1에 삽입
+                self.connectDB(db1_name)
+                with self.conn.cursor() as cursor:
+                    placeholders = ", ".join(["%s"] * len(new_rows[0]))
+                    query = f"INSERT INTO `{table1_name}` VALUES ({placeholders})"
+                    cursor.executemany(query, new_rows)
                     self.conn.commit()
-                else:  # DB2의 테이블이 비어있을 경우
-                    pass
+            else:
+                pass
+
+            # DB 연결 해제
             self.disconnectDB()
 
         except Exception as e:
