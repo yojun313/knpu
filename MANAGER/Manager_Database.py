@@ -7,12 +7,12 @@ import warnings
 import traceback
 import pandas as pd
 from tqdm import tqdm
-from datetime import datetime
+from datetime import datetime, timedelta
 import platform
 from PyQt5.QtCore import QTimer, QDate, QSize
 from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
-    QWidget, QMainWindow, QDialog, QVBoxLayout, QFormLayout, QTableWidget,
+    QWidget, QMainWindow, QDialog, QVBoxLayout, QFormLayout, QTableWidget, QInputDialog,
     QButtonGroup, QPushButton, QDialogButtonBox, QRadioButton, QLabel, QTabWidget,
     QLineEdit, QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
 )
@@ -438,6 +438,140 @@ class Manager_Database:
                     self.main.database_tablewidget.selectRow(row)
                     return
         except Exception as e:
+            self.main.program_bug_log(traceback.format_exc())
+
+    def database_merge_DB(self):
+        try:
+            selected_row = self.main.database_tablewidget.currentRow()
+            if selected_row < 0:
+                return
+
+            # 대상 DB 정보 가져오기
+            target_db_name = self.DB['DBlist'][selected_row]
+            target_db_info = self.DB['DBdata'][selected_row]
+            target_db_stats = self.DB['DBinfo'][selected_row]
+            target_db_parts = target_db_name.split('_')
+
+            target_keyword = target_db_info[2]
+            target_crawl_type = target_db_info[4]
+            target_count_data = eval(target_db_stats[2])  # 통계 데이터 (딕셔너리 형태)
+            target_start_date = target_db_parts[2]
+            target_end_date = target_db_parts[3]
+
+            # 다음 시작 날짜 계산
+            target_end_date_dt = datetime.strptime(target_end_date, '%Y%m%d')
+            next_start_date_dt = target_end_date_dt + timedelta(days=1)
+            next_start_date = next_start_date_dt.strftime('%Y%m%d')
+
+            # 병합 가능한 DB 필터링
+            merge_candidates = [
+                db_info[0] for db_info in self.DB['DBdata']
+                if db_info[2] == target_keyword and db_info[4] == target_crawl_type
+                   and db_info[0].split('_')[2] == next_start_date and db_info[6] != "크롤링 중"
+            ]
+
+            if not merge_candidates:
+                QMessageBox.information(self.main, "Information", "병합 가능한 DB가 없습니다")
+                return
+
+            # 병합할 DB 선택
+            selected_db_name, ok = QInputDialog.getItem(
+                self.main,
+                "DB 선택",
+                "병합할 DB를 선택하세요:",
+                merge_candidates,
+                0,
+                False
+            )
+
+            if not ok or not selected_db_name:
+                return
+
+            # 선택된 DB 정보 가져오기
+            selected_db_info = next(
+                (db_info for db_info in self.DB['DBdata'] if db_info[0] == selected_db_name),
+                None
+            )
+            selected_db_stats = self.DB['DBinfo'][self.DB['DBdata'].index(selected_db_info)]
+            selected_db_end_date = selected_db_name.split('_')[3]
+            selected_count_data = eval(selected_db_stats[2])  # 통계 데이터 (딕셔너리 형태)
+
+            # 대상 DB 이름 업데이트 및 병합된 통계 데이터 계산
+            target_db_parts[3] = selected_db_end_date
+            updated_target_db_name = '_'.join(target_db_parts)
+            merged_count_data = str({
+                key: target_count_data.get(key, 0) + selected_count_data.get(key, 0)
+                for key in set(target_count_data) | set(selected_count_data)
+            })
+
+            # 병합 여부 확인
+            reply = QMessageBox.question(
+                self.main,
+                'DB 병합',
+                f"'{target_db_name[:-10]}'에 {selected_db_name[:-10]}를 병합하시겠습니까?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.Yes
+            )
+
+            if reply != QMessageBox.Yes:
+                return
+
+            open_console("DB 병합")
+
+            print('\n실행 중 프로그램 종료되면 DB 시스템에 큰 문제를 일으킬 수 있습니다')
+            print("프로그램이 종료될 때까지 대기해주시기 바랍니다")
+
+            target_tables = sorted(self.main.mySQL_obj.showAllTable(target_db_name))
+            selected_tables = sorted(self.main.mySQL_obj.showAllTable(selected_db_name))
+
+            self.main.printStatus(f"병합 DB 생성 중...")
+            print("병합 DB 생성 중...")
+            self.main.mySQL_obj.renameDB(target_db_name, updated_target_db_name)
+
+            for target_table, selected_table in tqdm(zip(target_tables, selected_tables), desc="Merging", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' ='):
+                self.main.printStatus(f"{target_table} 병합 중...")
+                # 테이블 병합
+                self.main.mySQL_obj.mergeTable(updated_target_db_name, target_table, selected_db_name, selected_table)
+
+                # 테이블 이름 업데이트
+                target_table_parts = target_table.split('_')
+                if 'token' in target_table:
+                    target_table_parts[4] = selected_db_end_date
+                else:
+                    target_table_parts[3] = selected_db_end_date
+
+                new_target_table = '_'.join(target_table_parts)
+                self.main.mySQL_obj.renameTable(target_db_name, target_table, new_target_table)
+
+            self.main.printStatus(f"DB 목록 업데이트 중...")
+            print("DB 목록 업데이트 중...")
+            self.main.mySQL_obj.connectDB('crawler_db')
+            self.main.mySQL_obj.insertToTable('db_list', [[updated_target_db_name, target_db_info[4], target_db_info[5], selected_db_info[6], target_db_info[7], target_db_info[2], self.main.mySQL_obj.showDBSize(updated_target_db_name)[0], target_db_stats[0], target_db_stats[1], merged_count_data]])
+            self.main.mySQL_obj.commit()
+            self.main.printStatus()
+
+            # DB 새로고침
+            self.database_refresh_DB()
+            print("DB 병합 완료")
+
+            close_console()
+
+            reply = QMessageBox.question(self.main, 'Merge Finished', f"DB 병합이 완료되었습니다\n\n기존 DB를 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                self.main.printStatus("기존 DB 삭제 중...")
+                self.main.mySQL_obj.connectDB()
+                self.main.mySQL_obj.dropDB(target_db_name)
+                self.main.mySQL_obj.dropDB(selected_db_name)
+                self.main.mySQL_obj.connectDB('crawler_db')
+                self.main.mySQL_obj.deleteTableRowByColumn('db_list', target_db_name, 'DBname')
+                self.main.mySQL_obj.deleteTableRowByColumn('db_list', selected_db_name, 'DBname')
+                self.main.printStatus()
+                self.database_refresh_DB()
+                QMessageBox.information(self.main, "Information", "삭제가 완료되었습니다")
+            else:
+                return
+
+        except Exception:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_search_admin_mode(self, search_text):
@@ -964,6 +1098,7 @@ class Manager_Database:
         self.main.database_saveDB_button.clicked.connect(self.database_save_DB)
         self.main.database_deleteDB_button.clicked.connect(self.database_delete_DB)
         self.main.database_viewDB_button.clicked.connect(self.database_view_DB)
+        self.main.database_mergeDB_button.clicked.connect(self.database_merge_DB)
 
         self.main.database_chatgpt_button.setToolTip("ChatGPT Mode")
         self.main.database_saveDB_button.setToolTip("Ctrl+S")

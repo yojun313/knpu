@@ -10,7 +10,7 @@
 # - Phone: +82-10-4072-9190
 ##################################################################
 
-VERSION = '2.4.4'
+VERSION = '2.5.0'
 
 import os
 import platform
@@ -276,8 +276,6 @@ class MainWindow(QMainWindow):
         return getattr(self.toolmodule, name)
 
     ################################## Booting ##################################
-
-
 
     def initialize_listwidget(self):
         try:
@@ -974,7 +972,7 @@ class MainWindow(QMainWindow):
 
     def user_logging(self, text='', booting=False, force=False):
         try:
-            if self.CONFIG['Logging'] == 'Off' and force == False:
+            if (self.user == 'admin' and self.CONFIG['Logging'] == 'Off') or (self.CONFIG['Logging'] == 'Off' and force == False):
                 return
             self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
             if booting == True:
@@ -1123,8 +1121,10 @@ class MainWindow(QMainWindow):
             if size == 0:
                 try:
                     size = self.mySQL_obj.showDBSize(DB_name)
+                    if size == None:
+                        size = (0,0)
                 except:
-                    size = 0
+                    size = (0, 0)
                 self.fullstorage += float(size[0])
                 size = f"{size[1]} MB" if size[0] < 1 else f"{size[0]} GB"
             else:
