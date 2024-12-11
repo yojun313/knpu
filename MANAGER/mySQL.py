@@ -414,12 +414,8 @@ class mySQL:
     def TableToList(self, tableName):
         try:
             with self.conn.cursor() as cursor:
-                cursor.execute(f"SELECT * FROM `{tableName}`")
-                rows = cursor.fetchall()
-                columns = [desc[0] for desc in cursor.description]
-
-                # 데이터프레임으로 변환
-                dataframe = pd.DataFrame(rows, columns=columns)
+                query = f"SELECT * FROM `{tableName}`"
+                dataframe = cx.read_sql(self.conn_uri, query, partition_num=self.max_threads)
 
                 # 첫 번째 행과 첫 번째 열 제외
                 sub_dataframe = dataframe.iloc[:, 1:]
