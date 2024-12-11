@@ -1076,6 +1076,18 @@ class MainWindow(QMainWindow):
 
             return currentDB
 
+        def sort_currentDB_by_starttime(currentDB):
+            # starttime을 기준으로 정렬하고 리스트를 역순으로 반환
+            sorted_data = sorted(
+                zip(currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo']),
+                key=lambda x: datetime.strptime(x[1][5], '%Y-%m-%d %H:%M')  # x[1][5]는 starttime
+            )[::-1]  # 정렬된 리스트를 뒤집음 (reverse 효과)
+
+            # 정렬된 결과를 리스트로 분리
+            currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo'] = map(list, zip(*sorted_data))
+
+            return currentDB
+
         self.mySQL_obj.connectDB('crawler_db')
         db_list = self.mySQL_obj.TableToList('db_list')
 
@@ -1143,14 +1155,15 @@ class MainWindow(QMainWindow):
             currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester, size))
             currentDB['DBinfo'].append((crawlcom, crawlspeed, datainfo))
 
-        for key in currentDB:
-            currentDB[key].reverse()
+
 
         self.activate_crawl = len([item for item in currentDB['DBdata'] if item[6] == "크롤링 중"])
         self.fullstorage = round(self.fullstorage, 2)
 
         if self.SETTING['DBKeywordSort'] != 'default':
             currentDB = sort_currentDB_by_keyword(currentDB)
+        else:
+            currentDB = sort_currentDB_by_starttime(currentDB)
 
         return currentDB
 
