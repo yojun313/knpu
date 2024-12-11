@@ -918,7 +918,7 @@ class DataProcess:
             iterator = grouped
 
         for period_start, group in iterator:
-            parent.printStatus("wordcloud_{period_list[i]} 생성 중...")
+            parent.printStatus(f"wordcloud_{period_list[i]} 생성 중...")
             if group.empty:
                 continue
 
