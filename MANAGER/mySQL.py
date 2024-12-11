@@ -2,17 +2,20 @@ import pymysql
 import csv
 import os
 import pandas as pd
+import connectorx as cx
 
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
 class mySQL:
     def __init__(self, host, user, password, port, database=None):
+        self.conn_uri = f"mysql://{user}:{password}@{host}:{port}/{database}"
         self.host = host
         self.user = user
         self.password = password
         self.port = port
         self.database = database
+        self.max_threads = os.cpu_count()  # 시스템의 최대 스레드 수 가져오
         self.conn = pymysql.connect(
             host=self.host,
             user=self.user,
@@ -23,6 +26,7 @@ class mySQL:
 
     def connectDB(self, database_name=None):
         try:
+            self.conn_uri = f"mysql://{self.user}:{self.password}@{self.host}:{self.port}/{database_name}"
             self.disconnectDB()
             self.conn = pymysql.connect(
                 host=self.host,
@@ -354,10 +358,8 @@ class mySQL:
                 else:
                     query = f"SELECT * FROM `{tableName}`"
 
-                cursor.execute(query)
-                rows = cursor.fetchall()
-                columns = [desc[0] for desc in cursor.description]
-                dataframe = pd.DataFrame(rows, columns=columns)
+                # ConnectorX를 사용하여 데이터 읽기
+                dataframe = cx.read_sql(self.conn_uri, query, partition_num=self.max_threads)
                 return dataframe
 
         except Exception as e:
@@ -745,8 +747,9 @@ class mySQL:
 if __name__ == "__main__":
 
     def test():
-        mySQL_obj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
-        mySQL_obj.tokenization('navernews_문재인_20170510_20220509_1201_0022')
+        mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
+        mySQL_obj.connectDB('crawler_db')
+        mySQL_obj.updateTableCellByCondition('db_list', "DBname", 'navernews_문재인_20170510_20220509_1201_0022', 'DBSize', str(mySQL_obj.showDBSize('navernews_문재인_20170510_20220509_1201_0022')[0]))
 
     test()
 
