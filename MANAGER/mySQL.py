@@ -117,53 +117,6 @@ class mySQL:
             print(f"Failed to create table {tableName}")
             print(str(e))
 
-    def renameDB(self, old_db_name, new_db_name):
-        try:
-
-            # 기존 데이터베이스의 테이블 목록 가져오기
-            tables = self.showAllTable(old_db_name)
-
-            if not tables:
-                print(f"기존 데이터베이스 '{old_db_name}'에 테이블이 없습니다.")
-                return
-
-            # 새 데이터베이스 생성
-            self.newDB(new_db_name)
-
-            # 모든 테이블 복사
-            for table in tables:
-                # 기존 테이블 구조 가져오기
-                self.connectDB(old_db_name)
-                with self.conn.cursor() as cursor:
-                    cursor.execute(f"SHOW CREATE TABLE `{table}`")
-                    create_table_query = cursor.fetchone()[1]
-
-                # 새로운 데이터베이스에 테이블 생성
-                self.connectDB(new_db_name)
-                with self.conn.cursor() as cursor:
-                    cursor.execute(create_table_query)
-                    self.conn.commit()
-
-                # 기존 테이블 데이터 가져오기
-                self.connectDB(old_db_name)
-                with self.conn.cursor() as cursor:
-                    cursor.execute(f"SELECT * FROM `{table}`")
-                    rows = cursor.fetchall()
-                    columns = [desc[0] for desc in cursor.description]
-
-                # 새로운 테이블에 데이터 삽입
-                self.connectDB(new_db_name)
-                with self.conn.cursor() as cursor:
-                    column_str = ", ".join([f"`{col}`" for col in columns])
-                    placeholders = ", ".join(["%s"] * len(columns))
-                    insert_query = f"INSERT INTO `{table}` ({column_str}) VALUES ({placeholders})"
-                    cursor.executemany(insert_query, rows)
-                    self.conn.commit()
-
-        except Exception as e:
-            print("데이터베이스 이름 변경 중 오류 발생")
-            print(str(e))
-
     def copyDB(self, old_db_name, new_db_name):
         try:
             # 새 데이터베이스 생성
@@ -207,42 +160,45 @@ class mySQL:
 
     def mergeTable(self, db1_name, table1_name, db2_name, table2_name):
         try:
-            # DB1에 연결 및 table1의 마지막 ID 가져오기
+            # DB1에 연결하여 table1의 최대 ID 가져오기
             self.connectDB(db1_name)
             with self.conn.cursor() as cursor:
-                cursor.execute(f"SELECT MAX(id) FROM `{table1_name}`")
-                last_id = cursor.fetchone()[0] or 0  # 마지막 ID 가져오기 (없으면 0)
+                cursor.execute(f"SELECT COALESCE(MAX(id), 0) FROM `{table1_name}`")
+                max_id = cursor.fetchone()[0]
 
-            # DB2에서 데이터 가져오기
+            # DB2에 연결하여, table2의 컬럼 목록 가져오기 (id 제외한 나머지 컬럼 확인)
             self.connectDB(db2_name)
             with self.conn.cursor() as cursor:
-                cursor.execute(f"SELECT * FROM `{table2_name}`")
-                rows = cursor.fetchall()
+                cursor.execute(f"SHOW COLUMNS FROM `{table2_name}`")
+                columns = [col[0] for col in cursor.fetchall()]
 
-            # DB1에 데이터 삽입 준비
-            if rows:  # DB2의 테이블에 데이터가 있는 경우
-                new_rows = []
-                for i, row in enumerate(rows, start=1):
-                    new_id = last_id + i  # 기존 ID에 이어 새로운 ID 생성
-                    new_row = (new_id, *row[1:])  # 새 ID와 나머지 데이터를 합침
-                    new_rows.append(new_row)
+            # table2의 첫 번째 컬럼이 id라고 가정하고, 그 외 컬럼을 추출
+            # 만약 table2에 id가 없거나 위치가 다르다면 상황에 맞게 수정 필요
+            columns_without_id = columns[1:]
+            columns_list = ", ".join([f"`{c}`" for c in columns_without_id])
 
-                # 새로운 데이터 DB1에 삽입
-                self.connectDB(db1_name)
-                with self.conn.cursor() as cursor:
-                    placeholders = ", ".join(["%s"] * len(new_rows[0]))
-                    query = f"INSERT INTO `{table1_name}` VALUES ({placeholders})"
-                    cursor.executemany(query, new_rows)
-                    self.conn.commit()
-            else:
-                pass
+            # INSERT ... SELECT를 사용하여 서버 내부에서 바로 병합
+            # @rownum 변수에 최대 ID를 넣은 뒤, SELECT 시마다 @rownum을 1씩 증가시키며 new_id 할당
+            # 두 개의 문장(SET, INSERT)을 실행하므로 쿼리를 나누어 실행
+            self.connectDB(db2_name)
+            with self.conn.cursor() as cursor:
+                # @rownum 변수 초기화
+                cursor.execute(f"SET @rownum := {max_id}")
+                # db1.table1에 INSERT하면서 @rownum을 증가시켜 id 할당
+                insert_query = f"""
+                    INSERT INTO `{db1_name}`.`{table1_name}` (`id`, {columns_list})
+                    SELECT @rownum := @rownum + 1 AS new_id, {columns_list}
+                    FROM `{db2_name}`.`{table2_name}`;
+                """
+                cursor.execute(insert_query)
+                self.conn.commit()
 
             # DB 연결 해제
             self.disconnectDB()
 
         except Exception as e:
             print(f"테이블 병합 중 오류 발생: {e}")
-            self.conn.rollback()  # 오류 발생 시 트랜잭션 롤백
+            self.conn.rollback()
 
     def dropTable(self, tableName):
         try:
@@ -761,7 +717,6 @@ class mySQL:
         tablelist = [table for table in self.showAllTable(DBname) if 'info' not in table]
 
         for table in tablelist:
-            print(f"{table} 다운로드 중...")
             self.connectDB(DBname)
             data_df = self.TableToDataframe(table)
 
@@ -780,10 +735,9 @@ class mySQL:
                 data_df = data_df.rename(columns={'Article Day': date_column})
                 data_df = data_df.sort_values(by=date_column)
 
-            self.disconnectDB()
-            self.connectDB(DBname)
             token_df = tokenization(data_df)
             print(f'\r{table} DB Inserting...', end='')
+            self.connectDB(DBname)
             self.DataframeToTable(token_df, 'token_' + table)
 
 
