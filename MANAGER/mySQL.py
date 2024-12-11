@@ -718,6 +718,7 @@ class mySQL:
 
         for table in tablelist:
             self.connectDB(DBname)
+            print(f"{table} 가져오는 중...")
             data_df = self.TableToDataframe(table)
 
             if 'reply' in table or 'rereply' in table:
