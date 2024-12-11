@@ -258,6 +258,7 @@ class Crawler(CrawlerModule):
 
             for table in tablelist:
                 self.mySQL.connectDB(self.DBname)
+                print(f"{table} 가져오는 중...")
                 data_df = self.mySQL.TableToDataframe(table)
 
                 if 'reply' in table or 'rereply' in table:
