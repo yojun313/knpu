@@ -556,6 +556,100 @@ class Manager_Analysis:
                 close_console()
             self.main.program_bug_log(traceback.format_exc())
 
+    def analysis_wordcloud_file(self):
+        try:
+            selected_directory = self.analysis_getfiledirectory(self.file_dialog)
+            if len(selected_directory) == 0:
+                QMessageBox.warning(self.main, f"Wrong Selection", f"선택된 CSV 토큰 파일이 없습니다")
+                return
+            elif selected_directory[0] == False:
+                QMessageBox.warning(self.main, f"Wrong Format", f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
+                return
+            elif len(selected_directory) != 1:
+                QMessageBox.warning(self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
+                return
+            elif 'token' not in selected_directory[0]:
+                QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
+                return
+
+            filename = os.path.basename(selected_directory[0]).replace('token_', '').replace('.csv', '')
+            filename = re.sub(r'_\d{4}_\d{4}', '', filename)
+
+            # 날짜 값 추출
+            match = re.search(r'_(\d{8})_(\d{8})_', filename)
+            startdate = match.group(1)  # 첫 번째 날짜 (20170510)
+            enddate = match.group(2)  # 두 번째 날짜 (20220509)
+            date = (startdate, enddate)
+
+            self.main.printStatus("워드클라우드 데이터를 저장할 위치를 선택하세요")
+            save_path = QFileDialog.getExistingDirectory(self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요", self.main.default_directory)
+            if save_path == '':
+                self.main.printStatus()
+                return
+
+            # 병합할 DB 선택
+            selected_split, ok = QInputDialog.getItem(
+                self.main,
+                "옵션 선택",
+                "분할 기간을 선택하세요:",
+                ['1년', '6개월', '3개월', '1개월', '1주', '1일'],
+                0,
+                False
+            )
+
+            if not ok or not selected_split:
+                return
+
+            # max_words 설정 받기
+            max_words, ok = QInputDialog.getInt(
+                self.main,
+                "최대 단어 수 설정",
+                "워드클라우드에서 표시할 최대 단어 수를 입력하세요:",
+                value=200,
+                min=10,
+                max=1000,
+            )
+            if not ok:
+                return
+
+            split_change = {
+                '1년': '1y',
+                '6개월': '6m',
+                '3개월': '3m',
+                '1개월': '1m',
+                '1주': '1y',
+                '1일': '1d'
+            }
+            selected_split = split_change[selected_split]
+
+            folder_path = os.path.join(
+                save_path,
+                f"wordcloud_{filename}_{selected_split}_{datetime.now().strftime('%m%d%H%M')}"
+            )
+
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                open_console("워드클라우드")
+
+            self.main.printStatus("파일 읽는 중...")
+            print("\n파일 읽는 중...")
+            token_data = pd.read_csv(selected_directory[0], low_memory=False)
+
+            self.dataprocess_obj.wordcloud(self.main, token_data, folder_path, date, max_words, selected_split)
+
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                close_console()
+
+            reply = QMessageBox.question(self.main, 'Notification', f"{filename} 워드클라우드 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                self.main.openFileExplorer(folder_path)
+
+            return
+
+        except Exception as e:
+            self.main.program_bug_log(traceback.format_exc())
+
+
+
     def kimkem_kimkem(self):
         class KimKemOptionDialog(QDialog):
             def __init__(self, kimkem_file, rekimkem_file, interpret_kimkem):
@@ -1663,6 +1757,7 @@ class Manager_Analysis:
         self.main.analysis_timesplitfile_btn.clicked.connect(self.analysis_timesplit_file)
         self.main.analysis_dataanalysisfile_btn.clicked.connect(self.analysis_analysis_file)
         self.main.analysis_mergefile_btn.clicked.connect(self.analysis_merge_file)
+        self.main.analysis_wordcloud_btn.clicked.connect(self.analysis_wordcloud_file)
         self.main.analysis_kemkim_btn.clicked.connect(self.kimkem_kimkem)
 
         self.main.analysis_refreshDB_btn.setToolTip("Ctrl+R")
