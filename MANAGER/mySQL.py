@@ -2,20 +2,17 @@ import pymysql
 import csv
 import os
 import pandas as pd
-import connectorx as cx
 
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
 class mySQL:
     def __init__(self, host, user, password, port, database=None):
-        self.conn_uri = f"mysql://{user}:{password}@{host}:{port}/{database}"
         self.host = host
         self.user = user
         self.password = password
         self.port = port
         self.database = database
-        self.max_threads = os.cpu_count()  # 시스템의 최대 스레드 수 가져오
         self.conn = pymysql.connect(
             host=self.host,
             user=self.user,
@@ -26,7 +23,6 @@ class mySQL:
 
     def connectDB(self, database_name=None):
         try:
-            self.conn_uri = f"mysql://{self.user}:{self.password}@{self.host}:{self.port}/{database_name}"
             self.disconnectDB()
             self.conn = pymysql.connect(
                 host=self.host,
@@ -358,9 +354,10 @@ class mySQL:
                 else:
                     query = f"SELECT * FROM `{tableName}`"
 
-                # ConnectorX를 사용하여 데이터 읽기
-                dataframe = cx.read_sql(self.conn_uri, query, partition_num=self.max_threads)
-                return dataframe
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
+                dataframe = pd.DataFrame(rows, columns=columns)
 
         except Exception as e:
             print(f"Failed to convert table {tableName} to DataFrame")
@@ -414,8 +411,12 @@ class mySQL:
     def TableToList(self, tableName):
         try:
             with self.conn.cursor() as cursor:
-                query = f"SELECT * FROM `{tableName}`"
-                dataframe = cx.read_sql(self.conn_uri, query, partition_num=self.max_threads)
+                cursor.execute(f"SELECT * FROM `{tableName}`")
+                rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
+
+                # 데이터프레임으로 변환
+                dataframe = pd.DataFrame(rows, columns=columns)
 
                 # 첫 번째 행과 첫 번째 열 제외
                 sub_dataframe = dataframe.iloc[:, 1:]
