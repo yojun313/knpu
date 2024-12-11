@@ -488,7 +488,7 @@ class Manager_Database:
 
             if not merge_candidates:
                 QMessageBox.information(self.main, "Information",
-                    "병합 가능한 DB가 없습니다\n\n<병합 가능 조건>\n\n1. 키워드 동일\n2. 크롤링 옵션 동일\n3. 사용자 동일\n4. 크롤링 기간 연속적\n(ex. 12/01~12/14 & 12/15~12/31)"
+                    "병합 가능한 DB가 없습니다\n\n<병합 가능 조건>\n\n1. 키워드 동일\n2. 크롤링 옵션 동일\n3. 크롤링 기간 연속적\n(ex. 12/01~12/14 & 12/15~12/31)"
                 )
                 return
 
