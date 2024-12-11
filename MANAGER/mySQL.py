@@ -359,6 +359,8 @@ class mySQL:
                 columns = [desc[0] for desc in cursor.description]
                 dataframe = pd.DataFrame(rows, columns=columns)
 
+                return dataframe
+
         except Exception as e:
             print(f"Failed to convert table {tableName} to DataFrame")
             print(str(e))
