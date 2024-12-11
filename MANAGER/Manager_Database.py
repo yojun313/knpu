@@ -405,6 +405,16 @@ class Manager_Database:
         try:
             search_text = self.main.database_searchDB_lineinput.text().lower()
             if not search_text or search_text == "":
+                if self.main.SETTING['DBKeywordSort'] == 'default':
+                    self.main.SETTING['DBKeywordSort'] = 'on'
+                    self.main.update_settings(10, 'on')
+                    QMessageBox.information(self.main, "Information", "DB 정렬 기준이 '키워드순'으로 변경되었습니다")
+                    self.database_refresh_DB()
+                else:
+                    self.main.SETTING['DBKeywordSort'] = 'default'
+                    self.main.update_settings(10, 'default')
+                    QMessageBox.information(self.main, "Information", "DB 정렬 기준이 '최신순'으로 변경되었습니다")
+                    self.database_refresh_DB()
                 return
 
             self.database_search_admin_mode(search_text)
