@@ -587,7 +587,7 @@ class Manager_Analysis:
                 self.main.printStatus()
                 return
 
-            # 병합할 DB 선택
+            self.main.printStatus("옵션을 선택하세요")
             selected_split, ok = QInputDialog.getItem(
                 self.main,
                 "옵션 선택",
@@ -630,15 +630,16 @@ class Manager_Analysis:
             if self.main.SETTING['ProcessConsole'] == 'default':
                 open_console("워드클라우드")
 
-            self.main.printStatus("파일 읽는 중...")
-            print("\n파일 읽는 중...")
+            self.main.printStatus("파일 불러오는 중...")
+            print("\n파일 불러오는 중...\n")
             token_data = pd.read_csv(selected_directory[0], low_memory=False)
 
             self.dataprocess_obj.wordcloud(self.main, token_data, folder_path, date, max_words, selected_split)
+            self.main.printStatus()
 
             if self.main.SETTING['ProcessConsole'] == 'default':
                 close_console()
-
+                
             reply = QMessageBox.question(self.main, 'Notification', f"{filename} 워드클라우드 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 self.main.openFileExplorer(folder_path)
