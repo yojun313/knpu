@@ -13,7 +13,7 @@ a = Analysis(
         ('C:/GitHub/BIGMACLAB/MANAGER/source/microphone.png', 'source'),
         ('C:/GitHub/BIGMACLAB/MANAGER/source/malgun.ttf', 'source')
     ],
-    hiddenimports=['seaborn.external.kde', 'connectorx'],
+    hiddenimports=['seaborn.external.kde'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
