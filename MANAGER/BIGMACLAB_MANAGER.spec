@@ -10,7 +10,8 @@ a = Analysis(
         ('C:/GitHub/BIGMACLAB/MANAGER/source/exe_icon.png', 'source'),
         ('C:/GitHub/BIGMACLAB/MANAGER/source/setting.png', 'source'),
         ('C:/GitHub/BIGMACLAB/MANAGER/source/search.png', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/microphone.png', 'source')
+        ('C:/GitHub/BIGMACLAB/MANAGER/source/microphone.png', 'source'),
+        ('C:/GitHub/BIGMACLAB/MANAGER/source/malgun.ttf', 'source')
     ],
     hiddenimports=['seaborn.external.kde'],
     hookspath=[],

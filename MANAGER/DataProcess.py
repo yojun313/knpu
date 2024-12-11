@@ -1,9 +1,13 @@
 from PyQt5.QtWidgets import QMessageBox
 import pandas as pd
-import os
+import sys
 import matplotlib.pyplot as plt
 import seaborn as sns
 import platform
+from wordcloud import WordCloud
+from collections import Counter
+import os
+from tqdm import tqdm
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 import warnings
@@ -831,3 +835,112 @@ class DataProcess:
         description_file_path = os.path.join(output_dir, "description.txt")
         with open(description_file_path, 'w') as file:
             file.write(description_text)
+
+    def wordcloud(self, parent, data, folder_path, date, max_words, split_option):
+        parent = parent
+        def divide_period(csv_data, period):
+            # 'Unnamed' 열 제거
+            csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
+
+            # 날짜 열을 datetime 형식으로 변환
+            csv_data[self.dateColumn_name] = pd.to_datetime(csv_data[self.dateColumn_name].str.split().str[0],
+                                                            format='%Y-%m-%d', errors='coerce')
+
+            # 'YYYYMMDD' 형식의 문자열을 datetime 형식으로 변환
+            start_date = pd.to_datetime(str(date[0]), format='%Y%m%d')
+            end_date = pd.to_datetime(str(date[1]), format='%Y%m%d')
+
+            # 날짜 범위 필터링
+            csv_data = csv_data[csv_data[self.dateColumn_name].between(start_date, end_date)]
+
+            if start_date < csv_data[self.dateColumn_name].min():
+                self.startdate = int(csv_data[self.dateColumn_name].min().strftime('%Y%m%d'))
+
+            if end_date > csv_data[self.dateColumn_name].max():
+                self.enddate = int(csv_data[self.dateColumn_name].max().strftime('%Y%m%d'))
+
+            # 'period_month' 열 추가 (월 단위 기간으로 변환)
+            csv_data['period_month'] = csv_data[self.dateColumn_name].dt.to_period('M')
+
+            # 필요한 전체 기간 생성
+            full_range = pd.period_range(start=csv_data['period_month'].min(), end=csv_data['period_month'].max(),
+                                         freq='M')
+            full_df = pd.DataFrame(full_range, columns=['period_month'])
+
+            # 원본 데이터와 병합하여 빈 기간도 포함하도록 함
+            csv_data = pd.merge(full_df, csv_data, on='period_month', how='left')
+
+            # 새로운 열을 추가하여 주기 단위로 기간을 그룹화
+            if period == '1m':  # 월
+                csv_data['period_group'] = csv_data['period_month'].astype(str)
+            elif period == '3m':  # 분기
+                csv_data['period_group'] = (csv_data['period_month'].dt.year.astype(str) + 'Q' + (
+                            (csv_data['period_month'].dt.month - 1) // 3 + 1).astype(str))
+            elif period == '6m':  # 반기
+                csv_data['period_group'] = (csv_data['period_month'].dt.year.astype(str) + 'H' + (
+                            (csv_data['period_month'].dt.month - 1) // 6 + 1).astype(str))
+            elif period == '1y':  # 연도
+                csv_data['period_group'] = csv_data['period_month'].dt.year.astype(str)
+            elif period == '1w':  # 주
+                csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period('W').apply(
+                    lambda x: f"{x.start_time.strftime('%Y%m%d')}-{x.end_time.strftime('%Y%m%d')}"
+                )
+                first_date = csv_data['period_group'].iloc[0].split('-')[0]
+                end_date = csv_data['period_group'].iloc[-1].split('-')[1]
+                self.startdate = first_date
+                self.enddate = end_date
+            elif period == '1d':  # 일
+                csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period('D').astype(str)
+
+            # 주기별로 그룹화하여 결과 반환
+            period_divided_group = csv_data.groupby('period_group')
+
+            return period_divided_group
+
+        os.makedirs(folder_path, exist_ok=True)
+
+        for column in data.columns.tolist():
+            if 'Text' in column:
+                self.textColumn_name = column
+            elif 'Date' in column:
+                self.dateColumn_name = column
+                
+        print("\n데이터 분할 중...")
+        parent.printStatus("데이터 분할 중...")
+        grouped = divide_period(data, split_option)
+        period_list = list(grouped.groups.keys())
+
+        i = 0
+
+        if parent.SETTING['ProcessConsole'] == 'default':
+            iterator = tqdm(grouped, desc="WordCloud ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+        else:
+            iterator = grouped
+
+        for period_start, group in iterator:
+            parent.printStatus("wordcloud_{period_list[i]} 생성 중...")
+            if group.empty:
+                continue
+
+            # 단어 리스트 병합
+            all_words = []
+            for tokens in group[self.textColumn_name]:
+                if isinstance(tokens, str):  # 토큰 리스트가 문자열로 저장된 경우
+                    tokens = tokens.split(',')
+                    all_words.extend(tokens)
+
+            # 단어 빈도 계산
+            word_freq = Counter(all_words)
+
+            # 워드클라우드 생성
+            wordcloud = WordCloud(font_path=os.path.join(os.path.dirname(__file__), 'source', 'malgun.ttf'), background_color='white', width=800, height=600, max_words=max_words)
+            wc_generated = wordcloud.generate_from_frequencies(word_freq)
+
+            # 워드클라우드 저장
+            output_file = os.path.join(folder_path, f'wordcloud_{period_list[i]}.png')
+            wc_generated.to_file(output_file)
+
+            i += 1
+
+
+

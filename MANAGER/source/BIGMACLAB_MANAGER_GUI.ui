@@ -205,7 +205,14 @@
                 <item>
                  <widget class="QPushButton" name="analysis_dataanalysisfile_btn">
                   <property name="text">
-                   <string>데이터 분석</string>
+                   <string>통계 분석</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="analysis_wordcloud_btn">
+                  <property name="text">
+                   <string>워드클라우드</string>
                   </property>
                  </widget>
                 </item>
@@ -282,7 +289,7 @@
                 <item>
                  <widget class="QPushButton" name="analysis_dataanalysisDB_btn">
                   <property name="text">
-                   <string>데이터 분석</string>
+                   <string>통계 분석</string>
                   </property>
                  </widget>
                 </item>
