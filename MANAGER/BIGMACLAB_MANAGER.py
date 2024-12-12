@@ -1356,9 +1356,6 @@ class MainWindow(QMainWindow):
             else:
                 self.setDarkStyle()
 
-
-
-
     def setLightStyle(self):
         self.setStyleSheet(
             """
@@ -1506,8 +1503,8 @@ class MainWindow(QMainWindow):
                 color: #ffffff;  /* 선택된 셀 텍스트 색상 */
             }
             QTableCornerButton::section {  /* 좌측 상단 정사각형 부분 스타일 */
-                background-color: #2c3e50;
-                border: 1px solid #2c3e50;
+                background-color: #3c3c3c;
+                border: 1px solid #5a5a5a;
             }
             QHeaderView::section {
                 background-color: #3c3c3c;
