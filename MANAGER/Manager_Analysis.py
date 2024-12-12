@@ -740,6 +740,8 @@ class Manager_Analysis:
             if self.main.SETTING['ProcessConsole'] == 'default':
                 open_console("워드클라우드")
 
+            self.main.user_logging(f'ANALYSIS -> WordCloud({os.path.basename(folder_path)})')
+
             self.main.printStatus("파일 불러오는 중...")
             print("\n파일 불러오는 중...\n")
             token_data = pd.read_csv(selected_directory[0], low_memory=False)
