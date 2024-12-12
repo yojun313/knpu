@@ -929,7 +929,8 @@ class DataProcess:
                     tokens = tokens.split(',')
                     all_words.extend(tokens)
 
-            all_words = [item for item in all_words if item not in exception_word_list]
+            if exception_word_list != []:
+                all_words = [item.strip() for item in all_words if item.strip() not in exception_word_list]
 
             # 단어 빈도 계산
             word_freq = Counter(all_words)
