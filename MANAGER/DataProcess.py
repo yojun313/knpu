@@ -7,6 +7,7 @@ import platform
 from wordcloud import WordCloud
 from collections import Counter
 import os
+import csv
 from tqdm import tqdm
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
@@ -897,7 +898,7 @@ class DataProcess:
 
             return period_divided_group
 
-        os.makedirs(folder_path, exist_ok=True)
+        os.makedirs(os.path.join(folder_path, 'data'), exist_ok=True)
 
         for column in data.columns.tolist():
             if 'Text' in column:
@@ -934,6 +935,7 @@ class DataProcess:
 
             # 단어 빈도 계산
             word_freq = Counter(all_words)
+            sorted_word_freq = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
 
             # 워드클라우드 생성
             wordcloud = WordCloud(font_path=os.path.join(os.path.dirname(__file__), 'source', 'malgun.ttf'), background_color='white', width=800, height=600, max_words=max_words)
@@ -942,6 +944,16 @@ class DataProcess:
             # 워드클라우드 저장
             output_file = os.path.join(folder_path, f'wordcloud_{period_list[i]}.png')
             wc_generated.to_file(output_file)
+
+            # CSV 파일로 저장
+            output_file = os.path.join(folder_path, 'data', f'wordcount_{period_list[i]}.csv')
+            with open(output_file, mode="w", newline="", encoding="utf-8") as file:
+                writer = csv.writer(file)
+                # 헤더 작성
+                writer.writerow(["word", "count"])
+                # 데이터 작성
+                for word, count in sorted_word_freq:
+                    writer.writerow([word, count])
 
             i += 1
 
