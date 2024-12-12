@@ -572,59 +572,169 @@ class Manager_Analysis:
                 QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
                 return
 
-            filename = os.path.basename(selected_directory[0]).replace('token_', '').replace('.csv', '')
-            filename = re.sub(r'_\d{4}_\d{4}', '', filename)
-
-            # 날짜 값 추출
-            match = re.search(r'_(\d{8})_(\d{8})_', filename)
-            startdate = match.group(1)  # 첫 번째 날짜 (20170510)
-            enddate = match.group(2)  # 두 번째 날짜 (20220509)
-            date = (startdate, enddate)
-
             self.main.printStatus("워드클라우드 데이터를 저장할 위치를 선택하세요")
             save_path = QFileDialog.getExistingDirectory(self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요", self.main.default_directory)
             if save_path == '':
                 self.main.printStatus()
                 return
 
-            self.main.printStatus("옵션을 선택하세요")
-            selected_split, ok = QInputDialog.getItem(
-                self.main,
-                "옵션 선택",
-                "분할 기간을 선택하세요:",
-                ['1년', '6개월', '3개월', '1개월', '1주', '1일'],
-                0,
-                False
-            )
+            class wordcloud_optionDialog(QDialog):
+                def __init__(self, tokenfile_name):
+                    super().__init__()
+                    self.tokenfile_name = tokenfile_name
+                    self.initUI()
+                    self.data = None  # 데이터를 저장할 속성 추가
 
-            if not ok or not selected_split:
+                def initUI(self):
+                    try:
+                        self.startdate = QDate.fromString(self.tokenfile_name.split('_')[3], "yyyyMMdd")
+                        self.enddate = QDate.fromString(self.tokenfile_name.split('_')[4], "yyyyMMdd")
+                    except:
+                        self.startdate = QDate.currentDate()
+                        self.enddate = QDate.currentDate()
+
+                    self.setWindowTitle('WORDCLOUD OPTION')
+                    self.resize(300, 250)  # 창 크기를 조정
+
+                    layout = QVBoxLayout()
+
+                    # 레이아웃의 마진과 간격 조정
+                    layout.setContentsMargins(10, 10, 10, 10)  # (left, top, right, bottom) 여백 설정
+                    layout.setSpacing(10)  # 위젯 간 간격 설정
+
+                    # 각 입력 필드를 위한 QLabel 및 QDateEdit 생성
+                    self.startdate_label = QLabel('분석 시작 일자를 선택하세요: ')
+                    self.startdate_input = QDateEdit(calendarPopup=True)
+                    self.startdate_input.setDisplayFormat('yyyyMMdd')
+                    self.startdate_input.setDate(self.startdate)
+                    layout.addWidget(self.startdate_label)
+                    layout.addWidget(self.startdate_input)
+
+                    self.enddate_label = QLabel('분석 종료 일자를 선택하세요: ')
+                    self.enddate_input = QDateEdit(calendarPopup=True)
+                    self.enddate_input.setDisplayFormat('yyyyMMdd')
+                    self.enddate_input.setDate(self.enddate)
+                    layout.addWidget(self.enddate_label)
+                    layout.addWidget(self.enddate_input)
+
+                    # 새로운 드롭다운 메뉴(QComboBox) 생성
+                    self.period_option_label = QLabel('분석 주기 선택: ')
+                    layout.addWidget(self.period_option_label)
+
+                    self.period_option_menu = QComboBox()
+                    self.period_option_menu.addItem('1년 (Yearly)')
+                    self.period_option_menu.addItem('6개월 (Half-Yearly)')
+                    self.period_option_menu.addItem('3개월 (Quarterly)')
+                    self.period_option_menu.addItem('1개월 (Monthly)')
+                    self.period_option_menu.addItem('1주 (Weekly)')
+                    self.period_option_menu.addItem('1일 (Daily)')
+                    layout.addWidget(self.period_option_menu)
+
+                    self.topword_label = QLabel('최대 단어 개수를 입력하세요: ')
+                    self.topword_input = QLineEdit()
+                    self.topword_input.setText('200')  # 기본값 설정
+                    layout.addWidget(self.topword_label)
+                    layout.addWidget(self.topword_input)
+
+                    # 체크박스 생성
+                    self.except_checkbox_label = QLabel('제외 단어 리스트를 추가하시겠습니까? ')
+                    layout.addWidget(self.except_checkbox_label)
+
+                    checkbox_layout = QHBoxLayout()
+                    self.except_yes_checkbox = QCheckBox('Yes')
+                    self.except_no_checkbox = QCheckBox('No')
+
+                    self.except_yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
+                    self.except_no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
+
+                    # 서로 배타적으로 선택되도록 설정
+                    self.except_yes_checkbox.toggled.connect(
+                        lambda: self.except_no_checkbox.setChecked(
+                            False) if self.except_yes_checkbox.isChecked() else None)
+                    self.except_no_checkbox.toggled.connect(
+                        lambda: self.except_yes_checkbox.setChecked(
+                            False) if self.except_no_checkbox.isChecked() else None)
+
+                    checkbox_layout.addWidget(self.except_yes_checkbox)
+                    checkbox_layout.addWidget(self.except_no_checkbox)
+                    layout.addLayout(checkbox_layout)
+
+
+                    # 확인 버튼 생성 및 클릭 시 동작 연결
+                    self.submit_button = QPushButton('분석 실행')
+                    self.submit_button.clicked.connect(self.submit)
+                    layout.addWidget(self.submit_button)
+
+                    self.setLayout(layout)
+
+                def submit(self):
+                    period = self.period_option_menu.currentText()
+                    match period:
+                        case '1년 (Yearly)':
+                            period = '1y'
+                        case '6개월 (Half-Yearly)':
+                            period = '6m'
+                        case '3개월 (Quarterly)':
+                            period = '3m'
+                        case '1개월 (Monthly)':
+                            period = '1m'
+                        case '1주 (Weekly)':
+                            period = '1w'
+                        case '1일 (Daily)':
+                            period = '1d'
+                    startdate = self.startdate_input.text()
+                    enddate = self.enddate_input.text()
+                    maxword = self.topword_input.text()
+                    except_yes_selected = self.except_yes_checkbox.isChecked()
+
+                    self.data = {
+                        'startdate': startdate,
+                        'enddate': enddate,
+                        'period': period,
+                        'maxword': maxword,
+                        'except_yes_selected': except_yes_selected,
+                    }
+                    self.accept()
+
+            self.main.printStatus("워드클라우드 옵션을 설정하세요")
+            dialog = wordcloud_optionDialog(os.path.basename(selected_directory[0]))
+            dialog.exec_()
+
+            if dialog.data == None:
+                self.main.printStatus()
                 return
 
-            # max_words 설정 받기
-            max_words, ok = QInputDialog.getInt(
-                self.main,
-                "최대 단어 수 설정",
-                "워드클라우드에서 표시할 최대 단어 수를 입력하세요:",
-                value=200,
-                min=10,
-                max=1000,
-            )
-            if not ok:
-                return
+            startdate = dialog.data['startdate']
+            enddate = dialog.data['enddate']
+            date = (startdate, enddate)
+            period = dialog.data['period']
+            maxword = int(dialog.data['maxword'])
+            except_yes_selected = dialog.data['except_yes_selected']
 
-            split_change = {
-                '1년': '1y',
-                '6개월': '6m',
-                '3개월': '3m',
-                '1개월': '1m',
-                '1주': '1y',
-                '1일': '1d'
-            }
-            selected_split = split_change[selected_split]
+            filename = os.path.basename(selected_directory[0]).replace('token_', '').replace('.csv', '')
+            filename = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{startdate}~{enddate}_{period}', filename)
+
+            if except_yes_selected == True:
+                QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
+                self.main.printStatus(f"예외어 사전(CSV)을 선택하세요")
+                exception_word_list_path   = QFileDialog.getOpenFileName(self.main, "예외어 사전(CSV)를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
+                exception_word_list_path = exception_word_list_path[0]
+                if exception_word_list_path == "":
+                    return
+                with open(exception_word_list_path, 'rb') as f:
+                    codec = chardet.detect(f.read())['encoding']
+                df = pd.read_csv(exception_word_list_path, low_memory=False, encoding=codec)
+                if 'word' not in list(df.keys()):
+                    self.main.printStatus()
+                    QMessageBox.warning(self.main, "Wrong Format", "예외어 사전 형식과 일치하지 않습니다")
+                    return
+                exception_word_list = df['word'].tolist()
+            else:
+                exception_word_list = []
 
             folder_path = os.path.join(
                 save_path,
-                f"wordcloud_{filename}_{selected_split}_{datetime.now().strftime('%m%d%H%M')}"
+                f"wordcloud_{filename}_{datetime.now().strftime('%m%d%H%M')}"
             )
 
             if self.main.SETTING['ProcessConsole'] == 'default':
@@ -634,12 +744,12 @@ class Manager_Analysis:
             print("\n파일 불러오는 중...\n")
             token_data = pd.read_csv(selected_directory[0], low_memory=False)
 
-            self.dataprocess_obj.wordcloud(self.main, token_data, folder_path, date, max_words, selected_split)
+            self.dataprocess_obj.wordcloud(self.main, token_data, folder_path, date, maxword, period, exception_word_list)
             self.main.printStatus()
 
             if self.main.SETTING['ProcessConsole'] == 'default':
                 close_console()
-                
+
             reply = QMessageBox.question(self.main, 'Notification', f"{filename} 워드클라우드 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 self.main.openFileExplorer(folder_path)
@@ -648,8 +758,6 @@ class Manager_Analysis:
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
-
-
 
     def kimkem_kimkem(self):
         class KimKemOptionDialog(QDialog):
@@ -705,6 +813,242 @@ class Manager_Analysis:
         dialog.exec_()
     
     def kimkem_kimkem_file(self):
+        class KimKemInputDialog(QDialog):
+            def __init__(self, tokenfile_name):
+                super().__init__()
+                self.initUI()
+                self.tokenfile_name = tokenfile_name
+                self.data = None  # 데이터를 저장할 속성 추가
+
+            def initUI(self):
+                try:
+                    self.startdate = QDate.fromString(tokenfile_name.split('_')[3], "yyyyMMdd")
+                    self.enddate = QDate.fromString(tokenfile_name.split('_')[4], "yyyyMMdd")
+                except:
+                    self.startdate = QDate.currentDate()
+                    self.enddate = QDate.currentDate()
+
+                self.setWindowTitle('KEM KIM OPTION')
+                self.resize(300, 250)  # 창 크기를 조정
+
+                layout = QVBoxLayout()
+
+                # 레이아웃의 마진과 간격 조정
+                layout.setContentsMargins(10, 10, 10, 10)  # (left, top, right, bottom) 여백 설정
+                layout.setSpacing(10)  # 위젯 간 간격 설정
+
+                # 각 입력 필드를 위한 QLabel 및 QDateEdit 생성
+                self.startdate_label = QLabel('분석 시작 일자를 선택하세요: ')
+                self.startdate_input = QDateEdit(calendarPopup=True)
+                self.startdate_input.setDisplayFormat('yyyyMMdd')
+                self.startdate_input.setDate(self.startdate)
+                layout.addWidget(self.startdate_label)
+                layout.addWidget(self.startdate_input)
+
+                self.enddate_label = QLabel('분석 종료 일자를 선택하세요: ')
+                self.enddate_input = QDateEdit(calendarPopup=True)
+                self.enddate_input.setDisplayFormat('yyyyMMdd')
+                self.enddate_input.setDate(self.enddate)
+                layout.addWidget(self.enddate_label)
+                layout.addWidget(self.enddate_input)
+
+                # 새로운 드롭다운 메뉴(QComboBox) 생성
+                self.period_option_label = QLabel('분석 주기 선택: ')
+                layout.addWidget(self.period_option_label)
+
+                self.period_option_menu = QComboBox()
+                self.period_option_menu.addItem('1년 (Yearly)')
+                self.period_option_menu.addItem('6개월 (Half-Yearly)')
+                self.period_option_menu.addItem('3개월 (Quarterly)')
+                self.period_option_menu.addItem('1개월 (Monthly)')
+                self.period_option_menu.addItem('1주 (Weekly)')
+                self.period_option_menu.addItem('1일 (Daily)')
+                layout.addWidget(self.period_option_menu)
+
+                self.topword_label = QLabel('상위 단어 개수를 입력하세요: ')
+                self.topword_input = QLineEdit()
+                self.topword_input.setText('500')  # 기본값 설정
+                layout.addWidget(self.topword_label)
+                layout.addWidget(self.topword_input)
+
+                # Time Weight 입력 필드 생성 및 레이아웃에 추가
+                self.weight_label = QLabel('시간 가중치(tw)를 입력하세요: ')
+                self.weight_input = QLineEdit()
+                self.weight_input.setText('0.1')  # 기본값 설정
+                layout.addWidget(self.weight_label)
+                layout.addWidget(self.weight_input)
+
+                # Period Option Menu 선택 시 시간 가중치 변경 함수 연결
+                self.period_option_menu.currentIndexChanged.connect(self.update_weight)
+
+                self.wordcnt_label = QLabel('그래프 애니메이션에 띄울 단어의 개수를 입력하세요: ')
+                self.wordcnt_input = QLineEdit()
+                self.wordcnt_input.setText('10')  # 기본값 설정
+                layout.addWidget(self.wordcnt_label)
+                layout.addWidget(self.wordcnt_input)
+
+                # 비일관 필터링 체크박스 생성
+                self.filter_checkbox_label = QLabel('비일관 데이터를 필터링하시겠습니까?? ')
+                layout.addWidget(self.filter_checkbox_label)
+
+                checkbox_layout = QHBoxLayout()
+                self.filter_yes_checkbox = QCheckBox('Yes')
+                self.filter_no_checkbox = QCheckBox('No')
+
+                self.filter_yes_checkbox.setChecked(True)  # Yes 체크박스 기본 체크
+                self.filter_no_checkbox.setChecked(False)  # No 체크박스 기본 체크 해제
+
+                # 서로 배타적으로 선택되도록 설정
+                self.filter_yes_checkbox.toggled.connect(
+                    lambda: self.filter_no_checkbox.setChecked(
+                        False) if self.filter_yes_checkbox.isChecked() else None)
+                self.filter_no_checkbox.toggled.connect(
+                    lambda: self.filter_yes_checkbox.setChecked(
+                        False) if self.filter_no_checkbox.isChecked() else None)
+
+                checkbox_layout.addWidget(self.filter_yes_checkbox)
+                checkbox_layout.addWidget(self.filter_no_checkbox)
+                layout.addLayout(checkbox_layout)
+
+                # 애니메이션 체크박스 생성
+                self.ani_checkbox_label = QLabel('추적 데이터를 시각화하시겠습니까? ')
+                layout.addWidget(self.ani_checkbox_label)
+
+                checkbox_layout = QHBoxLayout()
+                self.ani_yes_checkbox = QCheckBox('Yes')
+                self.ani_no_checkbox = QCheckBox('No')
+
+                self.ani_yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
+                self.ani_no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
+
+                # 서로 배타적으로 선택되도록 설정
+                self.ani_yes_checkbox.toggled.connect(
+                    lambda: self.ani_no_checkbox.setChecked(False) if self.ani_yes_checkbox.isChecked() else None)
+                self.ani_no_checkbox.toggled.connect(
+                    lambda: self.ani_yes_checkbox.setChecked(False) if self.ani_no_checkbox.isChecked() else None)
+
+                checkbox_layout.addWidget(self.ani_yes_checkbox)
+                checkbox_layout.addWidget(self.ani_no_checkbox)
+                layout.addLayout(checkbox_layout)
+
+                # 체크박스 생성
+                self.except_checkbox_label = QLabel('제외 단어 리스트를 추가하시겠습니까? ')
+                layout.addWidget(self.except_checkbox_label)
+
+                checkbox_layout = QHBoxLayout()
+                self.except_yes_checkbox = QCheckBox('Yes')
+                self.except_no_checkbox = QCheckBox('No')
+
+                self.except_yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
+                self.except_no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
+
+                # 서로 배타적으로 선택되도록 설정
+                self.except_yes_checkbox.toggled.connect(
+                    lambda: self.except_no_checkbox.setChecked(
+                        False) if self.except_yes_checkbox.isChecked() else None)
+                self.except_no_checkbox.toggled.connect(
+                    lambda: self.except_yes_checkbox.setChecked(
+                        False) if self.except_no_checkbox.isChecked() else None)
+
+                checkbox_layout.addWidget(self.except_yes_checkbox)
+                checkbox_layout.addWidget(self.except_no_checkbox)
+                layout.addLayout(checkbox_layout)
+
+                # 드롭다운 메뉴(QComboBox) 생성
+                self.dropdown_label = QLabel('분할 기준: ')
+                layout.addWidget(self.dropdown_label)
+
+                self.dropdown_menu = QComboBox()
+                self.dropdown_menu.addItem('평균(Mean)')
+                self.dropdown_menu.addItem('중앙값(Median)')
+                self.dropdown_menu.addItem('직접 입력: 상위( )%')
+                layout.addWidget(self.dropdown_menu)
+
+                # 추가 입력창 (QLineEdit), 초기에는 숨김
+                self.additional_input_label = QLabel('숫자를 입력하세요')
+                self.additional_input = QLineEdit()
+                self.additional_input.setPlaceholderText('입력')
+                self.additional_input_label.hide()
+                self.additional_input.hide()
+                layout.addWidget(self.additional_input_label)
+                layout.addWidget(self.additional_input)
+
+                # 드롭다운 메뉴의 항목 변경 시 추가 입력창을 표시/숨김
+                self.dropdown_menu.currentIndexChanged.connect(self.handle_dropdown_change)
+
+                # 확인 버튼 생성 및 클릭 시 동작 연결
+                self.submit_button = QPushButton('분석 실행')
+                self.submit_button.clicked.connect(self.submit)
+                layout.addWidget(self.submit_button)
+
+                self.setLayout(layout)
+
+            def handle_dropdown_change(self, index):
+                # 특정 옵션이 선택되면 추가 입력창을 표시, 그렇지 않으면 숨김
+                if self.dropdown_menu.currentText() == '직접 입력: 상위( )%':
+                    self.additional_input_label.show()
+                    self.additional_input.show()
+                else:
+                    self.additional_input_label.hide()
+                    self.additional_input.hide()
+
+            def update_weight(self):
+                period = self.period_option_menu.currentText()
+                if period == '1 (Yearly)':
+                    self.weight_input.setText('0.1')
+                elif period == '6개월 (Half-Yearly)':
+                    self.weight_input.setText('0.05')
+                elif period == '3개월 (Quarterly)':
+                    self.weight_input.setText('0.025')
+                elif period == '1개월 (Monthly)':
+                    self.weight_input.setText('0.008')
+                elif period == '1주 (Weekly)':
+                    self.weight_input.setText('0.002')
+                elif period == '1일 (Daily)':
+                    self.weight_input.setText('0.0003')
+
+            def submit(self):
+                # 입력된 데이터를 확인하고 처리
+                startdate = self.startdate_input.text()
+                enddate = self.enddate_input.text()
+                period = self.period_option_menu.currentText()
+                match period:
+                    case '1년 (Yearly)':
+                        period = '1y'
+                    case '6개월 (Half-Yearly)':
+                        period = '6m'
+                    case '3개월 (Quarterly)':
+                        period = '3m'
+                    case '1개월 (Monthly)':
+                        period = '1m'
+                    case '1주 (Weekly)':
+                        period = '1w'
+                    case '1일 (Daily)':
+                        period = '1d'
+
+                topword = self.topword_input.text()
+                weight = self.weight_input.text()
+                graph_wordcnt = self.wordcnt_input.text()
+                filter_yes_selected = self.filter_yes_checkbox.isChecked()
+                ani_yes_selected = self.ani_yes_checkbox.isChecked()
+                except_yes_selected = self.except_yes_checkbox.isChecked()
+                split_option = self.dropdown_menu.currentText()
+                split_custom = self.additional_input.text() if self.additional_input.isVisible() else None
+
+                self.data = {
+                    'startdate': startdate,
+                    'enddate': enddate,
+                    'period': period,
+                    'topword': topword,
+                    'weight': weight,
+                    'graph_wordcnt': graph_wordcnt,
+                    'filter_yes_selected': filter_yes_selected,
+                    'ani_yes_selected': ani_yes_selected,
+                    'except_yes_selected': except_yes_selected,
+                    'split_option': split_option,
+                    'split_custom': split_custom
+                }
+                self.accept()
         try:
             selected_directory = self.analysis_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
@@ -720,10 +1064,125 @@ class Manager_Analysis:
                 QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
                 return
 
+            tokenfile_name = os.path.basename(selected_directory[0])
+
+            self.main.printStatus("KEM KIM 데이터를 저장할 위치를 선택하세요")
+            save_path = QFileDialog.getExistingDirectory(self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요", self.main.default_directory)
+            if save_path == '':
+                self.main.printStatus()
+                return
+
+            self.main.printStatus("KEM KIM 옵션을 설정하세요")
+            while True:
+                dialog = KimKemInputDialog(tokenfile_name)
+                dialog.exec_()
+                try:
+                    if dialog.data == None:
+                        return
+                    startdate = dialog.data['startdate']
+                    enddate = dialog.data['enddate']
+                    period = dialog.data['period']
+                    topword = int(dialog.data['topword'])
+                    weight = float(dialog.data['weight'])
+                    graph_wordcnt = int(dialog.data['graph_wordcnt'])
+                    filter_yes_selected = dialog.data['filter_yes_selected']
+                    ani_yes_selected = dialog.data['ani_yes_selected']
+                    except_yes_selected = dialog.data['except_yes_selected']
+                    split_option = dialog.data['split_option']
+                    split_custom = dialog.data['split_custom']
+                    # Calculate total periods based on the input period
+
+                    if period == '1y':
+                        total_periods = (1 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
+                    elif period in ['6m', '3m', '1m']:
+                        if startdate[:-4] == enddate[:-4]:  # 같은 연도일 경우
+                            total_periods = ((int(enddate[4:6]) - int(startdate[4:6])) + 1) / int(period[:-1])
+                        else:  # 다른 연도일 경우
+                            total_periods = (12 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
+                    elif period == '1w':
+                        total_days = (datetime.strptime(str(enddate), '%Y%m%d') - datetime.strptime(str(startdate),
+                                                                                                    '%Y%m%d')).days
+                        total_periods = total_days // 7
+                        if datetime.strptime(startdate, '%Y%m%d').strftime('%A') != 'Monday':
+                            QMessageBox.warning(self.main, "Wrong Form",
+                                                "분석 시작일이 월요일이 아닙니다\n\n1주 단위 분석에서는 분석 시작일을 월요일, 분석 종료일을 일요일로 설정하십시오")
+                            continue
+                        if datetime.strptime(enddate, '%Y%m%d').strftime('%A') != 'Sunday':
+                            QMessageBox.warning(self.main, "Wrong Form",
+                                                "분석 종료일이 일요일이 아닙니다\n\n1주 단위 분석에서는 분석 시작일을 월요일, 분석 종료일을 일요일로 설정하십시오")
+                            continue
+                    else:  # assuming '1d' or similar daily period
+                        total_days = (datetime.strptime(str(enddate), '%Y%m%d') - datetime.strptime(str(startdate),
+                                                                                                    '%Y%m%d')).days
+                        total_periods = total_days
+
+                    # Check if the total periods exceed the limit when multiplied by the weight
+                    if total_periods * weight >= 1:
+                        QMessageBox.warning(self.main, "Wrong Form",
+                                            "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
+                        continue
+
+                    if split_option in ['평균(Mean)', '중앙값(Median)'] and split_custom is None:
+                        pass
+                    else:
+                        split_custom = float(split_custom)
+                    break
+                except:
+                    QMessageBox.warning(self.main, "Wrong Form", "입력 형식이 올바르지 않습니다")
+
+            if except_yes_selected == True:
+                QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
+                self.main.printStatus(f"예외어 사전(CSV)을 선택하세요")
+                exception_word_list_path = QFileDialog.getOpenFileName(self.main, "예외어 사전(CSV)를 선택하세요",
+                                                                       self.main.default_directory,
+                                                                       "CSV Files (*.csv);;All Files (*)")
+                exception_word_list_path = exception_word_list_path[0]
+                if exception_word_list_path == "":
+                    return
+                with open(exception_word_list_path, 'rb') as f:
+                    codec = chardet.detect(f.read())['encoding']
+                df = pd.read_csv(exception_word_list_path, low_memory=False, encoding=codec)
+                if 'word' not in list(df.keys()):
+                    QMessageBox.warning(self.main, "Wrong Format", "예외어 사전 형식과 일치하지 않습니다")
+                    self.main.printStatus()
+                    return
+                exception_word_list = df['word'].tolist()
+            else:
+                exception_word_list = []
+                exception_word_list_path = 'N'
+
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                open_console('KEMKIM 분석')
+
+            print("\n파일 읽는 중...\n")
             self.main.printStatus("파일 읽는 중...")
             token_data = pd.read_csv(selected_directory[0], low_memory=False)
-            self.kimkem_kimkemStart(token_data, os.path.basename(selected_directory[0]))
+
+            self.main.user_logging(
+                f'ANALYSIS -> KEMKIM({tokenfile_name})-({startdate},{startdate},{topword},{weight},{filter_yes_selected})')
+            kimkem_obj = KimKem(self.main, token_data, tokenfile_name, save_path, startdate, enddate, period,
+                                topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected,
+                                ani_yes_selected, exception_word_list, exception_word_list_path)
+            result = kimkem_obj.make_kimkem()
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                close_console()
             self.main.printStatus()
+
+            if result == 1:
+                reply = QMessageBox.question(self.main, 'Notification', "KEM KIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
+            elif result == 0:
+                QMessageBox.information(self.main, "Notification", f"Keyword가 존재하지 않아 KEM KIM 분석이 진행되지 않았습니다")
+            elif result == 2:
+                QMessageBox.warning(self.main, "Wrong Range",
+                                    "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
+            else:
+                self.main.program_bug_log(result)
+
+            del kimkem_obj
+            gc.collect()
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
@@ -1408,343 +1867,6 @@ class Manager_Analysis:
                 QMessageBox.information(self.main, "Notification", f"CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다")
                 self.main.openFileExplorer(analyze_directory)
 
-        except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
-
-    def kimkem_kimkemStart(self, token_data, tokenfile_name):
-        class KimKemInputDialog(QDialog):
-            def __init__(self, tokenfile_name):
-                super().__init__()
-                self.initUI()
-                self.tokenfile_name = tokenfile_name
-                self.data = None  # 데이터를 저장할 속성 추가
-
-            def initUI(self):
-                try:
-                    self.startdate = QDate.fromString(tokenfile_name.split('_')[3], "yyyyMMdd")
-                    self.enddate = QDate.fromString(tokenfile_name.split('_')[4], "yyyyMMdd")
-                except:
-                    self.startdate = QDate.currentDate()
-                    self.enddate = QDate.currentDate()
-                
-                self.setWindowTitle('KEM KIM OPTION')
-                self.resize(300, 250)  # 창 크기를 조정
-
-                layout = QVBoxLayout()
-
-                # 레이아웃의 마진과 간격 조정
-                layout.setContentsMargins(10, 10, 10, 10)  # (left, top, right, bottom) 여백 설정
-                layout.setSpacing(10)  # 위젯 간 간격 설정
-
-                # 각 입력 필드를 위한 QLabel 및 QDateEdit 생성
-                self.startdate_label = QLabel('분석 시작 일자를 선택하세요: ')
-                self.startdate_input = QDateEdit(calendarPopup=True)
-                self.startdate_input.setDisplayFormat('yyyyMMdd')
-                self.startdate_input.setDate(self.startdate)
-                layout.addWidget(self.startdate_label)
-                layout.addWidget(self.startdate_input)
-
-                self.enddate_label = QLabel('분석 종료 일자를 선택하세요: ')
-                self.enddate_input = QDateEdit(calendarPopup=True)
-                self.enddate_input.setDisplayFormat('yyyyMMdd')
-                self.enddate_input.setDate(self.enddate)
-                layout.addWidget(self.enddate_label)
-                layout.addWidget(self.enddate_input)
-                
-                # 새로운 드롭다운 메뉴(QComboBox) 생성
-                self.period_option_label = QLabel('분석 주기 선택: ')
-                layout.addWidget(self.period_option_label)
-                
-                self.period_option_menu = QComboBox()
-                self.period_option_menu.addItem('1년 (Yearly)')
-                self.period_option_menu.addItem('6개월 (Half-Yearly)')
-                self.period_option_menu.addItem('3개월 (Quarterly)')
-                self.period_option_menu.addItem('1개월 (Monthly)')
-                self.period_option_menu.addItem('1주 (Weekly)')
-                self.period_option_menu.addItem('1일 (Daily)')
-                layout.addWidget(self.period_option_menu)
-
-                self.topword_label = QLabel('상위 단어 개수를 입력하세요: ')
-                self.topword_input = QLineEdit()
-                self.topword_input.setText('500')  # 기본값 설정
-                layout.addWidget(self.topword_label)
-                layout.addWidget(self.topword_input)
-
-                # Time Weight 입력 필드 생성 및 레이아웃에 추가
-                self.weight_label = QLabel('시간 가중치(tw)를 입력하세요: ')
-                self.weight_input = QLineEdit()
-                self.weight_input.setText('0.1')  # 기본값 설정
-                layout.addWidget(self.weight_label)
-                layout.addWidget(self.weight_input)
-
-                # Period Option Menu 선택 시 시간 가중치 변경 함수 연결
-                self.period_option_menu.currentIndexChanged.connect(self.update_weight)
-
-                self.wordcnt_label = QLabel('그래프 애니메이션에 띄울 단어의 개수를 입력하세요: ')
-                self.wordcnt_input = QLineEdit()
-                self.wordcnt_input.setText('10')  # 기본값 설정
-                layout.addWidget(self.wordcnt_label)
-                layout.addWidget(self.wordcnt_input)
-
-                # 비일관 필터링 체크박스 생성
-                self.filter_checkbox_label = QLabel('비일관 데이터를 필터링하시겠습니까?? ')
-                layout.addWidget(self.filter_checkbox_label)
-
-                checkbox_layout = QHBoxLayout()
-                self.filter_yes_checkbox = QCheckBox('Yes')
-                self.filter_no_checkbox = QCheckBox('No')
-
-                self.filter_yes_checkbox.setChecked(True)  # Yes 체크박스 기본 체크
-                self.filter_no_checkbox.setChecked(False)  # No 체크박스 기본 체크 해제
-
-                # 서로 배타적으로 선택되도록 설정
-                self.filter_yes_checkbox.toggled.connect(
-                    lambda: self.filter_no_checkbox.setChecked(False) if self.filter_yes_checkbox.isChecked() else None)
-                self.filter_no_checkbox.toggled.connect(
-                    lambda: self.filter_yes_checkbox.setChecked(False) if self.filter_no_checkbox.isChecked() else None)
-
-                checkbox_layout.addWidget(self.filter_yes_checkbox)
-                checkbox_layout.addWidget(self.filter_no_checkbox)
-                layout.addLayout(checkbox_layout)
-
-                # 애니메이션 체크박스 생성
-                self.ani_checkbox_label = QLabel('추적 데이터를 시각화하시겠습니까? ')
-                layout.addWidget(self.ani_checkbox_label)
-
-                checkbox_layout = QHBoxLayout()
-                self.ani_yes_checkbox = QCheckBox('Yes')
-                self.ani_no_checkbox = QCheckBox('No')
-
-                self.ani_yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
-                self.ani_no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
-
-                # 서로 배타적으로 선택되도록 설정
-                self.ani_yes_checkbox.toggled.connect(
-                    lambda: self.ani_no_checkbox.setChecked(False) if self.ani_yes_checkbox.isChecked() else None)
-                self.ani_no_checkbox.toggled.connect(
-                    lambda: self.ani_yes_checkbox.setChecked(False) if self.ani_no_checkbox.isChecked() else None)
-
-                checkbox_layout.addWidget(self.ani_yes_checkbox)
-                checkbox_layout.addWidget(self.ani_no_checkbox)
-                layout.addLayout(checkbox_layout)
-
-                # 체크박스 생성
-                self.except_checkbox_label = QLabel('제외 단어 리스트를 추가하시겠습니까? ')
-                layout.addWidget(self.except_checkbox_label)
-
-                checkbox_layout = QHBoxLayout()
-                self.except_yes_checkbox = QCheckBox('Yes')
-                self.except_no_checkbox = QCheckBox('No')
-
-                self.except_yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
-                self.except_no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
-
-                # 서로 배타적으로 선택되도록 설정
-                self.except_yes_checkbox.toggled.connect(
-                    lambda: self.except_no_checkbox.setChecked(False) if self.except_yes_checkbox.isChecked() else None)
-                self.except_no_checkbox.toggled.connect(
-                    lambda: self.except_yes_checkbox.setChecked(False) if self.except_no_checkbox.isChecked() else None)
-
-                checkbox_layout.addWidget(self.except_yes_checkbox)
-                checkbox_layout.addWidget(self.except_no_checkbox)
-                layout.addLayout(checkbox_layout)
-
-                # 드롭다운 메뉴(QComboBox) 생성
-                self.dropdown_label = QLabel('분할 기준: ')
-                layout.addWidget(self.dropdown_label)
-
-                self.dropdown_menu = QComboBox()
-                self.dropdown_menu.addItem('평균(Mean)')
-                self.dropdown_menu.addItem('중앙값(Median)')
-                self.dropdown_menu.addItem('직접 입력: 상위( )%')
-                layout.addWidget(self.dropdown_menu)
-
-                # 추가 입력창 (QLineEdit), 초기에는 숨김
-                self.additional_input_label = QLabel('숫자를 입력하세요')
-                self.additional_input = QLineEdit()
-                self.additional_input.setPlaceholderText('입력')
-                self.additional_input_label.hide()
-                self.additional_input.hide()
-                layout.addWidget(self.additional_input_label)
-                layout.addWidget(self.additional_input)
-
-                # 드롭다운 메뉴의 항목 변경 시 추가 입력창을 표시/숨김
-                self.dropdown_menu.currentIndexChanged.connect(self.handle_dropdown_change)
-
-                # 확인 버튼 생성 및 클릭 시 동작 연결
-                self.submit_button = QPushButton('분석 실행')
-                self.submit_button.clicked.connect(self.submit)
-                layout.addWidget(self.submit_button)
-
-                self.setLayout(layout)
-
-            def handle_dropdown_change(self, index):
-                # 특정 옵션이 선택되면 추가 입력창을 표시, 그렇지 않으면 숨김
-                if self.dropdown_menu.currentText() == '직접 입력: 상위( )%':
-                    self.additional_input_label.show()
-                    self.additional_input.show()
-                else:
-                    self.additional_input_label.hide()
-                    self.additional_input.hide()
-
-            def update_weight(self):
-                period = self.period_option_menu.currentText()
-                if period == '1 (Yearly)':
-                    self.weight_input.setText('0.1')
-                elif period == '6개월 (Half-Yearly)':
-                    self.weight_input.setText('0.05')
-                elif period == '3개월 (Quarterly)':
-                    self.weight_input.setText('0.025')
-                elif period == '1개월 (Monthly)':
-                    self.weight_input.setText('0.008')
-                elif period == '1주 (Weekly)':
-                    self.weight_input.setText('0.002')
-                elif period == '1일 (Daily)':
-                    self.weight_input.setText('0.0003')
-
-            def submit(self):
-                # 입력된 데이터를 확인하고 처리
-                startdate = self.startdate_input.text()
-                enddate = self.enddate_input.text()
-                period = self.period_option_menu.currentText()
-                match period:
-                    case '1년 (Yearly)':
-                        period = '1y'
-                    case '6개월 (Half-Yearly)':
-                        period = '6m'
-                    case '3개월 (Quarterly)':
-                        period = '3m'
-                    case '1개월 (Monthly)':
-                        period = '1m'
-                    case '1주 (Weekly)':
-                        period = '1w'
-                    case '1일 (Daily)':
-                        period = '1d'
-
-                topword = self.topword_input.text()
-                weight = self.weight_input.text()
-                graph_wordcnt = self.wordcnt_input.text()
-                filter_yes_selected = self.filter_yes_checkbox.isChecked()
-                ani_yes_selected = self.ani_yes_checkbox.isChecked()
-                except_yes_selected = self.except_yes_checkbox.isChecked()
-                split_option = self.dropdown_menu.currentText()
-                split_custom = self.additional_input.text() if self.additional_input.isVisible() else None
-
-                self.data = {
-                    'startdate': startdate,
-                    'enddate': enddate,
-                    'period': period,
-                    'topword': topword,
-                    'weight': weight,
-                    'graph_wordcnt': graph_wordcnt,
-                    'filter_yes_selected': filter_yes_selected,
-                    'ani_yes_selected': ani_yes_selected,
-                    'except_yes_selected': except_yes_selected,
-                    'split_option': split_option,
-                    'split_custom': split_custom
-                }
-                self.accept()
-        try:
-            self.main.printStatus("KEM KIM 데이터를 저장할 위치를 선택하세요")
-            save_path = QFileDialog.getExistingDirectory(self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요", self.main.default_directory)
-            if save_path == '':
-                self.main.printStatus()
-                return
-
-            self.main.printStatus(f"{tokenfile_name} KEMKIM 분석 중...")
-            while True:
-                dialog = KimKemInputDialog(tokenfile_name)
-                dialog.exec_()
-                try:
-                    if dialog.data == None:
-                        return
-                    startdate = dialog.data['startdate']
-                    enddate = dialog.data['enddate']
-                    period = dialog.data['period']
-                    topword = int(dialog.data['topword'])
-                    weight = float(dialog.data['weight'])
-                    graph_wordcnt = int(dialog.data['graph_wordcnt'])
-                    filter_yes_selected = dialog.data['filter_yes_selected']
-                    ani_yes_selected = dialog.data['ani_yes_selected']
-                    except_yes_selected = dialog.data['except_yes_selected']
-                    split_option = dialog.data['split_option']
-                    split_custom = dialog.data['split_custom']
-                    # Calculate total periods based on the input period
-
-                    if period == '1y':
-                        total_periods = (1 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
-                    elif period in ['6m', '3m', '1m']:
-                        if startdate[:-4] == enddate[:-4]:  # 같은 연도일 경우
-                            total_periods = ((int(enddate[4:6]) - int(startdate[4:6])) + 1) / int(period[:-1])
-                        else:  # 다른 연도일 경우
-                            total_periods = (12 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
-                    elif period == '1w':
-                        total_days = (datetime.strptime(str(enddate), '%Y%m%d') - datetime.strptime(str(startdate),'%Y%m%d')).days
-                        total_periods = total_days // 7
-                        if datetime.strptime(startdate, '%Y%m%d').strftime('%A') != 'Monday':
-                            QMessageBox.warning(self.main, "Wrong Form", "분석 시작일이 월요일이 아닙니다\n\n1주 단위 분석에서는 분석 시작일을 월요일, 분석 종료일을 일요일로 설정하십시오")
-                            continue
-                        if datetime.strptime(enddate, '%Y%m%d').strftime('%A') != 'Sunday':
-                            QMessageBox.warning(self.main, "Wrong Form", "분석 종료일이 일요일이 아닙니다\n\n1주 단위 분석에서는 분석 시작일을 월요일, 분석 종료일을 일요일로 설정하십시오")
-                            continue
-                    else:  # assuming '1d' or similar daily period
-                        total_days = (datetime.strptime(str(enddate), '%Y%m%d') - datetime.strptime(str(startdate),'%Y%m%d')).days
-                        total_periods = total_days
-
-                    # Check if the total periods exceed the limit when multiplied by the weight
-                    if total_periods * weight >= 1:
-                        QMessageBox.warning(self.main, "Wrong Form", "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
-                        continue
-
-                    if split_option in ['평균(Mean)', '중앙값(Median)'] and split_custom is None:
-                        pass
-                    else:
-                        split_custom = float(split_custom)
-                    break
-                except:
-                    QMessageBox.warning(self.main, "Wrong Form", "입력 형식이 올바르지 않습니다")
-
-
-            if except_yes_selected == True:
-                QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
-                exception_word_list_path   = QFileDialog.getOpenFileName(self.main, "예외어 사전(CSV)를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
-                exception_word_list_path = exception_word_list_path[0]
-                if exception_word_list_path == "":
-                    return
-                with open(exception_word_list_path, 'rb') as f:
-                    codec = chardet.detect(f.read())['encoding']
-                df = pd.read_csv(exception_word_list_path, low_memory=False, encoding=codec)
-                if 'word' not in list(df.keys()):
-                    QMessageBox.warning(self.main, "Wrong Format", "예외어 사전 형식과 일치하지 않습니다")
-                    return
-                exception_word_list = df['word'].tolist()
-            else:
-                exception_word_list = []
-                exception_word_list_path = 'N'
-
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                open_console('KEMKIM 분석')
-
-            self.main.user_logging(f'ANALYSIS -> KEMKIM({tokenfile_name})-({startdate},{startdate},{topword},{weight},{filter_yes_selected})')
-            kimkem_obj = KimKem(self.main, token_data, tokenfile_name, save_path, startdate, enddate, period, topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected, ani_yes_selected, exception_word_list, exception_word_list_path)
-            result = kimkem_obj.make_kimkem()
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                close_console()
-            self.main.printStatus()
-
-            if result == 1:
-                reply = QMessageBox.question(self.main, 'Notification', "KEM KIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
-                    self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
-            elif result == 0:
-                QMessageBox.information(self.main, "Notification", f"Keyword가 존재하지 않아 KEM KIM 분석이 진행되지 않았습니다")
-            elif result == 2:
-                QMessageBox.warning(self.main, "Wrong Range", "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
-            else:
-                self.main.program_bug_log(result)
-
-            del kimkem_obj
-            gc.collect()
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
