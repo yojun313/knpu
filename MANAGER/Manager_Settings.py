@@ -1,14 +1,11 @@
 from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, \
     QHBoxLayout, QLabel, QDialog, QLineEdit, QMessageBox, \
     QPushButton, QStackedWidget, QListWidget
-from PyQt5.QtCore import Qt, QTimer, QCoreApplication, QEventLoop
-from PyQt5.QtGui import QKeySequence, QPixmap, QPainter, QBrush, QColor
-from dotenv import load_dotenv
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QKeySequence
 from datetime import datetime
 import platform
 
-import os
-import tempfile
 class Manager_Setting(QDialog):
     def __init__(self, main, setting):
         super().__init__()
@@ -23,35 +20,18 @@ class Manager_Setting(QDialog):
         # 상단 레이아웃 (카테고리 목록과 설정 페이지)
         content_layout = QHBoxLayout()
 
+        self.is_dark_mode = False
+        if self.main.SETTING['Theme'] != 'default':
+            self.is_dark_mode = True
+
+
         # 왼쪽: 카테고리 목록
         self.category_list = QListWidget()
         self.category_list.addItem("앱 설정")
         self.category_list.addItem("DB 설정")
         self.category_list.addItem("정보")
         self.category_list.addItem("도움말")  # Help 섹션 추가
-        self.category_list.setStyleSheet("""
-            QListWidget {
-                border: 1px solid #ccc;
-                font-size: 14px;
-                background-color: #f4f4f4; /* 리스트 전체 배경색 */
-                border-radius: 8px; /* 둥근 모서리 */
-            }
-            QListWidget::item {
-                padding: 10px;
-                margin: 5px; /* 항목 간 간격 */
-                background-color: #ffffff; /* 항목 기본 배경색 */
-                border: 1px solid #ddd; /* 항목 테두리 */
-                border-radius: 6px; /* 항목 둥근 모서리 */
-            }
-            QListWidget::item:hover {
-                background-color: #34495e; /* 항목에 호버했을 때 배경색 */
-                color: white;
-            }
-            QListWidget::item:selected {
-                background-color: #34495e; /* 선택된 항목 배경색 */
-                color: white; /* 선택된 항목 텍스트 색상 */
-            }
-        """)
+
         self.category_list.currentRowChanged.connect(self.display_category)
         self.category_list.setCurrentRow(0)  # 첫 번째 항목을 기본 선택
 
@@ -80,36 +60,10 @@ class Manager_Setting(QDialog):
         # 저장 및 취소 버튼 섹션
         button_layout = QHBoxLayout()
         save_button = QPushButton("Save")
-        save_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2c3e50; /* 기본 배경색 */
-                color: white; /* 텍스트 색상 */
-                font-size: 14px; /* 폰트 크기 */
-                padding: 10px 20px; /* 내부 여백 */
-                border-radius: 8px; /* 둥근 모서리 */
-                border: none; /* 테두리 제거 */
-            }
-            QPushButton:hover {
-                background-color: #34495e; /* 호버 시 배경색 */
-            }
-        """)
         save_button.clicked.connect(self.save_settings)  # 저장 버튼 클릭 이벤트 연결
 
         # 취소 버튼
         cancel_button = QPushButton("Cancel")
-        cancel_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2c3e50; /* 기본 배경색 */
-                color: white; /* 텍스트 색상 */
-                font-size: 14px; /* 폰트 크기 */
-                padding: 10px 20px; /* 내부 여백 */
-                border-radius: 8px; /* 둥근 모서리 */
-                border: none; /* 테두리 제거 */
-            }
-            QPushButton:hover {
-                background-color: #34495e; /* 호버 시 배경색 */
-            }
-        """)
         cancel_button.clicked.connect(self.reject)  # 취소 버튼 클릭 이벤트 연결
 
         close_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
@@ -131,7 +85,221 @@ class Manager_Setting(QDialog):
         main_layout.addLayout(content_layout)
         main_layout.addLayout(button_layout)
 
+        self.apply_theme()
+
         self.setLayout(main_layout)
+
+    def apply_theme(self):
+        if self.is_dark_mode:
+            self.setStyleSheet(
+                """
+                QMainWindow {
+                    background-color: #2b2b2b;
+                    font-size: 14px;
+                    color: #eaeaea;  /* 기본 텍스트 색상 */
+                }
+                QPushButton {
+                    background-color: #34495e;
+                    color: #eaeaea;  /* 버튼 텍스트 색상 */
+                    border: none;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-size: 15px;
+                }
+                QStatusBar {
+                    font-family: 'Tahoma';
+                }
+                QPushButton:hover {
+                    background-color: #3a539b;
+                }
+                QLineEdit {
+                    border: 1px solid #5a5a5a;
+                    border-radius: 5px;
+                    padding: 8px;
+                    background-color: #3c3c3c;
+                    color: #eaeaea;  /* 입력 텍스트 색상 */
+                    font-size: 14px;
+                }
+                QLabel {
+                    color: #eaeaea;  /* 라벨 기본 텍스트 색상 */
+                    font-size: 14px;
+                }
+                QHeaderView::section {
+                    background-color: #3c3c3c;
+                    color: #eaeaea;  /* 헤더 텍스트 색상 */
+                    padding: 8px;
+                    border: 1px solid #5a5a5a;
+                    font-size: 14px;
+                }
+                QHeaderView::corner {  /* 좌측 상단 정사각형 부분 */
+                    background-color: #3c3c3c; /* 테이블 배경과 동일한 색상 */
+                    border: 1px solid #5a5a5a;
+                }
+                QHeaderView {
+                    background-color: #2b2b2b;  /* 헤더 전체 배경 */
+                    border: none;
+                }
+                QListWidget {
+                    background-color: #3c3c3c;
+                    color: #eaeaea;  /* 리스트 아이템 텍스트 색상 */
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                    border: none;
+                    min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
+                    max-width: 150px;
+                }
+                QListWidget::item {
+                    height: 40px;
+                    padding: 10px;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                }
+                QListWidget::item:selected {
+                    background-color: #34495e;
+                    color: #ffffff;
+                }
+                QTabWidget::pane {
+                    border-top: 2px solid #5a5a5a;
+                    background-color: #2b2b2b;
+                }
+                QTabWidget::tab-bar {
+                    left: 5px;
+                }
+                QDialog {
+                    background-color: #2b2b2b;  /* 다이얼로그 배경색 */
+                    color: #eaeaea;
+                    border: 1px solid #5a5a5a;
+                    font-size: 14px;
+                }
+                QMessageBox {
+                    background-color: #2b2b2b;  /* 메시지 박스 배경색 */
+                    color: #eaeaea;  /* 메시지 텍스트 색상 */
+                    font-size: 14px;
+                    border: 1px solid #5a5a5a;
+                }
+                QMessageBox QLabel {
+                    color: #eaeaea;  /* 메시지 박스 라벨 색상 */
+                }
+                QMessageBox QPushButton {
+                    background-color: #34495e;  /* 버튼 배경색 */
+                    color: #eaeaea;  /* 버튼 텍스트 색상 */
+                    border: none;
+                    border-radius: 5px;
+                    padding: 10px;
+                }
+                QMessageBox QPushButton:hover {
+                    background-color: #3a539b;  /* 버튼 hover 효과 */
+                }
+                QScrollBar:vertical {
+                    background: #2e2e2e;
+                    width: 16px;
+                    margin: 0px;
+                }
+                QScrollBar::handle:vertical {
+                    background: #5e5e5e;
+                    min-height: 20px;
+                    border-radius: 4px;
+                }
+                QScrollBar::add-line:vertical {
+                    background: #3a3a3a;
+                    height: 16px;
+                    subcontrol-position: bottom;
+                    subcontrol-origin: margin;
+                }
+                QScrollBar::sub-line:vertical {
+                    background: #3a3a3a;
+                    height: 16px;
+                    subcontrol-position: top;
+                    subcontrol-origin: margin;
+                }
+                QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                    background: #2e2e2e;
+                }
+                QScrollBar:horizontal {
+                    background: #2e2e2e;
+                    height: 16px;
+                    margin: 0px;
+                }
+                QScrollBar::handle:horizontal {
+                    background: #5e5e5e;
+                    min-width: 20px;
+                    border-radius: 4px;
+                }
+                QScrollBar::add-line:horizontal {
+                    background: #3a3a3a;
+                    width: 16px;
+                    subcontrol-position: right;
+                    subcontrol-origin: margin;
+                }
+                QScrollBar::sub-line:horizontal {
+                    background: #3a3a3a;
+                    width: 16px;
+                    subcontrol-position: left;
+                    subcontrol-origin: margin;
+                }
+                QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+                    background: #2e2e2e;
+                }
+                """
+            )
+        else:
+            # 라이트 모드 스타일
+            self.setStyleSheet(
+                """
+                QMainWindow {
+                    background-color: #f7f7f7;
+                    font-size: 14px;
+                }
+                QPushButton {
+                    background-color: #2c3e50;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-size: 15px;
+                }
+                QPushButton:hover {
+                    background-color: #34495e;
+                }
+                QLineEdit {
+                    border: 1px solid #bdc3c7;
+                    border-radius: 5px;
+                    padding: 8px;
+                    background-color: white;
+                    font-size: 14px;
+                    color: black;
+                }
+                QLabel {
+                    color: black;  /* 라벨 기본 텍스트 색상 */
+                    font-size: 14px;
+                }
+                QHeaderView::section {
+                    background-color: #2c3e50;
+                    color: white;
+                    padding: 8px;
+                    border: none;
+                    font-size: 14px;
+                }
+                QListWidget {
+                    background-color: lightgray;
+                    color: black;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                    border: none;
+                    min-width: 150px;
+                    max-width: 150px;
+                }
+                QListWidget::item {
+                    height: 40px;
+                    padding: 10px;
+                    font-family: 'Tahoma';
+                    font-size: 14px;
+                }
+                QListWidget::item:selected {
+                    background-color: #34495e;
+                }
+                """
+            )
 
     def create_app_settings_page(self, setting):
         """
@@ -567,31 +735,20 @@ class Manager_Setting(QDialog):
         # 사용자 정보 표시 섹션
         user_info_section = QVBoxLayout()
         user_title_label = QLabel("사용자 정보")
-        user_title_label.setStyleSheet(
-            """
-            font-size: 18px; 
-            font-weight: bold; 
-            color: #2C3E50; 
-            margin-bottom: 10px;
-            """
-        )
         user_title_label.setAlignment(Qt.AlignLeft)
+        user_title_label.setStyleSheet("font-size: 14px; font-weight: bold;")
 
         # 사용자 정보 추가 (예: 이름, 이메일, 디바이스)
         user_name_label = QLabel(f"이름: {self.main.user}")
-        user_name_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
 
         user_email_label = QLabel(f"이메일: {self.main.usermail}")
-        user_email_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
 
         user_device_label = QLabel(f"디바이스: {self.main.user_device}")
-        user_device_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
 
         if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20:
             GPT_key_label = QLabel(f"ChatGPT API Key: 없음")
         else:
             GPT_key_label = QLabel(f"ChatGPT Key: {self.main.gpt_api_key[:40]}...")
-        GPT_key_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
 
         # 사용자 정보 섹션 레이아웃 구성
         user_info_section.addWidget(user_title_label)
@@ -602,7 +759,6 @@ class Manager_Setting(QDialog):
 
         # 사용자 정보 섹션에 구분선 추가
         user_info_separator = QLabel()
-        user_info_separator.setStyleSheet("border: 1px solid #E0E0E0; margin: 15px 0;")
 
         info_layout.addLayout(user_info_section)
         info_layout.addWidget(user_info_separator)
@@ -612,26 +768,16 @@ class Manager_Setting(QDialog):
         # MANAGER 정보 표시 섹션
         manager_info_section = QVBoxLayout()
         manager_title_label = QLabel("MANAGER 정보")
-        manager_title_label.setStyleSheet(
-            """
-            font-size: 18px; 
-            font-weight: bold; 
-            color: #2C3E50; 
-            margin-bottom: 10px;
-            """
-        )
         manager_title_label.setAlignment(Qt.AlignLeft)
+        manager_title_label.setStyleSheet("font-size: 14px; font-weight: bold;")
 
         # MANAGER 정보 추가
         manager_version_label = QLabel(f"버전: {self.main.versionNum}")
-        manager_version_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
 
         manager_location_label = QLabel(f"앱 경로: {wrap_text_by_words(self.main.program_directory, 40)}")
-        manager_location_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
 
         # 실시간 업데이트를 위한 구동 시간 라벨
         self.manager_time_label = QLabel("구동 시간: 계산 중...")
-        self.manager_time_label.setStyleSheet("font-size: 15px; color: #34495E; padding-bottom: 5px;")
 
         # MANAGER 정보 섹션 레이아웃 구성
         manager_info_section.addWidget(manager_title_label)
@@ -667,24 +813,21 @@ class Manager_Setting(QDialog):
         # 제목
         help_title_label = QLabel("Instructions\n")
         help_title_label.setAlignment(Qt.AlignLeft)
-        help_title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #2C3E50;")
+        help_title_label.setStyleSheet("font-size: 14px; font-weight: bold;")
 
         # 설명 텍스트
         help_text_label = QLabel("아래 링크를 클릭하여 사용 설명서를 확인하세요.")
         help_text_label.setAlignment(Qt.AlignLeft)
-        help_text_label.setStyleSheet("font-size: 15px; color: #34495E;")
 
         # 첫 번째 하이퍼링크
         link1_label = QLabel('<a href="https://knpu.re.kr/tool">BIGMACLAB MANAGER</a>')
         link1_label.setOpenExternalLinks(True)
         link1_label.setAlignment(Qt.AlignLeft)
-        link1_label.setStyleSheet("font-size: 14px; color: #2C3E50;")
 
         # 두 번째 하이퍼링크
         link2_label = QLabel('<a href="https://knpu.re.kr/kemkim">KEM KIM</a>')
         link2_label.setOpenExternalLinks(True)
         link2_label.setAlignment(Qt.AlignLeft)
-        link2_label.setStyleSheet("font-size: 14px; color: #2C3E50;")
 
         # 레이아웃 구성
         help_layout.addWidget(help_title_label)
@@ -718,7 +861,7 @@ class Manager_Setting(QDialog):
         if is_selected:
             button.setStyleSheet("background-color: #2c3e50; font-weight: bold; color: #eaeaea;")
         else:
-            button.setStyleSheet("background-color: lightgray;")
+            button.setStyleSheet("background-color: lightgray; color: black;")
 
     def update_toggle(self, selected_button, other_button):
         """
