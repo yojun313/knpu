@@ -613,11 +613,19 @@ class MainWindow(QMainWindow):
                     self.close_bootscreen()
                     update_process()
                 self.Manager_Board_obj.board_version_refresh()
-                version_info_html = f"""
+                if self.SETTING['Theme'] != 'default':
+                    style_html = f"""
                     <style>
+                        h2 {{
+                            color: #2c3e50;
+                            text-align: center;
+                        }}
                         table {{
                             width: 100%;
                             border-collapse: collapse;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                            color: white;
                         }}
                         th, td {{
                             border: 1px solid #bdc3c7;
@@ -629,12 +637,53 @@ class MainWindow(QMainWindow):
                             color: white;
                         }}
                         td {{
-                            color: #34495e;
+                            color: white;
                         }}
-                        h4 {{
-                            text-align: center;
+                        .detail-content {{
+                            white-space: pre-wrap;
+                            margin-top: 5px;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
                         }}
                     </style>
+                    """
+                else:
+                    style_html = f"""
+                        <style>
+                            h2 {{
+                                color: #2c3e50;
+                                text-align: center;
+                            }}
+                            table {{
+                                width: 100%;
+                                border-collapse: collapse;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                color: black;
+                            }}
+                            th, td {{
+                                border: 1px solid #bdc3c7;
+                                padding: 8px;
+                                text-align: left;
+                                color: white;
+                            }}
+                            th {{
+                                background-color: #34495e;
+                            }}
+                            td {{
+                                color: black;
+                            }}
+                            .detail-content {{
+                                white-space: pre-wrap;
+                                margin-top: 5px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                color: black;
+                            }}
+                        </style>
+                    """
+
+                version_info_html = style_html + f"""
                     <table>
                         <tr><th>Item</th><th>Details</th></tr>
                         <tr><td><b>Version Num:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][0]}</td></tr>
