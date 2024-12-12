@@ -1322,11 +1322,42 @@ class MainWindow(QMainWindow):
             self.main.program_bug_log(traceback.format_exc())
 
     def setStyle(self):
+        def is_mac_dark_mode():
+            """
+            macOS 시스템 설정에서 다크 모드 활성화 여부 확인
+            """
+            try:
+                # macOS 명령어를 사용하여 다크 모드 상태를 가져옴
+                result = subprocess.run(
+                    ["defaults", "read", "-g", "AppleInterfaceStyle"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                # "Dark"가 반환되면 다크 모드가 활성화됨
+                return "Dark" in result.stdout
+            except Exception:
+                # 오류가 발생하면 기본적으로 라이트 모드로 간주
+                return False
 
-        if self.SETTING['Theme'] == 'default':
-            self.setLightStyle()
+        if platform.system() == "Darwin":  # macOS인지 확인
+            if is_mac_dark_mode():
+                self.SETTING['Theme'] = 'dark'
+                self.setDarkStyle()
+                self.update_settings(1, 'dark')
+            else:
+                self.SETTING['Theme'] = 'default'
+                self.setLightStyle()
+                self.update_settings(1, 'default')
         else:
-            self.setDarkStyle()
+            # macOS가 아닐 경우 기본 설정 사용
+            if self.SETTING['Theme'] == 'default':
+                self.setLightStyle()
+            else:
+                self.setDarkStyle()
+
+
+
 
     def setLightStyle(self):
         self.setStyleSheet(
