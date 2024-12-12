@@ -283,7 +283,8 @@ class Manager_Database:
                 endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
 
             # HTML을 사용하여 디테일 표시
-            details_html = f"""
+            if self.main.SETTING['Theme'] != 'default':
+                style_html = f"""
                 <style>
                     h2 {{
                         color: #2c3e50;
@@ -294,6 +295,7 @@ class Manager_Database:
                         border-collapse: collapse;
                         font-family: Arial, sans-serif;
                         font-size: 14px;
+                        color: white;
                     }}
                     th, td {{
                         border: 1px solid #bdc3c7;
@@ -305,16 +307,53 @@ class Manager_Database:
                         color: white;
                     }}
                     td {{
-                        color: #34495e;
+                        color: white;
                     }}
                     .detail-content {{
                         white-space: pre-wrap;
                         margin-top: 5px;
                         font-family: Arial, sans-serif;
                         font-size: 14px;
-                        color: #34495e;
                     }}
                 </style>
+                """
+            else:
+                style_html = f"""
+                    <style>
+                        h2 {{
+                            color: #2c3e50;
+                            text-align: center;
+                        }}
+                        table {{
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                            color: black;
+                        }}
+                        th, td {{
+                            border: 1px solid #bdc3c7;
+                            padding: 8px;
+                            text-align: left;
+                            color: white;
+                        }}
+                        th {{
+                            background-color: #34495e;
+                        }}
+                        td {{
+                            color: black;
+                        }}
+                        .detail-content {{
+                            white-space: pre-wrap;
+                            margin-top: 5px;
+                            font-family: Arial, sans-serif;
+                            font-size: 14px;
+                            color: black;
+                        }}
+                    </style>
+                """
+
+            details_html = style_html + f"""
                 <div class="version-details">
                     <table>
                         <tr>
@@ -376,6 +415,8 @@ class Manager_Database:
                     </table>
                 </div>
             """
+
+
 
             detail_label = QLabel(details_html)
             detail_label.setWordWrap(True)
