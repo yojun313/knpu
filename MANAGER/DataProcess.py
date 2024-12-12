@@ -836,7 +836,7 @@ class DataProcess:
         with open(description_file_path, 'w') as file:
             file.write(description_text)
 
-    def wordcloud(self, parent, data, folder_path, date, max_words, split_option):
+    def wordcloud(self, parent, data, folder_path, date, max_words, split_option, exception_word_list):
         parent = parent
         def divide_period(csv_data, period):
             # 'Unnamed' 열 제거
@@ -928,6 +928,8 @@ class DataProcess:
                 if isinstance(tokens, str):  # 토큰 리스트가 문자열로 저장된 경우
                     tokens = tokens.split(',')
                     all_words.extend(tokens)
+
+            all_words = [item for item in all_words if item not in exception_word_list]
 
             # 단어 빈도 계산
             word_freq = Counter(all_words)
