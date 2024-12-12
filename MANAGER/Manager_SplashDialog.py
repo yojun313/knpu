@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt, QCoreApplication, QEventLoop
 from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
 from dotenv import load_dotenv
 import platform
+import subprocess
 import os
 
 class SplashDialog(QDialog):
@@ -17,9 +18,28 @@ class SplashDialog(QDialog):
             else:
                 self.theme = 'default'
         else:
-            setting_path = os.path.join(os.path.dirname(__file__), 'settings.env')
-            load_dotenv(setting_path, encoding='utf-8')
-            self.theme = os.getenv("OPTION_1")
+            def is_mac_dark_mode():
+                """
+                macOS 시스템 설정에서 다크 모드 활성화 여부 확인
+                """
+                try:
+                    # macOS 명령어를 사용하여 다크 모드 상태를 가져옴
+                    result = subprocess.run(
+                        ["defaults", "read", "-g", "AppleInterfaceStyle"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
+                    # "Dark"가 반환되면 다크 모드가 활성화됨
+                    return "Dark" in result.stdout
+                except Exception:
+                    # 오류가 발생하면 기본적으로 라이트 모드로 간주
+                    return False
+
+            if is_mac_dark_mode():
+                self.theme = 'dark'
+            else:
+                self.theme = 'default'
 
         self.version = version
         if booting:
