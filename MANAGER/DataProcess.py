@@ -906,7 +906,7 @@ class DataProcess:
             elif 'Date' in column:
                 self.dateColumn_name = column
 
-        print("\n데이터 분할 중...")
+        print("\n데이터 분할 중...\n")
         parent.printStatus("데이터 분할 중...")
         grouped = divide_period(data, split_option)
         period_list = list(grouped.groups.keys())
