@@ -10,14 +10,15 @@
 # - Phone: +82-10-4072-9190
 ##################################################################
 
-VERSION = '2.5.3'
+VERSION = '2.5.4'
 
 import os
 import platform
 from PyQt5.QtWidgets import QApplication
-from Manager_SplashDialog import SplashDialog
+from Manager_SplashDialog import SplashDialog, light_style_sheet, dark_style_sheet
 from PyQt5.QtCore import QCoreApplication, Qt
 from PyQt5.QtGui import QFont
+from dotenv import load_dotenv
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 os.environ["QT_DEVICE_PIXEL_RATIO"] = "0"
@@ -37,8 +38,43 @@ if platform.system() == 'Windows':
     font.setStyleStrategy(QFont.PreferAntialias)  # 안티앨리어싱 활성화
     app.setFont(font)
 
+if platform.system() == 'Windows':
+    setting_path = os.path.join(os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER'), 'settings.env')
+    if os.path.exists(setting_path):
+        load_dotenv(setting_path, encoding='utf-8')
+        theme = os.getenv("OPTION_1")
+    else:
+        theme = 'default'
+else:
+    def is_mac_dark_mode():
+        """
+        macOS 시스템 설정에서 다크 모드 활성화 여부 확인
+        """
+        try:
+            import subprocess
+            # macOS 명령어를 사용하여 다크 모드 상태를 가져옴
+            result = subprocess.run(
+                ["defaults", "read", "-g", "AppleInterfaceStyle"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            # "Dark"가 반환되면 다크 모드가 활성화됨
+            return "Dark" in result.stdout
+        except Exception as e:
+            # 오류가 발생하면 기본적으로 라이트 모드로 간주
+            return False
+
+    theme = 'dark' if is_mac_dark_mode() else 'default'
+
+THEME = theme
+if theme != 'default':
+    app.setStyleSheet(dark_style_sheet)
+else:
+    app.setStyleSheet(light_style_sheet)
+
 # 로딩 다이얼로그 표시
-splash_dialog = SplashDialog(version=VERSION)
+splash_dialog = SplashDialog(version=VERSION, theme=theme)
 splash_dialog.show()
 
 splash_dialog.update_status("Loading System Libraries")
@@ -47,7 +83,6 @@ import sys
 import subprocess
 from openai import OpenAI
 from mySQL import mySQL
-from dotenv import load_dotenv
 from datetime import datetime
 import requests
 from packaging import version
@@ -105,7 +140,6 @@ class MainWindow(QMainWindow):
 
             self.resize(1400, 1000)
 
-            self.setStyle()
             self.initialize_statusBar()
             self.decrypt_process()
 
@@ -370,6 +404,7 @@ class MainWindow(QMainWindow):
                     with open(self.setting_path, "w", encoding="utf-8") as env_file:
                         env_file.write(env_content)
                 load_dotenv(self.setting_path)
+
             self.SETTING = {
                 'path': self.setting_path,
                 'Theme': os.getenv("OPTION_1"),
@@ -384,6 +419,13 @@ class MainWindow(QMainWindow):
                 'DBKeywordSort': os.getenv("OPTION_10"),
                 'ProcessConsole': os.getenv("OPTION_11"),
             }
+            if platform.system() == 'Darwin':
+                if THEME == 'dark':
+                    self.update_settings(1, 'dark')
+                    self.SETTING['Theme'] = 'dark'
+                else:
+                    self.update_settings(1, 'default')
+                    self.SETTING['Theme'] = 'default'
         except Exception as e:
             print(traceback.format_exc())
             self.SETTING = {
@@ -418,17 +460,6 @@ class MainWindow(QMainWindow):
 
         self.left_label = QLabel('  ' + self.version)
         self.right_label = QLabel('')
-
-        if platform.system() == 'Windows':
-            # 스타일시트로 폰트, 사이즈 지정 (Malgun Gothic, 12pt)
-            style = """
-            QLabel {
-                font-family: 'Tahoma';
-                font-size: 10pt;
-            }
-            """
-            self.left_label.setStyleSheet(style)
-            self.right_label.setStyleSheet(style)
 
         self.left_label.setToolTip("새 버전 확인을 위해 Ctrl+U")
         self.right_label.setToolTip("상태표시줄")
@@ -848,7 +879,6 @@ class MainWindow(QMainWindow):
                 self.rejected.connect(self.on_rejected)
                 self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
                 self.main = parent
-                self.set_theme()
                 if default_directory:
                     self.setDirectory(default_directory)
                 self.setup_double_click_event()
@@ -866,7 +896,6 @@ class MainWindow(QMainWindow):
                     # 나머지 컬럼들은 창 크기에 따라 비례적으로 늘어나도록 설정
                     for col in range(1, header.count()):
                         header.setSectionResizeMode(col, QHeaderView.Stretch)
-
             def setup_double_click_event(self):
                 def handle_double_click(index: QModelIndex):
                     # 더블 클릭된 파일 경로 가져오기
@@ -877,81 +906,6 @@ class MainWindow(QMainWindow):
                 # QListView 또는 QTreeView 중 하나를 찾아서 더블 클릭 이벤트 연결
                 for view in self.findChildren(QAbstractItemView):
                     view.doubleClicked.connect(handle_double_click)
-
-            def set_theme(self):
-                if self.main.SETTING['Theme'] == 'dark':
-                    # 다크 테마 적용
-                    self.setStyleSheet("""
-                        QFileDialog {
-                            background-color: #2e2e2e;
-                            color: #ffffff;
-                        }
-                        QTreeView, QListView {
-                            background-color: #2e2e2e;
-                            color: #ffffff;
-                        }
-                        QLineEdit {
-                            background-color: #3a3a3a;
-                            color: #ffffff;
-                            border: 1px solid #3a3a3a;
-                        }
-                        QPushButton {
-                            background-color: #444444;
-                            color: #ffffff;
-                            border: 1px solid #3a3a3a;
-                            padding: 5px;
-                        }
-                        QPushButton:hover {
-                            background-color: #555555;
-                        }
-                        QScrollBar:vertical, QScrollBar:horizontal {
-                            background: #2a2a2a;
-                            border: 1px solid #3a3a3a;
-                        }
-                        QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
-                            background: #3a3a3a;
-                            border-radius: 4px;
-                        }
-                        QScrollBar::add-line, QScrollBar::sub-line {
-                            background: #2a2a2a;
-                        }
-                    """)
-                else:
-                    self.setStyleSheet("""
-                        QFileDialog {
-                            background-color: #ffffff;
-                            color: #000000;
-                        }
-                        QTreeView, QListView {
-                            background-color: #f8f8f8;
-                            color: #000000;
-                        }
-                        QLineEdit {
-                            background-color: #ffffff;
-                            color: #000000;
-                            border: 1px solid #d0d0d0;
-                        }
-                        QPushButton {
-                            background-color: #e0e0e0;
-                            color: #000000;
-                            border: 1px solid #d0d0d0;
-                            padding: 5px;
-                        }
-                        QPushButton:hover {
-                            background-color: #d8d8d8;
-                        }
-                        QScrollBar:vertical, QScrollBar:horizontal {
-                            background: #f0f0f0;
-                            border: 1px solid #d0d0d0;
-                        }
-                        QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
-                            background: #d0d0d0;
-                            border-radius: 4px;
-                        }
-                        QScrollBar::add-line, QScrollBar::sub-line {
-                            background: #f0f0f0;
-                        }
-                    """)
 
             def open_in_external_app(self, file_path):
                 try:
@@ -1076,10 +1030,9 @@ class MainWindow(QMainWindow):
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
                 self.printStatus("설정 반영 중...")
                 if self.SETTING['Theme'] == 'default':
-                    self.setLightStyle()
+                    QApplication.instance().setStyleSheet(light_style_sheet)
                 else:
-                    self.setDarkStyle()
-                self.Manager_Analysis_obj.file_dialog.set_theme()
+                    QApplication.instance().setStyleSheet(dark_style_sheet)
 
                 if self.SETTING['MyDB'] != 'default' or self.SETTING['DBKeywordSort'] != 'default':
                     self.Manager_Database_obj.database_refresh_DB()
@@ -1372,328 +1325,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def setStyle(self):
-        def is_mac_dark_mode():
-            """
-            macOS 시스템 설정에서 다크 모드 활성화 여부 확인
-            """
-            try:
-                # macOS 명령어를 사용하여 다크 모드 상태를 가져옴
-                result = subprocess.run(
-                    ["defaults", "read", "-g", "AppleInterfaceStyle"],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                # "Dark"가 반환되면 다크 모드가 활성화됨
-                return "Dark" in result.stdout
-            except Exception:
-                # 오류가 발생하면 기본적으로 라이트 모드로 간주
-                return False
-
-        if platform.system() == "Darwin":  # macOS인지 확인
-            if is_mac_dark_mode():
-                self.SETTING['Theme'] = 'dark'
-                self.setDarkStyle()
-                self.update_settings(1, 'dark')
-            else:
-                self.SETTING['Theme'] = 'default'
-                self.setLightStyle()
-                self.update_settings(1, 'default')
-        else:
-            # macOS가 아닐 경우 기본 설정 사용
-            if self.SETTING['Theme'] == 'default':
-                self.setLightStyle()
-            else:
-                self.setDarkStyle()
-
-    def setLightStyle(self):
-        self.setStyleSheet(
-            """
-            QMainWindow {
-                background-color: #f7f7f7;
-                font-size: 14px;
-            }
-            QPushButton {
-                background-color: #2c3e50;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                padding: 13px;
-                font-size: 15px;
-            }
-            QPushButton:hover {
-                background-color: #34495e;
-            }
-            QLineEdit {
-                border: 1px solid #bdc3c7;
-                border-radius: 5px;
-                padding: 8px;
-                background-color: white;
-                font-size: 14px;
-                color: black;
-            }
-            QLabel {
-                color: black;  /* 라벨 기본 텍스트 색상 */
-                font-size: 14px;
-            }
-            QTableWidget {
-                background-color: white;
-                border: 1px solid #bdc3c7;
-                font-size: 14px;
-                color: black;
-            }
-            QTableCornerButton::section {  /* 좌측 상단 정사각형 부분 스타일 */
-                background-color: #2c3e50;
-                border: 1px solid #2c3e50;
-            }
-            QHeaderView::section {
-                background-color: #2c3e50;
-                color: white;
-                padding: 8px;
-                border: none;
-                font-size: 14px;
-            }
-            QListWidget {
-                background-color: #2c3e50;
-                color: white;
-                font-family: 'Tahoma';
-                font-size: 14px;
-                border: none;
-                min-width: 150px;
-                max-width: 150px;
-            }
-            QListWidget::item {
-                height: 40px;
-                padding: 10px;
-                font-family: 'Tahoma';
-                font-size: 14px;
-            }
-            QListWidget::item:selected {
-                background-color: #34495e;
-            }
-            QListWidget::item:hover {
-                background-color: #34495e;
-            }
-            QTabWidget::pane {
-                border-top: 2px solid #bdc3c7;
-                background-color: #f7f7f7;
-            }
-            QTabWidget::tab-bar {
-                left: 5px;
-            }
-            QTabBar::tab {
-                background: #2c3e50;
-                color: white;
-                border: 1px solid #bdc3c7;
-                border-bottom-color: #f7f7f7;
-                border-radius: 4px;
-                border-top-right-radius: 4px;
-                padding: 10px;
-                font-size: 14px;
-                min-width: 100px;
-                max-width: 200px;
-            }
-            QTabBar::tab:selected, QTabBar::tab:hover {
-                background: #34495e;
-            }
-            QTabBar::tab:selected {
-                border-color: #9B9B9B;
-                border-bottom-color: #f7f7f7;
-            }
-            """
-        )
-
-    def setDarkStyle(self):
-        self.setStyleSheet(
-            """
-            QMainWindow {
-                background-color: #2b2b2b;
-                font-size: 14px;
-                color: #eaeaea;  /* 기본 텍스트 색상 */
-            }
-            QPushButton {
-                background-color: #34495e;
-                color: #eaeaea;  /* 버튼 텍스트 색상 */
-                border: none;
-                border-radius: 5px;
-                padding: 13px;
-                font-size: 15px;
-            }
-            QStatusBar {
-                font-family: 'Tahoma';
-            }
-            QPushButton:hover {
-                background-color: #3a539b;
-            }
-            QLineEdit {
-                border: 1px solid #5a5a5a;
-                border-radius: 5px;
-                padding: 8px;
-                background-color: #3c3c3c;
-                color: #eaeaea;  /* 입력 텍스트 색상 */
-                font-size: 14px;
-            }
-            QLabel {
-                color: #eaeaea;  /* 라벨 기본 텍스트 색상 */
-                font-size: 14px;
-            }
-            QTableWidget {
-                background-color: #2b2b2b;  /* 테이블 전체 배경 */
-                gridline-color: #5a5a5a;  /* 셀 간격선 색상 */
-                color: #eaeaea;  /* 셀 텍스트 색상 */
-                font-size: 14px;
-                border: 1px solid #5a5a5a;  /* 테두리 설정 */
-            }
-            QTableWidget::item {
-                background-color: #3c3c3c;  /* 셀 배경색 */
-                color: #eaeaea;  /* 셀 텍스트 색상 */
-            }
-            QTableWidget::item:selected {
-                background-color: #34495e;  /* 선택된 셀 배경색 */
-                color: #ffffff;  /* 선택된 셀 텍스트 색상 */
-            }
-            QTableCornerButton::section {  /* 좌측 상단 정사각형 부분 스타일 */
-                background-color: #3c3c3c;
-                border: 1px solid #5a5a5a;
-            }
-            QHeaderView::section {
-                background-color: #3c3c3c;
-                color: #eaeaea;  /* 헤더 텍스트 색상 */
-                padding: 8px;
-                border: 1px solid #5a5a5a;
-                font-size: 14px;
-            }
-            QHeaderView::corner {  /* 좌측 상단 정사각형 부분 */
-                background-color: #3c3c3c; /* 테이블 배경과 동일한 색상 */
-                border: 1px solid #5a5a5a;
-            }
-            QHeaderView {
-                background-color: #2b2b2b;  /* 헤더 전체 배경 */
-                border: none;
-            }
-            QListWidget {
-                background-color: #3c3c3c;
-                color: #eaeaea;  /* 리스트 아이템 텍스트 색상 */
-                font-family: 'Tahoma';
-                font-size: 14px;
-                border: none;
-                min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
-                max-width: 150px;
-            }
-            QListWidget::item {
-                height: 40px;
-                padding: 10px;
-                font-family: 'Tahoma';
-                font-size: 14px;
-            }
-            QListWidget::item:selected {
-                background-color: #34495e;
-                color: #ffffff;
-            }
-            QListWidget::item:hover {
-                background-color: #3a539b;
-            }
-            QTabWidget::pane {
-                border-top: 2px solid #5a5a5a;
-                background-color: #2b2b2b;
-            }
-            QTabWidget::tab-bar {
-                left: 5px;
-            }
-            QTabBar::tab {
-                background: #3c3c3c;
-                color: #eaeaea;  /* 탭 텍스트 색상 */
-                border: 1px solid #5a5a5a;
-                border-bottom-color: #2b2b2b;
-                border-radius: 4px;
-                padding: 10px;
-                font-size: 14px;
-                min-width: 100px;  /* 최소 가로 길이 설정 */
-                max-width: 200px;  /* 최대 가로 길이 설정 */
-            }
-            QTabBar::tab:selected, QTabBar::tab:hover {
-                background: #34495e;
-                color: #ffffff;
-            }
-            QDialog {
-                background-color: #2b2b2b;  /* 다이얼로그 배경색 */
-                color: #eaeaea;
-                border: 1px solid #5a5a5a;
-                font-size: 14px;
-            }
-            QMessageBox {
-                background-color: #2b2b2b;  /* 메시지 박스 배경색 */
-                color: #eaeaea;  /* 메시지 텍스트 색상 */
-                font-size: 14px;
-                border: 1px solid #5a5a5a;
-            }
-            QMessageBox QLabel {
-                color: #eaeaea;  /* 메시지 박스 라벨 색상 */
-            }
-            QMessageBox QPushButton {
-                background-color: #34495e;  /* 버튼 배경색 */
-                color: #eaeaea;  /* 버튼 텍스트 색상 */
-                border: none;
-                border-radius: 5px;
-                padding: 10px;
-            }
-            QMessageBox QPushButton:hover {
-                background-color: #3a539b;  /* 버튼 hover 효과 */
-            }
-            QScrollBar:vertical {
-                background: #2e2e2e;
-                width: 16px;
-                margin: 0px;
-            }
-            QScrollBar::handle:vertical {
-                background: #5e5e5e;
-                min-height: 20px;
-                border-radius: 4px;
-            }
-            QScrollBar::add-line:vertical {
-                background: #3a3a3a;
-                height: 16px;
-                subcontrol-position: bottom;
-                subcontrol-origin: margin;
-            }
-            QScrollBar::sub-line:vertical {
-                background: #3a3a3a;
-                height: 16px;
-                subcontrol-position: top;
-                subcontrol-origin: margin;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                background: #2e2e2e;
-            }
-            QScrollBar:horizontal {
-                background: #2e2e2e;
-                height: 16px;
-                margin: 0px;
-            }
-            QScrollBar::handle:horizontal {
-                background: #5e5e5e;
-                min-width: 20px;
-                border-radius: 4px;
-            }
-            QScrollBar::add-line:horizontal {
-                background: #3a3a3a;
-                width: 16px;
-                subcontrol-position: right;
-                subcontrol-origin: margin;
-            }
-            QScrollBar::sub-line:horizontal {
-                background: #3a3a3a;
-                width: 16px;
-                subcontrol-position: left;
-                subcontrol-origin: margin;
-            }
-            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
-                background: #2e2e2e;
-            }
-            """
-        )
-
     def pw_check(self, admin=False, string=""):
         while True:
             input_dialog = QInputDialog(self)
@@ -1845,7 +1476,6 @@ class MainWindow(QMainWindow):
         for child in widget.findChildren(QWidget):
             child.installEventFilter(self.event_logger)
 
-
 # 로그 출력 제어 변수와 로그 저장 변수
 logging_enabled = False  # 콘솔 출력 여부를 조절
 log_text = ""  # 모든 로그 메시지를 저장하는 변수
@@ -1913,7 +1543,6 @@ class EventLogger(QObject):
 #######################################################
 
 if __name__ == '__main__':
-
     # 메인 윈도우 실행
     application = MainWindow(splash_dialog)
     sys.exit(app.exec_())

@@ -216,7 +216,6 @@ class Manager_Database:
                 if DBdata[6] == '오류 중단':
                     CountText = '오류 중단'
 
-
             match crawlType:
                 case 'navernews':
                     match crawlOption_int:
@@ -415,8 +414,6 @@ class Manager_Database:
                     </table>
                 </div>
             """
-
-
 
             detail_label = QLabel(details_html)
             detail_label.setWordWrap(True)

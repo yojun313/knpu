@@ -1,46 +1,12 @@
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QDialog
 from PyQt5.QtCore import Qt, QCoreApplication, QEventLoop
 from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
-from dotenv import load_dotenv
-import platform
-import subprocess
 import os
 
 class SplashDialog(QDialog):
     def __init__(self, version, theme="light", booting=True):
         super().__init__()
-
-        if platform.system() == 'Windows':
-            setting_path = os.path.join(os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER'), 'settings.env')
-            if os.path.exists(setting_path):
-                load_dotenv(setting_path, encoding='utf-8')
-                self.theme = os.getenv("OPTION_1")
-            else:
-                self.theme = 'default'
-        else:
-            def is_mac_dark_mode():
-                """
-                macOS 시스템 설정에서 다크 모드 활성화 여부 확인
-                """
-                try:
-                    # macOS 명령어를 사용하여 다크 모드 상태를 가져옴
-                    result = subprocess.run(
-                        ["defaults", "read", "-g", "AppleInterfaceStyle"],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True
-                    )
-                    # "Dark"가 반환되면 다크 모드가 활성화됨
-                    return "Dark" in result.stdout
-                except Exception:
-                    # 오류가 발생하면 기본적으로 라이트 모드로 간주
-                    return False
-
-            if is_mac_dark_mode():
-                self.theme = 'dark'
-            else:
-                self.theme = 'default'
-
+        self.theme = theme
         self.version = version
         if booting:
             self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 최상위 창 설정
@@ -118,3 +84,396 @@ class SplashDialog(QDialog):
         self.status_label.setText(message)
         for i in range(2):
             QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
+
+# 전역 스타일시트 설정
+light_style_sheet = """
+    QMainWindow {
+        background-color: #f7f7f7;
+        font-size: 14px;
+    }
+    QPushButton {
+        background-color: #2c3e50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 13px;
+        font-size: 15px;
+    }
+    QStatusBar {
+        font-family: 'Tahoma';
+        font-size: 10px;
+        color: black;
+    }
+    QPushButton:hover {
+        background-color: #34495e;
+    }
+    QLineEdit {
+        border: 1px solid #bdc3c7;
+        border-radius: 5px;
+        padding: 8px;
+        background-color: white;
+        font-size: 14px;
+        color: black;
+    }
+    QLabel {
+        color: black;  /* 라벨 기본 텍스트 색상 */
+        font-size: 14px;
+    }
+    QTableWidget {
+        background-color: white;
+        border: 1px solid #bdc3c7;
+        font-size: 14px;
+        color: black;
+    }
+    QTableCornerButton::section {  /* 좌측 상단 정사각형 부분 스타일 */
+        background-color: #2c3e50;
+        border: 1px solid #2c3e50;
+    }
+    QHeaderView::section {
+        background-color: #2c3e50;
+        color: white;
+        padding: 8px;
+        border: none;
+        font-size: 14px;
+    }
+    QListWidget {
+        background-color: #2c3e50;
+        color: white;
+        font-family: 'Tahoma';
+        font-size: 14px;
+        border: none;
+        min-width: 150px;
+        max-width: 150px;
+    }
+    QListWidget::item {
+        height: 40px;
+        padding: 10px;
+        font-family: 'Tahoma';
+        font-size: 14px;
+    }
+    QListWidget::item:selected {
+        background-color: #34495e;
+    }
+    QListWidget::item:hover {
+        background-color: #34495e;
+    }
+    QTabWidget::pane {
+        border-top: 2px solid #bdc3c7;
+        background-color: #f7f7f7;
+    }
+    QTabWidget::tab-bar {
+        left: 5px;
+    }
+    QTabBar::tab {
+        background: #2c3e50;
+        color: white;
+        border: 1px solid #bdc3c7;
+        border-bottom-color: #f7f7f7;
+        border-radius: 4px;
+        border-top-right-radius: 4px;
+        padding: 10px;
+        font-size: 14px;
+        min-width: 100px;
+        max-width: 200px;
+    }
+    QTabBar::tab:selected, QTabBar::tab:hover {
+        background: #34495e;
+    }
+    QTabBar::tab:selected {
+        border-color: #9B9B9B;
+        border-bottom-color: #f7f7f7;
+    }
+    QFileDialog {
+        background-color: #ffffff;
+        color: #000000;
+    }
+    QFileDialog QListView, QTreeView {
+        background-color: #ffffff;
+        color: #000000;
+    }
+    QComboBox {
+        background-color: #ffffff;
+        color: #000000;
+        border: 1px solid #bdc3c7;
+        border-radius: 4px;
+        padding: 5px;
+        font-size: 14px;
+    }
+    QComboBox:hover {
+        border: 1px solid #2c3e50;
+    }
+    QComboBox::drop-down {
+        subcontrol-origin: padding;
+        subcontrol-position: top right;
+        width: 20px;
+        background-color: #2c3e50;
+        border-left: 1px solid #bdc3c7;
+    }
+    QComboBox QAbstractItemView {
+        background-color: #ffffff;
+        color: #000000;
+        border: 1px solid #bdc3c7;
+        selection-background-color: #34495e;
+        selection-color: #ffffff;
+    }
+    QGroupBox {
+        border: 1px solid #bdc3c7;
+        margin-top: 10px;
+        background-color: #ffffff;
+        color: #000000;
+        font-size: 14px;
+        border-radius: 4px;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        subcontrol-position: top left;
+        padding: 5px;
+        background-color: #ffffff;
+        color: #000000;
+    }
+    """
+
+dark_style_sheet = """
+    QMainWindow {
+        background-color: #2b2b2b;
+        font-size: 14px;
+        color: #eaeaea;  /* 기본 텍스트 색상 */
+    }
+    QPushButton {
+        background-color: #34495e;
+        color: #eaeaea;  /* 버튼 텍스트 색상 */
+        border: none;
+        border-radius: 5px;
+        padding: 13px;
+        font-size: 15px;
+    }
+    QStatusBar {
+        font-family: 'Tahoma';
+        background-color: #2b2b2b;
+        font-size: 10px;
+        color: white;
+    }
+    QPushButton:hover {
+        background-color: #3a539b;
+    }
+    QLineEdit {
+        border: 1px solid #5a5a5a;
+        border-radius: 5px;
+        padding: 8px;
+        background-color: #3c3c3c;
+        color: #eaeaea;  /* 입력 텍스트 색상 */
+        font-size: 14px;
+    }
+    QLabel {
+        color: #eaeaea;  /* 라벨 기본 텍스트 색상 */
+        font-size: 14px;
+    }
+    QTableWidget {
+        background-color: #2b2b2b;  /* 테이블 전체 배경 */
+        gridline-color: #5a5a5a;  /* 셀 간격선 색상 */
+        color: #eaeaea;  /* 셀 텍스트 색상 */
+        font-size: 14px;
+        border: 1px solid #5a5a5a;  /* 테두리 설정 */
+    }
+    QTableWidget::item {
+        background-color: #3c3c3c;  /* 셀 배경색 */
+        color: #eaeaea;  /* 셀 텍스트 색상 */
+    }
+    QTableWidget::item:selected {
+        background-color: #34495e;  /* 선택된 셀 배경색 */
+        color: #ffffff;  /* 선택된 셀 텍스트 색상 */
+    }
+    QTableCornerButton::section {  /* 좌측 상단 정사각형 부분 스타일 */
+        background-color: #3c3c3c;
+        border: 1px solid #5a5a5a;
+    }
+    QHeaderView::section {
+        background-color: #3c3c3c;
+        color: #eaeaea;  /* 헤더 텍스트 색상 */
+        padding: 8px;
+        border: 1px solid #5a5a5a;
+        font-size: 14px;
+    }
+    QHeaderView::corner {  /* 좌측 상단 정사각형 부분 */
+        background-color: #3c3c3c; /* 테이블 배경과 동일한 색상 */
+        border: 1px solid #5a5a5a;
+    }
+    QHeaderView {
+        background-color: #2b2b2b;  /* 헤더 전체 배경 */
+        border: none;
+    }
+    QListWidget {
+        background-color: #3c3c3c;
+        color: #eaeaea;  /* 리스트 아이템 텍스트 색상 */
+        font-family: 'Tahoma';
+        font-size: 14px;
+        border: none;
+        min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
+        max-width: 150px;
+    }
+    QListWidget::item {
+        height: 40px;
+        padding: 10px;
+        font-family: 'Tahoma';
+        font-size: 14px;
+    }
+    QListWidget::item:selected {
+        background-color: #34495e;
+        color: #ffffff;
+    }
+    QListWidget::item:hover {
+        background-color: #3a539b;
+    }
+    QTabWidget::pane {
+        border-top: 2px solid #5a5a5a;
+        background-color: #2b2b2b;
+    }
+    QTabWidget::tab-bar {
+        left: 5px;
+    }
+    QTabBar::tab {
+        background: #3c3c3c;
+        color: #eaeaea;  /* 탭 텍스트 색상 */
+        border: 1px solid #5a5a5a;
+        border-bottom-color: #2b2b2b;
+        border-radius: 4px;
+        padding: 10px;
+        font-size: 14px;
+        min-width: 100px;  /* 최소 가로 길이 설정 */
+        max-width: 200px;  /* 최대 가로 길이 설정 */
+    }
+    QTabBar::tab:selected, QTabBar::tab:hover {
+        background: #34495e;
+        color: #ffffff;
+    }
+    QDialog {
+        background-color: #2b2b2b;  /* 다이얼로그 배경색 */
+        color: #eaeaea;
+        border: 1px solid #5a5a5a;
+        font-size: 14px;
+    }
+    QScrollArea {
+        background-color: #2b2b2b;  /* 다이얼로그 배경색 */
+        color: #eaeaea;
+        border: 1px solid #5a5a5a;
+        font-size: 14px;
+    }
+    QMessageBox {
+        background-color: #2b2b2b;  /* 메시지 박스 배경색 */
+        color: #eaeaea;  /* 메시지 텍스트 색상 */
+        font-size: 14px;
+        border: 1px solid #5a5a5a;
+    }
+    QMessageBox QLabel {
+        color: #eaeaea;  /* 메시지 박스 라벨 색상 */
+    }
+    QMessageBox QPushButton {
+        background-color: #34495e;  /* 버튼 배경색 */
+        color: #eaeaea;  /* 버튼 텍스트 색상 */
+        border: none;
+        border-radius: 5px;
+        padding: 10px;
+    }
+    QMessageBox QPushButton:hover {
+        background-color: #3a539b;  /* 버튼 hover 효과 */
+    }
+    QScrollBar:vertical {
+        background: #2e2e2e;
+        width: 16px;
+        margin: 0px;
+    }
+    QScrollBar::handle:vertical {
+        background: #5e5e5e;
+        min-height: 20px;
+        border-radius: 4px;
+    }
+    QScrollBar::add-line:vertical {
+        background: #3a3a3a;
+        height: 16px;
+        subcontrol-position: bottom;
+        subcontrol-origin: margin;
+    }
+    QScrollBar::sub-line:vertical {
+        background: #3a3a3a;
+        height: 16px;
+        subcontrol-position: top;
+        subcontrol-origin: margin;
+    }
+    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+        background: #2e2e2e;
+    }
+    QScrollBar:horizontal {
+        background: #2e2e2e;
+        height: 16px;
+        margin: 0px;
+    }
+    QScrollBar::handle:horizontal {
+        background: #5e5e5e;
+        min-width: 20px;
+        border-radius: 4px;
+    }
+    QScrollBar::add-line:horizontal {
+        background: #3a3a3a;
+        width: 16px;
+        subcontrol-position: right;
+        subcontrol-origin: margin;
+    }
+    QScrollBar::sub-line:horizontal {
+        background: #3a3a3a;
+        width: 16px;
+        subcontrol-position: left;
+        subcontrol-origin: margin;
+    }
+    QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+        background: #2e2e2e;
+    }
+    QFileDialog {
+        background-color: #2e2e2e;
+        color: #ffffff;
+    }
+    QFileDialog QListView, QTreeView {
+        background-color: #2e2e2e;
+        color: #ffffff;
+    }
+    QComboBox {
+        background-color: #3c3c3c;
+        color: #eaeaea;  /* 텍스트 색상 */
+        border: 1px solid #5a5a5a;
+        border-radius: 4px;
+        padding: 5px;
+        font-size: 14px;
+    }
+    QComboBox:hover {
+        border: 1px solid #34495e;
+    }
+    QComboBox::drop-down {
+        subcontrol-origin: padding;
+        subcontrol-position: top right;
+        width: 20px;
+        background-color: #34495e;
+        border-left: 1px solid #5a5a5a;
+    }
+    QComboBox QAbstractItemView {
+        background-color: #2b2b2b;
+        color: #eaeaea;
+        border: 1px solid #5a5a5a;
+        selection-background-color: #34495e;
+        selection-color: #ffffff;
+    }
+    QGroupBox {
+        border: 1px solid #5a5a5a;
+        margin-top: 20px;
+        background-color: #2b2b2b;
+        color: #eaeaea;
+        font-size: 14px;
+        border-radius: 5px;
+    }
+
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        subcontrol-position: top left;
+        padding: 5px;
+        background-color: #2b2b2b;
+        color: #eaeaea;
+    }
+    """

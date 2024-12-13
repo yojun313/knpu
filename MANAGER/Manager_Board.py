@@ -213,7 +213,7 @@ class Manager_Board:
                             border-collapse: collapse;
                             font-family: Arial, sans-serif;
                             font-size: 14px;
-                            color: white;
+                            color: black;
                         }}
                         th, td {{
                             border: 1px solid #bdc3c7;
@@ -225,7 +225,7 @@ class Manager_Board:
                             color: white;
                         }}
                         td {{
-                            color: white;
+                            color: black;
                         }}
                         .detail-content {{
                             white-space: pre-wrap;
@@ -305,7 +305,7 @@ class Manager_Board:
                             </tr>
                         </table>
                     </div>
-                    """
+                """
                 detail_label = QLabel(details_html)
                 detail_label.setWordWrap(True)
 
@@ -497,7 +497,7 @@ class Manager_Board:
                             border-collapse: collapse;
                             font-family: Arial, sans-serif;
                             font-size: 14px;
-                            color: white;
+                            color: black;
                         }}
                         th, td {{
                             border: 1px solid #bdc3c7;
@@ -509,7 +509,7 @@ class Manager_Board:
                             color: white;
                         }}
                         td {{
-                            color: white;
+                            color: black;
                         }}
                         .detail-content {{
                             white-space: pre-wrap;
@@ -620,7 +620,6 @@ class Manager_Board:
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
-
     def board_post_refresh(self):
         try:
             def sort_by_date(two_dim_list):
@@ -821,7 +820,7 @@ class Manager_Board:
                             border-collapse: collapse;
                             font-family: Arial, sans-serif;
                             font-size: 14px;
-                            color: white;
+                            color: black;
                         }}
                         th, td {{
                             border: 1px solid #bdc3c7;
@@ -833,7 +832,7 @@ class Manager_Board:
                             color: white;
                         }}
                         td {{
-                            color: white;
+                            color: black;
                         }}
                         .detail-content {{
                             white-space: pre-wrap;
