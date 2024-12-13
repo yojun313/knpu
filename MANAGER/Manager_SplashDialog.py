@@ -216,20 +216,8 @@ light_style_sheet = """
         selection-background-color: #34495e;
         selection-color: #ffffff;
     }
-    QGroupBox {
-        border: 1px solid #bdc3c7;
-        margin-top: 10px;
-        background-color: #ffffff;
-        color: #000000;
-        font-size: 14px;
-        border-radius: 4px;
-    }
     QGroupBox::title {
-        subcontrol-origin: margin;
-        subcontrol-position: top left;
-        padding: 5px;
-        background-color: #ffffff;
-        color: #000000;
+        color: black; /* 제목 텍스트 색상 */
     }
     """
 
@@ -263,6 +251,15 @@ dark_style_sheet = """
         background-color: #3c3c3c;
         color: #eaeaea;  /* 입력 텍스트 색상 */
         font-size: 14px;
+    }
+    QTextEdit {
+        background-color: #3c3c3c;  /* 배경색 */
+        color: #eaeaea;  /* 텍스트 색상 */
+        font-family: 'Tahoma';  /* 폰트 */
+        font-size: 14px;  /* 폰트 크기 */
+        border: 1px solid #5a5a5a;  /* 테두리 색상 */
+        border-radius: 4px;  /* 모서리 둥글기 */
+        padding: 8px;  /* 내부 여백 */
     }
     QLabel {
         color: #eaeaea;  /* 라벨 기본 텍스트 색상 */
@@ -460,20 +457,40 @@ dark_style_sheet = """
         selection-background-color: #34495e;
         selection-color: #ffffff;
     }
-    QGroupBox {
-        border: 1px solid #5a5a5a;
-        margin-top: 20px;
-        background-color: #2b2b2b;
-        color: #eaeaea;
+    QCheckBox {
+        spacing: 5px; /* 텍스트와 체크박스 간 간격 */
+        color: #eaeaea; /* 기본 텍스트 색상 */
         font-size: 14px;
-        border-radius: 5px;
     }
-
+    QCheckBox::indicator {
+        width: 16px;
+        height: 16px;
+        border: 1px solid #5a5a5a; /* 체크박스 외곽선 색상 */
+        border-radius: 3px;
+        background-color: #2b2b2b; /* 체크박스 배경 */
+    }
+    
+    QCheckBox::indicator:hover {
+        border: 1px solid #3a539b; /* 마우스 오버 시 외곽선 색상 */
+    }
+    
+    QCheckBox::indicator:checked {
+        background-color: #34495e; /* 체크된 상태 배경 */
+        border: 1px solid #3a539b; /* 체크된 상태 외곽선 */
+        image: url('checkmark.png'); /* 체크된 상태 이미지 (선택 사항) */
+    }
+    
+    QCheckBox::indicator:unchecked {
+        background-color: #2b2b2b; /* 체크 안 된 상태 배경 */
+        border: 1px solid #5a5a5a; /* 체크 안 된 상태 외곽선 */
+    }
+    
+    QCheckBox::indicator:disabled {
+        background-color: #3c3c3c; /* 비활성화 상태 배경 */
+        border: 1px solid #5a5a5a; /* 비활성화 상태 외곽선 */
+        color: #777777; /* 비활성화 상태 텍스트 색상 */
+    }
     QGroupBox::title {
-        subcontrol-origin: margin;
-        subcontrol-position: top left;
-        padding: 5px;
-        background-color: #2b2b2b;
-        color: #eaeaea;
+        color: white; /* 제목 텍스트 색상 */
     }
     """
