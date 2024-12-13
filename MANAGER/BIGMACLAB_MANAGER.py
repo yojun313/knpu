@@ -190,6 +190,7 @@ class MainWindow(QMainWindow):
                                                         f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",
                                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                             if reply == QMessageBox.Yes:
+                                self.printStatus("접속 재시도 중...")
                                 continue
                             else:
                                 os._exit(0)
@@ -222,6 +223,7 @@ class MainWindow(QMainWindow):
                                                         f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",
                                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                             if reply == QMessageBox.Yes:
+                                self.printStatus("접속 재시도 중...")
                                 continue
                             else:
                                 os._exit(0)
