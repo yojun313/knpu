@@ -723,6 +723,7 @@ class Manager_Database:
             self.main.database_searchDB_button.clicked.connect(lambda: self.database_search_chatgpt(True))
             self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_chatgpt)
             self.main.database_searchDB_lineinput.setPlaceholderText("ChatGPT 에게 질문을 입력하고 Enter키를 누르세요 / 음성인식 버튼을 클릭하고 음성으로 질문하세요...")
+            self.main.printStatus("ChatGPT Mode")
             QMessageBox.information(self.main, "ChatGPT Mode", f"입력란이 ChatGPT 프롬프트로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
             return
         if self.chatgpt_mode == True:
@@ -738,6 +739,7 @@ class Manager_Database:
             self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
             self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_DB)
             self.main.database_searchDB_lineinput.setPlaceholderText("검색어를 입력하고 Enter키나 검색 버튼을 누르세요...")
+            self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
             QMessageBox.information(self.main, "Search Mode", f"입력란이 DB 검색으로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
             return
 
@@ -794,7 +796,7 @@ class Manager_Database:
         print("ChatGPT > 답변 생성 중...", end='\r')
         self.main.printStatus("ChatGPT 답변 생성 중...")
         answer = self.main.chatgpt_generate(search_text)
-        self.main.printStatus()
+        self.main.printStatus("ChatGPT Mode")
 
         if type(answer) != str:
             print(f"ChatGPT > 답변 생성 중 오류 발생\n")
