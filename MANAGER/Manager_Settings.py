@@ -7,10 +7,9 @@ from datetime import datetime
 import platform
 
 class Manager_Setting(QDialog):
-    def __init__(self, main, setting):
+    def __init__(self, main):
         super().__init__()
         self.main = main
-        self.setting_path = setting['path']
         self.setWindowTitle("Settings")
         self.resize(800, 400)
 
@@ -34,15 +33,15 @@ class Manager_Setting(QDialog):
         self.stacked_widget = QStackedWidget()
 
         # 앱 설정 페이지 추가
-        self.app_settings_page = self.create_app_settings_page(setting)
+        self.app_settings_page = self.create_app_settings_page(self.main.SETTING)
         self.stacked_widget.addWidget(self.app_settings_page)
 
         # DB 설정 페이지 추가
-        self.db_settings_page = self.create_db_settings_page(setting)
+        self.db_settings_page = self.create_db_settings_page(self.main.SETTING)
         self.stacked_widget.addWidget(self.db_settings_page)
 
         # info 설정 페이지 추가
-        self.info_settings_page = self.create_info_settings_page(setting)
+        self.info_settings_page = self.create_info_settings_page(self.main.SETTING)
         self.stacked_widget.addWidget(self.info_settings_page)
 
         self.help_page = self.create_help_page()
@@ -565,6 +564,8 @@ class Manager_Setting(QDialog):
 
         manager_location_label = QLabel(f"앱 경로: {wrap_text_by_words(self.main.program_directory, 40)}")
 
+        setting_location_label = QLabel(f"설정 경로: {wrap_text_by_words(self.main.settings.fileName(), 40)}")
+
         # 실시간 업데이트를 위한 구동 시간 라벨
         self.manager_time_label = QLabel("구동 시간: 계산 중...")
 
@@ -572,6 +573,7 @@ class Manager_Setting(QDialog):
         manager_info_section.addWidget(manager_title_label)
         manager_info_section.addWidget(manager_version_label)
         manager_info_section.addWidget(manager_location_label)
+        manager_info_section.addWidget(setting_location_label)
         manager_info_section.addWidget(self.manager_time_label)
 
         info_layout.addLayout(manager_info_section)
@@ -686,16 +688,16 @@ class Manager_Setting(QDialog):
         self.main.gpt_api_key = api_key
 
         options = {
-            "theme": {"key": 1, "value": theme},  # 테마 설정
-            "screensize": {"key": 2, "value": screen_size},  # 스크린 사이즈 설정
-            "autoupdate": {"key": 4, "value": auto_update},  # 자동 업데이트 설정
-            "mydb": {"key": 5, "value": my_db},  # 내 DB만 보기 설정
-            "GPT_Key": {"key": 6, "value": api_key},
-            "DB_Refresh": {"key": 7, "value": db_refresh},
-            "GPT_TTS": {"key": 8, "value": gpt_tts},
-            "BootTerminal": {"key": 9, "value": boot_terminal},
-            'DBKeywordSort': {'key': 10, "value": db_keywordsort},
-            'ProcessConsole': {'key': 11, 'value': process_console}
+            "theme": {"key": 'Theme', "value": theme},  # 테마 설정
+            "screensize": {"key": 'ScreenSize', "value": screen_size},  # 스크린 사이즈 설정
+            "autoupdate": {"key": 'AutoUpdate', "value": auto_update},  # 자동 업데이트 설정
+            "mydb": {"key": 'MyDB', "value": my_db},  # 내 DB만 보기 설정
+            "GPT_Key": {"key": 'GPT_Key', "value": api_key},
+            "DB_Refresh": {"key": 'DB_Refresh', "value": db_refresh},
+            "GPT_TTS": {"key": 'GPT_TTS', "value": gpt_tts},
+            "BootTerminal": {"key": 'BootTerminal', "value": boot_terminal},
+            'DBKeywordSort': {'key': 'DBKeywordSort', "value": db_keywordsort},
+            'ProcessConsole': {'key': 'ProcessConsole', 'value': process_console}
         }
         for option in options.values():
             self.main.update_settings(option['key'], option['value'])
