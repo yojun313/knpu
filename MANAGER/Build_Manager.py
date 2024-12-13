@@ -2,6 +2,7 @@ import os
 import subprocess
 import socket
 from datetime import datetime
+from packaging.version import Version
 import shutil
 
 def create_spec_file(original_spec_file, new_spec_file, exe_name):
@@ -53,7 +54,13 @@ if __name__ == "__main__":
     while True:
         # Get the version from the user
         version = input("Enter the program version: ")
-        version = current_version if version == 'r' else version
+
+        if version == 'r':
+            version = current_version
+        elif version == 'n':
+            current = Version(current_version)
+            next_version = Version(f"{current.major}.{current.minor}.{current.micro + 1}")
+            version = str(next_version)
 
         same_version = os.path.join(output_directory, f"BIGMACLAB_MANAGER_{version}")
         if os.path.exists(same_version):
