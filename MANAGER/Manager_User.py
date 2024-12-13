@@ -4,10 +4,9 @@ import traceback
 from datetime import datetime
 from PyQt5.QtCore import QStringListModel, Qt
 from PyQt5.QtWidgets import (
-    QMessageBox, QFileDialog, QHBoxLayout, QTableWidgetItem,
+    QMessageBox, QFileDialog, QTableWidgetItem,
     QWidget, QToolBox,
     QListView, QVBoxLayout,
-    QPushButton, QDialog, QLabel, QCheckBox
 )
 warnings.filterwarnings("ignore")
 

@@ -20,11 +20,6 @@ class Manager_Setting(QDialog):
         # 상단 레이아웃 (카테고리 목록과 설정 페이지)
         content_layout = QHBoxLayout()
 
-        self.is_dark_mode = False
-        if self.main.SETTING['Theme'] != 'default':
-            self.is_dark_mode = True
-
-
         # 왼쪽: 카테고리 목록
         self.category_list = QListWidget()
         self.category_list.addItem("앱 설정")
@@ -75,8 +70,6 @@ class Manager_Setting(QDialog):
         save_shortcut_mac = QShortcut(QKeySequence("Ctrl+ㄴ"), self)
         save_shortcut_mac.activated.connect(self.save_settings)
 
-
-
         button_layout.addStretch()  # 버튼을 오른쪽으로 정렬
         button_layout.addWidget(save_button)
         button_layout.addWidget(cancel_button)
@@ -85,221 +78,17 @@ class Manager_Setting(QDialog):
         main_layout.addLayout(content_layout)
         main_layout.addLayout(button_layout)
 
-        self.apply_theme()
+        self.setStyleSheet('''
+            QPushButton {
+                border: none;
+                border-radius: 5px;
+                padding: 9px;
+                font-size: 15px;
+            }
+        '''
+        )
 
         self.setLayout(main_layout)
-
-    def apply_theme(self):
-        if self.is_dark_mode:
-            self.setStyleSheet(
-                """
-                QMainWindow {
-                    background-color: #2b2b2b;
-                    font-size: 14px;
-                    color: #eaeaea;  /* 기본 텍스트 색상 */
-                }
-                QPushButton {
-                    background-color: #34495e;
-                    color: #eaeaea;  /* 버튼 텍스트 색상 */
-                    border: none;
-                    border-radius: 5px;
-                    padding: 8px;
-                    font-size: 15px;
-                }
-                QStatusBar {
-                    font-family: 'Tahoma';
-                }
-                QPushButton:hover {
-                    background-color: #3a539b;
-                }
-                QLineEdit {
-                    border: 1px solid #5a5a5a;
-                    border-radius: 5px;
-                    padding: 8px;
-                    background-color: #3c3c3c;
-                    color: #eaeaea;  /* 입력 텍스트 색상 */
-                    font-size: 14px;
-                }
-                QLabel {
-                    color: #eaeaea;  /* 라벨 기본 텍스트 색상 */
-                    font-size: 14px;
-                }
-                QHeaderView::section {
-                    background-color: #3c3c3c;
-                    color: #eaeaea;  /* 헤더 텍스트 색상 */
-                    padding: 8px;
-                    border: 1px solid #5a5a5a;
-                    font-size: 14px;
-                }
-                QHeaderView::corner {  /* 좌측 상단 정사각형 부분 */
-                    background-color: #3c3c3c; /* 테이블 배경과 동일한 색상 */
-                    border: 1px solid #5a5a5a;
-                }
-                QHeaderView {
-                    background-color: #2b2b2b;  /* 헤더 전체 배경 */
-                    border: none;
-                }
-                QListWidget {
-                    background-color: #3c3c3c;
-                    color: #eaeaea;  /* 리스트 아이템 텍스트 색상 */
-                    font-family: 'Tahoma';
-                    font-size: 14px;
-                    border: none;
-                    min-width: 150px;  /* 가로 크기 고정: 최소 크기 설정 */
-                    max-width: 150px;
-                }
-                QListWidget::item {
-                    height: 40px;
-                    padding: 10px;
-                    font-family: 'Tahoma';
-                    font-size: 14px;
-                }
-                QListWidget::item:selected {
-                    background-color: #34495e;
-                    color: #ffffff;
-                }
-                QTabWidget::pane {
-                    border-top: 2px solid #5a5a5a;
-                    background-color: #2b2b2b;
-                }
-                QTabWidget::tab-bar {
-                    left: 5px;
-                }
-                QDialog {
-                    background-color: #2b2b2b;  /* 다이얼로그 배경색 */
-                    color: #eaeaea;
-                    border: 1px solid #5a5a5a;
-                    font-size: 14px;
-                }
-                QMessageBox {
-                    background-color: #2b2b2b;  /* 메시지 박스 배경색 */
-                    color: #eaeaea;  /* 메시지 텍스트 색상 */
-                    font-size: 14px;
-                    border: 1px solid #5a5a5a;
-                }
-                QMessageBox QLabel {
-                    color: #eaeaea;  /* 메시지 박스 라벨 색상 */
-                }
-                QMessageBox QPushButton {
-                    background-color: #34495e;  /* 버튼 배경색 */
-                    color: #eaeaea;  /* 버튼 텍스트 색상 */
-                    border: none;
-                    border-radius: 5px;
-                    padding: 10px;
-                }
-                QMessageBox QPushButton:hover {
-                    background-color: #3a539b;  /* 버튼 hover 효과 */
-                }
-                QScrollBar:vertical {
-                    background: #2e2e2e;
-                    width: 16px;
-                    margin: 0px;
-                }
-                QScrollBar::handle:vertical {
-                    background: #5e5e5e;
-                    min-height: 20px;
-                    border-radius: 4px;
-                }
-                QScrollBar::add-line:vertical {
-                    background: #3a3a3a;
-                    height: 16px;
-                    subcontrol-position: bottom;
-                    subcontrol-origin: margin;
-                }
-                QScrollBar::sub-line:vertical {
-                    background: #3a3a3a;
-                    height: 16px;
-                    subcontrol-position: top;
-                    subcontrol-origin: margin;
-                }
-                QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                    background: #2e2e2e;
-                }
-                QScrollBar:horizontal {
-                    background: #2e2e2e;
-                    height: 16px;
-                    margin: 0px;
-                }
-                QScrollBar::handle:horizontal {
-                    background: #5e5e5e;
-                    min-width: 20px;
-                    border-radius: 4px;
-                }
-                QScrollBar::add-line:horizontal {
-                    background: #3a3a3a;
-                    width: 16px;
-                    subcontrol-position: right;
-                    subcontrol-origin: margin;
-                }
-                QScrollBar::sub-line:horizontal {
-                    background: #3a3a3a;
-                    width: 16px;
-                    subcontrol-position: left;
-                    subcontrol-origin: margin;
-                }
-                QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
-                    background: #2e2e2e;
-                }
-                """
-            )
-        else:
-            # 라이트 모드 스타일
-            self.setStyleSheet(
-                """
-                QMainWindow {
-                    background-color: #f7f7f7;
-                    font-size: 14px;
-                }
-                QPushButton {
-                    background-color: #2c3e50;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    padding: 8px;
-                    font-size: 15px;
-                }
-                QPushButton:hover {
-                    background-color: #34495e;
-                }
-                QLineEdit {
-                    border: 1px solid #bdc3c7;
-                    border-radius: 5px;
-                    padding: 8px;
-                    background-color: white;
-                    font-size: 14px;
-                    color: black;
-                }
-                QLabel {
-                    color: black;  /* 라벨 기본 텍스트 색상 */
-                    font-size: 14px;
-                }
-                QHeaderView::section {
-                    background-color: #2c3e50;
-                    color: white;
-                    padding: 8px;
-                    border: none;
-                    font-size: 14px;
-                }
-                QListWidget {
-                    background-color: lightgray;
-                    color: black;
-                    font-family: 'Tahoma';
-                    font-size: 14px;
-                    border: none;
-                    min-width: 150px;
-                    max-width: 150px;
-                }
-                QListWidget::item {
-                    height: 40px;
-                    padding: 10px;
-                    font-family: 'Tahoma';
-                    font-size: 14px;
-                }
-                QListWidget::item:selected {
-                    background-color: #34495e;
-                }
-                """
-            )
 
     def create_app_settings_page(self, setting):
         """
