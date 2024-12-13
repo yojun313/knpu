@@ -49,7 +49,7 @@ if __name__ == "__main__":
         output_directory = "D:/BIGMACLAB/BIGMACLAB_MANAGER/exe"
 
     # Spec file path
-    spec_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'BIGMACLAB_MANAGER.spec')
+    spec_file = os.path.join(os.path.dirname(__file__), 'BIGMACLAB_MANAGER.spec')
 
     while True:
         # Get the version from the user
