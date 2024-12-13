@@ -16,9 +16,8 @@ import os
 import platform
 from PyQt5.QtWidgets import QApplication
 from Manager_SplashDialog import SplashDialog, light_style_sheet, dark_style_sheet
-from PyQt5.QtCore import QCoreApplication, Qt
+from PyQt5.QtCore import QCoreApplication, Qt, QSettings
 from PyQt5.QtGui import QFont
-from dotenv import load_dotenv
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 os.environ["QT_DEVICE_PIXEL_RATIO"] = "0"
@@ -31,6 +30,12 @@ QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
 app = QApplication([])
+app.setApplicationDisplayName("MANAGER")
+app.setApplicationName("BIGMACLAB_MANAGER")
+app.setApplicationVersion(VERSION)
+app.setOrganizationName("BIGMACLAB")
+app.setOrganizationDomain("https://knpu.re.kr")
+
 # 기본 폰트 설정 및 힌팅 설정
 if platform.system() == 'Windows':
     font = QFont("Malgun Gothic")
@@ -38,13 +43,9 @@ if platform.system() == 'Windows':
     font.setStyleStrategy(QFont.PreferAntialias)  # 안티앨리어싱 활성화
     app.setFont(font)
 
+settings = QSettings("BIGMACLAB", "BIGMACLAB_MANAGER")
 if platform.system() == 'Windows':
-    setting_path = os.path.join(os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER'), 'settings.env')
-    if os.path.exists(setting_path):
-        load_dotenv(setting_path, encoding='utf-8')
-        theme = os.getenv("OPTION_1")
-    else:
-        theme = 'default'
+    theme = settings.value('Theme', 'default')
 else:
     def is_mac_dark_mode():
         """
@@ -64,8 +65,8 @@ else:
         except Exception as e:
             # 오류가 발생하면 기본적으로 라이트 모드로 간주
             return False
-
     theme = 'dark' if is_mac_dark_mode() else 'default'
+    settings.setValue('Theme', theme)
 
 THEME = theme
 if theme != 'default':
@@ -91,12 +92,10 @@ from pathlib import Path
 import socket
 import gc
 import random
-import warnings
 import traceback
 import re
 import logging
 import shutil
-import textwrap
 
 splash_dialog.update_status("Loading GUI Libraries")
 from Manager_Settings import Manager_Setting
@@ -114,7 +113,6 @@ from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, 
 from PyQt5.QtCore import Qt, QCoreApplication, QObject, QEvent, QSize, QModelIndex, QEventLoop
 from PyQt5.QtGui import QKeySequence, QIcon
 
-warnings.filterwarnings("ignore")
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
 
@@ -168,6 +166,8 @@ class MainWindow(QMainWindow):
                         self.default_directory = "C:/BIGMACLAB_MANAGER"
                         if not os.path.exists(self.default_directory):
                             os.makedirs(self.default_directory)
+                        if os.path.exists(os.path.join(self.program_directory, 'settings.env')):
+                            os.remove(os.path.join(self.program_directory, 'settings.env'))
                     else:
                         self.program_directory = os.path.dirname(__file__)
                         self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
@@ -334,102 +334,8 @@ class MainWindow(QMainWindow):
 
     def initialize_settings(self):
         try:
-            env_content = textwrap.dedent("""\
-                #Setting
-                OPTION_1=default
-                OPTION_2=default
-                OPTION_3=default
-                OPTION_4=default
-                OPTION_5=default
-                OPTION_6=default
-                OPTION_7=default
-                OPTION_8=default
-                OPTION_9=default
-                OPTION_10=default
-                OPTION_11=default
-                OPTION_12=default
-                OPTION_13=default
-                OPTION_14=default
-                OPTION_15=default
-                OPTION_16=default
-                OPTION_17=default
-                OPTION_18=default
-                OPTION_19=default
-                OPTION_21=default 
-                OPTION_22=default 
-                OPTION_23=default 
-                OPTION_24=default 
-                OPTION_25=default 
-                OPTION_26=default 
-                OPTION_27=default 
-                OPTION_28=default 
-                OPTION_29=default 
-                OPTION_30=default 
-                OPTION_31=default 
-                OPTION_32=default 
-                OPTION_33=default 
-                OPTION_34=default 
-                OPTION_35=default 
-                OPTION_36=default 
-                OPTION_37=default 
-                OPTION_38=default 
-                OPTION_39=default 
-                OPTION_40=default 
-                OPTION_41=default 
-                OPTION_42=default 
-                OPTION_43=default 
-                OPTION_44=default 
-                OPTION_45=default 
-                OPTION_46=default 
-                OPTION_47=default 
-                OPTION_48=default
-                OPTION_49=default 
-                OPTION_50=default
-            """)
-            if platform.system() == 'Windows':
-                setting_folder_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER')
-                if not os.path.exists(setting_folder_path):
-                    os.makedirs(setting_folder_path)
-                self.setting_path = os.path.join(setting_folder_path, 'settings.env')
-                if not os.path.exists(self.setting_path):
-                    # 파일 쓰기
-                    with open(self.setting_path, "w", encoding="utf-8") as env_file:
-                        env_file.write(env_content)
-
-                load_dotenv(self.setting_path)
-            else:
-                self.setting_path = os.path.join(os.path.dirname(__file__), 'settings.env')
-                if not os.path.exists(self.setting_path):
-                    # 파일 쓰기
-                    with open(self.setting_path, "w", encoding="utf-8") as env_file:
-                        env_file.write(env_content)
-                load_dotenv(self.setting_path)
-
-            self.SETTING = {
-                'path': self.setting_path,
-                'Theme': os.getenv("OPTION_1"),
-                'ScreenSize': os.getenv("OPTION_2"),
-                'OldPostTitle': os.getenv("OPTION_3"),
-                'AutoUpdate': os.getenv("OPTION_4"),
-                'MyDB': os.getenv("OPTION_5"),
-                'GPT_Key': os.getenv("OPTION_6"),
-                'DB_Refresh': os.getenv("OPTION_7"),
-                'GPT_TTS': os.getenv("OPTION_8"),
-                'BootTerminal': os.getenv("OPTION_9"),
-                'DBKeywordSort': os.getenv("OPTION_10"),
-                'ProcessConsole': os.getenv("OPTION_11"),
-            }
-            if platform.system() == 'Darwin':
-                if THEME == 'dark':
-                    self.update_settings(1, 'dark')
-                    self.SETTING['Theme'] = 'dark'
-                else:
-                    self.update_settings(1, 'default')
-                    self.SETTING['Theme'] = 'default'
-        except Exception as e:
-            print(traceback.format_exc())
-            self.SETTING = {
-                'path': 'default',
+            self.settings = QSettings("BIGMACLAB", "BIGMACLAB_MANAGER")
+            defaults = {
                 'Theme': 'default',
                 'ScreenSize': 'default',
                 'OldPostTitle': 'default',
@@ -440,8 +346,31 @@ class MainWindow(QMainWindow):
                 'GPT_TTS': 'default',
                 'BootTerminal': 'default',
                 'DBKeywordSort': 'default',
-                'ProcessConsole': 'default'
+                'ProcessConsole': 'default',
             }
+
+            # 설정 초기화
+            for key, value in defaults.items():
+                if self.settings.value(key) is None:  # 값이 없을 경우 기본값 설정
+                    self.settings.setValue(key, value)
+
+            self.SETTING = {
+                'Theme': self.settings.value("Theme", "default"),
+                'ScreenSize': self.settings.value("ScreenSize", "default"),
+                'OldPostTitle': self.settings.value("OldPostTitle", "default"),
+                'AutoUpdate': self.settings.value("AutoUpdate", "default"),
+                'MyDB': self.settings.value("MyDB", "default"),
+                'GPT_Key': self.settings.value("GPT_Key", "default"),
+                'DB_Refresh': self.settings.value("DB_Refresh", "default"),
+                'GPT_TTS': self.settings.value("GPT_TTS", "default"),
+                'BootTerminal': self.settings.value("BootTerminal", "default"),
+                'DBKeywordSort': self.settings.value("DBKeywordSort", "default"),
+                'ProcessConsole': self.settings.value("ProcessConsole", "default"),
+            }
+
+        except Exception as e:
+            print(traceback.format_exc())
+            self.SETTING = defaults
 
     def initialize_configuration(self):
         try:
@@ -804,10 +733,10 @@ class MainWindow(QMainWindow):
         if new_post_text == old_post_text:
             return False
         elif old_post_text == 'default':
-            self.update_settings(3, new_post_text)
+            self.update_settings('OldPostTitle', new_post_text)
             return False
         elif new_post_text != old_post_text and self.user != new_post_writer:
-            self.update_settings(3, new_post_text)
+            self.update_settings('OldPostTitle', new_post_text)
             return True
 
     def check_internet_connection(self):
@@ -953,29 +882,7 @@ class MainWindow(QMainWindow):
 
     def update_settings(self, option_key, new_value):
         try:
-            option_key = f"OPTION_{option_key}"
-            file_path = self.SETTING['path']
-            # .env 파일 읽기
-            lines = []
-            if os.path.exists(file_path):
-                with open(file_path, 'r', encoding="utf-8") as file:
-                    lines = file.readlines()
-
-            # 변경된 내용을 다시 작성
-            with open(file_path, 'w', encoding="utf-8") as file:
-                key_found = False
-                for line in lines:
-                    key, sep, value = line.partition("=")
-                    key = key.strip()
-                    if key == option_key:  # 키가 존재하면 값을 변경
-                        file.write(f"{option_key}={new_value}\n")
-                        key_found = True
-                    else:  # 키가 다르면 기존 내용 유지
-                        file.write(line)
-
-                if not key_found:  # 키가 없으면 새로 추가
-                    file.write(f"{option_key}={new_value}\n")
-
+            self.settings.setValue(option_key, new_value)  # 설정값 업데이트
             return True
         except Exception as e:
             print(traceback.format_exc())
@@ -1025,7 +932,7 @@ class MainWindow(QMainWindow):
     def user_settings(self):
         try:
             self.user_logging(f'User Setting')
-            dialog = Manager_Setting(self, self.SETTING)
+            dialog = Manager_Setting(self)
             if dialog.exec_() == QDialog.Accepted:
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
                 self.printStatus("설정 반영 중...")
