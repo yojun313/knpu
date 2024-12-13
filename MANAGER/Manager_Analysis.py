@@ -12,10 +12,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from datetime import datetime
-from PyQt5.QtCore import QTimer, Qt, QDate
+from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtWidgets import (
     QInputDialog, QMessageBox, QFileDialog, QDialog, QHBoxLayout, QCheckBox,
-    QComboBox, QLineEdit, QLabel, QDialogButtonBox, QWidget, QGridLayout,
+    QComboBox, QLineEdit, QLabel, QDialogButtonBox, QGridLayout,
     QGroupBox, QScrollArea, QVBoxLayout,
     QPushButton, QButtonGroup, QRadioButton, QDateEdit
 )
@@ -1200,7 +1200,7 @@ class Manager_Analysis:
 
             def initUI(self):
                 # 메인 레이아웃을 감쌀 위젯 생성
-                container_widget = QWidget()
+                container_widget = QDialog()
                 main_layout = QVBoxLayout(container_widget)
 
                 self.info_label = QLabel('제외할 키워드를 선택하세요\n')
@@ -1526,7 +1526,7 @@ class Manager_Analysis:
 
             def initUI(self):
                 # 메인 레이아웃을 감쌀 위젯 생성
-                container_widget = QWidget()
+                container_widget = QDialog()
                 main_layout = QVBoxLayout(container_widget)
 
                 # 체크박스를 배치할 각 그룹 박스 생성

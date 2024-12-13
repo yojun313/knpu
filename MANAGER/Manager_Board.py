@@ -1,11 +1,11 @@
 import traceback
 import warnings
 from datetime import datetime
-from PyQt5.QtCore import QTimer, QRegExp, Qt, QDate
+from PyQt5.QtCore import QRegExp, Qt, QDate
 from PyQt5.QtGui import QRegExpValidator, QKeySequence
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton,
-    QMessageBox, QTextEdit, QScrollArea, QWidget, QShortcut
+    QMessageBox, QTextEdit, QScrollArea, QShortcut
 )
 
 warnings.filterwarnings("ignore")
@@ -63,7 +63,7 @@ class Manager_Board:
                     self.resize(400, 400)
 
                     # 컨테이너 위젯 생성
-                    container_widget = QWidget()
+                    container_widget = QDialog()
                     layout = QVBoxLayout(container_widget)
 
                     # 각 입력 필드를 위한 QLabel 및 QTextEdit 생성
@@ -369,7 +369,7 @@ class Manager_Board:
                     self.resize(400, 400)
 
                     # 컨테이너 위젯 생성
-                    container_widget = QWidget()
+                    container_widget = QDialog()
                     layout = QVBoxLayout(container_widget)
 
                     # 각 입력 필드를 위한 QLabel 및 QLineEdit, QTextEdit 생성
@@ -656,7 +656,7 @@ class Manager_Board:
                     self.resize(400, 400)
 
                     # 컨테이너 위젯 생성
-                    container_widget = QWidget()
+                    container_widget = QDialog()
                     layout = QVBoxLayout(container_widget)
 
                     # 비밀번호 입력 필드
@@ -970,7 +970,7 @@ class Manager_Board:
                     self.resize(400, 400)
 
                     # 컨테이너 위젯 생성
-                    container_widget = QWidget()
+                    container_widget = QDialog()
                     layout = QVBoxLayout(container_widget)
 
                     # 게시물 제목 입력 필드
