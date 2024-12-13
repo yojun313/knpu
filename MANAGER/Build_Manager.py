@@ -53,6 +53,7 @@ if __name__ == "__main__":
     while True:
         # Get the version from the user
         version = input("Enter the program version: ")
+        version = current_version if version == 'r' else version
 
         same_version = os.path.join(output_directory, f"BIGMACLAB_MANAGER_{version}")
         if os.path.exists(same_version):
@@ -64,4 +65,5 @@ if __name__ == "__main__":
 
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M")
+        current_version = version
         print(f"{current_time} BIGMACLAB_MANAGER_{version} built successfully\n")
