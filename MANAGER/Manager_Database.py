@@ -1183,6 +1183,12 @@ class Manager_Database:
         self.main.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'source', 'search.png')))  # 아이콘 설정 (이미지 경로 지정)
         self.main.database_searchDB_button.setIconSize(QSize(18, 18))  # 아이콘 크기 조정 (원하는 크기로 설정)
 
+        self.main.database_chatgpt_button.setText("")  # 텍스트 제거
+        self.main.database_chatgpt_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'source', 'chatgpt_logo.png')))  # 아이콘 설정 (이미지 경로 지정)
+        self.main.database_chatgpt_button.setIconSize(QSize(19, 19))  # 아이콘 크기 조정 (원하는 크기로 설정)
+
+
+
     def database_shortcut_setting(self):
         self.main.shortcut_initialize()
         self.main.ctrld.activated.connect(self.database_delete_DB)
