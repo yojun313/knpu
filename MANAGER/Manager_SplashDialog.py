@@ -100,6 +100,7 @@ light_style_sheet = """
         font-size: 15px;
     }
     QStatusBar {
+        background-color: #ffffff; /* 기본 흰색 배경 */
         font-family: 'Tahoma';
         font-size: 10px;
         color: black;
