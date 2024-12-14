@@ -89,6 +89,10 @@ class Manager_Setting(QDialog):
                 font-size: 14px;
                 font-family: 'Malgun Gothic';
             }
+            QListWidget {
+                color: white;
+                font-family: 'Malgun Gothic';
+            }
         '''
         )
         default_font = QFont(os.path.join(os.path.dirname(__file__), 'source', 'malgun.ttf'))  # 폰트 이름과 크기 지정
