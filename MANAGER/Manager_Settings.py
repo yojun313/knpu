@@ -95,6 +95,7 @@ class Manager_Setting(QDialog):
             }
         '''
         )
+
         default_font = QFont(os.path.join(os.path.dirname(__file__), 'source', 'malgun.ttf'))  # 폰트 이름과 크기 지정
         self.setFont(default_font)
 
@@ -523,6 +524,7 @@ class Manager_Setting(QDialog):
         # 사용자 정보 표시 섹션
         user_info_section = QVBoxLayout()
         user_title_label = QLabel("사용자 정보")
+        user_title_label.setStyleSheet("font-weight: bold;")
         user_title_label.setAlignment(Qt.AlignLeft)
 
         # 사용자 정보 추가 (예: 이름, 이메일, 디바이스)
@@ -555,6 +557,7 @@ class Manager_Setting(QDialog):
         # MANAGER 정보 표시 섹션
         manager_info_section = QVBoxLayout()
         manager_title_label = QLabel("MANAGER 정보")
+        manager_title_label.setStyleSheet("font-weight: bold;")
         manager_title_label.setAlignment(Qt.AlignLeft)
 
         # MANAGER 정보 추가
@@ -601,6 +604,7 @@ class Manager_Setting(QDialog):
 
         # 제목
         help_title_label = QLabel("Instructions\n")
+        help_title_label.setStyleSheet("font-weight: bold;")
         help_title_label.setAlignment(Qt.AlignLeft)
 
         # 설명 텍스트
