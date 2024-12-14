@@ -262,7 +262,9 @@ dark_style_sheet = """
         padding: 8px;  /* 내부 여백 */
     }
     QLabel {
-        color: #eaeaea;  /* 라벨 기본 텍스트 색상 */
+        background-color: #2b2b2b;  /* 내부 위젯 배경색 */
+        color: #eaeaea;            /* 글자 색 */
+        border: none;             /* 경계선 제거 */
         font-size: 14px;
     }
     QTableWidget {

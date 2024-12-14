@@ -281,78 +281,7 @@ class Manager_Database:
             if endtime != '오류 중단':
                 endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
 
-            # HTML을 사용하여 디테일 표시
-            if self.main.SETTING['Theme'] != 'default':
-                style_html = f"""
-                <style>
-                    h2 {{
-                        color: #2c3e50;
-                        text-align: center;
-                    }}
-                    table {{
-                        width: 100%;
-                        border-collapse: collapse;
-                        font-family: Arial, sans-serif;
-                        font-size: 14px;
-                        color: white;
-                    }}
-                    th, td {{
-                        border: 1px solid #bdc3c7;
-                        padding: 8px;
-                        text-align: left;
-                    }}
-                    th {{
-                        background-color: #34495e;
-                        color: white;
-                    }}
-                    td {{
-                        color: white;
-                    }}
-                    .detail-content {{
-                        white-space: pre-wrap;
-                        margin-top: 5px;
-                        font-family: Arial, sans-serif;
-                        font-size: 14px;
-                    }}
-                </style>
-                """
-            else:
-                style_html = f"""
-                    <style>
-                        h2 {{
-                            color: #2c3e50;
-                            text-align: center;
-                        }}
-                        table {{
-                            width: 100%;
-                            border-collapse: collapse;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            color: black;
-                        }}
-                        th, td {{
-                            border: 1px solid #bdc3c7;
-                            padding: 8px;
-                            text-align: left;
-                            color: white;
-                        }}
-                        th {{
-                            background-color: #34495e;
-                        }}
-                        td {{
-                            color: black;
-                        }}
-                        .detail-content {{
-                            white-space: pre-wrap;
-                            margin-top: 5px;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            color: black;
-                        }}
-                    </style>
-                """
-
-            details_html = style_html + f"""
+            details_html = self.main.style_html + f"""
                 <div class="version-details">
                     <table>
                         <tr>
