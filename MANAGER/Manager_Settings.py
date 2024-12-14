@@ -88,7 +88,6 @@ class Manager_Setting(QDialog):
             QLabel {
                 font-size: 14px;
                 font-family: 'Malgun Gothic';
-                font-weight: bold;
             }
         '''
         )
