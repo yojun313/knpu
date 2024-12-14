@@ -141,7 +141,6 @@ class Manager_Setting(QDialog):
         screen_size_layout = QHBoxLayout()
         screen_size_label = QLabel("부팅 시 창 크기:")
         screen_size_label.setAlignment(Qt.AlignLeft)
-        screen_size_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         screen_size_label.setToolTip("MANAGER 부팅 시 기본 창 크기를 설정합니다")
 
         self.default_size_toggle = QPushButton("기본값")
@@ -173,7 +172,6 @@ class Manager_Setting(QDialog):
         boot_terminal_layout = QHBoxLayout()
         boot_terminal_label = QLabel("부팅 시 터미널:")
         boot_terminal_label.setAlignment(Qt.AlignLeft)
-        boot_terminal_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         boot_terminal_label.setToolTip("MANAGER 부팅 시 터미널 창 여부를 설정합니다")
 
         self.default_bootterminal_toggle = QPushButton("끄기")
@@ -205,7 +203,6 @@ class Manager_Setting(QDialog):
         process_console_layout = QHBoxLayout()
         process_console_label = QLabel("프로세스 콘솔:")
         process_console_label.setAlignment(Qt.AlignLeft)
-        process_console_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         process_console_label.setToolTip("KEMKIM, CSV로 저장 등 복잡한 작업 수행 시 진행 상황을 나타내는 콘솔 창 여부를 설정합니다")
 
         self.default_processconsole_toggle = QPushButton("켜기")
@@ -237,7 +234,6 @@ class Manager_Setting(QDialog):
         auto_update_layout = QHBoxLayout()
         auto_update_label = QLabel("자동 업데이트:")
         auto_update_label.setAlignment(Qt.AlignLeft)
-        auto_update_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         auto_update_label.setToolTip("MANAGER 부팅 시 자동 업데이트 여부를 설정합니다")
 
         self.default_update_toggle = QPushButton("끄기")
@@ -293,12 +289,10 @@ class Manager_Setting(QDialog):
         api_key_layout = QHBoxLayout()
         api_key_label = QLabel("ChatGPT API:")
         api_key_label.setAlignment(Qt.AlignLeft)
-        api_key_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         api_key_label.setToolTip("ChatGPT 기능을 사용하기 위한 API Key를 설정합니다")
 
         self.api_key_input = QLineEdit()
         self.api_key_input.setPlaceholderText("Enter your Key")
-        self.api_key_input.setStyleSheet("font-size: 14px; padding: 5px;")
         if setting['GPT_Key'] != 'default' and len(setting['GPT_Key']) >= 20:
             self.api_key_input.setText(setting['GPT_Key'])  # 기존 값이 있으면 표시
             self.api_key_input.setDisabled(True)
@@ -311,7 +305,6 @@ class Manager_Setting(QDialog):
         gpt_tts_layout = QHBoxLayout()
         gpt_tts_label = QLabel("ChatGPT TTS:")
         gpt_tts_label.setAlignment(Qt.AlignLeft)
-        gpt_tts_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         gpt_tts_label.setToolTip("ChatGPT 프롬프트 음성인식 사용 시 TTS(TextToSpeech) 답변 여부를 설정합니다")
 
         self.default_gpttts_toggle = QPushButton("켜기")
@@ -389,7 +382,6 @@ class Manager_Setting(QDialog):
         db_display_layout = QHBoxLayout()
         mydb_label = QLabel("내 DB만 표시:")
         mydb_label.setAlignment(Qt.AlignLeft)
-        mydb_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         mydb_label.setToolTip("DB 목록에서 자신이 크롤링한 DB만 표시할지 여부를 설정합니다")
 
         self.default_mydb_toggle = QPushButton("끄기")
@@ -421,7 +413,6 @@ class Manager_Setting(QDialog):
         db_refresh_layout = QHBoxLayout()
         db_refresh_label = QLabel("DB 자동 새로고침:")
         db_refresh_label.setAlignment(Qt.AlignLeft)
-        db_refresh_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         db_refresh_label.setToolTip("DATABASE 섹션으로 이동 시 자동으로 DB 목록을 새로고침할지 여부를 설정합니다\n'Ctrl+R'로 수동 새로고침 가능합니다")
 
         self.default_dbrefresh_toggle = QPushButton("켜기")
@@ -453,7 +444,6 @@ class Manager_Setting(QDialog):
         db_keywordsort_layout = QHBoxLayout()
         db_keywordsort_label = QLabel("DB 목록 정렬:")
         db_keywordsort_label.setAlignment(Qt.AlignLeft)
-        db_keywordsort_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         db_keywordsort_label.setToolTip("DATABASE 섹션에서 DB 목록의 정렬 기준을 설정힙니다")
 
         self.default_dbkeywordsort_toggle = QPushButton("최신순")
@@ -531,7 +521,6 @@ class Manager_Setting(QDialog):
         user_info_section = QVBoxLayout()
         user_title_label = QLabel("사용자 정보")
         user_title_label.setAlignment(Qt.AlignLeft)
-        user_title_label.setStyleSheet("font-size: 14px; font-weight: bold;")
 
         # 사용자 정보 추가 (예: 이름, 이메일, 디바이스)
         user_name_label = QLabel(f"이름: {self.main.user}")
@@ -564,7 +553,6 @@ class Manager_Setting(QDialog):
         manager_info_section = QVBoxLayout()
         manager_title_label = QLabel("MANAGER 정보")
         manager_title_label.setAlignment(Qt.AlignLeft)
-        manager_title_label.setStyleSheet("font-size: 14px; font-weight: bold;")
 
         # MANAGER 정보 추가
         manager_version_label = QLabel(f"버전: {self.main.versionNum}")
@@ -611,7 +599,6 @@ class Manager_Setting(QDialog):
         # 제목
         help_title_label = QLabel("Instructions\n")
         help_title_label.setAlignment(Qt.AlignLeft)
-        help_title_label.setStyleSheet("font-size: 14px; font-weight: bold;")
 
         # 설명 텍스트
         help_text_label = QLabel("아래 링크를 클릭하여 사용 설명서를 확인하세요.")
