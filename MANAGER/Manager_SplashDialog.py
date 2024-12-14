@@ -219,6 +219,81 @@ light_style_sheet = """
     QGroupBox::title {
         color: black; /* 제목 텍스트 색상 */
     }
+    QTextEdit {
+        border: 1px solid #dcdcdc;
+        border-radius: 4px;
+        padding: 8px;
+        font-size: 14px;
+        background-color: #ffffff; /* 기본 흰색 배경 */
+        color: #000000; /* 기본 검정 텍스트 */
+    }
+
+    QDialog {
+        background-color: #ffffff; /* 기본 다이얼로그 흰색 배경 */
+        color: #000000; /* 기본 텍스트 검정 */
+        border: 1px solid #dcdcdc; /* 연한 회색 테두리 */
+    }
+
+    QScrollArea {
+        background-color: #ffffff; /* 스크롤 영역 기본 흰색 배경 */
+        color: #000000; /* 기본 텍스트 검정 */
+    }
+
+    QMessageBox {
+        background-color: #ffffff; /* 메시지 박스 기본 흰색 배경 */
+        color: #000000; /* 기본 텍스트 검정 */
+    }
+
+    QScrollBar:vertical {
+        background: #f1f1f1; /* 수직 스크롤바 배경 */
+        width: 16px;
+        margin: 0px;
+    }
+    QScrollBar::handle:vertical {
+        background: #c6c6c6; /* 수직 스크롤바 핸들 */
+        min-height: 20px;
+        border-radius: 4px;
+    }
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+        background: #e6e6e6; /* 수직 스크롤바 상/하단 버튼 */
+        height: 16px;
+        subcontrol-position: bottom;
+    }
+    QScrollBar:horizontal {
+        background: #f1f1f1; /* 수평 스크롤바 배경 */
+        height: 16px;
+        margin: 0px;
+    }
+    QScrollBar::handle:horizontal {
+        background: #c6c6c6; /* 수평 스크롤바 핸들 */
+        min-width: 20px;
+        border-radius: 4px;
+    }
+    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+        background: #e6e6e6; /* 수평 스크롤바 좌/우 버튼 */
+        width: 16px;
+    }
+
+    QCheckBox {
+        spacing: 5px; /* 텍스트와 체크박스 간 간격 */
+        font-size: 14px; /* 기본 폰트 크기 */
+        color: #000000; /* 기본 검정 텍스트 */
+    }
+    QCheckBox::indicator {
+        width: 16px;
+        height: 16px;
+        border: 1px solid #dcdcdc; /* 체크박스 외곽선 */
+        border-radius: 3px;
+        background-color: #ffffff; /* 체크박스 배경 */
+    }
+    QCheckBox::indicator:checked {
+        background-color: #0078d7; /* 체크된 상태의 배경 (파란색) */
+        border: 1px solid #005bb5; /* 체크된 상태의 테두리 */
+    }
+    QCheckBox::indicator:unchecked {
+        background-color: #ffffff; /* 체크 해제 상태의 배경 */
+        border: 1px solid #dcdcdc; /* 체크 해제 상태의 테두리 */
+    }
     """
 
 dark_style_sheet = """
