@@ -747,8 +747,9 @@ if __name__ == "__main__":
 
     def test():
         mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
-        mySQL_obj.connectDB('crawler_db')
-        mySQL_obj.updateTableCellByCondition('db_list', "DBname", 'navernews_박근혜_20130225_20170310_1212_0456', 'Requester', "노승국")
+        mySQL_obj.newDB('test')
+        #mySQL_obj.connectDB('crawler_db')
+        #mySQL_obj.updateTableCellByCondition('db_list', "DBname", 'navernews_박근혜_20130225_20170310_1212_0456', 'Requester', "노승국")
 
     test()
 
