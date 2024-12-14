@@ -657,9 +657,9 @@ class Manager_Setting(QDialog):
         토글 버튼 스타일 초기화
         """
         if is_selected:
-            button.setStyleSheet("background-color: #2c3e50; font-weight: bold; color: #eaeaea;")
+            button.setStyleSheet("background-color: #2c3e50; font-weight: bold; color: #eaeaea; font-family: 'Malgun Gothic';")
         else:
-            button.setStyleSheet("background-color: lightgray; color: black;")
+            button.setStyleSheet("background-color: lightgray; color: black; font-family: 'Malgun Gothic';")
 
     def update_toggle(self, selected_button, other_button):
         """
