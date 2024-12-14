@@ -19,7 +19,7 @@ class SplashDialog(QDialog):
 
         # 테마 색상 설정
         if self.theme == "dark":
-            bg_color = QColor(45, 45, 45)  # 다크 배경색
+            bg_color = QColor('#2b2b2b')  # 다크 배경색
             text_color = "white"
             gray_color = "lightgray"
         else:
@@ -200,22 +200,18 @@ light_style_sheet = """
         padding: 5px;
         font-size: 14px;
     }
+    
     QComboBox:hover {
-        border: 1px solid #2c3e50;
+        border: 1px solid #2c3e50; /* hover 상태에서 테두리 색 변경 */
+        background-color: #f5f5f5; /* hover 상태에서 배경색 변경 */
     }
+    
     QComboBox::drop-down {
         subcontrol-origin: padding;
         subcontrol-position: top right;
         width: 20px;
         background-color: #2c3e50;
         border-left: 1px solid #bdc3c7;
-    }
-    QComboBox QAbstractItemView {
-        background-color: #ffffff;
-        color: #000000;
-        border: 1px solid #bdc3c7;
-        selection-background-color: #34495e;
-        selection-color: #ffffff;
     }
     QGroupBox::title {
         color: black; /* 제목 텍스트 색상 */
