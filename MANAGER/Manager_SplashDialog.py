@@ -210,7 +210,7 @@ light_style_sheet = """
         subcontrol-origin: padding;
         subcontrol-position: top right;
         width: 20px;
-        background-color: #2c3e50;
+        background-color: #ecf0f1;
         border-left: 1px solid #bdc3c7;
     }
     QGroupBox::title {
@@ -290,6 +290,46 @@ light_style_sheet = """
     QCheckBox::indicator:unchecked {
         background-color: #ffffff; /* 체크 해제 상태의 배경 */
         border: 1px solid #dcdcdc; /* 체크 해제 상태의 테두리 */
+    }
+    QDateEdit {
+        background-color: white; /* 밝은 배경색 */
+        color: black; /* 텍스트 색상 */
+        border: 1px solid #bdc3c7; /* 테두리 색상 */
+        border-radius: 4px; /* 둥근 모서리 */
+        padding: 5px; /* 내부 여백 */
+        font-size: 14px;
+    }
+    
+    QDateEdit::drop-down {
+        subcontrol-origin: padding;
+        subcontrol-position: top right;
+        width: 20px;
+        background-color: #ecf0f1; /* 드롭다운 배경 */
+        border-left: 1px solid #bdc3c7; /* 드롭다운 구분선 */
+    }
+    
+    QDateEdit::up-button {
+        subcontrol-origin: border;
+        subcontrol-position: top right;
+        width: 15px;
+        background-color: #ecf0f1;
+        border: none;
+    }
+    
+    QDateEdit::down-button {
+        subcontrol-origin: border;
+        subcontrol-position: bottom right;
+        width: 15px;
+        background-color: #ecf0f1;
+        border: none;
+    }
+    
+    QDateEdit QAbstractItemView {
+        background-color: white; /* 드롭다운 리스트 배경 */
+        color: black; /* 드롭다운 텍스트 색상 */
+        selection-background-color: #bdc3c7; /* 선택 항목 배경 */
+        selection-color: black; /* 선택 항목 텍스트 색상 */
+        border: 1px solid #bdc3c7; /* 리스트 테두리 */
     }
     """
 
@@ -521,7 +561,7 @@ dark_style_sheet = """
         subcontrol-origin: padding;
         subcontrol-position: top right;
         width: 20px;
-        background-color: #34495e;
+        background-color: #3c3c3c;
         border-left: 1px solid #5a5a5a;
     }
     QComboBox QAbstractItemView {
@@ -566,6 +606,46 @@ dark_style_sheet = """
     }
     QGroupBox::title {
         color: white; /* 제목 텍스트 색상 */
+    }
+    QDateEdit {
+        background-color: #3c3c3c; /* 다크 배경색 */
+        color: white; /* 텍스트 색상 */
+        border: 1px solid #3c3c3c; /* 테두리 색상 */
+        border-radius: 4px; /* 둥근 모서리 */
+        padding: 5px; /* 내부 여백 */
+        font-size: 14px;
+    }
+    
+    QDateEdit::drop-down {
+        subcontrol-origin: padding;
+        subcontrol-position: top right;
+        width: 20px;
+        background-color: #3c3c3c; /* 드롭다운 배경 */
+        border-left: 1px solid #5c5c5c; /* 드롭다운 구분선 */
+    }
+    
+    QDateEdit::up-button {
+        subcontrol-origin: border;
+        subcontrol-position: top right;
+        width: 15px;
+        background-color: #3c3c3c;
+        border: none;
+    }
+    
+    QDateEdit::down-button {
+        subcontrol-origin: border;
+        subcontrol-position: bottom right;
+        width: 15px;
+        background-color: #3c3c3c;
+        border: none;
+    }
+    
+    QDateEdit QAbstractItemView {
+        background-color: #3c3c3c; /* 드롭다운 리스트 배경 */
+        color: white; /* 드롭다운 텍스트 색상 */
+        selection-background-color: #5c5c5c; /* 선택 항목 배경 */
+        selection-color: white; /* 선택 항목 텍스트 색상 */
+        border: 1px solid #5c5c5c; /* 리스트 테두리 */
     }
     """
 
