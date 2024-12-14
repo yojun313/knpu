@@ -2,9 +2,10 @@ from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, \
     QHBoxLayout, QLabel, QDialog, QLineEdit, QMessageBox, \
     QPushButton, QStackedWidget, QListWidget
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QKeySequence, QFont
 from datetime import datetime
 import platform
+import os
 
 class Manager_Setting(QDialog):
     def __init__(self, main):
@@ -86,6 +87,8 @@ class Manager_Setting(QDialog):
             }
         '''
         )
+        default_font = QFont(os.path.join(os.path.dirname(__file__), 'source', 'malgun.ttf'))  # 폰트 이름과 크기 지정
+        self.setFont(default_font)
 
         self.setLayout(main_layout)
 
