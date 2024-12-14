@@ -133,6 +133,7 @@ class MainWindow(QMainWindow):
             uic.loadUi(ui_path, self)
             self.initialize_settings()
             self.initialize_listwidget()
+            self.update_style_html()
             self.setWindowTitle("MANAGER")  # 창의 제목 설정
             self.setWindowIcon(QIcon(icon_path))
 
@@ -575,77 +576,8 @@ class MainWindow(QMainWindow):
                     self.close_bootscreen()
                     update_process()
                 self.Manager_Board_obj.board_version_refresh()
-                if self.SETTING['Theme'] != 'default':
-                    style_html = f"""
-                    <style>
-                        h2 {{
-                            color: #2c3e50;
-                            text-align: center;
-                        }}
-                        table {{
-                            width: 100%;
-                            border-collapse: collapse;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            color: white;
-                        }}
-                        th, td {{
-                            border: 1px solid #bdc3c7;
-                            padding: 8px;
-                            text-align: left;
-                        }}
-                        th {{
-                            background-color: #34495e;
-                            color: white;
-                        }}
-                        td {{
-                            color: white;
-                        }}
-                        .detail-content {{
-                            white-space: pre-wrap;
-                            margin-top: 5px;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                        }}
-                    </style>
-                    """
-                else:
-                    style_html = f"""
-                        <style>
-                            h2 {{
-                                color: #2c3e50;
-                                text-align: center;
-                            }}
-                            table {{
-                                width: 100%;
-                                border-collapse: collapse;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                color: black;
-                            }}
-                            th, td {{
-                                border: 1px solid #bdc3c7;
-                                padding: 8px;
-                                text-align: left;
-                                color: white;
-                            }}
-                            th {{
-                                background-color: #34495e;
-                            }}
-                            td {{
-                                color: black;
-                            }}
-                            .detail-content {{
-                                white-space: pre-wrap;
-                                margin-top: 5px;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                color: black;
-                            }}
-                        </style>
-                    """
 
-                version_info_html = style_html + f"""
+                version_info_html = self.style_html + f"""
                     <table>
                         <tr><th>Item</th><th>Details</th></tr>
                         <tr><td><b>Version Num:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][0]}</td></tr>
@@ -940,6 +872,7 @@ class MainWindow(QMainWindow):
                     QApplication.instance().setStyleSheet(light_style_sheet)
                 else:
                     QApplication.instance().setStyleSheet(dark_style_sheet)
+                self.update_style_html()
 
                 if self.SETTING['MyDB'] != 'default' or self.SETTING['DBKeywordSort'] != 'default':
                     self.Manager_Database_obj.database_refresh_DB()
@@ -1256,6 +1189,77 @@ class MainWindow(QMainWindow):
             else:
                 # 오류 메시지 표시
                 QMessageBox.warning(self, "Invalid Input", "영어로만 입력 가능합니다")
+
+    def update_style_html(self):
+        if self.SETTING['Theme'] != 'default':
+            self.style_html = f"""
+                        <style>
+                            h2 {{
+                                color: #2c3e50;
+                                text-align: center;
+                            }}
+                            table {{
+                                width: 100%;
+                                border-collapse: collapse;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                color: white;
+                            }}
+                            th, td {{
+                                border: 1px solid #bdc3c7;
+                                padding: 8px;
+                                text-align: left;
+                            }}
+                            th {{
+                                background-color: #34495e;
+                                color: white;
+                            }}
+                            td {{
+                                color: white;
+                            }}
+                            .detail-content {{
+                                white-space: pre-wrap;
+                                margin-top: 5px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                            }}
+                        </style>
+                        """
+        else:
+            self.style_html = f"""
+                            <style>
+                                h2 {{
+                                    color: #2c3e50;
+                                    text-align: center;
+                                }}
+                                table {{
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    font-family: Arial, sans-serif;
+                                    font-size: 14px;
+                                    color: black;
+                                }}
+                                th, td {{
+                                    border: 1px solid #bdc3c7;
+                                    padding: 8px;
+                                    text-align: left;
+                                    color: white;
+                                }}
+                                th {{
+                                    background-color: #34495e;
+                                }}
+                                td {{
+                                    color: black;
+                                }}
+                                .detail-content {{
+                                    white-space: pre-wrap;
+                                    margin-top: 5px;
+                                    font-family: Arial, sans-serif;
+                                    font-size: 14px;
+                                    color: black;
+                                }}
+                            </style>
+                        """
 
     def printStatus(self, msg=''):
         for i in range(3):

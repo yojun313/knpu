@@ -201,78 +201,8 @@ class Manager_Board:
 
                 layout = QVBoxLayout()
 
-                if self.main.SETTING['Theme'] != 'default':
-                    style_html = f"""
-                    <style>
-                        h2 {{
-                            color: #2c3e50;
-                            text-align: center;
-                        }}
-                        table {{
-                            width: 100%;
-                            border-collapse: collapse;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            color: black;
-                        }}
-                        th, td {{
-                            border: 1px solid #bdc3c7;
-                            padding: 8px;
-                            text-align: left;
-                        }}
-                        th {{
-                            background-color: #34495e;
-                            color: white;
-                        }}
-                        td {{
-                            color: black;
-                        }}
-                        .detail-content {{
-                            white-space: pre-wrap;
-                            margin-top: 5px;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                        }}
-                    </style>
-                    """
-                else:
-                    style_html = f"""
-                        <style>
-                            h2 {{
-                                color: #2c3e50;
-                                text-align: center;
-                            }}
-                            table {{
-                                width: 100%;
-                                border-collapse: collapse;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                color: black;
-                            }}
-                            th, td {{
-                                border: 1px solid #bdc3c7;
-                                padding: 8px;
-                                text-align: left;
-                                color: white;
-                            }}
-                            th {{
-                                background-color: #34495e;
-                            }}
-                            td {{
-                                color: black;
-                            }}
-                            .detail-content {{
-                                white-space: pre-wrap;
-                                margin-top: 5px;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                color: black;
-                            }}
-                        </style>
-                    """
-
                 # HTML을 사용하여 디테일 표시
-                details_html = style_html + f"""
+                details_html = self.main.style_html + f"""
                     <div class="version-details">
                         <table>
                             <tr>
@@ -485,78 +415,8 @@ class Manager_Board:
 
                 layout = QVBoxLayout()
 
-                if self.main.SETTING['Theme'] != 'default':
-                    style_html = f"""
-                    <style>
-                        h2 {{
-                            color: #2c3e50;
-                            text-align: center;
-                        }}
-                        table {{
-                            width: 100%;
-                            border-collapse: collapse;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            color: black;
-                        }}
-                        th, td {{
-                            border: 1px solid #bdc3c7;
-                            padding: 8px;
-                            text-align: left;
-                        }}
-                        th {{
-                            background-color: #34495e;
-                            color: white;
-                        }}
-                        td {{
-                            color: black;
-                        }}
-                        .detail-content {{
-                            white-space: pre-wrap;
-                            margin-top: 5px;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                        }}
-                    </style>
-                    """
-                else:
-                    style_html = f"""
-                        <style>
-                            h2 {{
-                                color: #2c3e50;
-                                text-align: center;
-                            }}
-                            table {{
-                                width: 100%;
-                                border-collapse: collapse;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                color: black;
-                            }}
-                            th, td {{
-                                border: 1px solid #bdc3c7;
-                                padding: 8px;
-                                text-align: left;
-                                color: white;
-                            }}
-                            th {{
-                                background-color: #34495e;
-                            }}
-                            td {{
-                                color: black;
-                            }}
-                            .detail-content {{
-                                white-space: pre-wrap;
-                                margin-top: 5px;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                color: black;
-                            }}
-                        </style>
-                    """
-
                 # HTML을 사용하여 디테일 표시
-                details_html = style_html + f"""
+                details_html = self.main.style_html + f"""
                     <div class="bug-details">
                         <table>
                             <tr>
@@ -808,77 +668,8 @@ class Manager_Board:
 
                 layout = QVBoxLayout()
 
-                if self.main.SETTING['Theme'] != 'default':
-                    style_html = f"""
-                    <style>
-                        h2 {{
-                            color: #2c3e50;
-                            text-align: center;
-                        }}
-                        table {{
-                            width: 100%;
-                            border-collapse: collapse;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            color: black;
-                        }}
-                        th, td {{
-                            border: 1px solid #bdc3c7;
-                            padding: 8px;
-                            text-align: left;
-                        }}
-                        th {{
-                            background-color: #34495e;
-                            color: white;
-                        }}
-                        td {{
-                            color: black;
-                        }}
-                        .detail-content {{
-                            white-space: pre-wrap;
-                            margin-top: 5px;
-                            font-family: Arial, sans-serif;
-                            font-size: 14px;
-                        }}
-                    </style>
-                    """
-                else:
-                    style_html = f"""
-                        <style>
-                            h2 {{
-                                color: #2c3e50;
-                                text-align: center;
-                            }}
-                            table {{
-                                width: 100%;
-                                border-collapse: collapse;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                color: black;
-                            }}
-                            th, td {{
-                                border: 1px solid #bdc3c7;
-                                padding: 8px;
-                                text-align: left;
-                                color: white;
-                            }}
-                            th {{
-                                background-color: #34495e;
-                            }}
-                            td {{
-                                color: black;
-                            }}
-                            .detail-content {{
-                                white-space: pre-wrap;
-                                margin-top: 5px;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                color: black;
-                            }}
-                        </style>
-                    """
                 # HTML을 사용하여 디테일 표시
-                details_html = style_html + f"""
+                details_html = self.main.style_html + f"""
                     <div class="post-details">
                         <table>
                             <tr>
@@ -904,7 +695,6 @@ class Manager_Board:
                         </table>
                     </div>
                     """
-
                 detail_label = QLabel(details_html)
                 detail_label.setWordWrap(True)
 
@@ -1065,7 +855,6 @@ class Manager_Board:
         self.main.board_detailpost_button.setToolTip("Ctrl+V")
         self.main.board_deletepost_button.setToolTip("Ctrl+D")
         self.main.board_editpost_button.setToolTip("Ctrl+E")
-
 
     def board_shortcut_setting(self):
         self.update_shortcuts_based_on_tab(0)
