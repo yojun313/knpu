@@ -78,6 +78,20 @@ class Manager_Setting(QDialog):
         main_layout.addLayout(content_layout)
         main_layout.addLayout(button_layout)
 
+        self.setStyleSheet('''
+            QPushButton {
+                border: none;
+                border-radius: 5px;
+                padding: 9px;
+                font-size: 15px;
+            }
+            QLabel {
+                font-size: 14px;
+                font-family: 'Malgun Gothic';
+                font-weight: bold;
+            }
+        '''
+        )
         default_font = QFont(os.path.join(os.path.dirname(__file__), 'source', 'malgun.ttf'))  # 폰트 이름과 크기 지정
         self.setFont(default_font)
 
@@ -96,7 +110,6 @@ class Manager_Setting(QDialog):
         theme_layout = QHBoxLayout()
         theme_label = QLabel("앱 테마 설정:")
         theme_label.setAlignment(Qt.AlignLeft)
-        theme_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         theme_label.setToolTip("MANAGER의 색 테마를 설정합니다")
 
         self.light_mode_toggle = QPushButton("라이트 모드")
