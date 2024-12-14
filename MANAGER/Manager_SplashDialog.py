@@ -331,6 +331,12 @@ light_style_sheet = """
         selection-color: black; /* 선택 항목 텍스트 색상 */
         border: 1px solid #bdc3c7; /* 리스트 테두리 */
     }
+    QRadioButton {
+        background-color: transparent; /* 배경 투명 */
+        color: black; /* 텍스트 색상 */
+        font-size: 14px;
+        padding: 5px;
+    }
     """
 
 dark_style_sheet = """
@@ -375,8 +381,7 @@ dark_style_sheet = """
     }
     QLabel {
         background-color: #2b2b2b;  /* 내부 위젯 배경색 */
-        color: #eaeaea;            /* 글자 색 */
-        border: none;             /* 경계선 제거 */
+        color: white;            /* 글자 색 */
         font-size: 14px;
     }
     QTableWidget {
@@ -573,7 +578,7 @@ dark_style_sheet = """
     }
     QCheckBox {
         spacing: 5px; /* 텍스트와 체크박스 간 간격 */
-        color: #eaeaea; /* 기본 텍스트 색상 */
+        color: white; /* 기본 텍스트 색상 */
         font-size: 14px;
     }
     QCheckBox::indicator {
@@ -647,6 +652,13 @@ dark_style_sheet = """
         selection-color: white; /* 선택 항목 텍스트 색상 */
         border: 1px solid #5c5c5c; /* 리스트 테두리 */
     }
+    QRadioButton {
+        background-color: transparent; /* 배경 투명 */
+        color: white; /* 텍스트 색상 */
+        font-size: 14px;
+        padding: 5px;
+    }
+
     """
 
 theme_option = {
