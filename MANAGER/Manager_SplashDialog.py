@@ -496,3 +496,8 @@ dark_style_sheet = """
         color: white; /* 제목 텍스트 색상 */
     }
     """
+
+theme_option = {
+    'default': light_style_sheet,
+    'dark': dark_style_sheet
+}

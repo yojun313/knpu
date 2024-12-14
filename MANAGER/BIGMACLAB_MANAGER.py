@@ -15,7 +15,7 @@ VERSION = '2.5.4'
 import os
 import platform
 from PyQt5.QtWidgets import QApplication
-from Manager_SplashDialog import SplashDialog, light_style_sheet, dark_style_sheet
+from Manager_SplashDialog import SplashDialog, theme_option
 from PyQt5.QtCore import QCoreApplication, Qt, QSettings
 from PyQt5.QtGui import QFont
 from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -67,11 +67,7 @@ else:
     theme = 'dark' if is_mac_dark_mode() else 'default'
     settings.setValue('Theme', theme)
 
-THEME = theme
-if theme != 'default':
-    app.setStyleSheet(dark_style_sheet)
-else:
-    app.setStyleSheet(light_style_sheet)
+app.setStyleSheet(theme_option[theme])
 
 # 로딩 다이얼로그 표시
 splash_dialog = SplashDialog(version=VERSION, theme=theme)
@@ -867,10 +863,7 @@ class MainWindow(QMainWindow):
             if dialog.exec_() == QDialog.Accepted:
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
                 self.printStatus("설정 반영 중...")
-                if self.SETTING['Theme'] == 'default':
-                    QApplication.instance().setStyleSheet(light_style_sheet)
-                else:
-                    QApplication.instance().setStyleSheet(dark_style_sheet)
+                QApplication.instance().setStyleSheet(theme_option[self.SETTING['Theme']])
                 self.update_style_html()
 
                 if self.SETTING['MyDB'] != 'default' or self.SETTING['DBKeywordSort'] != 'default':
