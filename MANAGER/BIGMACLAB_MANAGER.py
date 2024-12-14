@@ -36,10 +36,12 @@ app.setApplicationVersion(VERSION)
 app.setOrganizationName("BIGMACLAB")
 app.setOrganizationDomain("https://knpu.re.kr")
 
-font = QFont(os.path.join(os.path.dirname(__file__), 'source', "malgun.ttf"))
-font.setHintingPreference(QFont.PreferNoHinting)
-font.setStyleStrategy(QFont.PreferAntialias)  # 안티앨리어싱 활성화
-app.setFont(font)
+# 기본 폰트 설정 및 힌팅 설정
+if platform.system() == 'Windows':
+    font = QFont("Malgun Gothic")
+    font.setHintingPreference(QFont.PreferNoHinting)
+    font.setStyleStrategy(QFont.PreferAntialias)  # 안티앨리어싱 활성화
+    app.setFont(font)
 
 settings = QSettings("BIGMACLAB", "BIGMACLAB_MANAGER")
 if platform.system() == 'Windows':
