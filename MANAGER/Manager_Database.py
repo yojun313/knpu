@@ -742,7 +742,7 @@ class Manager_Database:
                 def __init__(self):
                     super().__init__()
                     self.setWindowTitle('Select Options')
-                    self.resize(250, 150)  # 너비 400, 높이 300
+                    self.resize(250, 150)  # 초기 크기 설정
 
                     self.incl_word_list = []
                     self.excl_word_list = []
@@ -837,10 +837,16 @@ class Manager_Database:
                 def toggle_date_input(self, checked):
                     # "기간 설정" 라디오 버튼이 선택되면 날짜 입력 필드 표시
                     self.date_input_form.setVisible(checked)
+                    self.adjust_dialog_size()
 
                 def toggle_word_input(self, checked):
-                    # "기간 설정" 라디오 버튼이 선택되면 날짜 입력 필드 표시
+                    # "필터링 설정" 라디오 버튼이 선택되면 단어 입력 필드 표시
                     self.word_input_form.setVisible(checked)
+                    self.adjust_dialog_size()
+
+                def adjust_dialog_size(self):
+                    """다이얼로그 크기를 현재 내용에 맞게 조정"""
+                    self.adjustSize()  # 다이얼로그 크기를 내용에 맞게 자동 조정
 
                 def accept(self):
                     # 확인 버튼을 눌렀을 때 데이터 유효성 검사
