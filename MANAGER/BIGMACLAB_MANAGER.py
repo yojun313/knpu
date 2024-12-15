@@ -166,7 +166,7 @@ class MainWindow(QMainWindow):
                             os.remove(os.path.join(self.program_directory, 'settings.env'))
                     else:
                         self.program_directory = os.path.dirname(__file__)
-                        self.default_directory = '/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER'
+                        self.default_directory = '/Users/yojunsmacbookprp/Documents/BIGMACLAB_MANAGER'
 
                     self.readme_path = os.path.join(self.default_directory, 'README.txt')
                     if not Path(self.readme_path).exists():
