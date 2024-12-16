@@ -54,6 +54,10 @@ class Crawler(CrawlerModule):
         self.user      = user
 
         userData = self.get_userInfo(user, self.mySQL)
+        if userData == False:
+            print("등록되지 않은 사용자입니다. 크롤러를 종료합니다")
+            os._exit(0)
+            
         self.userEmail = userData['Email']
         self.pushoverKey = userData['PushOver']
 
