@@ -23,8 +23,8 @@ class Manager_Database:
     def __init__(self, main_window):
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
-        self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester', 'Size']
-        self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column, self.database_dbinfo_viewer)
+        self.DB_table_column = ['Database', 'Type', 'Keyword', 'StartDate', 'EndDate', 'Option', 'Status', 'User', 'Size']
+        self.main.table_maker(self.main.database_tablewidget, self.DB['DBtable'], self.DB_table_column, self.database_dbinfo_viewer)
         self.database_buttonMatch()
         self.chatgpt_mode = False
         self.console_open = False
@@ -1091,7 +1091,7 @@ class Manager_Database:
             self.main.printStatus("새로고침 중...")
 
             self.DB = self.main.update_DB()
-            self.main.table_maker(self.main.database_tablewidget, self.DB['DBdata'], self.DB_table_column)
+            self.main.table_maker(self.main.database_tablewidget, self.DB['DBtable'], self.DB_table_column)
 
             self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
         except Exception as e:
