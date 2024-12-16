@@ -438,7 +438,7 @@ dark_style_sheet = """
         color: #ffffff;
     }
     QListWidget::item:hover {
-        background-color: #3a539b;
+        background-color: #34495e;
     }
     QTabWidget::pane {
         border-top: 2px solid #5a5a5a;
