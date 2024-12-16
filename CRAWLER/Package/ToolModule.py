@@ -95,7 +95,8 @@ class ToolModule:
     def get_userInfo(self, input_name, mysql):
         mysql.connectDB(database_name='user_db')
         df = mysql.TableToDataframe(tableName='user_info')
-
+        if input_name not in df['Name'].tolist():
+            return False
         email = df.loc[df['Name'] == input_name, 'Email'].values[0]
         pushover = df.loc[df['Name'] == input_name, 'PushOver'].values[0]
 
