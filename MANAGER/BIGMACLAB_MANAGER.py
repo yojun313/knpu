@@ -1,14 +1,16 @@
-##################################################################
+##############################################################################################################
 # Project Name: BIGMACLAB MANAGER
 # Version: 2.X.X
 # Developer: Moon Yo Jun (POSTECH, Computer Science and Engineering)
-# Date Created: 2024-12-09
-# Affiliation: BIGMACLAB, Korean National Police University, Asan, Chungcheongnam-do / knpu.re.kr
+# Date Created: 2024-08-03
+# Released: 2024-08-05
+# Download: https://knpu.re.kr/tool
+# Affiliation: BIGMACLAB(https://knpu.re.kr), Korea National Police University, Asan, Chungcheongnam-do
 #
 # Contact:
 # - Email: yojun313@postech.ac.kr / moonyojun@gmail.com
 # - Phone: +82-10-4072-9190
-##################################################################
+##############################################################################################################
 
 VERSION = '2.5.4'
 
@@ -20,12 +22,14 @@ from PyQt5.QtCore import QCoreApplication, Qt, QSettings
 from PyQt5.QtGui import QFont
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
-os.environ["QT_DEVICE_PIXEL_RATIO"] = "0"
-os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-os.environ["QT_SCREEN_SCALE_FACTORS"] = "1"
-os.environ["QT_SCALE_FACTOR"] = "1"
+os.environ.update({
+    "QT_DEVICE_PIXEL_RATIO": "0",
+    "QT_AUTO_SCREEN_SCALE_FACTOR": "1",
+    "QT_SCREEN_SCALE_FACTORS": "1",
+    "QT_SCALE_FACTOR": "1"
+})
 
-# High DPI 스케일링 활성화 (QApplication 생성 전 설정)
+# High DPI 스케일링 활성화
 QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
