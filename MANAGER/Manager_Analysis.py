@@ -41,8 +41,8 @@ class Manager_Analysis:
         self.main = main_window
         self.dataprocess_obj = DataProcess(self.main)
         self.DB = copy.deepcopy(self.main.DB)
-        self.DB_table_column = ['Name', 'Type', 'Keyword', 'Period', 'Option', 'Crawl Start', 'Crawl End', 'Requester', 'Size']
-        self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBdata'], self.DB_table_column)
+        self.DB_table_column = ['Database', 'Type', 'Keyword', 'StartDate', 'EndDate', 'Option', 'Status', 'User', 'Size']
+        self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBtable'], self.DB_table_column)
         self.analysis_filefinder_maker()
         self.anaylsis_buttonMatch()
         self.console_open = False
@@ -88,7 +88,7 @@ class Manager_Analysis:
             self.main.printStatus("새로고침 중...")
 
             self.DB = self.main.update_DB()
-            self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBdata'], self.DB_table_column)
+            self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBtable'], self.DB_table_column)
 
             self.main.printStatus()
         except Exception as e:

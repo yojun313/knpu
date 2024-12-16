@@ -902,29 +902,30 @@ class MainWindow(QMainWindow):
         def sort_currentDB_by_keyword(currentDB):
             # 세 리스트를 묶어서 keyword에서 따옴표를 제거한 기준으로 정렬
             sorted_data = sorted(
-                zip(currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo']),
+                zip(currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo'], currentDB['DBtable']),
                 key=lambda x: x[1][2].replace('"', '')  # x[1][2]는 keyword, 따옴표 제거 후 정렬
             )
 
             # 정렬된 결과를 각각의 리스트로 풀어서 저장
-            currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo'] = zip(*sorted_data)
+            currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo'], currentDB['DBtable'] = zip(*sorted_data)
 
             # zip 결과를 tuple로 반환하므로 list로 변환
             currentDB['DBlist'] = list(currentDB['DBlist'])
             currentDB['DBdata'] = list(currentDB['DBdata'])
             currentDB['DBinfo'] = list(currentDB['DBinfo'])
+            currentDB['DBtable'] = list(currentDB['DBtable'])
 
             return currentDB
 
         def sort_currentDB_by_starttime(currentDB):
             # starttime을 기준으로 정렬하고 리스트를 역순으로 반환
             sorted_data = sorted(
-                zip(currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo']),
+                zip(currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo'], currentDB['DBtable']),
                 key=lambda x: datetime.strptime(x[1][5], '%Y-%m-%d %H:%M')  # x[1][5]는 starttime
             )[::-1]  # 정렬된 리스트를 뒤집음 (reverse 효과)
 
             # 정렬된 결과를 리스트로 분리
-            currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo'] = map(list, zip(*sorted_data))
+            currentDB['DBlist'], currentDB['DBdata'], currentDB['DBinfo'], currentDB['DBtable'] = map(list, zip(*sorted_data))
 
             return currentDB
 
@@ -934,7 +935,8 @@ class MainWindow(QMainWindow):
         currentDB = {
             'DBdata': [],
             'DBlist': [],
-            'DBinfo': []
+            'DBinfo': [],
+            'DBtable': []
         }
 
         self.fullstorage = 0
@@ -994,6 +996,16 @@ class MainWindow(QMainWindow):
             currentDB['DBlist'].append(DB_name)
             currentDB['DBdata'].append((DB_name, crawltype, keyword, date, option, starttime, endtime, requester, size))
             currentDB['DBinfo'].append((crawlcom, crawlspeed, datainfo))
+
+            status = endtime
+            if endtime == '크롤링 중':
+                status = "Working"
+            elif endtime == "오류 중단":
+                status = "Error"
+            else:
+                status = "Done"
+
+            currentDB['DBtable'].append((DB_name, crawltype, keyword, db_split[2], db_split[3], option, status, requester, size))
 
 
 
