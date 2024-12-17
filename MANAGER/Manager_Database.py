@@ -33,15 +33,17 @@ class Manager_Database:
         try:
             selected_row = self.main.database_tablewidget.currentRow()
             if selected_row >= 0:
+                DBdata = self.DB['DBdata'][selected_row]
+
                 target_db = self.DB['DBlist'][selected_row]
-                endtime = self.DB['DBdata'][selected_row][6]
-                owner = self.DB['DBdata'][selected_row][7]
+                status = DBdata['Status']
+                owner = DBdata['Requester']
 
                 if owner != self.main.user and self.main.user != 'admin':
                     QMessageBox.warning(self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
                     return
 
-                if endtime == '크롤링 중':
+                if status == 'Working':
                     confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하고 DB를 삭제하시겠습니까?"
                 else:
                     confirm_msg = f"'{target_db}'를 삭제하시겠습니까?"
@@ -52,13 +54,13 @@ class Manager_Database:
                     self.main.mySQL_obj.dropDB(target_db)
                     self.main.mySQL_obj.connectDB('crawler_db')
                     self.main.mySQL_obj.deleteTableRowByColumn('db_list', target_db, 'DBname')
-                    self.database_refresh_DB()       
-                    if endtime == '-':
+                    if status == 'Working':
                         self.main.activate_crawl -= 1
                         QMessageBox.information(self.main, "Information", f"크롤러 서버에 중단 요청을 전송했습니다")
                     else:
                         QMessageBox.information(self.main, "Information", f"'{target_db}'가 삭제되었습니다")
                     self.main.user_logging(f'DATABASE -> delete_DB({target_db})')
+                    self.database_refresh_DB()
 
             self.main.printStatus()
         except Exception as e:
@@ -186,22 +188,20 @@ class Manager_Database:
         try:
             self.main.printStatus("불러오는 중...")
             DBdata = self.DB['DBdata'][row]
-            DBname = self.DB['DBlist'][row]
-            DBinfo = self.DB['DBinfo'][row]
 
-            self.main.user_logging(f'DATABASE -> dbinfo_viewer({DBname})')
+            self.main.user_logging(f'DATABASE -> dbinfo_viewer({DBdata['DB']})')
 
             # 다이얼로그 생성
             dialog = QDialog(self.main)
-            dialog.setWindowTitle(f'{DBname}_Info')
+            dialog.setWindowTitle(f'{DBdata['DB']}_Info')
             dialog.resize(540, 600)
 
             layout = QVBoxLayout()
 
-            crawlType = DBdata[1]
-            crawlOption_int = int(DBdata[4])
+            crawlType = DBdata['Crawltype']
+            crawlOption_int = int(DBdata['Option'])
 
-            json_str = DBinfo[2]
+            json_str = DBdata['Datainfo']
             numbers = re.findall(r'\d+', json_str)
             try:
                 CountText = (
@@ -210,11 +210,10 @@ class Manager_Database:
                     f"Rereply Count: {numbers[3]}\n"
                 )
                 if numbers[1] == '0' and numbers[2] == '0' and numbers[3] == '0':
-                    CountText = "크롤링 중..."
+                    CountText = DBdata['Status']
             except:
-                CountText = "크롤링 중..."
-                if DBdata[6] == '오류 중단':
-                    CountText = '오류 중단'
+                CountText = DBdata['Status']
+
 
             match crawlType:
                 case 'navernews':
@@ -268,8 +267,8 @@ class Manager_Database:
                 case _:
                     crawlOption = crawlOption_int
 
-            starttime = DBdata[5]
-            endtime = DBdata[6]
+            starttime = DBdata['Starttime']
+            endtime = DBdata['Endtime']
 
             try:
                 ElapsedTime = datetime.strptime(endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime,"%Y-%m-%d %H:%M")
@@ -290,23 +289,23 @@ class Manager_Database:
                         </tr>
                         <tr>
                             <td><b>DB Name:</b></td>
-                            <td>{DBdata[0]}</td>
+                            <td>{DBdata['DB']}</td>
                         </tr>
                         <tr>
                             <td><b>DB Size:</b></td>
-                            <td>{DBdata[8]}</td>
+                            <td>{DBdata['Size']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Type:</b></td>
-                            <td>{DBdata[1]}</td>
+                            <td>{DBdata['Crawltype']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Keyword:</b></td>
-                            <td>{DBdata[2]}</td>
+                            <td>{DBdata['Keyword']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Period:</b></td>
-                            <td>{DBdata[3]}</td>
+                            <td>{DBdata['Startdate']} ~ {DBdata['Enddate']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Option:</b></td>
@@ -326,15 +325,15 @@ class Manager_Database:
                         </tr>
                         <tr>
                             <td><b>Crawl Requester:</b></td>
-                            <td>{DBdata[7]}</td>
+                            <td>{DBdata['Requester']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Server:</b></td>
-                            <td>{DBinfo[0]}</td>
+                            <td>{DBdata['Crawlcom']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Speed:</b></td>
-                            <td>{DBinfo[1]}</td>
+                            <td>{DBdata['Crawlspeed']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Result:</b></td>
@@ -423,21 +422,19 @@ class Manager_Database:
 
             # 대상 DB 정보 가져오기
             target_db_name = self.DB['DBlist'][selected_row]
-            target_db_info = self.DB['DBdata'][selected_row]
-            target_db_stats = self.DB['DBinfo'][selected_row]
-            target_db_parts = target_db_name.split('_')
+            target_db_data = self.DB['DBdata'][selected_row]
 
-            owner = target_db_info[7]
+            owner = target_db_data['Requester']
 
             if owner != self.main.user and self.main.user != 'admin':
                 QMessageBox.warning(self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
                 return
 
-            target_keyword = target_db_info[2]
-            target_crawl_type = target_db_info[4]
-            target_count_data = eval(target_db_stats[2])  # 통계 데이터 (딕셔너리 형태)
-            target_start_date = target_db_parts[2]
-            target_end_date = target_db_parts[3]
+            target_keyword    = target_db_data['Keyword']
+            target_crawl_type = target_db_data['Crawltype']
+            target_count_data = eval(target_db_data['Datainfo'])  # 통계 데이터 (딕셔너리 형태)
+            target_start_date = target_db_data['Startdate']
+            target_end_date   = target_db_data['Enddate']
 
             # 다음 시작 날짜 계산
             target_end_date_dt = datetime.strptime(target_end_date, '%Y%m%d')
@@ -446,11 +443,11 @@ class Manager_Database:
 
             # 병합 가능한 DB 필터링
             merge_candidates = [
-                db_info[0] for db_info in self.DB['DBdata']
-                if db_info[2] == target_keyword
-                   and db_info[4] == target_crawl_type
-                   and db_info[0].split('_')[2] == next_start_date
-                   and db_info[6] != "크롤링 중"
+                db_data['DB'] for db_data in self.DB['DBdata']
+                if db_data['Keyword'] == target_keyword
+                   and db_data['Crawltype'] == target_crawl_type
+                   and db_data['Startdate'] == next_start_date
+                   and db_data['Status'] != "Working"
             ]
 
             if not merge_candidates:
@@ -473,15 +470,13 @@ class Manager_Database:
                 return
 
             # 선택된 DB 정보 가져오기
-            selected_db_info = next(
-                (db_info for db_info in self.DB['DBdata'] if db_info[0] == selected_db_name),
-                None
-            )
-            selected_db_stats = self.DB['DBinfo'][self.DB['DBdata'].index(selected_db_info)]
+
+            selected_db_data = self.DB['DBdata'][self.DB['DBlist'].index(selected_db_name)]
             selected_db_end_date = selected_db_name.split('_')[3]
-            selected_count_data = eval(selected_db_stats[2])  # 통계 데이터 (딕셔너리 형태)
+            selected_count_data = eval(selected_db_data['Datainfo'])  # 통계 데이터 (딕셔너리 형태)
 
             # 대상 DB 이름 업데이트 및 병합된 통계 데이터 계산
+            target_db_parts = target_db_name.split('_')
             target_db_parts[3] = selected_db_end_date
             updated_target_db_name = '_'.join(target_db_parts)
 
@@ -541,7 +536,14 @@ class Manager_Database:
             self.main.printStatus(f"DB 목록 업데이트 중...")
             print("\nDB 목록 업데이트 중...")
             self.main.mySQL_obj.connectDB('crawler_db')
-            self.main.mySQL_obj.insertToTable('db_list', [[updated_target_db_name, target_db_info[4], target_db_info[5], selected_db_info[6], target_db_info[7], target_db_info[2], self.main.mySQL_obj.showDBSize(updated_target_db_name)[0], target_db_stats[0], target_db_stats[1], str(merged_count_data)]])
+            self.main.mySQL_obj.insertToTable('db_list', [[
+                updated_target_db_name, target_db_data['Option'],
+                target_db_data['Starttime'], selected_db_data['Endtime'],
+                target_db_data['Requester'], target_db_data['Keyword'],
+                self.main.mySQL_obj.showDBSize(updated_target_db_name)[0],
+                target_db_data['Crawlcom'], target_db_data['Crawlspeed'],
+                str(merged_count_data)
+            ]])
             self.main.mySQL_obj.commit()
             self.main.printStatus()
 
