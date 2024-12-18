@@ -62,7 +62,7 @@ class Manager_Database:
                     self.main.user_logging(f'DATABASE -> delete_DB({target_db})')
                     self.database_refresh_DB()
 
-            self.main.printStatus()
+            self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
@@ -169,17 +169,15 @@ class Manager_Database:
                     del self.DBtable_window
                     gc.collect()
 
-                def load_database():
-                    selected_row = self.main.database_tablewidget.currentRow()
-                    if selected_row >= 0:
-                        target_DB = self.DB['DBlist'][selected_row]
-                        self.main.user_logging(f'DATABASE -> view_DB({target_DB})')
-                        self.DBtable_window = TableWindow(self.main, target_DB)
-                        self.DBtable_window.destroyed.connect(destory_table)
-                        self.DBtable_window.show()
+                selected_row = self.main.database_tablewidget.currentRow()
+                if selected_row >= 0:
+                    target_DB = self.DB['DBlist'][selected_row]
+                    self.main.user_logging(f'DATABASE -> view_DB({target_DB})')
+                    self.DBtable_window = TableWindow(self.main, target_DB)
+                    self.DBtable_window.destroyed.connect(destory_table)
+                    self.DBtable_window.show()
 
-                QTimer.singleShot(1, load_database)
-                QTimer.singleShot(1, self.main.printStatus)
+                self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
@@ -360,7 +358,7 @@ class Manager_Database:
             cmdw.activated.connect(dialog.accept)
 
             dialog.setLayout(layout)
-            self.main.printStatus()
+            self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
             # 다이얼로그 실행
             dialog.show()
 
@@ -562,7 +560,7 @@ class Manager_Database:
                 self.main.mySQL_obj.connectDB('crawler_db')
                 self.main.mySQL_obj.deleteTableRowByColumn('db_list', target_db_name, 'DBname')
                 self.main.mySQL_obj.deleteTableRowByColumn('db_list', selected_db_name, 'DBname')
-                self.main.printStatus()
+                self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
                 self.database_refresh_DB()
                 QMessageBox.information(self.main, "Information", "삭제가 완료되었습니다")
             else:
@@ -901,7 +899,7 @@ class Manager_Database:
 
             folder_path = QFileDialog.getExistingDirectory(self.main, "DB를 저장할 위치를 선택하여 주십시오", self.main.default_directory)
             if folder_path == '':
-                self.main.printStatus()
+                self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
                 return
             if folder_path:
                 self.main.printStatus("DB 저장 옵션을 설정하여 주십시오")
@@ -936,7 +934,7 @@ class Manager_Database:
                             date_options['option'] = None  # 잘못된 날짜가 입력된 경우 선택 옵션을 None으로 설정
 
                 if date_options == {}:
-                    self.main.printStatus()
+                    self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
                     return
                 if self.main.SETTING['ProcessConsole'] == 'default':
                     open_console('CSV로 저장')
@@ -1069,7 +1067,7 @@ class Manager_Database:
                         save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
                         filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
 
-                    self.main.printStatus()
+                    self.main.printStatus("CSV 변환 중...")
                     # 기타 테이블 처리
                     save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
 
@@ -1083,7 +1081,7 @@ class Manager_Database:
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.openFileExplorer(dbpath)
-                self.main.printStatus()
+                self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
 
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
