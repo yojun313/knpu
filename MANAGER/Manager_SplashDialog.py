@@ -20,7 +20,7 @@ class SplashDialog(QDialog):
         # 테마 색상 설정
         if self.theme == "dark":
             bg_color = QColor('#2b2b2b')  # 다크 배경색
-            text_color = "white"
+            text_color = "#eaeaea"
             gray_color = "lightgray"
         else:
             bg_color = QColor(255, 255, 255)  # 디폴트 배경색 (흰색)
@@ -93,7 +93,7 @@ light_style_sheet = """
     }
     QPushButton {
         background-color: #2c3e50;
-        color: white;
+        color: #eaeaea;
         border: none;
         border-radius: 5px;
         padding: 13px;
@@ -112,7 +112,7 @@ light_style_sheet = """
         border: 1px solid #bdc3c7;
         border-radius: 5px;
         padding: 8px;
-        background-color: white;
+        background-color: #eaeaea;
         font-size: 14px;
         color: black;
     }
@@ -121,7 +121,7 @@ light_style_sheet = """
         font-size: 14px;
     }
     QTableWidget {
-        background-color: white;
+        background-color: #eaeaea;
         border: 1px solid #bdc3c7;
         font-size: 14px;
         color: black;
@@ -132,14 +132,14 @@ light_style_sheet = """
     }
     QHeaderView::section {
         background-color: #2c3e50;
-        color: white;
+        color: #eaeaea;
         padding: 8px;
         border: none;
         font-size: 14px;
     }
     QListWidget {
         background-color: #2c3e50;
-        color: white;
+        color: #eaeaea;
         font-family: 'Tahoma';
         font-size: 14px;
         border: none;
@@ -167,7 +167,7 @@ light_style_sheet = """
     }
     QTabBar::tab {
         background: #2c3e50;
-        color: white;
+        color: #eaeaea;
         border: 1px solid #bdc3c7;
         border-bottom-color: #f7f7f7;
         border-radius: 4px;
@@ -292,7 +292,7 @@ light_style_sheet = """
         border: 1px solid #dcdcdc; /* 체크 해제 상태의 테두리 */
     }
     QDateEdit {
-        background-color: white; /* 밝은 배경색 */
+        background-color: #eaeaea; /* 밝은 배경색 */
         color: black; /* 텍스트 색상 */
         border: 1px solid #bdc3c7; /* 테두리 색상 */
         border-radius: 4px; /* 둥근 모서리 */
@@ -325,7 +325,7 @@ light_style_sheet = """
     }
     
     QDateEdit QAbstractItemView {
-        background-color: white; /* 드롭다운 리스트 배경 */
+        background-color: #eaeaea; /* 드롭다운 리스트 배경 */
         color: black; /* 드롭다운 텍스트 색상 */
         selection-background-color: #bdc3c7; /* 선택 항목 배경 */
         selection-color: black; /* 선택 항목 텍스트 색상 */
@@ -357,7 +357,7 @@ dark_style_sheet = """
         font-family: 'Tahoma';
         background-color: #2b2b2b;
         font-size: 10px;
-        color: white;
+        color: #eaeaea;
     }
     QPushButton:hover {
         background-color: #3a539b;
@@ -381,7 +381,7 @@ dark_style_sheet = """
     }
     QLabel {
         background-color: #2b2b2b;  /* 내부 위젯 배경색 */
-        color: white;            /* 글자 색 */
+        color: #eaeaea;            /* 글자 색 */
         font-size: 14px;
     }
     QTableWidget {
@@ -578,7 +578,7 @@ dark_style_sheet = """
     }
     QCheckBox {
         spacing: 5px; /* 텍스트와 체크박스 간 간격 */
-        color: white; /* 기본 텍스트 색상 */
+        color: #eaeaea; /* 기본 텍스트 색상 */
         font-size: 14px;
     }
     QCheckBox::indicator {
@@ -610,11 +610,11 @@ dark_style_sheet = """
         color: #777777; /* 비활성화 상태 텍스트 색상 */
     }
     QGroupBox::title {
-        color: white; /* 제목 텍스트 색상 */
+        color: #eaeaea; /* 제목 텍스트 색상 */
     }
     QDateEdit {
         background-color: #3c3c3c; /* 다크 배경색 */
-        color: white; /* 텍스트 색상 */
+        color: #eaeaea; /* 텍스트 색상 */
         border: 1px solid #3c3c3c; /* 테두리 색상 */
         border-radius: 4px; /* 둥근 모서리 */
         padding: 5px; /* 내부 여백 */
@@ -647,14 +647,14 @@ dark_style_sheet = """
     
     QDateEdit QAbstractItemView {
         background-color: #3c3c3c; /* 드롭다운 리스트 배경 */
-        color: white; /* 드롭다운 텍스트 색상 */
+        color: #eaeaea; /* 드롭다운 텍스트 색상 */
         selection-background-color: #5c5c5c; /* 선택 항목 배경 */
-        selection-color: white; /* 선택 항목 텍스트 색상 */
+        selection-color: #eaeaea; /* 선택 항목 텍스트 색상 */
         border: 1px solid #5c5c5c; /* 리스트 테두리 */
     }
     QRadioButton {
         background-color: transparent; /* 배경 투명 */
-        color: white; /* 텍스트 색상 */
+        color: #eaeaea; /* 텍스트 색상 */
         font-size: 14px;
         padding: 5px;
     }
