@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt, QCoreApplication, QEventLoop
 from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
 import os
 
+
 class SplashDialog(QDialog):
     def __init__(self, version, theme="light", booting=True):
         super().__init__()
@@ -20,7 +21,7 @@ class SplashDialog(QDialog):
         # 테마 색상 설정
         if self.theme == "dark":
             bg_color = QColor('#2b2b2b')  # 다크 배경색
-            text_color = "#eaeaea"
+            text_color = "white"
             gray_color = "lightgray"
         else:
             bg_color = QColor(255, 255, 255)  # 디폴트 배경색 (흰색)
@@ -56,7 +57,8 @@ class SplashDialog(QDialog):
         # 상태 메시지 라벨
         self.status_label = QLabel("Booting")
         self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet(f"font-size: 15px; font-family: 'Tahoma'; color: {gray_color}; margin-top: 8px;")
+        self.status_label.setStyleSheet(
+            f"font-size: 15px; font-family: 'Tahoma'; color: {gray_color}; margin-top: 8px;")
         main_layout.addWidget(self.status_label)
 
         # 저작권 정보 라벨
@@ -85,6 +87,7 @@ class SplashDialog(QDialog):
         for i in range(2):
             QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
 
+
 # 전역 스타일시트 설정
 light_style_sheet = """
     QMainWindow {
@@ -93,7 +96,7 @@ light_style_sheet = """
     }
     QPushButton {
         background-color: #2c3e50;
-        color: #eaeaea;
+        color: white;
         border: none;
         border-radius: 5px;
         padding: 13px;
@@ -112,7 +115,7 @@ light_style_sheet = """
         border: 1px solid #bdc3c7;
         border-radius: 5px;
         padding: 8px;
-        background-color: #eaeaea;
+        background-color: white;
         font-size: 14px;
         color: black;
     }
@@ -121,7 +124,7 @@ light_style_sheet = """
         font-size: 14px;
     }
     QTableWidget {
-        background-color: #eaeaea;
+        background-color: white;
         border: 1px solid #bdc3c7;
         font-size: 14px;
         color: black;
@@ -132,14 +135,14 @@ light_style_sheet = """
     }
     QHeaderView::section {
         background-color: #2c3e50;
-        color: #eaeaea;
+        color: white;
         padding: 8px;
         border: none;
         font-size: 14px;
     }
     QListWidget {
         background-color: #2c3e50;
-        color: #eaeaea;
+        color: white;
         font-family: 'Tahoma';
         font-size: 14px;
         border: none;
@@ -167,7 +170,7 @@ light_style_sheet = """
     }
     QTabBar::tab {
         background: #2c3e50;
-        color: #eaeaea;
+        color: white;
         border: 1px solid #bdc3c7;
         border-bottom-color: #f7f7f7;
         border-radius: 4px;
@@ -200,12 +203,12 @@ light_style_sheet = """
         padding: 5px;
         font-size: 14px;
     }
-    
+
     QComboBox:hover {
         border: 1px solid #2c3e50; /* hover 상태에서 테두리 색 변경 */
         background-color: #f5f5f5; /* hover 상태에서 배경색 변경 */
     }
-    
+
     QComboBox::drop-down {
         subcontrol-origin: padding;
         subcontrol-position: top right;
@@ -292,14 +295,14 @@ light_style_sheet = """
         border: 1px solid #dcdcdc; /* 체크 해제 상태의 테두리 */
     }
     QDateEdit {
-        background-color: #eaeaea; /* 밝은 배경색 */
+        background-color: white; /* 밝은 배경색 */
         color: black; /* 텍스트 색상 */
         border: 1px solid #bdc3c7; /* 테두리 색상 */
         border-radius: 4px; /* 둥근 모서리 */
         padding: 5px; /* 내부 여백 */
         font-size: 14px;
     }
-    
+
     QDateEdit::drop-down {
         subcontrol-origin: padding;
         subcontrol-position: top right;
@@ -307,7 +310,7 @@ light_style_sheet = """
         background-color: #ecf0f1; /* 드롭다운 배경 */
         border-left: 1px solid #bdc3c7; /* 드롭다운 구분선 */
     }
-    
+
     QDateEdit::up-button {
         subcontrol-origin: border;
         subcontrol-position: top right;
@@ -315,7 +318,7 @@ light_style_sheet = """
         background-color: #ecf0f1;
         border: none;
     }
-    
+
     QDateEdit::down-button {
         subcontrol-origin: border;
         subcontrol-position: bottom right;
@@ -323,9 +326,9 @@ light_style_sheet = """
         background-color: #ecf0f1;
         border: none;
     }
-    
+
     QDateEdit QAbstractItemView {
-        background-color: #eaeaea; /* 드롭다운 리스트 배경 */
+        background-color: white; /* 드롭다운 리스트 배경 */
         color: black; /* 드롭다운 텍스트 색상 */
         selection-background-color: #bdc3c7; /* 선택 항목 배경 */
         selection-color: black; /* 선택 항목 텍스트 색상 */
@@ -357,7 +360,7 @@ dark_style_sheet = """
         font-family: 'Tahoma';
         background-color: #2b2b2b;
         font-size: 10px;
-        color: #eaeaea;
+        color: white;
     }
     QPushButton:hover {
         background-color: #3a539b;
@@ -381,7 +384,7 @@ dark_style_sheet = """
     }
     QLabel {
         background-color: #2b2b2b;  /* 내부 위젯 배경색 */
-        color: #eaeaea;            /* 글자 색 */
+        color: white;            /* 글자 색 */
         font-size: 14px;
     }
     QTableWidget {
@@ -578,7 +581,7 @@ dark_style_sheet = """
     }
     QCheckBox {
         spacing: 5px; /* 텍스트와 체크박스 간 간격 */
-        color: #eaeaea; /* 기본 텍스트 색상 */
+        color: white; /* 기본 텍스트 색상 */
         font-size: 14px;
     }
     QCheckBox::indicator {
@@ -588,39 +591,39 @@ dark_style_sheet = """
         border-radius: 3px;
         background-color: #2b2b2b; /* 체크박스 배경 */
     }
-    
+
     QCheckBox::indicator:hover {
         border: 1px solid #3a539b; /* 마우스 오버 시 외곽선 색상 */
     }
-    
+
     QCheckBox::indicator:checked {
         background-color: #34495e; /* 체크된 상태 배경 */
         border: 1px solid #3a539b; /* 체크된 상태 외곽선 */
         image: url('checkmark.png'); /* 체크된 상태 이미지 (선택 사항) */
     }
-    
+
     QCheckBox::indicator:unchecked {
         background-color: #2b2b2b; /* 체크 안 된 상태 배경 */
         border: 1px solid #5a5a5a; /* 체크 안 된 상태 외곽선 */
     }
-    
+
     QCheckBox::indicator:disabled {
         background-color: #3c3c3c; /* 비활성화 상태 배경 */
         border: 1px solid #5a5a5a; /* 비활성화 상태 외곽선 */
         color: #777777; /* 비활성화 상태 텍스트 색상 */
     }
     QGroupBox::title {
-        color: #eaeaea; /* 제목 텍스트 색상 */
+        color: white; /* 제목 텍스트 색상 */
     }
     QDateEdit {
         background-color: #3c3c3c; /* 다크 배경색 */
-        color: #eaeaea; /* 텍스트 색상 */
+        color: white; /* 텍스트 색상 */
         border: 1px solid #3c3c3c; /* 테두리 색상 */
         border-radius: 4px; /* 둥근 모서리 */
         padding: 5px; /* 내부 여백 */
         font-size: 14px;
     }
-    
+
     QDateEdit::drop-down {
         subcontrol-origin: padding;
         subcontrol-position: top right;
@@ -628,7 +631,7 @@ dark_style_sheet = """
         background-color: #3c3c3c; /* 드롭다운 배경 */
         border-left: 1px solid #5c5c5c; /* 드롭다운 구분선 */
     }
-    
+
     QDateEdit::up-button {
         subcontrol-origin: border;
         subcontrol-position: top right;
@@ -636,7 +639,7 @@ dark_style_sheet = """
         background-color: #3c3c3c;
         border: none;
     }
-    
+
     QDateEdit::down-button {
         subcontrol-origin: border;
         subcontrol-position: bottom right;
@@ -644,17 +647,17 @@ dark_style_sheet = """
         background-color: #3c3c3c;
         border: none;
     }
-    
+
     QDateEdit QAbstractItemView {
         background-color: #3c3c3c; /* 드롭다운 리스트 배경 */
-        color: #eaeaea; /* 드롭다운 텍스트 색상 */
+        color: white; /* 드롭다운 텍스트 색상 */
         selection-background-color: #5c5c5c; /* 선택 항목 배경 */
-        selection-color: #eaeaea; /* 선택 항목 텍스트 색상 */
+        selection-color: white; /* 선택 항목 텍스트 색상 */
         border: 1px solid #5c5c5c; /* 리스트 테두리 */
     }
     QRadioButton {
         background-color: transparent; /* 배경 투명 */
-        color: #eaeaea; /* 텍스트 색상 */
+        color: white; /* 텍스트 색상 */
         font-size: 14px;
         padding: 5px;
     }
