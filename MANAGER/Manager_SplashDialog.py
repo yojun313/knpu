@@ -122,6 +122,7 @@ light_style_sheet = """
     QLabel {
         color: black;  /* 라벨 기본 텍스트 색상 */
         font-size: 14px;
+        background-color: #ffffff; /* 라벨 배경 흰색 */
     }
     QTableWidget {
         background-color: white;
