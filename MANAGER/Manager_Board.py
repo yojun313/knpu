@@ -638,12 +638,13 @@ class Manager_Board:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def board_view_post(self, row=None):
+    def board_view_post(self, row=0):
         try:
             selected_row = self.main.board_post_tableWidget.currentRow()
-            if row is not None:
+            if row != 0:
                 selected_row = row
             if selected_row >= 0:
+                print(selected_row)
                 self.main.printStatus("불러오는 중...")
                 post_data = self.post_data[selected_row]
 
