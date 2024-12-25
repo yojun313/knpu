@@ -171,6 +171,8 @@ class MainWindow(QMainWindow):
                     else:
                         self.program_directory = os.path.dirname(__file__)
                         self.default_directory = '/Users/yojunsmacbookprp/Documents/BIGMACLAB_MANAGER'
+                        if not os.path.exists(self.default_directory):
+                            os.makedirs(self.default_directory)
 
                     self.readme_path = os.path.join(self.default_directory, 'README.txt')
                     if not Path(self.readme_path).exists():
