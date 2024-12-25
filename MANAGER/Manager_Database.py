@@ -573,17 +573,14 @@ class Manager_Database:
     def database_search_admin_mode(self, search_text):
         # ADMIN MODE
         try:
-            if search_text == './remove_all':
+            if search_text == './remove':
                 reply = QMessageBox.question(self.main, 'Program Delete',
                                              f"'C:/BIGMACLAB_MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
 
                     if os.path.exists(self.main.default_directory):
-                        # 폴더 삭제
                         shutil.rmtree(self.main.default_directory)
-                    if os.path.exists(self.main.SETTING['path']):
-                        os.remove(self.main.SETTING['path'])
                     exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
                     subprocess.Popen([exe_file_path], shell=True)
                     os._exit(0)
