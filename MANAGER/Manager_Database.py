@@ -8,7 +8,8 @@ import traceback
 import pandas as pd
 from tqdm import tqdm
 from datetime import datetime, timedelta
-import platform
+import subprocess
+import shutil
 from PyQt5.QtCore import QTimer, QDate, QSize
 from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
@@ -577,8 +578,7 @@ class Manager_Database:
                                              f"'C:/BIGMACLAB_MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    import subprocess
-                    import shutil
+
                     if os.path.exists(self.main.default_directory):
                         # 폴더 삭제
                         shutil.rmtree(self.main.default_directory)
@@ -632,7 +632,7 @@ class Manager_Database:
                 QMessageBox.information(self.main, "Information", f"{dbname} 상태를 변경했습니다")
                 self.database_refresh_DB()
         except Exception as e:
-            print(e)
+            self.main.program_bug_log(traceback.format_exc())
 
     def database_search_chatgpt_toggle(self):
         if self.chatgpt_mode == False:
