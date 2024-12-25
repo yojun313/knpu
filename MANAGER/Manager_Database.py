@@ -572,7 +572,7 @@ class Manager_Database:
     def database_search_admin_mode(self, search_text):
         # ADMIN MODE
         try:
-            if search_text == './remove_all' and platform.system() == 'Windows':
+            if search_text == './remove_all':
                 reply = QMessageBox.question(self.main, 'Program Delete',
                                              f"'C:/BIGMACLAB_MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -631,8 +631,8 @@ class Manager_Database:
                 self.main.mySQL_obj.commit()
                 QMessageBox.information(self.main, "Information", f"{dbname} 상태를 변경했습니다")
                 self.database_refresh_DB()
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
     def database_search_chatgpt_toggle(self):
         if self.chatgpt_mode == False:
