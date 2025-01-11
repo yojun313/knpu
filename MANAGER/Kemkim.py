@@ -43,6 +43,7 @@ class KimKem:
                  split_option=None, 
                  split_custom=None,
                  filter_option=None,
+                 trace_standard = None,
                  ani_option = None,
                  exception_word_list=[],
                  exception_filename = 'N',
@@ -61,8 +62,10 @@ class KimKem:
             self.weight = weight
             self.graph_wordcnt = graph_wordcnt
             self.filter_option = filter_option
+            self.trace_standard = trace_standard
             self.ani_option = ani_option
             self.filter_option_display = 'Y' if filter_option == True else 'N'
+            self.trace_standard_display = '시작연도' if trace_standard == 'startyear' else '직전연도'
             self.ani_option_display = 'Y' if ani_option == True else 'N'
             self.except_option_display = 'Y' if exception_word_list else 'N'
             self.exception_filename = exception_filename
@@ -112,6 +115,7 @@ class KimKem:
             f"{'상위 단어 개수:'} {self.topword}\n"
             f"{'계산 가중치:'} {self.weight}\n"
             f"{'비일관 단어 필터링 여부:'} {self.filter_option_display}\n"
+            f"{'추적 데이터 계산 기준:'} {self.trace_standard_display}\n"
             f"{'애니메이션 여부:'} {self.ani_option_display}\n"
             f"{'제외 단어 여부:'} {self.except_option_display}\n"
             f"{'제외 단어 파일:'} {self.exception_filename}\n"
@@ -206,7 +210,10 @@ class KimKem:
                     self.write_status(f"{period} KEMKIM 증가율 계산 중...")
                     self.main.printStatus(f"{period} KEMKIM 증가율 계산 중...")
 
-                    avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[index-1], period)
+                    if self.trace_standard == 'prevyear':
+                        avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[index-1], period)
+                    else:
+                        avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[0], period)
 
                     self.write_status(f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
                     self.main.printStatus(f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
@@ -950,8 +957,14 @@ class KimKem:
             iterator = period_divided_dic
         for period in iterator:
             keyword_DoV_dic = {}
-            
-            n_j = 1 if trace else self.find_key_position(period_divided_dic, self.lastperiod) - self.find_key_position(period_divided_dic, period)
+
+            if trace == True:
+                if self.trace_standard == 'startyear':
+                    n_j = self.find_key_position(period_divided_dic, self.lastperiod) - self.find_key_position(period_divided_dic, period)
+                else:
+                    n_j = 1
+            else:
+                n_j = self.find_key_position(period_divided_dic, self.lastperiod) - self.find_key_position(period_divided_dic, period)
 
             for keyword in keyword_list:
                 value = (tf_counts[period][keyword] / len(period_divided_dic[period])) * (1 - self.weight * n_j)
@@ -968,8 +981,14 @@ class KimKem:
             iterator = period_divided_dic
         for period in iterator:
             keyword_DoV_dic = {}
-            
-            n_j = 1 if trace else self.find_key_position(period_divided_dic, self.lastperiod) - self.find_key_position(period_divided_dic, period)
+
+            if trace == True:
+                if self.trace_standard == 'startyear':
+                    n_j = self.find_key_position(period_divided_dic, self.lastperiod) - self.find_key_position(period_divided_dic, period)
+                else:
+                    n_j = 1
+            else:
+                n_j = self.find_key_position(period_divided_dic, self.lastperiod) - self.find_key_position(period_divided_dic, period)
             
             for keyword in keyword_list:
                 value = (df_counts[period][keyword] / len(period_divided_dic[period])) * (1 - self.weight * n_j)
