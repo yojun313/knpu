@@ -909,8 +909,8 @@ class Manager_Analysis:
                 layout.addWidget(self.trace_standard_label)
 
                 checkbox_layout = QHBoxLayout()
-                self.trace_prevyear_checkbox = QCheckBox('직전 연도')
-                self.trace_startyear_checkbox = QCheckBox('시작 연도')
+                self.trace_prevyear_checkbox = QCheckBox('직전 기간')
+                self.trace_startyear_checkbox = QCheckBox('시작 기간')
 
                 self.trace_prevyear_checkbox.setChecked(True)  # Yes 체크박스 기본 체크
                 self.trace_startyear_checkbox.setChecked(False)  # No 체크박스 기본 체크 해제
