@@ -890,7 +890,7 @@ class Manager_Analysis:
                 layout.addWidget(self.wordcnt_input)
 
                 # 비일관 필터링 체크박스 생성
-                self.filter_checkbox_label = QLabel('비일관 데이터를 필터링하시겠습니까?? ')
+                self.filter_checkbox_label = QLabel('비일관 데이터를 필터링하시겠습니까? ')
                 layout.addWidget(self.filter_checkbox_label)
 
                 checkbox_layout = QHBoxLayout()
@@ -900,16 +900,31 @@ class Manager_Analysis:
                 self.filter_yes_checkbox.setChecked(True)  # Yes 체크박스 기본 체크
                 self.filter_no_checkbox.setChecked(False)  # No 체크박스 기본 체크 해제
 
-                # 서로 배타적으로 선택되도록 설정
-                self.filter_yes_checkbox.toggled.connect(
-                    lambda: self.filter_no_checkbox.setChecked(
-                        False) if self.filter_yes_checkbox.isChecked() else None)
-                self.filter_no_checkbox.toggled.connect(
-                    lambda: self.filter_yes_checkbox.setChecked(
-                        False) if self.filter_no_checkbox.isChecked() else None)
-
                 checkbox_layout.addWidget(self.filter_yes_checkbox)
                 checkbox_layout.addWidget(self.filter_no_checkbox)
+                layout.addLayout(checkbox_layout)
+
+                # 추적 데이터 기준 연도 설정
+                self.trace_standard_label = QLabel('추적 데이터 계산 기준 연도를 설정하십시오 ')
+                layout.addWidget(self.trace_standard_label)
+
+                checkbox_layout = QHBoxLayout()
+                self.trace_prevyear_checkbox = QCheckBox('직전 연도')
+                self.trace_startyear_checkbox = QCheckBox('시작 연도')
+
+                self.trace_prevyear_checkbox.setChecked(True)  # Yes 체크박스 기본 체크
+                self.trace_startyear_checkbox.setChecked(False)  # No 체크박스 기본 체크 해제
+
+                # 서로 배타적으로 선택되도록 설정
+                self.trace_prevyear_checkbox.toggled.connect(
+                    lambda: self.trace_startyear_checkbox.setChecked(
+                        False) if self.trace_prevyear_checkbox.isChecked() else None)
+                self.trace_startyear_checkbox.toggled.connect(
+                    lambda: self.trace_prevyear_checkbox.setChecked(
+                        False) if self.trace_startyear_checkbox.isChecked() else None)
+
+                checkbox_layout.addWidget(self.trace_prevyear_checkbox)
+                checkbox_layout.addWidget(self.trace_startyear_checkbox)
                 layout.addLayout(checkbox_layout)
 
                 # 애니메이션 체크박스 생성
@@ -1031,6 +1046,7 @@ class Manager_Analysis:
                 topword = self.topword_input.text()
                 weight = self.weight_input.text()
                 graph_wordcnt = self.wordcnt_input.text()
+                trace_standard_selected = 'startyear' if self.trace_startyear_checkbox.isChecked() else 'prevyear'
                 filter_yes_selected = self.filter_yes_checkbox.isChecked()
                 ani_yes_selected = self.ani_yes_checkbox.isChecked()
                 except_yes_selected = self.except_yes_checkbox.isChecked()
@@ -1045,6 +1061,7 @@ class Manager_Analysis:
                     'weight': weight,
                     'graph_wordcnt': graph_wordcnt,
                     'filter_yes_selected': filter_yes_selected,
+                    'trace_standard_selected': trace_standard_selected,
                     'ani_yes_selected': ani_yes_selected,
                     'except_yes_selected': except_yes_selected,
                     'split_option': split_option,
@@ -1088,6 +1105,7 @@ class Manager_Analysis:
                     weight = float(dialog.data['weight'])
                     graph_wordcnt = int(dialog.data['graph_wordcnt'])
                     filter_yes_selected = dialog.data['filter_yes_selected']
+                    trace_standard_selected = dialog.data['trace_standard_selected']
                     ani_yes_selected = dialog.data['ani_yes_selected']
                     except_yes_selected = dialog.data['except_yes_selected']
                     split_option = dialog.data['split_option']
@@ -1163,7 +1181,7 @@ class Manager_Analysis:
             self.main.user_logging(
                 f'ANALYSIS -> KEMKIM({tokenfile_name})-({startdate},{startdate},{topword},{weight},{filter_yes_selected})')
             kimkem_obj = KimKem(self.main, token_data, tokenfile_name, save_path, startdate, enddate, period,
-                                topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected,
+                                topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected, trace_standard_selected,
                                 ani_yes_selected, exception_word_list, exception_word_list_path)
             result = kimkem_obj.make_kimkem()
             if self.main.SETTING['ProcessConsole'] == 'default':
