@@ -12,7 +12,7 @@
 # - Phone: +82-10-4072-9190
 ##############################################################################################################
 
-VERSION = '2.5.4'
+VERSION = '2.5.5'
 
 import os
 import platform
@@ -287,7 +287,7 @@ class MainWindow(QMainWindow):
                         reply = QMessageBox.question(self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?",
                                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                         if reply == QMessageBox.Yes:
-                            self.Manager_Board_obj.board_view_post(0)
+                            self.Manager_Board_obj.board_view_post(row=1)
                     if newversion == True:
                         self.update_program(auto=self.SETTING['AutoUpdate'])
 
