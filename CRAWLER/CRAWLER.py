@@ -181,6 +181,12 @@ class Crawler(CrawlerModule):
             os._exit(0)
 
         self.mySQL.newDB(self.DBname)
+        if self.DBname not in self.mySQL.showAllDB():
+            title = f"CRAWLER {self.DBname} 생성 실패 안내"
+            text = f"{self.DBname} DB 생성에 실패해 크롤러가 중단되었습니다\n\n관리자에게 문의바랍니다"
+            self.send_pushOver(msg=title + '\n' + text, user_key=self.pushoverKey)
+            os._exit(0)
+
         self.mySQL.connectDB('crawler_db')
 
         option = self.option
