@@ -813,6 +813,23 @@ class Manager_Database:
                     self.word_input_form_layout.addWidget(self.include_all)
                     self.word_input_form_layout.addWidget(self.include_any)
 
+                    # 이름에 필터링 설정 포함할지
+                    self.radio_name = QRadioButton('포함 설정')
+                    self.radio_name.setToolTip("예) (+사과,바나나 _ -당근,오이 _all)")
+                    self.radio_noname = QRadioButton('포함 안함')
+                    self.radio_name.setChecked(True)  # 기본으로 "전체 저장" 선택
+
+                    self.word_input_form_layout.addRow(QLabel('폴더명에 필터링 항목:'))
+                    self.word_input_form_layout.addWidget(self.radio_name)
+                    self.word_input_form_layout.addWidget(self.radio_noname)
+
+                    # QButtonGroup 생성하여 라디오 버튼 그룹화
+                    self.filter_name_group = QButtonGroup()
+                    self.filter_name_group.addButton(self.radio_name)
+                    self.filter_name_group.addButton(self.radio_noname)
+                    self.word_input_form_layout.addWidget(self.radio_name)
+                    self.word_input_form_layout.addWidget(self.radio_noname)
+
                     self.word_input_form.setLayout(self.word_input_form_layout)
                     self.word_input_form.setVisible(False)
 
@@ -953,7 +970,7 @@ class Manager_Database:
 
                 dbname = dbname[:-10] + f"_{datetime.now().strftime("%m%d")}_{datetime.now().strftime("%H%M")}"
 
-                if filterOption == True:
+                if filterOption == True and dialog.radio_name.isChecked():
                     inclexcl = 'all' if include_all else 'any'
                     add_keyword = f"(+{','.join(incl_words)} _ -{','.join(excl_words)} _{inclexcl})"
                     parts = dbname.split('_', 2)
