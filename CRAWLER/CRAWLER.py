@@ -7,6 +7,7 @@ MANAGER_PATH        = os.path.join(BIGMACLAB_PATH, 'MANAGER')
 sys.path.append(MANAGER_PATH)
 
 import time
+import traceback
 import asyncio
 import warnings
 import os
@@ -226,7 +227,8 @@ class Crawler(CrawlerModule):
             log.close()
         except:
             print("ERROR: DB 폴더 생성 실패 --> 잠시 후 다시 시도하세요")
-            sys.exit()
+            print(traceback.format_exc())
+            os._exit(0)
 
     def localDBRemover(self):
         if self.localArchive == True:
