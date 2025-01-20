@@ -73,6 +73,7 @@ class Crawler(CrawlerModule):
         self.endDate   = endDate
         self.keyword   = keyword
         self.DBkeyword = keyword.replace('+', '$').replace('-', '#').replace(' ','')
+        self.DBkeyword = self.DBkeyword.split('|', 1)[0].strip()
         self.DBkeyword = self.DBkeyword.translate(str.maketrans('', '', '/\\?%@\'":*|,;.&'))
         self.upload    = upload
         
@@ -164,6 +165,13 @@ class Crawler(CrawlerModule):
             self.mySQL.connectDB(self.DBname)
             self.running = True
             return False
+
+    def TableMakerChecker(self):
+        if self.articleDB not in self.mySQL.showAllTable(self.DBname):
+            title = f"CRAWLER {self.DBname} Table 생성 실패 안내"
+            text = f"{self.DBname} DB Table 생성에 실패해 크롤러가 중단되었습니다\n\n관리자에게 문의바랍니다"
+            self.send_pushOver(msg=title + '\n' + text, user_key=self.pushoverKey)
+            os._exit(0)
 
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
@@ -414,6 +422,8 @@ class Crawler(CrawlerModule):
             if option == 2:
                 self.mySQL.newTable(tableName=self.rereplyDB, column_list=rereply_column)
 
+        self.TableMakerChecker()
+
         if self.weboption == 0:
             self.infoPrinter()
 
@@ -528,6 +538,8 @@ class Crawler(CrawlerModule):
         if option == 2:
             self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
 
+        self.TableMakerChecker()
+
         if self.weboption == 0:
             self.infoPrinter()
 
@@ -613,6 +625,8 @@ class Crawler(CrawlerModule):
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
         if option == 2:
             self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
+
+        self.TableMakerChecker()
 
         if self.weboption == 0:
             self.infoPrinter()
@@ -704,6 +718,8 @@ class Crawler(CrawlerModule):
         self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
         self.mySQL.newTable(tableName=self.rereplyDB, column_list=rereply_column)
 
+        self.TableMakerChecker()
+
         if self.weboption == 0:
             self.infoPrinter()
 
@@ -786,6 +802,8 @@ class Crawler(CrawlerModule):
         article_column = ['Article Source', 'Article Title', 'Article Text', 'Article Date', 'Article Theme', 'Article URL', 'Article SearchURL']
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
 
+        self.TableMakerChecker()
+
         if self.weboption == 0:
             self.infoPrinter()
 
@@ -843,6 +861,8 @@ class Crawler(CrawlerModule):
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
         if option == 2:
             self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
+
+        self.TableMakerChecker()
 
         if self.weboption == 0:
             self.infoPrinter()
