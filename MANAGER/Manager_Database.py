@@ -955,13 +955,15 @@ class Manager_Database:
 
                 if filterOption == True:
                     inclexcl = 'all' if include_all else 'any'
-                    add_keyword = f"(+{','.join(incl_words)} | -{','.join(excl_words)} | {inclexcl})"
+                    add_keyword = f"(+{','.join(incl_words)} _ -{','.join(excl_words)} _ {inclexcl})"
                     parts = dbname.split('_', 2)
                     old_keyword = parts[1]
                     parts[1] = old_keyword + add_keyword
                     dbname = '_'.join(parts)
 
                 dbpath = os.path.join(folder_path,dbname)
+                print(dbpath)
+                return
 
                 # 폴더 생성 로직 최적화
                 while True:
