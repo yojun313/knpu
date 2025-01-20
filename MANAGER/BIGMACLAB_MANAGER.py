@@ -12,7 +12,7 @@
 # - Phone: +82-10-4072-9190
 ##############################################################################################################
 
-VERSION = '2.5.6'
+VERSION = '2.5.7'
 
 import os
 import platform
@@ -1291,7 +1291,8 @@ class MainWindow(QMainWindow):
         if self.user == 'admin':
             QMessageBox.critical(self, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
         else:
-            QMessageBox.critical(self, "Error", f"오류가 발생했습니다")
+            #QMessageBox.critical(self, "Error", f"오류가 발생했습니다")
+            QMessageBox.critical(self, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
         log_to_text(f"Exception: {text}")
         self.user_bugging(text)
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
