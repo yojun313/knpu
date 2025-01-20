@@ -418,7 +418,7 @@ class Crawler(CrawlerModule):
                     percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
                     NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
-                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
+                    if (dayCount % self.saveInterval == 0 or dayCount == self.date_range) and self.localArchive == True:
                         self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
                         if option in [1, 2]:
                             self.mySQL.TableToCSV(tableName=self.statisticsDB, csv_path=self.DBpath)
