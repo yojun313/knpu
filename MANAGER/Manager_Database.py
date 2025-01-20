@@ -601,6 +601,19 @@ class Manager_Database:
                 self.main.CONFIG['Logging'] = 'On' if self.main.CONFIG['Logging'] == 'Off' else 'Off'
                 QMessageBox.information(self.main, "Information", f"Logging 설정을 '{mode_changed}'으로 변경했습니다")
                 return
+            if './user_change' in search_text:
+                selected_row = self.main.database_tablewidget.currentRow()
+                if selected_row < 0:
+                    return
+                # 대상 DB 정보 가져오기
+                target_db_name = self.DB['DBlist'][selected_row]
+                new = search_text.split()[1]
+
+                self.main.mySQL_obj.connectDB('crawler_db')
+                self.main.mySQL_obj.updateTableCellByCondition('db_list', "DBname", {target_db_name}, 'Requester', new)
+                QMessageBox.information(self.main, "Information", f"요청자가 {new}로 변경했습니다")
+                self.database_refresh_DB()
+
             if search_text == './update':
                 self.main.update_program(sc=True)
                 return
