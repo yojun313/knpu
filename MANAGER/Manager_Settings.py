@@ -274,11 +274,7 @@ class Manager_Setting(QDialog):
         self.llm_option_selector = QComboBox()
 
         # 표시 이름과 실제 값을 매핑
-        llm_options = [
-            ("DeepSeek-R1 (14B)", "deepseek-r1:14b"),  # (표시 이름, 실제 값)
-            ("Llama 3.1 (8B)", "llama3.1-instruct-8b"),
-            ("ChatGPT 4", "ChatGPT")
-        ]
+        llm_options = [(value, key) for key, value in self.main.LLM_list.items()]
 
         # QComboBox에 항목 추가
         for display_name, actual_value in llm_options:

@@ -2,6 +2,7 @@ import os
 import sys
 import gc
 import copy
+import json
 import re
 import warnings
 import traceback
@@ -626,6 +627,51 @@ class Manager_Database:
             if search_text == './config':
                 self.main.table_view('bigmaclab_manager_db', 'configuration')
                 return
+            if search_text == './add_llm_model':
+                llm_models = ''
+                for index, (key, value) in enumerate(self.main.LLM_list.items(), start=1):
+                    llm_models += f'{index}. {key} - {value}\n'
+
+                reply = QMessageBox.question(self.main, 'Notification', f"현재 LLM 모델 목록은 다음과 같습니다\n\n{llm_models}\n\n모델을 추가하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    # 첫 번째 입력 받기 (표시 이름)
+                    model_name, ok1 = QInputDialog.getText(self.main, 'LLM 모델 추가', '모델의 표시 이름을 입력하세요:')
+
+                    if ok1 and model_name:
+                        # 두 번째 입력 받기 (실제 값)
+                        model_value, ok2 = QInputDialog.getText(self.main, 'LLM 모델 추가', '모델의 실제 값을 입력하세요:')
+
+                        if ok2 and model_value:
+                            # 입력된 값을 리스트에 추가
+                            self.main.LLM_list[model_value] = model_name
+                            self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                            self.main.mySQL_obj.updateTableCellByCondition('configuration', "Setting", 'LLM_model', 'Config', json.dumps(self.main.LLM_list))
+                            self.main.mySQL_obj.commit()
+                            QMessageBox.information(self.main, '성공', f'LLM 모델 "{model_name}"이(가) 추가되었습니다')
+
+            if search_text == './del_llm_model':
+                llm_models = ''
+                for index, (key, value) in enumerate(self.main.LLM_list.items(), start=1):
+                    llm_models += f'{index}. {key} - {value}\n'
+
+                reply = QMessageBox.question(self.main, 'Notification',
+                                             f"현재 LLM 모델 목록은 다음과 같습니다\n\n{llm_models}\n\n삭제할 모델의 번호를 입력하십시오",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    # 첫 번째 입력 받기 (표시 이름)
+                    num, ok1 = QInputDialog.getText(self.main, 'LLM 모델 삭제', '모델의 번호를 입력하세요:')
+
+                    if ok1 and num:
+                        key_to_delete = list(self.main.LLM_list.keys())[int(num)-1]
+                        value_to_delete = list(self.main.LLM_list.values())[int(num)-1]
+                        del self.main.LLM_list[key_to_delete]
+                        self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
+                        self.main.mySQL_obj.updateTableCellByCondition('configuration', "Setting", 'LLM_model',
+                                                                       'Config', json.dumps(self.main.LLM_list))
+                        self.main.mySQL_obj.commit()
+                        QMessageBox.information(self.main, '성공', f'LLM 모델 {key_to_delete}이(가) 삭제되었습니다')
+
             if 'log' in search_text:
                 match = re.match(r'\./(.+)_log', search_text)
                 name = match.group(1)

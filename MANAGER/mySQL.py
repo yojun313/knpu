@@ -744,11 +744,19 @@ class mySQL:
 
 
 if __name__ == "__main__":
-
+    import json
     def test():
         mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
-        mySQL_obj.connectDB('crawler_db')
-        mySQL_obj.updateTableCellByCondition('db_list', "DBname", 'navernews_노인범죄_20100101_20241231_0120_2105', 'Requester', "이정우")
+        mySQL_obj.connectDB('bigmaclab_manager_db')
+
+        LLM_list = {
+            "deepseek-r1:14b": "DeepSeek-R1 (14B)",
+            'ChatGPT': 'ChatGPT 4',
+            "llama3.1-instruct-8b": "Llama 3.1 (8B)"
+        }
+        LLM_list = json.dumps(LLM_list)
+        mySQL_obj.insertToTable('configuration', ['LLM_model', LLM_list])
+        mySQL_obj.commit()
 
     test()
 
