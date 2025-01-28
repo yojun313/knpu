@@ -644,30 +644,30 @@ class Manager_Database:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def database_search_chatgpt_toggle(self):
+    def database_search_llm_toggle(self):
         if self.chatgpt_mode == False:
-            if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20:
+            if self.main.SETTING['LLM_model_name'] == "ChatGPT 4" and (self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20):
                 QMessageBox.information(self.main, 'Notification', f'API Key가 설정되지 않았습니다\n\n환경설정에서 ChatGPT API Key를 입력해주십시오')
                 return
             self.main.printStatus()
-            self.main.user_logging(f'User --> ChatGPT Mode ON')
+            self.main.user_logging(f'User --> LLM Mode ON')
             self.chatgpt_mode = True
             self.main.database_searchDB_button.clicked.disconnect()
             self.main.database_searchDB_lineinput.returnPressed.disconnect()
             self.main.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'source', 'microphone.png')))  # 아이콘 설정 (이미지 경로 지정)
             self.main.database_searchDB_button.setIconSize(QSize(18, 18))  # 아이콘 크기 조정 (원하는 크기로 설정)
-            self.main.database_searchDB_button.clicked.connect(lambda: self.database_search_chatgpt(True))
-            self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_chatgpt)
-            self.main.database_searchDB_lineinput.setPlaceholderText("ChatGPT 에게 질문을 입력하고 Enter키를 누르세요 / 음성인식 버튼을 클릭하고 음성으로 질문하세요...")
-            self.main.printStatus("ChatGPT Mode")
-            QMessageBox.information(self.main, "ChatGPT Mode", f"입력란이 ChatGPT 프롬프트로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
+            self.main.database_searchDB_button.clicked.connect(lambda: self.database_search_llm(True))
+            self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_llm)
+            self.main.database_searchDB_lineinput.setPlaceholderText(f"{self.main.SETTING['LLM_model_name']}에 질문을 입력하고 Enter키를 누르세요 / 음성인식 버튼을 클릭하고 음성으로 질문하세요...")
+            self.main.printStatus("LLM Mode")
+            QMessageBox.information(self.main, "LLM Mode", f"입력란이 LLM 프롬프트로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
             return
         if self.chatgpt_mode == True:
             if self.console_open == True:
                 close_console()
             self.main.printStatus()
             self.chatgpt_mode = False
-            self.main.user_logging(f'User --> ChatGPT Mode OFF')
+            self.main.user_logging(f'User --> LLM Mode OFF')
             self.main.database_searchDB_button.clicked.disconnect()
             self.main.database_searchDB_lineinput.returnPressed.disconnect()
             self.main.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'source', 'search.png')))  # 아이콘 설정 (이미지 경로 지정)
@@ -679,15 +679,15 @@ class Manager_Database:
             QMessageBox.information(self.main, "Search Mode", f"입력란이 DB 검색으로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
             return
 
-    def database_search_chatgpt(self, speech=False):
+    def database_search_llm(self, speech=False):
         def add_to_log(message):
             """출력 메시지를 로그에 추가"""
             self.log += message + "\n"
 
         if speech == True:
             if self.console_open == False:
-                open_console("MANAGER ChatGPT")
-                print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 ChatGPT 버튼을 클릭하거나 입력란에 '닫기' 또는 'quit'을 입력하여 주십시오. '저장' 또는 'save'를 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
+                open_console("MANAGER LLM")
+                print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서 LLM 버튼을 클릭하거나 입력란에 '닫기' 또는 'quit'을 입력하여 주십시오. '저장' 또는 'save'를 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
                 self.console_open = True
                 self.log = ''
             print("System > 음성 인식 중...\n")
@@ -698,8 +698,8 @@ class Manager_Database:
             search_text = self.main.database_searchDB_lineinput.text()
         self.main.database_searchDB_lineinput.clear()
         if self.console_open == False:
-            open_console("MANAGER ChatGPT")
-            print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 ChatGPT 버튼을 클릭하거나 입력란에 '닫기' 또는 'quit'을 입력하여 주십시오. '저장' 또는 'save'를 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
+            open_console("MANAGER LLM")
+            print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 LLM 버튼을 클릭하거나 입력란에 '닫기' 또는 'quit'을 입력하여 주십시오. '저장' 또는 'save'를 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
             self.console_open = True
             self.log = ''
         if search_text == '닫기' or search_text.lower() == 'quit':
@@ -707,13 +707,13 @@ class Manager_Database:
             self.console_open = False
             return
         if search_text == "저장" or search_text.lower() == 'save':
-            reply = QMessageBox.question(self.main, 'Notification', f"ChatGPT 프롬프트를 저장하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            reply = QMessageBox.question(self.main, 'Notification', f"LLM 프롬프트를 저장하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
                 if folder_path == '':
                     return
                 if folder_path:
-                    file_path = os.path.join(folder_path, f"{datetime.now().strftime("%Y%m%d_%H%M")}_GPT_log.txt")
+                    file_path = os.path.join(folder_path, f"{datetime.now().strftime("%Y%m%d_%H%M")}_LLM_log.txt")
                     with open(file_path, "w", encoding="utf-8") as f:
                         f.write(self.log)
                     reply = QMessageBox.question(self.main, 'Notification', f"프롬프트 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -727,20 +727,20 @@ class Manager_Database:
 
         print(f"User > {search_text}\n")
         add_to_log(f"User > {search_text}\n")
-        # "ChatGPT > 답변 생성 중..." 출력
+        # "LLM > 답변 생성 중..." 출력
 
-        print("ChatGPT > 답변 생성 중...", end='\r')
-        self.main.printStatus("ChatGPT 답변 생성 중...")
-        answer = self.main.chatgpt_generate(search_text)
-        self.main.printStatus("ChatGPT Mode")
+        print(f"{self.main.SETTING['LLM_model_name']} > 답변 생성 중...", end='\r')
+        self.main.printStatus(f"{self.main.SETTING['LLM_model_name']} 답변 생성 중...")
+        answer = self.main.LLM_generate(search_text, self.main.SETTING['LLM_model'])
+        self.main.printStatus("LLM Mode")
 
         if type(answer) != str:
-            print(f"ChatGPT > 답변 생성 중 오류 발생\n")
+            print(f"{self.main.SETTING['LLM_model_name']} > 답변 생성 중 오류 발생\n")
             print(f"System > {answer[1]}\n")
             add_to_log(f"System > {answer[1]}\n")
         else:
-            print(f"ChatGPT > {answer}\n")
-            add_to_log(f"ChatGPT > {answer}\n")
+            print(f"{self.main.SETTING['LLM_model_name']} > {answer}\n")
+            add_to_log(f"{self.main.SETTING['LLM_model_name']} > {answer}\n")
         if speech == True and self.main.SETTING['GPT_TTS'] == 'default':
             self.main.speecher(answer)
 
@@ -1126,7 +1126,7 @@ class Manager_Database:
 
     def database_buttonMatch(self):
         self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
-        self.main.database_chatgpt_button.clicked.connect(self.database_search_chatgpt_toggle)
+        self.main.database_chatgpt_button.clicked.connect(self.database_search_llm_toggle)
         self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_DB)
         self.main.database_searchDB_lineinput.setPlaceholderText("검색어를 입력하고 Enter키나 검색 버튼을 누르세요...")
 
@@ -1157,12 +1157,12 @@ class Manager_Database:
         self.main.ctrlm.activated.connect(self.database_merge_DB)
         self.main.ctrlv.activated.connect(self.database_view_DB)
         self.main.ctrlr.activated.connect(self.database_refresh_DB)
-        self.main.ctrlc.activated.connect(self.database_search_chatgpt_toggle)
+        self.main.ctrlc.activated.connect(self.database_search_llm_toggle)
 
         self.main.cmdd.activated.connect(self.database_delete_DB)
         self.main.cmds.activated.connect(self.database_save_DB)
         self.main.cmdm.activated.connect(self.database_merge_DB)
         self.main.cmdv.activated.connect(self.database_view_DB)
         self.main.cmdr.activated.connect(self.database_refresh_DB)
-        self.main.cmdc.activated.connect(self.database_search_chatgpt_toggle)
+        self.main.cmdc.activated.connect(self.database_search_llm_toggle)
 

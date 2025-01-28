@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, \
     QHBoxLayout, QLabel, QDialog, QLineEdit, QMessageBox, \
-    QPushButton, QStackedWidget, QListWidget
+    QPushButton, QStackedWidget, QListWidget, QComboBox
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QKeySequence, QFont
 from datetime import datetime
@@ -265,7 +265,41 @@ class Manager_Setting(QDialog):
         ################################################################################
 
         ################################################################################
-        # ChatGPT API Key 입력 섹션
+        # LLM 옵션 선택 섹션
+        llm_option_layout = QHBoxLayout()
+        llm_option_label = QLabel("LLM 모델")
+        llm_option_label.setAlignment(Qt.AlignLeft)
+        llm_option_label.setToolTip("LLM 모델을 선택하세요: ")
+
+        self.llm_option_selector = QComboBox()
+
+        # 표시 이름과 실제 값을 매핑
+        llm_options = [
+            ("DeepSeek-R1 (14B)", "deepseek-r1:14b"),  # (표시 이름, 실제 값)
+            ("Llama 3.1 (8B)", "llama3.1-instruct-8b"),
+            ("ChatGPT 4", "ChatGPT")
+        ]
+
+        # QComboBox에 항목 추가
+        for display_name, actual_value in llm_options:
+            self.llm_option_selector.addItem(display_name, actual_value)  # 표시 이름과 데이터 추가
+
+        # 기본 선택값 설정
+        default_option = setting.get("LLM_model")
+        for index in range(self.llm_option_selector.count()):
+            if self.llm_option_selector.itemData(index) == default_option:
+                self.llm_option_selector.setCurrentIndex(index)
+                break
+
+        llm_option_layout.addWidget(llm_option_label, 1)
+        llm_option_layout.addWidget(self.llm_option_selector, 2)
+
+        app_layout.addLayout(llm_option_layout)
+
+        ################################################################################
+
+        ################################################################################
+        # LLM API Key 입력 섹션
         def open_details_url():
             """자세히 버튼 클릭 시 URL 열기"""
             import webbrowser
@@ -305,11 +339,11 @@ class Manager_Setting(QDialog):
         #################################################################################
 
         ################################################################################
-        # GPT TTS 설정 섹션
+        # LLM TTS 설정 섹션
         gpt_tts_layout = QHBoxLayout()
-        gpt_tts_label = QLabel("ChatGPT TTS:")
+        gpt_tts_label = QLabel("LLM TTS:")
         gpt_tts_label.setAlignment(Qt.AlignLeft)
-        gpt_tts_label.setToolTip("ChatGPT 프롬프트 음성인식 사용 시 TTS(TextToSpeech) 답변 여부를 설정합니다")
+        gpt_tts_label.setToolTip("LLM 프롬프트 음성인식 사용 시 TTS(TextToSpeech) 답변 여부를 설정합니다")
 
         self.default_gpttts_toggle = QPushButton("켜기")
         self.off_gpttts_toggle = QPushButton("끄기")
@@ -673,6 +707,8 @@ class Manager_Setting(QDialog):
         boot_terminal = 'default' if self.default_bootterminal_toggle.styleSheet().find("#2c3e50") != -1 else 'on'
         db_keywordsort =  'default' if self.default_dbkeywordsort_toggle.styleSheet().find("#2c3e50") != -1 else 'on'
         process_console = 'default' if self.default_processconsole_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
+        llm_model = self.llm_option_selector.currentData()
+
         api_key = self.api_key_input.text()
         api_key.replace('\n', '').replace(' ', '')
 
@@ -686,6 +722,8 @@ class Manager_Setting(QDialog):
         self.main.SETTING['BootTerminal'] = boot_terminal
         self.main.SETTING['DBKeywordSort'] = db_keywordsort
         self.main.SETTING['ProcessConsole'] = process_console
+        self.main.SETTING['LLM_model'] = llm_model
+        self.main.SETTING['LLM_model_name'] = self.main.LLM_list[llm_model]
         self.main.gpt_api_key = api_key
 
         options = {
@@ -698,7 +736,8 @@ class Manager_Setting(QDialog):
             "GPT_TTS": {"key": 'GPT_TTS', "value": gpt_tts},
             "BootTerminal": {"key": 'BootTerminal', "value": boot_terminal},
             'DBKeywordSort': {'key': 'DBKeywordSort', "value": db_keywordsort},
-            'ProcessConsole': {'key': 'ProcessConsole', 'value': process_console}
+            'ProcessConsole': {'key': 'ProcessConsole', 'value': process_console},
+            'LLM_model': {'key': 'LLM_model', "value": llm_model}
         }
         for option in options.values():
             self.main.update_settings(option['key'], option['value'])
