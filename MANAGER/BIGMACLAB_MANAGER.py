@@ -80,6 +80,7 @@ splash_dialog.show()
 splash_dialog.update_status("Loading System Libraries")
 import os
 import sys
+import json
 import subprocess
 from openai import OpenAI
 from mySQL import mySQL
@@ -358,12 +359,6 @@ class MainWindow(QMainWindow):
                 if self.settings.value(key) is None:  # 값이 없을 경우 기본값 설정
                     self.settings.setValue(key, value)
 
-            self.LLM_list = {
-                "deepseek-r1:14b": "DeepSeek-R1 (14B)",
-                'ChatGPT': 'ChatGPT 4',
-                "llama3.1-instruct-8b": "Llama 3.1 (8B)"
-            }
-
             self.SETTING = {
                 'Theme': self.settings.value("Theme", "default"),
                 'ScreenSize': self.settings.value("ScreenSize", "default"),
@@ -377,7 +372,7 @@ class MainWindow(QMainWindow):
                 'DBKeywordSort': self.settings.value("DBKeywordSort", "default"),
                 'ProcessConsole': self.settings.value("ProcessConsole", "default"),
                 'LLM_model': self.settings.value("LLM_model", "deepseek-r1:14b"),
-                'LLM_model_name': self.LLM_list[self.settings.value('LLM_model')]
+                'LLM_model_name': 'DeepSeek-R1 (14B)'
             }
 
         except Exception as e:
@@ -390,7 +385,10 @@ class MainWindow(QMainWindow):
             configDF = self.mySQL_obj.TableToDataframe('configuration')
             self.CONFIG = dict(zip(configDF[configDF.columns[1]], configDF[configDF.columns[2]]))
 
-            return self.CONFIG
+            # LLM 모델 이름 설정
+            self.LLM_list = json.loads(self.CONFIG['LLM_model'])
+            self.SETTING['LLM_model_name'] = self.LLM_list[self.settings.value('LLM_model')]
+
         except Exception as e:
             print(traceback.format_exc())
 
