@@ -12,7 +12,7 @@
 # - Phone: +82-10-4072-9190
 ##############################################################################################################
 
-VERSION = '2.5.7'
+VERSION = '2.6.0'
 
 import os
 import platform
@@ -349,12 +349,20 @@ class MainWindow(QMainWindow):
                 'BootTerminal': 'default',
                 'DBKeywordSort': 'default',
                 'ProcessConsole': 'default',
+                'LLM_model': 'deepseek-r1:14b',
+                'LLM_model_name': 'DeepSeek-R1 (14B)'
             }
 
             # 설정 초기화
             for key, value in defaults.items():
                 if self.settings.value(key) is None:  # 값이 없을 경우 기본값 설정
                     self.settings.setValue(key, value)
+
+            self.LLM_list = {
+                "deepseek-r1:14b": "DeepSeek-R1 (14B)",
+                'ChatGPT': 'ChatGPT 4',
+                "llama3.1-instruct-8b": "Llama 3.1 (8B)"
+            }
 
             self.SETTING = {
                 'Theme': self.settings.value("Theme", "default"),
@@ -368,6 +376,8 @@ class MainWindow(QMainWindow):
                 'BootTerminal': self.settings.value("BootTerminal", "default"),
                 'DBKeywordSort': self.settings.value("DBKeywordSort", "default"),
                 'ProcessConsole': self.settings.value("ProcessConsole", "default"),
+                'LLM_model': self.settings.value("LLM_model", "deepseek-r1:14b"),
+                'LLM_model_name': self.LLM_list[self.settings.value('LLM_model')]
             }
 
         except Exception as e:
@@ -1353,30 +1363,57 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(e)
 
-    def chatgpt_generate(self, query):
-        try:
-            # OpenAI 클라이언트 초기화
-            client = OpenAI(api_key=self.gpt_api_key)
+    def LLM_generate(self, query, model):
+        if model == 'ChatGPT':
+            try:
+                # OpenAI 클라이언트 초기화
+                client = OpenAI(api_key=self.gpt_api_key)
 
-            # 모델 이름 수정: gpt-4-turbo
-            model = "gpt-4-turbo"
+                # 모델 이름 수정: gpt-4-turbo
+                model = "gpt-4-turbo"
 
-            # ChatGPT API 요청
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": query},
-                ]
-            )
+                # ChatGPT API 요청
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": query},
+                    ]
+                )
 
-            # 응답 메시지 내용 추출
-            content = response.choices[0].message.content
-            return content
+                # 응답 메시지 내용 추출
+                content = response.choices[0].message.content
+                return content
 
-        except Exception as e:
-            # 예외 발생 시 에러 메시지 반환
-            return (0, traceback.format_exc())
+            except Exception as e:
+                # 예외 발생 시 에러 메시지 반환
+                return (0, traceback.format_exc())
+
+        else:
+            # 서버 URL
+            url = "http://121.152.225.232:3333/api/process"
+
+            # 전송할 데이터
+            data = {
+                "model_name": model,
+                "question": query
+            }
+
+            try:
+                # POST 요청 보내기
+                response = requests.post(url, json=data)
+
+                # 응답 확인
+                if response.status_code == 200:
+                    result = response.json()['result']
+                    result = result.replace('<think>', '').replace('</think>', '')
+                    return result
+                else:
+                    return f"Failed to get a valid response: {response.status_code} {response.text}"
+
+            except requests.exceptions.RequestException as e:
+                return "Error communicating with the server: {e}"
+
 
     #################### DEVELOPER MODE ###################
 
