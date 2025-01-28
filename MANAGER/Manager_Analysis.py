@@ -1866,7 +1866,7 @@ class Manager_Analysis:
                         "...\n"
                         "토픽 5. ~~: (여기에 내용 기입)"
                     )
-                    gpt_response = self.main.chatgpt_generate(gpt_query)
+                    gpt_response = self.main.LLM_generate(gpt_query, self.main.SETTING['LLM_model'])
                     if type(gpt_response) != str:
                         QMessageBox.warning(self.main, "Error", f"{gpt_response[1]}")
                         self.main.printStatus()
