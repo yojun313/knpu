@@ -199,24 +199,23 @@ light_style_sheet = """
     QComboBox {
         background-color: #ffffff;
         color: #000000;
-        border: 1px solid #bdc3c7;
-        border-radius: 4px;
-        padding: 5px;
+        border: 2px solid #bdc3c7; /* 두께를 증가시켜 입체감 추가 */
+        border-radius: 6px;
+        padding: 6px 10px;
         font-size: 14px;
     }
-
-    QComboBox:hover {
-        border: 1px solid #2c3e50; /* hover 상태에서 테두리 색 변경 */
-        background-color: #f5f5f5; /* hover 상태에서 배경색 변경 */
-    }
-
+    
+    /* 드롭다운 버튼 스타일 */
     QComboBox::drop-down {
         subcontrol-origin: padding;
         subcontrol-position: top right;
-        width: 20px;
+        width: 24px;
         background-color: #ecf0f1;
         border-left: 1px solid #bdc3c7;
+        border-top-right-radius: 6px;
+        border-bottom-right-radius: 6px;
     }
+
     QGroupBox::title {
         color: black; /* 제목 텍스트 색상 */
     }
@@ -556,30 +555,25 @@ dark_style_sheet = """
         color: #ffffff;
     }
     QComboBox {
-        background-color: #3c3c3c;
-        color: #eaeaea;  /* 텍스트 색상 */
-        border: 1px solid #5a5a5a;
-        border-radius: 4px;
-        padding: 5px;
+        background-color: #2e2e2e; /* 다크 모드 배경 */
+        color: #ecf0f1;
+        border: 2px solid #34495e;
+        border-radius: 6px;
+        padding: 6px 10px;
         font-size: 14px;
     }
-    QComboBox:hover {
-        border: 1px solid #34495e;
-    }
+    
+    /* 드롭다운 버튼 스타일 */
     QComboBox::drop-down {
         subcontrol-origin: padding;
         subcontrol-position: top right;
-        width: 20px;
-        background-color: #3c3c3c;
-        border-left: 1px solid #5a5a5a;
+        width: 24px;
+        background-color: #3b4d61;
+        border-left: 1px solid #34495e;
+        border-top-right-radius: 6px;
+        border-bottom-right-radius: 6px;
     }
-    QComboBox QAbstractItemView {
-        background-color: #2b2b2b;
-        color: #eaeaea;
-        border: 1px solid #5a5a5a;
-        selection-background-color: #34495e;
-        selection-color: #ffffff;
-    }
+
     QCheckBox {
         spacing: 5px; /* 텍스트와 체크박스 간 간격 */
         color: white; /* 기본 텍스트 색상 */
