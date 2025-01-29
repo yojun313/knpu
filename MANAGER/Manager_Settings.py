@@ -335,37 +335,6 @@ class Manager_Setting(QDialog):
             self.api_key_input.setEnabled(True)
         #################################################################################
 
-        ################################################################################
-        # LLM TTS 설정 섹션
-        gpt_tts_layout = QHBoxLayout()
-        gpt_tts_label = QLabel("LLM TTS:")
-        gpt_tts_label.setAlignment(Qt.AlignLeft)
-        gpt_tts_label.setToolTip("LLM 프롬프트 음성인식 사용 시 TTS(TextToSpeech) 답변 여부를 설정합니다")
-
-        self.default_gpttts_toggle = QPushButton("켜기")
-        self.off_gpttts_toggle = QPushButton("끄기")
-
-        self.init_toggle_style(self.default_gpttts_toggle, setting['GPT_TTS'] == 'default')
-        self.init_toggle_style(self.off_gpttts_toggle, setting['GPT_TTS'] != 'default')
-
-        self.default_gpttts_toggle.clicked.connect(
-            lambda: self.update_toggle(self.default_gpttts_toggle, self.off_gpttts_toggle)
-        )
-        self.off_gpttts_toggle.clicked.connect(
-            lambda: self.update_toggle(self.off_gpttts_toggle, self.default_gpttts_toggle)
-        )
-
-        gpt_tts_buttons_layout = QHBoxLayout()
-        gpt_tts_buttons_layout.setSpacing(10)  # 버튼 간 간격 설정
-        gpt_tts_buttons_layout.addWidget(self.default_gpttts_toggle)
-        gpt_tts_buttons_layout.addWidget(self.off_gpttts_toggle)
-
-        gpt_tts_layout.addWidget(gpt_tts_label, 1)
-        gpt_tts_layout.addLayout(gpt_tts_buttons_layout, 2)
-
-        app_layout.addLayout(gpt_tts_layout)
-        ################################################################################
-
         # 저장 버튼
         self.save_api_key_button = QPushButton("저장")
         self.save_api_key_button.clicked.connect(disable_api_key_input)
@@ -700,7 +669,6 @@ class Manager_Setting(QDialog):
         auto_update = 'default' if self.default_update_toggle.styleSheet().find("#2c3e50") != -1 else 'auto'
         my_db = 'default' if self.default_mydb_toggle.styleSheet().find("#2c3e50") != -1 else 'mydb'
         db_refresh = 'default' if self.default_dbrefresh_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
-        gpt_tts = 'default' if self.default_gpttts_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
         boot_terminal = 'default' if self.default_bootterminal_toggle.styleSheet().find("#2c3e50") != -1 else 'on'
         db_keywordsort =  'default' if self.default_dbkeywordsort_toggle.styleSheet().find("#2c3e50") != -1 else 'on'
         process_console = 'default' if self.default_processconsole_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
@@ -715,7 +683,6 @@ class Manager_Setting(QDialog):
         self.main.SETTING['MyDB'] = my_db
         self.main.SETTING['GPT_Key'] = api_key
         self.main.SETTING['DB_Refresh'] = db_refresh
-        self.main.SETTING['GPT_TTS'] = gpt_tts
         self.main.SETTING['BootTerminal'] = boot_terminal
         self.main.SETTING['DBKeywordSort'] = db_keywordsort
         self.main.SETTING['ProcessConsole'] = process_console
@@ -730,7 +697,6 @@ class Manager_Setting(QDialog):
             "mydb": {"key": 'MyDB', "value": my_db},  # 내 DB만 보기 설정
             "GPT_Key": {"key": 'GPT_Key', "value": api_key},
             "DB_Refresh": {"key": 'DB_Refresh', "value": db_refresh},
-            "GPT_TTS": {"key": 'GPT_TTS', "value": gpt_tts},
             "BootTerminal": {"key": 'BootTerminal', "value": boot_terminal},
             'DBKeywordSort': {'key': 'DBKeywordSort', "value": db_keywordsort},
             'ProcessConsole': {'key': 'ProcessConsole', 'value': process_console},

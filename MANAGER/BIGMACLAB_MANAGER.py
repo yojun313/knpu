@@ -12,7 +12,7 @@
 # - Phone: +82-10-4072-9190
 ##############################################################################################################
 
-VERSION = '2.6.0'
+VERSION = '2.6.1'
 
 import os
 import platform
@@ -346,7 +346,6 @@ class MainWindow(QMainWindow):
                 'MyDB': 'default',
                 'GPT_Key': 'default',
                 'DB_Refresh': 'default',
-                'GPT_TTS': 'default',
                 'BootTerminal': 'default',
                 'DBKeywordSort': 'default',
                 'ProcessConsole': 'default',
@@ -367,7 +366,6 @@ class MainWindow(QMainWindow):
                 'MyDB': self.settings.value("MyDB", "default"),
                 'GPT_Key': self.settings.value("GPT_Key", "default"),
                 'DB_Refresh': self.settings.value("DB_Refresh", "default"),
-                'GPT_TTS': self.settings.value("GPT_TTS", "default"),
                 'BootTerminal': self.settings.value("BootTerminal", "default"),
                 'DBKeywordSort': self.settings.value("DBKeywordSort", "default"),
                 'ProcessConsole': self.settings.value("ProcessConsole", "default"),
