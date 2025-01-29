@@ -12,7 +12,8 @@ a = Analysis(
         ('C:/GitHub/BIGMACLAB/MANAGER/source/search.png', 'source'),
         ('C:/GitHub/BIGMACLAB/MANAGER/source/microphone.png', 'source'),
         ('C:/GitHub/BIGMACLAB/MANAGER/source/chatgpt_logo.png', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/malgun.ttf', 'source')
+        ('C:/GitHub/BIGMACLAB/MANAGER/source/malgun.ttf', 'source'),
+        ('C:/GitHub/LLM_API/LLM_Chat.exe')
     ],
     hiddenimports=['seaborn.external.kde'],
     hookspath=[],
