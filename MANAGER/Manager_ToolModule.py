@@ -7,12 +7,6 @@ from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 import requests
 import pandas as pd
-import traceback
-from gtts import gTTS
-from playsound import playsound
-import tempfile
-import sounddevice as sd
-
 
 class ToolModule:
     def __init__(self):
@@ -103,39 +97,4 @@ class ToolModule:
         csv_data = pd.read_csv(csvPath, low_memory=False, index_col=0)
         csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
         return csv_data
-
-    def microphone(self):
-
-        with sr.Microphone() as source:
-            audio = self.recognizer.listen(source)
-
-        # Google Web Speech API를 사용하여 음성 인식
-        try:
-            return self.recognizer.recognize_google(audio, language='ko-KR')
-        except sr.UnknownValueError:
-            print(f"오류 발생\n{traceback.format_exc()}")
-            return "음성 인식 실패"
-        except sr.RequestError as e:
-            print(f"오류 발생\n{traceback.format_exc()}")
-            return "음성 인식 실패"
-
-    def speecher(self, text):
-        try:
-            # 임시 파일 생성 (delete=False로 설정)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
-                temp_file_name = temp_file.name  # 파일 경로 저장
-                # gTTS를 사용해 텍스트를 음성으로 변환
-                tts = gTTS(text=text, lang='ko')
-                tts.save(temp_file_name)  # 임시 파일에 저장
-
-            # 음성 파일 재생
-            playsound(temp_file_name)
-
-        except Exception as e:
-            print(f"오류가 발생했습니다: {e}")
-
-        finally:
-            # 임시 파일 삭제
-            if os.path.exists(temp_file_name):
-                os.remove(temp_file_name)
 
