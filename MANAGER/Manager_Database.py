@@ -632,7 +632,7 @@ class Manager_Database:
                 for index, (key, value) in enumerate(self.main.LLM_list.items(), start=1):
                     llm_models += f'{index}. {key} - {value}\n'
 
-                reply = QMessageBox.question(self.main, 'Notification', f"현재 LLM 모델 목록은 다음과 같습니다\n\n{llm_models}\n\n모델을 추가하시겠습니까?",
+                reply = QMessageBox.question(self.main, 'Notification', f"현재 LLM 모델 목록은 다음과 같습니다\n\n{llm_models}\n모델을 추가하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     # 첫 번째 입력 받기 (표시 이름)
@@ -656,7 +656,7 @@ class Manager_Database:
                     llm_models += f'{index}. {key} - {value}\n'
 
                 reply = QMessageBox.question(self.main, 'Notification',
-                                             f"현재 LLM 모델 목록은 다음과 같습니다\n\n{llm_models}\n\n삭제할 모델의 번호를 입력하십시오",
+                                             f"현재 LLM 모델 목록은 다음과 같습니다\n\n{llm_models}\n삭제할 모델의 번호를 입력하십시오",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     # 첫 번째 입력 받기 (표시 이름)
