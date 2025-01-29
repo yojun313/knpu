@@ -690,85 +690,10 @@ class Manager_Database:
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
 
-    def database_search_llm_toggle(self):
-        #open_console("MANAGER LLM")
-        print("hello")
+    def database_search_llm_button(self):
         script_path = os.path.join(os.path.dirname(__file__), 'source', "LLM_Chat.exe")
         subprocess.Popen([script_path])
-
         return
-
-    def database_search_llm(self, speech=False):
-        def add_to_log(message):
-            """출력 메시지를 로그에 추가"""
-            self.log += message + "\n"
-
-        if speech == True:
-            if self.console_open == False:
-                open_console("MANAGER LLM")
-                print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서 LLM 버튼을 클릭하거나 입력란에 '닫기' 또는 'quit'을 입력하여 주십시오. '저장' 또는 'save'를 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
-                self.console_open = True
-                self.log = ''
-            print("System > 음성 인식 중...\n")
-            self.main.printStatus("음성 인식 중...")
-            search_text = self.main.microphone()
-            self.main.printStatus()
-        else:
-            search_text = self.main.database_searchDB_lineinput.text()
-        self.main.database_searchDB_lineinput.clear()
-        if self.console_open == False:
-            open_console("MANAGER LLM")
-            print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 LLM 버튼을 클릭하거나 입력란에 '닫기' 또는 'quit'을 입력하여 주십시오. '저장' 또는 'save'를 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
-            self.console_open = True
-            self.log = ''
-
-        if search_text == 'chatbot':
-            script_path = os.path.join(os.path.dirname(__file__), 'source', "LLM_Chat.exe")
-            subprocess.Popen([script_path], shell=True)
-            return
-        if search_text == '닫기' or search_text.lower() == 'quit':
-            close_console()
-            self.console_open = False
-            return
-        if search_text == "저장" or search_text.lower() == 'save':
-            reply = QMessageBox.question(self.main, 'Notification', f"LLM 프롬프트를 저장하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
-                folder_path = QFileDialog.getExistingDirectory(self.main, "Select Directory", self.main.default_directory)
-                if folder_path == '':
-                    return
-                if folder_path:
-                    file_path = os.path.join(folder_path, f"{datetime.now().strftime("%Y%m%d_%H%M")}_LLM_log.txt")
-                    with open(file_path, "w", encoding="utf-8") as f:
-                        f.write(self.log)
-                    reply = QMessageBox.question(self.main, 'Notification', f"프롬프트 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                    if reply == QMessageBox.Yes:
-                        self.main.openFileExplorer(os.path.dirname(file_path))
-            else:
-                return
-            return
-        if search_text == "음성 인식 실패":
-            return
-
-        print(f"User > {search_text}\n")
-        add_to_log(f"User > {search_text}\n")
-        # "LLM > 답변 생성 중..." 출력
-
-        print(f"{self.main.SETTING['LLM_model_name']} > 답변 생성 중...", end='\r')
-        self.main.printStatus(f"{self.main.SETTING['LLM_model_name']} 답변 생성 중...")
-        answer = self.main.LLM_generate(search_text, self.main.SETTING['LLM_model'])
-        self.main.printStatus("LLM Mode")
-
-        if type(answer) != str:
-            print(f"{self.main.SETTING['LLM_model_name']} > 답변 생성 중 오류 발생\n")
-            print(f"System > {answer[1]}\n")
-            add_to_log(f"System > {answer[1]}\n")
-        else:
-            print(f"{self.main.SETTING['LLM_model_name']} > {answer}\n")
-            add_to_log(f"{self.main.SETTING['LLM_model_name']} > {answer}\n")
-        if speech == True and self.main.SETTING['GPT_TTS'] == 'default':
-            self.main.speecher(answer)
-
-        print("User > ", end='\r')
 
     def database_save_DB(self):
         try:
@@ -1150,7 +1075,7 @@ class Manager_Database:
 
     def database_buttonMatch(self):
         self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
-        self.main.database_chatgpt_button.clicked.connect(self.database_search_llm_toggle)
+        self.main.database_chatgpt_button.clicked.connect(self.database_search_llm_button)
         self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_DB)
         self.main.database_searchDB_lineinput.setPlaceholderText("검색어를 입력하고 Enter키나 검색 버튼을 누르세요...")
 
@@ -1181,12 +1106,12 @@ class Manager_Database:
         self.main.ctrlm.activated.connect(self.database_merge_DB)
         self.main.ctrlv.activated.connect(self.database_view_DB)
         self.main.ctrlr.activated.connect(self.database_refresh_DB)
-        self.main.ctrlc.activated.connect(self.database_search_llm_toggle)
+        self.main.ctrlc.activated.connect(self.database_search_llm_button)
 
         self.main.cmdd.activated.connect(self.database_delete_DB)
         self.main.cmds.activated.connect(self.database_save_DB)
         self.main.cmdm.activated.connect(self.database_merge_DB)
         self.main.cmdv.activated.connect(self.database_view_DB)
         self.main.cmdr.activated.connect(self.database_refresh_DB)
-        self.main.cmdc.activated.connect(self.database_search_llm_toggle)
+        self.main.cmdc.activated.connect(self.database_search_llm_button)
 
