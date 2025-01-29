@@ -691,9 +691,11 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_search_llm_toggle(self):
+        #open_console("MANAGER LLM")
         print("hello")
         script_path = os.path.join(os.path.dirname(__file__), 'source', "LLM_Chat.exe")
-        subprocess.Popen([script_path], shell=True)
+        subprocess.Popen([script_path])
+
         return
 
     def database_search_llm(self, speech=False):
