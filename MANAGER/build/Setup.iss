@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "MANAGER"
-#define MyAppVersion "2.5.3"
+#define MyAppVersion "2.6.1"
 #define MyAppPublisher "BIGMACLAB_MANAGER"
 #define MyAppURL "https://knpu.re.kr"
 #define MyAppExeName MyAppPublisher + "_" + MyAppVersion + ".exe"
@@ -63,6 +63,7 @@ Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}\SupportedTypes
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{autodesktop}\LLM Chat"; Filename: "{app}\_internal\source\LLM_Chat.exe"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
