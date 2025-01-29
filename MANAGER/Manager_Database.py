@@ -748,6 +748,10 @@ class Manager_Database:
             print("System > 콘솔창을 닫으면 프로그램 전체가 종료되므로 콘솔 창을 닫기 위해서는 LLM 버튼을 클릭하거나 입력란에 '닫기' 또는 'quit'을 입력하여 주십시오. '저장' 또는 'save'를 입력하면 프롬프트 기록을 저장할 수 있습니다\n")
             self.console_open = True
             self.log = ''
+
+        if search_text == 'chatbot':
+            script_path = os.path.join(os.path.dirname(__file__), "LLM_Chat.py")
+            subprocess.Popen([script_path], shell=True)
         if search_text == '닫기' or search_text.lower() == 'quit':
             close_console()
             self.console_open = False
