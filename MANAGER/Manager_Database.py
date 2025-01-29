@@ -691,39 +691,9 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_search_llm_toggle(self):
-        if self.chatgpt_mode == False:
-            if self.main.SETTING['LLM_model_name'] == "ChatGPT 4" and (self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20):
-                QMessageBox.information(self.main, 'Notification', f'API Key가 설정되지 않았습니다\n\n환경설정에서 ChatGPT API Key를 입력해주십시오')
-                return
-            self.main.printStatus()
-            self.main.user_logging(f'User --> LLM Mode ON')
-            self.chatgpt_mode = True
-            self.main.database_searchDB_button.clicked.disconnect()
-            self.main.database_searchDB_lineinput.returnPressed.disconnect()
-            self.main.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'source', 'microphone.png')))  # 아이콘 설정 (이미지 경로 지정)
-            self.main.database_searchDB_button.setIconSize(QSize(18, 18))  # 아이콘 크기 조정 (원하는 크기로 설정)
-            self.main.database_searchDB_button.clicked.connect(lambda: self.database_search_llm(True))
-            self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_llm)
-            self.main.database_searchDB_lineinput.setPlaceholderText(f"{self.main.SETTING['LLM_model_name']}에 질문을 입력하고 Enter키를 누르세요 / 음성인식 버튼을 클릭하고 음성으로 질문하세요...")
-            self.main.printStatus("LLM Mode")
-            QMessageBox.information(self.main, "LLM Mode", f"입력란이 LLM 프롬프트로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
-            return
-        if self.chatgpt_mode == True:
-            if self.console_open == True:
-                close_console()
-            self.main.printStatus()
-            self.chatgpt_mode = False
-            self.main.user_logging(f'User --> LLM Mode OFF')
-            self.main.database_searchDB_button.clicked.disconnect()
-            self.main.database_searchDB_lineinput.returnPressed.disconnect()
-            self.main.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'source', 'search.png')))  # 아이콘 설정 (이미지 경로 지정)
-            self.main.database_searchDB_button.setIconSize(QSize(18, 18))  # 아이콘 크기 조정 (원하는 크기로 설정)
-            self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
-            self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_DB)
-            self.main.database_searchDB_lineinput.setPlaceholderText("검색어를 입력하고 Enter키나 검색 버튼을 누르세요...")
-            self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
-            QMessageBox.information(self.main, "Search Mode", f"입력란이 DB 검색으로 설정되었습니다\n\n다시 클릭하시면 DB 검색으로 설정됩니다")
-            return
+        script_path = os.path.join(os.path.dirname(__file__), 'source', "LLM_Chat.exe")
+        subprocess.Popen([script_path], shell=True)
+        return
 
     def database_search_llm(self, speech=False):
         def add_to_log(message):
