@@ -275,6 +275,7 @@ class Manager_Setting(QDialog):
 
         # 표시 이름과 실제 값을 매핑
         llm_options = [(value, key) for key, value in self.main.LLM_list.items()]
+        llm_options = sorted(llm_options, key=lambda x: x[0])
 
         # QComboBox에 항목 추가
         for display_name, actual_value in llm_options:
