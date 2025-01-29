@@ -350,8 +350,8 @@ class MainWindow(QMainWindow):
                 'BootTerminal': 'default',
                 'DBKeywordSort': 'default',
                 'ProcessConsole': 'default',
-                'LLM_model': 'deepseek-r1:14b',
-                'LLM_model_name': 'DeepSeek-R1 (14B)'
+                'LLM_model': 'ChatGPT',
+                'LLM_model_name': 'ChatGPT 4'
             }
 
             # 설정 초기화
@@ -371,8 +371,8 @@ class MainWindow(QMainWindow):
                 'BootTerminal': self.settings.value("BootTerminal", "default"),
                 'DBKeywordSort': self.settings.value("DBKeywordSort", "default"),
                 'ProcessConsole': self.settings.value("ProcessConsole", "default"),
-                'LLM_model': self.settings.value("LLM_model", "deepseek-r1:14b"),
-                'LLM_model_name': 'DeepSeek-R1 (14B)'
+                'LLM_model': self.settings.value("LLM_model", "ChatGPT"),
+                'LLM_model_name': 'ChatGPT 4'
             }
 
         except Exception as e:
