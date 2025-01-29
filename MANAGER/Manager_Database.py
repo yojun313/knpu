@@ -750,8 +750,9 @@ class Manager_Database:
             self.log = ''
 
         if search_text == 'chatbot':
-            script_path = os.path.join(os.path.dirname(__file__), "LLM_Chat.py")
+            script_path = os.path.join(os.path.dirname(__file__), 'source', "LLM_Chat.exe")
             subprocess.Popen([script_path], shell=True)
+            return
         if search_text == '닫기' or search_text.lower() == 'quit':
             close_console()
             self.console_open = False
