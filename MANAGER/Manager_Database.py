@@ -693,6 +693,7 @@ class Manager_Database:
     def database_search_llm_button(self):
         script_path = os.path.join(os.path.dirname(__file__), 'source', "LLM_Chat.exe")
         subprocess.Popen([script_path])
+        self.main.user_logging(f'LLM Chat ON')
         return
 
     def database_save_DB(self):
