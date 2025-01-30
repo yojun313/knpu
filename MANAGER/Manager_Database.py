@@ -11,7 +11,7 @@ from tqdm import tqdm
 from datetime import datetime, timedelta
 import subprocess
 import shutil
-from PyQt5.QtCore import QTimer, QDate, QSize
+from PyQt5.QtCore import QDate, QSize
 from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
     QWidget, QMainWindow, QDialog, QVBoxLayout, QFormLayout, QTableWidget, QInputDialog,
@@ -1084,7 +1084,7 @@ class Manager_Database:
         self.main.database_viewDB_button.clicked.connect(self.database_view_DB)
         self.main.database_mergeDB_button.clicked.connect(self.database_merge_DB)
 
-        self.main.database_chatgpt_button.setToolTip("ChatGPT Mode")
+        self.main.database_chatgpt_button.setToolTip("LLM ChatBot")
         self.main.database_saveDB_button.setToolTip("Ctrl+S")
         self.main.database_viewDB_button.setToolTip("Ctrl+V")
         self.main.database_deleteDB_button.setToolTip("Ctrl+D")
