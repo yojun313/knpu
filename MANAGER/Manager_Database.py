@@ -11,6 +11,7 @@ from tqdm import tqdm
 from datetime import datetime, timedelta
 import subprocess
 import shutil
+import platform
 from PyQt5.QtCore import QDate, QSize
 from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
@@ -691,8 +692,18 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_search_llm_button(self):
-        script_path = os.path.join(os.path.dirname(__file__), 'source', "LLM_Chat.exe")
-        subprocess.Popen([script_path])
+        if platform.system() == "Darwin":  # macOS인지 확인
+            osascript_cmd = '''
+            tell application "Terminal"
+                activate
+                do script "cd /Users/yojunsmacbookprp/Documents/GitHub/BIGMACLAB && source venv/bin/activate && cd .. && cd LLM_API && python3 LLM_Chat.py"
+            end tell
+            '''
+            subprocess.Popen(["osascript", "-e", osascript_cmd])
+        else:  # Windows일 경우 기존 동작 유지
+            script_path = os.path.join(os.path.dirname(__file__), 'source', "LLM_Chat.exe")
+            subprocess.Popen([script_path])
+
         self.main.user_logging(f'LLM Chat ON')
         return
 
