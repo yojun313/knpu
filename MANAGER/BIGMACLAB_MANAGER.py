@@ -2,6 +2,7 @@
 # Project Name: BIGMACLAB MANAGER
 # Version: 2.X.X
 # Developer: Moon Yo Jun (POSTECH, Computer Science and Engineering)
+# GitHub: https://github.com/yojun313
 # Date Created: 2024-08-03
 # Released: 2024-08-05
 # Download: https://knpu.re.kr/tool
@@ -167,8 +168,6 @@ class MainWindow(QMainWindow):
                         self.default_directory = "C:/BIGMACLAB_MANAGER"
                         if not os.path.exists(self.default_directory):
                             os.makedirs(self.default_directory)
-                        if os.path.exists(os.path.join(self.program_directory, 'settings.env')):
-                            os.remove(os.path.join(self.program_directory, 'settings.env'))
                     else:
                         self.program_directory = os.path.dirname(__file__)
                         self.default_directory = '/Users/yojunsmacbookprp/Documents/BIGMACLAB_MANAGER'

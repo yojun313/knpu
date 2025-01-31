@@ -692,23 +692,27 @@ class Manager_Database:
             self.main.program_bug_log(traceback.format_exc())
 
     def database_search_llm_button(self):
-        if platform.system() == "Darwin":  # macOS인지 확인
-            osascript_cmd = '''
-            tell application "iTerm"
-                activate
-                set newWindow to (create window with default profile)
-                tell current session of newWindow
-                    write text "cd /Users/yojunsmacbookprp/Documents/GitHub/BIGMACLAB && source venv/bin/activate && cd .. && cd LLM_API && python3 LLM_Chat.py"
-                end tell
-            end tell
-            '''
-            subprocess.Popen(["osascript", "-e", osascript_cmd])
-        else:  # Windows일 경우 기존 동작 유지
-            script_path = os.path.join(os.path.dirname(__file__), 'source', "LLM_Chat.exe")
-            subprocess.Popen([script_path])
+        try:
+            self.main.printStatus("LLM Chat 실행 중")
+            if platform.system() == "Darwin":  # macOS인지 확인
+                osascript_cmd = '''
+                    tell application "iTerm"
+                        activate
+                        set newWindow to (create window with default profile)
+                        tell current session of newWindow
+                            write text "cd /Users/yojunsmacbookprp/Documents/GitHub/BIGMACLAB && source venv/bin/activate && cd .. && cd LLM_API && python3 LLM_Chat.py"
+                        end tell
+                    end tell
+                '''
+                subprocess.Popen(["osascript", "-e", osascript_cmd])
+            else:
+                script_path = os.path.join(os.path.dirname(__file__), 'source', "LLM_Chat.exe")
+                subprocess.Popen([script_path])
 
-        self.main.user_logging(f'LLM Chat ON')
-        return
+            self.main.user_logging(f'LLM Chat ON')
+            self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
+        except Exception as e:
+            self.main.program_bug_log(traceback.format_exc())
 
     def database_save_DB(self):
         try:
