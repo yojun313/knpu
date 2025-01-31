@@ -574,7 +574,7 @@ class Manager_Database:
     def database_search_admin_mode(self, search_text):
         # ADMIN MODE
         try:
-            if search_text == './remove':
+            if search_text == '/remove':
                 reply = QMessageBox.question(self.main, 'Program Delete',
                                              f"'C:/BIGMACLAB_MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -586,7 +586,7 @@ class Manager_Database:
                     subprocess.Popen([exe_file_path], shell=True)
                     os._exit(0)
 
-            if search_text == './admin-mode' and self.main.user != 'admin':
+            if search_text == '/admin-mode' and self.main.user != 'admin':
                 ok, password = self.main.pw_check(True)
                 if ok or password == self.main.admin_password:
                     self.main.user = 'admin'
@@ -594,7 +594,7 @@ class Manager_Database:
                 else:
                     QMessageBox.warning(self.main, 'Wrong Password', "비밀번호가 올바르지 않습니다")
 
-            if search_text == './toggle-logging':
+            if search_text == '/toggle-logging':
                 mode_changed = 'On' if self.main.CONFIG['Logging'] == 'Off' else 'Off'
                 self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
                 self.main.mySQL_obj.updateTableCellByCondition('configuration', 'Setting', 'Logging', 'Config', mode_changed)
@@ -615,19 +615,19 @@ class Manager_Database:
                 QMessageBox.information(self.main, "Information", f"요청자가 {new}로 변경했습니다")
                 self.database_refresh_DB()
 
-            if search_text == './update':
+            if search_text == '/update':
                 self.main.update_program(sc=True)
                 return
-            if search_text == './crawllog':
+            if search_text == '/crawllog':
                 self.main.table_view('crawler_db', 'crawl_log', 'max')
                 return
-            if search_text == './dblist':
+            if search_text == '/dblist':
                 self.main.table_view('crawler_db', 'db_list')
                 return
-            if search_text == './config':
+            if search_text == '/config':
                 self.main.table_view('bigmaclab_manager_db', 'configuration')
                 return
-            if search_text == './add_llm_model':
+            if search_text == '/add_llm_model':
                 llm_models = ''
                 for index, (key, value) in enumerate(self.main.LLM_list.items(), start=1):
                     llm_models += f'{index}. {key} - {value}\n'
@@ -650,7 +650,7 @@ class Manager_Database:
                             self.main.mySQL_obj.commit()
                             QMessageBox.information(self.main, '성공', f'LLM 모델 "{model_name}"이(가) 추가되었습니다')
 
-            if search_text == './del_llm_model':
+            if search_text == '/del_llm_model':
                 llm_models = ''
                 for index, (key, value) in enumerate(self.main.LLM_list.items(), start=1):
                     llm_models += f'{index}. {key} - {value}\n'
@@ -673,13 +673,13 @@ class Manager_Database:
                         QMessageBox.information(self.main, '성공', f'LLM 모델 {key_to_delete}이(가) 삭제되었습니다')
 
             if 'log' in search_text:
-                match = re.match(r'\./(.+)_log', search_text)
+                match = re.match(r'\/(.+)_log', search_text)
                 name = match.group(1)
                 self.main.table_view(f'{name}_db', 'manager_record', 'max')
                 return
             if 'error' in search_text:  # ./error_db 이름
                 # 패턴 매칭
-                match = re.search(r"(?<=./error_)(.*)", search_text)
+                match = re.search(r"(?<=/error_)(.*)", search_text)
                 dbname = match.group(1)
                 self.main.mySQL_obj.connectDB('crawler_db')
                 self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Endtime', '오류 중단')
