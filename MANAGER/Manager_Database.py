@@ -694,9 +694,12 @@ class Manager_Database:
     def database_search_llm_button(self):
         if platform.system() == "Darwin":  # macOS인지 확인
             osascript_cmd = '''
-            tell application "Terminal"
+            tell application "iTerm"
                 activate
-                do script "cd /Users/yojunsmacbookprp/Documents/GitHub/BIGMACLAB && source venv/bin/activate && cd .. && cd LLM_API && python3 LLM_Chat.py"
+                set newWindow to (create window with default profile)
+                tell current session of newWindow
+                    write text "cd /Users/yojunsmacbookprp/Documents/GitHub/BIGMACLAB && source venv/bin/activate && cd .. && cd LLM_API && python3 LLM_Chat.py"
+                end tell
             end tell
             '''
             subprocess.Popen(["osascript", "-e", osascript_cmd])
