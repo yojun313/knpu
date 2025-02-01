@@ -83,6 +83,7 @@ import os
 import sys
 import json
 import subprocess
+from getmac import get_mac_address
 from openai import OpenAI
 from mySQL import mySQL
 from datetime import datetime
@@ -214,6 +215,7 @@ class MainWindow(QMainWindow):
                             self.userMailList = self.Manager_User_obj.userMailList
                             self.user_list = self.Manager_User_obj.user_list  # Device Table 유저 리스트
                             self.device_list = self.Manager_User_obj.device_list
+                            self.mac_list = self.Manager_User_obj.mac_list
                             self.userPushOverKeyList = self.Manager_User_obj.userKeyList
                             print("Done")
                             break
@@ -462,7 +464,8 @@ class MainWindow(QMainWindow):
         try:
             current_device = socket.gethostname()
             self.user_device = current_device
-            if current_device in self.device_list:
+            self.user_mac = get_mac_address()
+            if self.user_mac in self.mac_list and self.user_device in self.device_list:
                 print("Done")
                 self.user = self.user_list[self.device_list.index(current_device)]
                 self.usermail = self.userMailList[self.userNameList.index(self.user)]
@@ -505,7 +508,7 @@ class MainWindow(QMainWindow):
                                                  f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?",
                                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
-                        self.mySQL_obj.insertToTable('device_list', [[current_device, user_name]])
+                        self.mySQL_obj.insertToTable('device_list', [[current_device, user_name, self.user_mac]])
                         self.mySQL_obj.commit()
                         QMessageBox.information(self, "Information", "디바이스가 등록되었습니다\n\n다음 실행 시 추가적인 로그인이 필요하지 않습니다")
                         msg = (
