@@ -13,7 +13,7 @@
 # - Phone: +82-10-4072-9190
 ##############################################################################################################
 
-VERSION = '2.6.3'
+VERSION = '2.6.2'
 
 import os
 import platform
@@ -211,12 +211,6 @@ class MainWindow(QMainWindow):
                                 raise
                             # DB 불러오기
                             self.Manager_Board_obj = Manager_Board(self)
-
-                            self.splash_dialog.update_status("Checking New Version")
-                            if self.newversion_check() == True:
-                                self.close_bootscreen()
-                                self.update_program(auto=self.SETTING['AutoUpdate'])
-
                             self.Manager_User_obj = Manager_User(self)
                             self.userNameList = self.Manager_User_obj.userNameList  # User Table 유저 리스트
                             self.userMailList = self.Manager_User_obj.userMailList
@@ -245,6 +239,11 @@ class MainWindow(QMainWindow):
                     self.splash_dialog.update_status("Checking User")
                     if self.login_program() == False:
                         os._exit(0)
+
+                    self.splash_dialog.update_status("Checking New Version")
+                    if self.newversion_check() == True:
+                        self.close_bootscreen()
+                        self.update_program(auto=self.SETTING['AutoUpdate'])
 
                     # Loading Data from DB & Making object
                     while True:
