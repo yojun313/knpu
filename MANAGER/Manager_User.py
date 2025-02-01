@@ -40,15 +40,17 @@ class Manager_User:
         # 데이터베이스 연결 및 데이터 가져오기
         self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
         userDF = self.main.mySQL_obj.TableToDataframe('device_list')
-        device_data = [(user, device) for _, device, user in userDF.itertuples(index=False, name=None)]
+        device_data = [(user, device, mac) for _, device, user, mac in userDF.itertuples(index=False, name=None)]
         device_data = sorted(device_data, key=lambda x: (not x[0][0].isalpha(), x[0]))
 
         # userNameList 및 userKeyList 업데이트
-        self.device_list = [device for name, device in device_data]
-        self.user_list = [name for name, device in device_data]
+        self.device_list = [device for name, device, mac in device_data]
+        self.user_list = [name for name, device, mac in device_data]
+        self.mac_list = [mac for name, device, mac in device_data]
+
 
         # 테이블 설정
-        columns = ['User', 'Device']
+        columns = ['User', 'Device', 'Mac']
         self.main.table_maker(
             widgetname=self.main.device_tablewidget,
             data=device_data,
