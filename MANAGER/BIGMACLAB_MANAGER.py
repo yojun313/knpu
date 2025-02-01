@@ -210,6 +210,13 @@ class MainWindow(QMainWindow):
                             if self.mySQL_obj.showAllDB() == []:
                                 raise
                             # DB 불러오기
+                            self.Manager_Board_obj = Manager_Board(self)
+
+                            self.splash_dialog.update_status("Checking New Version")
+                            if self.newversion_check() == True:
+                                self.close_bootscreen()
+                                self.update_program(auto=self.SETTING['AutoUpdate'])
+
                             self.Manager_User_obj = Manager_User(self)
                             self.userNameList = self.Manager_User_obj.userNameList  # User Table 유저 리스트
                             self.userMailList = self.Manager_User_obj.userMailList
@@ -245,7 +252,6 @@ class MainWindow(QMainWindow):
                             print("\nIII. Loading Data from DB... ", end='')
                             self.splash_dialog.update_status("Loading Data from DB")
                             self.Manager_User_obj.userDB_layout_maker()
-                            self.Manager_Board_obj = Manager_Board(self)
                             self.DB = self.update_DB()
                             self.Manager_Database_obj = Manager_Database(self)
                             self.Manager_Web_obj = Manager_Web(self)
@@ -268,7 +274,6 @@ class MainWindow(QMainWindow):
 
                     self.splash_dialog.update_status(f"안녕하세요, {self.user}님!")
                     newpost = self.newpost_check()
-                    newversion = self.newversion_check()
                     print(f"\n{self.user}님 환영합니다!")
 
                     self.shortcut_init()
@@ -290,8 +295,6 @@ class MainWindow(QMainWindow):
                                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                         if reply == QMessageBox.Yes:
                             self.Manager_Board_obj.board_view_post(row=1)
-                    if newversion == True:
-                        self.update_program(auto=self.SETTING['AutoUpdate'])
 
                 except Exception as e:
                     print("Failed")
@@ -656,7 +659,6 @@ class MainWindow(QMainWindow):
             return
 
     def newversion_check(self):
-        print("\nV. Checking New Version...", end='')
         current_version = version.parse(self.versionNum)
         self.new_version = version.parse(self.Manager_Board_obj.board_version_newcheck())
         print("Done")
