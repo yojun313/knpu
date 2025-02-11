@@ -225,6 +225,8 @@ class Manager_Database:
                             crawlOption = '기사 + 댓글/대댓글'
                         case 3:
                             crawlOption = '기사'
+                        case 4:
+                            crawlOption = '기사 + 댓글(추가 정보)'
 
                 case 'naverblog':
                     match crawlOption_int:
