@@ -436,7 +436,7 @@ class NaverNewsCrawler(CrawlerModule):
 
         # GET 요청 보내기
         headers = {"User-agent": generate_navigator()['user_agent'], "referer": newsURL}
-        response = await self.asyncRequester.get(url, params=params, headers=headers, session=session).text
+        response = await self.asyncRequester(url, params=params, headers=headers, session=session)
         res = '{' + response.replace("_callback(", "")[:-2].split("{", 1)[-1]
         data = json.loads(res)
 
@@ -563,7 +563,7 @@ class NaverNewsCrawler(CrawlerModule):
             if option == 4:
                 username = True
             replyData = await self.replyCollector(newsURL, session, username=username)
-            if option == 1:
+            if option == 1 or option == 4:
                 return {'articleData': articleData, 'replyData': replyData}
 
             first_key = list(replyData.keys())[0]
