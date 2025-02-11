@@ -16,4 +16,3 @@ __pycache__/
 .idea/misc.xml
 *.iml
 *.xml
-MANAGER/settings.env
