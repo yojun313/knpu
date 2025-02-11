@@ -229,7 +229,7 @@ class NaverNewsCrawler(CrawlerModule):
             return self.error_dump(2005, error_msg, newsURL)
     
     # 파라미터로 (url, 통계데이터 반환 옵션, 댓글 코드 반환 옵션) 전달
-    async def replyCollector(self, newsURL, session):
+    async def replyCollector(self, newsURL, session, username=False):
         if isinstance(newsURL, str) == False or self._newsURLChecker(newsURL) == False:
             return self.error_dump(2006, "Check newsURL", newsURL)
         try:
@@ -363,8 +363,7 @@ class NaverNewsCrawler(CrawlerModule):
                     r_sentiment = 0
 
                 if text_list[i] != '':
-                    replyList.append(
-                        [
+                    targetlist = [
                         str(reply_idx),
                         str(nickname_list[i]),
                         datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
@@ -376,8 +375,27 @@ class NaverNewsCrawler(CrawlerModule):
                         str(r_sentiment),
                         str(newsURL),
                         parentCommentNo_list[i]
+                    ]
+                    if username == True:
+                        add_data = await self.ReplyUsername(oid, aid, parentCommentNo_list[i], newsURL, session)
+                        targetlist = [
+                            str(reply_idx),
+                            str(nickname_list[i]),
+                            datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
+                            str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>',
+                                                                                                              '')),
+                            str(rere_count_list[i]),
+                            str(r_like_list[i]),
+                            str(r_bad_list[i]),
+                            str(r_per_like),
+                            str(r_sentiment),
+                            str(newsURL),
+                            parentCommentNo_list[i]
                         ]
-                    )
+                        if username == True:
+                            targetlist.extend(add_data)
+                    
+                    replyList.append(targetlist)
                     reply_idx += 1
 
             if self.print_status_option:
@@ -393,7 +411,43 @@ class NaverNewsCrawler(CrawlerModule):
         except Exception:
             error_msg  = self.error_detector(self.error_detector_option)
             return self.error_dump(2007, error_msg, newsURL)
-    
+
+    async def ReplyUsername(self, oid, aid, commentNo, newsURL, session):
+        # API 엔드포인트
+        url = "https://apis.naver.com/commentBox/cbox/web_naver_user_info_jsonp.json"
+        # 요청 파라미터
+        params = {
+            "ticket": "news",
+            "templateId": "default_society",
+            "pool": "cbox5",
+            "lang": "ko",
+            "country": "KR",
+            "objectId": f'news{oid},{aid}',
+            "categoryId": "",
+            "pageSize": 20,
+            "indexSize": 10,
+            "groupId": "",
+            "listType": "user",
+            "pageType": "more",
+            "commentNo": commentNo,
+            "targetUserInKey": "",
+            "_": "1739271277330"
+        }
+
+        # GET 요청 보내기
+        headers = {"User-agent": generate_navigator()['user_agent'], "referer": newsURL}
+        response = await self.asyncRequester.get(url, params=params, headers=headers, session=session).text
+        res = '{' + response.replace("_callback(", "")[:-2].split("{", 1)[-1]
+        data = json.loads(res)
+
+        nickname = data['result']['user']['nickname']
+        commentCnt = data['result']['commentUserStats']['commentCount']
+        replyCnt = data['result']['commentUserStats']['replyCount']
+        likecnt = data['result']['commentUserStats']['sympathyCount']
+
+        return [nickname, commentCnt, replyCnt, likecnt]
+
+
     # 파라미터로 (url, 댓글 코드) 전달
     async def rereplyCollector(self, newsURL, parentCommentNum_list, session):
         if isinstance(newsURL, str) == False or self._newsURLChecker(newsURL) == False:
@@ -505,7 +559,10 @@ class NaverNewsCrawler(CrawlerModule):
             if option == 3:
                 return {'articleData': articleData}
 
-            replyData = await self.replyCollector(newsURL, session)
+            username = False
+            if option == 4:
+                username = True
+            replyData = await self.replyCollector(newsURL, session, username=username)
             if option == 1:
                 return {'articleData': articleData, 'replyData': replyData}
 
