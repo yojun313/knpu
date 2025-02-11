@@ -748,8 +748,9 @@ if __name__ == "__main__":
     def test():
         mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
         mySQL_obj.connectDB('bigmaclab_manager_db')
-        mySQL_obj.dropTable('device_list')
-        mySQL_obj.newTable('device_list', ['device_name', 'user_name', 'mac_adress'])
+        reply_column = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID', 'Nickname', 'TotalUserComment', 'TotalUserReply', 'TotalUserLike', 'Article Day']
+
+        mySQL_obj.newTable('test', reply_column)
 
     test()
 

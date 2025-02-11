@@ -419,7 +419,7 @@ class Crawler(CrawlerModule):
 
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
 
-        if option in [1, 2]:
+        if option in [1, 2, 4]:
             self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
             self.mySQL.newTable(tableName=self.statisticsDB, column_list=statistiscs_column)
             if option == 2:
@@ -935,7 +935,7 @@ class Crawler(CrawlerModule):
 
 def controller():
     option_dic = {
-        1 : "\n1. 기사 + 댓글\n2. 기사 + 댓글/대댓글\n3. 기사\n4. 기사 + 댓글(실명)\n",
+        1 : "\n1. 기사 + 댓글\n2. 기사 + 댓글/대댓글\n3. 기사\n4. 기사 + 댓글(추가정보)\n",
         2 : "\n1. 블로그 본문\n2. 블로그 본문 + 댓글/대댓글\n",
         3 : "\n1. 카페 본문\n2. 카페 본문 + 댓글/대댓글\n",
         4 : "\n1. 영상 정보 + 댓글/대댓글 (100개 제한)\n2. 영상 정보 + 댓글/대댓글(무제한)\n",
@@ -964,7 +964,7 @@ def controller():
     
     while True:
         option = int(input("Option: "))
-        if option in [1,2]:
+        if option in [1,2,3,4]:
             break
         else:
             print("다시 입력하세요")
