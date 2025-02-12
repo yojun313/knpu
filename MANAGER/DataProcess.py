@@ -493,7 +493,7 @@ class DataProcess:
         # 각 상위 작성자의 댓글을 별도 CSV 파일로 저장
         for index, writer in enumerate(top_writers):
             writer_data = data[data['Reply Writer'] == writer]
-            writer_csv_path = os.path.join(filtered_reply_dir, f"{index+1}_{writer}_replies.csv")
+            writer_csv_path = os.path.join(filtered_reply_dir, f"{index+1}_{writer}_replies.csv").replace('*', '')
             writer_data.to_csv(writer_csv_path, encoding='utf-8-sig', index=False)
 
         # 그래프 설명 작성 (한국어)
