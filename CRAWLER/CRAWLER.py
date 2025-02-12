@@ -415,7 +415,7 @@ class Crawler(CrawlerModule):
         rereply_column = ["Reply_ID", "Rereply Writer", "Rereply Date", "Rereply Text", "Rereply Like", "Rereply Bad", "Rereply LikeRatio", "Rereply Sentiment", "Article URL", 'Article Day']
 
         if option == 4:
-            reply_column = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID', 'Nickname', 'TotalUserComment', 'TotalUserReply', 'TotalUserLike', 'Article Day']
+            reply_column = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID', 'TotalUserComment', 'TotalUserReply', 'TotalUserLike', 'Article Day']
 
         self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
 
