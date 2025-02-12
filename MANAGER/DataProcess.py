@@ -485,14 +485,15 @@ class DataProcess:
         plt.close()
 
         top_n = 10
-        top_writers = writer_reply_count.head(top_n).index
+        top_writers = writer_reply_count.sort_values(ascending=False).head(top_n).index
+
 
         filtered_reply_dir = os.path.join(csv_output_dir, 'user_replies')
         os.makedirs(filtered_reply_dir)
         # 각 상위 작성자의 댓글을 별도 CSV 파일로 저장
-        for writer in top_writers:
+        for index, writer in enumerate(top_writers):
             writer_data = data[data['Reply Writer'] == writer]
-            writer_csv_path = os.path.join(filtered_reply_dir, f"{writer}_replies.csv")
+            writer_csv_path = os.path.join(filtered_reply_dir, f"{index+1}_{writer}_replies.csv")
             writer_data.to_csv(writer_csv_path, encoding='utf-8-sig', index=False)
 
         # 그래프 설명 작성 (한국어)
