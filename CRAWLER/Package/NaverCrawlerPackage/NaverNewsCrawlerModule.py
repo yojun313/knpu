@@ -431,7 +431,7 @@ class NaverNewsCrawler(CrawlerModule):
             "targetUserInKey": "",
             "_": "1739271277330"
         }
-        print(f"\r{newsURL} commentNo={commentNo} 추가 정보 수집 중")
+        self.printStatus('NaverNews', 4, self.PrintData, commentNo=commentNo)
         # GET 요청 보내기
         headers = {"User-agent": generate_navigator()['user_agent'], "referer": newsURL}
         response = await self.asyncRequester(url, params=params, headers=headers, session=session)
