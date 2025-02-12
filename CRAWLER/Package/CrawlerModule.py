@@ -97,7 +97,7 @@ class CrawlerModule(ToolModule):
     def CountReturn(self):
         return self.IntegratedDB
 
-    def printStatus(self, type, option = 1, printData = {}):
+    def printStatus(self, type, option = 1, printData = {}, commentNo=None):
 
         WHITE = "\033[37m"
         YELLOW = "\033[33m"
@@ -161,6 +161,9 @@ class CrawlerModule(ToolModule):
                         out_str += f" | API num : {YELLOW}{self.PrintData['api_num']} {WHITE}|"
                     else:
                         out_str += f" | API num : {self.PrintData['api_num']} |"
+
+                if commentNo is not None:
+                    out_str += f" | {commentNo} Data Crawling |"
 
                 print(out_str, end = '')
             except:
