@@ -380,7 +380,7 @@ class NaverNewsCrawler(CrawlerModule):
                         add_data = await self.ReplyUsername(oid, aid, parentCommentNo_list[i], newsURL, session)
                         targetlist = [
                             str(reply_idx),
-                            str(nickname_list[i]),
+                            str(nickname_list[i])+f"({add_data[0]})",
                             datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
                             str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>',
                                                                                                               '')),
@@ -392,8 +392,7 @@ class NaverNewsCrawler(CrawlerModule):
                             str(newsURL),
                             parentCommentNo_list[i]
                         ]
-                        if username == True:
-                            targetlist.extend(add_data)
+                        targetlist.extend(add_data[1:])
                     
                     replyList.append(targetlist)
                     reply_idx += 1

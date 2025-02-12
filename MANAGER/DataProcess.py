@@ -421,6 +421,9 @@ class DataProcess:
 
         # 작성자별 댓글 수 계산
         writer_reply_count = data['Reply Writer'].value_counts()
+        if 'Nickname' in list(data.columns):
+            writer_reply_count = data['Nickname'].value_counts()
+
 
         # 결과를 저장할 디렉토리 생성
         output_dir = os.path.join(os.path.dirname(file_path),
@@ -485,8 +488,6 @@ class DataProcess:
         plt.close()
 
         top_n = 10
-        writer_reply_count = data['Reply Writer'].value_counts()
-
         top_writers = writer_reply_count.head(top_n).index
 
         filtered_reply_dir = os.path.join(csv_output_dir, 'user_replies')
@@ -873,38 +874,41 @@ class DataProcess:
             if end_date > csv_data[self.dateColumn_name].max():
                 self.enddate = int(csv_data[self.dateColumn_name].max().strftime('%Y%m%d'))
 
-            # 'period_month' 열 추가 (월 단위 기간으로 변환)
-            csv_data['period_month'] = csv_data[self.dateColumn_name].dt.to_period('M')
+            if period == 'total':
+                csv_data['period_group'] = 'total'
+            else:
+                # 'period_month' 열 추가 (월 단위 기간으로 변환)
+                csv_data['period_month'] = csv_data[self.dateColumn_name].dt.to_period('M')
 
-            # 필요한 전체 기간 생성
-            full_range = pd.period_range(start=csv_data['period_month'].min(), end=csv_data['period_month'].max(),
-                                         freq='M')
-            full_df = pd.DataFrame(full_range, columns=['period_month'])
+                # 필요한 전체 기간 생성
+                full_range = pd.period_range(start=csv_data['period_month'].min(), end=csv_data['period_month'].max(),
+                                             freq='M')
+                full_df = pd.DataFrame(full_range, columns=['period_month'])
 
-            # 원본 데이터와 병합하여 빈 기간도 포함하도록 함
-            csv_data = pd.merge(full_df, csv_data, on='period_month', how='left')
+                # 원본 데이터와 병합하여 빈 기간도 포함하도록 함
+                csv_data = pd.merge(full_df, csv_data, on='period_month', how='left')
 
-            # 새로운 열을 추가하여 주기 단위로 기간을 그룹화
-            if period == '1m':  # 월
-                csv_data['period_group'] = csv_data['period_month'].astype(str)
-            elif period == '3m':  # 분기
-                csv_data['period_group'] = (csv_data['period_month'].dt.year.astype(str) + 'Q' + (
-                            (csv_data['period_month'].dt.month - 1) // 3 + 1).astype(str))
-            elif period == '6m':  # 반기
-                csv_data['period_group'] = (csv_data['period_month'].dt.year.astype(str) + 'H' + (
-                            (csv_data['period_month'].dt.month - 1) // 6 + 1).astype(str))
-            elif period == '1y':  # 연도
-                csv_data['period_group'] = csv_data['period_month'].dt.year.astype(str)
-            elif period == '1w':  # 주
-                csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period('W').apply(
-                    lambda x: f"{x.start_time.strftime('%Y%m%d')}-{x.end_time.strftime('%Y%m%d')}"
-                )
-                first_date = csv_data['period_group'].iloc[0].split('-')[0]
-                end_date = csv_data['period_group'].iloc[-1].split('-')[1]
-                self.startdate = first_date
-                self.enddate = end_date
-            elif period == '1d':  # 일
-                csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period('D').astype(str)
+                # 새로운 열을 추가하여 주기 단위로 기간을 그룹화
+                if period == '1m':  # 월
+                    csv_data['period_group'] = csv_data['period_month'].astype(str)
+                elif period == '3m':  # 분기
+                    csv_data['period_group'] = (csv_data['period_month'].dt.year.astype(str) + 'Q' + (
+                                (csv_data['period_month'].dt.month - 1) // 3 + 1).astype(str))
+                elif period == '6m':  # 반기
+                    csv_data['period_group'] = (csv_data['period_month'].dt.year.astype(str) + 'H' + (
+                                (csv_data['period_month'].dt.month - 1) // 6 + 1).astype(str))
+                elif period == '1y':  # 연도
+                    csv_data['period_group'] = csv_data['period_month'].dt.year.astype(str)
+                elif period == '1w':  # 주
+                    csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period('W').apply(
+                        lambda x: f"{x.start_time.strftime('%Y%m%d')}-{x.end_time.strftime('%Y%m%d')}"
+                    )
+                    first_date = csv_data['period_group'].iloc[0].split('-')[0]
+                    end_date = csv_data['period_group'].iloc[-1].split('-')[1]
+                    self.startdate = first_date
+                    self.enddate = end_date
+                elif period == '1d':  # 일
+                    csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period('D').astype(str)
 
             # 주기별로 그룹화하여 결과 반환
             period_divided_group = csv_data.groupby('period_group')
@@ -956,10 +960,16 @@ class DataProcess:
 
             # 워드클라우드 저장
             output_file = os.path.join(folder_path, f'wordcloud_{period_list[i]}.png')
+            if split_option == 'total':
+                output_file = os.path.join(folder_path, f'wordcloud_{date[0]}~{date[1]}.png')
+
             wc_generated.to_file(output_file)
 
             # CSV 파일로 저장
             output_file = os.path.join(folder_path, 'data', f'wordcount_{period_list[i]}.csv')
+            if split_option == 'total':
+                output_file = os.path.join(folder_path, 'data', f'wordcount_{date[0]}~{date[1]}.csv')
+
             with open(output_file, mode="w", newline="", encoding="utf-8") as file:
                 writer = csv.writer(file)
                 # 헤더 작성
