@@ -421,9 +421,6 @@ class DataProcess:
 
         # 작성자별 댓글 수 계산
         writer_reply_count = data['Reply Writer'].value_counts()
-        if 'Nickname' in list(data.columns):
-            writer_reply_count = data['Nickname'].value_counts()
-
 
         # 결과를 저장할 디렉토리 생성
         output_dir = os.path.join(os.path.dirname(file_path),
