@@ -622,6 +622,7 @@ class Manager_Analysis:
                     layout.addWidget(self.period_option_label)
 
                     self.period_option_menu = QComboBox()
+                    self.period_option_menu.addItem('전 기간 통합 분석')
                     self.period_option_menu.addItem('1년 (Yearly)')
                     self.period_option_menu.addItem('6개월 (Half-Yearly)')
                     self.period_option_menu.addItem('3개월 (Quarterly)')
@@ -670,6 +671,8 @@ class Manager_Analysis:
                 def submit(self):
                     period = self.period_option_menu.currentText()
                     match period:
+                        case '전 기간 통합 분석':
+                            period = 'total'
                         case '1년 (Yearly)':
                             period = '1y'
                         case '6개월 (Half-Yearly)':
