@@ -241,6 +241,7 @@ class MainWindow(QMainWindow):
                         os._exit(0)
 
                     self.splash_dialog.update_status("Checking New Version")
+                    print("\nIII. Checking New Version... ", end='')
                     if self.newversion_check() == True:
                         self.close_bootscreen()
                         self.update_program(auto=self.SETTING['AutoUpdate'])
@@ -248,7 +249,7 @@ class MainWindow(QMainWindow):
                     # Loading Data from DB & Making object
                     while True:
                         try:
-                            print("\nIII. Loading Data from DB... ", end='')
+                            print("\nIV. Loading Data from DB... ", end='')
                             self.splash_dialog.update_status("Loading Data from DB")
                             self.Manager_User_obj.userDB_layout_maker()
                             self.DB = self.update_DB()
@@ -667,7 +668,7 @@ class MainWindow(QMainWindow):
             return False
 
     def newpost_check(self):
-        print("\nIV. Checking New Post... ", end='')
+        print("\nV. Checking New Post... ", end='')
         new_post_text = self.Manager_Board_obj.post_data[0][1]
         new_post_writer = self.Manager_Board_obj.post_data[0][0]
         old_post_text = self.SETTING['OldPostTitle']
