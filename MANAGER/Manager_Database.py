@@ -215,9 +215,10 @@ class Manager_Database:
             except:
                 CountText = DBdata['Status']
 
-
+            print(crawlType)
+            print(crawlOption_int)
             match crawlType:
-                case 'navernews':
+                case 'Naver News':
                     match crawlOption_int:
                         case 1:
                             crawlOption = '기사 + 댓글'
@@ -228,33 +229,33 @@ class Manager_Database:
                         case 4:
                             crawlOption = '기사 + 댓글(추가 정보)'
 
-                case 'naverblog':
+                case 'Naver Blog':
                     match crawlOption_int:
                         case 1:
                             crawlOption = '블로그 본문'
                         case 2:
                             crawlOption = '블로그 본문 + 댓글/대댓글'
 
-                case 'navercafe':
+                case 'Naver Cafe':
                     match crawlOption_int:
                         case 1:
                             crawlOption = '카페 본문'
                         case 2:
                             crawlOption = '카페 본문 + 댓글/대댓글'
 
-                case 'youtube':
+                case 'YouTube':
                     match crawlOption_int:
                         case 1:
                             crawlOption = '영상 정보 + 댓글/대댓글 (100개 제한)'
                         case 2:
                             crawlOption = '영상 정보 + 댓글/대댓글(무제한)'
 
-                case 'chinadaily':
+                case 'ChinaDaily':
                     match crawlOption_int:
                         case 1:
                             crawlOption = '기사 + 댓글'
 
-                case 'chinasina':
+                case 'ChinaSina':
                     match crawlOption_int:
                         case 1:
                             crawlOption = '기사'
