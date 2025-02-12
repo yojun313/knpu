@@ -382,8 +382,7 @@ class NaverNewsCrawler(CrawlerModule):
                             str(reply_idx),
                             str(nickname_list[i])+f"({add_data[0]})_{add_data[1]}",
                             datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
-                            str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>',
-                                                                                                              '')),
+                            str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
                             str(rere_count_list[i]),
                             str(r_like_list[i]),
                             str(r_bad_list[i]),
@@ -432,7 +431,7 @@ class NaverNewsCrawler(CrawlerModule):
             "targetUserInKey": "",
             "_": "1739271277330"
         }
-
+        print(f"\r{newsURL} commentNo={commentNo} 추가 정보 수집 중")
         # GET 요청 보내기
         headers = {"User-agent": generate_navigator()['user_agent'], "referer": newsURL}
         response = await self.asyncRequester(url, params=params, headers=headers, session=session)
