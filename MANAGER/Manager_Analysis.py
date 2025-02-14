@@ -23,6 +23,8 @@ from Manager_Console import open_console, close_console
 import chardet
 from DataProcess import DataProcess
 from Kemkim import KimKem
+import asyncio
+from googletrans import Translator
 
 warnings.filterwarnings("ignore")
 
@@ -1340,19 +1342,25 @@ class Manager_Analysis:
                 main_layout.addWidget(self.eng_checkbox_label)
 
                 checkbox_layout = QHBoxLayout()
-                self.eng_yes_checkbox = QCheckBox('Yes')
-                self.eng_no_checkbox = QCheckBox('No')
+                self.eng_auto_checkbox = QCheckBox('자동 변환')
+                self.eng_manual_checkbox = QCheckBox('수동 변환')
+                self.eng_no_checkbox = QCheckBox('변환 안함')
 
-                self.eng_yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
-                self.eng_no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
+                # ✅ QButtonGroup을 사용하여 배타적 선택 적용
+                self.checkbox_group = QButtonGroup(self)
+                self.checkbox_group.addButton(self.eng_auto_checkbox)
+                self.checkbox_group.addButton(self.eng_manual_checkbox)
+                self.checkbox_group.addButton(self.eng_no_checkbox)
 
-                # 서로 배타적으로 선택되도록 설정
-                self.eng_yes_checkbox.toggled.connect(
-                    lambda: self.eng_no_checkbox.setChecked(False) if self.eng_yes_checkbox.isChecked() else None)
-                self.eng_no_checkbox.toggled.connect(
-                    lambda: self.eng_yes_checkbox.setChecked(False) if self.eng_no_checkbox.isChecked() else None)
+                # ✅ 배타적 선택 활성화 (라디오 버튼처럼 동작)
+                self.checkbox_group.setExclusive(True)
 
-                checkbox_layout.addWidget(self.eng_yes_checkbox)
+                # 기본 선택 설정
+                self.eng_no_checkbox.setChecked(True)  # "변환 안함" 기본 선택
+
+                # 레이아웃에 추가
+                checkbox_layout.addWidget(self.eng_auto_checkbox)
+                checkbox_layout.addWidget(self.eng_manual_checkbox)
                 checkbox_layout.addWidget(self.eng_no_checkbox)
                 main_layout.addLayout(checkbox_layout)
 
@@ -1405,7 +1413,10 @@ class Manager_Analysis:
                 # 선택된 단어를 리스트에 추가
                 self.selected_words = [cb.text() for cb in self.checkboxes if cb.isChecked()]
                 self.size_input = (self.x_size_input.text(), self.y_size_input.text(), self.font_size_input.text(), self.dot_size_input.text(), self.label_size_input.text(), self.grade_size_input.text())
-                self.eng_checked = self.eng_yes_checkbox.isChecked()
+                self.eng_auto_checked = self.eng_auto_checkbox.isChecked()
+                self.eng_manual_checked = self.eng_manual_checkbox.isChecked()
+                self.eng_no_checked = self.eng_no_checkbox.isChecked()
+
                 # 선택된 단어를 메시지 박스로 출력
                 if self.selected_words == []:
                     QMessageBox.information(self, '선택한 단어', '선택된 단어가 없습니다')
@@ -1461,7 +1472,9 @@ class Manager_Analysis:
             if self.word_selector.exec_() == QDialog.Accepted:  # show() 대신 exec_() 사용
                 selected_words = self.word_selector.selected_words
                 size_input = self.word_selector.size_input
-                eng_option = self.word_selector.eng_checked
+                eng_auto_option = self.word_selector.eng_auto_checked
+                eng_manual_option = self.word_selector.eng_manual_checked
+                eng_no_option = self.word_selector.eng_no_checked
                 try:
                     size_input = tuple(map(int, size_input))
                 except:
@@ -1472,19 +1485,48 @@ class Manager_Analysis:
                 self.main.printStatus()
                 return
 
-            if eng_option == True:
-                QMessageBox.information(self.main, "Information", f"키워드-영단어 사전(CSV)를 선택하세요")
-                eng_keyword_list_path = QFileDialog.getOpenFileName(self.main, "키워드-영단어 사전(CSV)를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
-                eng_keyword_list_path = eng_keyword_list_path[0]
-                if eng_keyword_list_path == "":
-                    return
-                with open(eng_keyword_list_path, 'rb') as f:
-                    codec = chardet.detect(f.read())['encoding']
-                df = pd.read_csv(eng_keyword_list_path, low_memory=False, encoding=codec)
-                if 'english' not in list(df.keys()) or 'korean' not in list(df.keys()):
-                    QMessageBox.warning(self.main, "Wrong Form", "키워드-영단어 사전 형식과 일치하지 않습니다")
-                    return
-                eng_keyword_tupleList = list(zip(df['korean'], df['english']))
+            if eng_no_option == False:
+                if eng_manual_option == True:
+                    QMessageBox.information(self.main, "Information", f"키워드-영단어 사전(CSV)를 선택하세요")
+                    eng_keyword_list_path = QFileDialog.getOpenFileName(self.main, "키워드-영단어 사전(CSV)를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
+                    eng_keyword_list_path = eng_keyword_list_path[0]
+                    if eng_keyword_list_path == "":
+                        return
+                    with open(eng_keyword_list_path, 'rb') as f:
+                        codec = chardet.detect(f.read())['encoding']
+                    df = pd.read_csv(eng_keyword_list_path, low_memory=False, encoding=codec)
+                    if 'english' not in list(df.keys()) or 'korean' not in list(df.keys()):
+                        QMessageBox.warning(self.main, "Wrong Form", "키워드-영단어 사전 형식과 일치하지 않습니다")
+                        return
+                    eng_keyword_tupleList = list(zip(df['korean'], df['english']))
+                elif eng_auto_option == True:
+                    target_words = sum(all_keyword, [])
+                    self.main.printStatus("키워드 영문 변환 중...")
+                    async def wordcloud_translator(words_to_translate):
+                        translator = Translator()
+                        translate_history = {}
+
+                        # 병렬 번역 수행 (이미 번역된 단어 제외)
+                        if words_to_translate:
+                            async def translate_word(word):
+                                """ 개별 단어를 비동기적으로 번역하고 반환하는 함수 """
+                                result = await translator.translate(word, dest='en', src='auto')  # ✅ await 추가
+                                return word, result.text  # ✅ 원래 단어와 번역된 단어 튜플 반환
+
+                            # 번역 실행 (병렬 처리)
+                            translated_results = await asyncio.gather(
+                                *(translate_word(word) for word in words_to_translate))
+
+                            # 번역 결과를 캐시에 저장
+                            for original, translated in translated_results:
+                                translate_history[original] = translated
+
+                        # ✅ (원래 단어, 번역된 단어) 튜플 리스트로 변환
+                        translated_tuple_list = [(word, translate_history[word]) for word in words_to_translate if
+                                                 word in translate_history]
+
+                        return translated_tuple_list
+                    eng_keyword_tupleList = asyncio.run(wordcloud_translator(target_words))
             else:
                 eng_keyword_tupleList = []
 
