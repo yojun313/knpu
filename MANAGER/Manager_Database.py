@@ -985,7 +985,7 @@ class Manager_Database:
                 # 필터 옵션이 있는 경우 DB_info.txt 작성
                 if filterOption:
                     filteropt = "모두 포함/제외" if include_all else "개별 포함/제외"
-                    with open(os.path.join(dbpath, 'DB_info.txt'), 'w+') as info:
+                    with open(os.path.join(dbpath, 'DB_info.txt'), 'w+', encoding="utf-8", errors="ignore") as info:
                         info.write(
                             f"- 필터링 옵션: {filterOption}\n"
                             f"- 포함 단어 목록: {', '.join(incl_words)}\n"

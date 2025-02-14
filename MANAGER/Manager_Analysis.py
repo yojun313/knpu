@@ -1587,7 +1587,7 @@ class Manager_Analysis:
             delete_word_list.extend(selected_words)
             pd.DataFrame(delete_word_list, columns=['word']).to_csv(os.path.join(new_result_folder, 'filtered_words.csv'), index = False, encoding='utf-8-sig')
 
-            with open(os.path.join(new_graph_folder, 'graph_size.txt'),'w+') as graph_size:
+            with open(os.path.join(new_graph_folder, 'graph_size.txt'),'w+', encoding="utf-8", errors="ignore") as graph_size:
                 info = (
                     f'X Scale: {size_input[0]}\n'
                     f'Y Scale: {size_input[1]}\n'
@@ -1898,7 +1898,7 @@ class Manager_Analysis:
                     add_text = "\n\n".join(keyword_texts)
                     if keyword_texts:
                         context_dict[keyword] = add_text
-                    with open(os.path.join(analyze_directory, 'keyword_context', f'{keyword}_context.txt'), 'w', encoding='utf-8-sig') as context:
+                    with open(os.path.join(analyze_directory, 'keyword_context', f'{keyword}_context.txt'), 'w', encoding="utf-8", errors="ignore") as context:
                         context.write(add_text)
 
                 context_df = pd.DataFrame(list(context_dict.items()), columns=['Keyword', 'Context Text'])

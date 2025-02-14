@@ -221,7 +221,7 @@ class DataProcess:
 
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w') as file:
+        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def NaverNewsStatisticsAnalysis(self, data, file_path):
@@ -384,7 +384,7 @@ class DataProcess:
 
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w') as file:
+        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def NaverNewsReplyAnalysis(self, data, file_path):
@@ -526,7 +526,7 @@ class DataProcess:
 
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w') as file:
+        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def NaverNewsRereplyAnalysis(self, data, file_path):
@@ -649,7 +649,7 @@ class DataProcess:
         """
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w') as file:
+        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def NaverCafeArticleAnalysis(self, data, file_path):
@@ -769,7 +769,7 @@ class DataProcess:
 
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w') as file:
+        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def NaverCafeReplyAnalysis(self, data, file_path):
@@ -849,7 +849,7 @@ class DataProcess:
 
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w') as file:
+        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def wordcloud(self, parent, data, folder_path, date, max_words, split_option, exception_word_list, eng=False):
@@ -975,7 +975,7 @@ class DataProcess:
             if split_option == 'total':
                 output_file = os.path.join(folder_path, 'data', f'wordcount_{date[0]}~{date[1]}.csv')
 
-            with open(output_file, mode="w", newline="", encoding="utf-8") as file:
+            with open(output_file, mode="w", newline="", encoding="utf-8", errors="ignore") as file:
                 writer = csv.writer(file)
                 # 헤더 작성
                 writer.writerow(["word", "count"])
