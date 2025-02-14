@@ -196,7 +196,8 @@ class KimKem:
 
             if self.filter_option == True:
                 if self.main.SETTING['ProcessConsole'] == 'default':
-                    iterator = tqdm(enumerate(self.period_list), desc="기간별 추적 KEMKIM 데이터 생성 중", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+                    iterator = tqdm(self.period_list, desc="기간별 추적 KEMKIM 데이터", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+                    iterator = enumerate(iterator)
                 else:
                     iterator = enumerate(self.period_list)
                 for index, period in iterator:
