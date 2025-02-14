@@ -344,57 +344,48 @@ class NaverNewsCrawler(CrawlerModule):
                     returnParentCommentNo_list.append(parentCommentNo_list[i])
 
             # comment_list PART
-            reply_idx = 1
-            for i in range(len(nickname_list)):
+            tasks = []
 
-                r_per_like = 0.0 # 댓글 긍정 지수 구하기
+            for i, (nickname, text) in enumerate(zip(nickname_list, text_list), start=1):
+                if text == '':
+                    continue
+
+                r_per_like = 0.0  # 댓글 긍정 지수
                 r_sum_like_angry = int(r_like_list[i]) + int(r_bad_list[i])
                 if r_sum_like_angry != 0:
-                    r_per_like = float(int(r_like_list[i]) / r_sum_like_angry)
-                    r_per_like = float(format(r_per_like, ".2f"))
-                # 댓글 긍정,부정 평가
-                if r_per_like > 0.5:  # 긍정
-                    r_sentiment = 1
-                elif r_per_like == 0:  # 무관심
-                    r_sentiment = 2
-                elif r_per_like < 0.5:  # 부정
-                    r_sentiment = -1
-                else:  # 중립
-                    r_sentiment = 0
+                    r_per_like = round(int(r_like_list[i]) / r_sum_like_angry, 2)
 
-                if text_list[i] != '':
-                    targetlist = [
-                        str(reply_idx),
-                        str(nickname_list[i]),
-                        datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
-                        str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
-                        str(rere_count_list[i]),
-                        str(r_like_list[i]),
-                        str(r_bad_list[i]),
-                        str(r_per_like),
-                        str(r_sentiment),
-                        str(newsURL),
-                        parentCommentNo_list[i]
-                    ]
-                    if username == True:
-                        add_data = await self.ReplyUsername(oid, aid, parentCommentNo_list[i], newsURL, session)
-                        targetlist = [
-                            str(reply_idx),
-                            str(nickname_list[i])+f"_{add_data[0]}_{add_data[1]}",
-                            datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
-                            str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
-                            str(rere_count_list[i]),
-                            str(r_like_list[i]),
-                            str(r_bad_list[i]),
-                            str(r_per_like),
-                            str(r_sentiment),
-                            str(newsURL),
-                            parentCommentNo_list[i]
-                        ]
-                        targetlist.extend(add_data[1:])
-                    
-                    replyList.append(targetlist)
-                    reply_idx += 1
+                # 댓글 긍정, 부정 평가
+                r_sentiment = 1 if r_per_like > 0.5 else -1 if r_per_like < 0.5 else 2 if r_per_like == 0 else 0
+
+                # 기본 댓글 정보
+                targetlist = [
+                    str(i),
+                    str(nickname),
+                    datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
+                    text.replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', ''),
+                    str(rere_count_list[i]),
+                    str(r_like_list[i]),
+                    str(r_bad_list[i]),
+                    str(r_per_like),
+                    str(r_sentiment),
+                    str(newsURL),
+                    parentCommentNo_list[i]
+                ]
+
+                # ✅ username이 True이면, `ReplyUsername()`을 병렬 실행하도록 예약
+                if username:
+                    tasks.append(self.ReplyUsername(oid, aid, parentCommentNo_list[i], newsURL, session))
+
+                replyList.append(targetlist)
+
+            if username and tasks:
+                results = await asyncio.gather(*tasks)
+
+                # ✅ 번역 결과를 기존 리스트에 반영
+                for idx, add_data in enumerate(results):
+                    replyList[idx][1] = f"{replyList[idx][1]}_{add_data[0]}_{add_data[1]}"
+                    replyList[idx].extend(add_data[1:])  # 추가 데이터 삽입
 
             if self.print_status_option:
                 self.printStatus('NaverNews', 4, self.PrintData)
@@ -422,7 +413,7 @@ class NaverNewsCrawler(CrawlerModule):
             "country": "KR",
             "objectId": f'news{oid},{aid}',
             "categoryId": "",
-            "pageSize": 20,
+            "pageSize": 1,
             "indexSize": 10,
             "groupId": "",
             "listType": "user",
