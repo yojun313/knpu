@@ -661,6 +661,30 @@ class Manager_Analysis:
                     layout.addLayout(checkbox_layout)
 
 
+
+                    # 체크박스 생성
+                    self.eng_checkbox_label = QLabel('단어를 영문 변환하시겠습니까? ')
+                    layout.addWidget(self.eng_checkbox_label)
+
+                    checkbox_layout = QHBoxLayout()
+                    self.eng_yes_checkbox = QCheckBox('Yes')
+                    self.eng_no_checkbox = QCheckBox('No')
+
+                    self.eng_yes_checkbox.setChecked(False)  # Yes 체크박스 기본 체크
+                    self.eng_no_checkbox.setChecked(True)  # No 체크박스 기본 체크 해제
+
+                    # 서로 배타적으로 선택되도록 설정
+                    self.eng_yes_checkbox.toggled.connect(
+                        lambda: self.eng_no_checkbox.setChecked(
+                            False) if self.eng_yes_checkbox.isChecked() else None)
+                    self.eng_no_checkbox.toggled.connect(
+                        lambda: self.eng_yes_checkbox.setChecked(
+                            False) if self.eng_no_checkbox.isChecked() else None)
+
+                    checkbox_layout.addWidget(self.eng_yes_checkbox)
+                    checkbox_layout.addWidget(self.eng_no_checkbox)
+                    layout.addLayout(checkbox_layout)
+
                     # 확인 버튼 생성 및 클릭 시 동작 연결
                     self.submit_button = QPushButton('분석 실행')
                     self.submit_button.clicked.connect(self.submit)
@@ -689,6 +713,7 @@ class Manager_Analysis:
                     enddate = self.enddate_input.text()
                     maxword = self.topword_input.text()
                     except_yes_selected = self.except_yes_checkbox.isChecked()
+                    eng_yes_selected = self.eng_yes_checkbox.isChecked()
 
                     self.data = {
                         'startdate': startdate,
@@ -696,6 +721,7 @@ class Manager_Analysis:
                         'period': period,
                         'maxword': maxword,
                         'except_yes_selected': except_yes_selected,
+                        'eng_yes_selected': eng_yes_selected
                     }
                     self.accept()
 
@@ -713,6 +739,7 @@ class Manager_Analysis:
             period = dialog.data['period']
             maxword = int(dialog.data['maxword'])
             except_yes_selected = dialog.data['except_yes_selected']
+            eng_yes_selected = dialog.data['eng_yes_selected']
 
             filename = os.path.basename(selected_directory[0]).replace('token_', '').replace('.csv', '')
             filename = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{startdate}~{enddate}_{period}', filename)
@@ -749,7 +776,7 @@ class Manager_Analysis:
             print("\n파일 불러오는 중...\n")
             token_data = pd.read_csv(selected_directory[0], low_memory=False)
 
-            self.dataprocess_obj.wordcloud(self.main, token_data, folder_path, date, maxword, period, exception_word_list)
+            self.dataprocess_obj.wordcloud(self.main, token_data, folder_path, date, maxword, period, exception_word_list, eng=eng_yes_selected)
             self.main.printStatus()
 
             if self.main.SETTING['ProcessConsole'] == 'default':
@@ -1876,7 +1903,9 @@ class Manager_Analysis:
                         self.main.openFileExplorer(analyze_directory)
                         return
 
-                    with open(os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option})_AI_analyze.txt"), 'w+') as gpt_txt:
+                    with open(
+                            os.path.join(analyze_directory, f"{object_csv_name}(키워드 {selected_option})_AI_analyze.txt"),
+                            'w+', encoding="utf-8", errors="ignore") as gpt_txt:
                         gpt_txt.write(gpt_response)
 
                     QMessageBox.information(self.main, "AI 분석 결과", gpt_response)

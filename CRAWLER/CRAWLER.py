@@ -10,6 +10,7 @@ import time
 import traceback
 import asyncio
 import warnings
+import googletrans
 import os
 import re
 from kiwipiepy import Kiwi
@@ -301,6 +302,9 @@ class Crawler(CrawlerModule):
                 self.mySQL.connectDB(self.DBname)
                 self.mySQL.DataframeToTable(token_df, 'token_' + table)
 
+
+
+
             self.clear_screen()
             print('\r업로드 및 알림 전송 중...', end='')
 
@@ -343,6 +347,13 @@ class Crawler(CrawlerModule):
             error_msg = self.error_detector()
             error_data = self.error_dump(1002, error_msg, self.currentDate_str)
             self.ReturnChecker(error_data)
+
+    async def TextToEng(self, text):
+        translator = googletrans.Translator()
+        outStr = await translator.translate(text, dest='en', src='auto')
+        return outStr.text
+
+
 
     def tokenization(self, data):  # 갱신 간격 추가
         kiwi = Kiwi(num_workers=0)
