@@ -8,10 +8,13 @@ from wordcloud import WordCloud
 from collections import Counter
 import os
 import csv
+from googletrans import Translator
 from tqdm import tqdm
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 import warnings
+from tqdm.asyncio import tqdm_asyncio
+import asyncio
 warnings.filterwarnings("ignore")
 
 # 운영체제에 따라 한글 폰트를 설정
@@ -849,8 +852,10 @@ class DataProcess:
         with open(description_file_path, 'w') as file:
             file.write(description_text)
 
-    def wordcloud(self, parent, data, folder_path, date, max_words, split_option, exception_word_list):
+    def wordcloud(self, parent, data, folder_path, date, max_words, split_option, exception_word_list, eng=False):
         parent = parent
+        self.translate_history = {}
+        self.translator = Translator()
         def divide_period(csv_data, period):
             # 'Unnamed' 열 제거
             csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
@@ -949,12 +954,14 @@ class DataProcess:
                 all_words = [item.strip() for item in all_words if item.strip() not in exception_word_list]
 
             # 단어 빈도 계산
-            word_freq = Counter(all_words)
-            sorted_word_freq = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
+            self.word_freq = Counter(all_words).most_common(max_words)
+            if eng == True:
+                parent.printStatus(f"단어 영문 변환 중...")
+                asyncio.run(self.wordcloud_translator())
 
             # 워드클라우드 생성
             wordcloud = WordCloud(font_path=os.path.join(os.path.dirname(__file__), 'source', 'malgun.ttf'), background_color='white', width=800, height=600, max_words=max_words)
-            wc_generated = wordcloud.generate_from_frequencies(word_freq)
+            wc_generated = wordcloud.generate_from_frequencies(self.word_freq)
 
             # 워드클라우드 저장
             output_file = os.path.join(folder_path, f'wordcloud_{period_list[i]}.png')
@@ -973,10 +980,44 @@ class DataProcess:
                 # 헤더 작성
                 writer.writerow(["word", "count"])
                 # 데이터 작성
-                for word, count in sorted_word_freq:
+                for word, count in self.word_freq.items():
                     writer.writerow([word, count])
 
             i += 1
+
+    async def wordcloud_translator(self):
+        translator = Translator()
+
+        # 번역할 한글 단어 목록 (self.word_freq의 키값들 중 번역되지 않은 단어만)
+        word_dict = dict(self.word_freq)
+        words_to_translate = [word for word in word_dict.keys() if word not in self.translate_history]
+
+        # 병렬 번역 수행 (이미 번역된 단어 제외)
+        if words_to_translate:
+            async def translate_word(word):
+                """ 개별 단어를 비동기적으로 번역하고 반환하는 함수 """
+                result = await translator.translate(word, dest='en', src='auto')  # ✅ await 추가
+                return word, result.text  # ✅ 번역 결과 반환
+
+            # 번역 실행 (병렬 처리)
+            translated_results = await asyncio.gather(*(translate_word(word) for word in words_to_translate))
+
+            # 번역 결과를 캐시에 저장
+            for original, translated in translated_results:
+                self.translate_history[original] = translated
+
+        # 변환된 word_freq 딕셔너리 생성 (캐시 포함)
+        self.word_freq = {k: v for k, v in sorted(
+            {self.translate_history[word]: word_dict[word] for word in word_dict.keys()}.items(),
+            key=lambda item: item[1],
+            reverse=True
+        )}
+
+
+
+
+
+
 
 
 
