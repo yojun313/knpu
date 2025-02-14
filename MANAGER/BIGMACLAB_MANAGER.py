@@ -177,7 +177,7 @@ class MainWindow(QMainWindow):
 
                     self.readme_path = os.path.join(self.default_directory, 'README.txt')
                     if not Path(self.readme_path).exists():
-                        with open(self.readme_path, "w") as txt:
+                        with open(self.readme_path, "w", encoding="utf-8", errors="ignore") as txt:
                             text = (
                                 "[ BIGMACLAB MANAGER README ]\n\n\n"
                                 "C:/BIGMACLAB_MANAGER is default directory folder of this program. This folder is automatically built by program.\n\n"
