@@ -1342,15 +1342,15 @@ class Manager_Analysis:
                 main_layout.addWidget(self.eng_checkbox_label)
 
                 checkbox_layout = QHBoxLayout()
+                self.eng_no_checkbox = QCheckBox('변환 안함')
                 self.eng_auto_checkbox = QCheckBox('자동 변환')
                 self.eng_manual_checkbox = QCheckBox('수동 변환')
-                self.eng_no_checkbox = QCheckBox('변환 안함')
 
                 # ✅ QButtonGroup을 사용하여 배타적 선택 적용
                 self.checkbox_group = QButtonGroup(self)
+                self.checkbox_group.addButton(self.eng_no_checkbox)
                 self.checkbox_group.addButton(self.eng_auto_checkbox)
                 self.checkbox_group.addButton(self.eng_manual_checkbox)
-                self.checkbox_group.addButton(self.eng_no_checkbox)
 
                 # ✅ 배타적 선택 활성화 (라디오 버튼처럼 동작)
                 self.checkbox_group.setExclusive(True)
@@ -1359,9 +1359,9 @@ class Manager_Analysis:
                 self.eng_no_checkbox.setChecked(True)  # "변환 안함" 기본 선택
 
                 # 레이아웃에 추가
+                checkbox_layout.addWidget(self.eng_no_checkbox)
                 checkbox_layout.addWidget(self.eng_auto_checkbox)
                 checkbox_layout.addWidget(self.eng_manual_checkbox)
-                checkbox_layout.addWidget(self.eng_no_checkbox)
                 main_layout.addLayout(checkbox_layout)
 
                 # 선택된 단어 출력 버튼 추가
@@ -1453,7 +1453,7 @@ class Manager_Analysis:
                 return
 
             self.main.user_logging(f'ANALYSIS -> rekimkem_file({result_directory[0]})')
-            self.main.printStatus("KEMKIM 재분석 중...")
+            self.main.printStatus("파일 불러오는 중...")
             
             result_directory = result_directory[0]
             final_signal_csv_path = os.path.join(result_directory, "Signal", "Final_signal.csv")
@@ -1467,7 +1467,8 @@ class Manager_Analysis:
             for word_list_str in words:
                 word_list = ast.literal_eval(word_list_str)
                 all_keyword.append(word_list)
-            
+
+            self.main.printStatus("옵션을 선택하세요")
             self.word_selector = WordSelector(all_keyword)
             if self.word_selector.exec_() == QDialog.Accepted:  # show() 대신 exec_() 사용
                 selected_words = self.word_selector.selected_words
@@ -1488,6 +1489,7 @@ class Manager_Analysis:
             if eng_no_option == False:
                 if eng_manual_option == True:
                     QMessageBox.information(self.main, "Information", f"키워드-영단어 사전(CSV)를 선택하세요")
+                    self.main.printStatus("키워드-영단어 사전(CSV)를 선택하세요")
                     eng_keyword_list_path = QFileDialog.getOpenFileName(self.main, "키워드-영단어 사전(CSV)를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
                     eng_keyword_list_path = eng_keyword_list_path[0]
                     if eng_keyword_list_path == "":
@@ -1530,6 +1532,7 @@ class Manager_Analysis:
             else:
                 eng_keyword_tupleList = []
 
+            self.main.printStatus("KEMKIM 조정 중...")
             DoV_coordinates_path = os.path.join(result_directory, "Graph", "DOV_coordinates.csv")
             if not os.path.exists(DoV_coordinates_path):
                 QMessageBox.warning(self.main, 'Import Failed', 'DOV_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오')
@@ -1555,7 +1558,7 @@ class Manager_Analysis:
                 DoD_coordinates_dict[key] = value
                 
             delete_word_list = pd.read_csv(os.path.join(result_directory, 'filtered_words.csv'))['word'].tolist()
-            
+
             kimkem_obj = KimKem(self.main, exception_word_list=selected_words, rekemkim=True)
             
             new_result_folder = os.path.join(os.path.dirname(result_directory), f'Result_{datetime.now().strftime('%m%d%H%M')}')
@@ -1565,8 +1568,6 @@ class Manager_Analysis:
             os.makedirs(new_result_folder, exist_ok=True)
             os.makedirs(new_graph_folder, exist_ok=True)
             os.makedirs(new_signal_folder, exist_ok=True)
-            
-            self.main.openFileExplorer(new_result_folder)
             
             # 그래프 Statistics csv 복사
             copy_csv(os.path.join(result_directory, "Graph", "DOD_statistics.csv"), os.path.join(new_graph_folder, "DOD_statistics.csv"))
@@ -1602,6 +1603,7 @@ class Manager_Analysis:
 
             self.main.printStatus()
             QMessageBox.information(self.main, 'Notification', 'KEMKIM 재분석이 완료되었습니다')
+            self.main.openFileExplorer(new_result_folder)
         
         except Exception as e:
             self.main.program_bug_log(traceback.format_exc())
