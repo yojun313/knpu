@@ -130,6 +130,13 @@ class DataProcess:
         }).rename(columns={'id': 'Article Count'}).reset_index()
         time_analysis['Article Date'] = time_analysis['Article Date'].dt.to_timestamp()
 
+        # 시간에 따른 기사 및 댓글 수 분석 (일별)
+        day_analysis = data.groupby(data['Article Date'].dt.to_period("D")).agg({
+            'id': 'count',
+            'Article ReplyCnt': 'sum'
+        }).rename(columns={'id': 'Article Count'}).reset_index()
+        day_analysis['Article Date'] = day_analysis['Article Date'].dt.to_timestamp()
+
         # 기사 유형별 분석
         article_type_analysis = data.groupby('Article Type').agg({
             'id': 'count',
@@ -158,6 +165,7 @@ class DataProcess:
         # 결과를 CSV로 저장
         basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
         time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
+        day_analysis.to_csv(os.path.join(csv_output_dir, "day_analysis.csv"), encoding='utf-8-sig', index=False)
         article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig',
                                      index=False)
         press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig', index=False)
@@ -173,6 +181,18 @@ class DataProcess:
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "monthly_article_reply_count.png"))
+        plt.close()
+
+        # For day_analysis graph
+        plt.figure(figsize=self.calculate_figsize(len(day_analysis)))
+        sns.lineplot(data=day_analysis, x='Article Date', y='Article Count', label='Article Count')
+        sns.lineplot(data=day_analysis, x='Article Date', y='Article ReplyCnt', label='Reply Count')
+        plt.title('Daily Article and Reply Count Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "daily_article_reply_count.png"))
         plt.close()
 
         # For article_type_analysis graph
@@ -217,6 +237,11 @@ class DataProcess:
            - 이 막대 그래프는 기사 수를 기준으로 상위 10개 언론사를 보여줍니다.
            - x축은 언론사명을, y축은 각 언론사에서 발행한 기사 수를 나타냅니다.
            - 이 그래프는 가장 활발하게 기사를 발행하는 언론사를 파악하는 데 도움을 줍니다.
+        
+        4. 일별 기사 및 댓글 수 분석 (daily_article_reply_count.png):
+           - 이 선 그래프는 시간에 따른 일별 기사 수와 댓글 수를 보여줍니다.
+           - x축은 날짜를, y축은 수량을 나타냅니다.
+           - 특정 일에 기사 및 댓글 수가 급증하는 패턴을 파악하는 데 유용합니다.
         """
 
         # 설명을 txt 파일로 저장
@@ -258,6 +283,13 @@ class DataProcess:
         }).rename(columns={'id': 'Article Count'}).reset_index()
         time_analysis['Article Date'] = time_analysis['Article Date'].dt.to_timestamp()
 
+        # 시간에 따른 기사 및 댓글 수 분석 (일별)
+        day_analysis = data.groupby(data['Article Date'].dt.to_period("D")).agg({
+            'id': 'count',
+            'Article ReplyCnt': 'sum'
+        }).rename(columns={'id': 'Article Count'}).reset_index()
+        day_analysis['Article Date'] = day_analysis['Article Date'].dt.to_timestamp()
+
         # 기사 유형별 분석
         article_type_analysis = data.groupby('Article Type').agg({
             'id': 'count',
@@ -278,6 +310,7 @@ class DataProcess:
         # 결과를 CSV로 저장
         basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
         time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
+        day_analysis.to_csv(os.path.join(csv_output_dir, "day_analysis.csv"), encoding='utf-8-sig', index=False)
         article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig',
                                      index=False)
         press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig', index=False)
@@ -297,6 +330,18 @@ class DataProcess:
         plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "monthly_article_reply_count.png"))
+        plt.close()
+
+        # For day_analysis graph
+        plt.figure(figsize=self.calculate_figsize(len(day_analysis)))
+        sns.lineplot(data=day_analysis, x='Article Date', y='Article Count', label='Article Count')
+        sns.lineplot(data=day_analysis, x='Article Date', y='Article ReplyCnt', label='Reply Count')
+        plt.title('Daily Article and Reply Count Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "daily_article_reply_count.png"))
         plt.close()
 
         # 2. 기사 유형별 기사 및 댓글 수
@@ -380,6 +425,11 @@ class DataProcess:
 
         6. 연령대별 댓글 수 분석 (age_group_reply_count.png):
            - 각 연령대별 총 댓글 수를 나타냅니다.
+           
+        7. 일별 기사 및 댓글 수 분석 (daily_article_reply_count.png):
+           - 이 선 그래프는 시간에 따른 일별 기사 수와 댓글 수를 보여줍니다.
+           - x축은 날짜를, y축은 수량을 나타냅니다.
+           - 특정 일에 기사 및 댓글 수가 급증하는 패턴을 파악하는 데 유용합니다.
         """
 
         # 설명을 txt 파일로 저장
@@ -415,6 +465,14 @@ class DataProcess:
             'Reply Bad': 'sum'
         }).rename(columns={'id': 'Reply Count'})
 
+        # 월별 댓글 수, 좋아요, 싫어요 합계 분석
+        month_analysis = data.groupby(data['Reply Date'].dt.to_period("M")).agg({
+            'id': 'count',
+            'Reply Like': 'sum',
+            'Reply Bad': 'sum'
+        }).rename(columns={'id': 'Reply Count'}).reset_index()
+        month_analysis['Reply Date'] = month_analysis['Reply Date'].dt.to_timestamp()
+
         # 댓글 감성 분석 결과 빈도
         sentiment_counts = data['Reply Sentiment'].value_counts()
 
@@ -436,6 +494,7 @@ class DataProcess:
         # 결과를 CSV로 저장
         basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
         time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
+        month_analysis.to_csv(os.path.join(csv_output_dir, "month_analysis.csv"), encoding='utf-8-sig', index=False)
         sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"), encoding='utf-8-sig')
         correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
         writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_reply_count.csv"), encoding='utf-8-sig')
@@ -452,6 +511,19 @@ class DataProcess:
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "daily_reply_count.png"))
+        plt.close()
+
+        # For month_analysis graph
+        plt.figure(figsize=self.calculate_figsize(len(month_analysis)))
+        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Count', label='Reply Count')
+        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Like', label='Likes')
+        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Bad', label='Dislikes')
+        plt.title('Monthly Reply Count, Likes, and Dislikes Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "monthly_reply_count.png"))
         plt.close()
 
         # 2. 댓글 감성 분석 결과 분포
@@ -522,6 +594,11 @@ class DataProcess:
            - 이 그래프는 댓글을 가장 많이 작성한 상위 10명의 작성자를 보여줍니다.
            - x축은 작성자의 이름을, y축은 해당 작성자가 작성한 댓글 수를 나타냅니다.
            - 이를 통해 어떤 작성자가 댓글 활동이 활발한지 알 수 있습니다.
+           
+        5. 월별 댓글 통계 분석 (monthly_reply_count.png):
+           - 이 그래프는 월별 댓글 수, 좋아요 수, 싫어요 수의 변화를 보여줍니다.
+           - x축은 날짜를, y축은 수량을 나타냅니다.
+           - 이를 통해 특정 월에 댓글 활동이 증가하거나 감소한 패턴을 파악할 수 있습니다.
         """
 
         # 설명을 txt 파일로 저장
@@ -552,6 +629,14 @@ class DataProcess:
             'Rereply Bad': 'sum'
         }).rename(columns={'id': 'Rereply Count'}).reset_index()
 
+        # 월별 댓글 수, 좋아요, 싫어요 합계 분석
+        month_analysis = data.groupby(data['Reply Date'].dt.to_period("M")).agg({
+            'id': 'count',
+            'Reply Like': 'sum',
+            'Reply Bad': 'sum'
+        }).rename(columns={'id': 'Reply Count'}).reset_index()
+        month_analysis['Reply Date'] = month_analysis['Reply Date'].dt.to_timestamp()
+
         # 댓글 감성 분석 결과 빈도
         sentiment_counts = data['Rereply Sentiment'].value_counts()
 
@@ -574,6 +659,7 @@ class DataProcess:
         basic_stats = data.describe(include='all')
         basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
         time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
+        month_analysis.to_csv(os.path.join(csv_output_dir, "month_analysis.csv"), encoding='utf-8-sig', index=False)
         sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"), encoding='utf-8-sig')
         correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
         writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_rereply_count.csv"), encoding='utf-8-sig')
@@ -589,6 +675,19 @@ class DataProcess:
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "daily_rereply_count.png"))
+        plt.close()
+
+        # For month_analysis graph
+        plt.figure(figsize=self.calculate_figsize(len(month_analysis)))
+        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Count', label='Reply Count')
+        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Like', label='Likes')
+        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Bad', label='Dislikes')
+        plt.title('Monthly Reply Count, Likes, and Dislikes Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "monthly_reply_count.png"))
         plt.close()
 
         # 2. 댓글 감성 분석 결과 분포

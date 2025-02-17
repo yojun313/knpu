@@ -215,8 +215,6 @@ class Manager_Database:
             except:
                 CountText = DBdata['Status']
 
-            print(crawlType)
-            print(crawlOption_int)
             match crawlType:
                 case 'Naver News':
                     match crawlOption_int:
