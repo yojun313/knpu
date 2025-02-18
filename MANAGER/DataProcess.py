@@ -960,8 +960,7 @@ class DataProcess:
             csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
 
             # 날짜 열을 datetime 형식으로 변환
-            csv_data[self.dateColumn_name] = pd.to_datetime(csv_data[self.dateColumn_name].str.split().str[0],
-                                                            format='%Y-%m-%d', errors='coerce')
+            csv_data[self.dateColumn_name] = pd.to_datetime(csv_data[self.dateColumn_name].str.split().str[0], format='%Y-%m-%d', errors='coerce')
 
             # 'YYYYMMDD' 형식의 문자열을 datetime 형식으로 변환
             start_date = pd.to_datetime(str(date[0]), format='%Y%m%d')
@@ -1053,7 +1052,7 @@ class DataProcess:
                 all_words = [item.strip() for item in all_words if item.strip() not in exception_word_list]
 
             # 단어 빈도 계산
-            self.word_freq = Counter(all_words).most_common(max_words)
+            self.word_freq = dict(Counter(all_words).most_common(max_words))  # 딕셔너리 변환
             if eng == True:
                 parent.printStatus(f"단어 영문 변환 중...")
                 asyncio.run(self.wordcloud_translator())
@@ -1088,7 +1087,7 @@ class DataProcess:
         translator = Translator()
 
         # 번역할 한글 단어 목록 (self.word_freq의 키값들 중 번역되지 않은 단어만)
-        word_dict = dict(self.word_freq)
+        word_dict = self.word_freq
         words_to_translate = [word for word in word_dict.keys() if word not in self.translate_history]
 
         # 병렬 번역 수행 (이미 번역된 단어 제외)
