@@ -738,20 +738,6 @@ class KimKem:
     def _analyze_signals(self, avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, folder_path):
         DoV_signal, DoV_coordinates = self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, folder_path)
         DoD_signal, DoD_coordinates = self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path)
-
-        # 파이널 시그널 추출 후 DOV/DOD 그래프에 예외어 리스트를 넣어서 KIM/KEM 그래프 생성
-        final_signal = self._get_communal_signals(DoV_signal, DoD_signal)
-        final_signal_list = []
-        for value in final_signal.values():
-            final_signal_list.extend(value)
-
-        if len(final_signal_list) == 0:
-            with open(os.path.join(folder_path, 'No_Signal.txt'), 'w') as f:
-                f.write("Final Signal이 존재하지 않습니다")
-        else:
-            self.DoV_draw_graph(avg_DoV_increase_rate, avg_term_frequency, folder_path, final_signal_list=final_signal_list, graph_name='KEM_graph.png')
-            self.DoD_draw_graph(avg_DoD_increase_rate, avg_doc_frequency, folder_path, final_signal_list=final_signal_list, graph_name='KIM_graph.png')
-
         return DoV_signal, DoD_signal, DoV_coordinates, DoD_coordinates
     
     def _save_final_signals(self, DoV_signal, DoD_signal, result_folder):
@@ -1144,7 +1130,7 @@ class KimKem:
 
         # 그래프 표시
         if graph_name == '':
-            graph_name = "TF_DOV_graph.png"
+            graph_name = "KEM_graph.png"
 
         plt.savefig(os.path.join(graph_folder, graph_name), bbox_inches='tight')
         plt.close()
@@ -1239,7 +1225,7 @@ class KimKem:
 
         # 그래프 표시
         if graph_name == '':
-            graph_name = "DF_DOD_graph.png"
+            graph_name = "KIM_graph.png"
 
         plt.savefig(os.path.join(graph_folder, graph_name), bbox_inches='tight')
         plt.close()
