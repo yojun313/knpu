@@ -95,6 +95,29 @@ class NaverCafeCrawler(CrawlerModule):
         except:
             return self.error_dump(2019, 'Check DateForm', startDate)
         try:
+            def parse_query(query):
+                # 문자열을 공백으로 분리
+                terms = query.split()
+
+                # 첫 번째 단어를 nx_search_query에 할당
+                search_query = terms[0] if terms else ""
+                if "|" in query:
+                    search_query = query
+
+                # + 기호가 붙은 단어 찾기
+                and_terms = [term[1:] for term in terms if term.startswith('+')]
+
+                # - 기호가 붙은 단어 찾기
+                sub_terms = [term[1:] for term in terms if term.startswith('-')]
+
+                # 딕셔너리 반환
+                query_params = {
+                    "nx_search_query": search_query,
+                    "nx_and_query": " ".join(and_terms) if and_terms else "",
+                    "nx_sub_query": " ".join(sub_terms) if sub_terms else "",
+                }
+                return query_params
+
             def extract_cafeurls(text):
                 # 정규식 패턴 정의
                 pattern = r'https://cafe\.naver\.com/[a-zA-Z0-9_-]+/\d+\?art=[a-zA-Z0-9._-]+'
@@ -120,12 +143,37 @@ class NaverCafeCrawler(CrawlerModule):
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverCafe', 1, self.PrintData)
 
-            urlList = []
-            keyword = urllib.parse.quote_plus(keyword)
-            api_url = f"https://s.search.naver.com/p/cafe/47/search.naver?ac=0&aq=0&cafe_where=&date_from={startDate}&date_option=8&date_to={endDate}&display=30&m=0&nlu_query=&prdtype=0&prmore=1&qdt=1&query={keyword}&qvt=1&spq=0&ssc=tab.cafe.all&st=date&start=1&stnm=date&_callback=getCafeContents&_=1724218724778"
+            query_dict = parse_query(keyword)
 
+            urlList = []
+            params = {
+                "abt": "",
+                "ac": 1,
+                "aq": 0,
+                "cafe_where": "",
+                "date_from": f"{startDate}",
+                "date_option": 8,
+                "date_to": f"{endDate}",
+                "display": 30,
+                "m": 0,
+                "nlu_query": '',
+                "nx_and_query": f"{query_dict['nx_and_query']}",
+                "nx_search_query": f"{query_dict['nx_search_query']}",
+                "nx_sub_query": f"{query_dict['nx_sub_query']}",
+                "prdtype": 0,
+                "prmore": 1,
+                "qdt": 1,
+                "query": keyword,
+                "qvt": 1,
+                "spq": 0,
+                "ssc": "tab.cafe.all",
+                "st": "date",
+                "start": "01",
+                "stnm": "date"
+            }
+            base_url = 'https://s.search.naver.com/p/cafe/48/search.naver'
             # 첫 데이터는 들어오는 데이터 전처리 필요
-            response = self.Requester(api_url)
+            response = self.Requester(base_url, params=params)
             if self.RequesterChecker(response) == False:
                 return response
             json_text = response.text
@@ -363,4 +411,6 @@ async def asyncTester():
 
     
 if __name__ == "__main__":
-    asyncio.run(asyncTester())
+    #asyncio.run(asyncTester())
+    CrawlerPackage_obj = NaverCafeCrawler(proxy_option=False, print_status_option=True)
+    print(CrawlerPackage_obj.urlCollector('포항공대', 20230101, 20230101))
