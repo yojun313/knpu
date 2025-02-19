@@ -43,6 +43,29 @@ class NaverBlogCrawler(CrawlerModule):
         except:
             return self.error_dump(2012, 'Check DateForm', startDate)
         try:
+            def parse_query(query):
+                # 문자열을 공백으로 분리
+                terms = query.split()
+
+                # 첫 번째 단어를 nx_search_query에 할당
+                search_query = terms[0] if terms else ""
+                if "|" in query:
+                    search_query = query
+
+                # + 기호가 붙은 단어 찾기
+                and_terms = [term[1:] for term in terms if term.startswith('+')]
+
+                # - 기호가 붙은 단어 찾기
+                sub_terms = [term[1:] for term in terms if term.startswith('-')]
+
+                # 딕셔너리 반환
+                query_params = {
+                    "nx_search_query": search_query,
+                    "nx_and_query": " ".join(and_terms) if and_terms else "",
+                    "nx_sub_query": " ".join(sub_terms) if sub_terms else "",
+                }
+                return query_params
+
             def extract_blogurls(text):
                     # 정규식 패턴 정의
                 pattern = r'https://blog\.naver\.com/[a-zA-Z0-9_-]+/\d+'
@@ -69,11 +92,31 @@ class NaverBlogCrawler(CrawlerModule):
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverBlog', 1, self.PrintData)
 
+            query_dict = parse_query(keyword)
+
             urlList = []
-            keyword = urllib.parse.quote_plus(keyword)
-            api_url = f"https://s.search.naver.com/p/review/48/search.naver?ssc=tab.blog.all&api_type=8&query={keyword}&start=1&ac=0&aq=0&spq=0&sm=tab_opt&nso=so%3Add%2Cp%3Afrom{startDate}to{endDate}&prank=30&ngn_country=KR&lgl_rcode=15200104&fgn_region=&fgn_city=&lgl_lat=36.7512&lgl_long=126.9629&abt=&retry_count=0"
-            
-            response = self.Requester(api_url)
+            params = {
+                "ssc": "tab.blog.all",
+                "api_type": "8",
+                "query": f"{keyword}",
+                "start": "01",
+                "nx_search_query": f"{query_dict['nx_search_query']}",
+                "nx_and_query": f"{query_dict['nx_and_query']}",
+                "nx_sub_query": f"{query_dict['nx_sub_query']}",
+                "ac": "1",
+                "aq": "0",
+                "spq": "0",
+                "sm": "tab_opt",
+                "nso": f"so:r,p:from{startDate}to{endDate}",
+                "prank": "30",
+                "ngn_country": "KR",
+                "fgn_region": "",
+                "fgn_city": "",
+                "abt": ""
+            }
+            base_url = "https://s.search.naver.com/p/review/49/search.naver"
+
+            response = self.Requester(base_url, params=params)
             if self.RequesterChecker(response) == False:
                 return response
             json_text = response.text
@@ -322,21 +365,19 @@ class NaverBlogCrawler(CrawlerModule):
                     r_sentiment = 0
 
                 if text_list[i] != '':
-                    replyList.append(
-                        [
-                        str(reply_idx),
-                        str(nickname_list[i]),
-                        datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
-                        str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
-                        str(rere_count_list[i]),
-                        str(r_like_list[i]),
-                        str(r_bad_list[i]),
-                        str(r_per_like),
-                        str(r_sentiment),
-                        str(blogURL),
-                        parentCommentNo_list[i]
-                        ]
-                    )
+                    replyList.append([
+                            str(reply_idx),
+                            str(nickname_list[i]),
+                            datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
+                            str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
+                            str(rere_count_list[i]),
+                            str(r_like_list[i]),
+                            str(r_bad_list[i]),
+                            str(r_per_like),
+                            str(r_sentiment),
+                            str(blogURL),
+                            parentCommentNo_list[i]
+                    ])
                     reply_idx += 1
 
             returnData['replyList'] = replyList
@@ -401,4 +442,10 @@ async def asyncTester():
 
 
 if __name__ == "__main__":
-    asyncio.run(asyncTester())
+    #asyncio.run(asyncTester())
+    CrawlerPackage_obj = NaverBlogCrawler(proxy_option=0, print_status_option=True)
+    CrawlerPackage_obj.error_detector_option_on()
+    urlList_returnData = CrawlerPackage_obj.urlCollector("포항공대 | 카이스트", 20230101, 20230101)
+    urlList = urlList_returnData['urlList']
+
+    print(urlList)

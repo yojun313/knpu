@@ -81,70 +81,67 @@ class NaverNewsCrawler(CrawlerModule):
                 else:
                     return None
 
+            def parse_query(query):
+                # 문자열을 공백으로 분리
+                terms = query.split()
+
+                # 첫 번째 단어를 nx_search_query에 할당
+                search_query = terms[0] if terms else ""
+                if "|" in query:
+                    search_query = query
+
+                # + 기호가 붙은 단어 찾기
+                and_terms = [term[1:] for term in terms if term.startswith('+')]
+
+                # - 기호가 붙은 단어 찾기
+                sub_terms = [term[1:] for term in terms if term.startswith('-')]
+
+                # 딕셔너리 반환
+                query_params = {
+                    "nx_search_query": search_query,
+                    "nx_and_query": " ".join(and_terms) if and_terms else "",
+                    "nx_sub_query": " ".join(sub_terms) if sub_terms else "",
+                }
+                return query_params
+
             if self.print_status_option == True:
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverNews', 1, self.PrintData)
 
+            query_dict = parse_query(keyword)
+
             urlList = []
-            if '|' in keyword:
-                params = {
-                    "de": endDate_formed,
-                    "ds": startDate_formed,
-                    "eid": "",
-                    "field": "0",
-                    "force_original": "",
-                    "is_dts": "1",
-                    "is_sug_officeid": "0",
-                    "mynews": "0",
-                    "news_office_checked": "",
-                    "nlu_query": "",
-                    "nqx_theme": "",
-                    "nso": f"&so=so;r;p:from{startDate}to{endDate},a:all",
-                    "nx_and_query": "",
-                    "nx_search_hlquery": keyword,
-                    "nx_search_query": keyword,
-                    "nx_sub_query": "",
-                    "office_category": "0",
-                    "office_section_code": "0",
-                    "office_type": "0",
-                    "pd": "3",
-                    "photo": "0",
-                    "query": keyword,
-                    "query_original": "",
-                    "service_area": "0",
-                    "sort": "0",
-                    "spq": "0",
-                    "start": "1",
-                    "where": "news_tab_api"
-                }
-            else:
-                params = {
-                    "de": endDate_formed,
-                    "ds": startDate_formed,
-                    "eid": "",
-                    "field": "0",
-                    "force_original": "",
-                    "is_dts": "1",
-                    "is_sug_officeid": "0",
-                    "mynews": "0",
-                    "news_office_checked": "",
-                    "nlu_query": "",
-                    "nqx_theme": "",
-                    "office_category": "0",
-                    "office_section_code": "0",
-                    "office_type": "0",
-                    "pd": "3",
-                    "photo": "0",
-                    "query": keyword,
-                    "query_original": "",
-                    "service_area": "0",
-                    "sort": "1",
-                    "spq": "0",
-                    "start": "1",
-                    "where": "news_tab_api",
-                    "_callback": "jQuery112409864105848430387_1723710693433",
-                    "_": "1723710693436"
-                }
+            params = {
+                "de": f"{endDate_formed}",
+                "ds": f"{startDate_formed}",
+                "eid": "",
+                "field": 0,
+                "force_original": "",
+                "is_dts": 1,
+                "is_sug_officeid": 0,
+                "mynews": 0,
+                "news_office_checked": "",
+                "nlu_query": "",
+                "nqx_theme": "",
+                "nso": f"so:r,p:from{startDate}to{endDate},a:all",
+                "nx_and_query": f"{query_dict['nx_and_query']}",
+                "nx_search_hlquery": "",
+                "nx_search_query": f"{query_dict['nx_search_query']}",
+                "nx_sub_query": f"{query_dict['nx_sub_query']}",
+                "office_category": 0,
+                "office_section_code": 0,
+                "office_type": 0,
+                "pd": 3,
+                "photo": 0,
+                "query": f"{keyword}",
+                "query_original": "",
+                "rev": 31,
+                "service_area": 0,
+                "sort": 0,
+                "spq": 0,
+                "start": "01",
+                "where": "news_tab_api"
+            }
 
             # 파라미터를 쿼리 문자열로 변환
             query_string = urllib.parse.urlencode(params)
@@ -616,4 +613,4 @@ async def asyncTester():
 if __name__ == "__main__":
     #asyncio.run(asyncTester())
     CrawlerPackage_obj = NaverNewsCrawler(proxy_option=False, print_status_option=True)
-    print(CrawlerPackage_obj.urlCollector("노인범죄 | 고령범죄 | 고령자범죄", 20250101, 20250120))
+    print(CrawlerPackage_obj.urlCollector('포항공대', 20230101, 20230101))
