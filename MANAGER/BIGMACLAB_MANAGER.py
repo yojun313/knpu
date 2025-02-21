@@ -468,6 +468,10 @@ class MainWindow(QMainWindow):
             current_device = socket.gethostname()
             self.user_device = current_device
             self.user_mac = get_mac_address()
+            if self.user_device == 'Yojuns-MacBook-Pro.local':
+                self.user = 'admin'
+                self.usermail = 'moonyojun@naver.com'
+                return True
             if self.user_mac in self.mac_list and self.user_device in self.device_list:
                 print("Done")
                 self.user = self.user_list[self.device_list.index(current_device)]

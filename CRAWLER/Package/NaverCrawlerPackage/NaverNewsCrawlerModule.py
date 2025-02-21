@@ -613,4 +613,4 @@ async def asyncTester():
 if __name__ == "__main__":
     #asyncio.run(asyncTester())
     CrawlerPackage_obj = NaverNewsCrawler(proxy_option=False, print_status_option=True)
-    print(CrawlerPackage_obj.urlCollector('포항공대', 20230101, 20230101))
+    print(CrawlerPackage_obj.urlCollector('포항공대', 20230101, 20230131)['urlCnt'])
