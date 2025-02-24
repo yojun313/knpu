@@ -516,12 +516,23 @@ class Manager_Analysis:
 
             print("CSV 파일 읽는 중...")
             csv_path = selected_directory[0]
+            csv_filename = os.path.basename(csv_path)
+
+            words = {selected_options[0].split()[0].lower(),
+                     selected_options[1].split()[0].lower(),
+                     selected_options[1].split()[1].lower()}
+
+            if selected_options[0].split()[0].lower() not in csv_filename and selected_options[1].split()[0].lower() not in csv_filename and selected_options[1].split()[1].lower() not in csv_filename:
+                QMessageBox.warning(self.main, "Not Supported", f"선택하신 파일이 옵션과 일치하지 않습니다")
+                return
+
             csv_data = pd.read_csv(csv_path, low_memory=False)
 
             self.main.user_logging(f'ANALYSIS -> analysis_file({csv_path})')
 
-            print(f"\n{os.path.basename(csv_path).replace('.csv', '')} 데이터 분석 중...")
+            print(f"\n{csv_filename.replace('.csv', '')} 데이터 분석 중...")
             match selected_options:
+
                 case ['article 분석', 'Naver News']:
                     self.dataprocess_obj.NaverNewsArticleAnalysis(csv_data, csv_path)
                 case ['statistics 분석', 'Naver News']:
