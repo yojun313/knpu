@@ -879,8 +879,6 @@ class DataProcess:
 
         # 'Reply Date'를 datetime 형식으로 변환
         data['Reply Date'] = pd.to_datetime(data['Reply Date'])
-        for col in ['Reply Like']:
-            data[col] = pd.to_numeric(data[col], errors='coerce')  # 각 열을 숫자로 변환
 
 
         # 작성자별 분석 (상위 10명)
