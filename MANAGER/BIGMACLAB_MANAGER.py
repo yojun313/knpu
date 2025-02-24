@@ -469,6 +469,7 @@ class MainWindow(QMainWindow):
             self.user_device = current_device
             self.user_mac = get_mac_address()
             if self.user_device == 'Yojuns-MacBook-Pro.local':
+                print("Done")
                 self.user = 'admin'
                 self.usermail = 'moonyojun@naver.com'
                 return True
