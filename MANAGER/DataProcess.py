@@ -630,12 +630,12 @@ class DataProcess:
         }).rename(columns={'id': 'Rereply Count'}).reset_index()
 
         # 월별 댓글 수, 좋아요, 싫어요 합계 분석
-        month_analysis = data.groupby(data['Reply Date'].dt.to_period("M")).agg({
+        month_analysis = data.groupby(data['Rereply Date'].dt.to_period("M")).agg({
             'id': 'count',
-            'Reply Like': 'sum',
-            'Reply Bad': 'sum'
-        }).rename(columns={'id': 'Reply Count'}).reset_index()
-        month_analysis['Reply Date'] = month_analysis['Reply Date'].dt.to_timestamp()
+            'Rereply Like': 'sum',
+            'Rereply Bad': 'sum'
+        }).rename(columns={'id': 'Rereply Count'}).reset_index()
+        month_analysis['Rereply Date'] = month_analysis['Rereply Date'].dt.to_timestamp()
 
         # 댓글 감성 분석 결과 빈도
         sentiment_counts = data['Rereply Sentiment'].value_counts()
@@ -679,10 +679,10 @@ class DataProcess:
 
         # For month_analysis graph
         plt.figure(figsize=self.calculate_figsize(len(month_analysis)))
-        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Count', label='Reply Count')
-        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Like', label='Likes')
-        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Bad', label='Dislikes')
-        plt.title('Monthly Reply Count, Likes, and Dislikes Over Time')
+        sns.lineplot(data=month_analysis, x='Rereply Date', y='Rereply Count', label='Rereply Count')
+        sns.lineplot(data=month_analysis, x='Rereply Date', y='Rereply Like', label='Likes')
+        sns.lineplot(data=month_analysis, x='Rereply Date', y='Rereply Bad', label='Dislikes')
+        plt.title('Monthly Rereply Count, Likes, and Dislikes Over Time')
         plt.xlabel('Date')
         plt.ylabel('Count')
         plt.xticks(rotation=45)
