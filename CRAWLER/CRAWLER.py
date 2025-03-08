@@ -72,7 +72,7 @@ class Crawler(CrawlerModule):
         self.startDate = startDate
         self.endDate   = endDate
         self.keyword   = keyword
-        self.DBkeyword = keyword.replace('+', '$').replace('-', '#').replace(' ','')
+        self.DBkeyword = keyword.replace('+', '$').replace('-', '$').replace(' ','')
         self.DBkeyword = self.DBkeyword.split('|', 1)[0].strip()
         self.DBkeyword = self.DBkeyword.translate(str.maketrans('', '', '/\\?%@\'":*|,;.&'))
         self.upload    = upload
