@@ -444,7 +444,6 @@ class Manager_Analysis:
                     layout = QVBoxLayout()
 
                     # 여러 옵션 추가 (예: 체크박스, 라디오 버튼, 콤보박스)
-                    # 여러 옵션 추가 (예: 체크박스, 라디오 버튼, 콤보박스)
                     self.checkbox_group = []
 
                     self.combobox = QComboBox()
@@ -518,9 +517,25 @@ class Manager_Analysis:
             csv_path = selected_directory[0]
             csv_filename = os.path.basename(csv_path)
 
-            words = {selected_options[0].split()[0].lower(),
-                     selected_options[1].split()[0].lower(),
-                     selected_options[1].split()[1].lower()}
+            # 먼저, selected_options 리스트의 길이를 검사합니다.
+            if len(selected_options) < 2:
+                QMessageBox.warning(self.main, "Error", "선택 옵션이 부족합니다.")
+                return
+
+            # 첫 번째 요소의 split 결과 검사
+            split0 = selected_options[0].split()
+            if len(split0) < 1:
+                QMessageBox.warning(self.main, "Error", "첫 번째 옵션 형식이 올바르지 않습니다.")
+                return
+
+            # 두 번째 요소의 split 결과 검사
+            split1 = selected_options[1].split()
+            if len(split1) < 2:
+                QMessageBox.warning(self.main, "Error", "두 번째 옵션 형식이 올바르지 않습니다.")
+                return
+
+            # 검사 통과 시, words 집합 생성
+            words = {split0[0].lower(), split1[0].lower(), split1[1].lower()}
 
             if selected_options[0].split()[0].lower() not in csv_filename and selected_options[1].split()[0].lower() not in csv_filename and selected_options[1].split()[1].lower() not in csv_filename:
                 QMessageBox.warning(self.main, "Not Supported", f"선택하신 파일이 옵션과 일치하지 않습니다")
