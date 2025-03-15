@@ -447,7 +447,7 @@ class Manager_Analysis:
                     self.checkbox_group = []
 
                     self.combobox = QComboBox()
-                    self.combobox.addItems(['Naver News', 'Naver Blog', 'Naver Cafe', 'YouTube'])
+                    self.combobox.addItems(['Naver News', 'Naver Blog', 'Naver Cafe'])
                     self.combobox.currentIndexChanged.connect(self.update_checkboxes)
 
                     layout.addWidget(QLabel('Choose Data Type:'))
@@ -476,8 +476,8 @@ class Manager_Analysis:
                         options = ['article 분석', 'reply 분석']
                     elif self.combobox.currentText() == 'Naver Cafe':
                         options = ['article 분석', 'reply 분석']
-                    elif self.combobox.currentText() == 'YouTube':
-                        options = ['article 분석', 'reply 분석', 'rereply 분석']
+                    #elif self.combobox.currentText() == 'YouTube':
+                    #    options = ['article 분석', 'reply 분석', 'rereply 분석']
 
                     for option in options:
                         checkbox = QCheckBox(option)
