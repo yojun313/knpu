@@ -509,7 +509,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="user_name_lineinput"/>
+               <widget class="QLineEdit" name="userName_lineinput"/>
               </item>
               <item>
                <widget class="QLabel" name="label_email">

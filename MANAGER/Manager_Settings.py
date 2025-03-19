@@ -432,13 +432,13 @@ class Manager_Setting(QDialog):
             lambda: self.update_toggle(self.off_dbrefresh_toggle, self.default_dbrefresh_toggle)
         )
 
-        db_refresh_buttons_layout = QHBoxLayout()
-        db_refresh_buttons_layout.setSpacing(10)  # 버튼 간 간격 설정
-        db_refresh_buttons_layout.addWidget(self.default_dbrefresh_toggle)
-        db_refresh_buttons_layout.addWidget(self.off_dbrefresh_toggle)
+        db_refreshButtons_layout = QHBoxLayout()
+        db_refreshButtons_layout.setSpacing(10)  # 버튼 간 간격 설정
+        db_refreshButtons_layout.addWidget(self.default_dbrefresh_toggle)
+        db_refreshButtons_layout.addWidget(self.off_dbrefresh_toggle)
 
         db_refresh_layout.addWidget(db_refresh_label, 1)
-        db_refresh_layout.addLayout(db_refresh_buttons_layout, 2)
+        db_refresh_layout.addLayout(db_refreshButtons_layout, 2)
 
         db_layout.addLayout(db_refresh_layout)
         ################################################################################
@@ -528,11 +528,11 @@ class Manager_Setting(QDialog):
         user_title_label.setAlignment(Qt.AlignLeft)
 
         # 사용자 정보 추가 (예: 이름, 이메일, 디바이스)
-        user_name_label = QLabel(f"이름: {self.main.user}")
+        userName_label = QLabel(f"이름: {self.main.user}")
 
         user_email_label = QLabel(f"이메일: {self.main.usermail}")
 
-        user_device_label = QLabel(f"디바이스: {self.main.user_device}")
+        userDevice_label = QLabel(f"디바이스: {self.main.userDevice}")
 
         if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20:
             GPT_key_label = QLabel(f"ChatGPT API Key: 없음")
@@ -541,9 +541,9 @@ class Manager_Setting(QDialog):
 
         # 사용자 정보 섹션 레이아웃 구성
         user_info_section.addWidget(user_title_label)
-        user_info_section.addWidget(user_name_label)
+        user_info_section.addWidget(userName_label)
         user_info_section.addWidget(user_email_label)
-        user_info_section.addWidget(user_device_label)
+        user_info_section.addWidget(userDevice_label)
         user_info_section.addWidget(GPT_key_label)
 
         # 사용자 정보 섹션에 구분선 추가
@@ -563,7 +563,7 @@ class Manager_Setting(QDialog):
         # MANAGER 정보 추가
         manager_version_label = QLabel(f"버전: {self.main.versionNum}")
 
-        manager_location_label = QLabel(f"앱 경로: {wrap_text_by_words(self.main.program_directory, 40)}")
+        manager_location_label = QLabel(f"앱 경로: {wrap_text_by_words(self.main.programDirectory, 40)}")
 
         setting_location_label = QLabel(f"설정 경로: {wrap_text_by_words(self.main.settings.fileName(), 40)}")
 
@@ -703,7 +703,7 @@ class Manager_Setting(QDialog):
             'LLM_model': {'key': 'LLM_model', "value": llm_model}
         }
         for option in options.values():
-            self.main.update_settings(option['key'], option['value'])
+            self.main.updateSettings(option['key'], option['value'])
 
         self.accept()
 

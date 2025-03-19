@@ -75,10 +75,10 @@ else:
 app.setStyleSheet(theme_option[theme])
 
 # 로딩 다이얼로그 표시
-splash_dialog = SplashDialog(version=VERSION, theme=theme)
-splash_dialog.show()
+splashDialog = SplashDialog(version=VERSION, theme=theme)
+splashDialog.show()
 
-splash_dialog.update_status("Loading System Libraries")
+splashDialog.updateStatus("Loading System Libraries")
 import os
 import sys
 import json
@@ -99,7 +99,7 @@ import re
 import logging
 import shutil
 
-splash_dialog.update_status("Loading GUI Libraries")
+splashDialog.updateStatus("Loading GUI Libraries")
 from Manager_Settings import Manager_Setting
 from Manager_ToolModule import ToolModule
 from Manager_Database import Manager_Database
@@ -107,7 +107,7 @@ from Manager_Web import Manager_Web
 from Manager_Board import Manager_Board
 from Manager_User import Manager_User
 from Manager_Analysis import Manager_Analysis
-from Manager_Console import open_console, close_console
+from Manager_Console import openConsole, closeConsole
 from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
     QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
@@ -120,64 +120,64 @@ LOCAL_IP = '192.168.0.3'
 
 class MainWindow(QMainWindow):
 
-    def __init__(self, splash_dialog):
+    def __init__(self, splashDialog):
         try:
             self.versionNum = VERSION
             self.version = f'Version {self.versionNum}'
-            self.splash_dialog = splash_dialog
+            self.splashDialog = splashDialog
 
             self.toolmodule = ToolModule()
 
             super(MainWindow, self).__init__()
-            ui_path = os.path.join(os.path.dirname(__file__), 'source', 'BIGMACLAB_MANAGER_GUI.ui')
-            icon_path = os.path.join(os.path.dirname(__file__), 'source', 'exe_icon.png')
+            uiPath = os.path.join(os.path.dirname(__file__), 'source', 'BIGMACLAB_MANAGER_GUI.ui')
+            iconPath = os.path.join(os.path.dirname(__file__), 'source', 'exe_icon.png')
 
-            uic.loadUi(ui_path, self)
-            self.initialize_settings()
-            self.initialize_listwidget()
-            self.update_style_html()
+            uic.loadUi(uiPath, self)
+            self.initSettings()
+            self.initListWidget()
+            self.updateStyleHtml()
             self.setWindowTitle("MANAGER")  # 창의 제목 설정
-            self.setWindowIcon(QIcon(icon_path))
+            self.setWindowIcon(QIcon(iconPath))
 
             self.resize(1400, 1000)
 
             self.initialize_statusBar()
-            self.decrypt_process()
+            self.decryptProcess()
 
-            setup_logging()
-            self.event_logger = EventLogger()
-            self.install_event_filter_all_widgets(self)
+            setUpLogging()
+            self.eventLogger = EventLogger()
+            self.installEventFilter(self)
 
-            def load_program():
+            def loadProgram():
                 try:
                     self.listWidget.setCurrentRow(0)
                     if self.SETTING['BootTerminal'] == 'on':
-                        open_console("Boot Process")
+                        openConsole("Boot Process")
                     self.startTime = datetime.now()
                     self.gpt_api_key = self.SETTING['GPT_Key']
                     self.CONFIG = {
                         'Logging': 'On'
                     }
-                    self.check_internet_connection()
+                    self.checkNetwork()
                     self.listWidget.currentRowChanged.connect(self.display)
 
                     if platform.system() == "Windows":
-                        local_appdata_path = os.getenv("LOCALAPPDATA")
-                        desktop_path = os.path.join(os.getenv("USERPROFILE"), "Desktop")
+                        localAppdataPath = os.getenv("LOCALAPPDATA")
+                        desktopPath = os.path.join(os.getenv("USERPROFILE"), "Desktop")
 
-                        self.program_directory = os.path.join(local_appdata_path, "MANAGER")
-                        self.default_directory = "C:/BIGMACLAB_MANAGER"
-                        if not os.path.exists(self.default_directory):
-                            os.makedirs(self.default_directory)
+                        self.programDirectory = os.path.join(localAppdataPath, "MANAGER")
+                        self.localDirectory = "C:/BIGMACLAB_MANAGER"
+                        if not os.path.exists(self.localDirectory):
+                            os.makedirs(self.localDirectory)
                     else:
-                        self.program_directory = os.path.dirname(__file__)
-                        self.default_directory = '/Users/yojunsmacbookprp/Documents/BIGMACLAB_MANAGER'
-                        if not os.path.exists(self.default_directory):
-                            os.makedirs(self.default_directory)
+                        self.programDirectory = os.path.dirname(__file__)
+                        self.localDirectory = '/Users/yojunsmacbookprp/Documents/BIGMACLAB_MANAGER'
+                        if not os.path.exists(self.localDirectory):
+                            os.makedirs(self.localDirectory)
 
-                    self.readme_path = os.path.join(self.default_directory, 'README.txt')
-                    if not Path(self.readme_path).exists():
-                        with open(self.readme_path, "w", encoding="utf-8", errors="ignore") as txt:
+                    self.readmePath = os.path.join(self.localDirectory, 'README.txt')
+                    if not Path(self.readmePath).exists():
+                        with open(self.readmePath, "w", encoding="utf-8", errors="ignore") as txt:
                             text = (
                                 "[ BIGMACLAB MANAGER README ]\n\n\n"
                                 "C:/BIGMACLAB_MANAGER is default directory folder of this program. This folder is automatically built by program.\n\n"
@@ -188,14 +188,14 @@ class MainWindow(QMainWindow):
                             )
                             txt.write(text)
 
-                    if os.path.isdir(self.default_directory) == False:
-                        os.mkdir(self.default_directory)
+                    if os.path.isdir(self.localDirectory) == False:
+                        os.mkdir(self.localDirectory)
 
                     DB_ip = DB_IP
                     if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer', 'BIGMACLAB-Z8']:
                         DB_ip = LOCAL_IP
 
-                    self.network_text = (
+                    self.networkText = (
                         "\n\n[ DB 접속 반복 실패 시... ]\n"
                         "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 동작하는지 확인하십시오"
                         "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
@@ -204,29 +204,29 @@ class MainWindow(QMainWindow):
                     # Loading User info from DB
                     while True:
                         try:
-                            self.mySQL_obj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
+                            self.mySQLObj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
                             print("\nI. Loading User Info from DB... ", end='')
-                            self.splash_dialog.update_status("Loading User Info from DB")
-                            if self.mySQL_obj.showAllDB() == []:
+                            self.splashDialog.updateStatus("Loading User Info from DB")
+                            if self.mySQLObj.showAllDB() == []:
                                 raise
                             # DB 불러오기
-                            self.Manager_Board_obj = Manager_Board(self)
-                            self.Manager_User_obj = Manager_User(self)
-                            self.userNameList = self.Manager_User_obj.userNameList  # User Table 유저 리스트
-                            self.userMailList = self.Manager_User_obj.userMailList
-                            self.user_list = self.Manager_User_obj.user_list  # Device Table 유저 리스트
-                            self.device_list = self.Manager_User_obj.device_list
-                            self.mac_list = self.Manager_User_obj.mac_list
-                            self.userPushOverKeyList = self.Manager_User_obj.userKeyList
+                            self.managerBoardObj = Manager_Board(self)
+                            self.managerUserObj = Manager_User(self)
+                            self.userNameList = self.managerUserObj.userNameList  # User Table 유저 리스트
+                            self.userMailList = self.managerUserObj.userMailList
+                            self.userList = self.managerUserObj.userList  # Device Table 유저 리스트
+                            self.deviceList = self.managerUserObj.deviceList
+                            self.macList = self.managerUserObj.macList
+                            self.userPushOverKeyList = self.managerUserObj.userKeyList
                             print("Done")
                             break
                         except Exception as e:
                             print("Failed")
                             print(traceback.format_exc())
-                            self.close_bootscreen()
+                            self.closeBootscreen()
                             self.printStatus()
                             reply = QMessageBox.warning(self, 'Connection Failed',
-                                                        f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n다시 시도하시겠습니까?",
+                                                        f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.networkText}\n다시 시도하시겠습니까?",
                                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                             if reply == QMessageBox.Yes:
                                 self.printStatus("접속 재시도 중...")
@@ -236,35 +236,35 @@ class MainWindow(QMainWindow):
 
                     # User Checking & Login Process
                     print("\nII. Checking User... ", end='')
-                    self.splash_dialog.update_status("Checking User")
-                    if self.login_program() == False:
+                    self.splashDialog.updateStatus("Checking User")
+                    if self.loginProgram() == False:
                         os._exit(0)
 
-                    self.splash_dialog.update_status("Checking New Version")
+                    self.splashDialog.updateStatus("Checking New Version")
                     print("\nIII. Checking New Version... ", end='')
-                    if self.newversion_check() == True:
-                        self.close_bootscreen()
-                        self.update_program(auto=self.SETTING['AutoUpdate'])
+                    if self.checkNewVersion() == True:
+                        self.closeBootscreen()
+                        self.updateProgram(auto=self.SETTING['AutoUpdate'])
 
                     # Loading Data from DB & Making object
                     while True:
                         try:
                             print("\nIV. Loading Data from DB... ", end='')
-                            self.splash_dialog.update_status("Loading Data from DB")
-                            self.Manager_User_obj.userDB_layout_maker()
-                            self.DB = self.update_DB()
-                            self.Manager_Database_obj = Manager_Database(self)
-                            self.Manager_Web_obj = Manager_Web(self)
-                            self.Manager_Analysis_obj = Manager_Analysis(self)
+                            self.splashDialog.updateStatus("Loading Data from DB")
+                            self.managerUserObj.makeUserDBLayout()
+                            self.DB = self.updateDB()
+                            self.managerDatabaseObj = Manager_Database(self)
+                            self.managerWebObj = Manager_Web(self)
+                            self.managerAnalysisObj = Manager_Analysis(self)
                             print("Done")
                             break
                         except Exception as e:
                             print("Failed")
                             print(traceback.format_exc())
-                            self.close_bootscreen()
+                            self.closeBootscreen()
                             self.printStatus()
                             reply = QMessageBox.warning(self, 'Connection Failed',
-                                                        f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.network_text}\n\n다시 시도하시겠습니까?",
+                                                        f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.networkText}\n\n다시 시도하시겠습니까?",
                                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                             if reply == QMessageBox.Yes:
                                 self.printStatus("접속 재시도 중...")
@@ -272,17 +272,17 @@ class MainWindow(QMainWindow):
                             else:
                                 os._exit(0)
 
-                    self.splash_dialog.update_status(f"안녕하세요, {self.user}님!")
-                    newpost = self.newpost_check()
+                    self.splashDialog.updateStatus(f"안녕하세요, {self.user}님!")
+                    newpost = self.checkNewPost()
                     print(f"\n{self.user}님 환영합니다!")
 
-                    self.shortcut_init()
-                    self.Manager_Database_obj.database_shortcut_setting()
-                    self.user_logging(f'Booting ({self.user_location()})', booting=True, force=True)
-                    self.initialize_configuration()
+                    self.initShortcut()
+                    self.managerDatabaseObj.setDatabaseShortcut()
+                    self.userLogging(f'Booting ({self.getUserLocation()})', booting=True, force=True)
+                    self.initConfiguration()
 
-                    close_console()
-                    self.close_bootscreen()
+                    closeConsole()
+                    self.closeBootscreen()
 
                     if self.SETTING['ScreenSize'] == 'max':
                         self.showMaximized()
@@ -294,24 +294,24 @@ class MainWindow(QMainWindow):
                         reply = QMessageBox.question(self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?",
                                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                         if reply == QMessageBox.Yes:
-                            self.Manager_Board_obj.board_view_post(row=1)
+                            self.managerBoardObj.viewPost(row=1)
 
                 except Exception as e:
                     print("Failed")
                     print(traceback.format_exc())
-                    self.close_bootscreen()
+                    self.closeBootscreen()
                     self.printStatus()
                     msg = f'[ Admin CRITICAL Notification ]\n\nThere is Error in MANAGER Booting\n\nError Log: {traceback.format_exc()}'
-                    self.send_pushOver(msg, self.admin_pushoverkey)
+                    self.sendPushOver(msg, self.admin_pushoverkey)
                     QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
                     QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
                     os._exit(0)
 
-            load_program()
+            loadProgram()
 
         except Exception as e:
-            self.close_bootscreen()
-            open_console()
+            self.closeBootscreen()
+            openConsole()
             print(traceback.format_exc())
 
     def __getattr__(self, name):
@@ -320,18 +320,18 @@ class MainWindow(QMainWindow):
 
     ################################## Booting ##################################
 
-    def initialize_listwidget(self):
+    def initListWidget(self):
         try:
             """리스트 위젯의 특정 항목에만 아이콘 추가 및 텍스트 제거"""
 
-            icon_path = os.path.join(os.path.dirname(__file__), 'source', 'setting.png')
+            iconPath = os.path.join(os.path.dirname(__file__), 'source', 'setting.png')
 
             # 리스트 위젯의 모든 항목 가져오기
             for index in range(self.listWidget.count()):
                 item = self.listWidget.item(index)
                 if item.text() == "SETTING":
                     # SETTING 항목에 아이콘 추가 및 텍스트 제거
-                    item.setIcon(QIcon(icon_path))
+                    item.setIcon(QIcon(iconPath))
                     item.setText("")  # 텍스트 제거
 
             # 아이콘 크기 설정
@@ -339,7 +339,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(traceback.format_exc())
 
-    def initialize_settings(self):
+    def initSettings(self):
         try:
             self.settings = QSettings("BIGMACLAB", "BIGMACLAB_MANAGER")
             defaults = {
@@ -381,10 +381,10 @@ class MainWindow(QMainWindow):
             print(traceback.format_exc())
             self.SETTING = defaults
 
-    def initialize_configuration(self):
+    def initConfiguration(self):
         try:
-            self.mySQL_obj.connectDB('bigmaclab_manager_db')
-            configDF = self.mySQL_obj.TableToDataframe('configuration')
+            self.mySQLObj.connectDB('bigmaclab_manager_db')
+            configDF = self.mySQLObj.TableToDataframe('configuration')
             self.CONFIG = dict(zip(configDF[configDF.columns[1]], configDF[configDF.columns[2]]))
 
             # LLM 모델 이름 설정
@@ -399,17 +399,17 @@ class MainWindow(QMainWindow):
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
 
-        self.left_label = QLabel('  ' + self.version)
-        self.right_label = QLabel('')
+        self.leftLabel = QLabel('  ' + self.version)
+        self.rightLabel = QLabel('')
 
-        self.left_label.setToolTip("새 버전 확인을 위해 Ctrl+U")
-        self.right_label.setToolTip("상태표시줄")
-        self.left_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        self.right_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.statusbar.addPermanentWidget(self.left_label, 1)
-        self.statusbar.addPermanentWidget(self.right_label, 1)
+        self.leftLabel.setToolTip("새 버전 확인을 위해 Ctrl+U")
+        self.rightLabel.setToolTip("상태표시줄")
+        self.leftLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.rightLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.statusbar.addPermanentWidget(self.leftLabel, 1)
+        self.statusbar.addPermanentWidget(self.rightLabel, 1)
 
-    def shortcut_init(self):
+    def initShortcut(self):
         self.ctrld = QShortcut(QKeySequence("Ctrl+D"), self)
         self.ctrls = QShortcut(QKeySequence("Ctrl+S"), self)
         self.ctrlv = QShortcut(QKeySequence("Ctrl+V"), self)
@@ -442,91 +442,91 @@ class MainWindow(QMainWindow):
         self.cmdq = QShortcut(QKeySequence("Ctrl+ㅂ"), self)
         self.cmdpp = QShortcut(QKeySequence("Ctrl+Shift+ㅔ"), self)
 
-        self.ctrlu.activated.connect(lambda: self.update_program(sc=True))
+        self.ctrlu.activated.connect(lambda: self.updateProgram(sc=True))
         self.ctrlq.activated.connect(lambda: self.close())
-        self.ctrlp.activated.connect(lambda: self.developer_mode(True))
-        self.ctrlpp.activated.connect(lambda: self.developer_mode(False))
+        self.ctrlp.activated.connect(lambda: self.developerMode(True))
+        self.ctrlpp.activated.connect(lambda: self.developerMode(False))
 
-        self.cmdu.activated.connect(lambda: self.update_program(sc=True))
+        self.cmdu.activated.connect(lambda: self.updateProgram(sc=True))
         self.cmdq.activated.connect(lambda: self.close())
-        self.cmdp.activated.connect(lambda: self.developer_mode(True))
-        self.cmdpp.activated.connect(lambda: self.developer_mode(False))
+        self.cmdp.activated.connect(lambda: self.developerMode(True))
+        self.cmdpp.activated.connect(lambda: self.developerMode(False))
 
-    def close_bootscreen(self):
+    def closeBootscreen(self):
         try:
-            self.splash_dialog.accept()  # InfoDialog 닫기
+            self.splashDialog.accept()  # InfoDialog 닫기
             self.show()  # MainWindow 표시
         except:
             print(traceback.format_exc())
 
-    def login_program(self):
+    def loginProgram(self):
         def admin_notify(username):
-            msg = f'[ Admin Notification ]\n\nUnknown tried to connect\n\nName: {username}\n\nLocation: {self.user_location(True)}'
-            self.send_pushOver(msg, self.admin_pushoverkey)
+            msg = f'[ Admin Notification ]\n\nUnknown tried to connect\n\nName: {username}\n\nLocation: {self.getUserLocation(True)}'
+            self.sendPushOver(msg, self.admin_pushoverkey)
 
         try:
-            current_device = socket.gethostname()
-            self.user_device = current_device
-            self.user_mac = get_mac_address()
-            if self.user_device == 'Yojuns-MacBook-Pro.local':
+            currentDevice = socket.gethostname()
+            self.userDevice = currentDevice
+            self.userMac = get_mac_address()
+            if self.userDevice == 'Yojuns-MacBook-Pro.local':
                 print("Done")
                 self.user = 'admin'
                 self.usermail = 'moonyojun@naver.com'
                 return True
-            if self.user_mac in self.mac_list and self.user_device in self.device_list:
+            if self.userMac in self.macList and self.userDevice in self.deviceList:
                 print("Done")
-                self.user = self.user_list[self.device_list.index(current_device)]
+                self.user = self.userList[self.deviceList.index(currentDevice)]
                 self.usermail = self.userMailList[self.userNameList.index(self.user)]
                 return True
             else:
-                self.close_bootscreen()
+                self.closeBootscreen()
                 self.printStatus()
-                input_dialog_id = QInputDialog(self)
-                input_dialog_id.setWindowTitle('Login')
-                input_dialog_id.setLabelText('User Name:')
-                input_dialog_id.resize(300, 200)  # 원하는 크기로 설정
-                ok_id = input_dialog_id.exec_()
-                user_name = input_dialog_id.textValue()
-                if not ok_id:
+                inputDialogId = QInputDialog(self)
+                inputDialogId.setWindowTitle('Login')
+                inputDialogId.setLabelText('User Name:')
+                inputDialogId.resize(300, 200)  # 원하는 크기로 설정
+                ok = inputDialogId.exec_()
+                userName = inputDialogId.textValue()
+                if not ok:
                     QMessageBox.warning(self, 'Program Shutdown', '프로그램을 종료합니다')
                     return False
-                elif user_name not in self.userNameList:
-                    admin_notify(user_name)
+                elif userName not in self.userNameList:
+                    admin_notify(userName)
                     QMessageBox.warning(self, 'Unknown User', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
                     return False
 
-                self.user = user_name
-                self.usermail = self.userMailList[self.userNameList.index(user_name)]
+                self.user = userName
+                self.usermail = self.userMailList[self.userNameList.index(userName)]
                 self.printStatus("인증번호 전송 중...")
 
                 random_pw = ''.join(random.choices('0123456789', k=6))
                 msg = (
                     f"사용자: {self.user}\n"
-                    f"디바이스: {current_device}\n"
-                    f"인증 위치: {self.user_location()}\n\n"
+                    f"디바이스: {currentDevice}\n"
+                    f"인증 위치: {self.getUserLocation()}\n\n"
                     f"인증 번호 '{random_pw}'를 입력하십시오"
                 )
-                self.send_email(self.usermail, "[MANAGER] 디바이스 등록 인증번호", msg)
+                self.sendEmail(self.usermail, "[MANAGER] 디바이스 등록 인증번호", msg)
                 self.printStatus()
                 QMessageBox.information(self, "Information", f"{self.user}님의 메일 {self.usermail}로 인증번호가 전송되었습니다\n\n인증번호를 확인 후 다음 창에서 입력하십시오")
 
-                ok, password = self.pw_check(string="메일 인증번호")
+                ok, password = self.checkPassword(string="메일 인증번호")
                 if ok and password == random_pw:
                     reply = QMessageBox.question(self, 'Device Registration',
-                                                 f"BIGMACLAB MANAGER 서버에\n현재 디바이스({current_device})를 등록하시겠습니까?",
+                                                 f"BIGMACLAB MANAGER 서버에\n현재 디바이스({currentDevice})를 등록하시겠습니까?",
                                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
-                        self.mySQL_obj.insertToTable('device_list', [[current_device, user_name, self.user_mac]])
-                        self.mySQL_obj.commit()
+                        self.mySQLObj.insertToTable('deviceList', [[currentDevice, userName, self.userMac]])
+                        self.mySQLObj.commit()
                         QMessageBox.information(self, "Information", "디바이스가 등록되었습니다\n\n다음 실행 시 추가적인 로그인이 필요하지 않습니다")
                         msg = (
                             "[ New Device Added! ]\n\n"
-                            f"User: {user_name}\n"
-                            f"Device: {current_device}\n"
-                            f"Location: {self.user_location()}"
+                            f"User: {userName}\n"
+                            f"Device: {currentDevice}\n"
+                            f"Location: {self.getUserLocation()}"
                         )
-                        self.send_pushOver(msg, self.admin_pushoverkey)
-                        self.Manager_User_obj.device_init_table()
+                        self.sendPushOver(msg, self.admin_pushoverkey)
+                        self.managerUserObj.initDeviceTable()
                         return True
                     else:
                         QMessageBox.information(self, "Information", "디바이스가 등록되지 않았습니다\n\n다음 실행 시 추가적인 로그인이 필요합니다")
@@ -540,68 +540,68 @@ class MainWindow(QMainWindow):
                     QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
                     return False
         except Exception as e:
-            self.close_bootscreen()
+            self.closeBootscreen()
             QMessageBox.critical(self, "Error", f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
             QMessageBox.information(self, "Information",
                                     f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
             return False
 
-    def update_program(self, sc=False, auto=False):
+    def updateProgram(self, sc=False, auto=False):
         try:
             if platform.system() != "Windows":
                 return
-            def download_file(download_url, local_filename):
+            def downloadFile(download_url, local_filename):
                 response = requests.get(download_url, stream=True)
-                total_size = int(response.headers.get('content-length', 0))  # 파일의 총 크기 가져오기
-                chunk_size = 8192  # 8KB씩 다운로드
-                downloaded_size = 0  # 다운로드된 크기 초기화
+                totalSize = int(response.headers.get('content-length', 0))  # 파일의 총 크기 가져오기
+                chunkSize = 8192  # 8KB씩 다운로드
+                downloadSize = 0  # 다운로드된 크기 초기화
 
                 with open(local_filename, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=chunk_size):
+                    for chunk in response.iter_content(chunkSize=chunkSize):
                         if chunk:  # 빈 데이터 확인
                             f.write(chunk)
-                            downloaded_size += len(chunk)
-                            percent_complete = (downloaded_size / total_size) * 100
-                            print(f"\r{self.new_version} Download: {percent_complete:.0f}%", end='')  # 퍼센트 출력
+                            downloadSize += len(chunk)
+                            percent_complete = (downloadSize / totalSize) * 100
+                            print(f"\r{self.newVersion} Download: {percent_complete:.0f}%", end='')  # 퍼센트 출력
 
                 print("\nDownload Complete")
-                close_console()
+                closeConsole()
 
             def update_process():
-                open_console("Version Update Process")
+                openConsole("Version Update Process")
                 msg = (
                     "[ Admin Notification ]\n\n"
-                    f"{self.user} updated {current_version} -> {self.new_version}\n\n{self.user_location()}"
+                    f"{self.user} updated {currentVersion} -> {self.newVersion}\n\n{self.getUserLocation()}"
                 )
-                self.send_pushOver(msg, self.admin_pushoverkey)
-                self.user_logging(f'Program Update ({current_version} -> {self.new_version})', force=True)
+                self.sendPushOver(msg, self.admin_pushoverkey)
+                self.userLogging(f'Program Update ({currentVersion} -> {self.newVersion})', force=True)
 
                 self.printStatus("버전 업데이트 중...")
                 import subprocess
-                download_file_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.new_version}.exe")
-                download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe",
-                              download_file_path)
-                subprocess.Popen([download_file_path], shell=True)
-                close_console()
+                downloadFile_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.newVersion}.exe")
+                downloadFile(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.newVersion}.exe",
+                              downloadFile_path)
+                subprocess.Popen([downloadFile_path], shell=True)
+                closeConsole()
                 os._exit(0)
 
             # New version check
-            current_version = version.parse(self.versionNum)
-            self.new_version = version.parse(self.Manager_Board_obj.board_version_newcheck())
-            if current_version < self.new_version:
+            currentVersion = version.parse(self.versionNum)
+            self.newVersion = version.parse(self.managerBoardObj.checkNewVersion())
+            if currentVersion < self.newVersion:
                 if auto == 'auto':
-                    self.close_bootscreen()
+                    self.closeBootscreen()
                     update_process()
-                self.Manager_Board_obj.board_version_refresh()
+                self.managerBoardObj.refreshVersionBoard()
 
                 version_info_html = self.style_html + f"""
                     <table>
                         <tr><th>Item</th><th>Details</th></tr>
-                        <tr><td><b>Version Num:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][0]}</td></tr>
-                        <tr><td><b>Release Date:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][1]}</td></tr>
-                        <tr><td><b>ChangeLog:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][2]}</td></tr>
-                        <tr><td><b>Version Features:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][3]}</td></tr>
-                        <tr><td><b>Version Status:</b></td><td>{self.Manager_Board_obj.version_data_for_table[0][4]}</td></tr>
+                        <tr><td><b>Version Num:</b></td><td>{self.managerBoardObj.version_data_for_table[0][0]}</td></tr>
+                        <tr><td><b>Release Date:</b></td><td>{self.managerBoardObj.version_data_for_table[0][1]}</td></tr>
+                        <tr><td><b>ChangeLog:</b></td><td>{self.managerBoardObj.version_data_for_table[0][2]}</td></tr>
+                        <tr><td><b>Version Features:</b></td><td>{self.managerBoardObj.version_data_for_table[0][3]}</td></tr>
+                        <tr><td><b>Version Status:</b></td><td>{self.managerBoardObj.version_data_for_table[0][4]}</td></tr>
                     </table>
                 """
 
@@ -648,13 +648,13 @@ class MainWindow(QMainWindow):
                                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if reply == QMessageBox.Yes:
                         self.printStatus("버전 재설치 중...")
-                        open_console("Version Reinstall Process")
+                        openConsole("Version Reinstall Process")
                         import subprocess
-                        download_file_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.new_version}.exe")
-                        download_file(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.new_version}.exe",
-                                      download_file_path)
-                        subprocess.Popen([download_file_path], shell=True)
-                        close_console()
+                        downloadFile_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.newVersion}.exe")
+                        downloadFile(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.newVersion}.exe",
+                                      downloadFile_path)
+                        subprocess.Popen([downloadFile_path], shell=True)
+                        closeConsole()
                         os._exit(0)
                     else:
                         return
@@ -663,31 +663,31 @@ class MainWindow(QMainWindow):
             print(traceback.format_exc())
             return
 
-    def newversion_check(self):
-        current_version = version.parse(self.versionNum)
-        self.new_version = version.parse(self.Manager_Board_obj.board_version_newcheck())
+    def checkNewVersion(self):
+        currentVersion = version.parse(self.versionNum)
+        self.newVersion = version.parse(self.managerBoardObj.checkNewVersion())
         print("Done")
-        if current_version < self.new_version:
+        if currentVersion < self.newVersion:
             return True
         else:
             return False
 
-    def newpost_check(self):
+    def checkNewPost(self):
         print("\nV. Checking New Post... ", end='')
-        new_post_text = self.Manager_Board_obj.post_data[0][1]
-        new_post_writer = self.Manager_Board_obj.post_data[0][0]
+        new_post_text = self.managerBoardObj.post_data[0][1]
+        new_post_writer = self.managerBoardObj.post_data[0][0]
         old_post_text = self.SETTING['OldPostTitle']
         print("Done")
         if new_post_text == old_post_text:
             return False
         elif old_post_text == 'default':
-            self.update_settings('OldPostTitle', new_post_text)
+            self.updateSettings('OldPostTitle', new_post_text)
             return False
         elif new_post_text != old_post_text and self.user != new_post_writer:
-            self.update_settings('OldPostTitle', new_post_text)
+            self.updateSettings('OldPostTitle', new_post_text)
             return True
 
-    def check_internet_connection(self):
+    def checkNetwork(self):
         while True:
             try:
                 # Google을 기본으로 확인 (URL은 다른 사이트로 변경 가능)
@@ -695,7 +695,7 @@ class MainWindow(QMainWindow):
                 return response.status_code == 200
             except requests.ConnectionError:
                 self.printStatus()
-                self.close_bootscreen()
+                self.closeBootscreen()
                 reply = QMessageBox.question(self, "Internet Connection Error",
                                              "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -707,45 +707,45 @@ class MainWindow(QMainWindow):
     def display(self, index):
         if index != 6:
             self.stackedWidget.setCurrentIndex(index)
-        # self.update_program()
+        # self.updateProgram()
         # DATABASE
         if index == 0:
-            self.Manager_Database_obj.database_shortcut_setting()
+            self.managerDatabaseObj.setDatabaseShortcut()
             if self.SETTING['DB_Refresh'] == 'default':
-                self.Manager_Database_obj.database_refresh_DB()
+                self.managerDatabaseObj.refreshDB()
             self.printStatus(f"{self.fullstorage} GB / 2 TB")
         # CRAWLER
         elif index == 1:
-            self.shortcut_initialize()
+            self.initShortcutialize()
             self.printStatus(f"활성 크롤러 수: {self.activate_crawl}")
         # ANALYSIS
         elif index == 2:
             self.printStatus()
-            self.Manager_Analysis_obj.analysis_shortcut_setting()
+            self.managerAnalysisObj.analysis_shortcut_setting()
         # BOARD
         elif index == 3:
-            self.Manager_Board_obj.board_shortcut_setting()
+            self.managerBoardObj.setBoardShortcut()
             self.printStatus()
         # WEB
         elif index == 4:
-            self.shortcut_initialize()
+            self.initShortcutialize()
             self.printStatus()
-            #self.Manager_Web_obj.web_open_webbrowser('https://knpu.re.kr', self.Manager_Web_obj.web_web_layout)
+            #self.managerWebObj.web_open_webbrowser('https://knpu.re.kr', self.managerWebObj.web_web_layout)
         # USER
         elif index == 5:
             self.printStatus()
-            self.Manager_User_obj.user_shortcut_setting()
+            self.managerUserObj.user_shortcut_setting()
 
         elif index == 6:
-            self.user_settings()
+            self.userSettings()
             previous_index = self.stackedWidget.currentIndex()  # 현재 활성 화면의 인덱스
             self.listWidget.setCurrentRow(previous_index)  # 선택 상태를 이전 인덱스로 변경
 
         gc.collect()
 
-    def filefinder_maker(self, main_window):
+    def makeFileFinder(self, main_window):
         class EmbeddedFileDialog(QFileDialog):
-            def __init__(self, parent=None, default_directory=None):
+            def __init__(self, parent=None, localDirectory=None):
                 super().__init__(parent)
                 self.setFileMode(QFileDialog.ExistingFiles)
                 self.setOptions(QFileDialog.DontUseNativeDialog)
@@ -756,8 +756,8 @@ class MainWindow(QMainWindow):
                 self.rejected.connect(self.on_rejected)
                 self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
                 self.main = parent
-                if default_directory:
-                    self.setDirectory(default_directory)
+                if localDirectory:
+                    self.setDirectory(localDirectory)
                 self.setup_double_click_event()
 
                 # QTreeView 찾아서 헤더뷰 리사이즈 모드 설정
@@ -824,11 +824,11 @@ class MainWindow(QMainWindow):
             def reject(self):
                 self.show()
 
-        return EmbeddedFileDialog(self, self.default_directory)
+        return EmbeddedFileDialog(self, self.localDirectory)
 
     #############################################################################
 
-    def update_settings(self, option_key, new_value):
+    def updateSettings(self, option_key, new_value):
         try:
             self.settings.setValue(option_key, new_value)  # 설정값 업데이트
             return True
@@ -836,13 +836,13 @@ class MainWindow(QMainWindow):
             print(traceback.format_exc())
             return False
 
-    def user_logging(self, text='', booting=False, force=False):
+    def userLogging(self, text='', booting=False, force=False):
         try:
             if (self.user == 'admin' and self.CONFIG['Logging'] == 'Off') or (self.CONFIG['Logging'] == 'Off' and force == False):
                 return
-            self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
+            self.mySQLObj.connectDB(f'{self.user}_db')  # userDB 접속
             if booting == True:
-                latest_record = self.mySQL_obj.TableLastRow('manager_record')  # log의 마지막 행 불러옴
+                latest_record = self.mySQLObj.TableLastRow('manager_record')  # log의 마지막 행 불러옴
                 # 'Date' 열을 datetime 형식으로 변환
                 if latest_record != ():  # 테이블에 데이터가 있는 경우
                     # 테이블의 가장 마지막 행 데이터를 불러옴
@@ -857,55 +857,55 @@ class MainWindow(QMainWindow):
 
                 # 가장 최근 로그 날짜와 현재 날짜와 같은 경우
                 if latest_date != today or latest_date is None:
-                    self.mySQL_obj.insertToTable('manager_record', [[str(datetime.now().date()), '', '', '']])
-                    self.mySQL_obj.commit()
+                    self.mySQLObj.insertToTable('manager_record', [[str(datetime.now().date()), '', '', '']])
+                    self.mySQLObj.commit()
 
             self.printStatus("Loading...")
             text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
-            self.mySQL_obj.updateTableCell('manager_record', -1, 'Log', text, add=True)
+            self.mySQLObj.updateTableCell('manager_record', -1, 'Log', text, add=True)
             self.printStatus()
         except Exception as e:
             print(traceback.format_exc())
 
-    def user_bugging(self, text=''):
+    def userBugging(self, text=''):
         try:
             self.printStatus("Loading...")
-            self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
+            self.mySQLObj.connectDB(f'{self.user}_db')  # userDB 접속
             text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
-            self.mySQL_obj.updateTableCell('manager_record', -1, 'Bug', text, add=True)
+            self.mySQLObj.updateTableCell('manager_record', -1, 'Bug', text, add=True)
             self.printStatus()
         except Exception as e:
             print(traceback.format_exc())
 
-    def user_settings(self):
+    def userSettings(self):
         try:
-            self.user_logging(f'User Setting')
+            self.userLogging(f'User Setting')
             dialog = Manager_Setting(self)
             if dialog.exec_() == QDialog.Accepted:
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
                 self.printStatus("설정 반영 중...")
                 QApplication.instance().setStyleSheet(theme_option[self.SETTING['Theme']])
-                self.update_style_html()
+                self.updateStyleHtml()
 
                 if self.SETTING['MyDB'] != 'default' or self.SETTING['DBKeywordSort'] != 'default':
-                    self.Manager_Database_obj.database_refresh_DB()
+                    self.managerDatabaseObj.refreshDB()
                 self.printStatus()
 
         except Exception as e:
-            self.program_bug_log(traceback.format_exc())
+            self.programBugLog(traceback.format_exc())
 
-    def user_location(self, detail=False):
+    def getUserLocation(self, detail=False):
         try:
             response = requests.get("https://ipinfo.io")
             data = response.json()
-            returnData = f"{self.version} | {self.user_device} | {data.get("ip")} | {data.get("city")}"
+            returnData = f"{self.version} | {self.userDevice} | {data.get("ip")} | {data.get("city")}"
             if detail == True:
                 returnData = f"{data.get("ip")} | {data.get("city")} | {data.get('region')} | {data.get('country')} | {data.get('loc')} | {self.versionNum}"
             return returnData
         except requests.RequestException as e:
             return ""
 
-    def shortcut_initialize(self):
+    def initShortcutialize(self):
         shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrle, self.ctrlr, self.ctrlk, self.ctrlm, self.ctrlc,
                      self.cmdd, self.cmds, self.cmdv, self.cmda, self.cmdl, self.cmde, self.cmdr, self.cmdk, self.cmdm, self.cmdc]
         for shortcut in shortcuts:
@@ -915,7 +915,7 @@ class MainWindow(QMainWindow):
                 # 연결된 슬롯이 없는 경우 발생하는 에러를 무시
                 pass
 
-    def update_DB(self):
+    def updateDB(self):
         def sort_currentDB_by_keyword(currentDB):
             # keyword를 기준으로 정렬 (따옴표 제거 후 비교)
             sorted_data = sorted(
@@ -939,8 +939,8 @@ class MainWindow(QMainWindow):
 
             return currentDB
 
-        self.mySQL_obj.connectDB('crawler_db')
-        db_list = self.mySQL_obj.TableToList('db_list')
+        self.mySQLObj.connectDB('crawler_db')
+        db_list = self.mySQLObj.TableToList('db_list')
 
         currentDB = {
             'DBlist': [],
@@ -992,7 +992,7 @@ class MainWindow(QMainWindow):
             self.fullstorage += float(size)
             if size == 0:
                 try:
-                    size = self.mySQL_obj.showDBSize(DB_name)
+                    size = self.mySQLObj.showDBSize(DB_name)
                     if size is None:
                         size = (0, 0)
                 except:
@@ -1036,7 +1036,7 @@ class MainWindow(QMainWindow):
 
         return currentDB
 
-    def table_maker(self, widgetname, data, column, right_click_function=None, popupsize=None):
+    def makeTable(self, widgetname, data, column, right_click_function=None, popupsize=None):
         def show_details(item):
             # 이미 창이 열려있는지 확인
             if hasattr(self, "details_dialog") and self.details_dialog.isVisible():
@@ -1103,23 +1103,23 @@ class MainWindow(QMainWindow):
                 lambda pos: right_click_function(widgetname.rowAt(pos.y()))
             )
 
-    def table_view(self, dbname, tablename, popupsize=None):
+    def viewTable(self, dbname, tablename, popupsize=None):
         class SingleTableWindow(QMainWindow):
-            def __init__(self, parent=None, target_db=None, target_table=None, popupsize=None):
+            def __init__(self, parent=None, targetDB=None, target_table=None, popupsize=None):
                 super(SingleTableWindow, self).__init__(parent)
-                self.setWindowTitle(f"{target_db} -> {target_table}")
+                self.setWindowTitle(f"{targetDB} -> {target_table}")
                 self.setGeometry(100, 100, 1600, 1200)
 
                 self.parent = parent  # 부모 객체 저장
-                self.target_db = target_db  # 대상 데이터베이스 이름 저장
+                self.targetDB = targetDB  # 대상 데이터베이스 이름 저장
                 self.target_table = target_table  # 대상 테이블 이름 저장
 
                 self.popupsize = popupsize
 
-                self.central_widget = QWidget(self)
-                self.setCentralWidget(self.central_widget)
+                self.centralWidget = QWidget(self)
+                self.setCentralWidget(self.centralWidget)
 
-                self.layout = QVBoxLayout(self.central_widget)
+                self.layout = QVBoxLayout(self.centralWidget)
 
                 # 상단 버튼 레이아웃
                 self.button_layout = QHBoxLayout()
@@ -1144,9 +1144,9 @@ class MainWindow(QMainWindow):
                 # 버튼 레이아웃을 메인 레이아웃에 추가
                 self.layout.addLayout(self.button_layout)
 
-                # target_db와 target_table이 주어지면 테이블 뷰를 초기화
-                if target_db is not None and target_table is not None:
-                    self.init_table_view(parent.mySQL_obj, target_db, target_table)
+                # targetDB와 target_table이 주어지면 테이블 뷰를 초기화
+                if targetDB is not None and target_table is not None:
+                    self.init_viewTable(parent.mySQLObj, targetDB, target_table)
 
             def closeWindow(self):
                 self.close()  # 창 닫기
@@ -1158,10 +1158,10 @@ class MainWindow(QMainWindow):
                 self.closeWindow()
                 event.accept()  # 창 닫기 이벤트 허용
 
-            def init_table_view(self, mySQL_obj, target_db, target_table):
-                # target_db에 연결
-                mySQL_obj.connectDB(target_db)
-                tableDF = mySQL_obj.TableToDataframe(target_table)
+            def init_viewTable(self, mySQLObj, targetDB, target_table):
+                # targetDB에 연결
+                mySQLObj.connectDB(targetDB)
+                tableDF = mySQLObj.TableToDataframe(target_table)
 
                 tableDF = tableDF.iloc[::-1].reset_index(drop=True)
 
@@ -1170,14 +1170,14 @@ class MainWindow(QMainWindow):
                                    tableDF.itertuples(index=False, name=None)]
 
                 # 테이블 위젯 생성
-                new_table = QTableWidget(self.central_widget)
+                new_table = QTableWidget(self.centralWidget)
                 self.layout.addWidget(new_table)
 
                 # column 정보를 리스트로 저장
                 columns = list(tableDF.columns)
                 columns.pop(0)
-                # table_maker 함수를 호출하여 테이블 설정
-                self.parent.table_maker(new_table, self.tuple_list, columns, popupsize=self.popupsize)
+                # makeTable 함수를 호출하여 테이블 설정
+                self.parent.makeTable(new_table, self.tuple_list, columns, popupsize=self.popupsize)
 
         try:
             def destory_table():
@@ -1188,9 +1188,9 @@ class MainWindow(QMainWindow):
             self.DBtable_window.show()
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def pw_check(self, admin=False, string=""):
+    def checkPassword(self, admin=False, string=""):
         while True:
             input_dialog = QInputDialog(self)
             if admin == False:
@@ -1215,7 +1215,7 @@ class MainWindow(QMainWindow):
                 # 오류 메시지 표시
                 QMessageBox.warning(self, "Invalid Input", "영어로만 입력 가능합니다")
 
-    def update_style_html(self):
+    def updateStyleHtml(self):
         if self.SETTING['Theme'] != 'default':
             self.style_html = f"""
                         <style>
@@ -1288,7 +1288,7 @@ class MainWindow(QMainWindow):
 
     def printStatus(self, msg=''):
         for i in range(3):
-            self.right_label.setText(msg)
+            self.rightLabel.setText(msg)
             QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
 
     def openFileExplorer(self, path):
@@ -1300,7 +1300,7 @@ class MainWindow(QMainWindow):
         else:  # Linux and other OS
             os.system(f"xdg-open '{path}'")
         
-    def program_bug_log(self, text):
+    def programBugLog(self, text):
         print(text)
         self.printStatus("오류 발생")
         if self.user == 'admin':
@@ -1308,12 +1308,12 @@ class MainWindow(QMainWindow):
         else:
             #QMessageBox.critical(self, "Error", f"오류가 발생했습니다")
             QMessageBox.critical(self, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
-        log_to_text(f"Exception: {text}")
-        self.user_bugging(text)
+        logToText(f"Exception: {text}")
+        self.userBugging(text)
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
                                      QMessageBox.Yes)
         if reply == QMessageBox.Yes:
-            self.Manager_Board_obj.board_add_bug()
+            self.managerBoardObj.addBug()
         self.printStatus()
 
     def closeEvent(self, event):
@@ -1323,17 +1323,17 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.Yes:
             try:
                 if self.CONFIG['Logging'] == 'On' and self.user != 'admin':
-                    self.user_logging('Shutdown', force=True)
-                    self.mySQL_obj.connectDB(f'{self.user}_db')  # userDB 접속
-                    self.mySQL_obj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
-                self.temp_cleanup()
+                    self.userLogging('Shutdown', force=True)
+                    self.mySQLObj.connectDB(f'{self.user}_db')  # userDB 접속
+                    self.mySQLObj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
+                self.cleanUpTemp()
             except Exception as e:
                 print(traceback.format_exc())
             event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
         else:
             event.ignore()
 
-    def temp_cleanup(self):
+    def cleanUpTemp(self):
         if platform.system() != "Windows":
             return
         try:
@@ -1354,21 +1354,21 @@ class MainWindow(QMainWindow):
 
             pattern = re.compile(r"BIGMACLAB_MANAGER_(\d+\.\d+\.\d+)\.exe")
             exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER')
-            current_version = version.Version(self.versionNum)
+            currentVersion = version.Version(self.versionNum)
 
             for file_name in os.listdir(exe_file_path):
                 match = pattern.match(file_name)
                 if match:
                     file_version = version.Version(match.group(1))  # 버전 추출 및 비교를 위해 Version 객체로 변환
                     # 현재 버전을 제외한 파일 삭제
-                    if file_version != current_version:
+                    if file_version != currentVersion:
                         file_path = os.path.join(exe_file_path, file_name)
                         os.remove(file_path)
 
         except Exception as e:
             print(e)
 
-    def LLM_generate(self, query, model):
+    def generateLLM(self, query, model):
         if model == 'ChatGPT':
             try:
                 # OpenAI 클라이언트 초기화
@@ -1422,29 +1422,29 @@ class MainWindow(QMainWindow):
 
     #################### DEVELOPER MODE ###################
 
-    def developer_mode(self, toggle):
+    def developerMode(self, toggle):
         try:
             if toggle == True:
-                open_console("DEVELOPER MODE")
-                toggle_logging(True)
+                openConsole("DEVELOPER MODE")
+                toggleLogging(True)
                 print(log_text)
             else:
-                close_console()
-                toggle_logging(False)
+                closeConsole()
+                toggleLogging(False)
         except:
             pass
 
-    def install_event_filter_all_widgets(self, widget):
+    def installEventFilter(self, widget):
         """재귀적으로 모든 자식 위젯에 EventLogger를 설치하는 함수"""
-        widget.installEventFilter(self.event_logger)
+        widget.installEventFilter(self.eventLogger)
         for child in widget.findChildren(QWidget):
-            child.installEventFilter(self.event_logger)
+            child.installEventFilter(self.eventLogger)
 
 # 로그 출력 제어 변수와 로그 저장 변수
 logging_enabled = False  # 콘솔 출력 여부를 조절
 log_text = ""  # 모든 로그 메시지를 저장하는 변수
 
-def setup_logging():
+def setUpLogging():
     """로그 설정 초기화"""
     logging.basicConfig(
         level=logging.INFO,
@@ -1454,7 +1454,7 @@ def setup_logging():
     logging.getLogger().setLevel(logging.CRITICAL)  # 초기에는 콘솔 출력 방지
 
 
-def toggle_logging(enable):
+def toggleLogging(enable):
     """
     콘솔에 로그를 출력할지 여부를 결정.
     인자로 True 또는 False를 받아 INFO 레벨과 CRITICAL 레벨로 전환.
@@ -1464,7 +1464,7 @@ def toggle_logging(enable):
     logging.getLogger().setLevel(logging.DEBUG if logging_enabled else logging.CRITICAL)
 
 
-def log_to_text(message):
+def logToText(message):
     """
     모든 로그 메시지를 log_text에 저장하고, logging_enabled가 True일 경우 콘솔에도 출력.
     """
@@ -1475,32 +1475,32 @@ def log_to_text(message):
         print(timestamped_message)  # logging_enabled가 True일 때만 콘솔에 출력
 
 
-# 예외 발생 시 log_to_text에 기록하는 함수
-def exception_handler(exc_type, exc_value, exc_traceback):
+# 예외 발생 시 logToText에 기록하는 함수
+def exceptionHandler(exc_type, exc_value, exc_traceback):
     error_message = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    log_to_text(f"Exception: {error_message}")
+    logToText(f"Exception: {error_message}")
 
-# 전역 예외 처리기를 설정하여 모든 예외를 log_to_text에 기록
-sys.excepthook = exception_handler
+# 전역 예외 처리기를 설정하여 모든 예외를 logToText에 기록
+sys.excepthook = exceptionHandler
 
 class EventLogger(QObject):
     """이벤트 로그를 생성하고 log_text에 모든 로그를 쌓아두는 클래스"""
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.MouseButtonPress:
-            log_to_text(f"MouseButtonPress on {obj}")
+            logToText(f"MouseButtonPress on {obj}")
         elif event.type() == QEvent.KeyPress:
-            log_to_text(f"KeyPress: {event.key()} on {obj}")
+            logToText(f"KeyPress: {event.key()} on {obj}")
         elif event.type() == QEvent.FocusIn:
-            log_to_text(f"FocusIn on {obj}")
+            logToText(f"FocusIn on {obj}")
         elif event.type() == QEvent.FocusOut:
-            log_to_text(f"FocusOut on {obj}")
+            logToText(f"FocusOut on {obj}")
         elif event.type() == QEvent.MouseButtonDblClick:
-            log_to_text(f"Double-click on {obj}")
+            logToText(f"Double-click on {obj}")
         elif event.type() == QEvent.Resize:
-            log_to_text(f"{obj} resized")
+            logToText(f"{obj} resized")
         elif event.type() == QEvent.Close:
-            log_to_text(f"{obj} closed")
+            logToText(f"{obj} closed")
 
         return super().eventFilter(obj, event)
 
@@ -1508,5 +1508,5 @@ class EventLogger(QObject):
 
 if __name__ == '__main__':
     # 메인 윈도우 실행
-    application = MainWindow(splash_dialog)
+    application = MainWindow(splashDialog)
     sys.exit(app.exec_())

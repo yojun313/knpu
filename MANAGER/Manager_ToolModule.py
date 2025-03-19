@@ -11,7 +11,7 @@ import pandas as pd
 class ToolModule:
     def __init__(self):
         self.recognizer = sr.Recognizer()
-    def decrypt_process(self):
+    def decryptProcess(self):
         current_position = os.path.dirname(__file__)
 
         # 암호화 키 로드
@@ -47,7 +47,7 @@ class ToolModule:
         if os.path.exists(os.path.join(current_position, 'decrypted_env')):
             os.remove(os.path.join(current_position, 'decrypted_env'))
 
-    def send_pushOver(self, msg, user_key, image_path=False):
+    def sendPushOver(self, msg, user_key, image_path=False):
         app_key_list = ["a22qabchdf25zzkd1vjn12exjytsjx"]
 
         for app_key in app_key_list:
@@ -73,7 +73,7 @@ class ToolModule:
             except:
                 continue
 
-    def send_email(self, receiver, title, text):
+    def sendEmail(self, receiver, title, text):
         sender = "knpubigmac2024@gmail.com"
         MailPassword = 'vygn nrmh erpf trji'
 
@@ -93,7 +93,7 @@ class ToolModule:
             server.login(sender, MailPassword)
             server.sendmail(sender, receiver, msg.as_string())
 
-    def csvReader(self, csvPath):
+    def readCSV(self, csvPath):
         csv_data = pd.read_csv(csvPath, low_memory=False, index_col=0)
         csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
         return csv_data

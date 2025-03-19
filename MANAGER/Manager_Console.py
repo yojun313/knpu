@@ -11,7 +11,7 @@ class SMALL_RECT(ctypes.Structure):
 
 original_stdout = sys.stdout  # 기존 stdout 저장
 
-def open_console(msg=''):
+def openConsole(msg=''):
     global original_stdout
     try:
         if platform.system() != 'Windows':
@@ -30,7 +30,7 @@ def open_console(msg=''):
         sys.stdout = original_stdout  # 에러 발생 시 stdout 복구
         print(e)
 
-def close_console():
+def closeConsole():
     global original_stdout
     try:
         if platform.system() != 'Windows':
