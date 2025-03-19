@@ -31,7 +31,7 @@ class ToolModule:
             token_path          = crawler_folder_path
             computer_name       = "Yojun's MacBook Pro"
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
-            mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
+            mySQLObj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
                
         elif socket.gethostname() == "DESKTOP-502IMU5":
             crawler_folder_path = 'C:/BIGMACLAB/CRAWLER'
@@ -39,7 +39,7 @@ class ToolModule:
             token_path          = crawler_folder_path
             computer_name       = 'HP OMEN'
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
-            mySQL_obj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
+            mySQLObj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
 
         elif socket.gethostname() == "BIGMACLAB-Z8":
             crawler_folder_path = 'D:/BIGMACLAB/CRAWLER'
@@ -47,7 +47,7 @@ class ToolModule:
             token_path          = crawler_folder_path
             computer_name       = 'HP Z8'
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
-            mySQL_obj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
+            mySQLObj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
         
         elif socket.gethostname() == "BigMacServer":
             crawler_folder_path = "D:/BIGMACLAB/CRAWLER"
@@ -55,7 +55,7 @@ class ToolModule:
             token_path = crawler_folder_path
             computer_name = "BIGMACLAB SERVER"
             RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
-            mySQL_obj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
+            mySQLObj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
 
         returnData = {
             'crawler_folder_path': crawler_folder_path, 
@@ -63,7 +63,7 @@ class ToolModule:
             'token_path' : token_path, 
             'computer_name' : computer_name, 
             'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath, 
-            'MYSQL': mySQL_obj
+            'MYSQL': mySQLObj
         }
         return returnData
     
@@ -102,7 +102,7 @@ class ToolModule:
 
         return {'Email': email, 'PushOver': pushover}
 
-    def send_pushOver(self, msg, user_key):
+    def sendPushOver(self, msg, user_key):
         app_key_list  = ["a273soeggkmq1eafdyghexusve42bq", "a39cudwdti3ap97kax9pmvp6gdm2b9"]
 
         for app_key in app_key_list:
@@ -177,4 +177,4 @@ class ToolModule:
 
 if __name__ == '__main__':
     ToolModule = ToolModule()
-    mySQL_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='User_DB')
+    mySQLObj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='User_DB')
