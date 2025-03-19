@@ -301,9 +301,6 @@ class Crawler(CrawlerModule):
                 self.mySQL.connectDB(self.DBname)
                 self.mySQL.DataframeToTable(token_df, 'token_' + table)
 
-
-
-
             self.clear_screen()
             print('\r업로드 및 알림 전송 중...', end='')
 
