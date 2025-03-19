@@ -447,7 +447,7 @@ class Manager_Analysis:
                     self.checkbox_group = []
 
                     self.combobox = QComboBox()
-                    self.combobox.addItems(['Naver News', 'Naver Blog', 'Naver Cafe'])
+                    self.combobox.addItems(['Naver News', 'Naver Blog', 'Naver Cafe', 'Google YouTube'])
                     self.combobox.currentIndexChanged.connect(self.update_checkboxes)
 
                     layout.addWidget(QLabel('Choose Data Type:'))
@@ -476,8 +476,10 @@ class Manager_Analysis:
                         options = ['article 분석', 'reply 분석']
                     elif self.combobox.currentText() == 'Naver Cafe':
                         options = ['article 분석', 'reply 분석']
-                    #elif self.combobox.currentText() == 'YouTube':
-                    #    options = ['article 분석', 'reply 분석', 'rereply 분석']
+                    elif self.combobox.currentText() == 'Naver Cafe':
+                        options = ['article 분석', 'reply 분석']
+                    elif self.combobox.currentText() == 'Google YouTube':
+                        options = ['article 분석', 'reply 분석', 'rereply 분석']
 
                     for option in options:
                         checkbox = QCheckBox(option)
@@ -560,6 +562,12 @@ class Manager_Analysis:
                     self.dataprocess_obj.NaverCafeArticleAnalysis(csv_data, csv_path)
                 case ['reply 분석', 'Naver Cafe']:
                     self.dataprocess_obj.NaverCafeReplyAnalysis(csv_data, csv_path)
+                case ['article 분석', 'Google YouTube']:
+                    self.dataprocess_obj.YouTubeArticleAnalysis(csv_data, csv_path)
+                case ['reply 분석', 'Google YouTube']:
+                    self.dataprocess_obj.YouTubeReplyAnalysis(csv_data, csv_path)
+                case ['rereply 분석', 'Google YouTube']:
+                    self.dataprocess_obj.YouTubeRereplyAnalysis(csv_data, csv_path)
                 case []:
                     if self.main.SETTING['ProcessConsole'] == 'default':
                         close_console()

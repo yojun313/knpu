@@ -1,42 +1,22 @@
-import requests
-from user_agent import generate_navigator
-import json
+# OpenAI 클라이언트 초기화
+gpt_api_key = "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"
+from openai import OpenAI
 
-newsURL = "https://n.news.naver.com/mnews/article/comment/015/0003164210?sid=102"
-headers = {"User-agent":generate_navigator()['user_agent'], "referer":newsURL}
-def ReplyUsername(oid, aid, commentNo):
-    # API 엔드포인트
-    url = "https://apis.naver.com/commentBox/cbox/web_naver_user_info_jsonp.json"
-    # 요청 파라미터
-    params = {
-        "ticket": "news",
-        "templateId": "default_society",
-        "pool": "cbox5",
-        "lang": "ko",
-        "country": "KR",
-        "objectId": f'news{oid},{aid}',
-        "categoryId": "",
-        "pageSize": 20,
-        "indexSize": 10,
-        "groupId": "",
-        "listType": "user",
-        "pageType": "more",
-        "commentNo": commentNo,
-        "targetUserInKey": "",
-        "_": "1739271277330"
-    }
+query = "hello"
+client = OpenAI(api_key=gpt_api_key)
 
+# 모델 이름 수정: gpt-4-turbo
+model = "gpt-4-turbo"
 
-    # GET 요청 보내기
-    response = requests.get(url, params=params, headers=headers).text
-    res = '{' + response.replace("_callback(", "")[:-2].split("{", 1)[-1]
-    data = json.loads(res)
+# ChatGPT API 요청
+response = client.chat.completions.create(
+    model=model,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": query},
+    ]
+)
 
-    nickname   = data['result']['user']['nickname']
-    commentCnt = data['result']['commentUserStats']['commentCount']
-    replyCnt   = data['result']['commentUserStats']['replyCount']
-    likecnt    = data['result']['commentUserStats']['sympathyCount']
-
-    return [nickname, commentCnt, replyCnt, likecnt]
-
-ReplyUsername('015', '0003164210', 62344684)
+# 응답 메시지 내용 추출
+content = response.choices[0].message.content
+print(content)

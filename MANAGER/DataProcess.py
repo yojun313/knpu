@@ -949,6 +949,878 @@ class DataProcess:
         with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
+    def YouTubeArticleAnalysis(self, data, file_path):
+        import os
+        import pandas as pd
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        from PyQt5.QtWidgets import QMessageBox
+
+        # 1) 필수 컬럼 검증
+        if 'YouTube Channel' not in data.columns:
+            QMessageBox.warning(self.main, "Warning", "YouTube Article CSV 형태와 일치하지 않습니다.")
+            return
+
+        # 2) 날짜, 숫자 컬럼 변환
+        data['Article Date'] = pd.to_datetime(data['Article Date'], errors='coerce')
+
+        # 'Article ViewCount', 'Article Like', 'Article ReplyCount' -> 숫자형으로
+        data.rename(columns={
+            'Article ViewCount': 'views',
+            'Article Like': 'likes',
+            'Article ReplyCount': 'comments_count'
+        }, inplace=True)
+
+        for col in ['views', 'likes', 'comments_count']:
+            data[col] = pd.to_numeric(data[col], errors='coerce').fillna(0)
+
+        # 3) 결과 저장용 디렉토리 생성
+        output_dir = os.path.join(
+            os.path.dirname(file_path),
+            os.path.basename(file_path).replace('.csv', '') + '_analysis'
+        )
+        csv_output_dir = os.path.join(output_dir, "csv_files")
+        graph_output_dir = os.path.join(output_dir, "graphs")
+        os.makedirs(csv_output_dir, exist_ok=True)
+        os.makedirs(graph_output_dir, exist_ok=True)
+
+        # --------------------------------------------------------------------------------
+        # 4) 기본 통계
+        # --------------------------------------------------------------------------------
+        basic_stats = data.describe(include='all')
+
+        # --------------------------------------------------------------------------------
+        # 5) 월별, 일별, 주별로 그룹화하기 위해 날짜가 유효한 데이터만 사용
+        # --------------------------------------------------------------------------------
+        valid_data = data.dropna(subset=['Article Date']).copy()
+
+        # --------------------------------------------------------------------------------
+        # 5-1) 월별 분석
+        # --------------------------------------------------------------------------------
+        monthly_data = valid_data.groupby(valid_data['Article Date'].dt.to_period("M")).agg(
+            video_count=('Article Date', 'count'),
+            views=('views', 'sum'),
+            likes=('likes', 'sum'),
+            comments_count=('comments_count', 'sum')
+        ).reset_index()
+        monthly_data['Article Date'] = monthly_data['Article Date'].dt.to_timestamp()  # Period -> Timestamp 변환
+
+        # --------------------------------------------------------------------------------
+        # 5-2) 일별 분석
+        # --------------------------------------------------------------------------------
+        daily_data = valid_data.groupby(valid_data['Article Date'].dt.to_period("D")).agg(
+            video_count=('Article Date', 'count'),
+            views=('views', 'sum'),
+            likes=('likes', 'sum'),
+            comments_count=('comments_count', 'sum')
+        ).reset_index()
+        daily_data['Article Date'] = daily_data['Article Date'].dt.to_timestamp()
+
+        # --------------------------------------------------------------------------------
+        # 5-3) 주별 분석 (매주 일요일 기준 W-SUN)
+        # --------------------------------------------------------------------------------
+        weekly_data = valid_data.groupby(valid_data['Article Date'].dt.to_period("W-SUN")).agg(
+            video_count=('Article Date', 'count'),
+            views=('views', 'sum'),
+            likes=('likes', 'sum'),
+            comments_count=('comments_count', 'sum')
+        ).reset_index()
+        weekly_data['Article Date'] = weekly_data['Article Date'].dt.to_timestamp()
+
+        # --------------------------------------------------------------------------------
+        # 6) 요일별 분석
+        # --------------------------------------------------------------------------------
+        valid_data['DayOfWeek'] = valid_data['Article Date'].dt.day_name()
+        dow_analysis = valid_data.groupby('DayOfWeek').agg(
+            video_count=('Article Date', 'count'),
+            views=('views', 'sum'),
+            likes=('likes', 'sum'),
+            comments_count=('comments_count', 'sum')
+        ).reset_index()
+
+        # --------------------------------------------------------------------------------
+        # 7) 채널별 분석 (상위 10개)
+        # --------------------------------------------------------------------------------
+        top_10_channels = data['YouTube Channel'].value_counts().head(10).index
+        channel_analysis = data[data['YouTube Channel'].isin(top_10_channels)].groupby('YouTube Channel').agg(
+            video_count=('Article Date', 'count'),
+            total_views=('views', 'sum'),
+            total_likes=('likes', 'sum'),
+            total_comments=('comments_count', 'sum')
+        ).reset_index()
+
+        # --------------------------------------------------------------------------------
+        # 8) 상위 10개 영상(Article Title) 분석
+        # --------------------------------------------------------------------------------
+        top_10_videos = data.sort_values('views', ascending=False).head(10)[
+            ['Article Title', 'YouTube Channel', 'views', 'likes', 'comments_count']
+        ].reset_index(drop=True)
+
+        # --------------------------------------------------------------------------------
+        # 9) 추가 지표 계산 (Like-View 비율, Comment-View 비율 등)
+        # --------------------------------------------------------------------------------
+        data['like_view_ratio'] = data.apply(
+            lambda x: x['likes'] / x['views'] if x['views'] > 0 else 0,
+            axis=1
+        )
+        data['comment_view_ratio'] = data.apply(
+            lambda x: x['comments_count'] / x['views'] if x['views'] > 0 else 0,
+            axis=1
+        )
+
+        # --------------------------------------------------------------------------------
+        # 10) 상관관계 분석 (추가 지표 포함)
+        # --------------------------------------------------------------------------------
+        numeric_columns = ['views', 'likes', 'comments_count', 'like_view_ratio', 'comment_view_ratio']
+        correlation_matrix = data[numeric_columns].corr()
+
+        # --------------------------------------------------------------------------------
+        # 11) 분석 결과 CSV 저장
+        # --------------------------------------------------------------------------------
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        monthly_data.to_csv(os.path.join(csv_output_dir, "monthly_analysis.csv"), encoding='utf-8-sig', index=False)
+        daily_data.to_csv(os.path.join(csv_output_dir, "daily_analysis.csv"), encoding='utf-8-sig', index=False)
+        weekly_data.to_csv(os.path.join(csv_output_dir, "weekly_analysis.csv"), encoding='utf-8-sig', index=False)
+        dow_analysis.to_csv(os.path.join(csv_output_dir, "day_of_week_analysis.csv"), encoding='utf-8-sig', index=False)
+        channel_analysis.to_csv(os.path.join(csv_output_dir, "channel_analysis.csv"), encoding='utf-8-sig', index=False)
+        top_10_videos.to_csv(os.path.join(csv_output_dir, "top_10_videos.csv"), encoding='utf-8-sig', index=False)
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
+
+        # --------------------------------------------------------------------------------
+        # 12) 시각화
+        # --------------------------------------------------------------------------------
+
+        # (1) 월별 추세
+        plt.figure(figsize=self.calculate_figsize(len(monthly_data)))
+        sns.lineplot(data=monthly_data, x='Article Date', y='views', label='Views')
+        sns.lineplot(data=monthly_data, x='Article Date', y='likes', label='Likes')
+        sns.lineplot(data=monthly_data, x='Article Date', y='comments_count', label='Comments')
+        plt.title('월별 조회수, 좋아요, 댓글 수 추세')
+        plt.xlabel('월')
+        plt.ylabel('합계')
+        plt.xticks(rotation=45)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "monthly_trend.png"))
+        plt.close()
+
+        # (2) 일별 추세
+        plt.figure(figsize=self.calculate_figsize(len(daily_data)))
+        sns.lineplot(data=daily_data, x='Article Date', y='views', label='Views')
+        sns.lineplot(data=daily_data, x='Article Date', y='likes', label='Likes')
+        sns.lineplot(data=daily_data, x='Article Date', y='comments_count', label='Comments')
+        plt.title('일별 조회수, 좋아요, 댓글 수 추이')
+        plt.xlabel('일자')
+        plt.ylabel('합계')
+        plt.xticks(rotation=45)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "daily_trend.png"))
+        plt.close()
+
+        # (3) 주별 추세
+        plt.figure(figsize=self.calculate_figsize(len(weekly_data)))
+        sns.lineplot(data=weekly_data, x='Article Date', y='views', label='Views')
+        sns.lineplot(data=weekly_data, x='Article Date', y='likes', label='Likes')
+        sns.lineplot(data=weekly_data, x='Article Date', y='comments_count', label='Comments')
+        plt.title('주별 조회수, 좋아요, 댓글 수 추이')
+        plt.xlabel('주(시작일 기준)')
+        plt.ylabel('합계')
+        plt.xticks(rotation=45)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "weekly_trend.png"))
+        plt.close()
+
+        # (4) 요일별 분석
+        plt.figure(figsize=self.calculate_figsize(len(dow_analysis)))
+        dow_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        dow_analysis['DayOfWeek'] = pd.Categorical(dow_analysis['DayOfWeek'], categories=dow_order, ordered=True)
+        dow_analysis_sorted = dow_analysis.sort_values('DayOfWeek')
+        sns.barplot(data=dow_analysis_sorted, x='DayOfWeek', y='views')
+        plt.title('요일별 총 조회수')
+        plt.xlabel('요일')
+        plt.ylabel('조회수')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "day_of_week_views.png"))
+        plt.close()
+
+        # (5) 상위 10개 채널(조회수 기준)
+        plt.figure(figsize=self.calculate_figsize(len(channel_analysis)))
+        channel_analysis_sorted = channel_analysis.sort_values('total_views', ascending=False)
+        sns.barplot(data=channel_analysis_sorted, x='YouTube Channel', y='total_views')
+        plt.title('상위 10개 채널별 총 조회수')
+        plt.xlabel('채널명')
+        plt.ylabel('조회수')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "top_channels_views.png"))
+        plt.close()
+
+        # (6) 상위 10개 영상(조회수 기준)
+        plt.figure(figsize=self.calculate_figsize(len(top_10_videos)))
+        sns.barplot(data=top_10_videos, x='Article Title', y='views')
+        plt.title('상위 10개 영상 (조회수 기준)')
+        plt.xlabel('영상 제목')
+        plt.ylabel('조회수')
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "top_10_videos.png"))
+        plt.close()
+
+        # (7) 히스토그램 (Like-View 비율, Comment-View 비율 분포)
+        #     - 극단값 제거(상위 1%)를 위해 quantile(0.99)을 사용해 x축 제한
+        #     - 필요 시 로그 스케일(ax.set_xscale('log'))도 고려할 수 있음.
+
+        # Like-View Ratio
+        plt.figure(figsize=self.calculate_figsize(10))
+        ax1 = sns.histplot(data=data, x='like_view_ratio', kde=True)
+        like_99 = data['like_view_ratio'].quantile(0.99)
+        ax1.set_xlim(0, like_99)  # x축 범위를 0~상위 1% 분위수까지만
+        # ax1.set_xscale('log')   # 로그 스케일 예시(주석 해제 시 사용 가능)
+
+        plt.title('Like-View Ratio Distribution')
+        plt.xlabel('Like / View 비율')
+        plt.ylabel('빈도')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "like_view_ratio_distribution.png"))
+        plt.close()
+
+        # Comment-View Ratio
+        plt.figure(figsize=self.calculate_figsize(10))
+        ax2 = sns.histplot(data=data, x='comment_view_ratio', kde=True)
+        comment_99 = data['comment_view_ratio'].quantile(0.99)
+        ax2.set_xlim(0, comment_99)
+        # ax2.set_xscale('log')  # 로그 스케일 예시
+
+        plt.title('Comment-View Ratio Distribution')
+        plt.xlabel('Comment / View 비율')
+        plt.ylabel('빈도')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "comment_view_ratio_distribution.png"))
+        plt.close()
+
+        # (8) 상관관계 히트맵
+        plt.figure(figsize=self.calculate_figsize(len(correlation_matrix), height=8))
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+        plt.title('숫자형 지표 상관관계 (추가 지표 포함)')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
+        plt.close()
+
+        # --------------------------------------------------------------------------------
+        # 13) 그래프 설명 텍스트 작성
+        # --------------------------------------------------------------------------------
+        description_text = """
+        그래프/분석 결과 설명:
+
+        1. 기본 통계 (basic_stats.csv):
+           - 데이터 전체에 대한 기초 통계량을 제공합니다.
+
+        2. 월별 트렌드 (monthly_trend.png, monthly_analysis.csv):
+           - 월별 조회수(views), 좋아요(likes), 댓글 수(comments_count)를 합산하여 선 그래프로 표시합니다.
+           - 해당 기간의 전체 추이를 한눈에 파악할 수 있습니다.
+
+        3. 일별 트렌드 (daily_trend.png, daily_analysis.csv):
+           - 일자별 조회수, 좋아요, 댓글 수 변화를 선 그래프로 확인할 수 있습니다.
+
+        4. 주별 트렌드 (weekly_trend.png, weekly_analysis.csv):
+           - 매주 (일요일 기준) 간격으로 조회수, 좋아요, 댓글 수 추이를 요약합니다.
+
+        5. 요일별 분석 (day_of_week_views.png, day_of_week_analysis.csv):
+           - 월/일 단위가 아닌 일주일 간의 특정 요일(Mon~Sun)별로 조회수, 좋아요, 댓글 수를 비교합니다.
+           - 업로드하기 좋은 요일 등을 파악할 때 활용할 수 있습니다.
+
+        6. 상위 10개 채널 (top_channels_views.png, channel_analysis.csv):
+           - 'YouTube Channel'별로 조회수, 좋아요, 댓글 수 총합을 구한 뒤, 조회수가 높은 상위 10개 채널을 바 그래프로 시각화합니다.
+
+        7. 상위 10개 영상 (top_10_videos.png, top_10_videos.csv):
+           - 조회수가 가장 높은 10개 영상의 제목, 채널명, 조회수, 좋아요, 댓글 수 정보를 표시합니다.
+
+        8. Like-View 비율 & Comment-View 비율 분포 (like_view_ratio_distribution.png, comment_view_ratio_distribution.png):
+           - 극단값(상위 1% 구간)을 잘라낸 뒤, (likes / views), (comments_count / views)의 분포를 히스토그램으로 표시합니다.
+           - 로그 스케일 변환 등으로 추가 분석 가능.
+
+        9. 상관관계 히트맵 (correlation_matrix.png, correlation_matrix.csv):
+           - views, likes, comments_count, like_view_ratio, comment_view_ratio 간의 상관관계를 나타냅니다.
+           - 예: Like-View 비율과 Comment-View 비율이 강한 양의 상관관계를 보이는지, Likes와 Views 간에 어떤 상관이 있는지 등을 시각적으로 파악할 수 있습니다.
+        """
+        description_file_path = os.path.join(output_dir, "description.txt")
+        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
+            file.write(description_text)
+
+    def YouTubeReplyAnalysis(self, data, file_path):
+        # 0) 필수 컬럼 검증
+        required_cols = [
+            "Reply Writer",  # 댓글 작성자
+            "Reply Date",  # 댓글 작성 시간
+            "Reply Text",  # 댓글 내용
+            "Reply Like",  # 댓글 좋아요 수
+            "Article URL",  # 영상 URL
+            "Article Day"  # (영상)이 올라온 날짜
+        ]
+        missing = [col for col in required_cols if col not in data.columns]
+        if missing:
+            QMessageBox.warning(
+                self.main,
+                "Warning",
+                f"필수 컬럼이 누락되었습니다: {missing}\nCSV 형태를 확인하세요."
+            )
+            return
+
+        # 1) 날짜형 / 숫자형 변환
+        # - 댓글이 작성된 날짜
+        data["Reply Date"] = pd.to_datetime(data["Reply Date"], errors="coerce")
+        # - 게시물이 올라온 날짜
+        data["Article Day"] = pd.to_datetime(data["Article Day"], errors="coerce")
+
+        # - 좋아요 수: 숫자 변환
+        data["Reply Like"] = pd.to_numeric(data["Reply Like"], errors="coerce").fillna(0)
+
+        # 2) 결과 저장용 디렉토리 생성
+        output_dir = os.path.join(
+            os.path.dirname(file_path),
+            os.path.basename(file_path).replace(".csv", "") + "_analysis"
+        )
+        csv_output_dir = os.path.join(output_dir, "csv_files")
+        graph_output_dir = os.path.join(output_dir, "graphs")
+        os.makedirs(csv_output_dir, exist_ok=True)
+        os.makedirs(graph_output_dir, exist_ok=True)
+
+        # 3) 기본 통계 (기술 통계량)
+        basic_stats = data.describe(include="all")  # 범주형/수치형 모두 기술통계
+
+        # 4) 유효한 날짜 데이터만 따로 관리
+        #    (댓글 날짜, 기사 날짜 모두 제대로 변환된 행만 분석에 활용)
+        valid_data = data.dropna(subset=["Reply Date", "Article Day"]).copy()
+
+        # 5) 날짜 차이(댓글 작성 시점 vs 게시물 업로드 시점)
+        #    -> '작성 시점 - 업로드 시점' 일수 계산
+        valid_data["ReplyTimeDelta"] = (valid_data["Reply Date"] - valid_data["Article Day"]).dt.days
+
+        #    예: ReplyTimeDelta = 0 이면 같은 날 올라온 댓글
+        #        ReplyTimeDelta = 1 이면 업로드 다음 날 달린 댓글
+        #        음수가 나오면 업로드 전 시점(잘못된 데이터)일 수도 있음
+
+        # 6) 그룹화 분석
+        #    6-1) 일별 댓글 추이
+        daily_data = valid_data.groupby(valid_data["Reply Date"].dt.to_period("D")).agg(
+            reply_count=("Reply Text", "count"),
+            total_like=("Reply Like", "sum"),
+            avg_time_diff=("ReplyTimeDelta", "mean")  # 일별로 댓글-게시물 간 평균 시차
+        ).reset_index()
+        daily_data["Reply Date"] = daily_data["Reply Date"].dt.to_timestamp()
+
+        #    6-2) 월별 댓글 추이
+        monthly_data = valid_data.groupby(valid_data["Reply Date"].dt.to_period("M")).agg(
+            reply_count=("Reply Text", "count"),
+            total_like=("Reply Like", "sum"),
+            avg_time_diff=("ReplyTimeDelta", "mean")
+        ).reset_index()
+        monthly_data["Reply Date"] = monthly_data["Reply Date"].dt.to_timestamp()
+
+        #    6-3) 요일별 분석 (댓글 작성 요일)
+        valid_data["ReplyDayOfWeek"] = valid_data["Reply Date"].dt.day_name()
+        dow_data = valid_data.groupby("ReplyDayOfWeek").agg(
+            reply_count=("Reply Text", "count"),
+            total_like=("Reply Like", "sum"),
+            avg_time_diff=("ReplyTimeDelta", "mean")
+        ).reset_index()
+
+        #    6-4) 게시물(Article URL)별 분석
+        article_analysis = data.groupby("Article URL").agg(
+            reply_count=("Reply Text", "count"),
+            total_like=("Reply Like", "sum")
+        ).reset_index()
+
+        #    6-5) 게시물 업로드 날짜(Article Day) 기준 분석
+        #         업로드 날짜가 같으면 같은 날 업로드된 다른 게시물로 간주
+        #         날짜 변환 안 된건 제외(valid_data만 사용 가능)
+        day_post_analysis = valid_data.groupby(valid_data["Article Day"].dt.to_period("D")).agg(
+            article_reply_count=("Reply Text", "count"),
+            article_reply_like=("Reply Like", "sum"),
+            avg_reply_time=("ReplyTimeDelta", "mean")  # 업로드일 기준 평균 댓글 시차
+        ).reset_index()
+        day_post_analysis["Article Day"] = day_post_analysis["Article Day"].dt.to_timestamp()
+
+        #    6-6) 댓글 작성자별(Reply Writer) 분석
+        writer_analysis = data.groupby("Reply Writer").agg(
+            reply_count=("Reply Text", "count"),
+            total_like=("Reply Like", "sum")
+        ).reset_index()
+
+        # 7) 상위 10개 항목
+        #    - 작성자, 게시물
+        top_10_writers = writer_analysis.sort_values("reply_count", ascending=False).head(10)
+        top_10_articles = article_analysis.sort_values("reply_count", ascending=False).head(10)
+
+        # 8) 상위 10개 댓글(좋아요 기준)
+        top_10_liked_replies = data.sort_values("Reply Like", ascending=False).head(10)[
+            ["Reply Writer", "Reply Text", "Reply Date", "Reply Like", "Article URL", "Article Day"]
+        ].reset_index(drop=True)
+
+        # 9) 통계 지표 확장
+        #    - 예: Reply Like 분포 시각화를 위해 상위 1% 자르기
+        #    - 코릴레이션은 Like와 TimeDelta 정도만 해볼 수 있음
+        numeric_cols = ["Reply Like"]
+        # ReplyTimeDelta도 숫자형이면 상관관계에 추가
+        if "ReplyTimeDelta" in valid_data.columns:
+            numeric_cols.append("ReplyTimeDelta")
+
+        # 상관관계 (valid_data만 사용해도 됨, 여기서는 전체 data 중 null 제외)
+        # null이 있으면 corr() 계산에서 제외됨.
+        correlation_matrix = valid_data[numeric_cols].corr()
+
+        # 10) CSV 저장
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding="utf-8-sig")
+        daily_data.to_csv(os.path.join(csv_output_dir, "daily_analysis.csv"), encoding="utf-8-sig", index=False)
+        monthly_data.to_csv(os.path.join(csv_output_dir, "monthly_analysis.csv"), encoding="utf-8-sig", index=False)
+        dow_data.to_csv(os.path.join(csv_output_dir, "day_of_week_analysis.csv"), encoding="utf-8-sig", index=False)
+        article_analysis.to_csv(os.path.join(csv_output_dir, "article_analysis.csv"), encoding="utf-8-sig", index=False)
+        day_post_analysis.to_csv(os.path.join(csv_output_dir, "article_day_analysis.csv"), encoding="utf-8-sig",
+                                 index=False)
+        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"), encoding="utf-8-sig", index=False)
+        top_10_writers.to_csv(os.path.join(csv_output_dir, "top_10_writers.csv"), encoding="utf-8-sig", index=False)
+        top_10_articles.to_csv(os.path.join(csv_output_dir, "top_10_articles.csv"), encoding="utf-8-sig", index=False)
+        top_10_liked_replies.to_csv(os.path.join(csv_output_dir, "top_10_liked_replies.csv"), encoding="utf-8-sig",
+                                    index=False)
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding="utf-8-sig")
+
+        # 11) 시각화
+        #     - calculate_figsize(len(x)) 함수가 있다고 가정. (없으면 (10,6) 등 직접 입력)
+        # (1) 일별 댓글 추이
+        plt.figure(figsize=self.calculate_figsize(len(daily_data)))
+        sns.lineplot(data=daily_data, x="Reply Date", y="reply_count", label="Reply Count")
+        sns.lineplot(data=daily_data, x="Reply Date", y="total_like", label="Total Like")
+        plt.title("일별 댓글/좋아요 추이")
+        plt.xlabel("날짜")
+        plt.ylabel("합계")
+        plt.xticks(rotation=45)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "daily_trend.png"))
+        plt.close()
+
+        # (2) 월별 댓글 추이
+        plt.figure(figsize=self.calculate_figsize(len(monthly_data)))
+        sns.lineplot(data=monthly_data, x="Reply Date", y="reply_count", label="Reply Count")
+        sns.lineplot(data=monthly_data, x="Reply Date", y="total_like", label="Total Like")
+        plt.title("월별 댓글/좋아요 추이")
+        plt.xlabel("월")
+        plt.ylabel("합계")
+        plt.xticks(rotation=45)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "monthly_trend.png"))
+        plt.close()
+
+        # (3) 요일별 댓글 수
+        dow_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        dow_data["ReplyDayOfWeek"] = pd.Categorical(dow_data["ReplyDayOfWeek"], categories=dow_order, ordered=True)
+        sorted_dow_data = dow_data.sort_values("ReplyDayOfWeek")
+
+        plt.figure(figsize=self.calculate_figsize(len(sorted_dow_data)))
+        sns.barplot(data=sorted_dow_data, x="ReplyDayOfWeek", y="reply_count")
+        plt.title("요일별 댓글 수")
+        plt.xlabel("요일")
+        plt.ylabel("댓글 수")
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "day_of_week_reply_count.png"))
+        plt.close()
+
+        # (4) Article Day 기준 (게시물 업로드 날짜별) 댓글 수
+        plt.figure(figsize=self.calculate_figsize(len(day_post_analysis)))
+        sns.lineplot(data=day_post_analysis, x="Article Day", y="article_reply_count", label="Reply Count")
+        sns.lineplot(data=day_post_analysis, x="Article Day", y="article_reply_like", label="Reply Like")
+        plt.title("영상 업로드 날짜별 댓글 수/좋아요 추이")
+        plt.xlabel("영상 업로드 날짜")
+        plt.ylabel("합계")
+        plt.xticks(rotation=45)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "article_day_trend.png"))
+        plt.close()
+
+        # (5) 댓글 작성자 (상위 10명)
+        plt.figure(figsize=self.calculate_figsize(len(top_10_writers)))
+        sns.barplot(data=top_10_writers, x="Reply Writer", y="reply_count")
+        plt.title("상위 10명 댓글 작성자")
+        plt.xlabel("작성자")
+        plt.ylabel("댓글 수")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "top_10_writers.png"))
+        plt.close()
+
+        # (6) 게시물(Article URL)별 댓글 수 (상위 10)
+        plt.figure(figsize=self.calculate_figsize(len(top_10_articles)))
+        sns.barplot(data=top_10_articles, x="Article URL", y="reply_count")
+        plt.title("상위 10 영상별 댓글 수")
+        plt.xlabel("Article URL")
+        plt.ylabel("댓글 수")
+        plt.xticks(rotation=45, ha="right")
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "top_10_articles.png"))
+        plt.close()
+
+        # (8) ReplyTimeDelta(댓글 작성 - 업로드 날짜)의 분포
+        #     0보다 작으면 업로드 이전에 작성된(?) 이상치일 수 있음
+        plt.figure(figsize=self.calculate_figsize(10))
+        ax2 = sns.histplot(data=valid_data, x="ReplyTimeDelta", kde=True)
+        # 상위 1% 잘라내고 싶다면:
+        delta_99 = valid_data["ReplyTimeDelta"].quantile(0.99)
+        delta_min = valid_data["ReplyTimeDelta"].min()  # 음수도 있을 수 있음
+        ax2.set_xlim(delta_min, delta_99)
+        plt.title("댓글-영상 시차(일) 분포 (상위 1% 제외)")
+        plt.xlabel("ReplyTimeDelta (Days)")
+        plt.ylabel("빈도")
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "reply_time_delta_distribution.png"))
+        plt.close()
+
+        # (9) 상관관계 히트맵
+        plt.figure(figsize=self.calculate_figsize(len(correlation_matrix), height=8))
+        sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", vmin=-1, vmax=1)
+        plt.title("댓글 데이터 상관관계")
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
+        plt.close()
+
+        # 12) 분석/그래프 설명 txt
+        description_text = """
+        [댓글 데이터 분석 결과 설명]
+
+        1. basic_stats.csv
+           - 전체 CSV 데이터에 대한 기본 통계(최솟값, 최댓값, 평균 등).
+
+        2. daily_analysis.csv / daily_trend.png
+           - 일자(Reply Date) 기준으로 댓글 수, 좋아요 수 합계를 선 그래프로 표시합니다.
+
+        3. monthly_analysis.csv / monthly_trend.png
+           - 월별 댓글/좋아요 추이를 확인할 수 있습니다.
+
+        4. day_of_week_analysis.csv / day_of_week_reply_count.png
+           - 요일별(Monday~Sunday) 댓글 수를 바 그래프로 시각화했습니다.
+
+        5. article_day_analysis.csv / article_day_trend.png
+           - 'Article Day'(영상이 올라온 날짜)별 댓글 수/좋아요 추이를 나타냅니다.
+           - 업로드 후 댓글이 언제 많이 달리는지 파악하는 데 도움이 됩니다.
+
+        6. article_analysis.csv이정리한 CSV.
+
+        7. writer_analysis.csv
+           - 'Reply Writer'(작성자)별로 댓글 수, 좋아요 수 합계를 분석한 CSV.
+
+        8. top_10_writers.csv / top_10_writers.png
+           - 댓글 수 기준 상위 10명 작성자 정보를 정리하고, 바 그래프로 표시합니다.
+
+        9. top_10_articles.csv / top_10_articles.png
+           - 댓글 수 기준 상위 10개 Article URL을 정리하고, 바 그래프로 시각화합니다.
+
+        10. top_10_liked_replies.csv
+            - 좋아요(Reply Like)가 가장 많은 댓글 10개를 추출합니다.
+
+        11. reply_like_distribution.png
+            - 댓글 좋아요 수의 분포를 히스토그램과 KDE곡선으로 표시합니다.
+            - 상위 1% 구간은 잘라내어 x축 범위를 제한했습니다.
+
+        12. reply_time_delta_distribution.png
+            - (댓글 작성 날짜 - 게시물 업로드 날짜)를 일(day) 단위로 계산한 시차 분포를 히스토그램으로 확인합니다.
+
+        13. correlation_matrix.csv / correlation_matrix.png
+            - 'Reply Like', 'ReplyTimeDelta' 등의 수치 컬럼 간 상관관계를 나타냅니다.
+
+        """
+        with open(os.path.join(output_dir, "description.txt"), "w", encoding="utf-8", errors="ignore") as f:
+            f.write(description_text)
+
+    def YouTubeRereplyAnalysis(self, data, file_path):
+        """
+        기존 코드에서 Reply → Rereply, "댓글" → "대댓글" 로 변경한 예시.
+        주의: CSV 파일 컬럼명도 동일하게 변경되어 있어야 합니다.
+        """
+
+        import os
+        import pandas as pd
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        from PyQt5.QtWidgets import QMessageBox
+
+        # 0) 필수 컬럼 검증
+        required_cols = [
+            "Rereply Writer",  # 대댓글 작성자
+            "Rereply Date",  # 대댓글 작성 시간
+            "Rereply Text",  # 대댓글 내용
+            "Rereply Like",  # 대댓글 좋아요 수
+            "Article URL",  # 영상 URL
+            "Article Day"  # (영상)이 올라온 날짜
+        ]
+        missing = [col for col in required_cols if col not in data.columns]
+        if missing:
+            QMessageBox.warning(
+                self.main,
+                "Warning",
+                f"필수 컬럼이 누락되었습니다: {missing}\nCSV 형태를 확인하세요."
+            )
+            return
+
+        # 1) 날짜형 / 숫자형 변환
+        # - 대댓글이 작성된 날짜
+        data["Rereply Date"] = pd.to_datetime(data["Rereply Date"], errors="coerce")
+        # - 게시물이 올라온 날짜
+        data["Article Day"] = pd.to_datetime(data["Article Day"], errors="coerce")
+
+        # - 좋아요 수: 숫자 변환
+        data["Rereply Like"] = pd.to_numeric(data["Rereply Like"], errors="coerce").fillna(0)
+
+        # 2) 결과 저장용 디렉토리 생성
+        output_dir = os.path.join(
+            os.path.dirname(file_path),
+            os.path.basename(file_path).replace(".csv", "") + "_analysis"
+        )
+        csv_output_dir = os.path.join(output_dir, "csv_files")
+        graph_output_dir = os.path.join(output_dir, "graphs")
+        os.makedirs(csv_output_dir, exist_ok=True)
+        os.makedirs(graph_output_dir, exist_ok=True)
+
+        # 3) 기본 통계 (기술 통계량)
+        basic_stats = data.describe(include="all")  # 범주형/수치형 모두 기술통계
+
+        # 4) 유효한 날짜 데이터만 따로 관리
+        #    (대댓글 날짜, 영상 날짜 모두 제대로 변환된 행만 분석에 활용)
+        valid_data = data.dropna(subset=["Rereply Date", "Article Day"]).copy()
+
+        # 5) 날짜 차이(대댓글 작성 시점 vs 게시물 업로드 시점)
+        #    -> '작성 시점 - 업로드 시점' 일수 계산
+        valid_data["RereplyTimeDelta"] = (valid_data["Rereply Date"] - valid_data["Article Day"]).dt.days
+        #    예: RereplyTimeDelta = 0 이면 같은 날 올라온 대댓글
+        #        RereplyTimeDelta = 1 이면 업로드 다음 날 달린 대댓글
+        #        음수가 나오면 업로드 전 시점(잘못된 데이터)일 수도 있음
+
+        # 6) 그룹화 분석
+        #    6-1) 일별 대댓글 추이
+        daily_data = valid_data.groupby(valid_data["Rereply Date"].dt.to_period("D")).agg(
+            rereply_count=("Rereply Text", "count"),
+            total_like=("Rereply Like", "sum"),
+            avg_time_diff=("RereplyTimeDelta", "mean")  # 일별로 대댓글-게시물 간 평균 시차
+        ).reset_index()
+        daily_data["Rereply Date"] = daily_data["Rereply Date"].dt.to_timestamp()
+
+        #    6-2) 월별 대댓글 추이
+        monthly_data = valid_data.groupby(valid_data["Rereply Date"].dt.to_period("M")).agg(
+            rereply_count=("Rereply Text", "count"),
+            total_like=("Rereply Like", "sum"),
+            avg_time_diff=("RereplyTimeDelta", "mean")
+        ).reset_index()
+        monthly_data["Rereply Date"] = monthly_data["Rereply Date"].dt.to_timestamp()
+
+        #    6-3) 요일별 분석 (대댓글 작성 요일)
+        valid_data["RereplyDayOfWeek"] = valid_data["Rereply Date"].dt.day_name()
+        dow_data = valid_data.groupby("RereplyDayOfWeek").agg(
+            rereply_count=("Rereply Text", "count"),
+            total_like=("Rereply Like", "sum"),
+            avg_time_diff=("RereplyTimeDelta", "mean")
+        ).reset_index()
+
+        #    6-4) 게시물(Article URL)별 분석
+        article_analysis = data.groupby("Article URL").agg(
+            rereply_count=("Rereply Text", "count"),
+            total_like=("Rereply Like", "sum")
+        ).reset_index()
+
+        #    6-5) 게시물 업로드 날짜(Article Day) 기준 분석
+        day_post_analysis = valid_data.groupby(valid_data["Article Day"].dt.to_period("D")).agg(
+            article_rereply_count=("Rereply Text", "count"),
+            article_rereply_like=("Rereply Like", "sum"),
+            avg_rereply_time=("RereplyTimeDelta", "mean")  # 업로드일 기준 평균 대댓글 시차
+        ).reset_index()
+        day_post_analysis["Article Day"] = day_post_analysis["Article Day"].dt.to_timestamp()
+
+        #    6-6) 대댓글 작성자별(Rereply Writer) 분석
+        writer_analysis = data.groupby("Rereply Writer").agg(
+            rereply_count=("Rereply Text", "count"),
+            total_like=("Rereply Like", "sum")
+        ).reset_index()
+
+        # 7) 상위 10개 항목
+        #    - 작성자, 게시물
+        top_10_writers = writer_analysis.sort_values("rereply_count", ascending=False).head(10)
+        top_10_articles = article_analysis.sort_values("rereply_count", ascending=False).head(10)
+
+        # 8) 상위 10개 대댓글(좋아요 기준)
+        top_10_liked_rereplies = data.sort_values("Rereply Like", ascending=False).head(10)[
+            ["Rereply Writer", "Rereply Text", "Rereply Date", "Rereply Like", "Article URL", "Article Day"]
+        ].reset_index(drop=True)
+
+        # 9) 통계 지표 확장
+        #    - 예: Rereply Like 분포 시각화를 위해 상위 1% 자르기
+        #    - 코릴레이션은 Like와 TimeDelta 정도만 해볼 수 있음
+        numeric_cols = ["Rereply Like"]
+        # RereplyTimeDelta도 숫자형이면 상관관계에 추가
+        if "RereplyTimeDelta" in valid_data.columns:
+            numeric_cols.append("RereplyTimeDelta")
+
+        # 상관관계 (valid_data만 사용)
+        correlation_matrix = valid_data[numeric_cols].corr()
+
+        # 10) CSV 저장
+        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding="utf-8-sig")
+        daily_data.to_csv(os.path.join(csv_output_dir, "daily_analysis.csv"), encoding="utf-8-sig", index=False)
+        monthly_data.to_csv(os.path.join(csv_output_dir, "monthly_analysis.csv"), encoding="utf-8-sig", index=False)
+        dow_data.to_csv(os.path.join(csv_output_dir, "day_of_week_analysis.csv"), encoding="utf-8-sig", index=False)
+        article_analysis.to_csv(os.path.join(csv_output_dir, "article_analysis.csv"), encoding="utf-8-sig", index=False)
+        day_post_analysis.to_csv(os.path.join(csv_output_dir, "article_day_analysis.csv"), encoding="utf-8-sig",
+                                 index=False)
+        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"), encoding="utf-8-sig", index=False)
+        top_10_writers.to_csv(os.path.join(csv_output_dir, "top_10_writers.csv"), encoding="utf-8-sig", index=False)
+        top_10_articles.to_csv(os.path.join(csv_output_dir, "top_10_articles.csv"), encoding="utf-8-sig", index=False)
+        top_10_liked_rereplies.to_csv(os.path.join(csv_output_dir, "top_10_liked_rereplies.csv"), encoding="utf-8-sig",
+                                      index=False)
+        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding="utf-8-sig")
+
+        # 11) 시각화
+        #     - calculate_figsize(len(x)) 함수가 있다고 가정. (없으면 (10,6) 등 직접 입력)
+        # (1) 일별 대댓글 추이
+        plt.figure(figsize=self.calculate_figsize(len(daily_data)))
+        sns.lineplot(data=daily_data, x="Rereply Date", y="rereply_count", label="Rereply Count")
+        sns.lineplot(data=daily_data, x="Rereply Date", y="total_like", label="Total Like")
+        plt.title("일별 대댓글/좋아요 추이")
+        plt.xlabel("날짜")
+        plt.ylabel("합계")
+        plt.xticks(rotation=45)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "daily_trend.png"))
+        plt.close()
+
+        # (2) 월별 대댓글 추이
+        plt.figure(figsize=self.calculate_figsize(len(monthly_data)))
+        sns.lineplot(data=monthly_data, x="Rereply Date", y="rereply_count", label="Rereply Count")
+        sns.lineplot(data=monthly_data, x="Rereply Date", y="total_like", label="Total Like")
+        plt.title("월별 대댓글/좋아요 추이")
+        plt.xlabel("월")
+        plt.ylabel("합계")
+        plt.xticks(rotation=45)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "monthly_trend.png"))
+        plt.close()
+
+        # (3) 요일별 대댓글 수
+        dow_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        dow_data["RereplyDayOfWeek"] = pd.Categorical(dow_data["RereplyDayOfWeek"], categories=dow_order, ordered=True)
+        sorted_dow_data = dow_data.sort_values("RereplyDayOfWeek")
+
+        plt.figure(figsize=self.calculate_figsize(len(sorted_dow_data)))
+        sns.barplot(data=sorted_dow_data, x="RereplyDayOfWeek", y="rereply_count")
+        plt.title("요일별 대댓글 수")
+        plt.xlabel("요일")
+        plt.ylabel("대댓글 수")
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "day_of_week_rereply_count.png"))
+        plt.close()
+
+        # (4) Article Day 기준 (게시물 업로드 날짜별) 대댓글 수
+        plt.figure(figsize=self.calculate_figsize(len(day_post_analysis)))
+        sns.lineplot(data=day_post_analysis, x="Article Day", y="article_rereply_count", label="Rereply Count")
+        sns.lineplot(data=day_post_analysis, x="Article Day", y="article_rereply_like", label="Rereply Like")
+        plt.title("영상 업로드 날짜별 대댓글 수/좋아요 추이")
+        plt.xlabel("영상 업로드 날짜")
+        plt.ylabel("합계")
+        plt.xticks(rotation=45)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "article_day_trend.png"))
+        plt.close()
+
+        # (5) 대댓글 작성자 (상위 10명)
+        plt.figure(figsize=self.calculate_figsize(len(top_10_writers)))
+        sns.barplot(data=top_10_writers, x="Rereply Writer", y="rereply_count")
+        plt.title("상위 10명 대댓글 작성자")
+        plt.xlabel("작성자")
+        plt.ylabel("대댓글 수")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "top_10_writers.png"))
+        plt.close()
+
+        # (6) 게시물(Article URL)별 대댓글 수 (상위 10)
+        plt.figure(figsize=self.calculate_figsize(len(top_10_articles)))
+        sns.barplot(data=top_10_articles, x="Article URL", y="rereply_count")
+        plt.title("상위 10 영상별 대댓글 수")
+        plt.xlabel("Article URL")
+        plt.ylabel("대댓글 수")
+        plt.xticks(rotation=45, ha="right")
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "top_10_articles.png"))
+        plt.close()
+
+        # (8) RereplyTimeDelta(대댓글 작성 - 업로드 날짜)의 분포
+        plt.figure(figsize=self.calculate_figsize(10))
+        ax2 = sns.histplot(data=valid_data, x="RereplyTimeDelta", kde=True)
+        # 상위 1% 잘라내고 싶다면:
+        delta_99 = valid_data["RereplyTimeDelta"].quantile(0.99)
+        delta_min = valid_data["RereplyTimeDelta"].min()
+        ax2.set_xlim(delta_min, delta_99)
+        plt.title("대댓글-영상 시차(일) 분포 (상위 1% 제외)")
+        plt.xlabel("RereplyTimeDelta (Days)")
+        plt.ylabel("빈도")
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "rereply_time_delta_distribution.png"))
+        plt.close()
+
+        # (9) 상관관계 히트맵
+        plt.figure(figsize=self.calculate_figsize(len(correlation_matrix), height=8))
+        sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", vmin=-1, vmax=1)
+        plt.title("대댓글 데이터 상관관계")
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
+        plt.close()
+
+        # 12) 분석/그래프 설명 txt
+        description_text = """
+        [대댓글 데이터 분석 결과 설명]
+
+        1. basic_stats.csv
+           - 전체 CSV 데이터에 대한 기본 통계(최솟값, 최댓값, 평균 등).
+
+        2. daily_analysis.csv / daily_trend.png
+           - 일자(Rereply Date) 기준으로 대댓글 수, 좋아요 수 합계를 선 그래프로 표시합니다.
+
+        3. monthly_analysis.csv / monthly_trend.png
+           - 월별 대댓글/좋아요 추이를 확인할 수 있습니다.
+
+        4. day_of_week_analysis.csv / day_of_week_rereply_count.png
+           - 요일별(Monday~Sunday) 대댓글 수를 바 그래프로 시각화했습니다.
+
+        5. article_day_analysis.csv / article_day_trend.png
+           - 'Article Day'(영상이 올라온 날짜)별 대댓글 수/좋아요 추이를 나타냅니다.
+           - 업로드 후 대댓글이 언제 많이 달리는지 파악하는 데 도움이 됩니다.
+
+        6. article_analysis.csv
+           - Article URL별 대댓글 수, 좋아요 수 합계를 정리한 CSV.
+
+        7. writer_analysis.csv
+           - 'Rereply Writer'(작성자)별로 대댓글 수, 좋아요 수 합계를 분석한 CSV.
+
+        8. top_10_writers.csv / top_10_writers.png
+           - 대댓글 수 기준 상위 10명 작성자 정보를 정리하고, 바 그래프로 표시합니다.
+
+        9. top_10_articles.csv / top_10_articles.png
+           - 대댓글 수 기준 상위 10개 Article URL을 정리하고, 바 그래프로 시각화합니다.
+
+        10. top_10_liked_rereplies.csv
+            - 좋아요(Rereply Like)가 가장 많은 대댓글 10개를 추출합니다.
+
+        11. rereply_time_delta_distribution.png
+            - (대댓글 작성 날짜 - 게시물 업로드 날짜)를 일(day) 단위로 계산한 시차 분포를 히스토그램으로 확인합니다.
+
+        12. correlation_matrix.csv / correlation_matrix.png
+            - 'Rereply Like', 'RereplyTimeDelta' 등의 수치 컬럼 간 상관관계를 나타냅니다.
+        """
+        with open(os.path.join(output_dir, "description.txt"), "w", encoding="utf-8", errors="ignore") as f:
+            f.write(description_text)
+
     def wordcloud(self, parent, data, folder_path, date, max_words, split_option, exception_word_list, eng=False):
         parent = parent
         self.translate_history = {}
