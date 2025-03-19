@@ -19,26 +19,26 @@ from PyQt5.QtWidgets import (
     QButtonGroup, QPushButton, QDialogButtonBox, QRadioButton, QLabel, QTabWidget,
     QLineEdit, QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
 )
-from Manager_Console import open_console, close_console
+from Manager_Console import openConsole, closeConsole
 
 warnings.filterwarnings("ignore")
 class Manager_Database:
     def __init__(self, main_window):
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
-        self.DB_table_column = ['Database', 'Type', 'Keyword', 'StartDate', 'EndDate', 'Option', 'Status', 'User', 'Size']
-        self.main.table_maker(self.main.database_tablewidget, self.DB['DBtable'], self.DB_table_column, self.database_dbinfo_viewer)
-        self.database_buttonMatch()
+        self.DBTableColumn = ['Database', 'Type', 'Keyword', 'StartDate', 'EndDate', 'Option', 'Status', 'User', 'Size']
+        self.main.makeTable(self.main.database_tablewidget, self.DB['DBtable'], self.DBTableColumn, self.viewDBinfo)
+        self.matchButton()
         self.chatgpt_mode = False
         self.console_open = False
 
-    def database_delete_DB(self):
+    def deleteDB(self):
         try:
-            selected_row = self.main.database_tablewidget.currentRow()
-            if selected_row >= 0:
-                DBdata = self.DB['DBdata'][selected_row]
+            selectedRow = self.main.database_tablewidget.currentRow()
+            if selectedRow >= 0:
+                DBdata = self.DB['DBdata'][selectedRow]
 
-                target_db = self.DB['DBlist'][selected_row]
+                targetDB = self.DB['DBlist'][selectedRow]
                 status = DBdata['Status']
                 owner = DBdata['Requester']
 
@@ -47,43 +47,43 @@ class Manager_Database:
                     return
 
                 if status == 'Working':
-                    confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{target_db}' 크롤링을 중단하고 DB를 삭제하시겠습니까?"
+                    confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{targetDB}' 크롤링을 중단하고 DB를 삭제하시겠습니까?"
                 else:
-                    confirm_msg = f"'{target_db}'를 삭제하시겠습니까?"
+                    confirm_msg = f"'{targetDB}'를 삭제하시겠습니까?"
 
                 reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.printStatus("삭제 중...")
-                    self.main.mySQL_obj.dropDB(target_db)
-                    self.main.mySQL_obj.connectDB('crawler_db')
-                    self.main.mySQL_obj.deleteTableRowByColumn('db_list', target_db, 'DBname')
+                    self.main.mySQLObj.dropDB(targetDB)
+                    self.main.mySQLObj.connectDB('crawler_db')
+                    self.main.mySQLObj.deleteTableRowByColumn('db_list', targetDB, 'DBname')
                     if status == 'Working':
                         self.main.activate_crawl -= 1
                         QMessageBox.information(self.main, "Information", f"크롤러 서버에 중단 요청을 전송했습니다")
                     else:
-                        QMessageBox.information(self.main, "Information", f"'{target_db}'가 삭제되었습니다")
-                    self.main.user_logging(f'DATABASE -> delete_DB({target_db})')
-                    self.database_refresh_DB()
+                        QMessageBox.information(self.main, "Information", f"'{targetDB}'가 삭제되었습니다")
+                    self.main.userLogging(f'DATABASE -> delete_DB({targetDB})')
+                    self.refreshDB()
 
             self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def database_view_DB(self):
+    def viewDB(self):
 
         class TableWindow(QMainWindow):
-            def __init__(self, parent=None, target_db=None):
+            def __init__(self, parent=None, targetDB=None):
                 super(TableWindow, self).__init__(parent)
-                self.setWindowTitle(target_db)
+                self.setWindowTitle(targetDB)
                 self.resize(1600, 1200)
 
                 self.parent = parent  # 부모 객체를 저장하여 나중에 사용
-                self.target_db = target_db  # target_db를 저장하여 나중에 사용
+                self.targetDB = targetDB  # targetDB를 저장하여 나중에 사용
 
-                self.central_widget = QWidget(self)
-                self.setCentralWidget(self.central_widget)
+                self.centralWidget = QWidget(self)
+                self.setCentralWidget(self.centralWidget)
 
-                self.layout = QVBoxLayout(self.central_widget)
+                self.layout = QVBoxLayout(self.centralWidget)
 
                 # 상단 버튼 레이아웃
                 self.button_layout = QHBoxLayout()
@@ -93,10 +93,10 @@ class Manager_Database:
                 self.button_layout.addItem(spacer)
 
                 # 새로고침 버튼 추가
-                self.refresh_button = QPushButton("새로고침", self)
-                self.refresh_button.setFixedWidth(80)  # 가로 길이 조정
-                self.refresh_button.clicked.connect(self.refresh_table)
-                self.button_layout.addWidget(self.refresh_button)
+                self.refreshButton = QPushButton("새로고침", self)
+                self.refreshButton.setFixedWidth(80)  # 가로 길이 조정
+                self.refreshButton.clicked.connect(self.refresh_table)
+                self.button_layout.addWidget(self.refreshButton)
 
                 # 닫기 버튼 추가
                 self.close_button = QPushButton("닫기", self)
@@ -110,9 +110,9 @@ class Manager_Database:
                 self.tabWidget_tables = QTabWidget(self)
                 self.layout.addWidget(self.tabWidget_tables)
 
-                # target_db가 주어지면 테이블 뷰를 초기화
-                if target_db is not None:
-                    self.init_table_view(parent.mySQL_obj, target_db)
+                # targetDB가 주어지면 테이블 뷰를 초기화
+                if targetDB is not None:
+                    self.init_viewTable(parent.mySQLObj, targetDB)
 
             def closeWindow(self):
                 self.tabWidget_tables.clear()  # 탭 위젯 내용 삭제
@@ -125,18 +125,18 @@ class Manager_Database:
                 self.closeWindow()
                 event.accept()  # 창 닫기 이벤트를 허용
 
-            def init_table_view(self, mySQL_obj, target_db):
-                # target_db에 연결
-                mySQL_obj.connectDB(target_db)
+            def init_viewTable(self, mySQLObj, targetDB):
+                # targetDB에 연결
+                mySQLObj.connectDB(targetDB)
 
-                tableNameList = mySQL_obj.showAllTable(target_db)
+                tableNameList = mySQLObj.showAllTable(targetDB)
                 self.tabWidget_tables.clear()  # 기존 탭 내용 초기화
 
                 for tableName in tableNameList:
                     if 'info' in tableName or 'token' in tableName:
                         continue
-                    tableDF_begin = mySQL_obj.TableToDataframe(tableName, ':50')
-                    tableDF_end = mySQL_obj.TableToDataframe(tableName, ':-50')
+                    tableDF_begin = mySQLObj.TableToDataframe(tableName, ':50')
+                    tableDF_end = mySQLObj.TableToDataframe(tableName, ':-50')
                     tableDF = pd.concat([tableDF_begin, tableDF_end], axis=0)
                     tableDF = tableDF.drop(columns=['id'])
 
@@ -149,8 +149,8 @@ class Manager_Database:
                     new_table = QTableWidget(new_tab)
                     new_tab_layout.addWidget(new_table)
 
-                    # table_maker 함수를 호출하여 테이블 설정
-                    self.parent.table_maker(new_table, self.tuple_list, list(tableDF.columns))
+                    # makeTable 함수를 호출하여 테이블 설정
+                    self.parent.makeTable(new_table, self.tuple_list, list(tableDF.columns))
 
                     # 탭 위젯에 추가
                     self.tabWidget_tables.addTab(new_tab, tableName.split('_')[-1])
@@ -161,7 +161,7 @@ class Manager_Database:
 
             def refresh_table(self):
                 # 테이블 뷰를 다시 초기화하여 데이터를 새로 로드
-                self.init_table_view(self.parent.mySQL_obj, self.target_db)
+                self.init_viewTable(self.parent.mySQLObj, self.targetDB)
 
         try:
             reply = QMessageBox.question(self.main, 'Confirm View', 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -172,25 +172,25 @@ class Manager_Database:
                     del self.DBtable_window
                     gc.collect()
 
-                selected_row = self.main.database_tablewidget.currentRow()
-                if selected_row >= 0:
-                    target_DB = self.DB['DBlist'][selected_row]
-                    self.main.user_logging(f'DATABASE -> view_DB({target_DB})')
-                    self.DBtable_window = TableWindow(self.main, target_DB)
+                selectedRow = self.main.database_tablewidget.currentRow()
+                if selectedRow >= 0:
+                    targetDB = self.DB['DBlist'][selectedRow]
+                    self.main.userLogging(f'DATABASE -> view_DB({targetDB})')
+                    self.DBtable_window = TableWindow(self.main, targetDB)
                     self.DBtable_window.destroyed.connect(destory_table)
                     self.DBtable_window.show()
 
                 self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def database_dbinfo_viewer(self, row):
+    def viewDBinfo(self, row):
         try:
             self.main.printStatus("불러오는 중...")
             DBdata = self.DB['DBdata'][row]
 
-            self.main.user_logging(f'DATABASE -> dbinfo_viewer({DBdata['DB']})')
+            self.main.userLogging(f'DATABASE -> dbinfo_viewer({DBdata['DB']})')
 
             # 다이얼로그 생성
             dialog = QDialog(self.main)
@@ -367,25 +367,25 @@ class Manager_Database:
             dialog.show()
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def database_search_DB(self):
+    def searchDB(self):
         try:
             search_text = self.main.database_searchDB_lineinput.text().lower()
             if not search_text or search_text == "":
                 if self.main.SETTING['DBKeywordSort'] == 'default':
                     self.main.SETTING['DBKeywordSort'] = 'on'
-                    self.main.update_settings(10, 'on')
+                    self.main.updateSettings(10, 'on')
                     QMessageBox.information(self.main, "Information", "DB 정렬 기준이 '키워드순'으로 변경되었습니다")
-                    self.database_refresh_DB()
+                    self.refreshDB()
                 else:
                     self.main.SETTING['DBKeywordSort'] = 'default'
-                    self.main.update_settings(10, 'default')
+                    self.main.updateSettings(10, 'default')
                     QMessageBox.information(self.main, "Information", "DB 정렬 기준이 '최신순'으로 변경되었습니다")
-                    self.database_refresh_DB()
+                    self.refreshDB()
                 return
 
-            self.database_search_admin_mode(search_text)
+            self.searchAdminMode(search_text)
             # 현재 선택된 행의 다음 행부터 검색 시작
             start_row = self.main.database_tablewidget.currentRow() + 1 if self.main.database_tablewidget.currentRow() != -1 else 0
 
@@ -414,29 +414,29 @@ class Manager_Database:
                     self.main.database_tablewidget.selectRow(row)
                     return
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def database_merge_DB(self):
+    def mergeDB(self):
         try:
-            selected_row = self.main.database_tablewidget.currentRow()
-            if selected_row < 0:
+            selectedRow = self.main.database_tablewidget.currentRow()
+            if selectedRow < 0:
                 return
 
             # 대상 DB 정보 가져오기
-            target_db_name = self.DB['DBlist'][selected_row]
-            target_db_data = self.DB['DBdata'][selected_row]
+            targetDB_name = self.DB['DBlist'][selectedRow]
+            targetDB_data = self.DB['DBdata'][selectedRow]
 
-            owner = target_db_data['Requester']
+            owner = targetDB_data['Requester']
 
             if owner != self.main.user and self.main.user != 'admin':
                 QMessageBox.warning(self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
                 return
 
-            target_keyword    = target_db_data['Keyword']
-            target_crawl_type = target_db_data['Crawltype']
-            target_count_data = eval(target_db_data['Datainfo'])  # 통계 데이터 (딕셔너리 형태)
-            target_start_date = target_db_data['Startdate']
-            target_end_date   = target_db_data['Enddate']
+            target_keyword    = targetDB_data['Keyword']
+            target_crawl_type = targetDB_data['Crawltype']
+            target_count_data = eval(targetDB_data['Datainfo'])  # 통계 데이터 (딕셔너리 형태)
+            target_start_date = targetDB_data['Startdate']
+            target_end_date   = targetDB_data['Enddate']
 
             # 다음 시작 날짜 계산
             target_end_date_dt = datetime.strptime(target_end_date, '%Y%m%d')
@@ -478,9 +478,9 @@ class Manager_Database:
             selected_count_data = eval(selected_db_data['Datainfo'])  # 통계 데이터 (딕셔너리 형태)
 
             # 대상 DB 이름 업데이트 및 병합된 통계 데이터 계산
-            target_db_parts = target_db_name.split('_')
-            target_db_parts[3] = selected_db_end_date
-            updated_target_db_name = '_'.join(target_db_parts)
+            targetDB_parts = targetDB_name.split('_')
+            targetDB_parts[3] = selected_db_end_date
+            updated_targetDB_name = '_'.join(targetDB_parts)
 
             merged_count_data = {
                 'UrlCnt': target_count_data['UrlCnt'] + selected_count_data['UrlCnt'],
@@ -493,7 +493,7 @@ class Manager_Database:
             reply = QMessageBox.question(
                 self.main,
                 'DB 병합',
-                f"'{updated_target_db_name[:-10]}'로 병합하시겠습니까?",
+                f"'{updated_targetDB_name[:-10]}'로 병합하시겠습니까?",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.Yes
             )
@@ -501,19 +501,19 @@ class Manager_Database:
             if reply != QMessageBox.Yes:
                 return
 
-            self.main.user_logging(f'DATABASE -> Merge_DB({target_db_name} + {selected_db_name} = {updated_target_db_name})')
+            self.main.userLogging(f'DATABASE -> Merge_DB({targetDB_name} + {selected_db_name} = {updated_targetDB_name})')
             if self.main.SETTING['ProcessConsole'] == 'default':
-                open_console("DB 병합")
+                openConsole("DB 병합")
 
             print('\n실행 중 프로그램 종료되면 DB 시스템에 큰 문제를 일으킬 수 있습니다')
             print("프로그램이 종료될 때까지 대기해주시기 바랍니다\n\n")
 
-            target_tables = sorted(self.main.mySQL_obj.showAllTable(target_db_name))
-            selected_tables = sorted(self.main.mySQL_obj.showAllTable(selected_db_name))
+            target_tables = sorted(self.main.mySQLObj.showAllTable(targetDB_name))
+            selected_tables = sorted(self.main.mySQLObj.showAllTable(selected_db_name))
 
             self.main.printStatus(f"병합 DB 생성 중...")
             print("\n병합 DB 생성 중...")
-            self.main.mySQL_obj.copyDB(target_db_name, updated_target_db_name)
+            self.main.mySQLObj.copyDB(targetDB_name, updated_targetDB_name)
 
             if self.main.SETTING['ProcessConsole'] == 'default':
                 iterator = tqdm(list(zip(target_tables, selected_tables)), desc="Merging", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
@@ -523,7 +523,7 @@ class Manager_Database:
             for target_table, selected_table in iterator:
                 self.main.printStatus(f"{target_table} 병합 중...")
                 # 테이블 병합
-                self.main.mySQL_obj.mergeTable(updated_target_db_name, target_table, selected_db_name, selected_table)
+                self.main.mySQLObj.mergeTable(updated_targetDB_name, target_table, selected_db_name, selected_table)
 
                 # 테이블 이름 업데이트
                 target_table_parts = target_table.split('_')
@@ -533,47 +533,47 @@ class Manager_Database:
                     target_table_parts[3] = selected_db_end_date
 
                 new_target_table = '_'.join(target_table_parts)
-                self.main.mySQL_obj.renameTable(updated_target_db_name, target_table, new_target_table)
+                self.main.mySQLObj.renameTable(updated_targetDB_name, target_table, new_target_table)
 
             self.main.printStatus(f"DB 목록 업데이트 중...")
             print("\nDB 목록 업데이트 중...")
-            self.main.mySQL_obj.connectDB('crawler_db')
-            self.main.mySQL_obj.insertToTable('db_list', [[
-                updated_target_db_name, target_db_data['Option'],
-                target_db_data['Starttime'], selected_db_data['Endtime'],
-                target_db_data['Requester'], target_db_data['Keyword'],
-                self.main.mySQL_obj.showDBSize(updated_target_db_name)[0],
-                target_db_data['Crawlcom'], target_db_data['Crawlspeed'],
+            self.main.mySQLObj.connectDB('crawler_db')
+            self.main.mySQLObj.insertToTable('db_list', [[
+                updated_targetDB_name, targetDB_data['Option'],
+                targetDB_data['Starttime'], selected_db_data['Endtime'],
+                targetDB_data['Requester'], targetDB_data['Keyword'],
+                self.main.mySQLObj.showDBSize(updated_targetDB_name)[0],
+                targetDB_data['Crawlcom'], targetDB_data['Crawlspeed'],
                 str(merged_count_data)
             ]])
-            self.main.mySQL_obj.commit()
+            self.main.mySQLObj.commit()
             self.main.printStatus()
 
             # DB 새로고침
-            self.database_refresh_DB()
+            self.refreshDB()
             print("\nDB 병합 완료")
             if self.main.SETTING['ProcessConsole'] == 'default':
-                close_console()
+                closeConsole()
 
             reply = QMessageBox.question(self.main, 'Merge Finished', f"DB 병합이 완료되었습니다\n\n기존 DB를 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 self.main.printStatus("기존 DB 삭제 중...")
-                self.main.mySQL_obj.connectDB()
-                self.main.mySQL_obj.dropDB(target_db_name)
-                self.main.mySQL_obj.dropDB(selected_db_name)
-                self.main.mySQL_obj.connectDB('crawler_db')
-                self.main.mySQL_obj.deleteTableRowByColumn('db_list', target_db_name, 'DBname')
-                self.main.mySQL_obj.deleteTableRowByColumn('db_list', selected_db_name, 'DBname')
+                self.main.mySQLObj.connectDB()
+                self.main.mySQLObj.dropDB(targetDB_name)
+                self.main.mySQLObj.dropDB(selected_db_name)
+                self.main.mySQLObj.connectDB('crawler_db')
+                self.main.mySQLObj.deleteTableRowByColumn('db_list', targetDB_name, 'DBname')
+                self.main.mySQLObj.deleteTableRowByColumn('db_list', selected_db_name, 'DBname')
                 self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
-                self.database_refresh_DB()
+                self.refreshDB()
                 QMessageBox.information(self.main, "Information", "삭제가 완료되었습니다")
             else:
                 return
 
         except Exception:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def database_search_admin_mode(self, search_text):
+    def searchAdminMode(self, search_text):
         # ADMIN MODE
         try:
             if search_text == '/remove':
@@ -582,14 +582,14 @@ class Manager_Database:
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
 
-                    if os.path.exists(self.main.default_directory):
-                        shutil.rmtree(self.main.default_directory)
+                    if os.path.exists(self.main.localDirectory):
+                        shutil.rmtree(self.main.localDirectory)
                     exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
                     subprocess.Popen([exe_file_path], shell=True)
                     os._exit(0)
 
             if search_text == '/admin-mode' and self.main.user != 'admin':
-                ok, password = self.main.pw_check(True)
+                ok, password = self.main.checkPassword(True)
                 if ok or password == self.main.admin_password:
                     self.main.user = 'admin'
                     QMessageBox.information(self.main, "Admin Mode", f"관리자 권한이 부여되었습니다")
@@ -598,36 +598,36 @@ class Manager_Database:
 
             if search_text == '/toggle-logging':
                 mode_changed = 'On' if self.main.CONFIG['Logging'] == 'Off' else 'Off'
-                self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                self.main.mySQL_obj.updateTableCellByCondition('configuration', 'Setting', 'Logging', 'Config', mode_changed)
-                self.main.mySQL_obj.commit()
+                self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+                self.main.mySQLObj.updateTableCellByCondition('configuration', 'Setting', 'Logging', 'Config', mode_changed)
+                self.main.mySQLObj.commit()
                 self.main.CONFIG['Logging'] = 'On' if self.main.CONFIG['Logging'] == 'Off' else 'Off'
                 QMessageBox.information(self.main, "Information", f"Logging 설정을 '{mode_changed}'으로 변경했습니다")
                 return
             if './user_change' in search_text:
-                selected_row = self.main.database_tablewidget.currentRow()
-                if selected_row < 0:
+                selectedRow = self.main.database_tablewidget.currentRow()
+                if selectedRow < 0:
                     return
                 # 대상 DB 정보 가져오기
-                target_db_name = self.DB['DBlist'][selected_row]
+                targetDB_name = self.DB['DBlist'][selectedRow]
                 new = search_text.split()[1]
 
-                self.main.mySQL_obj.connectDB('crawler_db')
-                self.main.mySQL_obj.updateTableCellByCondition('db_list', "DBname", {target_db_name}, 'Requester', new)
+                self.main.mySQLObj.connectDB('crawler_db')
+                self.main.mySQLObj.updateTableCellByCondition('db_list', "DBname", {targetDB_name}, 'Requester', new)
                 QMessageBox.information(self.main, "Information", f"요청자가 {new}로 변경했습니다")
-                self.database_refresh_DB()
+                self.refreshDB()
 
             if search_text == '/update':
-                self.main.update_program(sc=True)
+                self.main.updateProgram(sc=True)
                 return
             if search_text == '/crawllog':
-                self.main.table_view('crawler_db', 'crawl_log', 'max')
+                self.main.viewTable('crawler_db', 'crawl_log', 'max')
                 return
             if search_text == '/dblist':
-                self.main.table_view('crawler_db', 'db_list')
+                self.main.viewTable('crawler_db', 'db_list')
                 return
             if search_text == '/config':
-                self.main.table_view('bigmaclab_manager_db', 'configuration')
+                self.main.viewTable('bigmaclab_manager_db', 'configuration')
                 return
             if search_text == '/add_llm_model':
                 llm_models = ''
@@ -647,9 +647,9 @@ class Manager_Database:
                         if ok2 and model_value:
                             # 입력된 값을 리스트에 추가
                             self.main.LLM_list[model_value] = model_name
-                            self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                            self.main.mySQL_obj.updateTableCellByCondition('configuration', "Setting", 'LLM_model', 'Config', json.dumps(self.main.LLM_list))
-                            self.main.mySQL_obj.commit()
+                            self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+                            self.main.mySQLObj.updateTableCellByCondition('configuration', "Setting", 'LLM_model', 'Config', json.dumps(self.main.LLM_list))
+                            self.main.mySQLObj.commit()
                             QMessageBox.information(self.main, '성공', f'LLM 모델 "{model_name}"이(가) 추가되었습니다')
 
             if search_text == '/del_llm_model':
@@ -668,31 +668,31 @@ class Manager_Database:
                         key_to_delete = list(self.main.LLM_list.keys())[int(num)-1]
                         value_to_delete = list(self.main.LLM_list.values())[int(num)-1]
                         del self.main.LLM_list[key_to_delete]
-                        self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                        self.main.mySQL_obj.updateTableCellByCondition('configuration', "Setting", 'LLM_model',
+                        self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+                        self.main.mySQLObj.updateTableCellByCondition('configuration', "Setting", 'LLM_model',
                                                                        'Config', json.dumps(self.main.LLM_list))
-                        self.main.mySQL_obj.commit()
+                        self.main.mySQLObj.commit()
                         QMessageBox.information(self.main, '성공', f'LLM 모델 {key_to_delete}이(가) 삭제되었습니다')
 
             if 'log' in search_text:
                 match = re.match(r'\/(.+)_log', search_text)
                 name = match.group(1)
-                self.main.table_view(f'{name}_db', 'manager_record', 'max')
+                self.main.viewTable(f'{name}_db', 'manager_record', 'max')
                 return
             if 'error' in search_text:  # ./error_db 이름
                 # 패턴 매칭
                 match = re.search(r"(?<=/error_)(.*)", search_text)
                 dbname = match.group(1)
-                self.main.mySQL_obj.connectDB('crawler_db')
-                self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Endtime', '오류 중단')
-                self.main.mySQL_obj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Datainfo', '오류 중단')
-                self.main.mySQL_obj.commit()
+                self.main.mySQLObj.connectDB('crawler_db')
+                self.main.mySQLObj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Endtime', '오류 중단')
+                self.main.mySQLObj.updateTableCellByCondition('db_list', 'DBname', dbname, 'Datainfo', '오류 중단')
+                self.main.mySQLObj.commit()
                 QMessageBox.information(self.main, "Information", f"{dbname} 상태를 변경했습니다")
-                self.database_refresh_DB()
+                self.refreshDB()
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def database_search_llm_button(self):
+    def initLLMChat(self):
         try:
             self.main.printStatus("LLM Chat 실행 중")
             if platform.system() == "Darwin":  # macOS인지 확인
@@ -710,12 +710,12 @@ class Manager_Database:
                 script_path = os.path.join(os.path.dirname(__file__), 'source', "LLM_Chat.exe")
                 subprocess.Popen([script_path])
 
-            self.main.user_logging(f'LLM Chat ON')
+            self.main.userLogging(f'LLM Chat ON')
             self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def database_save_DB(self):
+    def saveDB(self):
         try:
             class OptionDialog(QDialog):
                 def __init__(self):
@@ -886,14 +886,14 @@ class Manager_Database:
                 new_filename = re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
                 return new_filename
 
-            selected_row = self.main.database_tablewidget.currentRow()
-            if not selected_row >= 0:
+            selectedRow = self.main.database_tablewidget.currentRow()
+            if not selectedRow >= 0:
                 return
             self.main.printStatus("DB를 저장할 위치를 선택하여 주십시오")
 
-            target_db = self.DB['DBlist'][selected_row]
+            targetDB = self.DB['DBlist'][selectedRow]
 
-            folder_path = QFileDialog.getExistingDirectory(self.main, "DB를 저장할 위치를 선택하여 주십시오", self.main.default_directory)
+            folder_path = QFileDialog.getExistingDirectory(self.main, "DB를 저장할 위치를 선택하여 주십시오", self.main.localDirectory)
             if folder_path == '':
                 self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
                 return
@@ -933,8 +933,8 @@ class Manager_Database:
                     self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
                     return
                 if self.main.SETTING['ProcessConsole'] == 'default':
-                    open_console('CSV로 저장')
-                dbname = target_db
+                    openConsole('CSV로 저장')
+                dbname = targetDB
 
                 # 선택된 옵션에 따라 날짜를 형식화하고 DB 이름과 경로 수정
                 if date_options.get('option') == 'part':
@@ -942,7 +942,7 @@ class Manager_Database:
                     end_date = date_options['end_date']
                     start_date_formed = datetime.strptime(start_date, "%Y%m%d").strftime("%Y-%m-%d")
                     end_date_formed = datetime.strptime(end_date, "%Y%m%d").strftime("%Y-%m-%d")
-                    dbname = replace_dates_in_filename(target_db, start_date, end_date)
+                    dbname = replace_dates_in_filename(targetDB, start_date, end_date)
 
                 # 필터 옵션 설정 확인
                 filterOption = bool(filter_options['incl_words'] != [] or filter_options['excl_words'] != [])
@@ -973,11 +973,11 @@ class Manager_Database:
                 statisticsURL = []
 
                 self.main.printStatus(f"{dbname} 불러오는 중...")
-                self.main.user_logging(f'DATABASE -> save_DB({dbname})')
-                self.main.mySQL_obj.connectDB(target_db)
+                self.main.userLogging(f'DATABASE -> save_DB({dbname})')
+                self.main.mySQLObj.connectDB(targetDB)
 
                 # 불필요한 정렬 조건 제거
-                tableList = [table for table in sorted(self.main.mySQL_obj.showAllTable(target_db)) if 'info' not in table]
+                tableList = [table for table in sorted(self.main.mySQLObj.showAllTable(targetDB)) if 'info' not in table]
                 tableList = sorted(tableList, key=lambda x: ('article' not in x, 'statistics' not in x, x))
 
                 # 필터 옵션이 있는 경우 DB_info.txt 작성
@@ -991,7 +991,7 @@ class Manager_Database:
                             f"- 옵션: {filteropt}"
                         )
 
-                print(f"DB: {target_db}\n")
+                print(f"DB: {targetDB}\n")
 
                 # 옵션 출력
                 if date_options.get('option') == 'part' or filterOption:
@@ -1017,9 +1017,9 @@ class Manager_Database:
                     self.main.printStatus(f"{edited_tableName} 저장 중...")
                     # 테이블 데이터를 DataFrame으로 변환
                     if date_options['option'] == 'part':
-                        tableDF = self.main.mySQL_obj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
+                        tableDF = self.main.mySQLObj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
                     else:
-                        tableDF = self.main.mySQL_obj.TableToDataframe(tableName)
+                        tableDF = self.main.mySQLObj.TableToDataframe(tableName)
 
                     # 단어 필터링 옵션이 켜져있을 때
                     if filterOption == True and 'article' in tableName:
@@ -1056,7 +1056,7 @@ class Manager_Database:
                             tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
 
                     # reply_statistics 테이블 처리
-                    if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in target_db:
+                    if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in targetDB:
                         if filterOption == True:
                             filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
                         filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
@@ -1071,7 +1071,7 @@ class Manager_Database:
                     tableDF = None
                     gc.collect()
                 if self.main.SETTING['ProcessConsole'] == 'default':
-                    close_console()
+                    closeConsole()
                 reply = QMessageBox.question(self.main, 'Notification',
                                              f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -1080,29 +1080,29 @@ class Manager_Database:
                 self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def database_refresh_DB(self):
+    def refreshDB(self):
         try:
             self.main.printStatus("새로고침 중...")
 
-            self.DB = self.main.update_DB()
-            self.main.table_maker(self.main.database_tablewidget, self.DB['DBtable'], self.DB_table_column)
+            self.DB = self.main.updateDB()
+            self.main.makeTable(self.main.database_tablewidget, self.DB['DBtable'], self.DBTableColumn)
 
             self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def database_buttonMatch(self):
-        self.main.database_searchDB_button.clicked.connect(self.database_search_DB)
-        self.main.database_chatgpt_button.clicked.connect(self.database_search_llm_button)
-        self.main.database_searchDB_lineinput.returnPressed.connect(self.database_search_DB)
+    def matchButton(self):
+        self.main.database_searchDB_button.clicked.connect(self.searchDB)
+        self.main.database_chatgpt_button.clicked.connect(self.initLLMChat)
+        self.main.database_searchDB_lineinput.returnPressed.connect(self.searchDB)
         self.main.database_searchDB_lineinput.setPlaceholderText("검색어를 입력하고 Enter키나 검색 버튼을 누르세요...")
 
-        self.main.database_saveDB_button.clicked.connect(self.database_save_DB)
-        self.main.database_deleteDB_button.clicked.connect(self.database_delete_DB)
-        self.main.database_viewDB_button.clicked.connect(self.database_view_DB)
-        self.main.database_mergeDB_button.clicked.connect(self.database_merge_DB)
+        self.main.database_saveDB_button.clicked.connect(self.saveDB)
+        self.main.database_deleteDB_button.clicked.connect(self.deleteDB)
+        self.main.database_viewDB_button.clicked.connect(self.viewDB)
+        self.main.database_mergeDB_button.clicked.connect(self.mergeDB)
 
         self.main.database_chatgpt_button.setToolTip("LLM ChatBot")
         self.main.database_saveDB_button.setToolTip("Ctrl+S")
@@ -1117,21 +1117,19 @@ class Manager_Database:
         self.main.database_chatgpt_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'source', 'chatgpt_logo.png')))  # 아이콘 설정 (이미지 경로 지정)
         self.main.database_chatgpt_button.setIconSize(QSize(19, 19))  # 아이콘 크기 조정 (원하는 크기로 설정)
 
+    def setDatabaseShortcut(self):
+        self.main.initShortcutialize()
+        self.main.ctrld.activated.connect(self.deleteDB)
+        self.main.ctrls.activated.connect(self.saveDB)
+        self.main.ctrlm.activated.connect(self.mergeDB)
+        self.main.ctrlv.activated.connect(self.viewDB)
+        self.main.ctrlr.activated.connect(self.refreshDB)
+        self.main.ctrlc.activated.connect(self.initLLMChat)
 
-
-    def database_shortcut_setting(self):
-        self.main.shortcut_initialize()
-        self.main.ctrld.activated.connect(self.database_delete_DB)
-        self.main.ctrls.activated.connect(self.database_save_DB)
-        self.main.ctrlm.activated.connect(self.database_merge_DB)
-        self.main.ctrlv.activated.connect(self.database_view_DB)
-        self.main.ctrlr.activated.connect(self.database_refresh_DB)
-        self.main.ctrlc.activated.connect(self.database_search_llm_button)
-
-        self.main.cmdd.activated.connect(self.database_delete_DB)
-        self.main.cmds.activated.connect(self.database_save_DB)
-        self.main.cmdm.activated.connect(self.database_merge_DB)
-        self.main.cmdv.activated.connect(self.database_view_DB)
-        self.main.cmdr.activated.connect(self.database_refresh_DB)
-        self.main.cmdc.activated.connect(self.database_search_llm_button)
+        self.main.cmdd.activated.connect(self.deleteDB)
+        self.main.cmds.activated.connect(self.saveDB)
+        self.main.cmdm.activated.connect(self.mergeDB)
+        self.main.cmdv.activated.connect(self.viewDB)
+        self.main.cmdr.activated.connect(self.refreshDB)
+        self.main.cmdc.activated.connect(self.initLLMChat)
 

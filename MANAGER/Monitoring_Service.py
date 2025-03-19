@@ -24,7 +24,7 @@ class Monitoring:
                     msg = self.create_error_message(error_num, computer, server_type)
 
                     for key in self.user_keys:
-                        self.send_pushover(msg, key)
+                        self.sendPushOver(msg, key)
 
                 time.sleep(60)
 
@@ -39,7 +39,7 @@ class Monitoring:
             f"2. Check {computer} network"
         )
 
-    def send_pushover(self, msg, user_key):
+    def sendPushOver(self, msg, user_key):
         url = 'https://api.pushover.net/1/messages.json'
         message = {
             'token': self.app_key,
@@ -80,10 +80,10 @@ class Monitoring:
 
     def check_z8_db(self):
         try:
-            mysql_obj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
+            mySQLObj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306)
         except:
             return False
-        if mysql_obj.showAllDB() == []:
+        if mySQLObj.showAllDB() == []:
             if self.z8_status["db"]:
                 self.z8_status["db"] = False
                 return False
@@ -132,7 +132,7 @@ class Monitoring:
             f"{computer} {server_type.upper()} server is stable now"
         )
         for key in self.user_keys:
-            self.send_pushover(recovery_msg, key)
+            self.sendPushOver(recovery_msg, key)
 
 
 monitoring_obj = Monitoring()

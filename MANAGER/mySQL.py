@@ -607,7 +607,7 @@ class mySQL:
     def manager_setup(self):
 
         self.newDB('bigmaclab_manager_db_test')
-        self.newTable('device_list', ['device_name', 'user_name'])
+        self.newTable('deviceList', ['device_name', 'userName'])
         self.newTable('free_board', ['User', 'Title', 'DateTime', 'ViewCount', 'Text', 'PW'])
         self.newTable('version_bug', ['User', 'Version Num', 'Bug Title', 'DateTime', 'Bug Detail', 'Program Log'])
         self.newTable('version_info',['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status', 'Version Detail'])
@@ -746,11 +746,11 @@ class mySQL:
 if __name__ == "__main__":
     import json
     def test():
-        mySQL_obj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
-        mySQL_obj.connectDB('bigmaclab_manager_db')
+        mySQLObj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
+        mySQLObj.connectDB('bigmaclab_manager_db')
         reply_column = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID', 'Nickname', 'TotalUserComment', 'TotalUserReply', 'TotalUserLike', 'Article Day']
 
-        mySQL_obj.newTable('test', reply_column)
+        mySQLObj.newTable('test', reply_column)
 
     test()
 

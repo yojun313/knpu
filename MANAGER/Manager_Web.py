@@ -36,7 +36,7 @@ class Manager_Web:
             widget.addWidget(self.browser)
             self.browser.show()
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
     def web_open_downloadbrowser(self, url):
         webbrowser.open('https://knpu.re.kr:90')
 

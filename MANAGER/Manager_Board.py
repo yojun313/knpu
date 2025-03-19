@@ -13,13 +13,13 @@ warnings.filterwarnings("ignore")
 class Manager_Board:
     def __init__(self, main_window):
         self.main = main_window
-        self.board_version_refresh()
-        self.board_bug_refresh()
-        self.board_post_refresh()
-        self.board_buttonMatch()
-        self.main.tabWidget_board.currentChanged.connect(self.update_shortcuts_based_on_tab)
+        self.refreshVersionBoard()
+        self.refreshBugBoard()
+        self.refreshPostBoard()
+        self.matchButton()
+        self.main.tabWidget_board.currentChanged.connect(self.updateShortcut)
 
-    def board_version_refresh(self):
+    def refreshVersionBoard(self):
         try:
             def sort_by_version(two_dim_list):
                 # 버전 번호를 파싱하여 비교하는 함수
@@ -29,24 +29,24 @@ class Manager_Board:
                 sorted_list = sorted(two_dim_list, key=lambda x: version_key(x[0]), reverse=True)
                 return sorted_list
 
-            self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-            self.version_data = sort_by_version(self.main.mySQL_obj.TableToList('version_info'))
+            self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+            self.version_data = sort_by_version(self.main.mySQLObj.TableToList('version_info'))
             self.version_data_for_table = [sub_list[:-1] for sub_list in self.version_data]
             self.version_table_column = ['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status']
-            self.main.table_maker(self.main.board_version_tableWidget, self.version_data_for_table, self.version_table_column)
+            self.main.makeTable(self.main.board_version_tableWidget, self.version_data_for_table, self.version_table_column)
             self.version_name_list = [version_data[0] for version_data in self.version_data_for_table]
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def board_version_newcheck(self):
-        self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-        latest_version = self.main.mySQL_obj.TableLastRow("version_info")[1]
+    def checkNewVersion(self):
+        self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+        latest_version = self.main.mySQLObj.TableLastRow("version_info")[1]
         return latest_version
 
-    def board_add_version(self):
+    def addVersion(self):
         try:
             if self.main.user != 'admin':
-                ok, password = self.main.pw_check(True)
+                ok, password = self.main.checkPassword(True)
                 if not ok or password != self.main.admin_password:
                     return
 
@@ -141,14 +141,14 @@ class Manager_Board:
             dialog = VersionInputDialog(self.main.versionNum)
             dialog.exec_()
 
-            # 데이터를 board_add_version 함수에서 사용
+            # 데이터를 addVersion 함수에서 사용
             if dialog.data:
                 version_data = dialog.data
                 version_data = list(version_data.values())
-                self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                self.main.mySQL_obj.insertToTable('version_info', [version_data])
-                self.main.mySQL_obj.commit()
-                self.board_version_refresh()
+                self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+                self.main.mySQLObj.insertToTable('version_info', [version_data])
+                self.main.mySQLObj.commit()
+                self.refreshVersionBoard()
 
                 msg = (
                     "[ New Version Released! ]\n\n"
@@ -162,37 +162,39 @@ class Manager_Board:
                 reply = QMessageBox.question(self.main, 'Confirm Notification', "업데이트 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     for key in self.main.userPushOverKeyList:
-                        self.main.send_pushOver(msg, key)
+                        self.main.sendPushOver(msg, key)
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
-    def board_delete_version(self):
+            self.main.programBugLog(traceback.format_exc())
+
+    def deleteVersion(self):
         try:
             if self.main.user != 'admin':
-                ok, password = self.main.pw_check(True)
+                ok, password = self.main.checkPassword(True)
                 if not ok or password != self.main.admin_password:
                     return
             self.main.printStatus("삭제 중...")
 
-            selected_row = self.main.board_version_tableWidget.currentRow()
-            if selected_row >= 0:
+            selectedRow = self.main.board_version_tableWidget.currentRow()
+            if selectedRow >= 0:
                 reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                    self.main.mySQL_obj.deleteTableRowByColumn('version_info', self.version_name_list[selected_row], 'Version Num')
+                    self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+                    self.main.mySQLObj.deleteTableRowByColumn('version_info', self.version_name_list[selectedRow], 'Version Num')
                     self.main.printStatus()
-                    self.board_version_refresh()
+                    self.refreshVersionBoard()
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
-    def board_view_version(self):
-        try:
-            self.main.user_logging(f'BOARD -> board_view_version')
+            self.main.programBugLog(traceback.format_exc())
 
-            selected_row = self.main.board_version_tableWidget.currentRow()
-            if selected_row >= 0:
+    def viewVersion(self):
+        try:
+            self.main.userLogging(f'BOARD -> viewVersion')
+
+            selectedRow = self.main.board_version_tableWidget.currentRow()
+            if selectedRow >= 0:
                 self.main.printStatus("불러오는 중...")
-                version_data = self.version_data[selected_row]
+                version_data = self.version_data[selectedRow]
 
                 # 다이얼로그 생성
                 dialog = QDialog(self.main)
@@ -263,8 +265,9 @@ class Manager_Board:
                 dialog.exec_()
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
-    def board_bug_refresh(self):
+            self.main.programBugLog(traceback.format_exc())
+
+    def refreshBugBoard(self):
         try:
             def sort_by_date(two_dim_list):
                 # 날짜 문자열을 파싱하여 비교하는 함수
@@ -274,16 +277,17 @@ class Manager_Board:
                 sorted_list = sorted(two_dim_list, key=lambda x: date_key(x[3]), reverse=True)
                 return sorted_list
 
-            self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-            self.bug_data = sort_by_date(self.main.mySQL_obj.TableToList('version_bug'))
+            self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+            self.bug_data = sort_by_date(self.main.mySQLObj.TableToList('version_bug'))
             self.bug_data_for_table = [sub_list[:-2] for sub_list in self.bug_data]
             self.bug_table_column = ['User', 'Version Num', 'Title', 'DateTime']
-            self.main.table_maker(self.main.board_bug_tableWidget, self.bug_data_for_table,
+            self.main.makeTable(self.main.board_bug_tableWidget, self.bug_data_for_table,
                                   self.bug_table_column)
             self.bug_title_list = [bug_data[2] for bug_data in self.bug_data_for_table]
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
-    def board_add_bug(self):
+            self.main.programBugLog(traceback.format_exc())
+
+    def addBug(self):
         try:
             # QDialog를 상속받은 클래스 생성
             class BugInputDialog(QDialog):
@@ -337,14 +341,14 @@ class Manager_Board:
 
                 def submit(self):
                     # 입력된 데이터를 확인하고 처리
-                    user_name = self.user_input.text()
+                    userName = self.user_input.text()
                     version_num = self.version
                     bug_title = self.bug_title_input.text()
                     bug_date = datetime.now().strftime("%Y.%m.%d %H:%M")
                     bug_detail = self.bug_detail_input.toPlainText()
 
                     self.data = {
-                        'user_name': user_name,
+                        'userName': userName,
                         'version_num': version_num,
                         'bug_title': bug_title,
                         'bug_date': bug_date,
@@ -352,24 +356,24 @@ class Manager_Board:
                     }
 
                     QMessageBox.information(self, 'Input Data',
-                                            f'User Name: {user_name}\nVersion Num: {version_num}\nBug Title: {bug_title}\nDateTime: {bug_date}\nBug Detail: {bug_detail}')
+                                            f'User Name: {userName}\nVersion Num: {version_num}\nBug Title: {bug_title}\nDateTime: {bug_date}\nBug Detail: {bug_detail}')
                     self.accept()
 
             dialog = BugInputDialog(self.main, self.main.versionNum)
             dialog.exec_()
 
-            # 데이터를 board_add_version 함수에서 사용
+            # 데이터를 addVersion 함수에서 사용
             if dialog.data:
                 bug_data = dialog.data
                 bug_data = list(bug_data.values())
-                self.main.mySQL_obj.connectDB(f"{self.main.user}_db")
-                bug_log = self.main.mySQL_obj.TableToDataframe('manager_record')['Bug'].iloc[-1]
+                self.main.mySQLObj.connectDB(f"{self.main.user}_db")
+                bug_log = self.main.mySQLObj.TableToDataframe('manager_record')['Bug'].iloc[-1]
                 bug_data.append(bug_log)
 
-                self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                self.main.mySQL_obj.insertToTable('version_bug', bug_data)
-                self.main.mySQL_obj.commit()
-                self.board_bug_refresh()
+                self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+                self.main.mySQLObj.insertToTable('version_bug', bug_data)
+                self.main.mySQLObj.commit()
+                self.refreshBugBoard()
 
                 msg = (
                     "[ New Bug Added! ]\n"
@@ -380,32 +384,33 @@ class Manager_Board:
                     f"Detail: \n{bug_data[4]}\n"
                     f"log: \n\n{bug_log}\n"
                 )
-                self.main.send_pushOver(msg, self.main.admin_pushoverkey)
+                self.main.sendPushOver(msg, self.main.admin_pushoverkey)
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
-    def board_delete_bug(self):
+            self.main.programBugLog(traceback.format_exc())
+
+    def deleteBug(self):
         try:
             self.main.printStatus("삭제 중...")
 
             reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
-                selected_row = self.main.board_bug_tableWidget.currentRow()
-                if selected_row >= 0:
-                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                    self.main.mySQL_obj.deleteTableRowByColumn('version_bug', self.bug_title_list[selected_row], 'Bug Title')
-                    self.board_bug_refresh()
+                selectedRow = self.main.board_bug_tableWidget.currentRow()
+                if selectedRow >= 0:
+                    self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+                    self.main.mySQLObj.deleteTableRowByColumn('version_bug', self.bug_title_list[selectedRow], 'Bug Title')
+                    self.refreshBugBoard()
 
             self.main.printStatus()
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
-    def board_view_bug(self):
+            self.main.programBugLog(traceback.format_exc())
+    def viewBug(self):
         try:
-            self.main.user_logging(f'BOARD -> board_view_bug')
+            self.main.userLogging(f'BOARD -> viewBug')
 
-            selected_row = self.main.board_bug_tableWidget.currentRow()
-            if selected_row >= 0:
+            selectedRow = self.main.board_bug_tableWidget.currentRow()
+            if selectedRow >= 0:
                 self.main.printStatus("불러오는 중...")
-                bug_data = self.bug_data[selected_row]
+                bug_data = self.bug_data[selectedRow]
                 self.main.printStatus()
 
                 # 다이얼로그 생성
@@ -479,8 +484,8 @@ class Manager_Board:
                 dialog.exec_()
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
-    def board_post_refresh(self):
+            self.main.programBugLog(traceback.format_exc())
+    def refreshPostBoard(self):
         try:
             def sort_by_date(two_dim_list):
                 # 날짜 문자열을 파싱하여 비교하는 함수
@@ -490,20 +495,20 @@ class Manager_Board:
                 sorted_list = sorted(two_dim_list, key=lambda x: date_key(x[2]), reverse=True)
                 return sorted_list
 
-            self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-            self.post_data = sort_by_date(self.main.mySQL_obj.TableToList('free_board'))
+            self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+            self.post_data = sort_by_date(self.main.mySQLObj.TableToList('free_board'))
             self.post_data_for_table = [sub_list[:-1] for sub_list in self.post_data]
             self.post_table_column = ['User', 'Title', 'DateTime', 'ViewCount']
-            self.main.table_maker(self.main.board_post_tableWidget, self.post_data_for_table,
+            self.main.makeTable(self.main.board_post_tableWidget, self.post_data_for_table,
                                   self.post_table_column)
             self.post_title_list = [post_data[1] for post_data in self.post_data_for_table]
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def board_add_post(self):
+    def addPost(self):
         try:
             # QDialog를 상속받은 클래스 생성
-            self.main.user_logging(f'BOARD -> board_add_post')
+            self.main.userLogging(f'BOARD -> addPost')
             class PostInputDialog(QDialog):
                 def __init__(self, main_window):
                     super().__init__()
@@ -592,7 +597,7 @@ class Manager_Board:
 
                 def submit(self):
                     # 입력된 데이터를 확인하고 처리
-                    user_name = self.main.user
+                    userName = self.main.user
                     pw = self.password_input.text()
                     post_title = self.post_title_input.text()
                     post_date = datetime.now().strftime("%Y.%m.%d %H:%M")
@@ -600,7 +605,7 @@ class Manager_Board:
 
 
                     self.data = {
-                        'user_name': user_name,
+                        'userName': userName,
                         'post_title': post_title,
                         'post_date': post_date,
                         'ViewCount': 0,
@@ -609,20 +614,20 @@ class Manager_Board:
                     }
 
                     QMessageBox.information(self, 'Input Data',
-                                            f'User Name: {user_name}\nPost Title: {post_title}\nPost Date: {post_date}\nPost Text: {post_text}')
+                                            f'User Name: {userName}\nPost Title: {post_title}\nPost Date: {post_date}\nPost Text: {post_text}')
                     self.accept()
 
             dialog = PostInputDialog(self.main)
             dialog.exec_()
 
-            # 데이터를 board_add_version 함수에서 사용
+            # 데이터를 addVersion 함수에서 사용
             if dialog.data:
                 post_data = dialog.data
                 post_data = list(post_data.values())
-                self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                self.main.mySQL_obj.insertToTable('free_board', post_data)
-                self.main.mySQL_obj.commit()
-                self.board_post_refresh()
+                self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+                self.main.mySQLObj.insertToTable('free_board', post_data)
+                self.main.mySQLObj.commit()
+                self.refreshPostBoard()
 
                 msg = (
                     "[ New Post Added! ]\n"
@@ -634,32 +639,32 @@ class Manager_Board:
                 reply = QMessageBox.question(self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     for key in self.main.userPushOverKeyList:
-                        self.main.send_pushOver(msg, key)
+                        self.main.sendPushOver(msg, key)
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def board_view_post(self, row=0):
+    def viewPost(self, row=0):
         try:
-            selected_row = self.main.board_post_tableWidget.currentRow()
+            selectedRow = self.main.board_post_tableWidget.currentRow()
             if row != 0:
-                selected_row = row
-            if selected_row >= 0:
-                print(selected_row)
+                selectedRow = row
+            if selectedRow >= 0:
+                print(selectedRow)
                 self.main.printStatus("불러오는 중...")
-                post_data = self.post_data[selected_row]
+                post_data = self.post_data[selectedRow]
 
                 viewcount = int(post_data[3])
                 viewcount += 1
 
-                self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                self.main.mySQL_obj.updateTableCell('free_board', len(self.post_data)-selected_row-1, 'ViewCount', viewcount)
+                self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+                self.main.mySQLObj.updateTableCell('free_board', len(self.post_data)-selectedRow-1, 'ViewCount', viewcount)
 
                 if post_data[0] == 'admin' and self.main.user != 'admin':
                     msg = (
                         "[ Admin Notification ]\n\n"
                         f"{self.main.user} has read post [ {post_data[1]} ]"
                     )
-                    self.main.send_pushOver(msg, self.main.admin_pushoverkey)
+                    self.main.sendPushOver(msg, self.main.admin_pushoverkey)
 
                 self.main.printStatus()
                 # 다이얼로그 생성
@@ -721,22 +726,22 @@ class Manager_Board:
                 self.main.printStatus()
                 # 다이얼로그 실행
                 dialog.exec_()
-                self.board_post_refresh()
+                self.refreshPostBoard()
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def board_delete_post(self):
+    def deletePost(self):
         try:
             self.main.printStatus("삭제 중...")
 
-            selected_row = self.main.board_post_tableWidget.currentRow()
-            if selected_row >= 0:
-                ok, password = self.main.pw_check()
-                if ok and password == self.post_data[selected_row][5]:
-                    self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                    self.main.mySQL_obj.deleteTableRowByColumn('free_board', self.post_title_list[selected_row], 'Title')
-                    self.board_post_refresh()
+            selectedRow = self.main.board_post_tableWidget.currentRow()
+            if selectedRow >= 0:
+                ok, password = self.main.checkPassword()
+                if ok and password == self.post_data[selectedRow][5]:
+                    self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+                    self.main.mySQLObj.deleteTableRowByColumn('free_board', self.post_title_list[selectedRow], 'Title')
+                    self.refreshPostBoard()
                     self.main.printStatus()
                     QMessageBox.information(self.main, "Information", f"게시물이 삭제되었습니다")
                 else:
@@ -745,9 +750,9 @@ class Manager_Board:
                     return
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def board_edit_post(self):
+    def editPost(self):
         try:
             # QDialog를 상속받은 클래스 생성
             class PostInputDialog(QDialog):
@@ -807,44 +812,44 @@ class Manager_Board:
                                             f'Post Title: {post_title}\nPost Text: {post_text}')
                     self.accept()
 
-            selected_row = self.main.board_post_tableWidget.currentRow()
-            if selected_row >= 0:
-                ok, password = self.main.pw_check()
-                if ok and password == self.post_data[selected_row][5]:
-                    prev_post_data = self.post_data[selected_row]
+            selectedRow = self.main.board_post_tableWidget.currentRow()
+            if selectedRow >= 0:
+                ok, password = self.main.checkPassword()
+                if ok and password == self.post_data[selectedRow][5]:
+                    prev_post_data = self.post_data[selectedRow]
 
                     dialog = PostInputDialog(prev_post_data)
                     dialog.exec_()
 
-                    # 데이터를 board_add_version 함수에서 사용
+                    # 데이터를 addVersion 함수에서 사용
                     if dialog.data:
                         post_data = dialog.data
                         post_data = list(post_data.values())
-                        self.main.mySQL_obj.connectDB('bigmaclab_manager_db')
-                        self.main.mySQL_obj.updateTableCell('free_board', len(self.post_data)-selected_row-1, 'Title', post_data[0])
-                        self.main.mySQL_obj.updateTableCell('free_board', len(self.post_data)-selected_row-1, 'Text', post_data[1])
-                        self.board_post_refresh()
+                        self.main.mySQLObj.connectDB('bigmaclab_manager_db')
+                        self.main.mySQLObj.updateTableCell('free_board', len(self.post_data)-selectedRow-1, 'Title', post_data[0])
+                        self.main.mySQLObj.updateTableCell('free_board', len(self.post_data)-selectedRow-1, 'Text', post_data[1])
+                        self.refreshPostBoard()
                         QMessageBox.information(self.main, "Information", f"게시물이 수정되었습니다")
                 else:
                     QMessageBox.warning(self.main, "Wrong Password", f"비밀번호가 일치하지 않습니다")
                     self.main.printStatus()
                     return
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def board_buttonMatch(self):
-        self.main.board_deleteversion_button.clicked.connect(self.board_delete_version)
-        self.main.board_addversion_button.clicked.connect(self.board_add_version)
-        self.main.board_detailversion_button.clicked.connect(self.board_view_version)
+    def matchButton(self):
+        self.main.board_deleteversion_button.clicked.connect(self.deleteVersion)
+        self.main.board_addversion_button.clicked.connect(self.addVersion)
+        self.main.board_detailversion_button.clicked.connect(self.viewVersion)
 
-        self.main.board_addbug_button.clicked.connect(self.board_add_bug)
-        self.main.board_deletebug_button.clicked.connect(self.board_delete_bug)
-        self.main.board_detailbug_button.clicked.connect(self.board_view_bug)
+        self.main.board_addbug_button.clicked.connect(self.addBug)
+        self.main.board_deletebug_button.clicked.connect(self.deleteBug)
+        self.main.board_detailbug_button.clicked.connect(self.viewBug)
 
-        self.main.board_addpost_button.clicked.connect(self.board_add_post)
-        self.main.board_detailpost_button.clicked.connect(self.board_view_post)
-        self.main.board_deletepost_button.clicked.connect(self.board_delete_post)
-        self.main.board_editpost_button.clicked.connect(self.board_edit_post)
+        self.main.board_addpost_button.clicked.connect(self.addPost)
+        self.main.board_detailpost_button.clicked.connect(self.viewPost)
+        self.main.board_deletepost_button.clicked.connect(self.deletePost)
+        self.main.board_editpost_button.clicked.connect(self.editPost)
 
         self.main.board_deleteversion_button.setToolTip("Ctrl+D")
         self.main.board_addversion_button.setToolTip("Ctrl+A")
@@ -857,42 +862,42 @@ class Manager_Board:
         self.main.board_deletepost_button.setToolTip("Ctrl+D")
         self.main.board_editpost_button.setToolTip("Ctrl+E")
 
-    def board_shortcut_setting(self):
-        self.update_shortcuts_based_on_tab(0)
-        self.main.tabWidget_board.currentChanged.connect(self.update_shortcuts_based_on_tab)
+    def setBoardShortcut(self):
+        self.updateShortcut(0)
+        self.main.tabWidget_board.currentChanged.connect(self.updateShortcut)
 
-    def update_shortcuts_based_on_tab(self, index):
-        self.main.shortcut_initialize()
+    def updateShortcut(self, index):
+        self.main.initShortcutialize()
 
         # 패치 노트 탭
         if index == 0:
-            self.main.ctrld.activated.connect(self.board_delete_version)
-            self.main.ctrlv.activated.connect(self.board_view_version)
-            self.main.ctrla.activated.connect(self.board_add_version)
+            self.main.ctrld.activated.connect(self.deleteVersion)
+            self.main.ctrlv.activated.connect(self.viewVersion)
+            self.main.ctrla.activated.connect(self.addVersion)
 
-            self.main.cmdd.activated.connect(self.board_delete_version)
-            self.main.cmdv.activated.connect(self.board_view_version)
-            self.main.cmda.activated.connect(self.board_add_version)
+            self.main.cmdd.activated.connect(self.deleteVersion)
+            self.main.cmdv.activated.connect(self.viewVersion)
+            self.main.cmda.activated.connect(self.addVersion)
 
         # 버그 리포트 탭
         if index == 1:
-            self.main.ctrld.activated.connect(self.board_delete_bug)
-            self.main.ctrlv.activated.connect(self.board_view_bug)
-            self.main.ctrla.activated.connect(self.board_add_bug)
+            self.main.ctrld.activated.connect(self.deleteBug)
+            self.main.ctrlv.activated.connect(self.viewBug)
+            self.main.ctrla.activated.connect(self.addBug)
 
-            self.main.cmdd.activated.connect(self.board_delete_bug)
-            self.main.cmdv.activated.connect(self.board_view_bug)
-            self.main.cmda.activated.connect(self.board_add_bug)
+            self.main.cmdd.activated.connect(self.deleteBug)
+            self.main.cmdv.activated.connect(self.viewBug)
+            self.main.cmda.activated.connect(self.addBug)
 
         # 자유 게시판 탭
         if index == 2:
-            self.main.ctrld.activated.connect(self.board_delete_post)
-            self.main.ctrlv.activated.connect(self.board_view_post)
-            self.main.ctrla.activated.connect(self.board_add_post)
-            self.main.ctrle.activated.connect(self.board_edit_post)
+            self.main.ctrld.activated.connect(self.deletePost)
+            self.main.ctrlv.activated.connect(self.viewPost)
+            self.main.ctrla.activated.connect(self.addPost)
+            self.main.ctrle.activated.connect(self.editPost)
 
-            self.main.cmdd.activated.connect(self.board_delete_post)
-            self.main.cmdv.activated.connect(self.board_view_post)
-            self.main.cmda.activated.connect(self.board_add_post)
-            self.main.cmde.activated.connect(self.board_edit_post)
+            self.main.cmdd.activated.connect(self.deletePost)
+            self.main.cmdv.activated.connect(self.viewPost)
+            self.main.cmda.activated.connect(self.addPost)
+            self.main.cmde.activated.connect(self.editPost)
 

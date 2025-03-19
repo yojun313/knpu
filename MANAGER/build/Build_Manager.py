@@ -56,9 +56,9 @@ if __name__ == "__main__":
         version = input("Enter the program version: ")
 
         if version == 'r':
-            version = current_version
+            version = currentVersion
         elif version == 'n':
-            current = Version(current_version)
+            current = Version(currentVersion)
             next_version = Version(f"{current.major}.{current.minor}.{current.micro + 1}")
             version = str(next_version)
 
@@ -72,5 +72,5 @@ if __name__ == "__main__":
 
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M")
-        current_version = version
+        currentVersion = version
         print(f"{current_time} BIGMACLAB_MANAGER_{version} built successfully\n")

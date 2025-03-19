@@ -62,10 +62,10 @@ class SplashDialog(QDialog):
         main_layout.addWidget(self.status_label)
 
         # 저작권 정보 라벨
-        copyright_label = QLabel("Copyright © 2024 KNPU BIGMACLAB\nAll rights reserved.")
-        copyright_label.setAlignment(Qt.AlignCenter)
-        copyright_label.setStyleSheet(f"font-size: 15px; font-family: 'Tahoma'; color: {gray_color}; margin-top: 10px;")
-        main_layout.addWidget(copyright_label)
+        copyrightLabel = QLabel("Copyright © 2024 KNPU BIGMACLAB\nAll rights reserved.")
+        copyrightLabel.setAlignment(Qt.AlignCenter)
+        copyrightLabel.setStyleSheet(f"font-size: 15px; font-family: 'Tahoma'; color: {gray_color}; margin-top: 10px;")
+        main_layout.addWidget(copyrightLabel)
 
         # 배경 색상 저장
         self.bg_color = bg_color
@@ -79,7 +79,7 @@ class SplashDialog(QDialog):
         painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
         painter.drawRoundedRect(rect, 30, 30)  # 모서리를 둥글게 (30px radius)
 
-    def update_status(self, message):
+    def updateStatus(self, message):
         """
         SplashDialog의 상태 메시지를 업데이트하고 UI를 즉시 새로고침하는 메서드
         """

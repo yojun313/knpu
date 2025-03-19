@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (
     QGroupBox, QScrollArea, QVBoxLayout,
     QPushButton, QButtonGroup, QRadioButton, QDateEdit
 )
-from Manager_Console import open_console, close_console
+from Manager_Console import openConsole, closeConsole
 import chardet
 from DataProcess import DataProcess
 from Kemkim import KimKem
@@ -43,9 +43,9 @@ class Manager_Analysis:
         self.main = main_window
         self.dataprocess_obj = DataProcess(self.main)
         self.DB = copy.deepcopy(self.main.DB)
-        self.DB_table_column = ['Database', 'Type', 'Keyword', 'StartDate', 'EndDate', 'Option', 'Status', 'User', 'Size']
-        self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBtable'], self.DB_table_column)
-        self.analysis_filefinder_maker()
+        self.DBTableColumn = ['Database', 'Type', 'Keyword', 'StartDate', 'EndDate', 'Option', 'Status', 'User', 'Size']
+        self.main.makeTable(self.main.dataprocess_tab1_tablewidget, self.DB['DBtable'], self.DBTableColumn)
+        self.analysis_makeFileFinder()
         self.anaylsis_buttonMatch()
         self.console_open = False
 
@@ -83,32 +83,32 @@ class Manager_Analysis:
                     self.main.dataprocess_tab1_tablewidget.selectRow(row)
                     return
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
     def analysis_refresh_DB(self):
         try:
             self.main.printStatus("새로고침 중...")
 
-            self.DB = self.main.update_DB()
-            self.main.table_maker(self.main.dataprocess_tab1_tablewidget, self.DB['DBtable'], self.DB_table_column)
+            self.DB = self.main.updateDB()
+            self.main.makeTable(self.main.dataprocess_tab1_tablewidget, self.DB['DBtable'], self.DBTableColumn)
 
             self.main.printStatus()
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
     def analysis_timesplit_DB(self):
         try:
             def selectDB():
-                selected_row = self.main.dataprocess_tab1_tablewidget.currentRow()
-                if not selected_row >= 0:
+                selectedRow = self.main.dataprocess_tab1_tablewidget.currentRow()
+                if not selectedRow >= 0:
                     return 0 ,0, 0
-                target_db = self.DB['DBlist'][selected_row]
-                self.main.user_logging(f'ANALYSIS -> timesplit_DB({target_db})')
+                targetDB = self.DB['DBlist'][selectedRow]
+                self.main.userLogging(f'ANALYSIS -> timesplit_DB({targetDB})')
 
-                folder_path  = QFileDialog.getExistingDirectory(self.main, "분할 데이터를 저장할 폴더를 선택하세요", self.main.default_directory)
+                folder_path  = QFileDialog.getExistingDirectory(self.main, "분할 데이터를 저장할 폴더를 선택하세요", self.main.localDirectory)
                 if folder_path:
                     try:
-                        splitdata_path = os.path.join(folder_path, target_db + '_split')
+                        splitdata_path = os.path.join(folder_path, targetDB + '_split')
 
                         while True:
                             try:
@@ -117,14 +117,14 @@ class Manager_Analysis:
                             except:
                                 splitdata_path += "_copy"
 
-                        self.main.mySQL_obj.connectDB(target_db)
-                        tableList = self.main.mySQL_obj.showAllTable(target_db)
+                        self.main.mySQLObj.connectDB(targetDB)
+                        tableList = self.main.mySQLObj.showAllTable(targetDB)
                         tableList = [table for table in tableList if 'info' not in table]
 
-                        return target_db, tableList, splitdata_path
+                        return targetDB, tableList, splitdata_path
 
                     except Exception as e:
-                        self.main.program_bug_log(traceback.format_exc())
+                        self.main.programBugLog(traceback.format_exc())
                 else:
                     return 0,0,0
 
@@ -136,7 +136,7 @@ class Manager_Analysis:
                 return
             self.main.printStatus(f"{targetDB} 분할 및 저장 중...")
             if self.main.SETTING['ProcessConsole'] == 'default':
-                open_console("데이터 분할")
+                openConsole("데이터 분할")
 
             if self.main.SETTING['ProcessConsole'] == 'default':
                 iterator = tqdm(tableList, desc="Download(split) ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
@@ -151,7 +151,7 @@ class Manager_Analysis:
                     table_path += "_copy"
                     os.mkdir(table_path)
 
-                table_df = self.main.mySQL_obj.TableToDataframe(table)
+                table_df = self.main.mySQLObj.TableToDataframe(table)
                 table_df = self.dataprocess_obj.TimeSplitter(table_df)
 
                 year_divided_group = table_df.groupby('year')
@@ -167,28 +167,28 @@ class Manager_Analysis:
                 gc.collect()
             self.main.printStatus()
             if self.main.SETTING['ProcessConsole'] == 'default':
-                close_console()
+                closeConsole()
             reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분할 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 self.main.openFileExplorer(splitdata_path)
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
     def analysis_analysis_DB(self):
         try:
             def selectDB():
-                selected_row = self.main.dataprocess_tab1_tablewidget.currentRow()
-                if not selected_row >= 0:
+                selectedRow = self.main.dataprocess_tab1_tablewidget.currentRow()
+                if not selectedRow >= 0:
                     return 0 ,0, 0
-                target_db = self.DB['DBlist'][selected_row]
-                self.main.user_logging(f'ANALYSIS -> analysis_DB({target_db})')
+                targetDB = self.DB['DBlist'][selectedRow]
+                self.main.userLogging(f'ANALYSIS -> analysis_DB({targetDB})')
 
-                folder_path  = QFileDialog.getExistingDirectory(self.main, "분석 데이터를 저장할 폴더를 선택하세요", self.main.default_directory)
+                folder_path  = QFileDialog.getExistingDirectory(self.main, "분석 데이터를 저장할 폴더를 선택하세요", self.main.localDirectory)
                 if folder_path:
                     try:
-                        analysisdata_path = os.path.join(folder_path, target_db + '_analysis')
+                        analysisdata_path = os.path.join(folder_path, targetDB + '_analysis')
 
                         while True:
                             try:
@@ -197,14 +197,14 @@ class Manager_Analysis:
                             except:
                                 analysisdata_path += "_copy"
 
-                        self.main.mySQL_obj.connectDB(target_db)
-                        tableList = self.main.mySQL_obj.showAllTable(target_db)
+                        self.main.mySQLObj.connectDB(targetDB)
+                        tableList = self.main.mySQLObj.showAllTable(targetDB)
                         tableList = [table for table in tableList if 'info' not in table]
 
-                        return target_db, tableList, analysisdata_path
+                        return targetDB, tableList, analysisdata_path
 
                     except Exception as e:
-                        self.main.program_bug_log(traceback.format_exc())
+                        self.main.programBugLog(traceback.format_exc())
                 else:
                     return 0,0,0
 
@@ -216,7 +216,7 @@ class Manager_Analysis:
 
             self.main.printStatus(f"{targetDB} 분석 및 저장 중...")
             if self.main.SETTING['ProcessConsole'] == 'default':
-                open_console('데이터 분석')
+                openConsole('데이터 분석')
             print(f"DB: {targetDB}\n")
 
             if self.main.SETTING['ProcessConsole'] == 'default':
@@ -228,7 +228,7 @@ class Manager_Analysis:
                 if 'token' in table:
                     continue
                 tablename = table.split('_')
-                tabledf = self.main.mySQL_obj.TableToDataframe(table)
+                tabledf = self.main.mySQLObj.TableToDataframe(table)
 
                 match tablename[0]:
                     case 'navernews':
@@ -265,7 +265,7 @@ class Manager_Analysis:
                 gc.collect()
 
             if self.main.SETTING['ProcessConsole'] == 'default':
-                close_console()
+                closeConsole()
             self.main.printStatus()
 
             reply = QMessageBox.question(self.main, 'Notification', f"{targetDB} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
@@ -274,10 +274,10 @@ class Manager_Analysis:
                 self.main.openFileExplorer(analysisdata_path)
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
-    def analysis_filefinder_maker(self):
-        self.file_dialog = self.main.filefinder_maker(self.main)
+    def analysis_makeFileFinder(self):
+        self.file_dialog = self.main.makeFileFinder(self.main)
         self.main.analysis_filefinder_layout.addWidget(self.file_dialog)
 
     def analysis_getfiledirectory(self, file_dialog):
@@ -308,7 +308,7 @@ class Manager_Analysis:
             if reply != QMessageBox.Yes:
                 return
             if self.main.SETTING['ProcessConsole'] == 'default':
-                open_console("데이터 분할")
+                openConsole("데이터 분할")
 
             def split_table(csv_path):
                 table_path = os.path.join(os.path.dirname(csv_path), os.path.basename(csv_path).replace('.csv', '') + '_split')
@@ -319,12 +319,12 @@ class Manager_Analysis:
                     except:
                         table_path += "_copy"
 
-                table_df = self.main.csvReader(csv_path)
+                table_df = self.main.readCSV(csv_path)
 
                 if any('Date' in element for element in table_df.columns.tolist()) == False or table_df.columns.tolist() == []:
                     QMessageBox.information(self.main, "Wrong File", f"시간 분할할 수 없는 파일입니다")
                     if self.main.SETTING['ProcessConsole'] == 'default':
-                        close_console()
+                        closeConsole()
                     return 0
                 print("진행 중...")
                 table_df = self.dataprocess_obj.TimeSplitter(table_df)
@@ -338,7 +338,7 @@ class Manager_Analysis:
                 self.dataprocess_obj.TimeSplitToCSV(1, self.year_divided_group, table_path, tablename)
                 self.dataprocess_obj.TimeSplitToCSV(2, self.month_divided_group, table_path, tablename)
             def main(directory_list):
-                self.main.user_logging(f'ANALYSIS -> timesplit_file({directory_list[0]})')
+                self.main.userLogging(f'ANALYSIS -> timesplit_file({directory_list[0]})')
                 for csv_path in directory_list:
                     table_path = split_table(csv_path)
                     if table_path == 0:
@@ -350,7 +350,7 @@ class Manager_Analysis:
                     del self.week_divided_group
                     gc.collect()
                 if self.main.SETTING['ProcessConsole'] == 'default':
-                    close_console()
+                    closeConsole()
                 reply = QMessageBox.question(self.main, 'Notification', f"데이터 분할이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.openFileExplorer(os.path.dirname(selected_directory[0]))
@@ -360,7 +360,7 @@ class Manager_Analysis:
             self.main.printStatus()
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
     def analysis_merge_file(self):
         try:
@@ -393,8 +393,8 @@ class Manager_Analysis:
             mergedfilename, ok = QInputDialog.getText(None, '파일명 입력', '병합 파일명을 입력하세요:', text='merged_file')
             if not ok or not mergedfilename:
                 return
-            self.main.user_logging(f'ANALYSIS -> merge_file({mergedfilename})')
-            all_df = [self.main.csvReader(directory) for directory in selected_directory]
+            self.main.userLogging(f'ANALYSIS -> merge_file({mergedfilename})')
+            all_df = [self.main.readCSV(directory) for directory in selected_directory]
             all_columns = [df.columns.tolist() for df in all_df]
             same_check_result = find_different_element_index(all_columns)
             if same_check_result != None:
@@ -403,7 +403,7 @@ class Manager_Analysis:
 
             self.main.printStatus("데이터 병합 중...")
             if self.main.SETTING['ProcessConsole'] == 'default':
-                open_console("데이터 병합")
+                openConsole("데이터 병합")
             print("Target Files *\n")
             for directory in selected_directory:
                 print(directory)
@@ -424,14 +424,14 @@ class Manager_Analysis:
                 merged_df.to_csv(os.path.join(mergedfiledir, mergedfilename)+'.csv', index=False, encoding='utf-8-sig')
             self.main.printStatus()
             if self.main.SETTING['ProcessConsole'] == 'default':
-                close_console()
+                closeConsole()
 
             reply = QMessageBox.question(self.main, 'Notification', f"데이터 병합 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 self.main.openFileExplorer(mergedfiledir)
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
     def analysis_analysis_file(self):
         try:
@@ -513,7 +513,7 @@ class Manager_Analysis:
                 self.main.printStatus()
                 return
             if self.main.SETTING['ProcessConsole'] == 'default':
-                open_console('데이터 분석')
+                openConsole('데이터 분석')
 
             print("CSV 파일 읽는 중...")
             csv_path = selected_directory[0]
@@ -545,7 +545,7 @@ class Manager_Analysis:
 
             csv_data = pd.read_csv(csv_path, low_memory=False)
 
-            self.main.user_logging(f'ANALYSIS -> analysis_file({csv_path})')
+            self.main.userLogging(f'ANALYSIS -> analysis_file({csv_path})')
 
             print(f"\n{csv_filename.replace('.csv', '')} 데이터 분석 중...")
             match selected_options:
@@ -570,18 +570,18 @@ class Manager_Analysis:
                     self.dataprocess_obj.YouTubeRereplyAnalysis(csv_data, csv_path)
                 case []:
                     if self.main.SETTING['ProcessConsole'] == 'default':
-                        close_console()
+                        closeConsole()
                     return
                 case _:
                     if self.main.SETTING['ProcessConsole'] == 'default':
-                        close_console()
+                        closeConsole()
                     QMessageBox.warning(self.main, "Not Supported", f"{selected_options[1]} {selected_options[0]} 분석은 지원되지 않는 기능입니다")
                     return
 
             del csv_data
             gc.collect()
             if self.main.SETTING['ProcessConsole'] == 'default':
-                close_console()
+                closeConsole()
 
             reply = QMessageBox.question(self.main, 'Notification', f"{os.path.basename(csv_path)} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
@@ -589,8 +589,8 @@ class Manager_Analysis:
 
         except Exception as e:
             if self.main.SETTING['ProcessConsole'] == 'default':
-                close_console()
-            self.main.program_bug_log(traceback.format_exc())
+                closeConsole()
+            self.main.programBugLog(traceback.format_exc())
 
     def analysis_wordcloud_file(self):
         try:
@@ -609,7 +609,7 @@ class Manager_Analysis:
                 return
 
             self.main.printStatus("워드클라우드 데이터를 저장할 위치를 선택하세요")
-            save_path = QFileDialog.getExistingDirectory(self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요", self.main.default_directory)
+            save_path = QFileDialog.getExistingDirectory(self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요", self.main.localDirectory)
             if save_path == '':
                 self.main.printStatus()
                 return
@@ -783,7 +783,7 @@ class Manager_Analysis:
             if except_yes_selected == True:
                 QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
                 self.main.printStatus(f"예외어 사전(CSV)을 선택하세요")
-                exception_word_list_path   = QFileDialog.getOpenFileName(self.main, "예외어 사전(CSV)를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
+                exception_word_list_path   = QFileDialog.getOpenFileName(self.main, "예외어 사전(CSV)를 선택하세요", self.main.localDirectory, "CSV Files (*.csv);;All Files (*)")
                 exception_word_list_path = exception_word_list_path[0]
                 if exception_word_list_path == "":
                     return
@@ -804,9 +804,9 @@ class Manager_Analysis:
             )
 
             if self.main.SETTING['ProcessConsole'] == 'default':
-                open_console("워드클라우드")
+                openConsole("워드클라우드")
 
-            self.main.user_logging(f'ANALYSIS -> WordCloud({os.path.basename(folder_path)})')
+            self.main.userLogging(f'ANALYSIS -> WordCloud({os.path.basename(folder_path)})')
 
             self.main.printStatus("파일 불러오는 중...")
             print("\n파일 불러오는 중...\n")
@@ -816,7 +816,7 @@ class Manager_Analysis:
             self.main.printStatus()
 
             if self.main.SETTING['ProcessConsole'] == 'default':
-                close_console()
+                closeConsole()
 
             reply = QMessageBox.question(self.main, 'Notification', f"{filename} 워드클라우드 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
@@ -825,7 +825,7 @@ class Manager_Analysis:
             return
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
     def kimkem_kimkem(self):
         class KimKemOptionDialog(QDialog):
@@ -1152,7 +1152,7 @@ class Manager_Analysis:
             tokenfile_name = os.path.basename(selected_directory[0])
 
             self.main.printStatus("KEM KIM 데이터를 저장할 위치를 선택하세요")
-            save_path = QFileDialog.getExistingDirectory(self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요", self.main.default_directory)
+            save_path = QFileDialog.getExistingDirectory(self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요", self.main.localDirectory)
             if save_path == '':
                 self.main.printStatus()
                 return
@@ -1220,7 +1220,7 @@ class Manager_Analysis:
                 QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
                 self.main.printStatus(f"예외어 사전(CSV)을 선택하세요")
                 exception_word_list_path = QFileDialog.getOpenFileName(self.main, "예외어 사전(CSV)를 선택하세요",
-                                                                       self.main.default_directory,
+                                                                       self.main.localDirectory,
                                                                        "CSV Files (*.csv);;All Files (*)")
                 exception_word_list_path = exception_word_list_path[0]
                 if exception_word_list_path == "":
@@ -1238,20 +1238,20 @@ class Manager_Analysis:
                 exception_word_list_path = 'N'
 
             if self.main.SETTING['ProcessConsole'] == 'default':
-                open_console('KEMKIM 분석')
+                openConsole('KEMKIM 분석')
 
             print("\n파일 읽는 중...\n")
             self.main.printStatus("파일 읽는 중...")
             token_data = pd.read_csv(selected_directory[0], low_memory=False)
 
-            self.main.user_logging(
+            self.main.userLogging(
                 f'ANALYSIS -> KEMKIM({tokenfile_name})-({startdate},{startdate},{topword},{weight},{filter_yes_selected})')
             kimkem_obj = KimKem(self.main, token_data, tokenfile_name, save_path, startdate, enddate, period,
                                 topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected, trace_standard_selected,
                                 ani_yes_selected, exception_word_list, exception_word_list_path)
             result = kimkem_obj.make_kimkem()
             if self.main.SETTING['ProcessConsole'] == 'default':
-                close_console()
+                closeConsole()
             self.main.printStatus()
 
             if result == 1:
@@ -1265,13 +1265,13 @@ class Manager_Analysis:
                 QMessageBox.warning(self.main, "Wrong Range",
                                     "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
             else:
-                self.main.program_bug_log(result)
+                self.main.programBugLog(result)
 
             del kimkem_obj
             gc.collect()
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
     
     def kimkem_rekimkem_file(self):
 
@@ -1486,7 +1486,7 @@ class Manager_Analysis:
                 QMessageBox.warning(self.main, f"Wrong Directory", f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
                 return
 
-            self.main.user_logging(f'ANALYSIS -> rekimkem_file({result_directory[0]})')
+            self.main.userLogging(f'ANALYSIS -> rekimkem_file({result_directory[0]})')
             self.main.printStatus("파일 불러오는 중...")
             
             result_directory = result_directory[0]
@@ -1524,7 +1524,7 @@ class Manager_Analysis:
                 if eng_manual_option == True:
                     QMessageBox.information(self.main, "Information", f"키워드-영단어 사전(CSV)를 선택하세요")
                     self.main.printStatus("키워드-영단어 사전(CSV)를 선택하세요")
-                    eng_keyword_list_path = QFileDialog.getOpenFileName(self.main, "키워드-영단어 사전(CSV)를 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
+                    eng_keyword_list_path = QFileDialog.getOpenFileName(self.main, "키워드-영단어 사전(CSV)를 선택하세요", self.main.localDirectory, "CSV Files (*.csv);;All Files (*)")
                     eng_keyword_list_path = eng_keyword_list_path[0]
                     if eng_keyword_list_path == "":
                         return
@@ -1640,7 +1640,7 @@ class Manager_Analysis:
             self.main.openFileExplorer(new_result_folder)
         
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
     def kimkem_interpretkimkem_file(self):
         class WordSelector(QDialog):
@@ -1789,7 +1789,7 @@ class Manager_Analysis:
                 return
 
             result_directory = result_directory[0]
-            self.main.user_logging(f'ANALYSIS -> interpret_kimkem_file({result_directory})')
+            self.main.userLogging(f'ANALYSIS -> interpret_kimkem_file({result_directory})')
 
             final_signal_csv_path = os.path.join(result_directory, "Signal", "Final_signal.csv")
 
@@ -1838,7 +1838,7 @@ class Manager_Analysis:
                 return
 
             QMessageBox.information(self.main, "Information", f'Keyword를 추출할 CSV 파일을 선택하세요\n\n"{recommend_csv_name}"를 선택하세요')
-            object_csv_path = QFileDialog.getOpenFileName(self.main, "Keyword 추출 대상 CSV 파일을 선택하세요", self.main.default_directory, "CSV Files (*.csv);;All Files (*)")
+            object_csv_path = QFileDialog.getOpenFileName(self.main, "Keyword 추출 대상 CSV 파일을 선택하세요", self.main.localDirectory, "CSV Files (*.csv);;All Files (*)")
             object_csv_path = object_csv_path[0]
             object_csv_name = os.path.basename(object_csv_path).replace('.csv', '')
             if object_csv_path == "":
@@ -1974,7 +1974,7 @@ class Manager_Analysis:
                         "...\n"
                         "토픽 5. ~~: (여기에 내용 기입)"
                     )
-                    gpt_response = self.main.LLM_generate(gpt_query, self.main.SETTING['LLM_model'])
+                    gpt_response = self.main.generateLLM(gpt_query, self.main.SETTING['LLM_model'])
                     if type(gpt_response) != str:
                         QMessageBox.warning(self.main, "Error", f"{gpt_response[1]}")
                         self.main.printStatus()
@@ -1998,7 +1998,7 @@ class Manager_Analysis:
                 self.main.openFileExplorer(analyze_directory)
 
         except Exception as e:
-            self.main.program_bug_log(traceback.format_exc())
+            self.main.programBugLog(traceback.format_exc())
 
     def anaylsis_buttonMatch(self):
         self.main.analysis_refreshDB_btn.clicked.connect(self.analysis_refresh_DB)
@@ -2022,11 +2022,11 @@ class Manager_Analysis:
         self.main.analysis_kemkim_btn.setToolTip("Ctrl+K")
 
     def analysis_shortcut_setting(self):
-        self.update_shortcuts_based_on_tab(0)
-        self.main.tabWidget_data_process.currentChanged.connect(self.update_shortcuts_based_on_tab)
+        self.updateShortcut(0)
+        self.main.tabWidget_data_process.currentChanged.connect(self.updateShortcut)
 
-    def update_shortcuts_based_on_tab(self, index):
-        self.main.shortcut_initialize()
+    def updateShortcut(self, index):
+        self.main.initShortcutialize()
 
         # 파일 불러오기
         if index == 0:
