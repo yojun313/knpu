@@ -141,7 +141,7 @@ class MainWindow(QMainWindow):
 
             self.resize(1400, 1000)
 
-            self.initialize_statusBar()
+            self.initStatusbar()
             self.decryptProcess()
 
             setUpLogging()
@@ -394,7 +394,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(traceback.format_exc())
 
-    def initialize_statusBar(self):
+    def initStatusbar(self):
         # 상태 표시줄 생성
         self.statusbar = QStatusBar()
         self.setStatusBar(self.statusbar)
