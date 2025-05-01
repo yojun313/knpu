@@ -9,6 +9,9 @@ __pycache__/
 # Ignore .exe files
 *.exe
 
+logs/
+records/
+
 .idea/
 *.iml
 *.iws
