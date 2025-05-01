@@ -1417,7 +1417,7 @@ class MainWindow(QMainWindow):
                     return f"Failed to get a valid response: {response.status_code} {response.text}"
 
             except requests.exceptions.RequestException as e:
-                return "Error communicating with the server: {e}"
+                return f"Error communicating with the server: {e}"
 
 
     #################### DEVELOPER MODE ###################
