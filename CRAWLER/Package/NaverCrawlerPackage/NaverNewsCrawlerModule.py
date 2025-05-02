@@ -111,15 +111,17 @@ class NaverNewsCrawler(CrawlerModule):
             query_dict = parse_query(keyword)
 
             urlList = []
+
             params = {
+                "cluster_rank": "15",
                 "de": f"{endDate_formed}",
                 "ds": f"{startDate_formed}",
                 "eid": "",
-                "field": 0,
+                "field": "0",
                 "force_original": "",
-                "is_dts": 1,
-                "is_sug_officeid": 0,
-                "mynews": 0,
+                "is_dts": "0",
+                "is_sug_officeid": "0",
+                "mynews": "0",
                 "news_office_checked": "",
                 "nlu_query": "",
                 "nqx_theme": "",
@@ -128,26 +130,27 @@ class NaverNewsCrawler(CrawlerModule):
                 "nx_search_hlquery": "",
                 "nx_search_query": f"{query_dict['nx_search_query']}",
                 "nx_sub_query": f"{query_dict['nx_sub_query']}",
-                "office_category": 0,
-                "office_section_code": 0,
-                "office_type": 0,
-                "pd": 3,
-                "photo": 0,
+                "office_category": "",
+                "office_section_code": "0",
+                "office_type": "0",
+                "pd": "3",
+                "photo": "0",
                 "query": f"{keyword}",
                 "query_original": "",
-                "rev": 31,
-                "service_area": 0,
-                "sort": 0,
-                "spq": 0,
-                "start": "01",
-                "where": "news_tab_api"
+                "rev": "0",
+                "service_area": "",
+                "sm": "tab_smr",
+                "sort": "0",
+                "spq": "0",
+                "ssc": "tab.news.all",
+                "start": "1"
             }
 
             # 파라미터를 쿼리 문자열로 변환
             query_string = urllib.parse.urlencode(params)
 
             # API URL 생성
-            api_url = f"https://s.search.naver.com/p/newssearch/search.naver?{query_string}"
+            api_url = f"https://s.search.naver.com/p/newssearch/3/api/tab/more?{query_string}"
 
             # 요청 보내기
             response = self.Requester(api_url)
@@ -596,7 +599,7 @@ async def asyncTester():
 
     if number == 1:
         print("\nNaverNewsCrawler_urlCollector: ", end='')
-        urlList_returnData = CrawlerPackage_obj.urlCollector("테러 +예고", 20230102, 20230102)
+        urlList_returnData = CrawlerPackage_obj.urlCollector("아이패드", 20230102, 20230102)
         urlList = urlList_returnData['urlList']
 
         results = await CrawlerPackage_obj.asyncMultiCollector(urlList, option)
@@ -613,4 +616,4 @@ async def asyncTester():
 if __name__ == "__main__":
     #asyncio.run(asyncTester())
     CrawlerPackage_obj = NaverNewsCrawler(proxy_option=False, print_status_option=True)
-    print(CrawlerPackage_obj.urlCollector('포항공대', 20230101, 20230131)['urlCnt'])
+    print(CrawlerPackage_obj.urlCollector('아이패드', 20230101, 20230110)['urlCnt'])
