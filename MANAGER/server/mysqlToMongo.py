@@ -19,6 +19,7 @@ json_documents = df.to_dict(orient="records")
 dbs = []
 
 
+
 for document in json_documents:
     del document['id']
     dbs.append(document)
