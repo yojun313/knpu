@@ -1,0 +1,36 @@
+# GUI & PyQt
+PyQt5
+PyQtWebEngine
+
+# OpenAI & Web
+openai
+requests
+getmac
+
+# Database
+mysql-connector-python
+
+# Data & Analysis
+pandas
+numpy
+matplotlib
+seaborn
+wordcloud
+Pillow  # = PIL
+tqdm
+packaging
+python-dotenv
+
+# Translation
+googletrans==4.0.0-rc1
+
+# Async tqdm
+tqdm-asyncio
+
+# 기본 데이터 처리 및 시각화
+pandas
+numpy
+matplotlib
+seaborn
+Pillow        # for Image (PIL)
+tqdm
