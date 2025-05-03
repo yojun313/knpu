@@ -21,7 +21,7 @@ class Manager_User:
     def refreshUserTable(self):
         # 데이터베이스 연결 및 데이터 가져오기
         
-        self.user_list = requests.get(self.main.server_api + '/users').json()['data']
+        self.user_list = self.main.Request('get', '/users').json()['data']
         user_data = [(user['name'], user['email'], user['pushoverKey']) for user in self.user_list]
         self.userNameList = [user['name'] for user in self.user_list]
         # userNameList 및 userKeyList 업데이트
