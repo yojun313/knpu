@@ -492,7 +492,7 @@ class MainWindow(QMainWindow):
 
             self.user = userName
                         
-            res = self.Request('get', f"auth/request", params={"name": self.user}).json()
+            res = requests.get(f"{self.server_api}/auth/request", params={"name": self.user}).json()
             self.printStatus()
             QMessageBox.information(self, "Information",
                                     f"{self.user}님의 메일로 인증번호가 전송되었습니다\n\n"
@@ -503,8 +503,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
                 return False
 
-            
-            res = self.Request('post', f"auth/verify",
+            res = requests.post(f"{self.server_api}/auth/verify",
                                 params={"name": self.user, "code": password, "device": self.userDevice}).json()
             userData = res['user']
             access_token = res['access_token']
@@ -823,13 +822,24 @@ class MainWindow(QMainWindow):
         try:
             full_url = f"{self.server_api}/{url.lstrip('/')}"
 
-            if method.lower() == 'get':
+            # 기본 헤더에 Authorization 추가
+            headers = kwargs.get("headers", {})
+            token = self.settings.value('auth_token', '')
+            print(token)
+
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+            kwargs["headers"] = headers  
+            
+            # 요청 메서드 분기
+            method = method.lower()
+            if method == 'get':
                 response = requests.get(full_url, **kwargs)
-            elif method.lower() == 'post':
+            elif method == 'post':
                 response = requests.post(full_url, **kwargs)
-            elif method.lower() == 'put':
+            elif method == 'put':
                 response = requests.put(full_url, **kwargs)
-            elif method.lower() == 'delete':
+            elif method == 'delete':
                 response = requests.delete(full_url, **kwargs)
             else:
                 raise ValueError(f"Unsupported method: {method}")
@@ -845,6 +855,7 @@ class MainWindow(QMainWindow):
             raise Exception(f"[HTTP Error] {error_message}")
         except requests.exceptions.RequestException as err:
             raise Exception(f"[Request Failed] {str(err)}")
+
 
     
     #############################################################################
