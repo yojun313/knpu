@@ -1,25 +1,42 @@
 
 from bson import ObjectId
-from db import user_collection
-from models.user_model import UserCreate
+from app.db import user_collection
+from app.libs.exceptions import ConflictException, BadRequestException
+from app.models.user_model import UserCreate
+from app.utils.mongo import clean_doc
+from fastapi.responses import JSONResponse
 import uuid
 
 def create_user(user: UserCreate):
     user_dict = user.model_dump()
-    print(user_dict)
-    # result = user_collection.insert_one(user_dict)
-    # user_dict["_id"] = str(result.inserted_id)
-    return user_dict
-
-def get_user(user_id: str):
-    user = user_collection.find_one({"_id": ObjectId(user_id)})
-    if user:
-        user["_id"] = str(user["_id"])
-    return user
+    
+    existing_user = user_collection.find_one({"email": user_dict["email"]})
+    if existing_user:
+        raise ConflictException("User with this email already exists")
+    
+    user_dict['uid'] = str(uuid.uuid4())
+    user_collection.insert_one(user_dict)
+    
+    return JSONResponse(
+        status_code=201,
+        content={"message": "User created", "data": clean_doc(user_dict)},
+    )
 
 def get_all_users():
-    return [ {**u, "_id": str(u["_id"])} for u in user_collection.find() ]
+    users = user_collection.find()
+    user_list = [clean_doc(user) for user in users]
+    return JSONResponse(
+        status_code=200,
+        content={"message": "Users retrieved", "data": user_list},
+    )
 
-def delete_user(user_id: str):
-    result = user_collection.delete_one({"_id": ObjectId(user_id)})
-    return result.deleted_count > 0
+def delete_user(userUid: str):
+    result = user_collection.delete_one({"uid": userUid})
+    if not result.deleted_count > 0:
+        raise BadRequestException("User not found")
+    else:
+        return JSONResponse(
+            status_code=200,
+            content={"message": "User deleted"},
+        )
+        
