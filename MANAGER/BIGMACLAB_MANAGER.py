@@ -11,9 +11,9 @@
 # Contact:
 # - Email: yojun313@postech.ac.kr / moonyojun@gmail.com
 # - Phone: +82-10-4072-9190
-##############################################################################################################
+##############################################################################################################pip
 
-VERSION = '2.7.0'
+VERSION = '2.7.1'
 
 import os
 import platform
@@ -93,11 +93,12 @@ import pandas as pd
 from pathlib import Path
 import socket
 import gc
-import random
 import traceback
+import requests
 import re
 import logging
 import shutil
+import requests
 
 splashDialog.updateStatus("Loading GUI Libraries")
 from Manager_Settings import Manager_Setting
@@ -122,6 +123,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, splashDialog):
         try:
+            self.server_api = "http://localhost:8000/api"
             self.versionNum = VERSION
             self.version = f'Version {self.versionNum}'
             self.splashDialog = splashDialog
@@ -212,8 +214,6 @@ class MainWindow(QMainWindow):
                             # DB 불러오기
                             self.managerBoardObj = Manager_Board(self)
                             self.managerUserObj = Manager_User(self)
-                            self.userNameList = self.managerUserObj.userNameList  # User Table 유저 리스트
-                            self.userMailList = self.managerUserObj.userMailList
                             self.userList = self.managerUserObj.userList  # Device Table 유저 리스트
                             self.deviceList = self.managerUserObj.deviceList
                             self.macList = self.managerUserObj.macList
@@ -345,7 +345,7 @@ class MainWindow(QMainWindow):
             defaults = {
                 'Theme': 'default',
                 'ScreenSize': 'default',
-                'OldPostTitle': 'default',
+                'OldPostUid': 'default',
                 'AutoUpdate': 'default',
                 'MyDB': 'default',
                 'GPT_Key': 'default',
@@ -365,7 +365,7 @@ class MainWindow(QMainWindow):
             self.SETTING = {
                 'Theme': self.settings.value("Theme", "default"),
                 'ScreenSize': self.settings.value("ScreenSize", "default"),
-                'OldPostTitle': self.settings.value("OldPostTitle", "default"),
+                'OldPostUid': self.settings.value("OldPostUid", "default"),
                 'AutoUpdate': self.settings.value("AutoUpdate", "default"),
                 'MyDB': self.settings.value("MyDB", "default"),
                 'GPT_Key': self.settings.value("GPT_Key", "default"),
@@ -460,92 +460,66 @@ class MainWindow(QMainWindow):
             print(traceback.format_exc())
 
     def loginProgram(self):
-        def admin_notify(username):
-            msg = f'[ Admin Notification ]\n\nUnknown tried to connect\n\nName: {username}\n\nLocation: {self.getUserLocation(True)}'
-            self.sendPushOver(msg, self.admin_pushoverkey)
-
         try:
-            currentDevice = socket.gethostname()
-            self.userDevice = currentDevice
-            self.userMac = get_mac_address()
-            if self.userDevice == 'Yojuns-MacBook-Pro.local':
-                print("Done")
-                self.user = 'admin'
-                self.usermail = 'moonyojun@naver.com'
-                return True
-            if self.userMac in self.macList and self.userDevice in self.deviceList:
-                print("Done")
-                self.user = self.userList[self.deviceList.index(currentDevice)]
-                self.usermail = self.userMailList[self.userNameList.index(self.user)]
-                return True
-            else:
-                self.closeBootscreen()
-                self.printStatus()
-                inputDialogId = QInputDialog(self)
-                inputDialogId.setWindowTitle('Login')
-                inputDialogId.setLabelText('User Name:')
-                inputDialogId.resize(300, 200)  # 원하는 크기로 설정
-                ok = inputDialogId.exec_()
-                userName = inputDialogId.textValue()
-                if not ok:
-                    QMessageBox.warning(self, 'Program Shutdown', '프로그램을 종료합니다')
-                    return False
-                elif userName not in self.userNameList:
-                    admin_notify(userName)
-                    QMessageBox.warning(self, 'Unknown User', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
-                    return False
+            self.userDevice = socket.gethostname()
 
-                self.user = userName
-                self.usermail = self.userMailList[self.userNameList.index(userName)]
-                self.printStatus("인증번호 전송 중...")
+            # 이전에 발급된 토큰이 있는지 확인
+            saved_token = self.settings.value('auth_token', '')
+            if saved_token:
+                headers = {"Authorization": f"Bearer {saved_token}"}
+                res = requests.get(f"{self.server_api}/auth/login", headers=headers)
+                if res.status_code == 200:
+                    userData = res.json()['user']
+                    self.user = userData['name']
+                    self.userUid = userData['uid']
+                    self.usermail = userData['email']
+                    return True
 
-                random_pw = ''.join(random.choices('0123456789', k=6))
-                msg = (
-                    f"사용자: {self.user}\n"
-                    f"디바이스: {currentDevice}\n"
-                    f"인증 위치: {self.getUserLocation()}\n\n"
-                    f"인증 번호 '{random_pw}'를 입력하십시오"
-                )
-                self.sendEmail(self.usermail, "[MANAGER] 디바이스 등록 인증번호", msg)
-                self.printStatus()
-                QMessageBox.information(self, "Information", f"{self.user}님의 메일 {self.usermail}로 인증번호가 전송되었습니다\n\n인증번호를 확인 후 다음 창에서 입력하십시오")
-
-                ok, password = self.checkPassword(string="메일 인증번호")
-                if ok and password == random_pw:
-                    reply = QMessageBox.question(self, 'Device Registration',
-                                                 f"BIGMACLAB MANAGER 서버에\n현재 디바이스({currentDevice})를 등록하시겠습니까?",
-                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                    if reply == QMessageBox.Yes:
-                        self.mySQLObj.insertToTable('deviceList', [[currentDevice, userName, self.userMac]])
-                        self.mySQLObj.commit()
-                        QMessageBox.information(self, "Information", "디바이스가 등록되었습니다\n\n다음 실행 시 추가적인 로그인이 필요하지 않습니다")
-                        msg = (
-                            "[ New Device Added! ]\n\n"
-                            f"User: {userName}\n"
-                            f"Device: {currentDevice}\n"
-                            f"Location: {self.getUserLocation()}"
-                        )
-                        self.sendPushOver(msg, self.admin_pushoverkey)
-                        self.managerUserObj.initDeviceTable()
-                        return True
-                    else:
-                        QMessageBox.information(self, "Information", "디바이스가 등록되지 않았습니다\n\n다음 실행 시 추가적인 로그인이 필요합니다")
-                        return True
-                elif ok:
-                    self.printStatus("인증 실패")
-                    QMessageBox.warning(self, 'Wrong Password', '인증번호가 올바르지 않습니다\n\n프로그램을 종료합니다')
-                    admin_notify(self.user)
-                    return False
-                else:
-                    QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
-                    return False
-        except Exception as e:
+            # 사용자 이름 입력 대화
             self.closeBootscreen()
-            QMessageBox.critical(self, "Error", f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
-            QMessageBox.information(self, "Information",
-                                    f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
-            return False
+            self.printStatus()
 
+            inputDialogId = QInputDialog(self)
+            inputDialogId.setWindowTitle('Login')
+            inputDialogId.setLabelText('User Name:')
+            inputDialogId.resize(300, 200)
+            ok = inputDialogId.exec_()
+            userName = inputDialogId.textValue()
+
+            if not ok:
+                QMessageBox.warning(self, 'Program Shutdown', '프로그램을 종료합니다')
+                return False
+
+            self.user = userName
+                        
+            res = self.Request('get', f"auth/request", params={"name": self.user}).json()
+            self.printStatus()
+            QMessageBox.information(self, "Information",
+                                    f"{self.user}님의 메일로 인증번호가 전송되었습니다\n\n"
+                                    "인증번호를 확인 후 입력하십시오")
+
+            ok, password = self.checkPassword(string="메일 인증번호")
+            if not ok:
+                QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
+                return False
+
+            
+            res = self.Request('post', f"auth/verify",
+                                params={"name": self.user, "code": password, "device": self.userDevice}).json()
+            userData = res['user']
+            access_token = res['access_token']
+            
+            self.user = userData['name']
+            self.usermail = userData['email']
+            self.userUid = userData['uid']
+            self.settings.setValue('auth_token', access_token)
+
+        except Exception:
+            self.closeBootscreen()
+            QMessageBox.critical(self, "Error",
+                                f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
+            return False
+         
     def updateProgram(self, sc=False, auto=False):
         try:
             if platform.system() != "Windows":
@@ -674,17 +648,19 @@ class MainWindow(QMainWindow):
 
     def checkNewPost(self):
         print("\nV. Checking New Post... ", end='')
-        new_post_text = self.managerBoardObj.post_data[0][1]
-        new_post_writer = self.managerBoardObj.post_data[0][0]
-        old_post_text = self.SETTING['OldPostTitle']
+        if len(self.managerBoardObj.origin_post_data) == 0:
+            return False
+        new_post_uid = self.managerBoardObj.origin_post_data[0]['uid']
+        new_post_writer = self.managerBoardObj.origin_post_data[0]['writerName']
+        old_post_uid = self.SETTING['OldPostUid']
         print("Done")
-        if new_post_text == old_post_text:
+        if new_post_uid == old_post_uid:
             return False
-        elif old_post_text == 'default':
-            self.updateSettings('OldPostTitle', new_post_text)
+        elif old_post_uid == 'default':
+            self.updateSettings('OldPostUid', new_post_uid)
             return False
-        elif new_post_text != old_post_text and self.user != new_post_writer:
-            self.updateSettings('OldPostTitle', new_post_text)
+        elif new_post_uid != old_post_uid and self.user != new_post_writer:
+            self.updateSettings('OldPostUid', new_post_uid)
             return True
 
     def checkNetwork(self):
@@ -692,13 +668,30 @@ class MainWindow(QMainWindow):
             try:
                 # Google을 기본으로 확인 (URL은 다른 사이트로 변경 가능)
                 response = requests.get("http://www.google.com", timeout=5)
-                return response.status_code == 200
+                break
             except requests.ConnectionError:
                 self.printStatus()
                 self.closeBootscreen()
                 reply = QMessageBox.question(self, "Internet Connection Error",
                                              "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    continue
+                else:
+                    os._exit(0)
+                    
+        while True:
+            try:
+                # FastAPI 서버의 상태를 확인하는 핑 API 또는 기본 경로 사용
+                response = requests.get(f"{self.server_api}/ping", timeout=5)
+                if response.status_code == 200:
+                    return True
+            except requests.RequestException:
+                self.printStatus()
+                self.closeBootscreen()
+                reply = QMessageBox.question(self, "서버 연결 실패",
+                                            f"서버에 연결할 수 없습니다.\n\n관리자에게 문의하십시오\n\n재시도하시겠습니까?",
+                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     continue
                 else:
@@ -826,6 +819,34 @@ class MainWindow(QMainWindow):
 
         return EmbeddedFileDialog(self, self.localDirectory)
 
+    def Request(self, method, url, **kwargs):
+        try:
+            full_url = f"{self.server_api}/{url.lstrip('/')}"
+
+            if method.lower() == 'get':
+                response = requests.get(full_url, **kwargs)
+            elif method.lower() == 'post':
+                response = requests.post(full_url, **kwargs)
+            elif method.lower() == 'put':
+                response = requests.put(full_url, **kwargs)
+            elif method.lower() == 'delete':
+                response = requests.delete(full_url, **kwargs)
+            else:
+                raise ValueError(f"Unsupported method: {method}")
+
+            response.raise_for_status()
+            return response
+
+        except requests.exceptions.HTTPError as http_err:
+            try:
+                error_message = http_err.response.json().get("message", str(http_err))
+            except Exception:
+                error_message = str(http_err)
+            raise Exception(f"[HTTP Error] {error_message}")
+        except requests.exceptions.RequestException as err:
+            raise Exception(f"[Request Failed] {str(err)}")
+
+    
     #############################################################################
 
     def updateSettings(self, option_key, new_value):

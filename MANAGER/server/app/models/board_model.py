@@ -7,6 +7,7 @@ class AddVersionDto(BaseModel):
     features: str
     status: str
     details: str
+    sendPushOver: bool
 
 class VersionBoardSchema(BaseModel):
     uid: str
@@ -27,6 +28,7 @@ class AddBugDto(BaseModel):
 class BugBoardSchema(BaseModel):
     uid: str
     writerUid: str
+    writerName: str
     versionName: str
     bugTitle: str
     bugText: str
@@ -37,10 +39,12 @@ class AddPostDto(BaseModel):
     writerUid: str
     title: str
     text: str
+    sendPushOver: bool
 
 class FreeBoardSchema(BaseModel):
     uid: str
     writerUid: str
+    writerName: str
     title: str
     text: str
     datetime: datetime

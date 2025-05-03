@@ -15,6 +15,7 @@ def create_user(user: UserCreate):
         raise ConflictException("User with this email already exists")
     
     user_dict['uid'] = str(uuid.uuid4())
+    user_dict['device_list'] = []
     user_collection.insert_one(user_dict)
     
     return JSONResponse(

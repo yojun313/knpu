@@ -8,25 +8,24 @@ from PyQt5.QtWidgets import (
     QWidget, QToolBox,
     QListView, QVBoxLayout,
 )
+import requests
 warnings.filterwarnings("ignore")
 
 class Manager_User:
     def __init__(self, main_window):
         self.main = main_window
-        self.initUserTable()
+        self.refreshUserTable()
         self.initDeviceTable()
         self.matchButton()
 
-    def initUserTable(self):
+    def refreshUserTable(self):
         # 데이터베이스 연결 및 데이터 가져오기
-        self.main.mySQLObj.connectDB('user_db')
-        userDF = self.main.mySQLObj.TableToDataframe('user_info')
-        user_data = [(name, email, key) for _, name, email, key in userDF.itertuples(index=False, name=None)]
-
+        
+        self.user_list = requests.get(self.main.server_api + '/users').json()['data']
+        user_data = [(user['name'], user['email'], user['pushoverKey']) for user in self.user_list]
+        self.userNameList = [user['name'] for user in self.user_list]
         # userNameList 및 userKeyList 업데이트
-        self.userNameList = [name for name, _, key in user_data]
-        self.userKeyList = [key for _, _, key in user_data if key != 'n']
-        self.userMailList = [email for _, email, key in user_data]
+        self.userKeyList = [user['pushoverKey'] for user in self.user_list if user['pushoverKey'] != 'n']
 
         # 테이블 설정
         columns = ['Name', 'Email', 'PushOverKey']
@@ -68,35 +67,16 @@ class Manager_User:
                 if not ok or password != self.main.admin_password:
                     return
 
-            self.main.mySQLObj.connectDB('user_db')
-
             reply = QMessageBox.question(self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
-                self.main.mySQLObj.connectDB('user_db')
-                self.main.mySQLObj.insertToTable(tableName='user_info', data_list=[[name, email, key]])
-                self.userNameList.append(name)
-                self.main.mySQLObj.newDB(name+'_db')
-                self.main.mySQLObj.newTable('manager_record', ['Date', 'Log', 'Bug', 'D_Log'])
-                self.main.mySQLObj.commit()
-
-                row_position = self.main.user_tablewidget.rowCount()
-                self.main.user_tablewidget.insertRow(row_position)
-
-                name_item = QTableWidgetItem(name)
-                email_item = QTableWidgetItem(email)
-                key_item = QTableWidgetItem(key)
-
-                name_item.setTextAlignment(Qt.AlignCenter)
-                email_item.setTextAlignment(Qt.AlignCenter)
-                key_item.setTextAlignment(Qt.AlignCenter)
-
-                self.main.user_tablewidget.setItem(row_position, 0, name_item)
-                self.main.user_tablewidget.setItem(row_position, 1, email_item)
-                self.main.user_tablewidget.setItem(row_position, 2, key_item)
-
-                self.main.userName_lineinput.clear()
-                self.main.user_email_lineinput.clear()
-                self.main.user_key_lineinput.clear()
+                data = {
+                    'name': name,
+                    'email': email,
+                    'pushoverKey': key
+                }
+                response = requests.post(self.main.server_api + '/users/add', json=data)
+                self.refreshUserTable()
+                
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
@@ -110,15 +90,15 @@ class Manager_User:
 
             selectedRow = self.main.user_tablewidget.currentRow()
             if selectedRow >= 0:
-                reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.userNameList[selectedRow]}님을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                selectedUser = self.user_list[selectedRow]
+                reply = QMessageBox.question(self.main, 'Confirm Delete', f"{selectedUser['name']}님을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    self.main.mySQLObj.connectDB('user_db')
-                    self.main.mySQLObj.deleteTableRowByColumn('user_info', self.userNameList[selectedRow], 'Name')
-                    self.main.mySQLObj.dropDB(self.userNameList[selectedRow]+'_db')
-                    QMessageBox.information(self.main, "Information", f"'{self.userNameList[selectedRow]}'님이 삭제되었습니다")
-                    self.userNameList.pop(selectedRow)
-                    self.main.user_tablewidget.removeRow(selectedRow)
-
+                    response = requests.delete(self.main.server_api + '/users/' + selectedUser['uid'])
+                    if response.status_code == 200:
+                        QMessageBox.information(self.main, "Information", f"'{selectedUser['name']}'님이 삭제되었습니다")
+                        self.refreshUserTable()
+                    else:
+                        QMessageBox.warning(self.main, "Error", f"'{selectedUser['name']}'님을 삭제할 수 없습니다")
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())

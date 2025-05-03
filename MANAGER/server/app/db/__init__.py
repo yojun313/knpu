@@ -18,5 +18,12 @@ client = MongoClient(uri)
 manager_db = client["manager"]
 crawler_db = client["crawler"]
 
-user_collection = manager_db["users"]
 crawlDbList_collection = crawler_db["db_list"]
+
+user_collection = manager_db["users"]
+user_settings_collection = manager_db["user-settings"]
+user_logs_collection = manager_db["user-logs"]
+versionBoard_collection = manager_db["version-board"]
+bugBoard_collection = manager_db["bug-board"]
+freeBoard_collection = manager_db["free-board"]
+auth_collection = manager_db["auth"]
