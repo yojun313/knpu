@@ -1,9 +1,5 @@
 from fastapi import FastAPI
-from app.api import routes_user, routes_crawl, routes_analysis
+from app.routes.user_routes import api_router as user_router
 
 app = FastAPI()
-
-# API 라우터 등록
-app.include_router(routes_user.router, prefix="/users", tags=["Users"])
-app.include_router(routes_crawl.router, prefix="/crawl", tags=["Crawling"])
-app.include_router(routes_analysis.router, prefix="/analysis", tags=["Analysis"])
+app.include_router(user_router)
