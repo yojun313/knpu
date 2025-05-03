@@ -1,7 +1,7 @@
 
 from bson import ObjectId
-from app.api.db import user_collection
-from MANAGER.server.app.models.models import UserCreate
+from db import user_collection
+from models.user_model import UserCreate
 import uuid
 
 def create_user(user: UserCreate):
