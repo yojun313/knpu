@@ -35,20 +35,20 @@ class ToolModule:
 
             # 파일 복호화 및 .decrypted_env 파일로 저장
             decrypted_data = fernet.decrypt(encrypted_data).decode("utf-8")
-            with open(os.path.join(current_position, 'decrypted_env'), "w", encoding="utf-8") as dec_file:
+            with open(os.path.join(current_position, '..', 'assets', 'decrypted_env'), "w", encoding="utf-8") as dec_file:
                 dec_file.write(decrypted_data)
 
         decrypt_env_file(os.path.join(
             current_position, '..', 'assets', 'encrypted_env'))
-        load_dotenv(os.path.join(current_position, 'decrypted_env'))
+        load_dotenv(os.path.join(current_position, '..', 'assets', 'decrypted_env'))
 
         self.admin_password = os.getenv('ADMIN_PASSWORD')
         self.public_password = os.getenv('PUBLIC_PASSWORD')
         self.admin_pushoverkey = os.getenv('ADMIN_PUSHOVER')
         self.db_ip = os.getenv('DB_IP')
 
-        # if os.path.exists(os.path.join(current_position, 'decrypted_env')):
-        #     os.remove(os.path.join(current_position, 'decrypted_env'))
+        if os.path.exists(os.path.join(current_position, 'decrypted_env')):
+            os.remove(os.path.join(current_position, 'decrypted_env'))
 
     def sendPushOver(self, msg, user_key, image_path=False):
         app_key_list = ["a22qabchdf25zzkd1vjn12exjytsjx"]
