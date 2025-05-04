@@ -14,7 +14,7 @@ import os
 import re
 from kiwipiepy import Kiwi
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import shutil
 import urllib3
@@ -38,7 +38,7 @@ load_dotenv()
 class Crawler(CrawlerModule):
     
     def __init__(self, user, startDate, endDate, keyword, upload, speed, weboption):
-        super().__init__(proxy_option=True)
+        super().__init__(proxy_option=False)
 
         if user == '문요준':
             user = 'admin'
@@ -174,7 +174,12 @@ class Crawler(CrawlerModule):
 
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
-        self.DBname      = f"{DBtype}_{self.DBkeyword}{dbname_date}_{self.now.strftime('%m%d_%H%M')}"
+        
+        now_kst = datetime.now(timezone.utc).astimezone(
+            timezone(timedelta(hours=9))
+        ).strftime('%m%d_%H%M')
+        
+        self.DBname      = f"{DBtype}_{self.DBkeyword}{dbname_date}_{now_kst}"
         self.DBpath      = os.path.join(self.scrapdata_path, self.DBname)
 
         if self.DBname in self.mySQL.showAllDB():
