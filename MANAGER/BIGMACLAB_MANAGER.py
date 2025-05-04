@@ -203,12 +203,18 @@ class MainWindow(QMainWindow):
                         "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 동작하는지 확인하십시오"
                         "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
                     )
+                    
+                    # User Checking & Login Process
+                    print("\nI. Checking User... ", end='')
+                    self.splashDialog.updateStatus("Checking User")
+                    if self.loginProgram() == False:
+                        os._exit(0)
 
                     # Loading User info from DB
                     while True:
                         try:
                             self.mySQLObj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
-                            print("\nI. Loading User Info from DB... ", end='')
+                            print("\nII. Loading Boards from DB... ", end='')
                             self.splashDialog.updateStatus("Loading User Info from DB")
                             if self.mySQLObj.showAllDB() == []:
                                 raise
@@ -234,13 +240,7 @@ class MainWindow(QMainWindow):
                                 continue
                             else:
                                 os._exit(0)
-
-                    # User Checking & Login Process
-                    print("\nII. Checking User... ", end='')
-                    self.splashDialog.updateStatus("Checking User")
-                    if self.loginProgram() == False:
-                        os._exit(0)
-
+                                
                     self.splashDialog.updateStatus("Checking New Version")
                     print("\nIII. Checking New Version... ", end='')
                     if self.checkNewVersion() == True:
