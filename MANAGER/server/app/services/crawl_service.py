@@ -32,7 +32,7 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
     
     return JSONResponse(
         status_code=201,
-        content={"message": "CrawlDB created", "data": clean_doc(crawlDb_dict)},
+        content={"message": "CrawlDB created", "data": clean_doc(ordered_dict)},
     )
 
 def createCrawlLog(crawlLog: CrawlLogCreateDto):
