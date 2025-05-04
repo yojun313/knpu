@@ -221,7 +221,7 @@ class NaverBlogCrawler(CrawlerModule):
                 article_data["comment_cnt"] = str(comment_cnt)
                 '''
                 
-                self.IntegratedDB['TotalArticleCnt'] += 1
+                self.IntegratedDB['totalArticleCnt'] += 1
                 if self.print_status_option == True:
                     self.printStatus('NaverBlog', 3, self.PrintData)
                 
@@ -334,8 +334,8 @@ class NaverBlogCrawler(CrawlerModule):
                 r_like_list.extend(sympathy_counts)
                 r_bad_list.extend(antipathy_counts)
 
-                self.IntegratedDB['TotalReplyCnt'] += len(masked_user_ids)
-                self.IntegratedDB['TotalRereplyCnt'] += len(masked_user_ids)
+                self.IntegratedDB['totalReplyCnt'] += len(masked_user_ids)
+                self.IntegratedDB['totalRereplyCnt'] += len(masked_user_ids)
                 
                 if self.print_status_option:
                     self.printStatus('NaverBlog', 6, self.PrintData)

@@ -218,7 +218,7 @@ class NaverNewsCrawler(CrawlerModule):
             returnData = {
                 'articleData': articleData
             }
-            self.IntegratedDB['TotalArticleCnt'] += 1
+            self.IntegratedDB['totalArticleCnt'] += 1
             if self.print_status_option == True:
                 self.printStatus('NaverNews', 3, self.PrintData)
 
@@ -313,7 +313,7 @@ class NaverNewsCrawler(CrawlerModule):
                 r_like_list.extend(sympathy_counts)
                 r_bad_list.extend(antipathy_counts)
 
-                self.IntegratedDB['TotalReplyCnt'] += len(masked_user_ids)
+                self.IntegratedDB['totalReplyCnt'] += len(masked_user_ids)
                 
                 if self.print_status_option:
                     self.printStatus('NaverNews', 4, self.PrintData)
@@ -497,7 +497,7 @@ class NaverNewsCrawler(CrawlerModule):
                     r_bad_list.extend(antipathy_counts)
                     parentReplynum_list.extend([parentCommentNum_list[i]] * len(masked_user_ids))     
                     
-                    self.IntegratedDB['TotalRereplyCnt'] += len(masked_user_ids)
+                    self.IntegratedDB['totalRereplyCnt'] += len(masked_user_ids)
                     if self.print_status_option == True:
                         self.printStatus('NaverNews', 5, self.PrintData)
                 except:

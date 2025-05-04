@@ -228,7 +228,7 @@ class ChinaSinaCrawler(CrawlerModule):
                 
             articleData = [title, text, date, newsURL]
             
-            self.IntegratedDB['TotalArticleCnt'] += 1
+            self.IntegratedDB['totalArticleCnt'] += 1
             if self.print_status_option == True:
                 self.printStatus('ChinaSina', 3, self.PrintData)
 
@@ -332,7 +332,7 @@ class ChinaSinaCrawler(CrawlerModule):
                     replyList.append(replyData)
                     reply_num += 1
                     
-                self.IntegratedDB['TotalReplyCnt'] += len(comment_json)
+                self.IntegratedDB['totalReplyCnt'] += len(comment_json)
                 if self.print_status_option:
                     self.printStatus('ChinaSina', 4, self.PrintData)
 
