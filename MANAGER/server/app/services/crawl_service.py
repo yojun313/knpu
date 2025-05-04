@@ -1,16 +1,16 @@
-from app.db import crawlDbList_collection
+from app.db import crawlList_db, mysql_db, crawlLog_db
 from app.libs.exceptions import ConflictException, NotFoundException 
-from app.models.crawl_model import CrawlDbCreateDto, DataInfo
+from app.models.crawl_model import CrawlDbCreateDto, DataInfo, CrawlLogCreateDto
 from app.utils.mongo import clean_doc
 from fastapi.responses import JSONResponse
 from collections import OrderedDict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
 
 def createCrawlDb(crawlDb: CrawlDbCreateDto):
     crawlDb_dict = crawlDb.model_dump()
     
-    existing_crawlDb = crawlDbList_collection.find_one({"name": crawlDb_dict["name"]})
+    existing_crawlDb = crawlList_db.find_one({"name": crawlDb_dict["name"]})
     if existing_crawlDb:
         raise ConflictException("CrawlDB with this name already exists")
     
@@ -21,19 +21,42 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
         "totalReplyCnt": 0,
         "totalRereplyCnt": 0
     }
+    now_kst = datetime.now(timezone.utc).astimezone(
+        timezone(timedelta(hours=9))
+    ).strftime('%Y-%m-%d %H:%M')
     
-    ordered_dict['startTime'] = datetime.now(timezone.utc)
+    ordered_dict['startTime'] = now_kst
     ordered_dict['endTime'] = None
     
-    crawlDbList_collection.insert_one(ordered_dict)
+    crawlList_db.insert_one(ordered_dict)
     
     return JSONResponse(
         status_code=201,
         content={"message": "CrawlDB created", "data": clean_doc(crawlDb_dict)},
     )
+
+def createCrawlLog(crawlLog: CrawlLogCreateDto):
+    crawlLog_dict = crawlLog.model_dump()
+    
+    existing_crawlLog = crawlList_db.find_one({"uid": crawlLog_dict["uid"]})
+    if existing_crawlLog:
+        raise ConflictException("CrawlLog with this uid already exists")
+    
+    dict = {
+        'uid': crawlLog_dict['uid'],
+        'content': crawlLog_dict['content'],
+    }
+    
+    crawlLog_db.insert_one(dict)
+    
+    return JSONResponse(
+        status_code=201,
+        content={"message": "CrawlLog created", "data": clean_doc(crawlLog_dict)},
+    )   
+    
     
 def deleteCrawlDb(uid: str):
-    result = crawlDbList_collection.delete_one({"uid": uid})
+    result = crawlList_db.delete_one({"uid": uid})
     
     if result.deleted_count == 0:
         raise NotFoundException("CrawlDB not found")
@@ -44,7 +67,7 @@ def deleteCrawlDb(uid: str):
     )
     
 def getCrawlDbList():
-    crawlDbList = crawlDbList_collection.find()
+    crawlDbList = crawlList_db.find()
     
     if not crawlDbList:
         raise NotFoundException("No CrawlDBs found")
@@ -57,7 +80,7 @@ def getCrawlDbList():
     )
 
 def getCrawlDbInfo(uid: str):
-    crawlDb = crawlDbList_collection.find_one({"uid": uid})
+    crawlDb = crawlList_db.find_one({"uid": uid})
     
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
@@ -67,25 +90,36 @@ def getCrawlDbInfo(uid: str):
         content={"message": "CrawlDB retrieved", "data": clean_doc(crawlDb)},
     )   
     
-def updateCrawlDb(uid: str, dataInfo: DataInfo):
-
+def updateCrawlDb(uid: str, dataInfo: DataInfo, error:bool = False):
+    crawlDb = crawlList_db.find_one({"uid": uid})
+    if not crawlDb:
+        raise NotFoundException("CrawlDB not found")
+    
+    dbsize = mysql_db.showDBSize(crawlDb['name'])[0]
     data_info_dict = dataInfo.model_dump()
+    
+    if error:
+        result = crawlList_db.update_one(
+            {"uid": uid},
+            {"$set": {"dataInfo": data_info_dict, "endTime": 'X', "dbSize": dbsize}},
+        )
 
-    result = crawlDbList_collection.update_one(
+    now_kst = datetime.now(timezone.utc).astimezone(
+        timezone(timedelta(hours=9))
+    ).strftime('%Y-%m-%d %H:%M')
+
+    result = crawlList_db.update_one(
         {"uid": uid},
-        {"$set": {"dataInfo": data_info_dict, "endTime": datetime.now(timezone.utc)}}
+        {"$set": {"dataInfo": data_info_dict, "endTime": now_kst, "dbSize": dbsize}},
     )
 
     if result.matched_count == 0:
         raise NotFoundException("CrawlDB not found")
 
-    updated = crawlDbList_collection.find_one({"uid": uid})
-
     return JSONResponse(
         status_code=200,
         content={
             "message": "CrawlDB updated",
-            "data": clean_doc(updated)
         },
     )
     

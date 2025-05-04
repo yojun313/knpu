@@ -13,6 +13,7 @@ import warnings
 import os
 import re
 from kiwipiepy import Kiwi
+import requests
 from datetime import datetime, timedelta
 
 import shutil
@@ -50,6 +51,7 @@ class Crawler(CrawlerModule):
         self.crawllog_path  = os.path.join(self.pathFinder()['crawler_folder_path'], 'CrawlLog')
         self.crawlcom       = self.pathFinder(user)['computer_name']
         self.mySQL          = self.pathFinder(user)['MYSQL']
+        self.api_url        = "http://localhost:8000"
         
         # User Info
         self.user      = user
@@ -89,27 +91,18 @@ class Crawler(CrawlerModule):
     def DBinfoRecorder(self, endoption = False, error = False):
 
         if error == True:
-            endtime = 'X'
-            self.mySQL.connectDB('crawler_db')
-            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Endtime', endtime)
+            res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/error", json=self.IntegratedDB).json()
 
         elif endoption == True:
-            endtime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
-            try:
-                size = self.mySQL.showDBSize(self.DBname)[0]
-            except:
-                size = 0
-            datainfo = self.IntegratedDB
-            self.mySQL.connectDB('crawler_db')
-            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Endtime', endtime)
-            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'DBSize', size)
-            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Datainfo', str(datainfo))
-            self.mySQL.commit()
-
+            res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/datainfo", json=self.IntegratedDB).json()
             with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'r') as log:
                 log_content = log.read()
-            self.mySQL.insertToTable('crawl_log', [[self.DBname, log_content]])
-            self.mySQL.commit()
+                
+            json = {
+                'uid': self.dbUid,
+                'content': log_content
+            }
+            res = requests.post(f"{self.api_url}/crawls/add/log", json=json).json()
 
     # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
@@ -194,23 +187,25 @@ class Crawler(CrawlerModule):
             text = f"{self.DBname} DB 생성에 실패해 크롤러가 중단되었습니다\n\n관리자에게 문의바랍니다"
             self.sendPushOver(msg=title + '\n' + text, user_key=self.pushoverKey)
             os._exit(0)
-
-        self.mySQL.connectDB('crawler_db')
-
+        
         option = self.option
-        starttime = datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')
-        endtime = '크롤링 중'
         requester = self.user
         keyword = self.keyword
-        dbsize = 0
         crawlcom = self.crawlcom
         crawlspeed = self.speed
-        datainfo = str(self.IntegratedDB)
-
-        self.mySQL.insertToTable('db_list', [self.DBname, option, starttime, endtime, requester, keyword, dbsize, crawlcom, crawlspeed, datainfo])
-        self.mySQL.commit()
-
-        self.mySQL.disconnectDB()
+        
+        json = {
+            "name": self.DBname,
+            "crawlOption": option,
+            "requester": requester,
+            "keyword": keyword,
+            "dbSize": 0,
+            "crawlCom": crawlcom,
+            "crawlSpeed": crawlspeed,
+        }
+        
+        res = requests.post(self.api_url + '/crawls/add', json=json).json()
+        self.dbUid = res['data']['uid']
         self.mySQL.connectDB(self.DBname)
 
         self.articleDB    = self.DBname + '_article'

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone, timedelta
 from fastapi.responses import JSONResponse
-from app.db import versionBoard_collection, bugBoard_collection, freeBoard_collection, user_collection
+from app.db import version_board_db, bug_board_db, free_board_db, user_db
 from app.models.board_model import AddVersionDto, VersionBoardSchema, AddBugDto, BugBoardSchema, AddPostDto, FreeBoardSchema
 from app.utils.mongo import clean_doc
 from app.utils.pushover import sendPushOver
@@ -21,7 +21,7 @@ def add_version(data: AddVersionDto):
     doc["uid"] = str(uuid.uuid4())
     doc["releaseDate"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     
-    versionBoard_collection.insert_one(doc)
+    version_board_db.insert_one(doc)
             
     task = BackgroundTask(add_version_bg, doc)
     return JSONResponse(
@@ -32,7 +32,7 @@ def add_version(data: AddVersionDto):
 
 def add_version_bg(doc):
     if doc['sendPushOver']:
-        keys = list(user_collection.find({}, {"pushoverKey": 1, "_id": 0}))
+        keys = list(user_db.find({}, {"pushoverKey": 1, "_id": 0}))
         pushover_keys = [doc["pushoverKey"] for doc in keys if doc["pushoverKey"] != 'n']
         for key in pushover_keys:
             msg = (
@@ -47,17 +47,17 @@ def add_version_bg(doc):
             sendPushOver(msg, key)
 
 def get_version(versionName: str):
-    doc = versionBoard_collection.find_one({"versionName": versionName})
+    doc = version_board_db.find_one({"versionName": versionName})
     if not doc:
         raise NotFoundException("Version not found")
     return JSONResponse(status_code=200, content={"message": "Version post retrieved", "data": clean_doc(doc)})
 
 def get_version_list():
-    docs = [clean_doc(d) for d in versionBoard_collection.find()]
+    docs = [clean_doc(d) for d in version_board_db.find()]
     return JSONResponse(status_code=200, content={"message": "Version list retrieved", "data": docs})
 
 def delete_version(versionName: str):
-    result = versionBoard_collection.delete_one({"versionName": versionName})
+    result = version_board_db.delete_one({"versionName": versionName})
     if result.deleted_count == 0:
         raise NotFoundException("Version not found")
     return JSONResponse(status_code=200, content={"message": "Version post deleted"})
@@ -71,7 +71,7 @@ def check_newest_version():
         sorted_list = sorted(two_dim_list, key=lambda x: version_key(x[0]), reverse=True)
         return sorted_list
     
-    docs = versionBoard_collection.find()
+    docs = version_board_db.find()
     docs_list = [clean_doc(d) for d in docs]
     version_data = sort_by_version([list(map(str, item.values())) for item in docs_list])
     newest_version = version_data[0]
@@ -81,13 +81,13 @@ def check_newest_version():
 
 def add_bug(data: AddBugDto):
     doc = data.model_dump()
-    writer = user_collection.find_one({"uid": doc["writerUid"]})
+    writer = user_db.find_one({"uid": doc["writerUid"]})
     writerDoc = clean_doc(writer)
     
     doc["uid"] = str(uuid.uuid4())
     doc["datetime"] = datetime.now(timezone.utc)
     doc['writerName'] = writerDoc['name']
-    bugBoard_collection.insert_one(doc)
+    bug_board_db.insert_one(doc)
     
     msg = (
         "[ New Bug Added! ]\n"
@@ -103,7 +103,7 @@ def add_bug(data: AddBugDto):
     return JSONResponse(status_code=201, content={"message": "Bug post created", "data": clean_doc(doc)})
 
 def get_bug(uid: str):
-    doc = bugBoard_collection.find_one({"uid": uid})
+    doc = bug_board_db.find_one({"uid": uid})
     if not doc:
         raise NotFoundException("Bug post not found")
     doc['datetime'] = doc['datetime'].astimezone(pytz.timezone("Asia/Seoul")).strftime("%m-%d %H:%M")
@@ -113,7 +113,7 @@ def get_bug_list():
     korea = pytz.timezone("Asia/Seoul")
     docs = []
     
-    for doc in bugBoard_collection.find().sort("datetime", -1):
+    for doc in bug_board_db.find().sort("datetime", -1):
         doc = clean_doc(doc)
         if "datetime" in doc and isinstance(doc["datetime"], datetime):
             kst_time = doc["datetime"].astimezone(korea)
@@ -123,7 +123,7 @@ def get_bug_list():
     return JSONResponse(status_code=200, content={"message": "Bug list retrieved", "data": docs})
 
 def delete_bug(uid: str):
-    result = bugBoard_collection.delete_one({"uid": uid})
+    result = bug_board_db.delete_one({"uid": uid})
     if result.deleted_count == 0:
         raise NotFoundException("Bug post not found")
     return JSONResponse(status_code=200, content={"message": "Bug post deleted"})
@@ -134,13 +134,13 @@ def add_post(data: AddPostDto):
     doc = data.model_dump()
     doc["uid"] = str(uuid.uuid4())
     doc["datetime"] = datetime.now(timezone.utc)
-    doc['writerName'] = user_collection.find_one({"uid": doc["writerUid"]})['name']
+    doc['writerName'] = user_db.find_one({"uid": doc["writerUid"]})['name']
     doc["viewCnt"] = 0
-    freeBoard_collection.insert_one(doc)
+    free_board_db.insert_one(doc)
     doc['datetime'] = doc['datetime'].astimezone(pytz.timezone("Asia/Seoul")).strftime("%m-%d %H:%M")
     
     if doc['sendPushOver']:
-        keys = list(user_collection.find({}, {"pushoverKey": 1, "_id": 0}))
+        keys = list(user_db.find({}, {"pushoverKey": 1, "_id": 0}))
         pushover_keys = [doc["pushoverKey"] for doc in keys if doc["pushoverKey"] != 'n']
         for key in pushover_keys:
             msg = (
@@ -156,7 +156,7 @@ def add_post(data: AddPostDto):
 
 def get_post(uid: str):
 
-    doc = freeBoard_collection.find_one_and_update(
+    doc = free_board_db.find_one_and_update(
         {"uid": uid}, 
         {"$inc": {"viewCnt": 1}
     }, return_document=True)
@@ -170,7 +170,7 @@ def get_post_list():
     korea = pytz.timezone("Asia/Seoul")
     docs = []
     
-    for doc in freeBoard_collection.find().sort("datetime", -1):
+    for doc in free_board_db.find().sort("datetime", -1):
         doc = clean_doc(doc)
         if "datetime" in doc and isinstance(doc["datetime"], datetime):
             kst_time = doc["datetime"].astimezone(korea)
@@ -180,7 +180,7 @@ def get_post_list():
     return JSONResponse(status_code=200, content={"message": "post list retrieved", "data": docs})
 
 def delete_post(uid: str):
-    result = freeBoard_collection.delete_one({"uid": uid})
+    result = free_board_db.delete_one({"uid": uid})
     if result.deleted_count == 0:
         raise NotFoundException("Post not found")
     return JSONResponse(status_code=200, content={"message": "Post deleted"})
@@ -188,7 +188,7 @@ def delete_post(uid: str):
 def edit_post(postUid: str, data: AddPostDto):
     update_fields = data.model_dump()
 
-    result = freeBoard_collection.update_one(
+    result = free_board_db.update_one(
         {"uid": postUid},
         {"$set": update_fields}
     )
@@ -196,7 +196,7 @@ def edit_post(postUid: str, data: AddPostDto):
     if result.matched_count == 0:
         raise NotFoundException("Post not found")
 
-    updated_doc = freeBoard_collection.find_one({"uid": postUid})
+    updated_doc = free_board_db.find_one({"uid": postUid})
     updated_doc['datetime'] = updated_doc['datetime'].astimezone(pytz.timezone("Asia/Seoul")).strftime("%m-%d %H:%M")
     return JSONResponse(
         status_code=200,

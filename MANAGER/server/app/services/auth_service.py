@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from fastapi.responses import JSONResponse
-from app.db import user_collection, auth_collection
+from app.db import user_db, auth_db
 from app.models.board_model import AddVersionDto, VersionBoardSchema, AddBugDto, BugBoardSchema, AddPostDto, FreeBoardSchema
 from app.utils.mongo import clean_doc
 from app.libs.exceptions import NotFoundException
@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def request_verify(name: str):
-    existing_user = user_collection.find_one({"name": name})
+    existing_user = user_db.find_one({"name": name})
     if not existing_user:
         raise NotFoundException("User not found")
     
@@ -23,7 +23,7 @@ def request_verify(name: str):
     email = existing_user["email"]
     random_pw = ''.join(random.choices('0123456789', k=6))
     
-    auth_collection.update_one(
+    auth_db.update_one(
         {"email": email},
         {"$set": {"auth_code": random_pw}},
         upsert=True
@@ -38,14 +38,14 @@ def request_verify(name: str):
     return JSONResponse(status_code=200, content={"uid": existing_user["uid"], "message": "Verification code sent"})
     
 def verify_code(name: str, code: str, device: str):
-    existing_user = user_collection.find_one({"name": name})
+    existing_user = user_db.find_one({"name": name})
     if not existing_user:
         raise NotFoundException("User not found")
     
     existing_user = clean_doc(existing_user)
     email = existing_user["email"]
     
-    auth_data = auth_collection.find_one({"email": email})
+    auth_data = auth_db.find_one({"email": email})
     if not auth_data or auth_data["auth_code"] != code:
         raise NotFoundException("Invalid verification code")
 
@@ -54,7 +54,7 @@ def verify_code(name: str, code: str, device: str):
         "name": existing_user["name"],
         "device": device,
     }
-    user_collection.update_one(
+    user_db.update_one(
         {"uid": existing_user["uid"]},
         {"$addToSet": {"device_list": device}}
     )
@@ -66,7 +66,7 @@ def verify_code(name: str, code: str, device: str):
 def loginWithToken(token: str):
     try:
         payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=[os.getenv("JWT_ALGORITHM")])
-        user = user_collection.find_one({"uid": payload["sub"]})
+        user = user_db.find_one({"uid": payload["sub"]})
         if not user:
             raise NotFoundException("User not found")
 

@@ -2,6 +2,7 @@ from pymongo import MongoClient
 import urllib.parse
 from dotenv import load_dotenv
 import os
+from mysql import mySQL
 
 load_dotenv()
 
@@ -18,12 +19,14 @@ client = MongoClient(uri)
 manager_db = client["manager"]
 crawler_db = client["crawler"]
 
-crawlDbList_collection = crawler_db["db_list"]
+crawlList_db = crawler_db["db-list"]
+crawlLog_db = crawler_db["log-list"]
 
-user_collection = manager_db["users"]
-user_settings_collection = manager_db["user-settings"]
-user_logs_collection = manager_db["user-logs"]
-versionBoard_collection = manager_db["version-board"]
-bugBoard_collection = manager_db["bug-board"]
-freeBoard_collection = manager_db["free-board"]
-auth_collection = manager_db["auth"]
+user_db = manager_db["users"]
+user_logs_db = manager_db["user-logs"]
+version_board_db = manager_db["version-board"]
+bug_board_db = manager_db["bug-board"]
+free_board_db = manager_db["free-board"]
+auth_db = manager_db["auth"]
+
+mysql_db = mySQL(os.getenv("MYSQL_HOST"), os.getenv("MYSQL_USER"), os.getenv("MYSQL_PW"), os.getenv("MYSQL_PORT"))
