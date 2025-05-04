@@ -19,7 +19,7 @@ class ToolModule:
         # 암호화 키 로드
         def load_key():
             try:
-                with open(os.path.join(current_position, 'source', 'env.key'), "rb") as key_file:
+                with open(os.path.join(current_position, '..', 'assets', 'env.key'), "rb") as key_file:
                     return key_file.read()
             except:
                 secret_key = os.getenv("SECRET_KEY")
@@ -39,7 +39,7 @@ class ToolModule:
                 dec_file.write(decrypted_data)
 
         decrypt_env_file(os.path.join(
-            current_position, 'source', 'encrypted_env'))
+            current_position, '..', 'assets', 'encrypted_env'))
         load_dotenv(os.path.join(current_position, 'decrypted_env'))
 
         self.admin_password = os.getenv('ADMIN_PASSWORD')
@@ -47,8 +47,8 @@ class ToolModule:
         self.admin_pushoverkey = os.getenv('ADMIN_PUSHOVER')
         self.db_ip = os.getenv('DB_IP')
 
-        if os.path.exists(os.path.join(current_position, 'decrypted_env')):
-            os.remove(os.path.join(current_position, 'decrypted_env'))
+        # if os.path.exists(os.path.join(current_position, 'decrypted_env')):
+        #     os.remove(os.path.join(current_position, 'decrypted_env'))
 
     def sendPushOver(self, msg, user_key, image_path=False):
         app_key_list = ["a22qabchdf25zzkd1vjn12exjytsjx"]
