@@ -2,7 +2,8 @@ from pymongo import MongoClient
 import urllib.parse
 from dotenv import load_dotenv
 import os
-from mysql import mySQL
+import sys
+from .mysql import mySQL
 
 load_dotenv()
 
@@ -29,4 +30,4 @@ bug_board_db = manager_db["bug-board"]
 free_board_db = manager_db["free-board"]
 auth_db = manager_db["auth"]
 
-mysql_db = mySQL(os.getenv("MYSQL_HOST"), os.getenv("MYSQL_USER"), os.getenv("MYSQL_PW"), os.getenv("MYSQL_PORT"))
+mysql_db = mySQL(os.getenv("MYSQL_HOST"), os.getenv("MYSQL_USER"), os.getenv("MYSQL_PW"), int(os.getenv("MYSQL_PORT")))
