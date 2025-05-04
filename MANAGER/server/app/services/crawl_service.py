@@ -1,11 +1,18 @@
 from app.db import crawlList_db, mysql_db, crawlLog_db
 from app.libs.exceptions import ConflictException, NotFoundException 
-from app.models.crawl_model import CrawlDbCreateDto, DataInfo, CrawlLogCreateDto
+from app.models.crawl_model import CrawlDbCreateDto, DataInfo, CrawlLogCreateDto, SaveCrawlDbOption
 from app.utils.mongo import clean_doc
 from fastapi.responses import JSONResponse
 from collections import OrderedDict
 from datetime import datetime, timezone, timedelta
+from starlette.background import BackgroundTask
+from zoneinfo import ZoneInfo
+import pandas as pd
 import uuid
+import os
+import re
+import gc
+import zipfile
 
 def createCrawlDb(crawlDb: CrawlDbCreateDto):
     crawlDb_dict = crawlDb.model_dump()
@@ -54,36 +61,114 @@ def createCrawlLog(crawlLog: CrawlLogCreateDto):
         content={"message": "CrawlLog created", "data": clean_doc(crawlLog_dict)},
     )   
     
-    
 def deleteCrawlDb(uid: str):
-    result = crawlList_db.delete_one({"uid": uid})
-    
-    if result.deleted_count == 0:
+    crawlDb = crawlList_db.find_one({"uid": uid})
+    if not crawlDb:
         raise NotFoundException("CrawlDB not found")
+
+    result = crawlList_db.delete_one({"uid": uid})
+    task = BackgroundTask(deleteCrawlDbBg, crawlDb['name'])
     
     return JSONResponse(
         status_code=200,
         content={"message": "CrawlDB deleted"},
+        background=task,
     )
+
+def deleteCrawlDbBg(name: str):
+    mysql_db.connectDB()
+    mysql_db.dropDB(name)
     
-def getCrawlDbList():
-    crawlDbList = crawlList_db.find()
-    
+def getCrawlDbList(sort_by: str):
+    # 1) Mongo 에서 모두 불러오기
+    cursor = crawlList_db.find()
+    crawlDbList = [clean_doc(d) for d in cursor]
     if not crawlDbList:
         raise NotFoundException("No CrawlDBs found")
-    
-    crawlDbList = [clean_doc(crawlDb) for crawlDb in crawlDbList]
-    
+
+    fullStorage = 0
+    activeCrawl = 0
+
+    # 2) 각 doc 가공
+    for crawlDb in crawlDbList:
+        name = crawlDb["name"]
+        parts = name.split('_')
+        typ = parts[0]
+        match typ:
+            case 'navernews':  crawlType = 'Naver News'
+            case 'naverblog':  crawlType = 'Naver Blog'
+            case 'navercafe':  crawlType = 'Naver Cafe'
+            case 'youtube':    crawlType = 'YouTube'
+            case _:            crawlType = typ
+
+        crawlDb['crawlType']  = crawlType
+        crawlDb['startDate']  = parts[2]
+        crawlDb['endDate']    = parts[3]
+        crawlDb['crawlOption']= str(crawlDb['crawlOption'])
+        crawlDb['crawlSpeed'] = str(crawlDb['crawlSpeed'])
+
+        # 상태 처리
+        status = "Done"
+        endt = crawlDb.get('endTime')
+        if not endt:
+            crawlDb['endTime'] = '크롤링 중'
+            status = 'Working'
+            activeCrawl += 1
+        elif endt == 'X':
+            crawlDb['endTime'] = '오류 중단'
+            status = 'Error'
+        crawlDb['status'] = status
+
+        # dbSize 처리
+        size = crawlDb.get('dbSize') or 0
+        if float(size) == 0:
+            mysql_db.connectDB(database_name=name)
+            dbsize = mysql_db.showDBSize(name) or [0, 0]
+            gb, mb = dbsize
+            fullStorage += float(gb)
+            crawlDb['dbSize'] = f"{mb} MB" if gb < 1 else f"{gb} GB"
+        else:
+            fullStorage += float(size)
+            crawlDb['dbSize'] = f"{int(float(size)*1024)} MB" if float(size) < 1 else f"{size} GB"
+
+    # 3) 정렬
+    if sort_by == "keyword":
+        crawlDbList.sort(key=lambda d: d.get('keyword', '').replace('"',''))
+    elif sort_by == "starttime":
+        def _key(d):
+            st = d.get('startTime')
+            # 문자열이면 파싱, datetime 이면 그대로, 아니면 최소값
+            if isinstance(st, str):
+                try:
+                    return datetime.strptime(st, "%Y-%m-%d %H:%M")
+                except:
+                    return datetime.min
+            if isinstance(st, datetime):
+                return st
+            return datetime.min
+        crawlDbList.sort(key=_key, reverse=True)
+
+    # 4) 응답
     return JSONResponse(
         status_code=200,
-        content={"message": "CrawlDB list retrieved", "data": crawlDbList},
+        content={
+            "message": "CrawlDB list retrieved",
+            "data": crawlDbList,
+            "fullStorage": round(fullStorage, 1),
+            "activeCrawl": activeCrawl
+        },
     )
 
 def getCrawlDbInfo(uid: str):
     crawlDb = crawlList_db.find_one({"uid": uid})
-    
+
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
+
+    if not crawlDb['dbSize']:
+        mysql_db.connectDB(database_name=crawlDb['name'])
+        dbsize = mysql_db.showDBSize(crawlDb['name'])
+        crawlDb['dbSize'] = dbsize
     
     return JSONResponse(
         status_code=200,
@@ -123,4 +208,119 @@ def updateCrawlDb(uid: str, dataInfo, error:bool = False):
             "message": "CrawlDB updated",
         },
     )
+
+def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
+    saveOption = saveOption.model_dump()
+    crawlDb = crawlList_db.find_one({"uid": uid})
+    if not crawlDb:
+        raise NotFoundException("CrawlDB not found")
+
+    targetDB = crawlDb['name']
+    mysql_db.connectDB(targetDB)
     
+    temp_directory = os.path.join(os.path.dirname(__file__), '..', 'temp')
+    
+    tableList = [table for table in sorted(mysql_db.showAllTable(targetDB)) if 'info' not in table]
+    tableList = sorted(tableList, key=lambda x: ('article' not in x, 'statistics' not in x, x))
+    
+    def replace_dates_in_filename(filename, new_start_date, new_end_date):
+        pattern = r"_(\d{8})_(\d{8})_"
+        new_filename = re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
+        return new_filename
+    
+    kst = datetime.now(ZoneInfo("Asia/Seoul"))
+    dbname = targetDB[:-10] + f"_{kst.strftime("%m%d")}_{kst.strftime("%H%M")}"
+    dateOption = saveOption['dateOption']
+    filterOption = saveOption['filterOption']
+    
+    if dateOption == 'part':
+        start_date = saveOption['start_date']
+        end_date = saveOption['end_date']
+        start_date_formed = datetime.strptime(start_date, "%Y%m%d").strftime("%Y-%m-%d")
+        end_date_formed = datetime.strptime(end_date, "%Y%m%d").strftime("%Y-%m-%d")
+        dbname = replace_dates_in_filename(dbname, saveOption['start_date'], saveOption['end_date'])
+    if filterOption:
+        include_all = saveOption['include_all']
+        incl_words = saveOption['incl_words']
+        excl_words = saveOption['excl_words']
+        
+        if saveOption['filename_edit']:
+            inclexcl = 'all' if include_all else 'any'
+            add_keyword = f"(+{','.join(incl_words)} _ -{','.join(excl_words)} _{inclexcl})"
+            parts = dbname.split('_', 2)
+            old_keyword = parts[1]
+            parts[1] = old_keyword + add_keyword
+            dbname = '_'.join(parts)
+    
+    dbpath = os.path.join(temp_directory, dbname)
+    while True:
+        try:
+            os.makedirs(os.path.join(dbpath, 'token_data'), exist_ok=False)
+            break
+        except FileExistsError:
+            dbpath += "_copy"
+    
+    for tableName in tableList:
+        edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if dateOption == 'part' else tableName
+
+        if saveOption['dateOption'] == 'part':
+            tableDF = mysql_db.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
+        else:
+            tableDF = mysql_db.TableToDataframe(tableName)
+
+        # 단어 필터링 옵션이 켜져있을 때
+        if filterOption == True and 'article' in tableName:
+            if 'token' not in tableName:
+                recover_columns = tableDF.columns
+                if include_all == True:
+                    if incl_words != []:
+                        tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word in str(cell) for word in incl_words))]
+                    if excl_words != []:
+                        tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
+                else:
+                    if incl_words != []:
+                        tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
+                    if excl_words != []:
+                        tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word not in str(cell) for word in excl_words))]
+
+                if tableDF.empty:
+                    tableDF = pd.DataFrame(columns=recover_columns)  # 기존 열만 유지
+                articleURL = tableDF['Article URL'].tolist()
+            else:
+                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+
+        # statistics 테이블 처리
+        if 'statistics' in tableName:
+            if filterOption == True:
+                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+            statisticsURL = tableDF['Article URL'].tolist()
+            save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
+            tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
+            continue
+
+        if 'reply' in tableName:
+            if filterOption == True:
+                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+
+        # reply_statistics 테이블 처리
+        if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in targetDB:
+            if filterOption == True:
+                filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+            filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
+            save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
+            filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
+
+        # 기타 테이블 처리
+        save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
+
+        tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
+        tableDF = None
+        gc.collect()
+         
+    return dbpath
+        
+    
+
+
+    
+

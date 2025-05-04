@@ -286,7 +286,7 @@ class MainWindow(QMainWindow):
 
                     if self.SETTING['ScreenSize'] == 'max':
                         self.showMaximized()
-                    self.printStatus(f"{self.fullstorage} GB / 2 TB")
+                    self.printStatus(f"{self.fullStorage} GB / 2 TB")
 
                     # After Booting
 
@@ -705,11 +705,11 @@ class MainWindow(QMainWindow):
             self.managerDatabaseObj.setDatabaseShortcut()
             if self.SETTING['DB_Refresh'] == 'default':
                 self.managerDatabaseObj.refreshDB()
-            self.printStatus(f"{self.fullstorage} GB / 2 TB")
+            self.printStatus(f"{self.fullStorage} GB / 2 TB")
         # CRAWLER
         elif index == 1:
             self.initShortcutialize()
-            self.printStatus(f"활성 크롤러 수: {self.activate_crawl}")
+            self.printStatus(f"활성 크롤러 수: {self.activeCrawl}")
         # ANALYSIS
         elif index == 2:
             self.printStatus()
@@ -823,13 +823,12 @@ class MainWindow(QMainWindow):
             full_url = f"{self.server_api}/{url.lstrip('/')}"
 
             # 기본 헤더에 Authorization 추가
-            headers = kwargs.get("headers", {})
+            self.api_headers = kwargs.get("headers", {})
             token = self.settings.value('auth_token', '')
-            print(token)
 
             if token:
-                headers["Authorization"] = f"Bearer {token}"
-            kwargs["headers"] = headers  
+                self.api_headers["Authorization"] = f"Bearer {token}"
+            kwargs["headers"] = self.api_headers  
             
             # 요청 메서드 분기
             method = method.lower()
@@ -948,124 +947,21 @@ class MainWindow(QMainWindow):
                 pass
 
     def updateDB(self):
-        def sort_currentDB_by_keyword(currentDB):
-            # keyword를 기준으로 정렬 (따옴표 제거 후 비교)
-            sorted_data = sorted(
-                zip(currentDB['DBlist'], currentDB['DBdata'], currentDB['DBtable']),
-                key=lambda x: x[1]['Keyword'].replace('"', '')  # Keyword 값에서 따옴표 제거 후 정렬
-            )
-
-            # 정렬된 결과를 리스트로 분리
-            currentDB['DBlist'], currentDB['DBdata'], currentDB['DBtable'] = map(list, zip(*sorted_data))
-
-            return currentDB
-        def sort_currentDB_by_starttime(currentDB):
-            # starttime을 기준으로 정렬하고 리스트를 역순으로 반환
-            sorted_data = sorted(
-                zip(currentDB['DBlist'], currentDB['DBdata'], currentDB['DBtable']),
-                key=lambda x: datetime.strptime(x[1]['Starttime'], '%Y-%m-%d %H:%M') if x[1]['Starttime'] != '-' else datetime.min
-            )[::-1]  # 정렬된 리스트를 뒤집음 (reverse 효과)
-
-            # 정렬된 결과를 리스트로 분리
-            currentDB['DBlist'], currentDB['DBdata'], currentDB['DBtable'] = map(list, zip(*sorted_data))
-
-            return currentDB
-
-        self.mySQLObj.connectDB('crawler_db')
-        db_list = self.mySQLObj.TableToList('db_list')
-
+        sort_by = 'starttime' if self.SETTING['DBKeywordSort'] == 'default' else 'keyword'
+            
+        res = self.Request('get', f'/crawls/list?sort_by={sort_by}').json()
+        
+        self.db_list = res['data']
+        self.fullStorage = res['fullStorage']
+        self.activeCrawl = res['activeCrawl']
+        
         currentDB = {
-            'DBlist': [],
-            'DBdata': [],
-            'DBtable': []
+            'DBuids': [db['uid'] for db in self.db_list],
+            'DBnames': [db['name'] for db in self.db_list],
+            'DBdata': self.db_list,
+            'DBtable': [(db['name'], db['crawlType'], db['keyword'], db['startDate'], db['endDate'], db['crawlOption'], db['status'], db['requester'], db['dbSize']) for db in self.db_list]
         }
-
-        self.fullstorage = 0
-        self.activate_crawl = 0
-
-        for DBdata in db_list:
-            DB_name = DBdata[0]
-            db_split = DB_name.split('_')
-            crawltype = db_split[0]
-
-            match crawltype:
-                case 'navernews':
-                    crawltype = 'Naver News'
-                case 'naverblog':
-                    crawltype = 'Naver Blog'
-                case 'navercafe':
-                    crawltype = 'Naver Cafe'
-                case 'youtube':
-                    crawltype = 'YouTube'
-
-            startdate = db_split[2]
-            enddate   = db_split[3]
-            option    = DBdata[1]
-            starttime = DBdata[2]
-            endtime   = DBdata[3]
-
-            status = "Done"
-            if endtime == '-' or endtime == '크롤링 중':
-                endtime = '크롤링 중'
-                status  = 'Working'
-            elif endtime == 'X':
-                endtime = '오류 중단'
-                status  = "Error"
-
-            requester = DBdata[4]
-            if requester == 'admin' and self.user != 'admin':
-                continue
-
-            if self.SETTING['MyDB'] == 'mydb' and requester != self.user:
-                continue
-
-            keyword = DBdata[5]
-            size    = float(DBdata[6])
-            self.fullstorage += float(size)
-            if size == 0:
-                try:
-                    size = self.mySQLObj.showDBSize(DB_name)
-                    if size is None:
-                        size = (0, 0)
-                except:
-                    size = (0, 0)
-                self.fullstorage += float(size[0])
-                size = f"{size[1]} MB" if size[0] < 1 else f"{size[0]} GB"
-            else:
-                size = f"{int(size * 1024)} MB" if size < 1 else f"{size} GB"
-            crawlcom   = DBdata[7]
-            crawlspeed = DBdata[8]
-            datainfo   = DBdata[9]
-
-            DBdata = {
-                'DB': DB_name,
-                'Crawltype': crawltype,
-                'Keyword': keyword,
-                'Startdate': startdate,
-                'Enddate': enddate,
-                'Option': option,
-                'Starttime': starttime,
-                'Endtime': endtime,
-                'Status': status,
-                'Requester': requester,
-                'Size': size,
-                'Crawlcom': crawlcom,
-                'Crawlspeed': crawlspeed,
-                'Datainfo': datainfo
-            }
-
-            currentDB['DBlist'].append(DB_name)
-            currentDB['DBdata'].append(DBdata)
-            currentDB['DBtable'].append((DB_name, crawltype, keyword, db_split[2], db_split[3], option, status, requester, size))
-
-        self.activate_crawl = len([item for item in currentDB['DBdata'] if item['Status'] == "Working"])
-        self.fullstorage = round(self.fullstorage, 2)
-
-        if self.SETTING['DBKeywordSort'] != 'default':
-            currentDB = sort_currentDB_by_keyword(currentDB)
-        else:
-            currentDB = sort_currentDB_by_starttime(currentDB)
-
+            
         return currentDB
 
     def makeTable(self, widgetname, data, column, right_click_function=None, popupsize=None):

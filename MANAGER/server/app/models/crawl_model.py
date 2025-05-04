@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from typing import List
 
 class DataInfo(BaseModel):
     totalArticleCnt: int
@@ -32,3 +33,14 @@ class CrawlDbCreateDto(BaseModel):
 class CrawlLogCreateDto(BaseModel):
     uid: str
     content: str
+    
+class SaveCrawlDbOption(BaseModel):
+    dateOption: str
+    start_date: str
+    end_date: str
+    filterOption: bool
+    incl_words: List[str]
+    excl_words: List[str]
+    include_all: bool
+    filename_edit: bool
+    
