@@ -28,7 +28,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
-    icon='C:/GitHub/BIGMACLAB/manager/source/exe_icon.ico'
+    icon='C:/GitHub/BIGMACLAB/manager/app/assets/exe_icon.ico'
 )
 coll = COLLECT(
     exe,
