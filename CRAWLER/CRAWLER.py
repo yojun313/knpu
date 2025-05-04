@@ -22,7 +22,7 @@ from Package.CrawlerModule import CrawlerModule
 from Package.GoogleModule import GoogleModule
 import pandas as pd
 from dotenv import load_dotenv
-
+import platform
 from Package.ChinaCrawlerPackage.ChinaDailyCrawlerModule import ChinaDailyCrawler
 from Package.ChinaCrawlerPackage.ChinaSinaCrawlerModule import ChinaSinaCrawler
 from Package.NaverCrawlerPackage.NaverBlogCrawlerModule import NaverBlogCrawler
@@ -38,7 +38,8 @@ load_dotenv()
 class Crawler(CrawlerModule):
     
     def __init__(self, user, startDate, endDate, keyword, upload, speed, weboption):
-        self.proxy_option = False
+        if platform.system() != 'Windows':
+            self.proxy_option = False
         super().__init__(proxy_option=self.proxy_option)
 
         if user == '문요준':

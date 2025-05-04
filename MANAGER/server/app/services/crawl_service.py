@@ -95,6 +95,7 @@ def updateCrawlDb(uid: str, dataInfo, error:bool = False):
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
     
+    mysql_db.connectDB(database_name=crawlDb['name'])
     dbsize = mysql_db.showDBSize(crawlDb['name'])[0]
     data_info_dict = dataInfo.model_dump()
     
