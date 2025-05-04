@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.models.crawl_model import CrawlDbCreateDto, DataInfo
+from app.models.crawl_model import CrawlDbCreateDto, CrawlLogCreateDto, DataInfo
 from app.services.crawl_service import (
     createCrawlDb,
     deleteCrawlDb,
@@ -14,6 +14,10 @@ router = APIRouter()
 def create_crawl_db(crawlDb: CrawlDbCreateDto):
     return createCrawlDb(crawlDb)
 
+@router.post("/add/log")
+def create_crawl_db(crawlLog: CrawlLogCreateDto):
+    return createCrawlDb(crawlLog)
+
 @router.delete("/{uid}")
 def delete_crawl_db(uid: str):
     return deleteCrawlDb(uid)
@@ -27,5 +31,9 @@ def get_crawl_db_info(uid: str):
     return getCrawlDbInfo(uid)
 
 @router.put("/{uid}/datainfo")
+def update_crawl_db_datainfo(uid: str, dataInfo: DataInfo):
+    return updateCrawlDb(uid, dataInfo)
+
+@router.put("/{uid}/error")
 def update_crawl_db_datainfo(uid: str, dataInfo: DataInfo):
     return updateCrawlDb(uid, dataInfo)
