@@ -921,6 +921,7 @@ class Manager_Database:
                 json=option,
                 stream=True,
                 headers=self.main.api_headers,
+                timeout=3600
             )
             response.raise_for_status()
 
@@ -978,7 +979,6 @@ class Manager_Database:
                 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
-            QMessageBox.warning(self.main, "Error", f"DB 저장 중 오류가 발생했습니다\n\n{e}")
 
     def refreshDB(self):
         try:
