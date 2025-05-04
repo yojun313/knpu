@@ -90,7 +90,7 @@ def getCrawlDbInfo(uid: str):
         content={"message": "CrawlDB retrieved", "data": clean_doc(crawlDb)},
     )   
     
-def updateCrawlDb(uid: str, dataInfo: DataInfo, error:bool = False):
+def updateCrawlDb(uid: str, dataInfo, error:bool = False):
     crawlDb = crawlList_db.find_one({"uid": uid})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
