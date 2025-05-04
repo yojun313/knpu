@@ -15,6 +15,7 @@ import os
 import io
 import shutil
 from starlette.responses import FileResponse
+from starlette.background import BackgroundTask
 
 router = APIRouter()
 
@@ -56,11 +57,20 @@ def save_crawl_db(uid: str, save_option: SaveCrawlDbOption = Body(...)):
 
     # 3) 전송할 파일 이름 (원본 폴더명 + .zip)
     filename = os.path.basename(zip_path)  # 여기에 한글이 섞여 있어도 OK
-
+    
+    background_task = BackgroundTask(cleanup_folder_and_zip, folder_path, zip_path)
     # 4) FileResponse에 filename= 으로 넘기기
     return FileResponse(
         path=zip_path,
         media_type="application/zip",
-        filename=filename,       # ★ 이렇게만 해 주시면
-        # background=…            # (원하시면 삭제 후 백그라운드 작업까지)
+        filename=filename,     
+        background=background_task,
     )
+    
+def cleanup_folder_and_zip(folder_path: str, zip_path: str):
+    # 폴더와 ZIP 파일을 삭제
+    shutil.rmtree(folder_path, ignore_errors=True)
+    try:
+        os.remove(zip_path)
+    except OSError:
+        pass
