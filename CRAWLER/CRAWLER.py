@@ -290,6 +290,7 @@ class Crawler(CrawlerModule):
                 self.mySQL.connectDB(self.DBname)
                 print(f"{table} 가져오는 중...")
                 data_df = self.mySQL.TableToDataframe(table)
+                print("가져옴")
 
                 if 'reply' in table or 'rereply' in table:
                     # 열 이름 설정
@@ -306,7 +307,9 @@ class Crawler(CrawlerModule):
                     data_df = data_df.rename(columns={'Article Day': date_column})
                     data_df = data_df.sort_values(by=date_column)
 
+                print("날짜 처리 완료, 토큰화시작")
                 token_df = self.tokenization(data_df)
+                print("")
                 print(f'\r{table} DB Inserting...', end='')
                 self.mySQL.connectDB(self.DBname)
                 self.mySQL.DataframeToTable(token_df, 'token_' + table)
