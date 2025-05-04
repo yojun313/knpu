@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import (
     QWidget, QToolBox,
     QListView, QVBoxLayout,
 )
-import requests
 warnings.filterwarnings("ignore")
 
 class Manager_User:
@@ -74,7 +73,7 @@ class Manager_User:
                     'email': email,
                     'pushoverKey': key
                 }
-                response = requests.post(self.main.server_api + '/users/add', json=data)
+                response = self.main.Request('post', '/users/add', json=data)
                 self.refreshUserTable()
                 
 
@@ -93,7 +92,7 @@ class Manager_User:
                 selectedUser = self.user_list[selectedRow]
                 reply = QMessageBox.question(self.main, 'Confirm Delete', f"{selectedUser['name']}님을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    response = requests.delete(self.main.server_api + '/users/' + selectedUser['uid'])
+                    response = self.main.Request('delete', f'/users/{selectedUser['uid']}')
                     if response.status_code == 200:
                         QMessageBox.information(self.main, "Information", f"'{selectedUser['name']}'님이 삭제되었습니다")
                         self.refreshUserTable()
