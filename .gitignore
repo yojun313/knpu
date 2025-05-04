@@ -1,3 +1,11 @@
+# Python 가상환경
+venv/
+ENV/
+env/
+.venv/
+.ENV/
+ENV.bak/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -9,13 +17,16 @@ __pycache__/
 # Ignore .exe files
 *.exe
 
-logs/
-records/
-
+# IDE 관련
 .idea/
 *.iml
 *.iws
 *.ipr
 .idea/misc.xml
-*.iml
 *.xml
+
+# 환경 변수 및 로그
+.env
+logs/
+records/
+temp/

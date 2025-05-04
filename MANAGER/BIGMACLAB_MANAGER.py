@@ -11,9 +11,9 @@
 # Contact:
 # - Email: yojun313@postech.ac.kr / moonyojun@gmail.com
 # - Phone: +82-10-4072-9190
-##############################################################################################################
+##############################################################################################################pip
 
-VERSION = '2.7.0'
+VERSION = '2.7.1'
 
 import os
 import platform
@@ -93,11 +93,12 @@ import pandas as pd
 from pathlib import Path
 import socket
 import gc
-import random
 import traceback
+import requests
 import re
 import logging
 import shutil
+import requests
 
 splashDialog.updateStatus("Loading GUI Libraries")
 from Manager_Settings import Manager_Setting
@@ -122,6 +123,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self, splashDialog):
         try:
+            self.server_api = "http://localhost:8000/api"
+            self.server_api = "https://manager.knpu.re.kr/api"
             self.versionNum = VERSION
             self.version = f'Version {self.versionNum}'
             self.splashDialog = splashDialog
@@ -212,8 +215,6 @@ class MainWindow(QMainWindow):
                             # DB 불러오기
                             self.managerBoardObj = Manager_Board(self)
                             self.managerUserObj = Manager_User(self)
-                            self.userNameList = self.managerUserObj.userNameList  # User Table 유저 리스트
-                            self.userMailList = self.managerUserObj.userMailList
                             self.userList = self.managerUserObj.userList  # Device Table 유저 리스트
                             self.deviceList = self.managerUserObj.deviceList
                             self.macList = self.managerUserObj.macList
@@ -286,7 +287,7 @@ class MainWindow(QMainWindow):
 
                     if self.SETTING['ScreenSize'] == 'max':
                         self.showMaximized()
-                    self.printStatus(f"{self.fullstorage} GB / 2 TB")
+                    self.printStatus(f"{self.fullStorage} GB / 2 TB")
 
                     # After Booting
 
@@ -345,7 +346,7 @@ class MainWindow(QMainWindow):
             defaults = {
                 'Theme': 'default',
                 'ScreenSize': 'default',
-                'OldPostTitle': 'default',
+                'OldPostUid': 'default',
                 'AutoUpdate': 'default',
                 'MyDB': 'default',
                 'GPT_Key': 'default',
@@ -365,7 +366,7 @@ class MainWindow(QMainWindow):
             self.SETTING = {
                 'Theme': self.settings.value("Theme", "default"),
                 'ScreenSize': self.settings.value("ScreenSize", "default"),
-                'OldPostTitle': self.settings.value("OldPostTitle", "default"),
+                'OldPostUid': self.settings.value("OldPostUid", "default"),
                 'AutoUpdate': self.settings.value("AutoUpdate", "default"),
                 'MyDB': self.settings.value("MyDB", "default"),
                 'GPT_Key': self.settings.value("GPT_Key", "default"),
@@ -460,92 +461,65 @@ class MainWindow(QMainWindow):
             print(traceback.format_exc())
 
     def loginProgram(self):
-        def admin_notify(username):
-            msg = f'[ Admin Notification ]\n\nUnknown tried to connect\n\nName: {username}\n\nLocation: {self.getUserLocation(True)}'
-            self.sendPushOver(msg, self.admin_pushoverkey)
-
         try:
-            currentDevice = socket.gethostname()
-            self.userDevice = currentDevice
-            self.userMac = get_mac_address()
-            if self.userDevice == 'Yojuns-MacBook-Pro.local':
-                print("Done")
-                self.user = 'admin'
-                self.usermail = 'moonyojun@naver.com'
-                return True
-            if self.userMac in self.macList and self.userDevice in self.deviceList:
-                print("Done")
-                self.user = self.userList[self.deviceList.index(currentDevice)]
-                self.usermail = self.userMailList[self.userNameList.index(self.user)]
-                return True
-            else:
-                self.closeBootscreen()
-                self.printStatus()
-                inputDialogId = QInputDialog(self)
-                inputDialogId.setWindowTitle('Login')
-                inputDialogId.setLabelText('User Name:')
-                inputDialogId.resize(300, 200)  # 원하는 크기로 설정
-                ok = inputDialogId.exec_()
-                userName = inputDialogId.textValue()
-                if not ok:
-                    QMessageBox.warning(self, 'Program Shutdown', '프로그램을 종료합니다')
-                    return False
-                elif userName not in self.userNameList:
-                    admin_notify(userName)
-                    QMessageBox.warning(self, 'Unknown User', '등록되지 않은 사용자입니다\n\n프로그램을 종료합니다')
-                    return False
+            self.userDevice = socket.gethostname()
 
-                self.user = userName
-                self.usermail = self.userMailList[self.userNameList.index(userName)]
-                self.printStatus("인증번호 전송 중...")
+            # 이전에 발급된 토큰이 있는지 확인
+            saved_token = self.settings.value('auth_token', '')
+            if saved_token:
+                headers = {"Authorization": f"Bearer {saved_token}"}
+                res = requests.get(f"{self.server_api}/auth/login", headers=headers)
+                if res.status_code == 200:
+                    userData = res.json()['user']
+                    self.user = userData['name']
+                    self.userUid = userData['uid']
+                    self.usermail = userData['email']
+                    return True
 
-                random_pw = ''.join(random.choices('0123456789', k=6))
-                msg = (
-                    f"사용자: {self.user}\n"
-                    f"디바이스: {currentDevice}\n"
-                    f"인증 위치: {self.getUserLocation()}\n\n"
-                    f"인증 번호 '{random_pw}'를 입력하십시오"
-                )
-                self.sendEmail(self.usermail, "[MANAGER] 디바이스 등록 인증번호", msg)
-                self.printStatus()
-                QMessageBox.information(self, "Information", f"{self.user}님의 메일 {self.usermail}로 인증번호가 전송되었습니다\n\n인증번호를 확인 후 다음 창에서 입력하십시오")
-
-                ok, password = self.checkPassword(string="메일 인증번호")
-                if ok and password == random_pw:
-                    reply = QMessageBox.question(self, 'Device Registration',
-                                                 f"BIGMACLAB MANAGER 서버에\n현재 디바이스({currentDevice})를 등록하시겠습니까?",
-                                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                    if reply == QMessageBox.Yes:
-                        self.mySQLObj.insertToTable('deviceList', [[currentDevice, userName, self.userMac]])
-                        self.mySQLObj.commit()
-                        QMessageBox.information(self, "Information", "디바이스가 등록되었습니다\n\n다음 실행 시 추가적인 로그인이 필요하지 않습니다")
-                        msg = (
-                            "[ New Device Added! ]\n\n"
-                            f"User: {userName}\n"
-                            f"Device: {currentDevice}\n"
-                            f"Location: {self.getUserLocation()}"
-                        )
-                        self.sendPushOver(msg, self.admin_pushoverkey)
-                        self.managerUserObj.initDeviceTable()
-                        return True
-                    else:
-                        QMessageBox.information(self, "Information", "디바이스가 등록되지 않았습니다\n\n다음 실행 시 추가적인 로그인이 필요합니다")
-                        return True
-                elif ok:
-                    self.printStatus("인증 실패")
-                    QMessageBox.warning(self, 'Wrong Password', '인증번호가 올바르지 않습니다\n\n프로그램을 종료합니다')
-                    admin_notify(self.user)
-                    return False
-                else:
-                    QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
-                    return False
-        except Exception as e:
+            # 사용자 이름 입력 대화
             self.closeBootscreen()
-            QMessageBox.critical(self, "Error", f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
-            QMessageBox.information(self, "Information",
-                                    f"관리자에게 문의바랍니다\n\nEmail: yojun313@postech.ac.kr\nTel: 010-4072-9190\n\n프로그램을 종료합니다")
-            return False
+            self.printStatus()
 
+            inputDialogId = QInputDialog(self)
+            inputDialogId.setWindowTitle('Login')
+            inputDialogId.setLabelText('User Name:')
+            inputDialogId.resize(300, 200)
+            ok = inputDialogId.exec_()
+            userName = inputDialogId.textValue()
+
+            if not ok:
+                QMessageBox.warning(self, 'Program Shutdown', '프로그램을 종료합니다')
+                return False
+
+            self.user = userName
+                        
+            res = requests.get(f"{self.server_api}/auth/request", params={"name": self.user}).json()
+            self.printStatus()
+            QMessageBox.information(self, "Information",
+                                    f"{self.user}님의 메일로 인증번호가 전송되었습니다\n\n"
+                                    "인증번호를 확인 후 입력하십시오")
+
+            ok, password = self.checkPassword(string="메일 인증번호")
+            if not ok:
+                QMessageBox.warning(self, 'Error', '프로그램을 종료합니다')
+                return False
+
+            res = requests.post(f"{self.server_api}/auth/verify",
+                                params={"name": self.user, "code": password, "device": self.userDevice}).json()
+            userData = res['user']
+            access_token = res['access_token']
+            
+            self.user = userData['name']
+            self.usermail = userData['email']
+            self.userUid = userData['uid']
+            self.settings.setValue('auth_token', access_token)
+
+        except Exception:
+            self.closeBootscreen()
+            QMessageBox.critical(self, "Error",
+                                f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
+            return False
+         
     def updateProgram(self, sc=False, auto=False):
         try:
             if platform.system() != "Windows":
@@ -674,17 +648,19 @@ class MainWindow(QMainWindow):
 
     def checkNewPost(self):
         print("\nV. Checking New Post... ", end='')
-        new_post_text = self.managerBoardObj.post_data[0][1]
-        new_post_writer = self.managerBoardObj.post_data[0][0]
-        old_post_text = self.SETTING['OldPostTitle']
+        if len(self.managerBoardObj.origin_post_data) == 0:
+            return False
+        new_post_uid = self.managerBoardObj.origin_post_data[0]['uid']
+        new_post_writer = self.managerBoardObj.origin_post_data[0]['writerName']
+        old_post_uid = self.SETTING['OldPostUid']
         print("Done")
-        if new_post_text == old_post_text:
+        if new_post_uid == old_post_uid:
             return False
-        elif old_post_text == 'default':
-            self.updateSettings('OldPostTitle', new_post_text)
+        elif old_post_uid == 'default':
+            self.updateSettings('OldPostUid', new_post_uid)
             return False
-        elif new_post_text != old_post_text and self.user != new_post_writer:
-            self.updateSettings('OldPostTitle', new_post_text)
+        elif new_post_uid != old_post_uid and self.user != new_post_writer:
+            self.updateSettings('OldPostUid', new_post_uid)
             return True
 
     def checkNetwork(self):
@@ -692,13 +668,30 @@ class MainWindow(QMainWindow):
             try:
                 # Google을 기본으로 확인 (URL은 다른 사이트로 변경 가능)
                 response = requests.get("http://www.google.com", timeout=5)
-                return response.status_code == 200
+                break
             except requests.ConnectionError:
                 self.printStatus()
                 self.closeBootscreen()
                 reply = QMessageBox.question(self, "Internet Connection Error",
                                              "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?",
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    continue
+                else:
+                    os._exit(0)
+                    
+        while True:
+            try:
+                # FastAPI 서버의 상태를 확인하는 핑 API 또는 기본 경로 사용
+                response = requests.get(f"{self.server_api}/ping", timeout=5)
+                if response.status_code == 200:
+                    return True
+            except requests.RequestException:
+                self.printStatus()
+                self.closeBootscreen()
+                reply = QMessageBox.question(self, "서버 연결 실패",
+                                            f"서버에 연결할 수 없습니다.\n\n관리자에게 문의하십시오\n\n재시도하시겠습니까?",
+                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     continue
                 else:
@@ -713,11 +706,11 @@ class MainWindow(QMainWindow):
             self.managerDatabaseObj.setDatabaseShortcut()
             if self.SETTING['DB_Refresh'] == 'default':
                 self.managerDatabaseObj.refreshDB()
-            self.printStatus(f"{self.fullstorage} GB / 2 TB")
+            self.printStatus(f"{self.fullStorage} GB / 2 TB")
         # CRAWLER
         elif index == 1:
             self.initShortcutialize()
-            self.printStatus(f"활성 크롤러 수: {self.activate_crawl}")
+            self.printStatus(f"활성 크롤러 수: {self.activeCrawl}")
         # ANALYSIS
         elif index == 2:
             self.printStatus()
@@ -826,6 +819,45 @@ class MainWindow(QMainWindow):
 
         return EmbeddedFileDialog(self, self.localDirectory)
 
+    def Request(self, method, url, **kwargs):
+        try:
+            full_url = f"{self.server_api}/{url.lstrip('/')}"
+
+            # 기본 헤더에 Authorization 추가
+            self.api_headers = kwargs.get("headers", {})
+            token = self.settings.value('auth_token', '')
+
+            if token:
+                self.api_headers["Authorization"] = f"Bearer {token}"
+            kwargs["headers"] = self.api_headers  
+            
+            # 요청 메서드 분기
+            method = method.lower()
+            if method == 'get':
+                response = requests.get(full_url, **kwargs)
+            elif method == 'post':
+                response = requests.post(full_url, **kwargs)
+            elif method == 'put':
+                response = requests.put(full_url, **kwargs)
+            elif method == 'delete':
+                response = requests.delete(full_url, **kwargs)
+            else:
+                raise ValueError(f"Unsupported method: {method}")
+
+            response.raise_for_status()
+            return response
+
+        except requests.exceptions.HTTPError as http_err:
+            try:
+                error_message = http_err.response.json().get("message", str(http_err))
+            except Exception:
+                error_message = str(http_err)
+            raise Exception(f"[HTTP Error] {error_message}")
+        except requests.exceptions.RequestException as err:
+            raise Exception(f"[Request Failed] {str(err)}")
+
+
+    
     #############################################################################
 
     def updateSettings(self, option_key, new_value):
@@ -916,124 +948,21 @@ class MainWindow(QMainWindow):
                 pass
 
     def updateDB(self):
-        def sort_currentDB_by_keyword(currentDB):
-            # keyword를 기준으로 정렬 (따옴표 제거 후 비교)
-            sorted_data = sorted(
-                zip(currentDB['DBlist'], currentDB['DBdata'], currentDB['DBtable']),
-                key=lambda x: x[1]['Keyword'].replace('"', '')  # Keyword 값에서 따옴표 제거 후 정렬
-            )
-
-            # 정렬된 결과를 리스트로 분리
-            currentDB['DBlist'], currentDB['DBdata'], currentDB['DBtable'] = map(list, zip(*sorted_data))
-
-            return currentDB
-        def sort_currentDB_by_starttime(currentDB):
-            # starttime을 기준으로 정렬하고 리스트를 역순으로 반환
-            sorted_data = sorted(
-                zip(currentDB['DBlist'], currentDB['DBdata'], currentDB['DBtable']),
-                key=lambda x: datetime.strptime(x[1]['Starttime'], '%Y-%m-%d %H:%M') if x[1]['Starttime'] != '-' else datetime.min
-            )[::-1]  # 정렬된 리스트를 뒤집음 (reverse 효과)
-
-            # 정렬된 결과를 리스트로 분리
-            currentDB['DBlist'], currentDB['DBdata'], currentDB['DBtable'] = map(list, zip(*sorted_data))
-
-            return currentDB
-
-        self.mySQLObj.connectDB('crawler_db')
-        db_list = self.mySQLObj.TableToList('db_list')
-
+        sort_by = 'starttime' if self.SETTING['DBKeywordSort'] == 'default' else 'keyword'
+            
+        res = self.Request('get', f'/crawls/list?sort_by={sort_by}').json()
+        
+        self.db_list = res['data']
+        self.fullStorage = res['fullStorage']
+        self.activeCrawl = res['activeCrawl']
+        
         currentDB = {
-            'DBlist': [],
-            'DBdata': [],
-            'DBtable': []
+            'DBuids': [db['uid'] for db in self.db_list],
+            'DBnames': [db['name'] for db in self.db_list],
+            'DBdata': self.db_list,
+            'DBtable': [(db['name'], db['crawlType'], db['keyword'], db['startDate'], db['endDate'], db['crawlOption'], db['status'], db['requester'], db['dbSize']) for db in self.db_list]
         }
-
-        self.fullstorage = 0
-        self.activate_crawl = 0
-
-        for DBdata in db_list:
-            DB_name = DBdata[0]
-            db_split = DB_name.split('_')
-            crawltype = db_split[0]
-
-            match crawltype:
-                case 'navernews':
-                    crawltype = 'Naver News'
-                case 'naverblog':
-                    crawltype = 'Naver Blog'
-                case 'navercafe':
-                    crawltype = 'Naver Cafe'
-                case 'youtube':
-                    crawltype = 'YouTube'
-
-            startdate = db_split[2]
-            enddate   = db_split[3]
-            option    = DBdata[1]
-            starttime = DBdata[2]
-            endtime   = DBdata[3]
-
-            status = "Done"
-            if endtime == '-' or endtime == '크롤링 중':
-                endtime = '크롤링 중'
-                status  = 'Working'
-            elif endtime == 'X':
-                endtime = '오류 중단'
-                status  = "Error"
-
-            requester = DBdata[4]
-            if requester == 'admin' and self.user != 'admin':
-                continue
-
-            if self.SETTING['MyDB'] == 'mydb' and requester != self.user:
-                continue
-
-            keyword = DBdata[5]
-            size    = float(DBdata[6])
-            self.fullstorage += float(size)
-            if size == 0:
-                try:
-                    size = self.mySQLObj.showDBSize(DB_name)
-                    if size is None:
-                        size = (0, 0)
-                except:
-                    size = (0, 0)
-                self.fullstorage += float(size[0])
-                size = f"{size[1]} MB" if size[0] < 1 else f"{size[0]} GB"
-            else:
-                size = f"{int(size * 1024)} MB" if size < 1 else f"{size} GB"
-            crawlcom   = DBdata[7]
-            crawlspeed = DBdata[8]
-            datainfo   = DBdata[9]
-
-            DBdata = {
-                'DB': DB_name,
-                'Crawltype': crawltype,
-                'Keyword': keyword,
-                'Startdate': startdate,
-                'Enddate': enddate,
-                'Option': option,
-                'Starttime': starttime,
-                'Endtime': endtime,
-                'Status': status,
-                'Requester': requester,
-                'Size': size,
-                'Crawlcom': crawlcom,
-                'Crawlspeed': crawlspeed,
-                'Datainfo': datainfo
-            }
-
-            currentDB['DBlist'].append(DB_name)
-            currentDB['DBdata'].append(DBdata)
-            currentDB['DBtable'].append((DB_name, crawltype, keyword, db_split[2], db_split[3], option, status, requester, size))
-
-        self.activate_crawl = len([item for item in currentDB['DBdata'] if item['Status'] == "Working"])
-        self.fullstorage = round(self.fullstorage, 2)
-
-        if self.SETTING['DBKeywordSort'] != 'default':
-            currentDB = sort_currentDB_by_keyword(currentDB)
-        else:
-            currentDB = sort_currentDB_by_starttime(currentDB)
-
+            
         return currentDB
 
     def makeTable(self, widgetname, data, column, right_click_function=None, popupsize=None):
