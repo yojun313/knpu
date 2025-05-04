@@ -950,6 +950,7 @@ class Manager_Database:
 
             with open(local_zip, "wb") as f, tqdm(
                 total=total_size,
+                file=sys.stdout,
                 unit="B", unit_scale=True, unit_divisor=1024,
                 desc="Downloading DB",
                 ascii=True, ncols=80,
