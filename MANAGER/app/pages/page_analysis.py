@@ -19,10 +19,10 @@ from PyQt5.QtWidgets import (
     QGroupBox, QScrollArea, QVBoxLayout,
     QPushButton, QButtonGroup, QRadioButton, QDateEdit
 )
-from Manager_Console import openConsole, closeConsole
+from libs.console import openConsole, closeConsole
 import chardet
-from DataProcess import DataProcess
-from Kemkim import KimKem
+from libs.analysis import DataProcess
+from libs.kemkim import KimKem
 import asyncio
 from googletrans import Translator
 

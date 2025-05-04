@@ -45,7 +45,7 @@ class SplashDialog(QDialog):
         # 이미지 라벨
         image_label = QLabel(self)
         pixmap = QPixmap(os.path.join(os.path.dirname(
-            __file__), 'source', 'exe_icon.png'))
+            __file__), '..', 'assets', 'exe_icon.png'))
         pixmap = pixmap.scaled(180, 180, Qt.KeepAspectRatio,
                                Qt.SmoothTransformation)  # 이미지 크기 유지
         image_label.setPixmap(pixmap)
