@@ -8,9 +8,11 @@ from cryptography.fernet import Fernet
 import requests
 import pandas as pd
 
+
 class ToolModule:
     def __init__(self):
         self.recognizer = sr.Recognizer()
+
     def decryptProcess(self):
         current_position = os.path.dirname(__file__)
 
@@ -36,7 +38,8 @@ class ToolModule:
             with open(os.path.join(current_position, 'decrypted_env'), "w", encoding="utf-8") as dec_file:
                 dec_file.write(decrypted_data)
 
-        decrypt_env_file(os.path.join(current_position, 'source', 'encrypted_env'))
+        decrypt_env_file(os.path.join(
+            current_position, 'source', 'encrypted_env'))
         load_dotenv(os.path.join(current_position, 'decrypted_env'))
 
         self.admin_password = os.getenv('ADMIN_PASSWORD')
@@ -97,4 +100,3 @@ class ToolModule:
         csv_data = pd.read_csv(csvPath, low_memory=False, index_col=0)
         csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
         return csv_data
-

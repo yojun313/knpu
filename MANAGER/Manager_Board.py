@@ -1,14 +1,14 @@
 import traceback
 import warnings
-from datetime import datetime, timedelta
-from PyQt5.QtCore import QRegExp, Qt, QDate
-from PyQt5.QtGui import QRegExpValidator, QKeySequence
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton,
     QMessageBox, QTextEdit, QScrollArea, QShortcut
 )
 
 warnings.filterwarnings("ignore")
+
 
 class Manager_Board:
     def __init__(self, main_window):
@@ -26,18 +26,25 @@ class Manager_Board:
                 def version_key(version_str):
                     return [int(part) for part in version_str.split('.')]
 
-                sorted_list = sorted(two_dim_list, key=lambda x: version_key(x[0]), reverse=True)
+                sorted_list = sorted(
+                    two_dim_list, key=lambda x: version_key(x[0]), reverse=True)
                 return sorted_list
-            
-            self.origin_version_data = self.main.Request('get', '/board/version').json()['data']
-            self.version_data = [list(map(str, item.values())) for item in self.origin_version_data]
+
+            self.origin_version_data = self.main.Request(
+                'get', '/board/version').json()['data']
+            self.version_data = [list(map(str, item.values()))
+                                 for item in self.origin_version_data]
             self.version_data = sort_by_version(self.version_data)
-                
-            self.version_data_for_table = [sub_list[:-1] for sub_list in self.version_data]
-            self.version_table_column = ['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status']
-            self.main.makeTable(self.main.board_version_tableWidget, self.version_data_for_table, self.version_table_column)
-            self.version_name_list = [version_data[0] for version_data in self.version_data_for_table]
-            
+
+            self.version_data_for_table = [sub_list[:-1]
+                                           for sub_list in self.version_data]
+            self.version_table_column = [
+                'Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status']
+            self.main.makeTable(self.main.board_version_tableWidget,
+                                self.version_data_for_table, self.version_table_column)
+            self.version_name_list = [version_data[0]
+                                      for version_data in self.version_data_for_table]
+
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -102,7 +109,8 @@ class Manager_Board:
                     # QScrollArea 설정
                     scroll_area = QScrollArea()
                     scroll_area.setWidgetResizable(True)
-                    scroll_area.setWidget(container_widget)  # 컨테이너 위젯을 스크롤 영역에 추가
+                    # 컨테이너 위젯을 스크롤 영역에 추가
+                    scroll_area.setWidget(container_widget)
 
                     # 최종 레이아웃 설정
                     final_layout = QVBoxLayout()
@@ -117,7 +125,8 @@ class Manager_Board:
                     version_status = self.version_status_input.text()
                     detail = self.detail_input.toPlainText()
 
-                    self.data = [ version_num, changelog, version_features, version_status, detail ]
+                    self.data = [version_num, changelog,
+                                 version_features, version_status, detail]
 
                     QMessageBox.information(self, 'Input Data',
                                             f'Version Num: {version_num}\nChangeLog: {changelog}\nVersion Features: {version_features}\nVersion Status: {version_status}\nDetail: {detail}')
@@ -137,11 +146,12 @@ class Manager_Board:
                     "details": version_data[4],
                     'sendPushOver': False,
                 }
-                
-                reply = QMessageBox.question(self.main, 'Confirm Notification', "업데이트 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+
+                reply = QMessageBox.question(
+                    self.main, 'Confirm Notification', "업데이트 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     data['sendPushOver'] = True
-                    
+
                 self.main.Request('post', '/board/version/add', json=data)
             self.refreshVersionBoard()
 
@@ -157,11 +167,12 @@ class Manager_Board:
 
             selectedRow = self.main.board_version_tableWidget.currentRow()
             if selectedRow >= 0:
-                reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                reply = QMessageBox.question(
+                    self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     version = self.version_name_list[selectedRow]
                     self.main.Request('delete', f'/board/version/{version}')
-            
+
             self.refreshVersionBoard()
 
         except Exception as e:
@@ -249,12 +260,16 @@ class Manager_Board:
 
     def refreshBugBoard(self):
         try:
-            self.origin_bug_data = self.main.Request('get', '/board/bug').json()['data']
+            self.origin_bug_data = self.main.Request(
+                'get', '/board/bug').json()['data']
             self.bug_data_for_table = [
-                [sub_list['writerName'], sub_list['versionName'], sub_list['bugTitle'], sub_list['datetime']] 
+                [sub_list['writerName'], sub_list['versionName'],
+                    sub_list['bugTitle'], sub_list['datetime']]
                 for sub_list in self.origin_bug_data]
-            self.bug_table_column = ['User', 'Version Num', 'Title', 'DateTime']
-            self.main.makeTable(self.main.board_bug_tableWidget, self.bug_data_for_table, self.bug_table_column)
+            self.bug_table_column = [
+                'User', 'Version Num', 'Title', 'DateTime']
+            self.main.makeTable(self.main.board_bug_tableWidget,
+                                self.bug_data_for_table, self.bug_table_column)
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -291,7 +306,8 @@ class Manager_Board:
 
                     self.bug_detail_label = QLabel('Bug Detail:')
                     self.bug_detail_input = QTextEdit()
-                    self.bug_detail_input.setPlaceholderText('버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해주세요\n오류 로그는 자동으로 전송됩니다')
+                    self.bug_detail_input.setPlaceholderText(
+                        '버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해주세요\n오류 로그는 자동으로 전송됩니다')
                     layout.addWidget(self.bug_detail_label)
                     layout.addWidget(self.bug_detail_input)
 
@@ -303,7 +319,8 @@ class Manager_Board:
                     # QScrollArea 설정
                     scroll_area = QScrollArea()
                     scroll_area.setWidgetResizable(True)
-                    scroll_area.setWidget(container_widget)  # 컨테이너 위젯을 스크롤 영역에 추가
+                    # 컨테이너 위젯을 스크롤 영역에 추가
+                    scroll_area.setWidget(container_widget)
 
                     # 최종 레이아웃 설정
                     final_layout = QVBoxLayout()
@@ -335,7 +352,7 @@ class Manager_Board:
             if dialog.data:
                 bug_data = dialog.data
                 bug_data = list(bug_data.values())
-                
+
                 json_data = {
                     "writerUid": self.main.userUid,
                     "versionName": bug_data[1],
@@ -343,12 +360,12 @@ class Manager_Board:
                     "bugText": bug_data[3],
                     "programLog": "",
                 }
-                
+
                 self.main.Request('post', '/board/bug/add', json=json_data)
                 self.refreshBugBoard()
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
-    
+
     def deleteBug(self):
         try:
             self.main.printStatus("삭제 중...")
@@ -356,19 +373,21 @@ class Manager_Board:
             selectedRow = self.main.board_bug_tableWidget.currentRow()
             if selectedRow >= 0:
                 bug = self.origin_bug_data[selectedRow]
-                
+
                 if bug['writerUid'] == self.main.userUid or self.main.user == 'admin':
-                    reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                    reply = QMessageBox.question(
+                        self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
                         self.main.Request('delete', f'/board/bug/{bug["uid"]}')
                         self.refreshBugBoard()
                 else:
-                    QMessageBox.warning(self.main, "Wrong Password", f"작성자만 삭제할 수 있습니다")
+                    QMessageBox.warning(
+                        self.main, "Wrong Password", f"작성자만 삭제할 수 있습니다")
                     return
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
-    
+
     def viewBug(self):
         try:
             self.main.userLogging(f'BOARD -> viewBug')
@@ -381,7 +400,8 @@ class Manager_Board:
 
                 # 다이얼로그 생성
                 dialog = QDialog(self.main)
-                dialog.setWindowTitle(f'Version {bug_data['versionName']} Bug Details')
+                dialog.setWindowTitle(
+                    f'Version {bug_data['versionName']} Bug Details')
                 dialog.resize(400, 600)
 
                 layout = QVBoxLayout()
@@ -451,16 +471,20 @@ class Manager_Board:
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
-    
+
     def refreshPostBoard(self):
         try:
-            self.origin_post_data = self.main.Request('get', '/board/post').json()['data']
+            self.origin_post_data = self.main.Request(
+                'get', '/board/post').json()['data']
             self.post_data_for_table = [
-                [sub_list['writerName'], sub_list['title'], sub_list['datetime'], str(sub_list['viewCnt'])] 
+                [sub_list['writerName'], sub_list['title'],
+                    sub_list['datetime'], str(sub_list['viewCnt'])]
                 for sub_list in self.origin_post_data
             ]
-            self.post_table_column = ['User', 'Title', 'DateTime', 'View Count']
-            self.main.makeTable(self.main.board_post_tableWidget, self.post_data_for_table, self.post_table_column)
+            self.post_table_column = [
+                'User', 'Title', 'DateTime', 'View Count']
+            self.main.makeTable(self.main.board_post_tableWidget,
+                                self.post_data_for_table, self.post_table_column)
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -468,6 +492,7 @@ class Manager_Board:
         try:
             # QDialog를 상속받은 클래스 생성
             self.main.userLogging(f'BOARD -> addPost')
+
             class PostInputDialog(QDialog):
                 def __init__(self, main_window):
                     super().__init__()
@@ -503,7 +528,8 @@ class Manager_Board:
                     # QScrollArea 설정
                     scroll_area = QScrollArea()
                     scroll_area.setWidgetResizable(True)
-                    scroll_area.setWidget(container_widget)  # 컨테이너 위젯을 스크롤 영역에 추가
+                    # 컨테이너 위젯을 스크롤 영역에 추가
+                    scroll_area.setWidget(container_widget)
 
                     # 최종 레이아웃 설정
                     final_layout = QVBoxLayout()
@@ -530,18 +556,19 @@ class Manager_Board:
             if dialog.data:
                 post_data = dialog.data
                 post_data = list(post_data.values())
-                
+
                 json_data = {
                     "writerUid": self.main.userUid,
                     "title": post_data[0],
                     "text": post_data[1],
                     "sendPushOver": False,
                 }
-        
-                reply = QMessageBox.question(self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+
+                reply = QMessageBox.question(
+                    self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     json_data['sendPushOver'] = True
-                
+
                 self.main.Request('post', '/board/post/add', json=json_data)
                 self.refreshPostBoard()
         except Exception as e:
@@ -630,14 +657,17 @@ class Manager_Board:
             selectedRow = self.main.board_post_tableWidget.currentRow()
             if selectedRow >= 0:
                 post = self.origin_post_data[selectedRow]
-                
+
                 if post['writerUid'] == self.main.userUid or self.main.user == 'admin':
-                    reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                    reply = QMessageBox.question(
+                        self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
-                        self.main.Request('delete', f'/board/post/{post["uid"]}')
+                        self.main.Request(
+                            'delete', f'/board/post/{post["uid"]}')
                         self.refreshPostBoard()
                 else:
-                    QMessageBox.warning(self.main, "Wrong Password", f"작성자만 삭제할 수 있습니다")
+                    QMessageBox.warning(
+                        self.main, "Wrong Password", f"작성자만 삭제할 수 있습니다")
                     return
 
         except Exception as e:
@@ -652,6 +682,7 @@ class Manager_Board:
                     self.post_data = post_data
                     self.initUI()
                     self.data = None  # 데이터를 저장할 속성 추가
+
                 def initUI(self):
                     self.setWindowTitle('Edit Post')
                     self.resize(400, 400)
@@ -682,7 +713,8 @@ class Manager_Board:
                     # QScrollArea 설정
                     scroll_area = QScrollArea()
                     scroll_area.setWidgetResizable(True)
-                    scroll_area.setWidget(container_widget)  # 컨테이너 위젯을 스크롤 영역에 추가
+                    # 컨테이너 위젯을 스크롤 영역에 추가
+                    scroll_area.setWidget(container_widget)
 
                     # 최종 레이아웃 설정
                     final_layout = QVBoxLayout()
@@ -716,25 +748,29 @@ class Manager_Board:
                     if dialog.data:
                         post_data = dialog.data
                         post_data = list(post_data.values())
-                        
+
                         json_data = {
                             "writerUid": self.main.userUid,
                             "title": post_data[0],
                             "text": post_data[1],
                             "sendPushOver": False,
                         }
-                        self.main.Request('put', f'/board/post/{postUid}', json=json_data)
+                        self.main.Request(
+                            'put', f'/board/post/{postUid}', json=json_data)
                         self.refreshPostBoard()
-                        QMessageBox.information(self.main, "Information", f"게시물이 수정되었습니다")
+                        QMessageBox.information(
+                            self.main, "Information", f"게시물이 수정되었습니다")
                 else:
-                    QMessageBox.warning(self.main, "Wrong Password", f"비밀번호가 일치하지 않습니다")
+                    QMessageBox.warning(
+                        self.main, "Wrong Password", f"비밀번호가 일치하지 않습니다")
                     self.main.printStatus()
                     return
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
     def matchButton(self):
-        self.main.board_deleteversion_button.clicked.connect(self.deleteVersion)
+        self.main.board_deleteversion_button.clicked.connect(
+            self.deleteVersion)
         self.main.board_addversion_button.clicked.connect(self.addVersion)
         self.main.board_detailversion_button.clicked.connect(self.viewVersion)
 
@@ -796,4 +832,3 @@ class Manager_Board:
             self.main.cmdv.activated.connect(self.viewPost)
             self.main.cmda.activated.connect(self.addPost)
             self.main.cmde.activated.connect(self.editPost)
-

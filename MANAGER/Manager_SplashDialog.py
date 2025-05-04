@@ -10,7 +10,8 @@ class SplashDialog(QDialog):
         self.theme = theme
         self.version = version
         if booting:
-            self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 최상위 창 설정
+            self.setWindowFlags(Qt.FramelessWindowHint |
+                                Qt.WindowStaysOnTopHint)  # 최상위 창 설정
         self.setAttribute(Qt.WA_TranslucentBackground)  # 배경을 투명하게 설정
         self.initUI()
 
@@ -37,13 +38,16 @@ class SplashDialog(QDialog):
         # 프로그램 이름 라벨
         title_label = QLabel("MANAGER")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet(f"font-size: 24px; font-family: 'Tahoma'; color: {text_color};")
+        title_label.setStyleSheet(
+            f"font-size: 24px; font-family: 'Tahoma'; color: {text_color};")
         main_layout.addWidget(title_label)
 
         # 이미지 라벨
         image_label = QLabel(self)
-        pixmap = QPixmap(os.path.join(os.path.dirname(__file__), 'source', 'exe_icon.png'))
-        pixmap = pixmap.scaled(180, 180, Qt.KeepAspectRatio, Qt.SmoothTransformation)  # 이미지 크기 유지
+        pixmap = QPixmap(os.path.join(os.path.dirname(
+            __file__), 'source', 'exe_icon.png'))
+        pixmap = pixmap.scaled(180, 180, Qt.KeepAspectRatio,
+                               Qt.SmoothTransformation)  # 이미지 크기 유지
         image_label.setPixmap(pixmap)
         image_label.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(image_label)
@@ -51,7 +55,8 @@ class SplashDialog(QDialog):
         # 버전 정보 라벨
         version_label = QLabel(f"Version {self.version}")
         version_label.setAlignment(Qt.AlignCenter)
-        version_label.setStyleSheet(f"font-size: 18px; font-family: 'Tahoma'; color: {text_color}; margin-top: 5px;")
+        version_label.setStyleSheet(
+            f"font-size: 18px; font-family: 'Tahoma'; color: {text_color}; margin-top: 5px;")
         main_layout.addWidget(version_label)
 
         # 상태 메시지 라벨
@@ -62,9 +67,11 @@ class SplashDialog(QDialog):
         main_layout.addWidget(self.status_label)
 
         # 저작권 정보 라벨
-        copyrightLabel = QLabel("Copyright © 2024 KNPU BIGMACLAB\nAll rights reserved.")
+        copyrightLabel = QLabel(
+            "Copyright © 2024 KNPU BIGMACLAB\nAll rights reserved.")
         copyrightLabel.setAlignment(Qt.AlignCenter)
-        copyrightLabel.setStyleSheet(f"font-size: 15px; font-family: 'Tahoma'; color: {gray_color}; margin-top: 10px;")
+        copyrightLabel.setStyleSheet(
+            f"font-size: 15px; font-family: 'Tahoma'; color: {gray_color}; margin-top: 10px;")
         main_layout.addWidget(copyrightLabel)
 
         # 배경 색상 저장
