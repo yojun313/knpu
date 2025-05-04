@@ -64,9 +64,9 @@ class CrawlerModule(ToolModule):
         
         self.IntegratedDB = {
             'UrlCnt'          : 0,
-            'TotalArticleCnt' : 0,
-            'TotalReplyCnt'   : 0,
-            'TotalRereplyCnt' : 0
+            'totalArticleCnt' : 0,
+            'totalReplyCnt'   : 0,
+            'totalRereplyCnt' : 0
         }
 
     def ip_update(self):
@@ -140,9 +140,9 @@ class CrawlerModule(ToolModule):
                         f"| 경과: {YELLOW}{loadingtime}{WHITE} "
                         f"| 날짜: {color['date']}{printData['currentDate']}{WHITE} "
                         f"| URL: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
-                        f"| {type_word}: {color['type']}{self.IntegratedDB['TotalArticleCnt']}{WHITE} "
-                        f"| 댓글: {color['reply']}{self.IntegratedDB['TotalReplyCnt']}{WHITE} "
-                        f"| 대댓글: {color['re_reply']}{self.IntegratedDB['TotalRereplyCnt']}{WHITE} ||{RESET}"
+                        f"| {type_word}: {color['type']}{self.IntegratedDB['totalArticleCnt']}{WHITE} "
+                        f"| 댓글: {color['reply']}{self.IntegratedDB['totalReplyCnt']}{WHITE} "
+                        f"| 대댓글: {color['re_reply']}{self.IntegratedDB['totalRereplyCnt']}{WHITE} ||{RESET}"
                     )
 
                 else:
@@ -151,9 +151,9 @@ class CrawlerModule(ToolModule):
                         f"| 경과: {loadingtime} "
                         f"| 날짜: {printData['currentDate']} "
                         f"| URL: {self.IntegratedDB['UrlCnt']} "
-                        f"| {type_word}: {self.IntegratedDB['TotalArticleCnt']} "
-                        f"| 댓글: {self.IntegratedDB['TotalReplyCnt']} "
-                        f"| 대댓글: {self.IntegratedDB['TotalRereplyCnt']} ||"
+                        f"| {type_word}: {self.IntegratedDB['totalArticleCnt']} "
+                        f"| 댓글: {self.IntegratedDB['totalReplyCnt']} "
+                        f"| 대댓글: {self.IntegratedDB['totalRereplyCnt']} ||"
                     )
 
                 if type == 'YouTube':
@@ -179,9 +179,9 @@ class CrawlerModule(ToolModule):
                 table.add_row("경과", str(loadingtime))
                 table.add_row("날짜", str(printData['currentDate']))
                 table.add_row("URL", str(self.IntegratedDB['UrlCnt']))
-                table.add_row(f"{type_word}", str(self.IntegratedDB['TotalArticleCnt']))
-                table.add_row("댓글", str(self.IntegratedDB['TotalReplyCnt']))
-                table.add_row("대댓글", str(self.IntegratedDB['TotalRereplyCnt']))
+                table.add_row(f"{type_word}", str(self.IntegratedDB['totalArticleCnt']))
+                table.add_row("댓글", str(self.IntegratedDB['totalReplyCnt']))
+                table.add_row("대댓글", str(self.IntegratedDB['totalRereplyCnt']))
                 if type == 'YouTube':
                     table.add_row("API NUM", str(self.PrintData['api_num']))
 

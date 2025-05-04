@@ -38,7 +38,7 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
 def createCrawlLog(crawlLog: CrawlLogCreateDto):
     crawlLog_dict = crawlLog.model_dump()
     
-    existing_crawlLog = crawlList_db.find_one({"uid": crawlLog_dict["uid"]})
+    existing_crawlLog = crawlLog_db.find_one({"uid": crawlLog_dict["uid"]})
     if existing_crawlLog:
         raise ConflictException("CrawlLog with this uid already exists")
     
