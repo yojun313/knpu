@@ -102,7 +102,7 @@ class Manager_Analysis:
                 selectedRow = self.main.dataprocess_tab1_tablewidget.currentRow()
                 if not selectedRow >= 0:
                     return 0 ,0, 0
-                targetDB = self.DB['DBlist'][selectedRow]
+                targetDB = self.DB['DBnames'][selectedRow]
                 self.main.userLogging(f'ANALYSIS -> timesplit_DB({targetDB})')
 
                 folder_path  = QFileDialog.getExistingDirectory(self.main, "분할 데이터를 저장할 폴더를 선택하세요", self.main.localDirectory)
@@ -182,7 +182,7 @@ class Manager_Analysis:
                 selectedRow = self.main.dataprocess_tab1_tablewidget.currentRow()
                 if not selectedRow >= 0:
                     return 0 ,0, 0
-                targetDB = self.DB['DBlist'][selectedRow]
+                targetDB = self.DB['DBnames'][selectedRow]
                 self.main.userLogging(f'ANALYSIS -> analysis_DB({targetDB})')
 
                 folder_path  = QFileDialog.getExistingDirectory(self.main, "분석 데이터를 저장할 폴더를 선택하세요", self.main.localDirectory)
@@ -769,8 +769,8 @@ class Manager_Analysis:
                 self.main.printStatus()
                 return
 
-            startdate = dialog.data['startdate']
-            enddate = dialog.data['enddate']
+            startdate = dialog.data['startDate']
+            enddate = dialog.data['endDate']
             date = (startdate, enddate)
             period = dialog.data['period']
             maxword = int(dialog.data['maxword'])
@@ -1164,8 +1164,8 @@ class Manager_Analysis:
                 try:
                     if dialog.data == None:
                         return
-                    startdate = dialog.data['startdate']
-                    enddate = dialog.data['enddate']
+                    startdate = dialog.data['startDate']
+                    enddate = dialog.data['endDate']
                     period = dialog.data['period']
                     topword = int(dialog.data['topword'])
                     weight = float(dialog.data['weight'])
