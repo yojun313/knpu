@@ -2,7 +2,7 @@
 import signal
 import sys
 
-from CRAWLER import Crawler
+from crawler import Crawler
 
 sys.stdout.reconfigure(encoding='utf-8')
 
