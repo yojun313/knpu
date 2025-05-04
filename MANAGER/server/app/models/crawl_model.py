@@ -11,8 +11,8 @@ class CrawlDbListSchema(BaseModel):
     uid: str
     name: str
     crawlOption: int
-    startTime: datetime
-    endTime: Optional[datetime]
+    startTime: str
+    endTime: Optional[str]
     requester: str
     keyword: str
     dbSize: float
@@ -28,3 +28,7 @@ class CrawlDbCreateDto(BaseModel):
     dbSize: float
     crawlCom: str
     crawlSpeed: int
+    
+class CrawlLogCreateDto(BaseModel):
+    uid: str
+    content: str
