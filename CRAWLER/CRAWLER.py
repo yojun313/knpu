@@ -51,7 +51,7 @@ class Crawler(CrawlerModule):
         self.crawllog_path  = os.path.join(self.pathFinder()['crawler_folder_path'], 'CrawlLog')
         self.crawlcom       = self.pathFinder(user)['computer_name']
         self.mySQL          = self.pathFinder(user)['MYSQL']
-        self.api_url        = "http://localhost:8000"
+        self.api_url        = "http://localhost:8000/api"
         
         # User Info
         self.user      = user
