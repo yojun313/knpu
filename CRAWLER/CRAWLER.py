@@ -21,6 +21,7 @@ import urllib3
 from Package.CrawlerModule import CrawlerModule
 from Package.GoogleModule import GoogleModule
 import pandas as pd
+from dotenv import load_dotenv
 
 from Package.ChinaCrawlerPackage.ChinaDailyCrawlerModule import ChinaDailyCrawler
 from Package.ChinaCrawlerPackage.ChinaSinaCrawlerModule import ChinaSinaCrawler
@@ -31,6 +32,8 @@ from Package.OtherCrawlerPackage.YouTubeCrawlerModule import YouTubeCrawler
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
+
+load_dotenv()
 
 class Crawler(CrawlerModule):
     
@@ -52,6 +55,9 @@ class Crawler(CrawlerModule):
         self.crawlcom       = self.pathFinder(user)['computer_name']
         self.mySQL          = self.pathFinder(user)['MYSQL']
         self.api_url        = "http://localhost:8000/api"
+        self.api_headers = {
+            "Authorization": "Bearer " + os.getenv('ADMIN_TOKEN'),
+        }
         
         # User Info
         self.user      = user
@@ -91,10 +97,10 @@ class Crawler(CrawlerModule):
     def DBinfoRecorder(self, endoption = False, error = False):
 
         if error == True:
-            res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/error", json=self.IntegratedDB).json()
+            res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/error", json=self.IntegratedDB, headers=self.api_headers).json()
 
         elif endoption == True:
-            res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/datainfo", json=self.IntegratedDB).json()
+            res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/datainfo", json=self.IntegratedDB, headers=self.api_headers).json()
             with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'r') as log:
                 log_content = log.read()
                 
@@ -102,7 +108,7 @@ class Crawler(CrawlerModule):
                 'uid': self.dbUid,
                 'content': log_content
             }
-            res = requests.post(f"{self.api_url}/crawls/add/log", json=json).json()
+            res = requests.post(f"{self.api_url}/crawls/add/log", json=json, headers=self.api_headers).json()
 
     # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
@@ -204,7 +210,7 @@ class Crawler(CrawlerModule):
             "crawlSpeed": crawlspeed,
         }
         
-        res = requests.post(self.api_url + '/crawls/add', json=json).json()
+        res = requests.post(self.api_url + '/crawls/add', json=json, headers=self.api_headers).json()
         self.dbUid = res['data']['uid']
         self.mySQL.connectDB(self.DBname)
 
