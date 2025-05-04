@@ -7,6 +7,7 @@ import warnings
 import traceback
 warnings.filterwarnings("ignore")
 
+
 class Manager_Web:
 
     def __init__(self, main_window):
@@ -37,6 +38,7 @@ class Manager_Web:
             self.browser.show()
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
+
     def web_open_downloadbrowser(self, url):
         webbrowser.open('https://knpu.re.kr:90')
 
@@ -44,7 +46,8 @@ class Manager_Web:
         self.main.crawler_server_button.clicked.connect(
             partial(self.web_open_webbrowser, "https://crawler.knpu.re.kr", self.crawler_web_layout))
 
-        self.main.web_downloadpage_button.clicked.connect(self.web_open_downloadbrowser)
+        self.main.web_downloadpage_button.clicked.connect(
+            self.web_open_downloadbrowser)
         self.main.web_homepage_button.clicked.connect(
             partial(self.web_open_webbrowser, "https://knpu.re.kr", self.web_web_layout))
         self.main.web_sue_button.clicked.connect(
@@ -52,5 +55,3 @@ class Manager_Web:
 
         self.main.web_github_button.clicked.connect(
             partial(self.web_open_webbrowser, "https://github.com/yojun313", self.web_web_layout))
-
-

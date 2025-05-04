@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 )
 warnings.filterwarnings("ignore")
 
+
 class Manager_User:
     def __init__(self, main_window):
         self.main = main_window
@@ -19,12 +20,14 @@ class Manager_User:
 
     def refreshUserTable(self):
         # 데이터베이스 연결 및 데이터 가져오기
-        
+
         self.user_list = self.main.Request('get', '/users').json()['data']
-        user_data = [(user['name'], user['email'], user['pushoverKey']) for user in self.user_list]
+        user_data = [(user['name'], user['email'], user['pushoverKey'])
+                     for user in self.user_list]
         self.userNameList = [user['name'] for user in self.user_list]
         # userNameList 및 userKeyList 업데이트
-        self.userKeyList = [user['pushoverKey'] for user in self.user_list if user['pushoverKey'] != 'n']
+        self.userKeyList = [user['pushoverKey']
+                            for user in self.user_list if user['pushoverKey'] != 'n']
 
         # 테이블 설정
         columns = ['Name', 'Email', 'PushOverKey']
@@ -38,14 +41,15 @@ class Manager_User:
         # 데이터베이스 연결 및 데이터 가져오기
         self.main.mySQLObj.connectDB('bigmaclab_manager_db')
         userDF = self.main.mySQLObj.TableToDataframe('device_list')
-        device_data = [(user, device, mac) for _, device, user, mac in userDF.itertuples(index=False, name=None)]
-        device_data = sorted(device_data, key=lambda x: (not x[0][0].isalpha(), x[0]))
+        device_data = [(user, device, mac) for _, device, user,
+                       mac in userDF.itertuples(index=False, name=None)]
+        device_data = sorted(device_data, key=lambda x: (
+            not x[0][0].isalpha(), x[0]))
 
         # userNameList 및 userKeyList 업데이트
         self.deviceList = [device for name, device, mac in device_data]
         self.userList = [name for name, device, mac in device_data]
         self.macList = [mac for name, device, mac in device_data]
-
 
         # 테이블 설정
         columns = ['User', 'Device', 'Mac']
@@ -66,7 +70,8 @@ class Manager_User:
                 if not ok or password != self.main.admin_password:
                     return
 
-            reply = QMessageBox.question(self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            reply = QMessageBox.question(
+                self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 data = {
                     'name': name,
@@ -75,7 +80,6 @@ class Manager_User:
                 }
                 response = self.main.Request('post', '/users/add', json=data)
                 self.refreshUserTable()
-                
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
@@ -90,14 +94,18 @@ class Manager_User:
             selectedRow = self.main.user_tablewidget.currentRow()
             if selectedRow >= 0:
                 selectedUser = self.user_list[selectedRow]
-                reply = QMessageBox.question(self.main, 'Confirm Delete', f"{selectedUser['name']}님을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                reply = QMessageBox.question(
+                    self.main, 'Confirm Delete', f"{selectedUser['name']}님을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    response = self.main.Request('delete', f'/users/{selectedUser['uid']}')
+                    response = self.main.Request(
+                        'delete', f'/users/{selectedUser['uid']}')
                     if response.status_code == 200:
-                        QMessageBox.information(self.main, "Information", f"'{selectedUser['name']}'님이 삭제되었습니다")
+                        QMessageBox.information(
+                            self.main, "Information", f"'{selectedUser['name']}'님이 삭제되었습니다")
                         self.refreshUserTable()
                     else:
-                        QMessageBox.warning(self.main, "Error", f"'{selectedUser['name']}'님을 삭제할 수 없습니다")
+                        QMessageBox.warning(
+                            self.main, "Error", f"'{selectedUser['name']}'님을 삭제할 수 없습니다")
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
@@ -111,15 +119,17 @@ class Manager_User:
 
             selectedRow = self.main.device_tablewidget.currentRow()
             if selectedRow >= 0:
-                reply = QMessageBox.question(self.main, 'Confirm Delete', f"{self.deviceList[selectedRow]}를 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                reply = QMessageBox.question(
+                    self.main, 'Confirm Delete', f"{self.deviceList[selectedRow]}를 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-                    self.main.mySQLObj.deleteTableRowByColumn('deviceList', self.deviceList[selectedRow], 'device_name')
-                    QMessageBox.information(self.main, "Information", f"'{self.deviceList[selectedRow]}'가 삭제되었습니다")
+                    self.main.mySQLObj.deleteTableRowByColumn(
+                        'deviceList', self.deviceList[selectedRow], 'device_name')
+                    QMessageBox.information(
+                        self.main, "Information", f"'{self.deviceList[selectedRow]}'가 삭제되었습니다")
                     self.deviceList.pop(selectedRow)
                     self.main.user_tablewidget.removeRow(selectedRow)
                     self.initDeviceTable()
-
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
@@ -127,7 +137,8 @@ class Manager_User:
     def makeUserDBLayout(self):
         # File Explorer를 탭 레이아웃에 추가
         self.userDBfiledialog = self.main.makeFileFinder(self.main)
-        self.main.tab3_userDB_fileexplorerlayout.addWidget(self.userDBfiledialog)
+        self.main.tab3_userDB_fileexplorerlayout.addWidget(
+            self.userDBfiledialog)
 
         # QToolBox 생성
         self.tool_box = QToolBox()
@@ -178,7 +189,8 @@ class Manager_User:
         self.selected_userDB = self.selected_userDB.replace(' DB', '_db')
 
     def toolbox_DBlistItem_selected(self, index):
-        self.selected_DBlistItems = [item.data() for item in self.list_views[self.selected_userDB].selectedIndexes()]
+        self.selected_DBlistItems = [
+            item.data() for item in self.list_views[self.selected_userDB].selectedIndexes()]
         self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 선택됨")
 
     def toolbox_DBlistItem_delete(self):
@@ -191,10 +203,12 @@ class Manager_User:
                 if not ok or password != self.main.admin_password:
                     return
 
-            reply = QMessageBox.question(self.main, 'Confirm Delete', "테이블을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            reply = QMessageBox.question(
+                self.main, 'Confirm Delete', "테이블을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
 
             if reply == QMessageBox.Yes:
-                self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 삭제 중...")
+                self.main.printStatus(
+                    f"Table {len(self.selected_DBlistItems)}개 삭제 중...")
                 self.main.mySQLObj.connectDB(self.selected_userDB)
 
                 for item in self.selected_DBlistItems:
@@ -219,17 +233,20 @@ class Manager_User:
 
     def toolbox_DBlistItem_add(self):
         try:
-            selected_directory = self.toolbox_getfiledirectory(self.userDBfiledialog)
+            selected_directory = self.toolbox_getfiledirectory(
+                self.userDBfiledialog)
             if len(selected_directory) == 0:
                 return
             elif selected_directory[0] == False:
-                QMessageBox.warning(self.main, f"Wrong Format", f"{selected_directory[1]}는 CSV 파일이 아닙니다")
+                QMessageBox.warning(self.main, f"Wrong Format",
+                                    f"{selected_directory[1]}는 CSV 파일이 아닙니다")
                 return
             self.main.printStatus()
 
             def update_list_view(DBname):
                 # 데이터베이스에서 테이블 목록 다시 가져오기
-                updated_data = self.main.mySQLObj.showAllTable(database_name=DBname)
+                updated_data = self.main.mySQLObj.showAllTable(
+                    database_name=DBname)
 
                 # 해당 DB의 QListView 가져오기
                 list_view = self.list_views[DBname]
@@ -240,16 +257,18 @@ class Manager_User:
 
             self.main.mySQLObj.connectDB(self.selected_userDB)
 
-            self.main.printStatus(f'{self.selected_userDB}에 Table {len(selected_directory)}개 추가 중...')
+            self.main.printStatus(
+                f'{self.selected_userDB}에 Table {len(selected_directory)}개 추가 중...')
             for csv_path in selected_directory:
-                self.main.mySQLObj.CSVToTable(csv_path, os.path.basename(csv_path).replace('.csv', ''))
+                self.main.mySQLObj.CSVToTable(
+                    csv_path, os.path.basename(csv_path).replace('.csv', ''))
             update_list_view(self.selected_userDB)
             self.main.printStatus()
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
     def toolbox_DBlistItem_view(self, row=False):
-        popupsize=None
+        popupsize = None
         if row != False:
             row = self.main.user_tablewidget.currentRow()
             self.selected_DBlistItems = ['manager_record']
@@ -261,7 +280,8 @@ class Manager_User:
                 self.main.printStatus()
                 return
             if len(self.selected_DBlistItems) > 1:
-                QMessageBox.warning(self.main, "Wrong Selection", f"선택 가능한 테이블 수는 1개입니다")
+                QMessageBox.warning(
+                    self.main, "Wrong Selection", f"선택 가능한 테이블 수는 1개입니다")
                 return
             if self.selected_DBlistItems[0] == 'manager_record':
                 if self.main.user != 'admin':
@@ -269,7 +289,8 @@ class Manager_User:
                     if not ok or password != self.main.admin_password:
                         return
 
-            self.main.viewTable(self.selected_userDB, self.selected_DBlistItems[0], popupsize)
+            self.main.viewTable(self.selected_userDB,
+                                self.selected_DBlistItems[0], popupsize)
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
@@ -281,15 +302,18 @@ class Manager_User:
                 return
 
             self.main.printStatus("데이터를 저장할 위치를 선택하세요...")
-            folder_path = QFileDialog.getExistingDirectory(self.main, "데이터를 저장할 위치를 선택하세요", self.main.localDirectory)
+            folder_path = QFileDialog.getExistingDirectory(
+                self.main, "데이터를 저장할 위치를 선택하세요", self.main.localDirectory)
             if folder_path == '':
                 self.main.printStatus()
                 return
 
-            folder_path = os.path.join(folder_path, f'{self.selected_userDB}_download_{datetime.now().strftime('%m%d_%H%M')}')
+            folder_path = os.path.join(
+                folder_path, f'{self.selected_userDB}_download_{datetime.now().strftime('%m%d_%H%M')}')
             os.makedirs(folder_path, exist_ok=True)
 
-            self.main.printStatus(f"Table {len(self.selected_DBlistItems)}개 저장 중...")
+            self.main.printStatus(
+                f"Table {len(self.selected_DBlistItems)}개 저장 중...")
             self.main.mySQLObj.connectDB(self.selected_userDB)
 
             self.main.openFileExplorer(folder_path)
@@ -312,22 +336,28 @@ class Manager_User:
 
         for index, directory in enumerate(selected_directory):
             if index != 0:
-                selected_directory[index] = os.path.join(os.path.dirname(selected_directory[0]), directory)
+                selected_directory[index] = os.path.join(
+                    os.path.dirname(selected_directory[0]), directory)
 
         return selected_directory
 
     def matchButton(self):
         self.main.user_adduser_button.clicked.connect(self.addUser)
         self.main.user_deleteuser_button.clicked.connect(self.deleteUser)
-        self.main.user_log_button.clicked.connect(lambda: self.toolbox_DBlistItem_view(row=True))
+        self.main.user_log_button.clicked.connect(
+            lambda: self.toolbox_DBlistItem_view(row=True))
 
         self.selected_userDB = 'admin_db'
         self.selected_DBlistItem = None
         self.selected_DBlistItems = []
-        self.main.userDB_list_delete_button.clicked.connect(self.toolbox_DBlistItem_delete)
-        self.main.userDB_list_add_button.clicked.connect(self.toolbox_DBlistItem_add)
-        self.main.userDB_list_view_button.clicked.connect(self.toolbox_DBlistItem_view)
-        self.main.userDB_list_save_button.clicked.connect(self.toolbox_DBlistItem_save)
+        self.main.userDB_list_delete_button.clicked.connect(
+            self.toolbox_DBlistItem_delete)
+        self.main.userDB_list_add_button.clicked.connect(
+            self.toolbox_DBlistItem_add)
+        self.main.userDB_list_view_button.clicked.connect(
+            self.toolbox_DBlistItem_view)
+        self.main.userDB_list_save_button.clicked.connect(
+            self.toolbox_DBlistItem_save)
         self.main.device_delete_button.clicked.connect(self.deleteDevice)
 
         self.main.user_adduser_button.setToolTip("Ctrl+A")
@@ -349,12 +379,16 @@ class Manager_User:
         # User List
         if index == 0:
             self.main.ctrld.activated.connect(self.deleteUser)
-            self.main.ctrll.activated.connect(lambda: self.toolbox_DBlistItem_view(True))
-            self.main.ctrla.activated.connect(lambda: self.toolbox_DBlistItem_view(True))
+            self.main.ctrll.activated.connect(
+                lambda: self.toolbox_DBlistItem_view(True))
+            self.main.ctrla.activated.connect(
+                lambda: self.toolbox_DBlistItem_view(True))
 
             self.main.cmdd.activated.connect(self.deleteUser)
-            self.main.cmdl.activated.connect(lambda: self.toolbox_DBlistItem_view(True))
-            self.main.cmda.activated.connect(lambda: self.toolbox_DBlistItem_view(True))
+            self.main.cmdl.activated.connect(
+                lambda: self.toolbox_DBlistItem_view(True))
+            self.main.cmda.activated.connect(
+                lambda: self.toolbox_DBlistItem_view(True))
 
         # User DB
         if index == 1:

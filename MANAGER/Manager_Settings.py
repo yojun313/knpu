@@ -7,6 +7,7 @@ from datetime import datetime
 import platform
 import os
 
+
 class Manager_Setting(QDialog):
     def __init__(self, main):
         super().__init__()
@@ -34,7 +35,8 @@ class Manager_Setting(QDialog):
         self.stacked_widget = QStackedWidget()
 
         # 앱 설정 페이지 추가
-        self.app_settings_page = self.create_app_settings_page(self.main.SETTING)
+        self.app_settings_page = self.create_app_settings_page(
+            self.main.SETTING)
         self.stacked_widget.addWidget(self.app_settings_page)
 
         # DB 설정 페이지 추가
@@ -42,7 +44,8 @@ class Manager_Setting(QDialog):
         self.stacked_widget.addWidget(self.db_settings_page)
 
         # info 설정 페이지 추가
-        self.info_settings_page = self.create_info_settings_page(self.main.SETTING)
+        self.info_settings_page = self.create_info_settings_page(
+            self.main.SETTING)
         self.stacked_widget.addWidget(self.info_settings_page)
 
         self.help_page = self.create_help_page()
@@ -94,9 +97,10 @@ class Manager_Setting(QDialog):
                 font-family: 'Malgun Gothic';
             }
         '''
-        )
+                           )
 
-        default_font = QFont(os.path.join(os.path.dirname(__file__), 'source', 'malgun.ttf'))  # 폰트 이름과 크기 지정
+        default_font = QFont(os.path.join(os.path.dirname(
+            __file__), 'source', 'malgun.ttf'))  # 폰트 이름과 크기 지정
         self.setFont(default_font)
 
         self.setLayout(main_layout)
@@ -119,14 +123,18 @@ class Manager_Setting(QDialog):
         self.light_mode_toggle = QPushButton("라이트 모드")
         self.dark_mode_toggle = QPushButton("다크 모드")
 
-        self.init_toggle_style(self.light_mode_toggle, setting['Theme'] == 'default')
-        self.init_toggle_style(self.dark_mode_toggle, setting['Theme'] != 'default')
+        self.init_toggle_style(self.light_mode_toggle,
+                               setting['Theme'] == 'default')
+        self.init_toggle_style(self.dark_mode_toggle,
+                               setting['Theme'] != 'default')
 
         self.light_mode_toggle.clicked.connect(
-            lambda: self.update_toggle(self.light_mode_toggle, self.dark_mode_toggle)
+            lambda: self.update_toggle(
+                self.light_mode_toggle, self.dark_mode_toggle)
         )
         self.dark_mode_toggle.clicked.connect(
-            lambda: self.update_toggle(self.dark_mode_toggle, self.light_mode_toggle)
+            lambda: self.update_toggle(
+                self.dark_mode_toggle, self.light_mode_toggle)
         )
 
         theme_buttons_layout = QHBoxLayout()
@@ -150,14 +158,18 @@ class Manager_Setting(QDialog):
         self.default_size_toggle = QPushButton("기본값")
         self.maximized_toggle = QPushButton("최대화")
 
-        self.init_toggle_style(self.default_size_toggle, setting['ScreenSize'] == 'default')
-        self.init_toggle_style(self.maximized_toggle, setting['ScreenSize'] != 'default')
+        self.init_toggle_style(self.default_size_toggle,
+                               setting['ScreenSize'] == 'default')
+        self.init_toggle_style(self.maximized_toggle,
+                               setting['ScreenSize'] != 'default')
 
         self.default_size_toggle.clicked.connect(
-            lambda: self.update_toggle(self.default_size_toggle, self.maximized_toggle)
+            lambda: self.update_toggle(
+                self.default_size_toggle, self.maximized_toggle)
         )
         self.maximized_toggle.clicked.connect(
-            lambda: self.update_toggle(self.maximized_toggle, self.default_size_toggle)
+            lambda: self.update_toggle(
+                self.maximized_toggle, self.default_size_toggle)
         )
 
         screen_size_buttons_layout = QHBoxLayout()
@@ -181,19 +193,24 @@ class Manager_Setting(QDialog):
         self.default_bootterminal_toggle = QPushButton("끄기")
         self.on_bootterminal_toggle = QPushButton("켜기")
 
-        self.init_toggle_style(self.default_bootterminal_toggle, setting['BootTerminal'] == 'default')
-        self.init_toggle_style(self.on_bootterminal_toggle, setting['BootTerminal'] != 'default')
+        self.init_toggle_style(
+            self.default_bootterminal_toggle, setting['BootTerminal'] == 'default')
+        self.init_toggle_style(self.on_bootterminal_toggle,
+                               setting['BootTerminal'] != 'default')
 
         self.default_bootterminal_toggle.clicked.connect(
-            lambda: self.update_toggle(self.default_bootterminal_toggle, self.on_bootterminal_toggle)
+            lambda: self.update_toggle(
+                self.default_bootterminal_toggle, self.on_bootterminal_toggle)
         )
         self.on_bootterminal_toggle.clicked.connect(
-            lambda: self.update_toggle(self.on_bootterminal_toggle, self.default_bootterminal_toggle)
+            lambda: self.update_toggle(
+                self.on_bootterminal_toggle, self.default_bootterminal_toggle)
         )
 
         boot_terminal_buttons_layout = QHBoxLayout()
         boot_terminal_buttons_layout.setSpacing(10)
-        boot_terminal_buttons_layout.addWidget(self.default_bootterminal_toggle)
+        boot_terminal_buttons_layout.addWidget(
+            self.default_bootterminal_toggle)
         boot_terminal_buttons_layout.addWidget(self.on_bootterminal_toggle)
 
         boot_terminal_layout.addWidget(boot_terminal_label, 1)
@@ -207,25 +224,32 @@ class Manager_Setting(QDialog):
         process_console_layout = QHBoxLayout()
         process_console_label = QLabel("프로세스 콘솔:")
         process_console_label.setAlignment(Qt.AlignLeft)
-        process_console_label.setToolTip("KEMKIM, CSV로 저장 등 복잡한 작업 수행 시 진행 상황을 나타내는 콘솔 창 여부를 설정합니다")
+        process_console_label.setToolTip(
+            "KEMKIM, CSV로 저장 등 복잡한 작업 수행 시 진행 상황을 나타내는 콘솔 창 여부를 설정합니다")
 
         self.default_processconsole_toggle = QPushButton("켜기")
         self.off_processconsole_toggle = QPushButton("끄기")
 
-        self.init_toggle_style(self.default_processconsole_toggle, setting['ProcessConsole'] == 'default')
-        self.init_toggle_style(self.off_processconsole_toggle, setting['ProcessConsole'] != 'default')
+        self.init_toggle_style(
+            self.default_processconsole_toggle, setting['ProcessConsole'] == 'default')
+        self.init_toggle_style(
+            self.off_processconsole_toggle, setting['ProcessConsole'] != 'default')
 
         self.default_processconsole_toggle.clicked.connect(
-            lambda: self.update_toggle(self.default_processconsole_toggle, self.off_processconsole_toggle)
+            lambda: self.update_toggle(
+                self.default_processconsole_toggle, self.off_processconsole_toggle)
         )
         self.off_processconsole_toggle.clicked.connect(
-            lambda: self.update_toggle(self.off_processconsole_toggle, self.default_processconsole_toggle)
+            lambda: self.update_toggle(
+                self.off_processconsole_toggle, self.default_processconsole_toggle)
         )
 
         process_console_buttons_layout = QHBoxLayout()
         process_console_buttons_layout.setSpacing(10)
-        process_console_buttons_layout.addWidget(self.default_processconsole_toggle)
-        process_console_buttons_layout.addWidget(self.off_processconsole_toggle)
+        process_console_buttons_layout.addWidget(
+            self.default_processconsole_toggle)
+        process_console_buttons_layout.addWidget(
+            self.off_processconsole_toggle)
 
         process_console_layout.addWidget(process_console_label, 1)
         process_console_layout.addLayout(process_console_buttons_layout, 2)
@@ -243,14 +267,18 @@ class Manager_Setting(QDialog):
         self.default_update_toggle = QPushButton("끄기")
         self.auto_update_toggle = QPushButton("켜기")
 
-        self.init_toggle_style(self.default_update_toggle, setting['AutoUpdate'] == 'default')
-        self.init_toggle_style(self.auto_update_toggle, setting['AutoUpdate'] != 'default')
+        self.init_toggle_style(self.default_update_toggle,
+                               setting['AutoUpdate'] == 'default')
+        self.init_toggle_style(self.auto_update_toggle,
+                               setting['AutoUpdate'] != 'default')
 
         self.default_update_toggle.clicked.connect(
-            lambda: self.update_toggle(self.default_update_toggle, self.auto_update_toggle)
+            lambda: self.update_toggle(
+                self.default_update_toggle, self.auto_update_toggle)
         )
         self.auto_update_toggle.clicked.connect(
-            lambda: self.update_toggle(self.auto_update_toggle, self.default_update_toggle)
+            lambda: self.update_toggle(
+                self.auto_update_toggle, self.default_update_toggle)
         )
 
         auto_update_buttons_layout = QHBoxLayout()
@@ -274,12 +302,14 @@ class Manager_Setting(QDialog):
         self.llm_option_selector = QComboBox()
 
         # 표시 이름과 실제 값을 매핑
-        llm_options = [(value, key) for key, value in self.main.LLM_list.items()]
+        llm_options = [(value, key)
+                       for key, value in self.main.LLM_list.items()]
         llm_options = sorted(llm_options, key=lambda x: x[0])
 
         # QComboBox에 항목 추가
         for display_name, actual_value in llm_options:
-            self.llm_option_selector.addItem(display_name, actual_value)  # 표시 이름과 데이터 추가
+            self.llm_option_selector.addItem(
+                display_name, actual_value)  # 표시 이름과 데이터 추가
 
         # 기본 선택값 설정
         default_option = setting.get("LLM_model")
@@ -391,14 +421,18 @@ class Manager_Setting(QDialog):
         self.default_mydb_toggle = QPushButton("끄기")
         self.auto_mydb_toggle = QPushButton("켜기")
 
-        self.init_toggle_style(self.default_mydb_toggle, setting['MyDB'] == 'default')
-        self.init_toggle_style(self.auto_mydb_toggle, setting['MyDB'] != 'default')
+        self.init_toggle_style(self.default_mydb_toggle,
+                               setting['MyDB'] == 'default')
+        self.init_toggle_style(self.auto_mydb_toggle,
+                               setting['MyDB'] != 'default')
 
         self.default_mydb_toggle.clicked.connect(
-            lambda: self.update_toggle(self.default_mydb_toggle, self.auto_mydb_toggle)
+            lambda: self.update_toggle(
+                self.default_mydb_toggle, self.auto_mydb_toggle)
         )
         self.auto_mydb_toggle.clicked.connect(
-            lambda: self.update_toggle(self.auto_mydb_toggle, self.default_mydb_toggle)
+            lambda: self.update_toggle(
+                self.auto_mydb_toggle, self.default_mydb_toggle)
         )
 
         db_display_buttons_layout = QHBoxLayout()
@@ -417,19 +451,24 @@ class Manager_Setting(QDialog):
         db_refresh_layout = QHBoxLayout()
         db_refresh_label = QLabel("DB 자동 새로고침:")
         db_refresh_label.setAlignment(Qt.AlignLeft)
-        db_refresh_label.setToolTip("DATABASE 섹션으로 이동 시 자동으로 DB 목록을 새로고침할지 여부를 설정합니다\n'Ctrl+R'로 수동 새로고침 가능합니다")
+        db_refresh_label.setToolTip(
+            "DATABASE 섹션으로 이동 시 자동으로 DB 목록을 새로고침할지 여부를 설정합니다\n'Ctrl+R'로 수동 새로고침 가능합니다")
 
         self.default_dbrefresh_toggle = QPushButton("켜기")
         self.off_dbrefresh_toggle = QPushButton("끄기")
 
-        self.init_toggle_style(self.default_dbrefresh_toggle, setting['DB_Refresh'] == 'default')
-        self.init_toggle_style(self.off_dbrefresh_toggle, setting['DB_Refresh'] != 'default')
+        self.init_toggle_style(self.default_dbrefresh_toggle,
+                               setting['DB_Refresh'] == 'default')
+        self.init_toggle_style(self.off_dbrefresh_toggle,
+                               setting['DB_Refresh'] != 'default')
 
         self.default_dbrefresh_toggle.clicked.connect(
-            lambda: self.update_toggle(self.default_dbrefresh_toggle, self.off_dbrefresh_toggle)
+            lambda: self.update_toggle(
+                self.default_dbrefresh_toggle, self.off_dbrefresh_toggle)
         )
         self.off_dbrefresh_toggle.clicked.connect(
-            lambda: self.update_toggle(self.off_dbrefresh_toggle, self.default_dbrefresh_toggle)
+            lambda: self.update_toggle(
+                self.off_dbrefresh_toggle, self.default_dbrefresh_toggle)
         )
 
         db_refreshButtons_layout = QHBoxLayout()
@@ -453,19 +492,24 @@ class Manager_Setting(QDialog):
         self.default_dbkeywordsort_toggle = QPushButton("최신순")
         self.on_dbkeywordsort_toggle = QPushButton("키워드순")
 
-        self.init_toggle_style(self.default_dbkeywordsort_toggle, setting['DBKeywordSort'] == 'default')
-        self.init_toggle_style(self.on_dbkeywordsort_toggle, setting['DBKeywordSort'] != 'default')
+        self.init_toggle_style(
+            self.default_dbkeywordsort_toggle, setting['DBKeywordSort'] == 'default')
+        self.init_toggle_style(self.on_dbkeywordsort_toggle,
+                               setting['DBKeywordSort'] != 'default')
 
         self.default_dbkeywordsort_toggle.clicked.connect(
-            lambda: self.update_toggle(self.default_dbkeywordsort_toggle, self.on_dbkeywordsort_toggle)
+            lambda: self.update_toggle(
+                self.default_dbkeywordsort_toggle, self.on_dbkeywordsort_toggle)
         )
         self.on_dbkeywordsort_toggle.clicked.connect(
-            lambda: self.update_toggle(self.on_dbkeywordsort_toggle, self.default_dbkeywordsort_toggle)
+            lambda: self.update_toggle(
+                self.on_dbkeywordsort_toggle, self.default_dbkeywordsort_toggle)
         )
 
         db_keywordsort_buttons_layout = QHBoxLayout()
         db_keywordsort_buttons_layout.setSpacing(10)  # 버튼 간 간격 설정
-        db_keywordsort_buttons_layout.addWidget(self.default_dbkeywordsort_toggle)
+        db_keywordsort_buttons_layout.addWidget(
+            self.default_dbkeywordsort_toggle)
         db_keywordsort_buttons_layout.addWidget(self.on_dbkeywordsort_toggle)
 
         db_keywordsort_layout.addWidget(db_keywordsort_label, 1)
@@ -512,7 +556,8 @@ class Manager_Setting(QDialog):
             total_seconds = int(elapsed_time.total_seconds())
             hours, remainder = divmod(total_seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
-            self.manager_time_label.setText(f"구동 시간: {hours}시간 {minutes}분 {seconds}초")
+            self.manager_time_label.setText(
+                f"구동 시간: {hours}시간 {minutes}분 {seconds}초")
 
         ################################################################################
         # 사용자 정보 페이지 레이아웃 생성
@@ -537,7 +582,8 @@ class Manager_Setting(QDialog):
         if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20:
             GPT_key_label = QLabel(f"ChatGPT API Key: 없음")
         else:
-            GPT_key_label = QLabel(f"ChatGPT Key: {self.main.gpt_api_key[:40]}...")
+            GPT_key_label = QLabel(
+                f"ChatGPT Key: {self.main.gpt_api_key[:40]}...")
 
         # 사용자 정보 섹션 레이아웃 구성
         user_info_section.addWidget(user_title_label)
@@ -563,9 +609,11 @@ class Manager_Setting(QDialog):
         # MANAGER 정보 추가
         manager_version_label = QLabel(f"버전: {self.main.versionNum}")
 
-        manager_location_label = QLabel(f"앱 경로: {wrap_text_by_words(self.main.programDirectory, 40)}")
+        manager_location_label = QLabel(
+            f"앱 경로: {wrap_text_by_words(self.main.programDirectory, 40)}")
 
-        setting_location_label = QLabel(f"설정 경로: {wrap_text_by_words(self.main.settings.fileName(), 40)}")
+        setting_location_label = QLabel(
+            f"설정 경로: {wrap_text_by_words(self.main.settings.fileName(), 40)}")
 
         # 실시간 업데이트를 위한 구동 시간 라벨
         self.manager_time_label = QLabel("구동 시간: 계산 중...")
@@ -612,7 +660,8 @@ class Manager_Setting(QDialog):
         help_text_label.setAlignment(Qt.AlignLeft)
 
         # 첫 번째 하이퍼링크
-        link1_label = QLabel('<a href="https://knpu.re.kr/tool">BIGMACLAB MANAGER</a>')
+        link1_label = QLabel(
+            '<a href="https://knpu.re.kr/tool">BIGMACLAB MANAGER</a>')
         link1_label.setOpenExternalLinks(True)
         link1_label.setAlignment(Qt.AlignLeft)
 
@@ -651,9 +700,11 @@ class Manager_Setting(QDialog):
         토글 버튼 스타일 초기화
         """
         if is_selected:
-            button.setStyleSheet("background-color: #2c3e50; font-weight: bold; color: #eaeaea; font-family: 'Malgun Gothic';")
+            button.setStyleSheet(
+                "background-color: #2c3e50; font-weight: bold; color: #eaeaea; font-family: 'Malgun Gothic';")
         else:
-            button.setStyleSheet("background-color: lightgray; color: black; font-family: 'Malgun Gothic';")
+            button.setStyleSheet(
+                "background-color: lightgray; color: black; font-family: 'Malgun Gothic';")
 
     def update_toggle(self, selected_button, other_button):
         """
@@ -664,14 +715,22 @@ class Manager_Setting(QDialog):
 
     def save_settings(self):
         # 선택된 설정 가져오기
-        theme = 'default' if self.light_mode_toggle.styleSheet().find("#2c3e50") != -1 else 'dark'
-        screen_size = 'default' if self.default_size_toggle.styleSheet().find("#2c3e50") != -1 else 'max'
-        auto_update = 'default' if self.default_update_toggle.styleSheet().find("#2c3e50") != -1 else 'auto'
-        my_db = 'default' if self.default_mydb_toggle.styleSheet().find("#2c3e50") != -1 else 'mydb'
-        db_refresh = 'default' if self.default_dbrefresh_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
-        boot_terminal = 'default' if self.default_bootterminal_toggle.styleSheet().find("#2c3e50") != -1 else 'on'
-        db_keywordsort =  'default' if self.default_dbkeywordsort_toggle.styleSheet().find("#2c3e50") != -1 else 'on'
-        process_console = 'default' if self.default_processconsole_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
+        theme = 'default' if self.light_mode_toggle.styleSheet().find("#2c3e50") != - \
+            1 else 'dark'
+        screen_size = 'default' if self.default_size_toggle.styleSheet().find(
+            "#2c3e50") != -1 else 'max'
+        auto_update = 'default' if self.default_update_toggle.styleSheet().find(
+            "#2c3e50") != -1 else 'auto'
+        my_db = 'default' if self.default_mydb_toggle.styleSheet().find("#2c3e50") != - \
+            1 else 'mydb'
+        db_refresh = 'default' if self.default_dbrefresh_toggle.styleSheet().find(
+            "#2c3e50") != -1 else 'off'
+        boot_terminal = 'default' if self.default_bootterminal_toggle.styleSheet().find(
+            "#2c3e50") != -1 else 'on'
+        db_keywordsort = 'default' if self.default_dbkeywordsort_toggle.styleSheet(
+        ).find("#2c3e50") != -1 else 'on'
+        process_console = 'default' if self.default_processconsole_toggle.styleSheet(
+        ).find("#2c3e50") != -1 else 'off'
         llm_model = self.llm_option_selector.currentData()
 
         api_key = self.api_key_input.text()
@@ -692,8 +751,10 @@ class Manager_Setting(QDialog):
 
         options = {
             "theme": {"key": 'Theme', "value": theme},  # 테마 설정
-            "screensize": {"key": 'ScreenSize', "value": screen_size},  # 스크린 사이즈 설정
-            "autoupdate": {"key": 'AutoUpdate', "value": auto_update},  # 자동 업데이트 설정
+            # 스크린 사이즈 설정
+            "screensize": {"key": 'ScreenSize', "value": screen_size},
+            # 자동 업데이트 설정
+            "autoupdate": {"key": 'AutoUpdate', "value": auto_update},
             "mydb": {"key": 'MyDB', "value": my_db},  # 내 DB만 보기 설정
             "GPT_Key": {"key": 'GPT_Key', "value": api_key},
             "DB_Refresh": {"key": 'DB_Refresh', "value": db_refresh},
@@ -706,5 +767,3 @@ class Manager_Setting(QDialog):
             self.main.updateSettings(option['key'], option['value'])
 
         self.accept()
-
-
