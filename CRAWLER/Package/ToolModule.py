@@ -14,7 +14,7 @@ import csv
 import json
 import chardet
 import requests
-from mySQL import mySQL
+from mysql import mySQL
 
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
