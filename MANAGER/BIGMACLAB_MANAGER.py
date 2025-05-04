@@ -87,14 +87,12 @@ from getmac import get_mac_address
 from openai import OpenAI
 from mySQL import mySQL
 from datetime import datetime
-import requests
 from packaging import version
 import pandas as pd
 from pathlib import Path
 import socket
 import gc
 import traceback
-import requests
 import re
 import logging
 import shutil
