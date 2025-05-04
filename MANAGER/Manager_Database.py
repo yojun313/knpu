@@ -19,13 +19,17 @@ from PyQt5.QtWidgets import (
     QButtonGroup, QPushButton, QDialogButtonBox, QRadioButton, QLabel, QTabWidget,
     QLineEdit, QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
 )
+import requests
+import zipfile
 from Manager_Console import openConsole, closeConsole
+from urllib.parse import unquote
 
 warnings.filterwarnings("ignore")
 class Manager_Database:
     def __init__(self, main_window):
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
+        
         self.DBTableColumn = ['Database', 'Type', 'Keyword', 'StartDate', 'EndDate', 'Option', 'Status', 'User', 'Size']
         self.main.makeTable(self.main.database_tablewidget, self.DB['DBtable'], self.DBTableColumn, self.viewDBinfo)
         self.matchButton()
@@ -37,35 +41,33 @@ class Manager_Database:
             selectedRow = self.main.database_tablewidget.currentRow()
             if selectedRow >= 0:
                 DBdata = self.DB['DBdata'][selectedRow]
-
-                targetDB = self.DB['DBlist'][selectedRow]
-                status = DBdata['Status']
-                owner = DBdata['Requester']
+                DBuid = DBdata['uid']
+                DBname = DBdata['name']
+                status = DBdata['status']
+                owner = DBdata['requester']
 
                 if owner != self.main.user and self.main.user != 'admin':
                     QMessageBox.warning(self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
                     return
 
                 if status == 'Working':
-                    confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{targetDB}' 크롤링을 중단하고 DB를 삭제하시겠습니까?"
+                    confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{DBname}' 크롤링을 중단하고 DB를 삭제하시겠습니까?"
                 else:
-                    confirm_msg = f"'{targetDB}'를 삭제하시겠습니까?"
+                    confirm_msg = f"'{DBname}'를 삭제하시겠습니까?"
 
                 reply = QMessageBox.question(self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    self.main.printStatus("삭제 중...")
-                    self.main.mySQLObj.dropDB(targetDB)
-                    self.main.mySQLObj.connectDB('crawler_db')
-                    self.main.mySQLObj.deleteTableRowByColumn('db_list', targetDB, 'DBname')
+                    self.main.Request('delete', f'crawls/{DBuid}')
+                    
                     if status == 'Working':
-                        self.main.activate_crawl -= 1
+                        self.main.activeCrawl -= 1
                         QMessageBox.information(self.main, "Information", f"크롤러 서버에 중단 요청을 전송했습니다")
                     else:
-                        QMessageBox.information(self.main, "Information", f"'{targetDB}'가 삭제되었습니다")
-                    self.main.userLogging(f'DATABASE -> delete_DB({targetDB})')
+                        QMessageBox.information(self.main, "Information", f"'{DBname}'가 삭제되었습니다")
+                    self.main.userLogging(f'DATABASE -> delete_DB({DBname})')
                     self.refreshDB()
 
-            self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
+            self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -174,13 +176,13 @@ class Manager_Database:
 
                 selectedRow = self.main.database_tablewidget.currentRow()
                 if selectedRow >= 0:
-                    targetDB = self.DB['DBlist'][selectedRow]
+                    targetDB = self.DB['DBnames'][selectedRow]
                     self.main.userLogging(f'DATABASE -> view_DB({targetDB})')
                     self.DBtable_window = TableWindow(self.main, targetDB)
                     self.DBtable_window.destroyed.connect(destory_table)
                     self.DBtable_window.show()
 
-                self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
+                self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
@@ -190,30 +192,23 @@ class Manager_Database:
             self.main.printStatus("불러오는 중...")
             DBdata = self.DB['DBdata'][row]
 
-            self.main.userLogging(f'DATABASE -> dbinfo_viewer({DBdata['DB']})')
+            self.main.userLogging(f'DATABASE -> dbinfo_viewer({DBdata['name']})')
 
             # 다이얼로그 생성
             dialog = QDialog(self.main)
-            dialog.setWindowTitle(f'{DBdata['DB']}_Info')
+            dialog.setWindowTitle(f'{DBdata['name']}_Info')
             dialog.resize(540, 600)
 
             layout = QVBoxLayout()
 
-            crawlType = DBdata['Crawltype']
-            crawlOption_int = int(DBdata['Option'])
+            crawlType = DBdata['crawlType']
+            crawlOption_int = int(DBdata['crawlOption'])
 
-            json_str = DBdata['Datainfo']
-            numbers = re.findall(r'\d+', json_str)
-            try:
-                CountText = (
-                    f"Article Count: {numbers[1]}\n"
-                    f"Reply Count: {numbers[2]}\n"
-                    f"Rereply Count: {numbers[3]}\n"
-                )
-                if numbers[1] == '0' and numbers[2] == '0' and numbers[3] == '0':
-                    CountText = DBdata['Status']
-            except:
-                CountText = DBdata['Status']
+            CountText = DBdata['dataInfo']
+            if CountText['totalArticleCnt'] == '0' and CountText['totalReplyCnt'] == '0' and CountText['totalRereplyCnt'] == '0':
+                CountText = DBdata['status']
+            else:
+                CountText = f"Aricle: {CountText['totalArticleCnt']}\nReply: {CountText['totalReplyCnt']}\nRereply: {CountText['totalRereplyCnt']}"
 
             match crawlType:
                 case 'Naver News':
@@ -269,8 +264,8 @@ class Manager_Database:
                 case _:
                     crawlOption = crawlOption_int
 
-            starttime = DBdata['Starttime']
-            endtime = DBdata['Endtime']
+            starttime = DBdata['startTime']
+            endtime = DBdata['endTime']
 
             try:
                 ElapsedTime = datetime.strptime(endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime,"%Y-%m-%d %H:%M")
@@ -291,23 +286,23 @@ class Manager_Database:
                         </tr>
                         <tr>
                             <td><b>DB Name:</b></td>
-                            <td>{DBdata['DB']}</td>
+                            <td>{DBdata['name']}</td>
                         </tr>
                         <tr>
                             <td><b>DB Size:</b></td>
-                            <td>{DBdata['Size']}</td>
+                            <td>{DBdata['dbSize']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Type:</b></td>
-                            <td>{DBdata['Crawltype']}</td>
+                            <td>{DBdata['crawlType']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Keyword:</b></td>
-                            <td>{DBdata['Keyword']}</td>
+                            <td>{DBdata['keyword']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Period:</b></td>
-                            <td>{DBdata['Startdate']} ~ {DBdata['Enddate']}</td>
+                            <td>{DBdata['startDate']} ~ {DBdata['endDate']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Option:</b></td>
@@ -327,15 +322,15 @@ class Manager_Database:
                         </tr>
                         <tr>
                             <td><b>Crawl Requester:</b></td>
-                            <td>{DBdata['Requester']}</td>
+                            <td>{DBdata['requester']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Server:</b></td>
-                            <td>{DBdata['Crawlcom']}</td>
+                            <td>{DBdata['crawlCom']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Speed:</b></td>
-                            <td>{DBdata['Crawlspeed']}</td>
+                            <td>{DBdata['crawlSpeed']}</td>
                         </tr>
                         <tr>
                             <td><b>Crawl Result:</b></td>
@@ -362,7 +357,7 @@ class Manager_Database:
             cmdw.activated.connect(dialog.accept)
 
             dialog.setLayout(layout)
-            self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
+            self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
             # 다이얼로그 실행
             dialog.show()
 
@@ -423,20 +418,20 @@ class Manager_Database:
                 return
 
             # 대상 DB 정보 가져오기
-            targetDB_name = self.DB['DBlist'][selectedRow]
+            targetDB_name = self.DB['DBnames'][selectedRow]
             targetDB_data = self.DB['DBdata'][selectedRow]
 
-            owner = targetDB_data['Requester']
+            owner = targetDB_data['requester']
 
             if owner != self.main.user and self.main.user != 'admin':
                 QMessageBox.warning(self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
                 return
 
-            target_keyword    = targetDB_data['Keyword']
-            target_crawl_type = targetDB_data['Crawltype']
-            target_count_data = eval(targetDB_data['Datainfo'])  # 통계 데이터 (딕셔너리 형태)
-            target_start_date = targetDB_data['Startdate']
-            target_end_date   = targetDB_data['Enddate']
+            target_keyword    = targetDB_data['keyword']
+            target_crawl_type = targetDB_data['crawlType']
+            target_count_data = eval(targetDB_data['dataInfo'])  # 통계 데이터 (딕셔너리 형태)
+            target_start_date = targetDB_data['startDate']
+            target_end_date   = targetDB_data['endDate']
 
             # 다음 시작 날짜 계산
             target_end_date_dt = datetime.strptime(target_end_date, '%Y%m%d')
@@ -445,11 +440,11 @@ class Manager_Database:
 
             # 병합 가능한 DB 필터링
             merge_candidates = [
-                db_data['DB'] for db_data in self.DB['DBdata']
-                if db_data['Keyword'] == target_keyword
-                   and db_data['Crawltype'] == target_crawl_type
-                   and db_data['Startdate'] == next_start_date
-                   and db_data['Status'] != "Working"
+                db_data['name'] for db_data in self.DB['DBdata']
+                if db_data['keyword'] == target_keyword
+                   and db_data['crawlType'] == target_crawl_type
+                   and db_data['startDate'] == next_start_date
+                   and db_data['status'] != "Working"
             ]
 
             if not merge_candidates:
@@ -473,9 +468,9 @@ class Manager_Database:
 
             # 선택된 DB 정보 가져오기
 
-            selected_db_data = self.DB['DBdata'][self.DB['DBlist'].index(selected_db_name)]
+            selected_db_data = self.DB['DBdata'][self.DB['DBnames'].index(selected_db_name)]
             selected_db_end_date = selected_db_name.split('_')[3]
-            selected_count_data = eval(selected_db_data['Datainfo'])  # 통계 데이터 (딕셔너리 형태)
+            selected_count_data = eval(selected_db_data['dataInfo'])  # 통계 데이터 (딕셔너리 형태)
 
             # 대상 DB 이름 업데이트 및 병합된 통계 데이터 계산
             targetDB_parts = targetDB_name.split('_')
@@ -484,9 +479,9 @@ class Manager_Database:
 
             merged_count_data = {
                 'UrlCnt': target_count_data['UrlCnt'] + selected_count_data['UrlCnt'],
-                'TotalArticleCnt': target_count_data['TotalArticleCnt'] + selected_count_data['TotalArticleCnt'],
-                'TotalReplyCnt': target_count_data['TotalReplyCnt'] + selected_count_data['TotalReplyCnt'],
-                'TotalRereplyCnt': target_count_data['TotalRereplyCnt'] + selected_count_data['TotalRereplyCnt']
+                'totalArticleCnt': target_count_data['totalArticleCnt'] + selected_count_data['totalArticleCnt'],
+                'totalReplyCnt': target_count_data['totalReplyCnt'] + selected_count_data['totalReplyCnt'],
+                'totalRereplyCnt': target_count_data['totalRereplyCnt'] + selected_count_data['totalRereplyCnt']
             }
 
             # 병합 여부 확인
@@ -539,11 +534,11 @@ class Manager_Database:
             print("\nDB 목록 업데이트 중...")
             self.main.mySQLObj.connectDB('crawler_db')
             self.main.mySQLObj.insertToTable('db_list', [[
-                updated_targetDB_name, targetDB_data['Option'],
-                targetDB_data['Starttime'], selected_db_data['Endtime'],
-                targetDB_data['Requester'], targetDB_data['Keyword'],
+                updated_targetDB_name, targetDB_data['crawlOption'],
+                targetDB_data['startTime'], selected_db_data['endTime'],
+                targetDB_data['requester'], targetDB_data['keyword'],
                 self.main.mySQLObj.showDBSize(updated_targetDB_name)[0],
-                targetDB_data['Crawlcom'], targetDB_data['Crawlspeed'],
+                targetDB_data['crawlCom'], targetDB_data['crawlSpeed'],
                 str(merged_count_data)
             ]])
             self.main.mySQLObj.commit()
@@ -564,7 +559,7 @@ class Manager_Database:
                 self.main.mySQLObj.connectDB('crawler_db')
                 self.main.mySQLObj.deleteTableRowByColumn('db_list', targetDB_name, 'DBname')
                 self.main.mySQLObj.deleteTableRowByColumn('db_list', selected_db_name, 'DBname')
-                self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
+                self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
                 self.refreshDB()
                 QMessageBox.information(self.main, "Information", "삭제가 완료되었습니다")
             else:
@@ -609,7 +604,7 @@ class Manager_Database:
                 if selectedRow < 0:
                     return
                 # 대상 DB 정보 가져오기
-                targetDB_name = self.DB['DBlist'][selectedRow]
+                targetDB_name = self.DB['DBnames'][selectedRow]
                 new = search_text.split()[1]
 
                 self.main.mySQLObj.connectDB('crawler_db')
@@ -711,7 +706,7 @@ class Manager_Database:
                 subprocess.Popen([script_path])
 
             self.main.userLogging(f'LLM Chat ON')
-            self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
+            self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -846,14 +841,20 @@ class Manager_Database:
 
                 def accept(self):
                     # 확인 버튼을 눌렀을 때 데이터 유효성 검사
+                    self.start_date = None
+                    self.end_date = None
+                    
                     if self.radio_custom.isChecked():
                         date_format = "yyyyMMdd"
-                        start_date = QDate.fromString(self.start_date_input.text(), date_format)
-                        end_date = QDate.fromString(self.end_date_input.text(), date_format)
+                        self.start_date = QDate.fromString(self.start_date_input.text(), date_format)
+                        self.end_date = QDate.fromString(self.end_date_input.text(), date_format)
 
-                        if not (start_date.isValid() and end_date.isValid()):
+                        if not (self.start_date.isValid() and self.end_date.isValid()):
                             QMessageBox.warning(self, 'Wrong Form', '잘못된 날짜 형식입니다.')
                             return  # 확인 동작을 취소함
+                        
+                        self.start_date = self.start_date.toString(date_format)
+                        self.end_date = self.end_date.toString(date_format)
 
                     if self.radio_filter.isChecked():
                         try:
@@ -874,6 +875,9 @@ class Manager_Database:
                                 self.include_all_option = True
                             else:
                                 self.include_all_option = False
+                            
+                            if self.radio_name.isChecked():
+                                self.include = True
 
                         except:
                             QMessageBox.warning(self, 'Wrong Input', '잘못된 필터링 입력입니다')
@@ -881,204 +885,98 @@ class Manager_Database:
 
                     super().accept()  # 정상적인 경우에만 다이얼로그를 종료함
 
-            def replace_dates_in_filename(filename, new_start_date, new_end_date):
-                pattern = r"_(\d{8})_(\d{8})_"
-                new_filename = re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
-                return new_filename
-
             selectedRow = self.main.database_tablewidget.currentRow()
             if not selectedRow >= 0:
                 return
             self.main.printStatus("DB를 저장할 위치를 선택하여 주십시오")
 
-            targetDB = self.DB['DBlist'][selectedRow]
+            targetUid = self.DB['DBuids'][selectedRow]
 
             folder_path = QFileDialog.getExistingDirectory(self.main, "DB를 저장할 위치를 선택하여 주십시오", self.main.localDirectory)
             if folder_path == '':
-                self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
+                self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
                 return
-            if folder_path:
-                self.main.printStatus("DB 저장 옵션을 설정하여 주십시오")
-                dialog = OptionDialog()
-                date_options = {}
+            self.main.printStatus("DB 저장 옵션을 설정하여 주십시오")
+            dialog = OptionDialog()
+            option = {}
+            
+            if dialog.exec_() == QDialog.Accepted:
+                
+                option['dateOption'] = 'all' if dialog.radio_all.isChecked() else 'part'
+                option['start_date'] = dialog.start_date if dialog.start_date else ""
+                option['end_date'] = dialog.end_date if dialog.end_date else ""
+                incl_words = dialog.incl_word_list
+                excl_words = dialog.excl_word_list
+                option['filterOption'] = bool(incl_words or excl_words)
+                option['incl_words'] = dialog.incl_word_list
+                option['excl_words'] = dialog.excl_word_list
+                option['include_all'] = dialog.include_all_option
+                option['filename_edit'] = dialog.radio_name.isChecked()
+            
+            self.main.printStatus("서버에서 파일 준비 중...")
+            
+            download_url = self.main.server_api + f"/crawls/{targetUid}/save"
+            response = requests.post(
+                download_url,
+                json=option,
+                stream=True,
+                headers=self.main.api_headers,
+                timeout=3600
+            )
+            response.raise_for_status()
 
-                if dialog.exec_() == QDialog.Accepted:
+            # 1) Content-Disposition 헤더에서 파일명 파싱
+            content_disp = response.headers.get("Content-Disposition", "")
 
-                    filter_options = {
-                        'incl_words': dialog.incl_word_list,
-                        'excl_words': dialog.excl_word_list,
-                        'include_all': dialog.include_all_option
-                    }
-
-                    # 선택된 라디오 버튼 확인 날짜 범위 부분
-                    if dialog.radio_all.isChecked():
-                        date_options['option'] = 'all'
-                    elif dialog.radio_custom.isChecked():
-                        date_options['option'] = 'part'
-
-                    # 기간 설정이 선택된 경우, 입력된 날짜 가져오기
-                    if date_options['option'] == 'part':
-                        date_format = "yyyyMMdd"
-                        start_date = QDate.fromString(dialog.start_date_input.text(), date_format)
-                        end_date = QDate.fromString(dialog.end_date_input.text(), date_format)
-
-                        if start_date.isValid() and end_date.isValid():
-                            date_options['start_date'] = start_date.toString(date_format)
-                            date_options['end_date'] = end_date.toString(date_format)
-                        else:
-                            QMessageBox.warning(dialog, 'Wrong Form', '잘못된 날짜 형식입니다.')
-                            date_options['option'] = None  # 잘못된 날짜가 입력된 경우 선택 옵션을 None으로 설정
-
-                if date_options == {}:
-                    self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
-                    return
-                if self.main.SETTING['ProcessConsole'] == 'default':
-                    openConsole('CSV로 저장')
-                dbname = targetDB
-
-                # 선택된 옵션에 따라 날짜를 형식화하고 DB 이름과 경로 수정
-                if date_options.get('option') == 'part':
-                    start_date = date_options['start_date']
-                    end_date = date_options['end_date']
-                    start_date_formed = datetime.strptime(start_date, "%Y%m%d").strftime("%Y-%m-%d")
-                    end_date_formed = datetime.strptime(end_date, "%Y%m%d").strftime("%Y-%m-%d")
-                    dbname = replace_dates_in_filename(targetDB, start_date, end_date)
-
-                # 필터 옵션 설정 확인
-                filterOption = bool(filter_options['incl_words'] != [] or filter_options['excl_words'] != [])
-                incl_words = filter_options.get('incl_words', [])
-                excl_words = filter_options.get('excl_words', [])
-                include_all = filter_options['include_all']
-
-                dbname = dbname[:-10] + f"_{datetime.now().strftime("%m%d")}_{datetime.now().strftime("%H%M")}"
-
-                if filterOption == True and dialog.radio_name.isChecked():
-                    inclexcl = 'all' if include_all else 'any'
-                    add_keyword = f"(+{','.join(incl_words)} _ -{','.join(excl_words)} _{inclexcl})"
-                    parts = dbname.split('_', 2)
-                    old_keyword = parts[1]
-                    parts[1] = old_keyword + add_keyword
-                    dbname = '_'.join(parts)
-
-                dbpath = os.path.join(folder_path,dbname)
-
-                # 폴더 생성 로직 최적화
-                while True:
-                    try:
-                        os.makedirs(os.path.join(dbpath, 'token_data'), exist_ok=False)
-                        break
-                    except FileExistsError:
-                        dbpath += "_copy"
-
-                statisticsURL = []
-
-                self.main.printStatus(f"{dbname} 불러오는 중...")
-                self.main.userLogging(f'DATABASE -> save_DB({dbname})')
-                self.main.mySQLObj.connectDB(targetDB)
-
-                # 불필요한 정렬 조건 제거
-                tableList = [table for table in sorted(self.main.mySQLObj.showAllTable(targetDB)) if 'info' not in table]
-                tableList = sorted(tableList, key=lambda x: ('article' not in x, 'statistics' not in x, x))
-
-                # 필터 옵션이 있는 경우 DB_info.txt 작성
-                if filterOption:
-                    filteropt = "모두 포함/제외" if include_all else "개별 포함/제외"
-                    with open(os.path.join(dbpath, 'DB_info.txt'), 'w+', encoding="utf-8", errors="ignore") as info:
-                        info.write(
-                            f"- 필터링 옵션: {filterOption}\n"
-                            f"- 포함 단어 목록: {', '.join(incl_words)}\n"
-                            f"- 제외 단어 목록: {', '.join(excl_words)}\n"
-                            f"- 옵션: {filteropt}"
-                        )
-
-                print(f"DB: {targetDB}\n")
-
-                # 옵션 출력
-                if date_options.get('option') == 'part' or filterOption:
-                    print('< Option >\n')
-                    if date_options.get('option') == 'part':
-                        print(f'Period: {start_date_formed} ~ {end_date_formed}\n')
-                    if filterOption:
-                        print(f'Include Words: {", ".join(incl_words)}')
-                        print(f'Exclude Words: {", ".join(excl_words)}')
-                        if include_all == True:
-                            print("\nInclude/Exclude Option: All")
-                        else:
-                            print("\nInclude/Exclude Option: Any")
-                    print('')
-
-                if self.main.SETTING['ProcessConsole'] == 'default':
-                    iterator = tqdm(tableList, desc="Download", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+            # 2) 우선 filename="…" 시도
+            m = re.search(r'filename="(?P<fname>[^"]+)"', content_disp)
+            if m:
+                zip_name = m.group("fname")
+            else:
+                # 3) 없으면 filename*=utf-8''… 로 시도
+                m2 = re.search(r"filename\*=utf-8''(?P<fname>[^;]+)", content_disp)
+                if m2:
+                    zip_name = unquote(m2.group("fname"))
                 else:
-                    iterator = tableList
+                    zip_name = f"{targetUid}.zip"
 
-                for tableName in iterator:
-                    edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if date_options['option'] == 'part' else tableName
-                    self.main.printStatus(f"{edited_tableName} 저장 중...")
-                    # 테이블 데이터를 DataFrame으로 변환
-                    if date_options['option'] == 'part':
-                        tableDF = self.main.mySQLObj.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
-                    else:
-                        tableDF = self.main.mySQLObj.TableToDataframe(tableName)
+            # 4) 이제 다운로드 & 압축 해제
+            local_zip = os.path.join(folder_path, zip_name)
+            total_size = int(response.headers.get("Content-Length", 0))
 
-                    # 단어 필터링 옵션이 켜져있을 때
-                    if filterOption == True and 'article' in tableName:
-                        if 'token' not in tableName:
-                            recover_columns = tableDF.columns
-                            if include_all == True:
-                                if incl_words != []:
-                                    tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word in str(cell) for word in incl_words))]
-                                if excl_words != []:
-                                    tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: all(word not in str(cell) for word in excl_words))]
-                            else:
-                                if incl_words != []:
-                                    tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word in str(cell) for word in incl_words))]
-                                if excl_words != []:
-                                    tableDF = tableDF[tableDF['Article Text'].apply(lambda cell: any(word not in str(cell) for word in excl_words))]
+            with open(local_zip, "wb") as f, tqdm(
+                total=total_size,
+                unit="B", unit_scale=True, unit_divisor=1024,
+                desc="Downloading DB",
+                ascii=True, ncols=80,
+                bar_format="{desc}: |{bar}| {percentage:3.0f}% [{n_fmt}/{total_fmt} {unit}] @ {rate_fmt}",
+                dynamic_ncols=True
+            ) as pbar:
+                for chunk in response.iter_content(8192):
+                    if chunk:
+                        f.write(chunk)
+                        pbar.update(len(chunk))
 
-                            if tableDF.empty:
-                                tableDF = pd.DataFrame(columns=recover_columns)  # 기존 열만 유지
-                            articleURL = tableDF['Article URL'].tolist()
-                        else:
-                            tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+            self.main.printStatus("다운로드 완료, 압축 해제 중…")
 
-                    # statistics 테이블 처리
-                    if 'statistics' in tableName:
-                        if filterOption == True:
-                            tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
-                        statisticsURL = tableDF['Article URL'].tolist()
-                        save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
-                        tableDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
-                        continue
+            # 압축 풀 폴더 이름은 zip 파일 이름(확장자 제외)
+            base_folder = os.path.splitext(zip_name)[0]
+            extract_path = os.path.join(folder_path, base_folder)
+            os.makedirs(extract_path, exist_ok=True)
 
-                    if 'reply' in tableName:
-                        if filterOption == True:
-                            tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+            with zipfile.ZipFile(local_zip, "r") as zf:
+                zf.extractall(extract_path)
+            
+            os.remove(local_zip)
 
-                    # reply_statistics 테이블 처리
-                    if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in targetDB:
-                        if filterOption == True:
-                            filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
-                        filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
-                        save_path = os.path.join(dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
-                        filteredDF.to_csv(save_path, index=False, encoding='utf-8-sig', header=True)
-
-                    self.main.printStatus("CSV 변환 중...")
-                    # 기타 테이블 처리
-                    save_dir = os.path.join(dbpath, 'token_data' if 'token' in tableName else '')
-
-                    tableDF.to_csv(os.path.join(save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
-                    tableDF = None
-                    gc.collect()
-                if self.main.SETTING['ProcessConsole'] == 'default':
-                    closeConsole()
-                reply = QMessageBox.question(self.main, 'Notification',
-                                             f"{dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
-                    self.main.openFileExplorer(dbpath)
-                self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
-
+            self.main.printStatus()
+            
+            reply = QMessageBox.question(self.main, 'Notification', f"DB 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                self.main.openFileExplorer(folder_path)
+            
+                
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -1089,7 +987,7 @@ class Manager_Database:
             self.DB = self.main.updateDB()
             self.main.makeTable(self.main.database_tablewidget, self.DB['DBtable'], self.DBTableColumn)
 
-            self.main.printStatus(f"{self.main.fullstorage} GB / 2 TB")
+            self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 

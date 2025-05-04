@@ -137,7 +137,7 @@ class ChinaDailyCrawler(CrawlerModule):
                         
                         if text != "":
                             articleList.append([source, title, text, date, theme, url, searchURL])
-                            self.IntegratedDB['TotalArticleCnt'] += 1
+                            self.IntegratedDB['totalArticleCnt'] += 1
 
                     if self.print_status_option == True:
                         self.printStatus('ChinaDaily', 3, self.PrintData)
