@@ -31,9 +31,9 @@ def get_crawl_db_info(uid: str):
     return getCrawlDbInfo(uid)
 
 @router.put("/{uid}/datainfo")
-def update_crawl_db_datainfo(uid: str, dataInfo: DataInfo):
+def update_crawl_db_datainfo(uid: str, dataInfo):
     return updateCrawlDb(uid, dataInfo)
 
 @router.put("/{uid}/error")
-def update_crawl_db_datainfo(uid: str, dataInfo: DataInfo):
-    return updateCrawlDb(uid, dataInfo)
+def update_crawl_db_datainfo(uid: str, dataInfo):
+    return updateCrawlDb(uid, dataInfo, error=True)
