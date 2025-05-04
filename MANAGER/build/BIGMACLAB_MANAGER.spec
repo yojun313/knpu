@@ -1,19 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
-    ['C:/GitHub/BIGMACLAB/MANAGER/BIGMACLAB_MANAGER.py'],
-    pathex=[],
+    ['C:/GitHub/BIGMACLAB/MANAGER/app/main.py'],
+    pathex=['C:/GitHub/BIGMACLAB/MANAGER/app'],
     binaries=[],
-    datas=[('C:/GitHub/BIGMACLAB/MANAGER/source/BIGMACLAB_MANAGER_GUI.ui', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/encrypted_env', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/env.key', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/exe_icon.png', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/setting.png', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/search.png', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/microphone.png', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/chatgpt_logo.png', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/malgun.ttf', 'source'),
-        ('C:/GitHub/BIGMACLAB/MANAGER/source/LLM_Chat.exe', 'source')
+    datas=[
+        ('C:/GitHub/BIGMACLAB/MANAGER/app/assets', 'assets')
     ],
     hiddenimports=['seaborn.external.kde'],
     hookspath=[],

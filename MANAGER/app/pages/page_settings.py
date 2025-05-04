@@ -100,7 +100,7 @@ class Manager_Setting(QDialog):
                            )
 
         default_font = QFont(os.path.join(os.path.dirname(
-            __file__), 'source', 'malgun.ttf'))  # 폰트 이름과 크기 지정
+            __file__), '..', 'assets', 'malgun.ttf'))  # 폰트 이름과 크기 지정
         self.setFont(default_font)
 
         self.setLayout(main_layout)

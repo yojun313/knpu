@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
-from datetime import datetimed
+from datetime import datetime
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 import numpy as np

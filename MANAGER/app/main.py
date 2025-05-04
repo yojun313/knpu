@@ -18,7 +18,7 @@ VERSION = '2.7.1'
 import os
 import platform
 from PyQt5.QtWidgets import QApplication
-from Manager_SplashDialog import SplashDialog, theme_option
+from pages.page_splash import SplashDialog, theme_option
 from PyQt5.QtCore import QCoreApplication, Qt, QSettings
 from PyQt5.QtGui import QFont
 from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -42,7 +42,7 @@ app.setOrganizationName("BIGMACLAB")
 app.setOrganizationDomain("https://knpu.re.kr")
 
 # 기본 폰트 설정 및 힌팅 설정
-font = QFont(os.path.join(os.path.dirname(__file__), 'source', 'malgun.ttf'))
+font = QFont(os.path.join(os.path.dirname(__file__), 'assets', 'malgun.ttf'))
 font.setHintingPreference(QFont.PreferNoHinting)
 font.setStyleStrategy(QFont.PreferAntialias)  # 안티앨리어싱 활성화
 app.setFont(font)
@@ -83,9 +83,8 @@ import os
 import sys
 import json
 import subprocess
-from getmac import get_mac_address
 from openai import OpenAI
-from mySQL import mySQL
+from libs.mysql import mySQL
 from datetime import datetime
 from packaging import version
 import pandas as pd
@@ -99,14 +98,14 @@ import shutil
 import requests
 
 splashDialog.updateStatus("Loading GUI Libraries")
-from Manager_Settings import Manager_Setting
-from Manager_ToolModule import ToolModule
-from Manager_Database import Manager_Database
-from Manager_Web import Manager_Web
-from Manager_Board import Manager_Board
-from Manager_User import Manager_User
-from Manager_Analysis import Manager_Analysis
-from Manager_Console import openConsole, closeConsole
+from pages.page_settings import Manager_Setting
+from libs.tool import ToolModule
+from pages.page_database import Manager_Database
+from pages.page_web import Manager_Web
+from pages.page_board import Manager_Board
+from pages.page_user import Manager_User
+from pages.page_analysis import Manager_Analysis
+from libs.console import openConsole, closeConsole
 from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
     QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
@@ -130,8 +129,8 @@ class MainWindow(QMainWindow):
             self.toolmodule = ToolModule()
 
             super(MainWindow, self).__init__()
-            uiPath = os.path.join(os.path.dirname(__file__), 'source', 'BIGMACLAB_MANAGER_GUI.ui')
-            iconPath = os.path.join(os.path.dirname(__file__), 'source', 'exe_icon.png')
+            uiPath = os.path.join(os.path.dirname(__file__), 'assets', 'gui.ui')
+            iconPath = os.path.join(os.path.dirname(__file__), 'assets', 'exe_icon.png')
 
             uic.loadUi(uiPath, self)
             self.initSettings()
@@ -323,7 +322,7 @@ class MainWindow(QMainWindow):
         try:
             """리스트 위젯의 특정 항목에만 아이콘 추가 및 텍스트 제거"""
 
-            iconPath = os.path.join(os.path.dirname(__file__), 'source', 'setting.png')
+            iconPath = os.path.join(os.path.dirname(__file__), 'assets', 'setting.png')
 
             # 리스트 위젯의 모든 항목 가져오기
             for index in range(self.listWidget.count()):

@@ -2131,7 +2131,7 @@ class DataProcess:
 
             # 워드클라우드 생성
             wordcloud = WordCloud(font_path=os.path.join(os.path.dirname(
-                __file__), 'source', 'malgun.ttf'), background_color='white', width=800, height=600, max_words=max_words)
+                __file__), '..', 'assets', 'malgun.ttf'), background_color='white', width=800, height=600, max_words=max_words)
             wc_generated = wordcloud.generate_from_frequencies(self.word_freq)
 
             # 워드클라우드 저장
