@@ -484,9 +484,9 @@ class Manager_Database:
 
             merged_count_data = {
                 'UrlCnt': target_count_data['UrlCnt'] + selected_count_data['UrlCnt'],
-                'TotalArticleCnt': target_count_data['TotalArticleCnt'] + selected_count_data['TotalArticleCnt'],
-                'TotalReplyCnt': target_count_data['TotalReplyCnt'] + selected_count_data['TotalReplyCnt'],
-                'TotalRereplyCnt': target_count_data['TotalRereplyCnt'] + selected_count_data['TotalRereplyCnt']
+                'totalArticleCnt': target_count_data['totalArticleCnt'] + selected_count_data['totalArticleCnt'],
+                'totalReplyCnt': target_count_data['totalReplyCnt'] + selected_count_data['totalReplyCnt'],
+                'totalRereplyCnt': target_count_data['totalRereplyCnt'] + selected_count_data['totalRereplyCnt']
             }
 
             # 병합 여부 확인

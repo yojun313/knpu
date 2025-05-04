@@ -38,7 +38,8 @@ load_dotenv()
 class Crawler(CrawlerModule):
     
     def __init__(self, user, startDate, endDate, keyword, upload, speed, weboption):
-        super().__init__(proxy_option=False)
+        self.proxy_option = False
+        super().__init__(proxy_option=self.proxy_option)
 
         if user == '문요준':
             user = 'admin'
@@ -100,6 +101,7 @@ class Crawler(CrawlerModule):
             res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/error", json=self.IntegratedDB, headers=self.api_headers).json()
 
         elif endoption == True:
+            del self.IntegratedDB['UrlCnt']
             res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/datainfo", json=self.IntegratedDB, headers=self.api_headers).json()
             with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'r') as log:
                 log_content = log.read()
@@ -317,7 +319,7 @@ class Crawler(CrawlerModule):
             crawltime = str(timedelta(seconds=int(time.time() - self.startTime)))
 
             text = f'\n크롤링 시작: {starttime}' + f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
-            text += f'\n\nArticle: {self.IntegratedDB['TotalArticleCnt']}' + f'\nReply: {self.IntegratedDB['TotalReplyCnt']}' + f'\nRereply: {self.IntegratedDB['TotalRereplyCnt']}'
+            text += f'\n\nArticle: {self.IntegratedDB['totalArticleCnt']}' + f'\nReply: {self.IntegratedDB['totalReplyCnt']}' + f'\nRereply: {self.IntegratedDB['totalRereplyCnt']}'
 
             if self.upload == True:
                 driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
@@ -405,7 +407,7 @@ class Crawler(CrawlerModule):
 
     def Naver_News_Crawler(self, option):
 
-        NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=True, print_status_option=True)
+        NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=self.proxy_option, print_status_option=True)
         NaverNewsCrawler_obj.setCrawlSpeed(self.speed)
 
         self.option = option
@@ -530,7 +532,7 @@ class Crawler(CrawlerModule):
     
     def Naver_Blog_Crawler(self, option):
         
-        NaverBlogCrawler_obj = NaverBlogCrawler(proxy_option=True, print_status_option=True)
+        NaverBlogCrawler_obj = NaverBlogCrawler(proxy_option=self.proxy_option, print_status_option=True)
         NaverBlogCrawler_obj.setCrawlSpeed(self.speed)
 
         self.option = option
@@ -618,7 +620,7 @@ class Crawler(CrawlerModule):
 
     def Naver_Cafe_Crawler(self, option):
         
-        NaverCafeCrawler_obj = NaverCafeCrawler(proxy_option=True, print_status_option=True)
+        NaverCafeCrawler_obj = NaverCafeCrawler(proxy_option=self.proxy_option, print_status_option=True)
         NaverCafeCrawler_obj.setCrawlSpeed(self.speed)
 
         self.option = option
@@ -710,7 +712,7 @@ class Crawler(CrawlerModule):
         api_list_df = self.mySQL.TableToDataframe('youtube_api')
         api_list = api_list_df['API code'].tolist()
 
-        YouTubeCrawler_obj = YouTubeCrawler(api_list=api_list, proxy_option=True, print_status_option=True)
+        YouTubeCrawler_obj = YouTubeCrawler(api_list=api_list, proxy_option=self.proxy_option, print_status_option=True)
         
         self.option = option
         self.DBtype = "youtube"
@@ -802,7 +804,7 @@ class Crawler(CrawlerModule):
 
     def ChinaDaily_Crawler(self, option):
         
-        ChinaDailyCrawler_obj = ChinaDailyCrawler(proxy_option=True, print_status_option=True)
+        ChinaDailyCrawler_obj = ChinaDailyCrawler(proxy_option=self.proxy_option, print_status_option=True)
         
         self.option = option
         self.DBtype = "chinadaily"
@@ -856,7 +858,7 @@ class Crawler(CrawlerModule):
 
     def ChinaSina_Crawler(self, option):
         
-        ChinaSinaCrawler_obj = ChinaSinaCrawler(proxy_option=True, print_status_option=True)
+        ChinaSinaCrawler_obj = ChinaSinaCrawler(proxy_option=self.proxy_option, print_status_option=True)
         ChinaSinaCrawler_obj.setCrawlSpeed(self.speed)
         
         self.option = option

@@ -5,7 +5,8 @@ from app.services.crawl_service import (
     deleteCrawlDb,
     getCrawlDbList,
     getCrawlDbInfo,
-    updateCrawlDb
+    updateCrawlDb,
+    createCrawlLog
 )
 
 router = APIRouter()
@@ -16,7 +17,7 @@ def create_crawl_db(crawlDb: CrawlDbCreateDto):
 
 @router.post("/add/log")
 def create_crawl_db(crawlLog: CrawlLogCreateDto):
-    return createCrawlDb(crawlLog)
+    return createCrawlLog(crawlLog)
 
 @router.delete("/{uid}")
 def delete_crawl_db(uid: str):
@@ -31,9 +32,9 @@ def get_crawl_db_info(uid: str):
     return getCrawlDbInfo(uid)
 
 @router.put("/{uid}/datainfo")
-def update_crawl_db_datainfo(uid: str, dataInfo):
+def update_crawl_db_datainfo(uid: str, dataInfo: DataInfo):
     return updateCrawlDb(uid, dataInfo)
 
 @router.put("/{uid}/error")
-def update_crawl_db_datainfo(uid: str, dataInfo):
+def update_crawl_db_datainfo(uid: str, dataInfo: DataInfo):
     return updateCrawlDb(uid, dataInfo, error=True)
