@@ -353,7 +353,7 @@ class Crawler(CrawlerModule):
             self.ReturnChecker(error_data)
 
     def tokenization(self, data):  # 갱신 간격 추가
-        kiwi = Kiwi(num_workers=0)
+        kiwi = Kiwi(num_workers=-1)
         for column in data.columns.tolist():
             if 'Text' in column:
                 textColumn_name = column
