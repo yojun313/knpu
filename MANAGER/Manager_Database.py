@@ -981,7 +981,7 @@ class Manager_Database:
             reply = QMessageBox.question(self.main, 'Notification', f"DB 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
-                self.main.openFileExplorer(folder_path)
+                self.main.openFileExplorer(extract_path)
             
                 
         except Exception as e:

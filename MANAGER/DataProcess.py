@@ -1,3 +1,6 @@
+import asyncio
+from tqdm.asyncio import tqdm_asyncio
+import warnings
 from PyQt5.QtWidgets import QMessageBox
 import pandas as pd
 import sys
@@ -12,9 +15,6 @@ from googletrans import Translator
 from tqdm import tqdm
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
-import warnings
-from tqdm.asyncio import tqdm_asyncio
-import asyncio
 warnings.filterwarnings("ignore")
 
 # 운영체제에 따라 한글 폰트를 설정
@@ -26,8 +26,9 @@ elif platform.system() == 'Windows':  # Windows
 # 폰트 설정 후 음수 기호가 깨지는 것을 방지
 plt.rcParams['axes.unicode_minus'] = False
 
+
 class DataProcess:
-    
+
     def __init__(self, main_window):
         self.main = main_window
 
@@ -40,7 +41,8 @@ class DataProcess:
                 word = i
                 break
 
-        data[word] = pd.to_datetime(data[word], format='%Y-%m-%d', errors='coerce')
+        data[word] = pd.to_datetime(
+            data[word], format='%Y-%m-%d', errors='coerce')
 
         data['year'] = data[word].dt.year
         data['month'] = data[word].dt.month
@@ -70,11 +72,14 @@ class DataProcess:
         # 데이터 그룹을 순회하며 파일 저장 및 정보 수집
         for group_name, group_data in data_group:
             info[str(group_name)] = len(group_data)
-            group_data.to_csv(f"{data_path}/{folder_name}/{tablename+'_'+str(group_name)}.csv", index=False, encoding='utf-8-sig', header=True)
+            group_data.to_csv(f"{data_path}/{folder_name}/{tablename+'_'+str(group_name)}.csv",
+                              index=False, encoding='utf-8-sig', header=True)
 
         # 정보 파일 생성
-        info_df = pd.DataFrame(list(info.items()), columns=[info_label, 'Count'])
-        info_df.to_csv(f"{data_path}/{folder_name}/{folder_name} Count.csv", index=False, encoding='utf-8-sig', header=True)
+        info_df = pd.DataFrame(list(info.items()), columns=[
+                               info_label, 'Count'])
+        info_df.to_csv(f"{data_path}/{folder_name}/{folder_name} Count.csv",
+                       index=False, encoding='utf-8-sig', header=True)
 
         info_df.set_index(info_label, inplace=True)
         keys = list(info_df.index)
@@ -103,7 +108,8 @@ class DataProcess:
         plt.ylabel('Values')
 
         # 그래프 저장
-        plt.savefig(f"{data_path}/{folder_name}/{folder_name} Graph.png", bbox_inches='tight')
+        plt.savefig(
+            f"{data_path}/{folder_name}/{folder_name} Graph.png", bbox_inches='tight')
 
     def calculate_figsize(self, data_length, base_width=12, height=6, max_width=50):
         # Increase width proportionally to the number of data points, but limit the maximum width
@@ -112,13 +118,16 @@ class DataProcess:
 
     def NaverNewsArticleAnalysis(self, data, file_path):
         if 'Article Press' not in list(data.columns):
-            QMessageBox.warning(self.main, f"Warning", f"NaverNews Article CSV 형태와 일치하지 않습니다")
+            QMessageBox.warning(self.main, f"Warning",
+                                f"NaverNews Article CSV 형태와 일치하지 않습니다")
             return
 
         # 'Article Date'를 datetime 형식으로 변환
-        data['Article Date'] = pd.to_datetime(data['Article Date'], errors='coerce')
+        data['Article Date'] = pd.to_datetime(
+            data['Article Date'], errors='coerce')
         # 'Article ReplyCnt' 열을 숫자로 변환하고, 변환이 안 되는 값은 NaN으로 처리
-        data['Article ReplyCnt'] = pd.to_numeric(data['Article ReplyCnt'], errors='coerce').fillna(0)
+        data['Article ReplyCnt'] = pd.to_numeric(
+            data['Article ReplyCnt'], errors='coerce').fillna(0)
 
         # 기본 통계 분석
         basic_stats = data.describe(include='all')
@@ -163,42 +172,54 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
-        day_analysis.to_csv(os.path.join(csv_output_dir, "day_analysis.csv"), encoding='utf-8-sig', index=False)
+        basic_stats.to_csv(os.path.join(
+            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(
+            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
+        day_analysis.to_csv(os.path.join(
+            csv_output_dir, "day_analysis.csv"), encoding='utf-8-sig', index=False)
         article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig',
                                      index=False)
-        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig', index=False)
+        press_analysis.to_csv(os.path.join(
+            csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig', index=False)
         # correlation_matrix.to_csv(os.path.join(output_dir, "correlation_matrix.csv"), encoding='utf-8-sig', index=False)
 
         # For time_analysis graph
         plt.figure(figsize=self.calculate_figsize(len(time_analysis)))
-        sns.lineplot(data=time_analysis, x='Article Date', y='Article Count', label='Article Count')
-        sns.lineplot(data=time_analysis, x='Article Date', y='Article ReplyCnt', label='Reply Count')
+        sns.lineplot(data=time_analysis, x='Article Date',
+                     y='Article Count', label='Article Count')
+        sns.lineplot(data=time_analysis, x='Article Date',
+                     y='Article ReplyCnt', label='Reply Count')
         plt.title('Monthly Article and Reply Count Over Time')
         plt.xlabel('Date')
         plt.ylabel('Count')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "monthly_article_reply_count.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "monthly_article_reply_count.png"))
         plt.close()
 
         # For day_analysis graph
         plt.figure(figsize=self.calculate_figsize(len(day_analysis)))
-        sns.lineplot(data=day_analysis, x='Article Date', y='Article Count', label='Article Count')
-        sns.lineplot(data=day_analysis, x='Article Date', y='Article ReplyCnt', label='Reply Count')
+        sns.lineplot(data=day_analysis, x='Article Date',
+                     y='Article Count', label='Article Count')
+        sns.lineplot(data=day_analysis, x='Article Date',
+                     y='Article ReplyCnt', label='Reply Count')
         plt.title('Daily Article and Reply Count Over Time')
         plt.xlabel('Date')
         plt.ylabel('Count')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "daily_article_reply_count.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "daily_article_reply_count.png"))
         plt.close()
 
         # For article_type_analysis graph
         plt.figure(figsize=self.calculate_figsize(len(article_type_analysis)))
-        article_type_analysis = article_type_analysis.sort_values('Article Count', ascending=False)
-        sns.barplot(x='Article Type', y='Article Count', data=article_type_analysis, palette="viridis")
+        article_type_analysis = article_type_analysis.sort_values(
+            'Article Count', ascending=False)
+        sns.barplot(x='Article Type', y='Article Count',
+                    data=article_type_analysis, palette="viridis")
         plt.title('Article Count by Type')
         plt.xlabel('Article Type')
         plt.ylabel('Count')
@@ -209,8 +230,10 @@ class DataProcess:
 
         # For press_analysis graph
         plt.figure(figsize=self.calculate_figsize(len(press_analysis)))
-        press_analysis = press_analysis.sort_values('Article Count', ascending=False)
-        sns.barplot(x='Article Press', y='Article Count', data=press_analysis, palette="plasma")
+        press_analysis = press_analysis.sort_values(
+            'Article Count', ascending=False)
+        sns.barplot(x='Article Press', y='Article Count',
+                    data=press_analysis, palette="plasma")
         plt.title('Top 10 Press by Article Count')
         plt.xlabel('Press')
         plt.ylabel('Count')
@@ -251,14 +274,17 @@ class DataProcess:
 
     def NaverNewsStatisticsAnalysis(self, data, file_path):
         if 'Male' not in list(data.columns):
-            QMessageBox.warning(self.main, f"Warning", f"NaverNews Statistics CSV 형태와 일치하지 않습니다")
+            QMessageBox.warning(self.main, f"Warning",
+                                f"NaverNews Statistics CSV 형태와 일치하지 않습니다")
             return
 
         # 'Article Date'를 datetime 형식으로 변환 (오류 발생 시 NaT로 변환)
-        data['Article Date'] = pd.to_datetime(data['Article Date'], errors='coerce')
+        data['Article Date'] = pd.to_datetime(
+            data['Article Date'], errors='coerce')
 
         # 'Article ReplyCnt'를 숫자(float)로 변환
-        data['Article ReplyCnt'] = pd.to_numeric(data['Article ReplyCnt'], errors='coerce').fillna(0)
+        data['Article ReplyCnt'] = pd.to_numeric(
+            data['Article ReplyCnt'], errors='coerce').fillna(0)
 
         # 백분율 값을 실제 댓글 수로 변환하기 전에 각 열을 숫자로 변환하고, 변환 불가 시 0으로 채움
         for col in ['Male', 'Female', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y']:
@@ -304,16 +330,21 @@ class DataProcess:
         }).rename(columns={'id': 'Article Count'}).reset_index()
 
         # 상관관계 분석 (숫자형 컬럼만 선택)
-        numeric_columns = ['Article ReplyCnt', 'Male', 'Female', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y']
+        numeric_columns = ['Article ReplyCnt', 'Male',
+                           'Female', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y']
         correlation_matrix = data[numeric_columns].corr()
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
-        day_analysis.to_csv(os.path.join(csv_output_dir, "day_analysis.csv"), encoding='utf-8-sig', index=False)
+        basic_stats.to_csv(os.path.join(
+            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(
+            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
+        day_analysis.to_csv(os.path.join(
+            csv_output_dir, "day_analysis.csv"), encoding='utf-8-sig', index=False)
         article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig',
                                      index=False)
-        press_analysis.to_csv(os.path.join(csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig', index=False)
+        press_analysis.to_csv(os.path.join(
+            csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig', index=False)
         correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig',
                                   index=False)
 
@@ -321,33 +352,41 @@ class DataProcess:
 
         # 1. 월별 기사 및 댓글 수 추세
         plt.figure(figsize=self.calculate_figsize(len(time_analysis)))
-        sns.lineplot(data=time_analysis, x='Article Date', y='Article Count', label='Article Count')
-        sns.lineplot(data=time_analysis, x='Article Date', y='Article ReplyCnt', label='Reply Count')
+        sns.lineplot(data=time_analysis, x='Article Date',
+                     y='Article Count', label='Article Count')
+        sns.lineplot(data=time_analysis, x='Article Date',
+                     y='Article ReplyCnt', label='Reply Count')
         plt.title('Monthly Article and Reply Count Over Time')
         plt.xlabel('Date')
         plt.ylabel('Count')
         plt.xticks(rotation=45)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "monthly_article_reply_count.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "monthly_article_reply_count.png"))
         plt.close()
 
         # For day_analysis graph
         plt.figure(figsize=self.calculate_figsize(len(day_analysis)))
-        sns.lineplot(data=day_analysis, x='Article Date', y='Article Count', label='Article Count')
-        sns.lineplot(data=day_analysis, x='Article Date', y='Article ReplyCnt', label='Reply Count')
+        sns.lineplot(data=day_analysis, x='Article Date',
+                     y='Article Count', label='Article Count')
+        sns.lineplot(data=day_analysis, x='Article Date',
+                     y='Article ReplyCnt', label='Reply Count')
         plt.title('Daily Article and Reply Count Over Time')
         plt.xlabel('Date')
         plt.ylabel('Count')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "daily_article_reply_count.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "daily_article_reply_count.png"))
         plt.close()
 
         # 2. 기사 유형별 기사 및 댓글 수
         plt.figure(figsize=self.calculate_figsize(len(article_type_analysis)))
-        article_type_analysis = article_type_analysis.sort_values('Article Count', ascending=False)
-        sns.barplot(x='Article Type', y='Article Count', data=article_type_analysis, palette="viridis")
+        article_type_analysis = article_type_analysis.sort_values(
+            'Article Count', ascending=False)
+        sns.barplot(x='Article Type', y='Article Count',
+                    data=article_type_analysis, palette="viridis")
         plt.title('Article Count by Type')
         plt.xlabel('Article Type')
         plt.ylabel('Count')
@@ -358,8 +397,10 @@ class DataProcess:
 
         # 3. 상위 10개 언론사별 기사 및 댓글 수
         plt.figure(figsize=self.calculate_figsize(len(press_analysis)))
-        press_analysis = press_analysis.sort_values('Article Count', ascending=False)
-        sns.barplot(x='Article Press', y='Article Count', data=press_analysis, palette="plasma")
+        press_analysis = press_analysis.sort_values(
+            'Article Count', ascending=False)
+        sns.barplot(x='Article Press', y='Article Count',
+                    data=press_analysis, palette="plasma")
         plt.title('Top 10 Press by Article Count')
         plt.xlabel('Press')
         plt.ylabel('Count')
@@ -369,18 +410,24 @@ class DataProcess:
         plt.close()
 
         # 4. 상관관계 행렬 히트맵
-        plt.figure(figsize=self.calculate_figsize(len(correlation_matrix), height=8))
-        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+        plt.figure(figsize=self.calculate_figsize(
+            len(correlation_matrix), height=8))
+        sns.heatmap(correlation_matrix, annot=True,
+                    cmap='coolwarm', vmin=-1, vmax=1)
         plt.title('Correlation Matrix of Key Metrics')
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
         plt.close()
 
         # 5. 성별 댓글 수 분석
-        gender_reply_count = {'Male': data['Male'].sum(), 'Female': data['Female'].sum()}
-        gender_reply_df = pd.DataFrame(list(gender_reply_count.items()), columns=['Gender', 'Reply Count'])
-        plt.figure(figsize=self.calculate_figsize(len(gender_reply_df), base_width=8))
-        sns.barplot(x='Gender', y='Reply Count', data=gender_reply_df, palette="pastel")
+        gender_reply_count = {
+            'Male': data['Male'].sum(), 'Female': data['Female'].sum()}
+        gender_reply_df = pd.DataFrame(list(gender_reply_count.items()), columns=[
+                                       'Gender', 'Reply Count'])
+        plt.figure(figsize=self.calculate_figsize(
+            len(gender_reply_df), base_width=8))
+        sns.barplot(x='Gender', y='Reply Count',
+                    data=gender_reply_df, palette="pastel")
         plt.title('Total Number of Replies by Gender')
         plt.xlabel('Gender')
         plt.ylabel('Reply Count')
@@ -391,15 +438,20 @@ class DataProcess:
                                encoding='utf-8-sig')
 
         # 6. 연령대별 댓글 수 분석
-        age_group_reply_count = {age: data[age].sum() for age in ['10Y', '20Y', '30Y', '40Y', '50Y', '60Y']}
-        age_group_reply_df = pd.DataFrame(list(age_group_reply_count.items()), columns=['Age Group', 'Reply Count'])
-        plt.figure(figsize=self.calculate_figsize(len(age_group_reply_df), base_width=10))
-        sns.barplot(x='Age Group', y='Reply Count', data=age_group_reply_df, palette="coolwarm")
+        age_group_reply_count = {age: data[age].sum() for age in [
+            '10Y', '20Y', '30Y', '40Y', '50Y', '60Y']}
+        age_group_reply_df = pd.DataFrame(list(age_group_reply_count.items()), columns=[
+                                          'Age Group', 'Reply Count'])
+        plt.figure(figsize=self.calculate_figsize(
+            len(age_group_reply_df), base_width=10))
+        sns.barplot(x='Age Group', y='Reply Count',
+                    data=age_group_reply_df, palette="coolwarm")
         plt.title('Total Number of Replies by Age Group')
         plt.xlabel('Age Group')
         plt.ylabel('Reply Count')
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "age_group_reply_count.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "age_group_reply_count.png"))
         plt.close()
         age_group_reply_df.to_csv(os.path.join(csv_output_dir, "age_group_reply_count.csv"), index=False,
                                   encoding='utf-8-sig')
@@ -439,11 +491,13 @@ class DataProcess:
 
     def NaverNewsReplyAnalysis(self, data, file_path):
         if 'Reply Date' not in list(data.columns):
-            QMessageBox.warning(self.main, f"Warning", f"NaverNews Reply CSV 형태와 일치하지 않습니다")
+            QMessageBox.warning(self.main, f"Warning",
+                                f"NaverNews Reply CSV 형태와 일치하지 않습니다")
             return
 
         # 'Reply Date'를 datetime 형식으로 변환
-        data['Reply Date'] = pd.to_datetime(data['Reply Date'], errors='coerce')
+        data['Reply Date'] = pd.to_datetime(
+            data['Reply Date'], errors='coerce')
 
         # 각 열을 숫자로 변환
         for col in ['Rereply Count', 'Reply Like', 'Reply Bad', 'Reply LikeRatio', 'Reply Sentiment']:
@@ -453,7 +507,8 @@ class DataProcess:
         data['Reply Text'] = data['Reply Text'].astype(str).fillna('')
 
         # 댓글 길이 추가
-        data['Reply Length'] = data['Reply Text'].apply(lambda x: len(x) if isinstance(x, str) else 0)
+        data['Reply Length'] = data['Reply Text'].apply(
+            lambda x: len(x) if isinstance(x, str) else 0)
 
         # 기본 통계 분석
         basic_stats = data.describe(include='all')
@@ -492,19 +547,26 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
-        month_analysis.to_csv(os.path.join(csv_output_dir, "month_analysis.csv"), encoding='utf-8-sig', index=False)
-        sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"), encoding='utf-8-sig')
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
-        writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_reply_count.csv"), encoding='utf-8-sig')
+        basic_stats.to_csv(os.path.join(
+            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(
+            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
+        month_analysis.to_csv(os.path.join(
+            csv_output_dir, "month_analysis.csv"), encoding='utf-8-sig', index=False)
+        sentiment_counts.to_csv(os.path.join(
+            csv_output_dir, "sentiment_counts.csv"), encoding='utf-8-sig')
+        correlation_matrix.to_csv(os.path.join(
+            csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
+        writer_reply_count.to_csv(os.path.join(
+            csv_output_dir, "writer_reply_count.csv"), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
         # 1. 날짜별 댓글 수 추세
         data_length = len(time_analysis)
         plt.figure(figsize=self.calculate_figsize(data_length))
-        sns.lineplot(data=time_analysis, x=time_analysis.index, y='Reply Count')
+        sns.lineplot(data=time_analysis,
+                     x=time_analysis.index, y='Reply Count')
         plt.title('Daily Reply Count Over Time')
         plt.xlabel('Date')
         plt.ylabel('Number of Replies')
@@ -515,9 +577,12 @@ class DataProcess:
 
         # For month_analysis graph
         plt.figure(figsize=self.calculate_figsize(len(month_analysis)))
-        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Count', label='Reply Count')
-        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Like', label='Likes')
-        sns.lineplot(data=month_analysis, x='Reply Date', y='Reply Bad', label='Dislikes')
+        sns.lineplot(data=month_analysis, x='Reply Date',
+                     y='Reply Count', label='Reply Count')
+        sns.lineplot(data=month_analysis, x='Reply Date',
+                     y='Reply Like', label='Likes')
+        sns.lineplot(data=month_analysis, x='Reply Date',
+                     y='Reply Bad', label='Dislikes')
         plt.title('Monthly Reply Count, Likes, and Dislikes Over Time')
         plt.xlabel('Date')
         plt.ylabel('Count')
@@ -534,13 +599,15 @@ class DataProcess:
         plt.xlabel('Sentiment')
         plt.ylabel('Count')
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "reply_sentiment_distribution.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "reply_sentiment_distribution.png"))
         plt.close()
 
         # 4. 상관관계 행렬 히트맵
         data_length = len(correlation_matrix)
         plt.figure(figsize=self.calculate_figsize(data_length, height=8))
-        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+        sns.heatmap(correlation_matrix, annot=True,
+                    cmap='coolwarm', vmin=-1, vmax=1)
         plt.title('Correlation Matrix of Key Metrics')
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
@@ -550,7 +617,8 @@ class DataProcess:
         top_10_writers = writer_reply_count.head(10)  # 상위 10명 작성자 선택
         data_length = len(top_10_writers)
         plt.figure(figsize=self.calculate_figsize(data_length))
-        sns.barplot(x=top_10_writers.index, y=top_10_writers.values, palette="viridis")
+        sns.barplot(x=top_10_writers.index,
+                    y=top_10_writers.values, palette="viridis")
         plt.title('Top 10 Writers by Number of Replies')
         plt.xlabel('Writer')
         plt.ylabel('Number of Replies')
@@ -560,16 +628,18 @@ class DataProcess:
         plt.close()
 
         top_n = 10
-        top_writers = writer_reply_count.sort_values(ascending=False).head(top_n).index
-
+        top_writers = writer_reply_count.sort_values(
+            ascending=False).head(top_n).index
 
         filtered_reply_dir = os.path.join(csv_output_dir, 'user_replies')
         os.makedirs(filtered_reply_dir)
         # 각 상위 작성자의 댓글을 별도 CSV 파일로 저장
         for index, writer in enumerate(top_writers):
             writer_data = data[data['Reply Writer'] == writer]
-            writer_csv_path = os.path.join(filtered_reply_dir, f"{index+1}_{writer}_replies.csv").replace('*', '')
-            writer_data.to_csv(writer_csv_path, encoding='utf-8-sig', index=False)
+            writer_csv_path = os.path.join(
+                filtered_reply_dir, f"{index+1}_{writer}_replies.csv").replace('*', '')
+            writer_data.to_csv(
+                writer_csv_path, encoding='utf-8-sig', index=False)
 
         # 그래프 설명 작성 (한국어)
         description_text = """
@@ -608,11 +678,13 @@ class DataProcess:
 
     def NaverNewsRereplyAnalysis(self, data, file_path):
         if 'Rereply Date' not in list(data.columns):
-            QMessageBox.warning(self.main, f"Warning", f"NaverNews Rereply CSV 형태와 일치하지 않습니다")
+            QMessageBox.warning(self.main, f"Warning",
+                                f"NaverNews Rereply CSV 형태와 일치하지 않습니다")
             return
 
         # 'Rereply Date'를 datetime 형식으로 변환 (오류 발생 시 NaT로 변환)
-        data['Rereply Date'] = pd.to_datetime(data['Rereply Date'], errors='coerce')
+        data['Rereply Date'] = pd.to_datetime(
+            data['Rereply Date'], errors='coerce')
 
         # 숫자형 컬럼을 숫자(float)로 변환, 변환 불가 시 0으로 채움
         for col in ['Rereply Like', 'Rereply Bad', 'Rereply LikeRatio', 'Rereply Sentiment']:
@@ -641,7 +713,8 @@ class DataProcess:
         sentiment_counts = data['Rereply Sentiment'].value_counts()
 
         # 상관관계 분석 (숫자형 컬럼만 선택)
-        numeric_columns = ['Rereply Like', 'Rereply Bad', 'Rereply Length', 'Rereply LikeRatio', 'Rereply Sentiment']
+        numeric_columns = ['Rereply Like', 'Rereply Bad',
+                           'Rereply Length', 'Rereply LikeRatio', 'Rereply Sentiment']
         correlation_matrix = data[numeric_columns].corr()
 
         # 작성자별 댓글 수 계산
@@ -657,12 +730,18 @@ class DataProcess:
 
         # 결과를 CSV로 저장
         basic_stats = data.describe(include='all')
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
-        month_analysis.to_csv(os.path.join(csv_output_dir, "month_analysis.csv"), encoding='utf-8-sig', index=False)
-        sentiment_counts.to_csv(os.path.join(csv_output_dir, "sentiment_counts.csv"), encoding='utf-8-sig')
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
-        writer_reply_count.to_csv(os.path.join(csv_output_dir, "writer_rereply_count.csv"), encoding='utf-8-sig')
+        basic_stats.to_csv(os.path.join(
+            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(
+            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
+        month_analysis.to_csv(os.path.join(
+            csv_output_dir, "month_analysis.csv"), encoding='utf-8-sig', index=False)
+        sentiment_counts.to_csv(os.path.join(
+            csv_output_dir, "sentiment_counts.csv"), encoding='utf-8-sig')
+        correlation_matrix.to_csv(os.path.join(
+            csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
+        writer_reply_count.to_csv(os.path.join(
+            csv_output_dir, "writer_rereply_count.csv"), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -679,9 +758,12 @@ class DataProcess:
 
         # For month_analysis graph
         plt.figure(figsize=self.calculate_figsize(len(month_analysis)))
-        sns.lineplot(data=month_analysis, x='Rereply Date', y='Rereply Count', label='Rereply Count')
-        sns.lineplot(data=month_analysis, x='Rereply Date', y='Rereply Like', label='Likes')
-        sns.lineplot(data=month_analysis, x='Rereply Date', y='Rereply Bad', label='Dislikes')
+        sns.lineplot(data=month_analysis, x='Rereply Date',
+                     y='Rereply Count', label='Rereply Count')
+        sns.lineplot(data=month_analysis, x='Rereply Date',
+                     y='Rereply Like', label='Likes')
+        sns.lineplot(data=month_analysis, x='Rereply Date',
+                     y='Rereply Bad', label='Dislikes')
         plt.title('Monthly Rereply Count, Likes, and Dislikes Over Time')
         plt.xlabel('Date')
         plt.ylabel('Count')
@@ -698,13 +780,15 @@ class DataProcess:
         plt.xlabel('Sentiment')
         plt.ylabel('Count')
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "rereply_sentiment_distribution.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "rereply_sentiment_distribution.png"))
         plt.close()
 
         # 4. 상관관계 행렬 히트맵
         data_length = len(correlation_matrix)
         plt.figure(figsize=self.calculate_figsize(data_length, height=8))
-        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+        sns.heatmap(correlation_matrix, annot=True,
+                    cmap='coolwarm', vmin=-1, vmax=1)
         plt.title('Correlation Matrix of Key Metrics')
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
@@ -713,7 +797,8 @@ class DataProcess:
         # 5. 작성자별 댓글 수 분포 (상위 10명)
         top_10_writers = writer_reply_count.head(10)
         plt.figure(figsize=self.calculate_figsize(len(top_10_writers)))
-        sns.barplot(x=top_10_writers.index, y=top_10_writers.values, palette="viridis")
+        sns.barplot(x=top_10_writers.index,
+                    y=top_10_writers.values, palette="viridis")
         plt.title('Top 10 Writers by Number of Rereplies')
         plt.xlabel('Writer')
         plt.ylabel('Number of Rereplies')
@@ -753,12 +838,14 @@ class DataProcess:
 
     def NaverCafeArticleAnalysis(self, data, file_path):
         if 'NaverCafe Name' not in list(data.columns):
-            QMessageBox.warning(self.main, f"Warning", f"NaverCafe Article CSV 형태와 일치하지 않습니다")
+            QMessageBox.warning(self.main, f"Warning",
+                                f"NaverCafe Article CSV 형태와 일치하지 않습니다")
             return
         # 'Article Date'를 datetime 형식으로 변환
         data['Article Date'] = pd.to_datetime(data['Article Date'])
         for col in ['NaverCafe MemberCount', 'Article ReadCount', 'Article ReplyCount']:
-            data[col] = pd.to_numeric(data[col], errors='coerce')  # 각 열을 숫자로 변환
+            data[col] = pd.to_numeric(
+                data[col], errors='coerce')  # 각 열을 숫자로 변환
 
         # 기본 통계 분석
         basic_stats = data.describe(include='all')
@@ -788,7 +875,8 @@ class DataProcess:
         }).rename(columns={'id': 'Article Count'})
 
         # 상관관계 분석
-        numerical_cols = ['NaverCafe MemberCount', 'Article ReadCount', 'Article ReplyCount']
+        numerical_cols = ['NaverCafe MemberCount',
+                          'Article ReadCount', 'Article ReplyCount']
         correlation_matrix = data[numerical_cols].corr()
 
         # 결과를 저장할 디렉토리 생성
@@ -800,11 +888,16 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        cafe_analysis.to_csv(os.path.join(csv_output_dir, "cafe_analysis.csv"), encoding='utf-8-sig')
-        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
+        basic_stats.to_csv(os.path.join(
+            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        cafe_analysis.to_csv(os.path.join(
+            csv_output_dir, "cafe_analysis.csv"), encoding='utf-8-sig')
+        writer_analysis.to_csv(os.path.join(
+            csv_output_dir, "writer_analysis.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(
+            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
+        correlation_matrix.to_csv(os.path.join(
+            csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -823,18 +916,20 @@ class DataProcess:
         # 2. 시간별 게시글 수 추세
         data_length = len(time_analysis)
         plt.figure(figsize=self.calculate_figsize(data_length))
-        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Article Count')
+        sns.lineplot(data=time_analysis,
+                     x=time_analysis.index.to_timestamp(), y='Article Count')
         plt.title('Monthly Article Count Over Time')
         plt.xlabel('Date')
         plt.ylabel('Number of Articles')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "monthly_article_count.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "monthly_article_count.png"))
         plt.close()
 
-
         # 4. 작성자별 게시글 수 분포 (상위 10명)
-        top_10_writers = writer_analysis.sort_values('Article Count', ascending=False).head(10)
+        top_10_writers = writer_analysis.sort_values(
+            'Article Count', ascending=False).head(10)
         data_length = len(top_10_writers)
         plt.figure(figsize=self.calculate_figsize(data_length))
         sns.barplot(x=top_10_writers.index, y=top_10_writers['Article Count'])
@@ -874,12 +969,12 @@ class DataProcess:
     def NaverCafeReplyAnalysis(self, data, file_path):
         # 'Article URL' 열이 있는지 확인
         if 'Article URL' not in list(data.columns):
-            QMessageBox.warning(self.main, "Warning", "NaverCafe Reply CSV 형태와 일치하지 않습니다")
+            QMessageBox.warning(self.main, "Warning",
+                                "NaverCafe Reply CSV 형태와 일치하지 않습니다")
             return
 
         # 'Reply Date'를 datetime 형식으로 변환
         data['Reply Date'] = pd.to_datetime(data['Reply Date'])
-
 
         # 작성자별 분석 (상위 10명)
         writer_analysis = data.groupby('Reply Writer').agg({
@@ -900,8 +995,10 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
+        writer_analysis.to_csv(os.path.join(
+            csv_output_dir, "writer_analysis.csv"), encoding='utf-8-sig')
+        time_analysis.to_csv(os.path.join(
+            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -920,7 +1017,8 @@ class DataProcess:
         # 2. 시간별 댓글 수 추세
         data_length = len(time_analysis)
         plt.figure(figsize=self.calculate_figsize(data_length))
-        sns.lineplot(data=time_analysis, x=time_analysis.index.to_timestamp(), y='Reply Count')
+        sns.lineplot(data=time_analysis,
+                     x=time_analysis.index.to_timestamp(), y='Reply Count')
         plt.title('Monthly Reply Count Over Time')
         plt.xlabel('Date')
         plt.ylabel('Number of Replies')
@@ -958,11 +1056,13 @@ class DataProcess:
 
         # 1) 필수 컬럼 검증
         if 'YouTube Channel' not in data.columns:
-            QMessageBox.warning(self.main, "Warning", "YouTube Article CSV 형태와 일치하지 않습니다.")
+            QMessageBox.warning(self.main, "Warning",
+                                "YouTube Article CSV 형태와 일치하지 않습니다.")
             return
 
         # 2) 날짜, 숫자 컬럼 변환
-        data['Article Date'] = pd.to_datetime(data['Article Date'], errors='coerce')
+        data['Article Date'] = pd.to_datetime(
+            data['Article Date'], errors='coerce')
 
         # 'Article ViewCount', 'Article Like', 'Article ReplyCount' -> 숫자형으로
         data.rename(columns={
@@ -1003,7 +1103,8 @@ class DataProcess:
             likes=('likes', 'sum'),
             comments_count=('comments_count', 'sum')
         ).reset_index()
-        monthly_data['Article Date'] = monthly_data['Article Date'].dt.to_timestamp()  # Period -> Timestamp 변환
+        # Period -> Timestamp 변환
+        monthly_data['Article Date'] = monthly_data['Article Date'].dt.to_timestamp()
 
         # --------------------------------------------------------------------------------
         # 5-2) 일별 분석
@@ -1053,7 +1154,8 @@ class DataProcess:
         # 8) 상위 10개 영상(Article Title) 분석
         # --------------------------------------------------------------------------------
         top_10_videos = data.sort_values('views', ascending=False).head(10)[
-            ['Article Title', 'YouTube Channel', 'views', 'likes', 'comments_count']
+            ['Article Title', 'YouTube Channel',
+                'views', 'likes', 'comments_count']
         ].reset_index(drop=True)
 
         # --------------------------------------------------------------------------------
@@ -1064,27 +1166,37 @@ class DataProcess:
             axis=1
         )
         data['comment_view_ratio'] = data.apply(
-            lambda x: x['comments_count'] / x['views'] if x['views'] > 0 else 0,
+            lambda x: x['comments_count'] /
+            x['views'] if x['views'] > 0 else 0,
             axis=1
         )
 
         # --------------------------------------------------------------------------------
         # 10) 상관관계 분석 (추가 지표 포함)
         # --------------------------------------------------------------------------------
-        numeric_columns = ['views', 'likes', 'comments_count', 'like_view_ratio', 'comment_view_ratio']
+        numeric_columns = ['views', 'likes', 'comments_count',
+                           'like_view_ratio', 'comment_view_ratio']
         correlation_matrix = data[numeric_columns].corr()
 
         # --------------------------------------------------------------------------------
         # 11) 분석 결과 CSV 저장
         # --------------------------------------------------------------------------------
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        monthly_data.to_csv(os.path.join(csv_output_dir, "monthly_analysis.csv"), encoding='utf-8-sig', index=False)
-        daily_data.to_csv(os.path.join(csv_output_dir, "daily_analysis.csv"), encoding='utf-8-sig', index=False)
-        weekly_data.to_csv(os.path.join(csv_output_dir, "weekly_analysis.csv"), encoding='utf-8-sig', index=False)
-        dow_analysis.to_csv(os.path.join(csv_output_dir, "day_of_week_analysis.csv"), encoding='utf-8-sig', index=False)
-        channel_analysis.to_csv(os.path.join(csv_output_dir, "channel_analysis.csv"), encoding='utf-8-sig', index=False)
-        top_10_videos.to_csv(os.path.join(csv_output_dir, "top_10_videos.csv"), encoding='utf-8-sig', index=False)
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
+        basic_stats.to_csv(os.path.join(
+            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
+        monthly_data.to_csv(os.path.join(
+            csv_output_dir, "monthly_analysis.csv"), encoding='utf-8-sig', index=False)
+        daily_data.to_csv(os.path.join(
+            csv_output_dir, "daily_analysis.csv"), encoding='utf-8-sig', index=False)
+        weekly_data.to_csv(os.path.join(
+            csv_output_dir, "weekly_analysis.csv"), encoding='utf-8-sig', index=False)
+        dow_analysis.to_csv(os.path.join(
+            csv_output_dir, "day_of_week_analysis.csv"), encoding='utf-8-sig', index=False)
+        channel_analysis.to_csv(os.path.join(
+            csv_output_dir, "channel_analysis.csv"), encoding='utf-8-sig', index=False)
+        top_10_videos.to_csv(os.path.join(
+            csv_output_dir, "top_10_videos.csv"), encoding='utf-8-sig', index=False)
+        correlation_matrix.to_csv(os.path.join(
+            csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
 
         # --------------------------------------------------------------------------------
         # 12) 시각화
@@ -1092,9 +1204,12 @@ class DataProcess:
 
         # (1) 월별 추세
         plt.figure(figsize=self.calculate_figsize(len(monthly_data)))
-        sns.lineplot(data=monthly_data, x='Article Date', y='views', label='Views')
-        sns.lineplot(data=monthly_data, x='Article Date', y='likes', label='Likes')
-        sns.lineplot(data=monthly_data, x='Article Date', y='comments_count', label='Comments')
+        sns.lineplot(data=monthly_data, x='Article Date',
+                     y='views', label='Views')
+        sns.lineplot(data=monthly_data, x='Article Date',
+                     y='likes', label='Likes')
+        sns.lineplot(data=monthly_data, x='Article Date',
+                     y='comments_count', label='Comments')
         plt.title('월별 조회수, 좋아요, 댓글 수 추세')
         plt.xlabel('월')
         plt.ylabel('합계')
@@ -1106,9 +1221,12 @@ class DataProcess:
 
         # (2) 일별 추세
         plt.figure(figsize=self.calculate_figsize(len(daily_data)))
-        sns.lineplot(data=daily_data, x='Article Date', y='views', label='Views')
-        sns.lineplot(data=daily_data, x='Article Date', y='likes', label='Likes')
-        sns.lineplot(data=daily_data, x='Article Date', y='comments_count', label='Comments')
+        sns.lineplot(data=daily_data, x='Article Date',
+                     y='views', label='Views')
+        sns.lineplot(data=daily_data, x='Article Date',
+                     y='likes', label='Likes')
+        sns.lineplot(data=daily_data, x='Article Date',
+                     y='comments_count', label='Comments')
         plt.title('일별 조회수, 좋아요, 댓글 수 추이')
         plt.xlabel('일자')
         plt.ylabel('합계')
@@ -1120,9 +1238,12 @@ class DataProcess:
 
         # (3) 주별 추세
         plt.figure(figsize=self.calculate_figsize(len(weekly_data)))
-        sns.lineplot(data=weekly_data, x='Article Date', y='views', label='Views')
-        sns.lineplot(data=weekly_data, x='Article Date', y='likes', label='Likes')
-        sns.lineplot(data=weekly_data, x='Article Date', y='comments_count', label='Comments')
+        sns.lineplot(data=weekly_data, x='Article Date',
+                     y='views', label='Views')
+        sns.lineplot(data=weekly_data, x='Article Date',
+                     y='likes', label='Likes')
+        sns.lineplot(data=weekly_data, x='Article Date',
+                     y='comments_count', label='Comments')
         plt.title('주별 조회수, 좋아요, 댓글 수 추이')
         plt.xlabel('주(시작일 기준)')
         plt.ylabel('합계')
@@ -1134,8 +1255,10 @@ class DataProcess:
 
         # (4) 요일별 분석
         plt.figure(figsize=self.calculate_figsize(len(dow_analysis)))
-        dow_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        dow_analysis['DayOfWeek'] = pd.Categorical(dow_analysis['DayOfWeek'], categories=dow_order, ordered=True)
+        dow_order = ["Monday", "Tuesday", "Wednesday",
+                     "Thursday", "Friday", "Saturday", "Sunday"]
+        dow_analysis['DayOfWeek'] = pd.Categorical(
+            dow_analysis['DayOfWeek'], categories=dow_order, ordered=True)
         dow_analysis_sorted = dow_analysis.sort_values('DayOfWeek')
         sns.barplot(data=dow_analysis_sorted, x='DayOfWeek', y='views')
         plt.title('요일별 총 조회수')
@@ -1147,8 +1270,10 @@ class DataProcess:
 
         # (5) 상위 10개 채널(조회수 기준)
         plt.figure(figsize=self.calculate_figsize(len(channel_analysis)))
-        channel_analysis_sorted = channel_analysis.sort_values('total_views', ascending=False)
-        sns.barplot(data=channel_analysis_sorted, x='YouTube Channel', y='total_views')
+        channel_analysis_sorted = channel_analysis.sort_values(
+            'total_views', ascending=False)
+        sns.barplot(data=channel_analysis_sorted,
+                    x='YouTube Channel', y='total_views')
         plt.title('상위 10개 채널별 총 조회수')
         plt.xlabel('채널명')
         plt.ylabel('조회수')
@@ -1183,7 +1308,8 @@ class DataProcess:
         plt.xlabel('Like / View 비율')
         plt.ylabel('빈도')
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "like_view_ratio_distribution.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "like_view_ratio_distribution.png"))
         plt.close()
 
         # Comment-View Ratio
@@ -1197,12 +1323,15 @@ class DataProcess:
         plt.xlabel('Comment / View 비율')
         plt.ylabel('빈도')
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "comment_view_ratio_distribution.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "comment_view_ratio_distribution.png"))
         plt.close()
 
         # (8) 상관관계 히트맵
-        plt.figure(figsize=self.calculate_figsize(len(correlation_matrix), height=8))
-        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+        plt.figure(figsize=self.calculate_figsize(
+            len(correlation_matrix), height=8))
+        sns.heatmap(correlation_matrix, annot=True,
+                    cmap='coolwarm', vmin=-1, vmax=1)
         plt.title('숫자형 지표 상관관계 (추가 지표 포함)')
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
@@ -1270,12 +1399,15 @@ class DataProcess:
 
         # 1) 날짜형 / 숫자형 변환
         # - 댓글이 작성된 날짜
-        data["Reply Date"] = pd.to_datetime(data["Reply Date"], errors="coerce")
+        data["Reply Date"] = pd.to_datetime(
+            data["Reply Date"], errors="coerce")
         # - 게시물이 올라온 날짜
-        data["Article Day"] = pd.to_datetime(data["Article Day"], errors="coerce")
+        data["Article Day"] = pd.to_datetime(
+            data["Article Day"], errors="coerce")
 
         # - 좋아요 수: 숫자 변환
-        data["Reply Like"] = pd.to_numeric(data["Reply Like"], errors="coerce").fillna(0)
+        data["Reply Like"] = pd.to_numeric(
+            data["Reply Like"], errors="coerce").fillna(0)
 
         # 2) 결과 저장용 디렉토리 생성
         output_dir = os.path.join(
@@ -1296,7 +1428,8 @@ class DataProcess:
 
         # 5) 날짜 차이(댓글 작성 시점 vs 게시물 업로드 시점)
         #    -> '작성 시점 - 업로드 시점' 일수 계산
-        valid_data["ReplyTimeDelta"] = (valid_data["Reply Date"] - valid_data["Article Day"]).dt.days
+        valid_data["ReplyTimeDelta"] = (
+            valid_data["Reply Date"] - valid_data["Article Day"]).dt.days
 
         #    예: ReplyTimeDelta = 0 이면 같은 날 올라온 댓글
         #        ReplyTimeDelta = 1 이면 업로드 다음 날 달린 댓글
@@ -1341,7 +1474,8 @@ class DataProcess:
             article_reply_like=("Reply Like", "sum"),
             avg_reply_time=("ReplyTimeDelta", "mean")  # 업로드일 기준 평균 댓글 시차
         ).reset_index()
-        day_post_analysis["Article Day"] = day_post_analysis["Article Day"].dt.to_timestamp()
+        day_post_analysis["Article Day"] = day_post_analysis["Article Day"].dt.to_timestamp(
+        )
 
         #    6-6) 댓글 작성자별(Reply Writer) 분석
         writer_analysis = data.groupby("Reply Writer").agg(
@@ -1351,12 +1485,15 @@ class DataProcess:
 
         # 7) 상위 10개 항목
         #    - 작성자, 게시물
-        top_10_writers = writer_analysis.sort_values("reply_count", ascending=False).head(10)
-        top_10_articles = article_analysis.sort_values("reply_count", ascending=False).head(10)
+        top_10_writers = writer_analysis.sort_values(
+            "reply_count", ascending=False).head(10)
+        top_10_articles = article_analysis.sort_values(
+            "reply_count", ascending=False).head(10)
 
         # 8) 상위 10개 댓글(좋아요 기준)
         top_10_liked_replies = data.sort_values("Reply Like", ascending=False).head(10)[
-            ["Reply Writer", "Reply Text", "Reply Date", "Reply Like", "Article URL", "Article Day"]
+            ["Reply Writer", "Reply Text", "Reply Date",
+                "Reply Like", "Article URL", "Article Day"]
         ].reset_index(drop=True)
 
         # 9) 통계 지표 확장
@@ -1372,26 +1509,37 @@ class DataProcess:
         correlation_matrix = valid_data[numeric_cols].corr()
 
         # 10) CSV 저장
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding="utf-8-sig")
-        daily_data.to_csv(os.path.join(csv_output_dir, "daily_analysis.csv"), encoding="utf-8-sig", index=False)
-        monthly_data.to_csv(os.path.join(csv_output_dir, "monthly_analysis.csv"), encoding="utf-8-sig", index=False)
-        dow_data.to_csv(os.path.join(csv_output_dir, "day_of_week_analysis.csv"), encoding="utf-8-sig", index=False)
-        article_analysis.to_csv(os.path.join(csv_output_dir, "article_analysis.csv"), encoding="utf-8-sig", index=False)
+        basic_stats.to_csv(os.path.join(
+            csv_output_dir, "basic_stats.csv"), encoding="utf-8-sig")
+        daily_data.to_csv(os.path.join(
+            csv_output_dir, "daily_analysis.csv"), encoding="utf-8-sig", index=False)
+        monthly_data.to_csv(os.path.join(
+            csv_output_dir, "monthly_analysis.csv"), encoding="utf-8-sig", index=False)
+        dow_data.to_csv(os.path.join(
+            csv_output_dir, "day_of_week_analysis.csv"), encoding="utf-8-sig", index=False)
+        article_analysis.to_csv(os.path.join(
+            csv_output_dir, "article_analysis.csv"), encoding="utf-8-sig", index=False)
         day_post_analysis.to_csv(os.path.join(csv_output_dir, "article_day_analysis.csv"), encoding="utf-8-sig",
                                  index=False)
-        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"), encoding="utf-8-sig", index=False)
-        top_10_writers.to_csv(os.path.join(csv_output_dir, "top_10_writers.csv"), encoding="utf-8-sig", index=False)
-        top_10_articles.to_csv(os.path.join(csv_output_dir, "top_10_articles.csv"), encoding="utf-8-sig", index=False)
+        writer_analysis.to_csv(os.path.join(
+            csv_output_dir, "writer_analysis.csv"), encoding="utf-8-sig", index=False)
+        top_10_writers.to_csv(os.path.join(
+            csv_output_dir, "top_10_writers.csv"), encoding="utf-8-sig", index=False)
+        top_10_articles.to_csv(os.path.join(
+            csv_output_dir, "top_10_articles.csv"), encoding="utf-8-sig", index=False)
         top_10_liked_replies.to_csv(os.path.join(csv_output_dir, "top_10_liked_replies.csv"), encoding="utf-8-sig",
                                     index=False)
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding="utf-8-sig")
+        correlation_matrix.to_csv(os.path.join(
+            csv_output_dir, "correlation_matrix.csv"), encoding="utf-8-sig")
 
         # 11) 시각화
         #     - calculate_figsize(len(x)) 함수가 있다고 가정. (없으면 (10,6) 등 직접 입력)
         # (1) 일별 댓글 추이
         plt.figure(figsize=self.calculate_figsize(len(daily_data)))
-        sns.lineplot(data=daily_data, x="Reply Date", y="reply_count", label="Reply Count")
-        sns.lineplot(data=daily_data, x="Reply Date", y="total_like", label="Total Like")
+        sns.lineplot(data=daily_data, x="Reply Date",
+                     y="reply_count", label="Reply Count")
+        sns.lineplot(data=daily_data, x="Reply Date",
+                     y="total_like", label="Total Like")
         plt.title("일별 댓글/좋아요 추이")
         plt.xlabel("날짜")
         plt.ylabel("합계")
@@ -1403,8 +1551,10 @@ class DataProcess:
 
         # (2) 월별 댓글 추이
         plt.figure(figsize=self.calculate_figsize(len(monthly_data)))
-        sns.lineplot(data=monthly_data, x="Reply Date", y="reply_count", label="Reply Count")
-        sns.lineplot(data=monthly_data, x="Reply Date", y="total_like", label="Total Like")
+        sns.lineplot(data=monthly_data, x="Reply Date",
+                     y="reply_count", label="Reply Count")
+        sns.lineplot(data=monthly_data, x="Reply Date",
+                     y="total_like", label="Total Like")
         plt.title("월별 댓글/좋아요 추이")
         plt.xlabel("월")
         plt.ylabel("합계")
@@ -1415,8 +1565,10 @@ class DataProcess:
         plt.close()
 
         # (3) 요일별 댓글 수
-        dow_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        dow_data["ReplyDayOfWeek"] = pd.Categorical(dow_data["ReplyDayOfWeek"], categories=dow_order, ordered=True)
+        dow_order = ["Monday", "Tuesday", "Wednesday",
+                     "Thursday", "Friday", "Saturday", "Sunday"]
+        dow_data["ReplyDayOfWeek"] = pd.Categorical(
+            dow_data["ReplyDayOfWeek"], categories=dow_order, ordered=True)
         sorted_dow_data = dow_data.sort_values("ReplyDayOfWeek")
 
         plt.figure(figsize=self.calculate_figsize(len(sorted_dow_data)))
@@ -1425,13 +1577,16 @@ class DataProcess:
         plt.xlabel("요일")
         plt.ylabel("댓글 수")
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "day_of_week_reply_count.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "day_of_week_reply_count.png"))
         plt.close()
 
         # (4) Article Day 기준 (게시물 업로드 날짜별) 댓글 수
         plt.figure(figsize=self.calculate_figsize(len(day_post_analysis)))
-        sns.lineplot(data=day_post_analysis, x="Article Day", y="article_reply_count", label="Reply Count")
-        sns.lineplot(data=day_post_analysis, x="Article Day", y="article_reply_like", label="Reply Like")
+        sns.lineplot(data=day_post_analysis, x="Article Day",
+                     y="article_reply_count", label="Reply Count")
+        sns.lineplot(data=day_post_analysis, x="Article Day",
+                     y="article_reply_like", label="Reply Like")
         plt.title("영상 업로드 날짜별 댓글 수/좋아요 추이")
         plt.xlabel("영상 업로드 날짜")
         plt.ylabel("합계")
@@ -1475,12 +1630,15 @@ class DataProcess:
         plt.xlabel("ReplyTimeDelta (Days)")
         plt.ylabel("빈도")
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "reply_time_delta_distribution.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "reply_time_delta_distribution.png"))
         plt.close()
 
         # (9) 상관관계 히트맵
-        plt.figure(figsize=self.calculate_figsize(len(correlation_matrix), height=8))
-        sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", vmin=-1, vmax=1)
+        plt.figure(figsize=self.calculate_figsize(
+            len(correlation_matrix), height=8))
+        sns.heatmap(correlation_matrix, annot=True,
+                    cmap="coolwarm", vmin=-1, vmax=1)
         plt.title("댓글 데이터 상관관계")
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
@@ -1566,12 +1724,15 @@ class DataProcess:
 
         # 1) 날짜형 / 숫자형 변환
         # - 대댓글이 작성된 날짜
-        data["Rereply Date"] = pd.to_datetime(data["Rereply Date"], errors="coerce")
+        data["Rereply Date"] = pd.to_datetime(
+            data["Rereply Date"], errors="coerce")
         # - 게시물이 올라온 날짜
-        data["Article Day"] = pd.to_datetime(data["Article Day"], errors="coerce")
+        data["Article Day"] = pd.to_datetime(
+            data["Article Day"], errors="coerce")
 
         # - 좋아요 수: 숫자 변환
-        data["Rereply Like"] = pd.to_numeric(data["Rereply Like"], errors="coerce").fillna(0)
+        data["Rereply Like"] = pd.to_numeric(
+            data["Rereply Like"], errors="coerce").fillna(0)
 
         # 2) 결과 저장용 디렉토리 생성
         output_dir = os.path.join(
@@ -1592,7 +1753,8 @@ class DataProcess:
 
         # 5) 날짜 차이(대댓글 작성 시점 vs 게시물 업로드 시점)
         #    -> '작성 시점 - 업로드 시점' 일수 계산
-        valid_data["RereplyTimeDelta"] = (valid_data["Rereply Date"] - valid_data["Article Day"]).dt.days
+        valid_data["RereplyTimeDelta"] = (
+            valid_data["Rereply Date"] - valid_data["Article Day"]).dt.days
         #    예: RereplyTimeDelta = 0 이면 같은 날 올라온 대댓글
         #        RereplyTimeDelta = 1 이면 업로드 다음 날 달린 대댓글
         #        음수가 나오면 업로드 전 시점(잘못된 데이터)일 수도 있음
@@ -1634,7 +1796,8 @@ class DataProcess:
             article_rereply_like=("Rereply Like", "sum"),
             avg_rereply_time=("RereplyTimeDelta", "mean")  # 업로드일 기준 평균 대댓글 시차
         ).reset_index()
-        day_post_analysis["Article Day"] = day_post_analysis["Article Day"].dt.to_timestamp()
+        day_post_analysis["Article Day"] = day_post_analysis["Article Day"].dt.to_timestamp(
+        )
 
         #    6-6) 대댓글 작성자별(Rereply Writer) 분석
         writer_analysis = data.groupby("Rereply Writer").agg(
@@ -1644,12 +1807,15 @@ class DataProcess:
 
         # 7) 상위 10개 항목
         #    - 작성자, 게시물
-        top_10_writers = writer_analysis.sort_values("rereply_count", ascending=False).head(10)
-        top_10_articles = article_analysis.sort_values("rereply_count", ascending=False).head(10)
+        top_10_writers = writer_analysis.sort_values(
+            "rereply_count", ascending=False).head(10)
+        top_10_articles = article_analysis.sort_values(
+            "rereply_count", ascending=False).head(10)
 
         # 8) 상위 10개 대댓글(좋아요 기준)
         top_10_liked_rereplies = data.sort_values("Rereply Like", ascending=False).head(10)[
-            ["Rereply Writer", "Rereply Text", "Rereply Date", "Rereply Like", "Article URL", "Article Day"]
+            ["Rereply Writer", "Rereply Text", "Rereply Date",
+                "Rereply Like", "Article URL", "Article Day"]
         ].reset_index(drop=True)
 
         # 9) 통계 지표 확장
@@ -1664,26 +1830,37 @@ class DataProcess:
         correlation_matrix = valid_data[numeric_cols].corr()
 
         # 10) CSV 저장
-        basic_stats.to_csv(os.path.join(csv_output_dir, "basic_stats.csv"), encoding="utf-8-sig")
-        daily_data.to_csv(os.path.join(csv_output_dir, "daily_analysis.csv"), encoding="utf-8-sig", index=False)
-        monthly_data.to_csv(os.path.join(csv_output_dir, "monthly_analysis.csv"), encoding="utf-8-sig", index=False)
-        dow_data.to_csv(os.path.join(csv_output_dir, "day_of_week_analysis.csv"), encoding="utf-8-sig", index=False)
-        article_analysis.to_csv(os.path.join(csv_output_dir, "article_analysis.csv"), encoding="utf-8-sig", index=False)
+        basic_stats.to_csv(os.path.join(
+            csv_output_dir, "basic_stats.csv"), encoding="utf-8-sig")
+        daily_data.to_csv(os.path.join(
+            csv_output_dir, "daily_analysis.csv"), encoding="utf-8-sig", index=False)
+        monthly_data.to_csv(os.path.join(
+            csv_output_dir, "monthly_analysis.csv"), encoding="utf-8-sig", index=False)
+        dow_data.to_csv(os.path.join(
+            csv_output_dir, "day_of_week_analysis.csv"), encoding="utf-8-sig", index=False)
+        article_analysis.to_csv(os.path.join(
+            csv_output_dir, "article_analysis.csv"), encoding="utf-8-sig", index=False)
         day_post_analysis.to_csv(os.path.join(csv_output_dir, "article_day_analysis.csv"), encoding="utf-8-sig",
                                  index=False)
-        writer_analysis.to_csv(os.path.join(csv_output_dir, "writer_analysis.csv"), encoding="utf-8-sig", index=False)
-        top_10_writers.to_csv(os.path.join(csv_output_dir, "top_10_writers.csv"), encoding="utf-8-sig", index=False)
-        top_10_articles.to_csv(os.path.join(csv_output_dir, "top_10_articles.csv"), encoding="utf-8-sig", index=False)
+        writer_analysis.to_csv(os.path.join(
+            csv_output_dir, "writer_analysis.csv"), encoding="utf-8-sig", index=False)
+        top_10_writers.to_csv(os.path.join(
+            csv_output_dir, "top_10_writers.csv"), encoding="utf-8-sig", index=False)
+        top_10_articles.to_csv(os.path.join(
+            csv_output_dir, "top_10_articles.csv"), encoding="utf-8-sig", index=False)
         top_10_liked_rereplies.to_csv(os.path.join(csv_output_dir, "top_10_liked_rereplies.csv"), encoding="utf-8-sig",
                                       index=False)
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding="utf-8-sig")
+        correlation_matrix.to_csv(os.path.join(
+            csv_output_dir, "correlation_matrix.csv"), encoding="utf-8-sig")
 
         # 11) 시각화
         #     - calculate_figsize(len(x)) 함수가 있다고 가정. (없으면 (10,6) 등 직접 입력)
         # (1) 일별 대댓글 추이
         plt.figure(figsize=self.calculate_figsize(len(daily_data)))
-        sns.lineplot(data=daily_data, x="Rereply Date", y="rereply_count", label="Rereply Count")
-        sns.lineplot(data=daily_data, x="Rereply Date", y="total_like", label="Total Like")
+        sns.lineplot(data=daily_data, x="Rereply Date",
+                     y="rereply_count", label="Rereply Count")
+        sns.lineplot(data=daily_data, x="Rereply Date",
+                     y="total_like", label="Total Like")
         plt.title("일별 대댓글/좋아요 추이")
         plt.xlabel("날짜")
         plt.ylabel("합계")
@@ -1695,8 +1872,10 @@ class DataProcess:
 
         # (2) 월별 대댓글 추이
         plt.figure(figsize=self.calculate_figsize(len(monthly_data)))
-        sns.lineplot(data=monthly_data, x="Rereply Date", y="rereply_count", label="Rereply Count")
-        sns.lineplot(data=monthly_data, x="Rereply Date", y="total_like", label="Total Like")
+        sns.lineplot(data=monthly_data, x="Rereply Date",
+                     y="rereply_count", label="Rereply Count")
+        sns.lineplot(data=monthly_data, x="Rereply Date",
+                     y="total_like", label="Total Like")
         plt.title("월별 대댓글/좋아요 추이")
         plt.xlabel("월")
         plt.ylabel("합계")
@@ -1707,23 +1886,29 @@ class DataProcess:
         plt.close()
 
         # (3) 요일별 대댓글 수
-        dow_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        dow_data["RereplyDayOfWeek"] = pd.Categorical(dow_data["RereplyDayOfWeek"], categories=dow_order, ordered=True)
+        dow_order = ["Monday", "Tuesday", "Wednesday",
+                     "Thursday", "Friday", "Saturday", "Sunday"]
+        dow_data["RereplyDayOfWeek"] = pd.Categorical(
+            dow_data["RereplyDayOfWeek"], categories=dow_order, ordered=True)
         sorted_dow_data = dow_data.sort_values("RereplyDayOfWeek")
 
         plt.figure(figsize=self.calculate_figsize(len(sorted_dow_data)))
-        sns.barplot(data=sorted_dow_data, x="RereplyDayOfWeek", y="rereply_count")
+        sns.barplot(data=sorted_dow_data,
+                    x="RereplyDayOfWeek", y="rereply_count")
         plt.title("요일별 대댓글 수")
         plt.xlabel("요일")
         plt.ylabel("대댓글 수")
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "day_of_week_rereply_count.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "day_of_week_rereply_count.png"))
         plt.close()
 
         # (4) Article Day 기준 (게시물 업로드 날짜별) 대댓글 수
         plt.figure(figsize=self.calculate_figsize(len(day_post_analysis)))
-        sns.lineplot(data=day_post_analysis, x="Article Day", y="article_rereply_count", label="Rereply Count")
-        sns.lineplot(data=day_post_analysis, x="Article Day", y="article_rereply_like", label="Rereply Like")
+        sns.lineplot(data=day_post_analysis, x="Article Day",
+                     y="article_rereply_count", label="Rereply Count")
+        sns.lineplot(data=day_post_analysis, x="Article Day",
+                     y="article_rereply_like", label="Rereply Like")
         plt.title("영상 업로드 날짜별 대댓글 수/좋아요 추이")
         plt.xlabel("영상 업로드 날짜")
         plt.ylabel("합계")
@@ -1766,12 +1951,15 @@ class DataProcess:
         plt.xlabel("RereplyTimeDelta (Days)")
         plt.ylabel("빈도")
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "rereply_time_delta_distribution.png"))
+        plt.savefig(os.path.join(graph_output_dir,
+                    "rereply_time_delta_distribution.png"))
         plt.close()
 
         # (9) 상관관계 히트맵
-        plt.figure(figsize=self.calculate_figsize(len(correlation_matrix), height=8))
-        sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", vmin=-1, vmax=1)
+        plt.figure(figsize=self.calculate_figsize(
+            len(correlation_matrix), height=8))
+        sns.heatmap(correlation_matrix, annot=True,
+                    cmap="coolwarm", vmin=-1, vmax=1)
         plt.title("대댓글 데이터 상관관계")
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
@@ -1825,31 +2013,38 @@ class DataProcess:
         parent = parent
         self.translate_history = {}
         self.translator = Translator()
+
         def divide_period(csv_data, period):
             # 'Unnamed' 열 제거
-            csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
+            csv_data = csv_data.loc[:, ~
+                                    csv_data.columns.str.contains('^Unnamed')]
 
             # 날짜 열을 datetime 형식으로 변환
-            csv_data[self.dateColumn_name] = pd.to_datetime(csv_data[self.dateColumn_name].str.split().str[0], format='%Y-%m-%d', errors='coerce')
+            csv_data[self.dateColumn_name] = pd.to_datetime(
+                csv_data[self.dateColumn_name].str.split().str[0], format='%Y-%m-%d', errors='coerce')
 
             # 'YYYYMMDD' 형식의 문자열을 datetime 형식으로 변환
             start_date = pd.to_datetime(str(date[0]), format='%Y%m%d')
             end_date = pd.to_datetime(str(date[1]), format='%Y%m%d')
 
             # 날짜 범위 필터링
-            csv_data = csv_data[csv_data[self.dateColumn_name].between(start_date, end_date)]
+            csv_data = csv_data[csv_data[self.dateColumn_name].between(
+                start_date, end_date)]
 
             if start_date < csv_data[self.dateColumn_name].min():
-                self.startdate = int(csv_data[self.dateColumn_name].min().strftime('%Y%m%d'))
+                self.startdate = int(
+                    csv_data[self.dateColumn_name].min().strftime('%Y%m%d'))
 
             if end_date > csv_data[self.dateColumn_name].max():
-                self.enddate = int(csv_data[self.dateColumn_name].max().strftime('%Y%m%d'))
+                self.enddate = int(
+                    csv_data[self.dateColumn_name].max().strftime('%Y%m%d'))
 
             if period == 'total':
                 csv_data['period_group'] = 'total'
             else:
                 # 'period_month' 열 추가 (월 단위 기간으로 변환)
-                csv_data['period_month'] = csv_data[self.dateColumn_name].dt.to_period('M')
+                csv_data['period_month'] = csv_data[self.dateColumn_name].dt.to_period(
+                    'M')
 
                 # 필요한 전체 기간 생성
                 full_range = pd.period_range(start=csv_data['period_month'].min(), end=csv_data['period_month'].max(),
@@ -1857,19 +2052,22 @@ class DataProcess:
                 full_df = pd.DataFrame(full_range, columns=['period_month'])
 
                 # 원본 데이터와 병합하여 빈 기간도 포함하도록 함
-                csv_data = pd.merge(full_df, csv_data, on='period_month', how='left')
+                csv_data = pd.merge(full_df, csv_data,
+                                    on='period_month', how='left')
 
                 # 새로운 열을 추가하여 주기 단위로 기간을 그룹화
                 if period == '1m':  # 월
-                    csv_data['period_group'] = csv_data['period_month'].astype(str)
+                    csv_data['period_group'] = csv_data['period_month'].astype(
+                        str)
                 elif period == '3m':  # 분기
                     csv_data['period_group'] = (csv_data['period_month'].dt.year.astype(str) + 'Q' + (
-                                (csv_data['period_month'].dt.month - 1) // 3 + 1).astype(str))
+                        (csv_data['period_month'].dt.month - 1) // 3 + 1).astype(str))
                 elif period == '6m':  # 반기
                     csv_data['period_group'] = (csv_data['period_month'].dt.year.astype(str) + 'H' + (
-                                (csv_data['period_month'].dt.month - 1) // 6 + 1).astype(str))
+                        (csv_data['period_month'].dt.month - 1) // 6 + 1).astype(str))
                 elif period == '1y':  # 연도
-                    csv_data['period_group'] = csv_data['period_month'].dt.year.astype(str)
+                    csv_data['period_group'] = csv_data['period_month'].dt.year.astype(
+                        str)
                 elif period == '1w':  # 주
                     csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period('W').apply(
                         lambda x: f"{x.start_time.strftime('%Y%m%d')}-{x.end_time.strftime('%Y%m%d')}"
@@ -1879,7 +2077,8 @@ class DataProcess:
                     self.startdate = first_date
                     self.enddate = end_date
                 elif period == '1d':  # 일
-                    csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period('D').astype(str)
+                    csv_data['period_group'] = csv_data[self.dateColumn_name].dt.to_period(
+                        'D').astype(str)
 
             # 주기별로 그룹화하여 결과 반환
             period_divided_group = csv_data.groupby('period_group')
@@ -1902,7 +2101,8 @@ class DataProcess:
         i = 0
 
         if parent.SETTING['ProcessConsole'] == 'default':
-            iterator = tqdm(grouped, desc="WordCloud ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+            iterator = tqdm(grouped, desc="WordCloud ", file=sys.stdout,
+                            bar_format="{l_bar}{bar}|", ascii=' =')
         else:
             iterator = grouped
 
@@ -1919,29 +2119,36 @@ class DataProcess:
                     all_words.extend(tokens)
 
             if exception_word_list != []:
-                all_words = [item.strip() for item in all_words if item.strip() not in exception_word_list]
+                all_words = [
+                    item.strip() for item in all_words if item.strip() not in exception_word_list]
 
             # 단어 빈도 계산
-            self.word_freq = dict(Counter(all_words).most_common(max_words))  # 딕셔너리 변환
+            self.word_freq = dict(
+                Counter(all_words).most_common(max_words))  # 딕셔너리 변환
             if eng == True:
                 parent.printStatus(f"단어 영문 변환 중...")
                 asyncio.run(self.wordcloud_translator())
 
             # 워드클라우드 생성
-            wordcloud = WordCloud(font_path=os.path.join(os.path.dirname(__file__), 'source', 'malgun.ttf'), background_color='white', width=800, height=600, max_words=max_words)
+            wordcloud = WordCloud(font_path=os.path.join(os.path.dirname(
+                __file__), 'source', 'malgun.ttf'), background_color='white', width=800, height=600, max_words=max_words)
             wc_generated = wordcloud.generate_from_frequencies(self.word_freq)
 
             # 워드클라우드 저장
-            output_file = os.path.join(folder_path, f'wordcloud_{period_list[i]}.png')
+            output_file = os.path.join(
+                folder_path, f'wordcloud_{period_list[i]}.png')
             if split_option == 'total':
-                output_file = os.path.join(folder_path, f'wordcloud_{date[0]}~{date[1]}.png')
+                output_file = os.path.join(
+                    folder_path, f'wordcloud_{date[0]}~{date[1]}.png')
 
             wc_generated.to_file(output_file)
 
             # CSV 파일로 저장
-            output_file = os.path.join(folder_path, 'data', f'wordcount_{period_list[i]}.csv')
+            output_file = os.path.join(
+                folder_path, 'data', f'wordcount_{period_list[i]}.csv')
             if split_option == 'total':
-                output_file = os.path.join(folder_path, 'data', f'wordcount_{date[0]}~{date[1]}.csv')
+                output_file = os.path.join(
+                    folder_path, 'data', f'wordcount_{date[0]}~{date[1]}.csv')
 
             with open(output_file, mode="w", newline="", encoding="utf-8", errors="ignore") as file:
                 writer = csv.writer(file)
@@ -1958,7 +2165,8 @@ class DataProcess:
 
         # 번역할 한글 단어 목록 (self.word_freq의 키값들 중 번역되지 않은 단어만)
         word_dict = self.word_freq
-        words_to_translate = [word for word in word_dict.keys() if word not in self.translate_history]
+        words_to_translate = [
+            word for word in word_dict.keys() if word not in self.translate_history]
 
         # 병렬 번역 수행 (이미 번역된 단어 제외)
         if words_to_translate:
@@ -1976,16 +2184,8 @@ class DataProcess:
 
         # 변환된 word_freq 딕셔너리 생성 (캐시 포함)
         self.word_freq = {k: v for k, v in sorted(
-            {self.translate_history[word]: word_dict[word] for word in word_dict.keys()}.items(),
+            {self.translate_history[word]: word_dict[word]
+                for word in word_dict.keys()}.items(),
             key=lambda item: item[1],
             reverse=True
         )}
-
-
-
-
-
-
-
-
-
