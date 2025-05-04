@@ -12,15 +12,18 @@ import asyncio
 import warnings
 import os
 import re
+import socket
 from kiwipiepy import Kiwi
-from datetime import datetime, timedelta
+import requests
+from datetime import datetime, timedelta, timezone
 
 import shutil
 import urllib3
 from Package.CrawlerModule import CrawlerModule
 from Package.GoogleModule import GoogleModule
 import pandas as pd
-
+from dotenv import load_dotenv
+import platform
 from Package.ChinaCrawlerPackage.ChinaDailyCrawlerModule import ChinaDailyCrawler
 from Package.ChinaCrawlerPackage.ChinaSinaCrawlerModule import ChinaSinaCrawler
 from Package.NaverCrawlerPackage.NaverBlogCrawlerModule import NaverBlogCrawler
@@ -31,10 +34,15 @@ from Package.OtherCrawlerPackage.YouTubeCrawlerModule import YouTubeCrawler
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+load_dotenv()
+
 class Crawler(CrawlerModule):
     
     def __init__(self, user, startDate, endDate, keyword, upload, speed, weboption):
-        super().__init__(proxy_option=True)
+        self.proxy_option = True
+        if socket.gethostname() == "Yojuns-MacBook-Pro.local":
+            self.proxy_option = False
+        super().__init__(proxy_option=self.proxy_option)
 
         if user == '문요준':
             user = 'admin'
@@ -50,6 +58,10 @@ class Crawler(CrawlerModule):
         self.crawllog_path  = os.path.join(self.pathFinder()['crawler_folder_path'], 'CrawlLog')
         self.crawlcom       = self.pathFinder(user)['computer_name']
         self.mySQL          = self.pathFinder(user)['MYSQL']
+        self.api_url        = "http://localhost:8000/api"
+        self.api_headers = {
+            "Authorization": "Bearer " + os.getenv('ADMIN_TOKEN'),
+        }
         
         # User Info
         self.user      = user
@@ -89,27 +101,19 @@ class Crawler(CrawlerModule):
     def DBinfoRecorder(self, endoption = False, error = False):
 
         if error == True:
-            endtime = 'X'
-            self.mySQL.connectDB('crawler_db')
-            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Endtime', endtime)
+            res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/error", json=self.IntegratedDB, headers=self.api_headers).json()
 
         elif endoption == True:
-            endtime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
-            try:
-                size = self.mySQL.showDBSize(self.DBname)[0]
-            except:
-                size = 0
-            datainfo = self.IntegratedDB
-            self.mySQL.connectDB('crawler_db')
-            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Endtime', endtime)
-            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'DBSize', size)
-            self.mySQL.updateTableCellByCondition('db_list', 'DBname', self.DBname, 'Datainfo', str(datainfo))
-            self.mySQL.commit()
-
+            del self.IntegratedDB['UrlCnt']
+            res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/datainfo", json=self.IntegratedDB, headers=self.api_headers).json()
             with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'r') as log:
                 log_content = log.read()
-            self.mySQL.insertToTable('crawl_log', [[self.DBname, log_content]])
-            self.mySQL.commit()
+                
+            json = {
+                'uid': self.dbUid,
+                'content': log_content
+            }
+            res = requests.post(f"{self.api_url}/crawls/add/log", json=json, headers=self.api_headers).json()
 
     # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
@@ -175,7 +179,12 @@ class Crawler(CrawlerModule):
 
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
-        self.DBname      = f"{DBtype}_{self.DBkeyword}{dbname_date}_{self.now.strftime('%m%d_%H%M')}"
+        
+        now_kst = datetime.now(timezone.utc).astimezone(
+            timezone(timedelta(hours=9))
+        ).strftime('%m%d_%H%M')
+        
+        self.DBname      = f"{DBtype}_{self.DBkeyword}{dbname_date}_{now_kst}"
         self.DBpath      = os.path.join(self.scrapdata_path, self.DBname)
 
         if self.DBname in self.mySQL.showAllDB():
@@ -194,23 +203,25 @@ class Crawler(CrawlerModule):
             text = f"{self.DBname} DB 생성에 실패해 크롤러가 중단되었습니다\n\n관리자에게 문의바랍니다"
             self.sendPushOver(msg=title + '\n' + text, user_key=self.pushoverKey)
             os._exit(0)
-
-        self.mySQL.connectDB('crawler_db')
-
+        
         option = self.option
-        starttime = datetime.fromtimestamp(self.startTime).strftime('%Y-%m-%d %H:%M')
-        endtime = '크롤링 중'
         requester = self.user
         keyword = self.keyword
-        dbsize = 0
         crawlcom = self.crawlcom
         crawlspeed = self.speed
-        datainfo = str(self.IntegratedDB)
-
-        self.mySQL.insertToTable('db_list', [self.DBname, option, starttime, endtime, requester, keyword, dbsize, crawlcom, crawlspeed, datainfo])
-        self.mySQL.commit()
-
-        self.mySQL.disconnectDB()
+        
+        json = {
+            "name": self.DBname,
+            "crawlOption": option,
+            "requester": requester,
+            "keyword": keyword,
+            "dbSize": 0,
+            "crawlCom": crawlcom,
+            "crawlSpeed": crawlspeed,
+        }
+        
+        res = requests.post(self.api_url + '/crawls/add', json=json, headers=self.api_headers).json()
+        self.dbUid = res['data']['uid']
         self.mySQL.connectDB(self.DBname)
 
         self.articleDB    = self.DBname + '_article'
@@ -297,6 +308,7 @@ class Crawler(CrawlerModule):
                     data_df = data_df.sort_values(by=date_column)
 
                 token_df = self.tokenization(data_df)
+                print("")
                 print(f'\r{table} DB Inserting...', end='')
                 self.mySQL.connectDB(self.DBname)
                 self.mySQL.DataframeToTable(token_df, 'token_' + table)
@@ -311,7 +323,7 @@ class Crawler(CrawlerModule):
             crawltime = str(timedelta(seconds=int(time.time() - self.startTime)))
 
             text = f'\n크롤링 시작: {starttime}' + f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
-            text += f'\n\nArticle: {self.IntegratedDB['TotalArticleCnt']}' + f'\nReply: {self.IntegratedDB['TotalReplyCnt']}' + f'\nRereply: {self.IntegratedDB['TotalRereplyCnt']}'
+            text += f'\n\nArticle: {self.IntegratedDB['totalArticleCnt']}' + f'\nReply: {self.IntegratedDB['totalReplyCnt']}' + f'\nRereply: {self.IntegratedDB['totalRereplyCnt']}'
 
             if self.upload == True:
                 driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
@@ -345,7 +357,7 @@ class Crawler(CrawlerModule):
             self.ReturnChecker(error_data)
 
     def tokenization(self, data):  # 갱신 간격 추가
-        kiwi = Kiwi(num_workers=0)
+        kiwi = Kiwi(num_workers=-1)
         for column in data.columns.tolist():
             if 'Text' in column:
                 textColumn_name = column
@@ -399,7 +411,7 @@ class Crawler(CrawlerModule):
 
     def Naver_News_Crawler(self, option):
 
-        NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=True, print_status_option=True)
+        NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=self.proxy_option, print_status_option=True)
         NaverNewsCrawler_obj.setCrawlSpeed(self.speed)
 
         self.option = option
@@ -524,7 +536,7 @@ class Crawler(CrawlerModule):
     
     def Naver_Blog_Crawler(self, option):
         
-        NaverBlogCrawler_obj = NaverBlogCrawler(proxy_option=True, print_status_option=True)
+        NaverBlogCrawler_obj = NaverBlogCrawler(proxy_option=self.proxy_option, print_status_option=True)
         NaverBlogCrawler_obj.setCrawlSpeed(self.speed)
 
         self.option = option
@@ -612,7 +624,7 @@ class Crawler(CrawlerModule):
 
     def Naver_Cafe_Crawler(self, option):
         
-        NaverCafeCrawler_obj = NaverCafeCrawler(proxy_option=True, print_status_option=True)
+        NaverCafeCrawler_obj = NaverCafeCrawler(proxy_option=self.proxy_option, print_status_option=True)
         NaverCafeCrawler_obj.setCrawlSpeed(self.speed)
 
         self.option = option
@@ -704,7 +716,7 @@ class Crawler(CrawlerModule):
         api_list_df = self.mySQL.TableToDataframe('youtube_api')
         api_list = api_list_df['API code'].tolist()
 
-        YouTubeCrawler_obj = YouTubeCrawler(api_list=api_list, proxy_option=True, print_status_option=True)
+        YouTubeCrawler_obj = YouTubeCrawler(api_list=api_list, proxy_option=self.proxy_option, print_status_option=True)
         
         self.option = option
         self.DBtype = "youtube"
@@ -796,7 +808,7 @@ class Crawler(CrawlerModule):
 
     def ChinaDaily_Crawler(self, option):
         
-        ChinaDailyCrawler_obj = ChinaDailyCrawler(proxy_option=True, print_status_option=True)
+        ChinaDailyCrawler_obj = ChinaDailyCrawler(proxy_option=self.proxy_option, print_status_option=True)
         
         self.option = option
         self.DBtype = "chinadaily"
@@ -850,7 +862,7 @@ class Crawler(CrawlerModule):
 
     def ChinaSina_Crawler(self, option):
         
-        ChinaSinaCrawler_obj = ChinaSinaCrawler(proxy_option=True, print_status_option=True)
+        ChinaSinaCrawler_obj = ChinaSinaCrawler(proxy_option=self.proxy_option, print_status_option=True)
         ChinaSinaCrawler_obj.setCrawlSpeed(self.speed)
         
         self.option = option

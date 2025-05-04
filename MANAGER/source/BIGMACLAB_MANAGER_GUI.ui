@@ -146,16 +146,9 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
           <item>
-           <widget class="QPushButton" name="crawler_omen_button">
+           <widget class="QPushButton" name="crawler_server_button">
             <property name="text">
-             <string>크롤러 서버 1 (Z8)</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="crawler_z_button">
-            <property name="text">
-             <string>크롤러 서버 2 (OMEN)</string>
+             <string>크롤러 서버</string>
             </property>
            </widget>
           </item>

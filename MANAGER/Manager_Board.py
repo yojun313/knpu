@@ -1,6 +1,6 @@
 import traceback
 import warnings
-from datetime import datetime
+from datetime import datetime, timedelta
 from PyQt5.QtCore import QRegExp, Qt, QDate
 from PyQt5.QtGui import QRegExpValidator, QKeySequence
 from PyQt5.QtWidgets import (
@@ -28,20 +28,21 @@ class Manager_Board:
 
                 sorted_list = sorted(two_dim_list, key=lambda x: version_key(x[0]), reverse=True)
                 return sorted_list
-
-            self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-            self.version_data = sort_by_version(self.main.mySQLObj.TableToList('version_info'))
+            
+            self.origin_version_data = self.main.Request('get', '/board/version').json()['data']
+            self.version_data = [list(map(str, item.values())) for item in self.origin_version_data]
+            self.version_data = sort_by_version(self.version_data)
+                
             self.version_data_for_table = [sub_list[:-1] for sub_list in self.version_data]
             self.version_table_column = ['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status']
             self.main.makeTable(self.main.board_version_tableWidget, self.version_data_for_table, self.version_table_column)
             self.version_name_list = [version_data[0] for version_data in self.version_data_for_table]
+            
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
     def checkNewVersion(self):
-        self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-        latest_version = self.main.mySQLObj.TableLastRow("version_info")[1]
-        return latest_version
+        return self.main.Request('get', '/board/version/newest').json()['data']
 
     def addVersion(self):
         try:
@@ -72,14 +73,6 @@ class Manager_Board:
                     self.version_num_input.setText(self.version)
                     layout.addWidget(self.version_num_label)
                     layout.addWidget(self.version_num_input)
-
-                    self.release_date_label = QLabel('Release Date:')
-                    self.release_date_input = QLineEdit()
-                    current_date = QDate.currentDate()
-                    formatted_date = current_date.toString("yyyy.MM.dd")
-                    self.release_date_input.setText(formatted_date)
-                    layout.addWidget(self.release_date_label)
-                    layout.addWidget(self.release_date_input)
 
                     self.changelog_label = QLabel('ChangeLog:')
                     self.changelog_input = QTextEdit()
@@ -119,23 +112,15 @@ class Manager_Board:
                 def submit(self):
                     # 입력된 데이터를 확인하고 처리
                     version_num = self.version_num_input.text()
-                    release_date = self.release_date_input.text()
                     changelog = self.changelog_input.toPlainText()
                     version_features = self.version_features_input.toPlainText()
                     version_status = self.version_status_input.text()
                     detail = self.detail_input.toPlainText()
 
-                    self.data = {
-                        'version_num': version_num,
-                        'release_date': release_date,
-                        'changelog': changelog,
-                        'version_features': version_features,
-                        'version_status': version_status,
-                        'detail': detail
-                    }
+                    self.data = [ version_num, changelog, version_features, version_status, detail ]
 
                     QMessageBox.information(self, 'Input Data',
-                                            f'Version Num: {version_num}\nRelease Date: {release_date}\nChangeLog: {changelog}\nVersion Features: {version_features}\nVersion Status: {version_status}\nDetail: {detail}')
+                                            f'Version Num: {version_num}\nChangeLog: {changelog}\nVersion Features: {version_features}\nVersion Status: {version_status}\nDetail: {detail}')
                     self.accept()
 
             dialog = VersionInputDialog(self.main.versionNum)
@@ -144,25 +129,21 @@ class Manager_Board:
             # 데이터를 addVersion 함수에서 사용
             if dialog.data:
                 version_data = dialog.data
-                version_data = list(version_data.values())
-                self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-                self.main.mySQLObj.insertToTable('version_info', [version_data])
-                self.main.mySQLObj.commit()
-                self.refreshVersionBoard()
-
-                msg = (
-                    "[ New Version Released! ]\n\n"
-                    f"Version Num: {version_data[0]}\n"
-                    f"Release Date: {version_data[1]}\n"
-                    f"ChangeLog: {version_data[2]}\n"
-                    f"Version Features: {version_data[3]}\n"
-                    f"Version Status: {version_data[4]}\n"
-                    f"Version Detail: \n{version_data[5]}\n"
-                )
+                data = {
+                    "versionName": version_data[0],
+                    "changeLog": version_data[1],
+                    "features": version_data[2],
+                    "status": version_data[3],
+                    "details": version_data[4],
+                    'sendPushOver': False,
+                }
+                
                 reply = QMessageBox.question(self.main, 'Confirm Notification', "업데이트 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    for key in self.main.userPushOverKeyList:
-                        self.main.sendPushOver(msg, key)
+                    data['sendPushOver'] = True
+                    
+                self.main.Request('post', '/board/version/add', json=data)
+            self.refreshVersionBoard()
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
@@ -173,16 +154,15 @@ class Manager_Board:
                 ok, password = self.main.checkPassword(True)
                 if not ok or password != self.main.admin_password:
                     return
-            self.main.printStatus("삭제 중...")
 
             selectedRow = self.main.board_version_tableWidget.currentRow()
             if selectedRow >= 0:
                 reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-                    self.main.mySQLObj.deleteTableRowByColumn('version_info', self.version_name_list[selectedRow], 'Version Num')
-                    self.main.printStatus()
-                    self.refreshVersionBoard()
+                    version = self.version_name_list[selectedRow]
+                    self.main.Request('delete', f'/board/version/{version}')
+            
+            self.refreshVersionBoard()
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
@@ -269,21 +249,12 @@ class Manager_Board:
 
     def refreshBugBoard(self):
         try:
-            def sort_by_date(two_dim_list):
-                # 날짜 문자열을 파싱하여 비교하는 함수
-                def date_key(date_str):
-                    return datetime.strptime(date_str, "%Y.%m.%d %H:%M")
-
-                sorted_list = sorted(two_dim_list, key=lambda x: date_key(x[3]), reverse=True)
-                return sorted_list
-
-            self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-            self.bug_data = sort_by_date(self.main.mySQLObj.TableToList('version_bug'))
-            self.bug_data_for_table = [sub_list[:-2] for sub_list in self.bug_data]
+            self.origin_bug_data = self.main.Request('get', '/board/bug').json()['data']
+            self.bug_data_for_table = [
+                [sub_list['writerName'], sub_list['versionName'], sub_list['bugTitle'], sub_list['datetime']] 
+                for sub_list in self.origin_bug_data]
             self.bug_table_column = ['User', 'Version Num', 'Title', 'DateTime']
-            self.main.makeTable(self.main.board_bug_tableWidget, self.bug_data_for_table,
-                                  self.bug_table_column)
-            self.bug_title_list = [bug_data[2] for bug_data in self.bug_data_for_table]
+            self.main.makeTable(self.main.board_bug_tableWidget, self.bug_data_for_table, self.bug_table_column)
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -344,19 +315,17 @@ class Manager_Board:
                     userName = self.user_input.text()
                     version_num = self.version
                     bug_title = self.bug_title_input.text()
-                    bug_date = datetime.now().strftime("%Y.%m.%d %H:%M")
                     bug_detail = self.bug_detail_input.toPlainText()
 
                     self.data = {
                         'userName': userName,
                         'version_num': version_num,
                         'bug_title': bug_title,
-                        'bug_date': bug_date,
                         'bug_detail': bug_detail
                     }
 
                     QMessageBox.information(self, 'Input Data',
-                                            f'User Name: {userName}\nVersion Num: {version_num}\nBug Title: {bug_title}\nDateTime: {bug_date}\nBug Detail: {bug_detail}')
+                                            f'User Name: {userName}\nVersion Num: {version_num}\nBug Title: {bug_title}\nBug Detail: {bug_detail}')
                     self.accept()
 
             dialog = BugInputDialog(self.main, self.main.versionNum)
@@ -366,43 +335,40 @@ class Manager_Board:
             if dialog.data:
                 bug_data = dialog.data
                 bug_data = list(bug_data.values())
-                self.main.mySQLObj.connectDB(f"{self.main.user}_db")
-                bug_log = self.main.mySQLObj.TableToDataframe('manager_record')['Bug'].iloc[-1]
-                bug_data.append(bug_log)
-
-                self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-                self.main.mySQLObj.insertToTable('version_bug', bug_data)
-                self.main.mySQLObj.commit()
+                
+                json_data = {
+                    "writerUid": self.main.userUid,
+                    "versionName": bug_data[1],
+                    "bugTitle": bug_data[2],
+                    "bugText": bug_data[3],
+                    "programLog": "",
+                }
+                
+                self.main.Request('post', '/board/bug/add', json=json_data)
                 self.refreshBugBoard()
-
-                msg = (
-                    "[ New Bug Added! ]\n"
-                    f"User: {bug_data[0]}\n"
-                    f"Version: {bug_data[1]}\n"
-                    f"Title: {bug_data[2]}\n"
-                    f"Datetime: {bug_data[3]}\n"
-                    f"Detail: \n{bug_data[4]}\n"
-                    f"log: \n\n{bug_log}\n"
-                )
-                self.main.sendPushOver(msg, self.main.admin_pushoverkey)
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
-
+    
     def deleteBug(self):
         try:
             self.main.printStatus("삭제 중...")
 
-            reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
-                selectedRow = self.main.board_bug_tableWidget.currentRow()
-                if selectedRow >= 0:
-                    self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-                    self.main.mySQLObj.deleteTableRowByColumn('version_bug', self.bug_title_list[selectedRow], 'Bug Title')
-                    self.refreshBugBoard()
+            selectedRow = self.main.board_bug_tableWidget.currentRow()
+            if selectedRow >= 0:
+                bug = self.origin_bug_data[selectedRow]
+                
+                if bug['writerUid'] == self.main.userUid or self.main.user == 'admin':
+                    reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                    if reply == QMessageBox.Yes:
+                        self.main.Request('delete', f'/board/bug/{bug["uid"]}')
+                        self.refreshBugBoard()
+                else:
+                    QMessageBox.warning(self.main, "Wrong Password", f"작성자만 삭제할 수 있습니다")
+                    return
 
-            self.main.printStatus()
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
+    
     def viewBug(self):
         try:
             self.main.userLogging(f'BOARD -> viewBug')
@@ -410,12 +376,12 @@ class Manager_Board:
             selectedRow = self.main.board_bug_tableWidget.currentRow()
             if selectedRow >= 0:
                 self.main.printStatus("불러오는 중...")
-                bug_data = self.bug_data[selectedRow]
+                bug_data = self.origin_bug_data[selectedRow]
                 self.main.printStatus()
 
                 # 다이얼로그 생성
                 dialog = QDialog(self.main)
-                dialog.setWindowTitle(f'Version {bug_data[1]} Bug Details')
+                dialog.setWindowTitle(f'Version {bug_data['versionName']} Bug Details')
                 dialog.resize(400, 600)
 
                 layout = QVBoxLayout()
@@ -430,27 +396,27 @@ class Manager_Board:
                             </tr>
                             <tr>
                                 <td><b>User Name:</b></td>
-                                <td>{bug_data[0]}</td>
+                                <td>{bug_data['writerName']}</td>
                             </tr>
                             <tr>
                                 <td><b>Version Num:</b></td>
-                                <td>{bug_data[1]}</td>
+                                <td>{bug_data['versionName']}</td>
                             </tr>
                             <tr>
                                 <td><b>Bug Title:</b></td>
-                                <td>{bug_data[2]}</td>
+                                <td>{bug_data['bugTitle']}</td>
                             </tr>
                             <tr>
                                 <td><b>DateTime:</b></td>
-                                <td>{bug_data[3]}</td>
+                                <td>{bug_data['datetime']}</td>
                             </tr>
                             <tr>
                                 <td><b>Bug Detail:</b></td>
-                                <td class="detail-content">{bug_data[4]}</td>
+                                <td class="detail-content">{bug_data['bugText']}</td>
                             </tr>
                             <tr>
                                 <td><b>Program Log:</b></td>
-                                <td class="detail-content">{bug_data[5]}</td>
+                                <td class="detail-content">{bug_data['programLog']}</td>
                             </tr>
                         </table>
                     </div>
@@ -485,23 +451,16 @@ class Manager_Board:
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
+    
     def refreshPostBoard(self):
         try:
-            def sort_by_date(two_dim_list):
-                # 날짜 문자열을 파싱하여 비교하는 함수
-                def date_key(date_str):
-                    return datetime.strptime(date_str, "%Y.%m.%d %H:%M")
-
-                sorted_list = sorted(two_dim_list, key=lambda x: date_key(x[2]), reverse=True)
-                return sorted_list
-
-            self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-            self.post_data = sort_by_date(self.main.mySQLObj.TableToList('free_board'))
-            self.post_data_for_table = [sub_list[:-1] for sub_list in self.post_data]
-            self.post_table_column = ['User', 'Title', 'DateTime', 'ViewCount']
-            self.main.makeTable(self.main.board_post_tableWidget, self.post_data_for_table,
-                                  self.post_table_column)
-            self.post_title_list = [post_data[1] for post_data in self.post_data_for_table]
+            self.origin_post_data = self.main.Request('get', '/board/post').json()['data']
+            self.post_data_for_table = [
+                [sub_list['writerName'], sub_list['title'], sub_list['datetime'], str(sub_list['viewCnt'])] 
+                for sub_list in self.origin_post_data
+            ]
+            self.post_table_column = ['User', 'Title', 'DateTime', 'View Count']
+            self.main.makeTable(self.main.board_post_tableWidget, self.post_data_for_table, self.post_table_column)
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -523,39 +482,6 @@ class Manager_Board:
                     # 컨테이너 위젯 생성
                     container_widget = QDialog()
                     layout = QVBoxLayout(container_widget)
-
-                    # 비밀번호 입력 필드
-                    self.password_label = QLabel('Password (수정 및 삭제용):')
-                    self.password_input = QLineEdit()
-                    self.password_input.setEchoMode(QLineEdit.Password)  # 비밀번호 입력 필드로 설정
-
-                    # 영어 알파벳만 입력 가능하도록 제한 (영문 대소문자 포함)
-                    reg_exp = QRegExp("[a-zA-Z]*")
-                    validator = QRegExpValidator(reg_exp, self.password_input)
-                    self.password_input.setValidator(validator)
-
-                    layout.addWidget(self.password_label)
-                    layout.addWidget(self.password_input)
-
-                    # 비밀번호 확인 입력 필드
-                    self.confirm_password_label = QLabel('Confirm Password:')
-                    self.confirm_password_input = QLineEdit()
-                    self.confirm_password_input.setEchoMode(QLineEdit.Password)  # 비밀번호 확인 입력 필드로 설정
-
-                    # 영어 알파벳만 입력 가능하도록 제한 (영문 대소문자 포함)
-                    self.confirm_password_input.setValidator(validator)
-
-                    layout.addWidget(self.confirm_password_label)
-                    layout.addWidget(self.confirm_password_input)
-
-                    # 비밀번호 불일치 경고 메시지
-                    self.password_warning_label = QLabel('')
-                    self.password_warning_label.setStyleSheet('color: red')  # 경고 메시지를 빨간색으로 설정
-                    layout.addWidget(self.password_warning_label)
-
-                    # 비밀번호 필드 변경 시 일치 여부 확인
-                    self.password_input.textChanged.connect(self.check_password_match)
-                    self.confirm_password_input.textChanged.connect(self.check_password_match)
 
                     # 게시물 제목 입력 필드
                     self.post_title_label = QLabel('Post Title:')
@@ -584,62 +510,40 @@ class Manager_Board:
                     final_layout.addWidget(scroll_area)
                     self.setLayout(final_layout)
 
-                def check_password_match(self):
-                    password = self.password_input.text()
-                    confirm_password = self.confirm_password_input.text()
-
-                    if password != confirm_password:
-                        self.password_warning_label.setText('Passwords do not match.')
-                        self.submit_button.setEnabled(False)  # 제출 버튼 비활성화
-                    else:
-                        self.password_warning_label.setText('')
-                        self.submit_button.setEnabled(True)  # 제출 버튼 활성화
-
                 def submit(self):
                     # 입력된 데이터를 확인하고 처리
-                    userName = self.main.user
-                    pw = self.password_input.text()
                     post_title = self.post_title_input.text()
-                    post_date = datetime.now().strftime("%Y.%m.%d %H:%M")
                     post_text = self.post_text_input.toPlainText()
 
-
                     self.data = {
-                        'userName': userName,
                         'post_title': post_title,
-                        'post_date': post_date,
-                        'ViewCount': 0,
                         'post_text': post_text,
-                        'pw': pw,
                     }
 
-                    QMessageBox.information(self, 'Input Data',
-                                            f'User Name: {userName}\nPost Title: {post_title}\nPost Date: {post_date}\nPost Text: {post_text}')
+                    QMessageBox.information(self, 'New Post',
+                                            f'Post Title: {post_title}\nPost Text: {post_text}')
                     self.accept()
 
             dialog = PostInputDialog(self.main)
             dialog.exec_()
 
-            # 데이터를 addVersion 함수에서 사용
             if dialog.data:
                 post_data = dialog.data
                 post_data = list(post_data.values())
-                self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-                self.main.mySQLObj.insertToTable('free_board', post_data)
-                self.main.mySQLObj.commit()
-                self.refreshPostBoard()
-
-                msg = (
-                    "[ New Post Added! ]\n"
-                    f"User: {post_data[0]}\n"
-                    f"Post Title: {post_data[1]}\n"
-                    f"Post Date: {post_data[2]}\n"
-                    f"Post Text: {post_data[4]}\n"
-                )
+                
+                json_data = {
+                    "writerUid": self.main.userUid,
+                    "title": post_data[0],
+                    "text": post_data[1],
+                    "sendPushOver": False,
+                }
+        
                 reply = QMessageBox.question(self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    for key in self.main.userPushOverKeyList:
-                        self.main.sendPushOver(msg, key)
+                    json_data['sendPushOver'] = True
+                
+                self.main.Request('post', '/board/post/add', json=json_data)
+                self.refreshPostBoard()
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -649,22 +553,10 @@ class Manager_Board:
             if row != 0:
                 selectedRow = row
             if selectedRow >= 0:
-                print(selectedRow)
                 self.main.printStatus("불러오는 중...")
-                post_data = self.post_data[selectedRow]
+                post_data = self.origin_post_data[selectedRow]
 
-                viewcount = int(post_data[3])
-                viewcount += 1
-
-                self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-                self.main.mySQLObj.updateTableCell('free_board', len(self.post_data)-selectedRow-1, 'ViewCount', viewcount)
-
-                if post_data[0] == 'admin' and self.main.user != 'admin':
-                    msg = (
-                        "[ Admin Notification ]\n\n"
-                        f"{self.main.user} has read post [ {post_data[1]} ]"
-                    )
-                    self.main.sendPushOver(msg, self.main.admin_pushoverkey)
+                self.main.Request('get', f'/board/post/{post_data["uid"]}')
 
                 self.main.printStatus()
                 # 다이얼로그 생성
@@ -684,19 +576,19 @@ class Manager_Board:
                             </tr>
                             <tr>
                                 <td><b>User Name:</b></td>
-                                <td>{post_data[0]}</td>
+                                <td>{post_data['writerName']}</td>
                             </tr>
                             <tr>
                                 <td><b>Post Title:</b></td>
-                                <td>{post_data[1]}</td>
+                                <td>{post_data['title']}</td>
                             </tr>
                             <tr>
                                 <td><b>DateTime:</b></td>
-                                <td>{post_data[2]}</td>
+                                <td>{post_data['datetime']}</td>
                             </tr>
                             <tr>
                                 <td><b>Post Text:</b></td>
-                                <td class="detail-content">{post_data[4]}</td>
+                                <td class="detail-content">{post_data['text']}</td>
                             </tr>
                         </table>
                     </div>
@@ -737,16 +629,15 @@ class Manager_Board:
 
             selectedRow = self.main.board_post_tableWidget.currentRow()
             if selectedRow >= 0:
-                ok, password = self.main.checkPassword()
-                if ok and password == self.post_data[selectedRow][5]:
-                    self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-                    self.main.mySQLObj.deleteTableRowByColumn('free_board', self.post_title_list[selectedRow], 'Title')
-                    self.refreshPostBoard()
-                    self.main.printStatus()
-                    QMessageBox.information(self.main, "Information", f"게시물이 삭제되었습니다")
+                post = self.origin_post_data[selectedRow]
+                
+                if post['writerUid'] == self.main.userUid or self.main.user == 'admin':
+                    reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                    if reply == QMessageBox.Yes:
+                        self.main.Request('delete', f'/board/post/{post["uid"]}')
+                        self.refreshPostBoard()
                 else:
-                    QMessageBox.warning(self.main, "Wrong Password", f"비밀번호가 일치하지 않습니다")
-                    self.main.printStatus()
+                    QMessageBox.warning(self.main, "Wrong Password", f"작성자만 삭제할 수 있습니다")
                     return
 
         except Exception as e:
@@ -772,14 +663,14 @@ class Manager_Board:
                     # 게시물 제목 입력 필드
                     self.post_title_label = QLabel('Post Title:')
                     self.post_title_input = QLineEdit()
-                    self.post_title_input.setText(self.post_data[1])
+                    self.post_title_input.setText(self.post_data['title'])
                     layout.addWidget(self.post_title_label)
                     layout.addWidget(self.post_title_input)
 
                     # 게시물 내용 입력 필드
                     self.post_text_label = QLabel('Post Text:')
                     self.post_text_input = QTextEdit()
-                    self.post_text_input.setText(self.post_data[4])
+                    self.post_text_input.setText(self.post_data['text'])
                     layout.addWidget(self.post_text_label)
                     layout.addWidget(self.post_text_input)
 
@@ -814,20 +705,25 @@ class Manager_Board:
 
             selectedRow = self.main.board_post_tableWidget.currentRow()
             if selectedRow >= 0:
-                ok, password = self.main.checkPassword()
-                if ok and password == self.post_data[selectedRow][5]:
-                    prev_post_data = self.post_data[selectedRow]
+                post = self.origin_post_data[selectedRow]
+                postUid = post['uid']
+                if post['writerUid'] == self.main.userUid or self.main.user == 'admin':
+                    prev_post_data = self.origin_post_data[selectedRow]
 
                     dialog = PostInputDialog(prev_post_data)
                     dialog.exec_()
 
-                    # 데이터를 addVersion 함수에서 사용
                     if dialog.data:
                         post_data = dialog.data
                         post_data = list(post_data.values())
-                        self.main.mySQLObj.connectDB('bigmaclab_manager_db')
-                        self.main.mySQLObj.updateTableCell('free_board', len(self.post_data)-selectedRow-1, 'Title', post_data[0])
-                        self.main.mySQLObj.updateTableCell('free_board', len(self.post_data)-selectedRow-1, 'Text', post_data[1])
+                        
+                        json_data = {
+                            "writerUid": self.main.userUid,
+                            "title": post_data[0],
+                            "text": post_data[1],
+                            "sendPushOver": False,
+                        }
+                        self.main.Request('put', f'/board/post/{postUid}', json=json_data)
                         self.refreshPostBoard()
                         QMessageBox.information(self.main, "Information", f"게시물이 수정되었습니다")
                 else:
