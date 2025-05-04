@@ -38,6 +38,7 @@ load_dotenv()
 class Crawler(CrawlerModule):
     
     def __init__(self, user, startDate, endDate, keyword, upload, speed, weboption):
+        self.proxy_option = True
         if platform.system() != 'Windows':
             self.proxy_option = False
         super().__init__(proxy_option=self.proxy_option)
