@@ -913,7 +913,8 @@ class Manager_Database:
                 option['include_all'] = dialog.include_all_option
                 option['filename_edit'] = dialog.radio_name.isChecked()
             
-
+            self.main.printStatus("서버에서 파일 준비 중...")
+            
             download_url = self.main.server_api + f"/crawls/{targetUid}/save"
             response = requests.post(
                 download_url,
@@ -964,8 +965,16 @@ class Manager_Database:
 
             with zipfile.ZipFile(local_zip, "r") as zf:
                 zf.extractall(extract_path)
+            
+            os.remove(local_zip)
 
-            self.main.printStatus("압축 해제 완료")
+            self.main.printStatus()
+            
+            reply = QMessageBox.question(self.main, 'Notification', f"DB 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                self.main.openFileExplorer(folder_path)
+            
                 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
