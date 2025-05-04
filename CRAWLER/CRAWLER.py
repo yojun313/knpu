@@ -12,6 +12,7 @@ import asyncio
 import warnings
 import os
 import re
+import socket
 from kiwipiepy import Kiwi
 import requests
 from datetime import datetime, timedelta, timezone
@@ -39,7 +40,7 @@ class Crawler(CrawlerModule):
     
     def __init__(self, user, startDate, endDate, keyword, upload, speed, weboption):
         self.proxy_option = True
-        if platform.system() != 'Windows':
+        if socket.gethostname() == "Yojuns-MacBook-Pro.local":
             self.proxy_option = False
         super().__init__(proxy_option=self.proxy_option)
 
