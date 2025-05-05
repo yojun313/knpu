@@ -84,7 +84,7 @@ import sys
 import json
 import subprocess
 from openai import OpenAI
-from crawler.mysql import mySQL
+from libs.mysql import mySQL
 from datetime import datetime
 from packaging import version
 import pandas as pd
