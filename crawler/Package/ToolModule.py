@@ -3,11 +3,7 @@ import os
 import sys
 
 CRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
-CRAWLER_PATH        = os.path.dirname(CRAWLERPACKAGE_PATH)
-BIGMACLAB_PATH      = os.path.dirname(CRAWLER_PATH)
-MANAGER_PATH          = os.path.join(BIGMACLAB_PATH, 'MANAGER')
-
-sys.path.append(MANAGER_PATH)
+sys.path.append(CRAWLERPACKAGE_PATH)
 
 import socket
 import csv
