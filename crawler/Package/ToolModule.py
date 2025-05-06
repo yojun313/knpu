@@ -12,7 +12,9 @@ import chardet
 import requests
 from mysql import mySQL
 from pymongo import MongoClient
-import certifi
+from dotenv import load_dotenv
+
+load_dotenv()
 
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
@@ -61,7 +63,6 @@ class ToolModule:
         return returnData
     
     def mongoDB(self):
-        print(os.getenv("MONGO_URI"))
         self.mongoClient = MongoClient(os.getenv("MONGO_URI"))
     
     def read_txt(self, filepath):
