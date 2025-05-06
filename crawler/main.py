@@ -23,7 +23,6 @@ from Package.CrawlerModule import CrawlerModule
 from Package.GoogleModule import GoogleModule
 import pandas as pd
 from dotenv import load_dotenv
-import platform
 from Package.ChinaCrawlerPackage.ChinaDailyCrawlerModule import ChinaDailyCrawler
 from Package.ChinaCrawlerPackage.ChinaSinaCrawlerModule import ChinaSinaCrawler
 from Package.NaverCrawlerPackage.NaverBlogCrawlerModule import NaverBlogCrawler
