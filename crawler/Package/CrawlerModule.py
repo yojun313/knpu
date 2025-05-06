@@ -14,17 +14,15 @@ import warnings
 import urllib3
 from datetime import timedelta
 import requests
-import random
-from ToolModule import ToolModule
 from user_agent import generate_navigator
+import random
 import os
 import sys
-
 PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 CRAWLER_PATH = os.path.dirname(PACKAGE_PATH)
-
 sys.path.append(PACKAGE_PATH)
 
+from ToolModule import ToolModule
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
