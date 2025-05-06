@@ -61,7 +61,7 @@ class ToolModule:
         return returnData
     
     def mongoDB(self):
-        self.mongoClient = MongoClient(os.getenv("MONGO_URI"), tlsCAFile=certifi.where())
+        self.mongoClient = MongoClient(os.getenv("MONGO_URI"))
     
     def read_txt(self, filepath):
         txt_path = filepath
