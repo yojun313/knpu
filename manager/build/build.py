@@ -68,7 +68,7 @@ if __name__ == "__main__":
             print(f"\n이전 동일 버전({version}) 삭제됨\n")
 
         build_exe_from_spec(spec_file, output_directory, version)
-        #os.system("cls")
+        os.system("cls")
 
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M")
