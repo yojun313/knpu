@@ -63,6 +63,7 @@ class ToolModule:
         return returnData
     
     def mongoDB(self):
+        print(os.getenv("MONGO_URI"))
         self.mongoClient = MongoClient(os.getenv("MONGO_URI"))
     
     def read_txt(self, filepath):
