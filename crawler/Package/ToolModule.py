@@ -15,6 +15,8 @@ import json
 import chardet
 import requests
 from mysql import mySQL
+from pymongo import MongoClient
+import certifi
 
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
@@ -30,7 +32,6 @@ class ToolModule:
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
             token_path          = crawler_folder_path
             computer_name       = "Yojun's MacBook Pro"
-            RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
             mySQLObj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
 
         elif socket.gethostname() == "BIGMACLAB-Z8":
@@ -38,7 +39,6 @@ class ToolModule:
             scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
             token_path          = crawler_folder_path
             computer_name       = 'HP Z8'
-            RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
             mySQLObj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
         
         elif socket.gethostname() == "knpu":
@@ -46,7 +46,6 @@ class ToolModule:
             scrapdata_path = os.path.join(crawler_folder_path, 'scrapdata')
             token_path = crawler_folder_path
             computer_name = "Server"
-            RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
             mySQLObj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
 
         elif socket.gethostname() == "BigMacServer":
@@ -54,7 +53,6 @@ class ToolModule:
             scrapdata_path = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
             token_path = crawler_folder_path
             computer_name = "BIGMACLAB SERVER"
-            RealTimeCrawler_DBPath = os.path.join(crawler_folder_path, 'RealTimeCrawler_DB')
             mySQLObj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
 
         returnData = {
@@ -62,10 +60,12 @@ class ToolModule:
             'scrapdata_path' : scrapdata_path, 
             'token_path' : token_path, 
             'computer_name' : computer_name, 
-            'RealTimeCrawler_DBPath' : RealTimeCrawler_DBPath, 
             'MYSQL': mySQLObj
         }
         return returnData
+    
+    def mongoDB(self):
+        self.mongoClient = MongoClient(os.getenv("MONGO_URI"), tlsCAFile=certifi.where())
     
     def read_txt(self, filepath):
         txt_path = filepath
