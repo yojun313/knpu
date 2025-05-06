@@ -7,7 +7,10 @@ from .mysql import mySQL
 
 load_dotenv()
 
-client = MongoClient(os.getenv("MONGO_URI"))
+
+
+uri = os.getenv("MONGO_URI")
+client = MongoClient(uri)
 
 manager_db = client["manager"]
 crawler_db = client["crawler"]
