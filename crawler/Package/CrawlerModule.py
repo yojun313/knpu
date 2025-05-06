@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from ToolModule import ToolModule
 from rich.table import Table
 from rich.live import Live
 from rich.console import Console
@@ -22,7 +23,6 @@ PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 CRAWLER_PATH = os.path.dirname(PACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
 
-from ToolModule import ToolModule
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -386,4 +386,5 @@ class CrawlerModule(ToolModule):
 
 if __name__ == "__main__":
 
-    print("hello")
+    module = CrawlerModule(True)
+    print(module.proxy_list)
