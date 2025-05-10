@@ -302,14 +302,12 @@ class Manager_Setting(QDialog):
         self.llm_option_selector = QComboBox()
 
         # 표시 이름과 실제 값을 매핑
-        llm_options = [(value, key)
-                       for key, value in self.main.LLM_list.items()]
+        llm_options = [("ChatGPT", "ChatGPT")]
         llm_options = sorted(llm_options, key=lambda x: x[0])
 
         # QComboBox에 항목 추가
         for display_name, actual_value in llm_options:
-            self.llm_option_selector.addItem(
-                display_name, actual_value)  # 표시 이름과 데이터 추가
+            self.llm_option_selector.addItem(display_name, actual_value)
 
         # 기본 선택값 설정
         default_option = setting.get("LLM_model")

@@ -1,36 +1,36 @@
-# GUI & PyQt
-PyQt5
-PyQtWebEngine
-
-# OpenAI & Web
-openai
-requests
-getmac
-
-# Database
-mysql-connector-python
-
-# Data & Analysis
-pandas
-numpy
-matplotlib
-seaborn
-wordcloud
-Pillow  # = PIL
-tqdm
-packaging
-python-dotenv
-
-# Translation
-googletrans==4.0.0-rc1
-
-# Async tqdm
-tqdm-asyncio
-
-# 기본 데이터 처리 및 시각화
-pandas
-numpy
-matplotlib
-seaborn
-Pillow        # for Image (PIL)
-tqdm
+aiohttp==3.11.18
+beautifulsoup4==4.13.4
+chardet==5.2.0
+cryptography==44.0.3
+fastapi==0.115.12
+fastparquet==2024.11.0
+google_api_python_client==2.169.0
+google_auth_oauthlib==1.2.2
+googletrans==4.0.2
+kiwipiepy==0.21.0
+matplotlib==3.10.3
+mySQL==0.0.3
+numpy==2.2.5
+openai==1.78.0
+packaging==25.0
+pandas==2.2.3
+Pillow==11.2.1
+protobuf==6.30.2
+pyarrow==20.0.0
+pydantic==2.11.4
+pymongo==4.12.1
+PyMySQL==1.1.1
+PyQt5==5.15.11
+PyQt5_sip==12.17.0
+python-dotenv==1.1.0
+python_bcrypt==0.3.2
+pytz==2025.2
+Requests==2.32.3
+rich==14.0.0
+seaborn==0.13.2
+starlette==0.46.2
+tqdm==4.67.1
+urllib3==2.4.0
+user_agent==0.1.10
+uvicorn==0.34.2
+wordcloud==1.9.4

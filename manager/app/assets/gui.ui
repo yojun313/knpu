@@ -116,13 +116,6 @@
              <string>DB 조회</string>
             </property>
            </widget>
-           <item>
-           <widget class="QPushButton" name="database_mergeDB_button">
-            <property name="text">
-             <string>DB 병합</string>
-            </property>
-           </widget>
-          </item>
           </item>
           <item>
            <widget class="QPushButton" name="database_saveDB_button">
@@ -218,76 +211,6 @@
                 </item>
                 <item>
                  <spacer name="verticalSpacer_2">
-                  <property name="orientation">
-                   <enum>Qt::Vertical</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>20</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tab_DB">
-           <attribute name="title">
-            <string>DB 불러오기</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_6">
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_6">
-                <item>
-                 <widget class="QTableWidget" name="dataprocess_tab1_tablewidget"/>
-                </item>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_7">
-                  <item>
-                   <widget class="QLineEdit" name="analysis_searchDB_lineinput"/>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="analysis_searchDB_btn">
-                    <property name="text">
-                     <string>검색</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="analysis_refreshDB_btn">
-                    <property name="text">
-                     <string>새로고침</string>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_7">
-                <item>
-                 <widget class="QPushButton" name="analysis_timesplitDB_btn">
-                  <property name="text">
-                   <string>분할(년/월)</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="analysis_dataanalysisDB_btn">
-                  <property name="text">
-                   <string>통계 분석</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="verticalSpacer">
                   <property name="orientation">
                    <enum>Qt::Vertical</enum>
                   </property>
@@ -539,95 +462,6 @@
                <widget class="QPushButton" name="user_adduser_button">
                 <property name="text">
                  <string>사용자 추가</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="user_log_button">
-                <property name="text">
-                 <string>사용자 로그</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tab_userDB">
-           <attribute name="title">
-            <string>User DB</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_9">
-              <item>
-               <layout class="QVBoxLayout" name="tab3_userDB_explorerlayout">
-                <item>
-                 <layout class="QVBoxLayout" name="tab3_userDB_fileexplorerlayout"/>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_10">
-                <item>
-                 <layout class="QVBoxLayout" name="tab3_userDB_buttonlayout"/>
-                </item>
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_8">
-                  <item>
-                   <layout class="QHBoxLayout" name="horizontalLayout_10">
-                    <item>
-                     <widget class="QPushButton" name="userDB_list_add_button">
-                      <property name="text">
-                       <string>추가</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="userDB_list_delete_button">
-                      <property name="text">
-                       <string>삭제</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="userDB_list_view_button">
-                      <property name="text">
-                       <string>조회</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="userDB_list_save_button">
-                      <property name="text">
-                       <string>다운</string>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                 </layout>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tab_devicelist">
-           <attribute name="title">
-            <string>Device List</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout">
-            <item>
-             <widget class="QTableWidget" name="device_tablewidget"/>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout">
-              <item>
-               <widget class="QPushButton" name="device_delete_button">
-                <property name="text">
-                 <string>디바이스 삭제</string>
                 </property>
                </widget>
               </item>
