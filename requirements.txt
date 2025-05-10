@@ -39,3 +39,7 @@ PyQt5
 PyQtWebEngine
 openai
 packaging
+matplotlib
+seaborn
+wordcloud
+googletrans
