@@ -20,6 +20,7 @@ crawlLog_db = crawler_db["log-list"]
 
 user_db = manager_db["users"]
 user_logs_db = manager_db["user-logs"]
+user_bugs_db = manager_db["user-bugs"]
 version_board_db = manager_db["version-board"]
 bug_board_db = manager_db["bug-board"]
 free_board_db = manager_db["free-board"]

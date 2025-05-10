@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton,
     QMessageBox, QTextEdit, QScrollArea, QShortcut
 )
+import bcrypt
 
 warnings.filterwarnings("ignore")
 
@@ -32,7 +33,8 @@ class Manager_Board:
 
             self.origin_version_data = self.main.Request(
                 'get', '/board/version').json()['data']
-            self.version_data = [[item['versionName'], item['releaseDate'], item['changeLog'], item['features'], item['status']] 
+            
+            self.version_data = [[item['versionName'], item['releaseDate'], item['changeLog'], item['features'], item['status'], item['details']] 
                                  for item in self.origin_version_data]
             self.version_data = sort_by_version(self.version_data)
             
@@ -51,7 +53,7 @@ class Manager_Board:
         try:
             if self.main.user != 'admin':
                 ok, password = self.main.checkPassword(True)
-                if not ok or password != self.main.admin_password:
+                if not ok or bcrypt.checkpw(password.encode('utf-8'), self.main.admin_password.encode('utf-8')) == False:
                     return
 
             # QDialog를 상속받은 클래스 생성
@@ -158,7 +160,7 @@ class Manager_Board:
         try:
             if self.main.user != 'admin':
                 ok, password = self.main.checkPassword(True)
-                if not ok or password != self.main.admin_password:
+                if not ok or bcrypt.checkpw(password.encode('utf-8'), self.main.admin_password.encode('utf-8')) == False:
                     return
 
             selectedRow = self.main.board_version_tableWidget.currentRow()
@@ -364,8 +366,6 @@ class Manager_Board:
 
     def deleteBug(self):
         try:
-            self.main.printStatus("삭제 중...")
-
             selectedRow = self.main.board_bug_tableWidget.currentRow()
             if selectedRow >= 0:
                 bug = self.origin_bug_data[selectedRow]
@@ -374,8 +374,10 @@ class Manager_Board:
                     reply = QMessageBox.question(
                         self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
+                        self.main.printStatus("삭제 중...")
                         self.main.Request('delete', f'/board/bug/{bug["uid"]}')
                         self.refreshBugBoard()
+                        self.main.printStatus()
                 else:
                     QMessageBox.warning(
                         self.main, "Wrong Password", f"작성자만 삭제할 수 있습니다")
@@ -648,8 +650,6 @@ class Manager_Board:
 
     def deletePost(self):
         try:
-            self.main.printStatus("삭제 중...")
-
             selectedRow = self.main.board_post_tableWidget.currentRow()
             if selectedRow >= 0:
                 post = self.origin_post_data[selectedRow]
@@ -658,9 +658,11 @@ class Manager_Board:
                     reply = QMessageBox.question(
                         self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
+                        self.main.printStatus("삭제 중...")
                         self.main.Request(
                             'delete', f'/board/post/{post["uid"]}')
                         self.refreshPostBoard()
+                        self.main.printStatus()
                 else:
                     QMessageBox.warning(
                         self.main, "Wrong Password", f"작성자만 삭제할 수 있습니다")
