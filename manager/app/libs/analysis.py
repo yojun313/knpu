@@ -1,5 +1,4 @@
 import asyncio
-from tqdm.asyncio import tqdm_asyncio
 import warnings
 from PyQt5.QtWidgets import QMessageBox
 import pandas as pd
