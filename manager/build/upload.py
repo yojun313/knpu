@@ -59,7 +59,7 @@ def upload_file(filename):
 # 메인 실행
 if __name__ == "__main__":
     while True:
-        version_input = input("업로드할 버전을 입력하세요: ").strip()
+        version_input = input("업로드할 버전을 입력하세요 (또는 'n' = 최신버전): ").strip()
 
         if version_input.lower() == 'n':
             latest_file = find_latest_version_file()
