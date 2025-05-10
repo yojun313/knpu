@@ -3,7 +3,8 @@ import os
 import re
 from dotenv import load_dotenv
 
-load_dotenv
+load_dotenv()
+
 # === 사용자 설정 ===
 ACCESS_KEY_ID = os.getenv('ACCESS_KEY_ID')
 SECRET_ACCESS_KEY = os.getenv('SECRET_ACCESS_KEY')
