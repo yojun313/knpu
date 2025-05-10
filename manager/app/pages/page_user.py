@@ -17,6 +17,7 @@ class Manager_User:
         self.refreshUserTable()
         self.initDeviceTable()
         self.matchButton()
+        self.makeUserDBLayout()
 
     def refreshUserTable(self):
         # 데이터베이스 연결 및 데이터 가져오기
@@ -45,11 +46,6 @@ class Manager_User:
                        mac in userDF.itertuples(index=False, name=None)]
         device_data = sorted(device_data, key=lambda x: (
             not x[0][0].isalpha(), x[0]))
-
-        # userNameList 및 userKeyList 업데이트
-        self.deviceList = [device for name, device, mac in device_data]
-        self.userList = [name for name, device, mac in device_data]
-        self.macList = [mac for name, device, mac in device_data]
 
         # 테이블 설정
         columns = ['User', 'Device', 'Mac']
