@@ -504,7 +504,7 @@ class MainWindow(QMainWindow):
                 self.printStatus("버전 업데이트 중...")
                 import subprocess
                 downloadFile_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.newVersion}.exe")
-                downloadFile(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.newVersion}.exe",
+                downloadFile(f"https://knpu.re.kr/download/BIGMACLAB_MANAGER_{self.newVersion}.exe",
                               downloadFile_path)
                 subprocess.Popen([downloadFile_path], shell=True)
                 closeConsole()
