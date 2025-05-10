@@ -180,7 +180,6 @@ class Manager_Database:
                 self.init_viewTable(self.DBuid)
 
         try:
-            raise Exception("DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다")
             reply = QMessageBox.question(
                 self.main, 'Confirm View', 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
