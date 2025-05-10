@@ -1051,6 +1051,14 @@ class Manager_Analysis:
 
                 self.filter_yes_checkbox.setChecked(True)  # Yes 체크박스 기본 체크
                 self.filter_no_checkbox.setChecked(False)  # No 체크박스 기본 체크 해제
+                
+                # 서로 배타적으로 선택되도록 설정
+                self.filter_yes_checkbox.toggled.connect(
+                    lambda: self.filter_no_checkbox.setChecked(
+                        False) if self.filter_yes_checkbox.isChecked() else None)
+                self.filter_no_checkbox.toggled.connect(
+                    lambda: self.filter_yes_checkbox.setChecked(
+                        False) if self.filter_no_checkbox.isChecked() else None)
 
                 checkbox_layout.addWidget(self.filter_yes_checkbox)
                 checkbox_layout.addWidget(self.filter_no_checkbox)
@@ -1209,8 +1217,8 @@ class Manager_Analysis:
                 ) if self.additional_input.isVisible() else None
 
                 self.data = {
-                    'startdate': startdate,
-                    'enddate': enddate,
+                    'startDate': startdate,
+                    'endDate': enddate,
                     'period': period,
                     'topword': topword,
                     'weight': weight,
@@ -1310,9 +1318,9 @@ class Manager_Analysis:
                     else:
                         split_custom = float(split_custom)
                     break
-                except:
+                except Exception as e:
                     QMessageBox.warning(
-                        self.main, "Wrong Form", "입력 형식이 올바르지 않습니다")
+                        self.main, "Wrong Form", f"입력 형식이 올바르지 않습니다, {e}")
 
             if except_yes_selected == True:
                 QMessageBox.information(
