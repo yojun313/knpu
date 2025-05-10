@@ -1,9 +1,6 @@
-import os
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
-from dotenv import load_dotenv
-from cryptography.fernet import Fernet
 import requests
 import pandas as pd
 
