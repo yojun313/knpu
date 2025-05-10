@@ -32,12 +32,11 @@ class Manager_Board:
 
             self.origin_version_data = self.main.Request(
                 'get', '/board/version').json()['data']
-            self.version_data = [list(map(str, item.values()))
+            self.version_data = [[item['versionName'], item['releaseDate'], item['changeLog'], item['features'], item['status']] 
                                  for item in self.origin_version_data]
             self.version_data = sort_by_version(self.version_data)
-
-            self.version_data_for_table = [sub_list[:-1]
-                                           for sub_list in self.version_data]
+            
+            self.version_data_for_table = [sub_list[:-1] for sub_list in self.version_data]
             self.version_table_column = [
                 'Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status']
             self.main.makeTable(self.main.board_version_tableWidget,
@@ -47,9 +46,6 @@ class Manager_Board:
 
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
-
-    def checkNewVersion(self):
-        return self.main.Request('get', '/board/version/newest').json()['data']
 
     def addVersion(self):
         try:

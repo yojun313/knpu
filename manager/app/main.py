@@ -13,7 +13,7 @@
 # - Phone: +82-10-4072-9190
 ##############################################################################################################pip
 
-VERSION = '2.7.1'
+VERSION = '2.7.2'
 
 import os
 import platform
@@ -98,20 +98,22 @@ import shutil
 import requests
 
 splashDialog.updateStatus("Loading GUI Libraries")
-from pages.page_settings import Manager_Setting
-from libs.tool import ToolModule
-from pages.page_database import Manager_Database
-from pages.page_web import Manager_Web
-from pages.page_board import Manager_Board
-from pages.page_user import Manager_User
-from pages.page_analysis import Manager_Analysis
-from libs.console import openConsole, closeConsole
 from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
     QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
     QPushButton, QMainWindow, QSpacerItem, QAbstractItemView
 from PyQt5.QtCore import Qt, QCoreApplication, QObject, QEvent, QSize, QModelIndex, QEventLoop
 from PyQt5.QtGui import QKeySequence, QIcon
+
+splashDialog.updateStatus("Loading App Pages")
+from libs.tool import ToolModule
+from pages.page_settings import Manager_Setting
+from pages.page_database import Manager_Database
+from pages.page_web import Manager_Web
+from pages.page_board import Manager_Board
+from pages.page_user import Manager_User
+from pages.page_analysis import Manager_Analysis
+from libs.console import openConsole, closeConsole
 
 DB_IP = '121.152.225.232'
 LOCAL_IP = '192.168.0.3'
@@ -163,8 +165,6 @@ class MainWindow(QMainWindow):
 
                     if platform.system() == "Windows":
                         localAppdataPath = os.getenv("LOCALAPPDATA")
-                        desktopPath = os.path.join(os.getenv("USERPROFILE"), "Desktop")
-
                         self.programDirectory = os.path.join(localAppdataPath, "MANAGER")
                         self.localDirectory = "C:/BIGMACLAB_MANAGER"
                         if not os.path.exists(self.localDirectory):
@@ -206,54 +206,29 @@ class MainWindow(QMainWindow):
                     self.splashDialog.updateStatus("Checking User")
                     if self.loginProgram() == False:
                         os._exit(0)
-
-                    # Loading User info from DB
-                    while True:
-                        try:
-                            self.mySQLObj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
-                            print("\nII. Loading Boards from DB... ", end='')
-                            self.splashDialog.updateStatus("Loading User Info from DB")
-                            if self.mySQLObj.showAllDB() == []:
-                                raise
-                            # DB 불러오기
-                            self.managerBoardObj = Manager_Board(self)
-                            self.managerUserObj = Manager_User(self)
-                            self.userList = self.managerUserObj.userList  # Device Table 유저 리스트
-                            self.deviceList = self.managerUserObj.deviceList
-                            self.macList = self.managerUserObj.macList
-                            self.userPushOverKeyList = self.managerUserObj.userKeyList
-                            print("Done")
-                            break
-                        except Exception as e:
-                            print("Failed")
-                            print(traceback.format_exc())
-                            self.closeBootscreen()
-                            self.printStatus()
-                            reply = QMessageBox.warning(self, 'Connection Failed',
-                                                        f"DB 서버 접속에 실패했습니다\n네트워크 점검이 필요합니다{self.networkText}\n다시 시도하시겠습니까?",
-                                                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                            if reply == QMessageBox.Yes:
-                                self.printStatus("접속 재시도 중...")
-                                continue
-                            else:
-                                os._exit(0)
+                    print("Done")
                                 
                     self.splashDialog.updateStatus("Checking New Version")
-                    print("\nIII. Checking New Version... ", end='')
+                    print("\nII. Checking New Version... ", end='')
                     if self.checkNewVersion() == True:
                         self.closeBootscreen()
                         self.updateProgram(auto=self.SETTING['AutoUpdate'])
+                    print("Done")
 
                     # Loading Data from DB & Making object
                     while True:
                         try:
-                            print("\nIV. Loading Data from DB... ", end='')
-                            self.splashDialog.updateStatus("Loading Data from DB")
-                            self.managerUserObj.makeUserDBLayout()
+                            print("\nIII. Loading Data... ", end='')
+                            self.splashDialog.updateStatus("Loading Data")
+                            
                             self.DB = self.updateDB()
+                            self.mySQLObj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
+                            self.managerBoardObj = Manager_Board(self)
+                            self.managerUserObj = Manager_User(self)
                             self.managerDatabaseObj = Manager_Database(self)
                             self.managerWebObj = Manager_Web(self)
                             self.managerAnalysisObj = Manager_Analysis(self)
+                            
                             print("Done")
                             break
                         except Exception as e:
@@ -635,22 +610,17 @@ class MainWindow(QMainWindow):
             return
 
     def checkNewVersion(self):
+        newestVersion = self.Request('get', '/board/version/newest').json()['data']
         currentVersion = version.parse(self.versionNum)
-        self.newVersion = version.parse(self.managerBoardObj.checkNewVersion())
-        print("Done")
-        if currentVersion < self.newVersion:
-            return True
-        else:
-            return False
+        self.newVersion = version.parse(newestVersion)
+        return True if currentVersion < self.newVersion else False
 
     def checkNewPost(self):
-        print("\nV. Checking New Post... ", end='')
         if len(self.managerBoardObj.origin_post_data) == 0:
             return False
         new_post_uid = self.managerBoardObj.origin_post_data[0]['uid']
         new_post_writer = self.managerBoardObj.origin_post_data[0]['writerName']
         old_post_uid = self.SETTING['OldPostUid']
-        print("Done")
         if new_post_uid == old_post_uid:
             return False
         elif old_post_uid == 'default':
