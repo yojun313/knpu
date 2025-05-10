@@ -58,15 +58,16 @@ def upload_file(filename):
 
 # 메인 실행
 if __name__ == "__main__":
-    version_input = input("업로드할 버전을 입력하세요 (또는 'n' = 최신버전): ").strip()
+    while True:
+        version_input = input("업로드할 버전을 입력하세요: ").strip()
 
-    if version_input.lower() == 'n':
-        latest_file = find_latest_version_file()
-        if latest_file:
-            print(f"[🔍] 최신 버전 파일: {latest_file}")
-            upload_file(latest_file)
+        if version_input.lower() == 'n':
+            latest_file = find_latest_version_file()
+            if latest_file:
+                print(f"[🔍] 최신 버전 파일: {latest_file}")
+                upload_file(latest_file)
+            else:
+                print("[❌] 업로드 가능한 버전 파일을 찾을 수 없습니다.")
         else:
-            print("[❌] 업로드 가능한 버전 파일을 찾을 수 없습니다.")
-    else:
-        filename = f"BIGMACLAB_MANAGER_{version_input}.exe"
-        upload_file(filename)
+            filename = f"BIGMACLAB_MANAGER_{version_input}.exe"
+            upload_file(filename)
