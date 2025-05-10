@@ -30,8 +30,11 @@ def build_exe_from_spec(spec_file, output_directory, version):
 
     try:
         # Run pyinstaller with the new spec file
+        venv_python = os.path.join('C:/GitHub/BIGMACLAB/venv', 'Scripts', 'python.exe')  # 가상환경 안의 python
+
         subprocess.run([
-            'pyinstaller',
+            venv_python,
+            '-m', 'PyInstaller',
             '--distpath', output_directory,
             '--workpath', os.path.join(output_directory, 'build'),
             new_spec_file
