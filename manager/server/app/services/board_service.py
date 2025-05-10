@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone, timedelta
 from fastapi.responses import JSONResponse
-from app.db import version_board_db, bug_board_db, free_board_db, user_db
+from app.db import version_board_db, bug_board_db, free_board_db, user_db, user_bugs_db
 from app.models.board_model import AddVersionDto, VersionBoardSchema, AddBugDto, BugBoardSchema, AddPostDto, FreeBoardSchema
 from app.utils.mongo import clean_doc
 from app.utils.pushover import sendPushOver
@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import pytz
 import os
 from starlette.background import BackgroundTask
+from zoneinfo import ZoneInfo
 
 
 load_dotenv()
@@ -84,9 +85,19 @@ def add_bug(data: AddBugDto):
     writer = user_db.find_one({"uid": doc["writerUid"]})
     writerDoc = clean_doc(writer)
     
+    # 오늘 날짜의 버그 로그 불러오기
+    today_key = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
+    bug_doc = user_bugs_db.find_one({"uid": doc["writerUid"]}, {today_key: 1, "_id": 0})
+    
     doc["uid"] = str(uuid.uuid4())
     doc["datetime"] = datetime.now(timezone.utc)
     doc['writerName'] = writerDoc['name']
+    if bug_doc and today_key in bug_doc:
+        messages = [entry["message"] for entry in bug_doc[today_key]]
+        doc["programLog"] = "\n".join(messages)
+    else:
+        doc["programLog"] = "(No program logs for today)"
+    
     bug_board_db.insert_one(doc)
     
     msg = (

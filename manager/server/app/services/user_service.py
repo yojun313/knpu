@@ -1,11 +1,14 @@
 
 from bson import ObjectId
-from app.db import user_db
+from app.db import user_db, user_logs_db, user_bugs_db
 from app.libs.exceptions import ConflictException, BadRequestException
 from app.models.user_model import UserCreate
 from app.utils.mongo import clean_doc
 from fastapi.responses import JSONResponse
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import uuid
+from starlette.background import BackgroundTask
 
 def create_user(user: UserCreate):
     user_dict = user.model_dump()
@@ -41,3 +44,34 @@ def delete_user(userUid: str):
             content={"message": "User deleted"},
         )
         
+def log_user(userUid: str, message: str):
+    now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
+    date_key = now_kst.strftime("%Y-%m-%d")
+    time_str = now_kst.strftime("%H:%M:%S")
+
+    log_entry = {
+        "time": time_str,
+        "message": message
+    }
+
+    user_logs_db.update_one(
+        {"uid": userUid},
+        {"$push": {date_key: log_entry}, "$setOnInsert": {"uid": userUid}},
+        upsert=True
+    )
+
+def bug_user(userUid: str, message: str):
+    now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
+    date_key = now_kst.strftime("%Y-%m-%d")
+    time_str = now_kst.strftime("%H:%M:%S")
+
+    log_entry = {
+        "time": time_str,
+        "message": message
+    }
+
+    user_bugs_db.update_one(
+        {"uid": userUid},
+        {"$push": {date_key: log_entry}, "$setOnInsert": {"uid": userUid}},
+        upsert=True
+    )

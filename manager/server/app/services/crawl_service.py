@@ -7,12 +7,16 @@ from collections import OrderedDict
 from datetime import datetime, timezone, timedelta
 from starlette.background import BackgroundTask
 from zoneinfo import ZoneInfo
+from fastapi.responses import StreamingResponse
+from io import BytesIO
 import pandas as pd
 import uuid
 import os
 import re
 import gc
 import zipfile
+import pyarrow
+import fastparquet
 
 def createCrawlDb(crawlDb: CrawlDbCreateDto):
     crawlDb_dict = crawlDb.model_dump()
@@ -319,8 +323,41 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
          
     return dbpath
         
+def previewCrawlDb(uid: str):
+    crawlDb = crawlList_db.find_one({"uid": uid})
+    if not crawlDb:
+        raise NotFoundException("CrawlDB not found")
+
+    targetDB = crawlDb['name']
+    mysql_db.connectDB(targetDB)
+    tableNameList = mysql_db.showAllTable(targetDB)
+
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for tableName in tableNameList:
+            if 'info' in tableName or 'token' in tableName:
+                continue
+            df_start = mysql_db.TableToDataframe(tableName, ":50")
+            df_end = mysql_db.TableToDataframe(tableName, ":-50")
+            df = pd.concat([df_start, df_end])
+            df = df.drop(columns=['id'])
+
+            # DataFrame을 BytesIO로 Parquet으로 저장
+            df_buffer = BytesIO()
+            df.to_parquet(df_buffer, index=False)
+            df_buffer.seek(0)
+
+            # ZIP에 저장
+            zip_file.writestr(f"{tableName}.parquet", df_buffer.read())
+
+    zip_buffer.seek(0)
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=preview_data.zip"}
+    )
+        
     
-
-
+        
     
 

@@ -1,5 +1,4 @@
 import os
-import speech_recognition as sr
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
@@ -11,44 +10,7 @@ import pandas as pd
 
 class ToolModule:
     def __init__(self):
-        self.recognizer = sr.Recognizer()
-
-    def decryptProcess(self):
-        current_position = os.path.dirname(__file__)
-
-        # 암호화 키 로드
-        def load_key():
-            try:
-                with open(os.path.join(current_position, '..', 'assets', 'env.key'), "rb") as key_file:
-                    return key_file.read()
-            except:
-                secret_key = os.getenv("SECRET_KEY")
-                return secret_key
-
-        def decrypt_env_file(encrypted_file_path):
-            key = load_key()
-            fernet = Fernet(key)
-
-            # 암호화된 파일 읽기
-            with open(encrypted_file_path, "rb") as file:
-                encrypted_data = file.read()
-
-            # 파일 복호화 및 .decrypted_env 파일로 저장
-            decrypted_data = fernet.decrypt(encrypted_data).decode("utf-8")
-            with open(os.path.join(current_position, '..', 'assets', 'decrypted_env'), "w", encoding="utf-8") as dec_file:
-                dec_file.write(decrypted_data)
-
-        decrypt_env_file(os.path.join(
-            current_position, '..', 'assets', 'encrypted_env'))
-        load_dotenv(os.path.join(current_position, '..', 'assets', 'decrypted_env'))
-
-        self.admin_password = os.getenv('ADMIN_PASSWORD')
-        self.public_password = os.getenv('PUBLIC_PASSWORD')
-        self.admin_pushoverkey = os.getenv('ADMIN_PUSHOVER')
-        self.db_ip = os.getenv('DB_IP')
-
-        if os.path.exists(os.path.join(current_position, 'decrypted_env')):
-            os.remove(os.path.join(current_position, 'decrypted_env'))
+        self.admin_password = "$2b$12$y92zRYAOVwDC0UCXnuG5ZuiJXxiT.drxRFVBu4HoYKmDMB.e.y5kq"
 
     def sendPushOver(self, msg, user_key, image_path=False):
         app_key_list = ["a22qabchdf25zzkd1vjn12exjytsjx"]

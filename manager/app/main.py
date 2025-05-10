@@ -81,13 +81,10 @@ splashDialog.show()
 splashDialog.updateStatus("Loading System Libraries")
 import os
 import sys
-import json
 import subprocess
 from openai import OpenAI
-from libs.mysql import mySQL
 from datetime import datetime
 from packaging import version
-import pandas as pd
 from pathlib import Path
 import socket
 import gc
@@ -101,7 +98,7 @@ splashDialog.updateStatus("Loading GUI Libraries")
 from PyQt5 import uic
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
     QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
-    QPushButton, QMainWindow, QSpacerItem, QAbstractItemView
+    QPushButton, QMainWindow, QAbstractItemView
 from PyQt5.QtCore import Qt, QCoreApplication, QObject, QEvent, QSize, QModelIndex, QEventLoop
 from PyQt5.QtGui import QKeySequence, QIcon
 
@@ -123,7 +120,7 @@ class MainWindow(QMainWindow):
     def __init__(self, splashDialog):
         try:
             self.server_api = "http://localhost:8000/api"
-            self.server_api = "https://manager.knpu.re.kr/api"
+            #self.server_api = "https://manager.knpu.re.kr/api"
             self.versionNum = VERSION
             self.version = f'Version {self.versionNum}'
             self.splashDialog = splashDialog
@@ -140,11 +137,8 @@ class MainWindow(QMainWindow):
             self.updateStyleHtml()
             self.setWindowTitle("MANAGER")  # 창의 제목 설정
             self.setWindowIcon(QIcon(iconPath))
-
             self.resize(1400, 1000)
-
             self.initStatusbar()
-            self.decryptProcess()
 
             setUpLogging()
             self.eventLogger = EventLogger()
@@ -222,7 +216,6 @@ class MainWindow(QMainWindow):
                             self.splashDialog.updateStatus("Loading Data")
                             
                             self.DB = self.updateDB()
-                            self.mySQLObj = mySQL(host=DB_ip, user='admin', password=self.public_password, port=3306)
                             self.managerBoardObj = Manager_Board(self)
                             self.managerUserObj = Manager_User(self)
                             self.managerDatabaseObj = Manager_Database(self)
@@ -251,8 +244,7 @@ class MainWindow(QMainWindow):
 
                     self.initShortcut()
                     self.managerDatabaseObj.setDatabaseShortcut()
-                    self.userLogging(f'Booting ({self.getUserLocation()})', booting=True, force=True)
-                    self.initConfiguration()
+                    self.userLogging(f'Booting ({self.getUserLocation()})')
 
                     closeConsole()
                     self.closeBootscreen()
@@ -353,19 +345,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(traceback.format_exc())
             self.SETTING = defaults
-
-    def initConfiguration(self):
-        try:
-            self.mySQLObj.connectDB('bigmaclab_manager_db')
-            configDF = self.mySQLObj.TableToDataframe('configuration')
-            self.CONFIG = dict(zip(configDF[configDF.columns[1]], configDF[configDF.columns[2]]))
-
-            # LLM 모델 이름 설정
-            self.LLM_list = json.loads(self.CONFIG['LLM_model'])
-            self.SETTING['LLM_model_name'] = self.LLM_list[self.settings.value('LLM_model')]
-
-        except Exception as e:
-            print(traceback.format_exc())
 
     def initStatusbar(self):
         # 상태 표시줄 생성
@@ -520,7 +499,7 @@ class MainWindow(QMainWindow):
                     f"{self.user} updated {currentVersion} -> {self.newVersion}\n\n{self.getUserLocation()}"
                 )
                 self.sendPushOver(msg, self.admin_pushoverkey)
-                self.userLogging(f'Program Update ({currentVersion} -> {self.newVersion})', force=True)
+                self.userLogging(f'Program Update ({currentVersion} -> {self.newVersion})')
 
                 self.printStatus("버전 업데이트 중...")
                 import subprocess
@@ -667,7 +646,7 @@ class MainWindow(QMainWindow):
     def display(self, index):
         if index != 6:
             self.stackedWidget.setCurrentIndex(index)
-        # self.updateProgram()
+            
         # DATABASE
         if index == 0:
             self.managerDatabaseObj.setDatabaseShortcut()
@@ -690,7 +669,6 @@ class MainWindow(QMainWindow):
         elif index == 4:
             self.initShortcutialize()
             self.printStatus()
-            #self.managerWebObj.web_open_webbrowser('https://knpu.re.kr', self.managerWebObj.web_web_layout)
         # USER
         elif index == 5:
             self.printStatus()
@@ -823,7 +801,6 @@ class MainWindow(QMainWindow):
         except requests.exceptions.RequestException as err:
             raise Exception(f"[Request Failed] {str(err)}")
 
-
     
     #############################################################################
 
@@ -835,44 +812,21 @@ class MainWindow(QMainWindow):
             print(traceback.format_exc())
             return False
 
-    def userLogging(self, text='', booting=False, force=False):
+    def userLogging(self, text=''):
         try:
-            if (self.user == 'admin' and self.CONFIG['Logging'] == 'Off') or (self.CONFIG['Logging'] == 'Off' and force == False):
-                return
-            self.mySQLObj.connectDB(f'{self.user}_db')  # userDB 접속
-            if booting == True:
-                latest_record = self.mySQLObj.TableLastRow('manager_record')  # log의 마지막 행 불러옴
-                # 'Date' 열을 datetime 형식으로 변환
-                if latest_record != ():  # 테이블에 데이터가 있는 경우
-                    # 테이블의 가장 마지막 행 데이터를 불러옴
-                    latest_date = pd.to_datetime(latest_record[1])
-
-                # 만약 테이블이 비어있는 경우
-                else:
-                    latest_date = None  # 최근 날짜를 None으로 설정
-
-                # 오늘 날짜 가져오기
-                today = pd.to_datetime(datetime.now().date())
-
-                # 가장 최근 로그 날짜와 현재 날짜와 같은 경우
-                if latest_date != today or latest_date is None:
-                    self.mySQLObj.insertToTable('manager_record', [[str(datetime.now().date()), '', '', '']])
-                    self.mySQLObj.commit()
-
-            self.printStatus("Loading...")
-            text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
-            self.mySQLObj.updateTableCell('manager_record', -1, 'Log', text, add=True)
-            self.printStatus()
+            jsondata = {
+                "message": text
+            }
+            self.Request('post', '/users/log', json=jsondata)
         except Exception as e:
             print(traceback.format_exc())
 
     def userBugging(self, text=''):
         try:
-            self.printStatus("Loading...")
-            self.mySQLObj.connectDB(f'{self.user}_db')  # userDB 접속
-            text = f'\n\n[{str(datetime.now().time())[:-7]}] : {text}'
-            self.mySQLObj.updateTableCell('manager_record', -1, 'Bug', text, add=True)
-            self.printStatus()
+            jsondata = {
+                "message": text
+            }
+            self.Request('post', '/users/bug', json=jsondata)
         except Exception as e:
             print(traceback.format_exc())
 
@@ -999,93 +953,6 @@ class MainWindow(QMainWindow):
                 lambda pos: right_click_function(widgetname.rowAt(pos.y()))
             )
 
-    def viewTable(self, dbname, tablename, popupsize=None):
-        class SingleTableWindow(QMainWindow):
-            def __init__(self, parent=None, targetDB=None, target_table=None, popupsize=None):
-                super(SingleTableWindow, self).__init__(parent)
-                self.setWindowTitle(f"{targetDB} -> {target_table}")
-                self.setGeometry(100, 100, 1600, 1200)
-
-                self.parent = parent  # 부모 객체 저장
-                self.targetDB = targetDB  # 대상 데이터베이스 이름 저장
-                self.target_table = target_table  # 대상 테이블 이름 저장
-
-                self.popupsize = popupsize
-
-                self.centralWidget = QWidget(self)
-                self.setCentralWidget(self.centralWidget)
-
-                self.layout = QVBoxLayout(self.centralWidget)
-
-                # 상단 버튼 레이아웃
-                self.button_layout = QHBoxLayout()
-
-                # spacer 아이템 추가 (버튼을 오른쪽 끝에 배치)
-                spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-                self.button_layout.addItem(spacer)
-
-                # 닫기 버튼 추가
-                self.close_button = QPushButton("닫기", self)
-                self.close_button.setFixedWidth(80)
-                self.close_button.clicked.connect(self.closeWindow)
-                self.button_layout.addWidget(self.close_button)
-
-                # Ctrl+W 단축키 추가
-                ctrlw = QShortcut(QKeySequence("Ctrl+W"), self)
-                ctrlw.activated.connect(self.closeWindow)
-
-                cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), self)
-                cmdw.activated.connect(self.closeWindow)
-
-                # 버튼 레이아웃을 메인 레이아웃에 추가
-                self.layout.addLayout(self.button_layout)
-
-                # targetDB와 target_table이 주어지면 테이블 뷰를 초기화
-                if targetDB is not None and target_table is not None:
-                    self.init_viewTable(parent.mySQLObj, targetDB, target_table)
-
-            def closeWindow(self):
-                self.close()  # 창 닫기
-                self.deleteLater()  # 객체 삭제
-                gc.collect()
-
-            def closeEvent(self, event):
-                # 윈도우 창이 닫힐 때 closeWindow 메서드 호출
-                self.closeWindow()
-                event.accept()  # 창 닫기 이벤트 허용
-
-            def init_viewTable(self, mySQLObj, targetDB, target_table):
-                # targetDB에 연결
-                mySQLObj.connectDB(targetDB)
-                tableDF = mySQLObj.TableToDataframe(target_table)
-
-                tableDF = tableDF.iloc[::-1].reset_index(drop=True)
-
-                # 데이터프레임 값을 문자열로 변환하여 튜플 형태의 리스트로 저장
-                self.tuple_list = [tuple(str(cell) for cell in row[1:]) for row in
-                                   tableDF.itertuples(index=False, name=None)]
-
-                # 테이블 위젯 생성
-                new_table = QTableWidget(self.centralWidget)
-                self.layout.addWidget(new_table)
-
-                # column 정보를 리스트로 저장
-                columns = list(tableDF.columns)
-                columns.pop(0)
-                # makeTable 함수를 호출하여 테이블 설정
-                self.parent.makeTable(new_table, self.tuple_list, columns, popupsize=self.popupsize)
-
-        try:
-            def destory_table():
-                del self.DBtable_window
-                gc.collect()
-            self.DBtable_window = SingleTableWindow(self, dbname, tablename, popupsize)
-            self.DBtable_window.destroyed.connect(destory_table)
-            self.DBtable_window.show()
-
-        except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
-
     def checkPassword(self, admin=False, string=""):
         while True:
             input_dialog = QInputDialog(self)
@@ -1199,17 +1066,16 @@ class MainWindow(QMainWindow):
     def programBugLog(self, text):
         print(text)
         self.printStatus("오류 발생")
-        if self.user == 'admin':
-            QMessageBox.critical(self, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
-        else:
-            #QMessageBox.critical(self, "Error", f"오류가 발생했습니다")
-            QMessageBox.critical(self, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
+        QMessageBox.critical(self, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
+        
         logToText(f"Exception: {text}")
         self.userBugging(text)
+        
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
                                      QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             self.managerBoardObj.addBug()
+            
         self.printStatus()
 
     def closeEvent(self, event):
@@ -1218,10 +1084,7 @@ class MainWindow(QMainWindow):
                                      QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             try:
-                if self.CONFIG['Logging'] == 'On' and self.user != 'admin':
-                    self.userLogging('Shutdown', force=True)
-                    self.mySQLObj.connectDB(f'{self.user}_db')  # userDB 접속
-                    self.mySQLObj.updateTableCell('manager_record', -1, 'D_Log', log_text, add=True)
+                self.userLogging('Shutdown')
                 self.cleanUpTemp()
             except Exception as e:
                 print(traceback.format_exc())
