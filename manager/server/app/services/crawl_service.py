@@ -1,4 +1,4 @@
-from app.db import crawlList_db, mysql_db, crawlLog_db
+from app.db import crawlList_db, mysql_db, crawlLog_db, user_db
 from app.libs.exceptions import ConflictException, NotFoundException 
 from app.models.crawl_model import CrawlDbCreateDto, CrawlLogCreateDto, SaveCrawlDbOption
 from app.utils.mongo import clean_doc
@@ -85,7 +85,11 @@ def deleteCrawlDbBg(name: str):
     mysql_db.connectDB()
     mysql_db.dropDB(name)
     
-def getCrawlDbList(sort_by: str):
+def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
+    if mine == 1:
+        user = user_db.find_one({"uid": userUid})
+        username = user['name']
+    
     # 1) Mongo 에서 모두 불러오기
     cursor = crawlList_db.find()
     crawlDbList = [clean_doc(d) for d in cursor]
@@ -95,8 +99,9 @@ def getCrawlDbList(sort_by: str):
     fullStorage = 0
     activeCrawl = 0
 
+    filteredList = []
     # 2) 각 doc 가공
-    for crawlDb in crawlDbList:
+    for crawlDb in crawlDbList:        
         name = crawlDb["name"]
         parts = name.split('_')
         typ = parts[0]
@@ -112,7 +117,10 @@ def getCrawlDbList(sort_by: str):
         crawlDb['endDate']    = parts[3]
         crawlDb['crawlOption']= str(crawlDb['crawlOption'])
         crawlDb['crawlSpeed'] = str(crawlDb['crawlSpeed'])
-
+        
+        if mine == 1 and crawlDb['requester'] != username:
+            continue
+        
         # 상태 처리
         status = "Done"
         endt = crawlDb.get('endTime')
@@ -136,6 +144,9 @@ def getCrawlDbList(sort_by: str):
         else:
             fullStorage += float(size)
             crawlDb['dbSize'] = f"{int(float(size)*1024)} MB" if float(size) < 1 else f"{size} GB"
+        filteredList.append(crawlDb)
+        
+    crawlDbList = filteredList
 
     # 3) 정렬
     if sort_by == "keyword":
