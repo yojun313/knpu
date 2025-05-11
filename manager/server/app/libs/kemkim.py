@@ -133,7 +133,6 @@ class KimKem:
             if self.weighterror == True:
                 return 2
             
-            send_message(self.pid, self.info)
             send_message(self.pid, "토큰 데이터 분할 중...")
 
             # Step 2: 연도별 단어 리스트 생성 (딕셔너리)
