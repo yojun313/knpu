@@ -89,8 +89,8 @@ class Manager_Analysis:
                 self.main, 'Notification', f"선택하신 파일을 시간 분할하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply != QMessageBox.Yes:
                 return
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                openConsole("데이터 분할")
+            
+            openConsole("데이터 분할")
 
             def split_table(csv_path):
                 table_path = os.path.join(os.path.dirname(csv_path), os.path.basename(
@@ -107,8 +107,7 @@ class Manager_Analysis:
                 if any('Date' in element for element in table_df.columns.tolist()) == False or table_df.columns.tolist() == []:
                     QMessageBox.information(
                         self.main, "Wrong File", f"시간 분할할 수 없는 파일입니다")
-                    if self.main.SETTING['ProcessConsole'] == 'default':
-                        closeConsole()
+                    closeConsole()
                     return 0
                 print("진행 중...")
                 table_df = self.dataprocess_obj.TimeSplitter(table_df)
@@ -139,8 +138,8 @@ class Manager_Analysis:
                     del self.month_divided_group
                     del self.week_divided_group
                     gc.collect()
-                if self.main.SETTING['ProcessConsole'] == 'default':
-                    closeConsole()
+                    
+                closeConsole()
                 reply = QMessageBox.question(
                     self.main, 'Notification', f"데이터 분할이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
@@ -200,8 +199,7 @@ class Manager_Analysis:
                 return
 
             self.main.printStatus("데이터 병합 중...")
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                openConsole("데이터 병합")
+            openConsole("데이터 병합")
             print("Target Files *\n")
             for directory in selected_directory:
                 print(directory)
@@ -211,11 +209,9 @@ class Manager_Analysis:
             if ok and mergedfilename:
                 merged_df = pd.DataFrame()
 
-                if self.main.SETTING['ProcessConsole'] == 'default':
-                    iterator = tqdm(
-                        all_df, desc="Merge ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
-                else:
-                    iterator = all_df
+                iterator = tqdm(
+                    all_df, desc="Merge ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
+            
 
                 for df in iterator:
                     merged_df = pd.concat([merged_df, df], ignore_index=True)
@@ -223,8 +219,7 @@ class Manager_Analysis:
                 merged_df.to_csv(os.path.join(
                     mergedfiledir, mergedfilename)+'.csv', index=False, encoding='utf-8-sig')
             self.main.printStatus()
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                closeConsole()
+            closeConsole()
 
             reply = QMessageBox.question(
                 self.main, 'Notification', f"데이터 병합 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -320,8 +315,8 @@ class Manager_Analysis:
             else:
                 self.main.printStatus()
                 return
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                openConsole('데이터 분석')
+            
+            openConsole('데이터 분석')
 
             print("CSV 파일 읽는 중...")
             csv_path = selected_directory[0]
@@ -389,20 +384,17 @@ class Manager_Analysis:
                     self.dataprocess_obj.YouTubeRereplyAnalysis(
                         csv_data, csv_path)
                 case []:
-                    if self.main.SETTING['ProcessConsole'] == 'default':
-                        closeConsole()
+                    closeConsole()
                     return
                 case _:
-                    if self.main.SETTING['ProcessConsole'] == 'default':
-                        closeConsole()
+                    closeConsole()
                     QMessageBox.warning(
                         self.main, "Not Supported", f"{selected_options[1]} {selected_options[0]} 분석은 지원되지 않는 기능입니다")
                     return
 
             del csv_data
             gc.collect()
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                closeConsole()
+            closeConsole()
 
             reply = QMessageBox.question(
                 self.main, 'Notification', f"{os.path.basename(csv_path)} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -411,8 +403,7 @@ class Manager_Analysis:
                     csv_path), os.path.basename(csv_path).replace('.csv', '') + '_analysis'))
 
         except Exception as e:
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                closeConsole()
+            closeConsole()
             self.main.programBugLog(traceback.format_exc())
 
     def analysis_wordcloud_file(self):
@@ -642,8 +633,7 @@ class Manager_Analysis:
                 f"wordcloud_{filename}_{datetime.now().strftime('%m%d%H%M')}"
             )
 
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                openConsole("워드클라우드")
+            openConsole("워드클라우드")
 
             self.main.userLogging(
                 f'ANALYSIS -> WordCloud({os.path.basename(folder_path)})')
@@ -656,8 +646,7 @@ class Manager_Analysis:
                 self.main, token_data, folder_path, date, maxword, period, exception_word_list, eng=eng_yes_selected)
             self.main.printStatus()
 
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                closeConsole()
+            closeConsole()
 
             reply = QMessageBox.question(
                 self.main, 'Notification', f"{filename} 워드클라우드 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -1174,8 +1163,7 @@ class Manager_Analysis:
             total_size = int(response.headers.get("Content-Length", 0))
             
             close_viewer(viewer)
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                openConsole('KEMKIM 분석')
+            openConsole('KEMKIM 분석')
                 
             with open(local_zip, "wb") as f, tqdm(
                 total=total_size,

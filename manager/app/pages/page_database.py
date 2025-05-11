@@ -143,9 +143,6 @@ class Manager_Database:
 
                 response = self.main.Request(
                     'get', f'crawls/{DBuid}/preview', stream=True)
-                if response.status_code != 200:
-                    print("Error:", response.status_code)
-                    return
 
                 self.tabWidget_tables.clear()
 
@@ -705,8 +702,7 @@ class Manager_Database:
 
             if dialog.exec_() == QDialog.Accepted:
 
-                if self.main.SETTING['ProcessConsole'] == 'default':
-                    openConsole("DB 저장")
+                openConsole("DB 저장")
 
                 pid = str(uuid.uuid4())
                 option['pid'] = pid
@@ -723,10 +719,6 @@ class Manager_Database:
             
             register_process(pid, f"Crawl DB Save")
             viewer = open_viewer(pid)
-            
-            # 진행 상태 뷰어
-            self.main.printStatus("서버에서 파일 준비 중...")
-            print("\n서버에서 파일 준비 중...\n")
 
             download_url = self.main.server_api + f"/crawls/{targetUid}/save"
             response = requests.post(
@@ -739,8 +731,7 @@ class Manager_Database:
             response.raise_for_status()
             close_viewer(viewer)
             
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                openConsole("DB 저장")
+            openConsole("DB 저장")
             
             # 1) Content-Disposition 헤더에서 파일명 파싱
             content_disp = response.headers.get("Content-Disposition", "")
