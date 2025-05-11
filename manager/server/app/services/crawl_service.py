@@ -20,8 +20,6 @@ import zipfile
 import requests
 import shutil
 
-VIEW_SERVER_URL = "http://localhost:8080"
-
 def createCrawlDb(crawlDb: CrawlDbCreateDto):
     crawlDb_dict = crawlDb.model_dump()
     
