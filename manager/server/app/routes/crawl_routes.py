@@ -32,8 +32,9 @@ def delete_crawl_db(uid: str, userUid = Depends(verify_token)):
 
 @router.get("/list")
 def get_crawl_db_list(sort_by: str = Query("starttime", enum=["starttime", "keyword"]), 
+                      mine: int = Query("mine", enum=[0, 1]),
                       userUid = Depends(verify_token)):
-    return getCrawlDbList(sort_by)
+    return getCrawlDbList(sort_by, mine, userUid)
 
 
 @router.get("/{uid}/info")

@@ -744,7 +744,6 @@ class Manager_Setting(QDialog):
         self.main.SETTING['DBKeywordSort'] = db_keywordsort
         self.main.SETTING['ProcessConsole'] = process_console
         self.main.SETTING['LLM_model'] = llm_model
-        self.main.SETTING['LLM_model_name'] = self.main.LLM_list[llm_model]
         self.main.gpt_api_key = api_key
 
         options = {
