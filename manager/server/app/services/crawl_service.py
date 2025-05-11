@@ -237,6 +237,8 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
     
     temp_directory = os.path.join(os.path.dirname(__file__), '..', 'temp')
     
+    send_message(pid, f"DB에서 테이블 목록을 가져오는 중...")
+    
     tableList = [table for table in sorted(mysql_db.showAllTable(targetDB)) if 'info' not in table]
     tableList = sorted(tableList, key=lambda x: ('article' not in x, 'statistics' not in x, x))
     
