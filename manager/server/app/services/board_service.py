@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from fastapi.responses import JSONResponse
 from app.db import version_board_db, bug_board_db, free_board_db, user_db, user_bugs_db
-from app.models.board_model import AddVersionDto, VersionBoardSchema, AddBugDto, BugBoardSchema, AddPostDto, FreeBoardSchema
+from app.models.board_model import AddVersionDto, AddBugDto, AddPostDto
 from app.utils.mongo import clean_doc
 from app.utils.pushover import sendPushOver
 from app.libs.exceptions import NotFoundException

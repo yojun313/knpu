@@ -1,8 +1,5 @@
-import uuid
-from datetime import datetime, timezone
 from fastapi.responses import JSONResponse
 from app.db import user_db, auth_db
-from app.models.board_model import AddVersionDto, VersionBoardSchema, AddBugDto, BugBoardSchema, AddPostDto, FreeBoardSchema
 from app.utils.mongo import clean_doc
 from app.libs.exceptions import NotFoundException
 from app.utils.mail import sendEmail

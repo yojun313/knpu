@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Query, Header, UploadFile, File, Body, Form
 from app.services.analysis_service import start_kemkim
-from fastapi.responses import JSONResponse
 from app.models.analysis_model import KemKimOption
 import pandas as pd
 from io import StringIO

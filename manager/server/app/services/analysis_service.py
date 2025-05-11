@@ -4,7 +4,6 @@ import os
 import shutil
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
-from fastapi import UploadFile
 
 
 def start_kemkim(option: KemKimOption, token_data):
@@ -76,4 +75,3 @@ def start_kemkim(option: KemKimOption, token_data):
             status_code=500,
             content={"error": "KEMKIM 분석 중 오류 발생", "message": str(e)}
         )
-    
