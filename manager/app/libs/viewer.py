@@ -5,7 +5,8 @@ import subprocess
 import requests
 import tempfile
 
-VIEW_SERVER = "http://localhost:8080"
+VIEW_SERVER = 'http://localhost:8080'
+#VIEW_SERVER = "https://manager-progress.knpu.re.kr"
 
 '''
     사용법
