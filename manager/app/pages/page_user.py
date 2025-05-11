@@ -93,7 +93,7 @@ class Manager_User:
         self.main.tabWidget_user.currentChanged.connect(self.updateShortcut)
 
     def updateShortcut(self, index):
-        self.main.initShortcutialize()
+        self.main.resetShortcuts()
 
         # User List
         if index == 0:

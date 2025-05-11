@@ -32,7 +32,6 @@ import requests
 from libs.viewer import open_viewer, close_viewer, register_process
 
 
-
 warnings.filterwarnings("ignore")
 
 
@@ -53,7 +52,7 @@ class Manager_Analysis:
         self.analysis_makeFileFinder()
         self.anaylsis_buttonMatch()
         self.console_open = False
-        
+
     def analysis_makeFileFinder(self):
         self.file_dialog = self.main.makeFileFinder(self.main)
         self.main.analysis_filefinder_layout.addWidget(self.file_dialog)
@@ -89,7 +88,7 @@ class Manager_Analysis:
                 self.main, 'Notification', f"선택하신 파일을 시간 분할하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply != QMessageBox.Yes:
                 return
-            
+
             openConsole("데이터 분할")
 
             def split_table(csv_path):
@@ -138,7 +137,7 @@ class Manager_Analysis:
                     del self.month_divided_group
                     del self.week_divided_group
                     gc.collect()
-                    
+
                 closeConsole()
                 reply = QMessageBox.question(
                     self.main, 'Notification', f"데이터 분할이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -211,7 +210,6 @@ class Manager_Analysis:
 
                 iterator = tqdm(
                     all_df, desc="Merge ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
-            
 
                 for df in iterator:
                     merged_df = pd.concat([merged_df, df], ignore_index=True)
@@ -315,7 +313,7 @@ class Manager_Analysis:
             else:
                 self.main.printStatus()
                 return
-            
+
             openConsole('데이터 분석')
 
             print("CSV 파일 읽는 중...")
@@ -801,7 +799,7 @@ class Manager_Analysis:
 
                 self.filter_yes_checkbox.setChecked(True)  # Yes 체크박스 기본 체크
                 self.filter_no_checkbox.setChecked(False)  # No 체크박스 기본 체크 해제
-                
+
                 # 서로 배타적으로 선택되도록 설정
                 self.filter_yes_checkbox.toggled.connect(
                     lambda: self.filter_no_checkbox.setChecked(
@@ -1099,7 +1097,7 @@ class Manager_Analysis:
             pid = str(uuid.uuid4())
             register_process(pid, "KEMKIM")
             viewer = open_viewer(pid)
-            
+
             option = {
                 "pid": pid,
                 "tokenfile_name": tokenfile_name,
@@ -1127,21 +1125,23 @@ class Manager_Analysis:
                 headers=self.main.api_headers,
                 timeout=3600
             )
-            
+
             if response.status_code != 200:
                 try:
                     error_data = response.json()
-                    error_msg = error_data.get("message") or error_data.get("error") or "분석 실패"
+                    error_msg = error_data.get(
+                        "message") or error_data.get("error") or "분석 실패"
                 except Exception:
                     error_msg = response.text or "분석 중 알 수 없는 오류가 발생했습니다."
-                
-                QMessageBox.critical(self.main, "분석 실패", f"KEMKIM 분석 실패\n\n{error_msg}")
+
+                QMessageBox.critical(self.main, "분석 실패",
+                                     f"KEMKIM 분석 실패\n\n{error_msg}")
                 self.main.printStatus()
                 return
-            
+
             self.main.userLogging(
                 f'ANALYSIS -> KEMKIM({tokenfile_name})-({startdate},{startdate},{topword},{weight},{filter_yes_selected})')
-            
+
             # 1) Content-Disposition 헤더에서 파일명 파싱
             content_disp = response.headers.get("Content-Disposition", "")
 
@@ -1161,10 +1161,10 @@ class Manager_Analysis:
             # 4) 이제 다운로드 & 압축 해제
             local_zip = os.path.join(save_path, zip_name)
             total_size = int(response.headers.get("Content-Length", 0))
-            
+
             close_viewer(viewer)
             openConsole('KEMKIM 분석')
-                
+
             with open(local_zip, "wb") as f, tqdm(
                 total=total_size,
                 file=sys.stdout,
@@ -1193,12 +1193,12 @@ class Manager_Analysis:
             os.remove(local_zip)
             self.main.printStatus()
             closeConsole()
-            
+
             reply = QMessageBox.question(self.main, 'Notification', f"KEMKIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 self.main.openFileExplorer(extract_path)
-            
+
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -2048,7 +2048,7 @@ class Manager_Analysis:
             self.updateShortcut)
 
     def updateShortcut(self, index):
-        self.main.initShortcutialize()
+        self.main.resetShortcuts()
 
         # 파일 불러오기
         if index == 0:
