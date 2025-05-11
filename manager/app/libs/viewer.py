@@ -4,9 +4,9 @@ import shutil
 import subprocess
 import requests
 import tempfile
+from config import MANAGER_PROGRESS_API
 
-VIEW_SERVER = 'http://localhost:8080'
-#VIEW_SERVER = "https://manager-progress.knpu.re.kr"
+VIEW_SERVER = MANAGER_PROGRESS_API
 
 '''
     사용법
