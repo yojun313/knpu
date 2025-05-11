@@ -11,8 +11,35 @@
 # Contact:
 # - Email: yojun313@postech.ac.kr / moonyojun@gmail.com
 # - Phone: +82-10-4072-9190
-##############################################################################################################pip
+# pip
 
+from libs.console import openConsole, closeConsole
+from pages.page_analysis import Manager_Analysis
+from pages.page_user import Manager_User
+from pages.page_board import Manager_Board
+from pages.page_web import Manager_Web
+from pages.page_database import Manager_Database
+from pages.page_settings import Manager_Setting
+from libs.tool import ToolModule
+from PyQt5.QtGui import QKeySequence, QIcon
+from PyQt5.QtCore import Qt, QCoreApplication, QObject, QEvent, QSize, QModelIndex, QEventLoop
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
+    QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
+    QPushButton, QMainWindow, QAbstractItemView
+from PyQt5 import uic
+import requests
+import shutil
+import logging
+import re
+import traceback
+import gc
+import socket
+from pathlib import Path
+from packaging import version
+from datetime import datetime
+from openai import OpenAI
+import subprocess
+import sys
 import os
 import platform
 from config import MANAGER_SERVER_API, VERSION
@@ -78,38 +105,11 @@ splashDialog = SplashDialog(version=VERSION, theme=theme)
 splashDialog.show()
 
 splashDialog.updateStatus("Loading System Libraries")
-import os
-import sys
-import subprocess
-from openai import OpenAI
-from datetime import datetime
-from packaging import version
-from pathlib import Path
-import socket
-import gc
-import traceback
-import re
-import logging
-import shutil
-import requests
 
 splashDialog.updateStatus("Loading GUI Libraries")
-from PyQt5 import uic
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
-    QHBoxLayout, QLabel, QStatusBar, QDialog, QInputDialog, QLineEdit, QMessageBox, QFileDialog, QSizePolicy, \
-    QPushButton, QMainWindow, QAbstractItemView
-from PyQt5.QtCore import Qt, QCoreApplication, QObject, QEvent, QSize, QModelIndex, QEventLoop
-from PyQt5.QtGui import QKeySequence, QIcon
 
 splashDialog.updateStatus("Loading App Pages")
-from libs.tool import ToolModule
-from pages.page_settings import Manager_Setting
-from pages.page_database import Manager_Database
-from pages.page_web import Manager_Web
-from pages.page_board import Manager_Board
-from pages.page_user import Manager_User
-from pages.page_analysis import Manager_Analysis
-from libs.console import openConsole, closeConsole
+
 
 class MainWindow(QMainWindow):
 
@@ -123,8 +123,10 @@ class MainWindow(QMainWindow):
             self.toolmodule = ToolModule()
 
             super(MainWindow, self).__init__()
-            uiPath = os.path.join(os.path.dirname(__file__), 'assets', 'gui.ui')
-            iconPath = os.path.join(os.path.dirname(__file__), 'assets', 'exe_icon.png')
+            uiPath = os.path.join(os.path.dirname(
+                __file__), 'assets', 'gui.ui')
+            iconPath = os.path.join(os.path.dirname(
+                __file__), 'assets', 'exe_icon.png')
 
             uic.loadUi(uiPath, self)
             self.initSettings()
@@ -154,7 +156,8 @@ class MainWindow(QMainWindow):
 
                     if platform.system() == "Windows":
                         localAppdataPath = os.getenv("LOCALAPPDATA")
-                        self.programDirectory = os.path.join(localAppdataPath, "MANAGER")
+                        self.programDirectory = os.path.join(
+                            localAppdataPath, "MANAGER")
                         self.localDirectory = "C:/BIGMACLAB_MANAGER"
                         if not os.path.exists(self.localDirectory):
                             os.makedirs(self.localDirectory)
@@ -164,7 +167,8 @@ class MainWindow(QMainWindow):
                         if not os.path.exists(self.localDirectory):
                             os.makedirs(self.localDirectory)
 
-                    self.readmePath = os.path.join(self.localDirectory, 'README.txt')
+                    self.readmePath = os.path.join(
+                        self.localDirectory, 'README.txt')
                     if not Path(self.readmePath).exists():
                         with open(self.readmePath, "w", encoding="utf-8", errors="ignore") as txt:
                             text = (
@@ -185,14 +189,14 @@ class MainWindow(QMainWindow):
                         "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 동작하는지 확인하십시오"
                         "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
                     )
-                    
+
                     # User Checking & Login Process
                     print("\nI. Checking User... ", end='')
                     self.splashDialog.updateStatus("Checking User")
                     if self.loginProgram() == False:
                         os._exit(0)
                     print("Done")
-                                
+
                     self.splashDialog.updateStatus("Checking New Version")
                     print("\nII. Checking New Version... ", end='')
                     if self.checkNewVersion() == True:
@@ -205,14 +209,14 @@ class MainWindow(QMainWindow):
                         try:
                             print("\nIII. Loading Data... ", end='')
                             self.splashDialog.updateStatus("Loading Data")
-                            
+
                             self.DB = self.updateDB()
                             self.managerBoardObj = Manager_Board(self)
                             self.managerUserObj = Manager_User(self)
                             self.managerDatabaseObj = Manager_Database(self)
                             self.managerWebObj = Manager_Web(self)
                             self.managerAnalysisObj = Manager_Analysis(self)
-                            
+
                             print("Done")
                             break
                         except Exception as e:
@@ -259,8 +263,10 @@ class MainWindow(QMainWindow):
                     self.printStatus()
                     msg = f'[ Admin CRITICAL Notification ]\n\nThere is Error in MANAGER Booting\n\nError Log: {traceback.format_exc()}'
                     self.sendPushOver(msg, self.admin_pushoverkey)
-                    QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
-                    QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
+                    QMessageBox.critical(
+                        self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
+                    QMessageBox.information(
+                        self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
                     os._exit(0)
 
             loadProgram()
@@ -280,7 +286,8 @@ class MainWindow(QMainWindow):
         try:
             """리스트 위젯의 특정 항목에만 아이콘 추가 및 텍스트 제거"""
 
-            iconPath = os.path.join(os.path.dirname(__file__), 'assets', 'setting.png')
+            iconPath = os.path.join(os.path.dirname(
+                __file__), 'assets', 'setting.png')
 
             # 리스트 위젯의 모든 항목 가져오기
             for index in range(self.listWidget.count()):
@@ -410,7 +417,8 @@ class MainWindow(QMainWindow):
             saved_token = self.settings.value('auth_token', '')
             if saved_token:
                 headers = {"Authorization": f"Bearer {saved_token}"}
-                res = requests.get(f"{self.server_api}/auth/login", headers=headers)
+                res = requests.get(
+                    f"{self.server_api}/auth/login", headers=headers)
                 if res.status_code == 200:
                     userData = res.json()['user']
                     self.user = userData['name']
@@ -434,8 +442,9 @@ class MainWindow(QMainWindow):
                 return False
 
             self.user = userName
-                        
-            res = requests.get(f"{self.server_api}/auth/request", params={"name": self.user}).json()
+
+            res = requests.get(f"{self.server_api}/auth/request",
+                               params={"name": self.user}).json()
             self.printStatus()
             QMessageBox.information(self, "Information",
                                     f"{self.user}님의 메일로 인증번호가 전송되었습니다\n\n"
@@ -450,7 +459,7 @@ class MainWindow(QMainWindow):
                                 params={"name": self.user, "code": password, "device": self.userDevice}).json()
             userData = res['user']
             access_token = res['access_token']
-            
+
             self.user = userData['name']
             self.usermail = userData['email']
             self.userUid = userData['uid']
@@ -459,16 +468,18 @@ class MainWindow(QMainWindow):
         except Exception:
             self.closeBootscreen()
             QMessageBox.critical(self, "Error",
-                                f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
+                                 f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
             return False
-         
+
     def updateProgram(self, sc=False, auto=False):
         try:
             if platform.system() != "Windows":
                 return
+
             def downloadFile(download_url, local_filename):
                 response = requests.get(download_url, stream=True)
-                totalSize = int(response.headers.get('content-length', 0))  # 파일의 총 크기 가져오기
+                totalSize = int(response.headers.get(
+                    'content-length', 0))  # 파일의 총 크기 가져오기
                 chunkSize = 8192  # 8KB씩 다운로드
                 downloadSize = 0  # 다운로드된 크기 초기화
 
@@ -478,7 +489,9 @@ class MainWindow(QMainWindow):
                             f.write(chunk)
                             downloadSize += len(chunk)
                             percent_complete = (downloadSize / totalSize) * 100
-                            print(f"\r{self.newVersion} Download: {percent_complete:.0f}%", end='')  # 퍼센트 출력
+                            # 퍼센트 출력
+                            print(
+                                f"\r{self.newVersion} Download: {percent_complete:.0f}%", end='')
 
                 print("\nDownload Complete")
                 closeConsole()
@@ -490,20 +503,23 @@ class MainWindow(QMainWindow):
                     f"{self.user} updated {currentVersion} -> {self.newVersion}\n\n{self.getUserLocation()}"
                 )
                 self.sendPushOver(msg, self.admin_pushoverkey)
-                self.userLogging(f'Program Update ({currentVersion} -> {self.newVersion})')
+                self.userLogging(
+                    f'Program Update ({currentVersion} -> {self.newVersion})')
 
                 self.printStatus("버전 업데이트 중...")
                 import subprocess
-                downloadFile_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.newVersion}.exe")
+                downloadFile_path = os.path.join(
+                    'C:/Temp', f"BIGMACLAB_MANAGER_{self.newVersion}.exe")
                 downloadFile(f"https://knpu.re.kr/download/BIGMACLAB_MANAGER_{self.newVersion}.exe",
-                              downloadFile_path)
+                             downloadFile_path)
                 subprocess.Popen([downloadFile_path], shell=True)
                 closeConsole()
                 os._exit(0)
 
             # New version check
             currentVersion = version.parse(self.versionNum)
-            self.newVersion = version.parse(self.managerBoardObj.checkNewVersion())
+            self.newVersion = version.parse(
+                self.managerBoardObj.checkNewVersion())
             if currentVersion < self.newVersion:
                 if auto == 'auto':
                     self.closeBootscreen()
@@ -556,7 +572,8 @@ class MainWindow(QMainWindow):
                 if dialog.exec_() == QDialog.Accepted:
                     update_process()
                 else:
-                    QMessageBox.information(self, "Information", 'Ctrl+U 단축어로 프로그램 실행 중 업데이트 가능합니다')
+                    QMessageBox.information(
+                        self, "Information", 'Ctrl+U 단축어로 프로그램 실행 중 업데이트 가능합니다')
                     return
             else:
                 if sc == True:
@@ -566,9 +583,10 @@ class MainWindow(QMainWindow):
                         self.printStatus("버전 재설치 중...")
                         openConsole("Version Reinstall Process")
                         import subprocess
-                        downloadFile_path = os.path.join('C:/Temp', f"BIGMACLAB_MANAGER_{self.newVersion}.exe")
+                        downloadFile_path = os.path.join(
+                            'C:/Temp', f"BIGMACLAB_MANAGER_{self.newVersion}.exe")
                         downloadFile(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{self.newVersion}.exe",
-                                      downloadFile_path)
+                                     downloadFile_path)
                         subprocess.Popen([downloadFile_path], shell=True)
                         closeConsole()
                         os._exit(0)
@@ -580,7 +598,8 @@ class MainWindow(QMainWindow):
             return
 
     def checkNewVersion(self):
-        newestVersion = self.Request('get', '/board/version/newest').json()['data']
+        newestVersion = self.Request(
+            'get', '/board/version/newest').json()['data']
         currentVersion = version.parse(self.versionNum)
         self.newVersion = version.parse(newestVersion)
         return True if currentVersion < self.newVersion else False
@@ -616,7 +635,7 @@ class MainWindow(QMainWindow):
                     continue
                 else:
                     os._exit(0)
-                    
+
         while True:
             try:
                 # FastAPI 서버의 상태를 확인하는 핑 API 또는 기본 경로 사용
@@ -627,8 +646,8 @@ class MainWindow(QMainWindow):
                 self.printStatus()
                 self.closeBootscreen()
                 reply = QMessageBox.question(self, "서버 연결 실패",
-                                            f"서버에 연결할 수 없습니다.\n\n관리자에게 문의하십시오\n\n재시도하시겠습니까?",
-                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                                             f"서버에 연결할 수 없습니다.\n\n관리자에게 문의하십시오\n\n재시도하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     continue
                 else:
@@ -637,7 +656,7 @@ class MainWindow(QMainWindow):
     def display(self, index):
         if index != 6:
             self.stackedWidget.setCurrentIndex(index)
-            
+
         # DATABASE
         if index == 0:
             self.managerDatabaseObj.setDatabaseShortcut()
@@ -683,7 +702,8 @@ class MainWindow(QMainWindow):
                 self.currentChanged.connect(self.on_directory_change)
                 self.accepted.connect(self.on_accepted)
                 self.rejected.connect(self.on_rejected)
-                self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                self.setSizePolicy(QSizePolicy.Expanding,
+                                   QSizePolicy.Expanding)
                 self.main = parent
                 if localDirectory:
                     self.setDirectory(localDirectory)
@@ -698,10 +718,12 @@ class MainWindow(QMainWindow):
                     treeview.setColumnHidden(2, True)  # Kind 숨기기
                     header = treeview.header()
                     # 파일명 컬럼(일반적으로 첫 번째 컬럼)만 크기 자동 조정
-                    header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+                    header.setSectionResizeMode(
+                        0, QHeaderView.ResizeToContents)
                     # 나머지 컬럼들은 창 크기에 따라 비례적으로 늘어나도록 설정
                     for col in range(1, header.count()):
                         header.setSectionResizeMode(col, QHeaderView.Stretch)
+
             def setup_double_click_event(self):
                 def handle_double_click(index: QModelIndex):
                     # 더블 클릭된 파일 경로 가져오기
@@ -715,11 +737,13 @@ class MainWindow(QMainWindow):
 
             def open_in_external_app(self, file_path):
                 try:
-                    self.main.printStatus(f"{os.path.basename(file_path)} 여는 중...")
+                    self.main.printStatus(
+                        f"{os.path.basename(file_path)} 여는 중...")
                     if os.name == 'nt':  # Windows
                         os.startfile(file_path)
                     elif os.name == 'posix':  # macOS, Linux
-                        subprocess.run(["open" if os.uname().sysname == "Darwin" else "xdg-open", file_path])
+                        subprocess.run(
+                            ["open" if os.uname().sysname == "Darwin" else "xdg-open", file_path])
                     self.main.printStatus()
                 except Exception as e:
                     self.main.printStatus(f"파일 열기 실패")
@@ -730,7 +754,8 @@ class MainWindow(QMainWindow):
             def on_accepted(self):
                 selected_files = self.selectedFiles()
                 if selected_files:
-                    self.selectFile(', '.join([os.path.basename(file) for file in selected_files]))
+                    self.selectFile(
+                        ', '.join([os.path.basename(file) for file in selected_files]))
                 if len(selected_files) == 0:
                     self.main.printStatus()
                 else:
@@ -743,7 +768,8 @@ class MainWindow(QMainWindow):
             def accept(self):
                 selected_files = self.selectedFiles()
                 if selected_files:
-                    self.selectFile(', '.join([os.path.basename(file) for file in selected_files]))
+                    self.selectFile(
+                        ', '.join([os.path.basename(file) for file in selected_files]))
                 if len(selected_files) == 0:
                     self.main.printStatus()
                 else:
@@ -765,8 +791,8 @@ class MainWindow(QMainWindow):
 
             if token:
                 self.api_headers["Authorization"] = f"Bearer {token}"
-            kwargs["headers"] = self.api_headers  
-            
+            kwargs["headers"] = self.api_headers
+
             # 요청 메서드 분기
             method = method.lower()
             if method == 'get':
@@ -792,7 +818,6 @@ class MainWindow(QMainWindow):
         except requests.exceptions.RequestException as err:
             raise Exception(f"[Request Failed] {str(err)}")
 
-    
     #############################################################################
 
     def updateSettings(self, option_key, new_value):
@@ -828,11 +853,11 @@ class MainWindow(QMainWindow):
             if dialog.exec_() == QDialog.Accepted:
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
                 self.printStatus("설정 반영 중...")
-                QApplication.instance().setStyleSheet(theme_option[self.SETTING['Theme']])
+                QApplication.instance().setStyleSheet(
+                    theme_option[self.SETTING['Theme']])
                 self.updateStyleHtml()
 
-                if self.SETTING['MyDB'] != 'default' or self.SETTING['DBKeywordSort'] != 'default':
-                    self.managerDatabaseObj.refreshDB()
+                self.managerDatabaseObj.refreshDB()
                 self.printStatus()
 
         except Exception as e:
@@ -861,20 +886,22 @@ class MainWindow(QMainWindow):
 
     def updateDB(self):
         sort_by = 'starttime' if self.SETTING['DBKeywordSort'] == 'default' else 'keyword'
-            
-        res = self.Request('get', f'/crawls/list?sort_by={sort_by}').json()
-        
+        mine = 1 if self.SETTING['MyDB'] != 'default' else 0
+
+        res = self.Request(
+            'get', f'/crawls/list?sort_by={sort_by}&mine={mine}').json()
+
         self.db_list = res['data']
         self.fullStorage = res['fullStorage']
         self.activeCrawl = res['activeCrawl']
-        
+
         currentDB = {
             'DBuids': [db['uid'] for db in self.db_list],
             'DBnames': [db['name'] for db in self.db_list],
             'DBdata': self.db_list,
             'DBtable': [(db['name'], db['crawlType'], db['keyword'], db['startDate'], db['endDate'], db['crawlOption'], db['status'], db['requester'], db['dbSize']) for db in self.db_list]
         }
-            
+
         return currentDB
 
     def makeTable(self, widgetname, data, column, right_click_function=None, popupsize=None):
@@ -903,7 +930,8 @@ class MainWindow(QMainWindow):
 
             # 확인 버튼 생성
             ok_button = QPushButton("확인")
-            ok_button.clicked.connect(self.details_dialog.accept)  # 버튼 클릭 시 다이얼로그 닫기
+            ok_button.clicked.connect(
+                self.details_dialog.accept)  # 버튼 클릭 시 다이얼로그 닫기
             layout.addWidget(ok_button)
 
             shortcut = QShortcut(QKeySequence("Ctrl+W"), self.details_dialog)
@@ -1053,20 +1081,20 @@ class MainWindow(QMainWindow):
             os.system(f"open '{path}'")
         else:  # Linux and other OS
             os.system(f"xdg-open '{path}'")
-        
+
     def programBugLog(self, text):
         print(text)
         self.printStatus("오류 발생")
         QMessageBox.critical(self, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
-        
+
         logToText(f"Exception: {text}")
         self.userBugging(text)
-        
+
         reply = QMessageBox.question(self, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
                                      QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             self.managerBoardObj.addBug()
-            
+
         self.printStatus()
 
     def closeEvent(self, event):
@@ -1109,7 +1137,8 @@ class MainWindow(QMainWindow):
             for file_name in os.listdir(exe_file_path):
                 match = pattern.match(file_name)
                 if match:
-                    file_version = version.Version(match.group(1))  # 버전 추출 및 비교를 위해 Version 객체로 변환
+                    # 버전 추출 및 비교를 위해 Version 객체로 변환
+                    file_version = version.Version(match.group(1))
                     # 현재 버전을 제외한 파일 삭제
                     if file_version != currentVersion:
                         file_path = os.path.join(exe_file_path, file_name)
@@ -1161,14 +1190,14 @@ class MainWindow(QMainWindow):
                 # 응답 확인
                 if response.status_code == 200:
                     result = response.json()['result']
-                    result = result.replace('<think>', '').replace('</think>', '')
+                    result = result.replace(
+                        '<think>', '').replace('</think>', '')
                     return result
                 else:
                     return f"Failed to get a valid response: {response.status_code} {response.text}"
 
             except requests.exceptions.RequestException as e:
                 return f"Error communicating with the server: {e}"
-
 
     #################### DEVELOPER MODE ###################
 
@@ -1190,9 +1219,11 @@ class MainWindow(QMainWindow):
         for child in widget.findChildren(QWidget):
             child.installEventFilter(self.eventLogger)
 
+
 # 로그 출력 제어 변수와 로그 저장 변수
 logging_enabled = False  # 콘솔 출력 여부를 조절
 log_text = ""  # 모든 로그 메시지를 저장하는 변수
+
 
 def setUpLogging():
     """로그 설정 초기화"""
@@ -1219,7 +1250,8 @@ def logToText(message):
     모든 로그 메시지를 log_text에 저장하고, logging_enabled가 True일 경우 콘솔에도 출력.
     """
     global log_text
-    timestamped_message = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {message}"  # 타임스탬프 추가
+    # 타임스탬프 추가
+    timestamped_message = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {message}"
     log_text += f"{timestamped_message}\n"  # 모든 로그를 log_text에 기록
     if logging_enabled:
         print(timestamped_message)  # logging_enabled가 True일 때만 콘솔에 출력
@@ -1227,11 +1259,14 @@ def logToText(message):
 
 # 예외 발생 시 logToText에 기록하는 함수
 def exceptionHandler(exc_type, exc_value, exc_traceback):
-    error_message = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    error_message = "".join(traceback.format_exception(
+        exc_type, exc_value, exc_traceback))
     logToText(f"Exception: {error_message}")
+
 
 # 전역 예외 처리기를 설정하여 모든 예외를 logToText에 기록
 sys.excepthook = exceptionHandler
+
 
 class EventLogger(QObject):
     """이벤트 로그를 생성하고 log_text에 모든 로그를 쌓아두는 클래스"""
@@ -1255,6 +1290,7 @@ class EventLogger(QObject):
         return super().eventFilter(obj, event)
 
 #######################################################
+
 
 if __name__ == '__main__':
     # 메인 윈도우 실행
