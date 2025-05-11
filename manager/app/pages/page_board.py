@@ -33,12 +33,13 @@ class Manager_Board:
 
             self.origin_version_data = self.main.Request(
                 'get', '/board/version').json()['data']
-            
-            self.version_data = [[item['versionName'], item['releaseDate'], item['changeLog'], item['features'], item['status'], item['details']] 
+
+            self.version_data = [[item['versionName'], item['releaseDate'], item['changeLog'], item['features'], item['status'], item['details']]
                                  for item in self.origin_version_data]
             self.version_data = sort_by_version(self.version_data)
-            
-            self.version_data_for_table = [sub_list[:-1] for sub_list in self.version_data]
+
+            self.version_data_for_table = [sub_list[:-1]
+                                           for sub_list in self.version_data]
             self.version_table_column = [
                 'Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status']
             self.main.makeTable(self.main.board_version_tableWidget,
@@ -797,7 +798,7 @@ class Manager_Board:
         self.main.tabWidget_board.currentChanged.connect(self.updateShortcut)
 
     def updateShortcut(self, index):
-        self.main.initShortcutialize()
+        self.main.resetShortcuts()
 
         # 패치 노트 탭
         if index == 0:
