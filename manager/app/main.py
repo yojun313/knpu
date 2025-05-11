@@ -201,7 +201,7 @@ class MainWindow(QMainWindow):
                     print("\nII. Checking New Version... ", end='')
                     if self.checkNewVersion() == True:
                         self.closeBootscreen()
-                        self.updateProgram(auto=self.SETTING['AutoUpdate'])
+                        self.updateProgram()
                     print("Done")
 
                     # Loading Data from DB & Making object
@@ -467,9 +467,8 @@ class MainWindow(QMainWindow):
                                  f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
             return False
 
-    def updateProgram(self, sc=False, auto=False):
+    def updateProgram(self, sc=False):
         try:
-            
             def downloadFile(download_url, local_filename):
                 response = requests.get(download_url, stream=True)
                 totalSize = int(response.headers.get(
@@ -511,7 +510,7 @@ class MainWindow(QMainWindow):
                 os._exit(0)
 
             if self.checkNewVersion():
-                if auto == 'auto':
+                if self.SETTING['AutoUpdate'] == 'auto':
                     self.closeBootscreen()
                     update_process()
                 self.managerBoardObj.refreshVersionBoard()
