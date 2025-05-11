@@ -8,7 +8,6 @@ import traceback
 import pandas as pd
 from tqdm import tqdm
 from datetime import datetime
-from websocket import create_connection
 import subprocess
 import shutil
 import platform
