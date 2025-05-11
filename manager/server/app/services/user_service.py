@@ -1,5 +1,4 @@
 
-from bson import ObjectId
 from app.db import user_db, user_logs_db, user_bugs_db
 from app.libs.exceptions import ConflictException, BadRequestException
 from app.models.user_model import UserCreate
@@ -8,7 +7,6 @@ from fastapi.responses import JSONResponse
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import uuid
-from starlette.background import BackgroundTask
 
 def create_user(user: UserCreate):
     user_dict = user.model_dump()

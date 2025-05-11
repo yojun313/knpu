@@ -1,6 +1,6 @@
 from app.db import crawlList_db, mysql_db, crawlLog_db
 from app.libs.exceptions import ConflictException, NotFoundException 
-from app.models.crawl_model import CrawlDbCreateDto, DataInfo, CrawlLogCreateDto, SaveCrawlDbOption
+from app.models.crawl_model import CrawlDbCreateDto, CrawlLogCreateDto, SaveCrawlDbOption
 from app.utils.mongo import clean_doc
 from fastapi.responses import JSONResponse
 from collections import OrderedDict
@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from starlette.responses import FileResponse
 from io import BytesIO
 import pandas as pd
-from app.libs.progress import register_process, send_progress, send_status, send_complete, send_message
+from app.libs.progress import send_message
 import uuid
 import os
 import re

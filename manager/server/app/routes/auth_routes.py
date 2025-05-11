@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Query, Header
 from app.services.auth_service import request_verify, verify_code, loginWithToken
-from fastapi.responses import JSONResponse
 
 router = APIRouter()
 
