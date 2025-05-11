@@ -120,7 +120,7 @@ class MainWindow(QMainWindow):
     def __init__(self, splashDialog):
         try:
             self.server_api = "http://localhost:8000/api"
-            self.server_api = "https://manager.knpu.re.kr/api"
+            #self.server_api = "https://manager.knpu.re.kr/api"
             self.versionNum = VERSION
             self.version = f'Version {self.versionNum}'
             self.splashDialog = splashDialog
