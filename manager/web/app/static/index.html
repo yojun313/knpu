@@ -88,23 +88,31 @@
 
   <script>
     const urlParams = new URLSearchParams(location.search);
-    const pid = urlParams.get('pid');
-    const titleEl    = document.getElementById('title');
-    const fillEl     = document.getElementById('fill');
-    const messagesEl = document.getElementById('messages');
+    const pid       = urlParams.get('pid');
+    const titleEl   = document.getElementById('title');
+    const fillEl    = document.getElementById('fill');
+    const messagesEl= document.getElementById('messages');
 
     if (!pid) {
       titleEl.textContent = '프로세스 ID가 없습니다.';
     } else {
-      fetch(`/process/${pid}`)
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .then(data => {
-          titleEl.textContent = data.title;
-          startWS(pid);
-        })
-        .catch(() => {
-          titleEl.textContent = '알 수 없는 프로세스';
-        });
+      fetchProcessInfo(pid);
+    }
+
+    async function fetchProcessInfo(pid) {
+      try {
+        const res = await fetch(`/process/${pid}`);
+        if (!res.ok) {
+          console.error(`GET /process/${pid} failed:`, res.status, await res.text());
+          throw new Error(`Status ${res.status}`);
+        }
+        const data = await res.json();
+        titleEl.textContent = data.title;
+        startWS(pid);
+      } catch (err) {
+        console.error('프로세스 정보 조회 중 오류:', err);
+        titleEl.textContent = '알 수 없는 프로세스';
+      }
     }
 
     function startWS(id) {
