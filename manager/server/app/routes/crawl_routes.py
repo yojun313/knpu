@@ -11,11 +11,6 @@ from app.services.crawl_service import (
     previewCrawlDb
 )
 from app.services.user_service import log_user
-from fastapi.responses import StreamingResponse
-import os
-import shutil
-from starlette.responses import FileResponse
-from starlette.background import BackgroundTask
 from app.libs.jwt import verify_token
 
 router = APIRouter()
