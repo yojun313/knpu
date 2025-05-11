@@ -20,7 +20,6 @@ from pages.page_board import Manager_Board
 from pages.page_web import Manager_Web
 from pages.page_database import Manager_Database
 from pages.page_settings import Manager_Setting
-from libs.tool import ToolModule
 from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtCore import Qt, QCoreApplication, QObject, QEvent, QSize, QModelIndex, QEventLoop
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QWidget, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, \
@@ -42,6 +41,7 @@ import subprocess
 import sys
 import os
 import platform
+import pandas as pd
 from config import MANAGER_SERVER_API, VERSION
 from PyQt5.QtWidgets import QApplication
 from pages.page_splash import SplashDialog, theme_option
@@ -120,8 +120,6 @@ class MainWindow(QMainWindow):
             self.version = f'Version {self.versionNum}'
             self.splashDialog = splashDialog
 
-            self.toolmodule = ToolModule()
-
             super(MainWindow, self).__init__()
             uiPath = os.path.join(os.path.dirname(
                 __file__), 'assets', 'gui.ui')
@@ -140,6 +138,8 @@ class MainWindow(QMainWindow):
             setUpLogging()
             self.eventLogger = EventLogger()
             self.installEventFilter(self)
+            self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
+            self.admin_password = "$2b$12$y92zRYAOVwDC0UCXnuG5ZuiJXxiT.drxRFVBu4HoYKmDMB.e.y5kq"
 
             def loadProgram():
                 try:
@@ -275,10 +275,6 @@ class MainWindow(QMainWindow):
             self.closeBootscreen()
             openConsole()
             print(traceback.format_exc())
-
-    def __getattr__(self, name):
-        # ClassA에 속성이 있으면 반환
-        return getattr(self.toolmodule, name)
 
     ################################## Booting ##################################
 
@@ -473,9 +469,7 @@ class MainWindow(QMainWindow):
 
     def updateProgram(self, sc=False, auto=False):
         try:
-            if platform.system() != "Windows":
-                return
-
+            
             def downloadFile(download_url, local_filename):
                 response = requests.get(download_url, stream=True)
                 totalSize = int(response.headers.get(
@@ -500,11 +494,11 @@ class MainWindow(QMainWindow):
                 openConsole("Version Update Process")
                 msg = (
                     "[ Admin Notification ]\n\n"
-                    f"{self.user} updated {currentVersion} -> {self.newVersion}\n\n{self.getUserLocation()}"
+                    f"{self.user} updated {self.versionNum} -> {self.newVersion}\n\n{self.getUserLocation()}"
                 )
                 self.sendPushOver(msg, self.admin_pushoverkey)
                 self.userLogging(
-                    f'Program Update ({currentVersion} -> {self.newVersion})')
+                    f'Program Update ({self.versionNum} -> {self.newVersion})')
 
                 self.printStatus("버전 업데이트 중...")
                 import subprocess
@@ -516,11 +510,7 @@ class MainWindow(QMainWindow):
                 closeConsole()
                 os._exit(0)
 
-            # New version check
-            currentVersion = version.parse(self.versionNum)
-            self.newVersion = version.parse(
-                self.managerBoardObj.checkNewVersion())
-            if currentVersion < self.newVersion:
+            if self.checkNewVersion():
                 if auto == 'auto':
                     self.closeBootscreen()
                     update_process()
@@ -665,19 +655,18 @@ class MainWindow(QMainWindow):
             self.printStatus(f"{self.fullStorage} GB / 2 TB")
         # CRAWLER
         elif index == 1:
-            self.initShortcutialize()
             self.printStatus(f"활성 크롤러 수: {self.activeCrawl}")
+            self.resetShortcuts()
         # ANALYSIS
         elif index == 2:
             self.printStatus()
             self.managerAnalysisObj.analysis_shortcut_setting()
         # BOARD
         elif index == 3:
-            self.managerBoardObj.setBoardShortcut()
             self.printStatus()
+            self.managerBoardObj.setBoardShortcut()
         # WEB
         elif index == 4:
-            self.initShortcutialize()
             self.printStatus()
         # USER
         elif index == 5:
@@ -874,7 +863,7 @@ class MainWindow(QMainWindow):
         except requests.RequestException as e:
             return ""
 
-    def initShortcutialize(self):
+    def resetShortcuts(self):
         shortcuts = [self.ctrld, self.ctrls, self.ctrlv, self.ctrla, self.ctrll, self.ctrle, self.ctrlr, self.ctrlk, self.ctrlm, self.ctrlc,
                      self.cmdd, self.cmds, self.cmdv, self.cmda, self.cmdl, self.cmde, self.cmdr, self.cmdk, self.cmdm, self.cmdc]
         for shortcut in shortcuts:
@@ -1199,6 +1188,36 @@ class MainWindow(QMainWindow):
             except requests.exceptions.RequestException as e:
                 return f"Error communicating with the server: {e}"
 
+    def sendPushOver(self, msg, user_key, image_path=False):
+        app_key_list = ["a22qabchdf25zzkd1vjn12exjytsjx"]
+
+        for app_key in app_key_list:
+            try:
+                # Pushover API 설정
+                url = 'https://api.pushover.net/1/messages.json'
+                # 메시지 내용
+                message = {
+                    'token': app_key,
+                    'user': user_key,
+                    'message': msg
+                }
+                # Pushover에 요청을 보냄
+                if image_path == False:
+                    response = requests.post(url, data=message)
+                else:
+                    response = requests.post(url, data=message, files={
+                        "attachment": (
+                            "image.png", open(image_path, "rb"),
+                            "image/png")
+                    })
+                break
+            except:
+                continue
+
+    def readCSV(self, csvPath):
+        csv_data = pd.read_csv(csvPath, low_memory=False, index_col=0)
+        csv_data = csv_data.loc[:, ~csv_data.columns.str.contains('^Unnamed')]
+        return csv_data
     #################### DEVELOPER MODE ###################
 
     def developerMode(self, toggle):

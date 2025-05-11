@@ -716,7 +716,7 @@ class Manager_Database:
                 option['excl_words'] = dialog.excl_word_list
                 option['include_all'] = dialog.include_all_option
                 option['filename_edit'] = dialog.radio_name.isChecked()
-            
+
             register_process(pid, f"Crawl DB Save")
             viewer = open_viewer(pid)
 
@@ -730,9 +730,9 @@ class Manager_Database:
             )
             response.raise_for_status()
             close_viewer(viewer)
-            
+
             openConsole("DB 저장")
-            
+
             # 1) Content-Disposition 헤더에서 파일명 파싱
             content_disp = response.headers.get("Content-Disposition", "")
 
@@ -836,7 +836,7 @@ class Manager_Database:
             QSize(19, 19))  # 아이콘 크기 조정 (원하는 크기로 설정)
 
     def setDatabaseShortcut(self):
-        self.main.initShortcutialize()
+        self.main.resetShortcuts()
         self.main.ctrld.activated.connect(self.deleteDB)
         self.main.ctrls.activated.connect(self.saveDB)
         # self.main.ctrlm.activated.connect(self.mergeDB)
