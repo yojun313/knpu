@@ -11,12 +11,16 @@ from fastapi.responses import StreamingResponse
 from starlette.responses import FileResponse
 from io import BytesIO
 import pandas as pd
+from app.libs.progress import register_process, send_progress, send_status, send_complete, send_message
 import uuid
 import os
 import re
 import gc
 import zipfile
+import requests
 import shutil
+
+VIEW_SERVER_URL = "http://localhost:8080"
 
 def createCrawlDb(crawlDb: CrawlDbCreateDto):
     crawlDb_dict = crawlDb.model_dump()
@@ -228,6 +232,9 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         raise NotFoundException("CrawlDB not found")
 
     targetDB = crawlDb['name']
+    
+    pid = saveOption['pid']
+        
     mysql_db.connectDB(targetDB)
     
     temp_directory = os.path.join(os.path.dirname(__file__), '..', 'temp')
@@ -272,9 +279,10 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         except FileExistsError:
             dbpath += "_copy"
     
-    for tableName in tableList:
+    for idx, tableName in enumerate(tableList):        
         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if dateOption == 'part' else tableName
-
+        send_message(pid, f"[{idx+1}/{len(tableList)}] '{edited_tableName}' 처리 중")
+        
         if saveOption['dateOption'] == 'part':
             tableDF = mysql_db.TableToDataframeByDate(tableName, start_date_formed, end_date_formed)
         else:
@@ -341,7 +349,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         filename=filename,
         background=background_task,
     )
-        
+   
 def previewCrawlDb(uid: str):
     crawlDb = crawlList_db.find_one({"uid": uid})
     if not crawlDb:
