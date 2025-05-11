@@ -724,6 +724,7 @@ class Manager_Database:
             
             register_process(pid, f"Crawl DB Save")
             viewer = open_viewer(pid)
+            print(pid)
             
             # 진행 상태 뷰어
             self.main.printStatus("서버에서 파일 준비 중...")
