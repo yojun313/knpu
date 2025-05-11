@@ -1143,6 +1143,17 @@ class Manager_Analysis:
                 timeout=3600
             )
             
+            if response.status_code != 200:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get("message") or error_data.get("error") or "분석 실패"
+                except Exception:
+                    error_msg = response.text or "분석 중 알 수 없는 오류가 발생했습니다."
+                
+                QMessageBox.critical(self.main, "분석 실패", f"KEMKIM 분석 실패\n\n{error_msg}")
+                self.main.printStatus()
+                return
+            
             self.main.userLogging(
                 f'ANALYSIS -> KEMKIM({tokenfile_name})-({startdate},{startdate},{topword},{weight},{filter_yes_selected})')
             

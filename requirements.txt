@@ -43,3 +43,4 @@ matplotlib
 seaborn
 wordcloud
 googletrans
+python-multipart
