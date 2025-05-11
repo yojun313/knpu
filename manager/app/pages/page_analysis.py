@@ -1,7 +1,6 @@
 import os
 import sys
 import gc
-import copy
 import re
 import ast
 import csv
@@ -23,8 +22,16 @@ from libs.console import openConsole, closeConsole
 import chardet
 from libs.analysis import DataProcess
 from libs.kemkim import KimKem
+import uuid
 import asyncio
 from googletrans import Translator
+import json
+from urllib.parse import unquote
+import zipfile
+import requests
+from libs.viewer import open_viewer, close_viewer, register_process
+
+
 
 warnings.filterwarnings("ignore")
 
@@ -1100,40 +1107,103 @@ class Manager_Analysis:
                 exception_word_list = []
                 exception_word_list_path = 'N'
 
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                openConsole('KEMKIM 분석')
-
             print("\n파일 읽는 중...\n")
             self.main.printStatus("파일 읽는 중...")
-            token_data = pd.read_csv(selected_directory[0], low_memory=False)
+            
 
+            pid = str(uuid.uuid4())
+            register_process(pid, "KEMKIM")
+            viewer = open_viewer(pid)
+            
+            option = {
+                "pid": pid,
+                "tokenfile_name": tokenfile_name,
+                "startdate": startdate,
+                "enddate": enddate,
+                "period": period,
+                "topword": topword,
+                "weight": weight,
+                "graph_wordcnt": graph_wordcnt,
+                "split_option": split_option,
+                "split_custom": split_custom,
+                "filter_option": filter_yes_selected,
+                "trace_standard": trace_standard_selected,
+                "ani_option": ani_yes_selected,
+                "exception_word_list": exception_word_list,
+                "exception_filename": exception_word_list_path,
+            }
+
+            download_url = self.main.server_api + "/analysis/kemkim"
+
+            response = requests.post(
+                download_url,
+                files={"token_file": open(selected_directory[0], "rb")},
+                data={"option": json.dumps(option)},
+                headers=self.main.api_headers,
+                timeout=3600
+            )
+            
             self.main.userLogging(
                 f'ANALYSIS -> KEMKIM({tokenfile_name})-({startdate},{startdate},{topword},{weight},{filter_yes_selected})')
-            kimkem_obj = KimKem(self.main, token_data, tokenfile_name, save_path, startdate, enddate, period,
-                                topword, weight, graph_wordcnt, split_option, split_custom, filter_yes_selected, trace_standard_selected,
-                                ani_yes_selected, exception_word_list, exception_word_list_path)
-            result = kimkem_obj.make_kimkem()
-            if self.main.SETTING['ProcessConsole'] == 'default':
-                closeConsole()
-            self.main.printStatus()
+            
+            # 1) Content-Disposition 헤더에서 파일명 파싱
+            content_disp = response.headers.get("Content-Disposition", "")
 
-            if result == 1:
-                reply = QMessageBox.question(self.main, 'Notification', "KEM KIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
-                    self.main.openFileExplorer(kimkem_obj.kimkem_folder_path)
-            elif result == 0:
-                QMessageBox.information(
-                    self.main, "Notification", f"Keyword가 존재하지 않아 KEM KIM 분석이 진행되지 않았습니다")
-            elif result == 2:
-                QMessageBox.warning(self.main, "Wrong Range",
-                                    "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
+            # 2) 우선 filename="…" 시도
+            m = re.search(r'filename="(?P<fname>[^"]+)"', content_disp)
+            if m:
+                zip_name = m.group("fname")
             else:
-                self.main.programBugLog(result)
+                # 3) 없으면 filename*=utf-8''… 로 시도
+                m2 = re.search(
+                    r"filename\*=utf-8''(?P<fname>[^;]+)", content_disp)
+                if m2:
+                    zip_name = unquote(m2.group("fname"))
+                else:
+                    zip_name = f"example.zip"
 
-            del kimkem_obj
-            gc.collect()
+            # 4) 이제 다운로드 & 압축 해제
+            local_zip = os.path.join(save_path, zip_name)
+            total_size = int(response.headers.get("Content-Length", 0))
+            
+            close_viewer(viewer)
+            if self.main.SETTING['ProcessConsole'] == 'default':
+                openConsole('KEMKIM 분석')
+                
+            with open(local_zip, "wb") as f, tqdm(
+                total=total_size,
+                file=sys.stdout,
+                unit="B", unit_scale=True, unit_divisor=1024,
+                desc="Downloading Kemkim Data",
+                ascii=True, ncols=80,
+                bar_format="{desc}: |{bar}| {percentage:3.0f}% [{n_fmt}/{total_fmt} {unit}] @ {rate_fmt}",
+                dynamic_ncols=True
+            ) as pbar:
+                for chunk in response.iter_content(8192):
+                    if chunk:
+                        f.write(chunk)
+                        pbar.update(len(chunk))
 
+            self.main.printStatus("다운로드 완료, 압축 해제 중…")
+            print("\n다운로드 완료, 압축 해제 중...\n")
+
+            # 압축 풀 폴더 이름은 zip 파일 이름(확장자 제외)
+            base_folder = os.path.splitext(zip_name)[0]
+            extract_path = os.path.join(save_path, base_folder)
+            os.makedirs(extract_path, exist_ok=True)
+
+            with zipfile.ZipFile(local_zip, "r") as zf:
+                zf.extractall(extract_path)
+
+            os.remove(local_zip)
+            self.main.printStatus()
+            closeConsole()
+            
+            reply = QMessageBox.question(self.main, 'Notification', f"KEMKIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                self.main.openFileExplorer(extract_path)
+            
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
