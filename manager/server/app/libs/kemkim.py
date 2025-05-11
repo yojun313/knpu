@@ -1,4 +1,3 @@
-import sys
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
@@ -14,8 +13,8 @@ import traceback
 import warnings
 import re
 import platform
-from tqdm import tqdm
 import gc
+from .progress import send_message
 
 warnings.filterwarnings("ignore")
 
@@ -30,7 +29,7 @@ plt.rcParams['axes.unicode_minus'] = False
 
 class KimKem:
     def __init__(self,
-                 parent=None,
+                 pid=None,
                  token_data=None, 
                  csv_name=None, 
                  save_path=None, 
@@ -49,8 +48,8 @@ class KimKem:
                  exception_filename = 'N',
                  rekemkim = False):
         self.exception_word_list = exception_word_list
-        self.main = parent
         if rekemkim == False:
+            self.pid = pid
             self.csv_name = csv_name
             self.save_path = save_path
             self.token_data = token_data
@@ -87,6 +86,7 @@ class KimKem:
             
             if (len(period_list) - 1) * self.weight >= 1:
                 self.write_status("시간 가중치 오류")
+                send_message(self.pid, "시간 가중치 오류")
                 self.weighterror = True
 
             else:
@@ -132,10 +132,9 @@ class KimKem:
         try:
             if self.weighterror == True:
                 return 2
-            print(self.info + '\n')
-            self.write_status("토큰 데이터 분할 중...")
-            print("\n토큰 데이터 분할 중... ")
-            self.main.printStatus('토큰 데이터 분할 중...')
+            
+            send_message(self.pid, self.info)
+            send_message(self.pid, "토큰 데이터 분할 중...")
 
             # Step 2: 연도별 단어 리스트 생성 (딕셔너리)
             period_divided_dic_raw = self._initialize_period_divided_dic(self.period_divided_group)#
@@ -154,12 +153,10 @@ class KimKem:
             # 추출된 공통 키워드 존재하지 않으면 프로그램 종료
             if keyword_list == []:
                 self.write_status("키워드 없음 종료")
-                self.main.printStatus("키워드 없음 종료")
+                send_message(self.pid, "키워드 없음 종료")
                 return 0
 
-            self.write_status("TF/DF 계산 중...")
-            print("\nTF/DF 계산 중...")
-            self.main.printStatus('TF/DF 계산 중...')
+            send_message(self.pid, "TF/DF 계산 중...")
 
             # Step 4: TF, DF, DoV, DoD 계산 -> 결과: {key: 키워드, value: 계산값} 형식의 딕셔너리
             tf_counts = self.cal_tf(keyword_list, period_divided_dic_merged)
@@ -173,9 +170,7 @@ class KimKem:
             self.startperiod = self.period_list[0]
             self.lastperiod = self.period_list[-1]
 
-            self.write_status("추적 데이터 DOV/DOD 계산 중...")
-            print("\n추적 데이터 DOV/DOD 계산 중...")
-            self.main.printStatus('추적 데이터 DOV/DOD 계산 중...')
+            send_message(self.pid, "추적 데이터 DOV/DOD 계산 중...")
 
             trace_DoV_dict = self.cal_DoV(keyword_list, period_divided_dic, tf_counts)
             trace_DoD_dict = self.cal_DoD(keyword_list, period_divided_dic, df_counts)
@@ -192,15 +187,8 @@ class KimKem:
             DoD_coordinates_record = {}
             Final_signal_record = {}
 
-            print("")
-
             if self.filter_option == True:
-                if self.main.SETTING['ProcessConsole'] == 'default':
-                    iterator = tqdm(self.period_list, desc="기간별 추적 KEMKIM 데이터", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
-                    iterator = enumerate(iterator)
-                else:
-                    iterator = enumerate(self.period_list)
-                for index, period in iterator:
+                for index, period in enumerate(self.period_list):
                     # Step 7: 평균 증가율 및 빈도 계산
 
                     if index == 0:
@@ -208,25 +196,21 @@ class KimKem:
 
                     result_folder = os.path.join(self.trace_result_folder, period)
 
-                    self.write_status(f"{period} KEMKIM 증가율 계산 중...")
-                    self.main.printStatus(f"{period} KEMKIM 증가율 계산 중...")
+                    send_message(self.pid, f"{period} KEMKIM 증가율 계산 중...")
 
                     if self.trace_standard == 'prevyear':
                         avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[index-1], period)
                     else:
                         avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[0], period)
 
-                    self.write_status(f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
-                    self.main.printStatus(f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
+                    send_message(self.pid, f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
 
                     # Step 8: 신호 분석 및 그래프 생성
                     DoV_signal_record[period], DoD_signal_record[period], DoV_coordinates_record[period], DoD_coordinates_record[period] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
                     Final_signal_record[period] = self._save_final_signals(DoV_signal_record[period], DoD_signal_record[period], os.path.join(result_folder, 'Signal'))
 
                 # Trace 데이터에서 키워드별로 Signal 변화를 추적
-                self.write_status("키워드 추적 데이터 생성 및 필터링 중...")
-                print("\n키워드 추적 데이터 생성 및 필터링 중...")
-                self.main.printStatus('키워드 추적 데이터 생성 및 필터링 중...')
+                send_message(self.pid, "키워드 추적 데이터 생성 및 필터링 중...")
 
                 DoV_signal_trace = self.trace_keyword_positions(DoV_signal_record)
                 DoD_signal_trace = self.trace_keyword_positions(DoD_signal_record)
@@ -261,41 +245,35 @@ class KimKem:
                 self.exception_word_list = self.exception_word_list + ['@@@'] + add_list if self.exception_word_list else add_list
 
                 if self.ani_option == True:
-                    self.write_status("키워드 추적 그래프 생성 중...")
-                    print("\n키워드 추적 그래프 생성 중...")
-                    self.main.printStatus('키워드 추적 그래프 생성 중...')
+                    send_message(self.pid, "키워드 추적 그래프 생성 중...")
 
                     self.visualize_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_graph.png'), 'TF','Increasing Rate')
                     self.visualize_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_graph.png'), 'DF', 'Increasing Rate')
 
-                    self.write_status("키워드 추적 애니메이션 생성 중...")
-                    print("\n키워드 추적 애니메이션 생성 중...")
-                    self.main.printStatus('키워드 추적 애니메이션 생성 중...')
+                    send_message(self.pid, "키워드 추적 애니메이션 생성 중...")
 
                     self.animate_keyword_movements(DoV_signal_trace, os.path.join(self.trace_folder, 'DoV_signal_trace_animation.gif'), 'TF', 'Increasing Rate')
                     self.animate_keyword_movements(DoD_signal_trace, os.path.join(self.trace_folder, 'DoD_signal_trace_animation.gif'), 'DF', 'Increasing Rate')
-
-            self.write_status("최종 KEM KIM 생성 중...")
-            print("\n[ 최종 KEM KIM 계산 ]\n")
-            self.main.printStatus('최종 KEM KIM 생성 중...')
+                    
+            send_message(self.pid, "최종 KEM KIM 생성 중...")
 
             pd.DataFrame(self.exception_word_list, columns=['word']).to_csv(os.path.join(self.result_folder, 'filtered_words.csv'), index=False, encoding='utf-8-sig')
             DoV_dict = self.cal_DoV(keyword_list, period_divided_dic, tf_counts, trace=False)
             DoD_dict = self.cal_DoD(keyword_list, period_divided_dic, df_counts, trace=False)
             self._save_kimkem_results(tf_counts, df_counts, DoV_dict, DoD_dict)
-            print('\n평균 증가율 및 빈도 계산 중...')
+            send_message(self.pid, "최종 KEM KIM 생성 중...")
             avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, self.period_list[0], self.period_list[-1])
-            print("\n신호 분석 중...")
+            send_message(self.pid, "신호 분석 및 그래프 생성 중...")
             DoV_signal_record, DoD_signal_record, DoV_coordinates_record, DoD_coordinates_record = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(self.result_folder, 'Graph'))
             Final_signal_record = self._save_final_signals(DoV_signal_record, DoD_signal_record, os.path.join(self.result_folder, 'Signal'))
 
             self.write_status("완료")
-            print("완료")
-            self.main.printStatus('완료')
+            send_message(self.pid, "완료")
 
-            return 1
+            return self.kimkem_folder_path
         except Exception as e:
             self.write_status("오류 중단")
+            send_message(self.pid, "오류 중단")
             return traceback.format_exc()
 
     def filter_dic_empty_list(self, dictionary):
@@ -894,12 +872,8 @@ class KimKem:
 
         # tqdm을 사용하여 진행 바 추가
         keyword_set = set(keyword_list)  # 키워드 리스트를 set으로 변환하여 검색 시간 단축
-        if self.main.SETTING['ProcessConsole'] == 'default':
-            iterator = tqdm(period_divided_dic_merged.items(), desc="TF ", file=sys.stdout,bar_format="{l_bar}{bar}|", ascii=' =')
-        else:
-            iterator = period_divided_dic_merged.items()
 
-        for key, value in iterator:
+        for key, value in period_divided_dic_merged.items():
             value_counter = Counter([word for word in value if word in keyword_set])  # 키워드만 카운팅
 
             # 내림차순으로 정렬
@@ -913,12 +887,7 @@ class KimKem:
         df_counts = {}
         keyword_set = set(keyword_list)  # 키워드 리스트를 set으로 변환하여 검색 시간 단축
 
-        # tqdm을 사용하여 전체 기간에 대한 진행 상태 표
-        if self.main.SETTING['ProcessConsole'] == 'default':
-            iterator = tqdm(period_divided_dic, desc="DF ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
-        else:
-            iterator = period_divided_dic
-        for period in iterator:
+        for period in period_divided_dic:
             docs = period_divided_dic[period]
 
             # 각 키워드가 문서에 등장하는지 여부를 저장하는 Counter 사용
@@ -938,11 +907,7 @@ class KimKem:
     # 연도별 keyword DoV 딕셔너리 반환
     def cal_DoV(self, keyword_list, period_divided_dic, tf_counts, trace=True):
         DoV_dict = {}
-        if self.main.SETTING['ProcessConsole'] == 'default':
-            iterator = tqdm(period_divided_dic, desc="DOV ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
-        else:
-            iterator = period_divided_dic
-        for period in iterator:
+        for period in period_divided_dic:
             keyword_DoV_dic = {}
 
             if trace == True:
@@ -962,11 +927,7 @@ class KimKem:
     # 연도별 keyword DoD 딕셔너리 반환
     def cal_DoD(self, keyword_list, period_divided_dic, df_counts, trace=True):
         DoD_dict = {}
-        if self.main.SETTING['ProcessConsole'] == 'default':
-            iterator = tqdm(period_divided_dic, desc="DOV ", file=sys.stdout, bar_format="{l_bar}{bar}|", ascii=' =')
-        else:
-            iterator = period_divided_dic
-        for period in iterator:
+        for period in period_divided_dic:
             keyword_DoV_dic = {}
 
             if trace == True:

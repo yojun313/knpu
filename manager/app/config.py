@@ -5,7 +5,7 @@ VERSION = '2.7.2'
     1: production
 '''
 
-mode = 1
+mode = 0
 
 if mode == 0:
     MANAGER_SERVER_API = "http://localhost:8000/api"
