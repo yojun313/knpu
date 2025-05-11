@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>프로세스 뷰어</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #f4f6f8;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    #container {
+      max-width: 600px;
+      margin: 2em auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    header {
+      background: #2C3E50;        /* 테마 색상 */
+      color: white;
+      padding: 1em;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.4em;
+    }
+    #progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e0e0e0;
+    }
+    #progress-bar .fill {
+      height: 100%;
+      width: 0%;
+      background: #2C3E50;        /* 테마 색상 */
+      transition: width 0.3s ease;
+    }
+    #messages {
+      list-style: none;
+      padding: 1em;
+      margin: 0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    #messages li {
+      margin-bottom: 0.75em;
+      padding: 0.75em 1em;
+      border-radius: 4px;
+      background: #fafafa;
+      position: relative;
+      animation: fadeIn 0.5s ease;
+    }
+    #messages li::before {
+      content: '';
+      width: 4px;
+      height: 100%;
+      background: #2C3E50;        /* 테마 색상 */
+      position: absolute;
+      left: 0;
+      top: 0;
+      border-radius: 4px 0 0 4px;
+    }
+    #messages li.status {
+      background: #fff3cd;
+    }
+    #messages li.complete {
+      background: #d4edda;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <header>
+      <h1 id="title">프로세스 뷰어</h1>
+    </header>
+    <div id="progress-bar"><div class="fill" id="fill"></div></div>
+    <ul id="messages"></ul>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(location.search);
+    const pid = urlParams.get('pid');
+    const titleEl    = document.getElementById('title');
+    const fillEl     = document.getElementById('fill');
+    const messagesEl = document.getElementById('messages');
+
+    if (!pid) {
+      titleEl.textContent = '프로세스 ID가 없습니다.';
+    } else {
+      fetch(`/process/${pid}`)
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => {
+          titleEl.textContent = data.title;
+          startWS(pid);
+        })
+        .catch(() => {
+          titleEl.textContent = '알 수 없는 프로세스';
+        });
+    }
+
+    function startWS(id) {
+      const ws = new WebSocket(`ws://${location.host}/ws/${id}`);
+      ws.onopen = () => addMessage('서버 연결됨');
+      ws.onmessage = ev => {
+        const msg = JSON.parse(ev.data);
+        handleMessage(msg);
+      };
+      ws.onclose = () => addMessage('서버 연결 해제', 'status');
+    }
+
+    function handleMessage(msg) {
+      switch (msg.type) {
+        case 'message':
+          addMessage(msg.text);
+          break;
+        case 'progress':
+          const pct = Math.floor(msg.current/msg.total*100);
+          fillEl.style.width = pct + '%';
+          addMessage(`진행: ${msg.current}/${msg.total}`, '');
+          break;
+        case 'status':
+          addMessage(`상태: ${msg.phase}`, 'status');
+          break;
+        case 'complete':
+          fillEl.style.width = '100%';
+          addMessage(`완료! 다운로드: ${msg.url}`, 'complete');
+          setTimeout(()=> location.href = msg.url, 500);
+          break;
+        default:
+          addMessage(JSON.stringify(msg));
+      }
+    }
+
+    function addMessage(text, cls='') {
+      const li = document.createElement('li');
+      if (cls) li.classList.add(cls);
+      li.textContent = text;
+      messagesEl.appendChild(li);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+  </script>
+</body>
+</html>

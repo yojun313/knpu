@@ -35,6 +35,7 @@ class CrawlLogCreateDto(BaseModel):
     content: str
     
 class SaveCrawlDbOption(BaseModel):
+    pid: str
     dateOption: str
     start_date: str
     end_date: str
