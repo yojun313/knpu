@@ -8,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 from starlette.background import BackgroundTask
 from zoneinfo import ZoneInfo
 from fastapi.responses import StreamingResponse
+from starlette.responses import FileResponse
 from io import BytesIO
 import pandas as pd
 import uuid
@@ -15,8 +16,7 @@ import os
 import re
 import gc
 import zipfile
-import pyarrow
-import fastparquet
+import shutil
 
 def createCrawlDb(crawlDb: CrawlDbCreateDto):
     crawlDb_dict = crawlDb.model_dump()
@@ -214,6 +214,14 @@ def updateCrawlDb(uid: str, dataInfo, error:bool = False):
     )
 
 def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
+    def cleanup_folder_and_zip(folder_path: str, zip_path: str):
+        # 폴더와 ZIP 파일을 삭제
+        shutil.rmtree(folder_path, ignore_errors=True)
+        try:
+            os.remove(zip_path)
+        except OSError:
+            pass
+    
     saveOption = saveOption.model_dump()
     crawlDb = crawlList_db.find_one({"uid": uid})
     if not crawlDb:
@@ -321,7 +329,18 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         tableDF = None
         gc.collect()
          
-    return dbpath
+    zip_path = shutil.make_archive(dbpath, "zip", root_dir=dbpath)
+    filename = os.path.basename(zip_path)  # 여기에 한글이 섞여 있어도 OK
+
+    background_task = BackgroundTask(
+        cleanup_folder_and_zip, dbpath, zip_path)
+    # 4) FileResponse에 filename= 으로 넘기기
+    return FileResponse(
+        path=zip_path,
+        media_type="application/zip",
+        filename=filename,
+        background=background_task,
+    )
         
 def previewCrawlDb(uid: str):
     crawlDb = crawlList_db.find_one({"uid": uid})
