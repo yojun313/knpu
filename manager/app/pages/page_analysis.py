@@ -1107,10 +1107,6 @@ class Manager_Analysis:
                 exception_word_list = []
                 exception_word_list_path = 'N'
 
-            print("\n파일 읽는 중...\n")
-            self.main.printStatus("파일 읽는 중...")
-            
-
             pid = str(uuid.uuid4())
             register_process(pid, "KEMKIM")
             viewer = open_viewer(pid)
