@@ -32,7 +32,6 @@ def open_viewer(pid: str, width: int=800, height: int=400):
     Popen 객체에 프로필 디렉터리 경로를 붙여 반환합니다.
     """
     url = f"{VIEW_SERVER}/?pid={pid}"
-    print(f"open_viewer: {url}")
     profile_dir = tempfile.mkdtemp(prefix="chrome-profile-")
 
     # 실행할 Chrome 경로 결정
