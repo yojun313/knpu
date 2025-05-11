@@ -729,10 +729,7 @@ class Manager_Database:
                 timeout=3600
             )
             response.raise_for_status()
-            close_viewer(viewer)
-
-            openConsole("DB 저장")
-
+            
             # 1) Content-Disposition 헤더에서 파일명 파싱
             content_disp = response.headers.get("Content-Disposition", "")
 
@@ -752,6 +749,9 @@ class Manager_Database:
             # 4) 이제 다운로드 & 압축 해제
             local_zip = os.path.join(folder_path, zip_name)
             total_size = int(response.headers.get("Content-Length", 0))
+
+            close_viewer(viewer)
+            openConsole("CSV로 저장")
 
             with open(local_zip, "wb") as f, tqdm(
                 total=total_size,
