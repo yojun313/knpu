@@ -116,7 +116,8 @@
     }
 
     function startWS(id) {
-      const ws = new WebSocket(`ws://${location.host}/ws/${id}`);
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${protocol}//${location.host}/ws/${id}`);
       ws.onopen = () => addMessage('서버 연결됨');
       ws.onmessage = ev => {
         const msg = JSON.parse(ev.data);
