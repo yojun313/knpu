@@ -1023,9 +1023,9 @@ class Manager_Analysis:
             self.main.printStatus("KEM KIM 옵션을 설정하세요")
             while True:
                 dialog = KimKemInputDialog(tokenfile_name)
-                dialog.exec_()
+                result = dialog.exec_()
                 try:
-                    if dialog.data == None:
+                    if result != QDialog.Accepted or dialog.data is None:
                         return
                     startdate = dialog.data['startDate']
                     enddate = dialog.data['endDate']
