@@ -1,19 +1,20 @@
-from fastapi import APIRouter, Query, Header
-from app.services.auth_service import request_verify, verify_code, loginWithToken
+from fastapi import APIRouter, Query, Header, UploadFile, File, Body, Form
+from app.services.analysis_service import start_kemkim
 from fastapi.responses import JSONResponse
+from app.models.analysis_model import KemKimOption
+import pandas as pd
+from io import StringIO
+import json
 
 router = APIRouter()
 
-@router.get("/request")
-def request_verification(name: str = Query(..., description="유저 이름")):
-    return request_verify(name)
 
-@router.post("/verify")
-def verify_user(name: str = Query(...), code: str = Query(...), device: str = Query(...)):
-    return verify_code(name, code, device)
-
-@router.get("/login")
-def login_with_token(Authorization: str = Header(...)):
-    # 토큰 앞에 'Bearer ' 붙어서 올 경우 대비
-    token = Authorization.replace("Bearer ", "")
-    return loginWithToken(token)
+@router.post("/kemkim")
+async def analysis_kemkim(
+    option: str = Form(...),
+    token_file: UploadFile = File(...)
+):
+    option = json.loads(option)
+    content = await token_file.read()
+    token_data = pd.read_csv(StringIO(content.decode("utf-8")))
+    return start_kemkim(KemKimOption(**option), token_data)
