@@ -13,10 +13,9 @@
 # - Phone: +82-10-4072-9190
 ##############################################################################################################pip
 
-VERSION = '2.7.2'
-
 import os
 import platform
+from config import MANAGER_SERVER_API, VERSION
 from PyQt5.QtWidgets import QApplication
 from pages.page_splash import SplashDialog, theme_option
 from PyQt5.QtCore import QCoreApplication, Qt, QSettings
@@ -112,15 +111,11 @@ from pages.page_user import Manager_User
 from pages.page_analysis import Manager_Analysis
 from libs.console import openConsole, closeConsole
 
-DB_IP = '121.152.225.232'
-LOCAL_IP = '192.168.0.3'
-
 class MainWindow(QMainWindow):
 
     def __init__(self, splashDialog):
         try:
-            self.server_api = "http://localhost:8000/api"
-            #self.server_api = "https://manager.knpu.re.kr/api"
+            self.server_api = MANAGER_SERVER_API
             self.versionNum = VERSION
             self.version = f'Version {self.versionNum}'
             self.splashDialog = splashDialog
@@ -184,10 +179,6 @@ class MainWindow(QMainWindow):
 
                     if os.path.isdir(self.localDirectory) == False:
                         os.mkdir(self.localDirectory)
-
-                    DB_ip = DB_IP
-                    if socket.gethostname() in ['DESKTOP-502IMU5', 'DESKTOP-0I9OM9K', 'BigMacServer', 'BIGMACLAB-Z8']:
-                        DB_ip = LOCAL_IP
 
                     self.networkText = (
                         "\n\n[ DB 접속 반복 실패 시... ]\n"
