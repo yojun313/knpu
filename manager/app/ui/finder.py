@@ -60,7 +60,7 @@ def makeFileFinder(main_window, localDirectory=None):
                         ["open" if os.uname().sysname == "Darwin" else "xdg-open", file_path])
                 printStatus(self.main)
             except Exception as e:
-                printStatus(f"파일 열기 실패")
+                printStatus(self.main, f"파일 열기 실패")
 
         def on_directory_change(self, path):
             printStatus(self.main)
