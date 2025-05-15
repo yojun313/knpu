@@ -5,7 +5,6 @@ import shutil
 import socket
 import traceback
 import platform
-from pathlib import Path
 from datetime import datetime
 
 import requests
@@ -20,7 +19,6 @@ from PyQt5.QtWidgets import (
     QApplication, QVBoxLayout, QHBoxLayout, QLabel, QDialog, QInputDialog,
     QMessageBox, QPushButton, QMainWindow
 )
-from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 from config import MANAGER_SERVER_API, VERSION, ASSETS_PATH
 from libs.console import openConsole, closeConsole
@@ -37,7 +35,7 @@ from core.boot import (
 from services.auth import checkPassword
 from services.crawldb import updateDB
 from services.pushover import sendPushOver
-from services.api import Request
+from services.api import Request, api_headers
 from ui.style import theme_option
 from ui.status import printStatus
 from core.setting import get_setting, set_setting
@@ -71,7 +69,6 @@ class MainWindow(QMainWindow):
                     if get_setting('BootTerminal') == 'on':
                         openConsole("Boot Process")
                     self.startTime = datetime.now()
-                    self.gpt_api_key = get_setting('GPT_Key')
                     checkNetwork(self)
                     self.listWidget.currentRowChanged.connect(self.display)
 
@@ -87,20 +84,6 @@ class MainWindow(QMainWindow):
                         self.localDirectory = '/Users/yojunsmacbookprp/Documents/BIGMACLAB_MANAGER'
                         if not os.path.exists(self.localDirectory):
                             os.makedirs(self.localDirectory)
-
-                    self.readmePath = os.path.join(
-                        self.localDirectory, 'README.txt')
-                    if not Path(self.readmePath).exists():
-                        with open(self.readmePath, "w", encoding="utf-8", errors="ignore") as txt:
-                            text = (
-                                "[ BIGMACLAB MANAGER README ]\n\n\n"
-                                "C:/BIGMACLAB_MANAGER is default directory folder of this program. This folder is automatically built by program.\n\n"
-                                "All files made in this program will be saved in this folder without any change.\n\n\n\n"
-                                "< Instructions >\n\n"
-                                "- MANAGER: https://knpu.re.kr/tool\n"
-                                "- KEMKIM: https://knpu.re.kr/kemkim"
-                            )
-                            txt.write(text)
 
                     if os.path.isdir(self.localDirectory) == False:
                         os.mkdir(self.localDirectory)
@@ -214,9 +197,8 @@ class MainWindow(QMainWindow):
             saved_token = get_setting('auth_token')
             
             if saved_token:
-                headers = {"Authorization": f"Bearer {saved_token}"}
                 res = requests.get(
-                    f"{self.server_api}/auth/login", headers=headers)
+                    f"{self.server_api}/auth/login", headers=api_headers)
                 if res.status_code == 200:
                     userData = res.json()['user']
                     self.user = userData['name']
@@ -427,14 +409,6 @@ class MainWindow(QMainWindow):
 
     #############################################################################
 
-    def updateSettings(self, option_key, new_value):
-        try:
-            self.settings.setValue(option_key, new_value)  # 설정값 업데이트
-            return True
-        except Exception as e:
-            print(traceback.format_exc())
-            return False
-
     def userLogging(self, text=''):
         try:
             jsondata = {
@@ -629,7 +603,7 @@ class MainWindow(QMainWindow):
         if model == 'ChatGPT':
             try:
                 # OpenAI 클라이언트 초기화
-                client = OpenAI(api_key=self.gpt_api_key)
+                client = OpenAI(api_key=get_setting('GPT_Key'))
 
                 # 모델 이름 수정: gpt-4-turbo
                 model = "gpt-4-turbo"
