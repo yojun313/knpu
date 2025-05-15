@@ -2,6 +2,10 @@ import warnings
 import traceback
 from PyQt5.QtWidgets import QMessageBox
 import bcrypt
+from ui.table import makeTable
+from services.auth import checkPassword
+from config import ADMIN_PASSWORD
+from services.api import Request
 warnings.filterwarnings("ignore")
 
 
@@ -14,7 +18,7 @@ class Manager_User:
     def refreshUserTable(self):
         # 데이터베이스 연결 및 데이터 가져오기
 
-        self.user_list = self.main.Request('get', '/users').json()['data']
+        self.user_list = Request('get', '/users').json()['data']
         user_data = [(user['name'], user['email'], user['pushoverKey'])
                      for user in self.user_list]
         self.userNameList = [user['name'] for user in self.user_list]
@@ -24,7 +28,8 @@ class Manager_User:
 
         # 테이블 설정
         columns = ['Name', 'Email', 'PushOverKey']
-        self.main.makeTable(
+        makeTable(
+            self.main,
             widgetname=self.main.user_tablewidget,
             data=user_data,
             column=columns,
@@ -37,8 +42,8 @@ class Manager_User:
             key = self.main.user_key_lineinput.text()
 
             if self.main.user != 'admin':
-                ok, password = self.main.checkPassword(True)
-                if not ok or bcrypt.checkpw(password.encode('utf-8'), self.main.admin_password.encode('utf-8')) == False:
+                ok, password = checkPassword(self.main, True)
+                if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
 
             reply = QMessageBox.question(
@@ -49,7 +54,7 @@ class Manager_User:
                     'email': email,
                     'pushoverKey': key
                 }
-                response = self.main.Request('post', '/users/add', json=data)
+                response = Request('post', '/users/add', json=data)
                 self.refreshUserTable()
 
         except Exception as e:
@@ -58,8 +63,8 @@ class Manager_User:
     def deleteUser(self):
         try:
             if self.main.user != 'admin':
-                ok, password = self.main.checkPassword(True)
-                if not ok or bcrypt.checkpw(password.encode('utf-8'), self.main.admin_password.encode('utf-8')) == False:
+                ok, password = checkPassword(self.main, True)
+                if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
 
             selectedRow = self.main.user_tablewidget.currentRow()
@@ -68,7 +73,7 @@ class Manager_User:
                 reply = QMessageBox.question(
                     self.main, 'Confirm Delete', f"{selectedUser['name']}님을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    response = self.main.Request(
+                    response = Request(
                         'delete', f'/users/{selectedUser['uid']}')
                     if response.status_code == 200:
                         QMessageBox.information(
