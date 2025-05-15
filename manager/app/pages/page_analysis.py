@@ -428,7 +428,7 @@ class Manager_Analysis:
                 QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
                 return
 
-            printStatus("워드클라우드 데이터를 저장할 위치를 선택하세요")
+            printStatus(self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요")
             save_path = QFileDialog.getExistingDirectory(
                 self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요", self.main.localDirectory)
             if save_path == '':

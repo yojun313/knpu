@@ -13,7 +13,7 @@ import requests
 from ui.status import printStatus
 from services.api import Request
 from PyQt5.QtWidgets import QMessageBox
-from core.setting import get_setting
+from core.setting import get_setting, set_setting
 
 
 def initListWidget(parent):
@@ -108,10 +108,10 @@ def checkNewPost(parent):
     if new_post_uid == old_post_uid:
         return False
     elif old_post_uid == 'default':
-        parent.updateSettings('OldPostUid', new_post_uid)
+        set_setting('OldPostUid', new_post_uid)
         return False
     elif new_post_uid != old_post_uid and parent.user != new_post_writer:
-        parent.updateSettings('OldPostUid', new_post_uid)
+        set_setting('OldPostUid', new_post_uid)
         return True
 
 def checkNetwork(parent):

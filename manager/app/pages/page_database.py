@@ -39,7 +39,7 @@ from services.auth import checkPassword
 from services.crawldb import updateDB
 from services.api import Request, api_headers
 
-from core.setting import get_setting, update_settings
+from core.setting import get_setting, update_settings, set_setting
 
 from config import ADMIN_PASSWORD
 
@@ -222,7 +222,7 @@ class Manager_Database:
 
     def viewDBinfo(self, row):
         try:
-            printStatus("불러오는 중...")
+            printStatus(self.main, "불러오는 중...")
             DBdata = self.DB['DBdata'][row]
 
             self.main.userLogging(
@@ -406,14 +406,12 @@ class Manager_Database:
             search_text = self.main.database_searchDB_lineinput.text().lower()
             if not search_text or search_text == "":
                 if get_setting['DBKeywordSort'] == 'default':
-                    update_settings('DBKeywordSort', 'on')
-                    self.main.updateSettings(10, 'on')
+                    set_setting('DBKeywordSort', 'on')
                     QMessageBox.information(
                         self.main, "Information", "DB 정렬 기준이 '키워드순'으로 변경되었습니다")
                     self.refreshDB()
                 else:
-                    update_settings('DBKeywordSort', 'default')
-                    self.main.updateSettings(10, 'default')
+                    set_setting('DBKeywordSort', 'default')
                     QMessageBox.information(
                         self.main, "Information", "DB 정렬 기준이 '최신순'으로 변경되었습니다")
                     self.refreshDB()

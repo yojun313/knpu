@@ -577,11 +577,11 @@ class Manager_Setting(QDialog):
 
         userDevice_label = QLabel(f"디바이스: {self.main.userDevice}")
 
-        if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20:
+        if get_setting('GPT_Key') == 'default' or len(get_setting('GPT_Key')) < 20:
             GPT_key_label = QLabel(f"ChatGPT API Key: 없음")
         else:
             GPT_key_label = QLabel(
-                f"ChatGPT Key: {self.main.gpt_api_key[:40]}...")
+                f"ChatGPT Key: {get_setting('GPT_Key')[:40]}...")
 
         # 사용자 정보 섹션 레이아웃 구성
         user_info_section.addWidget(user_title_label)
