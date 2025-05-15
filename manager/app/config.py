@@ -1,9 +1,14 @@
+import os
 VERSION = '2.7.3'
 
 '''
     0: local
     1: production
 '''
+
+ASSETS_PATH = os.path.join(os.path.dirname(__file__), "assets")
+ADMIN_PUSHOVERKEY = '***REMOVED***'
+ADMIN_PASSWORD = "***REMOVED***"
 
 mode = 1
 

@@ -12,7 +12,10 @@ import os
 import csv
 from googletrans import Translator
 from tqdm import tqdm
+from ui.status import printStatus
 from PIL import Image
+from core.setting import get_setting
+
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 warnings.filterwarnings("ignore")
 
@@ -2093,20 +2096,20 @@ class DataProcess:
                 self.dateColumn_name = column
 
         print("\n데이터 분할 중...\n")
-        parent.printStatus("데이터 분할 중...")
+        printStatus(parent, "데이터 분할 중...")
         grouped = divide_period(data, split_option)
         period_list = list(grouped.groups.keys())
 
         i = 0
 
-        if parent.SETTING['ProcessConsole'] == 'default':
+        if get_setting('ProcessConsole') == 'default':
             iterator = tqdm(grouped, desc="WordCloud ", file=sys.stdout,
                             bar_format="{l_bar}{bar}|", ascii=' =')
         else:
             iterator = grouped
 
         for period_start, group in iterator:
-            parent.printStatus(f"wordcloud_{period_list[i]} 생성 중...")
+            printStatus(parent, f"wordcloud_{period_list[i]} 생성 중...")
             if group.empty:
                 continue
 
@@ -2125,7 +2128,7 @@ class DataProcess:
             self.word_freq = dict(
                 Counter(all_words).most_common(max_words))  # 딕셔너리 변환
             if eng == True:
-                parent.printStatus(f"단어 영문 변환 중...")
+                printStatus(parent, f"단어 영문 변환 중...")
                 asyncio.run(self.wordcloud_translator())
 
             # 워드클라우드 생성
