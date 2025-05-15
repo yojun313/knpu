@@ -7,6 +7,11 @@ from PyQt5.QtWidgets import (
     QMessageBox, QTextEdit, QScrollArea, QShortcut
 )
 import bcrypt
+from ui.table import makeTable
+from services.auth import checkPassword
+from ui.status import printStatus
+from config import ADMIN_PASSWORD
+from services.api import Request
 
 warnings.filterwarnings("ignore")
 
@@ -31,7 +36,7 @@ class Manager_Board:
                     two_dim_list, key=lambda x: version_key(x[0]), reverse=True)
                 return sorted_list
 
-            self.origin_version_data = self.main.Request(
+            self.origin_version_data = Request(
                 'get', '/board/version').json()['data']
 
             self.version_data = [[item['versionName'], item['releaseDate'], item['changeLog'], item['features'], item['status'], item['details']]
@@ -42,8 +47,8 @@ class Manager_Board:
                                            for sub_list in self.version_data]
             self.version_table_column = [
                 'Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Version Status']
-            self.main.makeTable(self.main.board_version_tableWidget,
-                                self.version_data_for_table, self.version_table_column)
+            makeTable(self.main, self.main.board_version_tableWidget,
+                      self.version_data_for_table, self.version_table_column)
             self.version_name_list = [version_data[0]
                                       for version_data in self.version_data_for_table]
 
@@ -53,8 +58,8 @@ class Manager_Board:
     def addVersion(self):
         try:
             if self.main.user != 'admin':
-                ok, password = self.main.checkPassword(True)
-                if not ok or bcrypt.checkpw(password.encode('utf-8'), self.main.admin_password.encode('utf-8')) == False:
+                ok, password = checkPassword(self.main, True)
+                if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
 
             # QDialog를 상속받은 클래스 생성
@@ -151,7 +156,7 @@ class Manager_Board:
                 if reply == QMessageBox.Yes:
                     data['sendPushOver'] = True
 
-                self.main.Request('post', '/board/version/add', json=data)
+                Request('post', '/board/version/add', json=data)
             self.refreshVersionBoard()
 
         except Exception as e:
@@ -160,8 +165,8 @@ class Manager_Board:
     def deleteVersion(self):
         try:
             if self.main.user != 'admin':
-                ok, password = self.main.checkPassword(True)
-                if not ok or bcrypt.checkpw(password.encode('utf-8'), self.main.admin_password.encode('utf-8')) == False:
+                ok, password = checkPassword(self.main, True)
+                if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
 
             selectedRow = self.main.board_version_tableWidget.currentRow()
@@ -170,7 +175,7 @@ class Manager_Board:
                     self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     version = self.version_name_list[selectedRow]
-                    self.main.Request('delete', f'/board/version/{version}')
+                    Request('delete', f'/board/version/{version}')
 
             self.refreshVersionBoard()
 
@@ -183,7 +188,7 @@ class Manager_Board:
 
             selectedRow = self.main.board_version_tableWidget.currentRow()
             if selectedRow >= 0:
-                self.main.printStatus("불러오는 중...")
+                printStatus(self.main, "불러오는 중...")
                 version_data = self.version_data[selectedRow]
 
                 # 다이얼로그 생성
@@ -250,7 +255,7 @@ class Manager_Board:
                 cmdw.activated.connect(dialog.accept)
 
                 dialog.setLayout(layout)
-                self.main.printStatus()
+                printStatus(self.main)
                 # 다이얼로그 실행
                 dialog.exec_()
 
@@ -259,7 +264,7 @@ class Manager_Board:
 
     def refreshBugBoard(self):
         try:
-            self.origin_bug_data = self.main.Request(
+            self.origin_bug_data = Request(
                 'get', '/board/bug').json()['data']
             self.bug_data_for_table = [
                 [sub_list['writerName'], sub_list['versionName'],
@@ -267,8 +272,8 @@ class Manager_Board:
                 for sub_list in self.origin_bug_data]
             self.bug_table_column = [
                 'User', 'Version Num', 'Title', 'DateTime']
-            self.main.makeTable(self.main.board_bug_tableWidget,
-                                self.bug_data_for_table, self.bug_table_column)
+            makeTable(self.main, self.main.board_bug_tableWidget,
+                      self.bug_data_for_table, self.bug_table_column)
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -360,7 +365,7 @@ class Manager_Board:
                     "programLog": "",
                 }
 
-                self.main.Request('post', '/board/bug/add', json=json_data)
+                Request('post', '/board/bug/add', json=json_data)
                 self.refreshBugBoard()
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
@@ -375,10 +380,10 @@ class Manager_Board:
                     reply = QMessageBox.question(
                         self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
-                        self.main.printStatus("삭제 중...")
-                        self.main.Request('delete', f'/board/bug/{bug["uid"]}')
+                        printStatus(self.main, "삭제 중...")
+                        Request('delete', f'/board/bug/{bug["uid"]}')
                         self.refreshBugBoard()
-                        self.main.printStatus()
+                        printStatus(self.main)
                 else:
                     QMessageBox.warning(
                         self.main, "Wrong Password", f"작성자만 삭제할 수 있습니다")
@@ -393,9 +398,9 @@ class Manager_Board:
 
             selectedRow = self.main.board_bug_tableWidget.currentRow()
             if selectedRow >= 0:
-                self.main.printStatus("불러오는 중...")
+                printStatus(self.main, "불러오는 중...")
                 bug_data = self.origin_bug_data[selectedRow]
-                self.main.printStatus()
+                printStatus(self.main)
 
                 # 다이얼로그 생성
                 dialog = QDialog(self.main)
@@ -463,7 +468,7 @@ class Manager_Board:
                 cmdw.activated.connect(dialog.accept)
 
                 dialog.setLayout(layout)
-                self.main.printStatus()
+                printStatus(self.main)
 
                 # 다이얼로그 실행
                 dialog.exec_()
@@ -473,7 +478,7 @@ class Manager_Board:
 
     def refreshPostBoard(self):
         try:
-            self.origin_post_data = self.main.Request(
+            self.origin_post_data = Request(
                 'get', '/board/post').json()['data']
             self.post_data_for_table = [
                 [sub_list['writerName'], sub_list['title'],
@@ -482,8 +487,8 @@ class Manager_Board:
             ]
             self.post_table_column = [
                 'User', 'Title', 'DateTime', 'View Count']
-            self.main.makeTable(self.main.board_post_tableWidget,
-                                self.post_data_for_table, self.post_table_column)
+            makeTable(self.main, self.main.board_post_tableWidget,
+                      self.post_data_for_table, self.post_table_column)
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
 
@@ -568,7 +573,7 @@ class Manager_Board:
                 if reply == QMessageBox.Yes:
                     json_data['sendPushOver'] = True
 
-                self.main.Request('post', '/board/post/add', json=json_data)
+                Request('post', '/board/post/add', json=json_data)
                 self.refreshPostBoard()
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
@@ -579,12 +584,12 @@ class Manager_Board:
             if row != 0:
                 selectedRow = row
             if selectedRow >= 0:
-                self.main.printStatus("불러오는 중...")
+                printStatus(self.main, "불러오는 중...")
                 post_data = self.origin_post_data[selectedRow]
 
-                self.main.Request('get', f'/board/post/{post_data["uid"]}')
+                Request('get', f'/board/post/{post_data["uid"]}')
 
-                self.main.printStatus()
+                printStatus(self.main)
                 # 다이얼로그 생성
                 dialog = QDialog(self.main)
                 dialog.setWindowTitle(f'Post View')
@@ -641,7 +646,7 @@ class Manager_Board:
                 cmdw.activated.connect(dialog.accept)
 
                 dialog.setLayout(layout)
-                self.main.printStatus()
+                printStatus(self.main)
                 # 다이얼로그 실행
                 dialog.exec_()
                 self.refreshPostBoard()
@@ -659,11 +664,11 @@ class Manager_Board:
                     reply = QMessageBox.question(
                         self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
-                        self.main.printStatus("삭제 중...")
-                        self.main.Request(
+                        printStatus(self.main, "삭제 중...")
+                        Request(
                             'delete', f'/board/post/{post["uid"]}')
                         self.refreshPostBoard()
-                        self.main.printStatus()
+                        printStatus(self.main)
                 else:
                     QMessageBox.warning(
                         self.main, "Wrong Password", f"작성자만 삭제할 수 있습니다")
@@ -754,7 +759,7 @@ class Manager_Board:
                             "text": post_data[1],
                             "sendPushOver": False,
                         }
-                        self.main.Request(
+                        Request(
                             'put', f'/board/post/{postUid}', json=json_data)
                         self.refreshPostBoard()
                         QMessageBox.information(
@@ -762,7 +767,7 @@ class Manager_Board:
                 else:
                     QMessageBox.warning(
                         self.main, "Wrong Password", f"비밀번호가 일치하지 않습니다")
-                    self.main.printStatus()
+                    printStatus(self.main)
                     return
         except Exception as e:
             self.main.programBugLog(traceback.format_exc())
