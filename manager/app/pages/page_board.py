@@ -12,6 +12,8 @@ from services.auth import checkPassword
 from ui.status import printStatus
 from config import ADMIN_PASSWORD
 from services.api import Request
+from services.logging import userLogging, programBugLog
+from core.shortcut import resetShortcuts
 
 warnings.filterwarnings("ignore")
 
@@ -53,7 +55,7 @@ class Manager_Board:
                                       for version_data in self.version_data_for_table]
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def addVersion(self):
         try:
@@ -160,7 +162,7 @@ class Manager_Board:
             self.refreshVersionBoard()
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def deleteVersion(self):
         try:
@@ -180,11 +182,11 @@ class Manager_Board:
             self.refreshVersionBoard()
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def viewVersion(self):
         try:
-            self.main.userLogging(f'BOARD -> viewVersion')
+            userLogging(f'BOARD -> viewVersion')
 
             selectedRow = self.main.board_version_tableWidget.currentRow()
             if selectedRow >= 0:
@@ -260,7 +262,7 @@ class Manager_Board:
                 dialog.exec_()
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def refreshBugBoard(self):
         try:
@@ -275,7 +277,7 @@ class Manager_Board:
             makeTable(self.main, self.main.board_bug_tableWidget,
                       self.bug_data_for_table, self.bug_table_column)
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def addBug(self):
         try:
@@ -368,7 +370,7 @@ class Manager_Board:
                 Request('post', '/board/bug/add', json=json_data)
                 self.refreshBugBoard()
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def deleteBug(self):
         try:
@@ -390,11 +392,11 @@ class Manager_Board:
                     return
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
-
+            programBugLog(self.main, traceback.format_exc())
+            
     def viewBug(self):
         try:
-            self.main.userLogging(f'BOARD -> viewBug')
+            userLogging(f'BOARD -> viewBug')
 
             selectedRow = self.main.board_bug_tableWidget.currentRow()
             if selectedRow >= 0:
@@ -474,7 +476,7 @@ class Manager_Board:
                 dialog.exec_()
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def refreshPostBoard(self):
         try:
@@ -490,12 +492,12 @@ class Manager_Board:
             makeTable(self.main, self.main.board_post_tableWidget,
                       self.post_data_for_table, self.post_table_column)
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def addPost(self):
         try:
             # QDialog를 상속받은 클래스 생성
-            self.main.userLogging(f'BOARD -> addPost')
+            userLogging(f'BOARD -> addPost')
 
             class PostInputDialog(QDialog):
                 def __init__(self, main_window):
@@ -576,7 +578,7 @@ class Manager_Board:
                 Request('post', '/board/post/add', json=json_data)
                 self.refreshPostBoard()
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def viewPost(self, row=0):
         try:
@@ -652,8 +654,7 @@ class Manager_Board:
                 self.refreshPostBoard()
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
-
+            programBugLog(self.main, traceback.format_exc())
     def deletePost(self):
         try:
             selectedRow = self.main.board_post_tableWidget.currentRow()
@@ -675,7 +676,7 @@ class Manager_Board:
                     return
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def editPost(self):
         try:
@@ -770,7 +771,7 @@ class Manager_Board:
                     printStatus(self.main)
                     return
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def matchButton(self):
         self.main.board_deleteversion_button.clicked.connect(
@@ -803,7 +804,7 @@ class Manager_Board:
         self.main.tabWidget_board.currentChanged.connect(self.updateShortcut)
 
     def updateShortcut(self, index):
-        self.main.resetShortcuts()
+        resetShortcuts(self.main)
 
         # 패치 노트 탭
         if index == 0:

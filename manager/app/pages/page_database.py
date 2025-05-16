@@ -38,10 +38,12 @@ from ui.finder import openFileExplorer
 from services.auth import checkPassword
 from services.crawldb import updateDB
 from services.api import Request, api_headers
+from services.logging import userLogging, programBugLog
 
 from core.setting import get_setting, update_settings, set_setting
+from core.shortcut import resetShortcuts
 
-from config import ADMIN_PASSWORD
+from config import ADMIN_PASSWORD, MANAGER_SERVER_API
 
 warnings.filterwarnings("ignore")
 
@@ -90,12 +92,12 @@ class Manager_Database:
                     else:
                         QMessageBox.information(
                             self.main, "Information", f"'{DBname}'가 삭제되었습니다")
-                    self.main.userLogging(f'DATABASE -> delete_DB({DBname})')
+                    userLogging(f'DATABASE -> delete_DB({DBname})')
                     self.refreshDB()
 
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def viewDB(self):
 
@@ -218,14 +220,14 @@ class Manager_Database:
                 printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def viewDBinfo(self, row):
         try:
             printStatus(self.main, "불러오는 중...")
             DBdata = self.DB['DBdata'][row]
 
-            self.main.userLogging(
+            userLogging(
                 f'DATABASE -> dbinfo_viewer({DBdata['name']})')
 
             # 다이얼로그 생성
@@ -399,7 +401,7 @@ class Manager_Database:
             dialog.show()
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def searchDB(self):
         try:
@@ -447,7 +449,7 @@ class Manager_Database:
                     self.main.database_tablewidget.selectRow(row)
                     return
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def searchAdminMode(self, search_text):
         # ADMIN MODE
@@ -489,7 +491,7 @@ class Manager_Database:
                 return
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def initLLMChat(self):
         try:
@@ -510,10 +512,10 @@ class Manager_Database:
                     __file__), 'assets', "LLM_Chat.exe")
                 subprocess.Popen([script_path])
 
-            self.main.userLogging(f'LLM Chat ON')
+            userLogging(f'LLM Chat ON')
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def saveDB(self):
         try:
@@ -735,7 +737,7 @@ class Manager_Database:
             register_process(pid, f"Crawl DB Save")
             viewer = open_viewer(pid)
 
-            download_url = self.main.server_api + f"/crawls/{targetUid}/save"
+            download_url = MANAGER_SERVER_API + f"/crawls/{targetUid}/save"
             response = requests.post(
                 download_url,
                 json=option,
@@ -804,7 +806,7 @@ class Manager_Database:
                 openFileExplorer(extract_path)
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def refreshDB(self):
         try:
@@ -816,8 +818,8 @@ class Manager_Database:
 
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
-
+            programBugLog(self.main, traceback.format_exc())
+            
     def matchButton(self):
         self.main.database_searchDB_button.clicked.connect(self.searchDB)
         self.main.database_chatgpt_button.clicked.connect(self.initLLMChat)
@@ -851,7 +853,7 @@ class Manager_Database:
             QSize(19, 19))  # 아이콘 크기 조정 (원하는 크기로 설정)
 
     def setDatabaseShortcut(self):
-        self.main.resetShortcuts()
+        resetShortcuts(self.main)
         self.main.ctrld.activated.connect(self.deleteDB)
         self.main.ctrls.activated.connect(self.saveDB)
         # self.main.ctrlm.activated.connect(self.mergeDB)

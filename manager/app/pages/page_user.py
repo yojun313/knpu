@@ -3,9 +3,11 @@ import traceback
 from PyQt5.QtWidgets import QMessageBox
 import bcrypt
 from ui.table import makeTable
+from core.shortcut import resetShortcuts
 from services.auth import checkPassword
 from config import ADMIN_PASSWORD
 from services.api import Request
+from services.logging import programBugLog
 warnings.filterwarnings("ignore")
 
 
@@ -58,7 +60,7 @@ class Manager_User:
                 self.refreshUserTable()
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def deleteUser(self):
         try:
@@ -84,7 +86,7 @@ class Manager_User:
                             self.main, "Error", f"'{selectedUser['name']}'님을 삭제할 수 없습니다")
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def matchButton(self):
         self.main.user_adduser_button.clicked.connect(self.addUser)
@@ -98,7 +100,7 @@ class Manager_User:
         self.main.tabWidget_user.currentChanged.connect(self.updateShortcut)
 
     def updateShortcut(self, index):
-        self.main.resetShortcuts()
+        resetShortcuts(self.main)
 
         # User List
         if index == 0:

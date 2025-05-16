@@ -1,20 +1,84 @@
 import os
+import socket
 import traceback
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QIcon
-from config import ASSETS_PATH
-from PyQt5.QtCore import QSettings
-from PyQt5.QtWidgets import QStatusBar, QLabel
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QShortcut
-from PyQt5.QtGui import QKeySequence
-from packaging import version
-import requests
-from ui.status import printStatus
-from services.api import Request
-from PyQt5.QtWidgets import QMessageBox
-from core.setting import get_setting, set_setting
 
+import requests
+from packaging import version
+
+from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtGui import QIcon, QKeySequence
+from PyQt5.QtWidgets import (
+    QStatusBar, QLabel, QInputDialog, QShortcut, QMessageBox
+)
+
+from config import ASSETS_PATH, VERSION, MANAGER_SERVER_API
+from ui.status import printStatus
+from services.api import Request, api_headers
+from core.setting import get_setting, set_setting
+from services.auth import checkPassword
+
+
+def loginProgram(parent):
+    try:
+        parent.userDevice = socket.gethostname()
+
+        # 이전에 발급된 토큰이 있는지 확인
+        saved_token = get_setting('auth_token')
+
+        if saved_token:
+            res = requests.get(
+                f"{MANAGER_SERVER_API}/auth/login", headers=api_headers)
+            if res.status_code == 200:
+                userData = res.json()['user']
+                parent.user = userData['name']
+                parent.userUid = userData['uid']
+                parent.usermail = userData['email']
+                return True
+
+        # 사용자 이름 입력 대화
+        parent.closeBootscreen()
+        printStatus(parent, "로그인 중...")
+
+        inputDialogId = QInputDialog(parent)
+        inputDialogId.setWindowTitle('Login')
+        inputDialogId.setLabelText('User Name:')
+        inputDialogId.resize(300, 200)
+        ok = inputDialogId.exec_()
+        userName = inputDialogId.textValue()
+
+        if not ok:
+            QMessageBox.warning(parent, 'Program Shutdown', '프로그램을 종료합니다')
+            return False
+
+        parent.user = userName
+
+        res = requests.get(f"{MANAGER_SERVER_API}/auth/request",
+                            params={"name": parent.user}).json()
+        printStatus(parent)
+        QMessageBox.information(parent, "Information",
+                                f"{parent.user}님의 메일로 인증번호가 전송되었습니다\n\n"
+                                "인증번호를 확인 후 입력하십시오")
+
+        ok, password = checkPassword(parent, string="메일 인증번호")
+        if not ok:
+            QMessageBox.warning(parent, 'Error', '프로그램을 종료합니다')
+            return False
+
+        res = requests.post(f"{MANAGER_SERVER_API}/auth/verify",
+                            params={"name": parent.user, "code": password, "device": parent.userDevice}).json()
+        userData = res['user']
+        access_token = res['access_token']
+
+        parent.user = userData['name']
+        parent.usermail = userData['email']
+        parent.userUid = userData['uid']
+        set_setting('auth_token', access_token)
+
+    except Exception:
+        parent.closeBootscreen()
+        QMessageBox.critical(parent, "Error",
+                                f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
+        return False
 
 def initListWidget(parent):
     try:
@@ -40,7 +104,7 @@ def initStatusbar(parent):
     parent.statusbar = QStatusBar()
     parent.setStatusBar(parent.statusbar)
 
-    parent.leftLabel = QLabel('  ' + parent.version)
+    parent.leftLabel = QLabel('  ' + f'Version {VERSION}')
     parent.rightLabel = QLabel('')
 
     parent.leftLabel.setToolTip("새 버전 확인을 위해 Ctrl+U")
@@ -95,7 +159,7 @@ def initShortcut(parent):
     
 def checkNewVersion(parent):
     newestVersion = Request('get', '/board/version/newest').json()['data']
-    currentVersion = version.parse(parent.versionNum)
+    currentVersion = version.parse(VERSION)
     parent.newVersion = version.parse(newestVersion)
     return True if currentVersion < parent.newVersion else False
 
@@ -134,7 +198,7 @@ def checkNetwork(parent):
     while True:
         try:
             # FastAPI 서버의 상태를 확인하는 핑 API 또는 기본 경로 사용
-            response = requests.get(f"{parent.server_api}/ping", timeout=5)
+            response = requests.get(f"{MANAGER_SERVER_API}/ping", timeout=5)
             if response.status_code == 200:
                 return True
         except requests.RequestException:
