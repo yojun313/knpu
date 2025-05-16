@@ -157,11 +157,11 @@ def initShortcut(parent):
     parent.cmdp.activated.connect(lambda: parent.developerMode(True))
     parent.cmdpp.activated.connect(lambda: parent.developerMode(False))
     
-def checkNewVersion(parent):
+def checkNewVersion():
     newestVersion = Request('get', '/board/version/newest').json()['data']
     currentVersion = version.parse(VERSION)
-    parent.newVersion = version.parse(newestVersion)
-    return True if currentVersion < parent.newVersion else False
+    newVersion = version.parse(newestVersion[0])
+    return newestVersion if currentVersion < newVersion else None
 
 def checkNewPost(parent):
     if len(parent.managerBoardObj.origin_post_data) == 0:
