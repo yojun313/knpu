@@ -10,7 +10,7 @@ import bcrypt
 from ui.table import makeTable
 from services.auth import checkPassword
 from ui.status import printStatus
-from config import ADMIN_PASSWORD
+from config import ADMIN_PASSWORD, VERSION
 from services.api import Request
 from services.logging import userLogging, programBugLog
 from core.shortcut import resetShortcuts
@@ -138,7 +138,7 @@ class Manager_Board:
                                             f'Version Num: {version_num}\nChangeLog: {changelog}\nVersion Features: {version_features}\nVersion Status: {version_status}\nDetail: {detail}')
                     self.accept()
 
-            dialog = VersionInputDialog(self.main.versionNum)
+            dialog = VersionInputDialog(VERSION)
             dialog.exec_()
 
             # 데이터를 addVersion 함수에서 사용
@@ -351,7 +351,7 @@ class Manager_Board:
                                             f'User Name: {userName}\nVersion Num: {version_num}\nBug Title: {bug_title}\nBug Detail: {bug_detail}')
                     self.accept()
 
-            dialog = BugInputDialog(self.main, self.main.versionNum)
+            dialog = BugInputDialog(self.main, VERSION)
             dialog.exec_()
 
             # 데이터를 addVersion 함수에서 사용
