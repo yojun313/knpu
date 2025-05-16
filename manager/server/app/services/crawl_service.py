@@ -12,7 +12,6 @@ from starlette.responses import FileResponse
 from io import BytesIO
 import pandas as pd
 from app.libs.progress import send_message
-from multiprocessing import Pool, cpu_count
 import uuid
 import os
 import re
@@ -237,179 +236,80 @@ def updateCrawlDb(uid: str, dataInfo, error: bool = False):
     )
 
 
-def replace_dates_in_filename(filename: str, new_start_date: str, new_end_date: str) -> str:
-    pattern = r"_(\d{8})_(\d{8})_"
-    return re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
-
-
-def replace_keyword_in_name(name: str, new_keyword: str) -> str:
-    parts = name.split('_')
-    if len(parts) > 1:
-        parts[1] = f"[{new_keyword}]"
-    return '_'.join(parts)
-
-
-def process_table(args):
-    """
-    Multiprocessing worker: fetches one table, applies filters, saves CSV, returns status message.
-    """
-    (
-        tableName,
-        idx,
-        total,
-        original_db_name,
-        dateOption,
-        start_date,
-        end_date,
-        start_date_formed,
-        end_date_formed,
-        filterOption,
-        include_all,
-        incl_words,
-        excl_words,
-        crawl_keyword,
-        dbpath,
-    ) = args
-
-    # reconnect to MySQL in this process
-    mysql_db.connectDB(original_db_name)
-
-    # edit table name: dates and keyword
-    edited = replace_dates_in_filename(
-        tableName, start_date, end_date) if dateOption == 'part' else tableName
-    edited = replace_keyword_in_name(edited, crawl_keyword)
-
-    # load data
-    if dateOption == 'part':
-        df = mysql_db.TableToDataframeByDate(
-            tableName, start_date_formed, end_date_formed)
-    else:
-        df = mysql_db.TableToDataframe(tableName)
-
-    articleURLs = []
-    statisticsURLs = []
-
-    # article filtering
-    if filterOption and 'article' in tableName:
-        if 'token' not in tableName:
-            cols = df.columns
-            if include_all:
-                if incl_words:
-                    df = df[df['Article Text'].apply(
-                        lambda c: all(w in str(c) for w in incl_words))]
-                if excl_words:
-                    df = df[df['Article Text'].apply(
-                        lambda c: all(w not in str(c) for w in excl_words))]
-            else:
-                if incl_words:
-                    df = df[df['Article Text'].apply(
-                        lambda c: any(w in str(c) for w in incl_words))]
-                if excl_words:
-                    df = df[df['Article Text'].apply(
-                        lambda c: any(w not in str(c) for w in excl_words))]
-            if df.empty:
-                df = pd.DataFrame(columns=cols)
-            articleURLs = df['Article URL'].tolist()
-        else:
-            df = df[df['Article URL'].isin(articleURLs)]
-
-    # statistics table
-    if 'statistics' in tableName:
-        if filterOption:
-            df = df[df['Article URL'].isin(articleURLs)]
-        statisticsURLs = df['Article URL'].tolist()
-        save_dir = os.path.join(
-            dbpath, 'token_data' if 'token' in tableName else '')
-        os.makedirs(save_dir, exist_ok=True)
-        df.to_csv(os.path.join(
-            save_dir, f"{edited}.csv"), index=False, encoding='utf-8-sig')
-        return f"[{idx+1}/{total}] '{edited}' 완료"
-
-    # reply table filtering
-    if 'reply' in tableName:
-        if filterOption:
-            df = df[df['Article URL'].isin(articleURLs)]
-
-    # reply_statistics
-    if 'reply' in tableName and statisticsURLs and 'navernews' in original_db_name:
-        df = df[df['Article URL'].isin(statisticsURLs)]
-        save_dir = os.path.join(
-            dbpath, 'token_data' if 'token' in tableName else '')
-        os.makedirs(save_dir, exist_ok=True)
-        df.to_csv(os.path.join(
-            save_dir, f"{edited}_statistics.csv"), index=False, encoding='utf-8-sig')
-        return f"[{idx+1}/{total}] '{edited}_statistics' 완료"
-
-    # other tables
-    save_dir = os.path.join(
-        dbpath, 'token_data' if 'token' in tableName else '')
-    os.makedirs(save_dir, exist_ok=True)
-    df.to_csv(os.path.join(
-        save_dir, f"{edited}.csv"), index=False, encoding='utf-8-sig')
-
-    # cleanup
-    del df
-    gc.collect()
-
-    return f"[{idx+1}/{total}] '{edited}' 완료"
-
-
 def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
     def cleanup_folder_and_zip(folder_path: str, zip_path: str):
+        # 폴더와 ZIP 파일을 삭제
         shutil.rmtree(folder_path, ignore_errors=True)
         try:
             os.remove(zip_path)
         except OSError:
             pass
 
-    save_opts = saveOption.model_dump()
+    saveOption = saveOption.model_dump()
     crawlDb = crawlList_db.find_one({"uid": uid})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
-    original_db = crawlDb['name']
-    pid = save_opts['pid']
-    mysql_db.connectDB(original_db)
+    targetDB = crawlDb['name']
 
-    temp_dir = os.path.join(os.path.dirname(__file__), '..', 'temp')
-    send_message(pid, "DB에서 테이블 목록을 가져오는 중...")
+    pid = saveOption['pid']
 
-    # get and sort tables
-    tables = [t for t in sorted(
-        mysql_db.showAllTable(original_db)) if 'info' not in t]
-    tables = sorted(tables, key=lambda x: (
+    mysql_db.connectDB(targetDB)
+
+    temp_directory = os.path.join(os.path.dirname(__file__), '..', 'temp')
+
+    send_message(pid, f"DB에서 테이블 목록을 가져오는 중...")
+
+    tableList = [table for table in sorted(
+        mysql_db.showAllTable(targetDB)) if 'info' not in table]
+    tableList = sorted(tableList, key=lambda x: (
         'article' not in x, 'statistics' not in x, x))
 
-    # date options
-    dateOpt = save_opts['dateOption']
-    start_date = save_opts.get('start_date', '')
-    end_date = save_opts.get('end_date', '')
-    if dateOpt == 'part':
-        sd_form = datetime.strptime(start_date, "%Y%m%d").strftime("%Y-%m-%d")
-        ed_form = datetime.strptime(end_date, "%Y%m%d").strftime("%Y-%m-%d")
-    else:
-        sd_form = ed_form = ''
+    def replace_dates_in_filename(filename, new_start_date, new_end_date):
+        pattern = r"_(\d{8})_(\d{8})_"
+        new_filename = re.sub(
+            pattern, f"_{new_start_date}_{new_end_date}_", filename)
+        return new_filename
 
-    # build new db name
+    def replace_keyword_in_name(name: str, new_keyword: str) -> str:
+        parts = name.split('_')
+        parts[1] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
+        return '_'.join(parts)
+
+    # 현재 시각
     kst_now = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%m%d_%H%M")
-    parts = original_db.split('_')
-    parts[1] = f"[{crawlDb['keyword']}]"
-    parts = parts[:-2] + kst_now.split('_')
-    new_dbname = '_'.join(parts)
 
-    # date-in-filename replacement if needed
-    if dateOpt == 'part':
-        new_dbname = replace_dates_in_filename(
-            new_dbname, start_date, end_date)
+    # targetDB 구조 예시:
+    parts = targetDB.split('_')[:-2] + kst_now.split('_')
+    dbname = '_'.join(parts)
+    dbname = replace_keyword_in_name(dbname, crawlDb['keyword'])
 
-    # filter options
-    filtOpt = save_opts['filterOption']
-    inc_all = save_opts.get('include_all', False)
-    inc_words = save_opts.get('incl_words', [])
-    exc_words = save_opts.get('excl_words', [])
+    dateOption = saveOption['dateOption']
+    filterOption = saveOption['filterOption']
 
-    # create workspace
-    dbpath = os.path.join(temp_dir, new_dbname)
+    if dateOption == 'part':
+        start_date = saveOption['start_date']
+        end_date = saveOption['end_date']
+        start_date_formed = datetime.strptime(
+            start_date, "%Y%m%d").strftime("%Y-%m-%d")
+        end_date_formed = datetime.strptime(
+            end_date, "%Y%m%d").strftime("%Y-%m-%d")
+        dbname = replace_dates_in_filename(
+            dbname, saveOption['start_date'], saveOption['end_date'])
+    if filterOption:
+        include_all = saveOption['include_all']
+        incl_words = saveOption['incl_words']
+        excl_words = saveOption['excl_words']
+
+        if saveOption['filename_edit']:
+            inclexcl = 'all' if include_all else 'any'
+            add_keyword = f"(+{','.join(incl_words)} _ -{','.join(excl_words)} _{inclexcl})"
+            parts = dbname.split('_', 2)
+            old_keyword = parts[1]
+            parts[1] = old_keyword + add_keyword
+            dbname = '_'.join(parts)
+
+    dbpath = os.path.join(temp_directory, dbname)
     while True:
         try:
             os.makedirs(os.path.join(dbpath, 'token_data'), exist_ok=False)
@@ -417,38 +317,92 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         except FileExistsError:
             dbpath += "_copy"
 
-    # prepare multiprocessing args
-    total_tables = len(tables)
-    args_list = []
-    for idx, tname in enumerate(tables):
-        args_list.append((
-            tname,
-            idx,
-            total_tables,
-            original_db,
-            dateOpt,
-            start_date,
-            end_date,
-            sd_form,
-            ed_form,
-            filtOpt,
-            inc_all,
-            inc_words,
-            exc_words,
-            crawlDb['keyword'],
-            dbpath,
-        ))
+    for idx, tableName in enumerate(tableList):
+        edited_tableName = replace_dates_in_filename(
+            tableName, start_date, end_date) if dateOption == 'part' else tableName
+        edited_tableName = replace_keyword_in_name(
+            edited_tableName, crawlDb['keyword'])
 
-    # process tables in parallel
-    with Pool(cpu_count()) as pool:
-        for status in pool.imap_unordered(process_table, args_list):
-            send_message(pid, status)
+        send_message(
+            pid, f"[{idx+1}/{len(tableList)}] '{edited_tableName}' 처리 중")
 
-    # zip and return response
+        if saveOption['dateOption'] == 'part':
+            tableDF = mysql_db.TableToDataframeByDate(
+                tableName, start_date_formed, end_date_formed)
+        else:
+            tableDF = mysql_db.TableToDataframe(tableName)
+
+        # 단어 필터링 옵션이 켜져있을 때
+        if filterOption == True and 'article' in tableName:
+            if 'token' not in tableName:
+                recover_columns = tableDF.columns
+                if include_all == True:
+                    if incl_words != []:
+                        tableDF = tableDF[tableDF['Article Text'].apply(
+                            lambda cell: all(word in str(cell) for word in incl_words))]
+                    if excl_words != []:
+                        tableDF = tableDF[tableDF['Article Text'].apply(
+                            lambda cell: all(word not in str(cell) for word in excl_words))]
+                else:
+                    if incl_words != []:
+                        tableDF = tableDF[tableDF['Article Text'].apply(
+                            lambda cell: any(word in str(cell) for word in incl_words))]
+                    if excl_words != []:
+                        tableDF = tableDF[tableDF['Article Text'].apply(
+                            lambda cell: any(word not in str(cell) for word in excl_words))]
+
+                if tableDF.empty:
+                    tableDF = pd.DataFrame(columns=recover_columns)  # 기존 열만 유지
+                articleURL = tableDF['Article URL'].tolist()
+            else:
+                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+
+        # statistics 테이블 처리
+        if 'statistics' in tableName:
+            if filterOption == True:
+                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+            statisticsURL = tableDF['Article URL'].tolist()
+            save_path = os.path.join(
+                dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
+            tableDF.to_csv(save_path, index=False,
+                           encoding='utf-8-sig', header=True)
+            continue
+
+        if 'reply' in tableName:
+            if filterOption == True:
+                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+
+        # reply_statistics 테이블 처리
+        if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in targetDB:
+            if filterOption == True:
+                filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+            filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
+            save_path = os.path.join(
+                dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
+            filteredDF.to_csv(save_path, index=False,
+                              encoding='utf-8-sig', header=True)
+
+        # 기타 테이블 처리
+        save_dir = os.path.join(
+            dbpath, 'token_data' if 'token' in tableName else '')
+
+        tableDF.to_csv(os.path.join(
+            save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
+        tableDF = None
+        gc.collect()
+
     zip_path = shutil.make_archive(dbpath, "zip", root_dir=dbpath)
-    filename = os.path.basename(zip_path)
-    background = BackgroundTask(cleanup_folder_and_zip, dbpath, zip_path)
-    return FileResponse(path=zip_path, media_type="application/zip", filename=filename, background=background)
+    filename = os.path.basename(zip_path)  # 여기에 한글이 섞여 있어도 OK
+
+    background_task = BackgroundTask(
+        cleanup_folder_and_zip, dbpath, zip_path)
+    # 4) FileResponse에 filename= 으로 넘기기
+    return FileResponse(
+        path=zip_path,
+        media_type="application/zip",
+        filename=filename,
+        background=background_task,
+    )
 
 
 def previewCrawlDb(uid: str):
