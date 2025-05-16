@@ -272,8 +272,12 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         return new_filename
 
     def replace_keyword_in_name(name: str, new_keyword: str) -> str:
-        parts = name.split('_')
-        parts[1] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
+        if 'token' in name:
+            parts = name.split('_')
+            parts[2] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
+        else:
+            parts = name.split('_')
+            parts[1] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
         return '_'.join(parts)
 
     # 현재 시각
