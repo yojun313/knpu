@@ -5,7 +5,7 @@ from libs.console import openConsole, closeConsole
 from services.pushover import sendPushOver
 from services.logging import userLogging, getUserLocation
 from ui.status import printStatus
-
+from config import VERSION
 from core.setting import get_setting
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QMessageBox
 from PyQt5.QtCore import Qt
@@ -36,11 +36,11 @@ def updateProgram(parent, sc=False):
             openConsole("Version Update Process")
             msg = (
                 "[ Admin Notification ]\n\n"
-                f"{parent.user} updated {parent.versionNum} -> {parent.newVersion}\n\n{getUserLocation(parent)}"
+                f"{parent.user} updated {VERSION} -> {parent.newVersion}\n\n{getUserLocation(parent)}"
             )
             sendPushOver(msg)
             userLogging(
-                f'Program Update ({parent.versionNum} -> {parent.newVersion})')
+                f'Program Update ({VERSION} -> {parent.newVersion})')
 
             printStatus(parent, "버전 업데이트 중...")
             import subprocess
