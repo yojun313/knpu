@@ -6,7 +6,7 @@ from config import ASSETS_PATH
 
 class SplashDialog(QDialog):
     
-    MAX_STEP      = 4
+    MAX_STEP      = 5
     
     def __init__(self, version, theme="light", booting=True):
         super().__init__()
