@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
 from datetime import datetime
+import psutil
+import signal
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 
@@ -204,12 +206,21 @@ class KimKem:
                      trace_DoD_dict, tf_counts, df_counts)
                     for index, period in enumerate(self.period_list)
                 ]
+                def kill_child_processes(parent_pid=os.getpid(), sig=signal.SIGTERM):
+                    parent = psutil.Process(parent_pid)
+                    for child in parent.children(recursive=True):
+                        print(f"Killing child process: {child.pid}")
+                        child.send_signal(sig)
+                
+                executor = ProcessPoolExecutor(max_workers=os.cpu_count())
 
-                with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+                try:
                     futures = [executor.submit(self._process_period_wrapper, args) for args in args_list]
-                    results = []
-                    for fut in as_completed(futures):
-                        results.append(fut.result())
+                    results = [fut.result() for fut in as_completed(futures)]
+                finally:
+                    executor.shutdown(wait=True)
+                    kill_child_processes()
+                    gc.collect()  # 메모리 누수 방지
 
                 for result in results:
                     if result is None:
