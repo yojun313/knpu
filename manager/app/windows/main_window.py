@@ -4,6 +4,7 @@ import gc
 import shutil
 import traceback
 import platform
+from pathlib import Path
 from datetime import datetime
 from packaging import version
 
@@ -66,21 +67,11 @@ class MainWindow(QMainWindow):
                 if platform.system() == "Windows":
                     localAppdataPath = os.getenv("LOCALAPPDATA")
                     self.programDirectory = os.path.join(localAppdataPath, "MANAGER")
-                    old_dir = "C:/BIGMACLAB_MANAGER"
-                    new_dir = "C:/MANAGER"
-
-                    if os.path.exists(old_dir):
-                        # 이미 C:/MANAGER가 존재한다면 덮어쓰지 않도록 삭제 또는 무시 처리 가능
-                        if not os.path.exists(new_dir):
-                            os.rename(old_dir, new_dir)
-                        else:
-                            print("C:/MANAGER already exists. Skipping rename.")
-                        self.localDirectory = new_dir
-                    else:
-                        # 기존 폴더가 없다면 새로 생성
-                        if not os.path.exists(new_dir):
-                            os.makedirs(new_dir)
-                        self.localDirectory = new_dir
+                    
+                    documents_path = Path().home() / "Documents" / "MANAGER"
+                    if not documents_path.exists():
+                        documents_path.mkdir(parents=True, exist_ok=True)
+                    self.localDirectory = str(documents_path)
                 else:
                     self.programDirectory = os.path.dirname(__file__)
                     self.localDirectory = '/Users/yojunsmacbookprp/Documents/MANAGER'
