@@ -1,5 +1,5 @@
 from .progress import send_message
-from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import gc
 import platform
 import re
@@ -205,8 +205,11 @@ class KimKem:
                     for index, period in enumerate(self.period_list)
                 ]
 
-                with Pool(processes=os.cpu_count()) as pool:
-                    results = pool.map(self._process_period_wrapper, args_list)
+                with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+                    futures = [executor.submit(self._process_period_wrapper, args) for args in args_list]
+                    results = []
+                    for fut in as_completed(futures):
+                        results.append(fut.result())
 
                 for result in results:
                     if result is None:
