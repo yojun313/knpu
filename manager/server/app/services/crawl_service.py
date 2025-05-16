@@ -17,7 +17,6 @@ import os
 import re
 import gc
 import zipfile
-import requests
 import shutil
 
 def createCrawlDb(crawlDb: CrawlDbCreateDto):
@@ -258,8 +257,21 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         new_filename = re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
         return new_filename
     
-    kst = datetime.now(ZoneInfo("Asia/Seoul"))
-    dbname = targetDB[:-10] + f"_{kst.strftime("%m%d")}_{kst.strftime("%H%M")}"
+    # 현재 시각
+    kst_now = kst.strftime("%m%d_%H%M")
+
+    # targetDB 구조 예시:
+    parts = targetDB.split('_')
+
+    # 키워드 교체
+    parts[1] = crawlDb['keyword']
+
+    # 시간 업데이트 (마지막 2개 제거 후 새로운 시간 추가)
+    parts = parts[:-2] + kst_now.split('_')
+
+    # 최종 DB 이름 생성
+    dbname = '_'.join(parts)
+    
     dateOption = saveOption['dateOption']
     filterOption = saveOption['filterOption']
     

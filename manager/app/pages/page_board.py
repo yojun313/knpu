@@ -3,8 +3,8 @@ import warnings
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton,
-    QMessageBox, QTextEdit, QScrollArea, QShortcut
+    QDialog, QVBoxLayout, QLabel, QPushButton,
+    QMessageBox, QScrollArea, QShortcut
 )
 import bcrypt
 from ui.table import makeTable
@@ -65,80 +65,8 @@ class Manager_Board:
                     return
 
             # QDialog를 상속받은 클래스 생성
-            class VersionInputDialog(QDialog):
-                def __init__(self, version):
-                    super().__init__()
-                    self.version = version
-                    self.initUI()
-                    self.data = None  # 데이터를 저장할 속성 추가
-
-                def initUI(self):
-                    self.setWindowTitle('Add Version')
-                    self.resize(400, 400)
-
-                    # 컨테이너 위젯 생성
-                    container_widget = QDialog()
-                    layout = QVBoxLayout(container_widget)
-
-                    # 각 입력 필드를 위한 QLabel 및 QTextEdit 생성
-                    self.version_num_label = QLabel('Version Num:')
-                    self.version_num_input = QLineEdit()
-                    self.version_num_input.setText(self.version)
-                    layout.addWidget(self.version_num_label)
-                    layout.addWidget(self.version_num_input)
-
-                    self.changelog_label = QLabel('ChangeLog:')
-                    self.changelog_input = QTextEdit()
-                    layout.addWidget(self.changelog_label)
-                    layout.addWidget(self.changelog_input)
-
-                    self.version_features_label = QLabel('Version Features:')
-                    self.version_features_input = QTextEdit()
-                    layout.addWidget(self.version_features_label)
-                    layout.addWidget(self.version_features_input)
-
-                    self.version_status_label = QLabel('Version Status:')
-                    self.version_status_input = QLineEdit()
-                    layout.addWidget(self.version_status_label)
-                    layout.addWidget(self.version_status_input)
-
-                    self.detail_label = QLabel('Detail:')
-                    self.detail_input = QTextEdit()
-                    layout.addWidget(self.detail_label)
-                    layout.addWidget(self.detail_input)
-
-                    # 확인 버튼 생성 및 클릭 시 동작 연결
-                    self.submit_button = QPushButton('Submit')
-                    self.submit_button.clicked.connect(self.submit)
-                    layout.addWidget(self.submit_button)
-
-                    # QScrollArea 설정
-                    scroll_area = QScrollArea()
-                    scroll_area.setWidgetResizable(True)
-                    # 컨테이너 위젯을 스크롤 영역에 추가
-                    scroll_area.setWidget(container_widget)
-
-                    # 최종 레이아웃 설정
-                    final_layout = QVBoxLayout()
-                    final_layout.addWidget(scroll_area)
-                    self.setLayout(final_layout)
-
-                def submit(self):
-                    # 입력된 데이터를 확인하고 처리
-                    version_num = self.version_num_input.text()
-                    changelog = self.changelog_input.toPlainText()
-                    version_features = self.version_features_input.toPlainText()
-                    version_status = self.version_status_input.text()
-                    detail = self.detail_input.toPlainText()
-
-                    self.data = [version_num, changelog,
-                                 version_features, version_status, detail]
-
-                    QMessageBox.information(self, 'Input Data',
-                                            f'Version Num: {version_num}\nChangeLog: {changelog}\nVersion Features: {version_features}\nVersion Status: {version_status}\nDetail: {detail}')
-                    self.accept()
-
-            dialog = VersionInputDialog(VERSION)
+            from ui.dialogs import AddVersionDialog
+            dialog = AddVersionDialog(VERSION)
             dialog.exec_()
 
             # 데이터를 addVersion 함수에서 사용
@@ -282,76 +210,8 @@ class Manager_Board:
     def addBug(self):
         try:
             # QDialog를 상속받은 클래스 생성
-            class BugInputDialog(QDialog):
-                def __init__(self, main_window, version):
-                    super().__init__()
-                    self.main = main_window
-                    self.initUI()
-                    self.data = None  # 데이터를 저장할 속성 추가
-                    self.version = version
-
-                def initUI(self):
-                    self.setWindowTitle('Bug Report')
-                    self.resize(400, 400)
-
-                    # 컨테이너 위젯 생성
-                    container_widget = QDialog()
-                    layout = QVBoxLayout(container_widget)
-
-                    # 각 입력 필드를 위한 QLabel 및 QLineEdit, QTextEdit 생성
-                    self.user_label = QLabel('User Name:')
-                    self.user_input = QLineEdit()
-                    self.user_input.setText(self.main.user)
-                    layout.addWidget(self.user_label)
-                    layout.addWidget(self.user_input)
-
-                    self.bug_title_label = QLabel('Bug Title:')
-                    self.bug_title_input = QLineEdit()
-                    layout.addWidget(self.bug_title_label)
-                    layout.addWidget(self.bug_title_input)
-
-                    self.bug_detail_label = QLabel('Bug Detail:')
-                    self.bug_detail_input = QTextEdit()
-                    self.bug_detail_input.setPlaceholderText(
-                        '버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해주세요\n오류 로그는 자동으로 전송됩니다')
-                    layout.addWidget(self.bug_detail_label)
-                    layout.addWidget(self.bug_detail_input)
-
-                    # 확인 버튼 생성 및 클릭 시 동작 연결
-                    self.submit_button = QPushButton('Submit')
-                    self.submit_button.clicked.connect(self.submit)
-                    layout.addWidget(self.submit_button)
-
-                    # QScrollArea 설정
-                    scroll_area = QScrollArea()
-                    scroll_area.setWidgetResizable(True)
-                    # 컨테이너 위젯을 스크롤 영역에 추가
-                    scroll_area.setWidget(container_widget)
-
-                    # 최종 레이아웃 설정
-                    final_layout = QVBoxLayout()
-                    final_layout.addWidget(scroll_area)
-                    self.setLayout(final_layout)
-
-                def submit(self):
-                    # 입력된 데이터를 확인하고 처리
-                    userName = self.user_input.text()
-                    version_num = self.version
-                    bug_title = self.bug_title_input.text()
-                    bug_detail = self.bug_detail_input.toPlainText()
-
-                    self.data = {
-                        'userName': userName,
-                        'version_num': version_num,
-                        'bug_title': bug_title,
-                        'bug_detail': bug_detail
-                    }
-
-                    QMessageBox.information(self, 'Input Data',
-                                            f'User Name: {userName}\nVersion Num: {version_num}\nBug Title: {bug_title}\nBug Detail: {bug_detail}')
-                    self.accept()
-
-            dialog = BugInputDialog(self.main, VERSION)
+            from ui.dialogs import AddBugDialog
+            dialog = AddBugDialog(self.main, VERSION)
             dialog.exec_()
 
             # 데이터를 addVersion 함수에서 사용
@@ -393,7 +253,7 @@ class Manager_Board:
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
-            
+
     def viewBug(self):
         try:
             userLogging(f'BOARD -> viewBug')
@@ -499,64 +359,8 @@ class Manager_Board:
             # QDialog를 상속받은 클래스 생성
             userLogging(f'BOARD -> addPost')
 
-            class PostInputDialog(QDialog):
-                def __init__(self, main_window):
-                    super().__init__()
-                    self.main = main_window
-                    self.initUI()
-                    self.data = None  # 데이터를 저장할 속성 추가
-
-                def initUI(self):
-                    self.setWindowTitle('Add Post')
-                    self.resize(400, 400)
-
-                    # 컨테이너 위젯 생성
-                    container_widget = QDialog()
-                    layout = QVBoxLayout(container_widget)
-
-                    # 게시물 제목 입력 필드
-                    self.post_title_label = QLabel('Post Title:')
-                    self.post_title_input = QLineEdit()
-                    layout.addWidget(self.post_title_label)
-                    layout.addWidget(self.post_title_input)
-
-                    # 게시물 내용 입력 필드
-                    self.post_text_label = QLabel('Post Text:')
-                    self.post_text_input = QTextEdit()
-                    layout.addWidget(self.post_text_label)
-                    layout.addWidget(self.post_text_input)
-
-                    # 확인 버튼 생성 및 클릭 시 동작 연결
-                    self.submit_button = QPushButton('Post')
-                    self.submit_button.clicked.connect(self.submit)
-                    layout.addWidget(self.submit_button)
-
-                    # QScrollArea 설정
-                    scroll_area = QScrollArea()
-                    scroll_area.setWidgetResizable(True)
-                    # 컨테이너 위젯을 스크롤 영역에 추가
-                    scroll_area.setWidget(container_widget)
-
-                    # 최종 레이아웃 설정
-                    final_layout = QVBoxLayout()
-                    final_layout.addWidget(scroll_area)
-                    self.setLayout(final_layout)
-
-                def submit(self):
-                    # 입력된 데이터를 확인하고 처리
-                    post_title = self.post_title_input.text()
-                    post_text = self.post_text_input.toPlainText()
-
-                    self.data = {
-                        'post_title': post_title,
-                        'post_text': post_text,
-                    }
-
-                    QMessageBox.information(self, 'New Post',
-                                            f'Post Title: {post_title}\nPost Text: {post_text}')
-                    self.accept()
-
-            dialog = PostInputDialog(self.main)
+            from ui.dialogs import AddPostDialog
+            dialog = AddPostDialog(self.main)
             dialog.exec_()
 
             if dialog.data:
@@ -655,6 +459,7 @@ class Manager_Board:
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
+
     def deletePost(self):
         try:
             selectedRow = self.main.board_post_tableWidget.currentRow()
@@ -680,66 +485,6 @@ class Manager_Board:
 
     def editPost(self):
         try:
-            # QDialog를 상속받은 클래스 생성
-            class PostInputDialog(QDialog):
-                def __init__(self, post_data):
-                    super().__init__()
-                    self.post_data = post_data
-                    self.initUI()
-                    self.data = None  # 데이터를 저장할 속성 추가
-
-                def initUI(self):
-                    self.setWindowTitle('Edit Post')
-                    self.resize(400, 400)
-
-                    # 컨테이너 위젯 생성
-                    container_widget = QDialog()
-                    layout = QVBoxLayout(container_widget)
-
-                    # 게시물 제목 입력 필드
-                    self.post_title_label = QLabel('Post Title:')
-                    self.post_title_input = QLineEdit()
-                    self.post_title_input.setText(self.post_data['title'])
-                    layout.addWidget(self.post_title_label)
-                    layout.addWidget(self.post_title_input)
-
-                    # 게시물 내용 입력 필드
-                    self.post_text_label = QLabel('Post Text:')
-                    self.post_text_input = QTextEdit()
-                    self.post_text_input.setText(self.post_data['text'])
-                    layout.addWidget(self.post_text_label)
-                    layout.addWidget(self.post_text_input)
-
-                    # 확인 버튼 생성 및 클릭 시 동작 연결
-                    self.submit_button = QPushButton('Edit')
-                    self.submit_button.clicked.connect(self.submit)
-                    layout.addWidget(self.submit_button)
-
-                    # QScrollArea 설정
-                    scroll_area = QScrollArea()
-                    scroll_area.setWidgetResizable(True)
-                    # 컨테이너 위젯을 스크롤 영역에 추가
-                    scroll_area.setWidget(container_widget)
-
-                    # 최종 레이아웃 설정
-                    final_layout = QVBoxLayout()
-                    final_layout.addWidget(scroll_area)
-                    self.setLayout(final_layout)
-
-                def submit(self):
-                    # 입력된 데이터를 확인하고 처리
-                    post_title = self.post_title_input.text()
-                    post_text = self.post_text_input.toPlainText()
-
-                    self.data = {
-                        'post_title': post_title,
-                        'post_text': post_text,
-                    }
-
-                    QMessageBox.information(self, 'Input Data',
-                                            f'Post Title: {post_title}\nPost Text: {post_text}')
-                    self.accept()
-
             selectedRow = self.main.board_post_tableWidget.currentRow()
             if selectedRow >= 0:
                 post = self.origin_post_data[selectedRow]
@@ -747,7 +492,8 @@ class Manager_Board:
                 if post['writerUid'] == self.main.userUid or self.main.user == 'admin':
                     prev_post_data = self.origin_post_data[selectedRow]
 
-                    dialog = PostInputDialog(prev_post_data)
+                    from ui.dialogs import EditPostDialog
+                    dialog = EditPostDialog(prev_post_data)
                     dialog.exec_()
 
                     if dialog.data:
