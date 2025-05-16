@@ -2,6 +2,12 @@ import warnings
 import traceback
 from PyQt5.QtWidgets import QMessageBox
 import bcrypt
+from ui.table import makeTable
+from core.shortcut import resetShortcuts
+from services.auth import checkPassword
+from config import ADMIN_PASSWORD
+from services.api import Request
+from services.logging import programBugLog
 warnings.filterwarnings("ignore")
 
 
@@ -14,7 +20,7 @@ class Manager_User:
     def refreshUserTable(self):
         # 데이터베이스 연결 및 데이터 가져오기
 
-        self.user_list = self.main.Request('get', '/users').json()['data']
+        self.user_list = Request('get', '/users').json()['data']
         user_data = [(user['name'], user['email'], user['pushoverKey'])
                      for user in self.user_list]
         self.userNameList = [user['name'] for user in self.user_list]
@@ -24,7 +30,8 @@ class Manager_User:
 
         # 테이블 설정
         columns = ['Name', 'Email', 'PushOverKey']
-        self.main.makeTable(
+        makeTable(
+            self.main,
             widgetname=self.main.user_tablewidget,
             data=user_data,
             column=columns,
@@ -37,8 +44,8 @@ class Manager_User:
             key = self.main.user_key_lineinput.text()
 
             if self.main.user != 'admin':
-                ok, password = self.main.checkPassword(True)
-                if not ok or bcrypt.checkpw(password.encode('utf-8'), self.main.admin_password.encode('utf-8')) == False:
+                ok, password = checkPassword(self.main, True)
+                if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
 
             reply = QMessageBox.question(
@@ -49,17 +56,17 @@ class Manager_User:
                     'email': email,
                     'pushoverKey': key
                 }
-                response = self.main.Request('post', '/users/add', json=data)
+                response = Request('post', '/users/add', json=data)
                 self.refreshUserTable()
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def deleteUser(self):
         try:
             if self.main.user != 'admin':
-                ok, password = self.main.checkPassword(True)
-                if not ok or bcrypt.checkpw(password.encode('utf-8'), self.main.admin_password.encode('utf-8')) == False:
+                ok, password = checkPassword(self.main, True)
+                if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
 
             selectedRow = self.main.user_tablewidget.currentRow()
@@ -68,7 +75,7 @@ class Manager_User:
                 reply = QMessageBox.question(
                     self.main, 'Confirm Delete', f"{selectedUser['name']}님을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    response = self.main.Request(
+                    response = Request(
                         'delete', f'/users/{selectedUser['uid']}')
                     if response.status_code == 200:
                         QMessageBox.information(
@@ -79,7 +86,7 @@ class Manager_User:
                             self.main, "Error", f"'{selectedUser['name']}'님을 삭제할 수 없습니다")
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def matchButton(self):
         self.main.user_adduser_button.clicked.connect(self.addUser)
@@ -93,7 +100,7 @@ class Manager_User:
         self.main.tabWidget_user.currentChanged.connect(self.updateShortcut)
 
     def updateShortcut(self, index):
-        self.main.resetShortcuts()
+        resetShortcuts(self.main)
 
         # User List
         if index == 0:
