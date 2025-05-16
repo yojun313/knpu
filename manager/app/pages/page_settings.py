@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, \
     QPushButton, QStackedWidget, QListWidget, QComboBox
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QKeySequence, QFont
+from core.setting import get_setting, set_setting
+from config import VERSION
 from datetime import datetime
 import platform
 import os
@@ -28,24 +30,19 @@ class Manager_Setting(QDialog):
         self.category_list.addItem("정보")
         self.category_list.addItem("도움말")  # Help 섹션 추가
 
-        self.category_list.currentRowChanged.connect(self.display_category)
-        self.category_list.setCurrentRow(0)  # 첫 번째 항목을 기본 선택
-
         # 오른쪽: 설정 내용 (Stacked Widget)
         self.stacked_widget = QStackedWidget()
 
         # 앱 설정 페이지 추가
-        self.app_settings_page = self.create_app_settings_page(
-            self.main.SETTING)
+        self.app_settings_page = self.create_app_settings_page()
         self.stacked_widget.addWidget(self.app_settings_page)
 
         # DB 설정 페이지 추가
-        self.db_settings_page = self.create_db_settings_page(self.main.SETTING)
+        self.db_settings_page = self.create_db_settings_page()
         self.stacked_widget.addWidget(self.db_settings_page)
 
         # info 설정 페이지 추가
-        self.info_settings_page = self.create_info_settings_page(
-            self.main.SETTING)
+        self.info_settings_page = self.create_info_settings_page()
         self.stacked_widget.addWidget(self.info_settings_page)
 
         self.help_page = self.create_help_page()
@@ -102,10 +99,13 @@ class Manager_Setting(QDialog):
         default_font = QFont(os.path.join(os.path.dirname(
             __file__), '..', 'assets', 'malgun.ttf'))  # 폰트 이름과 크기 지정
         self.setFont(default_font)
+        
+        self.category_list.currentRowChanged.connect(self.display_category)
+        self.category_list.setCurrentRow(0)  # 첫 번째 항목을 기본 선택
 
         self.setLayout(main_layout)
 
-    def create_app_settings_page(self, setting):
+    def create_app_settings_page(self):
         """
         앱 설정 페이지 생성
         """
@@ -124,9 +124,9 @@ class Manager_Setting(QDialog):
         self.dark_mode_toggle = QPushButton("다크 모드")
 
         self.init_toggle_style(self.light_mode_toggle,
-                               setting['Theme'] == 'default')
+                               get_setting('Theme') == 'default')
         self.init_toggle_style(self.dark_mode_toggle,
-                               setting['Theme'] != 'default')
+                               get_setting('Theme') != 'default')
 
         self.light_mode_toggle.clicked.connect(
             lambda: self.update_toggle(
@@ -159,9 +159,9 @@ class Manager_Setting(QDialog):
         self.maximized_toggle = QPushButton("최대화")
 
         self.init_toggle_style(self.default_size_toggle,
-                               setting['ScreenSize'] == 'default')
+                               get_setting('ScreenSize') == 'default')
         self.init_toggle_style(self.maximized_toggle,
-                               setting['ScreenSize'] != 'default')
+                               get_setting('ScreenSize') != 'default')
 
         self.default_size_toggle.clicked.connect(
             lambda: self.update_toggle(
@@ -194,9 +194,9 @@ class Manager_Setting(QDialog):
         self.on_bootterminal_toggle = QPushButton("켜기")
 
         self.init_toggle_style(
-            self.default_bootterminal_toggle, setting['BootTerminal'] == 'default')
+            self.default_bootterminal_toggle, get_setting('BootTerminal') == 'default')
         self.init_toggle_style(self.on_bootterminal_toggle,
-                               setting['BootTerminal'] != 'default')
+                               get_setting('BootTerminal') != 'default')
 
         self.default_bootterminal_toggle.clicked.connect(
             lambda: self.update_toggle(
@@ -231,9 +231,9 @@ class Manager_Setting(QDialog):
         self.off_processconsole_toggle = QPushButton("끄기")
 
         self.init_toggle_style(
-            self.default_processconsole_toggle, setting['ProcessConsole'] == 'default')
+            self.default_processconsole_toggle, get_setting('ProcessConsole') == 'default')
         self.init_toggle_style(
-            self.off_processconsole_toggle, setting['ProcessConsole'] != 'default')
+            self.off_processconsole_toggle, get_setting('ProcessConsole') != 'default')
 
         self.default_processconsole_toggle.clicked.connect(
             lambda: self.update_toggle(
@@ -268,9 +268,9 @@ class Manager_Setting(QDialog):
         self.auto_update_toggle = QPushButton("켜기")
 
         self.init_toggle_style(self.default_update_toggle,
-                               setting['AutoUpdate'] == 'default')
+                               get_setting('AutoUpdate') == 'default')
         self.init_toggle_style(self.auto_update_toggle,
-                               setting['AutoUpdate'] != 'default')
+                               get_setting('AutoUpdate') != 'default')
 
         self.default_update_toggle.clicked.connect(
             lambda: self.update_toggle(
@@ -310,7 +310,7 @@ class Manager_Setting(QDialog):
             self.llm_option_selector.addItem(display_name, actual_value)
 
         # 기본 선택값 설정
-        default_option = setting.get("LLM_model")
+        default_option = get_setting("LLM_model")
         for index in range(self.llm_option_selector.count()):
             if self.llm_option_selector.itemData(index) == default_option:
                 self.llm_option_selector.setCurrentIndex(index)
@@ -338,7 +338,8 @@ class Manager_Setting(QDialog):
                 self.api_key_input.setDisabled(True)  # 입력창 비활성화
                 self.save_api_key_button.setEnabled(False)  # 저장 버튼 비활성화
                 self.edit_api_key_button.setEnabled(True)  # 수정 버튼 활성화
-                setting['APIKey'] = api_key  # 설정에 저장
+                
+                set_setting('APIKey', api_key)  # 설정에 저장
                 QMessageBox.information(self, "성공", "API Key가 저장되었습니다.")
             else:
                 QMessageBox.warning(self, "경고", "API Key를 입력하세요.")
@@ -356,8 +357,8 @@ class Manager_Setting(QDialog):
 
         self.api_key_input = QLineEdit()
         self.api_key_input.setPlaceholderText("Enter your Key")
-        if setting['GPT_Key'] != 'default' and len(setting['GPT_Key']) >= 20:
-            self.api_key_input.setText(setting['GPT_Key'])  # 기존 값이 있으면 표시
+        if get_setting('GPT_Key') != 'default' and len(get_setting('GPT_Key')) >= 20:
+            self.api_key_input.setText(get_setting('GPT_Key'))  # 기존 값이 있으면 표시
             self.api_key_input.setDisabled(True)
         else:
             self.api_key_input.setEnabled(True)
@@ -402,7 +403,7 @@ class Manager_Setting(QDialog):
         app_settings_widget.setLayout(app_layout)
         return app_settings_widget
 
-    def create_db_settings_page(self, setting):
+    def create_db_settings_page(self):
 
         # DB 설정 페이지 생성
         db_layout = QVBoxLayout()
@@ -420,9 +421,9 @@ class Manager_Setting(QDialog):
         self.auto_mydb_toggle = QPushButton("켜기")
 
         self.init_toggle_style(self.default_mydb_toggle,
-                               setting['MyDB'] == 'default')
+                               get_setting('MyDB') == 'default')
         self.init_toggle_style(self.auto_mydb_toggle,
-                               setting['MyDB'] != 'default')
+                               get_setting('MyDB') != 'default')
 
         self.default_mydb_toggle.clicked.connect(
             lambda: self.update_toggle(
@@ -456,9 +457,9 @@ class Manager_Setting(QDialog):
         self.off_dbrefresh_toggle = QPushButton("끄기")
 
         self.init_toggle_style(self.default_dbrefresh_toggle,
-                               setting['DB_Refresh'] == 'default')
+                               get_setting('DB_Refresh') == 'default')
         self.init_toggle_style(self.off_dbrefresh_toggle,
-                               setting['DB_Refresh'] != 'default')
+                               get_setting('DB_Refresh') != 'default')
 
         self.default_dbrefresh_toggle.clicked.connect(
             lambda: self.update_toggle(
@@ -491,9 +492,9 @@ class Manager_Setting(QDialog):
         self.on_dbkeywordsort_toggle = QPushButton("키워드순")
 
         self.init_toggle_style(
-            self.default_dbkeywordsort_toggle, setting['DBKeywordSort'] == 'default')
+            self.default_dbkeywordsort_toggle, get_setting('DBKeywordSort') == 'default')
         self.init_toggle_style(self.on_dbkeywordsort_toggle,
-                               setting['DBKeywordSort'] != 'default')
+                               get_setting('DBKeywordSort') != 'default')
 
         self.default_dbkeywordsort_toggle.clicked.connect(
             lambda: self.update_toggle(
@@ -523,7 +524,7 @@ class Manager_Setting(QDialog):
         db_settings_widget.setLayout(db_layout)
         return db_settings_widget
 
-    def create_info_settings_page(self, setting):
+    def create_info_settings_page(self):
         def wrap_text_by_words(text, max_line_length):
             split = '/'
             if platform.system() == 'Windows':
@@ -577,11 +578,11 @@ class Manager_Setting(QDialog):
 
         userDevice_label = QLabel(f"디바이스: {self.main.userDevice}")
 
-        if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20:
+        if get_setting('GPT_Key') == 'default' or len(get_setting('GPT_Key')) < 20:
             GPT_key_label = QLabel(f"ChatGPT API Key: 없음")
         else:
             GPT_key_label = QLabel(
-                f"ChatGPT Key: {self.main.gpt_api_key[:40]}...")
+                f"ChatGPT Key: {get_setting('GPT_Key')[:40]}...")
 
         # 사용자 정보 섹션 레이아웃 구성
         user_info_section.addWidget(user_title_label)
@@ -605,13 +606,10 @@ class Manager_Setting(QDialog):
         manager_title_label.setAlignment(Qt.AlignLeft)
 
         # MANAGER 정보 추가
-        manager_version_label = QLabel(f"버전: {self.main.versionNum}")
+        manager_version_label = QLabel(f"버전: {VERSION}")
 
         manager_location_label = QLabel(
             f"앱 경로: {wrap_text_by_words(self.main.programDirectory, 40)}")
-
-        setting_location_label = QLabel(
-            f"설정 경로: {wrap_text_by_words(self.main.settings.fileName(), 40)}")
 
         # 실시간 업데이트를 위한 구동 시간 라벨
         self.manager_time_label = QLabel("구동 시간: 계산 중...")
@@ -620,7 +618,6 @@ class Manager_Setting(QDialog):
         manager_info_section.addWidget(manager_title_label)
         manager_info_section.addWidget(manager_version_label)
         manager_info_section.addWidget(manager_location_label)
-        manager_info_section.addWidget(setting_location_label)
         manager_info_section.addWidget(self.manager_time_label)
 
         info_layout.addLayout(manager_info_section)
@@ -734,33 +731,16 @@ class Manager_Setting(QDialog):
         api_key = self.api_key_input.text()
         api_key.replace('\n', '').replace(' ', '')
 
-        self.main.SETTING['Theme'] = theme
-        self.main.SETTING['ScreenSize'] = screen_size
-        self.main.SETTING['AutoUpdate'] = auto_update
-        self.main.SETTING['MyDB'] = my_db
-        self.main.SETTING['GPT_Key'] = api_key
-        self.main.SETTING['DB_Refresh'] = db_refresh
-        self.main.SETTING['BootTerminal'] = boot_terminal
-        self.main.SETTING['DBKeywordSort'] = db_keywordsort
-        self.main.SETTING['ProcessConsole'] = process_console
-        self.main.SETTING['LLM_model'] = llm_model
-        self.main.gpt_api_key = api_key
-
-        options = {
-            "theme": {"key": 'Theme', "value": theme},  # 테마 설정
-            # 스크린 사이즈 설정
-            "screensize": {"key": 'ScreenSize', "value": screen_size},
-            # 자동 업데이트 설정
-            "autoupdate": {"key": 'AutoUpdate', "value": auto_update},
-            "mydb": {"key": 'MyDB', "value": my_db},  # 내 DB만 보기 설정
-            "GPT_Key": {"key": 'GPT_Key', "value": api_key},
-            "DB_Refresh": {"key": 'DB_Refresh', "value": db_refresh},
-            "BootTerminal": {"key": 'BootTerminal', "value": boot_terminal},
-            'DBKeywordSort': {'key': 'DBKeywordSort', "value": db_keywordsort},
-            'ProcessConsole': {'key': 'ProcessConsole', 'value': process_console},
-            'LLM_model': {'key': 'LLM_model', "value": llm_model}
-        }
-        for option in options.values():
-            self.main.updateSettings(option['key'], option['value'])
+        # 바뀐 값마다 즉시 기록
+        set_setting('Theme',          theme)
+        set_setting('ScreenSize',     screen_size)
+        set_setting('AutoUpdate',     auto_update)
+        set_setting('MyDB',           my_db)
+        set_setting('GPT_Key',        api_key)
+        set_setting('DB_Refresh',     db_refresh)
+        set_setting('BootTerminal',   boot_terminal)
+        set_setting('DBKeywordSort',  db_keywordsort)
+        set_setting('ProcessConsole', process_console)
+        set_setting('LLM_model',      llm_model)
 
         self.accept()

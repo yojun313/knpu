@@ -5,6 +5,7 @@ from functools import partial
 import webbrowser
 import warnings
 import traceback
+from services.logging import programBugLog
 warnings.filterwarnings("ignore")
 
 
@@ -37,7 +38,7 @@ class Manager_Web:
             widget.addWidget(self.browser)
             self.browser.show()
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def web_open_downloadbrowser(self, url):
         webbrowser.open('https://knpu.re.kr:90')

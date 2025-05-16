@@ -5,12 +5,20 @@ import copy
 import re
 import warnings
 import traceback
-import pandas as pd
-from tqdm import tqdm
-from datetime import datetime
 import subprocess
 import shutil
 import platform
+import uuid
+from datetime import datetime
+from pathlib import Path
+from io import BytesIO
+
+import pandas as pd
+from tqdm import tqdm
+import requests
+import zipfile
+import bcrypt
+
 from PyQt5.QtCore import QDate, QSize
 from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
@@ -18,16 +26,26 @@ from PyQt5.QtWidgets import (
     QButtonGroup, QPushButton, QDialogButtonBox, QRadioButton, QLabel, QTabWidget,
     QLineEdit, QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
 )
-import requests
-import zipfile
-from io import BytesIO
-from libs.console import openConsole, closeConsole
+
 from urllib.parse import unquote
-import uuid
+
+from libs.console import openConsole, closeConsole
 from libs.viewer import open_viewer, close_viewer, register_process
+from ui.table import makeTable
+from ui.status import printStatus
+from ui.finder import openFileExplorer
+
+from services.auth import checkPassword
+from services.crawldb import updateDB
+from services.api import Request, api_headers
+from services.logging import userLogging, programBugLog
+
+from core.setting import get_setting, update_settings, set_setting
+from core.shortcut import resetShortcuts
+
+from config import ADMIN_PASSWORD, MANAGER_SERVER_API
 
 warnings.filterwarnings("ignore")
-
 
 class Manager_Database:
     def __init__(self, main_window):
@@ -36,8 +54,8 @@ class Manager_Database:
 
         self.DBTableColumn = ['Database', 'Type', 'Keyword',
                               'StartDate', 'EndDate', 'Option', 'Status', 'User', 'Size']
-        self.main.makeTable(self.main.database_tablewidget,
-                            self.DB['DBtable'], self.DBTableColumn, self.viewDBinfo)
+        makeTable(self.main, self.main.database_tablewidget,
+                  self.DB['DBtable'], self.DBTableColumn, self.viewDBinfo)
         self.matchButton()
         self.chatgpt_mode = False
         self.console_open = False
@@ -65,7 +83,7 @@ class Manager_Database:
                 reply = QMessageBox.question(
                     self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    self.main.Request('delete', f'crawls/{DBuid}')
+                    Request('delete', f'crawls/{DBuid}')
 
                     if status == 'Working':
                         self.main.activeCrawl -= 1
@@ -74,12 +92,12 @@ class Manager_Database:
                     else:
                         QMessageBox.information(
                             self.main, "Information", f"'{DBname}'가 삭제되었습니다")
-                    self.main.userLogging(f'DATABASE -> delete_DB({DBname})')
+                    userLogging(f'DATABASE -> delete_DB({DBname})')
                     self.refreshDB()
 
-            self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
+            printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def viewDB(self):
 
@@ -141,7 +159,7 @@ class Manager_Database:
 
             def init_viewTable(self, DBuid):
 
-                response = self.main.Request(
+                response = Request(
                     'get', f'crawls/{DBuid}/preview', stream=True)
 
                 self.tabWidget_tables.clear()
@@ -165,8 +183,9 @@ class Manager_Database:
                         new_table = QTableWidget(new_tab)
                         new_tab_layout.addWidget(new_table)
 
-                        self.main.makeTable(
-                            new_table, self.tuple_list, list(df.columns)
+                        makeTable(
+                            self.main, new_table, self.tuple_list, list(
+                                df.columns)
                         )
 
                         self.tabWidget_tables.addTab(
@@ -183,7 +202,7 @@ class Manager_Database:
             reply = QMessageBox.question(
                 self.main, 'Confirm View', 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
-                self.main.printStatus("불러오는 중...")
+                printStatus(self.main, "불러오는 중...")
 
                 def destory_table():
                     del self.DBtable_window
@@ -198,17 +217,17 @@ class Manager_Database:
                     self.DBtable_window.destroyed.connect(destory_table)
                     self.DBtable_window.show()
 
-                self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
+                printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def viewDBinfo(self, row):
         try:
-            self.main.printStatus("불러오는 중...")
+            printStatus(self.main, "불러오는 중...")
             DBdata = self.DB['DBdata'][row]
 
-            self.main.userLogging(
+            userLogging(
                 f'DATABASE -> dbinfo_viewer({DBdata['name']})')
 
             # 다이얼로그 생성
@@ -377,26 +396,24 @@ class Manager_Database:
             cmdw.activated.connect(dialog.accept)
 
             dialog.setLayout(layout)
-            self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
+            printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
             # 다이얼로그 실행
             dialog.show()
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def searchDB(self):
         try:
             search_text = self.main.database_searchDB_lineinput.text().lower()
             if not search_text or search_text == "":
-                if self.main.SETTING['DBKeywordSort'] == 'default':
-                    self.main.SETTING['DBKeywordSort'] = 'on'
-                    self.main.updateSettings(10, 'on')
+                if get_setting['DBKeywordSort'] == 'default':
+                    set_setting('DBKeywordSort', 'on')
                     QMessageBox.information(
                         self.main, "Information", "DB 정렬 기준이 '키워드순'으로 변경되었습니다")
                     self.refreshDB()
                 else:
-                    self.main.SETTING['DBKeywordSort'] = 'default'
-                    self.main.updateSettings(10, 'default')
+                    set_setting('DBKeywordSort', 'default')
                     QMessageBox.information(
                         self.main, "Information", "DB 정렬 기준이 '최신순'으로 변경되었습니다")
                     self.refreshDB()
@@ -432,7 +449,7 @@ class Manager_Database:
                     self.main.database_tablewidget.selectRow(row)
                     return
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def searchAdminMode(self, search_text):
         # ADMIN MODE
@@ -451,14 +468,14 @@ class Manager_Database:
                     os._exit(0)
 
             if search_text == '/admin-mode' and self.main.user != 'admin':
-                ok, password = self.main.checkPassword(True)
-                if ok or password == self.main.admin_password:
-                    self.main.user = 'admin'
-                    QMessageBox.information(
-                        self.main, "Admin Mode", f"관리자 권한이 부여되었습니다")
-                else:
+                ok, password = checkPassword(self.main, True)
+                if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     QMessageBox.warning(
                         self.main, 'Wrong Password', "비밀번호가 올바르지 않습니다")
+                    return
+                self.main.user = 'admin'
+                QMessageBox.information(
+                    self.main, "Admin Mode", f"관리자 권한이 부여되었습니다")
 
             if search_text == '/update':
                 self.main.updateProgram(sc=True)
@@ -474,11 +491,11 @@ class Manager_Database:
                 return
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def initLLMChat(self):
         try:
-            self.main.printStatus("LLM Chat 실행 중")
+            printStatus(self.main, "LLM Chat 실행 중")
             if platform.system() == "Darwin":  # macOS인지 확인
                 osascript_cmd = '''
                     tell application "iTerm"
@@ -495,10 +512,10 @@ class Manager_Database:
                     __file__), 'assets', "LLM_Chat.exe")
                 subprocess.Popen([script_path])
 
-            self.main.userLogging(f'LLM Chat ON')
-            self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
+            userLogging(f'LLM Chat ON')
+            printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def saveDB(self):
         try:
@@ -687,16 +704,16 @@ class Manager_Database:
             selectedRow = self.main.database_tablewidget.currentRow()
             if not selectedRow >= 0:
                 return
-            self.main.printStatus("DB를 저장할 위치를 선택하여 주십시오")
+            printStatus(self.main, "DB를 저장할 위치를 선택하여 주십시오")
 
             targetUid = self.DB['DBuids'][selectedRow]
 
             folder_path = QFileDialog.getExistingDirectory(
                 self.main, "DB를 저장할 위치를 선택하여 주십시오", self.main.localDirectory)
             if folder_path == '':
-                self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
+                printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
                 return
-            self.main.printStatus("DB 저장 옵션을 설정하여 주십시오")
+            printStatus(self.main, "DB 저장 옵션을 설정하여 주십시오")
             dialog = OptionDialog()
             option = {}
 
@@ -720,16 +737,16 @@ class Manager_Database:
             register_process(pid, f"Crawl DB Save")
             viewer = open_viewer(pid)
 
-            download_url = self.main.server_api + f"/crawls/{targetUid}/save"
+            download_url = MANAGER_SERVER_API + f"/crawls/{targetUid}/save"
             response = requests.post(
                 download_url,
                 json=option,
                 stream=True,
-                headers=self.main.api_headers,
+                headers=api_headers,
                 timeout=3600
             )
             response.raise_for_status()
-            
+
             # 1) Content-Disposition 헤더에서 파일명 파싱
             content_disp = response.headers.get("Content-Disposition", "")
 
@@ -767,7 +784,7 @@ class Manager_Database:
                         f.write(chunk)
                         pbar.update(len(chunk))
 
-            self.main.printStatus("다운로드 완료, 압축 해제 중…")
+            printStatus(self.main, "다운로드 완료, 압축 해제 중…")
             print("\n다운로드 완료, 압축 해제 중...\n")
 
             # 압축 풀 폴더 이름은 zip 파일 이름(확장자 제외)
@@ -780,29 +797,29 @@ class Manager_Database:
 
             os.remove(local_zip)
 
-            self.main.printStatus()
+            printStatus(self.main)
             closeConsole()
 
             reply = QMessageBox.question(self.main, 'Notification', f"DB 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
-                self.main.openFileExplorer(extract_path)
+                openFileExplorer(extract_path)
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def refreshDB(self):
         try:
-            self.main.printStatus("새로고침 중...")
+            printStatus(self.main, "새로고침 중...")
 
-            self.DB = self.main.updateDB()
-            self.main.makeTable(self.main.database_tablewidget,
-                                self.DB['DBtable'], self.DBTableColumn)
+            self.DB = updateDB(self.main)
+            makeTable(self.main, self.main.database_tablewidget,
+                      self.DB['DBtable'], self.DBTableColumn)
 
-            self.main.printStatus(f"{self.main.fullStorage} GB / 2 TB")
+            printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
-
+            programBugLog(self.main, traceback.format_exc())
+            
     def matchButton(self):
         self.main.database_searchDB_button.clicked.connect(self.searchDB)
         self.main.database_chatgpt_button.clicked.connect(self.initLLMChat)
@@ -836,7 +853,7 @@ class Manager_Database:
             QSize(19, 19))  # 아이콘 크기 조정 (원하는 크기로 설정)
 
     def setDatabaseShortcut(self):
-        self.main.resetShortcuts()
+        resetShortcuts(self.main)
         self.main.ctrld.activated.connect(self.deleteDB)
         self.main.ctrls.activated.connect(self.saveDB)
         # self.main.ctrlm.activated.connect(self.mergeDB)
