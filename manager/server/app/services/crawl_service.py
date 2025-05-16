@@ -258,7 +258,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         return new_filename
     
     # 현재 시각
-    kst_now = kst.strftime("%m%d_%H%M")
+    kst_now = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%m%d_%H%M")
 
     # targetDB 구조 예시:
     parts = targetDB.split('_')
