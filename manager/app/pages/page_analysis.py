@@ -1814,9 +1814,9 @@ class Manager_Analysis:
                 printStatus(self.main)
                 return
 
-            with open(infotxt_path, 'r') as info_txt:
+            with open(infotxt_path, 'r', encoding='utf-8') as info_txt:
                 lines = info_txt.readlines()
-
+                
             for line in lines:
                 if line.startswith('분석 데이터:'):
                     # '분석 데이터:' 뒤에 오는 값을 파싱
