@@ -264,7 +264,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
     parts = targetDB.split('_')
 
     # 키워드 교체
-    parts[1] = crawlDb['keyword']
+    parts[1] = f"[{crawlDb['keyword']}]"
 
     # 시간 업데이트 (마지막 2개 제거 후 새로운 시간 추가)
     parts = parts[:-2] + kst_now.split('_')
