@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QFontDatabase
 import os
 import sys
 import platform
@@ -10,6 +10,7 @@ from PyQt5.QtCore import QCoreApplication, Qt
 from core.setting import get_setting, set_setting
 from ui.style import theme_option
 from config import ASSETS_PATH
+
 
 def build_app():
 
@@ -31,10 +32,17 @@ def build_app():
     app.setOrganizationName("BIGMACLAB")
 
     # 글꼴
-    font = QFont(os.path.join(ASSETS_PATH, "malgun.ttf"))
-    font.setStyleStrategy(QFont.PreferAntialias)
-    app.setFont(font)
-        
+    font_path = os.path.join(ASSETS_PATH, "malgun.ttf")
+    # 등록
+    font_id = QFontDatabase.addApplicationFont(font_path)
+    if font_id != -1:
+        family = QFontDatabase.applicationFontFamilies(font_id)[0]
+        font = QFont(family)
+        font.setStyleStrategy(QFont.PreferAntialias)
+        app.setFont(font)
+    else:
+        print("⚠️ 폰트 로딩 실패:", font_path)
+
     if platform.system() == 'Windows':
         theme = get_setting("Theme", "default")
     else:
