@@ -20,7 +20,7 @@ from pages.page_web import Manager_Web
 from pages.page_database import Manager_Database
 from pages.page_settings import Manager_Setting
 from core.boot import (
-    initListWidget, initStatusbar, loginProgram,
+    initListWidget, initStatusbar,
     checkNetwork, checkNewPost, checkNewVersion
 )
 from core.shortcut import initShortcut, resetShortcuts
@@ -29,6 +29,7 @@ from services.crawldb import updateDB
 from services.pushover import sendPushOver
 from services.update import updateProgram
 from services.logging import userLogging, getUserLocation
+from services.auth import loginProgram
 from ui.style import theme_option, updateTableStyleHtml
 from ui.status import printStatus
 
