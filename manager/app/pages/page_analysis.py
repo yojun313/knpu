@@ -599,8 +599,8 @@ class Manager_Analysis:
                 printStatus(self.main)
                 return
 
-            startdate = dialog.data['startDate']
-            enddate = dialog.data['endDate']
+            startdate = dialog.data['startdate']
+            enddate = dialog.data['enddate']
             date = (startdate, enddate)
             period = dialog.data['period']
             maxword = int(dialog.data['maxword'])
