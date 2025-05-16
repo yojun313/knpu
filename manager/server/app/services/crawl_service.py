@@ -391,11 +391,20 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         tableDF = None
         gc.collect()
 
-    zip_path = shutil.make_archive(dbpath, "zip", root_dir=dbpath)
+    zip_path = os.path.join(dbpath, f"{os.path.basename(dbpath)}.zip")
+    # 완전 무압축으로 최대 속도를 원하면 ZIP_STORED 사용
+    # 혹은 최소 압축(최고 속도)을 원하면 ZIP_DEFLATED + compresslevel=1
+    with zipfile.ZipFile(zip_path, 'w', compression=zipfile.ZIP_STORED) as zf:
+        for root, dirs, files in os.walk(dbpath):
+            for fname in files:
+                full_path = os.path.join(root, fname)
+                # 아카이브 내 경로는 dbpath 기준 상대경로로
+                rel_path = os.path.relpath(full_path, dbpath)
+                zf.write(full_path, rel_path)
+                
     filename = os.path.basename(zip_path)  # 여기에 한글이 섞여 있어도 OK
 
-    background_task = BackgroundTask(
-        cleanup_folder_and_zip, dbpath, zip_path)
+    background_task = BackgroundTask(cleanup_folder_and_zip, dbpath, zip_path)
     # 4) FileResponse에 filename= 으로 넘기기
     return FileResponse(
         path=zip_path,
