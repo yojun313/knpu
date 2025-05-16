@@ -33,8 +33,12 @@ import zipfile
 import requests
 from libs.viewer import open_viewer, close_viewer, register_process
 from core.setting import get_setting
+from core.shortcut import resetShortcuts
 from services.api import api_headers
-
+from services.logging import userLogging, programBugLog
+from services.llm import generateLLM
+from services.csv import readCSV
+from config import MANAGER_SERVER_API
 
 warnings.filterwarnings("ignore")
 
@@ -105,7 +109,7 @@ class Manager_Analysis:
                     except:
                         table_path += "_copy"
 
-                table_df = self.main.readCSV(csv_path)
+                table_df = readCSV(csv_path)
 
                 if any('Date' in element for element in table_df.columns.tolist()) == False or table_df.columns.tolist() == []:
                     QMessageBox.information(
@@ -128,7 +132,7 @@ class Manager_Analysis:
                     2, self.month_divided_group, table_path, tablename)
 
             def main(directory_list):
-                self.main.userLogging(
+                userLogging(
                     f'ANALYSIS -> timesplit_file({directory_list[0]})')
                 for csv_path in directory_list:
                     table_path = split_table(csv_path)
@@ -154,7 +158,7 @@ class Manager_Analysis:
             printStatus(self.main)
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def analysis_merge_file(self):
         try:
@@ -191,8 +195,8 @@ class Manager_Analysis:
                 None, '파일명 입력', '병합 파일명을 입력하세요:', text='merged_file')
             if not ok or not mergedfilename:
                 return
-            self.main.userLogging(f'ANALYSIS -> merge_file({mergedfilename})')
-            all_df = [self.main.readCSV(directory)
+            userLogging(f'ANALYSIS -> merge_file({mergedfilename})')
+            all_df = [readCSV(directory)
                       for directory in selected_directory]
             all_columns = [df.columns.tolist() for df in all_df]
             same_check_result = find_different_element_index(all_columns)
@@ -229,7 +233,7 @@ class Manager_Analysis:
                 openFileExplorer(mergedfiledir)
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def analysis_analysis_file(self):
         try:
@@ -353,7 +357,7 @@ class Manager_Analysis:
 
             csv_data = pd.read_csv(csv_path, low_memory=False)
 
-            self.main.userLogging(f'ANALYSIS -> analysis_file({csv_path})')
+            userLogging(f'ANALYSIS -> analysis_file({csv_path})')
 
             print(f"\n{csv_filename.replace('.csv', '')} 데이터 분석 중...")
             match selected_options:
@@ -406,7 +410,7 @@ class Manager_Analysis:
 
         except Exception as e:
             closeConsole()
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def analysis_wordcloud_file(self):
         try:
@@ -637,7 +641,7 @@ class Manager_Analysis:
 
             openConsole("워드클라우드")
 
-            self.main.userLogging(
+            userLogging(
                 f'ANALYSIS -> WordCloud({os.path.basename(folder_path)})')
 
             printStatus(self.main, "파일 불러오는 중...")
@@ -658,7 +662,7 @@ class Manager_Analysis:
             return
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def kimkem_kimkem(self):
         class KimKemOptionDialog(QDialog):
@@ -1120,7 +1124,7 @@ class Manager_Analysis:
                 "exception_filename": exception_word_list_path,
             }
 
-            download_url = self.main.server_api + "/analysis/kemkim"
+            download_url = MANAGER_SERVER_API + "/analysis/kemkim"
 
             response = requests.post(
                 download_url,
@@ -1143,7 +1147,7 @@ class Manager_Analysis:
                 printStatus(self.main)
                 return
 
-            self.main.userLogging(
+            userLogging(
                 f'ANALYSIS -> KEMKIM({tokenfile_name})-({startdate},{startdate},{topword},{weight},{filter_yes_selected})')
 
             # 1) Content-Disposition 헤더에서 파일명 파싱
@@ -1204,7 +1208,7 @@ class Manager_Analysis:
                 openFileExplorer(extract_path)
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def kimkem_rekimkem_file(self):
 
@@ -1433,7 +1437,7 @@ class Manager_Analysis:
                                     f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
                 return
 
-            self.main.userLogging(
+            userLogging(
                 f'ANALYSIS -> rekimkem_file({result_directory[0]})')
             printStatus(self.main, "파일 불러오는 중...")
 
@@ -1617,7 +1621,7 @@ class Manager_Analysis:
             openFileExplorer(new_result_folder)
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def kimkem_interpretkimkem_file(self):
         class WordSelector(QDialog):
@@ -1778,7 +1782,7 @@ class Manager_Analysis:
                 return
 
             result_directory = result_directory[0]
-            self.main.userLogging(
+            userLogging(
                 f'ANALYSIS -> interpret_kimkem_file({result_directory})')
 
             final_signal_csv_path = os.path.join(
@@ -1998,8 +2002,7 @@ class Manager_Analysis:
                         "...\n"
                         "토픽 5. ~~: (여기에 내용 기입)"
                     )
-                    gpt_response = self.main.generateLLM(
-                        gpt_query, get_setting('LLM_model'))
+                    gpt_response = generateLLM(gpt_query)
                     if type(gpt_response) != str:
                         QMessageBox.warning(
                             self.main, "Error", f"{gpt_response[1]}")
@@ -2027,7 +2030,7 @@ class Manager_Analysis:
                 openFileExplorer(analyze_directory)
 
         except Exception as e:
-            self.main.programBugLog(traceback.format_exc())
+            programBugLog(self.main, traceback.format_exc())
 
     def anaylsis_buttonMatch(self):
 
@@ -2052,7 +2055,7 @@ class Manager_Analysis:
             self.updateShortcut)
 
     def updateShortcut(self, index):
-        self.main.resetShortcuts()
+        resetShortcuts(self.main)
 
         # 파일 불러오기
         if index == 0:

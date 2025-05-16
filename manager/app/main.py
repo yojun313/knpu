@@ -22,6 +22,7 @@ def build_app():
     # High DPI 스케일링 활성화
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 
     app = QApplication([])
     app.setApplicationName("BIGMACLAB_MANAGER")

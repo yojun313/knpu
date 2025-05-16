@@ -1,3 +1,5 @@
+from core.setting import get_setting
+
 # 전역 스타일시트 설정
 light_style_sheet = """
     QMainWindow {
@@ -573,3 +575,74 @@ theme_option = {
     'default': light_style_sheet,
     'dark': dark_style_sheet
 }
+
+def updateTableStyleHtml(parent):
+    if get_setting('Theme') != 'default':
+        parent.style_html = f"""
+            <style>
+                h2 {{
+                    color: #2c3e50;
+                    text-align: center;
+                }}
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-family: Arial, sans-serif;
+                    font-size: 14px;
+                    color: white;
+                }}
+                th, td {{
+                    border: 1px solid #bdc3c7;
+                    padding: 8px;
+                    text-align: left;
+                }}
+                th {{
+                    background-color: #34495e;
+                    color: white;
+                }}
+                td {{
+                    color: white;
+                }}
+                .detail-content {{
+                    white-space: pre-wrap;
+                    margin-top: 5px;
+                    font-family: Arial, sans-serif;
+                    font-size: 14px;
+                }}
+            </style>
+        """
+    else:
+        parent.style_html = f"""
+            <style>
+                h2 {{
+                    color: #2c3e50;
+                    text-align: center;
+                }}
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-family: Arial, sans-serif;
+                    font-size: 14px;
+                    color: black;
+                }}
+                th, td {{
+                    border: 1px solid #bdc3c7;
+                    padding: 8px;
+                    text-align: left;
+                    color: white;
+                }}
+                th {{
+                    background-color: #34495e;
+                }}
+                td {{
+                    color: black;
+                }}
+                .detail-content {{
+                    white-space: pre-wrap;
+                    margin-top: 5px;
+                    font-family: Arial, sans-serif;
+                    font-size: 14px;
+                    color: black;
+                }}
+            </style>
+        """
