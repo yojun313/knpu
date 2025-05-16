@@ -65,14 +65,25 @@ class MainWindow(QMainWindow):
 
                 if platform.system() == "Windows":
                     localAppdataPath = os.getenv("LOCALAPPDATA")
-                    self.programDirectory = os.path.join(
-                        localAppdataPath, "MANAGER")
-                    self.localDirectory = "C:/BIGMACLAB_MANAGER"
-                    if not os.path.exists(self.localDirectory):
-                        os.makedirs(self.localDirectory)
+                    self.programDirectory = os.path.join(localAppdataPath, "MANAGER")
+                    old_dir = "C:/BIGMACLAB_MANAGER"
+                    new_dir = "C:/MANAGER"
+
+                    if os.path.exists(old_dir):
+                        # 이미 C:/MANAGER가 존재한다면 덮어쓰지 않도록 삭제 또는 무시 처리 가능
+                        if not os.path.exists(new_dir):
+                            os.rename(old_dir, new_dir)
+                        else:
+                            print("C:/MANAGER already exists. Skipping rename.")
+                        self.localDirectory = new_dir
+                    else:
+                        # 기존 폴더가 없다면 새로 생성
+                        if not os.path.exists(new_dir):
+                            os.makedirs(new_dir)
+                        self.localDirectory = new_dir
                 else:
                     self.programDirectory = os.path.dirname(__file__)
-                    self.localDirectory = '/Users/yojunsmacbookprp/Documents/BIGMACLAB_MANAGER'
+                    self.localDirectory = '/Users/yojunsmacbookprp/Documents/MANAGER'
                     if not os.path.exists(self.localDirectory):
                         os.makedirs(self.localDirectory)
 
