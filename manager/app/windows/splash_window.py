@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QLabel, QDialog, QProgressBar
 from PyQt5.QtCore import Qt, QCoreApplication, QEventLoop
 from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
 import os
-
+from config import ASSETS_PATH
 
 class SplashDialog(QDialog):
     
@@ -52,8 +52,7 @@ class SplashDialog(QDialog):
 
         # 이미지 라벨
         image_label = QLabel(self)
-        pixmap = QPixmap(os.path.join(os.path.dirname(
-            __file__), '..', 'assets', 'exe_icon.png'))
+        pixmap = QPixmap(os.path.join(ASSETS_PATH, "exe_icon.png"))
         pixmap = pixmap.scaled(180, 180, Qt.KeepAspectRatio,
                                Qt.SmoothTransformation)  # 이미지 크기 유지
         image_label.setPixmap(pixmap)

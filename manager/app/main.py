@@ -9,6 +9,7 @@ from windows.splash_window import SplashDialog
 from PyQt5.QtCore import QCoreApplication, Qt
 from core.setting import get_setting, set_setting
 from ui.style import theme_option
+from config import ASSETS_PATH
 
 def build_app():
 
@@ -30,8 +31,7 @@ def build_app():
     app.setOrganizationName("BIGMACLAB")
 
     # 글꼴
-    font = QFont(os.path.join(os.path.dirname(
-        __file__), "resources", "malgun.ttf"))
+    font = QFont(os.path.join(ASSETS_PATH, "malgun.ttf"))
     font.setStyleStrategy(QFont.PreferAntialias)
     app.setFont(font)
         
