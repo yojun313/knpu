@@ -6,9 +6,9 @@ import platform
 from config import VERSION
 from windows.main_window import MainWindow
 from windows.splash_window import SplashDialog
-from PyQt5.QtCore import QCoreApplication, Qt, QSettings
+from PyQt5.QtCore import QCoreApplication, Qt
+from core.setting import get_setting, set_setting
 from ui.style import theme_option
-
 
 def build_app():
 
@@ -34,11 +34,9 @@ def build_app():
         __file__), "resources", "malgun.ttf"))
     font.setStyleStrategy(QFont.PreferAntialias)
     app.setFont(font)
-
-    settings = QSettings("BIGMACLAB", "BIGMACLAB_MANAGER")
-
+        
     if platform.system() == 'Windows':
-        theme = settings.value('Theme', 'default')
+        theme = get_setting("Theme", "default")
     else:
         def is_mac_dark_mode():
             """
@@ -59,9 +57,8 @@ def build_app():
                 # 오류가 발생하면 기본적으로 라이트 모드로 간주
                 return False
         theme = 'dark' if is_mac_dark_mode() else 'default'
-        settings.setValue('Theme', theme)
+        set_setting("Theme", theme)
 
-    theme = settings.value("Theme", "default")
     app.setStyleSheet(theme_option[theme])
 
     return app, theme
