@@ -95,7 +95,7 @@ def makeFileFinder(main_window, localDirectory=None):
 
     return EmbeddedFileDialog(main_window, localDirectory)
 
-def openFileExplorer(self, path):
+def openFileExplorer(path):
     # 저장된 폴더를 파일 탐색기로 열기
     if platform.system() == "Windows":
         os.startfile(path)
