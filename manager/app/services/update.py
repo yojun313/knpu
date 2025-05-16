@@ -57,7 +57,6 @@ def updateProgram(parent, sc=False):
             if get_setting('AutoUpdate') == 'auto':
                 parent.closeBootscreen()
                 update_process()
-            parent.managerBoardObj.refreshVersionBoard()
 
             version_info_html = parent.style_html + f"""
                 <table>
