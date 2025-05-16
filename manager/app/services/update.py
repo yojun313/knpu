@@ -24,7 +24,7 @@ def updateProgram(parent, sc=False):
             downloadSize = 0  # 다운로드된 크기 초기화
 
             with open(local_filename, 'wb') as f:
-                for chunk in response.iter_content(chunkSize=chunkSize):
+                for chunk in response.iter_content(chunk_size=chunkSize):
                     if chunk:  # 빈 데이터 확인
                         f.write(chunk)
                         downloadSize += len(chunk)
