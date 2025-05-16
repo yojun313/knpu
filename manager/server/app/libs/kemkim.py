@@ -14,6 +14,7 @@ import warnings
 import re
 import platform
 import gc
+from multiprocessing import Pool
 from .progress import send_message
 
 warnings.filterwarnings("ignore")
@@ -186,27 +187,24 @@ class KimKem:
             DoD_coordinates_record = {}
             Final_signal_record = {}
 
-            if self.filter_option == True:
-                for index, period in enumerate(self.period_list):
-                    # Step 7: 평균 증가율 및 빈도 계산
+            if self.filter_option:
+                args_list = [
+                    (index, period, keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts)
+                    for index, period in enumerate(self.period_list)
+                ]
 
-                    if index == 0:
+                with Pool(processes=os.cpu_count()) as pool:
+                    results = pool.map(self._process_period_wrapper, args_list)
+
+                for result in results:
+                    if result is None:
                         continue
-
-                    result_folder = os.path.join(self.trace_result_folder, period)
-
-                    send_message(self.pid, f"{period} KEMKIM 증가율 계산 중...")
-
-                    if self.trace_standard == 'prevyear':
-                        avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[index-1], period)
-                    else:
-                        avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, self.period_list[0], period)
-
-                    send_message(self.pid, f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
-
-                    # Step 8: 신호 분석 및 그래프 생성
-                    DoV_signal_record[period], DoD_signal_record[period], DoV_coordinates_record[period], DoD_coordinates_record[period] = self._analyze_signals(avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency, os.path.join(result_folder, 'Graph'))
-                    Final_signal_record[period] = self._save_final_signals(DoV_signal_record[period], DoD_signal_record[period], os.path.join(result_folder, 'Signal'))
+                    period, DoV_sig, DoD_sig, DoV_coord, DoD_coord, Final_sig = result
+                    DoV_signal_record[period] = DoV_sig
+                    DoD_signal_record[period] = DoD_sig
+                    DoV_coordinates_record[period] = DoV_coord
+                    DoD_coordinates_record[period] = DoD_coord
+                    Final_signal_record[period] = Final_sig
 
                 # Trace 데이터에서 키워드별로 Signal 변화를 추적
                 send_message(self.pid, "키워드 추적 데이터 생성 및 필터링 중...")
@@ -274,6 +272,37 @@ class KimKem:
             self.write_status("오류 중단")
             send_message(self.pid, "오류 중단")
             return traceback.format_exc()
+
+    def _process_period_wrapper(self, args):
+        index, period, keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts = args
+
+        if index == 0:
+            return None
+
+        try:
+            result_folder = os.path.join(self.trace_result_folder, period)
+            send_message(self.pid, f"{period} KEMKIM 증가율 계산 중...")
+
+            base_period = self.period_list[index - 1] if self.trace_standard == 'prevyear' else self.period_list[0]
+
+            avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(
+                keyword_list, trace_DoV_dict, trace_DoD_dict, tf_counts, df_counts, base_period, period
+            )
+
+            send_message(self.pid, f"{period} KEMKIM 신호 분석 및 그래프 생성 중...")
+
+            DoV_signal, DoD_signal, DoV_coord, DoD_coord = self._analyze_signals(
+                avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency,
+                os.path.join(result_folder, 'Graph')
+            )
+
+            Final_signal = self._save_final_signals(DoV_signal, DoD_signal, os.path.join(result_folder, 'Signal'))
+
+            return period, DoV_signal, DoD_signal, DoV_coord, DoD_coord, Final_signal
+
+        except Exception as e:
+            send_message(self.pid, f"{period} 처리 중 오류 발생: {e}")
+            return None
 
     def filter_dic_empty_list(self, dictionary):
 
