@@ -10,7 +10,6 @@ import shutil
 import platform
 import uuid
 from datetime import datetime
-from pathlib import Path
 from io import BytesIO
 
 import pandas as pd
@@ -19,16 +18,15 @@ import requests
 import zipfile
 import bcrypt
 
-from PyQt5.QtCore import QDate, QSize
+from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
-    QWidget, QMainWindow, QDialog, QVBoxLayout, QFormLayout, QTableWidget,
-    QButtonGroup, QPushButton, QDialogButtonBox, QRadioButton, QLabel, QTabWidget,
-    QLineEdit, QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
+    QWidget, QMainWindow, QDialog, QVBoxLayout, QTableWidget,
+    QPushButton, QLabel, QTabWidget,
+    QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
 )
 
 from urllib.parse import unquote
-
 from libs.console import openConsole, closeConsole
 from libs.viewer import open_viewer, close_viewer, register_process
 from ui.table import makeTable
@@ -40,7 +38,7 @@ from services.crawldb import updateDB
 from services.api import Request, api_headers
 from services.logging import userLogging, programBugLog
 
-from core.setting import get_setting, update_settings, set_setting
+from core.setting import get_setting, set_setting
 from core.shortcut import resetShortcuts
 
 from config import ADMIN_PASSWORD, MANAGER_SERVER_API
@@ -519,188 +517,7 @@ class Manager_Database:
 
     def saveDB(self):
         try:
-            class OptionDialog(QDialog):
-                def __init__(self):
-                    super().__init__()
-                    self.setWindowTitle('Select Options')
-                    self.resize(250, 150)  # 초기 크기 설정
-
-                    self.incl_word_list = []
-                    self.excl_word_list = []
-                    self.include_all_option = False
-
-                    # 다이얼로그 레이아웃
-                    self.layout = QVBoxLayout()
-
-                    # 라디오 버튼 그룹 생성
-                    self.radio_all = QRadioButton('전체 기간')
-                    self.radio_custom = QRadioButton('기간 설정')
-                    self.radio_all.setChecked(True)  # 기본으로 "전체 저장" 선택
-
-                    self.layout.addWidget(QLabel('Choose Date Option:'))
-                    self.layout.addWidget(self.radio_all)
-                    self.layout.addWidget(self.radio_custom)
-
-                    # 기간 입력 폼 (처음엔 숨김)
-                    self.date_input_form = QWidget()
-                    self.date_input_form_layout = QFormLayout()
-
-                    self.start_date_input = QLineEdit()
-                    self.start_date_input.setPlaceholderText('YYYYMMDD')
-                    self.end_date_input = QLineEdit()
-                    self.end_date_input.setPlaceholderText('YYYYMMDD')
-
-                    self.date_input_form_layout.addRow(
-                        '시작 날짜:', self.start_date_input)
-                    self.date_input_form_layout.addRow(
-                        '종료 날짜:', self.end_date_input)
-                    self.date_input_form.setLayout(self.date_input_form_layout)
-                    self.date_input_form.setVisible(False)
-
-                    self.layout.addWidget(self.date_input_form)
-
-                    # 라디오 버튼 그룹 생성
-                    self.radio_nofliter = QRadioButton('필터링 안함')
-                    self.radio_filter = QRadioButton('필터링 설정')
-                    self.radio_nofliter.setChecked(True)  # 기본으로 "전체 저장" 선택
-
-                    self.layout.addWidget(QLabel('Choose Filter Option:'))
-                    self.layout.addWidget(self.radio_nofliter)
-                    self.layout.addWidget(self.radio_filter)
-
-                    # QButtonGroup 생성하여 라디오 버튼 그룹화
-                    self.filter_group = QButtonGroup()
-                    self.filter_group.addButton(self.radio_nofliter)
-                    self.filter_group.addButton(self.radio_filter)
-
-                    # 단어 입력 폼 (처음엔 숨김)
-                    self.word_input_form = QWidget()
-                    self.word_input_form_layout = QFormLayout()
-
-                    self.incl_word_input = QLineEdit()
-                    self.incl_word_input.setPlaceholderText('ex) 사과, 바나나')
-                    self.excl_word_input = QLineEdit()
-                    self.excl_word_input.setPlaceholderText('ex) 당근, 오이')
-
-                    self.word_input_form_layout.addRow(
-                        '포함 문자:', self.incl_word_input)
-                    self.word_input_form_layout.addRow(
-                        '제외 문자:', self.excl_word_input)
-                    self.word_input_form.setLayout(self.word_input_form_layout)
-                    self.word_input_form.setVisible(False)
-
-                    # 포함 옵션 선택 (All 포함 vs Any 포함)
-                    self.include_option_group = QButtonGroup()
-                    self.include_all = QRadioButton('모두 포함/제외 (All)')
-                    self.include_any = QRadioButton('개별 포함/제외 (Any)')
-                    self.include_all.setToolTip("입력한 단어를 모두 포함/제외한 행을 선택")
-                    self.include_any.setToolTip("입력한 단어를 개별 포함/제외한 행을 선택")
-                    self.include_all.setChecked(True)  # 기본 선택: Any 포함
-
-                    self.word_input_form_layout.addRow(QLabel('포함 옵션:'))
-                    self.word_input_form_layout.addWidget(self.include_all)
-                    self.word_input_form_layout.addWidget(self.include_any)
-
-                    # 이름에 필터링 설정 포함할지
-                    self.radio_name = QRadioButton('포함 설정')
-                    self.radio_name.setToolTip("예) (+사과,바나나 _ -당근,오이 _all)")
-                    self.radio_noname = QRadioButton('포함 안함')
-                    self.radio_name.setChecked(True)  # 기본으로 "전체 저장" 선택
-
-                    self.word_input_form_layout.addRow(QLabel('폴더명에 필터링 항목:'))
-                    self.word_input_form_layout.addWidget(self.radio_name)
-                    self.word_input_form_layout.addWidget(self.radio_noname)
-
-                    # QButtonGroup 생성하여 라디오 버튼 그룹화
-                    self.filter_name_group = QButtonGroup()
-                    self.filter_name_group.addButton(self.radio_name)
-                    self.filter_name_group.addButton(self.radio_noname)
-                    self.word_input_form_layout.addWidget(self.radio_name)
-                    self.word_input_form_layout.addWidget(self.radio_noname)
-
-                    self.word_input_form.setLayout(self.word_input_form_layout)
-                    self.word_input_form.setVisible(False)
-
-                    self.layout.addWidget(self.word_input_form)
-
-                    # 다이얼로그의 OK/Cancel 버튼
-                    self.button_box = QDialogButtonBox(
-                        QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-                    self.button_box.accepted.connect(self.accept)
-                    self.button_box.rejected.connect(self.reject)
-
-                    self.layout.addWidget(self.button_box)
-
-                    self.setLayout(self.layout)
-
-                    # 신호 연결
-                    self.radio_custom.toggled.connect(self.toggle_date_input)
-                    self.radio_filter.toggled.connect(self.toggle_word_input)
-
-                def toggle_date_input(self, checked):
-                    # "기간 설정" 라디오 버튼이 선택되면 날짜 입력 필드 표시
-                    self.date_input_form.setVisible(checked)
-                    self.adjust_dialog_size()
-
-                def toggle_word_input(self, checked):
-                    # "필터링 설정" 라디오 버튼이 선택되면 단어 입력 필드 표시
-                    self.word_input_form.setVisible(checked)
-                    self.adjust_dialog_size()
-
-                def adjust_dialog_size(self):
-                    """다이얼로그 크기를 현재 내용에 맞게 조정"""
-                    self.adjustSize()  # 다이얼로그 크기를 내용에 맞게 자동 조정
-
-                def accept(self):
-                    # 확인 버튼을 눌렀을 때 데이터 유효성 검사
-                    self.start_date = None
-                    self.end_date = None
-
-                    if self.radio_custom.isChecked():
-                        date_format = "yyyyMMdd"
-                        self.start_date = QDate.fromString(
-                            self.start_date_input.text(), date_format)
-                        self.end_date = QDate.fromString(
-                            self.end_date_input.text(), date_format)
-
-                        if not (self.start_date.isValid() and self.end_date.isValid()):
-                            QMessageBox.warning(
-                                self, 'Wrong Form', '잘못된 날짜 형식입니다.')
-                            return  # 확인 동작을 취소함
-
-                        self.start_date = self.start_date.toString(date_format)
-                        self.end_date = self.end_date.toString(date_format)
-
-                    if self.radio_filter.isChecked():
-                        try:
-                            incl_word_str = self.incl_word_input.text()
-                            excl_word_str = self.excl_word_input.text()
-
-                            if incl_word_str == '':
-                                self.incl_word_list = []
-                            else:
-                                self.incl_word_list = incl_word_str.split(', ')
-
-                            if excl_word_str == '':
-                                self.excl_word_list = []
-                            else:
-                                self.excl_word_list = excl_word_str.split(', ')
-
-                            if self.include_all.isChecked():
-                                self.include_all_option = True
-                            else:
-                                self.include_all_option = False
-
-                            if self.radio_name.isChecked():
-                                self.include = True
-
-                        except:
-                            QMessageBox.warning(
-                                self, 'Wrong Input', '잘못된 필터링 입력입니다')
-                            return  # 확인 동작을 취소함
-
-                    super().accept()  # 정상적인 경우에만 다이얼로그를 종료함
-
+            
             selectedRow = self.main.database_tablewidget.currentRow()
             if not selectedRow >= 0:
                 return
@@ -714,7 +531,9 @@ class Manager_Database:
                 printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
                 return
             printStatus(self.main, "DB 저장 옵션을 설정하여 주십시오")
-            dialog = OptionDialog()
+            
+            from ui.dialogs import SaveDbDialog
+            dialog = SaveDbDialog()
             option = {}
 
             if dialog.exec_() == QDialog.Accepted:
