@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, \
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QKeySequence, QFont
 from core.setting import get_setting, set_setting
+from config import VERSION
 from datetime import datetime
 import platform
 import os
@@ -605,7 +606,7 @@ class Manager_Setting(QDialog):
         manager_title_label.setAlignment(Qt.AlignLeft)
 
         # MANAGER 정보 추가
-        manager_version_label = QLabel(f"버전: {self.main.versionNum}")
+        manager_version_label = QLabel(f"버전: {VERSION}")
 
         manager_location_label = QLabel(
             f"앱 경로: {wrap_text_by_words(self.main.programDirectory, 40)}")
