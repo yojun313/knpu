@@ -96,7 +96,7 @@ class MainWindow(QMainWindow):
 
                 self.splashDialog.updateStatus("Checking New Version")
                 print("\nII. Checking New Version... ", end='')
-                if checkNewVersion(self) == True:
+                if checkNewVersion():
                     self.closeBootscreen()
                     updateProgram(self)
                 print("Done")

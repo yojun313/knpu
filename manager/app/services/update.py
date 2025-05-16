@@ -9,9 +9,13 @@ from config import VERSION
 from core.setting import get_setting
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QMessageBox
 from PyQt5.QtCore import Qt
+from core.boot import checkNewVersion
 
 def updateProgram(parent, sc=False):
     try:
+        newVersionInfo = checkNewVersion()
+        newVersionName = newVersionInfo[0]
+        
         def downloadFile(download_url, local_filename):
             response = requests.get(download_url, stream=True)
             totalSize = int(response.headers.get(
@@ -27,7 +31,7 @@ def updateProgram(parent, sc=False):
                         percent_complete = (downloadSize / totalSize) * 100
                         # 퍼센트 출력
                         print(
-                            f"\r{parent.newVersion} Download: {percent_complete:.0f}%", end='')
+                            f"\r{newVersionName} Download: {percent_complete:.0f}%", end='')
 
             print("\nDownload Complete")
             closeConsole()
@@ -36,36 +40,36 @@ def updateProgram(parent, sc=False):
             openConsole("Version Update Process")
             msg = (
                 "[ Admin Notification ]\n\n"
-                f"{parent.user} updated {VERSION} -> {parent.newVersion}\n\n{getUserLocation(parent)}"
+                f"{parent.user} updated {VERSION} -> {newVersionName}\n\n{getUserLocation(parent)}"
             )
             sendPushOver(msg)
             userLogging(
-                f'Program Update ({VERSION} -> {parent.newVersion})')
+                f'Program Update ({VERSION} -> {newVersionName})')
 
             printStatus(parent, "버전 업데이트 중...")
             import subprocess
             downloadFile_path = os.path.join(
-                'C:/Temp', f"BIGMACLAB_MANAGER_{parent.newVersion}.exe")
-            downloadFile(f"https://knpu.re.kr/download/BIGMACLAB_MANAGER_{parent.newVersion}.exe",
+                'C:/Temp', f"BIGMACLAB_MANAGER_{newVersionName}.exe")
+            downloadFile(f"https://knpu.re.kr/download/BIGMACLAB_MANAGER_{newVersionName}.exe",
                             downloadFile_path)
             subprocess.Popen([downloadFile_path], shell=True)
             closeConsole()
             os._exit(0)
             
-        from core.boot import checkNewVersion
-        if checkNewVersion(parent):
+        
+        if newVersionInfo:
             if get_setting('AutoUpdate') == 'auto':
                 parent.closeBootscreen()
                 update_process()
-
+            
             version_info_html = parent.style_html + f"""
                 <table>
                     <tr><th>Item</th><th>Details</th></tr>
-                    <tr><td><b>Version Num:</b></td><td>{parent.managerBoardObj.version_data_for_table[0][0]}</td></tr>
-                    <tr><td><b>Release Date:</b></td><td>{parent.managerBoardObj.version_data_for_table[0][1]}</td></tr>
-                    <tr><td><b>ChangeLog:</b></td><td>{parent.managerBoardObj.version_data_for_table[0][2]}</td></tr>
-                    <tr><td><b>Version Features:</b></td><td>{parent.managerBoardObj.version_data_for_table[0][3]}</td></tr>
-                    <tr><td><b>Version Status:</b></td><td>{parent.managerBoardObj.version_data_for_table[0][4]}</td></tr>
+                    <tr><td><b>Version Num:</b></td><td>{newVersionInfo[0]}</td></tr>
+                    <tr><td><b>Release Date:</b></td><td>{newVersionInfo[-1]}</td></tr>
+                    <tr><td><b>ChangeLog:</b></td><td>{newVersionInfo[1]}</td></tr>
+                    <tr><td><b>Version Features:</b></td><td>{newVersionInfo[2]}</td></tr>
+                    <tr><td><b>Version Status:</b></td><td>{newVersionInfo[3]}</td></tr>
                 </table>
             """
 
@@ -116,8 +120,8 @@ def updateProgram(parent, sc=False):
                     openConsole("Version Reinstall Process")
                     import subprocess
                     downloadFile_path = os.path.join(
-                        'C:/Temp', f"BIGMACLAB_MANAGER_{parent.newVersion}.exe")
-                    downloadFile(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{parent.newVersion}.exe",
+                        'C:/Temp', f"BIGMACLAB_MANAGER_{newVersionName}.exe")
+                    downloadFile(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{newVersionName}.exe",
                                     downloadFile_path)
                     subprocess.Popen([downloadFile_path], shell=True)
                     closeConsole()
