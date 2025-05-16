@@ -268,7 +268,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
     # targetDB 구조 예시:
     parts = targetDB.split('_')[:-2] + kst_now.split('_')
     dbname = '_'.join(parts)
-    dbname = replace_dates_in_filename(dbname, crawlDb['keyword'])
+    dbname = replace_keyword_in_name(dbname, crawlDb['keyword'])
     
     dateOption = saveOption['dateOption']
     filterOption = saveOption['filterOption']
