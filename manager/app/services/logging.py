@@ -44,7 +44,7 @@ def getUserLocation(parent, detail=False):
         data = response.json()
         returnData = f"{VERSION} | {parent.userDevice} | {data.get("ip")} | {data.get("city")}"
         if detail == True:
-            returnData = f"{data.get("ip")} | {data.get("city")} | {data.get('region')} | {data.get('country')} | {data.get('loc')} | {parent.versionNum}"
+            returnData = f"{data.get("ip")} | {data.get("city")} | {data.get('region')} | {data.get('country')} | {data.get('loc')} | {VERSION}"
         return returnData
     except requests.RequestException as e:
         return ""
