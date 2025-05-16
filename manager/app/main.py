@@ -4,7 +4,6 @@ import os
 import sys
 import platform
 from config import VERSION
-from windows.main_window import MainWindow
 from windows.splash_window import SplashDialog
 from PyQt5.QtCore import QCoreApplication, Qt
 from core.setting import get_setting, set_setting
@@ -76,6 +75,9 @@ def main():
     app, theme = build_app()
     splash = SplashDialog(version=VERSION, theme=theme)
     splash.show()
+    splash.updateStatus("Loading System Libraries")
+    
+    from windows.main_window import MainWindow
     window = MainWindow(splash)
     sys.exit(app.exec_())
 
