@@ -256,21 +256,19 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         pattern = r"_(\d{8})_(\d{8})_"
         new_filename = re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
         return new_filename
+
+    def replace_keyword_in_name(name: str, new_keyword: str) -> str:
+        parts = name.split('_')
+        parts[1] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
+        return '_'.join(parts)
     
     # 현재 시각
     kst_now = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%m%d_%H%M")
 
     # targetDB 구조 예시:
-    parts = targetDB.split('_')
-
-    # 키워드 교체
-    parts[1] = f"[{crawlDb['keyword']}]"
-
-    # 시간 업데이트 (마지막 2개 제거 후 새로운 시간 추가)
-    parts = parts[:-2] + kst_now.split('_')
-
-    # 최종 DB 이름 생성
+    parts = targetDB.split('_')[:-2] + kst_now.split('_')
     dbname = '_'.join(parts)
+    dbname = replace_dates_in_filename(dbname, crawlDb['keyword'])
     
     dateOption = saveOption['dateOption']
     filterOption = saveOption['filterOption']
@@ -301,9 +299,11 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
             break
         except FileExistsError:
             dbpath += "_copy"
-    
+
     for idx, tableName in enumerate(tableList):        
         edited_tableName = replace_dates_in_filename(tableName, start_date, end_date) if dateOption == 'part' else tableName
+        edited_tableName = replace_keyword_in_name(edited_tableName, crawlDb['keyword'])
+        
         send_message(pid, f"[{idx+1}/{len(tableList)}] '{edited_tableName}' 처리 중")
         
         if saveOption['dateOption'] == 'part':
