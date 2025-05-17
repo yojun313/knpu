@@ -28,6 +28,7 @@ import zipfile
 import requests
 from libs.viewer import open_viewer, close_viewer, register_process
 from core.shortcut import resetShortcuts
+from core.setting import get_setting
 from services.api import api_headers
 from services.logging import userLogging, programBugLog
 from services.llm import generateLLM
@@ -1114,7 +1115,8 @@ class Manager_Analysis:
                 reply = QMessageBox.question(
                     self.main, 'Notification', f'키워드 필터링 데이터 저장이 완료되었습니다\n\nAI 분석을 진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    if self.main.gpt_api_key == 'default' or len(self.main.gpt_api_key) < 20:
+                    gpt_key = get_setting('GPT_Key')
+                    if gpt_key == 'default' or len(gpt_key) < 20:
                         QMessageBox.information(
                             self.main, 'Notification', f'API Key가 설정되지 않았습니다\n\n환경설정에서 ChatGPT API Key를 입력해주십시오')
                         printStatus(self.main)
