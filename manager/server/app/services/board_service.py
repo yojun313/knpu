@@ -90,7 +90,7 @@ def add_bug(data: AddBugDto):
     bug_doc = user_bugs_db.find_one({"uid": doc["writerUid"]}, {today_key: 1, "_id": 0})
     
     doc["uid"] = str(uuid.uuid4())
-    doc["datetime"] = datetime.now(ZoneInfo("Asia/Seoul"))
+    doc["datetime"] = datetime.now(timezone.utc) 
     doc['writerName'] = writerDoc['name']
     if bug_doc and today_key in bug_doc:
         messages = [entry["message"] for entry in bug_doc[today_key]]
@@ -144,7 +144,7 @@ def delete_bug(uid: str):
 def add_post(data: AddPostDto):
     doc = data.model_dump()
     doc["uid"] = str(uuid.uuid4())
-    doc["datetime"] = datetime.now(ZoneInfo("Asia/Seoul"))
+    doc["datetime"] = datetime.now(timezone.utc) 
     doc['writerName'] = user_db.find_one({"uid": doc["writerUid"]})['name']
     doc["viewCnt"] = 0
     free_board_db.insert_one(doc)
