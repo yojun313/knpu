@@ -249,11 +249,11 @@ class Manager_Board:
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
-    def viewPost(self, row=0):
+    def viewPost(self, selectedRow=0):
         try:
-            selectedRow = self.main.board_post_tableWidget.currentRow()
-            if row != 0:
-                selectedRow = row
+            if selectedRow != 0:
+                selectedRow = self.main.board_post_tableWidget.currentRow()
+            
             if selectedRow >= 0:
                 printStatus(self.main, "불러오는 중...")
                 post_data = self.origin_post_data[selectedRow]

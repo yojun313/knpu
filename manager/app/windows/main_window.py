@@ -131,10 +131,9 @@ class MainWindow(QMainWindow):
                 
                 newpost = checkNewPost(self)
                 if newpost == True:
-                    reply = QMessageBox.question(self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?",
-                                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                    reply = QMessageBox.question(self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
-                        self.managerBoardObj.viewPost(row=0)
+                        self.managerBoardObj.viewPost(selectedRow=0)
 
             except Exception as e:
                 print("Failed")

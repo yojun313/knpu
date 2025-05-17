@@ -6,6 +6,122 @@ from PyQt5.QtWidgets import (
     QShortcut, QApplication
 )
 from PyQt5.QtGui import QKeySequence
+from datetime import datetime
+
+class DBInfoDialog(QDialog):
+    def __init__(self, parent, DBdata, style_html):
+        super().__init__(parent)
+        self.setWindowTitle(f"{DBdata['name']}_Info")
+        self.resize(540, 600)
+
+        self.DBdata = DBdata
+        self.style_html = style_html
+
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        crawlType = self.DBdata['crawlType']
+        crawlOption_int = int(self.DBdata['crawlOption'])
+
+        CountText = self.DBdata['dataInfo']
+        if CountText['totalArticleCnt'] == '0' and CountText['totalReplyCnt'] == '0' and CountText['totalRereplyCnt'] == '0':
+            CountText = self.DBdata['status']
+        else:
+            CountText = f"Aricle: {CountText['totalArticleCnt']}\nReply: {CountText['totalReplyCnt']}\nRereply: {CountText['totalRereplyCnt']}"
+
+        match crawlType:
+            case 'Naver News':
+                crawlOption = {
+                    1: '기사 + 댓글',
+                    2: '기사 + 댓글/대댓글',
+                    3: '기사',
+                    4: '기사 + 댓글(추가 정보)'
+                }.get(crawlOption_int, crawlOption_int)
+            case 'Naver Blog':
+                crawlOption = {
+                    1: '블로그 본문',
+                    2: '블로그 본문 + 댓글/대댓글'
+                }.get(crawlOption_int, crawlOption_int)
+            case 'Naver Cafe':
+                crawlOption = {
+                    1: '카페 본문',
+                    2: '카페 본문 + 댓글/대댓글'
+                }.get(crawlOption_int, crawlOption_int)
+            case 'YouTube':
+                crawlOption = {
+                    1: '영상 정보 + 댓글/대댓글 (100개 제한)',
+                    2: '영상 정보 + 댓글/대댓글(무제한)'
+                }.get(crawlOption_int, crawlOption_int)
+            case 'ChinaDaily':
+                crawlOption = {
+                    1: '기사 + 댓글'
+                }.get(crawlOption_int, crawlOption_int)
+            case 'ChinaSina':
+                crawlOption = {
+                    1: '기사',
+                    2: '기사 + 댓글'
+                }.get(crawlOption_int, crawlOption_int)
+            case 'dcinside':
+                crawlOption = {
+                    1: '게시글',
+                    2: '게시글 + 댓글'
+                }.get(crawlOption_int, crawlOption_int)
+            case _:
+                crawlOption = crawlOption_int
+
+        starttime = self.DBdata['startTime']
+        endtime = self.DBdata['endTime']
+
+        try:
+            ElapsedTime = datetime.strptime(
+                endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
+        except:
+            ElapsedTime = str(
+                datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M"))[:-7]
+            if endtime == '오류 중단':
+                ElapsedTime = '오류 중단'
+
+        if endtime != '오류 중단':
+            endtime = endtime.replace(
+                '/', '-') if endtime != '크롤링 중' else endtime
+
+        details_html = self.style_html + f"""
+            <div class="version-details">
+                <table>
+                    <tr><th>Item</th><th>Details</th></tr>
+                    <tr><td><b>DB Name:</b></td><td>{self.DBdata['name']}</td></tr>
+                    <tr><td><b>DB Size:</b></td><td>{self.DBdata['dbSize']}</td></tr>
+                    <tr><td><b>Crawl Type:</b></td><td>{self.DBdata['crawlType']}</td></tr>
+                    <tr><td><b>Crawl Keyword:</b></td><td>{self.DBdata['keyword']}</td></tr>
+                    <tr><td><b>Crawl Period:</b></td><td>{self.DBdata['startDate']} ~ {self.DBdata['endDate']}</td></tr>
+                    <tr><td><b>Crawl Option:</b></td><td>{crawlOption}</td></tr>
+                    <tr><td><b>Crawl Start:</b></td><td>{starttime}</td></tr>
+                    <tr><td><b>Crawl End:</b></td><td>{endtime}</td></tr>
+                    <tr><td><b>Crawl ElapsedTime:</b></td><td>{ElapsedTime}</td></tr>
+                    <tr><td><b>Crawl Requester:</b></td><td>{self.DBdata['requester']}</td></tr>
+                    <tr><td><b>Crawl Server:</b></td><td>{self.DBdata['crawlCom']}</td></tr>
+                    <tr><td><b>Crawl Speed:</b></td><td>{self.DBdata['crawlSpeed']}</td></tr>
+                    <tr><td><b>Crawl Result:</b></td><td class="detail-content">{CountText}</td></tr>
+                </table>
+            </div>
+        """
+
+        detail_label = QLabel(details_html)
+        detail_label.setWordWrap(True)
+        detail_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
+        layout.addWidget(detail_label)
+
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.accept)
+        layout.addWidget(close_button)
+
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.accept)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.accept)
+
+        self.setLayout(layout)
 
 
 class SaveDbDialog(QDialog):
