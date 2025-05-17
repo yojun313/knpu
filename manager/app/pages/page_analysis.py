@@ -844,8 +844,7 @@ class Manager_Analysis:
             delete_word_list = pd.read_csv(os.path.join(
                 result_directory, 'filtered_words.csv'))['word'].tolist()
 
-            kimkem_obj = KimKem(
-                self.main, exception_word_list=selected_words, modify_kemkim=True)
+            kimkem_obj = KimKem(self.main, exception_word_list=selected_words, rekemkim=True)
 
             new_result_folder = os.path.join(os.path.dirname(
                 result_directory), f'Result_{datetime.now().strftime('%m%d%H%M')}')
