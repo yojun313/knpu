@@ -45,6 +45,7 @@ from config import ADMIN_PASSWORD, MANAGER_SERVER_API
 
 warnings.filterwarnings("ignore")
 
+
 class Manager_Database:
     def __init__(self, main_window):
         self.main = main_window
@@ -225,177 +226,11 @@ class Manager_Database:
             printStatus(self.main, "불러오는 중...")
             DBdata = self.DB['DBdata'][row]
 
-            userLogging(
-                f'DATABASE -> dbinfo_viewer({DBdata['name']})')
+            userLogging(f'DATABASE -> dbinfo_viewer({DBdata["name"]})')
 
-            # 다이얼로그 생성
-            dialog = QDialog(self.main)
-            dialog.setWindowTitle(f'{DBdata['name']}_Info')
-            dialog.resize(540, 600)
-
-            layout = QVBoxLayout()
-
-            crawlType = DBdata['crawlType']
-            crawlOption_int = int(DBdata['crawlOption'])
-
-            CountText = DBdata['dataInfo']
-            if CountText['totalArticleCnt'] == '0' and CountText['totalReplyCnt'] == '0' and CountText['totalRereplyCnt'] == '0':
-                CountText = DBdata['status']
-            else:
-                CountText = f"Aricle: {CountText['totalArticleCnt']}\nReply: {CountText['totalReplyCnt']}\nRereply: {CountText['totalRereplyCnt']}"
-
-            match crawlType:
-                case 'Naver News':
-                    match crawlOption_int:
-                        case 1:
-                            crawlOption = '기사 + 댓글'
-                        case 2:
-                            crawlOption = '기사 + 댓글/대댓글'
-                        case 3:
-                            crawlOption = '기사'
-                        case 4:
-                            crawlOption = '기사 + 댓글(추가 정보)'
-
-                case 'Naver Blog':
-                    match crawlOption_int:
-                        case 1:
-                            crawlOption = '블로그 본문'
-                        case 2:
-                            crawlOption = '블로그 본문 + 댓글/대댓글'
-
-                case 'Naver Cafe':
-                    match crawlOption_int:
-                        case 1:
-                            crawlOption = '카페 본문'
-                        case 2:
-                            crawlOption = '카페 본문 + 댓글/대댓글'
-
-                case 'YouTube':
-                    match crawlOption_int:
-                        case 1:
-                            crawlOption = '영상 정보 + 댓글/대댓글 (100개 제한)'
-                        case 2:
-                            crawlOption = '영상 정보 + 댓글/대댓글(무제한)'
-
-                case 'ChinaDaily':
-                    match crawlOption_int:
-                        case 1:
-                            crawlOption = '기사 + 댓글'
-
-                case 'ChinaSina':
-                    match crawlOption_int:
-                        case 1:
-                            crawlOption = '기사'
-                        case 2:
-                            crawlOption = '기사 + 댓글'
-
-                case 'dcinside':
-                    match crawlOption_int:
-                        case 1:
-                            crawlOption = '게시글'
-                        case 2:
-                            crawlOption = '게시글 + 댓글'
-                case _:
-                    crawlOption = crawlOption_int
-
-            starttime = DBdata['startTime']
-            endtime = DBdata['endTime']
-
-            try:
-                ElapsedTime = datetime.strptime(
-                    endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
-            except:
-                ElapsedTime = str(
-                    datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M"))[:-7]
-                if endtime == '오류 중단':
-                    ElapsedTime = '오류 중단'
-
-            if endtime != '오류 중단':
-                endtime = endtime.replace(
-                    '/', '-') if endtime != '크롤링 중' else endtime
-
-            details_html = self.main.style_html + f"""
-                <div class="version-details">
-                    <table>
-                        <tr>
-                            <th>Item</th>
-                            <th>Details</th>
-                        </tr>
-                        <tr>
-                            <td><b>DB Name:</b></td>
-                            <td>{DBdata['name']}</td>
-                        </tr>
-                        <tr>
-                            <td><b>DB Size:</b></td>
-                            <td>{DBdata['dbSize']}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Crawl Type:</b></td>
-                            <td>{DBdata['crawlType']}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Crawl Keyword:</b></td>
-                            <td>{DBdata['keyword']}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Crawl Period:</b></td>
-                            <td>{DBdata['startDate']} ~ {DBdata['endDate']}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Crawl Option:</b></td>
-                            <td>{crawlOption}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Crawl Start:</b></td>
-                            <td>{starttime}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Crawl End:</b></td>
-                            <td>{endtime}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Crawl ElapsedTime:</b></td>
-                            <td>{ElapsedTime}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Crawl Requester:</b></td>
-                            <td>{DBdata['requester']}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Crawl Server:</b></td>
-                            <td>{DBdata['crawlCom']}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Crawl Speed:</b></td>
-                            <td>{DBdata['crawlSpeed']}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Crawl Result:</b></td>
-                            <td class="detail-content">{CountText}</td>
-                        </tr>
-                    </table>
-                </div>
-            """
-
-            detail_label = QLabel(details_html)
-            detail_label.setWordWrap(True)
-
-            layout.addWidget(detail_label)
-
-            # 닫기 버튼 추가
-            close_button = QPushButton('Close')
-            close_button.clicked.connect(dialog.accept)
-            layout.addWidget(close_button)
-
-            ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
-            ctrlw.activated.connect(dialog.accept)
-
-            cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
-            cmdw.activated.connect(dialog.accept)
-
-            dialog.setLayout(layout)
+            from ui.dialogs import DBInfoDialog
+            dialog = DBInfoDialog(self.main, DBdata, self.main.style_html)
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
-            # 다이얼로그 실행
             dialog.show()
 
         except Exception as e:
@@ -465,7 +300,7 @@ class Manager_Database:
                     subprocess.Popen([exe_file_path], shell=True)
                     os._exit(0)
 
-            if search_text == '/admin-mode' and self.main.user != 'admin':
+            if search_text == '/admin' and self.main.user != 'admin':
                 ok, password = checkPassword(self.main, True)
                 if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     QMessageBox.warning(
@@ -477,15 +312,6 @@ class Manager_Database:
 
             if search_text == '/update':
                 self.main.updateProgram(sc=True)
-                return
-            if search_text == '/crawllog':
-                self.main.viewTable('crawler_db', 'crawl_log', 'max')
-                return
-            if search_text == '/dblist':
-                self.main.viewTable('crawler_db', 'db_list')
-                return
-            if search_text == '/config':
-                self.main.viewTable('bigmaclab_manager_db', 'configuration')
                 return
 
         except Exception as e:
@@ -517,7 +343,7 @@ class Manager_Database:
 
     def saveDB(self):
         try:
-            
+
             selectedRow = self.main.database_tablewidget.currentRow()
             if not selectedRow >= 0:
                 return
@@ -531,7 +357,7 @@ class Manager_Database:
                 printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
                 return
             printStatus(self.main, "DB 저장 옵션을 설정하여 주십시오")
-            
+
             from ui.dialogs import SaveDbDialog
             dialog = SaveDbDialog()
             option = {}
@@ -555,7 +381,7 @@ class Manager_Database:
             else:
                 printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
                 return
-            
+
             register_process(pid, f"Crawl DB Save")
             viewer = open_viewer(pid)
 
@@ -641,7 +467,7 @@ class Manager_Database:
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
-            
+
     def matchButton(self):
         self.main.database_searchDB_button.clicked.connect(self.searchDB)
         self.main.database_chatgpt_button.clicked.connect(self.initLLMChat)
