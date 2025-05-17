@@ -1278,9 +1278,11 @@ class KimKem:
         plt.savefig(os.path.join(graph_folder, graph_name),
                     bbox_inches='tight')
         plt.close()
-
+        
         coordinates_df = pd.DataFrame(
-            [(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
+            [(k, f"({float(v[0])}, {float(v[1])})") for k, v in coordinates.items()],
+            columns=['key', 'value']
+        )
         coordinates_df.to_csv(os.path.join(
             graph_folder, "DOV_coordinates.csv"), index=False, encoding='utf-8-sig')
 
@@ -1393,11 +1395,12 @@ class KimKem:
                     bbox_inches='tight')
         plt.close()
 
-        if final_signal_list == []:
-            coordinates_df = pd.DataFrame(
-                [(k, v) for k, v in coordinates.items()], columns=['key', 'value'])
-            coordinates_df.to_csv(os.path.join(
-                graph_folder, "DOD_coordinates.csv"), index=False, encoding='utf-8-sig')
+        coordinates_df = pd.DataFrame(
+            [(k, f"({float(v[0])}, {float(v[1])})") for k, v in coordinates.items()],
+            columns=['key', 'value']
+        )
+        coordinates_df.to_csv(os.path.join(
+            graph_folder, "DOD_coordinates.csv"), index=False, encoding='utf-8-sig')
 
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
 
