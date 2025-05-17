@@ -169,6 +169,7 @@ def checkNewPost(parent):
     new_post_uid = parent.managerBoardObj.origin_post_data[0]['uid']
     new_post_writer = parent.managerBoardObj.origin_post_data[0]['writerName']
     old_post_uid = get_setting('OldPostUid')
+    
     if new_post_uid == old_post_uid:
         return False
     elif old_post_uid == 'default':
