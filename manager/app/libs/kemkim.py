@@ -17,7 +17,8 @@ import seaborn as sns
 from collections import Counter
 from datetime import datetime
 from PIL import Image
-import matplotlib as mpl
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.font_manager as fm
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 
@@ -37,8 +38,8 @@ fm.fontManager.addfont(font_path)
 font_name = fm.FontProperties(fname=font_path).get_name()
 
 # 3) rcParams에 전역 설정
-mpl.rcParams['font.family'] = font_name
-mpl.rcParams['axes.unicode_minus'] = False  # 음수 기호 깨짐 방지
+matplotlib.rcParams['font.family'] = font_name
+matplotlib.rcParams['axes.unicode_minus'] = False  # 음수 기호 깨짐 방지
 
 class KimKem:
     def __init__(self,
