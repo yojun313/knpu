@@ -357,7 +357,7 @@ class Manager_Setting(QDialog):
 
         self.api_key_input = QLineEdit()
         self.api_key_input.setPlaceholderText("Enter your Key")
-        if get_setting('GPT_Key') != 'default' and len(get_setting('GPT_Key')) >= 20:
+        if get_setting('GPT_Key') != 'default':
             self.api_key_input.setText(get_setting('GPT_Key'))  # 기존 값이 있으면 표시
             self.api_key_input.setDisabled(True)
         else:
