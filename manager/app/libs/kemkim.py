@@ -17,23 +17,28 @@ import seaborn as sns
 from collections import Counter
 from datetime import datetime
 from PIL import Image
+import matplotlib as mpl
 import matplotlib.font_manager as fm
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 
 warnings.filterwarnings("ignore")
 
-# 1) 폰트 파일 경로
+# 1) 사용할 한글 폰트 파일(.ttf) 경로
 if platform.system() == 'Linux':
     font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
 elif platform.system() == 'Darwin':
     font_path = '/System/Library/Fonts/AppleGothic.ttf'
-else:
+else:  # Windows
     font_path = r'C:\Windows\Fonts\malgun.ttf'
 
-# 2) FontProperties 로 등록
-font_prop = fm.FontProperties(fname=font_path)
-plt.rcParams['font.family'] = font_prop.get_name()
-plt.rcParams['axes.unicode_minus'] = False  # 음수 기호 깨짐 방지
+# 2) 폰트 등록
+fm.fontManager.addfont(font_path)
+# FontProperties 객체를 만들고, 그 이름(name)을 읽어옵니다.
+font_name = fm.FontProperties(fname=font_path).get_name()
+
+# 3) rcParams에 전역 설정
+mpl.rcParams['font.family'] = font_name
+mpl.rcParams['axes.unicode_minus'] = False  # 음수 기호 깨짐 방지
 
 class KimKem:
     def __init__(self,
