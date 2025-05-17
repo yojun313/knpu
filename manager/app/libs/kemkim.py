@@ -51,6 +51,18 @@ class KimKem:
                  exception_word_list=[],
                  exception_filename='N',
                  modify_kemkim=False):
+        
+        # 운영체제에 따라 한글 폰트를 설정
+        if platform.system() == 'Darwin':  # macOS
+            plt.rcParams['font.family'] = 'AppleGothic'
+        elif platform.system() == 'Windows':  # Windows
+            plt.rcParams['font.family'] = 'Malgun Gothic'
+        elif platform.system() == 'Linux':
+            plt.rcParams['font.family'] = 'NanumGothic'
+
+        # 폰트 설정 후 음수 기호가 깨지는 것을 방지
+        plt.rcParams['axes.unicode_minus'] = False
+        
         self.exception_word_list = exception_word_list
         self.main = parent
         if modify_kemkim == False:
