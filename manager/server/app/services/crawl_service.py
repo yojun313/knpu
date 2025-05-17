@@ -281,7 +281,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         dbname = '_'.join(parts)
         dbname = dbname.replace('"', '＂')    
         
-        return '_'.join(parts)
+        return dbname
 
     # 현재 시각
     kst_now = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%m%d_%H%M")
