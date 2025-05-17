@@ -17,9 +17,23 @@ import seaborn as sns
 from collections import Counter
 from datetime import datetime
 from PIL import Image
+import matplotlib.font_manager as fm
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 
 warnings.filterwarnings("ignore")
+
+# 1) 폰트 파일 경로
+if platform.system() == 'Linux':
+    font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
+elif platform.system() == 'Darwin':
+    font_path = '/System/Library/Fonts/AppleGothic.ttf'
+else:
+    font_path = r'C:\Windows\Fonts\malgun.ttf'
+
+# 2) FontProperties 로 등록
+font_prop = fm.FontProperties(fname=font_path)
+plt.rcParams['font.family'] = font_prop.get_name()
+plt.rcParams['axes.unicode_minus'] = False  # 음수 기호 깨짐 방지
 
 class KimKem:
     def __init__(self,
@@ -41,19 +55,6 @@ class KimKem:
                  exception_word_list=[],
                  exception_filename='N',
                  modify_kemkim=False):
-        
-        # 1) 폰트 파일 경로
-        if platform.system() == 'Linux':
-            font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
-        elif platform.system() == 'Darwin':
-            font_path = '/System/Library/Fonts/AppleGothic.ttf'
-        else:
-            font_path = r'C:\Windows\Fonts\malgun.ttf'
-
-        # 2) FontProperties 로 등록
-        font_prop = fm.FontProperties(fname=font_path)
-        plt.rcParams['font.family'] = font_prop.get_name()
-        plt.rcParams['axes.unicode_minus'] = False  # 음수 기호 깨짐 방지
         
         self.exception_word_list = exception_word_list
         self.main = parent
