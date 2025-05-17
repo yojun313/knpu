@@ -113,9 +113,7 @@ class MainWindow(QMainWindow):
                 self.managerAnalysisObj = Manager_Analysis(self)
                 print("Done")
 
-
                 self.splashDialog.updateStatus(f"안녕하세요, {self.user}님!")
-                newpost = checkNewPost(self)
                 print(f"\n{self.user}님 환영합니다!")
 
                 initShortcut(self)
@@ -130,7 +128,8 @@ class MainWindow(QMainWindow):
                 printStatus(self, f"{self.fullStorage} GB / 2 TB")
 
                 # After Booting
-
+                
+                newpost = checkNewPost(self)
                 if newpost == True:
                     reply = QMessageBox.question(self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?",
                                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
