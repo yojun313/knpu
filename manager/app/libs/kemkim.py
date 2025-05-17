@@ -21,16 +21,6 @@ Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 
 warnings.filterwarnings("ignore")
 
-# 운영체제에 따라 한글 폰트를 설정
-if platform.system() == 'Darwin':  # macOS
-    plt.rcParams['font.family'] = 'AppleGothic'
-elif platform.system() == 'Windows':  # Windows
-    plt.rcParams['font.family'] = 'Malgun Gothic'  # 맑은 고딕 폰트 사용
-
-# 폰트 설정 후 음수 기호가 깨지는 것을 방지
-plt.rcParams['axes.unicode_minus'] = False
-
-
 class KimKem:
     def __init__(self,
                  parent=None,
@@ -52,16 +42,18 @@ class KimKem:
                  exception_filename='N',
                  modify_kemkim=False):
         
-        # 운영체제에 따라 한글 폰트를 설정
-        if platform.system() == 'Darwin':  # macOS
-            plt.rcParams['font.family'] = 'AppleGothic'
-        elif platform.system() == 'Windows':  # Windows
-            plt.rcParams['font.family'] = 'Malgun Gothic'
-        elif platform.system() == 'Linux':
-            plt.rcParams['font.family'] = 'NanumGothic'
+        # 1) 폰트 파일 경로
+        if platform.system() == 'Linux':
+            font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
+        elif platform.system() == 'Darwin':
+            font_path = '/System/Library/Fonts/AppleGothic.ttf'
+        else:
+            font_path = r'C:\Windows\Fonts\malgun.ttf'
 
-        # 폰트 설정 후 음수 기호가 깨지는 것을 방지
-        plt.rcParams['axes.unicode_minus'] = False
+        # 2) FontProperties 로 등록
+        font_prop = fm.FontProperties(fname=font_path)
+        plt.rcParams['font.family'] = font_prop.get_name()
+        plt.rcParams['axes.unicode_minus'] = False  # 음수 기호 깨짐 방지
         
         self.exception_word_list = exception_word_list
         self.main = parent
