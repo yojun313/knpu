@@ -339,7 +339,7 @@ class Manager_Setting(QDialog):
                 self.save_api_key_button.setEnabled(False)  # 저장 버튼 비활성화
                 self.edit_api_key_button.setEnabled(True)  # 수정 버튼 활성화
                 
-                set_setting('APIKey', api_key)  # 설정에 저장
+                set_setting('GPT_Key', api_key)  # 설정에 저장
                 QMessageBox.information(self, "성공", "API Key가 저장되었습니다.")
             else:
                 QMessageBox.warning(self, "경고", "API Key를 입력하세요.")
