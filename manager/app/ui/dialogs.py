@@ -2,8 +2,11 @@ from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
-    QTextEdit, QDialogButtonBox, QComboBox, QLabel, QDateEdit, QLineEdit, QHBoxLayout
+    QTextEdit, QDialogButtonBox, QComboBox, QLabel, QDateEdit, QLineEdit, QHBoxLayout,
+    QShortcut, QApplication
 )
+from PyQt5.QtGui import QKeySequence
+
 
 class SaveDbDialog(QDialog):
     def __init__(self):
@@ -388,6 +391,214 @@ class AddPostDialog(QDialog):
         QMessageBox.information(self, 'New Post',
                                 f'Post Title: {post_title}\nPost Text: {post_text}')
         self.accept()
+
+
+class ViewBugDialog(QDialog):
+    def __init__(self, parent, bug_data, style_html):
+        super().__init__(parent)
+        self.setWindowTitle(f"Version {bug_data['versionName']} Bug Details")
+        self.resize(400, 600)
+
+        self.bug_data = bug_data
+        self.style_html = style_html
+
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        # HTML 기반 디테일 내용
+        details_html = self.style_html + f"""
+            <div class="bug-details">
+                <table>
+                    <tr><th>Item</th><th>Details</th></tr>
+                    <tr><td><b>User Name:</b></td><td>{self.bug_data['writerName']}</td></tr>
+                    <tr><td><b>Version Num:</b></td><td>{self.bug_data['versionName']}</td></tr>
+                    <tr><td><b>Bug Title:</b></td><td>{self.bug_data['bugTitle']}</td></tr>
+                    <tr><td><b>DateTime:</b></td><td>{self.bug_data['datetime']}</td></tr>
+                    <tr><td><b>Bug Detail:</b></td><td class="detail-content">{self.bug_data['bugText']}</td></tr>
+                    <tr><td><b>Program Log:</b></td><td class="detail-content">{self.bug_data['programLog']}</td></tr>
+                </table>
+            </div>
+        """
+
+        detail_label = QLabel(details_html)
+        detail_label.setWordWrap(True)
+        detail_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(detail_label)
+
+        layout.addWidget(scroll_area)
+
+        # 하단 버튼 영역
+        button_layout = QHBoxLayout()
+
+        # 복사 버튼
+        copy_button = QPushButton("Copy All")
+        copy_button.clicked.connect(self.copy_all_text)
+        button_layout.addWidget(copy_button)
+
+        # 닫기 버튼
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.accept)
+        button_layout.addWidget(close_button)
+
+        layout.addLayout(button_layout)
+
+        # 단축키 연결
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.accept)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.accept)
+
+        self.setLayout(layout)
+
+    def copy_all_text(self):
+        clipboard = QApplication.clipboard()
+        # HTML 제거한 순수 텍스트 복사
+        plain_text = (
+            f"User Name: {self.bug_data['writerName']}\n"
+            f"Version Num: {self.bug_data['versionName']}\n"
+            f"Bug Title: {self.bug_data['bugTitle']}\n"
+            f"DateTime: {self.bug_data['datetime']}\n"
+            f"Bug Detail: {self.bug_data['bugText']}\n"
+            f"Program Log: {self.bug_data['programLog']}"
+        )
+        clipboard.setText(plain_text)
+
+
+class ViewVersionDialog(QDialog):
+    def __init__(self, parent, version_data, style_html):
+        super().__init__(parent)
+        self.version_data = version_data
+        self.style_html = style_html
+
+        self.setWindowTitle(f'Version {version_data[0]} Details')
+        self.resize(400, 400)
+
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        details_html = self.style_html + f"""
+            <div class="version-details">
+                <table>
+                    <tr><th>Item</th><th>Details</th></tr>
+                    <tr><td><b>Version Num:</b></td><td>{self.version_data[0]}</td></tr>
+                    <tr><td><b>Release Date:</b></td><td>{self.version_data[1]}</td></tr>
+                    <tr><td><b>ChangeLog:</b></td><td>{self.version_data[2]}</td></tr>
+                    <tr><td><b>Version Features:</b></td><td>{self.version_data[3]}</td></tr>
+                    <tr><td><b>Version Status:</b></td><td>{self.version_data[4]}</td></tr>
+                    <tr><td><b>Detail:</b></td><td class="detail-content">{self.version_data[5]}</td></tr>
+                </table>
+            </div>
+        """
+
+        detail_label = QLabel(details_html)
+        detail_label.setWordWrap(True)
+        detail_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(detail_label)
+
+        layout.addWidget(scroll_area)
+
+        # 하단 버튼
+        button_layout = QHBoxLayout()
+
+        copy_button = QPushButton("Copy All")
+        copy_button.clicked.connect(self.copy_all_text)
+        button_layout.addWidget(copy_button)
+
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.accept)
+        button_layout.addWidget(close_button)
+
+        layout.addLayout(button_layout)
+
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.accept)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.accept)
+
+        self.setLayout(layout)
+
+    def copy_all_text(self):
+        clipboard = QApplication.clipboard()
+        plain_text = (
+            f"Version Num: {self.version_data[0]}\n"
+            f"Release Date: {self.version_data[1]}\n"
+            f"ChangeLog: {self.version_data[2]}\n"
+            f"Version Features: {self.version_data[3]}\n"
+            f"Version Status: {self.version_data[4]}\n"
+            f"Detail: {self.version_data[5]}"
+        )
+        clipboard.setText(plain_text)
+
+
+class ViewPostDialog(QDialog):
+    def __init__(self, parent, post_data, style_html):
+        super().__init__(parent)
+        self.post_data = post_data
+        self.style_html = style_html
+
+        self.setWindowTitle("Post View")
+        self.resize(400, 400)
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        details_html = self.style_html + f"""
+            <div class="post-details">
+                <table>
+                    <tr><th>Item</th><th>Details</th></tr>
+                    <tr><td><b>User Name:</b></td><td>{self.post_data['writerName']}</td></tr>
+                    <tr><td><b>Post Title:</b></td><td>{self.post_data['title']}</td></tr>
+                    <tr><td><b>DateTime:</b></td><td>{self.post_data['datetime']}</td></tr>
+                    <tr><td><b>Post Text:</b></td><td class="detail-content">{self.post_data['text']}</td></tr>
+                </table>
+            </div>
+        """
+
+        detail_label = QLabel(details_html)
+        detail_label.setWordWrap(True)
+        detail_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(detail_label)
+
+        layout.addWidget(scroll_area)
+
+        # 하단 버튼 영역
+        button_layout = QHBoxLayout()
+
+        copy_button = QPushButton("Copy All")
+        copy_button.clicked.connect(self.copy_all_text)
+        button_layout.addWidget(copy_button)
+
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.accept)
+        button_layout.addWidget(close_button)
+
+        layout.addLayout(button_layout)
+
+        # 단축키
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.accept)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.accept)
+
+        self.setLayout(layout)
+
+    def copy_all_text(self):
+        clipboard = QApplication.clipboard()
+        plain_text = (
+            f"User Name: {self.post_data['writerName']}\n"
+            f"Post Title: {self.post_data['title']}\n"
+            f"DateTime: {self.post_data['datetime']}\n"
+            f"Post Text: {self.post_data['text']}"
+        )
+        clipboard.setText(plain_text)
 
 
 class EditPostDialog(QDialog):

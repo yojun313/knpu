@@ -552,7 +552,10 @@ class Manager_Database:
                 option['excl_words'] = dialog.excl_word_list
                 option['include_all'] = dialog.include_all_option
                 option['filename_edit'] = dialog.radio_name.isChecked()
-
+            else:
+                printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
+                return
+            
             register_process(pid, f"Crawl DB Save")
             viewer = open_viewer(pid)
 

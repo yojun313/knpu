@@ -1,11 +1,6 @@
 import traceback
 import warnings
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QPushButton,
-    QMessageBox, QScrollArea, QShortcut
-)
+from PyQt5.QtWidgets import  QMessageBox
 import bcrypt
 from ui.table import makeTable
 from services.auth import checkPassword
@@ -16,7 +11,6 @@ from services.logging import userLogging, programBugLog
 from core.shortcut import resetShortcuts
 
 warnings.filterwarnings("ignore")
-
 
 class Manager_Board:
     def __init__(self, main_window):
@@ -114,79 +108,17 @@ class Manager_Board:
 
     def viewVersion(self):
         try:
-            userLogging(f'BOARD -> viewVersion')
+            userLogging('BOARD -> viewVersion')
 
             selectedRow = self.main.board_version_tableWidget.currentRow()
             if selectedRow >= 0:
                 printStatus(self.main, "불러오는 중...")
                 version_data = self.version_data[selectedRow]
-
-                # 다이얼로그 생성
-                dialog = QDialog(self.main)
-                dialog.setWindowTitle(f'Version {version_data[0]} Details')
-                dialog.resize(400, 400)
-
-                layout = QVBoxLayout()
-
-                # HTML을 사용하여 디테일 표시
-                details_html = self.main.style_html + f"""
-                    <div class="version-details">
-                        <table>
-                            <tr>
-                                <th>Item</th>
-                                <th>Details</th>
-                            </tr>
-                            <tr>
-                                <td><b>Version Num:</b></td>
-                                <td>{version_data[0]}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Release Date:</b></td>
-                                <td>{version_data[1]}</td>
-                            </tr>
-                            <tr>
-                                <td><b>ChangeLog:</b></td>
-                                <td>{version_data[2]}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Version Features:</b></td>
-                                <td>{version_data[3]}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Version Status:</b></td>
-                                <td>{version_data[4]}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Detail:</b></td>
-                                <td class="detail-content">{version_data[5]}</td>
-                            </tr>
-                        </table>
-                    </div>
-                """
-                detail_label = QLabel(details_html)
-                detail_label.setWordWrap(True)
-
-                # QScrollArea를 사용하여 스크롤 가능하게 설정
-                scroll_area = QScrollArea()
-                scroll_area.setWidgetResizable(True)
-                scroll_area.setWidget(detail_label)
-
-                layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
-
-                # 닫기 버튼 추가
-                close_button = QPushButton('Close')
-                close_button.clicked.connect(dialog.accept)
-                layout.addWidget(close_button)
-
-                ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
-                ctrlw.activated.connect(dialog.accept)
-
-                cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
-                cmdw.activated.connect(dialog.accept)
-
-                dialog.setLayout(layout)
                 printStatus(self.main)
-                # 다이얼로그 실행
+
+                from ui.dialogs import ViewVersionDialog
+                dialog = ViewVersionDialog(
+                    self.main, version_data, self.main.style_html)
                 dialog.exec_()
 
         except Exception as e:
@@ -256,83 +188,16 @@ class Manager_Board:
 
     def viewBug(self):
         try:
-            userLogging(f'BOARD -> viewBug')
+            userLogging('BOARD -> viewBug')
 
             selectedRow = self.main.board_bug_tableWidget.currentRow()
             if selectedRow >= 0:
                 printStatus(self.main, "불러오는 중...")
                 bug_data = self.origin_bug_data[selectedRow]
                 printStatus(self.main)
-
-                # 다이얼로그 생성
-                dialog = QDialog(self.main)
-                dialog.setWindowTitle(
-                    f'Version {bug_data['versionName']} Bug Details')
-                dialog.resize(400, 600)
-
-                layout = QVBoxLayout()
-
-                # HTML을 사용하여 디테일 표시
-                details_html = self.main.style_html + f"""
-                    <div class="bug-details">
-                        <table>
-                            <tr>
-                                <th>Item</th>
-                                <th>Details</th>
-                            </tr>
-                            <tr>
-                                <td><b>User Name:</b></td>
-                                <td>{bug_data['writerName']}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Version Num:</b></td>
-                                <td>{bug_data['versionName']}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Bug Title:</b></td>
-                                <td>{bug_data['bugTitle']}</td>
-                            </tr>
-                            <tr>
-                                <td><b>DateTime:</b></td>
-                                <td>{bug_data['datetime']}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Bug Detail:</b></td>
-                                <td class="detail-content">{bug_data['bugText']}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Program Log:</b></td>
-                                <td class="detail-content">{bug_data['programLog']}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    """
-
-                detail_label = QLabel(details_html)
-                detail_label.setWordWrap(True)
-
-                # QScrollArea를 사용하여 스크롤 가능하게 설정
-                scroll_area = QScrollArea()
-                scroll_area.setWidgetResizable(True)
-                scroll_area.setWidget(detail_label)
-
-                layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
-
-                # 닫기 버튼 추가
-                close_button = QPushButton('Close')
-                close_button.clicked.connect(dialog.accept)
-                layout.addWidget(close_button)
-
-                ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
-                ctrlw.activated.connect(dialog.accept)
-
-                cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
-                cmdw.activated.connect(dialog.accept)
-
-                dialog.setLayout(layout)
-                printStatus(self.main)
-
-                # 다이얼로그 실행
+                from ui.dialogs import ViewBugDialog
+                dialog = ViewBugDialog(
+                    self.main, bug_data, self.main.style_html)
                 dialog.exec_()
 
         except Exception as e:
@@ -394,67 +259,12 @@ class Manager_Board:
                 post_data = self.origin_post_data[selectedRow]
 
                 Request('get', f'/board/post/{post_data["uid"]}')
-
                 printStatus(self.main)
-                # 다이얼로그 생성
-                dialog = QDialog(self.main)
-                dialog.setWindowTitle(f'Post View')
-                dialog.resize(400, 400)
 
-                layout = QVBoxLayout()
-
-                # HTML을 사용하여 디테일 표시
-                details_html = self.main.style_html + f"""
-                    <div class="post-details">
-                        <table>
-                            <tr>
-                                <th>Item</th>
-                                <th>Details</th>
-                            </tr>
-                            <tr>
-                                <td><b>User Name:</b></td>
-                                <td>{post_data['writerName']}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Post Title:</b></td>
-                                <td>{post_data['title']}</td>
-                            </tr>
-                            <tr>
-                                <td><b>DateTime:</b></td>
-                                <td>{post_data['datetime']}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Post Text:</b></td>
-                                <td class="detail-content">{post_data['text']}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    """
-                detail_label = QLabel(details_html)
-                detail_label.setWordWrap(True)
-
-                # QScrollArea를 사용하여 스크롤 가능하게 설정
-                scroll_area = QScrollArea()
-                scroll_area.setWidgetResizable(True)
-                scroll_area.setWidget(detail_label)
-
-                layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
-
-                # 닫기 버튼 추가
-                close_button = QPushButton('Close')
-                close_button.clicked.connect(dialog.accept)
-                layout.addWidget(close_button)
-
-                ctrlw = QShortcut(QKeySequence("Ctrl+W"), dialog)
-                ctrlw.activated.connect(dialog.accept)
-
-                cmdw = QShortcut(QKeySequence("Ctrl+ㅈ"), dialog)
-                cmdw.activated.connect(dialog.accept)
-
-                dialog.setLayout(layout)
-                printStatus(self.main)
-                # 다이얼로그 실행
+                from ui.dialogs import ViewPostDialog
+                dialog = ViewPostDialog(self.main, post_data, self.main.style_html)
                 dialog.exec_()
+
                 self.refreshPostBoard()
 
         except Exception as e:
