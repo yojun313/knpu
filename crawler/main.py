@@ -56,17 +56,18 @@ class Crawler(CrawlerModule):
         self.scrapdata_path = self.pathFinder(user)['scrapdata_path']
         self.crawllog_path  = os.path.join(self.pathFinder()['crawler_folder_path'], 'CrawlLog')
         self.crawlcom       = self.pathFinder(user)['computer_name']
-        self.mySQL          = self.pathFinder(user)['MYSQL']
         self.api_url        = "http://localhost:8000/api"
+        self.api_url        = "https://manager.knpu.re.kr/api"
         self.api_headers = {
             "Authorization": "Bearer " + os.getenv('ADMIN_TOKEN'),
         }
+        self.mongoDB()
         
         # User Info
         self.user      = user
 
-        userData = self.get_userInfo(user, self.mySQL)
-        if userData == False:
+        userData = self.get_userInfo(user)
+        if not userData:
             print("등록되지 않은 사용자입니다. 크롤러를 종료합니다")
             os._exit(0)
 
@@ -95,7 +96,6 @@ class Crawler(CrawlerModule):
         self.date_range  = (self.endDate_form - self.startDate_form).days + 1
         self.deltaD      = timedelta(days=1)
         
-
     # DB에 크롤링 상태 기록
     def DBinfoRecorder(self, endoption = False, error = False):
 
@@ -117,18 +117,10 @@ class Crawler(CrawlerModule):
     # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
         user_stop = False
-        for i in range(5):
-            DBlist = self.mySQL.showAllDB()
-            if self.DBname.lower() in DBlist:
-                self.running = True
-                return
-            else:
-                if len(DBlist) > 50:
-                    user_stop = True
-                else:
-                    user_stop = False
+        crawlDbList = self.mongoClient['crawler']['db-list']
+        targetDB = crawlDbList.find_one({'uid': self.dbUid})
 
-        if user_stop == True:
+        if not targetDB:
             self.running = False
             print('\rStopped by BIGMACLAB MANAGER PROGRAM', end='')
 
@@ -147,35 +139,6 @@ class Crawler(CrawlerModule):
             self.localDBRemover()
             sys.exit()
 
-        else:
-            msg_text = (
-                "[ DB ALERT ]\n\n"
-                f"Object DB : {self.DBname}\n\n"
-                f"크롤링 중 현재 DB 서버의 정상 동작 여부가 의심됩니다\n"
-                f"15분 내에 Z8에 접속하여 DB 서버의 정상 작동 여부를 확인해주십시오"
-            )
-            self.sendPushOver(msg_text, user_key=self.admin_pushoverkey)
-            start_time = time.time()
-            self.running = True
-            timeout = 15 * 60  # 15분을 초로 변환
-
-            while time.time() - start_time < timeout:
-                elapsed_time = int(time.time() - start_time)
-                print(f"DB 복구 중... 경과 시간: {elapsed_time // 60}분 {elapsed_time % 60}초")
-                time.sleep(1)
-
-            self.mySQL = self.pathFinder(self.user)['MYSQL']
-            self.mySQL.connectDB(self.DBname)
-            self.running = True
-            return False
-
-    def TableMakerChecker(self):
-        if self.articleDB not in self.mySQL.showAllTable(self.DBname):
-            title = f"CRAWLER {self.DBname} Table 생성 실패 안내"
-            text = f"{self.DBname} DB Table 생성에 실패해 크롤러가 중단되었습니다\n\n관리자에게 문의바랍니다"
-            self.sendPushOver(msg=title + '\n' + text, user_key=self.pushoverKey)
-            os._exit(0)
-
     def DBMaker(self, DBtype):
         dbname_date = "_{}_{}".format(self.startDate, self.endDate)
         
@@ -185,23 +148,6 @@ class Crawler(CrawlerModule):
         
         self.DBname      = f"{DBtype}_{self.DBkeyword}{dbname_date}_{now_kst}"
         self.DBpath      = os.path.join(self.scrapdata_path, self.DBname)
-
-        if self.DBname in self.mySQL.showAllDB():
-            msg_text = (
-                "[ 크롤러 활성화 불가 안내 ]\n\n"
-                f"Object DB : {self.DBname}\n\n"
-                f"같은 키워드의 연속된 크롤러로, DB 이름이 동일해 크롤러 활성화가 불가합니다\n"
-                f"1분 뒤에 재시도해주십시오"
-            )
-            self.sendPushOver(msg_text, user_key=self.pushoverKey)
-            os._exit(0)
-
-        self.mySQL.newDB(self.DBname)
-        if self.DBname not in self.mySQL.showAllDB():
-            title = f"CRAWLER {self.DBname} 생성 실패 안내"
-            text = f"{self.DBname} DB 생성에 실패해 크롤러가 중단되었습니다\n\n관리자에게 문의바랍니다"
-            self.sendPushOver(msg=title + '\n' + text, user_key=self.pushoverKey)
-            os._exit(0)
         
         option = self.option
         requester = self.user
@@ -221,7 +167,6 @@ class Crawler(CrawlerModule):
         
         res = requests.post(self.api_url + '/crawls/add', json=json, headers=self.api_headers).json()
         self.dbUid = res['data']['uid']
-        self.mySQL.connectDB(self.DBname)
 
         self.articleDB    = self.DBname + '_article'
         self.statisticsDB = self.DBname + '_statistics'
@@ -229,8 +174,7 @@ class Crawler(CrawlerModule):
         self.rereplyDB    = self.DBname + '_rereply'
         
         try:
-            if self.localArchive == True:
-                os.mkdir(self.DBpath)
+            os.mkdir(self.DBpath)
             log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'),'w+')
 
             self.msg = (
@@ -284,20 +228,22 @@ class Crawler(CrawlerModule):
 
     def FinalOperator(self):
         try:
-            tablelist = [table for table in self.mySQL.showAllTable(self.DBname) if 'info' not in table]
+            self.convertToParquet(self.DBpath)
+            
+            parquet_files = [f for f in os.listdir(self.DBpath) if f.endswith('.parquet')]
+            for file_name in parquet_files:
+                table_name = file_name.rsplit('.', 1)[0]
+                file_path = os.path.join(self.DBpath, file_name)
+                print(f"{table_name} 읽는 중...")
 
-            for table in tablelist:
-                self.mySQL.connectDB(self.DBname)
-                print(f"{table} 가져오는 중...")
-                data_df = self.mySQL.TableToDataframe(table)
+                data_df = pd.read_parquet(file_path)
 
-                if 'reply' in table or 'rereply' in table:
-                    # 열 이름 설정
-                    date_column = 'Rereply Date' if 'rereply' in table else 'Reply Date'
-                    text_column = 'Rereply Text' if 'rereply' in table else 'Reply Text'
+                # Step 3: Reply 관련 테이블이면 전처리 수행
+                if 'reply' in table_name or 'rereply' in table_name:
+                    date_column = 'Rereply Date' if 'rereply' in table_name else 'Reply Date'
+                    text_column = 'Rereply Text' if 'rereply' in table_name else 'Reply Text'
 
-                    # 날짜 형식 변환 및 그룹화 후 정렬
-                    data_df[date_column] = pd.to_datetime(data_df[date_column], format='%Y-%m-%d').dt.date
+                    data_df[date_column] = pd.to_datetime(data_df[date_column], errors='coerce').dt.date
                     grouped = data_df.groupby('Article URL')
                     data_df = grouped.agg({
                         text_column: ' '.join,
@@ -306,11 +252,13 @@ class Crawler(CrawlerModule):
                     data_df = data_df.rename(columns={'Article Day': date_column})
                     data_df = data_df.sort_values(by=date_column)
 
+                # Step 4: Tokenization
                 token_df = self.tokenization(data_df)
-                print("")
-                print(f'\r{table} DB Inserting...', end='')
-                self.mySQL.connectDB(self.DBname)
-                self.mySQL.DataframeToTable(token_df, 'token_' + table)
+
+                # Step 5: 저장 (선택 사항: parquet 저장 or print only)
+                token_file_path = os.path.join(self.DBpath, f"token_{table_name}.parquet")
+                token_df.to_parquet(token_file_path, index=False)
+                print(f"Token 저장 완료: token_{table_name}.parquet")
 
             self.clear_screen()
             print('\r업로드 및 알림 전송 중...', end='')
@@ -343,7 +291,6 @@ class Crawler(CrawlerModule):
                 log.write('\n\n' + end_msg)
 
             self.DBinfoRecorder(endoption=True)
-            self.localDBRemover()
 
             self.clear_screen()
 
@@ -407,7 +354,41 @@ class Crawler(CrawlerModule):
 
         data[textColumn_name] = tokenized_data
         return data
+    
+    def makeCSV(self, tableName, columns):
+        df = pd.DataFrame(columns=columns)
+        file_path = os.path.join(self.DBpath, tableName + '.csv')
+        df.to_csv(file_path, index=False, encoding='utf-8-sig')
+    
+    def addToCSV(self, table_name, data_list, columns):
+        df_new = pd.DataFrame(data_list, columns=columns)
+        file_path = os.path.join(self.DBpath, f"{table_name}.csv")
 
+        write_header = not os.path.exists(file_path)
+        df_new.to_csv(file_path, mode='a', header=write_header, index=False)
+    
+    def convertToParquet(self, folder_path):
+        if not os.path.exists(folder_path):
+            print(f"경로가 존재하지 않습니다: {folder_path}")
+            return
+
+        file_list = os.listdir(folder_path)
+        csv_files = [f for f in file_list if f.lower().endswith('.csv')]
+
+        if not csv_files:
+            print("CSV 파일이 없습니다.")
+            return
+
+        for csv_file in csv_files:
+            csv_path = os.path.join(folder_path, csv_file)
+            parquet_path = os.path.join(folder_path, csv_file.rsplit('.', 1)[0] + '.parquet')
+            try:
+                df = pd.read_csv(csv_path)
+                df.to_parquet(parquet_path, index=False)
+                os.remove(csv_path)  # ✅ 변환 성공 후 원본 CSV 삭제
+            except Exception as e:
+                print(f"변환 실패: {csv_file} → 오류: {e}")
+    
     def Naver_News_Crawler(self, option):
 
         NaverNewsCrawler_obj = NaverNewsCrawler(proxy_option=self.proxy_option, print_status_option=True)
@@ -428,15 +409,13 @@ class Crawler(CrawlerModule):
         if option == 4:
             reply_column = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID', 'TotalUserComment', 'TotalUserReply', 'TotalUserLike', 'Article Day']
 
-        self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
-
+        self.makeCSV(tableName=self.articleDB, columns=article_column)
+        
         if option in [1, 2, 4]:
-            self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
-            self.mySQL.newTable(tableName=self.statisticsDB, column_list=statistiscs_column)
+            self.makeCSV(tableName=self.replyDB, columns=reply_column)
+            self.makeCSV(tableName=self.statisticsDB, columns=statistiscs_column)
             if option == 2:
-                self.mySQL.newTable(tableName=self.rereplyDB, column_list=rereply_column)
-
-        self.TableMakerChecker()
+                self.makeCSV(tableName=self.rereplyDB, columns=rereply_column)
 
         if self.weboption == 0:
             self.infoPrinter()
@@ -447,14 +426,6 @@ class Crawler(CrawlerModule):
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
                     percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
                     NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
-
-                    if (dayCount % self.saveInterval == 0 or dayCount == self.date_range) and self.localArchive == True:
-                        self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
-                        if option in [1, 2]:
-                            self.mySQL.TableToCSV(tableName=self.statisticsDB, csv_path=self.DBpath)
-                            self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
-                            if option == 2:
-                                self.mySQL.TableToCSV(tableName=self.rereplyDB, csv_path=self.DBpath)
 
                     # finish line
                     if dayCount == self.date_range:
@@ -476,6 +447,7 @@ class Crawler(CrawlerModule):
                             os._exit(1)
                         self.currentDate += self.deltaD
                         continue
+                    
                     self.urlList = urlList_returnData['urlList']
 
                     FullreturnData = asyncio.run(NaverNewsCrawler_obj.asyncMultiCollector(self.urlList, option))
@@ -489,26 +461,21 @@ class Crawler(CrawlerModule):
                             continue
 
                         if option == 3:
-                            self.mySQL.insertToTable(tableName=self.articleDB, data_list=article_returnData['articleData'] + [0])
-
+                            self.addToCSV(tableName=self.articleDB, data_list=article_returnData['articleData'] + [0], columns=article_column)
+                            
                         else:
                             replyList_returnData = returnData['replyData']
                             # replyData 정상 확인
                             if self.ReturnChecker(replyList_returnData) == True:
                                 if articleStatus == True and article_returnData['articleData'] != []:
-                                    self.mySQL.insertToTable(tableName=self.articleDB,
-                                                             data_list=article_returnData['articleData'] + [
-                                                                 replyList_returnData['replyCnt']])
+                                    self.addToCSV(tableName=self.articleDB, data_list=article_returnData['articleData'] + [replyList_returnData['replyCnt']], columns=article_column)
 
                                     if replyList_returnData['statisticsData'] != []:
-                                        self.mySQL.insertToTable(tableName=self.statisticsDB,
-                                                                 data_list=article_returnData['articleData'] +
-                                                                           replyList_returnData['statisticsData'])
+                                        self.addToCSV(tableName=self.statisticsDB, data_list=replyList_returnData['statisticsData'], columns=statistiscs_column)
 
                                 if replyList_returnData['replyList'] != []:
-                                    data_list = [sublist + [article_returnData['articleData'][5]] for sublist in
-                                                 replyList_returnData['replyList']]
-                                    self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
+                                    data_list = [sublist + [article_returnData['articleData'][5]] for sublist in replyList_returnData['replyList']]
+                                    self.addToCSV(tableName=self.replyDB, data_list=data_list, columns=reply_column)
 
                             if option == 2:
                                 # rereplyData 정상확인
@@ -517,13 +484,11 @@ class Crawler(CrawlerModule):
                                     'rereplyList'] != []:
                                     data_list = [sublist + [article_returnData['articleData'][5]] for sublist in
                                                  rereplyList_returnData['rereplyList']]
-                                    self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=data_list)
+                                    self.addToCSV(tableName=self.rereplyDB, data_list=data_list, columns=rereply_column)
 
-                    if self.webCrawlerRunCheck() == False:
-                        dayCount -= 1
-                        continue
+                    self.webCrawlerRunCheck()
 
-                    self.mySQL.commit()
+
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()
 
@@ -548,11 +513,9 @@ class Crawler(CrawlerModule):
         article_column = ["Article ID", "Article URL", "Article Text", "Article Date"]
         reply_column   = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like", "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID', 'Article Day']
 
-        self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
+        self.makeCSV(tableName=self.articleDB, columns=article_column)
         if option == 2:
-            self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
-
-        self.TableMakerChecker()
+            self.makeCSV(tableName=self.replyDB, columns=reply_column)
 
         if self.weboption == 0:
             self.infoPrinter()
@@ -563,11 +526,6 @@ class Crawler(CrawlerModule):
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
                     percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     NaverBlogCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
-
-                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
-                        self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
-                        if option == 2:
-                            self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
 
                     # finish line
                     if dayCount == self.date_range:
@@ -593,12 +551,11 @@ class Crawler(CrawlerModule):
                     self.urlList = urlList_returnData['urlList']
 
                     FullreturnData = asyncio.run(NaverBlogCrawler_obj.asyncMultiCollector(self.urlList, option))
-
                     for returnData in FullreturnData:
 
                         article_returnData = returnData['articleData']
                         if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
-                            self.mySQL.insertToTable(tableName=self.articleDB, data_list=article_returnData['articleData'])
+                            self.addToCSV(tableName=self.articleDB, data_list=article_returnData['articleData'], columns=article_column)
                         else:
                             continue
 
@@ -606,12 +563,10 @@ class Crawler(CrawlerModule):
                             replyList_returnData = returnData['replyData']
                             if self.ReturnChecker(replyList_returnData) == True and replyList_returnData['replyList'] != []:
                                 data_list = [sublist + [article_returnData['articleData'][3]] for sublist in replyList_returnData['replyList']]
-                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
+                                self.addToCSV(tableName=self.replyDB, data_list=data_list, columns=reply_column)
 
-                    if self.webCrawlerRunCheck() == False:
-                        dayCount -= 1
-                        continue
-                    self.mySQL.commit()
+                    self.webCrawlerRunCheck()
+                    
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverBlogCrawler_obj.CountReturn()
 
@@ -636,11 +591,9 @@ class Crawler(CrawlerModule):
         article_column = ["NaverCafe Name", "NaverCafe MemberCount", "Article Writer", "Article Title", "Article Text", "Article Date", "Article ReadCount", "Article ReplyCount", "Article URL"]
         reply_column   = ["Reply Num", "Reply Writer", "Reply Date", 'Reply Text', 'Article URL', 'Article Day']
 
-        self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
+        self.makeCSV(tableName=self.articleDB, columns=article_column)
         if option == 2:
-            self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
-
-        self.TableMakerChecker()
+            self.makeCSV(tableName=self.replyDB, columns=reply_column)
 
         if self.weboption == 0:
             self.infoPrinter()
@@ -651,11 +604,6 @@ class Crawler(CrawlerModule):
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
                     percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     NaverCafeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
-
-                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
-                        self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
-                        if option == 2:
-                            self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
 
                     # finish line
                     if dayCount == self.date_range:
@@ -686,7 +634,7 @@ class Crawler(CrawlerModule):
 
                         article_returnData = returnData['articleData']
                         if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
-                            self.mySQL.insertToTable(tableName=self.articleDB, data_list=article_returnData['articleData'])
+                            self.addToCSV(tableName=self.articleDB, data_list=article_returnData['articleData'], columns=article_column)
                         else:
                             continue
 
@@ -694,12 +642,10 @@ class Crawler(CrawlerModule):
                             replyList_returnData = returnData['replyData']
                             if self.ReturnChecker(replyList_returnData) == True and replyList_returnData['replyList'] != []:
                                 data_list = [sublist + [article_returnData['articleData'][5]] for sublist in replyList_returnData['replyList']]
-                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
+                                self.addToCSV(tableName=self.replyDB, data_list=data_list, columns=reply_column)
 
-                    if self.webCrawlerRunCheck() == False:
-                        dayCount -= 1
-                        continue
-                    self.mySQL.commit()
+                    self.webCrawlerRunCheck()
+                    
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverCafeCrawler_obj.CountReturn()
 
@@ -710,11 +656,14 @@ class Crawler(CrawlerModule):
             return
 
     def YouTube_Crawler(self, option):
+        collection = self.mongoClient['crawler']['youtube_api']
+        api_list = []
+        cursor = collection.find({}, {"_id": 0, "API code": 1})  # _id는 제외, "API code"만 포함
 
-        self.mySQL.connectDB('user_db')
-        api_list_df = self.mySQL.TableToDataframe('youtube_api')
-        api_list = api_list_df['API code'].tolist()
-
+        for doc in cursor:
+            if "API code" in doc:
+                api_list.append(doc["API code"])
+        
         YouTubeCrawler_obj = YouTubeCrawler(api_list=api_list, proxy_option=self.proxy_option, print_status_option=True)
         
         self.option = option
@@ -727,12 +676,10 @@ class Crawler(CrawlerModule):
         article_column = ['YouTube Channel', 'Article URL', 'Article Title', 'Article Text', 'Article Date', 'Article ViewCount', 'Article Like', 'Article ReplyCount']
         reply_column = ['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Article URL', 'Article Day']
         rereply_column = ['Rereply Num', 'Rereply Writer', 'Rereply Date', 'Rereply Text', 'Rereply Like', 'Article URL', 'Article Day']
-
-        self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
-        self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
-        self.mySQL.newTable(tableName=self.rereplyDB, column_list=rereply_column)
-
-        self.TableMakerChecker()
+        
+        self.makeCSV(tableName=self.articleDB, columns=article_column)
+        self.makeCSV(tableName=self.replyDB, columns=reply_column)
+        self.makeCSV(tableName=self.rereplyDB, columns=rereply_column)
 
         if self.weboption == 0:
             self.infoPrinter()
@@ -743,12 +690,6 @@ class Crawler(CrawlerModule):
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
                     percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     YouTubeCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption, self.api_num)
-
-                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
-                        # option 1 & 2
-                        self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
-                        self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
-                        self.mySQL.TableToCSV(tableName=self.rereplyDB, csv_path=self.DBpath)
 
                     # finish line
                     if dayCount == self.date_range:
@@ -779,7 +720,7 @@ class Crawler(CrawlerModule):
 
                         article_returnData = returnData['articleData']
                         if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
-                            self.mySQL.insertToTable(tableName=self.articleDB, data_list=article_returnData['articleData'])
+                            self.addToCSV(tableName=self.articleDB, data_list=article_returnData['articleData'], columns=article_column)
                         else:
                             continue
 
@@ -787,15 +728,13 @@ class Crawler(CrawlerModule):
                         if self.ReturnChecker(replyList_returnData) == True:
                             if replyList_returnData['replyList'] != []:
                                 data_list = [sublist + [article_returnData['articleData'][4]] for sublist in replyList_returnData['replyList']]
-                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
+                                self.addToCSV(tableName=self.replyDB, data_list=data_list, columns=reply_column)
                             if replyList_returnData['rereplyList'] != []:
                                 data_list = [sublist + [article_returnData['articleData'][4]] for sublist in replyList_returnData['rereplyList']]
-                                self.mySQL.insertToTable(tableName=self.rereplyDB, data_list=data_list)
+                                self.addToCSV(tableName=self.rereplyDB, data_list=data_list, columns=rereply_column)
 
-                    if self.webCrawlerRunCheck() == False:
-                        dayCount -= 1
-                        continue
-                    self.mySQL.commit()
+                    self.webCrawlerRunCheck()
+                    
                     self.currentDate += self.deltaD
                     self.IntegratedDB = YouTubeCrawler_obj.CountReturn()
 
@@ -814,9 +753,7 @@ class Crawler(CrawlerModule):
         self.DBMaker(self.DBtype)
         
         article_column = ['Article Source', 'Article Title', 'Article Text', 'Article Date', 'Article Theme', 'Article URL', 'Article SearchURL']
-        self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
-
-        self.TableMakerChecker()
+        self.makeCSV(tableName=self.articleDB, columns=article_column)
 
         if self.weboption == 0:
             self.infoPrinter()
@@ -827,10 +764,6 @@ class Crawler(CrawlerModule):
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
                     percent = str(round(((dayCount+1)/self.date_range)*100, 1))
                     ChinaDailyCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
-
-                    if dayCount % self.saveInterval == 0 or dayCount == self.date_range and self.localArchive == True:
-                        # option 1 & 2
-                        self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
 
                     # finish line
                     if dayCount == self.date_range:
@@ -844,12 +777,10 @@ class Crawler(CrawlerModule):
                     articleCnt  = articleList_returnData['articleCnt']
 
                     if articleCnt != 0:
-                        self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
+                        self.addToCSV(tableName=self.articleDB, data_list=articleList, columns=article_column)
 
-                    if self.webCrawlerRunCheck() == False:
-                        dayCount -= 1
-                        continue
-                    self.mySQL.commit()
+                    self.webCrawlerRunCheck()
+                    
                     self.currentDate += self.deltaD
                     self.IntegratedDB = ChinaDailyCrawler_obj.CountReturn()
 
@@ -872,11 +803,9 @@ class Crawler(CrawlerModule):
         article_column = ['Article Title', 'Article Text', 'Article Date', 'Article URL']
         reply_column = ['Reply Num', 'Reply Writer', 'Reply Date', 'Reply Text', 'Reply Like', 'Article URL', 'Article Day']
 
-        self.mySQL.newTable(tableName=self.articleDB, column_list=article_column)
+        self.makeCSV(tableName=self.articleDB, columns=article_column)
         if option == 2:
-            self.mySQL.newTable(tableName=self.replyDB, column_list=reply_column)
-
-        self.TableMakerChecker()
+            self.makeCSV(tableName=self.replyDB, columns=reply_column)
 
         if self.weboption == 0:
             self.infoPrinter()
@@ -897,11 +826,6 @@ class Crawler(CrawlerModule):
                     percent = str(round(((DateRangeCnt+1)/len(DateRangeList))*100, 1))
 
                     ChinaSinaCrawler_obj.setPrintData(f"{currentDate_str_start.strftime('%Y.%m.%d')} ~ {currentDate_str_end.strftime('%Y.%m.%d')}", percent, self.weboption)
-
-                    if self.localArchive == True:
-                        self.mySQL.TableToCSV(tableName=self.articleDB, csv_path=self.DBpath)
-                        if option == 2:
-                            self.mySQL.TableToCSV(tableName=self.replyDB, csv_path=self.DBpath)
 
                     if DateRangeCnt == len(DateRangeList):
                         self.FinalOperator()
@@ -930,12 +854,11 @@ class Crawler(CrawlerModule):
                             replyList_returnData = returnData['replyData']
                             if self.ReturnChecker(replyList_returnData) == True and replyList_returnData['replyList'] != []:
                                 data_list = [sublist + [article_returnData['articleData'][2]] for sublist in replyList_returnData['replyList']]
-                                self.mySQL.insertToTable(tableName=self.replyDB, data_list=data_list)
+                                self.addToCSV(tableName=self.replyDB, data_list=data_list, columns=reply_column)
 
-                    self.mySQL.insertToTable(tableName=self.articleDB, data_list=sorted(articleList, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d")))
-
+                    self.addToCSV(tableName=self.articleDB, data_list=sorted(articleList, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d")), columns=article_column)
+                    
                     self.webCrawlerRunCheck()
-                    self.mySQL.commit()
                     self.IntegratedDB = ChinaSinaCrawler_obj.CountReturn()
 
                 except Exception as e:
