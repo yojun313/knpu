@@ -53,9 +53,9 @@ class Crawler(CrawlerModule):
         self.admin_pushoverkey = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
 
         # Computer Info
-        self.scrapdata_path = self.pathFinder(user)['scrapdata_path']
+        self.scrapdata_path = self.pathFinder()['scrapdata_path']
         self.crawllog_path  = os.path.join(self.pathFinder()['crawler_folder_path'], 'CrawlLog')
-        self.crawlcom       = self.pathFinder(user)['computer_name']
+        self.crawlcom       = self.pathFinder()['computer_name']
         self.api_url        = "http://localhost:8000/api"
         self.api_url        = "https://manager.knpu.re.kr/api"
         self.api_headers = {
