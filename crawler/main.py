@@ -360,9 +360,9 @@ class Crawler(CrawlerModule):
         file_path = os.path.join(self.DBpath, tableName + '.csv')
         df.to_csv(file_path, index=False, encoding='utf-8-sig')
     
-    def addToCSV(self, table_name, data_list, columns):
+    def addToCSV(self, tableName, data_list, columns):
         df_new = pd.DataFrame(data_list, columns=columns)
-        file_path = os.path.join(self.DBpath, f"{table_name}.csv")
+        file_path = os.path.join(self.DBpath, f"{tableName}.csv")
 
         write_header = not os.path.exists(file_path)
         df_new.to_csv(file_path, mode='a', header=write_header, index=False)
@@ -461,17 +461,17 @@ class Crawler(CrawlerModule):
                             continue
 
                         if option == 3:
-                            self.addToCSV(tableName=self.articleDB, data_list=article_returnData['articleData'] + [0], columns=article_column)
+                            self.addToCSV(tableName=self.articleDB, data_list=[article_returnData['articleData']] + [0], columns=article_column)
                             
                         else:
                             replyList_returnData = returnData['replyData']
                             # replyData 정상 확인
                             if self.ReturnChecker(replyList_returnData) == True:
                                 if articleStatus == True and article_returnData['articleData'] != []:
-                                    self.addToCSV(tableName=self.articleDB, data_list=article_returnData['articleData'] + [replyList_returnData['replyCnt']], columns=article_column)
+                                    self.addToCSV(tableName=self.articleDB, data_list=[article_returnData['articleData'] + [replyList_returnData['replyCnt']]], columns=article_column)
 
                                     if replyList_returnData['statisticsData'] != []:
-                                        self.addToCSV(tableName=self.statisticsDB, data_list=replyList_returnData['statisticsData'], columns=statistiscs_column)
+                                        self.addToCSV(tableName=self.statisticsDB, data_list=[article_returnData['articleData'] + replyList_returnData['statisticsData']], columns=statistiscs_column)
 
                                 if replyList_returnData['replyList'] != []:
                                     data_list = [sublist + [article_returnData['articleData'][5]] for sublist in replyList_returnData['replyList']]
@@ -555,7 +555,7 @@ class Crawler(CrawlerModule):
 
                         article_returnData = returnData['articleData']
                         if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
-                            self.addToCSV(tableName=self.articleDB, data_list=article_returnData['articleData'], columns=article_column)
+                            self.addToCSV(tableName=self.articleDB, data_list=[article_returnData['articleData']], columns=article_column)
                         else:
                             continue
 
@@ -634,7 +634,7 @@ class Crawler(CrawlerModule):
 
                         article_returnData = returnData['articleData']
                         if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
-                            self.addToCSV(tableName=self.articleDB, data_list=article_returnData['articleData'], columns=article_column)
+                            self.addToCSV(tableName=self.articleDB, data_list=[article_returnData['articleData']], columns=article_column)
                         else:
                             continue
 
@@ -720,7 +720,7 @@ class Crawler(CrawlerModule):
 
                         article_returnData = returnData['articleData']
                         if self.ReturnChecker(article_returnData) == True and article_returnData['articleData'] != []:
-                            self.addToCSV(tableName=self.articleDB, data_list=article_returnData['articleData'], columns=article_column)
+                            self.addToCSV(tableName=self.articleDB, data_list=[article_returnData['articleData']], columns=article_column)
                         else:
                             continue
 
