@@ -10,7 +10,6 @@ import csv
 import json
 import chardet
 import requests
-from mysql import mySQL
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
@@ -23,42 +22,21 @@ class ToolModule:
     def __init__(self):
         pass
     # Set folder path depending on the computer
-    def pathFinder(self, name = ''):
-
+    def pathFinder(self):
         if socket.gethostname() == "Yojuns-MacBook-Pro.local":
-            crawler_folder_path = '/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER'
-            scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata')
-            token_path          = crawler_folder_path
             computer_name       = "Yojun's MacBook Pro"
-            mySQLObj = mySQL(host=DB_IP, user='admin', password='bigmaclab2022!', port=3306)
-
-        elif socket.gethostname() == "BIGMACLAB-Z8":
-            crawler_folder_path = 'D:/BIGMACLAB/CRAWLER'
-            scrapdata_path      = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
-            token_path          = crawler_folder_path
-            computer_name       = 'HP Z8'
-            mySQLObj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
         
         elif socket.gethostname() == "knpu":
-            crawler_folder_path = "/home/yojun/BIGMACLAB/records"
-            scrapdata_path = os.path.join(crawler_folder_path, 'scrapdata')
-            token_path = crawler_folder_path
             computer_name = "Server"
-            mySQLObj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
-
+            
         elif socket.gethostname() == "BigMacServer":
-            crawler_folder_path = "D:/BIGMACLAB/CRAWLER"
-            scrapdata_path = os.path.join(crawler_folder_path, 'scrapdata', f'{name}_scrapdata')
-            token_path = crawler_folder_path
             computer_name = "BIGMACLAB SERVER"
-            mySQLObj = mySQL(host=LOCAL_IP, user='admin', password='bigmaclab2022!', port=3306)
 
         returnData = {
-            'crawler_folder_path': crawler_folder_path, 
-            'scrapdata_path' : scrapdata_path, 
-            'token_path' : token_path, 
+            'crawler_folder_path': os.getenv('DATA_PATH'), 
+            'scrapdata_path' : os.getenv('CRAWLDATA_PATH'),
+            'token_path' : os.getenv('DATA_PATH'), 
             'computer_name' : computer_name, 
-            'MYSQL': mySQLObj
         }
         return returnData
     
@@ -91,15 +69,13 @@ class ToolModule:
         with open(os.path.join(csv_path, csv_name), 'w', newline = '', encoding='utf-8-sig', errors='ignore') as object:
             csv.writer(object).writerows(object_list)
     
-    def get_userInfo(self, input_name, mysql):
-        mysql.connectDB(database_name='user_db')
-        df = mysql.TableToDataframe(tableName='user_info')
-        if input_name not in df['Name'].tolist():
+    def get_userInfo(self, input_name):
+        self.mongoDB()
+        db = self.mongoClient['manager']['users']
+        user = db.find_one({'name': input_name})
+        if user is None:
             return False
-        email = df.loc[df['Name'] == input_name, 'Email'].values[0]
-        pushover = df.loc[df['Name'] == input_name, 'PushOver'].values[0]
-
-        return {'Email': email, 'PushOver': pushover}
+        return {'Email': user['email'], 'PushOver': user['pushoverKey']}
 
     def sendPushOver(self, msg, user_key):
         app_key_list  = ["a273soeggkmq1eafdyghexusve42bq", "a39cudwdti3ap97kax9pmvp6gdm2b9"]
@@ -176,4 +152,3 @@ class ToolModule:
 
 if __name__ == '__main__':
     ToolModule = ToolModule()
-    mySQLObj = mySQL(host='121.152.225.232', user='admin', password='bigmaclab2022!', port=3306, database='User_DB')
