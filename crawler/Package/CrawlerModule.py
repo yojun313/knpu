@@ -47,8 +47,6 @@ class CrawlerModule(ToolModule):
 
         self.socketnum = 1
 
-        self.mySQL = self.pathFinder()['MYSQL']
-
         if proxy_option == True:
             self.mongoDB()
             self.proxy_list = self.mongoClient['crawler']['ip-list'].find_one(
@@ -67,12 +65,6 @@ class CrawlerModule(ToolModule):
             'totalReplyCnt': 0,
             'totalRereplyCnt': 0
         }
-
-    def ip_update(self):
-        self.mySQL.connectDB('crawler_db')
-        self.proxy_list = self.mySQL.TableToList('proxy_list')
-        self.proxy_list = [proxy[0] for proxy in self.proxy_list]
-        self.mySQL.disconnectDB()
 
     def setCrawlSpeed(self, speed):
         self.socketnum = speed

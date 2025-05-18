@@ -1,7 +1,8 @@
-from app.db import crawlList_db, mysql_db, crawlLog_db, user_db
+from app.db import crawlList_db, mysql_db, crawlLog_db, user_db, crawldata_path
 from app.libs.exceptions import ConflictException, NotFoundException
 from app.models.crawl_model import CrawlDbCreateDto, CrawlLogCreateDto, SaveCrawlDbOption
 from app.utils.mongo import clean_doc
+from app.utils.getsize import getFolderSize
 from fastapi.responses import JSONResponse
 from collections import OrderedDict
 from datetime import datetime, timezone, timedelta
@@ -87,8 +88,9 @@ def deleteCrawlDb(uid: str):
 
 
 def deleteCrawlDbBg(name: str):
-    mysql_db.connectDB()
-    mysql_db.dropDB(name)
+    folder_path = os.path.join(crawldata_path, name)
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path, ignore_errors=True)
 
 
 def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
@@ -100,7 +102,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     cursor = crawlList_db.find()
     crawlDbList = [clean_doc(d) for d in cursor]
     if not crawlDbList:
-        raise NotFoundException("No CrawlDBs found")
+        crawlDbList = []
 
     fullStorage = 0
     activeCrawl = 0
@@ -142,8 +144,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         # dbSize 처리
         size = crawlDb.get('dbSize') or 0
         if float(size) == 0:
-            mysql_db.connectDB(database_name=name)
-            dbsize = mysql_db.showDBSize(name) or [0, 0]
+            dbsize = getFolderSize(os.path.join(crawldata_path, name))
             gb, mb = dbsize
             fullStorage += float(gb)
             crawlDb['dbSize'] = f"{mb} MB" if gb < 1 else f"{gb} GB"
@@ -191,8 +192,7 @@ def getCrawlDbInfo(uid: str):
         raise NotFoundException("CrawlDB not found")
 
     if not crawlDb['dbSize']:
-        mysql_db.connectDB(database_name=crawlDb['name'])
-        dbsize = mysql_db.showDBSize(crawlDb['name'])
+        dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb['name']))
         crawlDb['dbSize'] = dbsize
 
     return JSONResponse(
@@ -206,8 +206,7 @@ def updateCrawlDb(uid: str, dataInfo, error: bool = False):
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
-    mysql_db.connectDB(database_name=crawlDb['name'])
-    dbsize = mysql_db.showDBSize(crawlDb['name'])[0]
+    dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb['name']))[0]
     data_info_dict = dataInfo.model_dump()
 
     if error:
@@ -254,16 +253,21 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
 
     pid = saveOption['pid']
 
-    mysql_db.connectDB(targetDB)
 
     temp_directory = os.path.join(os.path.dirname(__file__), '..', 'temp')
 
     send_message(pid, f"DB에서 테이블 목록을 가져오는 중...")
+    localDbpath = os.path.join(crawldata_path, targetDB)
+    
+    tableList = [
+        f[:-8] for f in os.listdir(localDbpath)
+        if f.endswith('.parquet') and 'info' not in f
+    ]
 
-    tableList = [table for table in sorted(
-        mysql_db.showAllTable(targetDB)) if 'info' not in table]
+    # 정렬: article > statistics > 나머지
     tableList = sorted(tableList, key=lambda x: (
-        'article' not in x, 'statistics' not in x, x))
+        'article' not in x, 'statistics' not in x, x
+    ))
 
     def replace_dates_in_filename(filename, new_start_date, new_end_date):
         pattern = r"_(\d{8})_(\d{8})_"
@@ -279,8 +283,8 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
             parts = name.split('_')
             parts[1] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
         dbname = '_'.join(parts)
-        dbname = dbname.replace('"', '＂')    
-        
+        dbname = dbname.replace('"', '＂')
+
         return dbname
 
     # 현재 시각
@@ -332,13 +336,23 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
 
         send_message(
             pid, f"[{idx+1}/{len(tableList)}] '{edited_tableName}' 처리 중")
+            
+        parquet_path = os.path.join(localDbpath, f"{tableName}.parquet")
+        tableDF = pd.read_parquet(parquet_path)
+        
+        # 날짜 필터링 (dateOption이 'part'일 경우)
+        if saveOption.get('dateOption') == 'part':
+            date_columns = ['Article Date', 'Reply Date', 'Rereply Date']
 
-        if saveOption['dateOption'] == 'part':
-            tableDF = mysql_db.TableToDataframeByDate(
-                tableName, start_date_formed, end_date_formed)
-        else:
-            tableDF = mysql_db.TableToDataframe(tableName)
-
+            for col in date_columns:
+                if col in tableDF.columns:
+                    tableDF[col] = pd.to_datetime(tableDF[col], errors='coerce')
+                    tableDF = tableDF[
+                        (tableDF[col] >= start_date_formed) &
+                        (tableDF[col] <= end_date_formed)
+                    ]
+                    break  # 첫 번째 매칭된 날짜 컬럼 기준으로 필터링 후 종료
+        
         # 단어 필터링 옵션이 켜져있을 때
         if filterOption == True and 'article' in tableName:
             if 'token' not in tableName:
@@ -417,27 +431,38 @@ def previewCrawlDb(uid: str):
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
-    targetDB = crawlDb['name']
-    mysql_db.connectDB(targetDB)
-    tableNameList = mysql_db.showAllTable(targetDB)
+    target_folder = crawlDb['name']  # 이 이름이 곧 디렉토리명
+    base_path = os.path.join(crawldata_path, target_folder)  # 경로에 맞게 수정
 
+    if not os.path.exists(base_path):
+        raise NotFoundException(f"폴더가 존재하지 않습니다: {base_path}")
+
+    # 압축 버퍼 생성
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        for tableName in tableNameList:
-            if 'info' in tableName or 'token' in tableName:
+        for file in os.listdir(base_path):
+            if not file.endswith(".parquet") or "info" in file or "token" in file:
                 continue
-            df_start = mysql_db.TableToDataframe(tableName, ":50")
-            df_end = mysql_db.TableToDataframe(tableName, ":-50")
-            df = pd.concat([df_start, df_end])
-            df = df.drop(columns=['id'])
 
-            # DataFrame을 BytesIO로 Parquet으로 저장
-            df_buffer = BytesIO()
-            df.to_parquet(df_buffer, index=False)
-            df_buffer.seek(0)
+            file_path = os.path.join(base_path, file)
+            try:
+                df = pd.read_parquet(file_path)
+                df_preview = pd.concat([df.head(50), df.tail(50)]).drop_duplicates()
 
-            # ZIP에 저장
-            zip_file.writestr(f"{tableName}.parquet", df_buffer.read())
+                # ID 열 제거 (있을 경우)
+                if 'id' in df_preview.columns:
+                    df_preview = df_preview.drop(columns=['id'])
+
+                # DataFrame을 BytesIO로 저장
+                df_buffer = BytesIO()
+                df_preview.to_parquet(df_buffer, index=False)
+                df_buffer.seek(0)
+
+                table_name = file.replace('.parquet', '')
+                zip_file.writestr(f"{table_name}.parquet", df_buffer.read())
+
+            except Exception as e:
+                print(f"[경고] {file} 처리 실패: {e}")
 
     zip_buffer.seek(0)
     return StreamingResponse(
