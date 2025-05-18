@@ -27,5 +27,3 @@ free_board_db = manager_db["free-board"]
 auth_db = manager_db["auth"]
 
 crawldata_path = os.getenv('CRAWLDATA_PATH')
-
-mysql_db = mySQL(os.getenv("MYSQL_HOST"), os.getenv("MYSQL_USER"), os.getenv("MYSQL_PW"), int(os.getenv("MYSQL_PORT")))

@@ -1,4 +1,4 @@
-from app.db import crawlList_db, mysql_db, crawlLog_db, user_db, crawldata_path
+from app.db import crawlList_db, crawlLog_db, user_db, crawldata_path
 from app.libs.exceptions import ConflictException, NotFoundException
 from app.models.crawl_model import CrawlDbCreateDto, CrawlLogCreateDto, SaveCrawlDbOption
 from app.utils.mongo import clean_doc
