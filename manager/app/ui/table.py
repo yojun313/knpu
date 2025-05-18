@@ -50,7 +50,7 @@ def makeTable(parent, widgetname, data, column, right_click_function=None, popup
 
     for i, row_data in enumerate(data):
         for j, cell_data in enumerate(row_data):
-            item = QTableWidgetItem(cell_data)
+            item = QTableWidgetItem(str(cell_data))
             item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
             item.setToolTip(str(cell_data)+"\n\n더블클릭 시 상세보기")  # Tooltip 설정
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # 수정 불가능 설정
