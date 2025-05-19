@@ -14,7 +14,8 @@ from core.boot import checkNewVersion
 def updateProgram(parent, sc=False):
     try:
         newVersionInfo = checkNewVersion()
-        newVersionName = newVersionInfo[0]
+        if not newVersionInfo:
+            newVersionName = VERSION
         
         def downloadFile(download_url, local_filename):
             response = requests.get(download_url, stream=True)
