@@ -51,8 +51,7 @@ def updateProgram(parent, sc=False):
             import subprocess
             downloadFile_path = os.path.join(
                 'C:/Temp', f"BIGMACLAB_MANAGER_{newVersionName}.exe")
-            downloadFile(f"https://knpu.re.kr/download/BIGMACLAB_MANAGER_{newVersionName}.exe",
-                            downloadFile_path)
+            downloadFile(f"https://knpu.re.kr/download/BIGMACLAB_MANAGER_{newVersionName}.exe", downloadFile_path)
             subprocess.Popen([downloadFile_path], shell=True)
             closeConsole()
             os._exit(0)
@@ -122,7 +121,7 @@ def updateProgram(parent, sc=False):
                     import subprocess
                     downloadFile_path = os.path.join(
                         'C:/Temp', f"BIGMACLAB_MANAGER_{newVersionName}.exe")
-                    downloadFile(f"https://knpu.re.kr:90/download/BIGMACLAB_MANAGER_{newVersionName}.exe",
+                    downloadFile(f"https://knpu.re.kr/download/BIGMACLAB_MANAGER_{newVersionName}.exe",
                                     downloadFile_path)
                     subprocess.Popen([downloadFile_path], shell=True)
                     closeConsole()
