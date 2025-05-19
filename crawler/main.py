@@ -54,7 +54,7 @@ class Crawler(CrawlerModule):
 
         # Computer Info
         self.scrapdata_path = self.pathFinder()['scrapdata_path']
-        self.crawllog_path  = os.path.join(self.pathFinder()['crawler_folder_path'], 'CrawlLog')
+        self.crawllog_path  = os.path.join(self.pathFinder()['crawler_folder_path'], 'crawllog')
         self.crawlcom       = self.pathFinder()['computer_name']
         self.api_url        = "http://localhost:8000/api"
         self.api_url        = "https://manager.knpu.re.kr/api"
