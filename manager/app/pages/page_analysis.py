@@ -856,8 +856,8 @@ class Manager_Analysis:
             os.makedirs(new_signal_folder, exist_ok=True)
 
             # 그래프 Statistics csv 복사
-            copy_csv(os.path.join(result_directory, "Graph", "DOD_statistics.csv"),
-                     os.path.join(new_graph_folder, "DOD_statistics.csv"))
+            copy_csv(os.path.join(result_directory, "Graph", "DOV_statistics.csv"),
+                     os.path.join(new_graph_folder, "DOV_statistics.csv"))
             copy_csv(os.path.join(result_directory, "Graph", "DOD_statistics.csv"),
                      os.path.join(new_graph_folder, "DOD_statistics.csv"))
 
