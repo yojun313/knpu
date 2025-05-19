@@ -35,7 +35,7 @@ from ui.finder import openFileExplorer
 
 from services.auth import checkPassword
 from services.crawldb import updateDB
-from services.api import Request, api_headers
+from services.api import Request, get_api_headers
 from services.logging import userLogging, programBugLog
 
 from core.setting import get_setting, set_setting
@@ -390,7 +390,7 @@ class Manager_Database:
                 download_url,
                 json=option,
                 stream=True,
-                headers=api_headers,
+                headers=get_api_headers(),
                 timeout=3600
             )
             response.raise_for_status()
