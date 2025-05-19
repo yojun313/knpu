@@ -2,15 +2,19 @@ import requests
 from core.setting import set_setting, get_setting
 from config import MANAGER_SERVER_API
 
-token = get_setting("auth_token")
-api_headers = {
-    "Authorization": f"Bearer {token}",
-}
+def get_api_headers():
+    """
+    Returns the API headers with the current token.
+    """
+    token = get_setting("auth_token")
+    return {
+        "Authorization": f"Bearer {token}"
+    }
 
 def Request(method, url, **kwargs):
     try:
         full_url = f"{MANAGER_SERVER_API}/{url.lstrip('/')}"
-        kwargs["headers"] = api_headers
+        kwargs["headers"] = get_api_headers()
 
         # 요청 메서드 분기
         method = method.lower()

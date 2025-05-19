@@ -29,7 +29,7 @@ import requests
 from libs.viewer import open_viewer, close_viewer, register_process
 from core.shortcut import resetShortcuts
 from core.setting import get_setting
-from services.api import api_headers
+from services.api import get_api_headers
 from services.logging import userLogging, programBugLog
 from services.llm import generateLLM
 from services.csv import readCSV
@@ -605,7 +605,7 @@ class Manager_Analysis:
                 download_url,
                 files={"token_file": open(selected_directory[0], "rb")},
                 data={"option": json.dumps(option)},
-                headers=api_headers,
+                headers=get_api_headers(),
                 timeout=3600
             )
 
