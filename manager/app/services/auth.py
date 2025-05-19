@@ -7,7 +7,7 @@ import requests
 
 from config import MANAGER_SERVER_API
 from ui.status import printStatus
-from services.api import api_headers
+from services.api import get_api_headers
 from core.setting import get_setting, set_setting
 
 def checkPassword(parent, admin=False, string=""):
@@ -44,7 +44,7 @@ def loginProgram(parent):
 
         if saved_token:
             res = requests.get(
-                f"{MANAGER_SERVER_API}/auth/login", headers=api_headers)
+                f"{MANAGER_SERVER_API}/auth/login", headers=get_api_headers())
             if res.status_code == 200:
                 userData = res.json()['user']
                 parent.user = userData['name']
