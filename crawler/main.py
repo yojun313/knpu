@@ -368,26 +368,31 @@ class Crawler(CrawlerModule):
         df_new.to_csv(file_path, mode='a', header=write_header, index=False)
     
     def convertToParquet(self, folder_path):
-        if not os.path.exists(folder_path):
-            print(f"경로가 존재하지 않습니다: {folder_path}")
-            return
+        try:
+            if not os.path.exists(folder_path):
+                print(f"경로가 존재하지 않습니다: {folder_path}")
+                return
 
-        file_list = os.listdir(folder_path)
-        csv_files = [f for f in file_list if f.lower().endswith('.csv')]
+            file_list = os.listdir(folder_path)
+            csv_files = [f for f in file_list if f.lower().endswith('.csv')]
 
-        if not csv_files:
-            print("CSV 파일이 없습니다.")
-            return
+            if not csv_files:
+                print("CSV 파일이 없습니다.")
+                return
 
-        for csv_file in csv_files:
-            csv_path = os.path.join(folder_path, csv_file)
-            parquet_path = os.path.join(folder_path, csv_file.rsplit('.', 1)[0] + '.parquet')
-            try:
-                df = pd.read_csv(csv_path)
-                df.to_parquet(parquet_path, index=False)
-                os.remove(csv_path)  # ✅ 변환 성공 후 원본 CSV 삭제
-            except Exception as e:
-                print(f"변환 실패: {csv_file} → 오류: {e}")
+            for csv_file in csv_files:
+                csv_path = os.path.join(folder_path, csv_file)
+                parquet_path = os.path.join(folder_path, csv_file.rsplit('.', 1)[0] + '.parquet')
+                try:
+                    df = pd.read_csv(csv_path)
+                    df.to_parquet(parquet_path, index=False)
+                    os.remove(csv_path)  # ✅ 변환 성공 후 원본 CSV 삭제
+                except Exception as e:
+                    print(f"변환 실패: {csv_file} → 오류: {e}")
+        except Exception as e:
+            error_msg = self.error_detector()
+            error_data = self.error_dump(1002, error_msg, self.currentDate_str)
+            self.ReturnChecker(error_data)
     
     def Naver_News_Crawler(self, option):
 
