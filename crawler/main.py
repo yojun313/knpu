@@ -174,7 +174,7 @@ class Crawler(CrawlerModule):
         self.rereplyDB    = self.DBname + '_rereply'
         
         try:
-            os.mkdir(self.DBpath)
+            os.makedirs(self.DBpath)
             log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'),'w+')
 
             self.msg = (
