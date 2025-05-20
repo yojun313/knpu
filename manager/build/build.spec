@@ -22,7 +22,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,  # 이 부분 추가하여 EXE에서 바이너리를 제외
-    name='BIGMACLAB_MANAGER',
+    name='MANAGER',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -38,5 +38,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name='BIGMACLAB_MANAGER'
+    name='MANAGER'
 )
