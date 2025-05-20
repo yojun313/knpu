@@ -99,7 +99,7 @@ class Manager_Setting(QDialog):
         default_font = QFont(os.path.join(os.path.dirname(
             __file__), '..', 'assets', 'malgun.ttf'))  # 폰트 이름과 크기 지정
         self.setFont(default_font)
-        
+
         self.category_list.currentRowChanged.connect(self.display_category)
         self.category_list.setCurrentRow(0)  # 첫 번째 항목을 기본 선택
 
@@ -338,7 +338,7 @@ class Manager_Setting(QDialog):
                 self.api_key_input.setDisabled(True)  # 입력창 비활성화
                 self.save_api_key_button.setEnabled(False)  # 저장 버튼 비활성화
                 self.edit_api_key_button.setEnabled(True)  # 수정 버튼 활성화
-                
+
                 set_setting('GPT_Key', api_key)  # 설정에 저장
                 QMessageBox.information(self, "성공", "API Key가 저장되었습니다.")
             else:
@@ -656,7 +656,7 @@ class Manager_Setting(QDialog):
 
         # 첫 번째 하이퍼링크
         link1_label = QLabel(
-            '<a href="https://knpu.re.kr/tool">BIGMACLAB MANAGER</a>')
+            '<a href="https://knpu.re.kr/tool">MANAGER</a>')
         link1_label.setOpenExternalLinks(True)
         link1_label.setAlignment(Qt.AlignLeft)
 
