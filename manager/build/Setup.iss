@@ -37,6 +37,7 @@ DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 OutputBaseFilename=MANAGER_{#MyAppVersion}
+OutputDir="D:\BIGMACLAB\MANAGER\Output"
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -45,7 +46,6 @@ DisableWelcomePage=true
 DisableDirPage=true
 DisableReadyPage=true
 DisableFinishedPage=true
-[Setup]
 SetupIconFile="C:\GitHub\BIGMACLAB\manager\app\assets\download_icon.ico"
 
 
