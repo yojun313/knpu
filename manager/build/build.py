@@ -138,11 +138,10 @@ if __name__ == "__main__":
         console.print("[green]✅ Inno Setup 완료 및 임시 파일 삭제")
 
         # Upload
-        exe_path = os.path.join(
-            output_directory, f"MANAGER_{version}", f"MANAGER_{version}.exe")
+        filename = f"MANAGER_{version}.exe"
         console.print(
-            Panel.fit(f"[bold blue]☁️ Uploading {exe_path}", title="파일 업로드"))
-        upload_file(exe_path)
+            Panel.fit(f"[bold blue]☁️ Uploading {filename}", title="파일 업로드"))
+        upload_file(filename)
         console.print("[green]✅ 업로드 완료")
 
         console.rule("[bold green]🎉 모든 작업 완료")
