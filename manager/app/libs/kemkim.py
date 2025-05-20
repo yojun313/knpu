@@ -1,3 +1,14 @@
+from ui.status import printStatus
+from core.setting import get_setting
+import gc
+from tqdm import tqdm
+import platform
+import re
+import warnings
+import traceback
+import csv
+import io
+import numpy as np
 import sys
 import pandas as pd
 import os
@@ -7,17 +18,6 @@ from collections import Counter
 from datetime import datetime
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
-import numpy as np
-import io
-import csv
-import traceback
-import warnings
-import re
-import platform
-from tqdm import tqdm
-import gc
-from core.setting import get_setting
-from ui.status import printStatus
 
 warnings.filterwarnings("ignore")
 
@@ -30,33 +30,35 @@ elif platform.system() == 'Windows':  # Windows
 # 폰트 설정 후 음수 기호가 깨지는 것을 방지
 plt.rcParams['axes.unicode_minus'] = False
 
+
 class KimKem:
     def __init__(self,
                  parent=None,
-                 token_data=None, 
-                 csv_name=None, 
-                 save_path=None, 
+                 token_data=None,
+                 csv_name=None,
+                 save_path=None,
                  startdate=None,
                  enddate=None,
                  period=None,
-                 topword=None, 
-                 weight=None, 
-                 graph_wordcnt=None, 
-                 split_option=None, 
+                 topword=None,
+                 weight=None,
+                 graph_wordcnt=None,
+                 split_option=None,
                  split_custom=None,
                  filter_option=None,
-                 trace_standard = None,
-                 ani_option = None,
+                 trace_standard=None,
+                 ani_option=None,
                  exception_word_list=[],
-                 exception_filename = 'N',
-                 rekemkim = False):
+                 exception_filename='N',
+                 rekemkim=False):
         self.exception_word_list = exception_word_list
         self.main = parent
         if rekemkim == False:
             self.csv_name = csv_name
             self.save_path = save_path
             self.token_data = token_data
-            self.folder_name = csv_name.replace('.csv', '').replace('token_', '')
+            self.folder_name = csv_name.replace(
+                '.csv', '').replace('token_', '')
             self.startdate = startdate
             self.enddate = enddate
             self.period = period
@@ -82,17 +84,19 @@ class KimKem:
                     self.textColumn_name = column
                 elif 'Date' in column:
                     self.dateColumn_name = column
-            
+
             # Step 1: 데이터 분할 및 초기화
-            self.period_divided_group = self.divide_period(self.token_data, period)
+            self.period_divided_group = self.divide_period(
+                self.token_data, period)
             period_list = list(self.period_divided_group.groups.keys())
-            
+
             if (len(period_list) - 1) * self.weight >= 1:
                 self.write_status("시간 가중치 오류")
                 self.weighterror = True
 
             else:
-                self.folder_name = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startdate}~{self.enddate}_{period}', self.folder_name)
+                self.folder_name = re.sub(
+                    r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startdate}~{self.enddate}_{period}', self.folder_name)
                 self.kimkem_folder_path = os.path.join(
                     self.save_path,
                     f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
@@ -101,23 +105,33 @@ class KimKem:
                 self.write_status()
 
     def _save_final_signals(self, DoV_signal, DoD_signal, result_folder):
-        DoV_signal_df = pd.DataFrame([(k, v) for k, v in DoV_signal.items()], columns=['signal', 'word'])
-        DoV_signal_df.to_csv(os.path.join(result_folder, "DoV_signal.csv"), index=False, encoding='utf-8-sig')
+        DoV_signal_df = pd.DataFrame(
+            [(k, v) for k, v in DoV_signal.items()], columns=['signal', 'word'])
+        DoV_signal_df.to_csv(os.path.join(
+            result_folder, "DoV_signal.csv"), index=False, encoding='utf-8-sig')
 
-        DoD_signal_df = pd.DataFrame([(k, v) for k, v in DoD_signal.items()], columns=['signal', 'word'])
-        DoD_signal_df.to_csv(os.path.join(result_folder, "DoD_signal.csv"), index=False, encoding='utf-8-sig')
+        DoD_signal_df = pd.DataFrame(
+            [(k, v) for k, v in DoD_signal.items()], columns=['signal', 'word'])
+        DoD_signal_df.to_csv(os.path.join(
+            result_folder, "DoD_signal.csv"), index=False, encoding='utf-8-sig')
 
         final_signal = self._get_communal_signals(DoV_signal, DoD_signal)
-        final_signal_df = pd.DataFrame([(k, v) for k, v in final_signal.items()], columns=['signal', 'word'])
-        final_signal_df.to_csv(os.path.join(result_folder, "Final_signal.csv"), index=False, encoding='utf-8-sig')
-        
+        final_signal_df = pd.DataFrame(
+            [(k, v) for k, v in final_signal.items()], columns=['signal', 'word'])
+        final_signal_df.to_csv(os.path.join(
+            result_folder, "Final_signal.csv"), index=False, encoding='utf-8-sig')
+
         return final_signal
 
     def _get_communal_signals(self, DoV_signal, DoD_signal):
-        communal_strong_signal = [word for word in DoV_signal['strong_signal'] if word in DoD_signal['strong_signal']]
-        communal_weak_signal = [word for word in DoV_signal['weak_signal'] if word in DoD_signal['weak_signal']]
-        communal_latent_signal = [word for word in DoV_signal['latent_signal'] if word in DoD_signal['latent_signal']]
-        communal_well_known_signal = [word for word in DoV_signal['well_known_signal'] if word in DoD_signal['well_known_signal']]
+        communal_strong_signal = [
+            word for word in DoV_signal['strong_signal'] if word in DoD_signal['strong_signal']]
+        communal_weak_signal = [
+            word for word in DoV_signal['weak_signal'] if word in DoD_signal['weak_signal']]
+        communal_latent_signal = [
+            word for word in DoV_signal['latent_signal'] if word in DoD_signal['latent_signal']]
+        communal_well_known_signal = [
+            word for word in DoV_signal['well_known_signal'] if word in DoD_signal['well_known_signal']]
         return {
             'strong_signal': communal_strong_signal,
             'weak_signal': communal_weak_signal,
@@ -133,7 +147,8 @@ class KimKem:
             return None  # n이 0이거나 음수일 경우 None 반환
 
         sorted_lst = sorted(lst, reverse=True)  # 내림차순으로 정렬
-        threshold_index = max(0, int(len(sorted_lst) * n / 100) - 1)  # n%에 해당하는 인덱스 계산
+        threshold_index = max(
+            0, int(len(sorted_lst) * n / 100) - 1)  # n%에 해당하는 인덱스 계산
 
         return sorted_lst[threshold_index]  # 상위 n%에 가장 가까운 요소 반환
 
@@ -144,7 +159,8 @@ class KimKem:
             mean = sum(data) / n
             std_dev = (sum((x - mean) ** 2 for x in data) / n) ** 0.5
 
-            skewness = (n / ((n - 1) * (n - 2))) * sum(((x - mean) / std_dev) ** 3 for x in data)
+            skewness = (n / ((n - 1) * (n - 2))) * \
+                sum(((x - mean) / std_dev) ** 3 for x in data)
             return round(skewness, 3)
 
         def calculate_kurtosis(data):
@@ -158,7 +174,7 @@ class KimKem:
 
         # 평균 계산
         mean_value = round(np.mean(data), 3)
-        
+
         # 중위값 계산
         median_value = round(np.median(data), 3)
 
@@ -168,7 +184,7 @@ class KimKem:
         except:
             skewness_value = 0
             kurtosis_value = 0
-        
+
          # 데이터를 내림차순으로 정렬
         sorted_data = np.sort(data)[::-1]
 
@@ -181,12 +197,13 @@ class KimKem:
         }
 
         # 10분위값 계산 (내림차순 데이터 기준)
-        deciles = {f"{i*10}%": round(np.percentile(sorted_data, i*10), 3) for i in range(1, 10)}
+        deciles = {
+            f"{i*10}%": round(np.percentile(sorted_data, i*10), 3) for i in range(1, 10)}
         # 딕셔너리에 10분위값 추가
         result.update(deciles)
 
         return result
-    
+
     def DoV_draw_graph(self, avg_DoV_increase_rate=None, avg_term_frequency=None, graph_folder=None, final_signal_list=[], graph_name='', redraw_option=False, coordinates=False, graph_size=None, eng_keyword_list=[]):
         if redraw_option == False:
             x_data = self.calculate_statistics(
@@ -293,9 +310,10 @@ class KimKem:
         plt.savefig(os.path.join(graph_folder, graph_name),
                     bbox_inches='tight')
         plt.close()
-        
+
         coordinates_df = pd.DataFrame(
-            [(k, f"({float(v[0])}, {float(v[1])})") for k, v in coordinates.items()],
+            [(k, f"({float(v[0])}, {float(v[1])})")
+             for k, v in coordinates.items()],
             columns=['key', 'value']
         )
         coordinates_df.to_csv(os.path.join(
@@ -411,7 +429,8 @@ class KimKem:
         plt.close()
 
         coordinates_df = pd.DataFrame(
-            [(k, f"({float(v[0])}, {float(v[1])})") for k, v in coordinates.items()],
+            [(k, f"({float(v[0])}, {float(v[1])})")
+             for k, v in coordinates.items()],
             columns=['key', 'value']
         )
         coordinates_df.to_csv(os.path.join(
@@ -420,11 +439,12 @@ class KimKem:
         return {'strong_signal': strong_signal, "weak_signal": weak_signal, "latent_signal": latent_signal, "well_known_signal": well_known_signal}, coordinates
 
 
-if __name__=='__main__':
-    token_data = pd.read_csv("/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/token_data/token_navernews_바이오의료_20100101_20240731_0815_2036_article.csv", low_memory=False, encoding='utf-8-sig')
-    kimkem_obj = KimKem(token_data=token_data, 
-                        csv_name='navernews_바이오의료_20100101_20240731_0815_2036_article.csv', 
-                        save_path='C:/BIGMACLAB_MANAGER/바이오의료 KIMKEM 데이터',
+if __name__ == '__main__':
+    token_data = pd.read_csv(
+        "/Users/yojunsmacbookprp/Desktop/MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/token_data/token_navernews_바이오의료_20100101_20240731_0815_2036_article.csv", low_memory=False, encoding='utf-8-sig')
+    kimkem_obj = KimKem(token_data=token_data,
+                        csv_name='navernews_바이오의료_20100101_20240731_0815_2036_article.csv',
+                        save_path='C:/MANAGER/바이오의료 KIMKEM 데이터',
                         startdate=20240301,
                         enddate=20240331,
                         period='1d',
@@ -434,5 +454,5 @@ if __name__=='__main__':
                         split_option='평균(Mean)',
                         ani_option=False,
                         exception_word_list=[]
-                )
+                        )
     kimkem_obj.make_kimkem()

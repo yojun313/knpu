@@ -10,14 +10,18 @@ ACCESS_KEY_ID = os.getenv('ACCESS_KEY_ID')
 SECRET_ACCESS_KEY = os.getenv('SECRET_ACCESS_KEY')
 ACCOUNT_ID = os.getenv('ACCOUNT_ID')
 BUCKET_NAME = os.getenv('BUCKET_NAME')
-LOCAL_FOLDER = "D:/BIGMACLAB/BIGMACLAB_MANAGER/Output"  # 파일이 있는 경로
+LOCAL_FOLDER = "D:/BIGMACLAB/MANAGER/Output"  # 파일이 있는 경로
 R2_ENDPOINT = f"https://{ACCOUNT_ID}.r2.cloudflarestorage.com"
 
 # 버전 문자열을 비교 가능한 튜플로 변환 (예: '2.7.1' → (2, 7, 1))
+
+
 def parse_version(version_str):
     return tuple(map(int, version_str.split(".")))
 
 # 폴더 내 가장 최신 버전 파일 찾기
+
+
 def find_latest_version_file():
     version_pattern = re.compile(r"BIGMACLAB_MANAGER_(\d+\.\d+\.\d+)\.exe")
     latest_file = None
@@ -32,6 +36,7 @@ def find_latest_version_file():
                 latest_file = filename
 
     return latest_file
+
 
 def upload_file(filename):
     local_path = os.path.join(LOCAL_FOLDER, filename)
@@ -52,9 +57,11 @@ def upload_file(filename):
     try:
         print(f"[⏫] 업로드 중: {filename} → R2 버킷 '{BUCKET_NAME}'")
         client.upload_file(local_path, BUCKET_NAME, filename)
-        print(f"[✅] 업로드 완료: https://{ACCOUNT_ID}.r2.cloudflarestorage.com/{BUCKET_NAME}/{filename}")
+        print(
+            f"[✅] 업로드 완료: https://{ACCOUNT_ID}.r2.cloudflarestorage.com/{BUCKET_NAME}/{filename}")
     except Exception as e:
         print(f"[❌] 업로드 실패: {e}")
+
 
 # 메인 실행
 if __name__ == "__main__":

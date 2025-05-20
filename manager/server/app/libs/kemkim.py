@@ -32,6 +32,7 @@ if platform.system() == 'Linux':
     plt.rcParams['font.family'] = font_prop.get_name()
     plt.rcParams['axes.unicode_minus'] = False  # 음수 기호 깨짐 방지
 
+
 class KimKem:
     def __init__(self,
                  pid=None,
@@ -207,16 +208,18 @@ class KimKem:
                      trace_DoD_dict, tf_counts, df_counts)
                     for index, period in enumerate(self.period_list)
                 ]
+
                 def kill_child_processes(parent_pid=os.getpid(), sig=signal.SIGTERM):
                     parent = psutil.Process(parent_pid)
                     for child in parent.children(recursive=True):
                         print(f"Killing child process: {child.pid}")
                         child.send_signal(sig)
-                
+
                 executor = ProcessPoolExecutor(max_workers=os.cpu_count())
 
                 try:
-                    futures = [executor.submit(self._process_period_wrapper, args) for args in args_list]
+                    futures = [executor.submit(
+                        self._process_period_wrapper, args) for args in args_list]
                     results = [fut.result() for fut in as_completed(futures)]
                 finally:
                     executor.shutdown(wait=True)
@@ -1278,9 +1281,10 @@ class KimKem:
         plt.savefig(os.path.join(graph_folder, graph_name),
                     bbox_inches='tight')
         plt.close()
-        
+
         coordinates_df = pd.DataFrame(
-            [(k, f"({float(v[0])}, {float(v[1])})") for k, v in coordinates.items()],
+            [(k, f"({float(v[0])}, {float(v[1])})")
+             for k, v in coordinates.items()],
             columns=['key', 'value']
         )
         coordinates_df.to_csv(os.path.join(
@@ -1396,7 +1400,8 @@ class KimKem:
         plt.close()
 
         coordinates_df = pd.DataFrame(
-            [(k, f"({float(v[0])}, {float(v[1])})") for k, v in coordinates.items()],
+            [(k, f"({float(v[0])}, {float(v[1])})")
+             for k, v in coordinates.items()],
             columns=['key', 'value']
         )
         coordinates_df.to_csv(os.path.join(
@@ -1407,10 +1412,10 @@ class KimKem:
 
 if __name__ == '__main__':
     token_data = pd.read_csv(
-        "/Users/yojunsmacbookprp/Desktop/BIGMACLAB_MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/token_data/token_navernews_바이오의료_20100101_20240731_0815_2036_article.csv", low_memory=False, encoding='utf-8-sig')
+        "/Users/yojunsmacbookprp/Desktop/MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/token_data/token_navernews_바이오의료_20100101_20240731_0815_2036_article.csv", low_memory=False, encoding='utf-8-sig')
     kimkem_obj = KimKem(token_data=token_data,
                         csv_name='navernews_바이오의료_20100101_20240731_0815_2036_article.csv',
-                        save_path='C:/BIGMACLAB_MANAGER/바이오의료 KIMKEM 데이터',
+                        save_path='C:/MANAGER/바이오의료 KIMKEM 데이터',
                         startdate=20240301,
                         enddate=20240331,
                         period='1d',

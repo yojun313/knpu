@@ -1,5 +1,5 @@
 """
-BIGMACLAB_MANAGER · persistent settings helper
+MANAGER · persistent settings helper
 ----------------------------------------------
 
 - Qt 의 `QSettings` 래퍼
@@ -12,7 +12,7 @@ from typing import Any, Mapping
 from PyQt5.QtCore import QSettings
 
 # ── 1) Persistent store 객체 ───────────────────────────────────────────────────
-_qsettings = QSettings("BIGMACLAB", "BIGMACLAB_MANAGER")
+_qsettings = QSettings("BIGMACLAB", "MANAGER")
 
 # ── 2) 디폴트 값 정의 ─────────────────────────────────────────────────────────
 _DEFAULTS: dict[str, Any] = {
