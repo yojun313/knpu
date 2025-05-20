@@ -29,7 +29,7 @@ def openConsole(msg=''):
         ctypes.windll.kernel32.SetConsoleWindowInfo(
             hConsole, True, ctypes.byref(rect))
 
-        print("[ BIGMACLAB MANAGER ]")
+        print("[ MANAGER ]")
         print(f'\n< {msg} >\n')  # 테스트 출력
     except Exception as e:
         sys.stdout = original_stdout  # 에러 발생 시 stdout 복구
