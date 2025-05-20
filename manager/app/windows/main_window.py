@@ -55,7 +55,6 @@ class MainWindow(QMainWindow):
             self.resize(1400, 1000)
             self.installEventFilter(self)
 
-            
             try:
                 self.listWidget.setCurrentRow(0)
                 if get_setting('BootTerminal') == 'on':
@@ -66,8 +65,9 @@ class MainWindow(QMainWindow):
 
                 if platform.system() == "Windows":
                     localAppdataPath = os.getenv("LOCALAPPDATA")
-                    self.programDirectory = os.path.join(localAppdataPath, "MANAGER")
-                    
+                    self.programDirectory = os.path.join(
+                        localAppdataPath, "MANAGER")
+
                     documents_path = Path().home() / "Documents" / "MANAGER"
                     if not documents_path.exists():
                         documents_path.mkdir(parents=True, exist_ok=True)
@@ -101,7 +101,6 @@ class MainWindow(QMainWindow):
                     updateProgram(self)
                 print("Done")
 
-
                 print("\nIII. Loading Data... ", end='')
                 self.splashDialog.updateStatus("Loading Data")
 
@@ -128,10 +127,11 @@ class MainWindow(QMainWindow):
                 printStatus(self, f"{self.fullStorage} GB / 2 TB")
 
                 # After Booting
-                
+
                 newpost = checkNewPost(self)
                 if newpost == True:
-                    reply = QMessageBox.question(self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                    reply = QMessageBox.question(
+                        self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                     if reply == QMessageBox.Yes:
                         self.managerBoardObj.viewPost(selectedRow=0)
 
@@ -199,7 +199,8 @@ class MainWindow(QMainWindow):
             if dialog.exec_() == QDialog.Accepted:
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
                 printStatus(self, "설정 반영 중...")
-                QApplication.instance().setStyleSheet(theme_option[get_setting('Theme')])
+                QApplication.instance().setStyleSheet(
+                    theme_option[get_setting('Theme')])
                 updateTableStyleHtml(self)
 
                 self.managerDatabaseObj.refreshDB()
@@ -212,7 +213,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         # 프로그램 종료 시 실행할 코드
         reply = QMessageBox.question(self, 'Shutdown', "프로그램을 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
-                                        QMessageBox.Yes)
+                                     QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             try:
                 userLogging('Shutdown')
@@ -242,7 +243,7 @@ class MainWindow(QMainWindow):
                         os.remove(file_path)  # 파일 삭제
                         print(f"Deleted file: {file_path}")
 
-            pattern = re.compile(r"BIGMACLAB_MANAGER_(\d+\.\d+\.\d+)\.exe")
+            pattern = re.compile(r"MANAGER_(\d+\.\d+\.\d+)\.exe")
             exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER')
             currentVersion = version.Version(VERSION)
 
@@ -258,5 +259,3 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             print(e)
-    
-    

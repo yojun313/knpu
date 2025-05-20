@@ -11,12 +11,13 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QHBoxLayo
 from PyQt5.QtCore import Qt
 from core.boot import checkNewVersion
 
+
 def updateProgram(parent, sc=False):
     try:
         newVersionInfo = checkNewVersion()
         if not newVersionInfo:
             newVersionName = VERSION
-        
+
         def downloadFile(download_url, local_filename):
             response = requests.get(download_url, stream=True)
             totalSize = int(response.headers.get(
@@ -50,18 +51,18 @@ def updateProgram(parent, sc=False):
             printStatus(parent, "버전 업데이트 중...")
             import subprocess
             downloadFile_path = os.path.join(
-                'C:/Temp', f"BIGMACLAB_MANAGER_{newVersionName}.exe")
-            downloadFile(f"https://knpu.re.kr/download/BIGMACLAB_MANAGER_{newVersionName}.exe", downloadFile_path)
+                'C:/Temp', f"MANAGER_{newVersionName}.exe")
+            downloadFile(
+                f"https://knpu.re.kr/download/MANAGER_{newVersionName}.exe", downloadFile_path)
             subprocess.Popen([downloadFile_path], shell=True)
             closeConsole()
             os._exit(0)
-            
-        
+
         if newVersionInfo:
             if get_setting('AutoUpdate') == 'auto':
                 parent.closeBootscreen()
                 update_process()
-            
+
             version_info_html = parent.style_html + f"""
                 <table>
                     <tr><th>Item</th><th>Details</th></tr>
@@ -114,15 +115,15 @@ def updateProgram(parent, sc=False):
         else:
             if sc == True:
                 reply = QMessageBox.question(parent, "Reinstall", "현재 버전이 최신 버전입니다\n\n현재 버전을 재설치하시겠습니까?",
-                                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     printStatus(parent, "버전 재설치 중...")
                     openConsole("Version Reinstall Process")
                     import subprocess
                     downloadFile_path = os.path.join(
-                        'C:/Temp', f"BIGMACLAB_MANAGER_{newVersionName}.exe")
-                    downloadFile(f"https://knpu.re.kr/download/BIGMACLAB_MANAGER_{newVersionName}.exe",
-                                    downloadFile_path)
+                        'C:/Temp', f"MANAGER_{newVersionName}.exe")
+                    downloadFile(f"https://knpu.re.kr/download/MANAGER_{newVersionName}.exe",
+                                 downloadFile_path)
                     subprocess.Popen([downloadFile_path], shell=True)
                     closeConsole()
                     os._exit(0)
