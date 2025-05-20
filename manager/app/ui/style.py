@@ -3,7 +3,7 @@ from core.setting import get_setting
 # 전역 스타일시트 설정
 light_style_sheet = """
     QMainWindow {
-        background-color: #f7f7f7;
+        background-color: #ffffff;
         font-size: 14px;
     }
     QPushButton {
@@ -76,7 +76,7 @@ light_style_sheet = """
     }
     QTabWidget::pane {
         border-top: 2px solid #bdc3c7;
-        background-color: #f7f7f7;
+        background-color: #ffffff;
     }
     QTabWidget::tab-bar {
         left: 5px;
@@ -85,7 +85,7 @@ light_style_sheet = """
         background: #2c3e50;
         color: white;
         border: 1px solid #bdc3c7;
-        border-bottom-color: #f7f7f7;
+        border-bottom-color: #ffffff;
         border-radius: 4px;
         border-top-right-radius: 4px;
         padding: 10px;
@@ -98,7 +98,7 @@ light_style_sheet = """
     }
     QTabBar::tab:selected {
         border-color: #9B9B9B;
-        border-bottom-color: #f7f7f7;
+        border-bottom-color: #ffffff;
     }
     QFileDialog {
         background-color: #ffffff;
@@ -575,6 +575,7 @@ theme_option = {
     'default': light_style_sheet,
     'dark': dark_style_sheet
 }
+
 
 def updateTableStyleHtml(parent):
     if get_setting('Theme') != 'default':
