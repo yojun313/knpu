@@ -367,6 +367,26 @@ class Crawler(CrawlerModule):
     def addToCSV(self, tableName, data_list, columns):
         df_new = pd.DataFrame(data_list, columns=columns)
         file_path = os.path.join(self.DBpath, f"{tableName}.csv")
+        
+        if not os.path.exists(file_path):
+            self.running = False
+            print('\rStopped by BIGMACLAB MANAGER PROGRAM', end='')
+
+            log = open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'a')
+            log.write(f"\n\nDB Check --> {datetime.fromtimestamp(self.startTime).strftime('%Y%m/%d %H:%M')}에 중단됨")
+            log.close()
+
+            msg_text = (
+                "[ CRAWLER STOPPED ]\n\n"
+                f"Object DB : {self.DBname}\n\n"
+                f"DB 저장소 삭제 또는 인식 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+                f"의도된 크롤링 중단이 아니라면 Admin에게 연락 부탁드립니다"
+            )
+            self.sendPushOver(msg_text, user_key=self.pushoverKey)
+
+            self.localDBRemover()
+            sys.exit()
+            
 
         write_header = not os.path.exists(file_path)
         df_new.to_csv(file_path, mode='a', header=write_header, index=False)
