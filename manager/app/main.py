@@ -26,7 +26,7 @@ def build_app():
     QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 
     app = QApplication([])
-    app.setApplicationName("BIGMACLAB_MANAGER")
+    app.setApplicationName("MANAGER")
     app.setApplicationVersion(VERSION)
     app.setOrganizationName("BIGMACLAB")
 
@@ -76,7 +76,7 @@ def main():
     splash = SplashDialog(version=VERSION, theme=theme)
     splash.show()
     splash.updateStatus("Loading System Libraries")
-    
+
     from windows.main_window import MainWindow
     window = MainWindow(splash)
     sys.exit(app.exec_())
