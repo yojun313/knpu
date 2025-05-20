@@ -4,6 +4,7 @@ import socket
 from datetime import datetime
 from packaging.version import Version
 import shutil
+import re
 
 def create_spec_file(original_spec_file, new_spec_file, exe_name):
     with open(original_spec_file, 'r', encoding='utf-8') as file:
@@ -77,3 +78,32 @@ if __name__ == "__main__":
         current_time = now.strftime("%Y-%m-%d %H:%M")
         currentVersion = version
         print(f"{current_time} BIGMACLAB_MANAGER_{version} built successfully\n")
+        
+        
+        # inno setup
+        
+        iss_path = os.path.join(os.path.dirname(__file__), 'setup.iss')
+        with open(iss_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+
+        updated_lines = []
+        pattern = r'^#define\s+MyAppVersion\s+"[\d.]+"'
+
+        for line in lines:
+            if re.match(pattern, line):
+                new_line = f'#define MyAppVersion "{version}"\n'
+                print(f"🔁 버전 변경: {line.strip()} → {new_line.strip()}")
+                updated_lines.append(new_line)
+            else:
+                updated_lines.append(line)
+
+        with open(os.path.join(os.path.dirname(__file__), 'setup_temp.iss'), 'w', encoding='utf-8') as f:
+            f.writelines(updated_lines)
+            
+        subprocess.run([r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe", "D:/BIGMACLAB/BIGMACLAB_MANAGER/Setup.iss"])
+        
+        from upload import upload_file
+        upload_file(f"BIGMACLAB_MANAGER_{version}.exe")
+
+        
+        
