@@ -78,7 +78,7 @@ if __name__ == "__main__":
     iss_path = os.path.join(os.path.dirname(__file__), 'setup.iss')
 
     while True:
-        console.rule("[bold green]🚀 BIGMACLAB MANAGER 빌드 시스템 시작")
+        console.rule("[bold green]🚀 MANAGER 빌드 시스템 시작")
         version = input("📦 Enter the program version ('r'=reuse, 'n'=next): ")
 
         if version == 'r':
