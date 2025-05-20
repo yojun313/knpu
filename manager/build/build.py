@@ -97,11 +97,16 @@ if __name__ == "__main__":
             else:
                 updated_lines.append(line)
 
-        with open(os.path.join(os.path.dirname(__file__), 'setup_temp.iss'), 'w', encoding='utf-8') as f:
+        temp_iss_path = os.path.join(os.path.dirname(__file__), 'setup_temp.iss')
+        with open(temp_iss_path, 'w', encoding='utf-8') as f:
             f.writelines(updated_lines)
+
+        # temp로 생성된 파일을 실행
+        subprocess.run([r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe", temp_iss_path])
+
+        # 사용 후 cleanup
+        os.remove(temp_iss_path)
             
-        subprocess.run([r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe", "D:/BIGMACLAB/BIGMACLAB_MANAGER/Setup.iss"])
-        
         from upload import upload_file
         upload_file(f"BIGMACLAB_MANAGER_{version}.exe")
 
