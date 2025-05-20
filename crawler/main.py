@@ -256,6 +256,10 @@ class Crawler(CrawlerModule):
                 token_df = self.tokenization(data_df)
 
                 # Step 5: 저장 (선택 사항: parquet 저장 or print only)
+                for col in token_df.columns:
+                    if token_df[col].apply(lambda x: isinstance(x, list)).any():
+                        token_df[col] = token_df[col].apply(lambda x: ' '.join(map(str, x)) if isinstance(x, list) else x)
+                    
                 token_file_path = os.path.join(self.DBpath, f"token_{table_name}.parquet")
                 token_df.to_parquet(token_file_path, index=False)
                 print(f"Token 저장 완료: token_{table_name}.parquet")
