@@ -39,11 +39,11 @@ def build_exe_from_spec(spec_file, output_directory, version):
     print(f"Building exe for {spec_file}...")
 
     # Define the output executable name with version
-    exe_name = f"BIGMACLAB_MANAGER_{version}"
+    exe_name = f"MANAGER_{version}"
 
     # Create a new spec file with the updated name
     new_spec_file = os.path.join(
-        output_directory, f"BIGMACLAB_MANAGER_{version}.spec")
+        output_directory, f"MANAGER_{version}.spec")
     create_spec_file(spec_file, new_spec_file, exe_name)
 
     try:
@@ -90,7 +90,7 @@ if __name__ == "__main__":
             version = str(next_version)
 
         same_version_path = os.path.join(
-            output_directory, f"BIGMACLAB_MANAGER_{version}")
+            output_directory, f"MANAGER_{version}")
         if os.path.exists(same_version_path):
             shutil.rmtree(same_version_path)
             console.print(f"[yellow]⚠️ 이전 동일 버전({version}) 디렉토리 삭제됨")
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         current_time = now.strftime("%Y-%m-%d %H:%M")
         currentVersion = version
         console.print(
-            Panel.fit(f"[bold green]🕒 {current_time}\n빌드 완료: BIGMACLAB_MANAGER_{version}"))
+            Panel.fit(f"[bold green]🕒 {current_time}\n빌드 완료: MANAGER_{version}"))
 
         # Inno Setup update
         console.print(
@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
         # Upload
         exe_path = os.path.join(
-            output_directory, f"BIGMACLAB_MANAGER_{version}", f"BIGMACLAB_MANAGER_{version}.exe")
+            output_directory, f"MANAGER_{version}", f"MANAGER_{version}.exe")
         console.print(
             Panel.fit(f"[bold blue]☁️ Uploading {exe_path}", title="파일 업로드"))
         upload_file(exe_path)

@@ -36,7 +36,7 @@ ChangesAssociations=yes
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputBaseFilename=BIGMACLAB_MANAGER_{#MyAppVersion}
+OutputBaseFilename=MANAGER_{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -53,8 +53,8 @@ SetupIconFile="C:\GitHub\BIGMACLAB\manager\app\assets\download_icon.ico"
 Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
 
 [Files]
-Source: "D:\BIGMACLAB\MANAGER\exe\BIGMACLAB_MANAGER_{#MyAppVersion}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\BIGMACLAB\MANAGER\exe\BIGMACLAB_MANAGER_{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "D:\BIGMACLAB\MANAGER\exe\MANAGER_{#MyAppVersion}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\BIGMACLAB\MANAGER\exe\MANAGER_{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Registry]

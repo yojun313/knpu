@@ -23,7 +23,7 @@ def parse_version(version_str):
 
 
 def find_latest_version_file():
-    version_pattern = re.compile(r"BIGMACLAB_MANAGER_(\d+\.\d+\.\d+)\.exe")
+    version_pattern = re.compile(r"MANAGER_(\d+\.\d+\.\d+)\.exe")
     latest_file = None
     latest_version = (0, 0, 0)
 
@@ -76,5 +76,5 @@ if __name__ == "__main__":
             else:
                 print("[❌] 업로드 가능한 버전 파일을 찾을 수 없습니다.")
         else:
-            filename = f"BIGMACLAB_MANAGER_{version_input}.exe"
+            filename = f"MANAGER_{version_input}.exe"
             upload_file(filename)
