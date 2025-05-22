@@ -16,7 +16,7 @@ def updateDB(parent):
         'DBuids': [db['uid'] for db in parent.db_list],
         'DBnames': [db['name'] for db in parent.db_list],
         'DBdata': parent.db_list,
-        'DBtable': [(db['name'], db['crawlType'], db['keyword'], db['startDate'], db['endDate'], db['crawlOption'], db['status'], db['requester'], db['dbSize']) for db in parent.db_list]
+        'DBtable': [(db['crawlType'], db['keyword'], db['startDate'], db['endDate'], db['crawlOption'], db['status'], db['requester'], db['dbSize']) for db in parent.db_list]
     }
 
     return currentDB

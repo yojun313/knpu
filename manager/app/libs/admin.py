@@ -135,60 +135,42 @@ def display_user_logs():
 
         console.print(Panel(f"[bold cyan]👤 {username}[/]", title="User", expand=False))
 
-        console.print("\n[bold green]작업을 선택하세요:[/bold green]")
-        console.print("[1] 로그 보기")
-        console.print("[2] 디바이스 관리")
-        console.print("[q] 유저 목록으로 돌아가기")
+       
+        date_keys = [key for key in selected_doc.keys() if key not in ["_id", "uid"]]
+        date_keys = [key for key in date_keys if is_valid_date(key)]
 
-        action_input = Prompt.ask("선택")
-
-        if action_input == "1":
-            date_keys = [key for key in selected_doc.keys() if key not in ["_id", "uid"]]
-            date_keys = [key for key in date_keys if is_valid_date(key)]
-
-            if not date_keys:
-                console.print("[yellow]해당 유저의 로그가 없습니다.[/]")
-                continue
-
-            console.print("\n[bold magenta]날짜를 선택하세요 ('q' 입력 시 유저 목록으로 돌아감):[/bold magenta]")
-            for i, date in enumerate(date_keys):
-                count = len(selected_doc[date])
-                console.print(f"[{i}] {date} ({count} 개 로그)")
-
-            date_input = Prompt.ask("\n숫자로 날짜 선택", default="q")
-
-            if date_input.lower() in ["q", "quit", "exit"]:
-                continue
-
-            if not date_input.isdigit() or int(date_input) not in range(len(date_keys)):
-                console.print("[red]유효한 숫자를 입력하세요.[/red]")
-                continue
-
-            selected_date = date_keys[int(date_input)]
-            logs = selected_doc[selected_date]
-
-            table = Table(title=f"[bold yellow]{selected_date}[/] 로그", show_lines=True)
-            table.add_column("Time", style="green", width=12)
-            table.add_column("Message", style="white")
-
-            for log in logs:
-                time = log.get("time", "-")
-                message = log.get("message", "")
-                table.add_row(time, message)
-
-            console.print(table)
-            console.rule("[bold blue]다시 유저 선택으로 돌아갑니다[/]")
-
-        elif action_input == "2":
-            manage_user_devices(uid)
+        if not date_keys:
+            console.print("[yellow]해당 유저의 로그가 없습니다.[/]")
             continue
 
-        elif action_input.lower() in ["q", "quit", "exit"]:
+        console.print("\n[bold magenta]날짜를 선택하세요 ('q' 입력 시 유저 목록으로 돌아감):[/bold magenta]")
+        for i, date in enumerate(date_keys):
+            count = len(selected_doc[date])
+            console.print(f"[{i}] {date} ({count} 개 로그)")
+
+        date_input = Prompt.ask("\n숫자로 날짜 선택", default="q")
+
+        if date_input.lower() in ["q", "quit", "exit"]:
             continue
 
-        else:
-            console.print("[red]유효한 입력이 아닙니다.[/red]")
+        if not date_input.isdigit() or int(date_input) not in range(len(date_keys)):
+            console.print("[red]유효한 숫자를 입력하세요.[/red]")
             continue
+
+        selected_date = date_keys[int(date_input)]
+        logs = selected_doc[selected_date]
+
+        table = Table(title=f"[bold yellow]{selected_date}[/] 로그", show_lines=True)
+        table.add_column("Time", style="green", width=12)
+        table.add_column("Message", style="white")
+
+        for log in logs:
+            time = log.get("time", "-")
+            message = log.get("message", "")
+            table.add_row(time, message)
+
+        console.print(table)
+        console.rule("[bold blue]다시 유저 선택으로 돌아갑니다[/]")
 
 
 def display_user_bug_reports():
