@@ -283,7 +283,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
             parts = name.split('_')
             parts[1] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
         dbname = '_'.join(parts)
-        dbname = dbname.replace('"', '＂')
+        dbname = dbname.replace('"', '＂').replace('|', '‖')
 
         return dbname
 

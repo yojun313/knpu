@@ -261,6 +261,7 @@ class Crawler(CrawlerModule):
                         text_column: ' '.join,
                         'Article Day': 'first'
                     }).reset_index()
+
                     data_df = data_df.rename(
                         columns={'Article Day': date_column})
                     data_df = data_df.sort_values(by=date_column)

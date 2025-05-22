@@ -19,24 +19,29 @@ def updateProgram(parent, sc=False):
             newVersionName = VERSION
 
         def downloadFile(download_url, local_filename):
-            response = requests.get(download_url, stream=True)
-            totalSize = int(response.headers.get(
-                'content-length', 0))  # 파일의 총 크기 가져오기
-            chunkSize = 8192  # 8KB씩 다운로드
-            downloadSize = 0  # 다운로드된 크기 초기화
+            try:
+                response = requests.get(download_url, stream=True)
+                totalSize = int(response.headers.get(
+                    'content-length', 0))  # 파일의 총 크기 가져오기
+                chunkSize = 8192  # 8KB씩 다운로드
+                downloadSize = 0  # 다운로드된 크기 초기화
 
-            with open(local_filename, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=chunkSize):
-                    if chunk:  # 빈 데이터 확인
-                        f.write(chunk)
-                        downloadSize += len(chunk)
-                        percent_complete = (downloadSize / totalSize) * 100
-                        # 퍼센트 출력
-                        print(
-                            f"\r{newVersionName} Download: {percent_complete:.0f}%", end='')
+                with open(local_filename, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=chunkSize):
+                        if chunk:  # 빈 데이터 확인
+                            f.write(chunk)
+                            downloadSize += len(chunk)
+                            percent_complete = (downloadSize / totalSize) * 100
+                            # 퍼센트 출력
+                            print(
+                                f"\r{newVersionName} Download: {percent_complete:.0f}%", end='')
 
-            print("\nDownload Complete")
-            closeConsole()
+                print("\nDownload Complete")
+                closeConsole()
+            except:
+                closeConsole()
+                parent.QMessageBox.critical(parent, "Error", "다운로드 중 오류가 발생했습니다\n\n관리자에게 문의하십시오")
+                return False
 
         def update_process():
             openConsole("Version Update Process")
