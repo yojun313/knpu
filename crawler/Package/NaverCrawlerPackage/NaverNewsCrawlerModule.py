@@ -72,8 +72,10 @@ class NaverNewsCrawler(CrawlerModule):
             def extract_nexturl(text):
                 try:
                     json_data = json.loads(text)
-                    next_url = json_data['url'] if 'url' in json_data else None
-                    return next_url
+                    if 'url' in json_data and json_data['url']:
+                        return json_data['url']
+                    else:
+                        return None
                 except:
                     return None
 
