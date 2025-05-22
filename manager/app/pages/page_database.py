@@ -51,10 +51,9 @@ class Manager_Database:
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
 
-        self.DBTableColumn = ['Database', 'Type', 'Keyword',
+        self.DBTableColumn = ['Type', 'Keyword',
                               'StartDate', 'EndDate', 'Option', 'Status', 'User', 'Size']
-        makeTable(self.main, self.main.database_tablewidget,
-                  self.DB['DBtable'], self.DBTableColumn, self.viewDBinfo)
+        makeTable(self.main, self.main.database_tablewidget, self.DB['DBtable'], self.DBTableColumn, self.viewDBinfo)
         self.matchButton()
         self.chatgpt_mode = False
         self.console_open = False
@@ -157,13 +156,16 @@ class Manager_Database:
                 event.accept()  # 창 닫기 이벤트를 허용
 
             def init_viewTable(self, DBuid):
-
                 response = Request(
                     'get', f'crawls/{DBuid}/preview', stream=True)
 
                 self.tabWidget_tables.clear()
 
                 with zipfile.ZipFile(BytesIO(response.content)) as zf:
+                    order = ['article', 'statistics', 'reply', 'rereply']
+                    file_list = zf.namelist()
+                    file_list.sort(key=lambda x: order.index(x) if x in order else float('inf'))
+                    
                     for file_name in zf.namelist():
                         table_name = file_name.replace('.parquet', '')
 
