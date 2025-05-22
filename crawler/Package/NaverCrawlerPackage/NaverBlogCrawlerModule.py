@@ -77,15 +77,11 @@ class NaverBlogCrawler(CrawlerModule):
                 return urls
 
             def extract_nexturl(text):
-                # 정규식 패턴 정의
-                pattern = r'https://s\.search\.naver\.com/p/review[^"]*'
-
-                # 정규식으로 매칭되는 패턴 찾기
-                match = re.search(pattern, text)
-
-                if match:
-                    return match.group(0)
-                else:
+                try:
+                    json_data = json.loads(text)
+                    next_url = json_data['url'] if 'url' in json_data else None
+                    return next_url
+                except:
                     return None
                 
             if self.print_status_option == True:
