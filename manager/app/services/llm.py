@@ -4,7 +4,7 @@ from openai import OpenAI
 
 from core.setting import get_setting
 
-def generateLLM(query, model):
+def generateLLM(query, model = 'ChatGPT'):
     if model == 'ChatGPT':
         try:
             # OpenAI 클라이언트 초기화
