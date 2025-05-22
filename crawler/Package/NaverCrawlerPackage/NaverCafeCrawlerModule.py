@@ -1,20 +1,24 @@
-# -*- coding: utf-8 -*-
-import aiohttp
-import asyncio
-from urllib.parse import urlparse, parse_qs
-import re
-import json
-from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
-import warnings
-import urllib3
-from datetime import datetime, timezone
-from CrawlerModule import CrawlerModule
+
 import os
 import sys
 
 NAVERCRAWLERPACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH = os.path.dirname(NAVERCRAWLERPACKAGE_PATH)
 sys.path.append(PACKAGE_PATH)
+
+# -*- coding: utf-8 -*-
+from CrawlerModule import CrawlerModule
+from datetime import datetime, timezone
+import urllib3
+import warnings
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
+import json
+import re
+from urllib.parse import urlparse, parse_qs
+import asyncio
+import aiohttp
+import os
+import sys
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -235,7 +239,7 @@ class NaverCafeCrawler(CrawlerModule):
                 temp = json.loads(json_string)
                 cafe_name = temp['result']['cafe']['name']
                 memberCount = temp['result']['cafe']['memberCount']
-                writer = temp['result']['article']['writer']['id']
+                writer = temp['result']['article']['writer']['nick']
                 title = re.sub(r'[^\w\s가-힣]', '',
                                temp['result']['article']['subject'])
                 text = ' '.join(BeautifulSoup(temp['result']['article']['contentHtml'], 'html.parser').get_text(
@@ -408,8 +412,7 @@ async def asyncTester():
 
     if number == 1:
         print("\nNaverCafeCrawler_urlCollector: ", end='')
-        urlList_returnData = CrawlerPackage_obj.urlCollector(
-            "테러 +예고", 20230102, 20230102)
+        urlList_returnData = CrawlerPackage_obj.urlCollector("포항공대", 20230101, 20230101)
         urlList = urlList_returnData['urlList']
 
         results = await CrawlerPackage_obj.asyncMultiCollector(urlList, option)
@@ -419,12 +422,12 @@ async def asyncTester():
 
     elif number == 2:
         url = input("\nTarget NaverCafe URL: ")
-        result = await CrawlerPackage_obj.asycSingleCollector(url, option)
+        result = await CrawlerPackage_obj.asyncSingleCollector(url, option)
         print(result)
 
 
 if __name__ == "__main__":
-    # asyncio.run(asyncTester())
-    CrawlerPackage_obj = NaverCafeCrawler(
-        proxy_option=False, print_status_option=True)
-    print(CrawlerPackage_obj.urlCollector('대통령', 20230101, 20230101))
+    asyncio.run(asyncTester())
+    # CrawlerPackage_obj = NaverCafeCrawler(
+    #     proxy_option=False, print_status_option=True)
+    # print(CrawlerPackage_obj.urlCollector('대통령', 20230101, 20230101))
