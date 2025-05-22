@@ -45,6 +45,7 @@ packages=(
   bcrypt
   PyQtWebEngine
   websockets
+  pyarrow
 )
 
 echo "📦 패키지 설치 중..."
