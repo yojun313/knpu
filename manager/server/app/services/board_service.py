@@ -112,6 +112,7 @@ def add_bug(data: AddBugDto):
 
     bug_board_db.insert_one(doc)
 
+    doc = clean_doc(doc)
     msg = (
         "[ New Bug Added! ]\n"
         f"User: {writerDoc['name']}\n"

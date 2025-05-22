@@ -253,12 +253,11 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
 
     pid = saveOption['pid']
 
-
     temp_directory = os.path.join(os.path.dirname(__file__), '..', 'temp')
 
     send_message(pid, f"DB에서 테이블 목록을 가져오는 중...")
     localDbpath = os.path.join(crawldata_path, targetDB)
-    
+
     tableList = [
         f[:-8] for f in os.listdir(localDbpath)
         if f.endswith('.parquet') and 'info' not in f
@@ -269,21 +268,36 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         'article' not in x, 'statistics' not in x, x
     ))
 
-    def replace_dates_in_filename(filename, new_start_date, new_end_date):
+    def replaceDatesInFilename(filename, new_start_date, new_end_date):
         pattern = r"_(\d{8})_(\d{8})_"
         new_filename = re.sub(
             pattern, f"_{new_start_date}_{new_end_date}_", filename)
         return new_filename
 
-    def replace_keyword_in_name(name: str, new_keyword: str) -> str:
+    def replaceKeywordInFilename(name: str, new_keyword: str) -> str:
+        parts = name.split('_')
+
         if 'token' in name:
-            parts = name.split('_')
             parts[2] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
         else:
-            parts = name.split('_')
             parts[1] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
         dbname = '_'.join(parts)
-        dbname = dbname.replace('"', '＂').replace('|', '‖')
+
+        replacements = {
+            '\\': '＼',  # U+FF3C
+            '/': '／',   # U+FF0F
+            ':': '：',   # U+FF1A
+            '*': '＊',   # U+FF0A
+            '?': '？',   # U+FF1F
+            '"': '＂',   # U+FF02
+            '<': '＜',   # U+FF1C
+            '>': '＞',   # U+FF1E
+            '|': '¦',    # U+00A6
+        }
+
+        # 3) 매핑 테이블을 이용해 한 번에 replace
+        for illegal, safe in replacements.items():
+            dbname = dbname.replace(illegal, safe)
 
         return dbname
 
@@ -293,7 +307,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
     # targetDB 구조 예시:
     parts = targetDB.split('_')[:-2] + kst_now.split('_')
     dbname = '_'.join(parts)
-    dbname = replace_keyword_in_name(dbname, crawlDb['keyword'])
+    dbname = replaceKeywordInFilename(dbname, crawlDb['keyword'])
 
     dateOption = saveOption['dateOption']
     filterOption = saveOption['filterOption']
@@ -305,7 +319,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
             start_date, "%Y%m%d").strftime("%Y-%m-%d")
         end_date_formed = datetime.strptime(
             end_date, "%Y%m%d").strftime("%Y-%m-%d")
-        dbname = replace_dates_in_filename(
+        dbname = replaceDatesInFilename(
             dbname, saveOption['start_date'], saveOption['end_date'])
     if filterOption:
         include_all = saveOption['include_all']
@@ -329,30 +343,31 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
             dbpath += "_copy"
 
     for idx, tableName in enumerate(tableList):
-        edited_tableName = replace_dates_in_filename(
+        edited_tableName = replaceDatesInFilename(
             tableName, start_date, end_date) if dateOption == 'part' else tableName
-        edited_tableName = replace_keyword_in_name(
+        edited_tableName = replaceKeywordInFilename(
             edited_tableName, crawlDb['keyword'])
 
         send_message(
             pid, f"[{idx+1}/{len(tableList)}] '{edited_tableName}' 처리 중")
-            
+
         parquet_path = os.path.join(localDbpath, f"{tableName}.parquet")
         tableDF = pd.read_parquet(parquet_path)
-        
+
         # 날짜 필터링 (dateOption이 'part'일 경우)
         if saveOption.get('dateOption') == 'part':
             date_columns = ['Article Date', 'Reply Date', 'Rereply Date']
 
             for col in date_columns:
                 if col in tableDF.columns:
-                    tableDF[col] = pd.to_datetime(tableDF[col], errors='coerce')
+                    tableDF[col] = pd.to_datetime(
+                        tableDF[col], errors='coerce')
                     tableDF = tableDF[
                         (tableDF[col] >= start_date_formed) &
                         (tableDF[col] <= end_date_formed)
                     ]
                     break  # 첫 번째 매칭된 날짜 컬럼 기준으로 필터링 후 종료
-        
+
         # 단어 필터링 옵션이 켜져있을 때
         if filterOption == True and 'article' in tableName:
             if 'token' not in tableName:
@@ -447,7 +462,8 @@ def previewCrawlDb(uid: str):
             file_path = os.path.join(base_path, file)
             try:
                 df = pd.read_parquet(file_path)
-                df_preview = pd.concat([df.head(50), df.tail(50)]).drop_duplicates()
+                df_preview = pd.concat(
+                    [df.head(50), df.tail(50)]).drop_duplicates()
 
                 # ID 열 제거 (있을 경우)
                 if 'id' in df_preview.columns:
