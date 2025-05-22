@@ -320,6 +320,8 @@ class Manager_Database:
             programBugLog(self.main, traceback.format_exc())
 
     def initLLMChat(self):
+        QMessageBox.information(self.main, "Not Supported", f"지원하지 않는 기능입니다")
+        return
         try:
             printStatus(self.main, "LLM Chat 실행 중")
             if platform.system() == "Darwin":  # macOS인지 확인
