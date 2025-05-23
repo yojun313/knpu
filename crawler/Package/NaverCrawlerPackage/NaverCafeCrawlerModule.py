@@ -109,7 +109,7 @@ class NaverCafeCrawler(CrawlerModule):
                 if "|" in query:
                     search_query = query
                 else:
-                    search_query = " "
+                    search_query = ""
 
                 # + 기호가 붙은 단어 찾기
                 and_terms = [term[1:] for term in terms if term.startswith('+')]
