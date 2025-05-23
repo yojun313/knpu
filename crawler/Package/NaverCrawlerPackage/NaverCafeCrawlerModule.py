@@ -105,11 +105,11 @@ class NaverCafeCrawler(CrawlerModule):
 
                 # 첫 번째 단어를 nx_search_query에 할당
                 if '+' in query or '-' in query:
-                    search_query = terms[0] if terms else ""
-                if "|" in query:
-                    search_query = query
+                    nx_search_query = terms[0] if terms else ""
+                elif "|" in query:
+                    nx_search_query = query
                 else:
-                    search_query = ""
+                    nx_search_query = ""
 
                 # + 기호가 붙은 단어 찾기
                 and_terms = [term[1:] for term in terms if term.startswith('+')]
@@ -117,14 +117,21 @@ class NaverCafeCrawler(CrawlerModule):
                 # - 기호가 붙은 단어 찾기
                 sub_terms = [term[1:] for term in terms if term.startswith('-')]
 
+                nx_search_hlquery = ""
+                if '"' in query:
+                    nx_search_hlquery = query
+                    nx_search_query = query.replace('"', '')
+                    and_terms.append(query)
+
                 # 딕셔너리 반환
                 query_params = {
-                    "nx_search_query": search_query,
+                    "nx_search_query": nx_search_query,
+                    "nx_search_hlquery": nx_search_hlquery,
                     "nx_and_query": " ".join(and_terms) if and_terms else "",
                     "nx_sub_query": " ".join(sub_terms) if sub_terms else "",
                 }
                 return query_params
-
+            
             def extract_cafeurls(text):
                 # 정규식 패턴 정의
                 pattern = r'https://cafe\.naver\.com/[a-zA-Z0-9_-]+/\d+\?art=[a-zA-Z0-9._-]+'
