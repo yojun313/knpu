@@ -529,8 +529,7 @@ class Crawler(CrawlerModule):
                             continue
 
                         if option == 3:
-                            self.addToCSV(tableName=self.articleDB, data_list=[
-                                          article_returnData['articleData']] + [0], columns=article_column)
+                            self.addToCSV(tableName=self.articleDB, data_list=[[article_returnData['articleData']] + [0]], columns=article_column)
 
                         else:
                             replyList_returnData = returnData['replyData']
