@@ -96,10 +96,13 @@ class NaverNewsCrawler(CrawlerModule):
 
                 # - 기호가 붙은 단어 찾기
                 sub_terms = [term[1:] for term in terms if term.startswith('-')]
-
+                
+                nx_search_hlquery = query if '"' in query else ""
+                
                 # 딕셔너리 반환
                 query_params = {
                     "nx_search_query": search_query,
+                    "nx_search_hlquery": nx_search_hlquery,
                     "nx_and_query": " ".join(and_terms) if and_terms else "",
                     "nx_sub_query": " ".join(sub_terms) if sub_terms else "",
                 }
@@ -128,7 +131,7 @@ class NaverNewsCrawler(CrawlerModule):
                 "nqx_theme": "",
                 "nso": f"so:r,p:from{startDate}to{endDate},a:all",
                 "nx_and_query": f"{query_dict['nx_and_query']}",
-                "nx_search_hlquery": "",
+                "nx_search_hlquery": f"{query_dict['nx_search_hlquery']}",
                 "nx_search_query": f"{query_dict['nx_search_query']}",
                 "nx_sub_query": f"{query_dict['nx_sub_query']}",
                 "office_category": "",
@@ -617,4 +620,4 @@ async def asyncTester():
 if __name__ == "__main__":
     #asyncio.run(asyncTester())
     CrawlerPackage_obj = NaverNewsCrawler(proxy_option=False, print_status_option=True)
-    print(CrawlerPackage_obj.urlCollector('데이트 폭행', 20101209, 20101209)['urlCnt'])
+    print(CrawlerPackage_obj.urlCollector('데이트 폭력', 20100101, 20101231)['urlCnt'])
