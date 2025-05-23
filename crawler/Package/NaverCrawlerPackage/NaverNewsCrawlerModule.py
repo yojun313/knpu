@@ -84,9 +84,12 @@ class NaverNewsCrawler(CrawlerModule):
                 terms = query.split()
 
                 # 첫 번째 단어를 nx_search_query에 할당
-                search_query = terms[0] if terms else ""
+                if '+' in query or '-' in query:
+                    search_query = terms[0] if terms else ""
                 if "|" in query:
                     search_query = query
+                else:
+                    search_query = " "
 
                 # + 기호가 붙은 단어 찾기
                 and_terms = [term[1:] for term in terms if term.startswith('+')]
