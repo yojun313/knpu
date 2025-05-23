@@ -133,6 +133,9 @@ class Manager_Database:
                 self.close_button.setFixedWidth(80)  # 가로 길이 조정
                 self.close_button.clicked.connect(self.closeWindow)
                 self.button_layout.addWidget(self.close_button)
+                
+                QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.closeWindow)
+                QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.closeWindow)
 
                 # 버튼 레이아웃을 메인 레이아웃에 추가
                 self.layout.addLayout(self.button_layout)
@@ -162,11 +165,10 @@ class Manager_Database:
                 self.tabWidget_tables.clear()
 
                 with zipfile.ZipFile(BytesIO(response.content)) as zf:
-                    order = ['article', 'statistics', 'reply', 'rereply']
                     file_list = zf.namelist()
-                    file_list.sort(key=lambda x: order.index(x) if x in order else float('inf'))
+                    file_list.sort()
                     
-                    for file_name in zf.namelist():
+                    for file_name in file_list:
                         table_name = file_name.replace('.parquet', '')
 
                         with zf.open(file_name) as f:
