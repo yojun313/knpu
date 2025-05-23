@@ -89,7 +89,7 @@ class NaverNewsCrawler(CrawlerModule):
                 if "|" in query:
                     search_query = query
                 else:
-                    search_query = " "
+                    search_query = ""
 
                 # + 기호가 붙은 단어 찾기
                 and_terms = [term[1:] for term in terms if term.startswith('+')]
@@ -617,4 +617,4 @@ async def asyncTester():
 if __name__ == "__main__":
     #asyncio.run(asyncTester())
     CrawlerPackage_obj = NaverNewsCrawler(proxy_option=False, print_status_option=True)
-    print(CrawlerPackage_obj.urlCollector('아이패드', 20230101, 20230110)['urlCnt'])
+    print(CrawlerPackage_obj.urlCollector('데이트 폭행', 20101209, 20101209)['urlCnt'])
