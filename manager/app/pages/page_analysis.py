@@ -127,8 +127,7 @@ class Manager_Analysis:
                     2, self.month_divided_group, table_path, tablename)
 
             def main(directory_list):
-                userLogging(
-                    f'ANALYSIS -> timesplit_file({directory_list[0]})')
+                userLogging(f'ANALYSIS -> timesplit_file({directory_list[0]})')
                 for csv_path in directory_list:
                     table_path = split_table(csv_path)
                     if table_path == 0:

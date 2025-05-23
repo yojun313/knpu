@@ -245,7 +245,6 @@ if __name__ == "__main__":
         console.print("[1] 유저 로그 조회")
         console.print("[2] 유저 버그 리포트 조회")
         console.print("[3] 유저 디바이스 관리")
-        console.print("[q] 종료")
 
         choice = Prompt.ask("선택")
 
