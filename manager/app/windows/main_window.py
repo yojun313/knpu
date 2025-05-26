@@ -94,15 +94,8 @@ class MainWindow(QMainWindow):
                     os._exit(0)
                 print("Done")
 
-                self.splashDialog.updateStatus("Checking New Version")
-                print("\nII. Checking New Version... ", end='')
-                if checkNewVersion():
-                    self.closeBootscreen()
-                    updateProgram(self)
-                print("Done")
-
-                print("\nIII. Loading Data... ", end='')
                 self.splashDialog.updateStatus("Loading Data")
+                print("\nII. Loading Data... ", end='')
 
                 self.DB = updateDB(self)
                 self.managerBoardObj = Manager_Board(self)
@@ -110,6 +103,13 @@ class MainWindow(QMainWindow):
                 self.managerDatabaseObj = Manager_Database(self)
                 self.managerWebObj = Manager_Web(self)
                 self.managerAnalysisObj = Manager_Analysis(self)
+                print("Done")
+                
+                self.splashDialog.updateStatus("Checking New Version")
+                print("\nIII. Checking New Version... ", end='')
+                if checkNewVersion():
+                    self.closeBootscreen()
+                    updateProgram(self)
                 print("Done")
 
                 self.splashDialog.updateStatus(f"안녕하세요, {self.user}님!")
