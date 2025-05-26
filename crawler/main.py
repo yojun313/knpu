@@ -250,21 +250,27 @@ class Crawler(CrawlerModule):
                 data_df = pd.read_parquet(file_path)
 
                 # Step 3: Reply 관련 테이블이면 전처리 수행
+                # 전처리 부분 수정 예시
                 if 'reply' in table_name or 'rereply' in table_name:
                     date_column = 'Rereply Date' if 'rereply' in table_name else 'Reply Date'
                     text_column = 'Rereply Text' if 'rereply' in table_name else 'Reply Text'
 
                     data_df[date_column] = pd.to_datetime(
                         data_df[date_column], errors='coerce').dt.date
+
+                    # 결측치를 빈 문자열로 치환
+                    data_df[text_column] = data_df[text_column].fillna('')
+
                     grouped = data_df.groupby('Article URL')
                     data_df = grouped.agg({
-                        text_column: ' '.join,
+                        text_column: lambda x: ' '.join(x),
                         'Article Day': 'first'
                     }).reset_index()
 
                     data_df = data_df.rename(
                         columns={'Article Day': date_column})
                     data_df = data_df.sort_values(by=date_column)
+
 
                 # Step 4: Tokenization
                 token_df = self.tokenization(data_df)
@@ -1061,4 +1067,105 @@ def controller():
 
 
 if __name__ == '__main__':
-    controller()
+    #controller()
+    
+    def tokenization(data):  # 갱신 간격 추가
+        kiwi = Kiwi(num_workers=-1)
+        for column in data.columns.tolist():
+            if 'Text' in column:
+                textColumn_name = column
+
+        text_list = list(data[textColumn_name])
+        tokenized_data = []
+
+        total_texts = len(text_list)
+        total_time = 0  # 전체 소요시간을 계산하기 위한 변수
+
+        for index, text in enumerate(text_list):
+            start_time = time.time()  # 처리 시작 시간 기록
+            try:
+                if not isinstance(text, str):
+                    tokenized_data.append([])
+                    continue  # 문자열이 아니면 넘어감
+
+                text = re.sub(r'[^가-힣a-zA-Z\s]', '', text)
+                tokens = kiwi.tokenize(text)
+                tokenized_text = [
+                    token.form for token in tokens if token.tag in ('NNG', 'NNP')]
+
+                # 리스트를 쉼표로 구분된 문자열로 변환
+                tokenized_text_str = ", ".join(tokenized_text)
+                tokenized_data.append(tokenized_text_str)
+            except:
+                tokenized_data.append([])
+
+            # 처리 완료 후 시간 측정
+            end_time = time.time()
+            total_time += end_time - start_time
+
+            # 평균 처리 시간 계산
+            avg_time_per_text = total_time / (index + 1)
+            remaining_time = avg_time_per_text * \
+                (total_texts - (index + 1))  # 남은 시간 추정
+
+            # 남은 시간을 시간과 분으로 변환
+            remaining_minutes = int(remaining_time // 60)
+            remaining_seconds = int(remaining_time % 60)
+
+            update_interval = 500
+            # N개마다 한 번 갱신
+            if (index + 1) % update_interval == 0 or index + 1 == total_texts:
+                progress_value = round((index + 1) / total_texts * 100, 2)
+                print(
+                    f'\r{textColumn_name.split(" ")[0]} Tokenization Progress: {progress_value}% | '
+                    f'예상 남은 시간: {remaining_minutes}분 {remaining_seconds}초', end=''
+                )
+
+        data[textColumn_name] = tokenized_data
+        return data
+
+    DBpath = "/mnt/ssd/bigmaclab/crawldata/navernews_보호관찰_20200101_20250331_0524_2059"
+    parquet_files = [f for f in os.listdir(DBpath) if f.endswith('.parquet')]
+    for file_name in parquet_files:
+        table_name = file_name.rsplit('.', 1)[0]
+        file_path = os.path.join(DBpath, file_name)
+        print(f"{table_name} 읽는 중...")
+
+        data_df = pd.read_parquet(file_path)
+
+        # Step 3: Reply 관련 테이블이면 전처리 수행
+        # 전처리 부분 수정 예시
+        if 'reply' in table_name or 'rereply' in table_name:
+            date_column = 'Rereply Date' if 'rereply' in table_name else 'Reply Date'
+            text_column = 'Rereply Text' if 'rereply' in table_name else 'Reply Text'
+
+            data_df[date_column] = pd.to_datetime(
+                data_df[date_column], errors='coerce').dt.date
+
+            # 결측치를 빈 문자열로 치환
+            data_df[text_column] = data_df[text_column].fillna('')
+
+            grouped = data_df.groupby('Article URL')
+            data_df = grouped.agg({
+                text_column: lambda x: ' '.join(x),
+                'Article Day': 'first'
+            }).reset_index()
+
+            data_df = data_df.rename(
+                columns={'Article Day': date_column})
+            data_df = data_df.sort_values(by=date_column)
+
+
+        # Step 4: Tokenization
+        token_df = tokenization(data_df)
+
+        # Step 5: 저장 (선택 사항: parquet 저장 or print only)
+        for col in token_df.columns:
+            if token_df[col].apply(lambda x: isinstance(x, list)).any():
+                token_df[col] = token_df[col].apply(lambda x: ' '.join(
+                    map(str, x)) if isinstance(x, list) else x)
+
+        token_file_path = os.path.join(
+            DBpath, f"token_{table_name}.parquet")
+        token_df.to_parquet(token_file_path, index=False)
+        print(f"Token 저장 완료: token_{table_name}.parquet")
