@@ -17,6 +17,8 @@ def updateProgram(parent, sc=False):
         newVersionInfo = checkNewVersion()
         if not newVersionInfo:
             newVersionName = VERSION
+        else:
+            newVersionName = newVersionInfo[0]
 
         def downloadFile(download_url, local_filename):
             try:
