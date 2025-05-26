@@ -10,7 +10,7 @@ from core.setting import get_setting
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QMessageBox
 from PyQt5.QtCore import Qt
 from core.boot import checkNewVersion
-
+import webbrowser
 
 def updateProgram(parent, sc=False):
     try:
@@ -41,7 +41,11 @@ def updateProgram(parent, sc=False):
             except:
                 closeConsole()
                 parent.QMessageBox.critical(parent, "Error", "다운로드 중 오류가 발생했습니다\n\n관리자에게 문의하십시오")
-                return False
+                QMessageBox.question(parent, "Reinstall", "다운로드 웹페이지를 열어 수동 업데이트를 진행하시겠습니까?",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    webbrowser.open("https://knpu.re.kr/download_manager")
+                return
 
         def update_process():
             openConsole("Version Update Process")
