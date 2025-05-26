@@ -21,7 +21,11 @@ async def periodic_gc(interval_seconds: int = 60):
             gen = f"G{i}: "
             table_text.append(f"{gen}", style="cyan")
             table_text.append(f"{stat['collected']} collected, ", style="green")
-            table_text.append(f"{stat['uncollectable']} uncollectable  | ", style="red")
+            table_text.append(f"{stat['uncollectable']} uncollectable", style="red")
+
+            if "objects" in stat:
+                table_text.append(f", {stat['objects']} objects", style="magenta")
+            table_text.append(" | ")
 
         console.log(table_text)
 
