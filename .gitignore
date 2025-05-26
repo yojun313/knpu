@@ -30,3 +30,5 @@ __pycache__/
 logs/
 records/
 temp/
+
+.idea/
