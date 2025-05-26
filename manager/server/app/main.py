@@ -29,7 +29,7 @@ async def periodic_gc(interval_seconds: int = 60):
 
         console.log(table_text)
 
-# ✅ 깔끔한 요청 로그 미들웨어
+# ✅ 요청 로그 미들웨어
 class RichLoggerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = datetime.now()
@@ -39,15 +39,22 @@ class RichLoggerMiddleware(BaseHTTPMiddleware):
         method = request.method
         path = request.url.path
         status = response.status_code
-        client_ip = request.client.host
         time_str = f"{duration:.2f}s"
 
+        # ✅ 실제 클라이언트 IP 가져오기 (프록시 환경 대응)
+        client_ip = request.headers.get("x-forwarded-for", request.client.host)
+        # 만약 여러 IP가 들어있을 경우 첫 번째 IP만 추출
+        if "," in client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+
+        # 상태 코드에 따른 색상 설정
         status_style = "green"
         if 300 <= status < 400:
             status_style = "yellow"
         elif status >= 400:
             status_style = "red"
 
+        # 로그 출력
         log_text = Text()
         log_text.append(f"[{status}] ", style=status_style)
         log_text.append(f"{method} ", style="bold cyan")
