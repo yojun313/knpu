@@ -15,10 +15,37 @@ from packaging.version import Version
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+import requests
 from upload import upload_file
 
 console = Console()
 
+
+def sendPushOver(msg, user_key = 'uvz7oczixno7daxvgxmq65g2gbnsd5', image_path=False):
+    app_key_list = ["a22qabchdf25zzkd1vjn12exjytsjx"]
+
+    for app_key in app_key_list:
+        try:
+            # Pushover API 설정
+            url = 'https://api.pushover.net/1/messages.json'
+            # 메시지 내용
+            message = {
+                'token': app_key,
+                'user': user_key,
+                'message': msg
+            }
+            # Pushover에 요청을 보냄
+            if image_path == False:
+                response = requests.post(url, data=message)
+            else:
+                response = requests.post(url, data=message, files={
+                    "attachment": (
+                        "image.png", open(image_path, "rb"),
+                        "image/png")
+                })
+            break
+        except:
+            continue
 
 def create_spec_file(original_spec_file, new_spec_file, exe_name):
     with open(original_spec_file, 'r', encoding='utf-8') as file:
@@ -145,3 +172,6 @@ if __name__ == "__main__":
         console.print("[green]✅ 업로드 완료")
 
         console.rule("[bold green]🎉 모든 작업 완료")
+        sendPushOver(f"[Admin Notification]\n\nMANAGER {version} 빌드 완료\n\n{current_time}")
+        
+        
