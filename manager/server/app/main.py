@@ -15,7 +15,6 @@ log_table.add_column("Status", style="bold")
 log_table.add_column("Method", style="cyan")
 log_table.add_column("Path", style="green")
 log_table.add_column("Duration", justify="right", style="yellow")
-log_table.add_column("IP", style="red")
 
 live = Live(log_table, console=console, refresh_per_second=4, transient=False)
 
@@ -38,11 +37,6 @@ class RichLoggerMiddleware(BaseHTTPMiddleware):
         duration_str = f"{duration:.2f}s"
         time_str = start_time.strftime("%H:%M:%S")
 
-        # 클라이언트 IP 처리 (프록시 대응)
-        client_ip = request.headers.get("x-forwarded-for", request.client.host)
-        if "," in client_ip:
-            client_ip = client_ip.split(",")[0].strip()
-
         status_str = str(status)
         if 200 <= status < 300:
             status_str = f"[green]{status}[/green]"
@@ -51,7 +45,7 @@ class RichLoggerMiddleware(BaseHTTPMiddleware):
         else:
             status_str = f"[red]{status}[/red]"
 
-        log_table.add_row(time_str, status_str, method, path, duration_str, client_ip)
+        log_table.add_row(time_str, status_str, method, path, duration_str)
         return response
 
 # ✅ FastAPI 앱 구성
