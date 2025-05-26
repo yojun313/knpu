@@ -134,9 +134,8 @@ def updateProgram(parent, sc=False):
                     return
             return
     except:
-        closeConsole()
         programBugLog(parent, traceback.format_exc())
-        QMessageBox.question(parent, "Reinstall", "다운로드 웹페이지를 열어 수동 업데이트를 진행하시겠습니까?",
+        reply = QMessageBox.question(parent, "Reinstall", "다운로드 웹페이지를 열어 수동 업데이트를 진행하시겠습니까?",
                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if reply == QMessageBox.Yes:
             webbrowser.open("https://knpu.re.kr/download_manager")
