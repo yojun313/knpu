@@ -135,7 +135,7 @@ def updateProgram(parent, sc=False):
             return
     except:
         closeConsole()
-        programBugLog(parent, traceback.format_exc(), "Update Error", "프로그램 업데이트 중 오류가 발생했습니다")
+        programBugLog(parent, traceback.format_exc())
         QMessageBox.question(parent, "Reinstall", "다운로드 웹페이지를 열어 수동 업데이트를 진행하시겠습니까?",
                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if reply == QMessageBox.Yes:
