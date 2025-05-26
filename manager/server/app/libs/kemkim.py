@@ -26,11 +26,9 @@ warnings.filterwarnings("ignore")
 # 1) 폰트 파일 경로
 if platform.system() == 'Linux':
     font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
-
-    # 2) FontProperties 로 등록
-    font_prop = fm.FontProperties(fname=font_path)
-    plt.rcParams['font.family'] = font_prop.get_name()
-    plt.rcParams['axes.unicode_minus'] = False  # 음수 기호 깨짐 방지
+    fm.fontManager.addfont(font_path)
+    plt.rcParams['font.family'] = 'NanumGothic'
+    plt.rcParams['axes.unicode_minus'] = False
 
 
 class KimKem:
