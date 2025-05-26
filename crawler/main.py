@@ -1169,5 +1169,4 @@ def manualTokenizer():
         print(f"Token 저장 완료: token_{table_name}.parquet")
 
 if __name__ == '__main__':
-    #controller()
-    manualTokenizer()
+    controller()
