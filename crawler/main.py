@@ -1066,9 +1066,7 @@ def controller():
         Crawler_obj.ChinaSina_Crawler(option)
 
 
-if __name__ == '__main__':
-    #controller()
-    
+def manualTokenizer():
     def tokenization(data):  # 갱신 간격 추가
         kiwi = Kiwi(num_workers=-1)
         for column in data.columns.tolist():
@@ -1169,3 +1167,6 @@ if __name__ == '__main__':
             DBpath, f"token_{table_name}.parquet")
         token_df.to_parquet(token_file_path, index=False)
         print(f"Token 저장 완료: token_{table_name}.parquet")
+
+if __name__ == '__main__':
+    controller()
