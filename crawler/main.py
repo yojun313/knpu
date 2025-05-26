@@ -1122,7 +1122,7 @@ def manualTokenizer():
         data[textColumn_name] = tokenized_data
         return data
 
-    DBpath = "/mnt/ssd/bigmaclab/crawldata/navernews_보호관찰_20200101_20250331_0524_2059"
+    DBpath = "/mnt/ssd/bigmaclab/crawldata/navernews_보호관찰_20200101_20250331_0526_2122"
     parquet_files = [f for f in os.listdir(DBpath) if f.endswith('.parquet')]
     for file_name in parquet_files:
         table_name = file_name.rsplit('.', 1)[0]
@@ -1169,4 +1169,5 @@ def manualTokenizer():
         print(f"Token 저장 완료: token_{table_name}.parquet")
 
 if __name__ == '__main__':
-    controller()
+    #controller()
+    manualTokenizer()
