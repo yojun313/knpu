@@ -4,32 +4,28 @@ import gc
 import asyncio
 from datetime import datetime
 from rich.console import Console
-from rich.text import Text
+from rich.table import Table
+from rich.live import Live
 from starlette.middleware.base import BaseHTTPMiddleware
 
 console = Console()
+log_table = Table(show_header=True, header_style="bold magenta")
+log_table.add_column("Time", style="dim", width=8)
+log_table.add_column("Status", style="bold")
+log_table.add_column("Method", style="cyan")
+log_table.add_column("Path", style="green")
+log_table.add_column("Duration", justify="right", style="yellow")
+log_table.add_column("IP", style="red")
 
-# ✅ 주기적으로 GC 수집 및 통계 출력
+live = Live(log_table, console=console, refresh_per_second=4, transient=False)
+
+# ✅ 주기적으로 GC 실행
 async def periodic_gc(interval_seconds: int = 60):
     while True:
         await asyncio.sleep(interval_seconds)
-        collected = gc.collect()
-        stats = gc.get_stats()
+        gc.collect()
 
-        table_text = Text("🧹 GC Stats | ", style="bold green")
-        for i, stat in enumerate(stats):
-            gen = f"G{i}: "
-            table_text.append(f"{gen}", style="cyan")
-            table_text.append(f"{stat['collected']} collected, ", style="green")
-            table_text.append(f"{stat['uncollectable']} uncollectable", style="red")
-
-            if "objects" in stat:
-                table_text.append(f", {stat['objects']} objects", style="magenta")
-            table_text.append(" | ")
-
-        console.log(table_text)
-
-# ✅ 요청 로그 미들웨어
+# ✅ 요청 로그 미들웨어 (테이블에 행 추가)
 class RichLoggerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = datetime.now()
@@ -39,30 +35,23 @@ class RichLoggerMiddleware(BaseHTTPMiddleware):
         method = request.method
         path = request.url.path
         status = response.status_code
-        time_str = f"{duration:.2f}s"
+        duration_str = f"{duration:.2f}s"
+        time_str = start_time.strftime("%H:%M:%S")
 
-        # ✅ 실제 클라이언트 IP 가져오기 (프록시 환경 대응)
+        # 클라이언트 IP 처리 (프록시 대응)
         client_ip = request.headers.get("x-forwarded-for", request.client.host)
-        # 만약 여러 IP가 들어있을 경우 첫 번째 IP만 추출
         if "," in client_ip:
             client_ip = client_ip.split(",")[0].strip()
 
-        # 상태 코드에 따른 색상 설정
-        status_style = "green"
-        if 300 <= status < 400:
-            status_style = "yellow"
-        elif status >= 400:
-            status_style = "red"
+        status_str = str(status)
+        if 200 <= status < 300:
+            status_str = f"[green]{status}[/green]"
+        elif 300 <= status < 400:
+            status_str = f"[yellow]{status}[/yellow]"
+        else:
+            status_str = f"[red]{status}[/red]"
 
-        # 로그 출력
-        log_text = Text()
-        log_text.append(f"[{status}] ", style=status_style)
-        log_text.append(f"{method} ", style="bold cyan")
-        log_text.append(f"{path} ", style="bold green")
-        log_text.append(f"in {time_str} ", style="dim")
-        log_text.append(f"from {client_ip}", style="magenta")
-
-        console.log(log_text)
+        log_table.add_row(time_str, status_str, method, path, duration_str, client_ip)
         return response
 
 # ✅ FastAPI 앱 구성
@@ -70,7 +59,12 @@ app = FastAPI()
 app.add_middleware(RichLoggerMiddleware)
 
 @app.on_event("startup")
-async def start_background_gc():
+async def start_background_tasks():
+    live.start()
     asyncio.create_task(periodic_gc(60))
+
+@app.on_event("shutdown")
+async def stop_live():
+    live.stop()
 
 app.include_router(api_router, prefix="/api", tags=["API"])
