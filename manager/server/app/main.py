@@ -4,19 +4,9 @@ import gc
 import asyncio
 from datetime import datetime
 from rich.console import Console
-from rich.table import Table
-from rich.live import Live
 from starlette.middleware.base import BaseHTTPMiddleware
 
 console = Console()
-log_table = Table(show_header=True, header_style="bold magenta")
-log_table.add_column("Time", style="dim", width=8)
-log_table.add_column("Status", style="bold")
-log_table.add_column("Method", style="cyan")
-log_table.add_column("Path", style="green")
-log_table.add_column("Duration", justify="right", style="yellow")
-
-live = Live(log_table, console=console, refresh_per_second=4, transient=False)
 
 # ✅ 주기적으로 GC 실행
 async def periodic_gc(interval_seconds: int = 60):
@@ -24,7 +14,7 @@ async def periodic_gc(interval_seconds: int = 60):
         await asyncio.sleep(interval_seconds)
         gc.collect()
 
-# ✅ 요청 로그 미들웨어 (테이블에 행 추가)
+# ✅ 요청 로그 미들웨어 (텍스트 출력)
 class RichLoggerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = datetime.now()
@@ -45,7 +35,15 @@ class RichLoggerMiddleware(BaseHTTPMiddleware):
         else:
             status_str = f"[red]{status}[/red]"
 
-        log_table.add_row(time_str, status_str, method, path, duration_str)
+        log_message = (
+            f"[dim]{time_str}[/dim] "
+            f"{status_str} "
+            f"[cyan]{method}[/cyan] "
+            f"[green]{path}[/green] "
+            f"[yellow]{duration_str}[/yellow]"
+        )
+
+        console.print(log_message)
         return response
 
 # ✅ FastAPI 앱 구성
@@ -54,11 +52,10 @@ app.add_middleware(RichLoggerMiddleware)
 
 @app.on_event("startup")
 async def start_background_tasks():
-    live.start()
     asyncio.create_task(periodic_gc(60))
 
 @app.on_event("shutdown")
-async def stop_live():
-    live.stop()
+async def stop_background_tasks():
+    pass  # 따로 종료할 작업 없음
 
 app.include_router(api_router, prefix="/api", tags=["API"])
