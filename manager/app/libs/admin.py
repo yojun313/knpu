@@ -56,6 +56,8 @@ def display_logs(documents, date_str, title):
     for doc in documents:
         uid = doc.get("uid")
         username = get_username(uid)
+        if username == 'admin':
+            continue
         logs = doc.get(date_str, [])
 
         panel_title = f"👤 {username}"
