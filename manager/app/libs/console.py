@@ -13,7 +13,7 @@ _term_win_id = None
 
 
 def _open_console_windows(msg: str):
-    global original_stdout
+    global _original_stdout
     try:
         if platform.system() != 'Windows':
             return
@@ -30,19 +30,19 @@ def _open_console_windows(msg: str):
         print("[ MANAGER ]")
         print(f'\n< {msg} >\n')  # 테스트 출력
     except Exception as e:
-        sys.stdout = original_stdout  # 에러 발생 시 stdout 복구
+        sys.stdout = _original_stdout  # 에러 발생 시 stdout 복구
         print(e)
 
 def _close_console_windows():
-    global original_stdout
+    global _original_stdout
     try:
         if platform.system() != 'Windows':
             return
         sys.stdout.close()  # 콘솔 창 출력 닫기
-        sys.stdout = original_stdout  # stdout 복구
+        sys.stdout = _original_stdout  # stdout 복구
         ctypes.windll.kernel32.FreeConsole()  # 콘솔 창 해제
     except Exception as e:
-        sys.stdout = original_stdout  # 에러 발생 시 stdout 복구
+        sys.stdout = _original_stdout  # 에러 발생 시 stdout 복구
         print(e)
 
 def _open_console_macos(msg: str = ""):
