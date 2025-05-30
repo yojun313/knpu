@@ -118,7 +118,7 @@ def updateProgram(parent, sc=False):
         else:
             if sc == True:
                 reply = QMessageBox.question(parent, "Reinstall", "현재 버전이 최신 버전입니다\n\n현재 버전을 재설치하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
                     printStatus(parent, "버전 재설치 중...")
                     openConsole("Version Reinstall Process")
