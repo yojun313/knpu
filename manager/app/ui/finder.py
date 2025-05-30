@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QModelIndex
-from PyQt5.QtWidgets import QFileDialog, QSizePolicy, QAbstractItemView
+from PyQt5.QtWidgets import QFileDialog, QSizePolicy, QAbstractItemView, QMessageBox
 import subprocess
 import os
 from ui.status import printStatus
@@ -103,3 +103,10 @@ def openFileExplorer(path):
         os.system(f"open '{path}'")
     else:  # Linux and other OS
         os.system(f"xdg-open '{path}'")
+
+def openFileResult(parent, msg, filepath):
+    printStatus(parent)
+    reply = QMessageBox.question(parent, 'Notification', msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+    if reply == QMessageBox.Yes:
+        openFileExplorer(filepath)
+    return
