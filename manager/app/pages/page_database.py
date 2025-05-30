@@ -365,9 +365,6 @@ class Manager_Database:
             option = {}
 
             if dialog.exec_() == QDialog.Accepted:
-
-                openConsole("DB 저장")
-
                 pid = str(uuid.uuid4())
                 option['pid'] = pid
                 option['dateOption'] = 'all' if dialog.radio_all.isChecked() else 'part'
