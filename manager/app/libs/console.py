@@ -13,24 +13,37 @@ _term_win_id = None
 
 
 def _open_console_windows(msg: str):
-    ctypes.windll.kernel32.AllocConsole()
-    sys.stdout = open("CONOUT$", "w", buffering=1, encoding=sys.stdout.encoding)
-    sys.stderr = sys.stdout
+    global original_stdout
+    try:
+        if platform.system() != 'Windows':
+            return
+        ctypes.windll.kernel32.AllocConsole()  # 새로운 콘솔 창 할당
+        sys.stdout = open("CONOUT$", "w")  # 표준 출력을 콘솔로 리다이렉트
 
-    # 창 크기(80×30) ‒ 필요 없으면 제거
-    hConsole = ctypes.windll.kernel32.GetStdHandle(-11)
-    rect = SMALL_RECT(0, 0, 79, 29)
-    ctypes.windll.kernel32.SetConsoleWindowInfo(hConsole, True, ctypes.byref(rect))
+        # 콘솔 창 크기 설정
+        # STD_OUTPUT_HANDLE = -11
+        hConsole = ctypes.windll.kernel32.GetStdHandle(-11)
+        rect = SMALL_RECT(0, 0, 79, 29)  # 콘솔 창 크기 설정 (가로 80, 세로 30)
+        ctypes.windll.kernel32.SetConsoleWindowInfo(
+            hConsole, True, ctypes.byref(rect))
 
-    print("[ MANAGER ]\n")
-    if msg:
-        print(f"< {msg} >\n")
+        print("[ MANAGER ]")
+        print(f'\n< {msg} >\n')  # 테스트 출력
+    except Exception as e:
+        sys.stdout = original_stdout  # 에러 발생 시 stdout 복구
+        print(e)
 
 def _close_console_windows():
-    sys.stdout.close()
-    ctypes.windll.kernel32.FreeConsole()
-    sys.stdout = _original_stdout
-    sys.stderr = _original_stdout
+    global original_stdout
+    try:
+        if platform.system() != 'Windows':
+            return
+        sys.stdout.close()  # 콘솔 창 출력 닫기
+        sys.stdout = original_stdout  # stdout 복구
+        ctypes.windll.kernel32.FreeConsole()  # 콘솔 창 해제
+    except Exception as e:
+        sys.stdout = original_stdout  # 에러 발생 시 stdout 복구
+        print(e)
 
 def _open_console_macos(msg: str = ""):
     global _log_file, _log_path, _term_win_id
