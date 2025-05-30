@@ -119,6 +119,10 @@ class DataProcess:
         return (width, height)
 
     def NaverNewsArticleAnalysis(self, data, file_path):
+        if 'id' not in data.columns:
+            # 1부터 시작하는 연속 번호를 부여
+            data.insert(0, 'id', range(1, len(data) + 1))
+            
         if 'Article Press' not in list(data.columns):
             QMessageBox.warning(self.main, f"Warning",
                                 f"NaverNews Article CSV 형태와 일치하지 않습니다")
@@ -275,6 +279,10 @@ class DataProcess:
             file.write(description_text)
 
     def NaverNewsStatisticsAnalysis(self, data, file_path):
+        if 'id' not in data.columns:
+            # 1부터 시작하는 연속 번호를 부여
+            data.insert(0, 'id', range(1, len(data) + 1))
+        
         if 'Male' not in list(data.columns):
             QMessageBox.warning(self.main, f"Warning",
                                 f"NaverNews Statistics CSV 형태와 일치하지 않습니다")
@@ -492,6 +500,10 @@ class DataProcess:
             file.write(description_text)
 
     def NaverNewsReplyAnalysis(self, data, file_path):
+        if 'id' not in data.columns:
+            # 1부터 시작하는 연속 번호를 부여
+            data.insert(0, 'id', range(1, len(data) + 1))
+    
         if 'Reply Date' not in list(data.columns):
             QMessageBox.warning(self.main, f"Warning",
                                 f"NaverNews Reply CSV 형태와 일치하지 않습니다")
@@ -679,6 +691,10 @@ class DataProcess:
             file.write(description_text)
 
     def NaverNewsRereplyAnalysis(self, data, file_path):
+        if 'id' not in data.columns:
+            # 1부터 시작하는 연속 번호를 부여
+            data.insert(0, 'id', range(1, len(data) + 1))
+            
         if 'Rereply Date' not in list(data.columns):
             QMessageBox.warning(self.main, f"Warning",
                                 f"NaverNews Rereply CSV 형태와 일치하지 않습니다")
@@ -839,6 +855,10 @@ class DataProcess:
             file.write(description_text)
 
     def NaverCafeArticleAnalysis(self, data, file_path):
+        if 'id' not in data.columns:
+            # 1부터 시작하는 연속 번호를 부여
+            data.insert(0, 'id', range(1, len(data) + 1))
+
         if 'NaverCafe Name' not in list(data.columns):
             QMessageBox.warning(self.main, f"Warning",
                                 f"NaverCafe Article CSV 형태와 일치하지 않습니다")
@@ -969,6 +989,10 @@ class DataProcess:
             file.write(description_text)
 
     def NaverCafeReplyAnalysis(self, data, file_path):
+        if 'id' not in data.columns:
+            # 1부터 시작하는 연속 번호를 부여
+            data.insert(0, 'id', range(1, len(data) + 1))
+
         # 'Article URL' 열이 있는지 확인
         if 'Article URL' not in list(data.columns):
             QMessageBox.warning(self.main, "Warning",
@@ -1050,11 +1074,9 @@ class DataProcess:
             file.write(description_text)
 
     def YouTubeArticleAnalysis(self, data, file_path):
-        import os
-        import pandas as pd
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        from PyQt5.QtWidgets import QMessageBox
+        if 'id' not in data.columns:
+            # 1부터 시작하는 연속 번호를 부여
+            data.insert(0, 'id', range(1, len(data) + 1))
 
         # 1) 필수 컬럼 검증
         if 'YouTube Channel' not in data.columns:
@@ -1381,6 +1403,10 @@ class DataProcess:
             file.write(description_text)
 
     def YouTubeReplyAnalysis(self, data, file_path):
+        if 'id' not in data.columns:
+            # 1부터 시작하는 연속 번호를 부여
+            data.insert(0, 'id', range(1, len(data) + 1))
+
         # 0) 필수 컬럼 검증
         required_cols = [
             "Reply Writer",  # 댓글 작성자
@@ -1695,16 +1721,9 @@ class DataProcess:
             f.write(description_text)
 
     def YouTubeRereplyAnalysis(self, data, file_path):
-        """
-        기존 코드에서 Reply → Rereply, "댓글" → "대댓글" 로 변경한 예시.
-        주의: CSV 파일 컬럼명도 동일하게 변경되어 있어야 합니다.
-        """
-
-        import os
-        import pandas as pd
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        from PyQt5.QtWidgets import QMessageBox
+        if 'id' not in data.columns:
+            # 1부터 시작하는 연속 번호를 부여
+            data.insert(0, 'id', range(1, len(data) + 1))
 
         # 0) 필수 컬럼 검증
         required_cols = [
