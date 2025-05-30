@@ -94,9 +94,8 @@ def deleteCrawlDbBg(name: str):
 
 
 def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
-    if mine == 1:
-        user = user_db.find_one({"uid": userUid})
-        username = user['name']
+    user = user_db.find_one({"uid": userUid})
+    username = user['name']
 
     # 1) Mongo 에서 모두 불러오기
     cursor = crawlList_db.find()
@@ -125,6 +124,9 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         crawlDb['endDate'] = parts[3]
         crawlDb['crawlOption'] = str(crawlDb['crawlOption'])
         crawlDb['crawlSpeed'] = str(crawlDb['crawlSpeed'])
+        
+        if username != 'admin' and crawlDb['requester'] == 'admin':
+            continue
 
         if mine == 1 and crawlDb['requester'] != username:
             continue
