@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, \
     QPushButton, QStackedWidget, QListWidget, QComboBox
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QKeySequence, QFont
-from core.setting import get_setting, set_setting
+from core.setting import *
 from config import VERSION
 from datetime import datetime
 import platform

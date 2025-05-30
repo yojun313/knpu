@@ -2,13 +2,13 @@ import traceback
 import warnings
 from PyQt5.QtWidgets import  QMessageBox
 import bcrypt
-from ui.table import makeTable
-from services.auth import checkPassword
-from ui.status import printStatus
-from config import ADMIN_PASSWORD, VERSION
-from services.api import Request
-from services.logging import userLogging, programBugLog
-from core.shortcut import resetShortcuts
+from config import *
+from ui.table import *
+from ui.status import *
+from services.auth import *
+from services.api import *
+from services.logging import *
+from core.shortcut import *
 
 warnings.filterwarnings("ignore")
 

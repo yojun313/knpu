@@ -5,7 +5,7 @@ from functools import partial
 import webbrowser
 import warnings
 import traceback
-from services.logging import programBugLog
+from services.logging import *
 warnings.filterwarnings("ignore")
 
 
