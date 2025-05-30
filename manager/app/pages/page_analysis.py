@@ -322,7 +322,7 @@ class Manager_Analysis:
             openFileResult(
                 self.main, 
                 f"{os.path.basename(csv_path)} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", 
-                os.path.dirname(csv_path), f"{os.path.splitext(os.path.basename(csv_path))[0]}_analysis"
+                os.path.join(os.path.dirname(csv_path), f"{os.path.splitext(os.path.basename(csv_path))[0]}_analysis")
             )
 
         except Exception as e:
