@@ -9,7 +9,6 @@ import subprocess
 import shutil
 import platform
 import uuid
-from datetime import datetime
 from io import BytesIO
 
 import pandas as pd
@@ -22,26 +21,23 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
     QWidget, QMainWindow, QDialog, QVBoxLayout, QTableWidget,
-    QPushButton, QLabel, QTabWidget,
+    QPushButton, QTabWidget,
     QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
 )
 
 from urllib.parse import unquote
-from libs.console import openConsole, closeConsole
-from libs.viewer import open_viewer, close_viewer, register_process
-from ui.table import makeTable
-from ui.status import printStatus
-from ui.finder import openFileExplorer
-
-from services.auth import checkPassword
-from services.crawldb import updateDB
-from services.api import Request, get_api_headers
-from services.logging import userLogging, programBugLog
-
-from core.setting import get_setting, set_setting
-from core.shortcut import resetShortcuts
-
-from config import ADMIN_PASSWORD, MANAGER_SERVER_API
+from libs.console import *
+from libs.viewer import *
+from ui.table import *
+from ui.status import *
+from ui.finder import *
+from services.auth import *
+from services.crawldb import *
+from services.api import *
+from services.logging import *
+from core.setting import *
+from core.shortcut import *
+from config import *
 
 warnings.filterwarnings("ignore")
 
@@ -389,6 +385,7 @@ class Manager_Database:
                 return
 
             register_process(pid, f"Crawl DB Save")
+            printStatus(self.main, "서버에서 데이터 처리 중...")
             viewer = open_viewer(pid)
 
             download_url = MANAGER_SERVER_API + f"/crawls/{targetUid}/save"
@@ -423,22 +420,24 @@ class Manager_Database:
 
             close_viewer(viewer)
             openConsole("CSV로 저장")
+            printStatus(self.main, "다운로드 중...")
 
             with open(local_zip, "wb") as f, tqdm(
                 total=total_size,
                 file=sys.stdout,
-                unit="B", unit_scale=True, unit_divisor=1024,
-                desc="Downloading DB",
-                ascii=True, ncols=80,
-                bar_format="{desc}: |{bar}| {percentage:3.0f}% [{n_fmt}/{total_fmt} {unit}] @ {rate_fmt}",
-                dynamic_ncols=True
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                desc="Downloading",
+                dynamic_ncols=True,
+                bar_format="{desc}: |{bar}| {percentage:3.0f}% • {n_fmt}/{total_fmt} {unit} • {rate_fmt}"
             ) as pbar:
                 for chunk in response.iter_content(8192):
                     if chunk:
                         f.write(chunk)
                         pbar.update(len(chunk))
 
-            printStatus(self.main, "다운로드 완료, 압축 해제 중…")
+            printStatus(self.main, "다운로드 완료, 압축 해제 중...")
             print("\n다운로드 완료, 압축 해제 중...\n")
 
             # 압축 풀 폴더 이름은 zip 파일 이름(확장자 제외)
@@ -451,13 +450,8 @@ class Manager_Database:
 
             os.remove(local_zip)
 
-            printStatus(self.main)
             closeConsole()
-
-            reply = QMessageBox.question(self.main, 'Notification', f"DB 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
-                openFileExplorer(extract_path)
+            openFileResult(self.main, f"DB 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
