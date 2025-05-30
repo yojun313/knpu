@@ -57,8 +57,7 @@ class MainWindow(QMainWindow):
 
             try:
                 self.listWidget.setCurrentRow(0)
-                if get_setting('BootTerminal') == 'on':
-                    openConsole("Boot Process")
+                if get_setting('BootTerminal') == 'on': openConsole("Boot Process")
                 self.startTime = datetime.now()
                 checkNetwork(self)
                 self.listWidget.currentRowChanged.connect(self.display)
@@ -119,7 +118,7 @@ class MainWindow(QMainWindow):
                 self.managerDatabaseObj.setDatabaseShortcut()
                 userLogging(f'Booting ({getUserLocation(self)})')
 
-                closeConsole()
+                if get_setting('BootTerminal') == 'on': closeConsole()
                 self.closeBootscreen()
 
                 if get_setting('ScreenSize') == 'max':
