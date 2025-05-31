@@ -375,14 +375,14 @@
           <item>
            <widget class="QPushButton" name="web_sue_button">
             <property name="text">
-             <string>GPT 고소장</string>
+             <string>AI 고소장 생성기</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="web_downloadpage_button">
+           <widget class="QPushButton" name="web_carnumber_button">
             <property name="text">
-             <string>Download Page</string>
+             <string>AI 차량 번호판 인식</string>
             </property>
            </widget>
           </item>

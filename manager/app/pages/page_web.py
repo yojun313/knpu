@@ -40,19 +40,13 @@ class Manager_Web:
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
-    def web_open_downloadbrowser(self, url):
-        webbrowser.open('https://knpu.re.kr:90')
 
     def web_buttonMatch(self):
         self.main.crawler_server_button.clicked.connect(
             partial(self.web_open_webbrowser, "https://crawler.knpu.re.kr", self.crawler_web_layout))
 
-        self.main.web_downloadpage_button.clicked.connect(
-            self.web_open_downloadbrowser)
-        self.main.web_homepage_button.clicked.connect(
-            partial(self.web_open_webbrowser, "https://knpu.re.kr", self.web_web_layout))
-        self.main.web_sue_button.clicked.connect(
-            partial(self.web_open_webbrowser, "http://bigmaclab-crawler.kro.kr:112", self.web_web_layout))
-
-        self.main.web_github_button.clicked.connect(
-            partial(self.web_open_webbrowser, "https://github.com/yojun313", self.web_web_layout))
+        self.main.web_homepage_button.clicked.connect(partial(webbrowser.open, "https://knpu.re.kr"))
+        self.main.web_sue_button.clicked.connect(partial(webbrowser.open, "https://complaint.knpu.re.kr"))
+        self.main.web_carnumber_button.clicked.connect(partial(webbrowser.open, "https://carnumber.knpu.re.kr"))
+        self.main.web_github_button.clicked.connect(partial(self.web_open_webbrowser, "https://github.com/yojun313", self.web_web_layout))
+    
