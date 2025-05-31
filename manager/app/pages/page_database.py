@@ -31,6 +31,7 @@ from libs.viewer import *
 from ui.table import *
 from ui.status import *
 from ui.finder import *
+from ui.dialogs import *
 from services.auth import *
 from services.crawldb import *
 from services.api import *
@@ -49,7 +50,8 @@ class Manager_Database:
 
         self.DBTableColumn = ['Type', 'Keyword',
                               'StartDate', 'EndDate', 'Option', 'Status', 'User', 'Size']
-        makeTable(self.main, self.main.database_tablewidget, self.DB['DBtable'], self.DBTableColumn, self.viewDBinfo)
+        makeTable(self.main, self.main.database_tablewidget,
+                  self.DB['DBtable'], self.DBTableColumn, self.viewDBinfo)
         self.matchButton()
         self.chatgpt_mode = False
         self.console_open = False
@@ -129,9 +131,11 @@ class Manager_Database:
                 self.close_button.setFixedWidth(80)  # 가로 길이 조정
                 self.close_button.clicked.connect(self.closeWindow)
                 self.button_layout.addWidget(self.close_button)
-                
-                QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.closeWindow)
-                QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.closeWindow)
+
+                QShortcut(QKeySequence("Ctrl+W"),
+                          self).activated.connect(self.closeWindow)
+                QShortcut(QKeySequence("Ctrl+ㅈ"),
+                          self).activated.connect(self.closeWindow)
 
                 # 버튼 레이아웃을 메인 레이아웃에 추가
                 self.layout.addLayout(self.button_layout)
@@ -163,7 +167,7 @@ class Manager_Database:
                 with zipfile.ZipFile(BytesIO(response.content)) as zf:
                     file_list = zf.namelist()
                     file_list.sort()
-                    
+
                     for file_name in file_list:
                         table_name = file_name.replace('.parquet', '')
 
@@ -240,7 +244,7 @@ class Manager_Database:
         try:
             search_text = self.main.database_searchDB_lineinput.text().lower()
             if not search_text or search_text == "":
-                if get_setting['DBKeywordSort'] == 'default':
+                if get_setting('DBKeywordSort') == 'default':
                     set_setting('DBKeywordSort', 'on')
                     QMessageBox.information(
                         self.main, "Information", "DB 정렬 기준이 '키워드순'으로 변경되었습니다")
@@ -349,9 +353,12 @@ class Manager_Database:
             selectedRow = self.main.database_tablewidget.currentRow()
             if not selectedRow >= 0:
                 return
-            printStatus(self.main, "DB를 저장할 위치를 선택하여 주십시오")
+            if self.DB['DBdata'][selectedRow]['status'] == 'Working':
+                QMessageBox.warning(self.main, "Information", "현재 크롤링이 진행 중인 DB는 저장할 수 없습니다")
+                return
 
             targetUid = self.DB['DBuids'][selectedRow]
+            printStatus(self.main, "DB를 저장할 위치를 선택하여 주십시오")            
 
             folder_path = QFileDialog.getExistingDirectory(
                 self.main, "DB를 저장할 위치를 선택하여 주십시오", self.main.localDirectory)
@@ -360,7 +367,6 @@ class Manager_Database:
                 return
             printStatus(self.main, "DB 저장 옵션을 설정하여 주십시오")
 
-            from ui.dialogs import SaveDbDialog
             dialog = SaveDbDialog()
             option = {}
 
@@ -448,7 +454,8 @@ class Manager_Database:
             os.remove(local_zip)
 
             closeConsole()
-            openFileResult(self.main, f"DB 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
+            openFileResult(
+                self.main, f"DB 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())

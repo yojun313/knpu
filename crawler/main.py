@@ -84,11 +84,24 @@ class Crawler(CrawlerModule):
         self.startDate = startDate
         self.endDate = endDate
         self.keyword = keyword
-        self.DBkeyword = keyword.replace(
-            '+', '$').replace('-', '$').replace(' ', '')
-        self.DBkeyword = self.DBkeyword.split('|', 1)[0].strip()
-        self.DBkeyword = self.DBkeyword.translate(
-            str.maketrans('', '', '/\\?%@\'":*|,;.&'))
+        self.DBkeyword = keyword
+
+        replacements = {
+            '\\': '＼',  # U+FF3C
+            '/': '／',   # U+FF0F
+            ':': '：',   # U+FF1A
+            '*': '＊',   # U+FF0A
+            '?': '？',   # U+FF1F
+            '"': '＂',   # U+FF02
+            '<': '＜',   # U+FF1C
+            '>': '＞',   # U+FF1E
+            '|': '¦',    # U+00A6
+        }
+
+        # 3) 매핑 테이블을 이용해 한 번에 replace
+        for illegal, safe in replacements.items():
+            self.DBkeyword = self.DBkeyword.replace(illegal, safe)
+        
         self.upload = upload
 
         self.startDate_form = datetime.strptime(startDate, '%Y%m%d').date()
