@@ -458,12 +458,15 @@ def previewCrawlDb(uid: str):
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file in os.listdir(base_path):
-            if not file.endswith(".parquet") or "info" in file or "token" in file:
+            if "token" in file:
                 continue
 
             file_path = os.path.join(base_path, file)
             try:
-                df = pd.read_parquet(file_path)
+                if file.endswith('.parquet'):
+                    df = pd.read_parquet(file_path)
+                elif file.endswith('.csv'):
+                    df = pd.read_csv(file_path, encoding='utf-8-sig')
                 df_preview = pd.concat(
                     [df.head(50), df.tail(50)]).drop_duplicates()
 
