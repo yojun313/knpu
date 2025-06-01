@@ -148,7 +148,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         if float(size) == 0:
             dbsize = getFolderSize(os.path.join(crawldata_path, name))
             gb, mb = dbsize
-            fullStorage += float(gb)
+            fullStorage += round(float(gb), 1)
             crawlDb['dbSize'] = f"{mb} MB" if gb < 1 else f"{gb} GB"
         else:
             fullStorage += float(size)
