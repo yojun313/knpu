@@ -152,8 +152,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
             crawlDb['dbSize'] = f"{mb} MB" if gb < 1 else f"{gb} GB"
         else:
             fullStorage += float(size)
-            crawlDb['dbSize'] = f"{int(float(size)*1024)} MB" if float(
-                size) < 1 else f"{size} GB"
+            crawlDb['dbSize'] = f"{int(float(size)*1024)} MB" if float(size) < 1 else f"{round(size, 1)} GB"
         filteredList.append(crawlDb)
 
     crawlDbList = filteredList
