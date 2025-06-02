@@ -13,6 +13,7 @@ from starlette.responses import FileResponse
 from io import BytesIO
 import pandas as pd
 from app.libs.progress import send_message
+import time
 import uuid
 import os
 import re
@@ -256,9 +257,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
 
     temp_directory = os.path.join(os.path.dirname(__file__), '..', 'temp')
     
-    import time
-    time.sleep(3)
-    
+    time.sleep(1)
     send_message(pid, f"DB에서 테이블 목록을 가져오는 중...")
     localDbpath = os.path.join(crawldata_path, targetDB)
 
