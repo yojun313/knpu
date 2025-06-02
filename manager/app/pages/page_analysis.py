@@ -21,6 +21,7 @@ import json
 from urllib.parse import unquote
 import zipfile
 import requests
+import time
 from PyQt5.QtWidgets import *
 from libs.console import *
 from ui.finder import *
@@ -562,6 +563,9 @@ class Manager_Analysis:
             }
 
             download_url = MANAGER_SERVER_API + "/analysis/kemkim"
+            
+            time.sleep(1)
+            send_message(pid, "토큰 데이터 업로드 중...")
             
             printStatus(self.main, "KEMKIM 분석 중...")
             response = requests.post(
