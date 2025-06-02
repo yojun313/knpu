@@ -255,7 +255,10 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
     pid = saveOption['pid']
 
     temp_directory = os.path.join(os.path.dirname(__file__), '..', 'temp')
-
+    
+    import time
+    time.sleep(3)
+    
     send_message(pid, f"DB에서 테이블 목록을 가져오는 중...")
     localDbpath = os.path.join(crawldata_path, targetDB)
 
