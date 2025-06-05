@@ -5,12 +5,7 @@ from .board_routes import router as board_router
 from .auth_routes import router as auth_router
 from .analysis_routes import router as analysis_router
 from .ping_routes import router as ping_router
-from dotenv import load_dotenv
-import jwt
-import os
-from jwt import PyJWTError
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends
 from app.libs.jwt import verify_token
 
 

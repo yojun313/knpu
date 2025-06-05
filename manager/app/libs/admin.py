@@ -159,16 +159,23 @@ def display_user_bug_reports():
 
 def display_logs_by_date():
     while True:
-        today = get_today_str()
-        date_input = Prompt.ask(
-            f"\n조회할 날짜 입력 (기본값 {today}, 'q' → 종료)", default=today)
+        today = get_today_str()  # 예: "2025-06-06"
+        today_mmdd = today[5:]   # "06-06"
+        date_input = Prompt.ask(f"\n조회할 날짜 입력 (기본값 {today_mmdd}, 'q' → 종료)", default=today_mmdd)
         if date_input.lower() in ["q", "quit", "exit"]:
             break
-        if not is_valid_date(date_input):
-            console.print("[red]유효한 날짜 형식이 아닙니다. (YYYY-MM-DD)[/red]")
+
+        # MMDD 형식을 MM-DD로 자동 변환
+        if len(date_input) == 4 and date_input.isdigit():
+            date_input = f"{date_input[:2]}-{date_input[2:]}"
+        
+        date_str = f"2025-{date_input}"
+        if not is_valid_date(date_str):
+            console.print("[red]유효한 날짜 형식이 아닙니다. (MMDD 또는 MM-DD)[/red]")
             continue
-        display_logs(
-            list(user_logs.find({date_input: {"$exists": True}})), date_input, "유저")
+
+        display_logs(list(user_logs.find({date_str: {"$exists": True}})), date_str, "유저")
+
 
 
 def display_todays_logs():

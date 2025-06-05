@@ -1,9 +1,6 @@
 from pymongo import MongoClient
-import urllib.parse
 from dotenv import load_dotenv
 import os
-import sys
-from .mysql import mySQL
 
 load_dotenv()
 
