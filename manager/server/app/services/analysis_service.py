@@ -84,63 +84,66 @@ def start_kemkim(option: KemKimOption, token_data):
             content={"error": "KEMKIM 분석 중 오류 발생", "message": str(e)}
         )
 
+import re, time, pandas as pd
+from kiwipiepy import Kiwi
+
 def tokenization(
     pid: str,
     data: pd.DataFrame,
     columns,
-    processes: int | None = None,
-    chunksize: int = 1_000,
     update_interval: int = 500,
 ) -> pd.DataFrame:
     """
-    columns      : 토큰화할 열 이름 또는 열 리스트
-    processes    : Pool 프로세스 수 (None => mp.cpu_count())
-    chunksize    : imap_unordered 에 넘길 chunk 크기
-    update_interval : 이 개수마다 진행 상황 메시지 전송
+    ▸ pid            : 진행 상황을 send_message(pid, …)로 전달할 때 사용
+    ▸ data           : 원본 DataFrame (in-place 수정)
+    ▸ columns        : 토큰화할 열 이름 또는 이름 리스트
+    ▸ update_interval: 이 개수마다 진행률 메시지 전송
     """
-    # ── 1) 보조 함수들 ──────────────────────────────────────────────
-    def _init_kiwi():
-        global kiwi
-        kiwi = Kiwi(num_workers=-1)       # 각 프로세스마다 1회만 생성
+    # 1) Kiwi 한 번만 로드
+    kiwi = Kiwi(num_workers=-1)
 
-    def _tokenize_single(text: str) -> str:
-        if not isinstance(text, str):
-            return ""
-        text = re.sub(r"[^가-힣a-zA-Z\s]", "", text)
-        tokens = kiwi.tokenize(text)
-        return ", ".join(t.form for t in tokens if t.tag in ("NNG", "NNP"))
-
-    # ── 2) 매개변수 정돈 ───────────────────────────────────────────
+    # 2) 단일 str → list 로 통일
     if isinstance(columns, str):
         columns = [columns]
 
-    # ── 3) 멀티프로세스 풀 생성 ──────────────────────────────────
-    with mp.Pool(processes=processes, initializer=_init_kiwi) as pool:
-        for col in columns:
-            if col not in data.columns:
-                send_message(pid, f"⚠️  열 '{col}'이(가) 존재하지 않아 건너뜁니다.")
-                continue
+    # 3) 각 열을 순차적으로 토큰화
+    for col in columns:
+        if col not in data.columns:
+            send_message(pid, f"⚠️  열 '{col}'이(가) 존재하지 않습니다 → 건너뜀")
+            continue
 
-            texts = data[col].tolist()
-            total = len(texts)
-            tokenized_col = []
+        texts        = data[col].tolist()
+        total        = len(texts)
+        tokenized_col = []
 
-            # ── 3-1) 진행 메시지 시작 ────────────────────────────
-            send_message(pid, f"[{col}] 토큰화 시작 (총 {total:,} rows)")
+        send_message(pid, f"[{col}] 토큰화 시작 (총 {total:,} rows)")
 
-            # ── 3-2) 비동기 스트리밍 처리 ───────────────────────
-            for idx, tok in enumerate(
-                pool.imap_unordered(_tokenize_single, texts, chunksize=chunksize), 1
-            ):
-                tokenized_col.append(tok)
+        total_time = 0.0
+        for idx, text in enumerate(texts, 1):
+            start = time.time()
 
-                if idx % update_interval == 0 or idx == total:
-                    progress = round(idx / total * 100, 2)
-                    send_message(pid, f"[{col}] 진행률 {progress}%  ({idx:,}/{total:,})")
+            # ── 실제 토큰화 ─────────────────────────────
+            if isinstance(text, str):
+                cleaned  = re.sub(r"[^가-힣a-zA-Z\s]", "", text)
+                tokens   = kiwi.tokenize(cleaned)
+                nouns    = [t.form for t in tokens if t.tag in ("NNG", "NNP")]
+                tokenized_col.append(", ".join(nouns))
+            else:
+                tokenized_col.append("")
 
-            # ── 3-3) DataFrame 열 덮어쓰기 & 완료 메시지 ─────────
-            data[col] = tokenized_col
-            send_message(pid, f"[{col}] 토큰화 완료 ✅")
+            # ── 진행률 출력 ─────────────────────────────
+            total_time += time.time() - start
+            if idx % update_interval == 0 or idx == total:
+                pct   = round(idx / total * 100, 2)
+                avg   = total_time / idx
+                remain_sec = avg * (total - idx)
+                m, s  = divmod(int(remain_sec), 60)
+                send_message(pid,
+                    f"[{col}] 진행률 {pct}% ({idx:,}/{total:,}) • 예상 남은 시간 {m}분 {s}초"
+                )
+
+        # DataFrame 에 덮어쓰기
+        data[col] = tokenized_col
+        send_message(pid, f"[{col}] 토큰화 완료 ✅")
 
     return data
-
