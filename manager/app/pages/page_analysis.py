@@ -1145,6 +1145,54 @@ class Manager_Analysis:
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
+    def select_tokenize(self):
+        dialog = SelectTokenizeDialog(self.run_tokenize_file)
+        dialog.exec_()
+    
+    def run_tokenize_file(self):
+        try:
+            selected_directory = self.analysis_getfiledirectory(
+                self.file_dialog)
+            if len(selected_directory) == 0:
+                QMessageBox.warning(
+                    self.main, f"Wrong Selection", f"선택된 CSV 토큰 파일이 없습니다")
+                return
+            if selected_directory[0] == False:
+                QMessageBox.warning(self.main, f"Wrong Format",
+                                    f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
+                return
+            if len(selected_directory) != 1:
+                QMessageBox.warning(
+                    self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
+                return
+            
+            csvfile_name = os.path.basename(selected_directory[0])
+
+            printStatus(self.main, "토큰 데이터를 저장할 위치를 선택하세요")
+            save_path = QFileDialog.getExistingDirectory(self.main, "토큰 데이터를 저장할 위치를 선택하세요", self.main.localDirectory)
+            if save_path == '':
+                printStatus(self.main)
+                return
+            
+            df_headers = pd.read_csv(selected_directory[0], nrows=0)
+            column_names = df_headers.columns.tolist()
+            
+            dialog = TokenizeFileDialog(column_names, parent=self.main)
+            if dialog.exec_() == QDialog.Accepted:
+                selected_columns = dialog.get_selected_columns()
+                print("사용자가 선택한 열:", selected_columns)
+
+                if not selected_columns:
+                    printStatus(self.main, "❗ 열을 하나 이상 선택하세요.")
+                    return
+                        
+            
+            
+        except Exception as e:
+            programBugLog(self.main, traceback.format_exc())
+            return
+    
+    
     def anaylsis_buttonMatch(self):
 
         self.main.analysis_timesplitfile_btn.clicked.connect(
@@ -1156,6 +1204,7 @@ class Manager_Analysis:
         self.main.analysis_wordcloud_btn.clicked.connect(
             self.run_wordcloud)
         self.main.analysis_kemkim_btn.clicked.connect(self.select_kemkim)
+        self.main.analysis_tokenization_btn.clicked.connect(self.select_tokenize)
 
         self.main.analysis_timesplitfile_btn.setToolTip("Ctrl+D")
         self.main.analysis_dataanalysisfile_btn.setToolTip("Ctrl+A")

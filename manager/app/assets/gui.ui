@@ -203,6 +203,13 @@
                  </widget>
                 </item>
                 <item>
+                 <widget class="QPushButton" name="analysis_tokenization_btn">
+                  <property name="text">
+                   <string>토큰화</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <widget class="QPushButton" name="analysis_kemkim_btn">
                   <property name="text">
                    <string>KEM KIM</string>
