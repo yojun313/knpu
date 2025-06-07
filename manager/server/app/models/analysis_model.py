@@ -18,3 +18,7 @@ class KemKimOption(BaseModel):
     exception_word_list: list
     exception_filename: str
     
+class TokenizeOption(BaseModel):
+    pid: str
+    csvfile_name: str
+    column_names: list
