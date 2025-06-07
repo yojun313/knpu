@@ -1196,7 +1196,6 @@ class Manager_Analysis:
 
             option = {
                 "pid"          : pid,
-                "csvfile_name" : tokenfile_name,
                 "column_names" : selected_columns,
             }
 
@@ -1232,13 +1231,7 @@ class Manager_Analysis:
 
             # ───────────────────────────── 6) Content-Disposition에서 파일명 추출
             content_disp = response.headers.get("Content-Disposition", "")
-            m  = re.search(r'filename="(?P<fname>[^"]+)"', content_disp)
-            if m:
-                csv_name = m.group("fname")
-            else:
-                m2 = re.search(r"filename\*=utf-8''(?P<fname>[^;]+)", content_disp)
-                csv_name = unquote(m2.group("fname")) if m2 else "tokenized.csv"
-
+            csv_name   = f"token_{tokenfile_name}"
             local_csv  = os.path.join(save_path, csv_name)
             total_size = int(response.headers.get("Content-Length", 0))
 
@@ -1261,7 +1254,7 @@ class Manager_Analysis:
                         pbar.update(len(chunk))
 
             send_message(pid, "✅ Parquet 파일 다운로드 완료")
-            printStatus(self.main, "다운로드 완료")
+            printStatus(self.main)
 
             closeConsole()
             openFileResult(

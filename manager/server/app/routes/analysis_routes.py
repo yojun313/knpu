@@ -51,7 +51,7 @@ async def tokenize_file(
     byte_buffer.seek(0)
 
     # ── 4) 스트리밍 응답 ──────────────────────────────────────
-    filename   = f'token_{os.path.splitext(option["csvfile_name"])[0]}.csv'
+    filename   = f'tokenized.csv'
     media_type = "text/csv"
     cd_header  = f"attachment; filename*=UTF-8''{quote(filename)}"
 
