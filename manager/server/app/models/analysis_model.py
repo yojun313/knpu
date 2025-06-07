@@ -20,5 +20,4 @@ class KemKimOption(BaseModel):
     
 class TokenizeOption(BaseModel):
     pid: str
-    csvfile_name: str
     column_names: list
