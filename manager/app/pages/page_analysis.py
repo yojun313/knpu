@@ -1151,47 +1151,131 @@ class Manager_Analysis:
     
     def run_tokenize_file(self):
         try:
-            selected_directory = self.analysis_getfiledirectory(
-                self.file_dialog)
+            # ───────────────────────────── 1) CSV 파일 검증
+            selected_directory = self.analysis_getfiledirectory(self.file_dialog)
             if len(selected_directory) == 0:
-                QMessageBox.warning(
-                    self.main, f"Wrong Selection", f"선택된 CSV 토큰 파일이 없습니다")
+                QMessageBox.warning(self.main, "Wrong Selection", "선택된 CSV 토큰 파일이 없습니다.")
                 return
-            if selected_directory[0] == False:
-                QMessageBox.warning(self.main, f"Wrong Format",
+            if selected_directory[0] is False:
+                QMessageBox.warning(self.main, "Wrong Format",
                                     f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
                 return
             if len(selected_directory) != 1:
-                QMessageBox.warning(
-                    self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
+                QMessageBox.warning(self.main, "Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오.")
                 return
-            
-            csvfile_name = os.path.basename(selected_directory[0])
 
+            csv_path     = selected_directory[0]
+            tokenfile_name = os.path.basename(csv_path)
+
+            # ───────────────────────────── 2) 저장 폴더 선택
             printStatus(self.main, "토큰 데이터를 저장할 위치를 선택하세요")
-            save_path = QFileDialog.getExistingDirectory(self.main, "토큰 데이터를 저장할 위치를 선택하세요", self.main.localDirectory)
+            save_path = QFileDialog.getExistingDirectory(
+                self.main, "토큰 데이터를 저장할 위치를 선택하세요", self.main.localDirectory
+            )
             if save_path == '':
                 printStatus(self.main)
                 return
-            
-            df_headers = pd.read_csv(selected_directory[0], nrows=0)
-            column_names = df_headers.columns.tolist()
-            
-            dialog = TokenizeFileDialog(column_names, parent=self.main)
-            if dialog.exec_() == QDialog.Accepted:
-                selected_columns = dialog.get_selected_columns()
-                print("사용자가 선택한 열:", selected_columns)
 
-                if not selected_columns:
-                    printStatus(self.main, "❗ 열을 하나 이상 선택하세요.")
-                    return
-                        
-            
-            
+            # ───────────────────────────── 3) 열 선택 Dialog
+            df_headers   = pd.read_csv(csv_path, nrows=0)
+            column_names = df_headers.columns.tolist()
+
+            dialog = TokenizeFileDialog(column_names, parent=self.main)
+            if dialog.exec_() != QDialog.Accepted:
+                printStatus(self.main)
+                return
+            selected_columns = dialog.get_selected_columns()
+            if not selected_columns:
+                printStatus(self.main, "❗ 열을 하나 이상 선택해주세요.")
+                return
+
+            # ───────────────────────────── 4) 프로세스 등록/뷰어
+            pid = str(uuid.uuid4())
+            register_process(pid, "Tokenizing File")
+            viewer = open_viewer(pid)
+
+            option = {
+                "pid"          : pid,
+                "csvfile_name" : tokenfile_name,
+                "column_names" : selected_columns,
+            }
+
+            download_url = MANAGER_SERVER_API + "/analysis/tokenize"
+
+            # ───────────────────────────── 5) 서버 요청
+            time.sleep(1)
+            send_message(pid, "파일 데이터 업로드 중...")
+            printStatus(self.main, "파일 토큰화 중...")
+
+            with open(csv_path, "rb") as file_obj:
+                response = requests.post(
+                    download_url,
+                    files={
+                        "csv_file": (tokenfile_name, file_obj, "text/csv"),
+                        "option"  : (None, json.dumps(option), "application/json"),
+                    },
+                    headers=get_api_headers(),
+                    stream=True,
+                    timeout=3600
+                )
+
+            # ────────── 오류 처리 ────────────────────────────────
+            if response.status_code != 200:
+                try:
+                    error_data = response.json()
+                    error_msg  = error_data.get("message") or error_data.get("error") or "토큰화 실패"
+                except Exception:
+                    error_msg = response.text or "토큰화 중 알 수 없는 오류가 발생했습니다."
+                QMessageBox.critical(self.main, "토큰화 실패", error_msg)
+                printStatus(self.main)
+                return
+
+            # ───────────────────────────── 6) Content-Disposition에서 파일명 추출
+            content_disp = response.headers.get("Content-Disposition", "")
+            m  = re.search(r'filename="(?P<fname>[^"]+)"', content_disp)
+            if m:
+                csv_name = m.group("fname")
+            else:
+                m2 = re.search(r"filename\*=utf-8''(?P<fname>[^;]+)", content_disp)
+                csv_name = unquote(m2.group("fname")) if m2 else "tokenized.csv"
+
+            local_csv  = os.path.join(save_path, csv_name)
+            total_size = int(response.headers.get("Content-Length", 0))
+
+            close_viewer(viewer)
+            openConsole("토큰화")
+
+            with open(local_csv, "wb") as f, tqdm(
+                total=total_size,
+                file=sys.stdout,
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                desc="Downloading",
+                dynamic_ncols=True,
+                bar_format="{desc}: |{bar}| {percentage:3.0f}% • {n_fmt}/{total_fmt} {unit} • {rate_fmt}"
+            ) as pbar:
+                for chunk in response.iter_content(8192):
+                    if chunk:
+                        f.write(chunk)
+                        pbar.update(len(chunk))
+
+            send_message(pid, "✅ Parquet 파일 다운로드 완료")
+            printStatus(self.main, "다운로드 완료")
+
+            closeConsole()
+            openFileResult(
+                self.main,
+                f"토큰화가 완료되었습니다.\n\n파일 탐색기에서 확인하시겠습니까?",
+                os.path.dirname(local_csv)
+            )
+
+            # 로그 기록
+            userLogging(f'ANALYSIS -> Tokenize({tokenfile_name}) : columns={selected_columns}')
+
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
-            return
-    
+
     
     def anaylsis_buttonMatch(self):
 
