@@ -5,7 +5,9 @@ from app.models.analysis_model import KemKimOption
 import pandas as pd
 from io import StringIO
 import json
-import io, os, tempfile
+import io, os
+from urllib.parse import quote  # 한글 파일명 안전 처리용
+
 
 router = APIRouter()
 
@@ -25,28 +27,34 @@ async def tokenize_file(
     option: str = Form(...),
     csv_file: UploadFile = File(...)
 ):
-    option = json.loads(option)
-    content = await csv_file.read()
-    csv_data = pd.read_csv(StringIO(content.decode("utf-8")))
-    
+
+    # ── 요청 파싱 ────────────────────────────────────────────
+    option      = json.loads(option)
+    content     = await csv_file.read()
+    csv_data    = pd.read_csv(io.StringIO(content.decode("utf-8")))
+
+    # ── 토큰화 실행 ──────────────────────────────────────────
     result_df = tokenization(
-        pid           = option.pid,
-        data          = csv_data,
-        columns       = option.column_names,
-        processes     = None,      # mp.cpu_count()
-        chunksize     = 1_000,
+        pid            = option["pid"],
+        data           = csv_data,
+        columns        = option["column_names"],
+        processes      = None,
+        chunksize      = 1_000,
         update_interval = 500,
     )
-    
-    buffer = io.BytesIO()
-    result_df.to_parquet(buffer, index=False, engine="pyarrow")
-    buffer.seek(0)
 
-    filename   = "token_" + os.path.splitext(option.csvfile_name)[0] + ".parquet"
-    media_type = "application/x-parquet"
+    # ── DataFrame → CSV(bytes) ──────────────────────────────
+    #   • utf-8-sig(Excel 호환) 인코딩
+    str_buffer = io.StringIO()
+    result_df.to_csv(str_buffer, index=False, encoding="utf-8-sig")
+    str_buffer.seek(0)
+    byte_buffer = io.BytesIO(str_buffer.read().encode("utf-8-sig"))
+    byte_buffer.seek(0)
 
-    # ── 4) 스트리밍 응답 생성 ─────────────────────────────────
-    headers = {
-        "Content-Disposition": f'attachment; filename="{filename}"'
-    }
-    return StreamingResponse(buffer, media_type=media_type, headers=headers)
+    filename   = f'token_{os.path.splitext(option["csvfile_name"])[0]}.csv'
+    media_type = "text/csv"
+    cd_header  = 'attachment; filename*=UTF-8\'\'{}'.format(quote(filename))
+
+    return StreamingResponse(byte_buffer,
+                             media_type=media_type,
+                             headers={"Content-Disposition": cd_header})
