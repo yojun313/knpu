@@ -1642,3 +1642,81 @@ class ModifyKemkimDialog(QDialog):
             QMessageBox.information(
                 self, '선택한 단어', ', '.join(self.selected_words))
         self.accept()
+
+
+class SelectTokenizeDialog(QDialog):
+    def __init__(self, tokenize_file):
+        super().__init__()
+        self.tokenize_file = tokenize_file
+        self.initUI()
+        self.data = None  # 데이터를 저장할 속성 추가
+
+    def initUI(self):
+        self.setWindowTitle('Tokenization')
+        self.resize(300, 100)  # 창 크기를 조정
+        # 레이아웃 생성
+        layout = QVBoxLayout()
+
+        # 버튼 생성
+        btn1 = QPushButton('파일 토큰화', self)
+
+        # 버튼에 이벤트 연결
+        btn1.clicked.connect(self.run_tokenize_file)
+
+        # 버튼 배치를 위한 가로 레이아웃
+        button_layout = QVBoxLayout()
+        button_layout.addWidget(btn1)
+
+        # 레이아웃에 버튼 레이아웃 추가
+        layout.addLayout(button_layout)
+
+        # 레이아웃을 다이얼로그에 설정
+        self.setLayout(layout)
+
+    def run_tokenize_file(self):
+        self.accept()
+        self.tokenize_file()
+
+
+class TokenizeFileDialog(QDialog):
+    def __init__(self, column_names, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("열 선택")
+        self.resize(400, 300)
+
+        self.selected_columns = []
+        self.checkboxes = []
+
+        # 전체 레이아웃
+        layout = QVBoxLayout(self)
+
+        # 안내 텍스트
+        layout.addWidget(QLabel("토큰화할 열을 선택하세요:"))
+
+        # 스크롤 가능한 체크박스 영역
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll_widget = QWidget()
+        scroll_layout = QVBoxLayout(scroll_widget)
+
+        # 열 이름마다 체크박스 생성
+        for col in column_names:
+            checkbox = QCheckBox(col)
+            scroll_layout.addWidget(checkbox)
+            self.checkboxes.append(checkbox)
+
+        scroll.setWidget(scroll_widget)
+        layout.addWidget(scroll)
+
+        # 확인 / 취소 버튼
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("확인")
+        cancel_button = QPushButton("취소")
+        ok_button.clicked.connect(self.accept)
+        cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+
+    def get_selected_columns(self):
+        return [cb.text() for cb in self.checkboxes if cb.isChecked()]
