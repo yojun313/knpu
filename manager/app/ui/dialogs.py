@@ -1645,9 +1645,10 @@ class ModifyKemkimDialog(QDialog):
 
 
 class SelectTokenizeDialog(QDialog):
-    def __init__(self, tokenize_file):
+    def __init__(self, tokenize_file, modify_token):
         super().__init__()
         self.tokenize_file = tokenize_file
+        self.modify_token = modify_token
         self.initUI()
         self.data = None  # 데이터를 저장할 속성 추가
 
@@ -1659,13 +1660,16 @@ class SelectTokenizeDialog(QDialog):
 
         # 버튼 생성
         btn1 = QPushButton('파일 토큰화', self)
-
+        btn2 = QPushButton('토큰 파일 조정', self)
+        
         # 버튼에 이벤트 연결
         btn1.clicked.connect(self.run_tokenize_file)
+        btn2.clicked.connect(self.run_modify_token)
 
         # 버튼 배치를 위한 가로 레이아웃
         button_layout = QVBoxLayout()
         button_layout.addWidget(btn1)
+        button_layout.addWidget(btn2)
 
         # 레이아웃에 버튼 레이아웃 추가
         layout.addLayout(button_layout)
@@ -1676,9 +1680,14 @@ class SelectTokenizeDialog(QDialog):
     def run_tokenize_file(self):
         self.accept()
         self.tokenize_file()
+    
+    def run_modify_token(self):
+        self.accept()
+        self.modify_token()
 
 
 class TokenizeFileDialog(QDialog):
+    
     def __init__(self, column_names, parent=None):
         super().__init__(parent)
         self.setWindowTitle("열 선택")
