@@ -1294,7 +1294,7 @@ class Manager_Analysis:
             QMessageBox.warning(
                 self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
             return 0
-        if tokenCheck = True and 'token' not in selected_directory[0]:
+        if tokenCheck == True and 'token' not in selected_directory[0]:
             QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
             return 0
         return 1
