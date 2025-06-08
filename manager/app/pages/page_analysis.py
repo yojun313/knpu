@@ -1146,7 +1146,7 @@ class Manager_Analysis:
             programBugLog(self.main, traceback.format_exc())
 
     def select_tokenize(self):
-        dialog = SelectTokenizeDialog(self.run_tokenize_file)
+        dialog = SelectTokenizeDialog(self.run_tokenize_file, self.run_modify_token)
         dialog.exec_()
     
     def run_tokenize_file(self):
@@ -1269,6 +1269,37 @@ class Manager_Analysis:
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
+    def run_modify_token(self):
+        try:
+            if not self.check_file(tokenCheck=True):
+                return
+
+            
+            
+        except Exception as e:
+            programBugLog(self.main, traceback.format_exc())
+    
+    def check_file(self, tokenCheck=False):
+        selected_directory = self.analysis_getfiledirectory(
+                self.file_dialog)
+        if len(selected_directory) == 0:
+            QMessageBox.warning(
+                self.main, f"Wrong Selection", f"선택된 CSV 토큰 파일이 없습니다")
+            return 0
+        if selected_directory[0] == False:
+            QMessageBox.warning(self.main, f"Wrong Format",
+                                f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
+            return 0
+        if len(selected_directory) != 1:
+            QMessageBox.warning(
+                self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
+            return 0
+        if tokenCheck = True and 'token' not in selected_directory[0]:
+            QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
+            return 0
+        return 1
+    
+    
     
     def anaylsis_buttonMatch(self):
 
