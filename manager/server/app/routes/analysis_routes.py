@@ -27,17 +27,10 @@ async def tokenize_file(
     option: str = Form(...),
     csv_file: UploadFile = File(...)
 ):
-    import io, os, json
-    import pandas as pd
-    from fastapi.responses import StreamingResponse
-    from urllib.parse import quote
-
-    # ── 1) 옵션·CSV 파싱 ──────────────────────────────────────
     option    = json.loads(option)
     content   = await csv_file.read()
     csv_data  = pd.read_csv(io.StringIO(content.decode("utf-8")))
 
-    # ── 2) 토큰화 실행 (단일 프로세스) ─────────────────────────
     result_df = tokenization(
         pid     = option["pid"],
         data    = csv_data,
@@ -45,12 +38,10 @@ async def tokenize_file(
         update_interval = 500,   # 필요 없으면 제거 가능
     )
 
-    # ── 3) DataFrame → CSV (utf-8-sig) ───────────────────────
     byte_buffer = io.BytesIO()
     result_df.to_csv(byte_buffer, index=False, encoding="utf-8-sig")
     byte_buffer.seek(0)
 
-    # ── 4) 스트리밍 응답 ──────────────────────────────────────
     filename   = f'tokenized.csv'
     media_type = "text/csv"
     cd_header  = f"attachment; filename*=UTF-8''{quote(filename)}"
@@ -60,3 +51,6 @@ async def tokenize_file(
         media_type=media_type,
         headers={"Content-Disposition": cd_header},
     )
+
+
+
