@@ -1662,7 +1662,7 @@ class SelectTokenizeDialog(QDialog):
         # 버튼 생성
         btn1 = QPushButton('파일 토큰화', self)
         btn2 = QPushButton('토큰 파일 조정', self)
-        btn3 = QPushButton('공통 토큰 탐색', self)
+        btn3 = QPushButton('교집합 토큰 추출', self)
                 
         # 버튼에 이벤트 연결
         btn1.clicked.connect(self.run_tokenize_file)
