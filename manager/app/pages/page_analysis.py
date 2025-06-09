@@ -216,15 +216,9 @@ class Manager_Analysis:
 
     def run_analysis(self):
         try:
-            selected_directory = self.analysis_getfiledirectory(
-                self.file_dialog)
-            if len(selected_directory) == 0:
-                return
-            if selected_directory[0] == False:
-                QMessageBox.warning(self.main, f"Wrong Format",f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
-                return
-            if len(selected_directory) != 1:
-                QMessageBox.warning(self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
+            filepath = self.check_file()
+            if not filepath:
+                printStatus(self.main)
                 return
 
             selected_options = []
@@ -246,7 +240,7 @@ class Manager_Analysis:
             openConsole('데이터 분석')
 
             print("CSV 파일 읽는 중...")
-            csv_path = selected_directory[0]
+            csv_path = filepath
             csv_filename = os.path.basename(csv_path)
 
             # 먼저, selected_options 리스트의 길이를 검사합니다.
@@ -331,19 +325,10 @@ class Manager_Analysis:
             programBugLog(self.main, traceback.format_exc())
 
     def run_wordcloud(self):
-        try:
-            selected_directory = self.analysis_getfiledirectory(self.file_dialog)
-            if len(selected_directory) == 0:
-                QMessageBox.warning(self.main, f"Wrong Selection", f"선택된 CSV 토큰 파일이 없습니다")
-                return
-            if selected_directory[0] == False:
-                QMessageBox.warning(self.main, f"Wrong Format",f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
-                return
-            if len(selected_directory) != 1:
-                QMessageBox.warning(self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
-                return
-            if 'token' not in selected_directory[0]:
-                QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
+        try:            
+            filepath = self.check_file(tokenCheck=True)
+            if not filepath:
+                printStatus(self.main)
                 return
 
             printStatus(self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요")
@@ -353,7 +338,7 @@ class Manager_Analysis:
                 return
 
             printStatus(self.main, "워드클라우드 옵션을 설정하세요")
-            dialog = WordcloudDialog(os.path.basename(selected_directory[0]))
+            dialog = WordcloudDialog(os.path.basename(filepath))
             dialog.exec_()
 
             if dialog.data == None:
@@ -368,7 +353,7 @@ class Manager_Analysis:
             except_yes_selected = dialog.data['except_yes_selected']
             eng_yes_selected = dialog.data['eng_yes_selected']
 
-            filename = os.path.basename(selected_directory[0]).replace('token_', '').replace('.csv', '')
+            filename = os.path.basename(filepath).replace('token_', '').replace('.csv', '')
             filename = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})',f'{startdate}~{enddate}_{period}', filename)
 
             exception_word_list = []
@@ -407,7 +392,7 @@ class Manager_Analysis:
 
             printStatus(self.main, "파일 불러오는 중...")
             print("\n파일 불러오는 중...\n")
-            token_data = pd.read_csv(selected_directory[0], low_memory=False)
+            token_data = pd.read_csv(filepath, low_memory=False)
 
             self.dataprocess_obj.wordcloud(
                 self.main, token_data, folder_path, date, maxword, period, exception_word_list, eng=eng_yes_selected)
@@ -425,25 +410,12 @@ class Manager_Analysis:
 
     def run_kemkim(self):
         try:
-            selected_directory = self.analysis_getfiledirectory(
-                self.file_dialog)
-            if len(selected_directory) == 0:
-                QMessageBox.warning(
-                    self.main, f"Wrong Selection", f"선택된 CSV 토큰 파일이 없습니다")
-                return
-            if selected_directory[0] == False:
-                QMessageBox.warning(self.main, f"Wrong Format",
-                                    f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
-                return
-            if len(selected_directory) != 1:
-                QMessageBox.warning(
-                    self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
-                return
-            if 'token' not in selected_directory[0]:
-                QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
+            filepath = self.check_file(tokenCheck=True)
+            if not filepath:
+                printStatus(self.main)
                 return
 
-            tokenfile_name = os.path.basename(selected_directory[0])
+            tokenfile_name = os.path.basename(filepath)
 
             printStatus(self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요")
             save_path = QFileDialog.getExistingDirectory(
@@ -570,7 +542,7 @@ class Manager_Analysis:
             printStatus(self.main, "KEMKIM 분석 중...")
             response = requests.post(
                 download_url,
-                files={"token_file": open(selected_directory[0], "rb")},
+                files={"token_file": open(filepath, "rb")},
                 data={"option": json.dumps(option)},
                 headers=get_api_headers(),
                 timeout=3600
@@ -1146,25 +1118,15 @@ class Manager_Analysis:
             programBugLog(self.main, traceback.format_exc())
 
     def select_tokenize(self):
-        dialog = SelectTokenizeDialog(self.run_tokenize_file, self.run_modify_token)
+        dialog = SelectTokenizeDialog(self.run_tokenize_file, self.run_modify_token, self.run_common_tokens)
         dialog.exec_()
     
     def run_tokenize_file(self):
         try:
-            # ───────────────────────────── 1) CSV 파일 검증
-            selected_directory = self.analysis_getfiledirectory(self.file_dialog)
-            if len(selected_directory) == 0:
-                QMessageBox.warning(self.main, "Wrong Selection", "선택된 CSV 토큰 파일이 없습니다.")
+            csv_path = self.check_file()
+            if not csv_path:
+                printStatus(self.main)
                 return
-            if selected_directory[0] is False:
-                QMessageBox.warning(self.main, "Wrong Format",
-                                    f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
-                return
-            if len(selected_directory) != 1:
-                QMessageBox.warning(self.main, "Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오.")
-                return
-
-            csv_path     = selected_directory[0]
             tokenfile_name = os.path.basename(csv_path)
 
             # ───────────────────────────── 2) 저장 폴더 선택
@@ -1271,14 +1233,221 @@ class Manager_Analysis:
 
     def run_modify_token(self):
         try:
-            if not self.check_file(tokenCheck=True):
+            token_filepath = self.check_file(tokenCheck=True)
+            if not token_filepath:
+                printStatus(self.main)
                 return
+            
+            printStatus(self.main, "조정된 토큰 데이터를 저장할 위치를 선택하세요")
+            save_path = QFileDialog.getExistingDirectory(
+                self.main, "토큰 데이터를 저장할 위치를 선택하세요", self.main.localDirectory
+            )
+            if save_path == '':
+                printStatus(self.main)
+                return
+            
+            df_headers   = pd.read_csv(token_filepath, nrows=0)
+            column_names = df_headers.columns.tolist()
 
+            printStatus(self.main, "토큰 데이터가 있는 열을 선택하세요")
+            dialog = TokenizeFileDialog(column_names, parent=self.main)
+            if dialog.exec_() != QDialog.Accepted:
+                printStatus(self.main)
+                return
+            selected_columns = dialog.get_selected_columns()
+            if not selected_columns:
+                printStatus(self.main, "❗ 열을 하나 이상 선택해주세요.")
+                return
             
+            window_size, ok = QInputDialog.getInt(self.main, "윈도우 크기 입력", "토큰 윈도우 크기를 입력하세요:", 1, 1)
+            if not ok:
+                printStatus(self.main)
+                return
             
+            def sliding_window_tokens(text, window_size):
+                tokens = [token.strip() for token in text.split(',')]
+                if window_size <= 1:
+                    return ', '.join(tokens)
+                windows = [''.join(tokens[i:i+window_size]) for i in range(len(tokens) - window_size + 1)]
+                return ', '.join(windows)
+
+            printStatus(self.main, "토큰 파일 읽는 중...")
+            token_df = readCSV(token_filepath)
+            
+            printStatus(self.main, "토큰 파일 조정 중...")
+            for column in selected_columns:
+                token_df[column] = token_df[column].apply(lambda x: sliding_window_tokens(x, window_size))
+            
+            base_filename = os.path.basename(token_filepath)
+            name, ext = os.path.splitext(base_filename)
+            new_filename = f"{name}_window={window_size}.csv"
+            
+            printStatus(self.main, "조정된 토큰 파일 저장 중...")
+            token_df.to_csv(os.path.join(save_path, new_filename), index=False, encoding='utf-8-sig')
+            
+            printStatus(self.main)
+            openFileResult(self.main, f"토큰 파일 조정이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", save_path)
+            return
+    
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
-    
+
+    def run_common_tokens(self):
+        try:
+            # ───── 1) 토큰 CSV 반복 선택 ─────────────────────────────
+            token_paths = []
+            while True:
+                fpath, _ = QFileDialog.getOpenFileName(
+                    self.main,
+                    "토큰 CSV 파일을 선택하세요",
+                    self.main.localDirectory if not token_paths else os.path.dirname(token_paths[-1]),
+                    "CSV Files (*.csv);;All Files (*)"
+                )
+                if fpath == "":                       # 취소 → 루프 종료
+                    break
+
+                if 'token' not in fpath:
+                    QMessageBox.warning(self.main, "Wrong File",
+                                        f"토큰 CSV 가 아닙니다:\n{os.path.basename(fpath)}")
+                    continue
+
+                token_paths.append(fpath)
+
+                # 추가 선택 여부 확인
+                reply = QMessageBox.question(
+                    self.main,
+                    "추가 선택",
+                    "파일이 추가되었습니다.\n\n다른 토큰 CSV를 더 선택하시겠습니까?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.Yes
+                )
+                if reply != QMessageBox.Yes:
+                    break
+
+            # 선택된 파일이 2개 미만이면 중단
+            if len(token_paths) < 2:
+                QMessageBox.information(self.main, "No Enough File",
+                                        "두 개 이상의 토큰 CSV를 선택하셔야 합니다.")
+                printStatus(self.main)
+                return
+
+            # 2) 기간(주기) 선택 ----------------------------------------------------
+            period_options = ['1일', '1주일', '1달', '3달', '6달', '1년']
+            period_choice, ok = QInputDialog.getItem(
+                self.main, "기간 선택", "토큰을 묶을 기간을 선택하세요:",
+                period_options, 0, False
+            )
+            if not ok:
+                printStatus(self.main)
+                return
+
+            # 3) 결과 저장 폴더 선택 -------------------------------------------------
+            printStatus(self.main, "결과를 저장할 위치를 선택하세요")
+            save_path = QFileDialog.getExistingDirectory(
+                self.main, "결과를 저장할 위치를 선택하세요", self.main.localDirectory
+            )
+            if save_path == '':
+                printStatus(self.main)
+                return
+
+            # 4) 토큰 열 선택(모든 파일에 동일한 열이라고 가정) -------------------------
+            df_headers = pd.read_csv(token_paths[0], nrows=0)
+            column_names = df_headers.columns.tolist()
+            dialog = TokenizeFileDialog(column_names, parent=self.main)
+            if dialog.exec_() != QDialog.Accepted:
+                printStatus(self.main)
+                return
+            token_columns = dialog.get_selected_columns()
+            if not token_columns:
+                printStatus(self.main, "❗ 토큰 열을 하나 이상 선택해 주세요.")
+                return
+
+            # 5) 기간 키 생성 helper -------------------------------------------------
+            def period_key(series, choice):
+                """
+                choice : '1일'|'1주일'|'1달'|'3달'|'6달'|'1년'
+                return  : Series[str]  (기간별 key)
+                """
+                if choice == '1일':
+                    return series.dt.strftime('%Y-%m-%d')
+                if choice == '1주일':      # ISO 주(월~일) 기준
+                    return series.dt.to_period('W').astype(str)
+                if choice == '1달':
+                    return series.dt.to_period('M').astype(str)
+                if choice == '3달':        # 분기
+                    return series.dt.to_period('Q').astype(str)
+                if choice == '6달':        # 반기
+                    # to_period('2Q')는 pandas>=2.2 필요. fallback 수동 계산
+                    return (series.dt.year.astype(str) + '-' +
+                            ((series.dt.month.sub(1)//6)+1).astype(str) + 'H')
+                if choice == '1년':
+                    return series.dt.to_period('A').astype(str)
+
+            # 6) 개별 파일 → {period: set(tokens)} dict 로 변환 ------------------------
+            def extract_token_set(cell):
+                if pd.isna(cell):
+                    return []
+                return [tok.strip() for tok in str(cell).split(',') if tok.strip()]
+
+            file_period_dicts = []  # 각 파일별 {period: set(...)} 저장
+            for path in token_paths:
+                df = readCSV(path)
+                # 날짜 컬럼 찾기
+                date_col = next((c for c in df.columns if 'Date' in c), None)
+                if date_col is None:
+                    QMessageBox.warning(self.main, "Wrong Format",
+                                        f"'Date' 컬럼이 없습니다: {os.path.basename(path)}")
+                    return
+                df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+                df = df.dropna(subset=[date_col])
+
+                df['period_key'] = period_key(df[date_col], period_choice)
+
+                period_group = {}
+                for p_key, g in df.groupby('period_key'):
+                    tok_set = set()
+                    for col in token_columns:
+                        tok_lists = g[col].dropna().apply(extract_token_set)
+                        for lst in tok_lists:
+                            tok_set.update(lst)
+                    period_group[p_key] = tok_set
+                file_period_dicts.append(period_group)
+
+            # 7) 교집합 계산 ---------------------------------------------------------
+            #   (모든 파일에 존재하는 기간만, 그리고 토큰 교집합도 존재해야)
+            common_periods = set.intersection(*[set(d.keys()) for d in file_period_dicts])
+            results = []
+            for per in sorted(common_periods):
+                common_tok = set.intersection(*[d[per] for d in file_period_dicts])
+                if common_tok:  # 교집합 비어있을 때 제외
+                    results.append({
+                        'Period': per,
+                        'Common Tokens': ', '.join(sorted(common_tok))
+                    })
+
+            if not results:
+                QMessageBox.information(self.main, "No Intersection",
+                                        "선택한 기간·파일 조합에서 교집합 토큰이 없습니다.")
+                printStatus(self.main)
+                return
+
+            # 8) CSV 저장 ------------------------------------------------------------
+            out_df = pd.DataFrame(results)
+            out_file = os.path.join(
+                save_path, f"common_tokens_{period_choice}_{datetime.now():%m%d%H%M}.csv"
+            )
+            out_df.to_csv(out_file, index=False, encoding='utf-8-sig')
+
+            printStatus(self.main)
+            openFileResult(
+                self.main,
+                f"교집합 토큰 추출이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                save_path
+            )
+
+        except Exception as e:
+            programBugLog(self.main, traceback.format_exc())
+
     def check_file(self, tokenCheck=False):
         selected_directory = self.analysis_getfiledirectory(
                 self.file_dialog)
@@ -1297,9 +1466,7 @@ class Manager_Analysis:
         if tokenCheck == True and 'token' not in selected_directory[0]:
             QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
             return 0
-        return 1
-    
-    
+        return selected_directory[0]
     
     def anaylsis_buttonMatch(self):
 
