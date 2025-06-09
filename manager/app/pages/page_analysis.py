@@ -1361,6 +1361,24 @@ class Manager_Analysis:
             if not token_columns:
                 printStatus(self.main, "❗ 토큰 열을 하나 이상 선택해 주세요.")
                 return
+            
+            missing_info = []  # (파일명, 빠진 열) 리스트
+            for p in token_paths:
+                cols = pd.read_csv(p, nrows=0).columns
+                for tc in token_columns:
+                    if tc not in cols:
+                        missing_info.append((os.path.basename(p), tc))
+
+            if missing_info:
+                # 파일별 누락 열 목록을 문자열로 정리
+                msg_lines = [f"{fname}  →  '{col}' 열 없음" for fname, col in missing_info]
+                QMessageBox.warning(
+                    self.main,
+                    "Wrong Format",
+                    "다음 파일에 선택한 토큰 열이 없습니다:\n\n" + "\n".join(msg_lines)
+                )
+                printStatus(self.main)
+                return
 
             # 5) 기간 키 생성 helper -------------------------------------------------
             def period_key(series, choice):
