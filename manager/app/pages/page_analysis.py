@@ -1297,6 +1297,7 @@ class Manager_Analysis:
             # ───── 1) 토큰 CSV 반복 선택 ─────────────────────────────
             token_paths = []
             while True:
+                printStatus(self.main, "토큰 CSV 파일을 하나씩 선택하세요")
                 fpath, _ = QFileDialog.getOpenFileName(
                     self.main,
                     "토큰 CSV 파일을 선택하세요",
@@ -1349,6 +1350,19 @@ class Manager_Analysis:
             if save_path == '':
                 printStatus(self.main)
                 return
+            
+            file_name, ok = QInputDialog.getText(
+                self.main,
+                "파일명 입력",
+                "저장할 CSV 파일명을 입력하세요:",
+                text=f"common_tokens_{period_choice}"
+            )
+            if not ok or not file_name.strip():
+                printStatus(self.main)          # 취소 / 빈 입력 → 종료
+                return
+            file_name = file_name.strip()
+            if not file_name.lower().endswith(".csv"):
+                file_name += ".csv"
 
             # 4) 토큰 열 선택(모든 파일에 동일한 열이라고 가정) -------------------------
             df_headers = pd.read_csv(token_paths[0], nrows=0)
@@ -1451,9 +1465,7 @@ class Manager_Analysis:
 
             # 8) CSV 저장 ------------------------------------------------------------
             out_df = pd.DataFrame(results)
-            out_file = os.path.join(
-                save_path, f"common_tokens_{period_choice}_{datetime.now():%m%d%H%M}.csv"
-            )
+            out_file = os.path.join(save_path, file_name)
             out_df.to_csv(out_file, index=False, encoding='utf-8-sig')
 
             printStatus(self.main)
