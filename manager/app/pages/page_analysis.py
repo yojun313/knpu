@@ -1265,6 +1265,9 @@ class Manager_Analysis:
                 return
             
             def sliding_window_tokens(text, window_size):
+                if not isinstance(text, str):
+                    return ''  # 또는 np.nan, None 등 상황에 따라
+
                 tokens = [token.strip() for token in text.split(',')]
                 if window_size <= 1:
                     return ', '.join(tokens)
