@@ -91,6 +91,7 @@ def tokenization(
     pid: str,
     data: pd.DataFrame,
     columns,
+    include_words: list = None,
     update_interval: int = 500,
 ) -> pd.DataFrame:
     """
@@ -101,6 +102,9 @@ def tokenization(
     """
     # 1) Kiwi 한 번만 초기화
     kiwi = Kiwi(num_workers=-1)
+    for word in include_words:
+        kiwi.add_user_word(word, 'NNP', score=10)
+    kiwi.prepare()
 
     # 2) 단일 str → list
     if isinstance(columns, str):
