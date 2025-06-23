@@ -1128,12 +1128,18 @@ class Manager_Analysis:
             if not csv_path:
                 printStatus(self.main)
                 return
+            
             tokenfile_name = os.path.basename(csv_path)
+            if "token" in tokenfile_name:
+                QMessageBox.warning(
+                    self.main, "Wrong File", "이미 토큰화된 파일입니다.\n다른 CSV 파일을 선택해주세요.")
+                printStatus(self.main)
+                return
 
             # ───────────────────────────── 2) 저장 폴더 선택
             printStatus(self.main, "토큰 데이터를 저장할 위치를 선택하세요")
             save_path = QFileDialog.getExistingDirectory(
-                self.main, "토큰 데이터를 저장할 위치를 선택하세요", self.main.localDirectory
+                self.main, "토큰 데이터를 저장할 위치를 선택하세요", os.path.dirname(csv_path)
             )
             if save_path == '':
                 printStatus(self.main)
@@ -1143,11 +1149,13 @@ class Manager_Analysis:
             df_headers   = pd.read_csv(csv_path, nrows=0)
             column_names = df_headers.columns.tolist()
 
+            printStatus(self.main, "토큰화할 CSV 열을 선택하세요")
             dialog = TokenizeFileDialog(column_names, parent=self.main)
             if dialog.exec_() != QDialog.Accepted:
                 printStatus(self.main)
                 return
             
+            printStatus(self.main)
             reply = QMessageBox.question(
                 self.main, "필수 포함 명사 입력",
                 "필수 포함 단어사전 입력하시겠습니까?\n\nEx) \"포항, 공대\" X | \"포항공대\"",
@@ -1267,7 +1275,7 @@ class Manager_Analysis:
 
             printStatus(self.main, "조정된 토큰 데이터를 저장할 위치를 선택하세요")
             save_path = QFileDialog.getExistingDirectory(
-                self.main, "토큰 데이터를 저장할 위치를 선택하세요", self.main.localDirectory
+                self.main, "토큰 데이터를 저장할 위치를 선택하세요", os.path.dirname(token_filepath)
             )
             if save_path == '':
                 printStatus(self.main)
@@ -1286,32 +1294,17 @@ class Manager_Analysis:
                 printStatus(self.main)
                 return
 
-            window_size, ok = QInputDialog.getInt(self.main, "윈도우 크기 입력", "토큰 윈도우 크기를 입력하세요:", 1, 1)
+            window_size, ok = QInputDialog.getInt(
+                self.main,
+                "윈도우 크기 입력",
+                "토큰 윈도우 크기를 입력하세요:",
+                1, 1
+            )
             if not ok:
                 printStatus(self.main)
                 return
 
-            use_original = False
-            original_sentences = None
-            reply = QMessageBox.question(
-                self.main,
-                "원본 파일 선택",
-                "토큰화되지 않은 원본 파일을 선택하시겠습니까?\n\n원본 문장에 존재하는 합성 명사만을 추출할 수 있습니다.",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.Yes
-            )
-            if reply == QMessageBox.Yes:
-                original_filepath, _ = QFileDialog.getOpenFileName(self.main, "원본 CSV 파일 선택", self.main.localDirectory, "CSV Files (*.csv)")
-                if original_filepath:
-                    original_df = pd.read_csv(original_filepath)
-                    if len(original_df) != len(pd.read_csv(token_filepath)):
-                        QMessageBox.critical(self.main, "행 수 불일치", "원본 파일과 토큰화 파일의 행 수가 일치하지 않습니다.")
-                        printStatus(self.main)
-                        return
-                    original_sentences = list(original_df.iloc[:, 0].astype(str))
-                    use_original = True
-
-            def sliding_window_tokens(text, window_size, original_text=None):
+            def sliding_window_tokens(text, window_size):
                 if not isinstance(text, str):
                     return ''
 
@@ -1319,11 +1312,8 @@ class Manager_Analysis:
                 if window_size <= 1:
                     candidates = tokens
                 else:
-                    candidates = [''.join(tokens[i:i+window_size]) for i in range(len(tokens) - window_size + 1)]
+                    candidates = [''.join(tokens[i:i+window_size]) for i in range(len(tokens)-window_size+1)]
 
-                if original_text is not None:
-                    # 원본 문장에 포함된 단어만 필터링
-                    candidates = [word for word in candidates if word in original_text]
                 return ', '.join(candidates)
 
             printStatus(self.main, "토큰 파일 읽는 중...")
@@ -1331,28 +1321,32 @@ class Manager_Analysis:
 
             printStatus(self.main, "토큰 파일 조정 중...")
             for column in selected_columns:
-                if use_original:
-                    token_df[column] = [
-                        sliding_window_tokens(token_df.at[i, column], window_size, original_sentences[i])
-                        for i in range(len(token_df))
-                    ]
-                else:
-                    token_df[column] = token_df[column].apply(lambda x: sliding_window_tokens(x, window_size))
+                token_df[column] = token_df[column].apply(
+                    lambda x: sliding_window_tokens(x, window_size)
+                )
 
             base_filename = os.path.basename(token_filepath)
             name, ext = os.path.splitext(base_filename)
             new_filename = f"{name}_window={window_size}.csv"
 
             printStatus(self.main, "조정된 토큰 파일 저장 중...")
-            token_df.to_csv(os.path.join(save_path, new_filename), index=False, encoding='utf-8-sig')
+            token_df.to_csv(
+                os.path.join(save_path, new_filename),
+                index=False,
+                encoding='utf-8-sig'
+            )
 
             printStatus(self.main)
-            openFileResult(self.main, f"토큰 파일 조정이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", save_path)
+            openFileResult(
+                self.main,
+                f"토큰 파일 조정이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                save_path
+            )
             return
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
-
+    
     def run_common_tokens(self):
         try:
             # ───── 1) 토큰 CSV 반복 선택 ─────────────────────────────
