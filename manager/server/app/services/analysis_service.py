@@ -99,14 +99,14 @@ def tokenization(
     ▸ columns        : 토큰화할 열 이름 또는 이름 리스트
     ▸ update_interval: 이 개수마다 진행률 메시지 전송
     """
-    # 1) Kiwi 한 번만 로드
+    # 1) Kiwi 한 번만 초기화
     kiwi = Kiwi(num_workers=-1)
 
-    # 2) 단일 str → list 로 통일
+    # 2) 단일 str → list
     if isinstance(columns, str):
         columns = [columns]
 
-    # 3) 각 열을 순차적으로 토큰화
+    # 3) 각 열을 순회
     for col in columns:
         if col not in data.columns:
             send_message(pid, f"⚠️  열 '{col}'이(가) 존재하지 않습니다 → 건너뜀")
@@ -122,27 +122,29 @@ def tokenization(
         for idx, text in enumerate(texts, 1):
             start = time.time()
 
-            # ── 실제 토큰화 ─────────────────────────────
             if isinstance(text, str):
-                cleaned  = re.sub(r"[^가-힣a-zA-Z\s]", "", text)
-                tokens   = kiwi.tokenize(cleaned)
+                # 전처리
+                cleaned = re.sub(r"[^가-힣a-zA-Z\s]", "", text)
+                # splitComplex=False → 복합어를 분해하지 않고 처리
+                tokens   = kiwi.tokenize(cleaned, splitComplex=False)
                 nouns    = [t.form for t in tokens if t.tag in ("NNG", "NNP")]
                 tokenized_col.append(", ".join(nouns))
             else:
                 tokenized_col.append("")
 
-            # ── 진행률 출력 ─────────────────────────────
+            # 진행률 계산
             total_time += time.time() - start
             if idx % update_interval == 0 or idx == total:
                 pct   = round(idx / total * 100, 2)
                 avg   = total_time / idx
                 remain_sec = avg * (total - idx)
                 m, s  = divmod(int(remain_sec), 60)
-                send_message(pid,
+                send_message(
+                    pid,
                     f"[{col}] 진행률 {pct}% ({idx:,}/{total:,}) • 예상 남은 시간 {m}분 {s}초"
                 )
 
-        # DataFrame 에 덮어쓰기
+        # 열 덮어쓰기
         data[col] = tokenized_col
         send_message(pid, f"[{col}] 토큰화 완료 ✅")
 

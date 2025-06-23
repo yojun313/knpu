@@ -348,7 +348,7 @@ class Crawler(CrawlerModule):
             error_data = self.error_dump(1002, error_msg, self.currentDate_str)
             self.ReturnChecker(error_data)
 
-    def tokenization(self, data):
+    def tokenization(self, data):  # 갱신 간격 추가
         kiwi = Kiwi(num_workers=-1)
         for column in data.columns.tolist():
             if 'Text' in column:
@@ -358,41 +358,41 @@ class Crawler(CrawlerModule):
         tokenized_data = []
 
         total_texts = len(text_list)
-        total_time = 0  # 전체 소요시간 계산
+        total_time = 0  # 전체 소요시간을 계산하기 위한 변수
 
         for index, text in enumerate(text_list):
-            start_time = time.time()
-
+            start_time = time.time()  # 처리 시작 시간 기록
             try:
                 if not isinstance(text, str):
                     tokenized_data.append([])
-                    continue
+                    continue  # 문자열이 아니면 넘어감
 
-                # 한글, 영문, 공백만 남김
                 text = re.sub(r'[^가-힣a-zA-Z\s]', '', text)
+                tokens = kiwi.tokenize(text)
+                tokenized_text = [
+                    token.form for token in tokens if token.tag in ('NNG', 'NNP')]
 
-                # splitComplex=False로 복합어 분리하지 않고 형태소 분석
-                tokens = kiwi.tokenize(text, splitComplex=False)
-
-                # NNG 또는 NNP 품사만 추출
-                tokenized_text = [token.form for token in tokens if token.tag in ('NNG', 'NNP')]
-
+                # 리스트를 쉼표로 구분된 문자열로 변환
                 tokenized_text_str = ", ".join(tokenized_text)
                 tokenized_data.append(tokenized_text_str)
-
-            except Exception as e:
+            except:
                 tokenized_data.append([])
 
+            # 처리 완료 후 시간 측정
             end_time = time.time()
             total_time += end_time - start_time
 
+            # 평균 처리 시간 계산
             avg_time_per_text = total_time / (index + 1)
-            remaining_time = avg_time_per_text * (total_texts - (index + 1))
+            remaining_time = avg_time_per_text * \
+                (total_texts - (index + 1))  # 남은 시간 추정
 
+            # 남은 시간을 시간과 분으로 변환
             remaining_minutes = int(remaining_time // 60)
             remaining_seconds = int(remaining_time % 60)
 
             update_interval = 500
+            # N개마다 한 번 갱신
             if (index + 1) % update_interval == 0 or index + 1 == total_texts:
                 progress_value = round((index + 1) / total_texts * 100, 2)
                 print(
@@ -402,7 +402,6 @@ class Crawler(CrawlerModule):
 
         data[textColumn_name] = tokenized_data
         return data
-
 
     def makeCSV(self, tableName, columns):
         df = pd.DataFrame(columns=columns)
