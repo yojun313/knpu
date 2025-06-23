@@ -126,7 +126,7 @@ def tokenization(
                 # 전처리
                 cleaned = re.sub(r"[^가-힣a-zA-Z\s]", "", text)
                 # splitComplex=False → 복합어를 분해하지 않고 처리
-                tokens   = kiwi.tokenize(cleaned, splitComplex=False)
+                tokens   = kiwi.tokenize(cleaned, split_complex=False)
                 nouns    = [t.form for t in tokens if t.tag in ("NNG", "NNP")]
                 tokenized_col.append(", ".join(nouns))
             else:
