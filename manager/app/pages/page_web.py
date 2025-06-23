@@ -22,8 +22,6 @@ class Manager_Web:
 
         # web
         self.web_web_layout = QVBoxLayout()
-        self.main.web_webview.setLayout(self.web_web_layout)
-
         self.web_buttonMatch()
 
     def web_open_webbrowser(self, url, widget):
@@ -48,5 +46,5 @@ class Manager_Web:
         self.main.web_homepage_button.clicked.connect(partial(webbrowser.open, "https://knpu.re.kr"))
         self.main.web_sue_button.clicked.connect(partial(webbrowser.open, "https://complaint.knpu.re.kr"))
         self.main.web_carnumber_button.clicked.connect(partial(webbrowser.open, "https://carnumber.knpu.re.kr"))
-        self.main.web_github_button.clicked.connect(partial(self.web_open_webbrowser, "https://github.com/yojun313", self.web_web_layout))
+        self.main.web_github_button.clicked.connect(partial(webbrowser.open, "https://github.com/yojun313"))
     
