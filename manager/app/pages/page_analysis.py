@@ -719,6 +719,7 @@ class Manager_Analysis:
                         return
                     eng_keyword_tupleList = list(
                         zip(df['korean'], df['english']))
+                    
                 elif eng_auto_option == True:
                     target_words = sum(all_keyword, [])
                     printStatus(self.main, "키워드 영문 변환 중...")

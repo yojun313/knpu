@@ -104,7 +104,6 @@ def tokenization(
     kiwi = Kiwi(num_workers=-1)
     for word in include_words:
         kiwi.add_user_word(word, 'NNP', score=10)
-    kiwi.prepare()
 
     # 2) 단일 str → list
     if isinstance(columns, str):
