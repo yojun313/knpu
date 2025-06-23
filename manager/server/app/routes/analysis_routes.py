@@ -35,6 +35,7 @@ async def tokenize_file(
         pid     = option["pid"],
         data    = csv_data,
         columns = option["column_names"],
+        include_words = option["include_words"],
         update_interval = 500,   # 필요 없으면 제거 가능
     )
 

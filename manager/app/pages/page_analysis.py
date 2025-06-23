@@ -1146,6 +1146,35 @@ class Manager_Analysis:
             if dialog.exec_() != QDialog.Accepted:
                 printStatus(self.main)
                 return
+            
+            reply = QMessageBox.question(
+                self.main, "필수 포함 명사 입력",
+                "필수 포함 단어사전 입력하시겠습니까?\n\nEx) \"포항, 공대\" X | \"포항공대\"",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+            )
+            include_word_list = []
+            if reply == QMessageBox.Yes:
+                printStatus(self.main, f"필수 포함 단어 리스트(CSV)을 선택하세요")
+                include_word_list_path = QFileDialog.getOpenFileName(self.main, "필수 포함 단어 리스트(CSV)를 선택하세요",
+                                                                        self.main.localDirectory,
+                                                                        "CSV Files (*.csv);;All Files (*)")
+                include_word_list_path = include_word_list_path[0]
+                if include_word_list_path == "":
+                    return
+                if not os.path.exists(include_word_list_path):
+                    raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{include_word_list_path}")
+                    
+                with open(include_word_list_path, 'rb') as f:
+                    codec = chardet.detect(f.read())['encoding']
+                
+                df = pd.read_csv(include_word_list_path, low_memory=False, encoding=codec)
+                if 'word' not in list(df.keys()):
+                    QMessageBox.warning(
+                        self.main, "Wrong Format", "필수 포함 단어 리스트 형식과 일치하지 않습니다")
+                    printStatus(self.main)
+                    return
+                include_word_list = df['word'].tolist()
+            
             selected_columns = dialog.get_selected_columns()
             if not selected_columns:
                 printStatus(self.main)
@@ -1159,6 +1188,7 @@ class Manager_Analysis:
             option = {
                 "pid"          : pid,
                 "column_names" : selected_columns,
+                "include_words": include_word_list,
             }
 
             download_url = MANAGER_SERVER_API + "/analysis/tokenize"
@@ -1322,7 +1352,6 @@ class Manager_Analysis:
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
-    
     def run_common_tokens(self):
         try:
             # ───── 1) 토큰 CSV 반복 선택 ─────────────────────────────
