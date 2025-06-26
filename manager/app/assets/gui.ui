@@ -428,13 +428,18 @@
             <property name="title"><string>Homepage Info</string></property>
             <layout class="QGridLayout" name="grid_downloads">
             <item row="0" column="0">
-            <widget class="QPushButton" name="web_download_doc1_button">
-            <property name="text"><string>랩 구성원 추가</string></property>
+            <widget class="QPushButton" name="homepage_paper_edit_btn">
+            <property name="text"><string>논문 관리</string></property>
             </widget>
             </item>
             <item row="0" column="1">
-            <widget class="QPushButton" name="web_download_doc2_button">
-            <property name="text"><string>논문 추가</string></property>
+            <widget class="QPushButton" name="homepage_member_edit_btn">
+            <property name="text"><string>멤버 관리</string></property>
+            </widget>
+            </item>
+            <item row="0" column="2">
+            <widget class="QPushButton" name="homepage_news_edit_btn">
+            <property name="text"><string>뉴스 관리</string></property>
             </widget>
             </item>
             </layout>

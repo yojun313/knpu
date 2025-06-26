@@ -3,10 +3,15 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
     QTextEdit, QDialogButtonBox, QComboBox, QLabel, QDateEdit, QLineEdit, QHBoxLayout,
-    QShortcut, QApplication
+    QShortcut, QApplication, QFileDialog, QListWidget
 )
+from services.api import *
+from services.logging import *
 from PyQt5.QtGui import QKeySequence
 from datetime import datetime
+import os
+import os
+
 
 class DBInfoDialog(QDialog):
     def __init__(self, parent, DBdata, style_html):
@@ -1663,12 +1668,12 @@ class SelectTokenizeDialog(QDialog):
         btn1 = QPushButton('파일 토큰화', self)
         btn2 = QPushButton('토큰 파일 조정', self)
         btn3 = QPushButton('교집합 토큰 추출', self)
-                
+
         # 버튼에 이벤트 연결
         btn1.clicked.connect(self.run_tokenize_file)
         btn2.clicked.connect(self.run_modify_token)
         btn3.clicked.connect(self.run_common_token)
-        
+
         # 버튼 배치를 위한 가로 레이아웃
         button_layout = QVBoxLayout()
         button_layout.addWidget(btn1)
@@ -1684,18 +1689,18 @@ class SelectTokenizeDialog(QDialog):
     def run_tokenize_file(self):
         self.accept()
         self.tokenize_file()
-    
+
     def run_modify_token(self):
         self.accept()
         self.modify_token()
-    
+
     def run_common_token(self):
         self.accept()
         self.common_token()
 
 
 class TokenizeFileDialog(QDialog):
-    
+
     def __init__(self, column_names, parent=None):
         super().__init__(parent)
         self.setWindowTitle("열 선택")
@@ -1737,3 +1742,285 @@ class TokenizeFileDialog(QDialog):
 
     def get_selected_columns(self):
         return [cb.text() for cb in self.checkboxes if cb.isChecked()]
+
+
+class EditHomeMemberDialog(QDialog):
+    def __init__(self, data: dict | None = None, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("멤버 편집")
+        self.resize(400, 600)
+        self.data = data or {}
+        vbox = QVBoxLayout(self)
+
+        def add_row(label: str, widget):
+            vbox.addWidget(QLabel(label))
+            vbox.addWidget(widget)
+
+        # ----- 필드 -----
+        self.in_name = QLineEdit(self.data.get("name", ""))
+        self.in_pos = QLineEdit(self.data.get("position", ""))
+        self.in_aff = QLineEdit(self.data.get("affiliation", ""))
+        self.in_section = QLineEdit(self.data.get("section", ""))
+        self.in_email = QLineEdit(self.data.get("email", ""))
+        self.in_career = QTextEdit("\n".join(self.data.get("경력", [])))
+        self.in_research = QTextEdit("\n".join(self.data.get("연구", [])))
+
+        for lbl, wid in [
+            ("이름", self.in_name), ("포지션", self.in_pos),
+            ("소속", self.in_aff), ("구분(section)", self.in_section),
+            ("이메일", self.in_email), ("경력(줄바꿈 구분)", self.in_career),
+            ("연구(줄바꿈 구분)", self.in_research)
+        ]:
+            add_row(lbl, wid)
+
+        # 이미지 선택
+        img_row = QHBoxLayout()
+        self.img_btn = QPushButton("프로필 이미지 선택")
+        self.img_btn.clicked.connect(self.pick_image)
+        img_row.addWidget(self.img_btn)
+        vbox.addLayout(img_row)
+
+        # OK / Cancel
+        ok = QPushButton("저장")
+        cancel = QPushButton("취소")
+        ok.clicked.connect(self.accept)
+        cancel.clicked.connect(self.reject)
+        vbox.addWidget(ok)
+        vbox.addWidget(cancel)
+
+        self.new_image_url = None
+
+    def pick_image(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.webp)")
+        if path:
+            fname = f"members/{os.path.basename(path)}"
+            try:
+                url = upload_homepage_image(path, fname)
+                self.new_image_url = url
+                QMessageBox.information(self, "완료", "업로드 성공")
+            except Exception as e:
+                QMessageBox.warning(self, "실패", str(e))
+
+    def get_payload(self):
+        payload = {
+            "name": self.in_name.text().strip(),
+            "position": self.in_pos.text().strip(),
+            "affiliation": self.in_aff.text().strip(),
+            "section": self.in_section.text().strip(),
+            "email": self.in_email.text().strip(),
+            # 반드시 포함되어야 하는 필드들
+            "학력": [],  # TODO: 학력 입력 위젯을 나중에 추가하거나 현재 고정값 지정
+            "경력": [l.strip() for l in self.in_career.toPlainText().splitlines() if l.strip()],
+            "연구": [l.strip() for l in self.in_research.toPlainText().splitlines() if l.strip()],
+        }
+        # image 필드 지정
+        if self.new_image_url:
+            payload["image"] = self.new_image_url
+        elif self.data.get("image"):
+            payload["image"] = self.data["image"]
+        else:
+            payload["image"] = ""  # 비어 있으면 서버가 기본 이미지 지정하게
+
+        return payload
+
+
+class EditHomeNewsDialog(QDialog):
+    def __init__(self, data: dict | None = None, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("뉴스 편집")
+        self.resize(400, 400)
+        self.data = data or {}
+        self.new_image_url = None
+
+        vbox = QVBoxLayout(self)
+
+        def add_row(label: str, widget):
+            vbox.addWidget(QLabel(label))
+            vbox.addWidget(widget)
+
+        self.in_title = QLineEdit(self.data.get("title", ""))
+        self.in_content = QTextEdit(self.data.get("content", ""))
+        self.in_date = QLineEdit(self.data.get("date", ""))
+        self.in_url = QLineEdit(self.data.get("url", ""))
+
+        for lbl, wid in [
+            ("제목", self.in_title),
+            ("내용", self.in_content),
+            ("날짜 (YYYY.MM 또는 YYYY.MM.DD)", self.in_date),
+            ("원본 기사 URL", self.in_url),
+        ]:
+            add_row(lbl, wid)
+
+        # 이미지 업로드
+        self.img_btn = QPushButton("썸네일 이미지 선택")
+        self.img_btn.clicked.connect(self.pick_image)
+        vbox.addWidget(self.img_btn)
+
+        # OK/Cancel
+        ok = QPushButton("저장")
+        cancel = QPushButton("취소")
+        ok.clicked.connect(self.accept)
+        cancel.clicked.connect(self.reject)
+        vbox.addWidget(ok)
+        vbox.addWidget(cancel)
+
+    def pick_image(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.webp)")
+        if path:
+            fname = f"news/{os.path.basename(path)}"
+            try:
+                self.new_image_url = upload_homepage_image(path, fname)
+                QMessageBox.information(self, "완료", "업로드 성공")
+            except Exception as e:
+                QMessageBox.warning(self, "실패", str(e))
+
+    def get_payload(self):
+        payload = {
+            "title": self.in_title.text().strip(),
+            "content": self.in_content.toPlainText().strip(),
+            "date": self.in_date.text().strip(),
+            "url": self.in_url.text().strip(),
+        }
+        if self.new_image_url:
+            payload["image"] = self.new_image_url
+        elif self.data.get("image"):
+            payload["image"] = self.data["image"]
+        return payload
+
+
+class EditHomePaperDialog(QDialog):
+    def __init__(self, data: dict | None = None, year: str = "", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"{year}년도 논문 편집")
+        self.resize(400, 400)
+        self.data = data or {}
+
+        vbox = QVBoxLayout(self)
+
+        def add_row(label: str, widget):
+            vbox.addWidget(QLabel(label))
+            vbox.addWidget(widget)
+
+        self.in_title = QLineEdit(self.data.get("title", ""))
+        self.in_authors = QTextEdit("\n".join(self.data.get("authors", [])))
+        self.in_conf = QLineEdit(self.data.get("conference", ""))
+        self.in_link = QLineEdit(self.data.get("link", ""))
+
+        for lbl, wid in [
+            ("제목", self.in_title),
+            ("저자들 (줄바꿈 구분)", self.in_authors),
+            ("컨퍼런스/저널", self.in_conf),
+            ("논문 링크(URL)", self.in_link),
+        ]:
+            add_row(lbl, wid)
+
+        ok = QPushButton("저장")
+        cancel = QPushButton("취소")
+        ok.clicked.connect(self.accept)
+        cancel.clicked.connect(self.reject)
+        vbox.addWidget(ok)
+        vbox.addWidget(cancel)
+
+    def get_payload(self, year: str) -> dict:
+        payload = {
+            "title": self.in_title.text().strip(),
+            "authors": [a.strip() for a in self.in_authors.toPlainText().splitlines() if a.strip()],
+            "conference": self.in_conf.text().strip(),
+            "link": self.in_link.text().strip(),
+        }
+        return {"year": int(year), "paper": payload}
+
+
+class SelectAndEditDialog(QDialog):
+    def __init__(self, item_type: str, parent=None):
+        super().__init__(parent)
+        self.API_INFO = {
+            "member": {
+                "list_endpoint": "members",
+                "edit_endpoint": "edit/member",
+                "edit_dialog_class": EditHomeMemberDialog,  # 반드시 import
+                "title": "멤버 선택 및 수정",
+            },
+            "news": {
+                "list_endpoint": "news",
+                "edit_endpoint": "edit/news",
+                "edit_dialog_class": EditHomeNewsDialog,  # 반드시 import
+                "title": "뉴스 선택 및 수정",
+            },
+            "paper": {
+                "list_endpoint": "papers",
+                "edit_endpoint": "edit/paper",
+                "edit_dialog_class": EditHomePaperDialog,  # 반드시 import
+                "title": "논문 선택 및 수정",
+            }
+        }
+
+        self.item_type = item_type
+        info = self.API_INFO.get(item_type)
+        if not info:
+            raise ValueError(f"{item_type}는 유효한 타입이 아닙니다!")
+
+        self.setWindowTitle(info["title"])
+        self.resize(400, 500)
+
+        layout = QVBoxLayout(self)
+        self.list_widget = QListWidget()
+        layout.addWidget(self.list_widget)
+
+        btn_row = QHBoxLayout()
+        self.edit_btn = QPushButton(f"선택 {item_type} 수정")
+        self.close_btn = QPushButton("닫기")
+        btn_row.addWidget(self.edit_btn)
+        btn_row.addWidget(self.close_btn)
+        layout.addLayout(btn_row)
+
+        self.edit_btn.clicked.connect(self.edit_selected_item)
+        self.close_btn.clicked.connect(self.close)
+
+        self.items = []
+        self.load_items()
+
+    def load_items(self):
+        """서버에서 항목 목록을 가져와 리스트 위젯에 채움"""
+        endpoint = self.API_INFO[self.item_type]["list_endpoint"]
+        response = Request("get", endpoint, base_api=HOMEPAGE_EDIT_API)
+        self.items = response.json() or []
+        self.list_widget.clear()
+
+        # 멤버: name / 뉴스: title / 논문: title
+        title_key = "name" if self.item_type == "member" else "title"
+        sub_key = "position" if self.item_type == "member" else (
+            "date" if self.item_type == "news" else "conference")
+
+        for obj in self.items:
+            self.list_widget.addItem(
+                f"{obj.get(title_key, '')} ({obj.get(sub_key, '')})"
+            )
+
+    def edit_selected_item(self):
+        current_row = self.list_widget.currentRow()
+        if current_row < 0:
+            QMessageBox.warning(self, "선택 안됨", f"수정할 {self.item_type}를 선택하세요.")
+            return
+
+        data = self.items[current_row]
+
+        info = self.API_INFO[self.item_type]
+        dialog_class = info["edit_dialog_class"]
+        dialog = dialog_class(data=data, parent=self)
+        if dialog.exec_():  # OK 눌림
+            payload = dialog.get_payload()
+            Request(
+                "post",
+                info["edit_endpoint"],
+                base_api=HOMEPAGE_EDIT_API,
+                json=payload
+            )
+            QMessageBox.information(
+                self,
+                "완료",
+                f"{payload.get('name', payload.get('title', ''))} {self.item_type}가 수정되었습니다!"
+            )
+            self.load_items()  # 수정 후 리스트 새로고침
