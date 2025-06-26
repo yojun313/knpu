@@ -2,6 +2,7 @@ import requests
 from core.setting import get_setting
 from config import MANAGER_SERVER_API, HOMEPAGE_EDIT_API
 import os
+import mimetypes
 
 
 def get_api_headers():
@@ -44,20 +45,26 @@ def Request(method, url, base_api = MANAGER_SERVER_API, **kwargs):
         raise Exception(f"[Request Failed] {str(err)}")
     
 
-def upload_homepage_image(src_path: str, folder: str = "misc") -> str:
+def upload_homepage_image(src_path: str, folder: str = "misc", file_name: str = "default") -> str:
     if not os.path.exists(src_path):
         raise FileNotFoundError(f"{src_path} 파일을 찾을 수 없습니다.")
+    mimetypes.init()  # mimetypes 초기화
+    mime_type, _ = mimetypes.guess_type(src_path)
+    if mime_type is None:
+        raise ValueError(f"{src_path}의 MIME 타입을 알 수 없음")
 
-    # 업로드할 파일 열기
     with open(src_path, "rb") as file:
         files = {
-            "file": (os.path.basename(src_path), file, "image/jpeg")
+            "file": (os.path.basename(src_path), file, mime_type)
         }
         data = {
-            "folder": folder
+            "folder": folder,
+            "object_name": f"{folder}/{file_name}"
         }
-
-        Request("post", "image", HOMEPAGE_EDIT_API, files=files, data=data)
-
+        
+        response = Request('post', f"image/", base_api=HOMEPAGE_EDIT_API, files=files, data=data)
+    print(response.status_code, response.text)
+        
+    return response.json()["url"]
 
 
