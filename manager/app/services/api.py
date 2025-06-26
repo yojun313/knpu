@@ -1,6 +1,8 @@
 import requests
-from core.setting import set_setting, get_setting
-from config import MANAGER_SERVER_API
+from core.setting import get_setting
+from config import MANAGER_SERVER_API, HOMEPAGE_EDIT_API
+import os
+
 
 def get_api_headers():
     """
@@ -11,9 +13,9 @@ def get_api_headers():
         "Authorization": f"Bearer {token}"
     }
 
-def Request(method, url, **kwargs):
+def Request(method, url, base_api = MANAGER_SERVER_API, **kwargs):
     try:
-        full_url = f"{MANAGER_SERVER_API}/{url.lstrip('/')}"
+        full_url = f"{base_api}/{url.lstrip('/')}"
         kwargs["headers"] = get_api_headers()
 
         # 요청 메서드 분기
@@ -40,6 +42,22 @@ def Request(method, url, **kwargs):
         raise Exception(f"[HTTP Error] {error_message}")
     except requests.exceptions.RequestException as err:
         raise Exception(f"[Request Failed] {str(err)}")
+    
+
+def upload_homepage_image(src_path: str, folder: str = "misc") -> str:
+    if not os.path.exists(src_path):
+        raise FileNotFoundError(f"{src_path} 파일을 찾을 수 없습니다.")
+
+    # 업로드할 파일 열기
+    with open(src_path, "rb") as file:
+        files = {
+            "file": (os.path.basename(src_path), file, "image/jpeg")
+        }
+        data = {
+            "folder": folder
+        }
+
+        Request("post", "image", HOMEPAGE_EDIT_API, files=files, data=data)
 
 
 
