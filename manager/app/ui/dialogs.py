@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
     QTextEdit, QDialogButtonBox, QComboBox, QLabel, QDateEdit, QLineEdit, QHBoxLayout,
-    QShortcut, QApplication, QFileDialog, QListWidget
+    QShortcut, QApplication, QFileDialog, QListWidget, QInputDialog
 )
 from services.api import *
 from services.logging import *
@@ -1794,9 +1794,14 @@ class EditHomeMemberDialog(QDialog):
         path, _ = QFileDialog.getOpenFileName(
             self, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.webp)")
         if path:
-            fname = f"members/{os.path.basename(path)}"
+            folder_name = f"members"
+            object_name = self.data.get("name", "")
+            if not object_name:
+                object_name, ok = QInputDialog.getText(None, '파일명 입력', '성함을 입력하세요:', text='merged_file')
+                if not ok or not object_name:
+                    return
             try:
-                url = upload_homepage_image(path, fname)
+                url = upload_homepage_image(path, folder_name, object_name)
                 self.new_image_url = url
                 QMessageBox.information(self, "완료", "업로드 성공")
             except Exception as e:
@@ -1866,10 +1871,9 @@ class EditHomeNewsDialog(QDialog):
         vbox.addWidget(cancel)
 
     def pick_image(self):
-        path, _ = QFileDialog.getOpenFileName(
-            self, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.webp)")
+        path, _ = QFileDialog.getOpenFileName(self, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.webp)")
         if path:
-            fname = f"news/{os.path.basename(path)}"
+            fname = f"news"
             try:
                 self.new_image_url = upload_homepage_image(path, fname)
                 QMessageBox.information(self, "완료", "업로드 성공")
@@ -1938,19 +1942,19 @@ class SelectAndEditDialog(QDialog):
         super().__init__(parent)
         self.API_INFO = {
             "member": {
-                "list_endpoint": "members",
+                "list_endpoint": "members/",
                 "edit_endpoint": "edit/member",
                 "edit_dialog_class": EditHomeMemberDialog,  # 반드시 import
                 "title": "멤버 선택 및 수정",
             },
             "news": {
-                "list_endpoint": "news",
+                "list_endpoint": "news/",
                 "edit_endpoint": "edit/news",
                 "edit_dialog_class": EditHomeNewsDialog,  # 반드시 import
                 "title": "뉴스 선택 및 수정",
             },
             "paper": {
-                "list_endpoint": "papers",
+                "list_endpoint": "papers/",
                 "edit_endpoint": "edit/paper",
                 "edit_dialog_class": EditHomePaperDialog,  # 반드시 import
                 "title": "논문 선택 및 수정",
