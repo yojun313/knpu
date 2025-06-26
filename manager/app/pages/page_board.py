@@ -249,7 +249,7 @@ class Manager_Board:
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
-    def viewPost(self, selectedRow=0):
+    def viewPost(self, selectedRow = 1):
         try:
             if selectedRow != 0:
                 selectedRow = self.main.board_post_tableWidget.currentRow()
