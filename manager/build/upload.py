@@ -10,7 +10,7 @@ ACCESS_KEY_ID = os.getenv('ACCESS_KEY_ID')
 SECRET_ACCESS_KEY = os.getenv('SECRET_ACCESS_KEY')
 ACCOUNT_ID = os.getenv('ACCOUNT_ID')
 BUCKET_NAME = os.getenv('BUCKET_NAME')
-LOCAL_FOLDER = "D:/BIGMACLAB/MANAGER/Output"  # 파일이 있는 경로
+LOCAL_FOLDER = "D:/knpu/MANAGER/Output"  # 파일이 있는 경로
 R2_ENDPOINT = f"https://{ACCOUNT_ID}.r2.cloudflarestorage.com"
 
 # 버전 문자열을 비교 가능한 튜플로 변환 (예: '2.7.1' → (2, 7, 1))
