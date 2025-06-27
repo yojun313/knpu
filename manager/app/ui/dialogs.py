@@ -9,7 +9,6 @@ from services.api import *
 from services.logging import *
 from PyQt5.QtGui import QKeySequence
 from datetime import datetime
-from PyQt5.QtWidgets import QSizePolicy
 
 
 class DBInfoDialog(QDialog):
@@ -1986,7 +1985,6 @@ class ViewHomePaperDialog(QDialog):
         add_label("컨퍼런스/저널", data.get("conference", ""))
         add_label("링크", data.get("link", ""))
         add_label("연도", str(data.get("year", "")))
-        add_label("UID", data.get("uid", ""))
 
         layout.addWidget(QPushButton("닫기", clicked=self.accept))
         
@@ -2014,7 +2012,6 @@ class ViewHomeMemberDialog(QDialog):
         add_label("학력", "\n".join(data.get("학력", [])) if isinstance(data.get("학력", []), list) else str(data.get("학력", "")))
         add_label("경력", "\n".join(data.get("경력", [])) if isinstance(data.get("경력", []), list) else str(data.get("경력", "")))
         add_label("연구", "\n".join(data.get("연구", [])) if isinstance(data.get("연구", []), list) else str(data.get("연구", "")))
-        add_label("UID", data.get("uid", ""))
 
         layout.addWidget(QPushButton("닫기", clicked=self.accept))
         
@@ -2039,7 +2036,6 @@ class ViewHomeNewsDialog(QDialog):
         add_label("내용", data.get("content", ""))
         add_label("날짜", data.get("date", ""))
         add_label("URL", data.get("url", ""))
-        add_label("UID", data.get("uid", ""))
 
         layout.addWidget(QPushButton("닫기", clicked=self.accept))
         
