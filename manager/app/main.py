@@ -28,7 +28,7 @@ def build_app():
     app = QApplication([])
     app.setApplicationName("MANAGER")
     app.setApplicationVersion(VERSION)
-    app.setOrganizationName("BIGMACLAB")
+    app.setOrganizationName("PAILAB")
 
     # 글꼴
     font_path = os.path.join(ASSETS_PATH, "malgun.ttf")

@@ -88,7 +88,7 @@ class SplashDialog(QDialog):
         
         # 저작권 정보 라벨
         copyrightLabel = QLabel(
-            "Copyright © 2024 KNPU BIGMACLAB\nAll rights reserved.")
+            "Copyright © 2024 KNPU PAILAB\nAll rights reserved.")
         copyrightLabel.setAlignment(Qt.AlignCenter)
         copyrightLabel.setStyleSheet(
             f"font-size: 15px; font-family: 'Tahoma'; color: {gray_color}; margin-top: 10px;")
