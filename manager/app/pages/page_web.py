@@ -3,7 +3,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl
 import warnings
 import traceback
-
+from core.shortcut import *
 from services.logging import programBugLog
 from services.api import Request
 from config import HOMEPAGE_EDIT_API
@@ -196,8 +196,7 @@ class Manager_Web:
     def editHomePaper(self):
         try:
             selectedRow = self.main.web_papers_tableWidget.currentRow()
-            if selectedRow == -1:
-                QMessageBox.warning(self.main, "경고", "편집할 논문을 선택하세요.")
+            if selectedRow < 0:
                 return
             selectedUid = self.paper_uid_list[selectedRow]
             # 기존 데이터 가져오기
@@ -225,8 +224,7 @@ class Manager_Web:
     def editHomeMember(self):
         try:
             selectedRow = self.main.web_members_tableWidget.currentRow()
-            if selectedRow == -1:
-                QMessageBox.warning(self.main, "경고", "편집할 멤버를 선택하세요.")
+            if selectedRow < 0:
                 return
             selectedUid = self.member_uid_list[selectedRow]
             origin = None
@@ -251,8 +249,7 @@ class Manager_Web:
     def editHomeNews(self):
         try:
             selectedRow = self.main.web_news_tableWidget.currentRow()
-            if selectedRow == -1:
-                QMessageBox.warning(self.main, "경고", "편집할 뉴스를 선택하세요.")
+            if selectedRow < 0:
                 return
             selectedUid = self.news_uid_list[selectedRow]
             origin = None
@@ -274,4 +271,41 @@ class Manager_Web:
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 
+    def setWebShortcut(self):
+        self.updateShortcut(0)
+        self.main.tabWidget_board.currentChanged.connect(self.updateShortcut)
+
+    def updateShortcut(self, index):
+        resetShortcuts(self.main)
+
+        # 패치 노트 탭
+        if index == 0:
+            self.main.ctrld.activated.connect(self.deleteHomePaper)
+            self.main.ctrle.activated.connect(self.editHomePaper)
+            self.main.ctrla.activated.connect(self.addHomePaper)
+
+            self.main.cmdd.activated.connect(self.deleteHomePaper)
+            self.main.cmde.activated.connect(self.addHomePaper)
+            self.main.cmda.activated.connect(self.addHomePaper)
+
+        # 버그 리포트 탭
+        if index == 1:
+            self.main.ctrld.activated.connect(self.deleteHomeMember)
+            self.main.ctrle.activated.connect(self.editHomeMember)
+            self.main.ctrla.activated.connect(self.addHomeMember)
+
+            self.main.cmdd.activated.connect(self.deleteHomeMember)
+            self.main.cmde.activated.connect(self.editHomeMember)
+            self.main.cmda.activated.connect(self.addHomeMember)
+
+        # 자유 게시판 탭
+        if index == 2:
+            self.main.ctrld.activated.connect(self.deleteHomeNews)
+            self.main.ctrla.activated.connect(self.addHomeNews)
+            self.main.ctrle.activated.connect(self.editHomeNews)
+
+            self.main.cmdd.activated.connect(self.deleteHomeNews)
+            self.main.cmda.activated.connect(self.addHomeNews)
+            self.main.cmde.activated.connect(self.editHomeNews)
+    
     

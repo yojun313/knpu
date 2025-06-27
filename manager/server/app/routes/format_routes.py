@@ -6,7 +6,7 @@ router = APIRouter()
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "format")
 
-@router.get("/request")
+@router.get("/engkor")
 def download_engkor_list():
     file_path = os.path.join(DATA_DIR, "engkor_list.csv")
     return FileResponse(
@@ -15,7 +15,7 @@ def download_engkor_list():
         filename="engkor_list.csv"
     )
 
-@router.post("/verify")
+@router.post("/exception")
 def download_exception_list():
     file_path = os.path.join(DATA_DIR, "exception_list.csv")
     return FileResponse(
@@ -24,7 +24,7 @@ def download_exception_list():
         filename="exception_list.csv"
     )
 
-@router.get("/login")
+@router.get("/tokenize")
 def download_tokenize_list():
     file_path = os.path.join(DATA_DIR, "tokenize_list.csv")
     return FileResponse(

@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, \
     QHBoxLayout, QLabel, QDialog, QLineEdit, QMessageBox, \
-    QPushButton, QStackedWidget, QListWidget, QComboBox
+    QPushButton, QStackedWidget, QListWidget, QComboBox, QFileDialog
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QKeySequence, QFont
 from core.setting import *
@@ -8,6 +8,8 @@ from config import VERSION
 from datetime import datetime
 import platform
 import os
+import requests
+from config import *
 
 
 class Manager_Setting(QDialog):
@@ -645,36 +647,76 @@ class Manager_Setting(QDialog):
         help_layout.setSpacing(10)
         help_layout.setContentsMargins(20, 20, 20, 20)
 
-        # 제목
+        # === 사용 설명서 영역 ===
         help_title_label = QLabel("Instructions\n")
         help_title_label.setStyleSheet("font-weight: bold;")
         help_title_label.setAlignment(Qt.AlignLeft)
 
-        # 설명 텍스트
         help_text_label = QLabel("아래 링크를 클릭하여 사용 설명서를 확인하세요.")
         help_text_label.setAlignment(Qt.AlignLeft)
 
-        # 첫 번째 하이퍼링크
-        link1_label = QLabel(
-            '<a href="https://knpu.re.kr/tool">MANAGER</a>')
+        link1_label = QLabel('<a href="https://knpu.re.kr/tool">MANAGER</a>')
         link1_label.setOpenExternalLinks(True)
         link1_label.setAlignment(Qt.AlignLeft)
 
-        # 두 번째 하이퍼링크
         link2_label = QLabel('<a href="https://knpu.re.kr/kemkim">KEM KIM</a>')
         link2_label.setOpenExternalLinks(True)
         link2_label.setAlignment(Qt.AlignLeft)
 
-        # 레이아웃 구성
+        # === CSV 양식 다운로드 영역 ===
+        format_title_label = QLabel("\nFormats\n")
+        format_title_label.setStyleSheet("font-weight: bold;")
+        format_title_label.setAlignment(Qt.AlignLeft)
+
+        format_text_label = QLabel("아래 링크를 클릭하여 CSV 양식을 다운로드하세요.")
+        format_text_label.setAlignment(Qt.AlignLeft)
+
+        # 다운로드 가능한 링크들
+        links = {
+            "KEMKIM Eng-Kor 매핑 양식": f"{MANAGER_SERVER_API}/format/engkor",
+            "KEMKIM 제외단어 리스트 양식": f"{MANAGER_SERVER_API}/format/exception",
+            "TOKENIZE 포함단어 리스트 양식": f"{MANAGER_SERVER_API}/format/tokenize",
+        }
+
         help_layout.addWidget(help_title_label)
         help_layout.addWidget(help_text_label)
         help_layout.addWidget(link1_label)
         help_layout.addWidget(link2_label)
+
+        help_layout.addWidget(format_title_label)
+        help_layout.addWidget(format_text_label)
+
+        for label, url in links.items():
+            link_label = QLabel(f'<a href="{url}">{label}</a>')
+            link_label.setOpenExternalLinks(False)
+            link_label.setAlignment(Qt.AlignLeft)
+            link_label.linkActivated.connect(lambda url=url: self.download_csv(url))
+            help_layout.addWidget(link_label)
+
         help_layout.addStretch()
 
         help_widget = QWidget()
         help_widget.setLayout(help_layout)
         return help_widget
+
+
+    def download_csv(self, url):
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                filename = url.split("/")[-1] + ".csv"
+                save_path, _ = QFileDialog.getSaveFileName(
+                    None, "CSV 파일 저장", filename, "CSV Files (*.csv)"
+                )
+                if save_path:
+                    with open(save_path, "wb") as f:
+                        f.write(response.content)
+                    QMessageBox.information(None, "완료", f"파일이 저장되었습니다:\n{save_path}")
+            else:
+                QMessageBox.warning(None, "실패", f"다운로드 실패: {response.status_code}")
+        except Exception as e:
+            QMessageBox.critical(None, "에러", str(e))
+
 
     def open_help_url(self):
         """
