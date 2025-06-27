@@ -10,6 +10,7 @@ import platform
 import os
 import requests
 from config import *
+from ui.finder import *
 
 
 class Manager_Setting(QDialog):
@@ -690,7 +691,8 @@ class Manager_Setting(QDialog):
             link_label = QLabel(f'<a href="{url}">{label}</a>')
             link_label.setOpenExternalLinks(False)
             link_label.setAlignment(Qt.AlignLeft)
-            link_label.linkActivated.connect(lambda url=url: self.download_csv(url))
+            link_label.linkActivated.connect(
+                lambda url=url: self.download_csv(url))
             help_layout.addWidget(link_label)
 
         help_layout.addStretch()
@@ -699,24 +701,25 @@ class Manager_Setting(QDialog):
         help_widget.setLayout(help_layout)
         return help_widget
 
-
     def download_csv(self, url):
         try:
             response = requests.get(url)
             if response.status_code == 200:
                 filename = url.split("/")[-1] + ".csv"
+                filename = os.path.join(self.main.localDirectory, filename)
                 save_path, _ = QFileDialog.getSaveFileName(
-                    None, "CSV 파일 저장", filename, "CSV Files (*.csv)"
+                    None, "CSV 양식 저장", filename, "CSV Files (*.csv)"
                 )
                 if save_path:
                     with open(save_path, "wb") as f:
                         f.write(response.content)
-                    QMessageBox.information(None, "완료", f"파일이 저장되었습니다:\n{save_path}")
+                    openFileResult(
+                        self.main, f"저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", os.path.dirname(save_path))
             else:
-                QMessageBox.warning(None, "실패", f"다운로드 실패: {response.status_code}")
+                QMessageBox.warning(
+                    None, "실패", f"다운로드 실패: {response.status_code}")
         except Exception as e:
             QMessageBox.critical(None, "에러", str(e))
-
 
     def open_help_url(self):
         """
