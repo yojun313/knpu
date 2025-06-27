@@ -366,86 +366,123 @@
        </layout>
       </widget>
       <widget class="QWidget" name="page_web">
-        <layout class="QVBoxLayout" name="verticalLayout">
-        <!-- 사이트 바로가기 버튼들 -->
+       <layout class="QVBoxLayout" name="verticalLayout_data_process">
         <item>
-        <widget class="QGroupBox" name="group_sites">
-            <property name="title">
-            <string>Websites</string>
-            </property>
-            <layout class="QGridLayout" name="grid_sites">
-            <item row="0" column="0">
-            <widget class="QPushButton" name="web_homepage_button">
-            <property name="text"><string>홈페이지</string></property>
-            </widget>
+         <widget class="QTabWidget" name="tabWidget_board">
+          <property name="tabPosition">
+           <enum>QTabWidget::North</enum>
+          </property>
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="tab_papers">
+           <attribute name="title">
+            <string>논문 목록</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
+            <item>
+             <widget class="QTableWidget" name="web_papers_tableWidget"/>
             </item>
-            <item row="0" column="1">
-            <widget class="QPushButton" name="web_sue_button">
-            <property name="text"><string>AI 고소장 생성기</string></property>
-            </widget>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <item>
+               <widget class="QPushButton" name="web_addpaper_button">
+                <property name="text">
+                 <string>추가</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_deletepaper_button">
+                <property name="text">
+                 <string>삭제</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_editpaper_button">
+                <property name="text">
+                 <string>수정</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
-            <item row="0" column="2">
-            <widget class="QPushButton" name="web_carnumber_button">
-            <property name="text"><string>AI 번호판 인식</string></property>
-            </widget>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tab_members">
+           <attribute name="title">
+            <string>멤버 목록</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
+            <item>
+             <widget class="QTableWidget" name="web_members_tableWidget"/>
             </item>
-            <item row="0" column="3">
-            <widget class="QPushButton" name="web_github_button">
-            <property name="text"><string>개발자 GitHub</string></property>
-            </widget>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <item>
+               <widget class="QPushButton" name="web_addmember_button">
+                <property name="text">
+                 <string>추가</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_deletemember_button">
+                <property name="text">
+                 <string>삭제</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_editmember_button">
+                <property name="text">
+                 <string>수정</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
-            </layout>
-        </widget>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tab_news">
+           <attribute name="title">
+            <string>뉴스 목록</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
+            <item>
+             <widget class="QTableWidget" name="web_news_tableWidget"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <item>
+               <widget class="QPushButton" name="web_addnews_button">
+                <property name="text">
+                 <string>추가</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_deletenews_button">
+                <property name="text">
+                 <string>삭제</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_editnews_button">
+                <property name="text">
+                 <string>수정</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </widget>
         </item>
-
-        <!-- 다운로드 버튼들 -->
-        <item>
-        <widget class="QGroupBox" name="group_downloads">
-            <property name="title"><string>Formats</string></property>
-            <layout class="QGridLayout" name="grid_downloads">
-            <item row="0" column="0">
-            <widget class="QPushButton" name="exception_list_download_btn">
-            <property name="text"><string>예외어 사전 양식 다운로드</string></property>
-            </widget>
-            </item>
-            <item row="0" column="1">
-            <widget class="QPushButton" name="koreng_list_download_btn">
-            <property name="text"><string>KEMKIM 한영변환 양식 다운로드</string></property>
-            </widget>
-            </item>
-            <item row="0" column="1">
-            <widget class="QPushButton" name="include_list_download_btn">
-            <property name="text"><string>토큰 포함단어 양식 다운로드</string></property>
-            </widget>
-            </item>
-            </layout>
-        </widget>
-        </item>
-        
-        <!-- 홈페이지 수정용 레이아웃 -->
-        <item>
-        <widget class="QGroupBox" name="group_downloads">
-            <property name="title"><string>Homepage Info</string></property>
-            <layout class="QGridLayout" name="grid_downloads">
-            <item row="0" column="0">
-            <widget class="QPushButton" name="homepage_paper_edit_btn">
-            <property name="text"><string>논문 관리</string></property>
-            </widget>
-            </item>
-            <item row="0" column="1">
-            <widget class="QPushButton" name="homepage_member_edit_btn">
-            <property name="text"><string>멤버 관리</string></property>
-            </widget>
-            </item>
-            <item row="0" column="2">
-            <widget class="QPushButton" name="homepage_news_edit_btn">
-            <property name="text"><string>뉴스 관리</string></property>
-            </widget>
-            </item>
-            </layout>
-        </widget>
-        </item>
-        </layout>
+       </layout>
       </widget>
       <widget class="QWidget" name="page_user">
        <layout class="QVBoxLayout" name="verticalLayout_user">

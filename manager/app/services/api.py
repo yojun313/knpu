@@ -59,7 +59,7 @@ def upload_homepage_image(src_path: str, folder: str = "misc", file_name: str = 
         }
         data = {
             "folder": folder,
-            "object_name": f"{folder}/{file_name}"
+            "object_name": f"{folder}/{file_name}.jpg"
         }
         
         response = Request('post', f"image/", base_api=HOMEPAGE_EDIT_API, files=files, data=data)

@@ -1,8 +1,6 @@
-from PyQt5.QtWidgets import QVBoxLayout, QInputDialog, QMessageBox
+from PyQt5.QtWidgets import QVBoxLayout, QMessageBox
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl
-from functools import partial
-import webbrowser
 import warnings
 import traceback
 
@@ -14,9 +12,9 @@ from config import HOMEPAGE_EDIT_API
 from ui.dialogs import (
     EditHomeMemberDialog,
     EditHomeNewsDialog,
-    EditHomePaperDialog,
-    SelectAndEditDialog,  # ★ 범용 선택/수정 다이얼로그
+    EditHomePaperDialog
 )
+from ui.table import *
 
 warnings.filterwarnings("ignore")
 
@@ -31,6 +29,9 @@ class Manager_Web:
         self.main.crawler_webview.setLayout(self.crawler_web_layout)
 
         self.web_web_layout = QVBoxLayout()
+        self.refreshPaperBoard()
+        self.refreshMemberBoard()
+        self.refreshNewsBoard()
         self.web_buttonMatch()
 
     def web_open_webbrowser(self, url, widget):
@@ -46,122 +47,231 @@ class Manager_Web:
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 
-    def web_buttonMatch(self):
-        # 웹사이트 링크들
-        self.main.crawler_server_button.clicked.connect(
-            partial(self.web_open_webbrowser, "https://crawler.knpu.re.kr", self.crawler_web_layout))
-        self.main.web_homepage_button.clicked.connect(
-            partial(webbrowser.open, "https://knpu.re.kr"))
-        self.main.web_sue_button.clicked.connect(
-            partial(webbrowser.open, "https://complaint.knpu.re.kr"))
-        self.main.web_carnumber_button.clicked.connect(
-            partial(webbrowser.open, "https://carnumber.knpu.re.kr"))
-        self.main.web_github_button.clicked.connect(
-            partial(webbrowser.open, "https://github.com/yojun313"))
+    def web_buttonMatch(self):        
+        self.main.web_addpaper_button.clicked.connect(self.addHomePaper)
+        self.main.web_addmember_button.clicked.connect(self.addHomeMember)
+        self.main.web_addnews_button.clicked.connect(self.addHomeNews)
+        self.main.web_deletepaper_button.clicked.connect(self.deleteHomePaper)
+        self.main.web_deletemember_button.clicked.connect(self.deleteHomeMember)
+        self.main.web_deletenews_button.clicked.connect(self.deleteHomeNews)
+        self.main.web_editpaper_button.clicked.connect(self.editHomePaper)
+        self.main.web_editmember_button.clicked.connect(self.editHomeMember)
+        self.main.web_editnews_button.clicked.connect(self.editHomeNews)
 
-        self.main.homepage_member_edit_btn.clicked.connect(self.open_member_action_dialog)
-        self.main.homepage_news_edit_btn.clicked.connect(self.open_news_action_dialog)
-        self.main.homepage_paper_edit_btn.clicked.connect(self.open_paper_action_dialog)
+    def refreshPaperBoard(self):
+        self.origin_paper_data = Request(
+            'get', 
+            '/papers/',
+            HOMEPAGE_EDIT_API
+        ).json()
 
-    def open_member_action_dialog(self):
-        options = ["멤버 추가", "멤버 수정(선택)", "멤버 삭제(선택)"]
-        choice, ok = QInputDialog.getItem(self.main, "멤버 작업 선택",
-                                          "원하는 작업을 선택하세요:", options, 0, False)
-        if not ok or not choice:
-            return
-        if choice.startswith("멤버 추가"):
-            self.open_add_member_dialog()
-        elif choice.startswith("멤버 수정"):
-            self.open_select_and_edit_dialog("member")
-        elif choice.startswith("멤버 삭제"):
-            self.open_select_and_delete_dialog("member")
+        parsed_items = []
+        self.paper_uid_list = []
+        for year_group in self.origin_paper_data:
+            year = year_group.get("year", "")
+            for paper in year_group.get("papers", []):
+                paper["year"] = year  # 연도 추가
+                self.paper_uid_list.append(paper.get("uid"))
+                paper["authors"] = ', '.join(paper.get("authors", []))
+                parsed_items.append(paper)
 
-    def open_news_action_dialog(self):
-        options = ["뉴스 추가", "뉴스 수정(선택)", "뉴스 삭제(선택)"]
-        choice, ok = QInputDialog.getItem(self.main, "뉴스 작업 선택",
-                                          "원하는 작업을 선택하세요:", options, 0, False)
-        if not ok or not choice:
-            return
-        if choice.startswith("뉴스 추가"):
-            self.open_add_news_dialog()
-        elif choice.startswith("뉴스 수정"):
-            self.open_select_and_edit_dialog("news")
-        elif choice.startswith("뉴스 삭제"):
-            self.open_select_and_delete_dialog("news")
+        self.paper_data = [[item['title'], item['authors'], item['conference'], item.get('link', ''), item['year']] for item in parsed_items]
+        self.paper_table_column = ['Title', 'Authors', 'Conference', 'Url', 'Year']
+        makeTable(self.main, self.main.web_papers_tableWidget, self.paper_data, self.paper_table_column)
 
-    def open_paper_action_dialog(self):
-        options = ["논문 추가", "논문 수정(선택)", "논문 삭제(선택)"]
-        choice, ok = QInputDialog.getItem(self.main, "논문 작업 선택",
-                                          "원하는 작업을 선택하세요:", options, 0, False)
-        if not ok or not choice:
-            return
-        if choice.startswith("논문 추가"):
-            self.open_add_paper_dialog()
-        elif choice.startswith("논문 수정"):
-            self.open_select_and_edit_dialog("paper")
-        elif choice.startswith("논문 삭제"):
-            self.open_select_and_delete_dialog("paper")
+    def refreshMemberBoard(self):
+        self.origin_member_data = Request(
+            'get', 
+            '/members/',
+            HOMEPAGE_EDIT_API
+        ).json()
 
-    def open_add_member_dialog(self):
-        try:
-            dialog = EditHomeMemberDialog(parent=self.main)
-            if dialog.exec_():  # OK
-                payload = dialog.get_payload()
-                Request("post", "edit/member", HOMEPAGE_EDIT_API, json=payload)
-                QMessageBox.information(self.main, "완료", f"{payload['name']} 멤버가 추가되었습니다!")
-        except Exception as e:
-            programBugLog(self.main, traceback.format_exc())
-            QMessageBox.critical(self.main, "실패", str(e))
+        parsed_items = []
+        self.member_uid_list = []
+        for member in self.origin_member_data:
+            self.member_uid_list.append(member.get("uid"))
+            member_info = {
+                'name': str(member.get('name', '')),
+                'position': str(member.get('position', '')),
+                'email': str(member.get('email', '')),
+                "학력": "\n".join(member.get("학력", [])) if isinstance(member.get("학력"), list) else str(member.get("학력", "")),
+                "경력": "\n".join(member.get("경력", [])) if isinstance(member.get("경력"), list) else str(member.get("경력", "")),
+                "연구": "\n".join(member.get("연구", [])) if isinstance(member.get("연구"), list) else str(member.get("연구", "")),
+            }
+            parsed_items.append(member_info)
 
-    def open_add_news_dialog(self):
-        try:
-            dialog = EditHomeNewsDialog(parent=self.main)
-            if dialog.exec_():
-                payload = dialog.get_payload()
-                Request("post", "edit/news", HOMEPAGE_EDIT_API, json=payload)
-                QMessageBox.information(self.main, "완료", f"{payload.get('title','뉴스')}가 추가되었습니다!")
-        except Exception as e:
-            programBugLog(self.main, traceback.format_exc())
+        self.member_data = [[item['name'], item['position'], item['email'], item['학력'], item['경력'], item['연구']] for item in parsed_items]
+        self.member_table_column = ['성명', '직책', '이메일', '학력', '경력', '연구']
+        makeTable(self.main, self.main.web_members_tableWidget, self.member_data, self.member_table_column)
 
-    def open_add_paper_dialog(self):
+    def refreshNewsBoard(self):
+        self.origin_news_data = Request(
+            'get', 
+            '/news/',
+            HOMEPAGE_EDIT_API
+        ).json()
+
+        parsed_items = []
+        self.news_uid_list = []
+        for news in self.origin_news_data:
+            self.news_uid_list.append(news.get("uid"))
+            news_info = {
+                'title': str(news.get('title', '')),
+                'content': str(news.get('content', '')),
+                'date': str(news.get('date', '')),
+                'url': str(news.get('url', '')),
+            }
+            parsed_items.append(news_info)
+
+        self.news_data = [[item['title'], item['content'], item['date'], item['url']] for item in parsed_items]
+        self.news_table_column = ['제목', '내용', '날짜', 'URL']
+        makeTable(self.main, self.main.web_news_tableWidget, self.news_data, self.news_table_column)
+
+    def addHomePaper(self):
         try:
             dialog = EditHomePaperDialog(parent=self.main)
             if dialog.exec_():
                 payload = dialog.get_payload()
                 Request("post", "edit/paper", HOMEPAGE_EDIT_API, json=payload)
-                QMessageBox.information(self.main, "완료", f"{payload.get('title','논문')}가 추가되었습니다!")
-        except Exception as e:
+                QMessageBox.information(self.main, "완료", f"{payload['paper'].get('title','논문')}가 추가되었습니다")
+                self.refreshPaperBoard()
+        except Exception:
             programBugLog(self.main, traceback.format_exc())
 
-    def open_select_and_edit_dialog(self, item_type: str):
+    def addHomeMember(self):
         try:
-            dialog = SelectAndEditDialog(item_type=item_type, parent=self.main)
-            dialog.exec_()  # 수정 선택 후 내부에서 서버 전송
-        except Exception as e:
+            dialog = EditHomeMemberDialog(parent=self.main)
+            if dialog.exec_():
+                payload = dialog.get_payload()
+                Request("post", "edit/member", HOMEPAGE_EDIT_API, json=payload)
+                QMessageBox.information(self.main, "완료", f"{payload['name']} 멤버가 추가되었습니다")
+                self.refreshMemberBoard()
+        except Exception:
             programBugLog(self.main, traceback.format_exc())
 
-    def open_select_and_delete_dialog(self, item_type: str):
+    def addHomeNews(self):
         try:
-            dialog = SelectAndEditDialog(item_type=item_type, parent=self.main)
-            dialog.setWindowTitle(f"{item_type} 삭제")
-            dialog.edit_btn.setText(f"선택 {item_type} 삭제")
-            dialog.edit_btn.clicked.disconnect()  # 원래 수정 연결 끊기
-            dialog.edit_btn.clicked.connect(partial(self.delete_selected_item, dialog, item_type))
-            dialog.exec_()
-        except Exception as e:
+            dialog = EditHomeNewsDialog(parent=self.main)
+            if dialog.exec_():
+                payload = dialog.get_payload()
+                Request("post", "edit/news", HOMEPAGE_EDIT_API, json=payload)
+                QMessageBox.information(self.main, "완료", f"{payload.get('title','뉴스')}가 추가되었습니다")
+                self.refreshNewsBoard()
+        except Exception:
             programBugLog(self.main, traceback.format_exc())
 
-    def delete_selected_item(self, dialog, item_type: str):
-        current_row = dialog.list_widget.currentRow()
-        if current_row < 0:
-            QMessageBox.warning(self.main, "선택 안됨", f"삭제할 {item_type}를 선택하세요.")
-            return
-        item = dialog.items[current_row]
+    def deleteHomePaper(self):
         try:
-            endpoint = f"{item_type}"
-            params = { "name": item.get("name") } if item_type == "member" else { "title": item.get("title") }
-            Request("delete", endpoint, HOMEPAGE_EDIT_API, params=params)
-            QMessageBox.information(self.main, "삭제됨", f"{item.get('name') or item.get('title')}가 삭제되었습니다!")
-            dialog.load_items()  # 삭제 후 목록 새로고침
-        except Exception as e:
+            selectedRow = self.main.web_papers_tableWidget.currentRow()
+            selectedUid = self.paper_uid_list[selectedRow]
+            reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                Request("delete", "edit/paper", HOMEPAGE_EDIT_API, params={"uid": selectedUid})
+                self.refreshPaperBoard()
+        except Exception:
             programBugLog(self.main, traceback.format_exc())
+
+    def deleteHomeMember(self):
+        try:
+            selectedRow = self.main.web_members_tableWidget.currentRow()
+            selectedUid = self.member_uid_list[selectedRow]
+            reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                Request("delete", "edit/member", HOMEPAGE_EDIT_API, params={"uid": selectedUid})
+                self.refreshMemberBoard()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
+    def deleteHomeNews(self):
+        try:
+            selectedRow = self.main.web_news_tableWidget.currentRow()
+            selectedUid = self.news_uid_list[selectedRow]
+            reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                Request("delete", "edit/news", HOMEPAGE_EDIT_API, params={"uid": selectedUid})
+                self.refreshNewsBoard()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
+    def editHomePaper(self):
+        try:
+            selectedRow = self.main.web_papers_tableWidget.currentRow()
+            if selectedRow == -1:
+                QMessageBox.warning(self.main, "경고", "편집할 논문을 선택하세요.")
+                return
+            selectedUid = self.paper_uid_list[selectedRow]
+            # 기존 데이터 가져오기
+            origin = None
+            for year_group in self.origin_paper_data:
+                for p in year_group["papers"]:
+                    if p.get("uid") == selectedUid:
+                        origin = p
+                        origin["year"] = year_group["year"]
+                        break
+            if not origin:
+                QMessageBox.warning(self.main, "오류", "논문 정보를 찾을 수 없습니다.")
+                return
+
+            dialog = EditHomePaperDialog(data=origin, parent=self.main)
+            if dialog.exec_():
+                payload = dialog.get_payload()
+                payload["paper"]["uid"] = selectedUid  # uid 유지
+                Request("post", "edit/paper", HOMEPAGE_EDIT_API, json=payload)
+                QMessageBox.information(self.main, "완료", f"{payload['paper'].get('title')}가 수정되었습니다")
+                self.refreshPaperBoard()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+    
+    def editHomeMember(self):
+        try:
+            selectedRow = self.main.web_members_tableWidget.currentRow()
+            if selectedRow == -1:
+                QMessageBox.warning(self.main, "경고", "편집할 멤버를 선택하세요.")
+                return
+            selectedUid = self.member_uid_list[selectedRow]
+            origin = None
+            for m in self.origin_member_data:
+                if m.get("uid") == selectedUid:
+                    origin = m
+                    break
+            if not origin:
+                QMessageBox.warning(self.main, "오류", "멤버 정보를 찾을 수 없습니다.")
+                return
+
+            dialog = EditHomeMemberDialog(data=origin, parent=self.main)
+            if dialog.exec_():
+                payload = dialog.get_payload()
+                payload["uid"] = selectedUid
+                Request("post", "edit/member", HOMEPAGE_EDIT_API, json=payload)
+                QMessageBox.information(self.main, "완료", f"{payload.get('name')} 멤버가 수정되었습니다")
+                self.refreshMemberBoard()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
+    def editHomeNews(self):
+        try:
+            selectedRow = self.main.web_news_tableWidget.currentRow()
+            if selectedRow == -1:
+                QMessageBox.warning(self.main, "경고", "편집할 뉴스를 선택하세요.")
+                return
+            selectedUid = self.news_uid_list[selectedRow]
+            origin = None
+            for n in self.origin_news_data:
+                if n.get("uid") == selectedUid:
+                    origin = n
+                    break
+            if not origin:
+                QMessageBox.warning(self.main, "오류", "뉴스 정보를 찾을 수 없습니다.")
+                return
+
+            dialog = EditHomeNewsDialog(data=origin, parent=self.main)
+            if dialog.exec_():
+                payload = dialog.get_payload()
+                payload["uid"] = selectedUid
+                Request("post", "edit/news", HOMEPAGE_EDIT_API, json=payload)
+                QMessageBox.information(self.main, "완료", f"{payload.get('title')} 뉴스가 수정되었습니다")
+                self.refreshNewsBoard()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
+    

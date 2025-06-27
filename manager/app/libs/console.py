@@ -142,7 +142,7 @@ def clear_console():
 
 # ===== 예시 =====
 if __name__ == "__main__":
-    openConsole("콘솔/터미널 창이 열렸습니다!")
+    openConsole("콘솔/터미널 창이 열렸습니다")
     print("여기에 PyQt 내부 print 도 함께 찍힙니다.")
     input("엔터를 누르면 창을 닫습니다…")
     closeConsole()
