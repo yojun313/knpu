@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
     QTextEdit, QDialogButtonBox, QComboBox, QLabel, QDateEdit, QLineEdit, QHBoxLayout,
-    QShortcut, QApplication, QFileDialog, QListWidget, QInputDialog
+    QShortcut, QApplication, QFileDialog, QInputDialog
 )
 from services.api import *
 from services.logging import *
@@ -1738,6 +1738,9 @@ class TokenizeFileDialog(QDialog):
         button_layout.addWidget(ok_button)
         button_layout.addWidget(cancel_button)
         layout.addLayout(button_layout)
+        
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
 
     def get_selected_columns(self):
         return [cb.text() for cb in self.checkboxes if cb.isChecked()]
@@ -1986,6 +1989,9 @@ class ViewHomePaperDialog(QDialog):
         add_label("UID", data.get("uid", ""))
 
         layout.addWidget(QPushButton("닫기", clicked=self.accept))
+        
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
     
 
 class ViewHomeMemberDialog(QDialog):
@@ -2011,6 +2017,9 @@ class ViewHomeMemberDialog(QDialog):
         add_label("UID", data.get("uid", ""))
 
         layout.addWidget(QPushButton("닫기", clicked=self.accept))
+        
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
 
 
 class ViewHomeNewsDialog(QDialog):
@@ -2033,3 +2042,6 @@ class ViewHomeNewsDialog(QDialog):
         add_label("UID", data.get("uid", ""))
 
         layout.addWidget(QPushButton("닫기", clicked=self.accept))
+        
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
