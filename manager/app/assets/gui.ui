@@ -368,7 +368,7 @@
       <widget class="QWidget" name="page_web">
        <layout class="QVBoxLayout" name="verticalLayout_data_process">
         <item>
-         <widget class="QTabWidget" name="tabWidget_board">
+         <widget class="QTabWidget" name="tabWidget_web">
           <property name="tabPosition">
            <enum>QTabWidget::North</enum>
           </property>
