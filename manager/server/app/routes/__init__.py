@@ -15,6 +15,6 @@ api_router.include_router(user_router, prefix="/users", tags=["Users"], dependen
 api_router.include_router(crawl_router, prefix="/crawls", tags=["Crawls"], dependencies=[Depends(verify_token)])
 api_router.include_router(board_router, prefix="/board", tags=["Board"], dependencies=[Depends(verify_token)])
 api_router.include_router(analysis_router, prefix="/analysis", tags=["Analysis"], dependencies=[Depends(verify_token)])
-api_router.include_router(format_router, prefix="/format", tags=["Format"], dependencies=[Depends(verify_token)])
+api_router.include_router(format_router, prefix="/format", tags=["Format"])
 api_router.include_router(auth_router, prefix="/auth", tags=["Auth"])
 api_router.include_router(ping_router, prefix="/ping", tags=["Ping"])
