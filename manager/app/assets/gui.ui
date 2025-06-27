@@ -406,6 +406,13 @@
                 </property>
                </widget>
               </item>
+              <item>
+               <widget class="QPushButton" name="web_viewpaper_button">
+                <property name="text">
+                 <string>자세히</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </item>
            </layout>
@@ -441,6 +448,13 @@
                 </property>
                </widget>
               </item>
+              <item>
+               <widget class="QPushButton" name="web_viewmember_button">
+                <property name="text">
+                 <string>자세히</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </item>
            </layout>
@@ -473,6 +487,13 @@
                <widget class="QPushButton" name="web_editnews_button">
                 <property name="text">
                  <string>수정</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_viewnews_button">
+                <property name="text">
+                 <string>자세히</string>
                 </property>
                </widget>
               </item>

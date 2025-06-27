@@ -7,11 +7,7 @@ from core.shortcut import *
 from services.logging import programBugLog
 from services.api import Request
 from config import HOMEPAGE_EDIT_API
-from ui.dialogs import (
-    EditHomeMemberDialog,
-    EditHomeNewsDialog,
-    EditHomePaperDialog
-)
+from ui.dialogs import *
 from ui.table import *
 from services.logging import userLogging
 
@@ -56,6 +52,9 @@ class Manager_Web:
         self.main.web_editpaper_button.clicked.connect(self.editHomePaper)
         self.main.web_editmember_button.clicked.connect(self.editHomeMember)
         self.main.web_editnews_button.clicked.connect(self.editHomeNews)
+        self.main.web_viewpaper_button.clicked.connect(self.viewPaper)
+        self.main.web_viewmember_button.clicked.connect(self.viewMember)
+        self.main.web_viewnews_button.clicked.connect(self.viewNews)
 
     def refreshPaperBoard(self):
         self.origin_paper_data = Request(
@@ -71,10 +70,9 @@ class Manager_Web:
             for paper in year_group.get("papers", []):
                 paper["year"] = year  # 연도 추가
                 self.paper_uid_list.append(paper.get("uid"))
-                paper["authors"] = ', '.join(paper.get("authors", []))
                 parsed_items.append(paper)
 
-        self.paper_data = [[item['title'], item['authors'], item['conference'], item.get('link', ''), item['year']] for item in parsed_items]
+        self.paper_data = [[item['title'], ', '.join(item.get("authors", [])), item['conference'], item.get('link', ''), item['year']] for item in parsed_items]
         self.paper_table_column = ['Title', 'Authors', 'Conference', 'Url', 'Year']
         makeTable(self.main, self.main.web_papers_tableWidget, self.paper_data, self.paper_table_column)
 
@@ -285,6 +283,65 @@ class Manager_Web:
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 
+    def viewPaper(self):
+        try:
+            selectedRow = self.main.web_papers_tableWidget.currentRow()
+            if selectedRow < 0:
+                return
+            selectedUid = self.paper_uid_list[selectedRow]
+            origin = None
+            for year_group in self.origin_paper_data:
+                for p in year_group["papers"]:
+                    if p.get("uid") == selectedUid:
+                        origin = p
+                        origin["year"] = year_group["year"]
+                        break
+            if not origin:
+                QMessageBox.warning(self.main, "오류", "논문 정보를 찾을 수 없습니다.")
+                return
+            dialog = ViewHomePaperDialog(data=origin, parent=self.main)
+            dialog.exec_()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
+    def viewMember(self):
+        try:
+            selectedRow = self.main.web_members_tableWidget.currentRow()
+            if selectedRow < 0:
+                return
+            selectedUid = self.member_uid_list[selectedRow]
+            origin = None
+            for m in self.origin_member_data:
+                if m.get("uid") == selectedUid:
+                    origin = m
+                    break
+            if not origin:
+                QMessageBox.warning(self.main, "오류", "멤버 정보를 찾을 수 없습니다.")
+                return
+            dialog = ViewHomeMemberDialog(data=origin, parent=self.main)
+            dialog.exec_()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
+    def viewNews(self):
+        try:
+            selectedRow = self.main.web_news_tableWidget.currentRow()
+            if selectedRow < 0:
+                return
+            selectedUid = self.news_uid_list[selectedRow]
+            origin = None
+            for n in self.origin_news_data:
+                if n.get("uid") == selectedUid:
+                    origin = n
+                    break
+            if not origin:
+                QMessageBox.warning(self.main, "오류", "뉴스 정보를 찾을 수 없습니다.")
+                return
+            dialog = ViewHomeNewsDialog(data=origin, parent=self.main)
+            dialog.exec_()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+    
     def setWebShortcut(self):
         self.updateShortcut(0)
         self.main.tabWidget_web.currentChanged.connect(self.updateShortcut)
@@ -296,27 +353,34 @@ class Manager_Web:
             self.main.ctrld.activated.connect(self.deleteHomePaper)
             self.main.ctrle.activated.connect(self.editHomePaper)
             self.main.ctrla.activated.connect(self.addHomePaper)
+            self.main.ctrlv.activated.connect(self.viewPaper)
 
             self.main.cmdd.activated.connect(self.deleteHomePaper)
-            self.main.cmde.activated.connect(self.addHomePaper)
+            self.main.cmde.activated.connect(self.editHomePaper)
             self.main.cmda.activated.connect(self.addHomePaper)
+            self.main.cmdv.activated.connect(self.viewPaper)
 
         if index == 1:
             self.main.ctrld.activated.connect(self.deleteHomeMember)
             self.main.ctrle.activated.connect(self.editHomeMember)
             self.main.ctrla.activated.connect(self.addHomeMember)
+            self.main.ctrlv.activated.connect(self.viewMember)
+
 
             self.main.cmdd.activated.connect(self.deleteHomeMember)
             self.main.cmde.activated.connect(self.editHomeMember)
             self.main.cmda.activated.connect(self.addHomeMember)
+            self.main.cmdv.activated.connect(self.viewMember)
 
         if index == 2:
             self.main.ctrld.activated.connect(self.deleteHomeNews)
             self.main.ctrla.activated.connect(self.addHomeNews)
             self.main.ctrle.activated.connect(self.editHomeNews)
+            self.main.ctrlv.activated.connect(self.viewNews)
 
             self.main.cmdd.activated.connect(self.deleteHomeNews)
             self.main.cmda.activated.connect(self.addHomeNews)
             self.main.cmde.activated.connect(self.editHomeNews)
+            self.main.cmdv.activated.connect(self.viewNews)
     
     
