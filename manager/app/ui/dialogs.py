@@ -9,8 +9,7 @@ from services.api import *
 from services.logging import *
 from PyQt5.QtGui import QKeySequence
 from datetime import datetime
-import os
-import os
+from PyQt5.QtWidgets import QSizePolicy
 
 
 class DBInfoDialog(QDialog):
@@ -1744,6 +1743,25 @@ class TokenizeFileDialog(QDialog):
         return [cb.text() for cb in self.checkboxes if cb.isChecked()]
 
 
+class EditActionDialog(QDialog):
+    def __init__(self, title, actions, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.choice = None
+        layout = QVBoxLayout()
+
+        for label, callback in actions:
+            btn = QPushButton(label)
+            btn.clicked.connect(lambda _, cb=callback: self.select_action(cb))
+            layout.addWidget(btn)
+
+        self.setLayout(layout)
+
+    def select_action(self, callback):
+        self.choice = callback
+        self.accept()
+
+
 class EditHomeMemberDialog(QDialog):
     def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)
@@ -1895,10 +1913,10 @@ class EditHomeNewsDialog(QDialog):
 
 
 class EditHomePaperDialog(QDialog):
-    def __init__(self, data: dict | None = None, year: str = "", parent=None):
+    def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"{year}년도 논문 편집")
-        self.resize(400, 400)
+        self.setWindowTitle("논문 정보 편집")
+        self.resize(400, 450)
         self.data = data or {}
 
         vbox = QVBoxLayout(self)
@@ -1907,14 +1925,24 @@ class EditHomePaperDialog(QDialog):
             vbox.addWidget(QLabel(label))
             vbox.addWidget(widget)
 
+        self.in_year = QLineEdit(str(self.data.get("year", "")))
         self.in_title = QLineEdit(self.data.get("title", ""))
-        self.in_authors = QTextEdit("\n".join(self.data.get("authors", [])))
+
+        # authors: 콤마로 구분된 문자열로 보여주기
+        raw_authors = self.data.get("authors", [])
+        if isinstance(raw_authors, list):
+            authors_text = ", ".join(raw_authors)
+        else:
+            authors_text = str(raw_authors)
+        self.in_authors = QLineEdit(authors_text)
+
         self.in_conf = QLineEdit(self.data.get("conference", ""))
         self.in_link = QLineEdit(self.data.get("link", ""))
 
         for lbl, wid in [
+            ("연도 (예: 2024)", self.in_year),
             ("제목", self.in_title),
-            ("저자들 (줄바꿈 구분)", self.in_authors),
+            ("저자들 (쉼표로 구분)", self.in_authors),
             ("컨퍼런스/저널", self.in_conf),
             ("논문 링크(URL)", self.in_link),
         ]:
@@ -1927,14 +1955,25 @@ class EditHomePaperDialog(QDialog):
         vbox.addWidget(ok)
         vbox.addWidget(cancel)
 
-    def get_payload(self, year: str) -> dict:
+    def get_payload(self) -> dict:
+        try:
+            year = int(self.in_year.text().strip())
+        except ValueError:
+            QMessageBox.warning(self, "입력 오류", "연도는 숫자로 입력해주세요.")
+            return {}
+
+        # authors: 쉼표 기준으로 분리하고 공백 제거
+        authors_raw = self.in_authors.text().strip()
+        authors_list = [a.strip() for a in authors_raw.split(",") if a.strip()]
+
         payload = {
             "title": self.in_title.text().strip(),
-            "authors": [a.strip() for a in self.in_authors.toPlainText().splitlines() if a.strip()],
+            "authors": authors_list,
             "conference": self.in_conf.text().strip(),
             "link": self.in_link.text().strip(),
         }
-        return {"year": int(year), "paper": payload}
+        return {"year": year, "paper": payload}
+
 
 
 class SelectAndEditDialog(QDialog):
@@ -1964,13 +2003,23 @@ class SelectAndEditDialog(QDialog):
         self.item_type = item_type
         info = self.API_INFO.get(item_type)
         if not info:
-            raise ValueError(f"{item_type}는 유효한 타입이 아닙니다!")
+            raise ValueError(f"{item_type}는 유효한 타입이 아닙니다")
 
         self.setWindowTitle(info["title"])
         self.resize(400, 500)
 
         layout = QVBoxLayout(self)
         self.list_widget = QListWidget()
+        self.list_widget.setObjectName("editListWidget")       # ← ID 지정
+        self.list_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.list_widget.setStyleSheet("""
+        QListWidget#editListWidget {
+            min-width: 0px;
+            max-width: 16777215px; 
+        }
+        """)
+        self.list_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         layout.addWidget(self.list_widget)
 
         btn_row = QHBoxLayout()
@@ -1992,16 +2041,33 @@ class SelectAndEditDialog(QDialog):
         response = Request("get", endpoint, base_api=HOMEPAGE_EDIT_API)
         self.items = response.json() or []
         self.list_widget.clear()
+        
+        if self.item_type == "paper":
+            # 논문은 연도별로 묶여 있으므로 풀어서 저장
+            parsed_items = []
+            for year_group in self.items:
+                year = year_group.get("year", "")
+                for paper in year_group.get("papers", []):
+                    paper["year"] = year  # 연도 추가
+                    parsed_items.append(paper)
+            self.items = parsed_items  # 평탄화된 논문 리스트로 대체
+            
+            for paper in self.items:
+                title = paper.get("title", "")
+                conference = paper.get("conference", "")
+                year = paper.get("year", "")
+                self.list_widget.addItem(f"{year} {title} ({conference})")
+            
+        else:
+            # 멤버 / 뉴스 처리
+            title_key = "name" if self.item_type == "member" else "title"
+            sub_key = "position" if self.item_type == "member" else "date"
 
-        # 멤버: name / 뉴스: title / 논문: title
-        title_key = "name" if self.item_type == "member" else "title"
-        sub_key = "position" if self.item_type == "member" else (
-            "date" if self.item_type == "news" else "conference")
+            for obj in self.items:
+                self.list_widget.addItem(
+                    f"{obj.get(title_key, '')} ({obj.get(sub_key, '')})"
+                )
 
-        for obj in self.items:
-            self.list_widget.addItem(
-                f"{obj.get(title_key, '')} ({obj.get(sub_key, '')})"
-            )
 
     def edit_selected_item(self):
         current_row = self.list_widget.currentRow()
@@ -2025,6 +2091,6 @@ class SelectAndEditDialog(QDialog):
             QMessageBox.information(
                 self,
                 "완료",
-                f"{payload.get('name', payload.get('title', ''))} {self.item_type}가 수정되었습니다!"
+                f"{payload.get('name', payload.get('title', ''))} {self.item_type}가 수정되었습니다"
             )
             self.load_items()  # 수정 후 리스트 새로고침

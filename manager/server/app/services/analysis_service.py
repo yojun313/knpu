@@ -92,7 +92,7 @@ def tokenization(
     data: pd.DataFrame,
     columns,
     include_words: list = None,
-    update_interval: int = 500,
+    update_interval: int = 3000,
 ) -> pd.DataFrame:
     """
     ▸ pid            : 진행 상황을 send_message(pid, …)로 전달할 때 사용
