@@ -1743,29 +1743,10 @@ class TokenizeFileDialog(QDialog):
         return [cb.text() for cb in self.checkboxes if cb.isChecked()]
 
 
-class EditActionDialog(QDialog):
-    def __init__(self, title, actions, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle(title)
-        self.choice = None
-        layout = QVBoxLayout()
-
-        for label, callback in actions:
-            btn = QPushButton(label)
-            btn.clicked.connect(lambda _, cb=callback: self.select_action(cb))
-            layout.addWidget(btn)
-
-        self.setLayout(layout)
-
-    def select_action(self, callback):
-        self.choice = callback
-        self.accept()
-
-
 class EditHomeMemberDialog(QDialog):
     def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("멤버 편집")
+        self.setWindowTitle("멤버 편집" if data else "멤버 추가")
         self.resize(400, 600)
         self.data = data or {}
         vbox = QVBoxLayout(self)
@@ -1807,6 +1788,9 @@ class EditHomeMemberDialog(QDialog):
         vbox.addWidget(cancel)
 
         self.new_image_url = None
+        
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
 
     def pick_image(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -1851,7 +1835,7 @@ class EditHomeMemberDialog(QDialog):
 class EditHomeNewsDialog(QDialog):
     def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("뉴스 편집")
+        self.setWindowTitle("뉴스 편집" if data else "뉴스 추가")
         self.resize(400, 400)
         self.data = data or {}
         self.new_image_url = None
@@ -1887,6 +1871,9 @@ class EditHomeNewsDialog(QDialog):
         cancel.clicked.connect(self.reject)
         vbox.addWidget(ok)
         vbox.addWidget(cancel)
+        
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
 
     def pick_image(self):
         path, _ = QFileDialog.getOpenFileName(self, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.webp)")
@@ -1915,7 +1902,7 @@ class EditHomeNewsDialog(QDialog):
 class EditHomePaperDialog(QDialog):
     def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("논문 정보 편집")
+        self.setWindowTitle("논문 편집" if data else "논문 추가")
         self.resize(400, 450)
         self.data = data or {}
 
@@ -1954,6 +1941,9 @@ class EditHomePaperDialog(QDialog):
         cancel.clicked.connect(self.reject)
         vbox.addWidget(ok)
         vbox.addWidget(cancel)
+        
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
 
     def get_payload(self) -> dict:
         try:
@@ -1974,123 +1964,3 @@ class EditHomePaperDialog(QDialog):
         }
         return {"year": year, "paper": payload}
 
-
-
-class SelectAndEditDialog(QDialog):
-    def __init__(self, item_type: str, parent=None):
-        super().__init__(parent)
-        self.API_INFO = {
-            "member": {
-                "list_endpoint": "members/",
-                "edit_endpoint": "edit/member",
-                "edit_dialog_class": EditHomeMemberDialog,  # 반드시 import
-                "title": "멤버 선택 및 수정",
-            },
-            "news": {
-                "list_endpoint": "news/",
-                "edit_endpoint": "edit/news",
-                "edit_dialog_class": EditHomeNewsDialog,  # 반드시 import
-                "title": "뉴스 선택 및 수정",
-            },
-            "paper": {
-                "list_endpoint": "papers/",
-                "edit_endpoint": "edit/paper",
-                "edit_dialog_class": EditHomePaperDialog,  # 반드시 import
-                "title": "논문 선택 및 수정",
-            }
-        }
-
-        self.item_type = item_type
-        info = self.API_INFO.get(item_type)
-        if not info:
-            raise ValueError(f"{item_type}는 유효한 타입이 아닙니다")
-
-        self.setWindowTitle(info["title"])
-        self.resize(400, 500)
-
-        layout = QVBoxLayout(self)
-        self.list_widget = QListWidget()
-        self.list_widget.setObjectName("editListWidget")       # ← ID 지정
-        self.list_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        self.list_widget.setStyleSheet("""
-        QListWidget#editListWidget {
-            min-width: 0px;
-            max-width: 16777215px; 
-        }
-        """)
-        self.list_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        layout.addWidget(self.list_widget)
-
-        btn_row = QHBoxLayout()
-        self.edit_btn = QPushButton(f"선택 {item_type} 수정")
-        self.close_btn = QPushButton("닫기")
-        btn_row.addWidget(self.edit_btn)
-        btn_row.addWidget(self.close_btn)
-        layout.addLayout(btn_row)
-
-        self.edit_btn.clicked.connect(self.edit_selected_item)
-        self.close_btn.clicked.connect(self.close)
-
-        self.items = []
-        self.load_items()
-
-    def load_items(self):
-        """서버에서 항목 목록을 가져와 리스트 위젯에 채움"""
-        endpoint = self.API_INFO[self.item_type]["list_endpoint"]
-        response = Request("get", endpoint, base_api=HOMEPAGE_EDIT_API)
-        self.items = response.json() or []
-        self.list_widget.clear()
-        
-        if self.item_type == "paper":
-            # 논문은 연도별로 묶여 있으므로 풀어서 저장
-            parsed_items = []
-            for year_group in self.items:
-                year = year_group.get("year", "")
-                for paper in year_group.get("papers", []):
-                    paper["year"] = year  # 연도 추가
-                    parsed_items.append(paper)
-            self.items = parsed_items  # 평탄화된 논문 리스트로 대체
-            
-            for paper in self.items:
-                title = paper.get("title", "")
-                conference = paper.get("conference", "")
-                year = paper.get("year", "")
-                self.list_widget.addItem(f"{year} {title} ({conference})")
-            
-        else:
-            # 멤버 / 뉴스 처리
-            title_key = "name" if self.item_type == "member" else "title"
-            sub_key = "position" if self.item_type == "member" else "date"
-
-            for obj in self.items:
-                self.list_widget.addItem(
-                    f"{obj.get(title_key, '')} ({obj.get(sub_key, '')})"
-                )
-
-
-    def edit_selected_item(self):
-        current_row = self.list_widget.currentRow()
-        if current_row < 0:
-            QMessageBox.warning(self, "선택 안됨", f"수정할 {self.item_type}를 선택하세요.")
-            return
-
-        data = self.items[current_row]
-
-        info = self.API_INFO[self.item_type]
-        dialog_class = info["edit_dialog_class"]
-        dialog = dialog_class(data=data, parent=self)
-        if dialog.exec_():  # OK 눌림
-            payload = dialog.get_payload()
-            Request(
-                "post",
-                info["edit_endpoint"],
-                base_api=HOMEPAGE_EDIT_API,
-                json=payload
-            )
-            QMessageBox.information(
-                self,
-                "완료",
-                f"{payload.get('name', payload.get('title', ''))} {self.item_type}가 수정되었습니다"
-            )
-            self.load_items()  # 수정 후 리스트 새로고침

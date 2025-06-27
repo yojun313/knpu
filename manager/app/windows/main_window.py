@@ -185,8 +185,8 @@ class MainWindow(QMainWindow):
             self.managerBoardObj.setBoardShortcut()
         # WEB
         elif index == 4:
-            resetShortcuts(self)
-            printStatus(self)
+            printStatus(self, "홈페이지 수정")
+            self.managerWebObj.setWebShortcut()
         # USER
         elif index == 5:
             printStatus(self)
