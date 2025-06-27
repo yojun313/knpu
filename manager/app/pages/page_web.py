@@ -7,14 +7,13 @@ from core.shortcut import *
 from services.logging import programBugLog
 from services.api import Request
 from config import HOMEPAGE_EDIT_API
-
-# 새롭게 만든 범용 Dialog
 from ui.dialogs import (
     EditHomeMemberDialog,
     EditHomeNewsDialog,
     EditHomePaperDialog
 )
 from ui.table import *
+from services.logging import userLogging
 
 warnings.filterwarnings("ignore")
 
@@ -134,6 +133,7 @@ class Manager_Web:
                 payload = dialog.get_payload()
                 Request("post", "edit/paper", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(self.main, "완료", f"{payload['paper'].get('title','논문')}가 추가되었습니다")
+                userLogging(f"WEB -> addHomePaper({payload['paper'].get('title')})")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -145,6 +145,7 @@ class Manager_Web:
                 payload = dialog.get_payload()
                 Request("post", "edit/member", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(self.main, "완료", f"{payload['name']} 멤버가 추가되었습니다")
+                userLogging(f"WEB -> addHomeMember({payload.get('name')})")
                 self.refreshMemberBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -156,6 +157,7 @@ class Manager_Web:
                 payload = dialog.get_payload()
                 Request("post", "edit/news", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(self.main, "완료", f"{payload.get('title','뉴스')}가 추가되었습니다")
+                userLogging(f"WEB -> addHomeNews({payload.get('title')})")
                 self.refreshNewsBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -163,10 +165,13 @@ class Manager_Web:
     def deleteHomePaper(self):
         try:
             selectedRow = self.main.web_papers_tableWidget.currentRow()
+            if selectedRow < 0:
+                return
             selectedUid = self.paper_uid_list[selectedRow]
             reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 Request("delete", "edit/paper", HOMEPAGE_EDIT_API, params={"uid": selectedUid})
+                userLogging(f"WEB -> deleteHomePaper({self.paper_data[selectedRow][0]})")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -174,10 +179,13 @@ class Manager_Web:
     def deleteHomeMember(self):
         try:
             selectedRow = self.main.web_members_tableWidget.currentRow()
+            if selectedRow < 0:
+                return
             selectedUid = self.member_uid_list[selectedRow]
             reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 Request("delete", "edit/member", HOMEPAGE_EDIT_API, params={"uid": selectedUid})
+                userLogging(f"WEB -> deleteHomeMember({self.member_data[selectedRow][0]})")
                 self.refreshMemberBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -185,10 +193,13 @@ class Manager_Web:
     def deleteHomeNews(self):
         try:
             selectedRow = self.main.web_news_tableWidget.currentRow()
+            if selectedRow < 0:
+                return
             selectedUid = self.news_uid_list[selectedRow]
             reply = QMessageBox.question(self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
             if reply == QMessageBox.Yes:
                 Request("delete", "edit/news", HOMEPAGE_EDIT_API, params={"uid": selectedUid})
+                userLogging(f"WEB -> deleteHomeNews({self.news_data[selectedRow][0]})")
                 self.refreshNewsBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -217,6 +228,7 @@ class Manager_Web:
                 payload["paper"]["uid"] = selectedUid  # uid 유지
                 Request("post", "edit/paper", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(self.main, "완료", f"{payload['paper'].get('title')}가 수정되었습니다")
+                userLogging(f"WEB -> editHomePaper({payload['paper'].get('title')})")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -242,6 +254,7 @@ class Manager_Web:
                 payload["uid"] = selectedUid
                 Request("post", "edit/member", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(self.main, "완료", f"{payload.get('name')} 멤버가 수정되었습니다")
+                userLogging(f"WEB -> editHomeMember({payload.get('name')})")
                 self.refreshMemberBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -267,18 +280,18 @@ class Manager_Web:
                 payload["uid"] = selectedUid
                 Request("post", "edit/news", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(self.main, "완료", f"{payload.get('title')} 뉴스가 수정되었습니다")
+                userLogging(f"WEB -> editHomeNews({payload.get('title')})")
                 self.refreshNewsBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 
     def setWebShortcut(self):
         self.updateShortcut(0)
-        self.main.tabWidget_board.currentChanged.connect(self.updateShortcut)
+        self.main.tabWidget_web.currentChanged.connect(self.updateShortcut)
 
     def updateShortcut(self, index):
         resetShortcuts(self.main)
 
-        # 패치 노트 탭
         if index == 0:
             self.main.ctrld.activated.connect(self.deleteHomePaper)
             self.main.ctrle.activated.connect(self.editHomePaper)
@@ -288,7 +301,6 @@ class Manager_Web:
             self.main.cmde.activated.connect(self.addHomePaper)
             self.main.cmda.activated.connect(self.addHomePaper)
 
-        # 버그 리포트 탭
         if index == 1:
             self.main.ctrld.activated.connect(self.deleteHomeMember)
             self.main.ctrle.activated.connect(self.editHomeMember)
@@ -298,7 +310,6 @@ class Manager_Web:
             self.main.cmde.activated.connect(self.editHomeMember)
             self.main.cmda.activated.connect(self.addHomeMember)
 
-        # 자유 게시판 탭
         if index == 2:
             self.main.ctrld.activated.connect(self.deleteHomeNews)
             self.main.ctrla.activated.connect(self.addHomeNews)
