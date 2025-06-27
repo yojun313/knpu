@@ -1964,3 +1964,72 @@ class EditHomePaperDialog(QDialog):
         }
         return {"year": year, "paper": payload}
 
+
+class ViewHomePaperDialog(QDialog):
+    def __init__(self, data: dict, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("논문 정보 보기")
+        self.resize(500, 400)
+        layout = QVBoxLayout(self)
+        print(data)
+        def add_label(title, content):
+            layout.addWidget(QLabel(f"<b>{title}</b>"))
+            text = QTextEdit(content)
+            text.setReadOnly(True)
+            layout.addWidget(text)
+
+        add_label("제목", data.get("title", ""))
+        add_label("저자", ", ".join(data.get("authors", [])))
+        add_label("컨퍼런스/저널", data.get("conference", ""))
+        add_label("링크", data.get("link", ""))
+        add_label("연도", str(data.get("year", "")))
+        add_label("UID", data.get("uid", ""))
+
+        layout.addWidget(QPushButton("닫기", clicked=self.accept))
+    
+
+class ViewHomeMemberDialog(QDialog):
+    def __init__(self, data: dict, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("멤버 정보 보기")
+        self.resize(500, 400)
+        layout = QVBoxLayout(self)
+
+        def add_label(title, content):
+            layout.addWidget(QLabel(f"<b>{title}</b>"))
+            text = QTextEdit(content)
+            text.setReadOnly(True)
+            layout.addWidget(text)
+
+        add_label("성명", data.get("name", ""))
+        add_label("직책", data.get("position", ""))
+        add_label("소속", data.get("affiliation", ""))
+        add_label("이메일", data.get("email", ""))
+        add_label("학력", "\n".join(data.get("학력", [])) if isinstance(data.get("학력", []), list) else str(data.get("학력", "")))
+        add_label("경력", "\n".join(data.get("경력", [])) if isinstance(data.get("경력", []), list) else str(data.get("경력", "")))
+        add_label("연구", "\n".join(data.get("연구", [])) if isinstance(data.get("연구", []), list) else str(data.get("연구", "")))
+        add_label("UID", data.get("uid", ""))
+
+        layout.addWidget(QPushButton("닫기", clicked=self.accept))
+
+
+class ViewHomeNewsDialog(QDialog):
+    def __init__(self, data: dict, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("뉴스 정보 보기")
+        self.resize(500, 400)
+        layout = QVBoxLayout(self)
+
+        def add_label(title, content):
+            layout.addWidget(QLabel(f"<b>{title}</b>"))
+            text = QTextEdit(content)
+            text.setReadOnly(True)
+            layout.addWidget(text)
+
+        add_label("제목", data.get("title", ""))
+        add_label("내용", data.get("content", ""))
+        add_label("날짜", data.get("date", ""))
+        add_label("URL", data.get("url", ""))
+        add_label("UID", data.get("uid", ""))
+
+        layout.addWidget(QPushButton("닫기", clicked=self.accept))
