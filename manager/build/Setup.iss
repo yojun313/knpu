@@ -37,7 +37,7 @@ DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 OutputBaseFilename=MANAGER_{#MyAppVersion}
-OutputDir="D:\BIGMACLAB\MANAGER\Output"
+OutputDir="D:\knpu\MANAGER\Output"
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -46,15 +46,15 @@ DisableWelcomePage=true
 DisableDirPage=true
 DisableReadyPage=true
 DisableFinishedPage=true
-SetupIconFile="C:\GitHub\BIGMACLAB\manager\app\assets\download_icon.ico"
+SetupIconFile="C:\GitHub\knpu\manager\app\assets\download_icon.ico"
 
 
 [Languages]
 Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
 
 [Files]
-Source: "D:\BIGMACLAB\MANAGER\exe\MANAGER_{#MyAppVersion}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\BIGMACLAB\MANAGER\exe\MANAGER_{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "D:\knpu\MANAGER\exe\MANAGER_{#MyAppVersion}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\knpu\MANAGER\exe\MANAGER_{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Registry]

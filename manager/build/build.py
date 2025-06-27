@@ -76,7 +76,7 @@ def build_exe_from_spec(spec_file, output_directory, version):
     try:
         # Run pyinstaller with the new spec file
         venv_python = os.path.join(
-            'C:/GitHub/BIGMACLAB/venv', 'Scripts', 'python.exe')  # 가상환경 안의 python
+            'C:/GitHub/knpu/venv', 'Scripts', 'python.exe')  # 가상환경 안의 python
 
         subprocess.run([
             venv_python,
@@ -97,7 +97,7 @@ def build_exe_from_spec(spec_file, output_directory, version):
 
 if __name__ == "__main__":
     if socket.gethostname() == "BigMacServer":
-        output_directory = "D:/BIGMACLAB/MANAGER/exe"
+        output_directory = "D:/knpu/MANAGER/exe"
     else:
         output_directory = "./build_output"
 

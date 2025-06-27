@@ -1,11 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
-    ['C:/GitHub/BIGMACLAB/manager/app/main.py'],
-    pathex=['C:/GitHub/BIGMACLAB/manager/app'],
+    ['C:/GitHub/knpu/manager/app/main.py'],
+    pathex=['C:/GitHub/knpu/manager/app'],
     binaries=[],
     datas=[
-        ('C:/GitHub/BIGMACLAB/manager/app/assets', 'assets')
+        ('C:/GitHub/knpu/manager/app/assets', 'assets')
     ],
     hiddenimports=['seaborn.external.kde'],
     hookspath=[],
@@ -28,7 +28,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
-    icon='C:/GitHub/BIGMACLAB/manager/app/assets/exe_icon.ico'
+    icon='C:/GitHub/knpu/manager/app/assets/exe_icon.ico'
 )
 coll = COLLECT(
     exe,
