@@ -1,4 +1,5 @@
-import torch, numpy as np
+import torch
+import numpy as np
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
@@ -7,12 +8,13 @@ from transformers import (
 import os
 from dotenv import load_dotenv
 
-load_dotenv() 
+load_dotenv()
 
 MODEL_DIR = os.getenv("MODEL_PATH")  # .env 파일에서 읽기
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
-model     = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR, local_files_only=True)
+model = AutoModelForSequenceClassification.from_pretrained(
+    MODEL_DIR, local_files_only=True)
 pipe = TextClassificationPipeline(
     model=model,
     tokenizer=tokenizer,
@@ -30,9 +32,13 @@ def hatefulness(text: str) -> float:
     한국어 문장의 혐오도를 0~1 사이 실수로 반환
     - clean을 제외한 레이블 중 최대 확률
     """
-    outputs = pipe(text, truncation=True)[0]         # [{'label':…, 'score':…}, …]
-    scores  = {o["label"]: o["score"] for o in outputs}
-    
+    outputs = pipe(text, truncation=True)[
+        0]         # [{'label':…, 'score':…}, …]
+    scores = {o["label"]: o["score"] for o in outputs}
+
+    import json
+
+    print(json.dumps(scores, ensure_ascii=False, indent=2))
     hate_prob = max(scores[lbl] for lbl in hate_labels)   # 0.0 ~ 1.0
     return hate_prob
 
@@ -45,4 +51,4 @@ if __name__ == "__main__":
         "늙은이들은 시대착오적이야.",
     ]
     for s in sents:
-        print(f"{s:30s} → 혐오도: {hatefulness(s):.3f}")
+        print(f"{s:30s} → 혐오도: {hatefulness(s):.2f}")

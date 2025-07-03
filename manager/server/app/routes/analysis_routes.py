@@ -54,4 +54,44 @@ async def tokenize_file(
     )
 
 
+@router.post("/hate")
+async def hate_measure_route(
+    option: str = Form(...),
+    csv_file: UploadFile = File(...),
+):
+    # 1) 옵션 파싱 → HateOption + 부가 파라미터(text_col 등)
+    option_dict  = json.loads(option)
+    hate_option  = HateOption(
+        pid        = option_dict["pid"],
+        option_num = option_dict["option_num"],
+    )
+    text_col     = option_dict.get("text_col", "Text")           # 없으면 기본값
+
+    # 2) CSV → DataFrame
+    content  = await csv_file.read()
+    df       = pd.read_csv(io.StringIO(content.decode("utf-8")))
+
+    # 3) 혐오도 분석
+    result_df = measure_hate(
+        option         = hate_option,
+        data           = df,
+        text_col       = text_col,
+        update_interval= 1000,      # 필요 시 조정
+    )
+
+    # 4) DataFrame → CSV Bytes
+    buffer = io.BytesIO()
+    result_df.to_csv(buffer, index=False, encoding="utf-8-sig")
+    buffer.seek(0)
+
+    # 5) 스트리밍 응답
+    filename   = f"hate_result_opt{hate_option.option_num}.csv"
+    media_type = "text/csv"
+    cd_header  = f"attachment; filename*=UTF-8''{quote(filename)}"
+
+    return StreamingResponse(
+        buffer,
+        media_type=media_type,
+        headers={"Content-Disposition": cd_header},
+    )
 

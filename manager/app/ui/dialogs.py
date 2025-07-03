@@ -1697,7 +1697,7 @@ class SelectTokenizeDialog(QDialog):
         self.common_token()
 
 
-class TokenizeFileDialog(QDialog):
+class SelectColumnsDialog(QDialog):
 
     def __init__(self, column_names, parent=None):
         super().__init__(parent)
@@ -1711,7 +1711,7 @@ class TokenizeFileDialog(QDialog):
         layout = QVBoxLayout(self)
 
         # 안내 텍스트
-        layout.addWidget(QLabel("토큰화할 열을 선택하세요:"))
+        layout.addWidget(QLabel("분석 대상 열을 선택하세요:"))
 
         # 스크롤 가능한 체크박스 영역
         scroll = QScrollArea()
@@ -1743,6 +1743,40 @@ class TokenizeFileDialog(QDialog):
 
     def get_selected_columns(self):
         return [cb.text() for cb in self.checkboxes if cb.isChecked()]
+
+
+class SelectEtcAnalysisDialog(QDialog):
+    def __init__(self, analyze_hate):
+        super().__init__()
+        self.analyze_hate = analyze_hate
+        self.initUI()
+        self.data = None  # 데이터를 저장할 속성 추가
+
+    def initUI(self):
+        self.setWindowTitle('기타 분석')
+        self.resize(300, 100)  # 창 크기를 조정
+        # 레이아웃 생성
+        layout = QVBoxLayout()
+
+        # 버튼 생성
+        btn1 = QPushButton('혐오도 분석', self)
+
+        # 버튼에 이벤트 연결
+        btn1.clicked.connect(self.run_analyze_hate)
+
+        # 버튼 배치를 위한 가로 레이아웃
+        button_layout = QVBoxLayout()
+        button_layout.addWidget(btn1)
+
+        # 레이아웃에 버튼 레이아웃 추가
+        layout.addLayout(button_layout)
+
+        # 레이아웃을 다이얼로그에 설정
+        self.setLayout(layout)
+
+    def run_analyze_hate(self):
+        self.accept()
+        self.analyze_hate()
 
 
 class EditHomeMemberDialog(QDialog):
