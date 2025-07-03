@@ -1623,7 +1623,7 @@ class Manager_Analysis:
 
             # 5) 프로세스 등록 / 뷰어
             pid = str(uuid.uuid4())
-            register_process(pid, "Hate Measure")
+            register_process(pid, "혐오도 분석")
             viewer = open_viewer(pid)
 
             option_payload = {
