@@ -191,14 +191,13 @@ def measure_hate(
         이름에 'text'가 포함된 첫 번째 열을 자동 선택
     """
     
-    def measure_hatefulness(text: str) -> float:
+    def measure_hatefulness(text: str) -> dict[str, float]:
         """
-        한국어 문장의 혐오도를 0~1 사이 실수로 반환
-        - clean을 제외한 레이블 중 최대 확률
+        한국어 문장의 혐오도 확률(0~1)을 소수 둘째 자리까지 반올림해 반환
         """
-        outputs = pipe(text, truncation=True)[0]         # [{'label':…, 'score':…}, …]
-        scores  = {o["label"]: o["score"] for o in outputs}
-    
+        outputs = pipe(text, truncation=True)[0]          # [{'label':…, 'score':…}, …]
+        # ←★ 여기서 바로 반올림
+        scores  = {o["label"]: round(o["score"], 2) for o in outputs}
         return scores
     
     pid  = option.pid
