@@ -223,10 +223,10 @@ def measure_hate(
     if mode == 1:
         hate_vals = []
     elif mode == 2:
-        clean_vals = []
-    elif mode == 3:
         all_labels  = list(model.config.id2label.values())   # 10개
         scores_dict = {lbl: [] for lbl in all_labels}
+    elif mode == 3:
+        clean_vals = []
     else:
         raise ValueError("option_num must be 1, 2, 또는 3 이어야 합니다")
 
