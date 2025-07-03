@@ -8,8 +8,9 @@ from starlette.background import BackgroundTask
 from kiwipiepy import Kiwi
 import time
 import pandas as pd
-import multiprocessing as mp
 import re
+from kiwipiepy import Kiwi
+
 
 def start_kemkim(option: KemKimOption, token_data):
 
@@ -84,9 +85,6 @@ def start_kemkim(option: KemKimOption, token_data):
             content={"error": "KEMKIM 분석 중 오류 발생", "message": str(e)}
         )
 
-import re, time, pandas as pd
-from kiwipiepy import Kiwi
-
 def tokenization(
     pid: str,
     data: pd.DataFrame,
@@ -152,3 +150,4 @@ def tokenization(
         send_message(pid, f"[{col}] 토큰화 완료 ✅")
 
     return data
+
