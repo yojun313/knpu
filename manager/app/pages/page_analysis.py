@@ -1612,14 +1612,14 @@ class Manager_Analysis:
             text_col = sel_cols[0]
 
             # 4) 옵션(1·2·3) 선택
-            opt_items = ["1 - 최대 혐오(Hate)", "2 - Clean 확률", "3 - 전체 레이블"]
+            opt_items = ["1 - 단일 카테고리", "2 - 모든 카테고리", "3 - 청정도 분석"]
             opt_str, ok = QInputDialog.getItem(
-                self.main, "옵션 선택", "분석 옵션을 선택하세요:", opt_items, 0, False
+                self.main, "옵션 선택", "혐오도 분석 옵션을 선택하세요:", opt_items, 0, False
             )
             if not ok:
                 printStatus(self.main)
                 return
-            option_num = int(opt_str.split()[0])   # '1 - ...' → 1
+            option_num = int(opt_str.split()[0])   
 
             # 5) 프로세스 등록 / 뷰어
             pid = str(uuid.uuid4())

@@ -1698,7 +1698,6 @@ class SelectTokenizeDialog(QDialog):
 
 
 class SelectColumnsDialog(QDialog):
-
     def __init__(self, column_names, parent=None):
         super().__init__(parent)
         self.setWindowTitle("열 선택")
@@ -1707,28 +1706,30 @@ class SelectColumnsDialog(QDialog):
         self.selected_columns = []
         self.checkboxes = []
 
-        # 전체 레이아웃
+        # ───────── 전체 레이아웃 ─────────
         layout = QVBoxLayout(self)
 
-        # 안내 텍스트
         layout.addWidget(QLabel("분석 대상 열을 선택하세요:"))
 
-        # 스크롤 가능한 체크박스 영역
+        # ───────── 스크롤 영역 ─────────
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll_widget = QWidget()
         scroll_layout = QVBoxLayout(scroll_widget)
 
-        # 열 이름마다 체크박스 생성
+        # ───────── 체크박스 생성 ─────────
         for col in column_names:
             checkbox = QCheckBox(col)
+            # ➊ 'text' 가 포함된 열은 기본 선택
+            if "text" in col.lower():
+                checkbox.setChecked(True)
             scroll_layout.addWidget(checkbox)
             self.checkboxes.append(checkbox)
 
         scroll.setWidget(scroll_widget)
         layout.addWidget(scroll)
 
-        # 확인 / 취소 버튼
+        # ───────── 확인 / 취소 버튼 ─────────
         button_layout = QHBoxLayout()
         ok_button = QPushButton("확인")
         cancel_button = QPushButton("취소")
@@ -1737,10 +1738,12 @@ class SelectColumnsDialog(QDialog):
         button_layout.addWidget(ok_button)
         button_layout.addWidget(cancel_button)
         layout.addLayout(button_layout)
-        
+
+        # ───────── 단축키 ─────────
         QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
         QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
 
+    # 선택된 열 반환
     def get_selected_columns(self):
         return [cb.text() for cb in self.checkboxes if cb.isChecked()]
 
