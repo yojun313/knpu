@@ -212,9 +212,9 @@ def measure_hate(
     if mode == 1:
         hate_vals = [0.0] * total
     elif mode == 2:
-        clean_vals = [0.0] * total
-    else:  # mode == 3
         scores_dict = {lbl: [0.0] * total for lbl in all_labels}
+    else:  # mode == 3
+        clean_vals = [0.0] * total
 
     # ③ 배치 처리
     texts = data[text_col].fillna("").tolist()
@@ -256,10 +256,10 @@ def measure_hate(
     if mode == 1:
         data["Hate"] = hate_vals
     elif mode == 2:
-        data["Clean"] = clean_vals
-    else:
         for lbl, vals in scores_dict.items():
             data[lbl] = vals
+    else:
+        data["Clean"] = clean_vals
 
     send_message(pid, "[혐오도 분석] 완료 ✅")
     return data
