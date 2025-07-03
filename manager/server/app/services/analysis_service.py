@@ -10,6 +10,31 @@ import time
 import pandas as pd
 import re
 from kiwipiepy import Kiwi
+import torch, numpy as np
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
+    TextClassificationPipeline,
+)
+import os
+from dotenv import load_dotenv
+
+load_dotenv() 
+
+MODEL_DIR = os.getenv("MODEL_PATH")  # .env 파일에서 읽기
+
+tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
+model     = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR, local_files_only=True)
+pipe = TextClassificationPipeline(
+    model=model,
+    tokenizer=tokenizer,
+    function_to_apply="sigmoid",
+    top_k=None,                                # 전체 레이블 확률 반환
+    device=0 if torch.cuda.is_available() else -1,
+)
+
+# clean 제외한 8개 혐오·악플 레이블
+hate_labels = [lbl for lbl in model.config.id2label.values() if lbl != "clean"]
 
 
 def start_kemkim(option: KemKimOption, token_data):
@@ -151,3 +176,97 @@ def tokenization(
 
     return data
 
+def measure_hate(
+    option: HateOption,
+    data: pd.DataFrame,
+    text_col: str | None = "Text",
+    update_interval: int = 1000,
+) -> pd.DataFrame:
+    """
+    ▸ option.option_num
+        1 → clean 제외 레이블 중 최대값 → 'Hate'  열
+        2 → clean 확률               → 'Clean' 열
+        3 → 10개 레이블 모두         → 각 레이블명이 열
+    ▸ text_col이 DataFrame에 없으면
+        이름에 'text'가 포함된 첫 번째 열을 자동 선택
+    """
+    
+    def measure_hatefulness(text: str) -> float:
+        """
+        한국어 문장의 혐오도를 0~1 사이 실수로 반환
+        - clean을 제외한 레이블 중 최대 확률
+        """
+        outputs = pipe(text, truncation=True)[0]         # [{'label':…, 'score':…}, …]
+        scores  = {o["label"]: o["score"] for o in outputs}
+    
+        return scores
+    
+    pid  = option.pid
+    mode = option.option_num
+
+    # ─────────────────────────────────────────────
+    # ① 분석 대상 열(auto-detect)
+    # ─────────────────────────────────────────────
+    if text_col not in data.columns:
+        # 'text' 포함 열 자동 검색 (대소문자 무관)
+        candidates = [c for c in data.columns if "text" in c.lower()]
+        if not candidates:
+            raise ValueError(
+                "'Text'라는 글자를 포함한 열을 찾을 수 없습니다 "
+                "(text_col 인자로 직접 지정해 주세요)."
+            )
+        text_col = candidates[0]
+        send_message(pid, f"🔍 '{text_col}' 열을 자동으로 선택했습니다")
+
+    # ─────────────────────────────────────────────
+    # ② 결과 버퍼 준비
+    # ─────────────────────────────────────────────
+    if mode == 1:
+        hate_vals = []
+    elif mode == 2:
+        clean_vals = []
+    elif mode == 3:
+        all_labels  = list(model.config.id2label.values())   # 10개
+        scores_dict = {lbl: [] for lbl in all_labels}
+    else:
+        raise ValueError("option_num must be 1, 2, 또는 3 이어야 합니다")
+
+    # ─────────────────────────────────────────────
+    # ③ row 단위 처리
+    # ─────────────────────────────────────────────
+    total = len(data)
+    send_message(pid, f"[혐오도 분석] '{text_col}' 열 처리 시작 (총 {total:,} rows)")
+
+    for idx, text in enumerate(data[text_col], 1):
+        # 빈 칸∙NaN 방어
+        if isinstance(text, str) and text.strip():
+            scores = measure_hatefulness(text)      # dict(label → prob 0~1)
+        else:
+            scores = {lbl: 0.0 for lbl in model.config.id2label.values()}
+
+        if mode == 1:
+            hate_vals.append(max(v for k, v in scores.items() if k != "clean"))
+        elif mode == 2:
+            clean_vals.append(scores.get("clean", 0.0))
+        else:   # mode == 3
+            for lbl in scores_dict:
+                scores_dict[lbl].append(scores.get(lbl, 0.0))
+
+        # 진행률 메시지
+        if idx % update_interval == 0 or idx == total:
+            pct = round(idx / total * 100, 2)
+            send_message(pid, f"[혐오도 분석] {pct}% 완료 ({idx:,}/{total:,})")
+
+    # ─────────────────────────────────────────────
+    # ④ DataFrame 열 추가
+    # ─────────────────────────────────────────────
+    if mode == 1:
+        data["Hate"] = hate_vals
+    elif mode == 2:
+        data["Clean"] = clean_vals
+    else:  # mode == 3
+        for lbl, vals in scores_dict.items():
+            data[lbl] = vals
+
+    send_message(pid, "[혐오도 분석] 완료 ✅")
+    return data

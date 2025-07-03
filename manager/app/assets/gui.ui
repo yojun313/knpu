@@ -217,6 +217,13 @@
                  </widget>
                 </item>
                 <item>
+                 <widget class="QPushButton" name="analysis_etc_btn">
+                  <property name="text">
+                   <string>기타 분석</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <spacer name="verticalSpacer_2">
                   <property name="orientation">
                    <enum>Qt::Vertical</enum>
