@@ -180,86 +180,94 @@ def measure_hate(
     option: HateOption,
     data: pd.DataFrame,
     text_col: str | None = "Text",
-    update_interval: int = 1000,
-    batch_size: int = 32,           # ← 추가: 배치 크기
+    update_interval: int = 1_000,
+    batch_size: int = 32,           # ← 배치 크기(메모리에 맞게 16~64 조정)
 ) -> pd.DataFrame:
     """
-    옵션 1: Hate  / 2: Clean  / 3: 모든 레이블
-    확률은 소수 둘째 자리로 반올림
+    option.option_num
+      1 → clean 제외 레이블 중 최대값 → Hate 열
+      2 → 10개 레이블 모두         → 레이블명별 열
+      3 → clean 확률               → Clean 열
+
+    • 확률은 소수 둘째 자리로 반올림
+    • 배치 추론으로 속도 향상
     """
 
-    # ───── 내부 헬퍼 ─────────────────────────────────────────
-    def outputs_to_scores(outputs):
-        """ pipeline 출력(list[dict]) → {label: rounded_prob} """
-        return {o["label"]: round(o["score"], 2) for o in outputs}
-    # ───────────────────────────────────────────────────────
+    # ───────────────────── 내부 헬퍼 ──────────────────────
+    def batch_scores(texts: list[str]) -> list[dict[str, float]]:
+        """문장 리스트 → [{label: prob}, ...] (둘째 자리 반올림)"""
+        outs = pipe(
+            texts,
+            truncation=True,
+            batch_size=batch_size,
+        )
+        return [{o["label"]: round(o["score"], 2) for o in each} for each in outs]
+    # ─────────────────────────────────────────────────────
 
     pid, mode = option.pid, option.option_num
 
-    # ① 대상 열 확인 / 자동 탐색
+    # ① 대상 열 탐색 -----------------------------------------------------------
     if text_col not in data.columns:
-        cand = [c for c in data.columns if "text" in c.lower()]
-        if not cand:
-            raise ValueError("'Text' 포함 열을 찾을 수 없습니다")
-        text_col = cand[0]
-        send_message(pid, f"🔍 '{text_col}' 열을 자동 선택했습니다")
+        matches = [c for c in data.columns if "text" in c.lower()]
+        if not matches:
+            raise ValueError("'Text'라는 글자를 포함한 열을 찾을 수 없습니다")
+        text_col = matches[0]
+        send_message(pid, f"🔍 '{text_col}' 열 자동 선택")
 
-    total = len(data)
+    texts  = data[text_col].fillna("").astype(str).tolist()
+    total  = len(texts)
+    labels = list(model.config.id2label.values())
+
     send_message(pid, f"[혐오도 분석] '{text_col}' 처리 시작 (총 {total:,} rows)")
 
-    # ② 결과 버퍼 초기화
-    all_labels = list(model.config.id2label.values())
-    if mode == 1:
+    # ② 결과 버퍼 --------------------------------------------------------------
+    if mode == 1:                              # Hate
         hate_vals = [0.0] * total
-    elif mode == 2:
-        scores_dict = {lbl: [0.0] * total for lbl in all_labels}
-    else:  # mode == 3
+    elif mode == 2:                            # 전체 레이블
+        scores_dict = {lbl: [0.0] * total for lbl in labels}
+    elif mode == 3:                            # Clean
         clean_vals = [0.0] * total
+    else:
+        raise ValueError("option_num must be 1, 2, 또는 3 이어야 합니다")
 
-    # ③ 배치 처리
-    texts = data[text_col].fillna("").tolist()
+    # ③ 배치 추론 --------------------------------------------------------------
     processed = 0
-
     for start in range(0, total, batch_size):
         end = min(start + batch_size, total)
 
-        # 비어 있지 않은 행만 추려서 추론
+        # 실제 추론이 필요한 문장 인덱스 & 텍스트 수집
         idxs, batch_txts = [], []
         for i in range(start, end):
-            t = texts[i]
-            if isinstance(t, str) and t.strip():
+            t = texts[i].strip()
+            if t:                               # 공백은 추론 건너뜀
                 idxs.append(i)
                 batch_txts.append(t)
 
         if batch_txts:
-            batch_outputs = pipe(
-                batch_txts,
-                truncation=True,
-                batch_size=batch_size,
-            )
-            for i, outs in zip(idxs, batch_outputs):
-                scores = outputs_to_scores(outs)
+            scored = batch_scores(batch_txts)   # 모델 한번 호출
+            for i, sc in zip(idxs, scored):
                 if mode == 1:
-                    hate_vals[i] = max(v for k, v in scores.items() if k != "clean")
+                    hate_vals[i] = max(v for k, v in sc.items() if k != "clean")
                 elif mode == 2:
-                    clean_vals[i] = scores.get("clean", 0.0)
+                    for lbl in labels:
+                        scores_dict[lbl][i] = sc.get(lbl, 0.0)
                 else:  # mode == 3
-                    for lbl in scores_dict:
-                        scores_dict[lbl][i] = scores.get(lbl, 0.0)
+                    clean_vals[i] = sc.get("clean", 0.0)
 
         processed += (end - start)
         if processed % update_interval == 0 or processed == total:
             pct = round(processed / total * 100, 2)
             send_message(pid, f"[혐오도 분석] {pct}% 완료 ({processed:,}/{total:,})")
 
-    # ④ 결과 열 추가
+    # ④ 결과 열 붙이기 -----------------------------------------------------------
     if mode == 1:
         data["Hate"] = hate_vals
     elif mode == 2:
         for lbl, vals in scores_dict.items():
             data[lbl] = vals
-    else:
+    else:  # mode == 3
         data["Clean"] = clean_vals
 
     send_message(pid, "[혐오도 분석] 완료 ✅")
     return data
+
