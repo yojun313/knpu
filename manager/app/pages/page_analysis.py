@@ -231,95 +231,78 @@ class Manager_Analysis:
                 printStatus(self.main)
                 return
 
-            selected_options = []
+            # ── 옵션 다이얼로그 ─────────────────────────────────────
             dialog = StatAnalysisDialog()
-            if dialog.exec_() == QDialog.Accepted:
-                selected_options = []
-
-                # 선택된 체크박스 옵션 추가
-                for checkbox in dialog.checkbox_group:
-                    if checkbox.isChecked():
-                        selected_options.append(checkbox.text())
-
-                # 콤보박스에서 선택된 옵션 추가
-                selected_options.append(dialog.combobox.currentText())
-            else:
+            if dialog.exec_() != QDialog.Accepted:
                 printStatus(self.main)
                 return
 
-            openConsole('데이터 분석')
-
-            print("CSV 파일 읽는 중...")
-            csv_path = filepath
-            csv_filename = os.path.basename(csv_path)
-
-            # 먼저, selected_options 리스트의 길이를 검사합니다.
+            # 체크박스 + 콤보 선택값
+            selected_options = [cb.text() for cb in dialog.checkbox_group if cb.isChecked()]
+            selected_options.append(dialog.combobox.currentText())   # [0] 분석타입, [1] 매체
             if len(selected_options) < 2:
                 QMessageBox.warning(self.main, "Error", "선택 옵션이 부족합니다.")
                 return
 
-            # 첫 번째 요소의 split 결과 검사
-            split0 = selected_options[0].split()
-            if len(split0) < 1:
-                QMessageBox.warning(self.main, "Error",
-                                    "첫 번째 옵션 형식이 올바르지 않습니다.")
-                return
+            csv_path      = filepath
+            csv_filename  = os.path.basename(csv_path)
+            csv_data      = pd.read_csv(csv_path, low_memory=False)
 
-            # 두 번째 요소의 split 결과 검사
-            split1 = selected_options[1].split()
-            if len(split1) < 2:
-                QMessageBox.warning(self.main, "Error",
-                                    "두 번째 옵션 형식이 올바르지 않습니다.")
-                return
-
-            if selected_options[0].split()[0].lower() not in csv_filename and selected_options[1].split()[0].lower() not in csv_filename and selected_options[1].split()[1].lower() not in csv_filename:
-                QMessageBox.warning(self.main, "Not Supported",
-                                    f"선택하신 파일이 옵션과 일치하지 않습니다")
-                return
-
-            csv_data = pd.read_csv(csv_path, low_memory=False)
-
-            userLogging(f'ANALYSIS -> analysis_file({csv_path})')
-
-            print(f"\n{csv_filename.replace('.csv', '')} 데이터 분석 중...")
-            match selected_options:
-
-                case ['article 분석', 'Naver News']:
-                    self.dataprocess_obj.NaverNewsArticleAnalysis(
-                        csv_data, csv_path)
-                case ['statistics 분석', 'Naver News']:
-                    self.dataprocess_obj.NaverNewsStatisticsAnalysis(
-                        csv_data, csv_path)
-                case ['reply 분석', 'Naver News']:
-                    self.dataprocess_obj.NaverNewsReplyAnalysis(
-                        csv_data, csv_path)
-                case ['rereply 분석', 'Naver News']:
-                    self.dataprocess_obj.NaverNewsRereplyAnalysis(
-                        csv_data, csv_path)
-                case ['article 분석', 'Naver Cafe']:
-                    self.dataprocess_obj.NaverCafeArticleAnalysis(
-                        csv_data, csv_path)
-                case ['reply 분석', 'Naver Cafe']:
-                    self.dataprocess_obj.NaverCafeReplyAnalysis(
-                        csv_data, csv_path)
-                case ['article 분석', 'Google YouTube']:
-                    self.dataprocess_obj.YouTubeArticleAnalysis(
-                        csv_data, csv_path)
-                case ['reply 분석', 'Google YouTube']:
-                    self.dataprocess_obj.YouTubeReplyAnalysis(
-                        csv_data, csv_path)
-                case ['rereply 분석', 'Google YouTube']:
-                    self.dataprocess_obj.YouTubeRereplyAnalysis(
-                        csv_data, csv_path)
-                case []:
-                    closeConsole()
+            # ── “혐오 분석” 여부 미리 파악 ────────────────────────────
+            hate_mode = selected_options[0].lower().startswith("hate") \
+                        or "혐오" in selected_options[0]
+            # hate_mode 면 파일명 일치·옵션 split 검사 PASS
+            if not hate_mode:
+                # 기존 유효성 검사 그대로 유지
+                if (len(selected_options[0].split()) < 1 or
+                    len(selected_options[1].split()) < 2 or
+                    selected_options[0].split()[0].lower() not in csv_filename and
+                    selected_options[1].split()[0].lower() not in csv_filename and
+                    selected_options[1].split()[1].lower() not in csv_filename):
+                    QMessageBox.warning(self.main, "Not Supported",
+                                        "선택하신 파일이 옵션과 일치하지 않습니다")
                     return
+
+            openConsole("데이터 분석")
+            userLogging(f'ANALYSIS -> analysis_file({csv_path})')
+            print(f"\n{csv_filename.replace('.csv', '')} 데이터 분석 중...")
+
+            # ── 분석 분기 ──────────────────────────────────────────
+            match selected_options:
+                # ================= 기존 분기 ======================
+                case ['article 분석', 'Naver News']:
+                    self.dataprocess_obj.NaverNewsArticleAnalysis(csv_data, csv_path)
+                case ['statistics 분석', 'Naver News']:
+                    self.dataprocess_obj.NaverNewsStatisticsAnalysis(csv_data, csv_path)
+                case ['reply 분석', 'Naver News']:
+                    self.dataprocess_obj.NaverNewsReplyAnalysis(csv_data, csv_path)
+                case ['rereply 분석', 'Naver News']:
+                    self.dataprocess_obj.NaverNewsRereplyAnalysis(csv_data, csv_path)
+                case ['article 분석', 'Naver Cafe']:
+                    self.dataprocess_obj.NaverCafeArticleAnalysis(csv_data, csv_path)
+                case ['reply 분석', 'Naver Cafe']:
+                    self.dataprocess_obj.NaverCafeReplyAnalysis(csv_data, csv_path)
+                case ['article 분석', 'Google YouTube']:
+                    self.dataprocess_obj.YouTubeArticleAnalysis(csv_data, csv_path)
+                case ['reply 분석', 'Google YouTube']:
+                    self.dataprocess_obj.YouTubeReplyAnalysis(csv_data, csv_path)
+                case ['rereply 분석', 'Google YouTube']:
+                    self.dataprocess_obj.YouTubeRereplyAnalysis(csv_data, csv_path)
+
+                # ================= 새로 추가된 분기 =================
+                case [opt, _] if opt.lower().startswith("hate") or "혐오" in opt:
+                    # option1/2/3 자동 판별 ► HateAnalysis
+                    self.dataprocess_obj.HateAnalysis(csv_data, csv_path)
+
+                # ================ 기본 fall-back ===================
                 case _:
                     closeConsole()
                     QMessageBox.warning(
-                        self.main, "Not Supported", f"{selected_options[1]} {selected_options[0]} 분석은 지원되지 않는 기능입니다")
+                        self.main, "Not Supported",
+                        f"{selected_options[1]} {selected_options[0]} 분석은 지원되지 않는 기능입니다")
                     return
 
+            # 메모리 정리 & 완료 알림
             del csv_data
             gc.collect()
             closeConsole()
@@ -327,14 +310,17 @@ class Manager_Analysis:
             openFileResult(
                 self.main,
                 f"{os.path.basename(csv_path)} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                os.path.join(os.path.dirname(
-                    csv_path), f"{os.path.splitext(os.path.basename(csv_path))[0]}_analysis")
+                os.path.join(
+                    os.path.dirname(csv_path),
+                    f"{os.path.splitext(csv_filename)[0]}_analysis" if not hate_mode
+                    else f"{os.path.splitext(csv_filename)[0]}_hate_analysis"
+                )
             )
 
         except Exception as e:
             closeConsole()
             programBugLog(self.main, traceback.format_exc())
-
+    
     def run_wordcloud(self):
         try:
             filepath = self.check_file(tokenCheck=True)
