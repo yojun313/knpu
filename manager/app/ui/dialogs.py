@@ -781,60 +781,74 @@ class EditPostDialog(QDialog):
 
 
 class StatAnalysisDialog(QDialog):
+    """
+    • 1차 : 분석 종류(체크박스) – 데이터 타입별로 구성
+    • 2차 : 데이터 출처(콤보박스)
+    ※ ‘혐오도 분석’은 모든 타입에 공통으로 제공.
+    """
+
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Select Options')
+        self.setWindowTitle("Select Options")
 
-        # 다이얼로그 레이아웃
-        layout = QVBoxLayout()
+        # ───────── 레이아웃 ─────────
+        main_layout = QVBoxLayout(self)
 
-        # 여러 옵션 추가 (예: 체크박스, 라디오 버튼, 콤보박스)
-        self.checkbox_group = []
-
+        # ▼ 데이터 출처 선택 ▼
+        main_layout.addWidget(QLabel("Choose Data Type:"))
         self.combobox = QComboBox()
         self.combobox.addItems(
-            ['Naver News', 'Naver Blog', 'Naver Cafe', 'Google YouTube'])
-        self.combobox.currentIndexChanged.connect(
-            self.update_checkboxes)
+            ["Naver News", "Naver Blog", "Naver Cafe", "Google YouTube"]
+        )
+        self.combobox.currentIndexChanged.connect(self.update_checkboxes)
+        main_layout.addWidget(self.combobox)
 
-        layout.addWidget(QLabel('Choose Data Type:'))
-        layout.addWidget(self.combobox)
+        # 체크박스 컨테이너
+        self.checkbox_group: list[QCheckBox] = []
 
-        # 다이얼로그의 OK/Cancel 버튼
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
+        # OK / Cancel 버튼
+        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btns.accepted.connect(self.accept)
+        btns.rejected.connect(self.reject)
+        main_layout.addWidget(btns)
 
-        layout.addWidget(self.button_box)
-
-        self.setLayout(layout)
+        # 최초 체크박스 세팅
         self.update_checkboxes()
 
+    # ────────────────────────────────────────
+    #  체크박스 갱신
+    # ────────────────────────────────────────
     def update_checkboxes(self):
-        # 기존 체크박스 제거
-        for checkbox in self.checkbox_group:
-            checkbox.setParent(None)
+        # ① 기존 체크박스 제거
+        for cb in self.checkbox_group:
+            cb.setParent(None)
         self.checkbox_group.clear()
 
-        # 콤보박스 선택에 따라 다른 체크박스 표시
-        if self.combobox.currentText() == 'Naver News':
-            options = ['article 분석', 'statistics 분석',
-                       'reply 분석', 'rereply 분석']
-        elif self.combobox.currentText() == 'Naver Blog':
-            options = ['article 분석', 'reply 분석']
-        elif self.combobox.currentText() == 'Naver Cafe':
-            options = ['article 분석', 'reply 분석']
-        elif self.combobox.currentText() == 'Naver Cafe':
-            options = ['article 분석', 'reply 분석']
-        elif self.combobox.currentText() == 'Google YouTube':
-            options = ['article 분석', 'reply 분석', 'rereply 분석']
+        # ② 출처별 전용 옵션
+        src = self.combobox.currentText()
+        if   src == "Naver News":
+            specific = ["article 분석", "statistics 분석",
+                        "reply 분석", "rereply 분석"]
+        elif src == "Naver Blog":
+            specific = ["article 분석", "reply 분석"]
+        elif src == "Naver Cafe":
+            specific = ["article 분석", "reply 분석"]
+        else:  # Google YouTube
+            specific = ["article 분석", "reply 분석", "rereply 분석"]
 
-        for option in options:
-            checkbox = QCheckBox(option)
-            checkbox.setAutoExclusive(True)  # 중복 체크 불가
-            self.checkbox_group.append(checkbox)
-            self.layout().insertWidget(self.layout().count() - 1, checkbox)  # 버튼 위에 체크박스 추가
+        # ③ ‘혐오도 분석’(공통)을 마지막에 추가
+        all_labels = specific + ["혐오도 분석"]
+
+        # ④ 체크박스 생성
+        for label in all_labels:
+            cb = QCheckBox(label)
+            cb.setAutoExclusive(True)          # 단일 선택 모드
+            self.checkbox_group.append(cb)
+            # OK/Cancel 직전에 삽입
+            self.layout().insertWidget(self.layout().count() - 1, cb)
+
+        # ─── 기본으로 선택된 항목 없음 ───
+        # (필요하면 self.checkbox_group[0].setChecked(True) 등 지정)
 
 
 class WordcloudDialog(QDialog):

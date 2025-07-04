@@ -15,6 +15,7 @@ from tqdm import tqdm
 from ui.status import printStatus
 from PIL import Image
 from core.setting import get_setting
+import re
 
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 warnings.filterwarnings("ignore")
@@ -2210,3 +2211,210 @@ class DataProcess:
             key=lambda item: item[1],
             reverse=True
         )}
+
+    def HateAnalysis(self, data: pd.DataFrame, file_path: str):
+        """
+        Hate / Clean / 레이블 컬럼이 포함된 CSV를 받아 자동으로
+        option1 : Hate   열만 있음
+        option2 : 10개 레이블(여성/가족‥clean) 열이 있음
+        option3 : Clean  열만 있음
+        을 판별하고 ▸ 기본 통계 ▸ 월·일별·7일 Rolling 평균
+        ▸ 상위 Top-N 기간 ▸ 상관관계 히트맵 ▸ 분포·추세 그래프
+        를 `<원본>_hate_analysis/` 폴더에 저장한다.
+        """
+
+        # ─────────────────────────────────────────────
+        # 0) 날짜 열 확인
+        # ─────────────────────────────────────────────
+        date_col = next((c for c in data.columns if "Date" in c), None)
+        if date_col is None:
+            QMessageBox.warning(self.main, "Warning", "'Date' 가 포함된 열을 찾을 수 없습니다.")
+            return
+        data[date_col] = pd.to_datetime(data[date_col], errors="coerce")
+
+        # ─────────────────────────────────────────────
+        # 1) 모드 판별 & 대상 열
+        # ─────────────────────────────────────────────
+        LABEL_COLS = {
+            "여성/가족", "남성", "성소수자", "인종/국적",
+            "연령", "지역", "종교", "기타 혐오", "악플/욕설", "clean",
+        }
+        mode, target_cols = None, []
+
+        if "Hate" in data.columns:                 # option1
+            mode, target_cols = 1, ["Hate"]
+
+        else:
+            present_lbl = [c for c in LABEL_COLS if c in data.columns]
+            if len(present_lbl) >= 8:              # option2
+                mode, target_cols = 2, present_lbl
+            elif set(present_lbl) == {"clean"}:    # option3
+                mode, target_cols = 3, ["clean"]
+
+        if mode is None:
+            QMessageBox.warning(self.main, "Warning", "Hate / Clean / 레이블 열이 없습니다.")
+            return
+
+        # ─────────────────────────────────────────────
+        # 2) 결과 폴더
+        # ─────────────────────────────────────────────
+        out_dir   = os.path.join(
+            os.path.dirname(file_path),
+            os.path.splitext(os.path.basename(file_path))[0] + "_hate_analysis"
+        )
+        csv_dir   = os.path.join(out_dir, "csv_files")
+        graph_dir = os.path.join(out_dir, "graphs")
+        os.makedirs(csv_dir,   exist_ok=True)
+        os.makedirs(graph_dir, exist_ok=True)
+
+        def _safe_fname(label: str) -> str:
+            return re.sub(r'[\\/*?:"<>|]', "_", label)
+
+        # ─────────────────────────────────────────────
+        # 3) 기본 통계
+        # ─────────────────────────────────────────────
+        basic_stats = data[target_cols].describe()
+        basic_stats.to_csv(os.path.join(csv_dir, "basic_stats.csv"), encoding="utf-8-sig")
+
+        # ─────────────────────────────────────────────
+        # 4) 기간별 평균 & 7-일 Rolling
+        # ─────────────────────────────────────────────
+        monthly = (
+            data.groupby(data[date_col].dt.to_period("M"))[target_cols]
+                .mean().reset_index()
+        )
+        monthly[date_col] = monthly[date_col].dt.to_timestamp()
+        monthly.to_csv(os.path.join(csv_dir, "monthly_mean.csv"),
+                    encoding="utf-8-sig", index=False)
+
+        daily = (
+            data.groupby(data[date_col].dt.to_period("D"))[target_cols]
+                .mean().reset_index()
+        )
+        daily[date_col] = daily[date_col].dt.to_timestamp()
+        daily.to_csv(os.path.join(csv_dir, "daily_mean.csv"),
+                    encoding="utf-8-sig", index=False)
+
+        # 7-일 이동평균(트렌드 부드럽게 보기용)
+        rolling7 = (
+            data.set_index(date_col)
+                .sort_index()[target_cols]
+                .rolling("7D").mean()
+                .reset_index()
+        )
+        rolling7.to_csv(os.path.join(csv_dir, "rolling7_mean.csv"),
+                        encoding="utf-8-sig", index=False)
+
+        # ─────────────────────────────────────────────
+        # 5) Top-N 기간 (가장 높은 Hate/clean)
+        # ─────────────────────────────────────────────
+        topN = 10
+        top_days = (
+            daily.sort_values(target_cols[0], ascending=False)
+                .head(topN)
+        )
+        top_days.to_csv(os.path.join(csv_dir, "top10_days.csv"),
+                        encoding="utf-8-sig", index=False)
+
+        top_months = (
+            monthly.sort_values(target_cols[0], ascending=False)
+                .head(topN)
+        )
+        top_months.to_csv(os.path.join(csv_dir, "top10_months.csv"),
+                        encoding="utf-8-sig", index=False)
+
+        # ─────────────────────────────────────────────
+        # 6) 상관관계(옵션2 전용 또는 Hate+Clean 동시 존재 시)
+        # ─────────────────────────────────────────────
+        corr_cols = target_cols.copy()
+        if "Hate" in data.columns and "clean" in data.columns:
+            corr_cols = ["Hate", "clean"]
+        if len(corr_cols) > 1:
+            corr = data[corr_cols].corr()
+            corr.to_csv(os.path.join(csv_dir, "correlation.csv"), encoding="utf-8-sig")
+
+            plt.figure(figsize=self.calculate_figsize(len(corr), height=6))
+            sns.heatmap(corr, annot=True, cmap="coolwarm", vmin=-1, vmax=1)
+            plt.title("Correlation Matrix")
+            plt.tight_layout()
+            plt.savefig(os.path.join(graph_dir, "correlation_heatmap.png"))
+            plt.close()
+
+        # ─────────────────────────────────────────────
+        # 7) 그래프
+        # ─────────────────────────────────────────────
+        # (1) 월별 추세
+        plt.figure(figsize=self.calculate_figsize(len(monthly)))
+        for col in target_cols[:6]:
+            sns.lineplot(data=monthly, x=date_col, y=col, label=col)
+        plt.title("월별 평균 점수 추세")
+        plt.xlabel("Month"); plt.ylabel("Mean Score")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_dir, "monthly_trend.png"))
+        plt.close()
+
+        # (2) 7-일 이동 평균 추세(부드러운 라인)
+        plt.figure(figsize=self.calculate_figsize(len(rolling7)))
+        for col in target_cols[:6]:
+            sns.lineplot(data=rolling7, x=date_col, y=col, label=col)
+        plt.title("7-Day Rolling Mean Trend")
+        plt.xlabel("Date"); plt.ylabel("Rolling Mean")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_dir, "rolling7_trend.png"))
+        plt.close()
+
+        # (3) 점수 분포
+        for col in target_cols:
+            plt.figure(figsize=self.calculate_figsize(10))
+            sns.histplot(data[col], kde=True, bins=50)
+            plt.title(f"{col} 영역 혐오도 분포")
+            plt.xlabel("Score"); plt.ylabel("Frequency")
+            plt.tight_layout()
+            plt.savefig(os.path.join(graph_dir, f"{_safe_fname(col)}_distribution.png"))
+            plt.close()
+
+        # (4) 레이블 히트맵(option2 전용)
+        if mode == 2:
+            heat_df = monthly.set_index(date_col)[target_cols]
+            plt.figure(figsize=self.calculate_figsize(len(heat_df), height=8))
+            sns.heatmap(
+                heat_df.T,
+                cmap="Reds", vmin=0, vmax=1,
+                cbar_kws={"label": "월별 평균 확률"}
+            )
+            plt.title("월별 레이블 평균 히트맵")
+            plt.tight_layout()
+            plt.savefig(os.path.join(graph_dir, "label_heatmap.png"))
+            plt.close()
+
+        # ─────────────────────────────────────────────
+        # 8) 설명 텍스트
+        # ─────────────────────────────────────────────
+        desc = [
+            "★ 혐오 통계 분석 결과 안내",
+            "",
+            f"자동 판별된 모드  : option {mode}",
+            "  option1 : Hate 열",
+            "  option2 : 10개 레이블 열",
+            "  option3 : Clean 열",
+            "",
+            "■ CSV",
+            "  · basic_stats.csv      : 기초 통계",
+            "  · monthly_mean.csv     : 월별 평균",
+            "  · daily_mean.csv       : 일별 평균",
+            "  · rolling7_mean.csv    : 7-일 이동 평균",
+            "  · top10_days / months  : 가장 높은 점수 TOP 10",
+            "  · correlation.csv      : 상관관계(해당 시)",
+            "",
+            "■ Graphs",
+            "  · monthly_trend.png    : 월별 추세",
+            "  · rolling7_trend.png   : 7-일 이동 평균 추세",
+            "  · *_distribution.png   : 점수 분포 히스토그램",
+            "  · correlation_heatmap.png : 상관관계 히트맵(해당 시)",
+            "  · label_heatmap.png    : 레이블 히트맵(option2)",
+        ]
+        with open(os.path.join(out_dir, "description.txt"), "w",
+                encoding="utf-8", errors="ignore") as f:
+            f.write("\n".join(desc))
