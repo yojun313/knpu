@@ -288,17 +288,25 @@ class Manager_Database:
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
+    
     def searchAdminMode(self, search_text):
         # ADMIN MODE
         try:
             if search_text == '/remove':
                 reply = QMessageBox.question(self.main, 'Program Delete',
-                                             f"'C:/MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                                            f"'C:/MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
+                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
+                    # ── 1) QSettings 값 제거 ─────────────────────
+                    settings = QSettings("BIGMACLAB", "MANAGER")
+                    settings.clear()
+                    settings.sync()
 
+                    # ── 2) 로컬 디렉토리 제거 ────────────────────
                     if os.path.exists(self.main.localDirectory):
                         shutil.rmtree(self.main.localDirectory)
+
+                    # ── 3) 언인스톨러 실행 후 종료 ────────────────
                     exe_file_path = os.path.join(
                         os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
                     subprocess.Popen([exe_file_path], shell=True)
