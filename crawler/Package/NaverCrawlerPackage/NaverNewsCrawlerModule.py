@@ -119,7 +119,7 @@ class NaverNewsCrawler(CrawlerModule):
             query_dict = parse_query(keyword)
 
             urlList = []
-
+            
             params = {
                 "cluster_rank": "15",
                 "de": f"{endDate_formed}",
@@ -127,7 +127,7 @@ class NaverNewsCrawler(CrawlerModule):
                 "eid": "",
                 "field": "0",
                 "force_original": "",
-                "is_dts": "0",
+                "is_dts": "1",
                 "is_sug_officeid": "0",
                 "mynews": "0",
                 "news_office_checked": "",
@@ -153,7 +153,7 @@ class NaverNewsCrawler(CrawlerModule):
                 "ssc": "tab.news.all",
                 "start": "1"
             }
-
+                        
             # 파라미터를 쿼리 문자열로 변환
             query_string = urllib.parse.urlencode(params)
 
@@ -624,4 +624,4 @@ async def asyncTester():
 if __name__ == "__main__":
     #asyncio.run(asyncTester())
     CrawlerPackage_obj = NaverNewsCrawler(proxy_option=False, print_status_option=True)
-    print(CrawlerPackage_obj.urlCollector('데이트 폭력 +폭행', 20100101, 20101231)['urlCnt'])
+    print(CrawlerPackage_obj.urlCollector('아이패드 | 애플', 20230101, 20230101))
