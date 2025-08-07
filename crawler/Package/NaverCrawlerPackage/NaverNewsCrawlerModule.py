@@ -68,6 +68,7 @@ class NaverNewsCrawler(CrawlerModule):
                 urls = re.findall(pattern, text)
                 urls = list(dict.fromkeys(urls))
 
+
                 return urls
             def extract_nexturl(text):
                 try:
