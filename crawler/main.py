@@ -57,7 +57,7 @@ class Crawler(CrawlerModule):
             self.pathFinder()['crawler_folder_path'], 'crawllog')
         self.crawlcom = self.pathFinder()['computer_name']
         self.api_url = "http://localhost:8000/api"
-        self.api_url = "https://manager.knpu.re.kr/api"
+        #self.api_url = "https://manager.knpu.re.kr/api"
         self.api_headers = {
             "Authorization": "Bearer " + os.getenv('ADMIN_TOKEN'),
         }
@@ -584,7 +584,7 @@ class Crawler(CrawlerModule):
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()
                     
-                    res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/datainfo", json=self.IntegratedDB, headers=self.api_headers).json()
+                    res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
 
                 except Exception as e:
                     error_msg = self.error_detector()
