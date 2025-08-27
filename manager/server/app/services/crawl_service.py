@@ -237,6 +237,27 @@ def updateCrawlDb(uid: str, dataInfo, error: bool = False):
     )
 
 
+def updateCount(uid: str, dataInfo):
+    crawlDb = crawlList_db.find_one({"uid": uid})
+    if not crawlDb:
+        raise NotFoundException("CrawlDB not found")
+
+    dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb['name']))[0]
+    data_info_dict = dataInfo.model_dump()
+
+    result = crawlList_db.update_one(
+        {"uid": uid},
+        {"$set": {"dataInfo": data_info_dict, "dbSize": dbsize}},
+    )
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "message": "CrawlDB updated",
+        },
+    )
+
+
 def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
     def cleanup_folder_and_zip(folder_path: str, zip_path: str):
         # 폴더와 ZIP 파일을 삭제
