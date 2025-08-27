@@ -6,6 +6,7 @@ from app.services.crawl_service import (
     getCrawlDbList,
     getCrawlDbInfo,
     updateCrawlDb,
+    updateCount,
     createCrawlLog,
     saveCrawlDb,
     previewCrawlDb
@@ -45,6 +46,11 @@ def get_crawl_db_info(uid: str):
 @router.put("/{uid}/datainfo")
 def update_crawl_db_datainfo(uid: str, dataInfo: DataInfo):
     return updateCrawlDb(uid, dataInfo)
+
+
+@router.put("/{uid}/count")
+def update_crawl_db_count(uid: str, dataInfo: DataInfo):
+    return updateCount(uid, dataInfo)
 
 
 @router.get("/{uid}/preview")
