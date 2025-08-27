@@ -54,7 +54,7 @@ def get_crawl_db_info(uid: str, userUid = Depends(verify_token)):
 
 
 @router.put("/{uid}/error")
-def update_crawl_db_datainfo(uid: str, dataInfo: DataInfo):
+def update_crawl_db_datainfo_error(uid: str, dataInfo: DataInfo):
     return updateCrawlDb(uid, dataInfo, error=True)
 
 
