@@ -583,6 +583,8 @@ class Crawler(CrawlerModule):
 
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()
+                    
+                    res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/datainfo", json=self.IntegratedDB, headers=self.api_headers).json()
 
                 except Exception as e:
                     error_msg = self.error_detector()
