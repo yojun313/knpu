@@ -53,8 +53,6 @@ class Manager_Database:
         makeTable(self.main, self.main.database_tablewidget,
                   self.DB['DBtable'], self.DBTableColumn, self.viewDBinfo)
         self.matchButton()
-        self.chatgpt_mode = False
-        self.console_open = False
 
     def deleteDB(self):
         try:

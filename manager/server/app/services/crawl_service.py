@@ -203,18 +203,15 @@ def getCrawlDbInfo(uid: str):
     )
 
 
-def updateCrawlDb(uid: str, dataInfo, error: bool = False):
+def endCrawlDb(uid: str, error: bool = False):
     crawlDb = crawlList_db.find_one({"uid": uid})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
-    dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb['name']))[0]
-    data_info_dict = dataInfo.model_dump()
-
     if error:
         result = crawlList_db.update_one(
             {"uid": uid},
-            {"$set": {"dataInfo": data_info_dict, "endTime": 'X', "dbSize": dbsize}},
+            {"$set": {"endTime": 'X'}},
         )
 
     now_kst = datetime.now(timezone.utc).astimezone(
@@ -223,7 +220,7 @@ def updateCrawlDb(uid: str, dataInfo, error: bool = False):
 
     result = crawlList_db.update_one(
         {"uid": uid},
-        {"$set": {"dataInfo": data_info_dict, "endTime": now_kst, "dbSize": dbsize}},
+        {"$set": {"endTime": now_kst}},
     )
 
     if result.matched_count == 0:
