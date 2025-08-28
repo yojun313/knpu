@@ -447,13 +447,15 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
             save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
         tableDF = None
         gc.collect()
+    
+    send_message(pid, f"데이터 압축 중")
 
     zip_path = shutil.make_archive(dbpath, "zip", root_dir=dbpath)
     filename = os.path.basename(zip_path)  # 여기에 한글이 섞여 있어도 OK
 
     background_task = BackgroundTask(
         cleanup_folder_and_zip, dbpath, zip_path)
-    # 4) FileResponse에 filename= 으로 넘기기
+
     return FileResponse(
         path=zip_path,
         media_type="application/zip",
