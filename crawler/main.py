@@ -115,13 +115,11 @@ class Crawler(CrawlerModule):
     def DBinfoRecorder(self, endoption=False, error=False):
 
         if error == True:
-            res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/error",
-                               json=self.IntegratedDB, headers=self.api_headers).json()
+            requests.put(f"{self.api_url}/crawls/{self.dbUid}/error", headers=self.api_headers).json()
 
         elif endoption == True:
             del self.IntegratedDB['UrlCnt']
-            res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/datainfo",
-                               json=self.IntegratedDB, headers=self.api_headers).json()
+            requests.put(f"{self.api_url}/crawls/{self.dbUid}/end", headers=self.api_headers).json()
             with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'r') as log:
                 log_content = log.read()
 
@@ -129,12 +127,10 @@ class Crawler(CrawlerModule):
                 'uid': self.dbUid,
                 'content': log_content
             }
-            res = requests.post(
-                f"{self.api_url}/crawls/add/log", json=json, headers=self.api_headers).json()
+            requests.post(f"{self.api_url}/crawls/add/log", json=json, headers=self.api_headers).json()
 
     # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
-        user_stop = False
         crawlDbList = self.mongoClient['crawler']['db-list']
         targetDB = crawlDbList.find_one({'uid': self.dbUid})
 

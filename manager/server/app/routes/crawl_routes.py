@@ -5,7 +5,7 @@ from app.services.crawl_service import (
     deleteCrawlDb,
     getCrawlDbList,
     getCrawlDbInfo,
-    updateCrawlDb,
+    endCrawlDb,
     updateCount,
     createCrawlLog,
     saveCrawlDb,
@@ -43,9 +43,9 @@ def get_crawl_db_info(uid: str):
     return getCrawlDbInfo(uid)
 
 
-@router.put("/{uid}/datainfo")
-def update_crawl_db_datainfo(uid: str, dataInfo: DataInfo):
-    return updateCrawlDb(uid, dataInfo)
+@router.put("/{uid}/end")
+def update_crawl_db_datainfo(uid: str):
+    return endCrawlDb(uid)
 
 
 @router.put("/{uid}/count")
@@ -60,8 +60,8 @@ def get_crawl_db_info(uid: str, userUid = Depends(verify_token)):
 
 
 @router.put("/{uid}/error")
-def update_crawl_db_datainfo_error(uid: str, dataInfo: DataInfo):
-    return updateCrawlDb(uid, dataInfo, error=True)
+def update_crawl_db_datainfo_error(uid: str):
+    return endCrawlDb(uid, error=True)
 
 
 @router.post("/{uid}/save")
