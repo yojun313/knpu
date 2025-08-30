@@ -11,7 +11,7 @@ import os
 import requests
 from config import *
 from ui.finder import *
-
+from libs.path import *
 
 class Manager_Setting(QDialog):
     def __init__(self, main):
@@ -711,7 +711,7 @@ class Manager_Setting(QDialog):
                     None, "CSV 양식 저장", filename, "CSV Files (*.csv)"
                 )
                 if save_path:
-                    with open(save_path, "wb") as f:
+                    with open(safe_path(save_path), "wb") as f:
                         f.write(response.content)
                     openFileResult(
                         self.main, f"저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", os.path.dirname(save_path))
