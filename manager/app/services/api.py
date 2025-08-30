@@ -3,6 +3,7 @@ from core.setting import get_setting
 from config import MANAGER_SERVER_API, HOMEPAGE_EDIT_API
 import os
 import mimetypes
+from libs.path import safe_path
 
 
 def get_api_headers():
@@ -53,7 +54,7 @@ def upload_homepage_image(src_path: str, folder: str = "misc", file_name: str = 
     if mime_type is None:
         raise ValueError(f"{src_path}의 MIME 타입을 알 수 없음")
 
-    with open(src_path, "rb") as file:
+    with open(safe_path(src_path), "rb") as file:
         files = {
             "file": (os.path.basename(src_path), file, mime_type)
         }

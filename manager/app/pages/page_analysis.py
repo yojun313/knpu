@@ -24,6 +24,7 @@ import requests
 import time
 from PyQt5.QtWidgets import *
 from libs.console import *
+from libs.path import *
 from ui.finder import *
 from ui.status import *
 from ui.dialogs import *
@@ -371,7 +372,7 @@ class Manager_Analysis:
                     raise FileNotFoundError(
                         f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}")
 
-                with open(exception_word_list_path, 'rb') as f:
+                with open(safe_path(exception_word_list_path), 'rb') as f:
                     codec = chardet.detect(f.read())['encoding']
 
                 df = pd.read_csv(exception_word_list_path,
@@ -508,7 +509,7 @@ class Manager_Analysis:
                     raise FileNotFoundError(
                         f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}")
 
-                with open(exception_word_list_path, 'rb') as f:
+                with open(safe_path(exception_word_list_path), 'rb') as f:
                     codec = chardet.detect(f.read())['encoding']
 
                 df = pd.read_csv(exception_word_list_path,
@@ -595,7 +596,7 @@ class Manager_Analysis:
             close_viewer(viewer)
             openConsole('KEMKIM 분석')
 
-            with open(local_zip, "wb") as f, tqdm(
+            with open(safe_path(local_zip), "wb") as f, tqdm(
                 total=total_size,
                 file=sys.stdout,
                 unit="B",
@@ -635,14 +636,14 @@ class Manager_Analysis:
             if not os.path.exists(input_file_path):
                 raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{input_file_path}")
 
-            with open(input_file_path, 'r') as csvfile:
+            with open(safe_path(input_file_path), 'r') as csvfile:
                 reader = csv.reader(csvfile)
 
                 # 모든 데이터를 읽어옵니다 (헤더 포함)
                 rows = list(reader)
 
             # 읽은 데이터를 그대로 새로운 CSV 파일로 저장하기
-            with open(output_file_path, 'w', newline='') as csvfile:
+            with open(safe_path(output_file_path), 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile)
 
                 # 데이터를 행 단위로 다시 작성합니다
@@ -719,7 +720,7 @@ class Manager_Analysis:
                         raise FileNotFoundError(
                             f"파일을 찾을 수 없습니다\n\n{eng_keyword_list_path}")
 
-                    with open(eng_keyword_list_path, 'rb') as f:
+                    with open(safe_path(eng_keyword_list_path), 'rb') as f:
                         codec = chardet.detect(f.read())['encoding']
                     df = pd.read_csv(eng_keyword_list_path,
                                      low_memory=False, encoding=codec)
@@ -836,7 +837,7 @@ class Manager_Analysis:
             pd.DataFrame(delete_word_list, columns=['word']).to_csv(os.path.join(
                 new_result_folder, 'filtered_words.csv'), index=False, encoding='utf-8-sig')
 
-            with open(os.path.join(new_graph_folder, 'graph_size.txt'), 'w+', encoding="utf-8", errors="ignore") as graph_size:
+            with open(safe_path(os.path.join(new_graph_folder, 'graph_size.txt')), 'w+', encoding="utf-8", errors="ignore") as graph_size:
                 info = (
                     f'X Scale: {size_input[0]}\n'
                     f'Y Scale: {size_input[1]}\n'
@@ -906,7 +907,7 @@ class Manager_Analysis:
             if not os.path.exists(infotxt_path):
                 raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{infotxt_path}")
 
-            with open(infotxt_path, 'r', encoding='utf-8') as info_txt:
+            with open(safe_path(infotxt_path), 'r', encoding='utf-8') as info_txt:
                 lines = info_txt.readlines()
 
             for line in lines:
@@ -964,7 +965,7 @@ class Manager_Analysis:
             if not os.path.exists(object_csv_path):
                 raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{object_csv_path}")
 
-            with open(object_csv_path, 'rb') as f:
+            with open(safe_path(object_csv_path), 'rb') as f:
                 codec = chardet.detect(f.read())['encoding']
             object_csv_df = pd.read_csv(
                 object_csv_path, low_memory=False, encoding=codec)
@@ -1054,7 +1055,7 @@ class Manager_Analysis:
                     add_text = "\n\n".join(keyword_texts)
                     if keyword_texts:
                         context_dict[keyword] = add_text
-                    with open(os.path.join(analyze_directory, 'keyword_context', f'{keyword}_context.txt'), 'w', encoding="utf-8", errors="ignore") as context:
+                    with open(safe_path(os.path.join(analyze_directory, 'keyword_context', f'{keyword}_context.txt')), 'w', encoding="utf-8", errors="ignore") as context:
                         context.write(add_text)
 
                 context_df = pd.DataFrame(list(context_dict.items()), columns=[
@@ -1108,9 +1109,9 @@ class Manager_Analysis:
                         openFileExplorer(analyze_directory)
                         return
 
-                    with open(
+                    with open(safe_path(
                             os.path.join(
-                                analyze_directory, f"{object_csv_name}(키워드 {selected_option})_AI_analyze.txt"),
+                                analyze_directory, f"{object_csv_name}(키워드 {selected_option})_AI_analyze.txt")),
                             'w+', encoding="utf-8", errors="ignore") as gpt_txt:
                         gpt_txt.write(gpt_response)
 
@@ -1187,7 +1188,7 @@ class Manager_Analysis:
                     raise FileNotFoundError(
                         f"파일을 찾을 수 없습니다\n\n{include_word_list_path}")
 
-                with open(include_word_list_path, 'rb') as f:
+                with open(safe_path(include_word_list_path), 'rb') as f:
                     codec = chardet.detect(f.read())['encoding']
 
                 df = pd.read_csv(include_word_list_path,
@@ -1222,7 +1223,7 @@ class Manager_Analysis:
             send_message(pid, "파일 데이터 업로드 중...")
             printStatus(self.main, "파일 토큰화 중...")
 
-            with open(csv_path, "rb") as file_obj:
+            with open(safe_path(csv_path), "rb") as file_obj:
                 response = requests.post(
                     download_url,
                     files={
@@ -1253,7 +1254,7 @@ class Manager_Analysis:
             close_viewer(viewer)
             openConsole("토큰화")
 
-            with open(local_csv, "wb") as f, tqdm(
+            with open(safe_path(local_csv), "wb") as f, tqdm(
                 total=total_size,
                 file=sys.stdout,
                 unit="B",
@@ -1625,7 +1626,7 @@ class Manager_Analysis:
             send_message(pid, "CSV 업로드 중...")
             printStatus(self.main, "혐오도 분석 중...")
 
-            with open(csv_path, "rb") as fobj:
+            with open(safe_path(csv_path), "rb") as fobj:
                 resp = requests.post(
                     url,
                     files={
@@ -1656,7 +1657,7 @@ class Manager_Analysis:
             close_viewer(viewer)
             openConsole("혐오도 분석 결과 다운로드")
 
-            with open(out_path, "wb") as f, tqdm(
+            with open(safe_path(out_path), "wb") as f, tqdm(
                 total=total_len,
                 unit="B", unit_scale=True, unit_divisor=1024,
                 file=sys.stdout, desc="Downloading",

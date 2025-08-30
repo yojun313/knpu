@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QHBoxLayo
 from PyQt5.QtCore import Qt
 from core.boot import checkNewVersion
 import webbrowser
+from libs.path import safe_path
 
 def updateProgram(parent, sc=False):
     try:
@@ -27,7 +28,7 @@ def updateProgram(parent, sc=False):
             chunkSize = 8192  # 8KB씩 다운로드
             downloadSize = 0  # 다운로드된 크기 초기화
 
-            with open(local_filename, 'wb') as f:
+            with open(safe_path(local_filename), 'wb') as f:
                 for chunk in response.iter_content(chunk_size=chunkSize):
                     if chunk:  # 빈 데이터 확인
                         f.write(chunk)
@@ -66,45 +67,57 @@ def updateProgram(parent, sc=False):
                 parent.closeBootscreen()
                 update_process()
 
-            version_info_html = parent.style_html + f"""
-                <table>
-                    <tr><th>Item</th><th>Details</th></tr>
-                    <tr><td><b>Version Num:</b></td><td>{newVersionInfo[0]}</td></tr>
-                    <tr><td><b>Release Date:</b></td><td>{newVersionInfo[-1]}</td></tr>
-                    <tr><td><b>ChangeLog:</b></td><td>{newVersionInfo[1]}</td></tr>
-                    <tr><td><b>Version Features:</b></td><td>{newVersionInfo[2]}</td></tr>
-                    <tr><td><b>Version Status:</b></td><td>{newVersionInfo[3]}</td></tr>
-                </table>
-            """
-
             dialog = QDialog(parent)
-            dialog.setWindowTitle(f"New Version Released")
-            dialog.resize(350, 250)
+            dialog.setWindowTitle("New Version Released")
+            dialog.resize(480, 420)
 
-            layout = QVBoxLayout()
+            layout = QVBoxLayout(dialog)
 
-            label = QLabel()
-            label.setText(version_info_html)
-            label.setWordWrap(True)
-            label.setTextFormat(Qt.RichText)  # HTML 렌더링
+            # 유틸: 라벨 + 읽기전용 QTextEdit 추가
+            from PyQt5.QtWidgets import QLabel, QTextEdit
+            from PyQt5.QtGui import QFont
 
-            layout.addWidget(label, alignment=Qt.AlignHCenter)
+            def add_field(title: str, content: str, *, monospace: bool = False, min_lines: int = 3) -> QTextEdit:
+                layout.addWidget(QLabel(f"<b>{title}</b>"))
+                edit = QTextEdit()
+                edit.setReadOnly(True)
+                edit.setAcceptRichText(False)
+                edit.setPlainText("" if content is None else str(content))
+                if monospace:
+                    font = QFont("Consolas")
+                    font.setStyleHint(QFont.Monospace)
+                    edit.setFont(font)
+                    edit.setLineWrapMode(QTextEdit.NoWrap)
+                # 보기 좋은 최소 높이
+                metrics = edit.fontMetrics()
+                edit.setMinimumHeight(metrics.lineSpacing() * min_lines + 12)
+                layout.addWidget(edit)
+                return edit
 
-            button_layout = QHBoxLayout()  # 수평 레이아웃
+            # newVersionInfo: [versionNum, changeLog, features, status, releaseDate]
+            ver  = str(newVersionInfo[0]) if len(newVersionInfo) > 0 else ""
+            chg  = str(newVersionInfo[1]) if len(newVersionInfo) > 1 else ""
+            feat = str(newVersionInfo[2]) if len(newVersionInfo) > 2 else ""
+            stat = str(newVersionInfo[3]) if len(newVersionInfo) > 3 else ""
+            rel  = str(newVersionInfo[-1]) if len(newVersionInfo) > 0 else ""
 
-            # confirm_button과 cancel_button의 크기가 창의 너비에 맞게 비례하도록 설정
+            add_field("Version Num", ver)
+            add_field("Release Date", rel)
+            add_field("Version Status", stat)
+            add_field("ChangeLog", chg, monospace=True, min_lines=6)
+            add_field("Version Features", feat, monospace=False, min_lines=4)
+
+            # 버튼 영역 (기존 구조 유지)
+            button_layout = QHBoxLayout()
             confirm_button = QPushButton("Update")
             cancel_button = QPushButton("Cancel")
 
-            # 버튼 클릭 이벤트 연결
             confirm_button.clicked.connect(dialog.accept)
             cancel_button.clicked.connect(dialog.reject)
 
-            # 버튼 사이에 간격 추가
             button_layout.addWidget(confirm_button)
             button_layout.addWidget(cancel_button)
-
-            layout.addLayout(button_layout)  # 버튼 레이아웃을 메인 레이아웃에 추가
+            layout.addLayout(button_layout)
 
             dialog.setLayout(layout)
 
@@ -113,7 +126,8 @@ def updateProgram(parent, sc=False):
                 update_process()
             else:
                 QMessageBox.information(
-                    parent, "Information", 'Ctrl+U 단축어로 프로그램 실행 중 업데이트 가능합니다')
+                    parent, "Information", 'Ctrl+U 단축어로 프로그램 실행 중 업데이트 가능합니다'
+                )
                 return
         else:
             if sc == True:
