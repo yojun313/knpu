@@ -403,8 +403,7 @@ class AddBugDialog(BaseDialog):
         self.setWindowTitle('Bug Report')
         self.resize(480, 420)
 
-        container = QWidget()
-        layout = QVBoxLayout(container)
+        layout = QVBoxLayout(self)
 
         # User Name (QLineEdit)
         layout.addWidget(QLabel('<b>User Name:</b>'))
@@ -428,13 +427,6 @@ class AddBugDialog(BaseDialog):
         self.submit_button = QPushButton('Submit')
         self.submit_button.clicked.connect(self.submit)
         layout.addWidget(self.submit_button)
-
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(container)
-
-        final = QVBoxLayout(self)
-        final.addWidget(scroll)
 
     def submit(self):
         userName = self.user_input.text()
@@ -468,8 +460,7 @@ class AddPostDialog(BaseDialog):
         self.setWindowTitle('Add Post')
         self.resize(480, 420)
 
-        container = QWidget()
-        layout = QVBoxLayout(container)
+        layout = QVBoxLayout(self)
 
         # Post Title (QLineEdit)
         layout.addWidget(QLabel('<b>Post Title:</b>'))
@@ -485,12 +476,6 @@ class AddPostDialog(BaseDialog):
         self.submit_button.clicked.connect(self.submit)
         layout.addWidget(self.submit_button)
 
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(container)
-
-        final = QVBoxLayout(self)
-        final.addWidget(scroll)
 
     def submit(self):
         post_title = self.post_title_input.text()
