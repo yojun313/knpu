@@ -98,12 +98,10 @@ def updateProgram(parent, sc=False):
             ver  = str(newVersionInfo[0]) if len(newVersionInfo) > 0 else ""
             chg  = str(newVersionInfo[1]) if len(newVersionInfo) > 1 else ""
             feat = str(newVersionInfo[2]) if len(newVersionInfo) > 2 else ""
-            stat = str(newVersionInfo[3]) if len(newVersionInfo) > 3 else ""
             rel  = str(newVersionInfo[-1]) if len(newVersionInfo) > 0 else ""
 
             add_field("Version Num", ver)
             add_field("Release Date", rel)
-            add_field("Version Status", stat)
             add_field("ChangeLog", chg, monospace=True, min_lines=6)
             add_field("Version Features", feat, monospace=False, min_lines=4)
 
