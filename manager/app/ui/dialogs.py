@@ -27,7 +27,22 @@ def _add_field(layout: QVBoxLayout, title: str, content: str, *, monospace: bool
     return edit
 
 
-class DBInfoDialog(QDialog):
+class BaseDialog(QDialog):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # 공통 단축키
+        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
+        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
+
+    def showEvent(self, event):
+        """다이얼로그가 보여질 때 QTextEdit에 Tab 이동 기능 부여"""
+        super().showEvent(event)
+        for te in self.findChildren(QTextEdit):
+            te.setTabChangesFocus(True)
+
+
+class DBInfoDialog(BaseDialog):
     def __init__(self, parent, DBdata, style_html):
         super().__init__(parent)
         self.setWindowTitle(f"{DBdata['name']}_Info")
@@ -132,18 +147,10 @@ class DBInfoDialog(QDialog):
         detail_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         layout.addWidget(detail_label)
-
-        close_button = QPushButton("Close")
-        close_button.clicked.connect(self.accept)
-        layout.addWidget(close_button)
-
-        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.accept)
-        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.accept)
-
         self.setLayout(layout)
 
 
-class SaveDbDialog(QDialog):
+class SaveDbDialog(BaseDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Select Options')
@@ -260,6 +267,9 @@ class SaveDbDialog(QDialog):
         # 신호 연결
         self.radio_custom.toggled.connect(self.toggle_date_input)
         self.radio_filter.toggled.connect(self.toggle_word_input)
+        
+        for te in self.findChildren(QTextEdit):
+            te.setTabChangesFocus(True)
 
     def toggle_date_input(self, checked):
         # "기간 설정" 라디오 버튼이 선택되면 날짜 입력 필드 표시
@@ -326,133 +336,107 @@ class SaveDbDialog(QDialog):
         super().accept()  # 정상적인 경우에만 다이얼로그를 종료함
 
 
-class AddVersionDialog(QDialog):
+class AddVersionDialog(BaseDialog):
     def __init__(self, version):
         super().__init__()
         self.version = version
+        self.data = None
         self.initUI()
-        self.data = None  # 데이터를 저장할 속성 추가
 
     def initUI(self):
         self.setWindowTitle('Add Version')
-        self.resize(400, 400)
+        self.resize(480, 520)
 
-        # 컨테이너 위젯 생성
-        container_widget = QDialog()
-        layout = QVBoxLayout(container_widget)
+        layout = QVBoxLayout(self)
 
-        # 각 입력 필드를 위한 QLabel 및 QTextEdit 생성
-        self.version_num_label = QLabel('Version Num:')
+        # Version Num (QLineEdit 유지)
+        layout.addWidget(QLabel('<b>Version Num:</b>'))
         self.version_num_input = QLineEdit()
         self.version_num_input.setText(self.version)
-        layout.addWidget(self.version_num_label)
         layout.addWidget(self.version_num_input)
 
-        self.changelog_label = QLabel('ChangeLog:')
-        self.changelog_input = QTextEdit()
-        layout.addWidget(self.changelog_label)
-        layout.addWidget(self.changelog_input)
+        # ChangeLog (QTextEdit - _add_field 사용 후 editable로)
+        self.changelog_input = _add_field(layout, "ChangeLog:", "", monospace=True)
+        self.changelog_input.setReadOnly(False)
 
-        self.version_features_label = QLabel('Version Features:')
-        self.version_features_input = QTextEdit()
-        layout.addWidget(self.version_features_label)
-        layout.addWidget(self.version_features_input)
+        # Version Features
+        self.version_features_input = _add_field(layout, "Version Features:", "", monospace=False)
+        self.version_features_input.setReadOnly(False)
 
-        self.version_status_label = QLabel('Version Status:')
-        self.version_status_input = QLineEdit()
-        layout.addWidget(self.version_status_label)
-        layout.addWidget(self.version_status_input)
+        # Detail
+        self.detail_input = _add_field(layout, "Detail:", "", monospace=True)
+        self.detail_input.setReadOnly(False)
 
-        self.detail_label = QLabel('Detail:')
-        self.detail_input = QTextEdit()
-        layout.addWidget(self.detail_label)
-        layout.addWidget(self.detail_input)
-
-        # 확인 버튼 생성 및 클릭 시 동작 연결
+        # Submit
         self.submit_button = QPushButton('Submit')
         self.submit_button.clicked.connect(self.submit)
         layout.addWidget(self.submit_button)
 
-        # QScrollArea 설정
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        # 컨테이너 위젯을 스크롤 영역에 추가
-        scroll_area.setWidget(container_widget)
-
-        # 최종 레이아웃 설정
-        final_layout = QVBoxLayout()
-        final_layout.addWidget(scroll_area)
-        self.setLayout(final_layout)
-
     def submit(self):
-        # 입력된 데이터를 확인하고 처리
         version_num = self.version_num_input.text()
         changelog = self.changelog_input.toPlainText()
         version_features = self.version_features_input.toPlainText()
-        version_status = self.version_status_input.text()
         detail = self.detail_input.toPlainText()
 
-        self.data = [version_num, changelog,
-                     version_features, version_status, detail]
+        self.data = [version_num, changelog, version_features, detail]
 
-        QMessageBox.information(self, 'Input Data',
-                                f'Version Num: {version_num}\nChangeLog: {changelog}\nVersion Features: {version_features}\nVersion Status: {version_status}\nDetail: {detail}')
+        QMessageBox.information(
+            self,
+            'Input Data',
+            f'Version Num: {version_num}\n'
+            f'ChangeLog: {changelog}\n'
+            f'Version Features: {version_features}\n'
+            f'Detail: {detail}'
+        )
         self.accept()
 
 
-class AddBugDialog(QDialog):
+class AddBugDialog(BaseDialog):
     def __init__(self, main_window, version):
         super().__init__()
         self.main = main_window
-        self.initUI()
-        self.data = None  # 데이터를 저장할 속성 추가
         self.version = version
+        self.data = None
+        self.initUI()
 
     def initUI(self):
         self.setWindowTitle('Bug Report')
-        self.resize(400, 400)
+        self.resize(480, 420)
 
-        # 컨테이너 위젯 생성
-        container_widget = QDialog()
-        layout = QVBoxLayout(container_widget)
+        container = QWidget()
+        layout = QVBoxLayout(container)
 
-        # 각 입력 필드를 위한 QLabel 및 QLineEdit, QTextEdit 생성
-        self.user_label = QLabel('User Name:')
+        # User Name (QLineEdit)
+        layout.addWidget(QLabel('<b>User Name:</b>'))
         self.user_input = QLineEdit()
-        self.user_input.setText(self.main.user)
-        layout.addWidget(self.user_label)
+        self.user_input.setText(getattr(self.main, "user", ""))
         layout.addWidget(self.user_input)
 
-        self.bug_title_label = QLabel('Bug Title:')
+        # Bug Title (QLineEdit)
+        layout.addWidget(QLabel('<b>Bug Title:</b>'))
         self.bug_title_input = QLineEdit()
-        layout.addWidget(self.bug_title_label)
         layout.addWidget(self.bug_title_input)
 
-        self.bug_detail_label = QLabel('Bug Detail:')
-        self.bug_detail_input = QTextEdit()
+        # Bug Detail (_add_field → editable)
+        self.bug_detail_input = _add_field(layout, "Bug Detail:", "", monospace=True)
         self.bug_detail_input.setPlaceholderText(
-            '버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해주세요\n오류 로그는 자동으로 전송됩니다')
-        layout.addWidget(self.bug_detail_label)
-        layout.addWidget(self.bug_detail_input)
+            '버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해주세요\n오류 로그는 자동으로 전송됩니다'
+        )
+        self.bug_detail_input.setReadOnly(False)
 
-        # 확인 버튼 생성 및 클릭 시 동작 연결
+        # Submit
         self.submit_button = QPushButton('Submit')
         self.submit_button.clicked.connect(self.submit)
         layout.addWidget(self.submit_button)
 
-        # QScrollArea 설정
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        # 컨테이너 위젯을 스크롤 영역에 추가
-        scroll_area.setWidget(container_widget)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(container)
 
-        # 최종 레이아웃 설정
-        final_layout = QVBoxLayout()
-        final_layout.addWidget(scroll_area)
-        self.setLayout(final_layout)
+        final = QVBoxLayout(self)
+        final.addWidget(scroll)
 
     def submit(self):
-        # 입력된 데이터를 확인하고 처리
         userName = self.user_input.text()
         version_num = self.version
         bug_title = self.bug_title_input.text()
@@ -466,55 +450,49 @@ class AddBugDialog(QDialog):
         }
 
         QMessageBox.information(self, 'Input Data',
-                                f'User Name: {userName}\nVersion Num: {version_num}\nBug Title: {bug_title}\nBug Detail: {bug_detail}')
+                                f'User Name: {userName}\n'
+                                f'Version Num: {version_num}\n'
+                                f'Bug Title: {bug_title}\n'
+                                f'Bug Detail: {bug_detail}')
         self.accept()
 
 
-class AddPostDialog(QDialog):
+class AddPostDialog(BaseDialog):
     def __init__(self, main_window):
         super().__init__()
         self.main = main_window
+        self.data = None
         self.initUI()
-        self.data = None  # 데이터를 저장할 속성 추가
 
     def initUI(self):
         self.setWindowTitle('Add Post')
-        self.resize(400, 400)
+        self.resize(480, 420)
 
-        # 컨테이너 위젯 생성
-        container_widget = QDialog()
-        layout = QVBoxLayout(container_widget)
+        container = QWidget()
+        layout = QVBoxLayout(container)
 
-        # 게시물 제목 입력 필드
-        self.post_title_label = QLabel('Post Title:')
+        # Post Title (QLineEdit)
+        layout.addWidget(QLabel('<b>Post Title:</b>'))
         self.post_title_input = QLineEdit()
-        layout.addWidget(self.post_title_label)
         layout.addWidget(self.post_title_input)
 
-        # 게시물 내용 입력 필드
-        self.post_text_label = QLabel('Post Text:')
-        self.post_text_input = QTextEdit()
-        layout.addWidget(self.post_text_label)
-        layout.addWidget(self.post_text_input)
+        # Post Text (_add_field → editable)
+        self.post_text_input = _add_field(layout, "Post Text:", "", monospace=True)
+        self.post_text_input.setReadOnly(False)
 
-        # 확인 버튼 생성 및 클릭 시 동작 연결
+        # Post
         self.submit_button = QPushButton('Post')
         self.submit_button.clicked.connect(self.submit)
         layout.addWidget(self.submit_button)
 
-        # QScrollArea 설정
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        # 컨테이너 위젯을 스크롤 영역에 추가
-        scroll_area.setWidget(container_widget)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(container)
 
-        # 최종 레이아웃 설정
-        final_layout = QVBoxLayout()
-        final_layout.addWidget(scroll_area)
-        self.setLayout(final_layout)
+        final = QVBoxLayout(self)
+        final.addWidget(scroll)
 
     def submit(self):
-        # 입력된 데이터를 확인하고 처리
         post_title = self.post_title_input.text()
         post_text = self.post_text_input.toPlainText()
 
@@ -524,11 +502,12 @@ class AddPostDialog(QDialog):
         }
 
         QMessageBox.information(self, 'New Post',
-                                f'Post Title: {post_title}\nPost Text: {post_text}')
+                                f'Post Title: {post_title}\n'
+                                f'Post Text: {post_text}')
         self.accept()
 
 
-class ViewBugDialog(QDialog):
+class ViewBugDialog(BaseDialog):
     def __init__(self, parent, bug_data: dict, style_html=None):  # style_html은 더 이상 사용하지 않지만 시그니처 유지
         super().__init__(parent)
         self.setWindowTitle(f"Version {bug_data.get('versionName','')} Bug Details")
@@ -548,36 +527,8 @@ class ViewBugDialog(QDialog):
         _add_field(layout, "Bug Detail",  self.bug_data.get("bugText", ""), monospace=True)
         _add_field(layout, "Program Log", self.bug_data.get("programLog", ""), monospace=True)
 
-        # 하단 버튼
-        btn_row = QHBoxLayout()
-        copy_btn = QPushButton("Copy All")
-        copy_btn.clicked.connect(self.copy_all_text)
-        btn_row.addWidget(copy_btn)
 
-        close_btn = QPushButton("Close")
-        close_btn.clicked.connect(self.accept)
-        btn_row.addWidget(close_btn)
-
-        layout.addLayout(btn_row)
-
-        # 단축키
-        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.accept)
-        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.accept)
-
-    def copy_all_text(self):
-        clipboard = QApplication.clipboard()
-        plain_text = (
-            f"User Name: {self.bug_data.get('writerName','')}\n"
-            f"Version Num: {self.bug_data.get('versionName','')}\n"
-            f"Bug Title: {self.bug_data.get('bugTitle','')}\n"
-            f"DateTime: {self.bug_data.get('datetime','')}\n"
-            f"Bug Detail:\n{self.bug_data.get('bugText','')}\n"
-            f"Program Log:\n{self.bug_data.get('programLog','')}"
-        )
-        clipboard.setText(plain_text)
-
-
-class ViewVersionDialog(QDialog):
+class ViewVersionDialog(BaseDialog):
     def __init__(self, parent, version_data, style_html=None):  # style_html 유지
         super().__init__(parent)
         self.version_data = version_data  # [num, date, changelog, features, status, detail]
@@ -592,37 +543,10 @@ class ViewVersionDialog(QDialog):
         _add_field(layout, "Release Date",     self.version_data[1])
         _add_field(layout, "ChangeLog",        self.version_data[2], monospace=True)
         _add_field(layout, "Version Features", self.version_data[3])
-        _add_field(layout, "Version Status",   self.version_data[4])
-        _add_field(layout, "Detail",           self.version_data[5], monospace=True)
-
-        btn_row = QHBoxLayout()
-        copy_btn = QPushButton("Copy All")
-        copy_btn.clicked.connect(self.copy_all_text)
-        btn_row.addWidget(copy_btn)
-
-        close_btn = QPushButton("Close")
-        close_btn.clicked.connect(self.accept)
-        btn_row.addWidget(close_btn)
-
-        layout.addLayout(btn_row)
-
-        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.accept)
-        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.accept)
-
-    def copy_all_text(self):
-        clipboard = QApplication.clipboard()
-        plain_text = (
-            f"Version Num: {self.version_data[0]}\n"
-            f"Release Date: {self.version_data[1]}\n"
-            f"ChangeLog:\n{self.version_data[2]}\n"
-            f"Version Features: {self.version_data[3]}\n"
-            f"Version Status: {self.version_data[4]}\n"
-            f"Detail:\n{self.version_data[5]}"
-        )
-        clipboard.setText(plain_text)
+        _add_field(layout, "Detail",           self.version_data[4], monospace=True)
 
 
-class ViewPostDialog(QDialog):
+class ViewPostDialog(BaseDialog):
     def __init__(self, parent, post_data: dict, style_html=None):  # style_html 유지
         super().__init__(parent)
         self.post_data = post_data
@@ -638,32 +562,8 @@ class ViewPostDialog(QDialog):
         _add_field(layout, "DateTime", self.post_data.get("datetime", ""))
         _add_field(layout, "Post Text", self.post_data.get("text", ""), monospace=True)
 
-        btn_row = QHBoxLayout()
-        copy_btn = QPushButton("Copy All")
-        copy_btn.clicked.connect(self.copy_all_text)
-        btn_row.addWidget(copy_btn)
 
-        close_btn = QPushButton("Close")
-        close_btn.clicked.connect(self.accept)
-        btn_row.addWidget(close_btn)
-
-        layout.addLayout(btn_row)
-
-        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.accept)
-        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.accept)
-
-    def copy_all_text(self):
-        clipboard = QApplication.clipboard()
-        plain_text = (
-            f"User Name: {self.post_data.get('writerName','')}\n"
-            f"Post Title: {self.post_data.get('title','')}\n"
-            f"DateTime: {self.post_data.get('datetime','')}\n"
-            f"Post Text:\n{self.post_data.get('text','')}"
-        )
-        clipboard.setText(plain_text)
-
-
-class EditPostDialog(QDialog):
+class EditPostDialog(BaseDialog):
     def __init__(self, post_data):
         super().__init__()
         self.post_data = post_data
@@ -707,6 +607,9 @@ class EditPostDialog(QDialog):
         final_layout = QVBoxLayout()
         final_layout.addWidget(scroll_area)
         self.setLayout(final_layout)
+        
+        for te in self.findChildren(QTextEdit):
+            te.setTabChangesFocus(True)
 
     def submit(self):
         # 입력된 데이터를 확인하고 처리
@@ -723,7 +626,7 @@ class EditPostDialog(QDialog):
         self.accept()
 
 
-class StatAnalysisDialog(QDialog):
+class StatAnalysisDialog(BaseDialog):
     """
     • 1차 : 분석 종류(체크박스) – 데이터 타입별로 구성
     • 2차 : 데이터 출처(콤보박스)
@@ -757,6 +660,9 @@ class StatAnalysisDialog(QDialog):
 
         # 최초 체크박스 세팅
         self.update_checkboxes()
+        
+        for te in self.findChildren(QTextEdit):
+            te.setTabChangesFocus(True)
 
     # ────────────────────────────────────────
     #  체크박스 갱신
@@ -794,7 +700,7 @@ class StatAnalysisDialog(QDialog):
         # (필요하면 self.checkbox_group[0].setChecked(True) 등 지정)
 
 
-class WordcloudDialog(QDialog):
+class WordcloudDialog(BaseDialog):
     def __init__(self, tokenfile_name):
         super().__init__()
         self.tokenfile_name = tokenfile_name
@@ -911,6 +817,9 @@ class WordcloudDialog(QDialog):
         layout.addWidget(self.submit_button)
 
         self.setLayout(layout)
+        
+        for te in self.findChildren(QTextEdit):
+            te.setTabChangesFocus(True)
 
     def submit(self):
         period = self.period_option_menu.currentText()
@@ -946,7 +855,7 @@ class WordcloudDialog(QDialog):
         self.accept()
 
 
-class SelectKemkimDialog(QDialog):
+class SelectKemkimDialog(BaseDialog):
     def __init__(self, kimkem_file, rekimkem_file, interpret_kimkem):
         super().__init__()
         self.kimkem_file = kimkem_file
@@ -982,6 +891,9 @@ class SelectKemkimDialog(QDialog):
 
         # 레이아웃을 다이얼로그에 설정
         self.setLayout(layout)
+        
+        for te in self.findChildren(QTextEdit):
+            te.setTabChangesFocus(True)
 
     def run_kimkem_file(self):
         self.accept()
@@ -996,7 +908,7 @@ class SelectKemkimDialog(QDialog):
         self.interpret_kimkem()
 
 
-class RunKemkimDialog(QDialog):
+class RunKemkimDialog(BaseDialog):
     def __init__(self, tokenfile_name):
         super().__init__()
         self.tokenfile_name = tokenfile_name
@@ -1194,6 +1106,9 @@ class RunKemkimDialog(QDialog):
         layout.addWidget(self.submit_button)
 
         self.setLayout(layout)
+        
+        for te in self.findChildren(QTextEdit):
+            te.setTabChangesFocus(True)
 
     def handle_dropdown_change(self, index):
         # 특정 옵션이 선택되면 추가 입력창을 표시, 그렇지 않으면 숨김
@@ -1266,7 +1181,7 @@ class RunKemkimDialog(QDialog):
         self.accept()
 
 
-class InterpretKemkimDialog(QDialog):
+class InterpretKemkimDialog(BaseDialog):
     def __init__(self, words):
         super().__init__()
         self.words = words
@@ -1353,6 +1268,9 @@ class InterpretKemkimDialog(QDialog):
         self.setWindowTitle('크롤링 데이터 CSV 필터링 기준 단어를 선택하세요')
         self.resize(800, 600)
         self.show()
+        
+        for te in self.findChildren(QTextEdit):
+            te.setTabChangesFocus(True)
 
     def create_select_all_handler(self, group_name):
         def select_all_handler(state):
@@ -1409,7 +1327,7 @@ class InterpretKemkimDialog(QDialog):
         self.accept()
 
 
-class ModifyKemkimDialog(QDialog):
+class ModifyKemkimDialog(BaseDialog):
     def __init__(self, words):
         super().__init__()
         self.words = words
@@ -1554,6 +1472,9 @@ class ModifyKemkimDialog(QDialog):
         self.setWindowTitle('KEMKIM 그래프 조정')
         self.resize(800, 600)
         self.show()
+        
+        for te in self.findChildren(QTextEdit):
+            te.setTabChangesFocus(True)
 
     def create_select_all_handler(self, group_name):
         def select_all_handler(state):
@@ -1604,7 +1525,7 @@ class ModifyKemkimDialog(QDialog):
         self.accept()
 
 
-class SelectTokenizeDialog(QDialog):
+class SelectTokenizeDialog(BaseDialog):
     def __init__(self, tokenize_file, modify_token, common_token):
         super().__init__()
         self.tokenize_file = tokenize_file
@@ -1654,7 +1575,7 @@ class SelectTokenizeDialog(QDialog):
         self.common_token()
 
 
-class SelectColumnsDialog(QDialog):
+class SelectColumnsDialog(BaseDialog):
     def __init__(self, column_names, parent=None):
         super().__init__(parent)
         self.setWindowTitle("열 선택")
@@ -1696,16 +1617,12 @@ class SelectColumnsDialog(QDialog):
         button_layout.addWidget(cancel_button)
         layout.addLayout(button_layout)
 
-        # ───────── 단축키 ─────────
-        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
-        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
-
     # 선택된 열 반환
     def get_selected_columns(self):
         return [cb.text() for cb in self.checkboxes if cb.isChecked()]
 
 
-class SelectEtcAnalysisDialog(QDialog):
+class SelectEtcAnalysisDialog(BaseDialog):
     def __init__(self, analyze_hate):
         super().__init__()
         self.analyze_hate = analyze_hate
@@ -1739,7 +1656,7 @@ class SelectEtcAnalysisDialog(QDialog):
         self.analyze_hate()
 
 
-class EditHomeMemberDialog(QDialog):
+class EditHomeMemberDialog(BaseDialog):
     def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("멤버 편집" if data else "멤버 추가")
@@ -1784,9 +1701,6 @@ class EditHomeMemberDialog(QDialog):
         vbox.addWidget(cancel)
 
         self.new_image_url = None
-        
-        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
-        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
 
     def pick_image(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -1828,7 +1742,7 @@ class EditHomeMemberDialog(QDialog):
         return payload
 
 
-class EditHomeNewsDialog(QDialog):
+class EditHomeNewsDialog(BaseDialog):
     def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("뉴스 편집" if data else "뉴스 추가")
@@ -1867,9 +1781,6 @@ class EditHomeNewsDialog(QDialog):
         cancel.clicked.connect(self.reject)
         vbox.addWidget(ok)
         vbox.addWidget(cancel)
-        
-        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
-        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
 
     def pick_image(self):
         path, _ = QFileDialog.getOpenFileName(self, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.webp)")
@@ -1895,7 +1806,7 @@ class EditHomeNewsDialog(QDialog):
         return payload
 
 
-class EditHomePaperDialog(QDialog):
+class EditHomePaperDialog(BaseDialog):
     def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("논문 편집" if data else "논문 추가")
@@ -1937,9 +1848,6 @@ class EditHomePaperDialog(QDialog):
         cancel.clicked.connect(self.reject)
         vbox.addWidget(ok)
         vbox.addWidget(cancel)
-        
-        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
-        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
 
     def get_payload(self) -> dict:
         try:
@@ -1961,7 +1869,7 @@ class EditHomePaperDialog(QDialog):
         return {"year": year, "paper": payload}
 
 
-class ViewHomePaperDialog(QDialog):
+class ViewHomePaperDialog(BaseDialog):
     def __init__(self, data: dict, parent=None):
         super().__init__(parent)
         self.setWindowTitle("논문 정보")
@@ -1979,14 +1887,9 @@ class ViewHomePaperDialog(QDialog):
         add_label("컨퍼런스/저널", data.get("conference", ""))
         add_label("링크", data.get("link", ""))
         add_label("연도", str(data.get("year", "")))
-
-        layout.addWidget(QPushButton("닫기", clicked=self.accept))
-        
-        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
-        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
     
 
-class ViewHomeMemberDialog(QDialog):
+class ViewHomeMemberDialog(BaseDialog):
     def __init__(self, data: dict, parent=None):
         super().__init__(parent)
         self.setWindowTitle("멤버 정보")
@@ -2007,13 +1910,8 @@ class ViewHomeMemberDialog(QDialog):
         add_label("경력", "\n".join(data.get("경력", [])) if isinstance(data.get("경력", []), list) else str(data.get("경력", "")))
         add_label("연구", "\n".join(data.get("연구", [])) if isinstance(data.get("연구", []), list) else str(data.get("연구", "")))
 
-        layout.addWidget(QPushButton("닫기", clicked=self.accept))
-        
-        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
-        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
 
-
-class ViewHomeNewsDialog(QDialog):
+class ViewHomeNewsDialog(BaseDialog):
     def __init__(self, data: dict, parent=None):
         super().__init__(parent)
         self.setWindowTitle("뉴스 정보")
@@ -2029,9 +1927,4 @@ class ViewHomeNewsDialog(QDialog):
         add_label("제목", data.get("title", ""))
         add_label("내용", data.get("content", ""))
         add_label("날짜", data.get("date", ""))
-        add_label("URL", data.get("url", ""))
-
-        layout.addWidget(QPushButton("닫기", clicked=self.accept))
-        
-        QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.reject)
-        QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
+        add_label("URL", data.get("url", ""))        

@@ -5,7 +5,6 @@ class AddVersionDto(BaseModel):
     versionName: str
     changeLog: str
     features: str
-    status: str
     details: str
     sendPushOver: bool
 
