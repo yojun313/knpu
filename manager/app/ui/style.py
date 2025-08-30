@@ -15,7 +15,7 @@ light_style_sheet = """
         font-size: 15px;
     }
     QStatusBar {
-        background-color: transparent; /* 기본 흰색 배경 */
+        background-color: #ffffff; /* 기본 흰색 배경 */
         font-family: 'Tahoma';
         font-size: 10px;
         color: black;
@@ -27,14 +27,14 @@ light_style_sheet = """
         border: 1px solid #bdc3c7;
         border-radius: 5px;
         padding: 8px;
-        background-color: transparent;
+        background-color: white;
         font-size: 14px;
         color: black;
     }
     QLabel {
         color: black;  /* 라벨 기본 텍스트 색상 */
         font-size: 14px;
-        background-color: transparent; /* 라벨 배경 흰색 */
+        background-color: #ffffff; /* 라벨 배경 흰색 */
     }
     QTableWidget {
         background-color: white;
@@ -101,15 +101,15 @@ light_style_sheet = """
         border-bottom-color: #ffffff;
     }
     QFileDialog {
-        background-color: transparent;
+        background-color: #ffffff;
         color: #000000;
     }
     QFileDialog QListView, QTreeView {
-        background-color: transparent;
+        background-color: #ffffff;
         color: #000000;
     }
     QComboBox {
-        background-color: transparent;
+        background-color: #ffffff;
         color: #000000;
         border: 2px solid #bdc3c7; /* 두께를 증가시켜 입체감 추가 */
         border-radius: 6px;
@@ -136,23 +136,23 @@ light_style_sheet = """
         border-radius: 4px;
         padding: 8px;
         font-size: 14px;
-        background-color: transparent; /* 기본 흰색 배경 */
+        background-color: #ffffff; /* 기본 흰색 배경 */
         color: #000000; /* 기본 검정 텍스트 */
     }
 
     QDialog {
-        background-color: transparent; /* 기본 다이얼로그 흰색 배경 */
+        background-color: #ffffff; /* 기본 다이얼로그 흰색 배경 */
         color: #000000; /* 기본 텍스트 검정 */
         border: 1px solid #dcdcdc; /* 연한 회색 테두리 */
     }
 
     QScrollArea {
-        background-color: transparent; /* 스크롤 영역 기본 흰색 배경 */
+        background-color: #ffffff; /* 스크롤 영역 기본 흰색 배경 */
         color: #000000; /* 기본 텍스트 검정 */
     }
 
     QMessageBox {
-        background-color: transparent; /* 메시지 박스 기본 흰색 배경 */
+        background-color: #ffffff; /* 메시지 박스 기본 흰색 배경 */
         color: #000000; /* 기본 텍스트 검정 */
     }
 
@@ -270,7 +270,7 @@ dark_style_sheet = """
     }
     QStatusBar {
         font-family: 'Tahoma';
-        background-color: transparent;
+        background-color: #2b2b2b;
         font-size: 10px;
         color: white;
     }
@@ -281,12 +281,12 @@ dark_style_sheet = """
         border: 1px solid #5a5a5a;
         border-radius: 5px;
         padding: 8px;
-        background-color: transparent;
+        background-color: #3c3c3c;
         color: #eaeaea;  /* 입력 텍스트 색상 */
         font-size: 14px;
     }
     QTextEdit {
-        background-color: transparent;  /* 배경색 */
+        background-color: #3c3c3c;  /* 배경색 */
         color: #eaeaea;  /* 텍스트 색상 */
         font-family: 'Tahoma';  /* 폰트 */
         font-size: 14px;  /* 폰트 크기 */
@@ -295,12 +295,12 @@ dark_style_sheet = """
         padding: 8px;  /* 내부 여백 */
     }
     QLabel {
-        background-color: transparent;  /* 내부 위젯 배경색 */
+        background-color: #2b2b2b;  /* 내부 위젯 배경색 */
         color: white;            /* 글자 색 */
         font-size: 14px;
     }
     QTableWidget {
-        background-color: transparent;  /* 테이블 전체 배경 */
+        background-color: #2b2b2b;  /* 테이블 전체 배경 */
         gridline-color: #5a5a5a;  /* 셀 간격선 색상 */
         color: #eaeaea;  /* 셀 텍스트 색상 */
         font-size: 14px;
@@ -330,7 +330,7 @@ dark_style_sheet = """
         border: 1px solid #5a5a5a;
     }
     QHeaderView {
-        background-color: transparent;  /* 헤더 전체 배경 */
+        background-color: #2b2b2b;  /* 헤더 전체 배경 */
         border: none;
     }
     QListWidget {
@@ -357,7 +357,7 @@ dark_style_sheet = """
     }
     QTabWidget::pane {
         border-top: 2px solid #5a5a5a;
-        background-color: transparent;
+        background-color: #2b2b2b;
     }
     QTabWidget::tab-bar {
         left: 5px;
@@ -378,19 +378,19 @@ dark_style_sheet = """
         color: #ffffff;
     }
     QDialog {
-        background-color: transparent;  /* 다이얼로그 배경색 */
+        background-color: #2b2b2b;  /* 다이얼로그 배경색 */
         color: #eaeaea;
         border: 1px solid #5a5a5a;
         font-size: 14px;
     }
     QScrollArea {
-        background-color: transparent;  /* 다이얼로그 배경색 */
+        background-color: #2b2b2b;  /* 다이얼로그 배경색 */
         color: #eaeaea;
         border: 1px solid #5a5a5a;
         font-size: 14px;
     }
     QMessageBox {
-        background-color: transparent;  /* 메시지 박스 배경색 */
+        background-color: #2b2b2b;  /* 메시지 박스 배경색 */
         color: #eaeaea;  /* 메시지 텍스트 색상 */
         font-size: 14px;
         border: 1px solid #5a5a5a;
