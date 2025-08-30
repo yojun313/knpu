@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QFileDialog, QSizePolicy, QAbstractItemView, QMessag
 import subprocess
 import os
 from ui.status import printStatus
+from libs.path import safe_path
 import platform
 
 def makeFileFinder(main_window, localDirectory=None):
@@ -51,6 +52,7 @@ def makeFileFinder(main_window, localDirectory=None):
 
         def open_in_external_app(self, file_path):
             try:
+                file_path = safe_path(file_path)
                 printStatus(self.main,
                     f"{os.path.basename(file_path)} 여는 중...")
                 if os.name == 'nt':  # Windows
@@ -96,6 +98,7 @@ def makeFileFinder(main_window, localDirectory=None):
     return EmbeddedFileDialog(main_window, localDirectory)
 
 def openFileExplorer(path):
+    path = safe_path(path)
     # 저장된 폴더를 파일 탐색기로 열기
     if platform.system() == "Windows":
         os.startfile(path)
