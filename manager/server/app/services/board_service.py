@@ -46,7 +46,6 @@ def add_version_bg(doc):
                 f"Release Date: {doc["releaseDate"]}\n"
                 f"ChangeLog: {doc["changeLog"]}\n"
                 f"Version Features: {doc["features"]}\n"
-                f"Version Status: {doc["status"]}\n"
                 f"Version Detail: \n{doc["details"]}\n"
             )
             sendPushOver(msg, key)
