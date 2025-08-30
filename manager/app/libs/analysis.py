@@ -16,6 +16,7 @@ from ui.status import printStatus
 from PIL import Image
 from core.setting import get_setting
 import re
+from libs.path import safe_path
 
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 warnings.filterwarnings("ignore")
@@ -276,7 +277,7 @@ class DataProcess:
 
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
+        with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def NaverNewsStatisticsAnalysis(self, data, file_path):
@@ -497,7 +498,7 @@ class DataProcess:
 
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
+        with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def NaverNewsReplyAnalysis(self, data, file_path):
@@ -688,7 +689,7 @@ class DataProcess:
 
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
+        with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def NaverNewsRereplyAnalysis(self, data, file_path):
@@ -852,7 +853,7 @@ class DataProcess:
         """
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
+        with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def NaverCafeArticleAnalysis(self, data, file_path):
@@ -986,7 +987,7 @@ class DataProcess:
 
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
+        with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def NaverCafeReplyAnalysis(self, data, file_path):
@@ -1071,7 +1072,7 @@ class DataProcess:
 
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
+        with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def YouTubeArticleAnalysis(self, data, file_path):
@@ -1400,7 +1401,7 @@ class DataProcess:
            - 예: Like-View 비율과 Comment-View 비율이 강한 양의 상관관계를 보이는지, Likes와 Views 간에 어떤 상관이 있는지 등을 시각적으로 파악할 수 있습니다.
         """
         description_file_path = os.path.join(output_dir, "description.txt")
-        with open(description_file_path, 'w', encoding="utf-8", errors="ignore") as file:
+        with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
 
     def YouTubeReplyAnalysis(self, data, file_path):
@@ -1718,7 +1719,7 @@ class DataProcess:
             - 'Reply Like', 'ReplyTimeDelta' 등의 수치 컬럼 간 상관관계를 나타냅니다.
 
         """
-        with open(os.path.join(output_dir, "description.txt"), "w", encoding="utf-8", errors="ignore") as f:
+        with open(safe_path(os.path.join(output_dir, "description.txt")), "w", encoding="utf-8", errors="ignore") as f:
             f.write(description_text)
 
     def YouTubeRereplyAnalysis(self, data, file_path):
@@ -2028,7 +2029,7 @@ class DataProcess:
         12. correlation_matrix.csv / correlation_matrix.png
             - 'Rereply Like', 'RereplyTimeDelta' 등의 수치 컬럼 간 상관관계를 나타냅니다.
         """
-        with open(os.path.join(output_dir, "description.txt"), "w", encoding="utf-8", errors="ignore") as f:
+        with open(safe_path(os.path.join(output_dir, "description.txt")), "w", encoding="utf-8", errors="ignore") as f:
             f.write(description_text)
 
     def wordcloud(self, parent, data, folder_path, date, max_words, split_option, exception_word_list, eng=False):
@@ -2172,7 +2173,7 @@ class DataProcess:
                 output_file = os.path.join(
                     folder_path, 'data', f'wordcount_{date[0]}~{date[1]}.csv')
 
-            with open(output_file, mode="w", newline="", encoding="utf-8", errors="ignore") as file:
+            with open(safe_path(output_file), mode="w", newline="", encoding="utf-8", errors="ignore") as file:
                 writer = csv.writer(file)
                 # 헤더 작성
                 writer.writerow(["word", "count"])
@@ -2415,6 +2416,6 @@ class DataProcess:
             "  · correlation_heatmap.png : 상관관계 히트맵(해당 시)",
             "  · label_heatmap.png    : 레이블 히트맵(option2)",
         ]
-        with open(os.path.join(out_dir, "description.txt"), "w",
+        with open(safe_path(os.path.join(out_dir, "description.txt")), "w",
                 encoding="utf-8", errors="ignore") as f:
             f.write("\n".join(desc))

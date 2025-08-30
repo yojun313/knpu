@@ -524,7 +524,7 @@
           </property>
           <widget class="QWidget" name="tab_userlist">
            <attribute name="title">
-            <string>User List</string>
+            <string>사용자 목록</string>
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>

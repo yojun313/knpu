@@ -28,6 +28,7 @@ from PyQt5.QtWidgets import (
 from urllib.parse import unquote
 from libs.console import *
 from libs.viewer import *
+from libs.path import *
 from ui.table import *
 from ui.status import *
 from ui.finder import *
@@ -431,7 +432,7 @@ class Manager_Database:
             openConsole("CSV로 저장")
             printStatus(self.main, "다운로드 중...")
 
-            with open(local_zip, "wb") as f, tqdm(
+            with open(safe_path(local_zip), "wb") as f, tqdm(
                 total=total_size,
                 file=sys.stdout,
                 unit="B",
