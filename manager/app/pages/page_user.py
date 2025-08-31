@@ -106,13 +106,4 @@ class Manager_User:
         # User List
         if index == 0:
             self.main.ctrld.activated.connect(self.deleteUser)
-            self.main.ctrll.activated.connect(
-                lambda: self.toolbox_DBlistItem_view(True))
-            self.main.ctrla.activated.connect(
-                lambda: self.toolbox_DBlistItem_view(True))
-
             self.main.cmdd.activated.connect(self.deleteUser)
-            self.main.cmdl.activated.connect(
-                lambda: self.toolbox_DBlistItem_view(True))
-            self.main.cmda.activated.connect(
-                lambda: self.toolbox_DBlistItem_view(True))
