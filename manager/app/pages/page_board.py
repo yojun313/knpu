@@ -116,8 +116,7 @@ class Manager_Board:
                 printStatus(self.main)
 
                 from ui.dialogs import ViewVersionDialog
-                dialog = ViewVersionDialog(
-                    self.main, version_data, self.main.style_html)
+                dialog = ViewVersionDialog(self.main, version_data)
                 dialog.exec_()
 
         except Exception as e:
@@ -195,8 +194,7 @@ class Manager_Board:
                 bug_data = self.origin_bug_data[selectedRow]
                 printStatus(self.main)
                 from ui.dialogs import ViewBugDialog
-                dialog = ViewBugDialog(
-                    self.main, bug_data, self.main.style_html)
+                dialog = ViewBugDialog(self.main, bug_data)
                 dialog.exec_()
 
         except Exception as e:
@@ -261,7 +259,7 @@ class Manager_Board:
                 printStatus(self.main)
 
                 from ui.dialogs import ViewPostDialog
-                dialog = ViewPostDialog(self.main, post_data, self.main.style_html)
+                dialog = ViewPostDialog(self.main, post_data)
                 dialog.exec_()
 
                 self.refreshPostBoard()

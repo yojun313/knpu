@@ -491,8 +491,7 @@ class Crawler(CrawlerModule):
 
         if option in [1, 2, 4]:
             self.makeCSV(tableName=self.replyDB, columns=reply_column)
-            self.makeCSV(tableName=self.statisticsDB,
-                         columns=statistiscs_column)
+            self.makeCSV(tableName=self.statisticsDB, columns=statistiscs_column)
             if option == 2:
                 self.makeCSV(tableName=self.rereplyDB, columns=rereply_column)
 

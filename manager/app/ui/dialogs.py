@@ -3,28 +3,13 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
     QTextEdit, QDialogButtonBox, QComboBox, QLabel, QDateEdit, QLineEdit, QHBoxLayout,
-    QShortcut, QApplication, QFileDialog, QInputDialog
+    QShortcut, QFileDialog, QInputDialog
 )
 from services.api import *
 from services.logging import *
 from PyQt5.QtGui import QKeySequence, QFont
 from datetime import datetime
 
-def _add_field(layout: QVBoxLayout, title: str, content: str, *, monospace: bool = False) -> QTextEdit:
-    label = QLabel(f"<b>{title}</b>")
-    layout.addWidget(label)
-
-    edit = QTextEdit()
-    edit.setReadOnly(True)
-    edit.setAcceptRichText(False)  # 안전하게 플레인 텍스트만
-    edit.setPlainText("" if content is None else str(content))
-    if monospace:
-        font = QFont("Consolas")  # 또는 "Courier New", 시스템에 없는 경우 기본 대체
-        font.setStyleHint(QFont.Monospace)
-        edit.setFont(font)
-        edit.setLineWrapMode(QTextEdit.NoWrap)
-    layout.addWidget(edit)
-    return edit
 
 
 class BaseDialog(QDialog):
@@ -40,6 +25,16 @@ class BaseDialog(QDialog):
         super().showEvent(event)
         for te in self.findChildren(QTextEdit):
             te.setTabChangesFocus(True)
+    
+    def add_label(self, layout, title, content, monospace=False, readonly=True):
+        layout.addWidget(QLabel(f"<b>{title}</b>"))
+        text = QTextEdit(content)
+        text.setReadOnly(readonly)
+        if monospace:
+            f = QFont("Consolas"); f.setStyleHint(QFont.Monospace)
+            text.setFont(f); text.setLineWrapMode(QTextEdit.NoWrap)
+        layout.addWidget(text)
+        return text
 
 
 class DBInfoDialog(BaseDialog):
@@ -349,23 +344,20 @@ class AddVersionDialog(BaseDialog):
 
         layout = QVBoxLayout(self)
 
-        # Version Num (QLineEdit 유지)
+        # Version Num (QLineEdit)
         layout.addWidget(QLabel('<b>Version Num:</b>'))
         self.version_num_input = QLineEdit()
         self.version_num_input.setText(self.version)
         layout.addWidget(self.version_num_input)
 
-        # ChangeLog (QTextEdit - _add_field 사용 후 editable로)
-        self.changelog_input = _add_field(layout, "ChangeLog:", "", monospace=True)
-        self.changelog_input.setReadOnly(False)
+        # ChangeLog (monospace=True, editable)
+        self.changelog_input = self.add_label(layout, "ChangeLog:", "", monospace=True, readonly=False)
 
-        # Version Features
-        self.version_features_input = _add_field(layout, "Version Features:", "", monospace=False)
-        self.version_features_input.setReadOnly(False)
+        # Version Features (일반 글꼴, editable)
+        self.version_features_input = self.add_label(layout, "Version Features:", "", monospace=False, readonly=False)
 
-        # Detail
-        self.detail_input = _add_field(layout, "Detail:", "", monospace=True)
-        self.detail_input.setReadOnly(False)
+        # Detail (monospace=True, editable)
+        self.detail_input = self.add_label(layout, "Detail:", "", monospace=True, readonly=False)
 
         # Submit
         self.submit_button = QPushButton('Submit')
@@ -381,8 +373,7 @@ class AddVersionDialog(BaseDialog):
         self.data = [version_num, changelog, version_features, detail]
 
         QMessageBox.information(
-            self,
-            'Input Data',
+            self, 'Input Data',
             f'Version Num: {version_num}\n'
             f'ChangeLog: {changelog}\n'
             f'Version Features: {version_features}\n'
@@ -416,12 +407,17 @@ class AddBugDialog(BaseDialog):
         self.bug_title_input = QLineEdit()
         layout.addWidget(self.bug_title_input)
 
-        # Bug Detail (_add_field → editable)
-        self.bug_detail_input = _add_field(layout, "Bug Detail:", "", monospace=True)
+        # Bug Detail (BaseDialog.add_label → editable + monospace)
+        self.bug_detail_input = self.add_label(
+            layout,
+            "Bug Detail:",
+            "",
+            monospace=True,
+            readonly=False
+        )
         self.bug_detail_input.setPlaceholderText(
             '버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해주세요\n오류 로그는 자동으로 전송됩니다'
         )
-        self.bug_detail_input.setReadOnly(False)
 
         # Submit
         self.submit_button = QPushButton('Submit')
@@ -441,11 +437,14 @@ class AddBugDialog(BaseDialog):
             'bug_detail': bug_detail
         }
 
-        QMessageBox.information(self, 'Input Data',
-                                f'User Name: {userName}\n'
-                                f'Version Num: {version_num}\n'
-                                f'Bug Title: {bug_title}\n'
-                                f'Bug Detail: {bug_detail}')
+        QMessageBox.information(
+            self,
+            'Input Data',
+            f'User Name: {userName}\n'
+            f'Version Num: {version_num}\n'
+            f'Bug Title: {bug_title}\n'
+            f'Bug Detail: {bug_detail}'
+        )
         self.accept()
 
 
@@ -467,15 +466,19 @@ class AddPostDialog(BaseDialog):
         self.post_title_input = QLineEdit()
         layout.addWidget(self.post_title_input)
 
-        # Post Text (_add_field → editable)
-        self.post_text_input = _add_field(layout, "Post Text:", "", monospace=True)
-        self.post_text_input.setReadOnly(False)
+        # Post Text (BaseDialog.add_label → editable + monospace)
+        self.post_text_input = self.add_label(
+            layout,
+            "Post Text:",
+            "",
+            monospace=True,
+            readonly=False
+        )
 
-        # Post
+        # Post 버튼
         self.submit_button = QPushButton('Post')
         self.submit_button.clicked.connect(self.submit)
         layout.addWidget(self.submit_button)
-
 
     def submit(self):
         post_title = self.post_title_input.text()
@@ -486,14 +489,17 @@ class AddPostDialog(BaseDialog):
             'post_text': post_text,
         }
 
-        QMessageBox.information(self, 'New Post',
-                                f'Post Title: {post_title}\n'
-                                f'Post Text: {post_text}')
+        QMessageBox.information(
+            self,
+            'New Post',
+            f'Post Title: {post_title}\n'
+            f'Post Text: {post_text}'
+        )
         self.accept()
 
 
 class ViewBugDialog(BaseDialog):
-    def __init__(self, parent, bug_data: dict, style_html=None):  # style_html은 더 이상 사용하지 않지만 시그니처 유지
+    def __init__(self, parent, bug_data: dict):  # style_html은 더 이상 사용하지 않지만 시그니처 유지
         super().__init__(parent)
         self.setWindowTitle(f"Version {bug_data.get('versionName','')} Bug Details")
         self.resize(500, 600)
@@ -504,19 +510,18 @@ class ViewBugDialog(BaseDialog):
     def _build_ui(self):
         layout = QVBoxLayout(self)
 
-        # 필드 추가 (내용 긴 것들은 monospace)
-        _add_field(layout, "User Name",   self.bug_data.get("writerName", ""))
-        _add_field(layout, "Version Num", self.bug_data.get("versionName", ""))
-        _add_field(layout, "Bug Title",   self.bug_data.get("bugTitle", ""))
-        _add_field(layout, "DateTime",    self.bug_data.get("datetime", ""))
-        _add_field(layout, "Bug Detail",  self.bug_data.get("bugText", ""), monospace=True)
-        _add_field(layout, "Program Log", self.bug_data.get("programLog", ""), monospace=True)
+        self.add_label(layout, "User Name",   self.bug_data.get("writerName", ""))
+        self.add_label(layout, "Version Num", self.bug_data.get("versionName", ""))
+        self.add_label(layout, "Bug Title",   self.bug_data.get("bugTitle", ""))
+        self.add_label(layout, "DateTime",    self.bug_data.get("datetime", ""))
+        self.add_label(layout, "Bug Detail",  self.bug_data.get("bugText", ""), monospace=True)
+        self.add_label(layout, "Program Log", self.bug_data.get("programLog", ""), monospace=True)
 
 
 class ViewVersionDialog(BaseDialog):
-    def __init__(self, parent, version_data, style_html=None):  # style_html 유지
+    def __init__(self, parent, version_data):  # style_html 유지
         super().__init__(parent)
-        self.version_data = version_data  # [num, date, changelog, features, status, detail]
+        self.version_data = version_data  # [num, date, changelog, features, detail]
         self.setWindowTitle(f"Version {version_data[0]} Details")
         self.resize(500, 500)
         self._build_ui()
@@ -524,15 +529,15 @@ class ViewVersionDialog(BaseDialog):
     def _build_ui(self):
         layout = QVBoxLayout(self)
 
-        _add_field(layout, "Version Num",      self.version_data[0])
-        _add_field(layout, "Release Date",     self.version_data[1])
-        _add_field(layout, "ChangeLog",        self.version_data[2], monospace=True)
-        _add_field(layout, "Version Features", self.version_data[3])
-        _add_field(layout, "Detail",           self.version_data[4], monospace=True)
+        self.add_label(layout, "Version Num",      self.version_data[0])
+        self.add_label(layout, "Release Date",     self.version_data[1])
+        self.add_label(layout, "ChangeLog",        self.version_data[2], monospace=True)
+        self.add_label(layout, "Version Features", self.version_data[3])
+        self.add_label(layout, "Detail",           self.version_data[4], monospace=True)
 
 
 class ViewPostDialog(BaseDialog):
-    def __init__(self, parent, post_data: dict, style_html=None):  # style_html 유지
+    def __init__(self, parent, post_data: dict):  # style_html 유지
         super().__init__(parent)
         self.post_data = post_data
         self.setWindowTitle("Post View")
@@ -542,10 +547,10 @@ class ViewPostDialog(BaseDialog):
     def _build_ui(self):
         layout = QVBoxLayout(self)
 
-        _add_field(layout, "User Name", self.post_data.get("writerName", ""))
-        _add_field(layout, "Post Title", self.post_data.get("title", ""))
-        _add_field(layout, "DateTime", self.post_data.get("datetime", ""))
-        _add_field(layout, "Post Text", self.post_data.get("text", ""), monospace=True)
+        self.add_label(layout, "User Name", self.post_data.get("writerName", ""))
+        self.add_label(layout, "Post Title", self.post_data.get("title", ""))
+        self.add_label(layout, "DateTime", self.post_data.get("datetime", ""))
+        self.add_label(layout, "Post Text", self.post_data.get("text", ""), monospace=True)
 
 
 class EditPostDialog(BaseDialog):
@@ -1819,7 +1824,7 @@ class EditHomePaperDialog(BaseDialog):
         self.in_link = QLineEdit(self.data.get("link", ""))
 
         for lbl, wid in [
-            ("연도 (예: 2024)", self.in_year),
+            ("연도 (예: 2025)", self.in_year),
             ("제목", self.in_title),
             ("저자들 (쉼표로 구분)", self.in_authors),
             ("컨퍼런스/저널", self.in_conf),
@@ -1860,18 +1865,12 @@ class ViewHomePaperDialog(BaseDialog):
         self.setWindowTitle("논문 정보")
         self.resize(500, 400)
         layout = QVBoxLayout(self)
-        print(data)
-        def add_label(title, content):
-            layout.addWidget(QLabel(f"<b>{title}</b>"))
-            text = QTextEdit(content)
-            text.setReadOnly(True)
-            layout.addWidget(text)
 
-        add_label("제목", data.get("title", ""))
-        add_label("저자", ", ".join(data.get("authors", [])))
-        add_label("컨퍼런스/저널", data.get("conference", ""))
-        add_label("링크", data.get("link", ""))
-        add_label("연도", str(data.get("year", "")))
+        self.add_label(layout, "제목", data.get("title", ""))
+        self.add_label(layout, "저자", ", ".join(data.get("authors", [])))
+        self.add_label(layout, "컨퍼런스/저널", data.get("conference", ""))
+        self.add_label(layout, "링크", data.get("link", ""))
+        self.add_label(layout, "연도", str(data.get("year", "")))
     
 
 class ViewHomeMemberDialog(BaseDialog):
@@ -1881,19 +1880,13 @@ class ViewHomeMemberDialog(BaseDialog):
         self.resize(500, 400)
         layout = QVBoxLayout(self)
 
-        def add_label(title, content):
-            layout.addWidget(QLabel(f"<b>{title}</b>"))
-            text = QTextEdit(content)
-            text.setReadOnly(True)
-            layout.addWidget(text)
-
-        add_label("성명", data.get("name", ""))
-        add_label("직책", data.get("position", ""))
-        add_label("소속", data.get("affiliation", ""))
-        add_label("이메일", data.get("email", ""))
-        add_label("학력", "\n".join(data.get("학력", [])) if isinstance(data.get("학력", []), list) else str(data.get("학력", "")))
-        add_label("경력", "\n".join(data.get("경력", [])) if isinstance(data.get("경력", []), list) else str(data.get("경력", "")))
-        add_label("연구", "\n".join(data.get("연구", [])) if isinstance(data.get("연구", []), list) else str(data.get("연구", "")))
+        self.add_label(layout, "성명", data.get("name", ""))
+        self.add_label(layout, "직책", data.get("position", ""))
+        self.add_label(layout, "소속", data.get("affiliation", ""))
+        self.add_label(layout, "이메일", data.get("email", ""))
+        self.add_label(layout, "학력", "\n".join(data.get("학력", [])) if isinstance(data.get("학력", []), list) else str(data.get("학력", "")))
+        self.add_label(layout, "경력", "\n".join(data.get("경력", [])) if isinstance(data.get("경력", []), list) else str(data.get("경력", "")))
+        self.add_label(layout, "연구", "\n".join(data.get("연구", [])) if isinstance(data.get("연구", []), list) else str(data.get("연구", "")))
 
 
 class ViewHomeNewsDialog(BaseDialog):
@@ -1903,13 +1896,7 @@ class ViewHomeNewsDialog(BaseDialog):
         self.resize(500, 400)
         layout = QVBoxLayout(self)
 
-        def add_label(title, content):
-            layout.addWidget(QLabel(f"<b>{title}</b>"))
-            text = QTextEdit(content)
-            text.setReadOnly(True)
-            layout.addWidget(text)
-
-        add_label("제목", data.get("title", ""))
-        add_label("내용", data.get("content", ""))
-        add_label("날짜", data.get("date", ""))
-        add_label("URL", data.get("url", ""))        
+        self.add_label(layout, "제목", data.get("title", ""))
+        self.add_label(layout, "내용", data.get("content", ""))
+        self.add_label(layout, "날짜", data.get("date", ""))
+        self.add_label(layout, "URL", data.get("url", ""))        
