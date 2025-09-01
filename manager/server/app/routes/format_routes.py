@@ -15,7 +15,7 @@ def download_engkor_list():
         filename="engkor_list.csv"
     )
 
-@router.post("/exception")
+@router.get("/exception")
 def download_exception_list():
     file_path = os.path.join(DATA_DIR, "exception_list.csv")
     return FileResponse(
