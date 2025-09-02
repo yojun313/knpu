@@ -449,33 +449,53 @@ class Manager_Analysis:
                     except_yes_selected = dialog.data['except_yes_selected']
                     split_option = dialog.data['split_option']
                     split_custom = dialog.data['split_custom']
+                    
+                    try:
+                        start_dt = pd.to_datetime(str(startdate), format='%Y%m%d', errors='coerce')
+                        end_dt   = pd.to_datetime(str(enddate),   format='%Y%m%d', errors='coerce')
+                    except Exception:
+                        start_dt = end_dt = pd.NaT
+
+                    if pd.isna(start_dt) or pd.isna(end_dt):
+                        QMessageBox.warning(self.main, "Wrong Form",
+                                            "시작일/종료일 형식이 올바르지 않습니다.\nYYYYMMDD 형식으로 입력하세요.")
+                        continue
+
+                    if end_dt < start_dt:
+                        QMessageBox.warning(self.main, "Wrong Form",
+                                            "종료일이 시작일보다 앞설 수 없습니다.")
+                        continue
+
+                    startdate = start_dt.strftime('%Y%m%d')
+                    enddate   = end_dt.strftime('%Y%m%d')
+                    
                     # Calculate total periods based on the input period
+                    def months_between_inclusive(s: datetime, e: datetime) -> int:
+                        # s와 e가 같은 달이면 1, 그 이상이면 월 차이 + 1 (양끝 달 포함)
+                        return (e.year - s.year) * 12 + (e.month - s.month) + 1
 
                     if period == '1y':
-                        total_periods = (
-                            1 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
+                        # 연도 포함 개수(양끝 포함)
+                        years = (end_dt.year - start_dt.year) + 1
+                        total_periods = years / int(period[:-1])  # period[:-1] == '1'
                     elif period in ['6m', '3m', '1m']:
-                        if startdate[:-4] == enddate[:-4]:  # 같은 연도일 경우
-                            total_periods = (
-                                (int(enddate[4:6]) - int(startdate[4:6])) + 1) / int(period[:-1])
-                        else:  # 다른 연도일 경우
-                            total_periods = (
-                                12 / int(period[:-1])) * (int(enddate[:-4]) - int(startdate[:-4]) + 1)
+                        months = months_between_inclusive(start_dt, end_dt)
+                        step = int(period[:-1])  # 6, 3, 1
+                        total_periods = months / step
                     elif period == '1w':
-                        total_days = (datetime.strptime(str(enddate), '%Y%m%d') - datetime.strptime(str(startdate),
-                                                                                                    '%Y%m%d')).days
+                        if start_dt.strftime('%A') != 'Monday':
+                            QMessageBox.warning(self.main, "Wrong Form",
+                                                "분석 시작일이 월요일이 아닙니다\n\n1주 단위 분석에서는 시작일=월요일, 종료일=일요일")
+                            continue
+                        if end_dt.strftime('%A') != 'Sunday':
+                            QMessageBox.warning(self.main, "Wrong Form",
+                                                "분석 종료일이 일요일이 아닙니다\n\n1주 단위 분석에서는 시작일=월요일, 종료일=일요일")
+                            continue
+                        total_days = (end_dt - start_dt).days + 1  # ← 양끝 포함
                         total_periods = total_days // 7
-                        if datetime.strptime(startdate, '%Y%m%d').strftime('%A') != 'Monday':
-                            QMessageBox.warning(self.main, "Wrong Form",
-                                                "분석 시작일이 월요일이 아닙니다\n\n1주 단위 분석에서는 분석 시작일을 월요일, 분석 종료일을 일요일로 설정하십시오")
-                            continue
-                        if datetime.strptime(enddate, '%Y%m%d').strftime('%A') != 'Sunday':
-                            QMessageBox.warning(self.main, "Wrong Form",
-                                                "분석 종료일이 일요일이 아닙니다\n\n1주 단위 분석에서는 분석 시작일을 월요일, 분석 종료일을 일요일로 설정하십시오")
-                            continue
-                    else:  # assuming '1d' or similar daily period
-                        total_days = (datetime.strptime(str(enddate), '%Y%m%d') - datetime.strptime(str(startdate),
-                                                                                                    '%Y%m%d')).days
+                    else:
+                        # 일 단위 가정
+                        total_days = (end_dt - start_dt).days
                         total_periods = total_days
 
                     # Check if the total periods exceed the limit when multiplied by the weight
@@ -484,7 +504,7 @@ class Manager_Analysis:
                                             "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
                         continue
 
-                    if split_option in ['평균(Mean)', '중앙값(Median)'] and split_custom is None:
+                    if split_option in ['평균(Mean)', '중앙값(Median)'] and (split_custom is None or str(split_custom).strip() == ''):
                         pass
                     else:
                         split_custom = float(split_custom)
