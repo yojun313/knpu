@@ -14,6 +14,11 @@ __pycache__/
 # macOS에서 생성되는 파일
 .DS_Store
 
+# Windows에서 생성되는 파일
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
 # Ignore .exe files
 *.exe
 
@@ -22,7 +27,7 @@ __pycache__/
 *.iml
 *.iws
 *.ipr
-.idea/misc.xml
+.vscode/
 *.xml
 
 # 환경 변수 및 로그
@@ -31,4 +36,23 @@ logs/
 records/
 temp/
 
-.idea/
+# 빌드 및 배포 결과물
+build/
+dist/
+*.egg-info/
+.eggs/
+*.manifest
+*.spec
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# 테스트 및 커버리지
+.coverage
+htmlcov/
+.cache/
+.pytest_cache/
+
+# 기타
+*.log
+.DS_Store
