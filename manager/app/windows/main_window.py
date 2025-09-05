@@ -185,7 +185,7 @@ class MainWindow(QMainWindow):
             self.managerBoardObj.setBoardShortcut()
         # WEB
         elif index == 4:
-            printStatus(self, "홈페이지 수정")
+            printStatus(self, "https://knpu.re.kr")
             self.managerWebObj.setWebShortcut()
         # USER
         elif index == 5:
