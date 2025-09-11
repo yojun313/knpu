@@ -4,6 +4,7 @@ import gc
 import shutil
 import traceback
 import platform
+import socket
 from pathlib import Path
 from datetime import datetime
 from packaging import version
@@ -139,10 +140,14 @@ class MainWindow(QMainWindow):
                 print(traceback.format_exc())
                 self.closeBootscreen()
                 printStatus(self)
-                msg = f'[ Admin CRITICAL Notification ]\n\nThere is Error in MANAGER Booting\n\nError Log: {traceback.format_exc()}'
+                msg = f'[ Admin CRITICAL Notification ]\n\nThere is Error in MANAGER Booting\n\nPC: {socket.gethostname()}\n\nError Log: {traceback.format_exc()}'
                 sendPushOver(msg)
-                QMessageBox.critical(
-                    self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
+                QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
+                
+                if checkNewVersion():
+                    self.closeBootscreen()
+                    updateProgram(self)
+                
                 QMessageBox.information(
                     self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
                 os._exit(0)
