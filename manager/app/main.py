@@ -8,6 +8,7 @@ from windows.splash_window import SplashDialog
 from PyQt5.QtCore import QCoreApplication, Qt
 from core.setting import get_setting, set_setting
 from ui.style import theme_option
+from PyQt5.QtGui import QIcon
 from config import ASSETS_PATH
 
 
@@ -29,6 +30,7 @@ def build_app():
     app.setApplicationName("MANAGER")
     app.setApplicationVersion(VERSION)
     app.setOrganizationName("PAILAB")
+    app.setWindowIcon(QIcon(os.path.join(ASSETS_PATH, 'exe_icon.png')))
 
     # 글꼴
     font_path = os.path.join(ASSETS_PATH, "malgun.ttf")
