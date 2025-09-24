@@ -7,7 +7,6 @@ import warnings
 import traceback
 import subprocess
 import shutil
-import platform
 import uuid
 from io import BytesIO
 
@@ -16,6 +15,7 @@ from tqdm import tqdm
 import requests
 import zipfile
 import bcrypt
+import webbrowser
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QKeySequence, QIcon
@@ -329,25 +329,12 @@ class Manager_Database:
             programBugLog(self.main, traceback.format_exc())
 
     def initLLMChat(self):
-        QMessageBox.information(self.main, "Not Supported", f"지원하지 않는 기능입니다")
-        return
         try:
             printStatus(self.main, "LLM Chat 실행 중")
-            if platform.system() == "Darwin":  # macOS인지 확인
-                osascript_cmd = '''
-                    tell application "iTerm"
-                        activate
-                        set newWindow to (create window with default profile)
-                        tell current session of newWindow
-                            write text "cd /Users/yojunsmacbookprp/Documents/GitHub/BIGMACLAB && source venv/bin/activate && cd .. && cd LLM_API && python3 LLM_Chat.py"
-                        end tell
-                    end tell
-                '''
-                subprocess.Popen(["osascript", "-e", osascript_cmd])
-            else:
-                script_path = os.path.join(os.path.dirname(
-                    __file__), 'assets', "LLM_Chat.exe")
-                subprocess.Popen([script_path])
+            
+            # 기본 브라우저로 URL 열기
+            url = "http://llm.knpu.re.kr"
+            webbrowser.open(url)
 
             userLogging(f'LLM Chat ON')
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
