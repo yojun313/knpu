@@ -669,6 +669,8 @@ class Crawler(CrawlerModule):
 
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverBlogCrawler_obj.CountReturn()
+                    
+                    res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -759,6 +761,8 @@ class Crawler(CrawlerModule):
 
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverCafeCrawler_obj.CountReturn()
+                    
+                    res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -863,6 +867,8 @@ class Crawler(CrawlerModule):
 
                     self.currentDate += self.deltaD
                     self.IntegratedDB = YouTubeCrawler_obj.CountReturn()
+                    
+                    res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
 
                 except Exception as e:
                     error_msg = self.error_detector()
