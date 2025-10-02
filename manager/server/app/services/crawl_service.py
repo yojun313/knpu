@@ -213,15 +213,15 @@ def endCrawlDb(uid: str, error: bool = False):
             {"uid": uid},
             {"$set": {"endTime": 'X'}},
         )
+    else:
+        now_kst = datetime.now(timezone.utc).astimezone(
+            timezone(timedelta(hours=9))
+        ).strftime('%Y-%m-%d %H:%M')
 
-    now_kst = datetime.now(timezone.utc).astimezone(
-        timezone(timedelta(hours=9))
-    ).strftime('%Y-%m-%d %H:%M')
-
-    result = crawlList_db.update_one(
-        {"uid": uid},
-        {"$set": {"endTime": now_kst}},
-    )
+        result = crawlList_db.update_one(
+            {"uid": uid},
+            {"$set": {"endTime": now_kst}},
+        )
 
     if result.matched_count == 0:
         raise NotFoundException("CrawlDB not found")
