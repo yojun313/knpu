@@ -461,6 +461,19 @@ class Crawler(CrawlerModule):
             error_data = self.error_dump(1002, error_msg, self.currentDate_str)
             self.ReturnChecker(error_data)
 
+    def fail_first_crawl(self):
+        msg_text = (
+            "[ CRAWLER STOPPED ]\n\n"
+            f"초기 데이터 수집 불가로 {self.user}님의 {self.DBname} 크롤링이 중단되었습니다\n\n"
+            f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
+        )
+        self.sendPushOver(msg_text, user_key=self.pushoverKey)
+        if self.user != "admin":
+            self.sendPushOver(msg_text, self.admin_pushoverkey)
+        self.DBinfoRecorder(False, True)
+        self.localDBRemover()
+        os._exit(1)
+    
     def Naver_News_Crawler(self, option):
 
         NaverNewsCrawler_obj = NaverNewsCrawler(
@@ -517,16 +530,8 @@ class Crawler(CrawlerModule):
                         keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
                         if dayCount == 0:
-                            msg_text = (
-                                "[ CRAWLER STOPPED ]\n\n"
-                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n\n"
-                                f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
-                            )
-                            self.sendPushOver(
-                                msg_text, user_key=self.pushoverKey)
-                            self.DBinfoRecorder(False, True)
-                            self.localDBRemover()
-                            os._exit(1)
+                            self.fail_first_crawl()
+                            
                         self.currentDate += self.deltaD
                         continue
 
@@ -631,16 +636,8 @@ class Crawler(CrawlerModule):
                         keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
                         if dayCount == 0:
-                            msg_text = (
-                                "[ CRAWLER STOPPED ]\n\n"
-                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n\n"
-                                f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
-                            )
-                            self.sendPushOver(
-                                msg_text, user_key=self.pushoverKey)
-                            self.DBinfoRecorder(False, True)
-                            self.localDBRemover()
-                            os._exit(1)
+                            self.fail_first_crawl()
+                            
                         self.currentDate += self.deltaD
                         continue
 
@@ -722,16 +719,8 @@ class Crawler(CrawlerModule):
                         keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
                         if dayCount == 0:
-                            msg_text = (
-                                "[ CRAWLER STOPPED ]\n\n"
-                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n\n"
-                                f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
-                            )
-                            self.sendPushOver(
-                                msg_text, user_key=self.pushoverKey)
-                            self.DBinfoRecorder(False, True)
-                            self.localDBRemover()
-                            os._exit(1)
+                            self.fail_first_crawl()
+
                         self.currentDate += self.deltaD
                         continue
 
@@ -823,16 +812,8 @@ class Crawler(CrawlerModule):
                         keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
                         if dayCount == 0:
-                            msg_text = (
-                                "[ CRAWLER STOPPED ]\n\n"
-                                f"초기 데이터 수집 불가로 {self.DBname} 크롤링이 중단되었습니다\n\n g"
-                                f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
-                            )
-                            self.sendPushOver(
-                                msg_text, user_key=self.pushoverKey)
-                            self.DBinfoRecorder(False, True)
-                            self.localDBRemover()
-                            os._exit(1)
+                            self.fail_first_crawl()
+
                         self.currentDate += self.deltaD
                         continue
 
