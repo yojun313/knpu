@@ -1664,13 +1664,14 @@ class EditHomeMemberDialog(BaseDialog):
         self.in_aff = QLineEdit(self.data.get("affiliation", ""))
         self.in_section = QLineEdit(self.data.get("section", ""))
         self.in_email = QLineEdit(self.data.get("email", ""))
+        self.in_school = QTextEdit("\n".join(self.data.get("학력", [])))
         self.in_career = QTextEdit("\n".join(self.data.get("경력", [])))
         self.in_research = QTextEdit("\n".join(self.data.get("연구", [])))
 
         for lbl, wid in [
             ("이름", self.in_name), ("포지션", self.in_pos),
             ("소속", self.in_aff), ("구분(section)", self.in_section),
-            ("이메일", self.in_email), ("경력(줄바꿈 구분)", self.in_career),
+            ("이메일", self.in_email), ("학력(줄바꿈 구분)", self.in_school), ("경력(줄바꿈 구분)", self.in_career),
             ("연구(줄바꿈 구분)", self.in_research)
         ]:
             add_row(lbl, wid)
@@ -1717,7 +1718,7 @@ class EditHomeMemberDialog(BaseDialog):
             "section": self.in_section.text().strip(),
             "email": self.in_email.text().strip(),
             # 반드시 포함되어야 하는 필드들
-            "학력": [],  # TODO: 학력 입력 위젯을 나중에 추가하거나 현재 고정값 지정
+            "학력": [l.strip() for l in self.in_school.toPlainText().splitlines() if l.strip()],
             "경력": [l.strip() for l in self.in_career.toPlainText().splitlines() if l.strip()],
             "연구": [l.strip() for l in self.in_research.toPlainText().splitlines() if l.strip()],
         }
