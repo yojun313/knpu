@@ -272,23 +272,23 @@ class Manager_Analysis:
             match selected_options:
                 # ================= 기존 분기 ======================
                 case ['article 분석', 'Naver News']:
-                    self.dataprocess_obj.NaverNewsArticleAnalysis(csv_data, csv_path)
+                    result = self.dataprocess_obj.NaverNewsArticleAnalysis(csv_data, csv_path)
                 case ['statistics 분석', 'Naver News']:
-                    self.dataprocess_obj.NaverNewsStatisticsAnalysis(csv_data, csv_path)
+                    result = self.dataprocess_obj.NaverNewsStatisticsAnalysis(csv_data, csv_path)
                 case ['reply 분석', 'Naver News']:
-                    self.dataprocess_obj.NaverNewsReplyAnalysis(csv_data, csv_path)
+                    result = self.dataprocess_obj.NaverNewsReplyAnalysis(csv_data, csv_path)
                 case ['rereply 분석', 'Naver News']:
-                    self.dataprocess_obj.NaverNewsRereplyAnalysis(csv_data, csv_path)
+                    result = self.dataprocess_obj.NaverNewsRereplyAnalysis(csv_data, csv_path)
                 case ['article 분석', 'Naver Cafe']:
-                    self.dataprocess_obj.NaverCafeArticleAnalysis(csv_data, csv_path)
+                    result = self.dataprocess_obj.NaverCafeArticleAnalysis(csv_data, csv_path)
                 case ['reply 분석', 'Naver Cafe']:
-                    self.dataprocess_obj.NaverCafeReplyAnalysis(csv_data, csv_path)
+                    result = self.dataprocess_obj.NaverCafeReplyAnalysis(csv_data, csv_path)
                 case ['article 분석', 'Google YouTube']:
-                    self.dataprocess_obj.YouTubeArticleAnalysis(csv_data, csv_path)
+                    result = self.dataprocess_obj.YouTubeArticleAnalysis(csv_data, csv_path)
                 case ['reply 분석', 'Google YouTube']:
-                    self.dataprocess_obj.YouTubeReplyAnalysis(csv_data, csv_path)
+                    result = self.dataprocess_obj.YouTubeReplyAnalysis(csv_data, csv_path)
                 case ['rereply 분석', 'Google YouTube']:
-                    self.dataprocess_obj.YouTubeRereplyAnalysis(csv_data, csv_path)
+                    result = self.dataprocess_obj.YouTubeRereplyAnalysis(csv_data, csv_path)
 
                 # ================= 새로 추가된 분기 =================
                 case [opt, _] if opt.lower().startswith("hate") or "혐오" in opt:
@@ -303,20 +303,21 @@ class Manager_Analysis:
                         f"{selected_options[1]} {selected_options[0]} 분석은 지원되지 않는 기능입니다")
                     return
 
-            # 메모리 정리 & 완료 알림
-            del csv_data
-            gc.collect()
-            closeConsole()
+            if result:
+                # 메모리 정리 & 완료 알림
+                del csv_data
+                gc.collect()
+                closeConsole()
 
-            openFileResult(
-                self.main,
-                f"{os.path.basename(csv_path)} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                os.path.join(
-                    os.path.dirname(csv_path),
-                    f"{os.path.splitext(csv_filename)[0]}_analysis" if not hate_mode
-                    else f"{os.path.splitext(csv_filename)[0]}_hate_analysis"
+                openFileResult(
+                    self.main,
+                    f"{os.path.basename(csv_path)} 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                    os.path.join(
+                        os.path.dirname(csv_path),
+                        f"{os.path.splitext(csv_filename)[0]}_analysis" if not hate_mode
+                        else f"{os.path.splitext(csv_filename)[0]}_hate_analysis"
+                    )
                 )
-            )
 
         except Exception as e:
             closeConsole()

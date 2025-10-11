@@ -17,6 +17,7 @@ from PIL import Image
 from core.setting import get_setting
 import re
 from libs.path import safe_path
+from libs.console import closeConsole
 
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 warnings.filterwarnings("ignore")
@@ -35,6 +36,21 @@ class DataProcess:
 
     def __init__(self, main_window):
         self.main = main_window
+        
+    def checkColumns(self, required_columns, columns):
+        # 2. 누락된 컬럼 확인
+        missing_columns = [col for col in required_columns if col not in columns]
+
+        if missing_columns:
+            closeConsole()
+            QMessageBox.warning(
+                self.main,
+                "Warning",
+                f"다음 필수 컬럼이 누락되어 있습니다:\n{', '.join(missing_columns)}\n\n"
+                f"CSV 파일 형식이 올바른지 확인해주세요."
+            )
+            return False
+        return True
 
     def TimeSplitter(self, data):
         # data 형태: DataFrame
@@ -121,14 +137,21 @@ class DataProcess:
         return (width, height)
 
     def NaverNewsArticleAnalysis(self, data, file_path):
+        if not self.checkColumns([
+            "Article Press",
+            "Article Type", 
+            "Article URL",
+            "Article Title", 
+            "Article Text", 
+            "Article Date", 
+            "Article ReplyCnt"
+        ], data.columns):
+            return False
+        
         if 'id' not in data.columns:
             # 1부터 시작하는 연속 번호를 부여
             data.insert(0, 'id', range(1, len(data) + 1))
             
-        if 'Article Press' not in list(data.columns):
-            QMessageBox.warning(self.main, f"Warning",
-                                f"NaverNews Article CSV 형태와 일치하지 않습니다")
-            return
 
         # 'Article Date'를 datetime 형식으로 변환
         data['Article Date'] = pd.to_datetime(
@@ -279,16 +302,31 @@ class DataProcess:
         description_file_path = os.path.join(output_dir, "description.txt")
         with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
+        return True
 
     def NaverNewsStatisticsAnalysis(self, data, file_path):
+        if not self.checkColumns([
+            "Article Press", 
+            "Article Type", 
+            "Article URL", 
+            "Article Title", 
+            "Article Text",
+            "Article Date", 
+            "Article ReplyCnt",
+            "Male", 
+            "Female",
+            "10Y", 
+            "20Y", 
+            "30Y", 
+            "40Y", 
+            "50Y", 
+            "60Y"
+        ], data.columns):
+            return False
+        
         if 'id' not in data.columns:
             # 1부터 시작하는 연속 번호를 부여
             data.insert(0, 'id', range(1, len(data) + 1))
-        
-        if 'Male' not in list(data.columns):
-            QMessageBox.warning(self.main, f"Warning",
-                                f"NaverNews Statistics CSV 형태와 일치하지 않습니다")
-            return
 
         # 'Article Date'를 datetime 형식으로 변환 (오류 발생 시 NaT로 변환)
         data['Article Date'] = pd.to_datetime(
@@ -500,23 +538,36 @@ class DataProcess:
         description_file_path = os.path.join(output_dir, "description.txt")
         with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
+        return True
 
     def NaverNewsReplyAnalysis(self, data, file_path):
+        
+        if not self.checkColumns([
+            'Reply Date',
+            'Reply Text',
+            'Reply Writer',
+            'Rereply Count',
+            'Reply Like',
+            'Reply Bad',
+            'Reply LikeRatio',
+            'Reply Sentiment'
+        ], data.columns):
+            return False
+
+        
         if 'id' not in data.columns:
             # 1부터 시작하는 연속 번호를 부여
             data.insert(0, 'id', range(1, len(data) + 1))
-    
-        if 'Reply Date' not in list(data.columns):
-            QMessageBox.warning(self.main, f"Warning",
-                                f"NaverNews Reply CSV 형태와 일치하지 않습니다")
-            return
 
         # 'Reply Date'를 datetime 형식으로 변환
         data['Reply Date'] = pd.to_datetime(
             data['Reply Date'], errors='coerce')
 
         # 각 열을 숫자로 변환
-        for col in ['Rereply Count', 'Reply Like', 'Reply Bad', 'Reply LikeRatio', 'Reply Sentiment']:
+        numeric_cols = ['Rereply Count', 'Reply Like', 'Reply Bad', 'Reply LikeRatio', 'Reply Sentiment']
+        optional_cols = ['TotalUserComment', 'TotalUserReply', 'TotalUserLike']
+
+        for col in numeric_cols + [c for c in optional_cols if c in data.columns]:
             data[col] = pd.to_numeric(data[col], errors='coerce')
 
         # Reply Text 열이 문자열이 아닌 값이 있거나 NaN일 경우 대비
@@ -686,21 +737,193 @@ class DataProcess:
            - x축은 날짜를, y축은 수량을 나타냅니다.
            - 이를 통해 특정 월에 댓글 활동이 증가하거나 감소한 패턴을 파악할 수 있습니다.
         """
+        
+        if all(col in data.columns for col in ['TotalUserComment', 'TotalUserReply', 'TotalUserLike']):
+            # 1. 사용자별 총합 집계
+            user_activity = data.groupby('Reply Writer').agg({
+                'TotalUserComment': 'max',
+                'TotalUserReply': 'max',
+                'TotalUserLike': 'max'
+            }).sort_values(by='TotalUserComment', ascending=False)
+
+            # 결과 저장
+            user_activity.to_csv(os.path.join(csv_output_dir, "user_activity.csv"), encoding='utf-8-sig')
+
+            # 2. Top 10 사용자 그래프 (댓글 수, 대댓글 수, 좋아요 수)
+            top_user_activity = user_activity.head(10)
+
+            # 총 댓글 수
+            plt.figure(figsize=self.calculate_figsize(len(top_user_activity)))
+            sns.barplot(x=top_user_activity.index, y=top_user_activity['TotalUserComment'], palette='Blues_r')
+            plt.title('Top 10 Users by Total Comments')
+            plt.xlabel('User')
+            plt.ylabel('Total Comments')
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            plt.savefig(os.path.join(graph_output_dir, "top_users_total_comments.png"))
+            plt.close()
+
+            # 총 대댓글 수
+            top_user_reply = top_user_activity.sort_values(by='TotalUserReply', ascending=False)
+            plt.figure(figsize=self.calculate_figsize(len(top_user_reply)))
+            sns.barplot(x=top_user_reply.index, y=top_user_reply['TotalUserReply'], palette='Greens_r')
+            plt.title('Top 10 Users by Total Replies')
+            plt.xlabel('User')
+            plt.ylabel('Total Replies')
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            plt.savefig(os.path.join(graph_output_dir, "top_users_total_replies.png"))
+            plt.close()
+
+            # 총 좋아요 수
+            top_user_like = top_user_activity.sort_values(by='TotalUserLike', ascending=False)
+            plt.figure(figsize=self.calculate_figsize(len(top_user_like)))
+            sns.barplot(x=top_user_like.index, y=top_user_like['TotalUserLike'], palette='Oranges_r')
+            plt.title('Top 10 Users by Total Likes')
+            plt.xlabel('User')
+            plt.ylabel('Total Likes')
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            plt.savefig(os.path.join(graph_output_dir, "top_users_total_likes.png"))
+            plt.close()
+
+            # ------------------- 3. 사용자 활동량 분포 (히스토그램) -------------------
+            plt.figure(figsize=(10, 6))
+            sns.histplot(user_activity['TotalUserComment'], bins=30, kde=True)
+            plt.title('Distribution of Total Comments per User')
+            plt.xlabel('Total Comments')
+            plt.ylabel('User Count')
+            plt.tight_layout()
+            plt.savefig(os.path.join(graph_output_dir, "user_comment_distribution.png"))
+            plt.close()
+
+            plt.figure(figsize=(10, 6))
+            sns.histplot(user_activity['TotalUserReply'], bins=30, kde=True, color='green')
+            plt.title('Distribution of Total Replies per User')
+            plt.xlabel('Total Replies')
+            plt.ylabel('User Count')
+            plt.tight_layout()
+            plt.savefig(os.path.join(graph_output_dir, "user_reply_distribution.png"))
+            plt.close()
+
+            plt.figure(figsize=(10, 6))
+            sns.histplot(user_activity['TotalUserLike'], bins=30, kde=True, color='orange')
+            plt.title('Distribution of Total Likes per User')
+            plt.xlabel('Total Likes')
+            plt.ylabel('User Count')
+            plt.tight_layout()
+            plt.savefig(os.path.join(graph_output_dir, "user_like_distribution.png"))
+            plt.close()
+
+            # ------------------- 4. 사용자 활동량 상관관계 분석 -------------------
+            corr_user = user_activity.corr()
+
+            plt.figure(figsize=(6, 5))
+            sns.heatmap(corr_user, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+            plt.title('Correlation between User Activity Metrics')
+            plt.tight_layout()
+            plt.savefig(os.path.join(graph_output_dir, "user_activity_correlation.png"))
+            plt.close()
+
+            corr_user.to_csv(os.path.join(csv_output_dir, "user_activity_correlation.csv"), encoding='utf-8-sig')
+
+            # ------------------- 5. 활동 상위 10% 사용자 파악 -------------------
+            top_10_percent_threshold = user_activity['TotalUserComment'].quantile(0.9)
+            top_active_users = user_activity[user_activity['TotalUserComment'] >= top_10_percent_threshold]
+            top_active_users.to_csv(os.path.join(csv_output_dir, "top_10_percent_users.csv"), encoding='utf-8-sig')
+
+            # ------------------- 6. 사용자 활동 지수 (가중치 지표) -------------------
+            # 예: 댓글 1점, 대댓글 1.5점, 좋아요 0.5점
+            user_activity['ActivityScore'] = (
+                user_activity['TotalUserComment'] * 1.0 +
+                user_activity['TotalUserReply'] * 1.5 +
+                user_activity['TotalUserLike'] * 0.5
+            )
+
+            user_activity_sorted = user_activity.sort_values(by='ActivityScore', ascending=False)
+            top_user_score = user_activity_sorted.head(10)
+
+            plt.figure(figsize=self.calculate_figsize(len(top_user_score)))
+            sns.barplot(x=top_user_score.index, y=top_user_score['ActivityScore'], palette='Purples_r')
+            plt.title('Top 10 Users by Activity Score')
+            plt.xlabel('User')
+            plt.ylabel('Activity Score')
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            plt.savefig(os.path.join(graph_output_dir, "top_users_activity_score.png"))
+            plt.close()
+
+            user_activity_sorted.to_csv(os.path.join(csv_output_dir, "user_activity_with_score.csv"), encoding='utf-8-sig')
+
+            # 설명 텍스트에 추가
+            description_text += """
+
+        6. 사용자 활동 통계 분석 (user_activity 분석 결과):
+            - 이 분석은 각 사용자의 전체 활동량을 바탕으로 댓글 수, 대댓글 수, 좋아요 수를 집계하고 
+                사용자 간의 활동 패턴을 비교하는 데 초점을 맞추고 있습니다.
+            - 'TotalUserComment', 'TotalUserReply', 'TotalUserLike' 열이 존재할 경우에만 실행됩니다.
+
+            1) user_activity.csv:
+                - 각 사용자가 작성한 총 댓글 수, 총 대댓글 수, 총 좋아요 수를 집계한 파일입니다.
+                - 동일 작성자에 대해 여러 댓글이 존재할 수 있으므로, 가장 큰 누적값을 기준으로 정리됩니다.
+                - 이를 통해 사용자의 전체 활동 규모를 한눈에 파악할 수 있습니다.
+
+            2) top_users_total_comments.png / top_users_total_replies.png / top_users_total_likes.png:
+                - 각각 댓글 수, 대댓글 수, 좋아요 수 기준으로 상위 10명의 사용자를 시각화한 막대 그래프입니다.
+                - 댓글 중심 활동자, 대댓글 중심 활동자, 좋아요를 많이 받은 사용자를 비교할 수 있습니다.
+                - 그래프를 통해 활동 패턴의 불균형(소수의 활동 집중 현상 등)도 확인 가능합니다.
+
+            3) user_comment_distribution.png / user_reply_distribution.png / user_like_distribution.png:
+                - 사용자 전체의 활동량 분포를 보여주는 히스토그램입니다.
+                - 대부분의 사용자가 낮은 활동량을 보이는 ‘긴 꼬리(long tail)’ 현상을 시각적으로 파악할 수 있습니다.
+                - KDE(확률밀도곡선)가 함께 표시되어 평균적인 활동 수준과 분포의 치우침 정도를 확인할 수 있습니다.
+
+            4) user_activity_correlation.png:
+                - 댓글 수, 대댓글 수, 좋아요 수 간의 상관관계를 보여주는 히트맵입니다.
+                - 양의 상관관계가 높을 경우, 댓글을 많이 작성한 사용자가 대댓글과 좋아요도 많이 받는 경향이 있음을 의미합니다.
+                - 음의 상관관계가 있을 경우, 특정 활동 유형(예: 댓글)과 다른 활동(예: 좋아요 수집)이 반비례할 가능성을 나타냅니다.
+
+            5) top_10_percent_users.csv:
+                - 전체 사용자 중 댓글 수 기준 상위 10%에 해당하는 활동적인 사용자 목록입니다.
+                - 활발한 사용자 그룹을 별도로 분석하거나, 영향력 있는 사용자군을 파악하는 데 유용합니다.
+
+            6) user_activity_with_score.csv / top_users_activity_score.png:
+                - 댓글, 대댓글, 좋아요 각각에 가중치를 부여해 산출한 ‘활동 지수(Activity Score)’를 기반으로 정렬한 결과입니다.
+                    (기본 가중치: 댓글×1.0 + 대댓글×1.5 + 좋아요×0.5)
+                - 활동 지수는 단순 활동량보다 “참여의 질적 수준”을 반영하며, 
+                    활발한 커뮤니티 참여자나 인플루언서형 사용자를 선별하는 데 도움이 됩니다.
+                - top_users_activity_score.png는 활동 지수가 높은 상위 10명의 사용자를 시각화한 그래프입니다.
+
+            🔍 분석 활용 예시:
+                - 댓글 수 대비 좋아요 수의 비율이 높은 사용자를 통해 영향력 있는 의견 리더를 식별할 수 있습니다.
+                - 활동량이 많으나 좋아요 수가 적은 사용자는 논쟁적이거나 비판적인 성향을 보일 가능성이 있습니다.
+                - 상위 10% 사용자군의 활동 시점과 감성 분포를 결합 분석하면 커뮤니티의 주요 트렌드를 파악할 수 있습니다.
+            """
 
         # 설명을 txt 파일로 저장
         description_file_path = os.path.join(output_dir, "description.txt")
         with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
+        return True
 
     def NaverNewsRereplyAnalysis(self, data, file_path):
+        if not self.checkColumns([
+            "Reply_ID", 
+            "Rereply Writer", 
+            "Rereply Date", 
+            "Rereply Text", 
+            "Rereply Like",
+            "Rereply Bad", 
+            "Rereply LikeRatio", 
+            "Rereply Sentiment", 
+            "Article URL", 
+            'Article Day'
+        ], data.columns):
+            return False
+        
         if 'id' not in data.columns:
             # 1부터 시작하는 연속 번호를 부여
             data.insert(0, 'id', range(1, len(data) + 1))
-            
-        if 'Rereply Date' not in list(data.columns):
-            QMessageBox.warning(self.main, f"Warning",
-                                f"NaverNews Rereply CSV 형태와 일치하지 않습니다")
-            return
 
         # 'Rereply Date'를 datetime 형식으로 변환 (오류 발생 시 NaT로 변환)
         data['Rereply Date'] = pd.to_datetime(
@@ -855,16 +1078,26 @@ class DataProcess:
         description_file_path = os.path.join(output_dir, "description.txt")
         with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
+        return True
 
     def NaverCafeArticleAnalysis(self, data, file_path):
+        if not self.checkColumns([
+            "NaverCafe Name", 
+            "NaverCafe MemberCount", 
+            "Article Writer", 
+            "Article Title",
+            "Article Text", 
+            "Article Date", 
+            "Article ReadCount", 
+            "Article ReplyCount", 
+            "Article URL"
+        ], data.columns):
+            return False
+        
         if 'id' not in data.columns:
             # 1부터 시작하는 연속 번호를 부여
             data.insert(0, 'id', range(1, len(data) + 1))
 
-        if 'NaverCafe Name' not in list(data.columns):
-            QMessageBox.warning(self.main, f"Warning",
-                                f"NaverCafe Article CSV 형태와 일치하지 않습니다")
-            return
         # 'Article Date'를 datetime 형식으로 변환
         data['Article Date'] = pd.to_datetime(data['Article Date'])
         for col in ['NaverCafe MemberCount', 'Article ReadCount', 'Article ReplyCount']:
@@ -989,17 +1222,22 @@ class DataProcess:
         description_file_path = os.path.join(output_dir, "description.txt")
         with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
+        return True
 
     def NaverCafeReplyAnalysis(self, data, file_path):
+        if not self.checkColumns([
+            "Reply Num", 
+            "Reply Writer", 
+            "Reply Date",
+            'Reply Text', 
+            'Article URL', 
+            'Article Day'
+        ], data.columns):
+            return False
+        
         if 'id' not in data.columns:
             # 1부터 시작하는 연속 번호를 부여
             data.insert(0, 'id', range(1, len(data) + 1))
-
-        # 'Article URL' 열이 있는지 확인
-        if 'Article URL' not in list(data.columns):
-            QMessageBox.warning(self.main, "Warning",
-                                "NaverCafe Reply CSV 형태와 일치하지 않습니다")
-            return
 
         # 'Reply Date'를 datetime 형식으로 변환
         data['Reply Date'] = pd.to_datetime(data['Reply Date'])
@@ -1074,17 +1312,24 @@ class DataProcess:
         description_file_path = os.path.join(output_dir, "description.txt")
         with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
+        return True
 
     def YouTubeArticleAnalysis(self, data, file_path):
+        if not self.checkColumns([
+            'YouTube Channel', 
+            'Article URL', 
+            'Article Title', 
+            'Article Text',
+            'Article Date', 
+            'Article ViewCount', 
+            'Article Like', 
+            'Article ReplyCount'
+        ], data.columns):
+            return False
+        
         if 'id' not in data.columns:
             # 1부터 시작하는 연속 번호를 부여
             data.insert(0, 'id', range(1, len(data) + 1))
-
-        # 1) 필수 컬럼 검증
-        if 'YouTube Channel' not in data.columns:
-            QMessageBox.warning(self.main, "Warning",
-                                "YouTube Article CSV 형태와 일치하지 않습니다.")
-            return
 
         # 2) 날짜, 숫자 컬럼 변환
         data['Article Date'] = pd.to_datetime(
@@ -1403,29 +1648,23 @@ class DataProcess:
         description_file_path = os.path.join(output_dir, "description.txt")
         with open(safe_path(description_file_path), 'w', encoding="utf-8", errors="ignore") as file:
             file.write(description_text)
+        return True
 
     def YouTubeReplyAnalysis(self, data, file_path):
+        if not self.checkColumns([
+            'Reply Num', 
+            'Reply Writer', 
+            'Reply Date',
+            'Reply Text', 
+            'Reply Like', 
+            'Article URL', 
+            'Article Day'
+        ], data.columns):
+            return False
+
         if 'id' not in data.columns:
             # 1부터 시작하는 연속 번호를 부여
             data.insert(0, 'id', range(1, len(data) + 1))
-
-        # 0) 필수 컬럼 검증
-        required_cols = [
-            "Reply Writer",  # 댓글 작성자
-            "Reply Date",  # 댓글 작성 시간
-            "Reply Text",  # 댓글 내용
-            "Reply Like",  # 댓글 좋아요 수
-            "Article URL",  # 영상 URL
-            "Article Day"  # (영상)이 올라온 날짜
-        ]
-        missing = [col for col in required_cols if col not in data.columns]
-        if missing:
-            QMessageBox.warning(
-                self.main,
-                "Warning",
-                f"필수 컬럼이 누락되었습니다: {missing}\nCSV 형태를 확인하세요."
-            )
-            return
 
         # 1) 날짜형 / 숫자형 변환
         # - 댓글이 작성된 날짜
@@ -1721,29 +1960,23 @@ class DataProcess:
         """
         with open(safe_path(os.path.join(output_dir, "description.txt")), "w", encoding="utf-8", errors="ignore") as f:
             f.write(description_text)
+        return True
 
     def YouTubeRereplyAnalysis(self, data, file_path):
+        if not self.checkColumns([
+            'Rereply Num', 
+            'Rereply Writer', 
+            'Rereply Date',
+            'Rereply Text', 
+            'Rereply Like', 
+            'Article URL', 
+            'Article Day'
+        ], data.columns):
+            return False
+        
         if 'id' not in data.columns:
             # 1부터 시작하는 연속 번호를 부여
             data.insert(0, 'id', range(1, len(data) + 1))
-
-        # 0) 필수 컬럼 검증
-        required_cols = [
-            "Rereply Writer",  # 대댓글 작성자
-            "Rereply Date",  # 대댓글 작성 시간
-            "Rereply Text",  # 대댓글 내용
-            "Rereply Like",  # 대댓글 좋아요 수
-            "Article URL",  # 영상 URL
-            "Article Day"  # (영상)이 올라온 날짜
-        ]
-        missing = [col for col in required_cols if col not in data.columns]
-        if missing:
-            QMessageBox.warning(
-                self.main,
-                "Warning",
-                f"필수 컬럼이 누락되었습니다: {missing}\nCSV 형태를 확인하세요."
-            )
-            return
 
         # 1) 날짜형 / 숫자형 변환
         # - 대댓글이 작성된 날짜
@@ -2031,6 +2264,7 @@ class DataProcess:
         """
         with open(safe_path(os.path.join(output_dir, "description.txt")), "w", encoding="utf-8", errors="ignore") as f:
             f.write(description_text)
+        return True
 
     def wordcloud(self, parent, data, folder_path, date, max_words, split_option, exception_word_list, eng=False):
         parent = parent
