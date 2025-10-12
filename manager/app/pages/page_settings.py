@@ -656,7 +656,7 @@ class Manager_Setting(QDialog):
         help_text_label = QLabel("아래 링크를 클릭하여 사용 설명서를 확인하세요.")
         help_text_label.setAlignment(Qt.AlignLeft)
 
-        link1_label = QLabel('<a href="https://knpu.re.kr/tool">MANAGER</a>')
+        link1_label = QLabel('<a href="https://knpu.re.kr/manager">MANAGER</a>')
         link1_label.setOpenExternalLinks(True)
         link1_label.setAlignment(Qt.AlignLeft)
 
