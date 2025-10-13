@@ -13,6 +13,7 @@ from starlette.responses import FileResponse
 from io import BytesIO
 import pandas as pd
 from app.libs.progress import send_message
+from app.services.user_service import log_user
 import time
 import uuid
 import os
@@ -255,7 +256,7 @@ def updateCount(uid: str, dataInfo):
     )
 
 
-def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
+def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
     def cleanup_folder_and_zip(folder_path: str, zip_path: str):
         # 폴더와 ZIP 파일을 삭제
         shutil.rmtree(folder_path, ignore_errors=True)
@@ -270,6 +271,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption):
         raise NotFoundException("CrawlDB not found")
 
     targetDB = crawlDb['name']
+    log_user(userUid, f"Requested to save crawl DB: {targetDB}")
 
     pid = saveOption['pid']
 
