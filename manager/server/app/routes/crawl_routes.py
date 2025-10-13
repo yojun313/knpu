@@ -66,5 +66,4 @@ def update_crawl_db_datainfo_error(uid: str):
 
 @router.post("/{uid}/save")
 def save_crawl_db(uid: str, save_option: SaveCrawlDbOption = Body(...), userUid = Depends(verify_token)):
-    log_user(userUid, f"Requested to save crawl DB: {uid}")
-    return saveCrawlDb(uid, save_option)
+    return saveCrawlDb(uid, save_option, userUid)
