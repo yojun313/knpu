@@ -136,8 +136,8 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         # 상태 처리
         status = "Done"
         endt = crawlDb.get('endTime')
-        if not endt:
-            crawlDb['endTime'] = '크롤링 중'
+        if "%" in endt:
+            crawlDb['endTime'] = endt
             status = 'Working'
             activeCrawl += 1
         elif endt == 'X':
@@ -242,10 +242,13 @@ def updateCount(uid: str, dataInfo):
 
     dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb['name']))[0]
     data_info_dict = dataInfo.model_dump()
+    percent = data_info_dict['percent']
+    
+    del data_info_dict['percent']
 
-    result = crawlList_db.update_one(
+    crawlList_db.update_one(
         {"uid": uid},
-        {"$set": {"dataInfo": data_info_dict, "dbSize": dbsize}},
+        {"$set": {"dataInfo": data_info_dict, "dbSize": dbsize, "endTime": percent}},
     )
 
     return JSONResponse(

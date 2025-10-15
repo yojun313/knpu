@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query, Body, Depends
-from app.models.crawl_model import CrawlDbCreateDto, CrawlLogCreateDto, DataInfo, SaveCrawlDbOption
+from app.models.crawl_model import CrawlDbCreateDto, CrawlLogCreateDto, CountDataInfo, SaveCrawlDbOption
 from app.services.crawl_service import (
     createCrawlDb,
     deleteCrawlDb,
@@ -49,7 +49,7 @@ def update_crawl_db_datainfo(uid: str):
 
 
 @router.put("/{uid}/count")
-def update_crawl_db_count(uid: str, dataInfo: DataInfo):
+def update_crawl_db_count(uid: str, dataInfo: CountDataInfo):
     return updateCount(uid, dataInfo)
 
 
