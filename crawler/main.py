@@ -583,6 +583,7 @@ class Crawler(CrawlerModule):
 
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverNewsCrawler_obj.CountReturn()
+                    self.IntegratedDB['percent'] = percent
                     
                     res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
 
@@ -666,6 +667,7 @@ class Crawler(CrawlerModule):
 
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverBlogCrawler_obj.CountReturn()
+                    self.IntegratedDB['percent'] = percent
                     
                     res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
 
@@ -750,6 +752,7 @@ class Crawler(CrawlerModule):
 
                     self.currentDate += self.deltaD
                     self.IntegratedDB = NaverCafeCrawler_obj.CountReturn()
+                    self.IntegratedDB['percent'] = percent
                     
                     res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
 
@@ -848,6 +851,7 @@ class Crawler(CrawlerModule):
 
                     self.currentDate += self.deltaD
                     self.IntegratedDB = YouTubeCrawler_obj.CountReturn()
+                    self.IntegratedDB['percent'] = percent
                     
                     res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
 

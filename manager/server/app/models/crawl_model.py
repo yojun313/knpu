@@ -8,6 +8,13 @@ class DataInfo(BaseModel):
     totalReplyCnt: int
     totalRereplyCnt: int
 
+class CountDataInfo(BaseModel):
+    totalArticleCnt: int
+    totalReplyCnt: int
+    totalRereplyCnt: int
+    percent: str
+
+
 class CrawlDbListSchema(BaseModel):
     uid: str
     name: str
