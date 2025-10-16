@@ -139,6 +139,10 @@ def open_csv_from_arg(path, splash):
 
 # ------------------ Main ------------------
 if __name__ == "__main__":
+    # 🟡 Plotly 렌더러 설정을 가장 먼저 추가
+    import plotly.io as pio
+    pio.renderers.default = "browser"   # 또는 "json", "iframe_connected"도 가능
+
     app = QApplication(sys.argv)
 
     # Splash 먼저 띄우기
