@@ -16,7 +16,6 @@ a = Analysis(
         ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/wordcloud', 'wordcloud'),
         ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/pyarrow', 'pyarrow'),
         ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/astor', 'astor'),
-        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/typing_extensions', 'typing_extensions'),
         ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/pynput', 'pynput'),
         ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/IPython', 'IPython'),
         ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/setuptools', 'setuptools'),
