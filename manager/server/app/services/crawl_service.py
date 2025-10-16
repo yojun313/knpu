@@ -42,7 +42,7 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
     ).strftime('%Y-%m-%d %H:%M')
 
     ordered_dict['startTime'] = now_kst
-    ordered_dict['endTime'] = None
+    ordered_dict['endTime'] = "0%"
 
     crawlList_db.insert_one(ordered_dict)
 
