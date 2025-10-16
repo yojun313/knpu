@@ -49,8 +49,8 @@ Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
 [Files]
 ; pyinstaller로 만든 exe가 들어있는 onedir 디렉토리 경로를 지정하세요.
 ; 예: D:\knpu\ANALYZER\exe\ANALYZER_1.0.0
-Source: ".\exe\ANALYZER\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\exe\ANALYZER\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ".\dist\ANALYZER\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\dist\ANALYZER\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Registry]
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue
