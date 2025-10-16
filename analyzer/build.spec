@@ -9,7 +9,7 @@ a = Analysis(
     datas=[
         ('pandasgui/resources', 'pandasgui/resources'),
         ('pandasgui/widgets', 'pandasgui/widgets'),
-        ('venv/Lib/site-packages/qtstylish/compiled', 'qtstylish/compiled'),
+        ('venv/Lib/site-packages/qtstylish', 'qtstylish'),
     ],
     hiddenimports=[
         # pandasgui 내부에서 동적으로 import되는 모듈이 있을 수 있으므로 필요시 여기에 추가
