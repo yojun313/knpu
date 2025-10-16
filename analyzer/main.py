@@ -97,15 +97,24 @@ class SplashDialog(QDialog):
 # ------------------ CSV Loader Functions ------------------
 def open_csv_from_dialog(splash):
     splash.updateStatus("Opening file dialog...")
+    
+    # 🟡 사용자 Documents 폴더의 MANAGER 경로를 기본으로 설정
+    documents_dir = os.path.join(os.path.expanduser("~"), "Documents", "MANAGER")
+
+    # MANAGER 폴더가 없으면 Documents 폴더로 fallback
+    if not os.path.isdir(documents_dir):
+        documents_dir = os.path.join(os.path.expanduser("~"), "Documents")
+        
     file_path, _ = QFileDialog.getOpenFileName(
         None,
         "CSV 파일 열기",
-        "",
+        documents_dir,
         "CSV Files (*.csv);;All Files (*)"
     )
     if not file_path:
         print("파일이 선택되지 않았습니다.")
         sys.exit()
+        
     splash.updateStatus("Loading CSV...")
     df = pd.read_csv(file_path)
     splash.updateStatus("CSV loaded")
