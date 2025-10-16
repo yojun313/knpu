@@ -47,10 +47,14 @@ DisableProgramGroupPage=yes
 Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
 
 [Files]
-; pyinstaller로 만든 exe가 들어있는 onedir 디렉토리 경로를 지정하세요.
-; 예: D:\knpu\ANALYZER\exe\ANALYZER_1.0.0
+; 메인 exe
 Source: ".\dist\ANALYZER\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+
+; 전체 폴더 복사
 Source: ".\dist\ANALYZER\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; _internal 폴더 명시적으로 지정 (중복 복사 허용)
+Source: ".\dist\ANALYZER\_internal\*"; DestDir: "{app}\_internal"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Registry]
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue

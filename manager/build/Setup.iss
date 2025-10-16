@@ -53,16 +53,9 @@ SetupIconFile="C:\GitHub\knpu\manager\app\assets\download_icon.ico"
 Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
 
 [Files]
-[Files]
-; 메인 exe
-Source: ".\dist\ANALYZER\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-
-; 전체 폴더 복사
-Source: ".\dist\ANALYZER\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-; _internal 폴더 명시적으로 지정 (중복 복사 허용)
-Source: ".\dist\ANALYZER\_internal\*"; DestDir: "{app}\_internal"; Flags: ignoreversion recursesubdirs createallsubdirs
-
+Source: "D:\knpu\MANAGER\exe\MANAGER_{#MyAppVersion}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\knpu\MANAGER\exe\MANAGER_{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Registry]
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue
