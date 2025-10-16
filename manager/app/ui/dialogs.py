@@ -676,7 +676,7 @@ class StatAnalysisDialog(BaseDialog):
             specific = ["article 분석", "reply 분석", "rereply 분석"]
 
         # ③ ‘혐오도 분석’(공통)을 마지막에 추가
-        all_labels = specific + ["혐오도 분석"]
+        all_labels = specific + ["혐오도 분석", "직접 분석"]
 
         # ④ 체크박스 생성
         for label in all_labels:
