@@ -260,14 +260,14 @@ class Manager_Analysis:
 
         if reply == QMessageBox.Yes:
             try:
-                # ✅ 설치파일 다운로드 경로 지정 (TEMP 폴더 사용)
+                openConsole("ANALYZER Download Process")
                 temp_dir = tempfile.gettempdir()
                 installer_path = os.path.join(temp_dir, "ANALYZER.exe")
 
-                # ✅ 설치 파일 URL (나중에 네가 줄 URL로 교체)
+                # 설치 파일 URL
                 download_url = MANAGER_SERVER_API + "/analysis/download/analyzer"
 
-                # ✅ 다운로드 진행
+                # 다운로드 진행
                 response = requests.get(download_url, stream=True, timeout=600, headers=get_api_headers())
                 response.raise_for_status()
                 total_size = int(response.headers.get('content-length', 0))
@@ -280,6 +280,7 @@ class Manager_Analysis:
                             percent = (downloaded / total_size) * 100
                             print(f"\rANALYZER Installer Download: {percent:.0f}%", end="")
                 print("\nDownload Complete")
+                closeConsole()
 
                 # ✅ 설치 프로그램 실행
                 subprocess.Popen([installer_path], shell=True)
