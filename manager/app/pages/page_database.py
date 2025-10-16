@@ -99,7 +99,7 @@ class Manager_Database:
         class TableWindow(QMainWindow):
             def __init__(self, parent=None, DBuid=None, DBname=None):
                 super(TableWindow, self).__init__(parent)
-                self.setWindowTitle(DBname)
+                self.setWindowTitle(DBname) 
                 self.resize(1600, 1200)
 
                 self.main = parent  # 부모 객체를 저장하여 나중에 사용
