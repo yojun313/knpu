@@ -9,13 +9,46 @@ a = Analysis(
     datas=[
         ('pandasgui/resources', 'pandasgui/resources'),
         ('pandasgui/widgets', 'pandasgui/widgets'),
+
+        # GUI 관련
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/PyQt5', 'PyQt5'),
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/PyQt5_sip', 'PyQt5_sip'),
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/PyQtWebEngine', 'PyQtWebEngine'),
+
+        # 데이터 분석 관련
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/pandas', 'pandas'),
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/numpy', 'numpy'),
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/plotly', 'plotly'),
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/wordcloud', 'wordcloud'),
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/pyarrow', 'pyarrow'),
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/astor', 'astor'),
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/typing_extensions', 'typing_extensions'),
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/pynput', 'pynput'),
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/IPython', 'IPython'),
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/setuptools', 'setuptools'),
         ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/qtstylish', 'qtstylish'),
+
+        # Windows 전용 모듈
+        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/pywin32_system32', 'pywin32_system32'),
     ],
     hiddenimports=[
-        # pandasgui 내부에서 동적으로 import되는 모듈이 있을 수 있으므로 필요시 여기에 추가
+        # 기본 GUI 관련
         'PyQt5',
+        'PyQt5.sip',
+        'PyQtWebEngine',
+        # 데이터 분석 관련
         'pandas',
         'numpy',
+        'plotly',
+        'wordcloud',
+        'pyarrow',
+        'astor',
+        'typing_extensions',
+        'pynput',
+        'IPython',
+        'setuptools',
+        # Windows 관련 (조건부)
+        'pywin32',
     ],
     hookspath=[],
     hooksconfig={},
