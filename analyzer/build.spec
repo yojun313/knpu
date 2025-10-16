@@ -39,7 +39,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=True           # 콘솔창 숨기고 싶다면 False로
+    console=True,           # 콘솔창 숨기고 싶다면 False로
     icon='C:/GitHub/knpu/analyzer/pandasgui/resources/images/icon.ico'
 )
 
