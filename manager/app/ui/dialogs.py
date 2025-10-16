@@ -104,13 +104,13 @@ class DBInfoDialog(BaseDialog):
         endtime = self.DBdata['endTime']
 
         try:
-            ElapsedTime = datetime.strptime(
+            duration = datetime.strptime(
                 endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
         except:
-            ElapsedTime = str(
+            duration = str(
                 datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M"))[:-7]
             if endtime == '오류 중단':
-                ElapsedTime = '오류 중단'
+                duration = '오류 중단'
 
         if endtime != '오류 중단':
             endtime = endtime.replace(
@@ -120,19 +120,19 @@ class DBInfoDialog(BaseDialog):
             <div class="version-details">
                 <table>
                     <tr><th>Item</th><th>Details</th></tr>
-                    <tr><td><b>DB Name:</b></td><td>{self.DBdata['name']}</td></tr>
-                    <tr><td><b>DB Size:</b></td><td>{self.DBdata['dbSize']}</td></tr>
-                    <tr><td><b>Crawl Type:</b></td><td>{self.DBdata['crawlType']}</td></tr>
-                    <tr><td><b>Crawl Keyword:</b></td><td>{self.DBdata['keyword']}</td></tr>
-                    <tr><td><b>Crawl Period:</b></td><td>{self.DBdata['startDate']} ~ {self.DBdata['endDate']}</td></tr>
-                    <tr><td><b>Crawl Option:</b></td><td>{crawlOption}</td></tr>
-                    <tr><td><b>Crawl Start:</b></td><td>{starttime}</td></tr>
-                    <tr><td><b>Crawl End:</b></td><td>{endtime}</td></tr>
-                    <tr><td><b>Crawl ElapsedTime:</b></td><td>{ElapsedTime}</td></tr>
-                    <tr><td><b>Crawl Requester:</b></td><td>{self.DBdata['requester']}</td></tr>
-                    <tr><td><b>Crawl Server:</b></td><td>{self.DBdata['crawlCom']}</td></tr>
-                    <tr><td><b>Crawl Speed:</b></td><td>{self.DBdata['crawlSpeed']}</td></tr>
-                    <tr><td><b>Crawl Result:</b></td><td class="detail-content">{CountText}</td></tr>
+                    <tr><td><b>Name</b></td><td>{self.DBdata['name']}</td></tr>
+                    <tr><td><b>Size</b></td><td>{self.DBdata['dbSize']}</td></tr>
+                    <tr><td><b>Type</b></td><td>{self.DBdata['crawlType']}</td></tr>
+                    <tr><td><b>Keyword</b></td><td>{self.DBdata['keyword']}</td></tr>
+                    <tr><td><b>Period</b></td><td>{datetime.strptime(self.DBdata['startDate'], '%Y%m%d').strftime('%Y.%m.%d')} ~ {datetime.strptime(self.DBdata['endDate'], '%Y%m%d').strftime('%Y.%m.%d')}</td></tr>
+                    <tr><td><b>Option</b></td><td>{crawlOption}</td></tr>
+                    <tr><td><b>Start</b></td><td>{starttime}</td></tr>
+                    <tr><td><b>End</b></td><td>{endtime}</td></tr>
+                    <tr><td><b>Duration</b></td><td>{duration}</td></tr>
+                    <tr><td><b>Requester</b></td><td>{self.DBdata['requester']}</td></tr>
+                    <tr><td><b>Server</b></td><td>{self.DBdata['crawlCom']}</td></tr>
+                    <tr><td><b>Speed</b></td><td>{self.DBdata['crawlSpeed']}</td></tr>
+                    <tr><td><b>Result</b></td><td class="detail-content">{CountText}</td></tr>
                 </table>
             </div>
         """
