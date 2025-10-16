@@ -138,7 +138,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         endt = crawlDb.get('endTime')
         if "%" in endt:
             crawlDb['endTime'] = endt
-            status = 'Working'
+            status = endt
             activeCrawl += 1
         elif endt == 'X':
             crawlDb['endTime'] = '오류 중단'
