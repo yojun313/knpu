@@ -5,7 +5,7 @@
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "ANALYZER"
 #define MyAppURL "https://knpu.re.kr"
-#define MyAppExeName MyAppPublisher + "_" + MyAppVersion + ".exe"
+#define MyAppExeName MyAppPublisher + ".exe"
 #define MyAppAssocName MyAppName + " File"
 #define MyAppAssocExt ".myp"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
@@ -24,7 +24,7 @@ DefaultDirName={localappdata}\{#MyAppName}
 PrivilegesRequired=lowest                    
 
 ; 빌드 결과물 이름 및 위치
-OutputBaseFilename=ANALYZER_{#MyAppVersion}
+OutputBaseFilename=ANALYZER
 OutputDir="."
 
 ; 빌드 설정
@@ -49,8 +49,8 @@ Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
 [Files]
 ; pyinstaller로 만든 exe가 들어있는 onedir 디렉토리 경로를 지정하세요.
 ; 예: D:\knpu\ANALYZER\exe\ANALYZER_1.0.0
-Source: ".\exe\ANALYZER_{#MyAppVersion}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\exe\ANALYZER_{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: ".\exe\ANALYZER\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\exe\ANALYZER\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Registry]
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue
