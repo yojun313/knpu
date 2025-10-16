@@ -42,7 +42,6 @@ dist/
 *.egg-info/
 .eggs/
 *.manifest
-*.spec
 
 # Jupyter Notebook
 .ipynb_checkpoints/
