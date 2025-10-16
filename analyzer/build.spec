@@ -10,13 +10,7 @@ a = Analysis(
         ('pandasgui/resources', 'pandasgui/resources'),
         ('pandasgui/widgets', 'pandasgui/widgets'),
 
-        # GUI 관련
-        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/PyQt5', 'PyQt5'),
-        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/PyQt5_sip', 'PyQt5_sip'),
-        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/PyQtWebEngine', 'PyQtWebEngine'),
-
         # 데이터 분석 관련
-        ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/pandas', 'pandas'),
         ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/numpy', 'numpy'),
         ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/plotly', 'plotly'),
         ('C:/Users/skroh/AppData/Local/Programs/Python/Python312/Lib/site-packages/wordcloud', 'wordcloud'),
