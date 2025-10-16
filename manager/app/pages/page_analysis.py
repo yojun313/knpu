@@ -225,6 +225,83 @@ class Manager_Analysis:
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
+    def run_analyzer(self, csv_path, csv_filename):
+        analyzer_path = None
+        possible_paths = [
+            r"C:\Program Files\ANALYZER\ANALYZER.exe",
+            r"C:\Program Files (x86)\ANALYZER\ANALYZER.exe",
+            os.path.expanduser(r"~\AppData\Local\ANALYZER\ANALYZER.exe")
+        ]
+        for p in possible_paths:
+            if os.path.isfile(p):
+                analyzer_path = p
+                break
+
+        if not analyzer_path:
+            # PATH 환경 변수에서 찾기
+            found = shutil.which("ANALYZER.exe")
+            if found:
+                analyzer_path = found
+
+        if analyzer_path:
+            # 설치되어 있으면 바로 실행
+            subprocess.Popen([analyzer_path, csv_path], shell=True)
+            printStatus(self.main, f"ANALYZER로 {csv_filename}을(를) 열었습니다.")
+            return
+
+        # 설치되어 있지 않으면 안내 후 설치 실행
+        reply = QMessageBox.question(
+            self.main,
+            "ANALYZER 없음",
+            "ANALYZER가 설치되어 있지 않습니다.\n지금 설치하시겠습니까?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes
+        )
+
+        if reply == QMessageBox.Yes:
+            try:
+                # ✅ 설치파일 다운로드 경로 지정 (TEMP 폴더 사용)
+                temp_dir = tempfile.gettempdir()
+                installer_path = os.path.join(temp_dir, "ANALYZER.exe")
+
+                # ✅ 설치 파일 URL (나중에 네가 줄 URL로 교체)
+                download_url = MANAGER_SERVER_API + "/download/analyzer"
+
+                # ✅ 다운로드 진행
+                response = requests.get(download_url, stream=True, timeout=600)
+                response.raise_for_status()
+                total_size = int(response.headers.get('content-length', 0))
+                downloaded = 0
+                with open(installer_path, 'wb') as f:
+                    for chunk in response.iter_content(8192):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            percent = (downloaded / total_size) * 100
+                            print(f"\rANALYZER Installer Download: {percent:.0f}%", end="")
+                print("\nDownload Complete")
+
+                # ✅ 설치 프로그램 실행
+                subprocess.Popen([installer_path], shell=True)
+                QMessageBox.information(
+                    self.main,
+                    "설치 시작됨",
+                    "ANALYZER 설치 프로그램이 실행되었습니다.\n설치 완료 후 다시 시도해주세요."
+                )
+
+            except Exception as e:
+                QMessageBox.critical(
+                    self.main,
+                    "설치 실패",
+                    f"ANALYZER 설치 파일 다운로드 또는 실행 중 오류가 발생했습니다.\n\n{e}"
+                )
+        else:
+            QMessageBox.warning(
+                self.main,
+                "ANALYZER 없음",
+                "ANALYZER 설치가 필요합니다."
+            )
+    
     def run_analysis(self):
         try:
             filepath = self.check_file()
@@ -248,6 +325,10 @@ class Manager_Analysis:
             csv_path      = filepath
             csv_filename  = os.path.basename(csv_path)
             csv_data      = pd.read_csv(csv_path, low_memory=False)
+            
+            if selected_options[0] == "직접 분석":
+                self.run_analyzer(csv_path, csv_filename)
+                return  # 이 시점에서 함수 종료
 
             # ── “혐오 분석” 여부 미리 파악 ────────────────────────────
             hate_mode = selected_options[0].lower().startswith("hate") \

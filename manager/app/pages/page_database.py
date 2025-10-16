@@ -287,7 +287,6 @@ class Manager_Database:
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
-    
     def searchAdminMode(self, search_text):
         # ADMIN MODE
         try:
