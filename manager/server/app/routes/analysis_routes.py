@@ -8,9 +8,10 @@ import json
 import io, os
 from urllib.parse import quote  # 한글 파일명 안전 처리용
 
-
 router = APIRouter()
 
+load_dotenv()
+ANALYZER_EXE_PATH = os.getenv("ANALYZER_EXE_PATH")
 
 @router.post("/kemkim")
 async def analysis_kemkim(
@@ -95,3 +96,21 @@ async def hate_measure_route(
         headers={"Content-Disposition": cd_header},
     )
 
+@router.get("/download/analyzer")
+async def download_analyzer():
+    if not os.path.exists(ANALYZER_EXE_PATH):
+        return {"error": "파일을 찾을 수 없습니다."}
+
+    filename = os.path.basename(ANALYZER_EXE_PATH)
+    quoted_filename = quote(filename)
+
+    headers = {
+        "Content-Disposition": f"attachment; filename*=UTF-8''{quoted_filename}"
+    }
+
+    return FileResponse(
+        ANALYZER_EXE_PATH,
+        media_type="application/octet-stream",
+        filename=filename,
+        headers=headers
+    )
