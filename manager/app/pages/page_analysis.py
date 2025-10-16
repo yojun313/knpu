@@ -268,7 +268,7 @@ class Manager_Analysis:
                 download_url = MANAGER_SERVER_API + "/analysis/download/analyzer"
 
                 # ✅ 다운로드 진행
-                response = requests.get(download_url, stream=True, timeout=600)
+                response = requests.get(download_url, stream=True, timeout=600, headers=get_api_headers())
                 response.raise_for_status()
                 total_size = int(response.headers.get('content-length', 0))
                 downloaded = 0
