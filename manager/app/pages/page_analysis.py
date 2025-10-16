@@ -265,7 +265,7 @@ class Manager_Analysis:
                 installer_path = os.path.join(temp_dir, "ANALYZER.exe")
 
                 # ✅ 설치 파일 URL (나중에 네가 줄 URL로 교체)
-                download_url = MANAGER_SERVER_API + "analysis/download/analyzer"
+                download_url = MANAGER_SERVER_API + "/analysis/download/analyzer"
 
                 # ✅ 다운로드 진행
                 response = requests.get(download_url, stream=True, timeout=600)
