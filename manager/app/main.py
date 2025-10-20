@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QFont, QFontDatabase
+from PyQt5.QtGui import QFont, QFontDatabase, QPalette, QColor
 import os
 import sys
 import platform
@@ -25,12 +25,20 @@ def build_app():
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
+    QCoreApplication.setAttribute(Qt.AA_Use96Dpi, True)
 
     app = QApplication([])
     app.setApplicationName("MANAGER")
     app.setApplicationVersion(VERSION)
     app.setOrganizationName("PAILAB")
     app.setWindowIcon(QIcon(os.path.join(ASSETS_PATH, 'exe_icon.png')))
+    
+    if platform.system() == "Windows":
+        app.setStyle("WindowsVista")
+    elif platform.system() == "Darwin":
+        app.setStyle("Fusion")   # macOS도 Fusion이 안정적
+    else:
+        app.setStyle("Fusion")
 
     # 글꼴
     font_path = os.path.join(ASSETS_PATH, "malgun.ttf")
@@ -69,6 +77,35 @@ def build_app():
         set_setting("Theme", theme)
 
     app.setStyleSheet(theme_option[theme])
+    
+    palette = QPalette()
+    if theme == 'default':
+        palette.setColor(QPalette.Window, QColor(240, 240, 240))          # 전체 배경
+        palette.setColor(QPalette.WindowText, Qt.black)                   # 윈도우 텍스트
+        palette.setColor(QPalette.Base, Qt.white)                         # 입력창, 리스트 배경
+        palette.setColor(QPalette.AlternateBase, QColor(225, 225, 225))   # 교차 줄 배경
+        palette.setColor(QPalette.ToolTipBase, Qt.white)                  # 툴팁 배경
+        palette.setColor(QPalette.ToolTipText, Qt.black)                  # 툴팁 텍스트
+        palette.setColor(QPalette.Text, Qt.black)                         # 일반 텍스트
+        palette.setColor(QPalette.Button, QColor(240, 240, 240))          # 버튼 배경
+        palette.setColor(QPalette.ButtonText, Qt.black)                   # 버튼 텍스트
+        palette.setColor(QPalette.BrightText, Qt.red)                     # 경고 강조 텍스트
+        palette.setColor(QPalette.Highlight, QColor(76, 163, 224))        # 하이라이트 색 (파란색)
+        palette.setColor(QPalette.HighlightedText, Qt.white)              # 하이라이트된 글씨 색
+    else:
+        palette.setColor(QPalette.Window, QColor(53, 53, 53))
+        palette.setColor(QPalette.WindowText, Qt.white)
+        palette.setColor(QPalette.Base, QColor(35, 35, 35))
+        palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+        palette.setColor(QPalette.ToolTipBase, Qt.white)
+        palette.setColor(QPalette.ToolTipText, Qt.white)
+        palette.setColor(QPalette.Text, Qt.white)
+        palette.setColor(QPalette.Button, QColor(53, 53, 53))
+        palette.setColor(QPalette.ButtonText, Qt.white)
+        palette.setColor(QPalette.BrightText, Qt.red)
+        palette.setColor(QPalette.Highlight, QColor(142, 45, 197).lighter())
+        palette.setColor(QPalette.HighlightedText, Qt.black)
+    app.setPalette(palette)
 
     return app, theme
 
