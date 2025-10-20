@@ -1625,12 +1625,12 @@ class SelectEtcAnalysisDialog(BaseDialog):
 
         # 기존 혐오도 분석 버튼
         hate_btn = QPushButton("혐오도 분석")
-        hate_btn.clicked.connect(self.analyze_hate)
+        hate_btn.clicked.connect(self.run_analyze_hate)
         layout.addWidget(hate_btn)
 
         # Topic 분석 버튼
         topic_btn = QPushButton("토픽/키워드 분석")
-        topic_btn.clicked.connect(self.analyze_topic)
+        topic_btn.clicked.connect(self.run_analyze_topic)
         layout.addWidget(topic_btn)
 
         self.setLayout(layout)

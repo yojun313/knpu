@@ -315,24 +315,32 @@ def extract_keywords(
         cleaned = text.strip()
         if cleaned:
             try:
-                # 후보어: 명사만 추출
-                tokens = kiwi.tokenize(cleaned, split_complex=False)
-                noun_candidates = [t.form for t in tokens if t.tag in ("NNG", "NNP")]
+                # 긴 텍스트 문장 단위로 분할
+                chunks = split_sentences(cleaned, max_len=500)
 
-                if noun_candidates:
-                    kw = topic_model.extract_keywords(
-                        cleaned,
-                        candidates=noun_candidates,
-                        keyphrase_ngram_range=(1, 2),
-                        stop_words=None,
-                        top_n=top_n,
-                        use_mmr=True,
-                        diversity=0.7
-                    )
-                    keywords_col[idx - 1] = ", ".join([k[0] for k in kw])
-                else:
-                    keywords_col[idx - 1] = ""
-            except Exception:
+                all_keywords = []
+                for chunk in chunks:
+                    tokens = kiwi.tokenize(chunk, split_complex=False)
+                    noun_candidates = [t.form for t in tokens if t.tag in ("NNG", "NNP")]
+
+                    # 후보어 너무 많으면 자르기
+                    noun_candidates = noun_candidates[:500]
+
+                    if noun_candidates:
+                        kw = topic_model.extract_keywords(
+                            chunk,
+                            candidates=noun_candidates,
+                            keyphrase_ngram_range=(1, 2),
+                            stop_words=None,
+                            top_n=top_n,
+                            use_mmr=True,
+                            diversity=0.7
+                        )
+                        all_keywords.extend([k[0] for k in kw])
+
+                keywords_col[idx - 1] = ", ".join(list(dict.fromkeys(all_keywords)))  # 중복 제거
+            except Exception as e:
+                print(f"키워드 추출 오류 ({idx}):", e)
                 keywords_col[idx - 1] = ""
 
         # 진행률 출력
