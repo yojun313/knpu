@@ -25,7 +25,7 @@ load_dotenv()
 MODEL_DIR = os.getenv("MODEL_PATH")  # .env 파일에서 읽기
 
 tokenizer = AutoTokenizer.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
-kor_unsmile_model     = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR, local_files_only=True)
+kor_unsmile_model     = AutoModelForSequenceClassification.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
 kor_unsmile_pipe = TextClassificationPipeline(
     model=kor_unsmile_model,
     tokenizer=tokenizer,
