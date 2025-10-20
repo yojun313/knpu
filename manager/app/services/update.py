@@ -45,7 +45,6 @@ def updateProgram(parent, sc=False):
         def update_process():
             openConsole("Version Update Process")
             msg = (
-                "[ Admin Notification ]\n\n"
                 f"{parent.user} updated {VERSION} -> {newVersionName}\n\n{getUserLocation(parent)}"
             )
             sendPushOver(msg)
