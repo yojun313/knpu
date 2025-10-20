@@ -96,6 +96,52 @@ async def hate_measure_route(
         headers={"Content-Disposition": cd_header},
     )
 
+
+@router.post("/topic")
+async def extract_topic_keywords(
+    option: str = Form(...),
+    csv_file: UploadFile = File(...)
+):
+    """
+    업로드된 CSV의 특정 텍스트 컬럼에서 키워드(토픽)를 추출합니다.
+    """
+    # 1) 옵션 파싱
+    option_dict = json.loads(option)
+    pid = option_dict["pid"]
+    text_col = option_dict.get("text_col", "Text")
+    top_n = option_dict.get("top_n", 5)
+    update_interval = option_dict.get("update_interval", 1000)
+
+    # 2) CSV → DataFrame
+    content = await csv_file.read()
+    df = pd.read_csv(io.StringIO(content.decode("utf-8")))
+
+    # 3) 키워드 추출 실행
+    result_df = extract_keywords(
+        pid=pid,
+        data=df,
+        text_col=text_col,
+        top_n=top_n,
+        update_interval=update_interval,
+    )
+
+    # 4) 결과 CSV 변환
+    buffer = io.BytesIO()
+    result_df.to_csv(buffer, index=False, encoding="utf-8-sig")
+    buffer.seek(0)
+
+    # 5) 스트리밍 응답
+    filename   = f"topic_keywords.csv"
+    media_type = "text/csv"
+    cd_header  = f"attachment; filename*=UTF-8''{quote(filename)}"
+
+    return StreamingResponse(
+        buffer,
+        media_type=media_type,
+        headers={"Content-Disposition": cd_header},
+    )
+
+
 @router.get("/download/analyzer")
 async def download_analyzer():
     if not os.path.exists(ANALYZER_EXE_PATH):
