@@ -1629,9 +1629,9 @@ class SelectEtcAnalysisDialog(BaseDialog):
         layout.addWidget(hate_btn)
 
         # Topic 분석 버튼
-        topic_btn = QPushButton("토픽/키워드 분석")
-        topic_btn.clicked.connect(self.run_analyze_topic)
-        layout.addWidget(topic_btn)
+        # topic_btn = QPushButton("토픽/키워드 분석")
+        # topic_btn.clicked.connect(self.run_analyze_topic)
+        # layout.addWidget(topic_btn)
 
         self.setLayout(layout)
 
