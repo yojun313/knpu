@@ -1661,7 +1661,7 @@ class Manager_Analysis:
             programBugLog(self.main, traceback.format_exc())
 
     def select_etc_analysis(self):
-        dialog = SelectEtcAnalysisDialog(self.run_hate_measure)
+        dialog = SelectEtcAnalysisDialog(self.run_hate_measure, self.run_topic_analysis)
         dialog.exec_()
 
     def run_hate_measure(self):
@@ -1774,6 +1774,124 @@ class Manager_Analysis:
             # 로그
             userLogging(
                 f'ANALYSIS -> HateMeasure({csv_fname}) : col={text_col}, opt={option_num}')
+
+        except Exception as e:
+            programBugLog(self.main, traceback.format_exc())
+
+    def run_topic_analysis(self):
+        try:
+            # 1) CSV 선택(1개)
+            csv_path = self.check_file()
+            if not csv_path:
+                printStatus(self.main)
+                return
+
+            csv_fname = os.path.basename(csv_path)
+
+            # 2) 결과 저장 폴더
+            printStatus(self.main, "결과 CSV를 저장할 위치를 선택하세요")
+            save_dir = QFileDialog.getExistingDirectory(
+                self.main, "결과 CSV를 저장할 위치를 선택하세요", os.path.dirname(csv_path)
+            )
+            if save_dir == "":
+                printStatus(self.main)
+                return
+
+            # 3) 텍스트 열 선택
+            df_headers = pd.read_csv(csv_path, nrows=0)
+            column_names = df_headers.columns.tolist()
+
+            dialog = SelectColumnsDialog(column_names, parent=self.main)
+            dialog.setWindowTitle("토픽/키워드 분석할 텍스트 열 선택")
+            if dialog.exec_() != QDialog.Accepted:
+                printStatus(self.main)
+                return
+
+            sel_cols = dialog.get_selected_columns()
+            if len(sel_cols) != 1:
+                QMessageBox.warning(
+                    self.main, "Wrong Selection", "텍스트 열을 하나만 선택해 주세요."
+                )
+                printStatus(self.main)
+                return
+
+            text_col = sel_cols[0]
+            option_num = 1  # 토픽 분석 옵션
+
+            # 4) 프로세스 등록 / 뷰어
+            pid = str(uuid.uuid4())
+            register_process(pid, "토픽/키워드 분석")
+            viewer = open_viewer(pid)
+
+            option_payload = {
+                "pid": pid,
+                "option_num": option_num,
+                "text_col": text_col,
+                "top_n": 5  # 상위 5개 키워드 추출 (필요시 옵션화 가능)
+            }
+
+            url = MANAGER_SERVER_API + "/analysis/topic"
+
+            # 5) 서버 요청
+            time.sleep(1)
+            send_message(pid, "CSV 업로드 중...")
+            printStatus(self.main, "토픽/키워드 분석 중...")
+
+            with open(safe_path(csv_path), "rb") as fobj:
+                resp = requests.post(
+                    url,
+                    files={
+                        "csv_file": (csv_fname, fobj, "text/csv"),
+                        "option": (None, json.dumps(option_payload), "application/json"),
+                    },
+                    headers=get_api_headers(),
+                    stream=True,
+                    timeout=3600
+                )
+
+            # ─── 오류 처리 ─────────────────────────────────────────
+            if resp.status_code != 200:
+                try:
+                    err = resp.json()
+                    msg = err.get("message") or err.get("error") or "분석 실패"
+                except Exception:
+                    msg = resp.text or "분석 중 알 수 없는 오류가 발생했습니다."
+                QMessageBox.critical(self.main, "토픽 분석 실패", msg)
+                printStatus(self.main)
+                return
+
+            # 6) 응답 CSV 저장
+            out_name = f"topic_{csv_fname}"
+            out_path = os.path.join(save_dir, out_name)
+            total_len = int(resp.headers.get("Content-Length", 0))
+
+            close_viewer(viewer)
+            openConsole("토픽 분석 결과 다운로드")
+
+            with open(safe_path(out_path), "wb") as f, tqdm(
+                total=total_len,
+                unit="B", unit_scale=True, unit_divisor=1024,
+                file=sys.stdout, desc="Downloading",
+                bar_format="{desc}: |{bar}| {percentage:3.0f}% • {n_fmt}/{total_fmt} {unit} • {rate_fmt}"
+            ) as pbar:
+                for chunk in resp.iter_content(8192):
+                    if chunk:
+                        f.write(chunk)
+                        pbar.update(len(chunk))
+
+            closeConsole()
+            printStatus(self.main)
+
+            openFileResult(
+                self.main,
+                f"토픽/키워드 분석이 완료되었습니다.\n\n파일 탐색기에서 확인하시겠습니까?",
+                save_dir
+            )
+
+            # 로그
+            userLogging(
+                f'ANALYSIS -> TopicMeasure({csv_fname}) : col={text_col}, opt={option_num}'
+            )
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())

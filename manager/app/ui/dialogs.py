@@ -1613,37 +1613,35 @@ class SelectColumnsDialog(BaseDialog):
 
 
 class SelectEtcAnalysisDialog(BaseDialog):
-    def __init__(self, analyze_hate):
+    def __init__(self, analyze_hate, analyze_topic):
         super().__init__()
         self.analyze_hate = analyze_hate
+        self.analyze_topic = analyze_topic
         self.initUI()
         self.data = None  # 데이터를 저장할 속성 추가
 
     def initUI(self):
-        self.setWindowTitle('기타 분석')
-        self.resize(300, 100)  # 창 크기를 조정
-        # 레이아웃 생성
         layout = QVBoxLayout()
 
-        # 버튼 생성
-        btn1 = QPushButton('혐오도 분석', self)
+        # 기존 혐오도 분석 버튼
+        hate_btn = QPushButton("혐오도 분석")
+        hate_btn.clicked.connect(self.analyze_hate)
+        layout.addWidget(hate_btn)
 
-        # 버튼에 이벤트 연결
-        btn1.clicked.connect(self.run_analyze_hate)
+        # Topic 분석 버튼
+        topic_btn = QPushButton("토픽/키워드 분석")
+        topic_btn.clicked.connect(self.analyze_topic)
+        layout.addWidget(topic_btn)
 
-        # 버튼 배치를 위한 가로 레이아웃
-        button_layout = QVBoxLayout()
-        button_layout.addWidget(btn1)
-
-        # 레이아웃에 버튼 레이아웃 추가
-        layout.addLayout(button_layout)
-
-        # 레이아웃을 다이얼로그에 설정
         self.setLayout(layout)
 
     def run_analyze_hate(self):
         self.accept()
         self.analyze_hate()
+        
+    def run_analyze_topic(self):
+        self.accept()
+        self.analyze_topic()
 
 
 class EditHomeMemberDialog(BaseDialog):

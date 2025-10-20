@@ -18,23 +18,26 @@ from transformers import (
 )
 import os
 from dotenv import load_dotenv
+from sentence_transformers import SentenceTransformer
 
 load_dotenv() 
 
-MODEL_DIR = os.getenv("KOR_UNSMILE_MODEL_PATH")  # .env 파일에서 읽기
+MODEL_DIR = os.getenv("MODEL_PATH")  # .env 파일에서 읽기
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
-model     = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR, local_files_only=True)
-pipe = TextClassificationPipeline(
-    model=model,
+tokenizer = AutoTokenizer.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
+kor_unsmile_model     = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR, local_files_only=True)
+kor_unsmile_pipe = TextClassificationPipeline(
+    model=kor_unsmile_model,
     tokenizer=tokenizer,
     function_to_apply="sigmoid",
     top_k=None,                                # 전체 레이블 확률 반환
     device=0 if torch.cuda.is_available() else -1,
 )
 
+topic_model = SentenceTransformer(os.path.join(MODEL_DIR, "topic"))
+
 # clean 제외한 8개 혐오·악플 레이블
-hate_labels = [lbl for lbl in model.config.id2label.values() if lbl != "clean"]
+hate_labels = [lbl for lbl in kor_unsmile_model.config.id2label.values() if lbl != "clean"]
 
 
 def start_kemkim(option: KemKimOption, token_data):
@@ -196,7 +199,7 @@ def measure_hate(
     # ───────────────────── 내부 헬퍼 ──────────────────────
     def batch_scores(texts: list[str]) -> list[dict[str, float]]:
         """문장 리스트 → [{label: prob}, ...] (둘째 자리 반올림)"""
-        outs = pipe(
+        outs = kor_unsmile_pipe(
             texts,
             truncation=True,
             batch_size=batch_size,
@@ -216,7 +219,7 @@ def measure_hate(
 
     texts  = data[text_col].fillna("").astype(str).tolist()
     total  = len(texts)
-    labels = list(model.config.id2label.values())
+    labels = list(kor_unsmile_model.config.id2label.values())
 
     send_message(pid, f"[혐오도 분석] '{text_col}' 처리 시작 (총 {total:,} rows)")
 
@@ -269,5 +272,60 @@ def measure_hate(
         data["Clean"] = clean_vals
 
     send_message(pid, "[혐오도 분석] 완료 ✅")
+    return data
+
+def extract_keywords(
+    pid: str,
+    data: pd.DataFrame,
+    text_col: str = "Text",
+    top_n: int = 5,
+    update_interval: int = 1_000,
+) -> pd.DataFrame:
+    """
+    ▸ pid         : 진행 상황 메시지 전송용 ID
+    ▸ data        : 원본 DataFrame
+    ▸ text_col    : 키워드 추출 대상 컬럼
+    ▸ top_n       : 추출할 키워드 개수
+    """
+
+    # ① 대상 열 탐색 -----------------------------------------------------------
+    if text_col not in data.columns:
+        matches = [c for c in data.columns if "text" in c.lower()]
+        if not matches:
+            raise ValueError("'Text'라는 글자를 포함한 열을 찾을 수 없습니다")
+        text_col = matches[0]
+        send_message(pid, f"🔍 '{text_col}' 열 자동 선택")
+
+    texts = data[text_col].fillna("").astype(str).tolist()
+    total = len(texts)
+
+    send_message(pid, f"[토픽 분석] '{text_col}' 처리 시작 (총 {total:,} rows)")
+
+    keywords_col = [""] * total
+
+    # ② 키워드 추출 루프 --------------------------------------------------------
+    for idx, text in enumerate(texts, 1):
+        cleaned = text.strip()
+        if cleaned:
+            try:
+                kw = topic_model.extract_keywords(
+                    cleaned,
+                    keyphrase_ngram_range=(1, 2),
+                    stop_words=None,
+                    top_n=top_n
+                )
+                # 키워드 문자열로 합치기
+                keywords_col[idx - 1] = ", ".join([k[0] for k in kw])
+            except Exception:
+                keywords_col[idx - 1] = ""
+
+        # 진행률 표시
+        if idx % update_interval == 0 or idx == total:
+            pct = round(idx / total * 100, 2)
+            send_message(pid, f"[토픽 분석] {pct}% 완료 ({idx:,}/{total:,})")
+
+    # ③ 결과 열 추가 -----------------------------------------------------------
+    data["Keywords"] = keywords_col
+    send_message(pid, "[토픽 분석] 완료 ✅")
     return data
 
