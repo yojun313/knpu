@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 
 load_dotenv() 
 
-MODEL_DIR = os.getenv("MODEL_PATH")  # .env 파일에서 읽기
+MODEL_DIR = os.getenv("KOR_UNSMILE_MODEL_PATH")  # .env 파일에서 읽기
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, local_files_only=True)
 model     = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR, local_files_only=True)
