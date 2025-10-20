@@ -141,7 +141,7 @@ class MainWindow(QMainWindow):
                 print(traceback.format_exc())
                 self.closeBootscreen()
                 printStatus(self)
-                msg = f'[ Admin CRITICAL Notification ]\n\nThere is Error in MANAGER Booting\n\nPC: {socket.gethostname()}\n\nError Log: {traceback.format_exc()}'
+                msg = f'[ CRITICAL ]\n\nThere is Error in MANAGER Booting\n\nPC: {socket.gethostname()}\n\nError Log: {traceback.format_exc()}'
                 sendPushOver(msg)
                 QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
                 
