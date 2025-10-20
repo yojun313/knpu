@@ -1744,7 +1744,7 @@ class Manager_Analysis:
                 return
 
             # 7) 응답 CSV 저장
-            out_name = f"hate_opt{option_num}_{csv_fname}"
+            out_name = f"hate_{csv_fname}"
             out_path = os.path.join(save_dir, out_name)
             total_len = int(resp.headers.get("Content-Length", 0))
 
