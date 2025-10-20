@@ -18,7 +18,7 @@ from transformers import (
 )
 import os
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
+from keybert import KeyBERT
 
 load_dotenv() 
 
@@ -34,7 +34,7 @@ kor_unsmile_pipe = TextClassificationPipeline(
     device=0 if torch.cuda.is_available() else -1,
 )
 
-topic_model = SentenceTransformer(os.path.join(MODEL_DIR, "topic"))
+topic_model = KeyBERT(os.path.join(MODEL_DIR, "topic"))
 
 # clean 제외한 8개 혐오·악플 레이블
 hate_labels = [lbl for lbl in kor_unsmile_model.config.id2label.values() if lbl != "clean"]
@@ -294,7 +294,7 @@ def extract_keywords(
         if not matches:
             raise ValueError("'Text'라는 글자를 포함한 열을 찾을 수 없습니다")
         text_col = matches[0]
-        send_message(pid, f"🔍 '{text_col}' 열 자동 선택")
+        send_message(pid, f"'{text_col}' 열 자동 선택")
 
     texts = data[text_col].fillna("").astype(str).tolist()
     total = len(texts)
