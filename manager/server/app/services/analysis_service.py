@@ -292,6 +292,23 @@ def extract_keywords(
     ▸ 명사만 추출하여 후보어로 사용
     """
 
+    import re
+
+    def split_sentences(text, max_len=512):
+        # 간단한 문장 단위 split (정제 필요시 더 정교하게 가능)
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        chunks = []
+        current = ""
+        for sent in sentences:
+            if len(current) + len(sent) < max_len:
+                current += " " + sent
+            else:
+                chunks.append(current.strip())
+                current = sent
+        if current:
+            chunks.append(current.strip())
+        return chunks
+
     # ① 대상 열 탐색 -----------------------------------------------------------
     if text_col not in data.columns:
         matches = [c for c in data.columns if "text" in c.lower()]
