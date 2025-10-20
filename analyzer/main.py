@@ -7,6 +7,8 @@ from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QDialog, QProgressBar
 
 # pandasgui
+import plotly
+import plotly.io as pio
 from pandasgui.gui import show
 
 # 경로는 필요에 따라 수정
