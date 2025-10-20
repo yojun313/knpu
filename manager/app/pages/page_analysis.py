@@ -1818,7 +1818,20 @@ class Manager_Analysis:
             text_col = sel_cols[0]
             option_num = 1  # 토픽 분석 옵션
 
-            # 4) 프로세스 등록 / 뷰어
+            # 4) 키워드 개수(top_n) 옵션 입력
+            top_n, ok = QInputDialog.getInt(
+                self.main,
+                "키워드 개수 설정",
+                "추출할 키워드 개수를 입력하세요 (기본: 5):",
+                value=5,
+                min=1,
+                max=50
+            )
+            if not ok:
+                printStatus(self.main)
+                return
+
+            # 5) 프로세스 등록 / 뷰어
             pid = str(uuid.uuid4())
             register_process(pid, "토픽/키워드 분석")
             viewer = open_viewer(pid)
@@ -1827,12 +1840,12 @@ class Manager_Analysis:
                 "pid": pid,
                 "option_num": option_num,
                 "text_col": text_col,
-                "top_n": 5  # 상위 5개 키워드 추출 (필요시 옵션화 가능)
+                "top_n": top_n
             }
 
             url = MANAGER_SERVER_API + "/analysis/topic"
 
-            # 5) 서버 요청
+            # 6) 서버 요청
             time.sleep(1)
             send_message(pid, "CSV 업로드 중...")
             printStatus(self.main, "토픽/키워드 분석 중...")
@@ -1860,7 +1873,7 @@ class Manager_Analysis:
                 printStatus(self.main)
                 return
 
-            # 6) 응답 CSV 저장
+            # 7) 응답 CSV 저장
             out_name = f"topic_{csv_fname}"
             out_path = os.path.join(save_dir, out_name)
             total_len = int(resp.headers.get("Content-Length", 0))
@@ -1890,7 +1903,7 @@ class Manager_Analysis:
 
             # 로그
             userLogging(
-                f'ANALYSIS -> TopicMeasure({csv_fname}) : col={text_col}, opt={option_num}'
+                f'ANALYSIS -> TopicMeasure({csv_fname}) : col={text_col}, top_n={top_n}'
             )
 
         except Exception as e:

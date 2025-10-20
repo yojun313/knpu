@@ -19,6 +19,8 @@ from transformers import (
 import os
 from dotenv import load_dotenv
 from keybert import KeyBERT
+from sentence_transformers import SentenceTransformer
+
 
 load_dotenv() 
 
@@ -34,7 +36,8 @@ kor_unsmile_pipe = TextClassificationPipeline(
     device=0 if torch.cuda.is_available() else -1,
 )
 
-topic_model = KeyBERT(os.path.join(MODEL_DIR, "topic"))
+embed_model = SentenceTransformer(os.path.join(MODEL_DIR, "topic"), device="cuda" if torch.cuda.is_available() else "cpu")
+topic_model = KeyBERT(embed_model)
 
 # clean 제외한 8개 혐오·악플 레이블
 hate_labels = [lbl for lbl in kor_unsmile_model.config.id2label.values() if lbl != "clean"]
@@ -286,6 +289,7 @@ def extract_keywords(
     ▸ data        : 원본 DataFrame
     ▸ text_col    : 키워드 추출 대상 컬럼
     ▸ top_n       : 추출할 키워드 개수
+    ▸ 명사만 추출하여 후보어로 사용
     """
 
     # ① 대상 열 탐색 -----------------------------------------------------------
@@ -301,30 +305,42 @@ def extract_keywords(
 
     send_message(pid, f"[토픽 분석] '{text_col}' 처리 시작 (총 {total:,} rows)")
 
+    # ② Kiwi 초기화 (한 번만)
+    kiwi = Kiwi(num_workers=-1)
+
     keywords_col = [""] * total
 
-    # ② 키워드 추출 루프 --------------------------------------------------------
+    # ③ 루프 시작 ---------------------------------------------------------------
     for idx, text in enumerate(texts, 1):
         cleaned = text.strip()
         if cleaned:
             try:
-                kw = topic_model.extract_keywords(
-                    cleaned,
-                    keyphrase_ngram_range=(1, 2),
-                    stop_words=None,
-                    top_n=top_n
-                )
-                # 키워드 문자열로 합치기
-                keywords_col[idx - 1] = ", ".join([k[0] for k in kw])
+                # 후보어: 명사만 추출
+                tokens = kiwi.tokenize(cleaned, split_complex=False)
+                noun_candidates = [t.form for t in tokens if t.tag in ("NNG", "NNP")]
+
+                if noun_candidates:
+                    kw = topic_model.extract_keywords(
+                        cleaned,
+                        candidates=noun_candidates,
+                        keyphrase_ngram_range=(1, 2),
+                        stop_words=None,
+                        top_n=top_n,
+                        use_mmr=True,
+                        diversity=0.7
+                    )
+                    keywords_col[idx - 1] = ", ".join([k[0] for k in kw])
+                else:
+                    keywords_col[idx - 1] = ""
             except Exception:
                 keywords_col[idx - 1] = ""
 
-        # 진행률 표시
+        # 진행률 출력
         if idx % update_interval == 0 or idx == total:
             pct = round(idx / total * 100, 2)
             send_message(pid, f"[토픽 분석] {pct}% 완료 ({idx:,}/{total:,})")
 
-    # ③ 결과 열 추가 -----------------------------------------------------------
+    # ④ 결과 열 추가 -----------------------------------------------------------
     data["Keywords"] = keywords_col
     send_message(pid, "[토픽 분석] 완료 ✅")
     return data
