@@ -2653,3 +2653,4 @@ class DataProcess:
         with open(safe_path(os.path.join(out_dir, "description.txt")), "w",
                 encoding="utf-8", errors="ignore") as f:
             f.write("\n".join(desc))
+        return True

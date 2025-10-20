@@ -375,7 +375,7 @@ class Manager_Analysis:
                 # ================= 새로 추가된 분기 =================
                 case [opt, _] if opt.lower().startswith("hate") or "혐오" in opt:
                     # option1/2/3 자동 판별 ► HateAnalysis
-                    self.dataprocess_obj.HateAnalysis(csv_data, csv_path)
+                    result = self.dataprocess_obj.HateAnalysis(csv_data, csv_path)
 
                 # ================ 기본 fall-back ===================
                 case _:
@@ -1700,16 +1700,7 @@ class Manager_Analysis:
                 printStatus(self.main)
                 return
             text_col = sel_cols[0]
-
-            # 4) 옵션(1·2·3) 선택
-            opt_items = ["1 - 단일 카테고리", "2 - 모든 카테고리", "3 - 청정도 분석"]
-            opt_str, ok = QInputDialog.getItem(
-                self.main, "옵션 선택", "혐오도 분석 옵션을 선택하세요:", opt_items, 0, False
-            )
-            if not ok:
-                printStatus(self.main)
-                return
-            option_num = int(opt_str.split()[0])   
+            option_num = 2
 
             # 5) 프로세스 등록 / 뷰어
             pid = str(uuid.uuid4())
