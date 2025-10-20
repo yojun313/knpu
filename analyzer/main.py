@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QLabel, QDialog, QProgressBar
 from pandasgui.gui import show
 
 # 경로는 필요에 따라 수정
-ASSETS_PATH = os.path.join(os.path.dirname(__file__), 'pandasgui', 'resources', 'images')  
+ASSETS_PATH = os.path.join(os.path.dirname(__file__), 'pandasgui_copy', 'resources', 'images')  
 
 
 # ------------------ Splash Dialog ------------------
