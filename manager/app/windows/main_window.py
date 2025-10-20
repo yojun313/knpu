@@ -87,6 +87,7 @@ class MainWindow(QMainWindow):
                     "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
                 )
 
+                
                 # User Checking & Login Process
                 print("\nI. Checking User... ", end='')
                 self.splashDialog.updateStatus("Checking User")
