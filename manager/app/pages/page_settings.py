@@ -622,6 +622,14 @@ class Manager_Setting(QDialog):
         manager_info_section.addWidget(manager_version_label)
         manager_info_section.addWidget(manager_location_label)
         manager_info_section.addWidget(self.manager_time_label)
+        
+        dev_info_label = QLabel(
+            '<a href="https://github.com/yojun313" style="color: #3498db;">Developed by Yojun Moon</a>'
+        )
+        dev_info_label.setOpenExternalLinks(True)
+        dev_info_label.setStyleSheet("font-size: 12px; color: gray;")
+
+        manager_info_section.addWidget(dev_info_label)
 
         info_layout.addLayout(manager_info_section)
         ################################################################################
