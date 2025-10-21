@@ -311,7 +311,7 @@ class Manager_Analysis:
                 return
 
             # ── 옵션 다이얼로그 ─────────────────────────────────────
-            dialog = StatAnalysisDialog()
+            dialog = StatAnalysisDialog(filename=os.path.basename(filepath))
             if dialog.exec_() != QDialog.Accepted:
                 printStatus(self.main)
                 return
