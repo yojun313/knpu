@@ -623,72 +623,97 @@ class StatAnalysisDialog(BaseDialog):
     ※ ‘혐오도 분석’은 모든 타입에 공통으로 제공.
     """
 
-    def __init__(self):
+    def __init__(self, filename: str = ""):
         super().__init__()
         self.setWindowTitle("Select Options")
+        self.filename = filename.lower()
+        self._initializing = True  # 초기 세팅 중 플래그
 
         # ───────── 레이아웃 ─────────
         main_layout = QVBoxLayout(self)
 
-        # ▼ 데이터 출처 선택 ▼
         main_layout.addWidget(QLabel("Choose Data Type:"))
         self.combobox = QComboBox()
-        self.combobox.addItems(
-            ["Naver News", "Naver Blog", "Naver Cafe", "Google YouTube"]
-        )
+        self.combobox.addItems(["Naver News", "Naver Blog", "Naver Cafe", "Google YouTube"])
         self.combobox.currentIndexChanged.connect(self.update_checkboxes)
         main_layout.addWidget(self.combobox)
 
-        # 체크박스 컨테이너
         self.checkbox_group: list[QCheckBox] = []
 
-        # OK / Cancel 버튼
         btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
         main_layout.addWidget(btns)
 
-        # 최초 체크박스 세팅
-        self.update_checkboxes()
-        
-        for te in self.findChildren(QTextEdit):
-            te.setTabChangesFocus(True)
+        self.update_checkboxes()  # 초기 체크박스 세팅
+        self._initializing = False  # 초기 세팅 끝
 
-    # ────────────────────────────────────────
-    #  체크박스 갱신
-    # ────────────────────────────────────────
     def update_checkboxes(self):
-        # ① 기존 체크박스 제거
+        # ── 기존 체크박스 제거
         for cb in self.checkbox_group:
-            cb.setParent(None)
+            self.layout().removeWidget(cb)
+            cb.deleteLater()
         self.checkbox_group.clear()
 
-        # ② 출처별 전용 옵션
+        # ── 초기화 중일 때만 콤보 자동 세팅
+        if self._initializing:
+            source_map = {
+                "navernews": "Naver News",
+                "naverblog": "Naver Blog",
+                "navercafe": "Naver Cafe",
+                "youtube": "Google YouTube"
+            }
+            for key, combo_label in source_map.items():
+                if key in self.filename:
+                    idx = self.combobox.findText(combo_label)
+                    if idx != -1:
+                        self.combobox.blockSignals(True)
+                        self.combobox.setCurrentIndex(idx)
+                        self.combobox.blockSignals(False)
+                    break
+
+        # ── 현재 콤보박스 값에 따라 체크박스 옵션 생성
         src = self.combobox.currentText()
-        if   src == "Naver News":
-            specific = ["article 분석", "statistics 분석",
-                        "reply 분석", "rereply 분석"]
+        if src == "Naver News":
+            specific = ["article 분석", "statistics 분석", "reply 분석", "rereply 분석"]
         elif src == "Naver Blog":
             specific = ["article 분석", "reply 분석"]
         elif src == "Naver Cafe":
             specific = ["article 분석", "reply 분석"]
-        else:  # Google YouTube
+        else:
             specific = ["article 분석", "reply 분석", "rereply 분석"]
 
-        # ③ ‘혐오도 분석’(공통)을 마지막에 추가
         all_labels = specific + ["혐오도 분석"]
 
-        # ④ 체크박스 생성
+        # ── 기본 선택 우선순위 (초기 세팅 시에만 적용)
+        default_label = None
+        if self._initializing:
+            priority = [
+                ("hate", "혐오도 분석"),
+                ("혐오", "혐오도 분석"),
+                ("reply", "reply 분석"),
+                ("rereply", "rereply 분석"),
+                ("statistics", "statistics 분석"),
+                ("article", "article 분석"),
+            ]
+            for key, label in priority:
+                if key in self.filename:
+                    default_label = label
+                    break
+
+        # ── 단일 선택 체크박스 로직
+        def on_checkbox_clicked(clicked_cb):
+            for cb in self.checkbox_group:
+                if cb is not clicked_cb:
+                    cb.setChecked(False)
+
         for label in all_labels:
             cb = QCheckBox(label)
-            cb.setAutoExclusive(True)          # 단일 선택 모드
+            if self._initializing and label == default_label:
+                cb.setChecked(True)
+            cb.clicked.connect(lambda _, c=cb: on_checkbox_clicked(c))
             self.checkbox_group.append(cb)
-            # OK/Cancel 직전에 삽입
             self.layout().insertWidget(self.layout().count() - 1, cb)
-
-        # ─── 기본으로 선택된 항목 없음 ───
-        # (필요하면 self.checkbox_group[0].setChecked(True) 등 지정)
-
 
 class WordcloudDialog(BaseDialog):
     def __init__(self, tokenfile_name):
