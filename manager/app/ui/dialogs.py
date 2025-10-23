@@ -35,34 +35,96 @@ class BaseDialog(QDialog):
         layout.addWidget(text)
         return text
 
-
 class DownloadDialog(QDialog):
     def __init__(self, display_name, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"다운로드: {display_name}")
-        self.setMinimumWidth(400)
+        self.setWindowTitle(f"{display_name}")
+        self.setMinimumWidth(420)
 
         self.layout = QVBoxLayout(self)
+
+        # 상단 라벨 (제목)
         self.label = QLabel(display_name)
+        self.label.setStyleSheet("font-weight: bold; font-size: 14px;")
+
+        # 진행 메시지 라벨 (실시간 상태 출력)
+        self.msg_label = QLabel("작업을 준비 중입니다...")
+        self.msg_label.setWordWrap(True)  # 긴 메시지도 줄바꿈
+        self.msg_label.setStyleSheet("color: #555; font-size: 12px;")
+        self.msg_label.setAlignment(Qt.AlignLeft)
+
+        # 진행바
         self.pbar = QProgressBar()
         self.pbar.setValue(0)
-        self.cancel_btn = QPushButton("취소")
-        self.cancel_btn.setFixedWidth(60)
+        self.pbar.setTextVisible(True)
+        self.pbar.setFormat("%p%")
+        self.pbar.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #bcbcbc;
+                border-radius: 8px;
+                background-color: #f0f0f0;
+                height: 22px;
+                text-align: center;
+                font-size: 12px;
+            }
+            QProgressBar::chunk {
+                background-color: #4CAF50;
+                border-radius: 8px;
+            }
+        """)
 
-        h = QHBoxLayout()
-        h.addWidget(self.label, 2)
-        h.addWidget(self.pbar, 3)
-        h.addWidget(self.cancel_btn)
+        # 레이아웃 구성
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(self.label, 2)
+        top_layout.addWidget(self.pbar, 4)
 
-        self.layout.addLayout(h)
+        self.layout.addLayout(top_layout)
+        self.layout.addWidget(self.msg_label)
 
     def update_progress(self, value: int):
         self.pbar.setValue(value)
 
+    def update_message(self, message: str):
+        """진행 중 메시지를 업데이트"""
+        self.msg_label.setText(message)
+
     def complete_task(self, success=True):
         self.label.setText(f"{self.label.text()} - {'완료' if success else '실패'}")
         self.pbar.setValue(100 if success else 0)
-        QTimer.singleShot(1200, self.close)  # 1.2초 후 창 자동 닫기
+        self.pbar.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #bcbcbc;
+                border-radius: 8px;
+                background-color: #f0f0f0;
+                height: 22px;
+                text-align: center;
+                font-size: 12px;
+            }
+            QProgressBar::chunk {
+                background-color: %s;
+                border-radius: 8px;
+            }
+        """ % ("#4CAF50" if success else "#E74C3C"))
+
+        self.msg_label.setText("작업이 완료되었습니다." if success else "작업 중 오류가 발생했습니다.")
+        QTimer.singleShot(1200, self.close)
+
+class TaskStatusDialog(QDialog):
+    def __init__(self, title: str, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setModal(True)
+        self.resize(400, 75)
+
+        self.label = QLabel("작업을 준비 중입니다...", self)
+        self.label.setAlignment(Qt.AlignCenter)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.label)
+        self.setLayout(layout)
+
+    def update_message(self, message: str):
+        self.label.setText(message)
 
 class DBInfoDialog(BaseDialog):
     def __init__(self, parent, DBdata, style_html):

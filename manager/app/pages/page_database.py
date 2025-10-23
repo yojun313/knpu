@@ -356,8 +356,9 @@ class Manager_Database:
             error = pyqtSignal(str, str)                 # (에러 메시지, task_id)
             progress = pyqtSignal(str, int)             # (task_id, 진행률)
 
-            def __init__(self, targetUid, folder_path, option, viewer, task_id, parent=None):
+            def __init__(self, dbname, targetUid, folder_path, option, viewer, task_id, parent=None):
                 super().__init__(parent)
+                self.dbname = dbname
                 self.targetUid = targetUid
                 self.folder_path = folder_path
                 self.option = option
@@ -408,7 +409,7 @@ class Manager_Database:
                         zf.extractall(extract_path)
                     os.remove(local_zip)
 
-                    self.finished.emit(True, "DB 저장이 완료되었습니다", extract_path, self.task_id)
+                    self.finished.emit(True, f"{self.dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path, self.task_id)
 
                 except Exception:
                     self.error.emit(traceback.format_exc(), self.task_id)
@@ -457,18 +458,15 @@ class Manager_Database:
             printStatus(self.main)
             viewer = open_viewer(pid)
 
-            # ✅ 다운로드마다 별도의 DownloadDialog 창 생성
-            manager = DownloadDialog(display_name, self.main)
-            manager.show()
+            downloadDialog = DownloadDialog(f"CSV로 저장: {display_name}", self.main)
+            downloadDialog.show()
 
             # QThread Worker 생성
-            worker = SaveDBWorker(targetUid, folder_path, option, viewer, pid)
-            worker.progress.connect(lambda tid, val: manager.update_progress(val))
-            worker.finished.connect(lambda ok, msg, path, tid: manager.complete_task(ok))
+            worker = SaveDBWorker(display_name, targetUid, folder_path, option, viewer, pid)
+            worker.progress.connect(lambda tid, val: downloadDialog.update_progress(val))
+            worker.finished.connect(lambda ok, msg, path, tid: downloadDialog.complete_task(ok))
             worker.finished.connect(lambda ok, msg, path, tid: self.worker_finished(ok, msg, path))
-            worker.error.connect(lambda err, tid: manager.complete_task(False))
-
-            manager.cancel_btn.clicked.connect(worker.terminate)
+            worker.error.connect(lambda err, tid: downloadDialog.complete_task(False))
             worker.start()
 
             # 여러 다운로드를 관리할 수 있도록 worker를 리스트에 저장
