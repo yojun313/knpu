@@ -17,7 +17,7 @@ import zipfile
 import bcrypt
 import webbrowser
 
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, QThread, pyqtSignal
 from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
     QWidget, QMainWindow, QDialog, QVBoxLayout, QTableWidget,
@@ -55,6 +55,17 @@ class Manager_Database:
                   self.DB['DBtable'], self.DBTableColumn, self.viewDBinfo)
         self.matchButton()
 
+    def worker_finished(self, success: bool, message: str, path: str = None):
+        if success:
+            print(path)
+            openFileResult(self.main, message, path)
+        else:
+            QMessageBox.warning(self.main, "실패", f"작업을 실패했습니다.\n{message}")
+    
+    def worker_failed(self, error_message: str):
+        QMessageBox.critical(self.main, "오류 발생", f"오류가 발생했습니다:\n{error_message}")
+        programBugLog(self.main, error_message)
+    
     def deleteDB(self):
         try:
             selectedRow = self.main.database_tablewidget.currentRow()
@@ -341,8 +352,80 @@ class Manager_Database:
             programBugLog(self.main, traceback.format_exc())
 
     def saveDB(self):
-        try:
+        class SaveDBWorker(QThread):
+            finished = pyqtSignal(bool, str, str)   # (성공 여부, 메시지, 결과 경로)
+            error = pyqtSignal(str)
 
+            def __init__(self, targetUid, folder_path, option, viewer, parent=None):
+                super().__init__(parent)
+                self.targetUid = targetUid
+                self.folder_path = folder_path
+                self.option = option
+                self.viewer = viewer
+
+            def run(self):
+                try:
+                    download_url = MANAGER_SERVER_API + f"/crawls/{self.targetUid}/save"
+                    response = requests.post(
+                        download_url,
+                        json=self.option,
+                        stream=True,
+                        headers=get_api_headers(),
+                        timeout=3600
+                    )
+                    response.raise_for_status()
+                    
+                    close_viewer(self.viewer)
+                    openConsole("[ DB 저장 ]")
+
+                    # Content-Disposition에서 파일명 파싱
+                    content_disp = response.headers.get("Content-Disposition", "")
+                    m = re.search(r'filename="(?P<fname>[^"]+)"', content_disp)
+                    if m:
+                        zip_name = m.group("fname")
+                    else:
+                        m2 = re.search(r"filename\*=utf-8''(?P<fname>[^;]+)", content_disp)
+                        if m2:
+                            zip_name = unquote(m2.group("fname"))
+                        else:
+                            zip_name = f"{self.targetUid}.zip"
+
+                    local_zip = os.path.join(self.folder_path, zip_name)
+                    total_size = int(response.headers.get("Content-Length", 0))
+
+                    # 다운로드
+                    with open(safe_path(local_zip), "wb") as f, tqdm(
+                        total=total_size,
+                        file=sys.stdout,
+                        unit="B",
+                        unit_scale=True,
+                        unit_divisor=1024,
+                        desc="Downloading",
+                        dynamic_ncols=True,
+                        bar_format="{desc}: |{bar}| {percentage:3.0f}% • {n_fmt}/{total_fmt} {unit} • {rate_fmt}"
+                    ) as pbar:
+                        for chunk in response.iter_content(8192):
+                            if chunk:
+                                f.write(chunk)
+                                pbar.update(len(chunk))
+
+                    # 압축 해제
+                    base_folder = os.path.splitext(zip_name)[0]
+                    extract_path = os.path.join(self.folder_path, base_folder)
+                    os.makedirs(extract_path, exist_ok=True)
+
+                    with zipfile.ZipFile(local_zip, "r") as zf:
+                        zf.extractall(extract_path)
+
+                    os.remove(local_zip)
+                    closeConsole()
+
+                    self.finished.emit(True, "DB 저장이 완료되었습니다", extract_path)
+
+                except Exception:
+                    self.error.emit(traceback.format_exc())
+
+        try:
             selectedRow = self.main.database_tablewidget.currentRow()
             if not selectedRow >= 0:
                 return
@@ -351,15 +434,16 @@ class Manager_Database:
                 return
 
             targetUid = self.DB['DBuids'][selectedRow]
-            printStatus(self.main, "DB를 저장할 위치를 선택하여 주십시오")            
+            printStatus(self.main, "DB를 저장할 위치를 선택하여 주십시오")
 
             folder_path = QFileDialog.getExistingDirectory(
-                self.main, "DB를 저장할 위치를 선택하여 주십시오", self.main.localDirectory)
+                self.main, "DB를 저장할 위치를 선택하여 주십시오", self.main.localDirectory
+            )
             if folder_path == '':
                 printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
                 return
-            printStatus(self.main, "DB 저장 옵션을 설정하여 주십시오")
 
+            printStatus(self.main, "DB 저장 옵션을 설정하여 주십시오")
             dialog = SaveDbDialog()
             option = {}
 
@@ -381,78 +465,18 @@ class Manager_Database:
                 return
 
             register_process(pid, f"Crawl DB Save")
-            printStatus(self.main, "서버에서 데이터 처리 중...")
+            printStatus(self.main)
             viewer = open_viewer(pid)
+            
+            # QThread Worker 생성
+            self.worker = SaveDBWorker(targetUid, folder_path, option, viewer)
+            self.worker.finished.connect(self.worker_finished)
+            self.worker.error.connect(self.worker_failed)
+            self.worker.start()
 
-            download_url = MANAGER_SERVER_API + f"/crawls/{targetUid}/save"
-            response = requests.post(
-                download_url,
-                json=option,
-                stream=True,
-                headers=get_api_headers(),
-                timeout=3600
-            )
-            response.raise_for_status()
-
-            # 1) Content-Disposition 헤더에서 파일명 파싱
-            content_disp = response.headers.get("Content-Disposition", "")
-
-            # 2) 우선 filename="…" 시도
-            m = re.search(r'filename="(?P<fname>[^"]+)"', content_disp)
-            if m:
-                zip_name = m.group("fname")
-            else:
-                # 3) 없으면 filename*=utf-8''… 로 시도
-                m2 = re.search(
-                    r"filename\*=utf-8''(?P<fname>[^;]+)", content_disp)
-                if m2:
-                    zip_name = unquote(m2.group("fname"))
-                else:
-                    zip_name = f"{targetUid}.zip"
-
-            # 4) 이제 다운로드 & 압축 해제
-            local_zip = os.path.join(folder_path, zip_name)
-            total_size = int(response.headers.get("Content-Length", 0))
-
-            close_viewer(viewer)
-            openConsole("CSV로 저장")
-            printStatus(self.main, "다운로드 중...")
-
-            with open(safe_path(local_zip), "wb") as f, tqdm(
-                total=total_size,
-                file=sys.stdout,
-                unit="B",
-                unit_scale=True,
-                unit_divisor=1024,
-                desc="Downloading",
-                dynamic_ncols=True,
-                bar_format="{desc}: |{bar}| {percentage:3.0f}% • {n_fmt}/{total_fmt} {unit} • {rate_fmt}"
-            ) as pbar:
-                for chunk in response.iter_content(8192):
-                    if chunk:
-                        f.write(chunk)
-                        pbar.update(len(chunk))
-
-            printStatus(self.main, "다운로드 완료, 압축 해제 중...")
-            print("\n다운로드 완료, 압축 해제 중...\n")
-
-            # 압축 풀 폴더 이름은 zip 파일 이름(확장자 제외)
-            base_folder = os.path.splitext(zip_name)[0]
-            extract_path = os.path.join(folder_path, base_folder)
-            os.makedirs(extract_path, exist_ok=True)
-
-            with zipfile.ZipFile(local_zip, "r") as zf:
-                zf.extractall(extract_path)
-
-            os.remove(local_zip)
-
-            closeConsole()
-            openFileResult(
-                self.main, f"DB 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
-
-        except Exception as e:
+        except Exception:
             programBugLog(self.main, traceback.format_exc())
-
+    
     def refreshDB(self):
         try:
             printStatus(self.main, "새로고침 중...")
