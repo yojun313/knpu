@@ -10,7 +10,6 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import pyqtSignal, QThread
 
-from libs.console import openConsole, closeConsole
 from services.pushover import sendPushOver
 from services.logging import userLogging, getUserLocation, programBugLog
 from ui.status import printStatus
@@ -60,7 +59,6 @@ def updateProgram(parent, sc=False):
             newVersionName = newVersionInfo[0]
 
         def update_process():
-            openConsole("Version Update Process")
             msg = f"{parent.user} updated {VERSION} -> {newVersionName}\n\n{getUserLocation(parent)}"
             sendPushOver(msg)
             userLogging(f'Program Update ({VERSION} -> {newVersionName})')
@@ -166,7 +164,6 @@ def updateProgram(parent, sc=False):
                 )
                 if reply == QMessageBox.Yes:
                     printStatus(parent, "버전 재설치 중...")
-                    openConsole("Version Reinstall Process")
                     downloadFile_path = os.path.join(
                         'C:/Temp', f"MANAGER_{newVersionName}.exe"
                     )

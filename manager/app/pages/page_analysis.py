@@ -450,7 +450,7 @@ class Manager_Analysis:
             userLogging(f'ANALYSIS -> analysis_file({filepath})')
 
             # 5) 상태 다이얼로그 표시
-            taskDialog = TaskStatusDialog(f"{os.path.basename(filepath)} 통계 분석", self.main)
+            taskDialog = TaskStatusDialog(f"통계 분석: {os.path.basename(filepath)}", self.main)
             taskDialog.show()
             taskDialog.update_message("작업을 준비 중입니다...")
 
@@ -579,7 +579,7 @@ class Manager_Analysis:
             userLogging(f'ANALYSIS -> WordCloud({filename})')
 
             # 6. 상태 다이얼로그 생성
-            statusDialog = TaskStatusDialog(f"{filename} 워드클라우드", self.main)
+            statusDialog = TaskStatusDialog(f"워드클라우드: {filename}", self.main)
             statusDialog.show()
 
             # 7. 워커 실행
@@ -1437,7 +1437,7 @@ class Manager_Analysis:
                 include_word_list = df['word'].tolist()
 
             # ───────────────────────────── 5) 다운로드 다이얼로그
-            downloadDialog = DownloadDialog(f"{tokenfile_name} 토큰화", self.main)
+            downloadDialog = DownloadDialog(f"CSV 토큰화: {tokenfile_name}", self.main)
             downloadDialog.show()
 
             # ───────────────────────────── 6) 백그라운드 작업 시작
@@ -1849,7 +1849,7 @@ class Manager_Analysis:
             option_num = 2
 
             # 4) 다운로드 다이얼로그 생성
-            downloadDialog = DownloadDialog(f"{csv_fname} 혐오도 분석", self.main)
+            downloadDialog = DownloadDialog(f"혐오도 분석: {csv_fname}", self.main)
             downloadDialog.show()
 
             # 5) 워커 실행
