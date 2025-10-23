@@ -20,7 +20,7 @@ from ui.dialogs import DownloadDialog
 from libs.path import safe_path
 
 def openAndExit(path):
-    subprocess.Popen([path], shell=True),
+    subprocess.Popen(f'"{path}"', shell=True)
     os._exit(0)
 
 def updateProgram(parent, sc=False):
