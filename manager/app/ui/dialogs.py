@@ -649,7 +649,6 @@ class StatAnalysisDialog(BaseDialog):
         self._initializing = False  # 초기 세팅 끝
 
     def update_checkboxes(self):
-        # ── 기존 체크박스 제거
         for cb in self.checkbox_group:
             self.layout().removeWidget(cb)
             cb.deleteLater()
@@ -714,6 +713,7 @@ class StatAnalysisDialog(BaseDialog):
             cb.clicked.connect(lambda _, c=cb: on_checkbox_clicked(c))
             self.checkbox_group.append(cb)
             self.layout().insertWidget(self.layout().count() - 1, cb)
+
 
 class WordcloudDialog(BaseDialog):
     def __init__(self, tokenfile_name):

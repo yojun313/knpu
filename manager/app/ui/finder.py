@@ -98,6 +98,8 @@ def makeFileFinder(main_window, localDirectory=None):
     return EmbeddedFileDialog(main_window, localDirectory)
 
 def openFileExplorer(path):
+    if not path:
+        return
     path = safe_path(path)
     # 저장된 폴더를 파일 탐색기로 열기
     if platform.system() == "Windows":
