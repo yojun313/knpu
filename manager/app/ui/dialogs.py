@@ -49,7 +49,7 @@ class DownloadDialog(QDialog):
         self.label.setStyleSheet("font-weight: bold; font-size: 14px;")
 
         # 진행 메시지 라벨 (실시간 상태 출력)
-        self.msg_label = QLabel("작업을 준비 중입니다...")
+        self.msg_label = QLabel("")
         self.msg_label.setWordWrap(True)  # 긴 메시지도 줄바꿈
         self.msg_label.setStyleSheet("color: #555; font-size: 12px;")
         self.msg_label.setAlignment(Qt.AlignLeft)
@@ -108,7 +108,7 @@ class DownloadDialog(QDialog):
         """ % ("#4CAF50" if success else "#E74C3C"))
 
         self.msg_label.setText("작업이 완료되었습니다." if success else "작업 중 오류가 발생했습니다.")
-        QTimer.singleShot(800, self.close)
+        self.close()
 
 
 class TaskStatusDialog(QDialog):

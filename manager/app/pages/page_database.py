@@ -40,10 +40,11 @@ from services.logging import *
 from core.setting import *
 from core.shortcut import *
 from config import *
+from .page_analysis import Manager_Page
 
 warnings.filterwarnings("ignore")
 
-class Manager_Database:
+class Manager_Database(Manager_Page):
     def __init__(self, main_window):
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
@@ -54,17 +55,6 @@ class Manager_Database:
                   self.DB['DBtable'], self.DBTableColumn, self.viewDBinfo)
         self.matchButton()
 
-    def worker_finished(self, success: bool, message: str, path: str = None):
-        if success:
-            print(path)
-            openFileResult(self.main, message, path)
-        else:
-            QMessageBox.warning(self.main, "실패", f"작업을 실패했습니다.\n{message}")
-    
-    def worker_failed(self, error_message: str):
-        QMessageBox.critical(self.main, "오류 발생", f"오류가 발생했습니다:\n{error_message}")
-        programBugLog(self.main, error_message)
-    
     def deleteDB(self):
         try:
             selectedRow = self.main.database_tablewidget.currentRow()
@@ -345,6 +335,14 @@ class Manager_Database:
                 self.main.updateProgram(sc=True)
                 return
 
+            if search_text == '/delete':
+                reply = QMessageBox.question(self.main, 'Local Data Delete',
+                                            f"로컬 디렉토리 '{self.main.localDirectory}'가 제거됩니다\n\n진행하시겠습니까?",
+                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes and os.path.exists(self.main.localDirectory):
+                    shutil.rmtree(self.main.localDirectory)
+                    os.makedirs(self.main.localDirectory, exist_ok=True)
+                    
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
