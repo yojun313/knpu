@@ -21,7 +21,7 @@ from libs.path import safe_path
 
 def openAndExit(path):
     subprocess.Popen([path], shell=True),
-    QTimer.singleShot(1000, lambda: os._exit(0))
+    os._exit(0)
 
 def updateProgram(parent, sc=False):
     class DownloadWorker(QThread):
