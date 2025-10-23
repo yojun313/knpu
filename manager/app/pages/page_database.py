@@ -376,7 +376,6 @@ class Manager_Database:
                     response.raise_for_status()
                     
                     close_viewer(self.viewer)
-                    openConsole("[ DB 저장 ]")
 
                     # Content-Disposition에서 파일명 파싱
                     content_disp = response.headers.get("Content-Disposition", "")
@@ -418,7 +417,6 @@ class Manager_Database:
                         zf.extractall(extract_path)
 
                     os.remove(local_zip)
-                    closeConsole()
 
                     self.finished.emit(True, "DB 저장이 완료되었습니다", extract_path)
 
