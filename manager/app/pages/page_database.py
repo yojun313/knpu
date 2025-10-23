@@ -17,7 +17,7 @@ import zipfile
 import bcrypt
 import webbrowser
 
-from PyQt5.QtCore import QSize, QThread, pyqtSignal
+from PyQt5.QtCore import QSize, QThread, pyqtSignal, QTimer
 from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
     QWidget, QMainWindow, QDialog, QVBoxLayout, QTableWidget,
@@ -43,6 +43,35 @@ from config import *
 
 warnings.filterwarnings("ignore")
 
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QProgressBar, QPushButton, QHBoxLayout, QWidget
+
+class DownloadManager(QDialog):
+    def __init__(self, display_name, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"다운로드: {display_name}")
+        self.setMinimumWidth(400)
+
+        self.layout = QVBoxLayout(self)
+        self.label = QLabel(display_name)
+        self.pbar = QProgressBar()
+        self.pbar.setValue(0)
+        self.cancel_btn = QPushButton("취소")
+        self.cancel_btn.setFixedWidth(60)
+
+        h = QHBoxLayout()
+        h.addWidget(self.label, 2)
+        h.addWidget(self.pbar, 3)
+        h.addWidget(self.cancel_btn)
+
+        self.layout.addLayout(h)
+
+    def update_progress(self, value: int):
+        self.pbar.setValue(value)
+
+    def complete_task(self, success=True):
+        self.label.setText(f"{self.label.text()} - {'완료' if success else '실패'}")
+        self.pbar.setValue(100 if success else 0)
+        QTimer.singleShot(1200, self.close)  # 1.2초 후 창 자동 닫기
 
 class Manager_Database:
     def __init__(self, main_window):
@@ -353,15 +382,17 @@ class Manager_Database:
 
     def saveDB(self):
         class SaveDBWorker(QThread):
-            finished = pyqtSignal(bool, str, str)   # (성공 여부, 메시지, 결과 경로)
-            error = pyqtSignal(str)
+            finished = pyqtSignal(bool, str, str, str)   # (성공 여부, 메시지, 경로, task_id)
+            error = pyqtSignal(str, str)                 # (에러 메시지, task_id)
+            progress = pyqtSignal(str, int)             # (task_id, 진행률)
 
-            def __init__(self, targetUid, folder_path, option, viewer, parent=None):
+            def __init__(self, targetUid, folder_path, option, viewer, task_id, parent=None):
                 super().__init__(parent)
                 self.targetUid = targetUid
                 self.folder_path = folder_path
                 self.option = option
                 self.viewer = viewer
+                self.task_id = task_id
 
             def run(self):
                 try:
@@ -374,10 +405,8 @@ class Manager_Database:
                         timeout=3600
                     )
                     response.raise_for_status()
-                    
                     close_viewer(self.viewer)
 
-                    # Content-Disposition에서 파일명 파싱
                     content_disp = response.headers.get("Content-Disposition", "")
                     m = re.search(r'filename="(?P<fname>[^"]+)"', content_disp)
                     if m:
@@ -391,37 +420,28 @@ class Manager_Database:
 
                     local_zip = os.path.join(self.folder_path, zip_name)
                     total_size = int(response.headers.get("Content-Length", 0))
+                    downloaded = 0
 
-                    # 다운로드
-                    with open(safe_path(local_zip), "wb") as f, tqdm(
-                        total=total_size,
-                        file=sys.stdout,
-                        unit="B",
-                        unit_scale=True,
-                        unit_divisor=1024,
-                        desc="Downloading",
-                        dynamic_ncols=True,
-                        bar_format="{desc}: |{bar}| {percentage:3.0f}% • {n_fmt}/{total_fmt} {unit} • {rate_fmt}"
-                    ) as pbar:
+                    with open(safe_path(local_zip), "wb") as f:
                         for chunk in response.iter_content(8192):
                             if chunk:
                                 f.write(chunk)
-                                pbar.update(len(chunk))
+                                downloaded += len(chunk)
+                                if total_size > 0:
+                                    percent = int(downloaded / total_size * 100)
+                                    self.progress.emit(self.task_id, percent)
 
-                    # 압축 해제
                     base_folder = os.path.splitext(zip_name)[0]
                     extract_path = os.path.join(self.folder_path, base_folder)
                     os.makedirs(extract_path, exist_ok=True)
-
                     with zipfile.ZipFile(local_zip, "r") as zf:
                         zf.extractall(extract_path)
-
                     os.remove(local_zip)
 
-                    self.finished.emit(True, "DB 저장이 완료되었습니다", extract_path)
+                    self.finished.emit(True, "DB 저장이 완료되었습니다", extract_path, self.task_id)
 
                 except Exception:
-                    self.error.emit(traceback.format_exc())
+                    self.error.emit(traceback.format_exc(), self.task_id)
 
         try:
             selectedRow = self.main.database_tablewidget.currentRow()
@@ -432,8 +452,9 @@ class Manager_Database:
                 return
 
             targetUid = self.DB['DBuids'][selectedRow]
-            printStatus(self.main, "DB를 저장할 위치를 선택하여 주십시오")
+            display_name = self.DB['DBdata'][selectedRow]['name']
 
+            printStatus(self.main, "DB를 저장할 위치를 선택하여 주십시오")
             folder_path = QFileDialog.getExistingDirectory(
                 self.main, "DB를 저장할 위치를 선택하여 주십시오", self.main.localDirectory
             )
@@ -465,16 +486,29 @@ class Manager_Database:
             register_process(pid, f"Crawl DB Save")
             printStatus(self.main)
             viewer = open_viewer(pid)
-            
+
+            # ✅ 다운로드마다 별도의 DownloadManager 창 생성
+            manager = DownloadManager(display_name, self.main)
+            manager.show()
+
             # QThread Worker 생성
-            self.worker = SaveDBWorker(targetUid, folder_path, option, viewer)
-            self.worker.finished.connect(self.worker_finished)
-            self.worker.error.connect(self.worker_failed)
-            self.worker.start()
+            worker = SaveDBWorker(targetUid, folder_path, option, viewer, pid)
+            worker.progress.connect(lambda tid, val: manager.update_progress(val))
+            worker.finished.connect(lambda ok, msg, path, tid: manager.complete_task(ok))
+            worker.finished.connect(lambda ok, msg, path, tid: self.worker_finished(ok, msg, path))
+            worker.error.connect(lambda err, tid: manager.complete_task(False))
+
+            manager.cancel_btn.clicked.connect(worker.terminate)
+            worker.start()
+
+            # 여러 다운로드를 관리할 수 있도록 worker를 리스트에 저장
+            if not hasattr(self, "_workers"):
+                self._workers = []
+            self._workers.append(worker)
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-    
+
     def refreshDB(self):
         try:
             printStatus(self.main, "새로고침 중...")
