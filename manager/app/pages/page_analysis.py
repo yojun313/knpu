@@ -22,7 +22,7 @@ from urllib.parse import unquote
 import zipfile
 import requests
 import time
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QMessageBox, QFileDialog, QInputDialog, QDialog
 from libs.console import *
 from libs.path import *
 from ui.finder import *
@@ -37,7 +37,7 @@ from services.llm import *
 from services.csv import *
 from config import *
 from PyQt5.QtCore import QThread, pyqtSignal
-
+from .page_parent import Manager_Page
 warnings.filterwarnings("ignore")
 
 
@@ -51,7 +51,7 @@ elif platform.system() == 'Windows':  # Windows
 plt.rcParams['axes.unicode_minus'] = False
 
 
-class Manager_Analysis:
+class Manager_Analysis(Manager_Page):
     def __init__(self, main_window):
         self.main = main_window
         self.dataprocess_obj = DataProcess(self.main)
@@ -59,17 +59,7 @@ class Manager_Analysis:
         self.anaylsis_buttonMatch()
         self.console_open = False
 
-    def worker_finished(self, success: bool, message: str, path: str = None):
-        if success:
-            print(path)
-            openFileResult(self.main, message, path)
-        else:
-            QMessageBox.warning(self.main, "실패", f"작업을 실패했습니다.\n{message}")
-    
-    def worker_failed(self, error_message: str):
-        QMessageBox.critical(self.main, "오류 발생", f"오류가 발생했습니다:\n{error_message}")
-        programBugLog(self.main, error_message)
-        
+      
     def analysis_makeFileFinder(self):
         self.file_dialog = makeFileFinder(self.main, self.main.localDirectory)
         self.main.analysis_filefinder_layout.addWidget(self.file_dialog)
@@ -277,7 +267,7 @@ class Manager_Analysis:
                 return
 
             userLogging(f'ANALYSIS -> merge_file({mergedfilename})')
-
+            
             thread_name = f"데이터 병합: {mergedfilename}"
             register_thread(thread_name)
             printStatus(self.main)
@@ -472,29 +462,20 @@ class Manager_Analysis:
                 QMessageBox.warning(self.main, "Error", "선택 옵션이 부족합니다.")
                 return
 
-            # 3) 혐오 분석 모드 확인
             hate_mode = selected_options[0].lower().startswith("hate") or "혐오" in selected_options[0]
 
-            # 4) 로그
             userLogging(f'ANALYSIS -> analysis_file({filepath})')
 
-            # 5) 상태 다이얼로그 표시
             taskDialog = TaskStatusDialog(f"통계 분석: {os.path.basename(filepath)}", self.main)
             taskDialog.show()
             taskDialog.update_message("작업을 준비 중입니다...")
 
-            # thread_name 설정 & 등록
             thread_name = f"통계 분석: {os.path.basename(filepath)}"
             register_thread(thread_name)
             printStatus(self.main)
 
-            # 6) 백그라운드 워커 생성 및 실행
             worker = RunAnalysisWorker(filepath, selected_options, self.dataprocess_obj, hate_mode)
-
-            # 메시지 갱신
             worker.message.connect(lambda msg: taskDialog.update_message(msg))
-
-            # 완료 시 한 번에 처리
             worker.finished.connect(
                 lambda ok, msg, path: (
                     self.worker_finished(ok, msg, path),
@@ -503,8 +484,6 @@ class Manager_Analysis:
                     printStatus(self.main)
                 )
             )
-
-            # 에러 시 한 번에 처리
             worker.error.connect(
                 lambda err: (
                     self.worker_failed(err),
@@ -984,8 +963,8 @@ class Manager_Analysis:
                         if words_to_translate:
                             async def translate_word(word):
                                 """ 개별 단어를 비동기적으로 번역하고 반환하는 함수 """
-                                result = await translator.translate(word, dest='en', src='auto')  # ✅ await 추가
-                                return word, result.text  # ✅ 원래 단어와 번역된 단어 튜플 반환
+                                result = await translator.translate(word, dest='en', src='auto')  # await 추가
+                                return word, result.text  # 원래 단어와 번역된 단어 튜플 반환
 
                             # 번역 실행 (병렬 처리)
                             translated_results = await asyncio.gather(
@@ -995,7 +974,7 @@ class Manager_Analysis:
                             for original, translated in translated_results:
                                 translate_history[original] = translated
 
-                        # ✅ (원래 단어, 번역된 단어) 튜플 리스트로 변환
+                        # (원래 단어, 번역된 단어) 튜플 리스트로 변환
                         translated_tuple_list = [(word, translate_history[word]) for word in words_to_translate if
                                                  word in translate_history]
 
@@ -1521,11 +1500,11 @@ class Manager_Analysis:
                 include_word_list = df['word'].tolist()
 
             thread_name = f"CSV 토큰화: {tokenfile_name}"
-            downloadDialog = DownloadDialog(thread_name, self.main)
-            downloadDialog.show()
-            
             register_thread(thread_name)
             printStatus(self.main)
+            
+            downloadDialog = DownloadDialog(thread_name, self.main)
+            downloadDialog.show()
 
             worker = TokenizeWorker(csv_path, save_path, tokenfile_name, selected_columns, include_word_list)
             worker.message.connect(lambda msg: downloadDialog.update_message(msg))
