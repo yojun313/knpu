@@ -41,6 +41,7 @@ class DownloadDialog(QDialog):
         self.setWindowTitle(f"{display_name}")
         self.setMinimumWidth(420)
 
+        self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
         self.layout = QVBoxLayout(self)
 
         # 상단 라벨 (제목)
@@ -107,7 +108,7 @@ class DownloadDialog(QDialog):
         """ % ("#4CAF50" if success else "#E74C3C"))
 
         self.msg_label.setText("작업이 완료되었습니다." if success else "작업 중 오류가 발생했습니다.")
-        QTimer.singleShot(1200, self.close)
+        QTimer.singleShot(800, self.close)
 
 class TaskStatusDialog(QDialog):
     def __init__(self, title: str, parent=None):
@@ -115,7 +116,8 @@ class TaskStatusDialog(QDialog):
         self.setWindowTitle(title)
         self.setModal(True)
         self.resize(400, 75)
-
+        
+        self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
         self.label = QLabel("작업을 준비 중입니다...", self)
         self.label.setAlignment(Qt.AlignCenter)
 
