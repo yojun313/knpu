@@ -105,114 +105,127 @@ class Manager_Database:
             programBugLog(self.main, traceback.format_exc())
 
     def viewDB(self):
+        class LoadDBWorker(QThread):
+            finished = pyqtSignal(object)   # 로드 완료 시 DataFrame 목록 반환
+            error = pyqtSignal(str)
+            message = pyqtSignal(str)
+
+            def __init__(self, DBuid):
+                super().__init__()
+                self.DBuid = DBuid
+
+            def run(self):
+                try:
+                    self.message.emit("DB 데이터를 불러오는 중...")
+                    response = Request('get', f'crawls/{self.DBuid}/preview', stream=True)
+
+                    tab_data = []  # [(table_name, df), ...] 형태로 저장
+
+                    with zipfile.ZipFile(BytesIO(response.content)) as zf:
+                        file_list = zf.namelist()
+                        file_list.sort()
+
+                        for file_name in file_list:
+                            table_name = file_name.replace('.parquet', '')
+
+                            with zf.open(file_name) as f:
+                                df = pd.read_parquet(f)
+
+                            if 'id' in df.columns:
+                                df = df.drop(columns=['id'])
+
+                            tab_data.append((table_name, df))
+
+                    self.finished.emit(tab_data)
+
+                except Exception:
+                    self.error.emit(traceback.format_exc())
 
         class TableWindow(QMainWindow):
             def __init__(self, parent=None, DBuid=None, DBname=None):
                 super(TableWindow, self).__init__(parent)
-                self.setWindowTitle(DBname) 
+                self.setWindowTitle(DBname)
                 self.resize(1600, 1200)
-
-                self.main = parent  # 부모 객체를 저장하여 나중에 사용
-                self.DBuid = DBuid  # targetDB를 저장하여 나중에 사용
-                self.DBname = DBname  # DBname을 저장하여 나중에 사용
+                self.main = parent
+                self.DBuid = DBuid
+                self.DBname = DBname
 
                 self.centralWidget = QWidget(self)
                 self.setCentralWidget(self.centralWidget)
-
                 self.layout = QVBoxLayout(self.centralWidget)
 
-                # 상단 버튼 레이아웃
+                # 상단 버튼
                 self.button_layout = QHBoxLayout()
-
-                # spacer 아이템 추가 (버튼들을 오른쪽 끝에 배치하기 위해 앞에 추가)
-                spacer = QSpacerItem(
-                    40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+                spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
                 self.button_layout.addItem(spacer)
 
-                # 새로고침 버튼 추가
                 self.refreshButton = QPushButton("새로고침", self)
-                self.refreshButton.setFixedWidth(80)  # 가로 길이 조정
+                self.refreshButton.setFixedWidth(80)
                 self.refreshButton.clicked.connect(self.refresh_table)
                 self.button_layout.addWidget(self.refreshButton)
 
-                # 닫기 버튼 추가
                 self.close_button = QPushButton("닫기", self)
-                self.close_button.setFixedWidth(80)  # 가로 길이 조정
+                self.close_button.setFixedWidth(80)
                 self.close_button.clicked.connect(self.closeWindow)
                 self.button_layout.addWidget(self.close_button)
 
-                QShortcut(QKeySequence("Ctrl+W"),
-                          self).activated.connect(self.closeWindow)
-                QShortcut(QKeySequence("Ctrl+ㅈ"),
-                          self).activated.connect(self.closeWindow)
+                QShortcut(QKeySequence("Ctrl+W"), self).activated.connect(self.closeWindow)
+                QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.closeWindow)
 
-                # 버튼 레이아웃을 메인 레이아웃에 추가
                 self.layout.addLayout(self.button_layout)
 
                 self.tabWidget_tables = QTabWidget(self)
                 self.layout.addWidget(self.tabWidget_tables)
 
-                # targetDB가 주어지면 테이블 뷰를 초기화
                 if DBuid is not None:
-                    self.init_viewTable(DBuid)
+                    self.load_table(DBuid)
 
             def closeWindow(self):
-                self.tabWidget_tables.clear()  # 탭 위젯 내용 삭제
-                self.close()  # 창 닫기
-                self.deleteLater()  # 객체 삭제
+                self.tabWidget_tables.clear()
+                self.close()
+                self.deleteLater()
                 gc.collect()
 
             def closeEvent(self, event):
-                # 윈도우 창이 닫힐 때 closeWindow 메서드 호출
                 self.closeWindow()
-                event.accept()  # 창 닫기 이벤트를 허용
+                event.accept()
 
-            def init_viewTable(self, DBuid):
-                response = Request(
-                    'get', f'crawls/{DBuid}/preview', stream=True)
-
+            def load_table(self, DBuid):
                 self.tabWidget_tables.clear()
+                self.worker = LoadDBWorker(DBuid)
+                self.worker.message.connect(lambda msg: printStatus(self.main, msg))
+                self.worker.finished.connect(self.render_tabs)
+                self.worker.error.connect(lambda err: programBugLog(self.main, err))
+                self.worker.start()
 
-                with zipfile.ZipFile(BytesIO(response.content)) as zf:
-                    file_list = zf.namelist()
-                    file_list.sort()
+                if not hasattr(self.main, "_workers"):
+                    self.main._workers = []
+                self.main._workers.append(self.worker)
 
-                    for file_name in file_list:
-                        table_name = file_name.replace('.parquet', '')
+            def render_tabs(self, tab_data):
+                for table_name, df in tab_data:
+                    tuple_list = [tuple(row) for row in df.itertuples(index=False, name=None)]
+                    new_tab = QWidget()
+                    new_tab_layout = QVBoxLayout(new_tab)
+                    new_table = QTableWidget(new_tab)
+                    new_tab_layout.addWidget(new_table)
 
-                        with zf.open(file_name) as f:
-                            df = pd.read_parquet(f)
+                    makeTable(self.main, new_table, tuple_list, list(df.columns))
+                    self.tabWidget_tables.addTab(new_tab, table_name.split('_')[-1])
 
-                        if 'id' in df.columns:
-                            df = df.drop(columns=['id'])
-
-                        self.tuple_list = [
-                            tuple(row) for row in df.itertuples(index=False, name=None)
-                        ]
-
-                        new_tab = QWidget()
-                        new_tab_layout = QVBoxLayout(new_tab)
-                        new_table = QTableWidget(new_tab)
-                        new_tab_layout.addWidget(new_table)
-
-                        makeTable(
-                            self.main, new_table, self.tuple_list, list(
-                                df.columns)
-                        )
-
-                        self.tabWidget_tables.addTab(
-                            new_tab, table_name.split('_')[-1])
-
-                        new_tab = None
-                        new_table = None
+                printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
 
             def refresh_table(self):
-                # 테이블 뷰를 다시 초기화하여 데이터를 새로 로드
-                self.init_viewTable(self.DBuid)
+                self.load_table(self.DBuid)
 
         try:
             reply = QMessageBox.question(
-                self.main, 'Confirm View', 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                self.main,
+                'Confirm View',
+                'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?',
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.Yes
+            )
             if reply == QMessageBox.Yes:
                 printStatus(self.main, "불러오는 중...")
 
@@ -229,9 +242,7 @@ class Manager_Database:
                     self.DBtable_window.destroyed.connect(destory_table)
                     self.DBtable_window.show()
 
-                printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
-
-        except Exception as e:
+        except Exception:
             programBugLog(self.main, traceback.format_exc())
 
     def viewDBinfo(self, row):
