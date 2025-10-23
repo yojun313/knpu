@@ -36,7 +36,7 @@ class BaseDialog(QDialog):
         return text
 
 class DownloadDialog(QDialog):
-    def __init__(self, display_name, path = None, parent=None):
+    def __init__(self, display_name, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"{display_name}")
         self.setMinimumWidth(420)
@@ -45,10 +45,7 @@ class DownloadDialog(QDialog):
         self.layout = QVBoxLayout(self)
 
         # 상단 라벨 (제목)
-        if path:
-            self.label = QLabel(path)
-        else:
-            self.label = QLabel(display_name)
+        self.label = QLabel(display_name)
         self.label.setStyleSheet("font-weight: bold; font-size: 14px;")
 
         # 진행 메시지 라벨 (실시간 상태 출력)
