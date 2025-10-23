@@ -72,7 +72,7 @@ def updateProgram(parent, sc=False):
 
             # 다운로드 진행창 생성
             dialog = DownloadDialog(f"업데이트 다운로드: {newVersionName}", parent)
-            worker = DownloadWorker(download_url, safe_path(downloadFile_path))
+            worker = DownloadWorker(download_url, downloadFile_path)
 
             worker.progress.connect(dialog.update_progress)
             worker.finished.connect(lambda path: (
