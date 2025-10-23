@@ -84,8 +84,6 @@ def build_app():
         palette.setColor(QPalette.WindowText, Qt.black)                   # 윈도우 텍스트
         palette.setColor(QPalette.Base, Qt.white)                         # 입력창, 리스트 배경
         palette.setColor(QPalette.AlternateBase, QColor(225, 225, 225))   # 교차 줄 배경
-        palette.setColor(QPalette.ToolTipBase, Qt.white)                  # 툴팁 배경
-        palette.setColor(QPalette.ToolTipText, Qt.black)                  # 툴팁 텍스트
         palette.setColor(QPalette.Text, Qt.black)                         # 일반 텍스트
         palette.setColor(QPalette.Button, QColor(240, 240, 240))          # 버튼 배경
         palette.setColor(QPalette.ButtonText, Qt.black)                   # 버튼 텍스트
@@ -97,8 +95,6 @@ def build_app():
         palette.setColor(QPalette.WindowText, Qt.white)
         palette.setColor(QPalette.Base, QColor(35, 35, 35))
         palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-        palette.setColor(QPalette.ToolTipBase, Qt.white)
-        palette.setColor(QPalette.ToolTipText, Qt.white)
         palette.setColor(QPalette.Text, Qt.white)
         palette.setColor(QPalette.Button, QColor(53, 53, 53))
         palette.setColor(QPalette.ButtonText, Qt.white)
