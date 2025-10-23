@@ -17,7 +17,6 @@ from config import VERSION
 from core.setting import get_setting
 from core.boot import checkNewVersion
 from ui.dialogs import DownloadDialog
-from libs.path import safe_path
 
 def openAndExit(path):
     subprocess.Popen(f'"{path}"', shell=True)
@@ -173,7 +172,7 @@ def updateProgram(parent, sc=False):
 
                     # 다운로드 진행창 생성
                     dialog = DownloadDialog(f"재설치 다운로드: {newVersionName}", parent)
-                    worker = DownloadWorker(download_url, safe_path(downloadFile_path))
+                    worker = DownloadWorker(download_url, downloadFile_path)
 
                     worker.progress.connect(dialog.update_progress)
                     worker.finished.connect(lambda path: (
