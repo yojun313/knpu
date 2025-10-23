@@ -43,36 +43,6 @@ from config import *
 
 warnings.filterwarnings("ignore")
 
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QProgressBar, QPushButton, QHBoxLayout, QWidget
-
-class DownloadManager(QDialog):
-    def __init__(self, display_name, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle(f"다운로드: {display_name}")
-        self.setMinimumWidth(400)
-
-        self.layout = QVBoxLayout(self)
-        self.label = QLabel(display_name)
-        self.pbar = QProgressBar()
-        self.pbar.setValue(0)
-        self.cancel_btn = QPushButton("취소")
-        self.cancel_btn.setFixedWidth(60)
-
-        h = QHBoxLayout()
-        h.addWidget(self.label, 2)
-        h.addWidget(self.pbar, 3)
-        h.addWidget(self.cancel_btn)
-
-        self.layout.addLayout(h)
-
-    def update_progress(self, value: int):
-        self.pbar.setValue(value)
-
-    def complete_task(self, success=True):
-        self.label.setText(f"{self.label.text()} - {'완료' if success else '실패'}")
-        self.pbar.setValue(100 if success else 0)
-        QTimer.singleShot(1200, self.close)  # 1.2초 후 창 자동 닫기
-
 class Manager_Database:
     def __init__(self, main_window):
         self.main = main_window
@@ -487,8 +457,8 @@ class Manager_Database:
             printStatus(self.main)
             viewer = open_viewer(pid)
 
-            # ✅ 다운로드마다 별도의 DownloadManager 창 생성
-            manager = DownloadManager(display_name, self.main)
+            # ✅ 다운로드마다 별도의 DownloadDialog 창 생성
+            manager = DownloadDialog(display_name, self.main)
             manager.show()
 
             # QThread Worker 생성

@@ -1,15 +1,14 @@
-from PyQt5.QtCore import Qt, QDate
+from PyQt5.QtCore import Qt, QDate, QTimer
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
     QTextEdit, QDialogButtonBox, QComboBox, QLabel, QDateEdit, QLineEdit, QHBoxLayout,
-    QShortcut, QFileDialog, QInputDialog
+    QShortcut, QFileDialog, QInputDialog, QProgressBar
 )
 from services.api import *
 from services.logging import *
 from PyQt5.QtGui import QKeySequence, QFont
 from datetime import datetime
-
 
 
 class BaseDialog(QDialog):
@@ -36,6 +35,34 @@ class BaseDialog(QDialog):
         layout.addWidget(text)
         return text
 
+
+class DownloadDialog(QDialog):
+    def __init__(self, display_name, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"다운로드: {display_name}")
+        self.setMinimumWidth(400)
+
+        self.layout = QVBoxLayout(self)
+        self.label = QLabel(display_name)
+        self.pbar = QProgressBar()
+        self.pbar.setValue(0)
+        self.cancel_btn = QPushButton("취소")
+        self.cancel_btn.setFixedWidth(60)
+
+        h = QHBoxLayout()
+        h.addWidget(self.label, 2)
+        h.addWidget(self.pbar, 3)
+        h.addWidget(self.cancel_btn)
+
+        self.layout.addLayout(h)
+
+    def update_progress(self, value: int):
+        self.pbar.setValue(value)
+
+    def complete_task(self, success=True):
+        self.label.setText(f"{self.label.text()} - {'완료' if success else '실패'}")
+        self.pbar.setValue(100 if success else 0)
+        QTimer.singleShot(1200, self.close)  # 1.2초 후 창 자동 닫기
 
 class DBInfoDialog(BaseDialog):
     def __init__(self, parent, DBdata, style_html):
