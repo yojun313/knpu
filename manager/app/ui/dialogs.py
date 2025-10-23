@@ -25,7 +25,7 @@ class BaseDialog(QDialog):
         for te in self.findChildren(QTextEdit):
             te.setTabChangesFocus(True)
     
-    def add_label(self, layout, title, content, monospace=False, readonly=True):
+    def add_label(self, layout, title, content, monospace=True, readonly=True):
         layout.addWidget(QLabel(f"<b>{title}</b>"))
         text = QTextEdit(content)
         text.setReadOnly(readonly)
@@ -605,8 +605,8 @@ class ViewBugDialog(BaseDialog):
         self.add_label(layout, "Version Num", self.bug_data.get("versionName", ""))
         self.add_label(layout, "Bug Title",   self.bug_data.get("bugTitle", ""))
         self.add_label(layout, "DateTime",    self.bug_data.get("datetime", ""))
-        self.add_label(layout, "Bug Detail",  self.bug_data.get("bugText", ""), monospace=True)
-        self.add_label(layout, "Program Log", self.bug_data.get("programLog", ""), monospace=True)
+        self.add_label(layout, "Bug Detail",  self.bug_data.get("bugText", ""), monospace=False)
+        self.add_label(layout, "Program Log", self.bug_data.get("programLog", ""), monospace=False)
 
 
 class ViewVersionDialog(BaseDialog):
@@ -622,9 +622,9 @@ class ViewVersionDialog(BaseDialog):
 
         self.add_label(layout, "Version Num",      self.version_data[0])
         self.add_label(layout, "Release Date",     self.version_data[1])
-        self.add_label(layout, "ChangeLog",        self.version_data[2], monospace=True)
+        self.add_label(layout, "ChangeLog",        self.version_data[2])
         self.add_label(layout, "Version Features", self.version_data[3])
-        self.add_label(layout, "Detail",           self.version_data[4], monospace=True)
+        self.add_label(layout, "Detail",           self.version_data[4], monospace=False)
 
 
 class ViewPostDialog(BaseDialog):
@@ -641,7 +641,7 @@ class ViewPostDialog(BaseDialog):
         self.add_label(layout, "User Name", self.post_data.get("writerName", ""))
         self.add_label(layout, "Post Title", self.post_data.get("title", ""))
         self.add_label(layout, "DateTime", self.post_data.get("datetime", ""))
-        self.add_label(layout, "Post Text", self.post_data.get("text", ""), monospace=True)
+        self.add_label(layout, "Post Text", self.post_data.get("text", ""), monospace=False)
 
 
 class EditPostDialog(BaseDialog):
@@ -1999,9 +1999,9 @@ class ViewHomeMemberDialog(BaseDialog):
         self.add_label(layout, "직책", data.get("position", ""))
         self.add_label(layout, "소속", data.get("affiliation", ""))
         self.add_label(layout, "이메일", data.get("email", ""))
-        self.add_label(layout, "학력", "\n".join(data.get("학력", [])) if isinstance(data.get("학력", []), list) else str(data.get("학력", "")))
-        self.add_label(layout, "경력", "\n".join(data.get("경력", [])) if isinstance(data.get("경력", []), list) else str(data.get("경력", "")))
-        self.add_label(layout, "연구", "\n".join(data.get("연구", [])) if isinstance(data.get("연구", []), list) else str(data.get("연구", "")))
+        self.add_label(layout, "학력", "\n".join(data.get("학력", [])) if isinstance(data.get("학력", []), list) else str(data.get("학력", "")), monospace=False)
+        self.add_label(layout, "경력", "\n".join(data.get("경력", [])) if isinstance(data.get("경력", []), list) else str(data.get("경력", "")), monospace=False)
+        self.add_label(layout, "연구", "\n".join(data.get("연구", [])) if isinstance(data.get("연구", []), list) else str(data.get("연구", "")), monospace=False)
 
 
 class ViewHomeNewsDialog(BaseDialog):
@@ -2012,6 +2012,6 @@ class ViewHomeNewsDialog(BaseDialog):
         layout = QVBoxLayout(self)
 
         self.add_label(layout, "제목", data.get("title", ""))
-        self.add_label(layout, "내용", data.get("content", ""))
+        self.add_label(layout, "내용", data.get("content", ""), monospace=False)
         self.add_label(layout, "날짜", data.get("date", ""))
         self.add_label(layout, "URL", data.get("url", ""))        
