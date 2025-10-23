@@ -5,8 +5,8 @@ import traceback
 import requests
 from packaging import version
 
-from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QIcon, QKeySequence
+from PyQt5.QtCore import QSize, Qt, pyqtSignal
+from PyQt5.QtGui import QIcon, QKeySequence, QCursor
 from PyQt5.QtWidgets import (
     QStatusBar, QLabel, QInputDialog, QShortcut, QMessageBox
 )
@@ -16,7 +16,14 @@ from ui.status import printStatus
 from services.api import Request, get_api_headers
 from core.setting import get_setting, set_setting
 from services.auth import checkPassword
+from ui.status import showActiveThreadsDialog
 
+class ClickableLabel(QLabel):
+    clicked = pyqtSignal()  # 클릭 시그널 정의
+
+    def mousePressEvent(self, event):
+        self.clicked.emit()  # 클릭되면 시그널 발생
+        super().mousePressEvent(event)
 
 def loginProgram(parent):
     try:
@@ -104,8 +111,12 @@ def initStatusbar(parent):
     parent.statusbar = QStatusBar()
     parent.setStatusBar(parent.statusbar)
 
-    parent.leftLabel = QLabel('  ' + f'Version {VERSION}')
-    parent.rightLabel = QLabel('')
+    parent.leftLabel = ClickableLabel('  ' + f'Version {VERSION}')
+    parent.rightLabel = ClickableLabel('')
+    parent.rightLabel.clicked.connect(lambda: showActiveThreadsDialog())
+    
+    parent.leftLabel.setCursor(QCursor(Qt.PointingHandCursor))
+    parent.rightLabel.setCursor(QCursor(Qt.PointingHandCursor))
 
     parent.leftLabel.setToolTip("새 버전 확인을 위해 Ctrl+U")
     parent.leftLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
