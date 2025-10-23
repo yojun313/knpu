@@ -108,7 +108,6 @@ def initStatusbar(parent):
     parent.rightLabel = QLabel('')
 
     parent.leftLabel.setToolTip("새 버전 확인을 위해 Ctrl+U")
-    parent.rightLabel.setToolTip("상태표시줄")
     parent.leftLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
     parent.rightLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
     parent.statusbar.addPermanentWidget(parent.leftLabel, 1)

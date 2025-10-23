@@ -455,18 +455,29 @@ class Manager_Database:
                 return
 
             register_process(pid, f"Crawl DB Save")
-            printStatus(self.main)
+            
             viewer = open_viewer(pid)
 
-            downloadDialog = DownloadDialog(f"CSV로 저장: {display_name}", self.main)
+            thread_name = f"CSV로 저장: {display_name}"
+            downloadDialog = DownloadDialog(thread_name)
             downloadDialog.show()
 
             # QThread Worker 생성
             worker = SaveDBWorker(display_name, targetUid, folder_path, option, viewer, pid)
+            
+            register_thread(thread_name)
+            
+            printStatus(self.main)
             worker.progress.connect(lambda tid, val: downloadDialog.update_progress(val))
-            worker.finished.connect(lambda ok, msg, path, tid: downloadDialog.complete_task(ok))
-            worker.finished.connect(lambda ok, msg, path, tid: self.worker_finished(ok, msg, path))
-            worker.error.connect(lambda err, tid: downloadDialog.complete_task(False))
+            worker.finished.connect(
+                lambda ok, msg, path, tid: (
+                    downloadDialog.complete_task(ok),
+                    self.worker_finished(ok, msg, path),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+            worker.error.connect(lambda err, tid: (downloadDialog.complete_task(False), unregister_thread(thread_name), printStatus(self.main)))
             worker.start()
 
             # 여러 다운로드를 관리할 수 있도록 worker를 리스트에 저장
