@@ -19,6 +19,9 @@ from core.boot import checkNewVersion
 from ui.dialogs import DownloadDialog
 from libs.path import safe_path
 
+def openAndExit(path):
+    subprocess.Popen([path], shell=True),
+    QTimer.singleShot(1000, lambda: os._exit(0))
 
 def updateProgram(parent, sc=False):
     class DownloadWorker(QThread):
@@ -74,8 +77,7 @@ def updateProgram(parent, sc=False):
             worker.progress.connect(dialog.update_progress)
             worker.finished.connect(lambda path: (
                 dialog.complete_task(True),
-                subprocess.Popen([path], shell=True),
-                QTimer.singleShot(1000, lambda: os._exit(0))
+                openAndExit(path)
             ))
             worker.error.connect(lambda e: (
                 dialog.complete_task(False),
@@ -176,8 +178,7 @@ def updateProgram(parent, sc=False):
                     worker.progress.connect(dialog.update_progress)
                     worker.finished.connect(lambda path: (
                         dialog.complete_task(True),
-                        subprocess.Popen([path], shell=True),
-                        QTimer.singleShot(1000, lambda: os._exit(0))
+                        openAndExit(path)
                     ))
                     worker.error.connect(lambda e: (
                         dialog.complete_task(False),
