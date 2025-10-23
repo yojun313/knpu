@@ -110,6 +110,7 @@ class DownloadDialog(QDialog):
         self.msg_label.setText("작업이 완료되었습니다." if success else "작업 중 오류가 발생했습니다.")
         QTimer.singleShot(800, self.close)
 
+
 class TaskStatusDialog(QDialog):
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
@@ -127,6 +128,7 @@ class TaskStatusDialog(QDialog):
 
     def update_message(self, message: str):
         self.label.setText(message)
+
 
 class DBInfoDialog(BaseDialog):
     def __init__(self, parent, DBdata, style_html):
