@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout, QMessageBox, QTextEdit
 )
 from PyQt5.QtGui import QFont
-from PyQt5.QtCore import pyqtSignal, QThread
+from PyQt5.QtCore import pyqtSignal, QThread, QTimer
 
 from services.pushover import sendPushOver
 from services.logging import userLogging, getUserLocation, programBugLog
@@ -75,7 +75,7 @@ def updateProgram(parent, sc=False):
             worker.finished.connect(lambda path: (
                 dialog.complete_task(True),
                 subprocess.Popen([path], shell=True),
-                os._exit(0)
+                QTimer.singleShot(1000, lambda: os._exit(0))
             ))
             worker.error.connect(lambda e: (
                 dialog.complete_task(False),
@@ -177,7 +177,7 @@ def updateProgram(parent, sc=False):
                     worker.finished.connect(lambda path: (
                         dialog.complete_task(True),
                         subprocess.Popen([path], shell=True),
-                        os._exit(0)
+                        QTimer.singleShot(1000, lambda: os._exit(0))
                     ))
                     worker.error.connect(lambda e: (
                         dialog.complete_task(False),
