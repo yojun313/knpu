@@ -1,4 +1,6 @@
 from PyQt5.QtCore import QCoreApplication, QEventLoop
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QScrollArea, QWidget
+from PyQt5.QtCore import Qt
 
 _active_threads = []  
 
@@ -14,16 +16,55 @@ def unregister_thread(thread):
 def get_active_thread_count():
     return len(_active_threads)
 
+def showActiveThreadsDialog():
+    if len(_active_threads) == 0:
+        return
+
+    dialog = QDialog()
+    dialog.setWindowTitle("실행 중인 작업")
+    dialog.resize(400, 300)
+
+    layout = QVBoxLayout(dialog)
+    layout.setContentsMargins(10, 10, 10, 10)
+    layout.setSpacing(10)
+
+    info_label = QLabel(f"현재 실행 중인 작업 {len(_active_threads)}개")
+    layout.addWidget(info_label)
+
+    # 스크롤 가능한 리스트
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+
+    container = QWidget()
+    container_layout = QVBoxLayout(container)
+    container_layout.setSpacing(5)
+
+    for t in _active_threads:
+        lbl = QLabel(t)
+        lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)  # 복사 가능
+        container_layout.addWidget(lbl)
+
+    container_layout.addStretch()
+    scroll.setWidget(container)
+    layout.addWidget(scroll)
+
+    close_btn = QPushButton("닫기")
+    close_btn.clicked.connect(dialog.accept)
+    layout.addWidget(close_btn)
+
+    dialog.exec_()
+ 
 def printStatus(parent, msg=''):
     if len(_active_threads) > 0:
         add_msg = f"{len(_active_threads)}개의 작업 진행 중"
         if msg:
             msg += f" | {add_msg}"
-        else:
+        else: 
             msg = add_msg
         
         tooltipMsg = "\n".join(_active_threads)
         parent.rightLabel.setToolTip(tooltipMsg)
+
 
     for i in range(3):
         parent.rightLabel.setText(msg)

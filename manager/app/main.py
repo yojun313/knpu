@@ -69,7 +69,8 @@ def build_app():
                     text=True
                 )
                 # "Dark"가 반환되면 다크 모드가 활성화됨
-                return "Dark" in result.stdout
+                #return "Dark" in result.stdout
+                return False
             except Exception as e:
                 # 오류가 발생하면 기본적으로 라이트 모드로 간주
                 return False

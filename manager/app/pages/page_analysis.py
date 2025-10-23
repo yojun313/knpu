@@ -1842,7 +1842,7 @@ class Manager_Analysis(Manager_Page):
 
                     url = MANAGER_SERVER_API + "/analysis/hate"
 
-                    self.message.emit("CSV 업로드 중...")
+                    self.message.emit("서버에서 처리 중...")
 
                     with open(safe_path(self.csv_path), "rb") as fobj:
                         resp = requests.post(
