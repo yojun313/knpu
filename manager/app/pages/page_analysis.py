@@ -178,17 +178,32 @@ class Manager_Analysis:
             # 3. 로그 기록
             userLogging(f'ANALYSIS -> timesplit_file({selected_directory[0]})')
 
-            # 4. 상태 메시지 다이얼로그 띄우기
-            statusDialog = TaskStatusDialog("시간 분할", self.main)
+            thread_name = f"시간 분할: {os.path.basename(selected_directory[0])}"
+            register_thread(thread_name)
+            printStatus(self.main)
+            
+            statusDialog = TaskStatusDialog(thread_name, self.main)
             statusDialog.show()
 
-            # 5. Worker 생성 및 실행
             worker = TimeSplitWorker(selected_directory, self.dataprocess_obj)
             worker.message.connect(statusDialog.update_message)
-            worker.finished.connect(lambda ok, msg, path: self.worker_finished(ok, msg, path))
-            worker.finished.connect(lambda *_: statusDialog.close())
-            worker.error.connect(lambda err: self.worker_failed(err))
-            worker.error.connect(lambda *_: statusDialog.close())
+            worker.finished.connect(
+                lambda ok, msg, path: (
+                    self.worker_finished(ok, msg, path),
+                    statusDialog.close(),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+            worker.error.connect(
+                lambda err: (
+                    self.worker_failed(err),
+                    statusDialog.close(),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+                
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -263,17 +278,31 @@ class Manager_Analysis:
 
             userLogging(f'ANALYSIS -> merge_file({mergedfilename})')
 
-            # 🪄 상태 메시지 다이얼로그 띄우기
-            statusDialog = TaskStatusDialog("데이터 병합", self.main)
+            thread_name = f"데이터 병합: {mergedfilename}"
+            register_thread(thread_name)
+            printStatus(self.main)
+            
+            statusDialog = TaskStatusDialog(thread_name, self.main)
             statusDialog.show()
-
-            # 🧵 Worker 생성
+            
             worker = MergeWorker(selected_directory, mergedfilename)
-            worker.message.connect(statusDialog.update_message)  # 메시지 갱신 연결
-            worker.finished.connect(lambda ok, msg, path: self.worker_finished(ok, msg, path))
-            worker.finished.connect(lambda *_: statusDialog.close())
-            worker.error.connect(lambda err: self.worker_failed(err))
-            worker.error.connect(lambda *_: statusDialog.close())
+            worker.message.connect(lambda msg: statusDialog.update_message(msg))
+            worker.finished.connect(
+                lambda ok, msg, path: (
+                    self.worker_finished(ok, msg, path),  # 완료 로직
+                    statusDialog.close(),                 # 다이얼로그 닫기
+                    unregister_thread(thread_name),       # 스레드 등록 해제
+                    printStatus(self.main)                # 상태 표시 갱신
+                )
+            )
+            worker.error.connect(
+                lambda err: (
+                    self.worker_failed(err),              # 에러 로직
+                    statusDialog.close(),                 # 다이얼로그 닫기
+                    unregister_thread(thread_name),       # 스레드 등록 해제
+                    printStatus(self.main)                # 상태 표시 갱신
+                )
+            )
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -454,13 +483,37 @@ class Manager_Analysis:
             taskDialog.show()
             taskDialog.update_message("작업을 준비 중입니다...")
 
+            # thread_name 설정 & 등록
+            thread_name = f"통계 분석: {os.path.basename(filepath)}"
+            register_thread(thread_name)
+            printStatus(self.main)
+
             # 6) 백그라운드 워커 생성 및 실행
             worker = RunAnalysisWorker(filepath, selected_options, self.dataprocess_obj, hate_mode)
-            worker.message.connect(taskDialog.update_message)
-            worker.finished.connect(lambda ok, msg, path: self.worker_finished(ok, msg, path))
-            worker.finished.connect(lambda *_: taskDialog.close())
-            worker.error.connect(lambda err: self.worker_failed(err))
-            worker.error.connect(lambda *_: taskDialog.close())
+
+            # 메시지 갱신
+            worker.message.connect(lambda msg: taskDialog.update_message(msg))
+
+            # 완료 시 한 번에 처리
+            worker.finished.connect(
+                lambda ok, msg, path: (
+                    self.worker_finished(ok, msg, path),
+                    taskDialog.close(),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+
+            # 에러 시 한 번에 처리
+            worker.error.connect(
+                lambda err: (
+                    self.worker_failed(err),
+                    taskDialog.close(),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -575,12 +628,15 @@ class Manager_Analysis:
                     return
                 exception_word_list = df['word'].tolist()
 
-            # 5. 로그 기록
             userLogging(f'ANALYSIS -> WordCloud({filename})')
 
-            # 6. 상태 다이얼로그 생성
             statusDialog = TaskStatusDialog(f"워드클라우드: {filename}", self.main)
             statusDialog.show()
+
+            # thread_name 설정 & 등록
+            thread_name = f"워드클라우드: {filename}"
+            register_thread(thread_name)
+            printStatus(self.main)
 
             # 7. 워커 실행
             worker = WordcloudWorker(
@@ -594,11 +650,24 @@ class Manager_Analysis:
                 filename,
                 self.dataprocess_obj
             )
-            worker.message.connect(statusDialog.update_message)
-            worker.finished.connect(lambda ok, msg, path: self.worker_finished(ok, msg, path))
-            worker.finished.connect(lambda *_: statusDialog.close())
-            worker.error.connect(lambda err: self.worker_failed(err))
-            worker.error.connect(lambda *_: statusDialog.close())
+            worker.message.connect(lambda msg: statusDialog.update_message(msg))
+            worker.finished.connect(
+                lambda ok, msg, path: (
+                    self.worker_finished(ok, msg, path),
+                    statusDialog.close(),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+            worker.error.connect(
+                lambda err: (
+                    self.worker_failed(err),
+                    statusDialog.close(),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -766,17 +835,32 @@ class Manager_Analysis:
                 "exception_filename": exception_word_list_path,
             }
 
-            # 📊 다운로드 진행 상황을 표시할 다이얼로그 생성
             downloadDialog = DownloadDialog(f"KEMKIM 분석: {tokenfile_name}", self.main)
             downloadDialog.show()
 
-            # 🧵 Worker 실행
+            # thread_name 설정 및 등록
+            thread_name = f"KEMKIM 분석: {tokenfile_name}"
+            register_thread(thread_name)
+            printStatus(self.main)
+
             worker = KemkimWorker(pid, filepath, option, save_path, tokenfile_name, viewer)
             worker.progress.connect(lambda tid, val: downloadDialog.update_progress(val))
-            worker.finished.connect(lambda ok, msg, path, tid: downloadDialog.complete_task(ok))
-            worker.finished.connect(lambda ok, msg, path, tid: self.worker_finished(ok, msg, path))
-            worker.error.connect(lambda err, tid: downloadDialog.complete_task(False))
-            worker.error.connect(lambda err, tid: self.worker_failed(err))
+            worker.finished.connect(
+                lambda ok, msg, path, tid: (
+                    downloadDialog.complete_task(ok),
+                    self.worker_finished(ok, msg, path),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+            worker.error.connect(
+                lambda err, tid: (
+                    downloadDialog.complete_task(False),
+                    self.worker_failed(err),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
             worker.start()
 
             # GC 방지용 리스트에 저장
@@ -1436,18 +1520,33 @@ class Manager_Analysis:
                     return
                 include_word_list = df['word'].tolist()
 
-            # ───────────────────────────── 5) 다운로드 다이얼로그
-            downloadDialog = DownloadDialog(f"CSV 토큰화: {tokenfile_name}", self.main)
+            thread_name = f"CSV 토큰화: {tokenfile_name}"
+            downloadDialog = DownloadDialog(thread_name, self.main)
             downloadDialog.show()
+            
+            register_thread(thread_name)
+            printStatus(self.main)
 
-            # ───────────────────────────── 6) 백그라운드 작업 시작
             worker = TokenizeWorker(csv_path, save_path, tokenfile_name, selected_columns, include_word_list)
-            worker.message.connect(downloadDialog.update_message)
-            worker.progress.connect(downloadDialog.update_progress)
-            worker.finished.connect(lambda ok, msg, path: self.worker_finished(ok, msg, path))
-            worker.finished.connect(lambda *_: downloadDialog.close())
-            worker.error.connect(lambda err: self.worker_failed(err))
-            worker.error.connect(lambda *_: downloadDialog.close())
+            worker.message.connect(lambda msg: downloadDialog.update_message(msg))
+            worker.progress.connect(lambda cur, total: downloadDialog.update_progress(int(cur / total * 100) if total else 0))
+            worker.finished.connect(
+                lambda ok, msg, path: (
+                    self.worker_finished(ok, msg, path),
+                    downloadDialog.close(),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+            worker.error.connect(
+                lambda err: (
+                    self.worker_failed(err),
+                    downloadDialog.close(),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -1848,18 +1947,34 @@ class Manager_Analysis:
             text_col = sel_cols[0]
             option_num = 2
 
-            # 4) 다운로드 다이얼로그 생성
-            downloadDialog = DownloadDialog(f"혐오도 분석: {csv_fname}", self.main)
+            thread_name = f"혐오도 분석: {csv_fname}"
+            downloadDialog = DownloadDialog(thread_name, self.main)
             downloadDialog.show()
 
-            # 5) 워커 실행
+            register_thread(thread_name)
+            printStatus(self.main)
+
             worker = HateMeasureWorker(csv_path, save_dir, csv_fname, text_col, option_num)
-            worker.message.connect(downloadDialog.update_message)
+
+            worker.message.connect(lambda msg: downloadDialog.update_message(msg))
             worker.progress.connect(lambda cur, total: downloadDialog.update_progress(int(cur * 100 / total) if total > 0 else 0))
-            worker.finished.connect(lambda ok, msg, path: self.worker_finished(ok, msg, path))
-            worker.finished.connect(lambda *_: downloadDialog.complete_task(True))
-            worker.error.connect(lambda err: self.worker_failed(err))
-            worker.error.connect(lambda *_: downloadDialog.complete_task(False))
+            worker.finished.connect(
+                lambda ok, msg, path: (
+                    self.worker_finished(ok, msg, path),
+                    downloadDialog.close(),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+            worker.error.connect(
+                lambda err: (
+                    self.worker_failed(err),
+                    downloadDialog.close(),
+                    unregister_thread(thread_name),
+                    printStatus(self.main)
+                )
+            )
+
             worker.start()
 
             if not hasattr(self, "_workers"):
