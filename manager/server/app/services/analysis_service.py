@@ -204,7 +204,7 @@ def tokenization(
 
         # 열 덮어쓰기
         data[col] = tokenized_col
-        send_message(pid, f"[{col}] 토큰화 완료 ✅")
+        send_message(pid, f"[{col}] 토큰화 완료")
 
     return data
 
@@ -401,7 +401,7 @@ def extract_keywords(
 
     # ④ 결과 열 추가 -----------------------------------------------------------
     data["Keywords"] = keywords_col
-    send_message(pid, "[토픽 분석] 완료 ✅")
+    send_message(pid, "[토픽 분석] 완료")
     unload_models()
     return data
 

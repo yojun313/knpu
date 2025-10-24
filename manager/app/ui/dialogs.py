@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt, QDate, pyqtSignal, QUrl
+from PyQt5.QtCore import Qt, QDate, pyqtSignal, QUrl, QTimer
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
@@ -78,7 +78,7 @@ class DownloadDialog(QDialog):
         self.update_text_signal.connect(self.update_message)
 
         self.pid = pid
-        self.webview = None  # ✅ 기본값 None
+        self.webview = None  # 기본값 None
 
         # -----------------------
         # 웹뷰 (pid가 있을 때만 생성)
@@ -122,11 +122,11 @@ class DownloadDialog(QDialog):
         bottom_layout.addWidget(self.pbar, 4)
         self.layout.addLayout(bottom_layout)
 
-    # -----------------------
-    # 기능 함수
-    # -----------------------
     def update_progress(self, value: int):
         self.pbar.setValue(value)
+        # 100%가 되면 자동으로 초기화 메시지 출력
+        if value >= 100:
+            QTimer.singleShot(200, self.reset_bar)
 
     def update_message(self, message: str):
         self.msg_label.setText(message)
@@ -152,6 +152,10 @@ class DownloadDialog(QDialog):
         )
         self.close()
 
+    def reset_bar(self):
+        self.msg_label.setText("대기 중...")
+        self.pbar.setValue(0)
+    
     def closeEvent(self, event):
         if self.webview:
             self.webview.setUrl(QUrl("about:blank"))
@@ -1565,13 +1569,13 @@ class ModifyKemkimDialog(BaseDialog):
         self.eng_auto_checkbox = QCheckBox('자동 변환')
         self.eng_manual_checkbox = QCheckBox('수동 변환')
 
-        # ✅ QButtonGroup을 사용하여 배타적 선택 적용
+        # QButtonGroup을 사용하여 배타적 선택 적용
         self.checkbox_group = QButtonGroup(self)
         self.checkbox_group.addButton(self.eng_no_checkbox)
         self.checkbox_group.addButton(self.eng_auto_checkbox)
         self.checkbox_group.addButton(self.eng_manual_checkbox)
 
-        # ✅ 배타적 선택 활성화 (라디오 버튼처럼 동작)
+        # 배타적 선택 활성화 (라디오 버튼처럼 동작)
         self.checkbox_group.setExclusive(True)
 
         # 기본 선택 설정

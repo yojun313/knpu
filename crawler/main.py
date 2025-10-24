@@ -453,7 +453,7 @@ class Crawler(CrawlerModule):
                 try:
                     df = pd.read_csv(csv_path)
                     df.to_parquet(parquet_path, index=False)
-                    os.remove(csv_path)  # ✅ 변환 성공 후 원본 CSV 삭제
+                    os.remove(csv_path)  # 변환 성공 후 원본 CSV 삭제
                 except Exception as e:
                     print(f"변환 실패: {csv_file} → 오류: {e}")
         except Exception as e:

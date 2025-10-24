@@ -26,7 +26,7 @@ with progress:
     task = progress.add_task("📄 프록시 리스트 불러오는 중...", total=None)
     proxy_path = os.path.join(pathfinder_obj['crawler_folder_path'], '아이피샵(유동프록시).txt')
     proxy_list = ToolModule_obj.read_txt(proxy_path)
-    progress.update(task, description="✅ 프록시 리스트 로드 완료")
+    progress.update(task, description="프록시 리스트 로드 완료")
     progress.stop_task(task)
 
     # MongoDB 연결
@@ -35,7 +35,7 @@ with progress:
     client = MongoClient(uri)
     crawler_db = client["crawler"]
     collection = crawler_db["ip-list"]
-    progress.update(task, description="✅ MongoDB 연결 완료")
+    progress.update(task, description="MongoDB 연결 완료")
     progress.stop_task(task)
 
     # 프록시 업로드
@@ -45,7 +45,7 @@ with progress:
         {"$set": {"list": proxy_list}},
         upsert=True
     )
-    progress.update(task, description="✅ MongoDB 업데이트 완료")
+    progress.update(task, description="MongoDB 업데이트 완료")
     progress.stop_task(task)
 
 # 최종 메시지
