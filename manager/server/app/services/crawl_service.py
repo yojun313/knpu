@@ -2,6 +2,7 @@ from app.db import crawlList_db, crawlLog_db, user_db, crawldata_path
 from app.libs.exceptions import ConflictException, NotFoundException
 from app.models.crawl_model import CrawlDbCreateDto, CrawlLogCreateDto, SaveCrawlDbOption
 from app.utils.mongo import clean_doc
+from app.utils.zip import fast_zip
 from app.utils.getsize import getFolderSize
 from fastapi.responses import JSONResponse
 from collections import OrderedDict
@@ -455,10 +456,11 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
     
     send_message(pid, f"데이터 압축 중")
 
-    zip_path = shutil.make_archive(dbpath, "zip", root_dir=dbpath)
-    filename = os.path.basename(zip_path)  # 여기에 한글이 섞여 있어도 OK
+    zip_path = f"{dbpath}.zip"
+    fast_zip(dbpath, zip_path)
+    filename = os.path.basename(zip_path)
 
-    send_message(pid, f"처리 완료")
+    send_message(pid, f"데이터 처리 완료")
     send_message(pid, f"데이터 전송 중")
     background_task = BackgroundTask(
         cleanup_folder_and_zip, dbpath, zip_path)
