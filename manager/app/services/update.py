@@ -15,7 +15,7 @@ from core.boot import checkNewVersion
 from ui.dialogs import DownloadDialog
 
 class DownloadWorker(QThread):
-    progress = pyqtSignal(int)
+    progress = pyqtSignal(int, str)
     finished = pyqtSignal(str)
     error = pyqtSignal(str)
 
@@ -30,6 +30,7 @@ class DownloadWorker(QThread):
             totalSize = int(response.headers.get('content-length', 0))
             chunkSize = 8192
             downloaded = 0
+            start_time = time.time()  # ✅ 추가
 
             with open(self.save_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=chunkSize):
@@ -37,7 +38,15 @@ class DownloadWorker(QThread):
                         f.write(chunk)
                         downloaded += len(chunk)
                         percent = int((downloaded / totalSize) * 100)
-                        self.progress.emit(percent)
+
+                        # ✅ 속도 및 용량 계산
+                        elapsed = time.time() - start_time
+                        speed = downloaded / (1024 * 1024) / elapsed  # MB/s
+                        current_mb = downloaded / (1024 * 1024)
+                        total_mb = totalSize / (1024 * 1024)
+
+                        msg = f"{current_mb:.2f} MB / {total_mb:.2f} MB ({speed:.2f} MB/s)"
+                        self.progress.emit(percent, msg)  # ✅ 메시지 포함 emit
 
             self.finished.emit(self.save_path)
 
@@ -61,7 +70,10 @@ def downloadProgram(parent, newVersionName):
     dialog = DownloadDialog(f"업데이트 다운로드: {newVersionName}", parent)
     worker = DownloadWorker(download_url, downloadFile_path)
 
-    worker.progress.connect(dialog.update_progress)
+    worker.progress.connect(lambda percent, msg: (
+        dialog.update_progress(percent),
+        dialog.update_message(msg)
+    ))
     worker.finished.connect(lambda path: (
         dialog.complete_task(True),
         openAndExit(path)
