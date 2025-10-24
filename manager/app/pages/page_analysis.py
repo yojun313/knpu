@@ -316,6 +316,7 @@ class Manager_Analysis(Manager_Page):
 
         if not analyzer_path:
             # PATH 환경 변수에서 찾기
+            import shutil
             found = shutil.which("ANALYZER.exe")
             if found:
                 analyzer_path = found
