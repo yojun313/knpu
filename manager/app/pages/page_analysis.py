@@ -1916,6 +1916,12 @@ class Manager_Analysis(Manager_Page):
                     self.error.emit(traceback.format_exc())
 
         try:
+            for thread in active_threads:
+                if "혐오도 분석" in thread:
+                    QMessageBox.information(
+                        self.main, "Processing", "이미 혐오도 분석이 진행 중입니다. 완료 후 다시 시도해주세요.")
+                    return
+            
             # 1) CSV 선택
             csv_path = self.check_file()
             if not csv_path:

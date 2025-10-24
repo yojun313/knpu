@@ -466,7 +466,7 @@ class AddVersionDialog(BaseDialog):
         self.version_features_input = self.add_label(layout, "Version Features:", "", readonly=False)
 
         # Detail (monospace=True, editable)
-        self.detail_input = self.add_label(layout, "Detail:", "", readonly=False)
+        self.detail_input = self.add_label(layout, "Detail:", "", readonly=False, multiline=True)
 
         # Submit
         self.submit_button = QPushButton('Submit')
@@ -521,7 +521,8 @@ class AddBugDialog(BaseDialog):
             layout,
             "Bug Detail:",
             "",
-            readonly=False
+            readonly=False,
+            multiline=True,
         )
         self.bug_detail_input.setPlaceholderText(
             '버그가 발생하는 상황과 조건, 어떤 버그가 일어나는지 자세히 작성해주세요\n오류 로그는 자동으로 전송됩니다'
@@ -579,7 +580,8 @@ class AddPostDialog(BaseDialog):
             layout,
             "Post Text:",
             "",
-            readonly=False
+            readonly=False,
+            multiline=True,
         )
 
         # Post 버튼
