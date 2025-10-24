@@ -38,6 +38,8 @@ from services.csv import *
 from config import *
 from PyQt5.QtCore import QThread, pyqtSignal
 from .page_parent import Manager_Page
+from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
+
 warnings.filterwarnings("ignore")
 
 
@@ -682,14 +684,43 @@ class Manager_Analysis(Manager_Page):
                     download_url = MANAGER_SERVER_API + "/analysis/kemkim"
                     send_message(self.pid, "토큰 데이터 업로드 중...")
 
-                    response = requests.post(
-                        download_url,
-                        files={"token_file": open(self.filepath, "rb")},
-                        data={"option": json.dumps(self.option)},
-                        headers=get_api_headers(),
-                        timeout=3600,
-                        stream=True
-                    )
+                    file_size = os.path.getsize(self.filepath)
+                    uploaded = 0
+                    last_percent = -1
+                    last_emit_time = 0
+
+                    def upload_callback(monitor):
+                        nonlocal uploaded, last_percent, last_emit_time
+                        uploaded = monitor.bytes_read
+                        percent = int(uploaded / file_size * 100)
+                        now = time.time()
+                        if percent != last_percent or now - last_emit_time > 0.2:
+                            mb_up = uploaded / (1024 * 1024)
+                            mb_total = file_size / (1024 * 1024)
+                            speed = mb_up / (now - start_time) if now > start_time else 0
+                            msg = f"토큰 데이터 업로드 중... {mb_up:.1f}MB/{mb_total:.1f}MB ({speed:.1f}MB/s)"
+                            self.progress.emit(percent, msg)
+                            last_percent = percent
+                            last_emit_time = now
+
+                    start_time = time.time()
+
+                    with open(self.filepath, "rb") as f:
+                        encoder = MultipartEncoder(
+                            fields={
+                                "token_file": (os.path.basename(self.filepath), f, "application/octet-stream"),
+                                "option": json.dumps(self.option),
+                            }
+                        )
+                        monitor = MultipartEncoderMonitor(encoder, upload_callback)
+
+                        response = requests.post(
+                            download_url,
+                            data=monitor,
+                            headers={**get_api_headers(), "Content-Type": monitor.content_type},
+                            timeout=3600,
+                            stream=True
+                        )
                     response.raise_for_status()
                     
                     # 1) 파일명 파싱
