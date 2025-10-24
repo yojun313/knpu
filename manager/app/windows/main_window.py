@@ -264,3 +264,6 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             print(e)
+
+    def updateProgram(self, sc=False):  
+        updateProgram(self, sc)

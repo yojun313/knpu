@@ -17,6 +17,7 @@ from services.api import Request, get_api_headers
 from core.setting import get_setting, set_setting
 from services.auth import checkPassword
 from ui.status import showActiveThreadsDialog
+from windows.splash_window import AboutDialog
 
 class ClickableLabel(QLabel):
     clicked = pyqtSignal()  # 클릭 시그널 정의
@@ -112,6 +113,7 @@ def initStatusbar(parent):
     parent.setStatusBar(parent.statusbar)
 
     parent.leftLabel = ClickableLabel('  ' + f'Version {VERSION}')
+    parent.leftLabel.clicked.connect(lambda: AboutDialog(VERSION, "light" if get_setting("Theme") == "default" else "dark", parent).show())
     parent.rightLabel = ClickableLabel('')
     parent.rightLabel.clicked.connect(lambda: showActiveThreadsDialog())
     
