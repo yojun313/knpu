@@ -63,25 +63,21 @@ class BaseDialog(QDialog):
 
 class DownloadDialog(QDialog):
     update_text_signal = pyqtSignal(str)
+
     def __init__(self, display_name, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"{display_name}")
         self.setMinimumWidth(420)
-
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+
         self.layout = QVBoxLayout(self)
-
-        # 상단 라벨 (제목)
         self.update_text_signal.connect(self.update_message)
-        
-        self.label = QLabel(display_name)
-        self.label.setStyleSheet("font-weight: bold; font-size: 14px;")
 
-        # 진행 메시지 라벨 (실시간 상태 출력)
-        self.msg_label = QLabel("")
-        self.msg_label.setWordWrap(True)  # 긴 메시지도 줄바꿈
-        self.msg_label.setStyleSheet("color: #555; font-size: 12px;")
-        self.msg_label.setAlignment(Qt.AlignLeft)
+        # 메시지 라벨 (제목 대신)
+        self.msg_label = QLabel("서버 응답 대기 중...")
+        self.msg_label.setWordWrap(True)
+        self.msg_label.setStyleSheet("font-weight: bold; color: #333; font-size: 13px;")
+        self.msg_label.setAlignment(Qt.AlignCenter) 
 
         # 진행바
         self.pbar = QProgressBar()
@@ -103,23 +99,20 @@ class DownloadDialog(QDialog):
             }
         """)
 
-        # 레이아웃 구성
+        # 레이아웃 구성 (제목 라벨 없이 메시지 라벨만 위에)
         top_layout = QHBoxLayout()
-        top_layout.addWidget(self.label, 2)
+        top_layout.addWidget(self.msg_label, 2)
         top_layout.addWidget(self.pbar, 4)
 
         self.layout.addLayout(top_layout)
-        self.layout.addWidget(self.msg_label)
 
     def update_progress(self, value: int):
         self.pbar.setValue(value)
 
     def update_message(self, message: str):
-        """진행 중 메시지를 업데이트"""
         self.msg_label.setText(message)
 
     def complete_task(self, success=True):
-        self.label.setText(f"{self.label.text()} - {'완료' if success else '실패'}")
         self.pbar.setValue(100 if success else 0)
         self.pbar.setStyleSheet("""
             QProgressBar {
