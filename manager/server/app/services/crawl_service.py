@@ -458,6 +458,8 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
     zip_path = shutil.make_archive(dbpath, "zip", root_dir=dbpath)
     filename = os.path.basename(zip_path)  # 여기에 한글이 섞여 있어도 OK
 
+    send_message(pid, f"처리 완료")
+    send_message(pid, f"데이터 전송 중")
     background_task = BackgroundTask(
         cleanup_folder_and_zip, dbpath, zip_path)
 

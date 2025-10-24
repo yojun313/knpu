@@ -175,7 +175,7 @@ class Manager_Analysis(Manager_Page):
             statusDialog = TaskStatusDialog(thread_name, self.main)
             statusDialog.show()
 
-            worker = TimeSplitWorker(selected_directory, self.dataprocess_obj)
+            worker = TimeSplitWorker(selected_directory, self.dataprocess_obj, self.main)
             worker.message.connect(statusDialog.update_message)
             worker.finished.connect(
                 lambda ok, msg, path: (
@@ -275,7 +275,7 @@ class Manager_Analysis(Manager_Page):
             statusDialog = TaskStatusDialog(thread_name, self.main)
             statusDialog.show()
             
-            worker = MergeWorker(selected_directory, mergedfilename)
+            worker = MergeWorker(selected_directory, mergedfilename, self.main)
             worker.message.connect(lambda msg: statusDialog.update_message(msg))
             worker.finished.connect(
                 lambda ok, msg, path: (
@@ -474,7 +474,7 @@ class Manager_Analysis(Manager_Page):
             register_thread(thread_name)
             printStatus(self.main)
 
-            worker = RunAnalysisWorker(filepath, selected_options, self.dataprocess_obj, hate_mode)
+            worker = RunAnalysisWorker(filepath, selected_options, self.dataprocess_obj, hate_mode, self.main)
             worker.message.connect(lambda msg: taskDialog.update_message(msg))
             worker.finished.connect(
                 lambda ok, msg, path: (
@@ -627,7 +627,8 @@ class Manager_Analysis(Manager_Page):
                 exception_word_list,
                 eng_yes_selected,
                 filename,
-                self.dataprocess_obj
+                self.dataprocess_obj,
+                self.main
             )
             worker.message.connect(lambda msg: statusDialog.update_message(msg))
             worker.finished.connect(
@@ -663,18 +664,17 @@ class Manager_Analysis(Manager_Page):
 
     def run_kemkim(self):
         class KemkimWorker(QThread):
-            finished = pyqtSignal(bool, str, str, str)   # (성공 여부, 메시지, 경로, task_id)
-            error = pyqtSignal(str, str)                # (에러 메시지, task_id)
-            progress = pyqtSignal(str, int)            # (task_id, 진행률)
+            finished = pyqtSignal(bool, str, str)   # (성공 여부, 메시지, 경로)
+            error = pyqtSignal(str)                # (에러 메시지)
+            progress = pyqtSignal(int, str)            # (task_id, 진행률)
 
-            def __init__(self, pid, filepath, option, save_path, tokenfile_name, viewer, parent=None):
+            def __init__(self, pid, filepath, option, save_path, tokenfile_name, parent=None):
                 super().__init__(parent)
                 self.pid = pid
                 self.filepath = filepath
                 self.option = option
                 self.save_path = save_path
                 self.tokenfile_name = tokenfile_name
-                self.viewer = viewer
 
             def run(self):
                 try:
@@ -691,8 +691,6 @@ class Manager_Analysis(Manager_Page):
                     )
                     response.raise_for_status()
                     
-                    close_viewer(self.viewer)
-
                     # 1) 파일명 파싱
                     content_disp = response.headers.get("Content-Disposition", "")
                     m = re.search(r'filename="(?P<fname>[^"]+)"', content_disp)
@@ -708,8 +706,11 @@ class Manager_Analysis(Manager_Page):
                     local_zip = os.path.join(self.save_path, zip_name)
                     total_size = int(response.headers.get("Content-Length", 0))
                     downloaded = 0
+                    start_time = time.time() 
 
-                    # 2) 다운로드 진행률 업데이트
+                    last_emit_time = 0
+                    last_percent = -1
+
                     with open(safe_path(local_zip), "wb") as f:
                         for chunk in response.iter_content(8192):
                             if chunk:
@@ -717,7 +718,20 @@ class Manager_Analysis(Manager_Page):
                                 downloaded += len(chunk)
                                 if total_size > 0:
                                     percent = int(downloaded / total_size * 100)
-                                    self.progress.emit(self.pid, percent)
+
+                                    elapsed = time.time() - start_time
+                                    if elapsed == 0:
+                                        elapsed = 0.001  # 0 방지
+                                    speed = downloaded / (1024 * 1024) / elapsed
+                                    current_mb = downloaded / (1024 * 1024)
+                                    total_mb = total_size / (1024 * 1024)
+
+                                    now = time.time()
+                                    if percent != last_percent or now - last_emit_time > 0.2:
+                                        msg = f"{current_mb:.1f}MB / {total_mb:.1f}MB ({speed:.1f}MB/s)"
+                                        self.progress.emit(percent, msg)
+                                        last_percent = percent
+                                        last_emit_time = now
 
                     # 3) 압축 해제
                     base_folder = os.path.splitext(zip_name)[0]
@@ -729,10 +743,10 @@ class Manager_Analysis(Manager_Page):
 
                     os.remove(local_zip)
 
-                    self.finished.emit(True, f"{self.tokenfile_name} KEMKIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path, self.pid)
+                    self.finished.emit(True, f"{self.tokenfile_name} KEMKIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
 
                 except Exception:
-                    self.error.emit(traceback.format_exc(), self.pid)
+                    self.error.emit(traceback.format_exc())
 
         try:
             filepath = self.check_file(tokenCheck=True)
@@ -794,7 +808,6 @@ class Manager_Analysis(Manager_Page):
             # 옵션 딕셔너리 구성
             pid = str(uuid.uuid4())
             register_process(pid, "KEMKIM")
-            viewer = open_viewer(pid)
 
             option = {
                 "pid": pid,
@@ -814,7 +827,7 @@ class Manager_Analysis(Manager_Page):
                 "exception_filename": exception_word_list_path,
             }
 
-            downloadDialog = DownloadDialog(f"KEMKIM 분석: {tokenfile_name}", self.main)
+            downloadDialog = DownloadDialog(f"KEMKIM 분석: {tokenfile_name}", pid, self.main)
             downloadDialog.show()
 
             # thread_name 설정 및 등록
@@ -822,10 +835,13 @@ class Manager_Analysis(Manager_Page):
             register_thread(thread_name)
             printStatus(self.main)
 
-            worker = KemkimWorker(pid, filepath, option, save_path, tokenfile_name, viewer)
-            worker.progress.connect(lambda tid, val: downloadDialog.update_progress(val))
+            worker = KemkimWorker(pid, filepath, option, save_path, tokenfile_name, self.main)
+            worker.progress.connect(lambda val, msg: (
+                downloadDialog.update_progress(val), 
+                downloadDialog.update_text_signal.emit(msg)
+            ))
             worker.finished.connect(
-                lambda ok, msg, path, tid: (
+                lambda ok, msg, path: (
                     downloadDialog.complete_task(ok),
                     self.worker_finished(ok, msg, path),
                     unregister_thread(thread_name),
@@ -833,7 +849,7 @@ class Manager_Analysis(Manager_Page):
                 )
             )
             worker.error.connect(
-                lambda err, tid: (
+                lambda err: (
                     downloadDialog.complete_task(False),
                     self.worker_failed(err),
                     unregister_thread(thread_name),
@@ -1360,32 +1376,27 @@ class Manager_Analysis(Manager_Page):
         class TokenizeWorker(QThread):
             finished = pyqtSignal(bool, str, str)  # (성공 여부, 메시지, 결과 파일 경로)
             error = pyqtSignal(str)
-            progress = pyqtSignal(int, int)  # (현재 바이트, 총 바이트)
+            progress = pyqtSignal(int, str)  # (percent)
             message = pyqtSignal(str)
 
-            def __init__(self, csv_path, save_path, tokenfile_name, selected_columns, include_word_list):
-                super().__init__()
+            def __init__(self, pid, csv_path, save_path, tokenfile_name, selected_columns, include_word_list, parent=None):
+                super().__init__(parent)
                 self.csv_path = csv_path
                 self.save_path = save_path
                 self.tokenfile_name = tokenfile_name
                 self.selected_columns = selected_columns
                 self.include_word_list = include_word_list
-
+                self.pid = pid
+                
             def run(self):
                 try:
-                    # 프로세스 등록
-                    pid = str(uuid.uuid4())
-                    register_process(pid, "Tokenizing File")
-                    viewer = open_viewer(pid)
-
                     option = {
-                        "pid": pid,
+                        "pid": self.pid,
                         "column_names": self.selected_columns,
                         "include_words": self.include_word_list,
                     }
 
                     download_url = MANAGER_SERVER_API + "/analysis/tokenize"
-                    self.message.emit("서버에서 처리 중...")
 
                     with open(safe_path(self.csv_path), "rb") as file_obj:
                         response = requests.post(
@@ -1399,8 +1410,6 @@ class Manager_Analysis(Manager_Page):
                             timeout=3600
                         )
 
-                    close_viewer(viewer)
-
                     if response.status_code != 200:
                         try:
                             error_data = response.json()
@@ -1413,18 +1422,36 @@ class Manager_Analysis(Manager_Page):
                     csv_name = f"token_{self.tokenfile_name}"
                     local_csv = os.path.join(self.save_path, csv_name)
                     total_size = int(response.headers.get("Content-Length", 0))
+                    
+                    downloaded = 0
+                    start_time = time.time() 
 
-                    self.message.emit("토큰화된 파일 다운로드 중...")
+                    last_emit_time = 0
+                    last_percent = -1
 
                     with open(safe_path(local_csv), "wb") as f:
-                        downloaded = 0
                         for chunk in response.iter_content(8192):
                             if chunk:
                                 f.write(chunk)
                                 downloaded += len(chunk)
-                                self.progress.emit(downloaded, total_size)
+                                if total_size > 0:
+                                    percent = int(downloaded / total_size * 100)
 
-                    self.finished.emit(True, f"{self.tokenfile_name} 토큰화가 완료되었습니다", local_csv)
+                                    elapsed = time.time() - start_time
+                                    if elapsed == 0:
+                                        elapsed = 0.001  # 0 방지
+                                    speed = downloaded / (1024 * 1024) / elapsed
+                                    current_mb = downloaded / (1024 * 1024)
+                                    total_mb = total_size / (1024 * 1024)
+
+                                    now = time.time()
+                                    if percent != last_percent or now - last_emit_time > 0.2:
+                                        msg = f"{current_mb:.1f}MB / {total_mb:.1f}MB ({speed:.1f}MB/s)"
+                                        self.progress.emit(percent, msg)
+                                        last_percent = percent
+                                        last_emit_time = now
+
+                    self.finished.emit(True, f"{self.tokenfile_name} 토큰화가 완료되었습니다", os.path.dirname(local_csv))
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
@@ -1499,28 +1526,34 @@ class Manager_Analysis(Manager_Page):
                     return
                 include_word_list = df['word'].tolist()
 
+            pid = str(uuid.uuid4())
+            register_process(pid, "Tokenizing File")
+            
             thread_name = f"CSV 토큰화: {tokenfile_name}"
             register_thread(thread_name)
             printStatus(self.main)
             
-            downloadDialog = DownloadDialog(thread_name, self.main)
+            downloadDialog = DownloadDialog(thread_name, pid, self.main)
             downloadDialog.show()
 
-            worker = TokenizeWorker(csv_path, save_path, tokenfile_name, selected_columns, include_word_list)
+            worker = TokenizeWorker(pid, csv_path, save_path, tokenfile_name, selected_columns, include_word_list, self.main)
             worker.message.connect(lambda msg: downloadDialog.update_message(msg))
-            worker.progress.connect(lambda cur, total: downloadDialog.update_progress(int(cur / total * 100) if total else 0))
+            worker.progress.connect(lambda val, msg: (
+                downloadDialog.update_progress(val), 
+                downloadDialog.update_text_signal.emit(msg)
+            ))
             worker.finished.connect(
                 lambda ok, msg, path: (
+                    downloadDialog.complete_task(),
                     self.worker_finished(ok, msg, path),
-                    downloadDialog.close(),
                     unregister_thread(thread_name),
                     printStatus(self.main)
                 )
             )
             worker.error.connect(
                 lambda err: (
+                    downloadDialog.complete_task(),
                     self.worker_failed(err),
-                    downloadDialog.close(),
                     unregister_thread(thread_name),
                     printStatus(self.main)
                 )
@@ -1816,11 +1849,12 @@ class Manager_Analysis(Manager_Page):
         class HateMeasureWorker(QThread):
             finished = pyqtSignal(bool, str, str)  # (성공 여부, 메시지, 결과 파일 경로)
             error = pyqtSignal(str)
-            progress = pyqtSignal(int, int)       # (현재, 총 바이트)
+            progress = pyqtSignal(int)       # (현재, 총 바이트)
             message = pyqtSignal(str)
 
-            def __init__(self, csv_path, save_dir, csv_fname, text_col, option_num):
-                super().__init__()
+            def __init__(self, pid, csv_path, save_dir, csv_fname, text_col, option_num, parent=None):
+                super().__init__(parent)
+                self.pid = pid
                 self.csv_path = csv_path
                 self.save_dir = save_dir
                 self.csv_fname = csv_fname
@@ -1829,20 +1863,13 @@ class Manager_Analysis(Manager_Page):
 
             def run(self):
                 try:
-                    # 1. 프로세스 등록 및 뷰어
-                    pid = str(uuid.uuid4())
-                    register_process(pid, "혐오도 분석")
-                    viewer = open_viewer(pid)
-
                     option_payload = {
-                        "pid": pid,
+                        "pid": self.pid,
                         "option_num": self.option_num,
                         "text_col": self.text_col,
                     }
 
                     url = MANAGER_SERVER_API + "/analysis/hate"
-
-                    self.message.emit("서버에서 처리 중...")
 
                     with open(safe_path(self.csv_path), "rb") as fobj:
                         resp = requests.post(
@@ -1855,8 +1882,6 @@ class Manager_Analysis(Manager_Page):
                             stream=True,
                             timeout=3600
                         )
-
-                    close_viewer(viewer)
 
                     # 2. 오류 처리
                     if resp.status_code != 200:
@@ -1871,19 +1896,21 @@ class Manager_Analysis(Manager_Page):
                     # 3. 다운로드
                     out_name = f"hate_{self.csv_fname}"
                     out_path = os.path.join(self.save_dir, out_name)
-                    total_len = int(resp.headers.get("Content-Length", 0))
+                    total_size = int(resp.headers.get("Content-Length", 0))
 
                     self.message.emit("혐오도 분석 결과 다운로드 중...")
-
+                    downloaded = 0
+                    # 2) 다운로드 진행률 업데이트
                     with open(safe_path(out_path), "wb") as f:
-                        downloaded = 0
                         for chunk in resp.iter_content(8192):
                             if chunk:
                                 f.write(chunk)
                                 downloaded += len(chunk)
-                                self.progress.emit(downloaded, total_len)
+                                if total_size > 0:
+                                    percent = int(downloaded / total_size * 100)
+                                    self.progress.emit(percent)
 
-                    self.finished.emit(True, f"{self.csv_fname} 혐오도 분석이 완료되었습니다", out_path)
+                    self.finished.emit(True, f"{self.csv_fname} 혐오도 분석이 완료되었습니다", os.path.dirname(out_path))
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
@@ -1926,29 +1953,32 @@ class Manager_Analysis(Manager_Page):
             text_col = sel_cols[0]
             option_num = 2
 
+            pid = str(uuid.uuid4())
+            register_process(pid, "혐오도 분석")
+            
             thread_name = f"혐오도 분석: {csv_fname}"
-            downloadDialog = DownloadDialog(thread_name, self.main)
-            downloadDialog.show()
-
             register_thread(thread_name)
             printStatus(self.main)
-
-            worker = HateMeasureWorker(csv_path, save_dir, csv_fname, text_col, option_num)
+            
+            downloadDialog = DownloadDialog(thread_name, pid, self.main)
+            downloadDialog.show()
+        
+            worker = HateMeasureWorker(pid, csv_path, save_dir, csv_fname, text_col, option_num, self.main)
 
             worker.message.connect(lambda msg: downloadDialog.update_message(msg))
-            worker.progress.connect(lambda cur, total: downloadDialog.update_progress(int(cur * 100 / total) if total > 0 else 0))
+            worker.progress.connect(lambda val: downloadDialog.update_progress(val))
             worker.finished.connect(
                 lambda ok, msg, path: (
+                    downloadDialog.complete_task(), 
                     self.worker_finished(ok, msg, path),
-                    downloadDialog.close(),
                     unregister_thread(thread_name),
                     printStatus(self.main)
                 )
             )
             worker.error.connect(
                 lambda err: (
+                    downloadDialog.complete_task(),
                     self.worker_failed(err),
-                    downloadDialog.close(),
                     unregister_thread(thread_name),
                     printStatus(self.main)
                 )
@@ -2022,7 +2052,6 @@ class Manager_Analysis(Manager_Page):
             # 5) 프로세스 등록 / 뷰어
             pid = str(uuid.uuid4())
             register_process(pid, "토픽/키워드 분석")
-            viewer = open_viewer(pid)
 
             option_payload = {
                 "pid": pid,
@@ -2066,7 +2095,6 @@ class Manager_Analysis(Manager_Page):
             out_path = os.path.join(save_dir, out_name)
             total_len = int(resp.headers.get("Content-Length", 0))
 
-            close_viewer(viewer)
             openConsole("토픽 분석 결과 다운로드")
 
             with open(safe_path(out_path), "wb") as f, tqdm(

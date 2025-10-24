@@ -54,7 +54,7 @@ class DownloadWorker(QThread):
 
                             now = time.time()
                             if percent != last_percent or now - last_emit_time > 0.2:
-                                msg = f"{current_mb:.2f} MB / {total_mb:.2f} MB ({speed:.2f} MB/s)"
+                                msg = f"{current_mb:.1f}MB / {total_mb:.1f}MB ({speed:.1f}MB/s)"
                                 self.progress.emit(percent, msg)
                                 last_percent = percent
                                 last_emit_time = now
