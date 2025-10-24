@@ -2425,8 +2425,8 @@ class DataProcess:
         if words_to_translate:
             async def translate_word(word):
                 """ 개별 단어를 비동기적으로 번역하고 반환하는 함수 """
-                result = await translator.translate(word, dest='en', src='auto')  # ✅ await 추가
-                return word, result.text  # ✅ 번역 결과 반환
+                result = await translator.translate(word, dest='en', src='auto')  # await 추가
+                return word, result.text  # 번역 결과 반환
 
             # 번역 실행 (병렬 처리)
             translated_results = await asyncio.gather(*(translate_word(word) for word in words_to_translate))

@@ -362,7 +362,7 @@ class Manager_Analysis(Manager_Page):
                 print("\nDownload Complete")
                 closeConsole()
 
-                # ✅ 설치 프로그램 실행
+                # 설치 프로그램 실행
                 subprocess.Popen([installer_path], shell=True)
                 QMessageBox.information(
                     self.main,
@@ -766,6 +766,7 @@ class Manager_Analysis(Manager_Page):
                                         last_emit_time = now
 
                     # 3) 압축 해제
+                    self.progress.emit(100, "압축 해제 중...")
                     base_folder = os.path.splitext(zip_name)[0]
                     extract_path = os.path.join(self.save_path, base_folder)
                     os.makedirs(extract_path, exist_ok=True)
@@ -795,49 +796,117 @@ class Manager_Analysis(Manager_Page):
                 printStatus(self.main)
                 return
 
-            # 옵션 설정 (기존 로직 그대로 유지)
-            dialog = RunKemkimDialog(tokenfile_name)
-            result = dialog.exec_()
-            if result != QDialog.Accepted or dialog.data is None:
-                return
+            printStatus(self.main, "KEM KIM 옵션을 설정하세요")
+            while True:
+                dialog = RunKemkimDialog(tokenfile_name)
+                result = dialog.exec_()
+                try:
+                    if result != QDialog.Accepted or dialog.data is None:
+                        return
+                    startdate = dialog.data['startDate']
+                    enddate = dialog.data['endDate']
+                    period = dialog.data['period']
+                    topword = int(dialog.data['topword'])
+                    weight = float(dialog.data['weight'])
+                    graph_wordcnt = int(dialog.data['graph_wordcnt'])
+                    filter_yes_selected = dialog.data['filter_yes_selected']
+                    trace_standard_selected = dialog.data['trace_standard_selected']
+                    ani_yes_selected = dialog.data['ani_yes_selected']
+                    except_yes_selected = dialog.data['except_yes_selected']
+                    split_option = dialog.data['split_option']
+                    split_custom = dialog.data['split_custom']
+                    
+                    try:
+                        start_dt = pd.to_datetime(str(startdate), format='%Y%m%d', errors='coerce')
+                        end_dt   = pd.to_datetime(str(enddate),   format='%Y%m%d', errors='coerce')
+                    except Exception:
+                        start_dt = end_dt = pd.NaT
 
-            # 날짜 등 유효성 검사 (기존 로직 그대로 유지)
-            startdate = dialog.data['startDate']
-            enddate = dialog.data['endDate']
-            period = dialog.data['period']
-            topword = int(dialog.data['topword'])
-            weight = float(dialog.data['weight'])
-            graph_wordcnt = int(dialog.data['graph_wordcnt'])
-            filter_yes_selected = dialog.data['filter_yes_selected']
-            trace_standard_selected = dialog.data['trace_standard_selected']
-            ani_yes_selected = dialog.data['ani_yes_selected']
-            except_yes_selected = dialog.data['except_yes_selected']
-            split_option = dialog.data['split_option']
-            split_custom = dialog.data['split_custom']
+                    if pd.isna(start_dt) or pd.isna(end_dt):
+                        QMessageBox.warning(self.main, "Wrong Form",
+                                            "시작일/종료일 형식이 올바르지 않습니다.\nYYYYMMDD 형식으로 입력하세요.")
+                        continue
 
-            # 예외어 처리 로직 (기존 그대로)
+                    if end_dt < start_dt:
+                        QMessageBox.warning(self.main, "Wrong Form",
+                                            "종료일이 시작일보다 앞설 수 없습니다.")
+                        continue
+
+                    startdate = start_dt.strftime('%Y%m%d')
+                    enddate   = end_dt.strftime('%Y%m%d')
+                    
+                    # Calculate total periods based on the input period
+                    def months_between_inclusive(s: datetime, e: datetime) -> int:
+                        # s와 e가 같은 달이면 1, 그 이상이면 월 차이 + 1 (양끝 달 포함)
+                        return (e.year - s.year) * 12 + (e.month - s.month) + 1
+
+                    if period == '1y':
+                        # 연도 포함 개수(양끝 포함)
+                        years = (end_dt.year - start_dt.year) + 1
+                        total_periods = years / int(period[:-1])  # period[:-1] == '1'
+                    elif period in ['6m', '3m', '1m']:
+                        months = months_between_inclusive(start_dt, end_dt)
+                        step = int(period[:-1])  # 6, 3, 1
+                        total_periods = months / step
+                    elif period == '1w':
+                        if start_dt.strftime('%A') != 'Monday':
+                            QMessageBox.warning(self.main, "Wrong Form",
+                                                "분석 시작일이 월요일이 아닙니다\n\n1주 단위 분석에서는 시작일=월요일, 종료일=일요일")
+                            continue
+                        if end_dt.strftime('%A') != 'Sunday':
+                            QMessageBox.warning(self.main, "Wrong Form",
+                                                "분석 종료일이 일요일이 아닙니다\n\n1주 단위 분석에서는 시작일=월요일, 종료일=일요일")
+                            continue
+                        total_days = (end_dt - start_dt).days + 1  # ← 양끝 포함
+                        total_periods = total_days // 7
+                    else:
+                        # 일 단위 가정
+                        total_days = (end_dt - start_dt).days
+                        total_periods = total_days
+
+                    # Check if the total periods exceed the limit when multiplied by the weight
+                    if total_periods * weight >= 1:
+                        QMessageBox.warning(self.main, "Wrong Form",
+                                            "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
+                        continue
+
+                    if split_option in ['평균(Mean)', '중앙값(Median)'] and (split_custom is None or str(split_custom).strip() == ''):
+                        pass
+                    else:
+                        split_custom = float(split_custom)
+                    break
+                except Exception as e:
+                    QMessageBox.warning(
+                        self.main, "Wrong Form", f"입력 형식이 올바르지 않습니다, {e}")
+
             exception_word_list = []
             exception_word_list_path = 'N'
-            if except_yes_selected:
-                QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
-                exception_word_list_path = QFileDialog.getOpenFileName(
-                    self.main, "예외어 사전(CSV)를 선택하세요", self.main.localDirectory,
-                    "CSV Files (*.csv);;All Files (*)")[0]
+            if except_yes_selected == True:
+                QMessageBox.information(
+                    self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
+                printStatus(self.main, f"예외어 사전(CSV)을 선택하세요")
+                exception_word_list_path = QFileDialog.getOpenFileName(self.main, "예외어 사전(CSV)를 선택하세요",
+                                                                       self.main.localDirectory,
+                                                                       "CSV Files (*.csv);;All Files (*)")
+                exception_word_list_path = exception_word_list_path[0]
                 if exception_word_list_path == "":
                     return
                 if not os.path.exists(exception_word_list_path):
-                    raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}")
+                    raise FileNotFoundError(
+                        f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}")
 
                 with open(safe_path(exception_word_list_path), 'rb') as f:
                     codec = chardet.detect(f.read())['encoding']
-                df = pd.read_csv(exception_word_list_path, low_memory=False, encoding=codec)
+
+                df = pd.read_csv(exception_word_list_path,
+                                 low_memory=False, encoding=codec)
                 if 'word' not in list(df.keys()):
-                    QMessageBox.warning(self.main, "Wrong Format", "예외어 사전 형식과 일치하지 않습니다")
+                    QMessageBox.warning(
+                        self.main, "Wrong Format", "예외어 사전 형식과 일치하지 않습니다")
                     printStatus(self.main)
                     return
                 exception_word_list = df['word'].tolist()
 
-            # 옵션 딕셔너리 구성
             pid = str(uuid.uuid4())
             register_process(pid, "KEMKIM")
 
@@ -1429,15 +1498,40 @@ class Manager_Analysis(Manager_Page):
                     }
 
                     download_url = MANAGER_SERVER_API + "/analysis/tokenize"
+                    file_size = os.path.getsize(self.csv_path)
+                    uploaded = 0
+                    last_percent = -1
+                    last_emit_time = 0
+                    start_time = time.time()
 
-                    with open(safe_path(self.csv_path), "rb") as file_obj:
+                    def upload_callback(monitor):
+                        nonlocal uploaded, last_percent, last_emit_time
+                        uploaded = monitor.bytes_read
+                        percent = int(uploaded / file_size * 100)
+                        now = time.time()
+                        if percent != last_percent or now - last_emit_time > 0.2:
+                            mb_up = uploaded / (1024 * 1024)
+                            mb_total = file_size / (1024 * 1024)
+                            speed = mb_up / (now - start_time) if now > start_time else 0
+                            msg = f"CSV 업로드 중... {mb_up:.1f}MB / {mb_total:.1f}MB ({speed:.1f}MB/s)"
+                            self.progress.emit(percent, msg)
+                            last_percent = percent
+                            last_emit_time = now
+
+                    # MultipartEncoder로 업로드 진행률 추적
+                    with open(self.csv_path, "rb") as f:
+                        encoder = MultipartEncoder(
+                            fields={
+                                "csv_file": (self.tokenfile_name, f, "text/csv"),
+                                "option": (None, json.dumps(option), "application/json"),
+                            }
+                        )
+                        monitor = MultipartEncoderMonitor(encoder, upload_callback)
+
                         response = requests.post(
                             download_url,
-                            files={
-                                "csv_file": (self.tokenfile_name, file_obj, "text/csv"),
-                                "option": (None, json.dumps(option), "application/json"),
-                            },
-                            headers=get_api_headers(),
+                            data=monitor,
+                            headers={**get_api_headers(), "Content-Type": monitor.content_type},
                             stream=True,
                             timeout=3600
                         )
@@ -1903,14 +1997,41 @@ class Manager_Analysis(Manager_Page):
 
                     url = MANAGER_SERVER_API + "/analysis/hate"
 
-                    with open(safe_path(self.csv_path), "rb") as fobj:
+                    file_size = os.path.getsize(self.csv_path)
+                    uploaded = 0
+                    last_percent = -1
+                    last_emit_time = 0
+                    start_time = time.time()
+
+                    def upload_callback(monitor):
+                        nonlocal uploaded, last_percent, last_emit_time
+                        uploaded = monitor.bytes_read
+                        percent = int(uploaded / file_size * 100)
+                        now = time.time()
+                        if percent != last_percent or now - last_emit_time > 0.2:
+                            mb_up = uploaded / (1024 * 1024)
+                            mb_total = file_size / (1024 * 1024)
+                            speed = mb_up / (now - start_time) if now > start_time else 0
+                            msg = f"업로드 중... {mb_up:.1f}MB / {mb_total:.1f}MB ({speed:.1f}MB/s)"
+                            self.message.emit(msg)
+                            self.progress.emit(percent)
+                            last_percent = percent
+                            last_emit_time = now
+
+                    # MultipartEncoder로 업로드 진행률 추적
+                    with open(self.csv_path, "rb") as f:
+                        encoder = MultipartEncoder(
+                            fields={
+                                "csv_file": (self.csv_fname, f, "text/csv"),
+                                "option": (None, json.dumps(option_payload), "application/json"),
+                            }
+                        )
+                        monitor = MultipartEncoderMonitor(encoder, upload_callback)
+
                         resp = requests.post(
                             url,
-                            files={
-                                "csv_file": (self.csv_fname, fobj, "text/csv"),
-                                "option": (None, json.dumps(option_payload), "application/json"),
-                            },
-                            headers=get_api_headers(),
+                            data=monitor,
+                            headers={**get_api_headers(), "Content-Type": monitor.content_type},
                             stream=True,
                             timeout=3600
                         )
