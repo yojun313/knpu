@@ -79,7 +79,7 @@ def build_exe_from_spec(spec_file, output_directory, version):
             'C:/GitHub/knpu/venv', 'Scripts', 'python.exe')  # 가상환경 안의 python
 
         subprocess.run([
-            'python',
+            venv_python,
             '-m', 'PyInstaller',
             '--distpath', output_directory,
             '--workpath', os.path.join(output_directory, 'build'),
