@@ -435,6 +435,7 @@ class Manager_Database(Manager_Page):
                                         last_emit_time = now
 
                     # 압축 해제
+                    self.progress.emit(100, "압축 해제 중...")
                     base_folder = os.path.splitext(zip_name)[0]
                     extract_path = os.path.join(self.folder_path, base_folder)
                     os.makedirs(extract_path, exist_ok=True)

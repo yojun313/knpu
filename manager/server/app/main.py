@@ -8,13 +8,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 console = Console()
 
-# ✅ 주기적으로 GC 실행
+# 주기적으로 GC 실행
 async def periodic_gc(interval_seconds: int = 60):
     while True:
         await asyncio.sleep(interval_seconds)
         gc.collect()
 
-# ✅ 요청 로그 미들웨어 (텍스트 출력)
+# 요청 로그 미들웨어 (텍스트 출력)
 class RichLoggerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = datetime.now()
@@ -46,7 +46,7 @@ class RichLoggerMiddleware(BaseHTTPMiddleware):
         console.print(log_message)
         return response
 
-# ✅ FastAPI 앱 구성
+# FastAPI 앱 구성
 app = FastAPI()
 app.add_middleware(RichLoggerMiddleware)
 

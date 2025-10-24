@@ -12,7 +12,7 @@ fi
 # 가상환경 활성화
 source venv/bin/activate
 pip install --upgrade pip
-echo "✅ 가상환경 활성화 완료"
+echo "가상환경 활성화 완료"
 
 # 패키지 목록 정의
 packages=(
