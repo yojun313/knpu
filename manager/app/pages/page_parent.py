@@ -8,7 +8,6 @@ class Manager_Page:
     
     def worker_finished(self, success: bool, message: str, path: str = None):
         if success:
-            print(path)
             openFileResult(self.main, message, path)
         else:
             QMessageBox.warning(self.main, "실패", f"작업을 실패했습니다.\n{message}")

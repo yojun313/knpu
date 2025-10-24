@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QDialog, QProgressBar, QPushButton, QDesktopWidget, QGridLayout, QWidget, QHBoxLayout
 from PyQt5.QtCore import Qt, QCoreApplication, QEventLoop
 from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
+from ui.dialogs import BaseDialog
 import os
 from config import ASSETS_PATH
 
@@ -115,7 +116,7 @@ class SplashDialog(QDialog):
         for _ in range(2):
             QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
 
-class AboutDialog(QDialog):
+class AboutDialog(BaseDialog):
     def __init__(self, version, theme="light", parent=None):
         super().__init__(parent)
         self.parent = parent

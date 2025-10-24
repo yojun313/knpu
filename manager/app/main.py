@@ -22,6 +22,7 @@ def build_app():
     })
 
     # High DPI 스케일링 활성화
+    os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu" 
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)

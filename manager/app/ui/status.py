@@ -1,6 +1,8 @@
 from PyQt5.QtCore import QCoreApplication, QEventLoop
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QScrollArea, QWidget
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
+from PyQt5.QtWidgets import QShortcut
 
 _active_threads = []  
 
@@ -49,6 +51,9 @@ def showActiveThreadsDialog():
     close_btn = QPushButton("닫기")
     close_btn.clicked.connect(dialog.accept)
     layout.addWidget(close_btn)
+    
+    QShortcut(QKeySequence("Ctrl+W"), dialog).activated.connect(dialog.reject)
+    QShortcut(QKeySequence("Ctrl+ㅈ"), dialog).activated.connect(dialog.reject)
 
     dialog.exec_()
  
