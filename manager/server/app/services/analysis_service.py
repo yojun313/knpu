@@ -26,27 +26,49 @@ from dotenv import load_dotenv
 from keybert import KeyBERT
 from sentence_transformers import SentenceTransformer
 from app.utils.zip import fast_zip
+import gc
 
 load_dotenv() 
 
-MODEL_DIR = os.getenv("MODEL_PATH")  # .env 파일에서 읽기
+kor_unsmile_pipe = None
+kor_unsmile_model = None
+topic_model = None
+kiwi_instance = None
 
-tokenizer = AutoTokenizer.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
-kor_unsmile_model     = AutoModelForSequenceClassification.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
-kor_unsmile_pipe = TextClassificationPipeline(
-    model=kor_unsmile_model,
-    tokenizer=tokenizer,
-    function_to_apply="sigmoid",
-    top_k=None,                                # 전체 레이블 확률 반환
-    device=0 if torch.cuda.is_available() else -1,
-)
+def get_kiwi():
+    global kiwi_instance
+    if kiwi_instance is None:
+        kiwi_instance = Kiwi(num_workers=-1)
+    return kiwi_instance
 
-embed_model = SentenceTransformer(os.path.join(MODEL_DIR, "topic"), device="cuda" if torch.cuda.is_available() else "cpu")
-topic_model = KeyBERT(embed_model)
+def get_models():
+    global kor_unsmile_pipe, topic_model, kor_unsmile_model
+    MODEL_DIR = os.getenv("MODEL_PATH")
+    
+    if kor_unsmile_pipe is None:
+        tokenizer = AutoTokenizer.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
+        kor_unsmile_model = AutoModelForSequenceClassification.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
+        kor_unsmile_pipe = TextClassificationPipeline(
+            model=kor_unsmile_model,
+            tokenizer=tokenizer,
+            function_to_apply="sigmoid",
+            top_k=None,
+            device=0 if torch.cuda.is_available() else -1,
+        )
 
-# clean 제외한 8개 혐오·악플 레이블
-hate_labels = [lbl for lbl in kor_unsmile_model.config.id2label.values() if lbl != "clean"]
+    if topic_model is None:
+        embed_model = SentenceTransformer(os.path.join(MODEL_DIR, "topic"),
+                                          device="cuda" if torch.cuda.is_available() else "cpu")
+        topic_model = KeyBERT(embed_model)
 
+    return kor_unsmile_pipe, topic_model
+
+def unload_models():
+    global kor_unsmile_pipe, topic_model
+    kor_unsmile_pipe = None
+    topic_model = None
+    torch.cuda.empty_cache()
+    gc.collect()
 
 def start_kemkim(option: KemKimOption, token_data):
 
@@ -135,7 +157,7 @@ def tokenization(
     ▸ update_interval: 이 개수마다 진행률 메시지 전송
     """
     # 1) Kiwi 한 번만 초기화
-    kiwi = Kiwi(num_workers=-1)
+    kiwi = get_kiwi()
     for word in include_words:
         kiwi.add_user_word(word, 'NNP', score=10)
 
@@ -204,7 +226,8 @@ def measure_hate(
     # ───────────────────── 내부 헬퍼 ──────────────────────
     def batch_scores(texts: list[str]) -> list[dict[str, float]]:
         """문장 리스트 → [{label: prob}, ...] (둘째 자리 반올림)"""
-        outs = kor_unsmile_pipe(
+        pipe, _ = get_models()
+        outs = pipe(
             texts,
             truncation=True,
             batch_size=batch_size,
@@ -284,6 +307,7 @@ def measure_hate(
         data["Clean"] = results
 
     send_message(pid, "[혐오도 분석] 완료")
+    unload_models()
     return data
 
 def extract_keywords(
@@ -332,7 +356,7 @@ def extract_keywords(
     send_message(pid, f"[토픽 분석] '{text_col}' 처리 시작 (총 {total:,} rows)")
 
     # ② Kiwi 초기화 (한 번만)
-    kiwi = Kiwi(num_workers=-1)
+    kiwi = get_kiwi()
 
     keywords_col = [""] * total
 
@@ -353,6 +377,7 @@ def extract_keywords(
                     noun_candidates = noun_candidates[:500]
 
                     if noun_candidates:
+                        _, topic_model = get_models()
                         kw = topic_model.extract_keywords(
                             chunk,
                             candidates=noun_candidates,
@@ -377,5 +402,6 @@ def extract_keywords(
     # ④ 결과 열 추가 -----------------------------------------------------------
     data["Keywords"] = keywords_col
     send_message(pid, "[토픽 분석] 완료 ✅")
+    unload_models()
     return data
 
