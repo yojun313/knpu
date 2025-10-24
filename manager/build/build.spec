@@ -7,7 +7,7 @@ a = Analysis(
     datas=[
         ('C:/GitHub/knpu/manager/app/assets', 'assets')
     ],
-    hiddenimports=['seaborn.external.kde'],
+    hiddenimports=['seaborn.external.kde', 'requests_toolbelt'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
