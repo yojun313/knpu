@@ -4,6 +4,7 @@ from app.libs.progress import *
 import os
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import shutil
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
