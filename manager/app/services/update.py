@@ -31,23 +31,33 @@ class DownloadWorker(QThread):
             totalSize = int(response.headers.get('content-length', 0))
             chunkSize = 8192
             downloaded = 0
-            start_time = time.time()  # ✅ 추가
+            start_time = time.time()
+
+            last_emit_time = 0
+            last_percent = -1
 
             with open(self.save_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=chunkSize):
                     if chunk:
                         f.write(chunk)
                         downloaded += len(chunk)
-                        percent = int((downloaded / totalSize) * 100)
+                        if totalSize > 0:
+                            percent = int((downloaded / totalSize) * 100)
 
-                        # ✅ 속도 및 용량 계산
-                        elapsed = time.time() - start_time
-                        speed = downloaded / (1024 * 1024) / elapsed  # MB/s
-                        current_mb = downloaded / (1024 * 1024)
-                        total_mb = totalSize / (1024 * 1024)
+                            elapsed = time.time() - start_time
+                            if elapsed <= 0:
+                                elapsed = 0.001  # 0 division 방지
 
-                        msg = f"{current_mb:.2f} MB / {total_mb:.2f} MB ({speed:.2f} MB/s)"
-                        self.progress.emit(percent, msg)  # ✅ 메시지 포함 emit
+                            speed = downloaded / (1024 * 1024) / elapsed  # MB/s
+                            current_mb = downloaded / (1024 * 1024)
+                            total_mb = totalSize / (1024 * 1024)
+
+                            now = time.time()
+                            if percent != last_percent or now - last_emit_time > 0.2:
+                                msg = f"{current_mb:.2f} MB / {total_mb:.2f} MB ({speed:.2f} MB/s)"
+                                self.progress.emit(percent, msg)
+                                last_percent = percent
+                                last_emit_time = now
 
             self.finished.emit(self.save_path)
 
@@ -73,7 +83,7 @@ def downloadProgram(parent, newVersionName):
 
     worker.progress.connect(lambda percent, msg: (
         dialog.update_progress(percent),
-        dialog.update_message(msg)
+        dialog.update_text_signal.emit(msg)
     ))
     worker.finished.connect(lambda path: (
         dialog.complete_task(True),

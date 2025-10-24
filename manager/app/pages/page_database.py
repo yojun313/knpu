@@ -402,7 +402,7 @@ class Manager_Database(Manager_Page):
                     local_zip = os.path.join(self.folder_path, zip_name)
                     total_size = int(response.headers.get("Content-Length", 0))
                     downloaded = 0
-                    start_time = time.time()  # ✅ 다운로드 시작 시각 기록
+                    start_time = time.time() 
 
                     last_emit_time = 0
                     last_percent = -1
@@ -423,7 +423,6 @@ class Manager_Database(Manager_Page):
                                     total_mb = total_size / (1024 * 1024)
 
                                     now = time.time()
-                                    # ✅ 0.2초 이상 지난 경우나 퍼센트 변한 경우만 emit
                                     if percent != last_percent or now - last_emit_time > 0.2:
                                         msg = f"{current_mb:.2f} MB / {total_mb:.2f} MB  ({speed:.2f} MB/s)"
                                         self.progress.emit(self.task_id, percent, msg)
