@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QTabWidget,
     QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
 )
-
+import time
 from urllib.parse import unquote
 from libs.console import *
 from libs.viewer import *
@@ -363,7 +363,7 @@ class Manager_Database(Manager_Page):
         class SaveDBWorker(QThread):
             finished = pyqtSignal(bool, str, str, str)   # (성공 여부, 메시지, 경로, task_id)
             error = pyqtSignal(str, str)                 # (에러 메시지, task_id)
-            progress = pyqtSignal(str, int)             # (task_id, 진행률)
+            progress = pyqtSignal(str, int, str)             # (task_id, 진행률)
 
             def __init__(self, dbname, targetUid, folder_path, option, viewer, task_id, parent=None):
                 super().__init__(parent)
@@ -387,6 +387,7 @@ class Manager_Database(Manager_Page):
                     response.raise_for_status()
                     close_viewer(self.viewer)
 
+                    # 파일 이름 파싱
                     content_disp = response.headers.get("Content-Disposition", "")
                     m = re.search(r'filename="(?P<fname>[^"]+)"', content_disp)
                     if m:
@@ -401,6 +402,7 @@ class Manager_Database(Manager_Page):
                     local_zip = os.path.join(self.folder_path, zip_name)
                     total_size = int(response.headers.get("Content-Length", 0))
                     downloaded = 0
+                    start_time = time.time()  # ✅ 다운로드 시작 시각 기록
 
                     with open(safe_path(local_zip), "wb") as f:
                         for chunk in response.iter_content(8192):
@@ -409,8 +411,17 @@ class Manager_Database(Manager_Page):
                                 downloaded += len(chunk)
                                 if total_size > 0:
                                     percent = int(downloaded / total_size * 100)
-                                    self.progress.emit(self.task_id, percent)
 
+                                    # ✅ 속도 및 용량 계산
+                                    elapsed = time.time() - start_time
+                                    speed = downloaded / (1024 * 1024) / elapsed  # MB/s
+                                    current_mb = downloaded / (1024 * 1024)
+                                    total_mb = total_size / (1024 * 1024)
+
+                                    msg = f"{current_mb:.2f} MB / {total_mb:.2f} MB  ({speed:.2f} MB/s)"
+                                    self.progress.emit(self.task_id, percent, msg)  # ✅ 메시지 추가
+
+                    # 압축 해제
                     base_folder = os.path.splitext(zip_name)[0]
                     extract_path = os.path.join(self.folder_path, base_folder)
                     os.makedirs(extract_path, exist_ok=True)
@@ -422,7 +433,7 @@ class Manager_Database(Manager_Page):
 
                 except Exception:
                     self.error.emit(traceback.format_exc(), self.task_id)
-
+            
         try:
             selectedRow = self.main.database_tablewidget.currentRow()
             if not selectedRow >= 0:
@@ -477,7 +488,7 @@ class Manager_Database(Manager_Page):
             register_thread(thread_name)
             
             printStatus(self.main)
-            worker.progress.connect(lambda tid, val: downloadDialog.update_progress(val))
+            worker.progress.connect(lambda tid, val, msg: (downloadDialog.update_progress(val), downloadDialog.update_message(msg)))
             worker.finished.connect(
                 lambda ok, msg, path, tid: (
                     downloadDialog.complete_task(ok),
