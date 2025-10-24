@@ -52,6 +52,14 @@ class BaseDialog(QDialog):
 
         layout.addWidget(widget)
         return widget
+    
+    def add_buttons(self, *buttons):
+        """하단에 버튼 레이아웃을 추가하는 메서드"""
+        button_layout = QHBoxLayout()
+        for btn in buttons:
+            button_layout.addWidget(btn)
+        self.layout().addLayout(button_layout)
+
 
 class DownloadDialog(QDialog):
     def __init__(self, display_name, parent=None):
@@ -151,17 +159,17 @@ class TaskStatusDialog(QDialog):
 class DBInfoDialog(BaseDialog):
     def __init__(self, parent, DBdata, style_html):
         super().__init__(parent)
+        self.DBdata = DBdata
+        self.style_html = style_html
         self.setWindowTitle(f"{DBdata['name']}_Info")
         self.resize(540, 600)
 
-        self.DBdata = DBdata
-        self.style_html = style_html
+        self._build_ui()
 
-        self.initUI()
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
 
-    def initUI(self):
-        layout = QVBoxLayout()
-
+        # ======== 크롤 옵션 처리 ========
         crawlType = self.DBdata['crawlType']
         crawlOption_int = int(self.DBdata['crawlOption'])
 
@@ -169,48 +177,23 @@ class DBInfoDialog(BaseDialog):
         if CountText['totalArticleCnt'] == '0' and CountText['totalReplyCnt'] == '0' and CountText['totalRereplyCnt'] == '0':
             CountText = self.DBdata['status']
         else:
-            CountText = f"Aricle: {CountText['totalArticleCnt']}\nReply: {CountText['totalReplyCnt']}\nRereply: {CountText['totalRereplyCnt']}"
+            CountText = (
+                f"Article: {CountText['totalArticleCnt']}\n"
+                f"Reply: {CountText['totalReplyCnt']}\n"
+                f"Rereply: {CountText['totalRereplyCnt']}"
+            )
 
-        match crawlType:
-            case 'Naver News':
-                crawlOption = {
-                    1: '기사 + 댓글',
-                    2: '기사 + 댓글/대댓글',
-                    3: '기사',
-                    4: '기사 + 댓글(추가 정보)'
-                }.get(crawlOption_int, crawlOption_int)
-            case 'Naver Blog':
-                crawlOption = {
-                    1: '블로그 본문',
-                    2: '블로그 본문 + 댓글/대댓글'
-                }.get(crawlOption_int, crawlOption_int)
-            case 'Naver Cafe':
-                crawlOption = {
-                    1: '카페 본문',
-                    2: '카페 본문 + 댓글/대댓글'
-                }.get(crawlOption_int, crawlOption_int)
-            case 'YouTube':
-                crawlOption = {
-                    1: '영상 정보 + 댓글/대댓글 (100개 제한)',
-                    2: '영상 정보 + 댓글/대댓글(무제한)'
-                }.get(crawlOption_int, crawlOption_int)
-            case 'ChinaDaily':
-                crawlOption = {
-                    1: '기사 + 댓글'
-                }.get(crawlOption_int, crawlOption_int)
-            case 'ChinaSina':
-                crawlOption = {
-                    1: '기사',
-                    2: '기사 + 댓글'
-                }.get(crawlOption_int, crawlOption_int)
-            case 'dcinside':
-                crawlOption = {
-                    1: '게시글',
-                    2: '게시글 + 댓글'
-                }.get(crawlOption_int, crawlOption_int)
-            case _:
-                crawlOption = crawlOption_int
+        crawlOption = {
+            'Naver News': {1: '기사 + 댓글', 2: '기사 + 댓글/대댓글', 3: '기사', 4: '기사 + 댓글(추가 정보)'},
+            'Naver Blog': {1: '블로그 본문', 2: '블로그 본문 + 댓글/대댓글'},
+            'Naver Cafe': {1: '카페 본문', 2: '카페 본문 + 댓글/대댓글'},
+            'YouTube': {1: '영상 정보 + 댓글/대댓글 (100개 제한)', 2: '영상 정보 + 댓글/대댓글(무제한)'},
+            'ChinaDaily': {1: '기사 + 댓글'},
+            'ChinaSina': {1: '기사', 2: '기사 + 댓글'},
+            'dcinside': {1: '게시글', 2: '게시글 + 댓글'}
+        }.get(crawlType, {}).get(crawlOption_int, crawlOption_int)
 
+        # ======== 시간 처리 ========
         starttime = self.DBdata['startTime']
         endtime = self.DBdata['endTime']
 
@@ -218,42 +201,33 @@ class DBInfoDialog(BaseDialog):
             duration = datetime.strptime(
                 endtime, "%Y-%m-%d %H:%M") - datetime.strptime(starttime, "%Y-%m-%d %H:%M")
         except:
-            duration = str(
-                datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M"))[:-7]
+            duration = str(datetime.now() - datetime.strptime(starttime, "%Y-%m-%d %H:%M"))[:-7]
             if endtime == '오류 중단':
                 duration = '오류 중단'
 
         if endtime != '오류 중단':
-            endtime = endtime.replace(
-                '/', '-') if endtime != '크롤링 중' else endtime
+            endtime = endtime.replace('/', '-') if endtime != '크롤링 중' else endtime
 
-        details_html = self.style_html + f"""
-            <div class="version-details">
-                <table>
-                    <tr><th>Item</th><th>Details</th></tr>
-                    <tr><td><b>Name</b></td><td>{self.DBdata['name']}</td></tr>
-                    <tr><td><b>Size</b></td><td>{self.DBdata['dbSize']}</td></tr>
-                    <tr><td><b>Type</b></td><td>{self.DBdata['crawlType']}</td></tr>
-                    <tr><td><b>Keyword</b></td><td>{self.DBdata['keyword']}</td></tr>
-                    <tr><td><b>Period</b></td><td>{datetime.strptime(self.DBdata['startDate'], '%Y%m%d').strftime('%Y.%m.%d')} ~ {datetime.strptime(self.DBdata['endDate'], '%Y%m%d').strftime('%Y.%m.%d')}</td></tr>
-                    <tr><td><b>Option</b></td><td>{crawlOption}</td></tr>
-                    <tr><td><b>Start</b></td><td>{starttime}</td></tr>
-                    <tr><td><b>End</b></td><td>{endtime}</td></tr>
-                    <tr><td><b>Duration</b></td><td>{duration}</td></tr>
-                    <tr><td><b>Requester</b></td><td>{self.DBdata['requester']}</td></tr>
-                    <tr><td><b>Server</b></td><td>{self.DBdata['crawlCom']}</td></tr>
-                    <tr><td><b>Speed</b></td><td>{self.DBdata['crawlSpeed']}</td></tr>
-                    <tr><td><b>Result</b></td><td class="detail-content">{CountText}</td></tr>
-                </table>
-            </div>
-        """
+        # ======== 라벨 추가 ========
+        self.add_label(layout, "Name", self.DBdata['name'])
+        self.add_label(layout, "Size", self.DBdata['dbSize'])
+        self.add_label(layout, "Type", self.DBdata['crawlType'])
+        self.add_label(layout, "Keyword", self.DBdata['keyword'])
+        self.add_label(layout, "Period",
+            f"{datetime.strptime(self.DBdata['startDate'], '%Y%m%d').strftime('%Y.%m.%d')} ~ "
+            f"{datetime.strptime(self.DBdata['endDate'], '%Y%m%d').strftime('%Y.%m.%d')}"
+        )
+        self.add_label(layout, "Option", str(crawlOption))
+        self.add_label(layout, "Start", starttime)
+        self.add_label(layout, "End", endtime)
+        self.add_label(layout, "Duration", str(duration))
+        self.add_label(layout, "Requester", self.DBdata['requester'])
+        self.add_label(layout, "Result", CountText)
 
-        detail_label = QLabel(details_html)
-        detail_label.setWordWrap(True)
-        detail_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-
-        layout.addWidget(detail_label)
-        self.setLayout(layout)
+        # ======== 버튼 추가 ========
+        ok_btn = QPushButton("확인")
+        ok_btn.clicked.connect(self.accept)
+        self.add_buttons(ok_btn)
 
 
 class SaveDbDialog(BaseDialog):
