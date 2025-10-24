@@ -1,16 +1,18 @@
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, QDialog, QPushButton
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, QDialog, QPushButton, QApplication
 
 def makeTable(parent, widgetname, data, column, right_click_function=None, popupsize=None):
     def show_details(item):
         # 이미 창이 열려있는지 확인
         if hasattr(parent, "details_dialog") and parent.details_dialog.isVisible():
             return  # 창이 열려있다면 새로 열지 않음
+
         # 팝업 창 생성
         parent.details_dialog = QDialog()
         parent.details_dialog.setWindowTitle("상세 정보")
-        if popupsize == None:
+
+        if popupsize is None:
             parent.details_dialog.resize(200, 150)
         elif popupsize == 'max':
             parent.details_dialog.showMaximized()
@@ -20,18 +22,27 @@ def makeTable(parent, widgetname, data, column, right_click_function=None, popup
         # 레이아웃 설정
         layout = QVBoxLayout(parent.details_dialog)
 
-        # 스크롤 가능한 QTextEdit 위젯 생성
+        # 텍스트 표시 영역
         text_edit = QTextEdit()
         text_edit.setText(item.text())
-        text_edit.setReadOnly(True)  # 텍스트 편집 불가로 설정
+        text_edit.setReadOnly(True)  # 편집 불가
         layout.addWidget(text_edit)
+
+        # 복사 버튼 생성
+        copy_button = QPushButton("복사")
+        def copy_text():
+            clipboard = QApplication.clipboard()
+            clipboard.setText(text_edit.toPlainText())
+
+        copy_button.clicked.connect(copy_text)
+        layout.addWidget(copy_button)
 
         # 확인 버튼 생성
         ok_button = QPushButton("확인")
-        ok_button.clicked.connect(
-            parent.details_dialog.accept)  # 버튼 클릭 시 다이얼로그 닫기
+        ok_button.clicked.connect(parent.details_dialog.accept)
         layout.addWidget(ok_button)
 
+        # 단축키 등록 (닫기)
         shortcut = QShortcut(QKeySequence("Ctrl+W"), parent.details_dialog)
         shortcut.activated.connect(parent.details_dialog.close)
 

@@ -6,6 +6,9 @@ light_style_sheet = """
         background-color: #ffffff;
         font-size: 14px;
     }
+    QWidget {
+        background-color: #ffffff;
+    }
     QPushButton {
         background-color: #2c3e50;
         color: white;
@@ -34,7 +37,6 @@ light_style_sheet = """
     QLabel {
         color: black;  /* 라벨 기본 텍스트 색상 */
         font-size: 14px;
-        background-color: #ffffff; /* 라벨 배경 흰색 */
     }
     QTableWidget {
         background-color: white;
@@ -146,14 +148,17 @@ light_style_sheet = """
         border: 1px solid #dcdcdc; /* 연한 회색 테두리 */
     }
 
-    QScrollArea {
-        background-color: #ffffff; /* 스크롤 영역 기본 흰색 배경 */
-        color: #000000; /* 기본 텍스트 검정 */
-    }
-
     QMessageBox {
         background-color: #ffffff; /* 메시지 박스 기본 흰색 배경 */
         color: #000000; /* 기본 텍스트 검정 */
+    }
+    QScrollArea {
+        background-color: #ffffff;
+        border: none;
+    }
+
+    QScrollArea > QWidget > QWidget {
+        background-color: #ffffff;
     }
 
     QScrollBar:vertical {
@@ -251,6 +256,14 @@ light_style_sheet = """
         color: black; /* 텍스트 색상 */
         font-size: 14px;
         padding: 5px;
+    }
+    QPlainTextEdit {
+        background-color: #ffffff;
+        color: #000000;
+        border: 1px solid #dcdcdc;
+        border-radius: 4px;
+        padding: 8px;
+        font-size: 14px;
     }
     """
 

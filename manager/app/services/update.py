@@ -3,56 +3,79 @@ import requests
 import traceback
 import subprocess
 import webbrowser
-from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QPushButton,
-    QHBoxLayout, QMessageBox, QTextEdit
-)
-from PyQt5.QtGui import QFont
-from PyQt5.QtCore import pyqtSignal, QThread, QTimer
-
+from PyQt5.QtWidgets import QDialog, QPushButton, QMessageBox
+from PyQt5.QtCore import pyqtSignal, QThread
 from services.pushover import sendPushOver
 from services.logging import userLogging, getUserLocation, programBugLog
 from ui.status import printStatus
+from ui.dialogs import ViewVersionDialog
 from config import VERSION
 from core.setting import get_setting
 from core.boot import checkNewVersion
 from ui.dialogs import DownloadDialog
 
+class DownloadWorker(QThread):
+    progress = pyqtSignal(int)
+    finished = pyqtSignal(str)
+    error = pyqtSignal(str)
+
+    def __init__(self, url, save_path, parent=None):
+        super().__init__(parent)
+        self.url = url
+        self.save_path = save_path
+
+    def run(self):
+        try:
+            response = requests.get(self.url, stream=True)
+            totalSize = int(response.headers.get('content-length', 0))
+            chunkSize = 8192
+            downloaded = 0
+
+            with open(self.save_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=chunkSize):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        percent = int((downloaded / totalSize) * 100)
+                        self.progress.emit(percent)
+
+            self.finished.emit(self.save_path)
+
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 def openAndExit(path):
     subprocess.Popen(f'"{path}"', shell=True)
     os._exit(0)
 
+def downloadProgram(parent, newVersionName):
+    temp_dir = 'C:/Temp'
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir, exist_ok=True)
+        
+    downloadFile_path = os.path.join(temp_dir, f"MANAGER_{newVersionName}.exe")
+    download_url = f"https://knpu.re.kr/download/MANAGER_{newVersionName}.exe"
+
+    # 다운로드 진행창 생성
+    dialog = DownloadDialog(f"업데이트 다운로드: {newVersionName}", parent)
+    worker = DownloadWorker(download_url, downloadFile_path)
+
+    worker.progress.connect(dialog.update_progress)
+    worker.finished.connect(lambda path: (
+        dialog.complete_task(True),
+        openAndExit(path)
+    ))
+    worker.error.connect(lambda e: (
+        dialog.complete_task(False),
+        QMessageBox.critical(parent, "Error", f"다운로드 실패: {e}")
+    ))
+
+    worker.start()
+    dialog.exec_()
+
 def updateProgram(parent, sc=False):
-    class DownloadWorker(QThread):
-        progress = pyqtSignal(int)
-        finished = pyqtSignal(str)
-        error = pyqtSignal(str)
-
-        def __init__(self, url, save_path, parent=None):
-            super().__init__(parent)
-            self.url = url
-            self.save_path = save_path
-
-        def run(self):
-            try:
-                response = requests.get(self.url, stream=True)
-                totalSize = int(response.headers.get('content-length', 0))
-                chunkSize = 8192
-                downloaded = 0
-
-                with open(self.save_path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=chunkSize):
-                        if chunk:
-                            f.write(chunk)
-                            downloaded += len(chunk)
-                            percent = int((downloaded / totalSize) * 100)
-                            self.progress.emit(percent)
-
-                self.finished.emit(self.save_path)
-
-            except Exception as e:
-                self.error.emit(str(e))
-
+    
     try:
         newVersionInfo = checkNewVersion()
         if not newVersionInfo:
@@ -65,81 +88,34 @@ def updateProgram(parent, sc=False):
             sendPushOver(msg)
             userLogging(f'Program Update ({VERSION} -> {newVersionName})')
             printStatus(parent, "버전 업데이트 중...")
+            downloadProgram(parent, newVersionName)
 
-            downloadFile_path = os.path.join('C:/Temp', f"MANAGER_{newVersionName}.exe")
-            download_url = f"https://knpu.re.kr/download/MANAGER_{newVersionName}.exe"
-
-            # 다운로드 진행창 생성
-            dialog = DownloadDialog(f"업데이트 다운로드: {newVersionName}", parent)
-            worker = DownloadWorker(download_url, downloadFile_path)
-
-            worker.progress.connect(dialog.update_progress)
-            worker.finished.connect(lambda path: (
-                dialog.complete_task(True),
-                openAndExit(path)
-            ))
-            worker.error.connect(lambda e: (
-                dialog.complete_task(False),
-                QMessageBox.critical(parent, "Error", f"다운로드 실패: {e}")
-            ))
-
-            worker.start()
-            dialog.exec_()
-
-        # ────────────────────────────────────────────────────────────────
         # 새 버전 있음
-        # ────────────────────────────────────────────────────────────────
         if newVersionInfo:
             # 자동 업데이트 모드일 경우 바로 실행
             if get_setting('AutoUpdate') == 'auto':
                 parent.closeBootscreen()
                 update_process()
                 return
-
-            # 수동 업데이트 안내 Dialog
-            dialog = QDialog(parent)
-            dialog.setWindowTitle("New Version Released")
-            dialog.resize(480, 420)
-
-            layout = QVBoxLayout(dialog)
-
-            def add_field(title: str, content: str, *, monospace: bool = False, min_lines: int = 3) -> QTextEdit:
-                layout.addWidget(QLabel(f"<b>{title}</b>"))
-                edit = QTextEdit()
-                edit.setReadOnly(True)
-                edit.setAcceptRichText(False)
-                edit.setPlainText("" if content is None else str(content))
-                if monospace:
-                    font = QFont("Consolas")
-                    font.setStyleHint(QFont.Monospace)
-                    edit.setFont(font)
-                    edit.setLineWrapMode(QTextEdit.NoWrap)
-                metrics = edit.fontMetrics()
-                edit.setMinimumHeight(metrics.lineSpacing() * min_lines + 12)
-                layout.addWidget(edit)
-                return edit
-
             # newVersionInfo: [versionNum, changeLog, features, status, releaseDate]
-            ver = str(newVersionInfo[0]) if len(newVersionInfo) > 0 else ""
-            chg = str(newVersionInfo[1]) if len(newVersionInfo) > 1 else ""
+            ver  = str(newVersionInfo[0]) if len(newVersionInfo) > 0 else ""
+            chg  = str(newVersionInfo[1]) if len(newVersionInfo) > 1 else ""
             feat = str(newVersionInfo[2]) if len(newVersionInfo) > 2 else ""
-            rel = str(newVersionInfo[-1]) if len(newVersionInfo) > 0 else ""
+            rel  = str(newVersionInfo[-1]) if len(newVersionInfo) > 0 else ""
+            # detail은 없다면 빈 값으로
+            detail = "" if len(newVersionInfo) < 5 else str(newVersionInfo[3])
 
-            add_field("Version Num", ver)
-            add_field("Release Date", rel)
-            add_field("ChangeLog", chg, monospace=True, min_lines=6)
-            add_field("Version Features", feat, monospace=False, min_lines=4)
+            version_data = [ver, rel, chg, feat, detail]
 
-            button_layout = QHBoxLayout()
-            confirm_button = QPushButton("Update")
-            cancel_button = QPushButton("Cancel")
-            confirm_button.clicked.connect(dialog.accept)
-            cancel_button.clicked.connect(dialog.reject)
-            button_layout.addWidget(confirm_button)
-            button_layout.addWidget(cancel_button)
-            layout.addLayout(button_layout)
+            # ViewVersionDialog를 이용해 UI 띄우기
+            dialog = ViewVersionDialog(parent, version_data)
+            update_btn = QPushButton("Update")
+            cancel_btn = QPushButton("Cancel")
 
-            dialog.setLayout(layout)
+            update_btn.clicked.connect(dialog.accept)
+            cancel_btn.clicked.connect(dialog.reject)
+
+            dialog.add_buttons(update_btn, cancel_btn)
 
             if dialog.exec_() == QDialog.Accepted:
                 update_process()
@@ -149,11 +125,8 @@ def updateProgram(parent, sc=False):
                     "Information",
                     'Ctrl+U 단축어로 프로그램 실행 중 업데이트 가능합니다'
                 )
-                return
 
-        # ────────────────────────────────────────────────────────────────
         # 새 버전 없음 (재설치 여부 묻기)
-        # ────────────────────────────────────────────────────────────────
         else:
             if sc is True:
                 reply = QMessageBox.question(
@@ -165,27 +138,7 @@ def updateProgram(parent, sc=False):
                 )
                 if reply == QMessageBox.Yes:
                     printStatus(parent, "버전 재설치 중...")
-                    downloadFile_path = os.path.join(
-                        'C:/Temp', f"MANAGER_{newVersionName}.exe"
-                    )
-                    download_url = f"https://knpu.re.kr/download/MANAGER_{newVersionName}.exe"
-
-                    # 다운로드 진행창 생성
-                    dialog = DownloadDialog(f"재설치 다운로드: {newVersionName}", parent)
-                    worker = DownloadWorker(download_url, downloadFile_path)
-
-                    worker.progress.connect(dialog.update_progress)
-                    worker.finished.connect(lambda path: (
-                        dialog.complete_task(True),
-                        openAndExit(path)
-                    ))
-                    worker.error.connect(lambda e: (
-                        dialog.complete_task(False),
-                        QMessageBox.critical(parent, "Error", f"다운로드 실패: {e}")
-                    ))
-
-                    worker.start()
-                    dialog.exec_()
+                    downloadProgram(parent, newVersionName)
                 else:
                     return
             return
