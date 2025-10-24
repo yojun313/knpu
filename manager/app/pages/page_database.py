@@ -369,18 +369,16 @@ class Manager_Database(Manager_Page):
 
     def saveDB(self):
         class SaveDBWorker(QThread):
-            finished = pyqtSignal(bool, str, str, str)   # (성공 여부, 메시지, 경로, task_id)
-            error = pyqtSignal(str, str)                 # (에러 메시지, task_id)
-            progress = pyqtSignal(str, int, str)             # (task_id, 진행률)
+            finished = pyqtSignal(bool, str, str)   # (성공 여부, 메시지, 경로)
+            error = pyqtSignal(str)                 # (에러 메시지)
+            progress = pyqtSignal(int, str)             # (percent, 진행문자열)
 
-            def __init__(self, dbname, targetUid, folder_path, option, viewer, task_id, parent=None):
+            def __init__(self, dbname, targetUid, folder_path, option, parent=None):
                 super().__init__(parent)
                 self.dbname = dbname
                 self.targetUid = targetUid
                 self.folder_path = folder_path
                 self.option = option
-                self.viewer = viewer
-                self.task_id = task_id
 
             def run(self):
                 try:
@@ -393,7 +391,6 @@ class Manager_Database(Manager_Page):
                         timeout=3600
                     )
                     response.raise_for_status()
-                    close_viewer(self.viewer)
 
                     # 파일 이름 파싱
                     content_disp = response.headers.get("Content-Disposition", "")
@@ -432,8 +429,8 @@ class Manager_Database(Manager_Page):
 
                                     now = time.time()
                                     if percent != last_percent or now - last_emit_time > 0.2:
-                                        msg = f"{current_mb:.2f} MB / {total_mb:.2f} MB  ({speed:.2f} MB/s)"
-                                        self.progress.emit(self.task_id, percent, msg)
+                                        msg = f"{current_mb:.1f}MB / {total_mb:.1f}MB ({speed:.1f}MB/s)"
+                                        self.progress.emit(percent, msg)
                                         last_percent = percent
                                         last_emit_time = now
 
@@ -445,10 +442,10 @@ class Manager_Database(Manager_Page):
                         zf.extractall(extract_path)
                     os.remove(local_zip)
 
-                    self.finished.emit(True, f"{self.dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path, self.task_id)
+                    self.finished.emit(True, f"{self.dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
 
                 except Exception:
-                    self.error.emit(traceback.format_exc(), self.task_id)
+                    self.error.emit(traceback.format_exc())
             
         try:
             selectedRow = self.main.database_tablewidget.currentRow()
@@ -492,28 +489,29 @@ class Manager_Database(Manager_Page):
 
             register_process(pid, f"Crawl DB Save")
             
-            viewer = open_viewer(pid)
-
             thread_name = f"CSV로 저장: {display_name}"
-            downloadDialog = DownloadDialog(thread_name)
+            downloadDialog = DownloadDialog(thread_name, pid)
             downloadDialog.show()
 
             # QThread Worker 생성
-            worker = SaveDBWorker(display_name, targetUid, folder_path, option, viewer, pid)
+            worker = SaveDBWorker(display_name, targetUid, folder_path, option, self.main)
             
             register_thread(thread_name)
             
             printStatus(self.main)
-            worker.progress.connect(lambda tid, val, msg: (downloadDialog.update_progress(val), downloadDialog.update_text_signal.emit(msg)))
+            worker.progress.connect(lambda val, msg: (
+                downloadDialog.update_progress(val), 
+                downloadDialog.update_text_signal.emit(msg)
+            ))
             worker.finished.connect(
-                lambda ok, msg, path, tid: (
+                lambda ok, msg, path: (
                     downloadDialog.complete_task(ok),
                     self.worker_finished(ok, msg, path),
                     unregister_thread(thread_name),
                     printStatus(self.main)
                 )
             )
-            worker.error.connect(lambda err, tid: (downloadDialog.complete_task(False), unregister_thread(thread_name), printStatus(self.main)))
+            worker.error.connect(lambda err: (downloadDialog.complete_task(False), unregister_thread(thread_name), printStatus(self.main)))
             worker.start()
 
             # 여러 다운로드를 관리할 수 있도록 worker를 리스트에 저장
