@@ -404,6 +404,9 @@ class Manager_Database(Manager_Page):
                     downloaded = 0
                     start_time = time.time()  # ✅ 다운로드 시작 시각 기록
 
+                    last_emit_time = 0
+                    last_percent = -1
+
                     with open(safe_path(local_zip), "wb") as f:
                         for chunk in response.iter_content(8192):
                             if chunk:
@@ -412,14 +415,20 @@ class Manager_Database(Manager_Page):
                                 if total_size > 0:
                                     percent = int(downloaded / total_size * 100)
 
-                                    # ✅ 속도 및 용량 계산
                                     elapsed = time.time() - start_time
-                                    speed = downloaded / (1024 * 1024) / elapsed  # MB/s
+                                    if elapsed == 0:
+                                        elapsed = 0.001  # 0 방지
+                                    speed = downloaded / (1024 * 1024) / elapsed
                                     current_mb = downloaded / (1024 * 1024)
                                     total_mb = total_size / (1024 * 1024)
 
-                                    msg = f"{current_mb:.2f} MB / {total_mb:.2f} MB  ({speed:.2f} MB/s)"
-                                    self.progress.emit(self.task_id, percent, msg)  # ✅ 메시지 추가
+                                    now = time.time()
+                                    # ✅ 0.2초 이상 지난 경우나 퍼센트 변한 경우만 emit
+                                    if percent != last_percent or now - last_emit_time > 0.2:
+                                        msg = f"{current_mb:.2f} MB / {total_mb:.2f} MB  ({speed:.2f} MB/s)"
+                                        self.progress.emit(self.task_id, percent, msg)
+                                        last_percent = percent
+                                        last_emit_time = now
 
                     # 압축 해제
                     base_folder = os.path.splitext(zip_name)[0]
