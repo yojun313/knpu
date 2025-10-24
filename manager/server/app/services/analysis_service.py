@@ -20,7 +20,7 @@ import os
 from dotenv import load_dotenv
 from keybert import KeyBERT
 from sentence_transformers import SentenceTransformer
-
+from app.utils.zip import fast_zip
 
 load_dotenv() 
 
@@ -78,11 +78,11 @@ def start_kemkim(option: KemKimOption, token_data):
     )
     try:
         result_path = kemkim_obj.make_kimkem()
-
+        
         if type(result_path) == str:
-            zip_path = shutil.make_archive(
-                result_path, "zip", root_dir=result_path)
-            filename = os.path.basename(zip_path)  # 여기에 한글이 섞여 있어도 OK
+            zip_path = f"{result_path}.zip"
+            fast_zip(result_path, zip_path)   
+            filename = os.path.basename(zip_path)
 
             background_task = BackgroundTask(
                 cleanup_folder_and_zip, result_path, zip_path)
