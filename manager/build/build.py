@@ -172,6 +172,6 @@ if __name__ == "__main__":
         console.print("[green]✅ 업로드 완료")
 
         console.rule("[bold green]🎉 모든 작업 완료")
-        sendPushOver(f"[Admin Notification]\n\nMANAGER {version} 빌드 완료\n\n{current_time}")
+        sendPushOver(f"MANAGER {version} 빌드 완료\n\n{current_time}")
         
         
