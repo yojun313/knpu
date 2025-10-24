@@ -10,5 +10,7 @@ def fast_zip(folder_path: str, zip_path: str):
     subprocess.run(
         ["7z", "a", "-tzip", "-mx=1", "-mmt=on", zip_path, "."],
         cwd=folder_path,
+        stdout=subprocess.DEVNULL,  # 표준 출력 숨기기
+        stderr=subprocess.DEVNULL,  # 에러 출력 숨기기
         check=True
     )
