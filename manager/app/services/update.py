@@ -13,6 +13,7 @@ from config import VERSION
 from core.setting import get_setting
 from core.boot import checkNewVersion
 from ui.dialogs import DownloadDialog
+import time
 
 class DownloadWorker(QThread):
     progress = pyqtSignal(int, str)
