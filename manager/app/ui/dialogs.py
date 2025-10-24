@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt, QDate, QTimer
+from PyQt5.QtCore import Qt, QDate, pyqtSignal
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
@@ -62,6 +62,7 @@ class BaseDialog(QDialog):
 
 
 class DownloadDialog(QDialog):
+    update_text_signal = pyqtSignal(str)
     def __init__(self, display_name, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"{display_name}")
@@ -71,6 +72,8 @@ class DownloadDialog(QDialog):
         self.layout = QVBoxLayout(self)
 
         # 상단 라벨 (제목)
+        self.update_text_signal.connect(self.update_message)
+        
         self.label = QLabel(display_name)
         self.label.setStyleSheet("font-weight: bold; font-size: 14px;")
 

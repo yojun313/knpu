@@ -488,7 +488,7 @@ class Manager_Database(Manager_Page):
             register_thread(thread_name)
             
             printStatus(self.main)
-            worker.progress.connect(lambda tid, val, msg: (downloadDialog.update_progress(val), downloadDialog.update_message(msg)))
+            worker.progress.connect(lambda tid, val, msg: (downloadDialog.update_progress(val), downloadDialog.update_text_signal.emit(msg)))
             worker.finished.connect(
                 lambda ok, msg, path, tid: (
                     downloadDialog.complete_task(ok),
