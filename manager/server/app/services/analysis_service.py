@@ -31,7 +31,6 @@ import gc
 load_dotenv() 
 
 kor_unsmile_pipe = None
-kor_unsmile_model = None
 topic_model = None
 kiwi_instance = None
 
@@ -42,7 +41,7 @@ def get_kiwi():
     return kiwi_instance
 
 def get_models():
-    global kor_unsmile_pipe, topic_model, kor_unsmile_model
+    global kor_unsmile_pipe, topic_model
     MODEL_DIR = os.getenv("MODEL_PATH")
     
     if kor_unsmile_pipe is None:
@@ -252,8 +251,9 @@ def measure_hate(
 
     texts = data[text_col].fillna("").astype(str).tolist()
     total = len(texts)
-    labels = list(kor_unsmile_model.config.id2label.values())
-
+    pipe, _ = get_models()
+    labels = list(pipe.model.config.id2label.values())
+    
     send_message(pid, f"[혐오도 분석] '{text_col}' 처리 시작 (총 {total:,} rows)")
 
     # ② 결과 버퍼 --------------------------------------------------------------
