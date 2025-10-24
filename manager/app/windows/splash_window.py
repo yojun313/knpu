@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QDialog, QProgressBar
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QDialog, QProgressBar, QPushButton, QDesktopWidget, QGridLayout, QWidget, QHBoxLayout
 from PyQt5.QtCore import Qt, QCoreApplication, QEventLoop
 from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
 import os
@@ -115,3 +115,133 @@ class SplashDialog(QDialog):
         for _ in range(2):
             QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
 
+class AboutDialog(QDialog):
+    def __init__(self, version, theme="light", parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.version = version
+        self.theme = theme
+
+        self.bg_color = QColor('#2b2b2b') if self.theme == "dark" else QColor(255, 255, 255)
+        self.text_color = "white" if self.theme == "dark" else "#2c3e50"
+        self.gray_color = "lightgray" if self.theme == "dark" else "gray"
+
+        self.setWindowTitle("About MANAGER")
+        self.resize(600, 300)  # 가로 길이를 넓혀줌
+        self._build_ui()
+
+    def _build_ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(30, 30, 30, 30)
+        main_layout.setSpacing(15)
+
+        # ===== 상단: 이미지(왼쪽) + 텍스트(오른쪽) =====
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(24)
+        grid.setVerticalSpacing(0)
+        grid.setColumnStretch(0, 1)   # 이미지 컬럼
+        grid.setColumnStretch(1, 2)   # 텍스트 컬럼 (조금 더 넓게)
+
+        # --- 이미지 ---
+        image_label = QLabel(self)
+        pixmap = QPixmap(os.path.join(ASSETS_PATH, "exe_icon.png"))
+        pixmap = pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        image_label.setPixmap(pixmap)
+
+        # 이미지가 컬럼 안에서 중앙에 오도록 컨테이너로 감싸기
+        image_container = QWidget(self)
+        ic_layout = QVBoxLayout(image_container)
+        ic_layout.setContentsMargins(0, 0, 0, 0)
+        ic_layout.addStretch(1)
+        ic_layout.addWidget(image_label, alignment=Qt.AlignHCenter | Qt.AlignVCenter)
+        ic_layout.addStretch(1)
+
+        # 너무 왼쪽으로 붙지 않도록 컬럼 자체에 적당한 너비를 부여
+        image_container.setFixedWidth(220)  # 필요하면 200~260 사이로 조절
+
+        # --- 텍스트 ---
+        text_layout = QVBoxLayout()
+        text_layout.setSpacing(8)
+
+        title_label = QLabel("MANAGER")
+        title_label.setStyleSheet(f"font-size: 24px; font-family: 'Tahoma'; color: {self.text_color};")
+        text_layout.addWidget(title_label, alignment=Qt.AlignLeft)
+
+        version_label = QLabel(f"Version {self.version}")
+        version_label.setStyleSheet(f"font-size: 18px; font-family: 'Tahoma'; color: {self.text_color};")
+        text_layout.addWidget(version_label, alignment=Qt.AlignLeft)
+
+        desc_label = QLabel("MANAGER는 KNPU PAILAB에서 개발한 빅데이터 분석 및 관리 프로그램입니다.")
+        desc_label.setWordWrap(True)
+        desc_label.setStyleSheet(f"font-size: 14px; font-family: 'Tahoma'; color: {self.gray_color};")
+        text_layout.addWidget(desc_label, alignment=Qt.AlignLeft)
+
+        dev_label = QLabel('제작자: <a href="https://github.com/yojun313">github.com/yojun313</a>')
+        dev_label.setOpenExternalLinks(True)
+        dev_label.setStyleSheet(f"font-size: 14px; font-family: 'Tahoma'; color: {self.gray_color};")
+        text_layout.addWidget(dev_label, alignment=Qt.AlignLeft)
+
+        # 그리드에 배치
+        grid.addWidget(image_container, 0, 0, alignment=Qt.AlignHCenter | Qt.AlignVCenter)
+        grid.addLayout(text_layout, 0, 1)
+
+        main_layout.addLayout(grid)
+
+        # ----- 하단 공통: 저작권 + 닫기 버튼 -----
+        copyright_label = QLabel("Copyright © 2024 KNPU PAILAB\nAll rights reserved.")
+        copyright_label.setAlignment(Qt.AlignCenter)
+        copyright_label.setStyleSheet(
+            f"font-size: 14px; font-family: 'Tahoma'; color: {self.gray_color}; margin-top: 10px;")
+        main_layout.addWidget(copyright_label)
+
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(15)
+        button_layout.setAlignment(Qt.AlignCenter)
+    
+        # 업데이트 확인 버튼
+        update_btn = QPushButton("업데이트 확인")
+        update_btn.setFixedWidth(120)
+        update_btn.clicked.connect(lambda: self.parent.updateProgram(sc=True))
+        update_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self._button_bg()};
+                color: {self.text_color};
+                border-radius: 8px;
+                padding: 6px;
+                font-size: 14px;
+                font-family: 'Tahoma';
+            }}
+            QPushButton:hover {{ background-color: {self._button_hover_bg()}; }}
+        """)
+        button_layout.addWidget(update_btn)
+    
+        close_btn = QPushButton("닫기")
+        close_btn.setFixedWidth(120)
+        close_btn.clicked.connect(self.accept)
+        close_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self._button_bg()};
+                color: {self.text_color};
+                border-radius: 8px;
+                padding: 6px;
+                font-size: 14px;
+                font-family: 'Tahoma';
+            }}
+            QPushButton:hover {{ background-color: {self._button_hover_bg()}; }}
+        """)
+        button_layout.addWidget(close_btn, alignment=Qt.AlignCenter)
+        
+        main_layout.addLayout(button_layout)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+    def _button_bg(self):
+        return "#34495e" if self.theme == "dark" else "#ecf0f1"
+
+    def _button_hover_bg(self):
+        return "#2c3e50" if self.theme == "dark" else "#bdc3c7"

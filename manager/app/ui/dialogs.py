@@ -25,15 +25,33 @@ class BaseDialog(QDialog):
         for te in self.findChildren(QTextEdit):
             te.setTabChangesFocus(True)
     
-    def add_label(self, layout, title, content, monospace=True, readonly=True):
+    def add_label(self, layout, title, content, multiline=False, monospace=False, readonly=True):
+        # 제목 라벨
         layout.addWidget(QLabel(f"<b>{title}</b>"))
-        text = QTextEdit(content)
-        text.setReadOnly(readonly)
-        if monospace:
-            f = QFont("Consolas"); f.setStyleHint(QFont.Monospace)
-            text.setFont(f); text.setLineWrapMode(QTextEdit.NoWrap)
-        layout.addWidget(text)
-        return text
+
+        # 내용 길이 및 줄 수에 따라 위젯 선택
+        is_multiline = "\n" in content or len(content) > 50
+        if multiline:
+            is_multiline = True
+
+        if is_multiline:
+            widget = QTextEdit(content)
+            widget.setReadOnly(readonly)
+            if monospace:
+                f = QFont("Consolas")
+                f.setStyleHint(QFont.Monospace)
+                widget.setFont(f)
+                widget.setLineWrapMode(QTextEdit.NoWrap)
+        else:
+            widget = QLineEdit(content)
+            widget.setReadOnly(readonly)
+            if monospace:
+                f = QFont("Consolas")
+                f.setStyleHint(QFont.Monospace)
+                widget.setFont(f)
+
+        layout.addWidget(widget)
+        return widget
 
 class DownloadDialog(QDialog):
     def __init__(self, display_name, parent=None):
@@ -444,13 +462,13 @@ class AddVersionDialog(BaseDialog):
         layout.addWidget(self.version_num_input)
 
         # ChangeLog (monospace=True, editable)
-        self.changelog_input = self.add_label(layout, "ChangeLog:", "", monospace=True, readonly=False)
+        self.changelog_input = self.add_label(layout, "ChangeLog:", "", readonly=False)
 
         # Version Features (일반 글꼴, editable)
-        self.version_features_input = self.add_label(layout, "Version Features:", "", monospace=False, readonly=False)
+        self.version_features_input = self.add_label(layout, "Version Features:", "", readonly=False)
 
         # Detail (monospace=True, editable)
-        self.detail_input = self.add_label(layout, "Detail:", "", monospace=True, readonly=False)
+        self.detail_input = self.add_label(layout, "Detail:", "", readonly=False)
 
         # Submit
         self.submit_button = QPushButton('Submit')
@@ -505,7 +523,6 @@ class AddBugDialog(BaseDialog):
             layout,
             "Bug Detail:",
             "",
-            monospace=True,
             readonly=False
         )
         self.bug_detail_input.setPlaceholderText(
@@ -564,7 +581,6 @@ class AddPostDialog(BaseDialog):
             layout,
             "Post Text:",
             "",
-            monospace=True,
             readonly=False
         )
 
@@ -607,8 +623,8 @@ class ViewBugDialog(BaseDialog):
         self.add_label(layout, "Version Num", self.bug_data.get("versionName", ""))
         self.add_label(layout, "Bug Title",   self.bug_data.get("bugTitle", ""))
         self.add_label(layout, "DateTime",    self.bug_data.get("datetime", ""))
-        self.add_label(layout, "Bug Detail",  self.bug_data.get("bugText", ""), monospace=False)
-        self.add_label(layout, "Program Log", self.bug_data.get("programLog", ""), monospace=False)
+        self.add_label(layout, "Bug Detail",  self.bug_data.get("bugText", ""), multiline=True)
+        self.add_label(layout, "Program Log", self.bug_data.get("programLog", ""), multiline=True)
 
 
 class ViewVersionDialog(BaseDialog):
@@ -620,13 +636,19 @@ class ViewVersionDialog(BaseDialog):
         self._build_ui()
 
     def _build_ui(self):
-        layout = QVBoxLayout(self)
+        self.layout = QVBoxLayout(self)
 
-        self.add_label(layout, "Version Num",      self.version_data[0])
-        self.add_label(layout, "Release Date",     self.version_data[1])
-        self.add_label(layout, "ChangeLog",        self.version_data[2])
-        self.add_label(layout, "Version Features", self.version_data[3])
-        self.add_label(layout, "Detail",           self.version_data[4], monospace=False)
+        self.add_label(self.layout, "Version Num",      self.version_data[0])
+        self.add_label(self.layout, "Release Date",     self.version_data[1])
+        self.add_label(self.layout, "ChangeLog",        self.version_data[2])
+        self.add_label(self.layout, "Version Features", self.version_data[3])
+        self.add_label(self.layout, "Detail",           self.version_data[4], multiline=True)
+    
+    def add_buttons(self, *buttons):
+        button_layout = QHBoxLayout()
+        for btn in buttons:
+            button_layout.addWidget(btn)
+        self.layout.addLayout(button_layout)
 
 
 class ViewPostDialog(BaseDialog):
@@ -643,7 +665,7 @@ class ViewPostDialog(BaseDialog):
         self.add_label(layout, "User Name", self.post_data.get("writerName", ""))
         self.add_label(layout, "Post Title", self.post_data.get("title", ""))
         self.add_label(layout, "DateTime", self.post_data.get("datetime", ""))
-        self.add_label(layout, "Post Text", self.post_data.get("text", ""), monospace=False)
+        self.add_label(layout, "Post Text", self.post_data.get("text", ""), multiline=True)
 
 
 class EditPostDialog(BaseDialog):
@@ -2001,9 +2023,9 @@ class ViewHomeMemberDialog(BaseDialog):
         self.add_label(layout, "직책", data.get("position", ""))
         self.add_label(layout, "소속", data.get("affiliation", ""))
         self.add_label(layout, "이메일", data.get("email", ""))
-        self.add_label(layout, "학력", "\n".join(data.get("학력", [])) if isinstance(data.get("학력", []), list) else str(data.get("학력", "")), monospace=False)
-        self.add_label(layout, "경력", "\n".join(data.get("경력", [])) if isinstance(data.get("경력", []), list) else str(data.get("경력", "")), monospace=False)
-        self.add_label(layout, "연구", "\n".join(data.get("연구", [])) if isinstance(data.get("연구", []), list) else str(data.get("연구", "")), monospace=False)
+        self.add_label(layout, "학력", "\n".join(data.get("학력", [])) if isinstance(data.get("학력", []), list) else str(data.get("학력", "")))
+        self.add_label(layout, "경력", "\n".join(data.get("경력", [])) if isinstance(data.get("경력", []), list) else str(data.get("경력", "")), multiline=True)
+        self.add_label(layout, "연구", "\n".join(data.get("연구", [])) if isinstance(data.get("연구", []), list) else str(data.get("연구", "")), multiline=True)
 
 
 class ViewHomeNewsDialog(BaseDialog):
@@ -2014,6 +2036,6 @@ class ViewHomeNewsDialog(BaseDialog):
         layout = QVBoxLayout(self)
 
         self.add_label(layout, "제목", data.get("title", ""))
-        self.add_label(layout, "내용", data.get("content", ""), monospace=False)
         self.add_label(layout, "날짜", data.get("date", ""))
         self.add_label(layout, "URL", data.get("url", ""))        
+        self.add_label(layout, "내용", data.get("content", ""), multiline=True)
