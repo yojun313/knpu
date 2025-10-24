@@ -267,6 +267,8 @@ class Manager_Database(Manager_Page):
                 return
 
             self.searchAdminMode(search_text)
+            
+            
             # 현재 선택된 행의 다음 행부터 검색 시작
             start_row = self.main.database_tablewidget.currentRow(
             ) + 1 if self.main.database_tablewidget.currentRow() != -1 else 0
@@ -302,6 +304,7 @@ class Manager_Database(Manager_Page):
         # ADMIN MODE
         try:
             if search_text == '/remove':
+                self.main.database_searchDB_lineinput.clear()
                 reply = QMessageBox.question(self.main, 'Program Delete',
                                             f"'C:/MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -320,8 +323,9 @@ class Manager_Database(Manager_Page):
                         os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
                     subprocess.Popen([exe_file_path], shell=True)
                     os._exit(0)
-
+                
             if search_text == '/admin' and self.main.user != 'admin':
+                self.main.database_searchDB_lineinput.clear()
                 ok, password = checkPassword(self.main, True)
                 if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     QMessageBox.warning(
@@ -330,18 +334,22 @@ class Manager_Database(Manager_Page):
                 self.main.user = 'admin'
                 QMessageBox.information(
                     self.main, "Admin Mode", f"관리자 권한이 부여되었습니다")
+                
 
             if search_text == '/update':
+                self.main.database_searchDB_lineinput.clear()
                 self.main.updateProgram(sc=True)
                 return
 
             if search_text == '/delete':
+                self.main.database_searchDB_lineinput.clear()
                 reply = QMessageBox.question(self.main, 'Local Data Delete',
                                             f"로컬 디렉토리 '{self.main.localDirectory}'가 제거됩니다\n\n진행하시겠습니까?",
                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes and os.path.exists(self.main.localDirectory):
                     shutil.rmtree(self.main.localDirectory)
                     os.makedirs(self.main.localDirectory, exist_ok=True)
+                return
                     
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
