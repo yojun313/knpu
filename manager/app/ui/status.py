@@ -17,8 +17,6 @@ def get_active_thread_count():
     return len(_active_threads)
 
 def showActiveThreadsDialog():
-    if len(_active_threads) == 0:
-        return
 
     dialog = QDialog()
     dialog.setWindowTitle("실행 중인 작업")
