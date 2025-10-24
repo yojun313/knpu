@@ -4,19 +4,19 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QShortcut
 
-_active_threads = []  
+active_threads = []  
 
 def register_thread(thread):
-    _active_threads.append(thread)  
+    active_threads.append(thread)  
 
 def unregister_thread(thread):
     try:
-        _active_threads.remove(thread)  
+        active_threads.remove(thread)  
     except ValueError:
         pass  # 등록되지 않은 스레드일 경우 무시
 
 def get_active_thread_count():
-    return len(_active_threads)
+    return len(active_threads)
 
 def showActiveThreadsDialog():
 
@@ -28,7 +28,7 @@ def showActiveThreadsDialog():
     layout.setContentsMargins(10, 10, 10, 10)
     layout.setSpacing(10)
 
-    info_label = QLabel(f"현재 실행 중인 작업 {len(_active_threads)}개")
+    info_label = QLabel(f"현재 실행 중인 작업 {len(active_threads)}개")
     layout.addWidget(info_label)
 
     # 스크롤 가능한 리스트
@@ -39,7 +39,7 @@ def showActiveThreadsDialog():
     container_layout = QVBoxLayout(container)
     container_layout.setSpacing(5)
 
-    for t in _active_threads:
+    for t in active_threads:
         lbl = QLabel(t)
         lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)  # 복사 가능
         container_layout.addWidget(lbl)
@@ -58,14 +58,14 @@ def showActiveThreadsDialog():
     dialog.exec_()
  
 def printStatus(parent, msg=''):
-    if len(_active_threads) > 0:
-        add_msg = f"{len(_active_threads)}개의 작업 진행 중"
+    if len(active_threads) > 0:
+        add_msg = f"{len(active_threads)}개의 작업 진행 중"
         if msg:
             msg += f" | {add_msg}"
         else: 
             msg = add_msg
         
-        tooltipMsg = "\n".join(_active_threads)
+        tooltipMsg = "\n".join(active_threads)
         parent.rightLabel.setToolTip(tooltipMsg)
 
 
