@@ -8,7 +8,7 @@ def fast_zip(folder_path: str, zip_path: str):
 
     # zip 명령어 실행
     subprocess.run(
-        ["zip", "-r", "-q", zip_path, "."],  # -r: recursive, -q: quiet(로그 안 찍힘)
+        ["7z", "a", "-tzip", "-mx=1", "-mmt=on", zip_path, "."],
         cwd=folder_path,
         check=True
     )
