@@ -2,6 +2,8 @@ from app.models.analysis_model import *
 from app.libs.kemkim import KimKem
 from app.libs.progress import *
 import os
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import shutil
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
@@ -15,7 +17,9 @@ from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
     TextClassificationPipeline,
+    logging
 )
+logging.set_verbosity_error()
 import os
 from dotenv import load_dotenv
 from keybert import KeyBERT
