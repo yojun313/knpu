@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QMessageBox
 from services.logging import * 
 from ui.status import unregister_thread, printStatus
 
-class Manager_Page:
+class Manager_Worker:
     def __init__(self):
         pass
     
@@ -42,16 +42,16 @@ class Manager_Page:
         worker.message.connect(lambda msg: statusDialog.update_message(msg))
         worker.finished.connect(
             lambda ok, msg, path: (
-                self.worker_finished(ok, msg, path),
                 statusDialog.close(),
+                self.worker_finished(ok, msg, path),
                 unregister_thread(thread_name),
                 printStatus(self.main)
             )
         )
         worker.error.connect(
             lambda err: (
-                self.worker_failed(err),
                 statusDialog.close(),
+                self.worker_failed(err),
                 unregister_thread(thread_name),
                 printStatus(self.main)
             )

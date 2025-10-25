@@ -38,7 +38,7 @@ from services.llm import *
 from services.csv import *
 from config import *
 from PyQt5.QtCore import QThread, pyqtSignal
-from .page_parent import Manager_Page
+from .page_worker import Manager_Worker
 
 warnings.filterwarnings("ignore")
 
@@ -53,7 +53,7 @@ elif platform.system() == 'Windows':  # Windows
 plt.rcParams['axes.unicode_minus'] = False
 
 
-class Manager_Analysis(Manager_Page):
+class Manager_Analysis(Manager_Worker):
     def __init__(self, main_window):
         self.main = main_window
         self.dataprocess_obj = DataProcess(self.main)

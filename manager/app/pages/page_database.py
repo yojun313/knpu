@@ -1,5 +1,4 @@
 import os
-import sys
 import gc
 import copy
 import re
@@ -38,11 +37,11 @@ from core.setting import *
 from core.shortcut import *
 from core.thread import *
 from config import *
-from .page_analysis import Manager_Page
+from .page_worker import Manager_Worker
 
 warnings.filterwarnings("ignore")
 
-class Manager_Database(Manager_Page):
+class Manager_Database(Manager_Worker):
     def __init__(self, main_window):
         self.main = main_window
         self.DB = copy.deepcopy(self.main.DB)
