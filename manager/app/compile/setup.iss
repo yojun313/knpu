@@ -11,6 +11,10 @@
 #define MyAppAssocExt ".myp"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
 
+#define BuildDir "D:\knpu\MANAGER\exe\MANAGER_2.7.9"
+#define OutputDir "D:\knpu\MANAGER\Output"
+#define IconFile "C:\GitHub\knpu\manager\app\assets\download_icon.ico"
+
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
@@ -37,7 +41,7 @@ DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 OutputBaseFilename=MANAGER_{#MyAppVersion}
-OutputDir="D:\knpu\MANAGER\Output"
+OutputDir={#OutputDir}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -46,15 +50,14 @@ DisableWelcomePage=true
 DisableDirPage=true
 DisableReadyPage=true
 DisableFinishedPage=true
-SetupIconFile="C:\GitHub\knpu\manager\app\assets\download_icon.ico"
+SetupIconFile={#IconFile}
 
 
 [Languages]
 Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
 
 [Files]
-Source: "D:\knpu\MANAGER\exe\MANAGER_{#MyAppVersion}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\knpu\MANAGER\exe\MANAGER_{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [InstallDelete]

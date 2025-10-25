@@ -14,7 +14,6 @@ from datetime import datetime
 from packaging.version import Version
 from rich.console import Console
 from rich.panel import Panel
-from rich.text import Text
 import requests
 from upload import upload_file
 
