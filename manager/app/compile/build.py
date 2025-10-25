@@ -19,6 +19,7 @@ from upload import upload_file
 
 console = Console()
 
+OUTPUT_DIRECTORY = "D:/knpu/MANAGER/exe"
 
 def sendPushOver(msg, user_key = 'uvz7oczixno7daxvgxmq65g2gbnsd5', image_path=False):
     app_key_list = ["a22qabchdf25zzkd1vjn12exjytsjx"]
@@ -95,10 +96,7 @@ def build_exe_from_spec(spec_file, output_directory, version):
 
 
 if __name__ == "__main__":
-    if socket.gethostname() == "BigMacServer":
-        output_directory = "D:/knpu/MANAGER/exe"
-    else:
-        output_directory = "./build_output"
+    output_directory = OUTPUT_DIRECTORY
 
     spec_file = os.path.join(os.path.dirname(__file__), 'build.spec')
     iss_path = os.path.join(os.path.dirname(__file__), 'setup.iss')
