@@ -31,6 +31,7 @@ from ui.dialogs import *
 from libs.viewer import *
 from core.shortcut import *
 from core.setting import *
+from core.worker import *
 from services.api import *
 from services.logging import *
 from services.llm import *
@@ -38,7 +39,6 @@ from services.csv import *
 from config import *
 from PyQt5.QtCore import QThread, pyqtSignal
 from .page_parent import Manager_Page
-from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 warnings.filterwarnings("ignore")
 
@@ -666,11 +666,7 @@ class Manager_Analysis(Manager_Page):
         dialog.exec_()
 
     def run_kemkim(self):
-        class KemkimWorker(QThread):
-            finished = pyqtSignal(bool, str, str)   # (성공 여부, 메시지, 경로)
-            error = pyqtSignal(str)                # (에러 메시지)
-            progress = pyqtSignal(int, str)            # (task_id, 진행률)
-
+        class KemkimWorker(BaseWorker):
             def __init__(self, pid, filepath, option, save_path, tokenfile_name, parent=None):
                 super().__init__(parent)
                 self.pid = pid
@@ -681,106 +677,19 @@ class Manager_Analysis(Manager_Page):
 
             def run(self):
                 try:
-                    download_url = MANAGER_SERVER_API + "/analysis/kemkim"
-                    send_message(self.pid, "토큰 데이터 업로드 중...")
-
-                    file_size = os.path.getsize(self.filepath)
-                    uploaded = 0
-                    last_percent = -1
-                    last_emit_time = 0
-
-                    def upload_callback(monitor):
-                        nonlocal uploaded, last_percent, last_emit_time
-                        uploaded = monitor.bytes_read
-                        percent = int(uploaded / file_size * 100)
-                        now = time.time()
-                        if percent != last_percent or now - last_emit_time > 0.2:
-                            mb_up = uploaded / (1024 * 1024)
-                            mb_total = file_size / (1024 * 1024)
-                            speed = mb_up / (now - start_time) if now > start_time else 0
-                            msg = f"토큰 데이터 업로드 중... {mb_up:.1f}MB/{mb_total:.1f}MB ({speed:.1f}MB/s)"
-                            self.progress.emit(percent, msg)
-                            last_percent = percent
-                            last_emit_time = now
-
-                    start_time = time.time()
-
-                    with open(self.filepath, "rb") as f:
-                        encoder = MultipartEncoder(
-                            fields={
-                                "token_file": (os.path.basename(self.filepath), f, "application/octet-stream"),
-                                "option": json.dumps(self.option),
-                            }
-                        )
-                        monitor = MultipartEncoderMonitor(encoder, upload_callback)
-
-                        response = requests.post(
-                            download_url,
-                            data=monitor,
-                            headers={**get_api_headers(), "Content-Type": monitor.content_type},
-                            timeout=3600,
-                            stream=True
-                        )
-                    response.raise_for_status()
-                    
-                    # 1) 파일명 파싱
-                    content_disp = response.headers.get("Content-Disposition", "")
-                    m = re.search(r'filename="(?P<fname>[^"]+)"', content_disp)
-                    if m:
-                        zip_name = m.group("fname")
-                    else:
-                        m2 = re.search(r"filename\*=utf-8''(?P<fname>[^;]+)", content_disp)
-                        if m2:
-                            zip_name = unquote(m2.group("fname"))
-                        else:
-                            zip_name = f"{self.pid}.zip"
-
-                    local_zip = os.path.join(self.save_path, zip_name)
-                    total_size = int(response.headers.get("Content-Length", 0))
-                    downloaded = 0
-                    start_time = time.time() 
-
-                    last_emit_time = 0
-                    last_percent = -1
-
-                    with open(safe_path(local_zip), "wb") as f:
-                        for chunk in response.iter_content(8192):
-                            if chunk:
-                                f.write(chunk)
-                                downloaded += len(chunk)
-                                if total_size > 0:
-                                    percent = int(downloaded / total_size * 100)
-
-                                    elapsed = time.time() - start_time
-                                    if elapsed == 0:
-                                        elapsed = 0.001  # 0 방지
-                                    speed = downloaded / (1024 * 1024) / elapsed
-                                    current_mb = downloaded / (1024 * 1024)
-                                    total_mb = total_size / (1024 * 1024)
-
-                                    now = time.time()
-                                    if percent != last_percent or now - last_emit_time > 0.2:
-                                        msg = f"{current_mb:.1f}MB / {total_mb:.1f}MB ({speed:.1f}MB/s)"
-                                        self.progress.emit(percent, msg)
-                                        last_percent = percent
-                                        last_emit_time = now
-
-                    # 3) 압축 해제
-                    self.progress.emit(100, "압축 해제 중...")
-                    base_folder = os.path.splitext(zip_name)[0]
-                    extract_path = os.path.join(self.save_path, base_folder)
-                    os.makedirs(extract_path, exist_ok=True)
-
-                    with zipfile.ZipFile(local_zip, "r") as zf:
-                        zf.extractall(extract_path)
-
-                    os.remove(local_zip)
-
-                    self.finished.emit(True, f"{self.tokenfile_name} KEMKIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
+                    upload_url = MANAGER_SERVER_API + "/analysis/kemkim"
+                    response = self.upload_file(
+                        self.filepath,
+                        upload_url,
+                        extra_fields={"option": json.dumps(self.option)},
+                        label="토큰 데이터 업로드 중"
+                    )
+                    extract_path = self.download_file(response, self.save_path, label="결과 다운로드 중")
+                    self.finished.emit(True, f"{self.tokenfile_name} KEMKIM 분석 완료", extract_path)
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
-
+                    
         try:
             filepath = self.check_file(tokenCheck=True)
             if not filepath:
@@ -1474,12 +1383,7 @@ class Manager_Analysis(Manager_Page):
         dialog.exec_()
 
     def run_tokenize_file(self):
-        class TokenizeWorker(QThread):
-            finished = pyqtSignal(bool, str, str)  # (성공 여부, 메시지, 결과 파일 경로)
-            error = pyqtSignal(str)
-            progress = pyqtSignal(int, str)  # (percent)
-            message = pyqtSignal(str)
-
+        class TokenizeWorker(BaseWorker):
             def __init__(self, pid, csv_path, save_path, tokenfile_name, selected_columns, include_word_list, parent=None):
                 super().__init__(parent)
                 self.csv_path = csv_path
@@ -1488,7 +1392,7 @@ class Manager_Analysis(Manager_Page):
                 self.selected_columns = selected_columns
                 self.include_word_list = include_word_list
                 self.pid = pid
-                
+
             def run(self):
                 try:
                     option = {
@@ -1496,88 +1400,16 @@ class Manager_Analysis(Manager_Page):
                         "column_names": self.selected_columns,
                         "include_words": self.include_word_list,
                     }
+                    upload_url = MANAGER_SERVER_API + "/analysis/tokenize"
+                    response = self.upload_file(
+                        self.csv_path,
+                        upload_url,
+                        extra_fields={"option": json.dumps(option)},
+                        label="CSV 업로드 중"
+                    )
 
-                    download_url = MANAGER_SERVER_API + "/analysis/tokenize"
-                    file_size = os.path.getsize(self.csv_path)
-                    uploaded = 0
-                    last_percent = -1
-                    last_emit_time = 0
-                    start_time = time.time()
-
-                    def upload_callback(monitor):
-                        nonlocal uploaded, last_percent, last_emit_time
-                        uploaded = monitor.bytes_read
-                        percent = int(uploaded / file_size * 100)
-                        now = time.time()
-                        if percent != last_percent or now - last_emit_time > 0.2:
-                            mb_up = uploaded / (1024 * 1024)
-                            mb_total = file_size / (1024 * 1024)
-                            speed = mb_up / (now - start_time) if now > start_time else 0
-                            msg = f"CSV 업로드 중... {mb_up:.1f}MB / {mb_total:.1f}MB ({speed:.1f}MB/s)"
-                            self.progress.emit(percent, msg)
-                            last_percent = percent
-                            last_emit_time = now
-
-                    # MultipartEncoder로 업로드 진행률 추적
-                    with open(self.csv_path, "rb") as f:
-                        encoder = MultipartEncoder(
-                            fields={
-                                "csv_file": (self.tokenfile_name, f, "text/csv"),
-                                "option": (None, json.dumps(option), "application/json"),
-                            }
-                        )
-                        monitor = MultipartEncoderMonitor(encoder, upload_callback)
-
-                        response = requests.post(
-                            download_url,
-                            data=monitor,
-                            headers={**get_api_headers(), "Content-Type": monitor.content_type},
-                            stream=True,
-                            timeout=3600
-                        )
-
-                    if response.status_code != 200:
-                        try:
-                            error_data = response.json()
-                            error_msg = error_data.get("message") or error_data.get("error") or "토큰화 실패"
-                        except Exception:
-                            error_msg = response.text or "토큰화 중 알 수 없는 오류가 발생했습니다."
-                        self.error.emit(error_msg)
-                        return
-
-                    csv_name = f"token_{self.tokenfile_name}"
-                    local_csv = os.path.join(self.save_path, csv_name)
-                    total_size = int(response.headers.get("Content-Length", 0))
-                    
-                    downloaded = 0
-                    start_time = time.time() 
-
-                    last_emit_time = 0
-                    last_percent = -1
-
-                    with open(safe_path(local_csv), "wb") as f:
-                        for chunk in response.iter_content(8192):
-                            if chunk:
-                                f.write(chunk)
-                                downloaded += len(chunk)
-                                if total_size > 0:
-                                    percent = int(downloaded / total_size * 100)
-
-                                    elapsed = time.time() - start_time
-                                    if elapsed == 0:
-                                        elapsed = 0.001  # 0 방지
-                                    speed = downloaded / (1024 * 1024) / elapsed
-                                    current_mb = downloaded / (1024 * 1024)
-                                    total_mb = total_size / (1024 * 1024)
-
-                                    now = time.time()
-                                    if percent != last_percent or now - last_emit_time > 0.2:
-                                        msg = f"{current_mb:.1f}MB / {total_mb:.1f}MB ({speed:.1f}MB/s)"
-                                        self.progress.emit(percent, msg)
-                                        last_percent = percent
-                                        last_emit_time = now
-
-                    self.finished.emit(True, f"{self.tokenfile_name} 토큰화가 완료되었습니다", os.path.dirname(local_csv))
+                    local_csv = self.download_file(response, self.save_path, f"token_{self.tokenfile_name}", label="결과 다운로드 중")
+                    self.finished.emit(True, f"{self.tokenfile_name} 토큰화 완료", os.path.dirname(local_csv))
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
@@ -1972,12 +1804,7 @@ class Manager_Analysis(Manager_Page):
         dialog.exec_()
 
     def run_hate_measure(self):
-        class HateMeasureWorker(QThread):
-            finished = pyqtSignal(bool, str, str)  # (성공 여부, 메시지, 결과 파일 경로)
-            error = pyqtSignal(str)
-            progress = pyqtSignal(int)       # (현재, 총 바이트)
-            message = pyqtSignal(str)
-
+        class HateMeasureWorker(BaseWorker):
             def __init__(self, pid, csv_path, save_dir, csv_fname, text_col, option_num, parent=None):
                 super().__init__(parent)
                 self.pid = pid
@@ -1997,73 +1824,31 @@ class Manager_Analysis(Manager_Page):
 
                     url = MANAGER_SERVER_API + "/analysis/hate"
 
-                    file_size = os.path.getsize(self.csv_path)
-                    uploaded = 0
-                    last_percent = -1
-                    last_emit_time = 0
-                    start_time = time.time()
+                    # 1. 업로드
+                    response = self.upload_file(
+                        self.csv_path,
+                        url,
+                        extra_fields={
+                            "option": (None, json.dumps(option_payload), "application/json")
+                        },
+                        label="CSV 업로드 중"
+                    )
 
-                    def upload_callback(monitor):
-                        nonlocal uploaded, last_percent, last_emit_time
-                        uploaded = monitor.bytes_read
-                        percent = int(uploaded / file_size * 100)
-                        now = time.time()
-                        if percent != last_percent or now - last_emit_time > 0.2:
-                            mb_up = uploaded / (1024 * 1024)
-                            mb_total = file_size / (1024 * 1024)
-                            speed = mb_up / (now - start_time) if now > start_time else 0
-                            msg = f"업로드 중... {mb_up:.1f}MB / {mb_total:.1f}MB ({speed:.1f}MB/s)"
-                            self.message.emit(msg)
-                            self.progress.emit(percent)
-                            last_percent = percent
-                            last_emit_time = now
-
-                    # MultipartEncoder로 업로드 진행률 추적
-                    with open(self.csv_path, "rb") as f:
-                        encoder = MultipartEncoder(
-                            fields={
-                                "csv_file": (self.csv_fname, f, "text/csv"),
-                                "option": (None, json.dumps(option_payload), "application/json"),
-                            }
-                        )
-                        monitor = MultipartEncoderMonitor(encoder, upload_callback)
-
-                        resp = requests.post(
-                            url,
-                            data=monitor,
-                            headers={**get_api_headers(), "Content-Type": monitor.content_type},
-                            stream=True,
-                            timeout=3600
-                        )
-
-                    # 2. 오류 처리
-                    if resp.status_code != 200:
+                    # 2. 응답 코드 검사
+                    if response.status_code != 200:
                         try:
-                            err = resp.json()
+                            err = response.json()
                             msg = err.get("message") or err.get("error") or "분석 실패"
                         except Exception:
-                            msg = resp.text or "분석 중 알 수 없는 오류가 발생했습니다."
+                            msg = response.text or "분석 중 알 수 없는 오류가 발생했습니다."
                         self.error.emit(msg)
                         return
 
                     # 3. 다운로드
-                    out_name = f"hate_{self.csv_fname}"
-                    out_path = os.path.join(self.save_dir, out_name)
-                    total_size = int(resp.headers.get("Content-Length", 0))
+                    filename = f"hate_{self.csv_fname}"
+                    self.download_file(response, self.save_dir, filename, label="결과 다운로드 중")
 
-                    self.message.emit("혐오도 분석 결과 다운로드 중...")
-                    downloaded = 0
-                    # 2) 다운로드 진행률 업데이트
-                    with open(safe_path(out_path), "wb") as f:
-                        for chunk in resp.iter_content(8192):
-                            if chunk:
-                                f.write(chunk)
-                                downloaded += len(chunk)
-                                if total_size > 0:
-                                    percent = int(downloaded / total_size * 100)
-                                    self.progress.emit(percent)
-
-                    self.finished.emit(True, f"{self.csv_fname} 혐오도 분석이 완료되었습니다", os.path.dirname(out_path))
+                    self.finished.emit(True, f"{self.csv_fname} 혐오도 분석이 완료되었습니다", self.save_dir)
 
                 except Exception:
                     self.error.emit(traceback.format_exc())

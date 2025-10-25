@@ -16,20 +16,20 @@ ANALYZER_EXE_PATH = os.getenv("ANALYZER_EXE_PATH")
 @router.post("/kemkim")
 async def analysis_kemkim(
     option: str = Form(...),
-    token_file: UploadFile = File(...)
+    file: UploadFile = File(...)
 ):
     option = json.loads(option)
-    content = await token_file.read()
+    content = await file.read()
     token_data = pd.read_csv(StringIO(content.decode("utf-8")))
     return start_kemkim(KemKimOption(**option), token_data)
 
 @router.post("/tokenize")
 async def tokenize_file(
     option: str = Form(...),
-    csv_file: UploadFile = File(...)
+    file: UploadFile = File(...)
 ):
     option    = json.loads(option)
-    content   = await csv_file.read()
+    content   = await file.read()
     csv_data  = pd.read_csv(io.StringIO(content.decode("utf-8")))
 
     result_df = tokenization(
@@ -58,7 +58,7 @@ async def tokenize_file(
 @router.post("/hate")
 async def hate_measure_route(
     option: str = Form(...),
-    csv_file: UploadFile = File(...),
+    file: UploadFile = File(...),
 ):
     # 1) 옵션 파싱 → HateOption + 부가 파라미터(text_col 등)
     option_dict  = json.loads(option)
@@ -69,7 +69,7 @@ async def hate_measure_route(
     text_col     = option_dict.get("text_col", "Text")           # 없으면 기본값
 
     # 2) CSV → DataFrame
-    content  = await csv_file.read()
+    content  = await file.read()
     df       = pd.read_csv(io.StringIO(content.decode("utf-8")))
 
     # 3) 혐오도 분석
