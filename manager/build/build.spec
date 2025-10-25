@@ -27,7 +27,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    console=False,
+    console=True,
     icon='C:/GitHub/knpu/manager/app/assets/exe_icon.ico'
 )
 coll = COLLECT(
