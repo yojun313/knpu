@@ -10,9 +10,12 @@ from core.setting import get_setting, set_setting
 from ui.style import theme_option
 from PyQt5.QtGui import QIcon
 from config import ASSETS_PATH
-
+from packaging import version
 
 def build_app():
+    if version.parse(VERSION) < version.parse(get_setting("LastVersion")):
+        set_setting("LastVersion", VERSION)
+    
     os.environ.update({
         "QT_DEVICE_PIXEL_RATIO": "0",
         "QT_AUTO_SCREEN_SCALE_FACTOR": "1",
