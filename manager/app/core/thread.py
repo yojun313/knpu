@@ -8,6 +8,14 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 import zipfile
 from urllib.parse import unquote
+from ui.dialogs import BaseDialog
+from PyQt5.QtCore import Qt, pyqtSignal, QUrl, QTimer
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QProgressBar
+from PyQt5.QtWebEngineWidgets import QWebEngineView
+from services.api import *
+from services.logging import *
+from config import MANAGER_PROGRESS_API
+VIEW_SERVER = MANAGER_PROGRESS_API
 
 class BaseWorker(QThread):
     finished = pyqtSignal(bool, str, str)
@@ -126,3 +134,123 @@ class BaseWorker(QThread):
             return extract_path
 
         return local_path
+
+class DownloadDialog(BaseDialog):
+    update_text_signal = pyqtSignal(str)
+
+    def __init__(self, display_name, pid=None, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"{display_name}")
+        self.setMinimumWidth(600)
+        self.pid = pid 
+        if self.pid:
+            self.setMinimumHeight(400)
+        else:
+            self.setMinimumHeight(120)
+        self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+
+        self.layout = QVBoxLayout(self)
+        self.update_text_signal.connect(self.update_message)
+
+        self.webview = None  # 기본값 None
+
+        # -----------------------
+        # 웹뷰 (pid가 있을 때만 생성)
+        # -----------------------
+        if self.pid:
+            self.webview = QWebEngineView()
+            self.layout.addWidget(self.webview, stretch=1)
+
+            url = QUrl(f"{VIEW_SERVER}/?pid={pid}")
+            self.webview.setUrl(url)
+
+        # -----------------------
+        # 상태 메시지 & 진행바 (웹뷰 아래)
+        # -----------------------
+        self.msg_label = QLabel("다운로드 대기 중...")
+        self.msg_label.setWordWrap(True)
+        self.msg_label.setStyleSheet("font-weight: bold; color: #333; font-size: 13px;")
+        self.msg_label.setAlignment(Qt.AlignCenter)
+
+        self.pbar = QProgressBar()
+        self.pbar.setValue(0)
+        self.pbar.setTextVisible(True)
+        self.pbar.setFormat("%p%")
+        self.pbar.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #bcbcbc;
+                border-radius: 8px;
+                background-color: #f0f0f0;
+                height: 22px;
+                text-align: center;
+                font-size: 12px;
+            }
+            QProgressBar::chunk {
+                background-color: #4CAF50;
+                border-radius: 8px;
+            }
+        """)
+
+        bottom_layout = QHBoxLayout()
+        bottom_layout.addWidget(self.msg_label, 2)
+        bottom_layout.addWidget(self.pbar, 4)
+        self.layout.addLayout(bottom_layout)
+
+    def update_progress(self, value: int):
+        self.pbar.setValue(value)
+        # 100%가 되면 자동으로 초기화 메시지 출력
+        if value >= 100:
+            QTimer.singleShot(200, self.reset_bar)
+
+    def update_message(self, message: str):
+        self.msg_label.setText(message)
+
+    def complete_task(self, success=True):
+        self.pbar.setValue(100 if success else 0)
+        self.pbar.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #bcbcbc;
+                border-radius: 8px;
+                background-color: #f0f0f0;
+                height: 22px;
+                text-align: center;
+                font-size: 12px;
+            }
+            QProgressBar::chunk {
+                background-color: %s;
+                border-radius: 8px;
+            }
+        """ % ("#4CAF50" if success else "#E74C3C"))
+        self.msg_label.setText(
+            "작업이 완료되었습니다." if success else "작업 중 오류가 발생했습니다."
+        )
+        self.close()
+
+    def reset_bar(self):
+        self.msg_label.setText("대기 중...")
+        self.pbar.setValue(0)
+    
+    def closeEvent(self, event):
+        if self.webview:
+            self.webview.setUrl(QUrl("about:blank"))
+            self.webview.deleteLater()
+            self.webview = None
+        super().closeEvent(event)
+     
+class TaskStatusDialog(BaseDialog):
+    def __init__(self, title: str, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setModal(True)
+        self.resize(400, 75)
+        
+        self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+        self.label = QLabel("작업을 준비 중입니다...", self)
+        self.label.setAlignment(Qt.AlignCenter)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.label)
+        self.setLayout(layout)
+
+    def update_message(self, message: str):
+        self.label.setText(message)

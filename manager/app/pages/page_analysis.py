@@ -31,7 +31,7 @@ from ui.dialogs import *
 from libs.viewer import *
 from core.shortcut import *
 from core.setting import *
-from core.worker import *
+from core.thread import *
 from services.api import *
 from services.logging import *
 from services.llm import *
