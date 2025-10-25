@@ -398,7 +398,7 @@ class Manager_Database(Manager_Worker):
                             zip_name = f"{self.targetUid}.zip"
 
                     # 1) 다운로드
-                    extract_path = self.download_file(response, self.folder_path, zip_name, label="DB 저장 중", extract=True)
+                    extract_path = self.download_file(response, self.folder_path, zip_name, extract=True)
                     self.finished.emit(True, f"{self.dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
 
                 except Exception:
