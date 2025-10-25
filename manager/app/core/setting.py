@@ -8,7 +8,7 @@ MANAGER · persistent settings helper
 """
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any
 from PyQt5.QtCore import QSettings
 
 # ── 1) Persistent store 객체 ───────────────────────────────────────────────────
@@ -28,6 +28,7 @@ _DEFAULTS: dict[str, Any] = {
     "ProcessConsole":   "default",
     "LLM_model":        "ChatGPT",
     "LLM_model_name":   "ChatGPT 4",
+    "LastVersion":    "0.0.0",
 }
 
 # ── 3) 최초 실행 시 한 번만 기본값 주입 ────────────────────────────────────────
