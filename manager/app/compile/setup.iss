@@ -11,7 +11,7 @@
 #define MyAppAssocExt ".myp"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
 
-#define BuildDir "D:\knpu\MANAGER\exe\MANAGER_2.7.9"
+#define BuildDir "D:\knpu\MANAGER\exe\MANAGER_" + MyAppVersion
 #define OutputDir "D:\knpu\MANAGER\Output"
 #define IconFile "C:\GitHub\knpu\manager\app\assets\download_icon.ico"
 
