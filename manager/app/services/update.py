@@ -78,7 +78,7 @@ def downloadProgram(parent, newVersionName):
     download_url = f"https://knpu.re.kr/download/MANAGER_{newVersionName}.exe"
 
     # 다운로드 진행창 생성
-    dialog = DownloadDialog(f"업데이트 다운로드: {newVersionName}", parent)
+    dialog = DownloadDialog(f"업데이트 다운로드: {newVersionName}", parent=parent)
     worker = DownloadWorker(download_url, downloadFile_path)
 
     worker.progress.connect(lambda percent, msg: (
