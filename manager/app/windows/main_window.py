@@ -11,7 +11,7 @@ from packaging import version
 
 from PyQt5 import uic
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow
+from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QPushButton
 
 from config import VERSION, ASSETS_PATH
 from libs.console import openConsole, closeConsole
@@ -87,7 +87,6 @@ class MainWindow(QMainWindow):
                     "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 동작하는지 확인하십시오"
                     "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
                 )
-
                 
                 # User Checking & Login Process
                 print("\nI. Checking User... ", end='')
@@ -129,28 +128,8 @@ class MainWindow(QMainWindow):
                 printStatus(self, f"{self.fullStorage} GB / 2 TB")
 
                 # After Booting
-                
-                # Show New Version Info
-                lastVersion = version.parse(get_setting('LastVersion'))
-                if version.parse(VERSION) > lastVersion:
-                    newVersionInfo = getVersionInfo(VERSION)
-                    version_data = [
-                        str(newVersionInfo['versionName']),
-                        str(newVersionInfo['releaseDate']),
-                        str(newVersionInfo['changeLog']),
-                        str(newVersionInfo['features']),
-                        str(newVersionInfo['details'])
-                    ]
-                    set_setting('LastVersion', VERSION)
-                    dialog = ViewVersionDialog(self, version_data, title = f"새로운 버전으로 업데이트되었습니다: {VERSION}")
-                    dialog.exec_()
-
-                newpost = checkNewPost(self)
-                if newpost == True:
-                    reply = QMessageBox.question(
-                        self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                    if reply == QMessageBox.Yes:
-                        self.managerBoardObj.viewPost(selectedRow=0)
+                self.showNewVersionInfo()
+                self.showNewPostInfo()
 
             except Exception as e:
                 print("Failed")
@@ -176,6 +155,35 @@ class MainWindow(QMainWindow):
 
     ################################## Booting ##################################
 
+    def showNewVersionInfo(self):
+        # Show New Version Info
+        lastVersion = version.parse(get_setting('LastVersion'))
+        
+        # 최신 버전으로 업데이트 되었을 때
+        if version.parse(VERSION) > lastVersion:
+            newVersionInfo = getVersionInfo(VERSION)
+            version_data = [
+                str(newVersionInfo['versionName']),
+                str(newVersionInfo['releaseDate']),
+                str(newVersionInfo['changeLog']),
+                str(newVersionInfo['features']),
+                str(newVersionInfo['details'])
+            ]
+            set_setting('LastVersion', VERSION)
+            dialog = ViewVersionDialog(self, version_data, title = f"새로운 버전으로 업데이트되었습니다")
+            confirm_btn = QPushButton("확인")
+            confirm_btn.clicked.connect(dialog.accept)
+            dialog.add_buttons(confirm_btn)
+            dialog.exec_()
+    
+    def showNewPostInfo(self):
+        newpost = checkNewPost(self)
+        if newpost == True:
+            reply = QMessageBox.question(
+                self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                self.managerBoardObj.viewPost(selectedRow=0)
+    
     def closeBootscreen(self):
         try:
             self.splashDialog.accept()  # InfoDialog 닫기

@@ -69,7 +69,7 @@ def openAndExit(path):
     subprocess.Popen(f'"{path}"', shell=True)
     os._exit(0)
 
-def downloadProgram(parent, newVersionName):
+def downloadProgram(parent, newVersionName, reinstall=False):
     temp_dir = 'C:/Temp'
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir, exist_ok=True)
@@ -78,7 +78,8 @@ def downloadProgram(parent, newVersionName):
     download_url = f"https://knpu.re.kr/download/MANAGER_{newVersionName}.exe"
 
     # 다운로드 진행창 생성
-    dialog = DownloadDialog(f"업데이트 다운로드: {newVersionName}", parent=parent)
+    msg = "업데이트 다운로드" if not reinstall else "재설치 다운로드"
+    dialog = DownloadDialog(f"{msg}: {newVersionName}", parent=parent)
     worker = DownloadWorker(download_url, downloadFile_path)
 
     worker.progress.connect(lambda percent, msg: (
@@ -142,12 +143,6 @@ def updateProgram(parent, sc=False):
 
             if dialog.exec_() == QDialog.Accepted:
                 update_process()
-            else:
-                QMessageBox.information(
-                    parent,
-                    "Information",
-                    'Ctrl+U 단축어로 프로그램 실행 중 업데이트 가능합니다'
-                )
 
         # 새 버전 없음 (재설치 여부 묻기)
         else:
@@ -161,7 +156,7 @@ def updateProgram(parent, sc=False):
                 )
                 if reply == QMessageBox.Yes:
                     printStatus(parent, "버전 재설치 중...")
-                    downloadProgram(parent, newVersionName)
+                    downloadProgram(parent, newVersionName, reinstall=True)
                 else:
                     return
             return
