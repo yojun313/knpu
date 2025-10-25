@@ -57,6 +57,10 @@ Source: "D:\knpu\MANAGER\exe\MANAGER_{#MyAppVersion}\{#MyAppExeName}"; DestDir: 
 Source: "D:\knpu\MANAGER\exe\MANAGER_{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
+[InstallDelete]
+; 설치 시작 시 기존 _internal 폴더를 먼저 삭제
+Type: filesandordirs; Name: "{app}\_internal"
+
 [Registry]
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}"; ValueType: string; ValueName: ""; ValueData: "{#MyAppAssocName}"; Flags: uninsdeletekey
