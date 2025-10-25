@@ -24,7 +24,6 @@ from PyQt5.QtWidgets import (
     QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
 )
 from urllib.parse import unquote
-from libs.console import *
 from libs.viewer import *
 from libs.path import *
 from ui.table import *
@@ -37,7 +36,7 @@ from services.api import *
 from services.logging import *
 from core.setting import *
 from core.shortcut import *
-from core.worker import BaseWorker
+from core.thread import *
 from config import *
 from .page_analysis import Manager_Page
 

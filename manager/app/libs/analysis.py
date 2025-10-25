@@ -16,7 +16,6 @@ from PIL import Image
 from core.setting import get_setting
 import re
 from libs.path import safe_path
-from libs.console import closeConsole
 
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 warnings.filterwarnings("ignore")
@@ -41,7 +40,6 @@ class DataProcess:
         missing_columns = [col for col in required_columns if col not in columns]
 
         if missing_columns:
-            closeConsole()
             QMessageBox.warning(
                 self.main,
                 "Warning",

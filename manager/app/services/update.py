@@ -12,7 +12,7 @@ from ui.dialogs import ViewVersionDialog
 from config import VERSION
 from core.setting import get_setting
 from core.boot import checkNewVersion
-from ui.dialogs import DownloadDialog
+from core.thread import DownloadDialog
 import time
 
 class DownloadWorker(QThread):
