@@ -146,7 +146,7 @@ class DownloadDialog(BaseDialog):
         if self.pid:
             self.setMinimumHeight(400)
         else:
-            self.setMinimumHeight(120)
+            self.setMinimumHeight(60)
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
 
         self.layout = QVBoxLayout(self)
