@@ -47,6 +47,26 @@ def sendPushOver(msg, user_key = 'uvz7oczixno7daxvgxmq65g2gbnsd5', image_path=Fa
         except:
             continue
 
+def update_inno_version(iss_path: str, new_version: str):
+    with open(iss_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+
+    updated_lines = []
+    # 앞에 공백이 있어도 매칭되도록 ^\s*
+    # 버전 문자열은 숫자, 점, 문자(-, a-z 등)도 허용
+    pattern = r'^\s*#define\s+MyAppVersion\s+"[\w.\-]+"'
+
+    for line in lines:
+        if re.match(pattern, line):
+            new_line = f'#define MyAppVersion "{new_version}"\n'
+            updated_lines.append(new_line)
+            print(f"[INFO] MyAppVersion 변경: {line.strip()} → {new_line.strip()}")
+        else:
+            updated_lines.append(line)
+
+    with open(iss_path, 'w', encoding='utf-8') as f:
+        f.writelines(updated_lines)
+
 def create_spec_file(original_spec_file, new_spec_file, exe_name):
     with open(original_spec_file, 'r', encoding='utf-8') as file:
         spec_content = file.read()
@@ -133,27 +153,13 @@ if __name__ == "__main__":
             Panel.fit(f"[bold green]🕒 {current_time}\n빌드 완료: MANAGER_{version}"))
 
         # Inno Setup update
-        console.print(
-            Panel.fit(f"[bold magenta]⚙️ Inno Setup 버전 정보 업데이트", title="setup.iss 처리"))
-        with open(iss_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+        console.print(Panel.fit(f"[bold magenta]⚙️ Inno Setup 버전 정보 업데이트", title="setup.iss 처리"))
 
-        updated_lines = []
-        pattern = r'^#define\s+MyAppVersion\s+"[\d.]+"'
-        for line in lines:
-            if re.match(pattern, line):
-                new_line = f'#define MyAppVersion "{version}"\n'
-                console.print(
-                    f"[cyan]🔁 버전 변경: [white]{line.strip()} → [green]{new_line.strip()}")
-                updated_lines.append(new_line)
-            else:
-                updated_lines.append(line)
+        update_inno_version(iss_path, version)
 
         # Temp ISS 실행
-        temp_iss_path = os.path.join(
-            os.path.dirname(__file__), 'setup_temp.iss')
-        with open(temp_iss_path, 'w', encoding='utf-8') as f:
-            f.writelines(updated_lines)
+        temp_iss_path = os.path.join(os.path.dirname(__file__), 'setup_temp.iss')
+        shutil.copy(iss_path, temp_iss_path)  # 원본 수정 후 임시 파일로 복사
 
         console.print("[bold cyan]📦 Inno Setup 실행 중...")
         subprocess.run(
