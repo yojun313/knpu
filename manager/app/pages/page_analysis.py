@@ -634,8 +634,8 @@ class Manager_Analysis(Manager_Page):
                         extra_fields={"option": json.dumps(self.option)},
                         label="토큰 데이터 업로드 중"
                     )
-                    extract_path = self.download_file(response, self.save_path, label="결과 다운로드 중")
-                    self.finished.emit(True, f"{self.tokenfile_name} KEMKIM 분석 완료", extract_path)
+                    extract_path = self.download_file(response, self.save_path, label="결과 다운로드 중", extract=True)
+                    self.finished.emit(True, f"{self.tokenfile_name} KEMKIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
@@ -1340,7 +1340,7 @@ class Manager_Analysis(Manager_Page):
                     )
 
                     local_csv = self.download_file(response, self.save_path, f"token_{self.tokenfile_name}", label="결과 다운로드 중")
-                    self.finished.emit(True, f"{self.tokenfile_name} 토큰화 완료", os.path.dirname(local_csv))
+                    self.finished.emit(True, f"{self.tokenfile_name} 토큰화가 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", os.path.dirname(local_csv))
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
@@ -1758,7 +1758,7 @@ class Manager_Analysis(Manager_Page):
                     filename = f"hate_{self.csv_fname}"
                     self.download_file(response, self.save_dir, filename, label="결과 다운로드 중")
 
-                    self.finished.emit(True, f"{self.csv_fname} 혐오도 분석이 완료되었습니다", self.save_dir)
+                    self.finished.emit(True, f"{self.csv_fname} 혐오도 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", self.save_dir)
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
