@@ -71,13 +71,16 @@ class DownloadDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(f"{display_name}")
         self.setMinimumWidth(600)
-        self.setMinimumHeight(400)
+        self.pid = pid 
+        if self.pid:
+            self.setMinimumHeight(400)
+        else:
+            self.setMinimumHeight(120)
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
 
         self.layout = QVBoxLayout(self)
         self.update_text_signal.connect(self.update_message)
 
-        self.pid = pid
         self.webview = None  # 기본값 None
 
         # -----------------------

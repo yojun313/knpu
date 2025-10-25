@@ -11,7 +11,6 @@ import uuid
 from io import BytesIO
 
 import pandas as pd
-from tqdm import tqdm
 import requests
 import zipfile
 import bcrypt
@@ -24,7 +23,6 @@ from PyQt5.QtWidgets import (
     QPushButton, QTabWidget,
     QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
 )
-import time
 from urllib.parse import unquote
 from libs.console import *
 from libs.viewer import *
@@ -39,6 +37,7 @@ from services.api import *
 from services.logging import *
 from core.setting import *
 from core.shortcut import *
+from core.worker import BaseWorker
 from config import *
 from .page_analysis import Manager_Page
 
@@ -368,11 +367,7 @@ class Manager_Database(Manager_Page):
             programBugLog(self.main, traceback.format_exc())
 
     def saveDB(self):
-        class SaveDBWorker(QThread):
-            finished = pyqtSignal(bool, str, str)   # (성공 여부, 메시지, 경로)
-            error = pyqtSignal(str)                 # (에러 메시지)
-            progress = pyqtSignal(int, str)             # (percent, 진행문자열)
-
+        class SaveDBWorker(BaseWorker):
             def __init__(self, dbname, targetUid, folder_path, option, parent=None):
                 super().__init__(parent)
                 self.dbname = dbname
@@ -404,50 +399,13 @@ class Manager_Database(Manager_Page):
                         else:
                             zip_name = f"{self.targetUid}.zip"
 
-                    local_zip = os.path.join(self.folder_path, zip_name)
-                    total_size = int(response.headers.get("Content-Length", 0))
-                    downloaded = 0
-                    start_time = time.time() 
-
-                    last_emit_time = 0
-                    last_percent = -1
-
-                    with open(safe_path(local_zip), "wb") as f:
-                        for chunk in response.iter_content(8192):
-                            if chunk:
-                                f.write(chunk)
-                                downloaded += len(chunk)
-                                if total_size > 0:
-                                    percent = int(downloaded / total_size * 100)
-
-                                    elapsed = time.time() - start_time
-                                    if elapsed == 0:
-                                        elapsed = 0.001  # 0 방지
-                                    speed = downloaded / (1024 * 1024) / elapsed
-                                    current_mb = downloaded / (1024 * 1024)
-                                    total_mb = total_size / (1024 * 1024)
-
-                                    now = time.time()
-                                    if percent != last_percent or now - last_emit_time > 0.2:
-                                        msg = f"{current_mb:.1f}MB / {total_mb:.1f}MB ({speed:.1f}MB/s)"
-                                        self.progress.emit(percent, msg)
-                                        last_percent = percent
-                                        last_emit_time = now
-
-                    # 압축 해제
-                    self.progress.emit(100, "압축 해제 중...")
-                    base_folder = os.path.splitext(zip_name)[0]
-                    extract_path = os.path.join(self.folder_path, base_folder)
-                    os.makedirs(extract_path, exist_ok=True)
-                    with zipfile.ZipFile(local_zip, "r") as zf:
-                        zf.extractall(extract_path)
-                    os.remove(local_zip)
-
+                    # 1) 다운로드
+                    extract_path = self.download_file(response, self.folder_path, zip_name, label="DB 저장 중", extract=True)
                     self.finished.emit(True, f"{self.dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
-            
+    
         try:
             selectedRow = self.main.database_tablewidget.currentRow()
             if not selectedRow >= 0:
