@@ -61,7 +61,7 @@ class Manager_Analysis(Manager_Page):
         self.anaylsis_buttonMatch()
         self.console_open = False
 
-      
+    
     def analysis_makeFileFinder(self):
         self.file_dialog = makeFileFinder(self.main, self.main.localDirectory)
         self.main.analysis_filefinder_layout.addWidget(self.file_dialog)
@@ -178,24 +178,7 @@ class Manager_Analysis(Manager_Page):
             statusDialog.show()
 
             worker = TimeSplitWorker(selected_directory, self.dataprocess_obj, self.main)
-            worker.message.connect(statusDialog.update_message)
-            worker.finished.connect(
-                lambda ok, msg, path: (
-                    self.worker_finished(ok, msg, path),
-                    statusDialog.close(),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
-            worker.error.connect(
-                lambda err: (
-                    self.worker_failed(err),
-                    statusDialog.close(),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
-                
+            self.connectWorkerForStatusDialog(worker, statusDialog, thread_name)
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -278,23 +261,7 @@ class Manager_Analysis(Manager_Page):
             statusDialog.show()
             
             worker = MergeWorker(selected_directory, mergedfilename, self.main)
-            worker.message.connect(lambda msg: statusDialog.update_message(msg))
-            worker.finished.connect(
-                lambda ok, msg, path: (
-                    self.worker_finished(ok, msg, path),  # 완료 로직
-                    statusDialog.close(),                 # 다이얼로그 닫기
-                    unregister_thread(thread_name),       # 스레드 등록 해제
-                    printStatus(self.main)                # 상태 표시 갱신
-                )
-            )
-            worker.error.connect(
-                lambda err: (
-                    self.worker_failed(err),              # 에러 로직
-                    statusDialog.close(),                 # 다이얼로그 닫기
-                    unregister_thread(thread_name),       # 스레드 등록 해제
-                    printStatus(self.main)                # 상태 표시 갱신
-                )
-            )
+            self.connectWorkerForStatusDialog(worker, statusDialog, thread_name)
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -633,24 +600,7 @@ class Manager_Analysis(Manager_Page):
                 self.dataprocess_obj,
                 self.main
             )
-            worker.message.connect(lambda msg: statusDialog.update_message(msg))
-            worker.finished.connect(
-                lambda ok, msg, path: (
-                    self.worker_finished(ok, msg, path),
-                    statusDialog.close(),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
-            worker.error.connect(
-                lambda err: (
-                    self.worker_failed(err),
-                    statusDialog.close(),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
-
+            self.connectWorkerForStatusDialog(worker, statusDialog, thread_name)
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -846,26 +796,7 @@ class Manager_Analysis(Manager_Page):
             printStatus(self.main)
 
             worker = KemkimWorker(pid, filepath, option, save_path, tokenfile_name, self.main)
-            worker.progress.connect(lambda val, msg: (
-                downloadDialog.update_progress(val), 
-                downloadDialog.update_text_signal.emit(msg)
-            ))
-            worker.finished.connect(
-                lambda ok, msg, path: (
-                    downloadDialog.complete_task(ok),
-                    self.worker_finished(ok, msg, path),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
-            worker.error.connect(
-                lambda err: (
-                    downloadDialog.complete_task(False),
-                    self.worker_failed(err),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
+            self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
             # GC 방지용 리스트에 저장
@@ -1495,28 +1426,7 @@ class Manager_Analysis(Manager_Page):
             downloadDialog.show()
 
             worker = TokenizeWorker(pid, csv_path, save_path, tokenfile_name, selected_columns, include_word_list, self.main)
-            worker.message.connect(lambda msg: downloadDialog.update_message(msg))
-            worker.progress.connect(lambda val, msg: (
-                downloadDialog.update_progress(val), 
-                downloadDialog.update_text_signal.emit(msg)
-            ))
-            worker.finished.connect(
-                lambda ok, msg, path: (
-                    downloadDialog.complete_task(),
-                    self.worker_finished(ok, msg, path),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
-            worker.error.connect(
-                lambda err: (
-                    downloadDialog.complete_task(),
-                    self.worker_failed(err),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
-
+            self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -1908,26 +1818,7 @@ class Manager_Analysis(Manager_Page):
             downloadDialog.show()
         
             worker = HateMeasureWorker(pid, csv_path, save_dir, csv_fname, text_col, option_num, self.main)
-
-            worker.message.connect(lambda msg: downloadDialog.update_message(msg))
-            worker.progress.connect(lambda val: downloadDialog.update_progress(val))
-            worker.finished.connect(
-                lambda ok, msg, path: (
-                    downloadDialog.complete_task(), 
-                    self.worker_finished(ok, msg, path),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
-            worker.error.connect(
-                lambda err: (
-                    downloadDialog.complete_task(),
-                    self.worker_failed(err),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
-
+            self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
             if not hasattr(self, "_workers"):
