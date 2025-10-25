@@ -13,7 +13,6 @@ from config import ASSETS_PATH
 
 
 def build_app():
-
     os.environ.update({
         "QT_DEVICE_PIXEL_RATIO": "0",
         "QT_AUTO_SCREEN_SCALE_FACTOR": "1",
