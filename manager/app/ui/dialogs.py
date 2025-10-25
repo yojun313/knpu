@@ -508,10 +508,13 @@ class ViewBugDialog(BaseDialog):
 
 
 class ViewVersionDialog(BaseDialog):
-    def __init__(self, parent, version_data):  # style_html 유지
+    def __init__(self, parent, version_data, title=None):  # style_html 유지
         super().__init__(parent)
         self.version_data = version_data  # [num, date, changelog, features, detail]
-        self.setWindowTitle(f"Version {version_data[0]} Details")
+        if not title:
+            self.setWindowTitle(f"Version {version_data[0]} Details")
+        else:
+            self.setWindowTitle(title)
         self.resize(500, 500)
         self._build_ui()
 

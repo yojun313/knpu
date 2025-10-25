@@ -436,20 +436,20 @@ class Manager_Analysis(Manager_Worker):
 
             userLogging(f'ANALYSIS -> analysis_file({filepath})')
 
-            taskDialog = TaskStatusDialog(f"통계 분석: {os.path.basename(filepath)}", self.main)
-            taskDialog.show()
-            taskDialog.update_message("작업을 준비 중입니다...")
+            statusDialog = TaskStatusDialog(f"통계 분석: {os.path.basename(filepath)}", self.main)
+            statusDialog.show()
+            statusDialog.update_message("작업을 준비 중입니다...")
 
             thread_name = f"통계 분석: {os.path.basename(filepath)}"
             register_thread(thread_name)
             printStatus(self.main)
 
             worker = RunAnalysisWorker(filepath, selected_options, self.dataprocess_obj, hate_mode, self.main)
-            worker.message.connect(lambda msg: taskDialog.update_message(msg))
+            worker.message.connect(lambda msg: statusDialog.update_message(msg))
             worker.finished.connect(
                 lambda ok, msg, path: (
                     self.worker_finished(ok, msg, path),
-                    taskDialog.close(),
+                    statusDialog.close(),
                     unregister_thread(thread_name),
                     printStatus(self.main)
                 )
@@ -457,7 +457,7 @@ class Manager_Analysis(Manager_Worker):
             worker.error.connect(
                 lambda err: (
                     self.worker_failed(err),
-                    taskDialog.close(),
+                    statusDialog.close(),
                     unregister_thread(thread_name),
                     printStatus(self.main)
                 )
@@ -865,7 +865,7 @@ class Manager_Analysis(Manager_Worker):
             printStatus(self.main, "옵션을 선택하세요")
 
             self.word_selector = ModifyKemkimDialog(all_keyword)
-            if self.word_selector.exec_() == QDialog.Accepted:  # show() 대신 exec_() 사용
+            if self.word_selector.exec_() == QDialog.Accepted:
                 selected_words = self.word_selector.selected_words
                 size_input = self.word_selector.size_input
                 eng_auto_option = self.word_selector.eng_auto_checked
@@ -1124,7 +1124,7 @@ class Manager_Analysis(Manager_Worker):
 
             from ui.dialogs import InterpretKemkimDialog
             self.word_selector = InterpretKemkimDialog(all_keyword)
-            if self.word_selector.exec_() == QDialog.Accepted:  # show() 대신 exec_() 사용
+            if self.word_selector.exec_() == QDialog.Accepted:
                 selected_words_2dim = self.word_selector.selected_words
                 selected_words = [
                     word for group in selected_words_2dim for word in group]

@@ -113,7 +113,7 @@ def initStatusbar(parent):
     parent.setStatusBar(parent.statusbar)
 
     parent.leftLabel = ClickableLabel('  ' + f'Version {VERSION}')
-    parent.leftLabel.clicked.connect(lambda: AboutDialog(VERSION, "light" if get_setting("Theme") == "default" else "dark", parent).show())
+    parent.leftLabel.clicked.connect(lambda: AboutDialog(VERSION, "light" if get_setting("Theme") == "default" else "dark", parent).exec_())
     parent.rightLabel = ClickableLabel('')
     parent.rightLabel.clicked.connect(lambda: showActiveThreadsDialog())
     
@@ -174,6 +174,10 @@ def checkNewVersion():
     currentVersion = version.parse(VERSION)
     newVersion = version.parse(newestVersion[0])
     return newestVersion if currentVersion < newVersion else None
+
+def getVersionInfo(version):
+    newestVersion = Request('get', f'/board/version/{version}').json()['data']
+    return newestVersion
 
 def checkNewPost(parent):
     if len(parent.managerBoardObj.origin_post_data) == 0:

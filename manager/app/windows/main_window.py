@@ -23,10 +23,10 @@ from pages.page_database import Manager_Database
 from pages.page_settings import Manager_Setting
 from core.boot import (
     initListWidget, initStatusbar,
-    checkNetwork, checkNewPost, checkNewVersion
+    checkNetwork, checkNewPost, checkNewVersion, getVersionInfo
 )
 from core.shortcut import initShortcut, resetShortcuts
-from core.setting import get_setting
+from core.setting import get_setting, set_setting
 from services.crawldb import updateDB
 from services.pushover import sendPushOver
 from services.update import updateProgram
@@ -34,6 +34,7 @@ from services.logging import userLogging, getUserLocation
 from services.auth import loginProgram
 from ui.style import theme_option, updateTableStyleHtml
 from ui.status import printStatus
+from ui.dialogs import ViewVersionDialog
 
 
 class MainWindow(QMainWindow):
@@ -128,6 +129,21 @@ class MainWindow(QMainWindow):
                 printStatus(self, f"{self.fullStorage} GB / 2 TB")
 
                 # After Booting
+                
+                # Show New Version Info
+                lastVersion = version.parse(get_setting('LastVersion'))
+                if version.parse(VERSION) > lastVersion:
+                    newVersionInfo = getVersionInfo(VERSION)
+                    version_data = [
+                        str(newVersionInfo['versionName']),
+                        str(newVersionInfo['releaseDate']),
+                        str(newVersionInfo['changeLog']),
+                        str(newVersionInfo['features']),
+                        str(newVersionInfo['details'])
+                    ]
+                    set_setting('LastVersion', VERSION)
+                    dialog = ViewVersionDialog(self, version_data, title = f"새로운 버전으로 업데이트되었습니다: {VERSION}")
+                    dialog.exec_()
 
                 newpost = checkNewPost(self)
                 if newpost == True:
