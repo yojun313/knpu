@@ -45,7 +45,7 @@ class BaseWorker(QThread):
                     mb_up = uploaded / (1024 * 1024)
                     mb_total = file_size / (1024 * 1024)
                     speed = mb_up / (now - start_time) if now > start_time else 0
-                    msg = f"{label}... {mb_up:.1f}MB/{mb_total:.1f}MB ({speed:.1f}MB/s)"
+                    msg = f"{label} {mb_up:.1f}MB/{mb_total:.1f}MB ({speed:.1f}MB/s)"
                     self.progress.emit(percent, msg)
                     last_percent = percent
                     last_emit_time = now
@@ -117,7 +117,7 @@ class BaseWorker(QThread):
                         total_mb = total_size / (1024 * 1024)
                         now = time.time()
                         if percent != last_percent or now - last_emit_time > 0.2:
-                            msg = f"{label}... {current_mb:.1f}MB / {total_mb:.1f}MB ({speed:.1f}MB/s)"
+                            msg = f"{label} {current_mb:.1f}MB / {total_mb:.1f}MB ({speed:.1f}MB/s)"
                             self.progress.emit(percent, msg)
                             last_percent = percent
                             last_emit_time = now
