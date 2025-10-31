@@ -223,44 +223,6 @@ class Manager_Setting(QDialog):
         ################################################################################
 
         ################################################################################
-        # 프로세스 콘솔 설정 섹션
-        process_console_layout = QHBoxLayout()
-        process_console_label = QLabel("프로세스 콘솔:")
-        process_console_label.setAlignment(Qt.AlignLeft)
-        process_console_label.setToolTip(
-            "KEMKIM, CSV로 저장 등 복잡한 작업 수행 시 진행 상황을 나타내는 콘솔 창 여부를 설정합니다")
-
-        self.default_processconsole_toggle = QPushButton("켜기")
-        self.off_processconsole_toggle = QPushButton("끄기")
-
-        self.init_toggle_style(
-            self.default_processconsole_toggle, get_setting('ProcessConsole') == 'default')
-        self.init_toggle_style(
-            self.off_processconsole_toggle, get_setting('ProcessConsole') != 'default')
-
-        self.default_processconsole_toggle.clicked.connect(
-            lambda: self.update_toggle(
-                self.default_processconsole_toggle, self.off_processconsole_toggle)
-        )
-        self.off_processconsole_toggle.clicked.connect(
-            lambda: self.update_toggle(
-                self.off_processconsole_toggle, self.default_processconsole_toggle)
-        )
-
-        process_console_buttons_layout = QHBoxLayout()
-        process_console_buttons_layout.setSpacing(10)
-        process_console_buttons_layout.addWidget(
-            self.default_processconsole_toggle)
-        process_console_buttons_layout.addWidget(
-            self.off_processconsole_toggle)
-
-        process_console_layout.addWidget(process_console_label, 1)
-        process_console_layout.addLayout(process_console_buttons_layout, 2)
-
-        app_layout.addLayout(process_console_layout)
-        ################################################################################
-
-        ################################################################################
         # 자동 업데이트 설정 섹션
         auto_update_layout = QHBoxLayout()
         auto_update_label = QLabel("자동 업데이트:")
@@ -763,22 +725,13 @@ class Manager_Setting(QDialog):
 
     def save_settings(self):
         # 선택된 설정 가져오기
-        theme = 'default' if self.light_mode_toggle.styleSheet().find("#2c3e50") != - \
-            1 else 'dark'
-        screen_size = 'default' if self.default_size_toggle.styleSheet().find(
-            "#2c3e50") != -1 else 'max'
-        auto_update = 'default' if self.default_update_toggle.styleSheet().find(
-            "#2c3e50") != -1 else 'auto'
-        my_db = 'default' if self.default_mydb_toggle.styleSheet().find("#2c3e50") != - \
-            1 else 'mydb'
-        db_refresh = 'default' if self.default_dbrefresh_toggle.styleSheet().find(
-            "#2c3e50") != -1 else 'off'
-        boot_terminal = 'default' if self.default_bootterminal_toggle.styleSheet().find(
-            "#2c3e50") != -1 else 'on'
-        db_keywordsort = 'default' if self.default_dbkeywordsort_toggle.styleSheet(
-        ).find("#2c3e50") != -1 else 'on'
-        process_console = 'default' if self.default_processconsole_toggle.styleSheet(
-        ).find("#2c3e50") != -1 else 'off'
+        theme = 'default' if self.light_mode_toggle.styleSheet().find("#2c3e50") != -1 else 'dark'
+        screen_size = 'default' if self.default_size_toggle.styleSheet().find("#2c3e50") != -1 else 'max'
+        auto_update = 'default' if self.default_update_toggle.styleSheet().find("#2c3e50") != -1 else 'auto'
+        my_db = 'default' if self.default_mydb_toggle.styleSheet().find("#2c3e50") != -1 else 'mydb'
+        db_refresh = 'default' if self.default_dbrefresh_toggle.styleSheet().find("#2c3e50") != -1 else 'off'
+        boot_terminal = 'default' if self.default_bootterminal_toggle.styleSheet().find("#2c3e50") != -1 else 'on'
+        db_keywordsort = 'default' if self.default_dbkeywordsort_toggle.styleSheet().find("#2c3e50") != -1 else 'on'
         llm_model = self.llm_option_selector.currentData()
 
         api_key = self.api_key_input.text()
@@ -793,7 +746,6 @@ class Manager_Setting(QDialog):
         set_setting('DB_Refresh',     db_refresh)
         set_setting('BootTerminal',   boot_terminal)
         set_setting('DBKeywordSort',  db_keywordsort)
-        set_setting('ProcessConsole', process_console)
         set_setting('LLM_model',      llm_model)
 
         self.accept()

@@ -48,6 +48,9 @@ def sendPushOver(msg, user_key = 'uvz7oczixno7daxvgxmq65g2gbnsd5', image_path=Fa
             continue
 
 def update_inno_version(iss_path: str, new_version: str):
+    # 임시 파일 경로 생성
+    temp_iss_path = os.path.join(os.path.dirname(iss_path), 'setup_temp.iss')
+
     with open(iss_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
 
@@ -64,8 +67,11 @@ def update_inno_version(iss_path: str, new_version: str):
         else:
             updated_lines.append(line)
 
-    with open(iss_path, 'w', encoding='utf-8') as f:
+    # 임시 파일에 변경된 내용 저장
+    with open(temp_iss_path, 'w', encoding='utf-8') as f:
         f.writelines(updated_lines)
+
+    return temp_iss_path  # 임시 파일 경로 반환
 
 def create_spec_file(original_spec_file, new_spec_file, exe_name):
     with open(original_spec_file, 'r', encoding='utf-8') as file:
@@ -143,7 +149,7 @@ if __name__ == "__main__":
         console.print(
             Panel.fit(f"[bold cyan]📦 빌드 시작: MANAGER {version}", title="PyInstaller"))
         build_exe_from_spec(spec_file, output_directory, version)
-        console.print("[green]✅ 빌드 완료")
+        console.print("[green]빌드 완료")
 
         # Time log
         now = datetime.now()
@@ -155,24 +161,23 @@ if __name__ == "__main__":
         # Inno Setup update
         console.print(Panel.fit(f"[bold magenta]⚙️ Inno Setup 버전 정보 업데이트", title="setup.iss 처리"))
 
-        update_inno_version(iss_path, version)
-
-        # Temp ISS 실행
-        temp_iss_path = os.path.join(os.path.dirname(__file__), 'setup_temp.iss')
-        shutil.copy(iss_path, temp_iss_path)  # 원본 수정 후 임시 파일로 복사
+        # 임시 파일 생성
+        temp_iss_path = update_inno_version(iss_path, version)
 
         console.print("[bold cyan]📦 Inno Setup 실행 중...")
         subprocess.run(
             [r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe", temp_iss_path])
+
+        # 임시 파일 삭제
         os.remove(temp_iss_path)
-        console.print("[green]✅ Inno Setup 완료 및 임시 파일 삭제")
+        console.print("[green]Inno Setup 완료 및 임시 파일 삭제")
 
         # Upload
         filename = f"MANAGER_{version}.exe"
         console.print(
             Panel.fit(f"[bold blue]☁️ Uploading {filename}", title="파일 업로드"))
         upload_file(filename)
-        console.print("[green]✅ 업로드 완료")
+        console.print("[green]업로드 완료")
 
         console.rule("[bold green]🎉 모든 작업 완료")
         sendPushOver(f"MANAGER {version} 빌드 완료\n\n{current_time}")

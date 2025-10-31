@@ -58,7 +58,7 @@ def upload_file(filename):
         print(f"[⏫] 업로드 중: {filename} → R2 버킷 '{BUCKET_NAME}'")
         client.upload_file(local_path, BUCKET_NAME, filename)
         print(
-            f"[✅] 업로드 완료: https://{ACCOUNT_ID}.r2.cloudflarestorage.com/{BUCKET_NAME}/{filename}")
+            f"[] 업로드 완료: https://{ACCOUNT_ID}.r2.cloudflarestorage.com/{BUCKET_NAME}/{filename}")
     except Exception as e:
         print(f"[❌] 업로드 실패: {e}")
 
