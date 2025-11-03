@@ -18,8 +18,6 @@ import uuid
 import asyncio
 from googletrans import Translator
 import json
-from urllib.parse import unquote
-import zipfile
 import requests
 import time
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QInputDialog, QDialog
