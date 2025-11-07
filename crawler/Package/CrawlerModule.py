@@ -427,7 +427,6 @@ class CrawlerModule(ToolModule):
             "nx_sub_query": nx_sub_query,
         }
 
-        print(json.dumps(query_params, ensure_ascii=False, indent=4))
         return query_params
 
 
