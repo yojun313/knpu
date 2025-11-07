@@ -43,38 +43,6 @@ class NaverBlogCrawler(CrawlerModule):
         except:
             return self.error_dump(2012, 'Check DateForm', startDate)
         try:
-            def parse_query(query):
-                # 문자열을 공백으로 분리
-                terms = query.split()
-
-                # 첫 번째 단어를 nx_search_query에 할당
-                if '+' in query or '-' in query:
-                    nx_search_query = terms[0] if terms else ""
-                elif "|" in query:
-                    nx_search_query = query
-                else:
-                    nx_search_query = ""
-
-                # + 기호가 붙은 단어 찾기
-                and_terms = [term[1:] for term in terms if term.startswith('+')]
-
-                # - 기호가 붙은 단어 찾기
-                sub_terms = [term[1:] for term in terms if term.startswith('-')]
-
-                nx_search_hlquery = ""
-                if '"' in query:
-                    nx_search_hlquery = query
-                    nx_search_query = query.replace('"', '')
-                    and_terms.append(query)
-
-                # 딕셔너리 반환
-                query_params = {
-                    "nx_search_query": nx_search_query,
-                    "nx_search_hlquery": nx_search_hlquery,
-                    "nx_and_query": " ".join(and_terms) if and_terms else "",
-                    "nx_sub_query": " ".join(sub_terms) if sub_terms else "",
-                }
-                return query_params
             
             def extract_blogurls(text):
                     # 정규식 패턴 정의
@@ -100,7 +68,7 @@ class NaverBlogCrawler(CrawlerModule):
                 self.IntegratedDB['UrlCnt'] = 0
                 self.printStatus('NaverBlog', 1, self.PrintData)
 
-            query_dict = parse_query(keyword)
+            query_dict = self.parse_naver_query(keyword)
 
             urlList = []
             params = {
