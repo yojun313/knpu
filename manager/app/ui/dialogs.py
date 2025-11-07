@@ -355,9 +355,9 @@ class AddVersionDialog(BaseDialog):
 
     def submit(self):
         version_num = self.version_num_input.text()
-        changelog = self.changelog_input.toPlainText()
-        version_features = self.version_features_input.toPlainText()
-        detail = self.detail_input.toPlainText()
+        changelog = self.changelog_input.text() 
+        version_features = self.version_features_input.text()  
+        detail = self.detail_input.toPlainText()  
 
         self.data = [version_num, changelog, version_features, detail]
 
