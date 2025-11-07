@@ -54,7 +54,17 @@ def add_version_bg(doc):
 def get_version(versionName: str):
     doc = version_board_db.find_one({"versionName": versionName})
     if not doc:
-        raise NotFoundException("Version not found")
+        # 임시 JSON 데이터 생성
+        temp_doc = {
+            "versionName": versionName,
+            "releaseDate": "",
+            "changeLog": "",
+            "features": "",
+            "details": "",
+            "uid": str(uuid.uuid4())
+        }
+        return JSONResponse(status_code=200, content={"message": "Version not found, returning temporary data", "data": temp_doc})
+    
     return JSONResponse(status_code=200, content={"message": "Version post retrieved", "data": clean_doc(doc)})
 
 
