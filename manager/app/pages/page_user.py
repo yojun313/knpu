@@ -76,11 +76,9 @@ class Manager_User:
                 reply = QMessageBox.question(
                     self.main, 'Confirm Delete', f"{selectedUser['name']}님을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
                 if reply == QMessageBox.Yes:
-                    response = Request(
-                        'delete', f'/users/{selectedUser['uid']}')
+                    response = Request('delete', f'/users/{selectedUser['uid']}')
                     if response.status_code == 200:
-                        QMessageBox.information(
-                            self.main, "Information", f"'{selectedUser['name']}'님이 삭제되었습니다")
+                        QMessageBox.information(self.main, "Information", f"'{selectedUser['name']}'님이 삭제되었습니다")
                         self.refreshUserTable()
                     else:
                         QMessageBox.warning(
