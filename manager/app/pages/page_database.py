@@ -302,9 +302,11 @@ class Manager_Database(Manager_Worker):
         try:
             if search_text == '/remove':
                 self.main.database_searchDB_lineinput.clear()
-                reply = QMessageBox.question(self.main, 'Program Delete',
-                                            f"'C:/MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
-                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                reply = QMessageBox.question(
+                    self.main, 'Program Delete',
+                    f"'C:/MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                )
                 if reply == QMessageBox.Yes:
                     # ── 1) QSettings 값 제거 ─────────────────────
                     settings = QSettings("BIGMACLAB", "MANAGER")
@@ -408,7 +410,7 @@ class Manager_Database(Manager_Worker):
             selectedRow = self.main.database_tablewidget.currentRow()
             if not selectedRow >= 0:
                 return
-            if self.DB['DBdata'][selectedRow]['status'] == 'Working':
+            if self.DB['DBdata'][selectedRow]['status'] != 'Done':
                 QMessageBox.warning(self.main, "Information", "현재 크롤링이 진행 중인 DB는 저장할 수 없습니다")
                 return
 
@@ -468,11 +470,8 @@ class Manager_Database(Manager_Worker):
     def refreshDB(self):
         try:
             printStatus(self.main, "새로고침 중...")
-
             self.DB = updateDB(self.main)
-            makeTable(self.main, self.main.database_tablewidget,
-                      self.DB['DBtable'], self.DBTableColumn)
-
+            makeTable(self.main, self.main.database_tablewidget, self.DB['DBtable'], self.DBTableColumn)
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
@@ -480,47 +479,36 @@ class Manager_Database(Manager_Worker):
     def matchButton(self):
         self.main.database_searchDB_button.clicked.connect(self.searchDB)
         self.main.database_chatgpt_button.clicked.connect(self.initLLMChat)
-        self.main.database_searchDB_lineinput.returnPressed.connect(
-            self.searchDB)
-        self.main.database_searchDB_lineinput.setPlaceholderText(
-            "검색어를 입력하고 Enter키나 검색 버튼을 누르세요...")
+        self.main.database_searchDB_lineinput.returnPressed.connect(self.searchDB)
+        self.main.database_searchDB_lineinput.setPlaceholderText("검색어를 입력하고 Enter키나 검색 버튼을 누르세요...")
 
         self.main.database_saveDB_button.clicked.connect(self.saveDB)
         self.main.database_deleteDB_button.clicked.connect(self.deleteDB)
         self.main.database_viewDB_button.clicked.connect(self.viewDB)
-        # self.main.database_mergeDB_button.clicked.connect(self.mergeDB)
 
         self.main.database_chatgpt_button.setToolTip("LLM ChatBot")
         self.main.database_saveDB_button.setToolTip("Ctrl+S")
         self.main.database_viewDB_button.setToolTip("Ctrl+V")
         self.main.database_deleteDB_button.setToolTip("Ctrl+D")
 
-        self.main.database_searchDB_button.setText("")  # 텍스트 제거
-        self.main.database_searchDB_button.setIcon(QIcon(os.path.join(
-            # 아이콘 설정 (이미지 경로 지정)
-            os.path.dirname(__file__), '..', 'assets', 'search.png')))
-        self.main.database_searchDB_button.setIconSize(
-            QSize(18, 18))  # 아이콘 크기 조정 (원하는 크기로 설정)
+        self.main.database_searchDB_button.setText("") 
+        self.main.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), '..', 'assets', 'search.png')))
+        self.main.database_searchDB_button.setIconSize(QSize(18, 18))  
 
-        self.main.database_chatgpt_button.setText("")  # 텍스트 제거
-        self.main.database_chatgpt_button.setIcon(QIcon(os.path.join(os.path.dirname(
-            # 아이콘 설정 (이미지 경로 지정)
-            __file__), '..', 'assets', 'chatgpt_logo.png')))
-        self.main.database_chatgpt_button.setIconSize(
-            QSize(19, 19))  # 아이콘 크기 조정 (원하는 크기로 설정)
+        self.main.database_chatgpt_button.setText("")  
+        self.main.database_chatgpt_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), '..', 'assets', 'chatgpt_logo.png')))
+        self.main.database_chatgpt_button.setIconSize(QSize(19, 19))  
 
     def setDatabaseShortcut(self):
         resetShortcuts(self.main)
         self.main.ctrld.activated.connect(self.deleteDB)
         self.main.ctrls.activated.connect(self.saveDB)
-        # self.main.ctrlm.activated.connect(self.mergeDB)
         self.main.ctrlv.activated.connect(self.viewDB)
         self.main.ctrlr.activated.connect(self.refreshDB)
         self.main.ctrlc.activated.connect(self.initLLMChat)
 
         self.main.cmdd.activated.connect(self.deleteDB)
         self.main.cmds.activated.connect(self.saveDB)
-        # self.main.cmdm.activated.connect(self.mergeDB)
         self.main.cmdv.activated.connect(self.viewDB)
         self.main.cmdr.activated.connect(self.refreshDB)
         self.main.cmdc.activated.connect(self.initLLMChat)
