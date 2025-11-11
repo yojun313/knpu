@@ -134,6 +134,9 @@ class NaverNewsCrawler(CrawlerModule):
             response = self.Requester(api_url)
             if self.RequesterChecker(response) == False:
                 return response
+            
+            if hasattr(response, "status_code") and response.status_code != 200:
+                self.error_dump(2002, f"Non-200 response: {response.status_code}", api_url)
             json_text = response.text
             
             while True:
@@ -594,4 +597,4 @@ async def asyncTester():
 if __name__ == "__main__":
     #asyncio.run(asyncTester())
     CrawlerPackage_obj = NaverNewsCrawler(proxy_option=False, print_status_option=True)
-    print(CrawlerPackage_obj.urlCollector('경찰대학', 20230101, 20231231))
+    print(CrawlerPackage_obj.urlCollector('경찰대학', 20110101, 20111231))
