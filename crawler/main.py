@@ -248,6 +248,9 @@ class Crawler(CrawlerModule):
     def FinalOperator(self):
         try:
             self.convertToParquet(self.DBpath)
+            
+            self.IntegratedDB['percent'] = "토큰화 중"
+            res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
 
             parquet_files = [f for f in os.listdir(
                 self.DBpath) if f.endswith('.parquet')]
