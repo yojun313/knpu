@@ -592,4 +592,4 @@ async def asyncTester():
 if __name__ == "__main__":
     #asyncio.run(asyncTester())
     CrawlerPackage_obj = NaverNewsCrawler(proxy_option=False, print_status_option=True)
-    print(CrawlerPackage_obj.urlCollector('파리 여행 +루브르', 20230101, 20230110))
+    print(CrawlerPackage_obj.urlCollector('"경찰대" -공항 -지하철 -관광', 20230101, 20230110))

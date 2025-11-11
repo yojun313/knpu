@@ -137,7 +137,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         # 상태 처리
         status = "Done"
         endt = crawlDb.get('endTime')
-        if "%" in endt:
+        if "%" in endt or endt == "토큰화 중":
             crawlDb['endTime'] = endt
             status = endt
             activeCrawl += 1
