@@ -89,7 +89,8 @@ class NaverNewsCrawler(CrawlerModule):
             urlList = []
             
             params = {
-                "cluster_rank": "15",
+                "abt": "null",
+                "cluster_rank": "64",  # 이미지에서는 64로 표시됨
                 "de": f"{endDate_formed}",
                 "ds": f"{startDate_formed}",
                 "eid": "",
@@ -100,26 +101,26 @@ class NaverNewsCrawler(CrawlerModule):
                 "mynews": "0",
                 "news_office_checked": "",
                 "nlu_query": "",
-                "nqx_theme": "",
+                "nqx_theme": "",  # 이미지의 JSON 반영
                 "nso": f"so:r,p:from{startDate}to{endDate},a:all",
                 "nx_and_query": f"{query_dict['nx_and_query']}",
                 "nx_search_hlquery": f"{query_dict['nx_search_hlquery']}",
                 "nx_search_query": f"{query_dict['nx_search_query']}",
                 "nx_sub_query": f"{query_dict['nx_sub_query']}",
-                "office_category": "",
+                "office_category": "0",
                 "office_section_code": "0",
                 "office_type": "0",
                 "pd": "3",
                 "photo": "0",
                 "query": f"{keyword}",
-                "query_original": "",
+                "query_original": f"{keyword}",
                 "rev": "0",
-                "service_area": "",
+                "service_area": "0",
                 "sm": "tab_smr",
                 "sort": "0",
                 "spq": "0",
                 "ssc": "tab.news.all",
-                "start": "1"
+                "start": "1"  # 이미지에서 31로 표시됨 (필요에 따라 변경)
             }
                         
             # 파라미터를 쿼리 문자열로 변환
@@ -592,4 +593,4 @@ async def asyncTester():
 if __name__ == "__main__":
     #asyncio.run(asyncTester())
     CrawlerPackage_obj = NaverNewsCrawler(proxy_option=False, print_status_option=True)
-    print(CrawlerPackage_obj.urlCollector('"경찰대" -공항 -지하철 -관광', 20230101, 20230110))
+    print(CrawlerPackage_obj.urlCollector('경찰대학', 20230101, 20231231))

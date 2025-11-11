@@ -167,7 +167,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         def _key(d):
             st = d.get('startTime')
             # 문자열이면 파싱, datetime 이면 그대로, 아니면 최소값
-            if isinstance(st, str):
+            if isinstance(st, str): 
                 try:
                     return datetime.strptime(st, "%Y-%m-%d %H:%M")
                 except:
