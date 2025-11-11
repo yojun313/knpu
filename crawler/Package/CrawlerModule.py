@@ -220,7 +220,7 @@ class CrawlerModule(ToolModule):
         try:
             if headers == {}:
                 headers = self.random_heador()
-
+            print(self.proxy_option)
             if self.proxy_option == True:
                 trynum = 0
                 while True:
