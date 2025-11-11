@@ -19,6 +19,7 @@ from user_agent import generate_navigator
 import asyncio
 import aiohttp
 import urllib.parse
+import random
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -90,12 +91,12 @@ class NaverNewsCrawler(CrawlerModule):
             
             params = {
                 "abt": "null",
-                "cluster_rank": "64",  # 이미지에서는 64로 표시됨
+                "cluster_rank": str(random.choice([63, 64, 65])),
                 "de": f"{endDate_formed}",
                 "ds": f"{startDate_formed}",
                 "eid": "",
                 "field": "0",
-                "force_original": "",
+                "force_original": random.choice(["", "1"]),
                 "is_dts": "1",
                 "is_sug_officeid": "0",
                 "mynews": "0",
