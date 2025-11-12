@@ -11,7 +11,6 @@ from app.services.crawl_service import (
     saveCrawlDb,
     previewCrawlDb
 )
-from app.services.user_service import log_user
 from app.libs.jwt import verify_token
 
 router = APIRouter()
@@ -28,8 +27,7 @@ def create_crawl_db(crawlLog: CrawlLogCreateDto):
 
 @router.delete("/{uid}",)
 def delete_crawl_db(uid: str, userUid = Depends(verify_token)):
-    log_user(userUid, f"Requested to delete crawl DB: {uid}")
-    return deleteCrawlDb(uid)
+    return deleteCrawlDb(uid, userUid)
 
 @router.get("/list")
 def get_crawl_db_list(sort_by: str = Query("starttime", enum=["starttime", "keyword"]), 
@@ -55,8 +53,7 @@ def update_crawl_db_count(uid: str, dataInfo: CountDataInfo):
 
 @router.get("/{uid}/preview")
 def get_crawl_db_info(uid: str, userUid = Depends(verify_token)):
-    log_user(userUid, f"Requested preview for crawl DB: {uid}")
-    return previewCrawlDb(uid)
+    return previewCrawlDb(uid, userUid)
 
 
 @router.put("/{uid}/error")
