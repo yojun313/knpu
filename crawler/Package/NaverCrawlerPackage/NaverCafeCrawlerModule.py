@@ -19,7 +19,7 @@ import asyncio
 import aiohttp
 import os
 import sys
-
+import time
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -159,7 +159,9 @@ class NaverCafeCrawler(CrawlerModule):
 
             while True:
                 pre_urlList = extract_cafeurls(json_text)
-
+                if not pre_urlList:
+                    time.sleep(1)
+                
                 for url in pre_urlList:
                     if url not in urlList and 'book' not in url:
                         urlList.append(url)
@@ -170,6 +172,7 @@ class NaverCafeCrawler(CrawlerModule):
 
                 nextUrl = extract_nexturl(json_text)
                 if nextUrl == None:
+                    time.sleep(1)
                     break
                 else:
                     api_url = nextUrl

@@ -518,10 +518,8 @@ class Crawler(CrawlerModule):
             for dayCount in range(self.date_range + 1):
                 try:
                     self.currentDate_str = self.currentDate.strftime('%Y%m%d')
-                    percent = str(
-                        round(((dayCount + 1) / self.date_range) * 100, 1))
-                    NaverNewsCrawler_obj.setPrintData(
-                        self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
+                    percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
+                    NaverNewsCrawler_obj.setPrintData(self.currentDate.strftime('%Y.%m.%d'), percent, self.weboption)
 
                     # finish line
                     if dayCount == self.date_range:
