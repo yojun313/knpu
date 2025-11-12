@@ -15,7 +15,7 @@ keyword      = sys.argv[6]
 upload       = sys.argv[7]
 upload       = 0
 weboption    = 1
-speed        = 3
+speed        = 1
 
 '''
 name = "문요준"

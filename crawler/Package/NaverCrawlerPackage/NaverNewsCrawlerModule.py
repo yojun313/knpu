@@ -141,7 +141,9 @@ class NaverNewsCrawler(CrawlerModule):
             
             while True:
                 pre_urlList = extract_newsurls(json_text)
-
+                if not pre_urlList:
+                    time.sleep(1)
+                    
                 for url in pre_urlList:
                     if url not in urlList and 'sid=106' not in url:
                         urlList.append(url)
@@ -154,6 +156,7 @@ class NaverNewsCrawler(CrawlerModule):
                 if nextUrl == None:
                     break
                 else:
+                    time.sleep(1)
                     api_url = nextUrl
                     response = self.Requester(api_url)
                     json_text = response.text
