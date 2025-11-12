@@ -35,6 +35,7 @@ class BaseDialog(QDialog):
 
         if is_multiline:
             widget = QTextEdit(content)
+            widget.setPlainText(str(content))
             widget.setReadOnly(readonly)
             if monospace:
                 f = QFont("Consolas")
@@ -1685,9 +1686,12 @@ class EditHomeMemberDialog(BaseDialog):
         self.in_aff = QLineEdit(self.data.get("affiliation", ""))
         self.in_section = QLineEdit(self.data.get("section", ""))
         self.in_email = QLineEdit(self.data.get("email", ""))
-        self.in_school = QTextEdit("\n".join(self.data.get("학력", [])))
-        self.in_career = QTextEdit("\n".join(self.data.get("경력", [])))
-        self.in_research = QTextEdit("\n".join(self.data.get("연구", [])))
+        self.in_school = QTextEdit()
+        self.in_school.setPlainText("\n".join(self.data.get("학력", [])))
+        self.in_career = QTextEdit()
+        self.in_career.setPlainText("\n".join(self.data.get("경력", [])))
+        self.in_research = QTextEdit()
+        self.in_research.setPlainText("\n".join(self.data.get("연구", [])))
 
         for lbl, wid in [
             ("이름", self.in_name), ("포지션", self.in_pos),
@@ -1738,10 +1742,10 @@ class EditHomeMemberDialog(BaseDialog):
             "affiliation": self.in_aff.text().strip(),
             "section": self.in_section.text().strip(),
             "email": self.in_email.text().strip(),
-            # 반드시 포함되어야 하는 필드들
-            "학력": [l.strip() for l in self.in_school.toPlainText().splitlines() if l.strip()],
-            "경력": [l.strip() for l in self.in_career.toPlainText().splitlines() if l.strip()],
-            "연구": [l.strip() for l in self.in_research.toPlainText().splitlines() if l.strip()],
+            # QTextEdit에서 실제 텍스트를 읽기
+            "학력": self.in_school.toPlainText().strip().splitlines(),
+            "경력": self.in_career.toPlainText().strip().splitlines(),
+            "연구": self.in_research.toPlainText().strip().splitlines(),
         }
         # image 필드 지정
         if self.new_image_url:
@@ -1906,7 +1910,7 @@ class ViewHomeMemberDialog(BaseDialog):
         self.add_label(layout, "직책", data.get("position", ""))
         self.add_label(layout, "소속", data.get("affiliation", ""))
         self.add_label(layout, "이메일", data.get("email", ""))
-        self.add_label(layout, "학력", "\n".join(data.get("학력", [])) if isinstance(data.get("학력", []), list) else str(data.get("학력", "")))
+        self.add_label(layout, "학력", "\n".join(data.get("학력", [])) if isinstance(data.get("학력", []), list) else str(data.get("학력", "")), multiline=True)
         self.add_label(layout, "경력", "\n".join(data.get("경력", [])) if isinstance(data.get("경력", []), list) else str(data.get("경력", "")), multiline=True)
         self.add_label(layout, "연구", "\n".join(data.get("연구", [])) if isinstance(data.get("연구", []), list) else str(data.get("연구", "")), multiline=True)
 
