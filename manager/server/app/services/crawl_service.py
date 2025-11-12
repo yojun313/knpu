@@ -75,11 +75,14 @@ def createCrawlLog(crawlLog: CrawlLogCreateDto):
     )
 
 
-def deleteCrawlDb(uid: str):
+def deleteCrawlDb(uid: str, userUid: str):
     crawlDb = crawlList_db.find_one({"uid": uid})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
-
+    
+    targetDB = crawlDb['name']
+    log_user(userUid, f"Requested to delete crawl DB: {targetDB}")
+    
     result = crawlList_db.delete_one({"uid": uid})
     task = BackgroundTask(deleteCrawlDbBg, crawlDb['name'])
 
@@ -473,10 +476,12 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
     )
 
 
-def previewCrawlDb(uid: str):
+def previewCrawlDb(uid: str, userUid: str):
     crawlDb = crawlList_db.find_one({"uid": uid})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
+    targetDB = crawlDb['name']
+    log_user(userUid, f"Requested preview for crawl DB: {targetDB}")
 
     target_folder = crawlDb['name']  # 이 이름이 곧 디렉토리명
     base_path = os.path.join(crawldata_path, target_folder)  # 경로에 맞게 수정
