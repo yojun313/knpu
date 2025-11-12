@@ -27,6 +27,7 @@ from core.boot import (
 )
 from core.shortcut import initShortcut, resetShortcuts
 from core.setting import get_setting, set_setting
+from core.boot import changeStatusbarAction
 from services.crawldb import updateDB
 from services.pushover import sendPushOver
 from services.update import updateProgram
@@ -201,21 +202,26 @@ class MainWindow(QMainWindow):
             if get_setting('DB_Refresh') == 'default':
                 self.managerDatabaseObj.refreshDB()
             printStatus(self, f"{self.fullStorage} GB / 2 TB")
+            changeStatusbarAction(self, "DATABASE")
         # CRAWLER
         elif index == 1:
             printStatus(self, f"활성 크롤러 수: {self.activeCrawl}")
+            changeStatusbarAction(self)
             resetShortcuts(self)
         # ANALYSIS
         elif index == 2:
             printStatus(self)
+            changeStatusbarAction(self, "ANALYSIS")
             self.managerAnalysisObj.analysis_shortcut_setting()
         # BOARD
         elif index == 3:
             printStatus(self)
+            changeStatusbarAction(self)
             self.managerBoardObj.setBoardShortcut()
         # WEB
         elif index == 4:
-            printStatus(self, "https://knpu.re.kr")
+            printStatus(self, "https://knpu.re.kr/publications")
+            changeStatusbarAction(self, "WEB")
             self.managerWebObj.setWebShortcut()
         # USER
         elif index == 5:

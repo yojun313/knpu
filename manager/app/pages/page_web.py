@@ -11,6 +11,7 @@ from ui.dialogs import *
 from ui.table import *
 from services.logging import userLogging
 from functools import partial
+from core.boot import changeStatusbarAction
 
 
 warnings.filterwarnings("ignore")
@@ -377,8 +378,9 @@ class Manager_Web:
 
     def updateShortcut(self, index):
         resetShortcuts(self.main)
-
+        
         if index == 0:
+            printStatus(self.main, "https://knpu.re.kr/publications")
             self.main.ctrld.activated.connect(self.deleteHomePaper)
             self.main.ctrle.activated.connect(self.editHomePaper)
             self.main.ctrla.activated.connect(self.addHomePaper)
@@ -390,6 +392,7 @@ class Manager_Web:
             self.main.cmdv.activated.connect(self.viewPaper)
 
         if index == 1:
+            printStatus(self.main, "https://knpu.re.kr/team")
             self.main.ctrld.activated.connect(self.deleteHomeMember)
             self.main.ctrle.activated.connect(self.editHomeMember)
             self.main.ctrla.activated.connect(self.addHomeMember)
@@ -401,6 +404,7 @@ class Manager_Web:
             self.main.cmdv.activated.connect(self.viewMember)
 
         if index == 2:
+            printStatus(self.main, "https://knpu.re.kr#news")
             self.main.ctrla.activated.connect(self.addHomeNews)
             self.main.ctrle.activated.connect(self.editHomeNews)
             self.main.ctrlv.activated.connect(self.viewNews)
@@ -409,3 +413,5 @@ class Manager_Web:
             self.main.cmda.activated.connect(self.addHomeNews)
             self.main.cmde.activated.connect(self.editHomeNews)
             self.main.cmdv.activated.connect(self.viewNews)
+
+        changeStatusbarAction(self.main, "WEB")
