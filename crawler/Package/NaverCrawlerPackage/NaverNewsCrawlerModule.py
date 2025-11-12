@@ -136,7 +136,7 @@ class NaverNewsCrawler(CrawlerModule):
                 return response
             
             if hasattr(response, "status_code") and response.status_code != 200:
-                self.error_dump(2002, f"Non-200 response: {response.status_code}", api_url)
+                return self.error_dump(0, f"Non-200 response: {response.status_code}", api_url)
             json_text = response.text
             
             while True:
