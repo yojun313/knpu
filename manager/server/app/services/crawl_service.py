@@ -152,13 +152,15 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         # dbSize 처리
         size = crawlDb.get('dbSize') or 0
         if float(size) == 0:
-            dbsize = getFolderSize(os.path.join(crawldata_path, name))
-            gb, mb = dbsize
-            fullStorage += float(gb)
+            gb, mb = getFolderSize(os.path.join(crawldata_path, name))
+
+            fullStorage += gb
             crawlDb['dbSize'] = f"{mb} MB" if gb < 1 else f"{gb} GB"
         else:
-            fullStorage += float(size)
-            crawlDb['dbSize'] = f"{int(float(size)*1024)} MB" if float(size) < 1 else f"{size} GB"
+            s = float(size)
+            fullStorage += s
+            crawlDb['dbSize'] = f"{s * 1024:.2f} MB" if s < 1 else f"{s:.2f} GB"
+
         filteredList.append(crawlDb)
 
     crawlDbList = filteredList
