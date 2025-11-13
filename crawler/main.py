@@ -143,14 +143,7 @@ class Crawler(CrawlerModule):
             log.write(
                 f"\n\nDB Check --> {datetime.fromtimestamp(self.startTime).strftime('%Y%m/%d %H:%M')}에 중단됨")
             log.close()
-
-            msg_text = (
-                "[ CRAWLER STOPPED ]\n\n"
-                f"Object DB : {self.DBname}\n\n"
-                f"DB 저장소 삭제 또는 인식 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
-                f"의도된 크롤링 중단이 아니라면 Admin에게 연락 부탁드립니다"
-            )
-            self.sendPushOver(msg_text, user_key=self.pushoverKey)
+            self.sendPushOver(self.halt_msg, user_key=self.pushoverKey)
 
             self.localDBRemover()
             sys.exit()
@@ -190,6 +183,12 @@ class Crawler(CrawlerModule):
         self.replyDB = self.DBname + '_reply'
         self.rereplyDB = self.DBname + '_rereply'
 
+        self.halt_msg = (
+            f"[크롤링 중단] {self.DBname}"
+            f"\n\nDB 저장소 삭제 또는 인식 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
+            f"의도된 크롤링 중단이 아니라면 Admin에게 문의 바랍니다"
+        )
+        
         try:
             os.makedirs(self.DBpath)
             log = open(os.path.join(self.crawllog_path,
@@ -421,14 +420,7 @@ class Crawler(CrawlerModule):
             log.write(
                 f"\n\nDB Check --> {datetime.fromtimestamp(self.startTime).strftime('%Y%m/%d %H:%M')}에 중단됨")
             log.close()
-
-            msg_text = (
-                "[ CRAWLER STOPPED ]\n\n"
-                f"Object DB : {self.DBname}\n\n"
-                f"DB 저장소 삭제 또는 인식 불가로 {self.DBname} 크롤링이 중단되었습니다\n"
-                f"의도된 크롤링 중단이 아니라면 Admin에게 연락 부탁드립니다"
-            )
-            self.sendPushOver(msg_text, user_key=self.pushoverKey)
+            self.sendPushOver(self.halt_msg, user_key=self.pushoverKey)
 
             self.localDBRemover()
             sys.exit()
@@ -465,14 +457,9 @@ class Crawler(CrawlerModule):
             self.ReturnChecker(error_data)
 
     def fail_first_crawl(self):
-        msg_text = (
-            "[ CRAWLER STOPPED ]\n\n"
-            f"초기 데이터 수집 불가로 {self.user}님의 {self.DBname} 크롤링이 중단되었습니다\n\n"
-            f"IP Proxy 프로그램이 가동 중인지, IP가 최신 버전으로 업데이트되었는지 확인바랍니다\n"
-        )
-        self.sendPushOver(msg_text, user_key=self.pushoverKey)
+        self.sendPushOver(self.halt_msg, user_key=self.pushoverKey)
         if self.user != "admin":
-            self.sendPushOver(msg_text, self.admin_pushoverkey)
+            self.sendPushOver(self.halt_msg, self.admin_pushoverkey)
         self.DBinfoRecorder(False, True)
         self.localDBRemover()
         os._exit(1)
