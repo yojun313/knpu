@@ -1736,7 +1736,6 @@ class EditHomeMemberDialog(BaseDialog):
             "affiliation": self.in_aff.text().strip(),
             "section": self.in_section.text().strip(),
             "email": self.in_email.text().strip(),
-            # QTextEdit에서 실제 텍스트를 읽기
             "학력": self.in_school.toPlainText().strip().splitlines(),
             "경력": self.in_career.toPlainText().strip().splitlines(),
             "연구": self.in_research.toPlainText().strip().splitlines(),
