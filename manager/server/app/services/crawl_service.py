@@ -151,21 +151,14 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
 
         # dbSize 처리
         size = crawlDb.get('dbSize') or 0
-        if float(size) == 0:
-            # 폴더 실제 용량 계산
+        size = int(size)  
+
+        if size == 0:
             byte_size = getFolderSize(os.path.join(crawldata_path, name))
+            size = byte_size
 
-            # GB 합산 기준은 GB 단위 → bytes를 GB로 변환
-            fullStorage += byte_size / (1024 ** 3)
-
-            crawlDb['dbSize'] = format_size(byte_size)
-
-        else:
-            gb = float(size)
-            fullStorage += gb
-
-            # 화면 표시용은 KB/MB/GB 자동 단위 변환
-            crawlDb['dbSize'] = format_size(int(gb * (1024 ** 3)))
+        fullStorage += size / (1024 ** 3)
+        crawlDb['dbSize'] = format_size(size)
 
         filteredList.append(crawlDb)
 
