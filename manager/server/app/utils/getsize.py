@@ -3,11 +3,19 @@ from pathlib import Path
 
 def getFolderSize(path):
     total_bytes = sum(f.stat().st_size for f in Path(path).rglob('*') if f.is_file())
-    size_gb = total_bytes / (1024 ** 3)
-    size_mb = total_bytes / (1024 ** 2)
+    return total_bytes
 
-    # GB, MB 모두 소수점 포함
-    size_gb = round(size_gb, 3)   # 예: 0.123 GB
-    size_mb = round(size_mb, 2)   # 예: 123.45 MB
+def format_size(bytes_size):
+    if bytes_size < 1024:  # 1KB 미만
+        return f"{bytes_size} B"
 
-    return size_gb, size_mb
+    kb = bytes_size / 1024
+    if kb < 1024:  # 1MB 미만
+        return f"{kb:.2f} KB"
+
+    mb = kb / 1024
+    if mb < 1024:  # 1GB 미만
+        return f"{mb:.2f} MB"
+
+    gb = mb / 1024
+    return f"{gb:.3f} GB"
