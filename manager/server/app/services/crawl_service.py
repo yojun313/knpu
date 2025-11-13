@@ -161,7 +161,6 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
             crawlDb['dbSize'] = format_size(byte_size)
 
         else:
-            # 기존 저장된 size는 GB라고 가정 (기존 코드 구조 기준)
             gb = float(size)
             fullStorage += gb
 
@@ -208,7 +207,7 @@ def getCrawlDbInfo(uid: str):
         raise NotFoundException("CrawlDB not found")
 
     if not crawlDb['dbSize']:
-        dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb['name']))
+        dbsize = format_size(getFolderSize(os.path.join(crawldata_path, crawlDb['name'])))
         crawlDb['dbSize'] = dbsize
 
     return JSONResponse(
@@ -253,7 +252,7 @@ def updateCount(uid: str, dataInfo):
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
-    dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb['name']))[0]
+    dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb['name']))
     data_info_dict = dataInfo.model_dump()
     percent = data_info_dict['percent']
     
