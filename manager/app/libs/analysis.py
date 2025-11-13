@@ -2,7 +2,6 @@ import asyncio
 import warnings
 from PyQt5.QtWidgets import QMessageBox
 import pandas as pd
-import sys
 import matplotlib.pyplot as plt
 import seaborn as sns
 import platform
@@ -11,9 +10,7 @@ from collections import Counter
 import os
 import csv
 from googletrans import Translator
-from tqdm import tqdm
 from PIL import Image
-from core.setting import get_setting
 import re
 from libs.path import safe_path
 
@@ -2352,12 +2349,7 @@ class DataProcess:
         period_list = list(grouped.groups.keys())
 
         i = 0
-
-        if get_setting('ProcessConsole') == 'default':
-            iterator = tqdm(grouped, desc="WordCloud ", file=sys.stdout,
-                            bar_format="{l_bar}{bar}|", ascii=' =')
-        else:
-            iterator = grouped
+        iterator = grouped
 
         for period_start, group in iterator:
             if group.empty:
