@@ -79,6 +79,41 @@ class Manager_Board:
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
+    def editVersion(self):
+        try:
+            if self.main.user != 'admin':
+                ok, password = checkPassword(self.main, True)
+                if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
+                    return
+
+            selectedRow = self.main.board_version_tableWidget.currentRow()
+            if selectedRow < 0:
+                return
+
+            # 기존 데이터
+            origin = self.origin_version_data[selectedRow]
+
+            # Edit Dialog 열기
+            from ui.dialogs import AddVersionDialog
+            dialog = AddVersionDialog(origin)
+            dialog.exec_()
+
+            if dialog.data:
+                version_data = dialog.data
+                data = {
+                    "versionName": version_data[0],
+                    "changeLog": version_data[1],
+                    "features": version_data[2],
+                    "details": version_data[3],
+                }
+
+                Request('put', f'/board/version/{origin["versionName"]}', json=data)
+                QMessageBox.information(self.main, "완료", f"{data['versionName']} 수정 완료했습니다")
+                self.refreshVersionBoard()
+
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
     def deleteVersion(self):
         try:
             if self.main.user != 'admin':
@@ -321,9 +356,9 @@ class Manager_Board:
             programBugLog(self.main, traceback.format_exc())
 
     def matchButton(self):
-        self.main.board_deleteversion_button.clicked.connect(
-            self.deleteVersion)
         self.main.board_addversion_button.clicked.connect(self.addVersion)
+        self.main.board_deleteversion_button.clicked.connect(self.deleteVersion)
+        self.main.board_editversion_button.clicked.connect(self.editVersion)
         self.main.board_detailversion_button.clicked.connect(self.viewVersion)
 
         self.main.board_addbug_button.clicked.connect(self.addBug)
@@ -338,6 +373,7 @@ class Manager_Board:
         self.main.board_deleteversion_button.setToolTip("Ctrl+D")
         self.main.board_addversion_button.setToolTip("Ctrl+A")
         self.main.board_detailversion_button.setToolTip("Ctrl+V")
+        self.main.board_editversion_button.setToolTip("Ctrl+E")
         self.main.board_addbug_button.setToolTip("Ctrl+A")
         self.main.board_deletebug_button.setToolTip("Ctrl+D")
         self.main.board_detailbug_button.setToolTip("Ctrl+V")
@@ -358,10 +394,12 @@ class Manager_Board:
             self.main.ctrld.activated.connect(self.deleteVersion)
             self.main.ctrlv.activated.connect(self.viewVersion)
             self.main.ctrla.activated.connect(self.addVersion)
+            self.main.ctrle.activated.connect(self.editVersion)
 
             self.main.cmdd.activated.connect(self.deleteVersion)
             self.main.cmdv.activated.connect(self.viewVersion)
             self.main.cmda.activated.connect(self.addVersion)
+            self.main.cmde.activated.connect(self.editVersion)
 
         # 버그 리포트 탭
         if index == 1:

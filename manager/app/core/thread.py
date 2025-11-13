@@ -241,7 +241,6 @@ class TaskStatusDialog(BaseDialog):
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
         self.setWindowTitle(title)
-        self.setModal(True)
         self.resize(400, 75)
         
         self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
