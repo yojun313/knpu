@@ -1637,10 +1637,9 @@ class SelectColumnsDialog(BaseDialog):
 
 
 class SelectEtcAnalysisDialog(BaseDialog):
-    def __init__(self, analyze_hate, analyze_topic):
+    def __init__(self, analyze_hate):
         super().__init__()
         self.analyze_hate = analyze_hate
-        self.analyze_topic = analyze_topic
         self.initUI()
         self.data = None  # 데이터를 저장할 속성 추가
 
@@ -1651,11 +1650,6 @@ class SelectEtcAnalysisDialog(BaseDialog):
         hate_btn = QPushButton("혐오도 분석")
         hate_btn.clicked.connect(self.run_analyze_hate)
         layout.addWidget(hate_btn)
-
-        # Topic 분석 버튼
-        # topic_btn = QPushButton("토픽/키워드 분석")
-        # topic_btn.clicked.connect(self.run_analyze_topic)
-        # layout.addWidget(topic_btn)
 
         self.setLayout(layout)
 

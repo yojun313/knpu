@@ -1,20 +1,11 @@
-from ui.status import printStatus
-from core.setting import get_setting
-import gc
-from tqdm import tqdm
 import platform
 import re
 import warnings
-import traceback
 import csv
-import io
 import numpy as np
-import sys
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
-import seaborn as sns
-from collections import Counter
 from datetime import datetime
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
