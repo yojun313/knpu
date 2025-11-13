@@ -18,8 +18,6 @@ from core.setting import get_setting, set_setting
 from services.auth import checkPassword
 from ui.status import showActiveThreadsDialog
 from windows.splash_window import AboutDialog
-import webbrowser
-import re
 
 class ClickableLabel(QLabel):
     clicked = pyqtSignal()  # 클릭 시그널 정의
@@ -128,21 +126,6 @@ def initStatusbar(parent):
     parent.rightLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
     parent.statusbar.addPermanentWidget(parent.leftLabel, 1)
     parent.statusbar.addPermanentWidget(parent.rightLabel, 1)
-
-def changeStatusbarAction(parent, option: str = "DEFAULT"):
-    try:
-        parent.rightLabel.clicked.disconnect()  
-    except TypeError:
-        pass  
-        
-    if option in ["DATABASE", "ANALYSIS"]:
-        parent.rightLabel.setToolTip("실행 중인 작업 보기")
-        parent.rightLabel.clicked.connect(lambda: showActiveThreadsDialog())
-    elif option == "WEB":
-        raw_text = parent.rightLabel.text().strip()
-        url = re.compile(r"(https?://[A-Za-z0-9\.\-_/:%#?=&]+)").search(raw_text).group(1)
-        parent.rightLabel.setToolTip("클릭하여 웹페이지 열기")
-        parent.rightLabel.clicked.connect(lambda: webbrowser.open(url))
 
 def initShortcut(parent):
     parent.ctrld = QShortcut(QKeySequence("Ctrl+D"), parent)
