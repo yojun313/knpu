@@ -67,7 +67,25 @@ def get_version(versionName: str):
     
     return JSONResponse(status_code=200, content={"message": "Version post retrieved", "data": clean_doc(doc)})
 
+def edit_version(versionName: str, data: AddVersionDto):
+    update_fields = data.model_dump()
 
+    # releaseDate는 수정하지 않음 (원한다면 수정 가능)
+    update_result = version_board_db.update_one(
+        {"versionName": versionName},
+        {"$set": update_fields}
+    )
+
+    if update_result.matched_count == 0:
+        raise NotFoundException("Version not found")
+
+    updated_doc = clean_doc(version_board_db.find_one({"versionName": update_fields["versionName"]}))
+
+    return JSONResponse(
+        status_code=200,
+        content={"message": "Version updated", "data": updated_doc},
+    )
+    
 def get_version_list():
     docs = [clean_doc(d) for d in version_board_db.find()]
     return JSONResponse(status_code=200, content={"message": "Version list retrieved", "data": docs})

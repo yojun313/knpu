@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from app.models.board_model import AddVersionDto, AddBugDto, AddPostDto
 from app.services.board_service import (
-    add_version, get_version, get_version_list, delete_version, check_newest_version,
+    add_version, edit_version, get_version, get_version_list, delete_version, check_newest_version,
     add_bug, get_bug, get_bug_list, delete_bug,
     add_post, get_post, get_post_list, delete_post, edit_post
 )
@@ -21,6 +21,10 @@ def create_version(data: AddVersionDto):
 @router.get("/version/{versionName}")
 def read_version(versionName: str):
     return get_version(versionName)
+
+@router.put("/version/{versionName}")
+def update_version(versionName: str, data: AddVersionDto):
+    return edit_version(versionName, data)
 
 @router.get("/version")
 def list_versions():

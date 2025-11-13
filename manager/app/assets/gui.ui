@@ -274,6 +274,13 @@
                </widget>
               </item>
               <item>
+               <widget class="QPushButton" name="board_editversion_button">
+                <property name="text">
+                 <string>수정</string>
+                </property>
+               </widget>
+              </item>
+              <item>
                <widget class="QPushButton" name="board_deleteversion_button">
                 <property name="text">
                  <string>삭제</string>
