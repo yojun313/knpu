@@ -3,7 +3,7 @@ from app.libs.exceptions import ConflictException, NotFoundException
 from app.models.crawl_model import CrawlDbCreateDto, CrawlLogCreateDto, SaveCrawlDbOption
 from app.utils.mongo import clean_doc
 from app.utils.zip import fast_zip
-from app.utils.getsize import getFolderSize
+from app.utils.getsize import getFolderSize, format_size
 from fastapi.responses import JSONResponse
 from collections import OrderedDict
 from datetime import datetime, timezone, timedelta
@@ -152,14 +152,21 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         # dbSize 처리
         size = crawlDb.get('dbSize') or 0
         if float(size) == 0:
-            gb, mb = getFolderSize(os.path.join(crawldata_path, name))
+            # 폴더 실제 용량 계산
+            byte_size = getFolderSize(os.path.join(crawldata_path, name))
 
-            fullStorage += gb
-            crawlDb['dbSize'] = f"{mb} MB" if gb < 1 else f"{gb} GB"
+            # GB 합산 기준은 GB 단위 → bytes를 GB로 변환
+            fullStorage += byte_size / (1024 ** 3)
+
+            crawlDb['dbSize'] = format_size(byte_size)
+
         else:
-            s = float(size)
-            fullStorage += s
-            crawlDb['dbSize'] = f"{s * 1024:.2f} MB" if s < 1 else f"{s:.2f} GB"
+            # 기존 저장된 size는 GB라고 가정 (기존 코드 구조 기준)
+            gb = float(size)
+            fullStorage += gb
+
+            # 화면 표시용은 KB/MB/GB 자동 단위 변환
+            crawlDb['dbSize'] = format_size(int(gb * (1024 ** 3)))
 
         filteredList.append(crawlDb)
 
