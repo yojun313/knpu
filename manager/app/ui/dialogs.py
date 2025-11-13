@@ -552,6 +552,93 @@ class ViewPostDialog(BaseDialog):
         self.add_label(layout, "Post Text", self.post_data.get("text", ""), multiline=True)
 
 
+class EditVersionDialog(BaseDialog):
+    def __init__(self, version_data):
+        super().__init__()
+        self.version_data = version_data     # dict 형태
+        self.data = None                     # 결과 저장
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle('Edit Version')
+        self.resize(480, 520)
+
+        # 컨테이너 위젯 생성
+        container = QDialog()
+        layout = QVBoxLayout(container)
+
+        # Version Num
+        layout.addWidget(QLabel('<b>Version Num:</b>'))
+        self.version_num_input = QLineEdit()
+        self.version_num_input.setText(self.version_data[0])
+        layout.addWidget(self.version_num_input)
+
+        # ChangeLog
+        self.changelog_input = self.add_label(
+            layout, "ChangeLog:", 
+            self.version_data[2], 
+            readonly=False
+        )
+
+        # Version Features
+        self.version_features_input = self.add_label(
+            layout, "Version Features:", 
+            self.version_data[3], 
+            readonly=False
+        )
+
+        # Detail (multiline)
+        self.detail_input = self.add_label(
+            layout, "Detail:", 
+            self.version_data[4], 
+            readonly=False, 
+            multiline=True
+        )
+
+        # Submit button
+        self.submit_button = QPushButton('Edit')
+        self.submit_button.clicked.connect(self.submit)
+        layout.addWidget(self.submit_button)
+
+        # ScrollArea
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(container)
+
+        # Final layout
+        final_layout = QVBoxLayout()
+        final_layout.addWidget(scroll)
+        self.setLayout(final_layout)
+
+        # TAB 키를 QTextEdit에서 빠져나가도록 설정
+        for te in self.findChildren(QTextEdit):
+            te.setTabChangesFocus(True)
+
+    def submit(self):
+        version_num = self.version_num_input.text()
+        changelog = self.changelog_input.text()
+        version_features = self.version_features_input.text()
+        detail = self.detail_input.toPlainText()
+
+        # 반환 데이터
+        self.data = {
+            "versionName": version_num,
+            "changeLog": changelog,
+            "features": version_features,
+            "details": detail
+        }
+
+        QMessageBox.information(
+            self, "Updated",
+            f"Version Num: {version_num}\n"
+            f"ChangeLog: {changelog}\n"
+            f"Features: {version_features}\n"
+            f"Detail: {detail}"
+        )
+
+        self.accept()
+
+
 class EditPostDialog(BaseDialog):
     def __init__(self, post_data):
         super().__init__()

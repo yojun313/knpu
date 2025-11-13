@@ -91,24 +91,18 @@ class Manager_Board:
                 return
 
             # 기존 데이터
-            origin = self.origin_version_data[selectedRow]
-
+            origin = self.version_data[selectedRow]
+        
             # Edit Dialog 열기
-            from ui.dialogs import AddVersionDialog
-            dialog = AddVersionDialog(origin)
+            from ui.dialogs import EditVersionDialog
+            dialog = EditVersionDialog(origin)
             dialog.exec_()
 
             if dialog.data:
                 version_data = dialog.data
-                data = {
-                    "versionName": version_data[0],
-                    "changeLog": version_data[1],
-                    "features": version_data[2],
-                    "details": version_data[3],
-                }
-
-                Request('put', f'/board/version/{origin["versionName"]}', json=data)
-                QMessageBox.information(self.main, "완료", f"{data['versionName']} 수정 완료했습니다")
+                version_data['sendPushOver'] = False
+                Request('put', f'/board/version/{version_data["versionName"]}', json=version_data)
+                QMessageBox.information(self.main, "완료", f"{version_data['versionName']} 수정 완료했습니다")
                 self.refreshVersionBoard()
 
         except Exception:
