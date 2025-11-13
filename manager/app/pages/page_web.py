@@ -9,10 +9,9 @@ from services.api import Request
 from config import HOMEPAGE_EDIT_API
 from ui.dialogs import *
 from ui.table import *
+from ui.status import changeStatusbarAction
 from services.logging import userLogging
 from functools import partial
-from core.boot import changeStatusbarAction
-
 
 warnings.filterwarnings("ignore")
 
