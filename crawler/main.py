@@ -136,7 +136,7 @@ class Crawler(CrawlerModule):
 
         if not targetDB:
             self.running = False
-            print('\rStopped by MANAGER PROGRAM', end='')
+            print('\rStopped by MANAGER', end='')
 
             log = open(os.path.join(self.crawllog_path,
                        self.DBname + '_log.txt'), 'a')
@@ -414,7 +414,7 @@ class Crawler(CrawlerModule):
 
         if not os.path.exists(file_path):
             self.running = False
-            print('\rStopped by MANAGER PROGRAM', end='')
+            print('\rStopped by MANAGER', end='')
 
             log = open(os.path.join(self.crawllog_path,
                        self.DBname + '_log.txt'), 'a')
