@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QScrollAr
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QShortcut
+import webbrowser
+import re
 
 active_threads = []  
 
@@ -72,3 +74,18 @@ def printStatus(parent, msg=''):
     for i in range(3):
         parent.rightLabel.setText(msg)
         QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
+
+def changeStatusbarAction(parent, option: str = "DEFAULT"):
+    try:
+        parent.rightLabel.clicked.disconnect()  
+    except TypeError:
+        pass  
+        
+    if option in ["DATABASE", "ANALYSIS"]:
+        parent.rightLabel.setToolTip("실행 중인 작업 보기")
+        parent.rightLabel.clicked.connect(lambda: showActiveThreadsDialog())
+    elif option == "WEB":
+        raw_text = parent.rightLabel.text().strip()
+        url = re.compile(r"(https?://[A-Za-z0-9\.\-_/:%#?=&]+)").search(raw_text).group(1)
+        parent.rightLabel.setToolTip("클릭하여 웹페이지 열기")
+        parent.rightLabel.clicked.connect(lambda: webbrowser.open(url))
