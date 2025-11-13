@@ -11,7 +11,6 @@ from services.auth import *
 
 warnings.filterwarnings("ignore")
 
-
 class Manager_User:
     def __init__(self, main_window):
         self.main = main_window
