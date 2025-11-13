@@ -2261,7 +2261,6 @@ class DataProcess:
         return True
 
     def wordcloud(self, parent, data, folder_path, date, max_words, split_option, exception_word_list, eng=False):
-        parent = parent
         self.translate_history = {}
         self.translator = Translator()
 
@@ -2344,7 +2343,7 @@ class DataProcess:
             elif 'Date' in column:
                 self.dateColumn_name = column
 
-        print("\n데이터 분할 중...\n")
+        parent.message.emit("데이터 분할 중...")
         grouped = divide_period(data, split_option)
         period_list = list(grouped.groups.keys())
 
@@ -2352,6 +2351,8 @@ class DataProcess:
         iterator = grouped
 
         for period_start, group in iterator:
+            period = period_list[i]
+            parent.message.emit(f"{period} 워드클라우드 생성 중... ({i+1}/{len(period_list)})")
             if group.empty:
                 continue
 
@@ -2379,7 +2380,7 @@ class DataProcess:
 
             # 워드클라우드 저장
             output_file = os.path.join(
-                folder_path, f'wordcloud_{period_list[i]}.png')
+                folder_path, f'wordcloud_{period}.png')
             if split_option == 'total':
                 output_file = os.path.join(
                     folder_path, f'wordcloud_{date[0]}~{date[1]}.png')
@@ -2388,7 +2389,7 @@ class DataProcess:
 
             # CSV 파일로 저장
             output_file = os.path.join(
-                folder_path, 'data', f'wordcount_{period_list[i]}.csv')
+                folder_path, 'data', f'wordcount_{period}.csv')
             if split_option == 'total':
                 output_file = os.path.join(
                     folder_path, 'data', f'wordcount_{date[0]}~{date[1]}.csv')

@@ -442,24 +442,7 @@ class Manager_Analysis(Manager_Worker):
             printStatus(self.main)
 
             worker = RunAnalysisWorker(filepath, selected_options, self.dataprocess_obj, hate_mode, self.main)
-            worker.message.connect(lambda msg: statusDialog.update_message(msg))
-            worker.finished.connect(
-                lambda ok, msg, path: (
-                    self.worker_finished(ok, msg, path),
-                    statusDialog.close(),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
-            worker.error.connect(
-                lambda err: (
-                    self.worker_failed(err),
-                    statusDialog.close(),
-                    unregister_thread(thread_name),
-                    printStatus(self.main)
-                )
-            )
-
+            self.connectWorkerForStatusDialog(worker, statusDialog, thread_name)
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -500,7 +483,7 @@ class Manager_Analysis(Manager_Worker):
 
                     self.message.emit("워드클라우드 분석 중...")
                     self.dataprocess_obj.wordcloud(
-                        None,
+                        self,
                         token_data,
                         folder_path,
                         self.date,
@@ -575,12 +558,11 @@ class Manager_Analysis(Manager_Worker):
                 exception_word_list = df['word'].tolist()
 
             userLogging(f'ANALYSIS -> WordCloud({filename})')
-
-            statusDialog = TaskStatusDialog(f"워드클라우드: {filename}", self.main)
+            
+            thread_name = f"워드클라우드: {filename}"
+            statusDialog = TaskStatusDialog(thread_name, self.main)
             statusDialog.show()
 
-            # thread_name 설정 & 등록
-            thread_name = f"워드클라우드: {filename}"
             register_thread(thread_name)
             printStatus(self.main)
 
@@ -1849,18 +1831,12 @@ class Manager_Analysis(Manager_Worker):
         return selected_directory[0]
 
     def anaylsis_buttonMatch(self):
-
-        self.main.analysis_timesplitfile_btn.clicked.connect(
-            self.run_timesplit)
-        self.main.analysis_dataanalysisfile_btn.clicked.connect(
-            self.run_analysis)
-        self.main.analysis_mergefile_btn.clicked.connect(
-            self.run_merge)
-        self.main.analysis_wordcloud_btn.clicked.connect(
-            self.run_wordcloud)
+        self.main.analysis_timesplitfile_btn.clicked.connect(self.run_timesplit)
+        self.main.analysis_dataanalysisfile_btn.clicked.connect(self.run_analysis)
+        self.main.analysis_mergefile_btn.clicked.connect(self.run_merge)
+        self.main.analysis_wordcloud_btn.clicked.connect(self.run_wordcloud)
         self.main.analysis_kemkim_btn.clicked.connect(self.select_kemkim)
-        self.main.analysis_tokenization_btn.clicked.connect(
-            self.select_tokenize)
+        self.main.analysis_tokenization_btn.clicked.connect(self.select_tokenize)
         self.main.analysis_etc_btn.clicked.connect(self.select_etc_analysis)
 
         self.main.analysis_timesplitfile_btn.setToolTip("Ctrl+D")
