@@ -37,8 +37,8 @@ def get_crawl_db_list(sort_by: str = Query("starttime", enum=["starttime", "keyw
 
 
 @router.get("/{uid}/info")
-def get_crawl_db_info(uid: str):
-    return getCrawlDbInfo(uid)
+def get_crawl_db_info(uid: str, userUid = Depends(verify_token)):
+    return getCrawlDbInfo(uid, userUid)
 
 
 @router.put("/{uid}/end")

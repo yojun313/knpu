@@ -84,7 +84,6 @@ class Manager_Database(Manager_Worker):
                     else:
                         QMessageBox.information(
                             self.main, "Information", f"'{DBname}'가 삭제되었습니다")
-                    userLogging(f'DATABASE -> delete_DB({DBname})')
                     self.refreshDB()
 
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
@@ -235,10 +234,9 @@ class Manager_Database(Manager_Worker):
     def viewDBinfo(self, row):
         try:
             printStatus(self.main, "불러오는 중...")
-            DBdata = self.DB['DBdata'][row]
-
-            userLogging(f'DATABASE -> dbinfo_viewer({DBdata["name"]})')
-
+            DBuid = self.DB['DBdata'][row]['uid']
+            DBdata = Request('get', f'crawls/{DBuid}/info')
+            
             from ui.dialogs import DBInfoDialog
             dialog = DBInfoDialog(self.main, DBdata, self.main.style_html)
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")

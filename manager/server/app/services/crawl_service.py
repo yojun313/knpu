@@ -99,6 +99,54 @@ def deleteCrawlDbBg(name: str):
         shutil.rmtree(folder_path, ignore_errors=True)
 
 
+def processDbInfo(crawlDb: dict, mine: int = 0, username: str = 'admin'):
+    name = crawlDb["name"]
+    parts = name.split('_')
+    typ = parts[0]
+    match typ:
+        case 'navernews':  crawlType = 'Naver News'
+        case 'naverblog':  crawlType = 'Naver Blog'
+        case 'navercafe':  crawlType = 'Naver Cafe'
+        case 'youtube':    crawlType = 'YouTube'
+        case _:            crawlType = typ
+
+    crawlDb['crawlType'] = crawlType
+    crawlDb['startDate'] = parts[2]
+    crawlDb['endDate'] = parts[3]
+    crawlDb['crawlOption'] = str(crawlDb['crawlOption'])
+    crawlDb['crawlSpeed'] = str(crawlDb['crawlSpeed'])
+    
+    if username != 'admin' and crawlDb['requester'] == 'admin':
+        return False
+
+    if mine == 1 and crawlDb['requester'] != username:
+        return False
+
+    # 상태 처리
+    status = "Done"
+    endt = crawlDb.get('endTime')
+    if "%" in endt or endt == "토큰화 중":
+        crawlDb['endTime'] = endt
+        status = endt
+        activeCrawl += 1
+    elif endt == 'X':
+        crawlDb['endTime'] = '오류 중단'
+        status = 'Error'
+    crawlDb['status'] = status
+
+    # dbSize 처리
+    size = crawlDb.get('dbSize') or 0
+    size = int(size)  
+
+    if size == 0:
+        byte_size = getFolderSize(os.path.join(crawldata_path, name))
+        size = byte_size
+
+    fullStorage += size / (1024 ** 3)
+    crawlDb['dbSize'] = format_size(size)
+    return crawlDb
+
+
 def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     user = user_db.find_one({"uid": userUid})
     username = user['name']
@@ -115,51 +163,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     filteredList = []
     # 2) 각 doc 가공
     for crawlDb in crawlDbList:
-        name = crawlDb["name"]
-        parts = name.split('_')
-        typ = parts[0]
-        match typ:
-            case 'navernews':  crawlType = 'Naver News'
-            case 'naverblog':  crawlType = 'Naver Blog'
-            case 'navercafe':  crawlType = 'Naver Cafe'
-            case 'youtube':    crawlType = 'YouTube'
-            case _:            crawlType = typ
-
-        crawlDb['crawlType'] = crawlType
-        crawlDb['startDate'] = parts[2]
-        crawlDb['endDate'] = parts[3]
-        crawlDb['crawlOption'] = str(crawlDb['crawlOption'])
-        crawlDb['crawlSpeed'] = str(crawlDb['crawlSpeed'])
-        
-        if username != 'admin' and crawlDb['requester'] == 'admin':
-            continue
-
-        if mine == 1 and crawlDb['requester'] != username:
-            continue
-
-        # 상태 처리
-        status = "Done"
-        endt = crawlDb.get('endTime')
-        if "%" in endt or endt == "토큰화 중":
-            crawlDb['endTime'] = endt
-            status = endt
-            activeCrawl += 1
-        elif endt == 'X':
-            crawlDb['endTime'] = '오류 중단'
-            status = 'Error'
-        crawlDb['status'] = status
-
-        # dbSize 처리
-        size = crawlDb.get('dbSize') or 0
-        size = int(size)  
-
-        if size == 0:
-            byte_size = getFolderSize(os.path.join(crawldata_path, name))
-            size = byte_size
-
-        fullStorage += size / (1024 ** 3)
-        crawlDb['dbSize'] = format_size(size)
-
+        crawlDb = processDbInfo(crawlDb, mine, username)
         filteredList.append(crawlDb)
 
     crawlDbList = filteredList
@@ -193,16 +197,16 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     )
 
 
-def getCrawlDbInfo(uid: str):
+def getCrawlDbInfo(uid: str, userUid: str = None):
     crawlDb = crawlList_db.find_one({"uid": uid})
 
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
-    if not crawlDb['dbSize']:
-        dbsize = format_size(getFolderSize(os.path.join(crawldata_path, crawlDb['name'])))
-        crawlDb['dbSize'] = dbsize
-
+    targetDB = crawlDb['name']
+    log_user(userUid, f"Requested info for crawl DB: {targetDB}")
+    
+    crawlDb = processDbInfo(clean_doc(crawlDb))
     return JSONResponse(
         status_code=200,
         content={"message": "CrawlDB retrieved", "data": clean_doc(crawlDb)},
