@@ -235,7 +235,7 @@ class Manager_Database(Manager_Worker):
         try:
             printStatus(self.main, "불러오는 중...")
             DBuid = self.DB['DBdata'][row]['uid']
-            DBdata = Request('get', f'crawls/{DBuid}/info')
+            DBdata = Request('get', f'crawls/{DBuid}/info').json()['data']
             
             from ui.dialogs import DBInfoDialog
             dialog = DBInfoDialog(self.main, DBdata, self.main.style_html)

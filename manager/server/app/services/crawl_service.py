@@ -123,12 +123,13 @@ def processDbInfo(crawlDb: dict, mine: int = 0, username: str = 'admin'):
         return False
 
     # 상태 처리
+    activeCrawl = False
     status = "Done"
     endt = crawlDb.get('endTime')
     if "%" in endt or endt == "토큰화 중":
         crawlDb['endTime'] = endt
         status = endt
-        activeCrawl += 1
+        activeCrawl = True
     elif endt == 'X':
         crawlDb['endTime'] = '오류 중단'
         status = 'Error'
@@ -142,9 +143,10 @@ def processDbInfo(crawlDb: dict, mine: int = 0, username: str = 'admin'):
         byte_size = getFolderSize(os.path.join(crawldata_path, name))
         size = byte_size
 
-    fullStorage += size / (1024 ** 3)
+    
     crawlDb['dbSize'] = format_size(size)
-    return crawlDb
+    crawlDb['dbSize_int'] = size
+    return crawlDb, activeCrawl
 
 
 def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
@@ -163,8 +165,12 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     filteredList = []
     # 2) 각 doc 가공
     for crawlDb in crawlDbList:
-        crawlDb = processDbInfo(crawlDb, mine, username)
-        filteredList.append(crawlDb)
+        crawlDb, activeCrawl = processDbInfo(crawlDb, mine, username)
+        if crawlDb:
+            fullStorage += crawlDb['dbSize_int'] / (1024 ** 3)
+            if activeCrawl:
+                activeCrawl += 1
+            filteredList.append(crawlDb)
 
     crawlDbList = filteredList
 
@@ -206,7 +212,7 @@ def getCrawlDbInfo(uid: str, userUid: str = None):
     targetDB = crawlDb['name']
     log_user(userUid, f"Requested info for crawl DB: {targetDB}")
     
-    crawlDb = processDbInfo(clean_doc(crawlDb))
+    crawlDb, activeCrawl = processDbInfo(clean_doc(crawlDb))
     return JSONResponse(
         status_code=200,
         content={"message": "CrawlDB retrieved", "data": clean_doc(crawlDb)},
