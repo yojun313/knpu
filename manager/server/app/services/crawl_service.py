@@ -143,7 +143,6 @@ def processDbInfo(crawlDb: dict, mine: int = 0, username: str = 'admin'):
         byte_size = getFolderSize(os.path.join(crawldata_path, name))
         size = byte_size
 
-    
     crawlDb['dbSize'] = format_size(size)
     crawlDb['dbSize_int'] = size
     return crawlDb, activeCrawl
