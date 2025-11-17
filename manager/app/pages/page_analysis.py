@@ -821,8 +821,7 @@ class Manager_Analysis(Manager_Worker):
                                     f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
                 return
 
-            userLogging(
-                f'ANALYSIS -> rekimkem_file({result_directory[0]})')
+            userLogging(f'ANALYSIS -> rekimkem_file({result_directory[0]})')
             printStatus(self.main, "파일 불러오는 중...")
 
             result_directory = result_directory[0]
@@ -1028,8 +1027,7 @@ class Manager_Analysis(Manager_Worker):
                 return
 
             result_directory = result_directory[0]
-            userLogging(
-                f'ANALYSIS -> interpret_kimkem_file({result_directory})')
+            userLogging(f'ANALYSIS -> interpret_kimkem_file({result_directory})')
 
             final_signal_csv_path = os.path.join(
                 result_directory, "Signal", "Final_signal.csv")
