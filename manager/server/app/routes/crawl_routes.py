@@ -9,7 +9,8 @@ from app.services.crawl_service import (
     updateCount,
     createCrawlLog,
     saveCrawlDb,
-    previewCrawlDb
+    previewCrawlDb,
+    getCrawlLog
 )
 from app.libs.jwt import verify_token
 
@@ -23,6 +24,11 @@ def create_crawl_db(crawlDb: CrawlDbCreateDto):
 @router.post("/add/log")
 def create_crawl_db(crawlLog: CrawlLogCreateDto):
     return createCrawlLog(crawlLog)
+
+
+@router.get('/{uid}/log')
+def get_crawl_db_log(uid: str):
+    return getCrawlLog(uid)
 
 
 @router.delete("/{uid}",)

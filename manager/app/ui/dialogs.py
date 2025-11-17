@@ -135,6 +135,24 @@ class DBInfoDialog(BaseDialog):
         self.add_buttons(ok_btn)
 
 
+class LogViewerDialog(QDialog):
+    def __init__(self, parent, uid, log_content):
+        super().__init__(parent)
+        self.setWindowTitle(f"Log - {uid}")
+        self.resize(800, 600)
+
+        layout = QVBoxLayout(self)
+
+        text_widget = QTextEdit(self)
+        text_widget.setReadOnly(True)
+        text_widget.setText(log_content)
+        layout.addWidget(text_widget)
+
+        close_button = QPushButton("닫기", self)
+        close_button.clicked.connect(self.close)
+        layout.addWidget(close_button)
+
+
 class SaveDbDialog(BaseDialog):
     def __init__(self):
         super().__init__()
