@@ -144,8 +144,7 @@ class Manager_Web:
                 Request("post", "edit/paper", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
                     self.main, "완료", f"{payload['paper'].get('title', '논문')}가 추가되었습니다")
-                userLogging(
-                    f"WEB -> addHomePaper({payload['paper'].get('title')})")
+                userLogging(f"WEB -> addHomePaper({payload['paper'].get('title')})")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -187,8 +186,7 @@ class Manager_Web:
             if reply == QMessageBox.Yes:
                 Request("delete", "edit/paper", HOMEPAGE_EDIT_API,
                         params={"uid": selectedUid})
-                userLogging(
-                    f"WEB -> deleteHomePaper({self.paper_data[selectedRow][0]})")
+                userLogging(f"WEB -> deleteHomePaper({self.paper_data[selectedRow][0]})")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -204,8 +202,7 @@ class Manager_Web:
             if reply == QMessageBox.Yes:
                 Request("delete", "edit/member", HOMEPAGE_EDIT_API,
                         params={"uid": selectedUid})
-                userLogging(
-                    f"WEB -> deleteHomeMember({self.member_data[selectedRow][0]})")
+                userLogging(f"WEB -> deleteHomeMember({self.member_data[selectedRow][0]})")
                 self.refreshMemberBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -221,8 +218,7 @@ class Manager_Web:
             if reply == QMessageBox.Yes:
                 Request("delete", "edit/news", HOMEPAGE_EDIT_API,
                         params={"uid": selectedUid})
-                userLogging(
-                    f"WEB -> deleteHomeNews({self.news_data[selectedRow][0]})")
+                userLogging(f"WEB -> deleteHomeNews({self.news_data[selectedRow][0]})")
                 self.refreshNewsBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -252,8 +248,7 @@ class Manager_Web:
                 Request("post", "edit/paper", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
                     self.main, "완료", f"{payload['paper'].get('title')}가 수정되었습니다")
-                userLogging(
-                    f"WEB -> editHomePaper({payload['paper'].get('title')})")
+                userLogging(f"WEB -> editHomePaper({payload['paper'].get('title')})")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
