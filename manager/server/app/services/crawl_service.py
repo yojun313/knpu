@@ -75,6 +75,25 @@ def createCrawlLog(crawlLog: CrawlLogCreateDto):
     )
 
 
+def getCrawlLog(uid: str):
+    # DB에서 uid로 crawlLog 검색
+    crawlLog = crawlLog_db.find_one({"uid": uid})
+
+    if not crawlLog:
+        raise NotFoundException("CrawlLog not found")
+
+    # MongoDB ObjectId 등 정리
+    cleaned = clean_doc(crawlLog)
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "message": "CrawlLog fetched",
+            "data": cleaned
+        }
+    )
+    
+
 def deleteCrawlDb(uid: str, userUid: str):
     crawlDb = crawlList_db.find_one({"uid": uid})
     if not crawlDb:

@@ -333,6 +333,36 @@ class Manager_Database(Manager_Worker):
                     self.main, "Admin Mode", f"관리자 권한이 부여되었습니다")
                 
 
+            if search_text == '/log':
+                self.main.database_searchDB_lineinput.clear()
+
+                selectedRow = self.main.database_tablewidget.currentRow()
+                if selectedRow < 0:
+                    QMessageBox.warning(self.main, "Information", "DB를 먼저 선택해 주세요")
+                    return
+
+                DBdata = self.DB['DBdata'][selectedRow]
+                DBuid = DBdata['uid']
+
+                try:
+                    printStatus(self.main, "로그 불러오는 중...")
+                    response = Request('get', f'crawls/{DBuid}/log')
+                    data = response.json().get("data")
+
+                    if not data or "content" not in data:
+                        QMessageBox.warning(self.main, "Information", "로그가 비어있습니다")
+                        return
+
+                    from ui.dialogs import LogViewerDialog
+                    dialog = LogViewerDialog(self.main, DBuid, data["content"])
+                    dialog.exec_()
+
+                except Exception as e:
+                    programBugLog(self.main, traceback.format_exc())
+
+                printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
+                return
+
             if search_text == '/update':
                 self.main.database_searchDB_lineinput.clear()
                 self.main.updateProgram(sc=True)
