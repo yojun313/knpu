@@ -183,17 +183,15 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     filteredList = []
     # 2) 각 doc 가공
     for crawlDb in crawlDbList:
-        result = processDbInfo(crawlDb, mine, username)
-        if not result:
+        processed = processDbInfo(crawlDb, mine, username)
+        if not processed:
             continue
-        crawlDb, activeCrawl = result
-        if crawlDb:
-            fullStorage += crawlDb['dbSize_int'] / (1024 ** 3)
-            if activeCrawl:
+        processed_crawlDb, active = processed
+        if processed_crawlDb:
+            fullStorage += processed_crawlDb['dbSize_int'] / (1024 ** 3)
+            if active:
                 activeCrawl += 1
-                print(activeCrawl)
-                print(crawlDb)
-            filteredList.append(crawlDb)
+            filteredList.append(processed_crawlDb)
 
     crawlDbList = filteredList
 
