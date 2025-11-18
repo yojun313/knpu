@@ -7,7 +7,7 @@ def updateDB(parent):
 
     res = Request(
         'get', f'/crawls/list?sort_by={sort_by}&mine={mine}').json()
-
+    
     parent.db_list = res['data']
     parent.fullStorage = res['fullStorage']
     parent.activeCrawl = res['activeCrawl']
