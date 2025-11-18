@@ -190,6 +190,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         if crawlDb:
             fullStorage += crawlDb['dbSize_int'] / (1024 ** 3)
             if activeCrawl:
+                print(crawlDb)
                 activeCrawl += 1
             filteredList.append(crawlDb)
 
