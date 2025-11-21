@@ -1,10 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from app.models.board_model import AddVersionDto, AddBugDto, AddPostDto
 from app.services.board_service import (
     add_version, edit_version, get_version, get_version_list, delete_version, check_newest_version,
     add_bug, get_bug, get_bug_list, delete_bug,
     add_post, get_post, get_post_list, delete_post, edit_post
 )
+from app.libs.jwt import verify_token
 
 router = APIRouter()
 
@@ -59,7 +60,7 @@ def create_post(data: AddPostDto):
     return add_post(data)
 
 @router.get("/post/{uid}")
-def read_post(uid: str):
+def read_post(uid: str, userUid = Depends(verify_token)):
     return get_post(uid)
 
 @router.get("/post")
