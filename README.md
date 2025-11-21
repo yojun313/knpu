@@ -1,5 +1,6 @@
 # Project Architecture
 
+```shell
 knpu
 ├── crawler
 │   ├── main_web.py
@@ -148,5 +149,4 @@ knpu
 ├── README.md
 ├── requirements.txt
 └── setup.sh
-
-28 directories, 122 files
+```
