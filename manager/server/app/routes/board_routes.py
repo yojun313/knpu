@@ -61,7 +61,7 @@ def create_post(data: AddPostDto):
 
 @router.get("/post/{uid}")
 def read_post(uid: str, userUid = Depends(verify_token)):
-    return get_post(uid)
+    return get_post(uid, userUid)
 
 @router.get("/post")
 def list_posts():
