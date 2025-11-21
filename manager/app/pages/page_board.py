@@ -130,8 +130,6 @@ class Manager_Board:
 
     def viewVersion(self):
         try:
-            userLogging('BOARD -> viewVersion')
-
             selectedRow = self.main.board_version_tableWidget.currentRow()
             if selectedRow >= 0:
                 printStatus(self.main, "불러오는 중...")
@@ -209,8 +207,6 @@ class Manager_Board:
 
     def viewBug(self):
         try:
-            userLogging('BOARD -> viewBug')
-
             selectedRow = self.main.board_bug_tableWidget.currentRow()
             if selectedRow >= 0:
                 printStatus(self.main, "불러오는 중...")
@@ -241,9 +237,6 @@ class Manager_Board:
 
     def addPost(self):
         try:
-            # QDialog를 상속받은 클래스 생성
-            userLogging(f'BOARD -> addPost')
-
             from ui.dialogs import AddPostDialog
             dialog = AddPostDialog(self.main)
             dialog.exec_()

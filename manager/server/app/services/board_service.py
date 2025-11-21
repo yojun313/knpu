@@ -11,6 +11,8 @@ import pytz
 import os
 from starlette.background import BackgroundTask
 from zoneinfo import ZoneInfo
+from app.services.user_service import log_user
+
 
 
 load_dotenv()
@@ -18,7 +20,8 @@ load_dotenv()
 # ----------- Version Board -----------
 
 
-def add_version(data: AddVersionDto):
+def add_version(data: AddVersionDto, userUid: str):
+    log_user(userUid, f"Added new version: {data.versionName}")
     doc = data.model_dump()
     doc["uid"] = str(uuid.uuid4())
     doc["releaseDate"] = datetime.now(
@@ -67,7 +70,8 @@ def get_version(versionName: str):
     
     return JSONResponse(status_code=200, content={"message": "Version post retrieved", "data": clean_doc(doc)})
 
-def edit_version(versionName: str, data: AddVersionDto):
+def edit_version(versionName: str, data: AddVersionDto, userUid: str):
+    log_user(userUid, f"Edited version: {versionName}")
     update_fields = data.model_dump()
 
     # releaseDate는 수정하지 않음 (원한다면 수정 가능)
@@ -91,7 +95,8 @@ def get_version_list():
     return JSONResponse(status_code=200, content={"message": "Version list retrieved", "data": docs})
 
 
-def delete_version(versionName: str):
+def delete_version(versionName: str, userUid: str):
+    log_user(userUid, f"Deleted version: {versionName}")
     result = version_board_db.delete_one({"versionName": versionName})
     if result.deleted_count == 0:
         raise NotFoundException("Version not found")
@@ -118,7 +123,8 @@ def check_newest_version():
 # ----------- Bug Board -----------
 
 
-def add_bug(data: AddBugDto):
+def add_bug(data: AddBugDto, userUid: str):
+    log_user(userUid, f"Added new bug: {data.bugTitle}")
     doc = data.model_dump()
     writer = user_db.find_one({"uid": doc["writerUid"]})
     writerDoc = clean_doc(writer)
@@ -154,11 +160,13 @@ def add_bug(data: AddBugDto):
     return JSONResponse(status_code=201, content={"message": "Bug post created", "data": clean_doc(doc)})
 
 
-def get_bug(uid: str):
+def get_bug(uid: str, userUid: str):
     doc = bug_board_db.find_one({"uid": uid})
     if not doc:
         raise NotFoundException("Bug post not found")
 
+    log_user(userUid, f"Viewed bug: {doc['bugTitle']}")
+    
     return JSONResponse(status_code=200, content={"message": "Bug post retrieved", "data": clean_doc(doc)})
 
 
@@ -172,7 +180,8 @@ def get_bug_list():
     return JSONResponse(status_code=200, content={"message": "Bug list retrieved", "data": docs})
 
 
-def delete_bug(uid: str):
+def delete_bug(uid: str, userUid: str):
+    log_user(userUid, f"Deleted bug with UID: {uid}")
     result = bug_board_db.delete_one({"uid": uid})
     if result.deleted_count == 0:
         raise NotFoundException("Bug post not found")
@@ -181,7 +190,7 @@ def delete_bug(uid: str):
 # ----------- Free Board -----------
 
 
-def add_post(data: AddPostDto):
+def add_post(data: AddPostDto, userUid: str):
     doc = data.model_dump()
     doc["uid"] = str(uuid.uuid4())
     doc["datetime"] = datetime.now(timezone.utc)
@@ -203,6 +212,7 @@ def add_post(data: AddPostDto):
                 f"Post Text: {doc['text']}\n"
             )
             sendPushOver(msg, key)
+    log_user(userUid, f"Added new post: {data.title}")
 
     return JSONResponse(status_code=201, content={"message": "Post added", "data": clean_doc(doc)})
 
@@ -213,9 +223,10 @@ def get_post(uid: str, userUid: str):
         {"$addToSet": {"viewCnt": userUid}
          }, return_document=True)
 
-    if not doc:
+    if not doc: 
         raise NotFoundException("Post not found")
 
+    log_user(userUid, f"Viewed post: {doc['title']}")
     return JSONResponse(status_code=200, content={"message": "Post retrieved", "data": clean_doc(doc)})
 
 
@@ -230,14 +241,16 @@ def get_post_list():
     return JSONResponse(status_code=200, content={"message": "post list retrieved", "data": docs})
 
 
-def delete_post(uid: str):
+def delete_post(uid: str, userUid: str):
+    log_user(userUid, f"Deleted post with UID: {uid}")
     result = free_board_db.delete_one({"uid": uid})
     if result.deleted_count == 0:
         raise NotFoundException("Post not found")
     return JSONResponse(status_code=200, content={"message": "Post deleted"})
 
 
-def edit_post(postUid: str, data: AddPostDto):
+def edit_post(postUid: str, data: AddPostDto, userUid: str):
+    log_user(userUid, f"Edited post with UID: {postUid}")
     update_fields = data.model_dump()
 
     result = free_board_db.update_one(
