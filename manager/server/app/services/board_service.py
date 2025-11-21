@@ -186,7 +186,7 @@ def add_post(data: AddPostDto):
     doc["uid"] = str(uuid.uuid4())
     doc["datetime"] = datetime.now(timezone.utc)
     doc['writerName'] = user_db.find_one({"uid": doc["writerUid"]})['name']
-    doc["viewCnt"] = 0
+    doc["viewCnt"] = []
     free_board_db.insert_one(doc)
     doc["datetime"] = datetime.now(timezone.utc)
 
@@ -207,11 +207,10 @@ def add_post(data: AddPostDto):
     return JSONResponse(status_code=201, content={"message": "Post added", "data": clean_doc(doc)})
 
 
-def get_post(uid: str):
-
+def get_post(uid: str, userUid: str):
     doc = free_board_db.find_one_and_update(
         {"uid": uid},
-        {"$inc": {"viewCnt": 1}
+        {"$addToSet": {"viewCnt": userUid}
          }, return_document=True)
 
     if not doc:
@@ -225,6 +224,7 @@ def get_post_list():
 
     for doc in free_board_db.find().sort("datetime", -1):
         doc = clean_doc(doc)
+        doc['viewCnt'] = len(doc['viewCnt'])   
         docs.append(doc)
 
     return JSONResponse(status_code=200, content={"message": "post list retrieved", "data": docs})

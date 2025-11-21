@@ -47,5 +47,5 @@ class FreeBoardSchema(BaseModel):
     title: str
     text: str
     datetime: datetime
-    viewCnt: int
+    viewCnt: list
     
