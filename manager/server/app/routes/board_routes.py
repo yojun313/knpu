@@ -16,48 +16,48 @@ def create_version():
 
 
 @router.post("/version/add")
-def create_version(data: AddVersionDto):
-    return add_version(data)
+def create_version(data: AddVersionDto, userUid: str = Depends(verify_token)):
+    return add_version(data, userUid)
 
 @router.get("/version/{versionName}")
 def read_version(versionName: str):
     return get_version(versionName)
 
 @router.put("/version/{versionName}")
-def update_version(versionName: str, data: AddVersionDto):
-    return edit_version(versionName, data)
+def update_version(versionName: str, data: AddVersionDto, userUid: str = Depends(verify_token)):
+    return edit_version(versionName, data, userUid)
 
 @router.get("/version")
 def list_versions():
     return get_version_list()
 
 @router.delete("/version/{versionName}")
-def remove_version(versionName: str):
-    return delete_version(versionName)
+def remove_version(versionName: str, userUid: str = Depends(verify_token)):
+    return delete_version(versionName, userUid)
 
 # ---------------- Bug ----------------
 
 @router.post("/bug/add")
-def create_bug(data: AddBugDto):
-    return add_bug(data)
+def create_bug(data: AddBugDto, userUid: str = Depends(verify_token)):
+    return add_bug(data, userUid)
 
 @router.get("/bug/{uid}")
-def read_bug(uid: str):
-    return get_bug(uid)
+def read_bug(uid: str, userUid: str = Depends(verify_token)):
+    return get_bug(uid, userUid)
 
 @router.get("/bug")
 def list_bugs():
     return get_bug_list()
 
 @router.delete("/bug/{uid}")
-def remove_bug(uid: str):
-    return delete_bug(uid)
+def remove_bug(uid: str, userUid: str = Depends(verify_token)):
+    return delete_bug(uid, userUid)
 
 # ---------------- Free Board ----------------
 
 @router.post("/post/add")
-def create_post(data: AddPostDto):
-    return add_post(data)
+def create_post(data: AddPostDto, userUid: str = Depends(verify_token)):
+    return add_post(data, userUid)
 
 @router.get("/post/{uid}")
 def read_post(uid: str, userUid = Depends(verify_token)):
@@ -68,9 +68,9 @@ def list_posts():
     return get_post_list()
 
 @router.delete("/post/{uid}")
-def remove_post(uid: str):
-    return delete_post(uid)
+def remove_post(uid: str, userUid: str = Depends(verify_token)):
+    return delete_post(uid, userUid)
 
 @router.put("/post/{uid}")
-def update_post(uid: str, data: AddPostDto):
-    return edit_post(uid, data)
+def update_post(uid: str, data: AddPostDto, userUid: str = Depends(verify_token)):
+    return edit_post(uid, data, userUid)
