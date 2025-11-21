@@ -99,10 +99,10 @@ class MainWindow(QMainWindow):
                 print("\nII. Loading Data... ", end='')
 
                 self.DB = updateDB(self)
+                self.page_web_load = False
                 self.managerBoardObj = Manager_Board(self)
                 self.managerUserObj = Manager_User(self)
                 self.managerDatabaseObj = Manager_Database(self)
-                self.managerWebObj = Manager_Web(self)
                 self.managerAnalysisObj = Manager_Analysis(self)
                 print("Done")
                 
@@ -219,6 +219,9 @@ class MainWindow(QMainWindow):
             self.managerBoardObj.setBoardShortcut()
         # WEB
         elif index == 4:
+            if not self.page_web_load:
+                self.managerWebObj = Manager_Web(self)
+                self.page_web_load = True
             printStatus(self, "https://knpu.re.kr/publications")
             changeStatusbarAction(self, "WEB")
             self.managerWebObj.setWebShortcut()
