@@ -2,9 +2,6 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
 import socket
-from sshtunnel import SSHTunnelForwarder
-import warnings
-warnings.filterwarnings("ignore", module="paramiko")
 
 load_dotenv()
 
@@ -30,6 +27,9 @@ if is_server:
         f"@localhost:{MONGO_PORT}/?authSource={MONGO_AUTH_DB}"
     )
 else:
+    import warnings
+    warnings.filterwarnings("ignore", module="paramiko")
+    from sshtunnel import SSHTunnelForwarder
     # 외부에서 실행 → SSH 터널 사용
     server = SSHTunnelForwarder(
         (SSH_HOST, SSH_PORT),
