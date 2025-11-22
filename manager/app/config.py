@@ -10,7 +10,7 @@ ASSETS_PATH = os.path.join(os.path.dirname(__file__), "assets")
 ADMIN_PUSHOVERKEY = '***REMOVED***'
 ADMIN_PASSWORD = "***REMOVED***"
 
-mode = 0
+mode = 1
 
 if mode == 0:
     MANAGER_SERVER_API = "http://localhost:8000/api"
