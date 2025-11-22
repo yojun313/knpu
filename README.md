@@ -128,7 +128,7 @@
 
 ## CRAWLER
 
-- URL: [h](https://knpu.re.kr/manager)ttps://crawler.knpu.re.kr
+- URL: [https://crawler.knpu.re.kr](https://crawler.knpu.re.kr)
 - Architecture
     
     ```
