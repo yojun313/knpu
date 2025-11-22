@@ -37,3 +37,4 @@ uvicorn
 wordcloud
 PyQtWebEngine
 python-multipart
+sshtunnel
