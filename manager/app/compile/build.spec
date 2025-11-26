@@ -26,8 +26,8 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
-    noarchive=True,
-    optimize=2
+    noarchive=False,
+    optimize=0
 )
 
 pyz = PYZ(a.pure)
@@ -36,7 +36,7 @@ exe = EXE(
     pyz,
     a.scripts,
     [],
-    exclude_binaries=False,
+    exclude_binaries=True,
     name='MANAGER',
     debug=False,
     bootloader_ignore_signals=False,
