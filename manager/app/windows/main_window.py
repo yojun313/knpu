@@ -32,7 +32,7 @@ from services.pushover import sendPushOver
 from services.update import updateProgram
 from services.logging import userLogging, getUserLocation
 from services.auth import loginProgram
-from ui.style import theme_option, updateTableStyleHtml
+from ui.style import theme_option
 from ui.status import printStatus, changeStatusbarAction
 from ui.dialogs import ViewVersionDialog
 
@@ -51,7 +51,6 @@ class MainWindow(QMainWindow):
             initListWidget(self)
             initStatusbar(self)
 
-            updateTableStyleHtml(self)
             self.setWindowTitle("MANAGER")  # 창의 제목 설정
             self.setWindowIcon(QIcon(iconPath))
             self.resize(1400, 1000)
@@ -233,10 +232,7 @@ class MainWindow(QMainWindow):
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
                 printStatus(self, "설정 반영 중...")
-                QApplication.instance().setStyleSheet(
-                    theme_option[get_setting('Theme')])
-                updateTableStyleHtml(self)
-
+                QApplication.instance().setStyleSheet(theme_option[get_setting('Theme')])
                 self.managerDatabaseObj.refreshDB()
                 printStatus(self)
             previous_index = self.stackedWidget.currentIndex()  # 현재 활성 화면의 인덱스

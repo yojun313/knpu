@@ -168,27 +168,12 @@ class DownloadDialog(BaseDialog):
         # -----------------------
         self.msg_label = QLabel("다운로드 대기 중...")
         self.msg_label.setWordWrap(True)
-        self.msg_label.setStyleSheet("font-weight: bold; color: #333; font-size: 13px;")
         self.msg_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.pbar = QProgressBar()
         self.pbar.setValue(0)
         self.pbar.setTextVisible(True)
         self.pbar.setFormat("%p%")
-        self.pbar.setStyleSheet("""
-            QProgressBar {
-                border: 1px solid #bcbcbc;
-                border-radius: 8px;
-                background-color: #f0f0f0;
-                height: 22px;
-                text-align: center;
-                font-size: 12px;
-            }
-            QProgressBar::chunk {
-                background-color: #4CAF50;
-                border-radius: 8px;
-            }
-        """)
 
         bottom_layout = QHBoxLayout()
         bottom_layout.addWidget(self.msg_label, 2)
@@ -206,20 +191,6 @@ class DownloadDialog(BaseDialog):
 
     def complete_task(self, success=True):
         self.pbar.setValue(100 if success else 0)
-        self.pbar.setStyleSheet("""
-            QProgressBar {
-                border: 1px solid #bcbcbc;
-                border-radius: 8px;
-                background-color: #f0f0f0;
-                height: 22px;
-                text-align: center;
-                font-size: 12px;
-            }
-            QProgressBar::chunk {
-                background-color: %s;
-                border-radius: 8px;
-            }
-        """ % ("#4CAF50" if success else "#E74C3C"))
         self.msg_label.setText(
             "작업이 완료되었습니다." if success else "작업 중 오류가 발생했습니다."
         )
