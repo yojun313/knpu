@@ -58,29 +58,29 @@ def build_app():
 
     if platform.system() == 'Windows':
         theme = get_setting("Theme", "default")
-    else:
-        def is_mac_dark_mode():
-            """
-            macOS 시스템 설정에서 다크 모드 활성화 여부 확인
-            """
-            try:
-                import subprocess
-                # macOS 명령어를 사용하여 다크 모드 상태를 가져옴
-                result = subprocess.run(
-                    ["defaults", "read", "-g", "AppleInterfaceStyle"],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                # "Dark"가 반환되면 다크 모드가 활성화됨
-                #return "Dark" in result.stdout
-                return False
-            except Exception as e:
-                # 오류가 발생하면 기본적으로 라이트 모드로 간주
-                return False
-        theme = 'dark' if is_mac_dark_mode() else 'default'
-        set_setting("Theme", theme)
-
+    # else:
+    #     def is_mac_dark_mode():
+    #         """
+    #         macOS 시스템 설정에서 다크 모드 활성화 여부 확인
+    #         """
+    #         try:
+    #             import subprocess
+    #             # macOS 명령어를 사용하여 다크 모드 상태를 가져옴
+    #             result = subprocess.run(
+    #                 ["defaults", "read", "-g", "AppleInterfaceStyle"],
+    #                 stdout=subprocess.PIPE,
+    #                 stderr=subprocess.PIPE,
+    #                 text=True
+    #             )
+    #             # "Dark"가 반환되면 다크 모드가 활성화됨
+    #             #return "Dark" in result.stdout
+    #             return False
+    #         except Exception as e:
+    #             # 오류가 발생하면 기본적으로 라이트 모드로 간주
+    #             return False
+    #     theme = 'dark' if is_mac_dark_mode() else 'default'
+    #     set_setting("Theme", theme)
+    theme = get_setting("Theme", "default")
     app.setStyleSheet(theme_option[theme])
     
     palette = QPalette()

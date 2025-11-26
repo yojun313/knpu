@@ -99,7 +99,7 @@ class MainWindow(QMainWindow):
                 print("\nII. Loading Data... ", end='')
 
                 self.DB = updateDB(self)
-                self.page_web_load = False
+                self.managerWebObj = Manager_Web(self)
                 self.managerBoardObj = Manager_Board(self)
                 self.managerUserObj = Manager_User(self)
                 self.managerDatabaseObj = Manager_Database(self)
@@ -204,9 +204,6 @@ class MainWindow(QMainWindow):
             changeStatusbarAction(self, "DATABASE")
         # CRAWLER
         elif index == 1:
-            if not self.page_web_load:
-                self.managerWebObj = Manager_Web(self)
-                self.page_web_load = True
             printStatus(self, f"활성 크롤러 수: {self.activeCrawl}")
             changeStatusbarAction(self)
             resetShortcuts(self)
@@ -222,9 +219,6 @@ class MainWindow(QMainWindow):
             self.managerBoardObj.setBoardShortcut()
         # WEB
         elif index == 4:
-            if not self.page_web_load:
-                self.managerWebObj = Manager_Web(self)
-                self.page_web_load = True
             printStatus(self, "https://knpu.re.kr/publications")
             changeStatusbarAction(self, "WEB")
             self.managerWebObj.setWebShortcut()
