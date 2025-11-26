@@ -4,14 +4,13 @@ import requests
 import time
 from services.api import get_api_headers
 from libs.path import safe_path
-from PyQt5.QtCore import QThread, pyqtSignal
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 import zipfile
 from urllib.parse import unquote
 from ui.dialogs import BaseDialog
-from PyQt5.QtCore import Qt, pyqtSignal, QUrl, QTimer
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QProgressBar
-from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtCore import Qt, pyqtSignal, QUrl, QTimer, QThread
+from PyQt6.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QProgressBar
+from PyQt6.QtWebEngineWidgets import QWebEngineView
 from services.api import *
 from services.logging import *
 from config import MANAGER_PROGRESS_API
@@ -147,7 +146,7 @@ class DownloadDialog(BaseDialog):
             self.setMinimumHeight(400)
         else:
             self.setMinimumHeight(60)
-        self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
 
         self.layout = QVBoxLayout(self)
         self.update_text_signal.connect(self.update_message)
@@ -170,7 +169,7 @@ class DownloadDialog(BaseDialog):
         self.msg_label = QLabel("다운로드 대기 중...")
         self.msg_label.setWordWrap(True)
         self.msg_label.setStyleSheet("font-weight: bold; color: #333; font-size: 13px;")
-        self.msg_label.setAlignment(Qt.AlignCenter)
+        self.msg_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.pbar = QProgressBar()
         self.pbar.setValue(0)
@@ -243,9 +242,9 @@ class TaskStatusDialog(BaseDialog):
         self.setWindowTitle(title)
         self.resize(400, 75)
         
-        self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
         self.label = QLabel("작업을 준비 중입니다...", self)
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         layout = QVBoxLayout()
         layout.addWidget(self.label)

@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QDialog, QProgressBar, QPushButton, QDesktopWidget, QGridLayout, QWidget, QHBoxLayout
-from PyQt5.QtCore import Qt, QCoreApplication, QEventLoop
-from PyQt5.QtGui import QPixmap, QPainter, QBrush, QColor
+from PyQt6.QtWidgets import QVBoxLayout, QLabel, QDialog, QProgressBar, QPushButton, QGridLayout, QWidget, QHBoxLayout, QApplication
+from PyQt6.QtCore import Qt, QCoreApplication, QEventLoop
+from PyQt6.QtGui import QPixmap, QPainter, QBrush, QColor, QPen
 from ui.dialogs import BaseDialog
 import os
 from config import ASSETS_PATH
@@ -18,11 +18,14 @@ class SplashDialog(QDialog):
         self._step = 0
         
         if booting:
-            self.setWindowFlags(Qt.FramelessWindowHint |
-                                Qt.WindowStaysOnTopHint)  # 최상위 창 설정
-        self.setAttribute(Qt.WA_TranslucentBackground)  # 배경을 투명하게 설정
+            self.setWindowFlags(
+                Qt.WindowType.FramelessWindowHint |
+                Qt.WindowType.WindowStaysOnTopHint
+            )
+
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.initUI()
-        
+                
 
     def initUI(self):
         # 창 크기 설정
@@ -40,13 +43,13 @@ class SplashDialog(QDialog):
 
         # 전체 레이아웃을 중앙 정렬로 설정
         main_layout = QVBoxLayout(self)
-        main_layout.setAlignment(Qt.AlignCenter)
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.setContentsMargins(30, 30, 30, 30)  # 전체 여백 설정
         main_layout.setSpacing(15)  # 위젯 간격 확대
 
         # 프로그램 이름 라벨
         title_label = QLabel("MANAGER")
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet(
             f"font-size: 24px; font-family: 'Tahoma'; color: {text_color};")
         main_layout.addWidget(title_label)
@@ -54,22 +57,26 @@ class SplashDialog(QDialog):
         # 이미지 라벨
         image_label = QLabel(self)
         pixmap = QPixmap(os.path.join(ASSETS_PATH, "exe_icon.png"))
-        pixmap = pixmap.scaled(180, 180, Qt.KeepAspectRatio,
-                               Qt.SmoothTransformation)  # 이미지 크기 유지
+        pixmap = pixmap.scaled(
+            180,
+            180,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
         image_label.setPixmap(pixmap)
-        image_label.setAlignment(Qt.AlignCenter)
+        image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(image_label)
 
         # 버전 정보 라벨
         version_label = QLabel(f"Version {self.version}")
-        version_label.setAlignment(Qt.AlignCenter)
+        version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_label.setStyleSheet(
             f"font-size: 18px; font-family: 'Tahoma'; color: {text_color}; margin-top: 5px;")
         main_layout.addWidget(version_label)
 
         # 상태 메시지 라벨
         self.status_label = QLabel("Booting")
-        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status_label.setStyleSheet(
             f"font-size: 15px; font-family: 'Tahoma'; color: {gray_color}; margin-top: 8px;")
         main_layout.addWidget(self.status_label)
@@ -85,12 +92,12 @@ class SplashDialog(QDialog):
             QProgressBar {{background: transparent; border-radius:4px;}}
             QProgressBar::chunk {{background:{self._sub_color}; border-radius:4px;}}
         """)
-        main_layout.addWidget(self.bar, alignment=Qt.AlignCenter)
+        main_layout.addWidget(self.bar, alignment=Qt.AlignmentFlag.AlignCenter)
         
         # 저작권 정보 라벨
         copyrightLabel = QLabel(
             "Copyright © 2024 KNPU PAILAB\nAll rights reserved.")
-        copyrightLabel.setAlignment(Qt.AlignCenter)
+        copyrightLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         copyrightLabel.setStyleSheet(
             f"font-size: 15px; font-family: 'Tahoma'; color: {gray_color}; margin-top: 10px;")
         main_layout.addWidget(copyrightLabel)
@@ -101,10 +108,10 @@ class SplashDialog(QDialog):
     def paintEvent(self, event):
         # 둥근 모서리를 위한 QPainter 설정
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)  # 안티앨리어싱 적용
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = self.rect()
         painter.setBrush(QBrush(self.bg_color))
-        painter.setPen(Qt.NoPen)  # 테두리를 없애기 위해 Pen 없음 설정
+        painter.setPen(QPen(Qt.PenStyle.NoPen))  # PyQt6: PenStyle 스코프 사용
         painter.drawRoundedRect(rect, 30, 30)  # 모서리를 둥글게 (30px radius)
 
     def updateStatus(self, msg: str):
@@ -114,7 +121,9 @@ class SplashDialog(QDialog):
         self.bar.setValue(int(self._step / self.MAX_STEP * 100))
 
         for _ in range(2):
-            QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
+            QCoreApplication.processEvents(
+                QEventLoop.ProcessEventsFlag.AllEvents, 0
+            )
 
 class AboutDialog(BaseDialog):
     def __init__(self, version, theme="light", parent=None):
@@ -166,21 +175,21 @@ class AboutDialog(BaseDialog):
 
         title_label = QLabel("MANAGER")
         title_label.setStyleSheet(f"font-size: 24px; font-family: 'Tahoma'; color: {self.text_color};")
-        text_layout.addWidget(title_label, alignment=Qt.AlignLeft)
+        text_layout.addWidget(title_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
         version_label = QLabel(f"Version {self.version}")
         version_label.setStyleSheet(f"font-size: 18px; font-family: 'Tahoma'; color: {self.text_color};")
-        text_layout.addWidget(version_label, alignment=Qt.AlignLeft)
+        text_layout.addWidget(version_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
         desc_label = QLabel("MANAGER는 KNPU PAILAB에서 개발한 빅데이터 분석 및 관리 프로그램입니다.")
         desc_label.setWordWrap(True)
         desc_label.setStyleSheet(f"font-size: 14px; font-family: 'Tahoma'; color: {self.gray_color};")
-        text_layout.addWidget(desc_label, alignment=Qt.AlignLeft)
+        text_layout.addWidget(desc_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
         dev_label = QLabel('제작자: <a href="https://github.com/yojun313">github.com/yojun313</a>')
         dev_label.setOpenExternalLinks(True)
         dev_label.setStyleSheet(f"font-size: 14px; font-family: 'Tahoma'; color: {self.gray_color};")
-        text_layout.addWidget(dev_label, alignment=Qt.AlignLeft)
+        text_layout.addWidget(dev_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # 그리드에 배치
         grid.addWidget(image_container, 0, 0, alignment=Qt.AlignHCenter | Qt.AlignVCenter)
@@ -190,14 +199,14 @@ class AboutDialog(BaseDialog):
 
         # ----- 하단 공통: 저작권 + 닫기 버튼 -----
         copyright_label = QLabel("Copyright © 2024 KNPU PAILAB\nAll rights reserved.")
-        copyright_label.setAlignment(Qt.AlignCenter)
+        copyright_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         copyright_label.setStyleSheet(
             f"font-size: 14px; font-family: 'Tahoma'; color: {self.gray_color}; margin-top: 10px;")
         main_layout.addWidget(copyright_label)
 
         button_layout = QHBoxLayout()
         button_layout.setSpacing(15)
-        button_layout.setAlignment(Qt.AlignCenter)
+        button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
     
         # 업데이트 확인 버튼
         update_btn = QPushButton("업데이트 확인")
@@ -230,14 +239,14 @@ class AboutDialog(BaseDialog):
             }}
             QPushButton:hover {{ background-color: {self._button_hover_bg()}; }}
         """)
-        button_layout.addWidget(close_btn, alignment=Qt.AlignCenter)
+        button_layout.addWidget(close_btn, alignment=Qt.AlignmentFlag.AlignCenter)
         
         main_layout.addLayout(button_layout)
 
     def showEvent(self, event):
         super().showEvent(event)
         qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
+        cp = QApplication.primaryScreen().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 

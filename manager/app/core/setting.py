@@ -9,7 +9,7 @@ MANAGER · persistent settings helper
 from __future__ import annotations
 
 from typing import Any
-from PyQt5.QtCore import QSettings
+from PyQt6.QtCore import QSettings
 from config import VERSION
 
 # ── 1) Persistent store 객체 ───────────────────────────────────────────────────

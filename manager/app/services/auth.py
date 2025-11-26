@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QInputDialog, QMessageBox
-from PyQt5.QtWidgets import QLineEdit
+from PyQt6.QtWidgets import QInputDialog, QMessageBox
+from PyQt6.QtWidgets import QLineEdit
 import re
 import socket
 import traceback
@@ -25,7 +25,7 @@ def checkPassword(parent, admin=False, string=""):
         input_dialog.resize(300, 200)  # 원하는 크기로 설정
 
         # 비밀번호 입력 창 띄우기
-        ok = input_dialog.exec_()
+        ok = input_dialog.exec()
         password = input_dialog.textValue()
 
         # 영어 알파벳만 있는지 확인
@@ -60,7 +60,7 @@ def loginProgram(parent):
         inputDialogId.setWindowTitle('Login')
         inputDialogId.setLabelText('User Name:')
         inputDialogId.resize(300, 200)
-        ok = inputDialogId.exec_()
+        ok = inputDialogId.exec()
         userName = inputDialogId.textValue()
 
         if not ok:

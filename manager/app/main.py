@@ -1,14 +1,15 @@
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QFont, QFontDatabase, QPalette, QColor
+from PyQt6 import QtWebEngineWidgets
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QFont, QFontDatabase, QPalette, QColor
 import os
 import sys
 import platform
 from config import VERSION
 from windows.splash_window import SplashDialog
-from PyQt5.QtCore import QCoreApplication, Qt
+from PyQt6.QtCore import QCoreApplication, Qt
 from core.setting import get_setting, set_setting
 from ui.style import theme_option
-from PyQt5.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QGuiApplication
 from config import ASSETS_PATH
 from packaging import version
 
@@ -25,12 +26,11 @@ def build_app():
 
     # High DPI 스케일링 활성화
     os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu" 
-    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
-    QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
-    QCoreApplication.setAttribute(Qt.AA_Use96Dpi, True)
+    QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
+    Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+)
 
-    app = QApplication([])
+    app = QApplication(sys.argv)
     app.setApplicationName("MANAGER")
     app.setApplicationVersion(VERSION)
     app.setOrganizationName("PAILAB")
@@ -45,13 +45,16 @@ def build_app():
 
     # 글꼴
     font_path = os.path.join(ASSETS_PATH, "malgun.ttf")
-    # 등록
     font_id = QFontDatabase.addApplicationFont(font_path)
+
     if font_id != -1:
-        family = QFontDatabase.applicationFontFamilies(font_id)[0]
-        font = QFont(family)
-        font.setStyleStrategy(QFont.PreferAntialias)
-        app.setFont(font)
+        families = QFontDatabase.applicationFontFamilies(font_id)
+        if families:
+            font = QFont(families[0])
+            font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)  # ✅ 변경됨
+            app.setFont(font)
+        else:
+            print("⚠️ 폰트 패밀리를 찾을 수 없음:", font_path)
     else:
         print("⚠️ 폰트 로딩 실패:", font_path)
 
@@ -84,27 +87,27 @@ def build_app():
     
     palette = QPalette()
     if theme == 'default':
-        palette.setColor(QPalette.Window, QColor(240, 240, 240))          # 전체 배경
-        palette.setColor(QPalette.WindowText, Qt.black)                   # 윈도우 텍스트
-        palette.setColor(QPalette.Base, Qt.white)                         # 입력창, 리스트 배경
-        palette.setColor(QPalette.AlternateBase, QColor(225, 225, 225))   # 교차 줄 배경
-        palette.setColor(QPalette.Text, Qt.black)                         # 일반 텍스트
-        palette.setColor(QPalette.Button, QColor(240, 240, 240))          # 버튼 배경
-        palette.setColor(QPalette.ButtonText, Qt.black)                   # 버튼 텍스트
-        palette.setColor(QPalette.BrightText, Qt.red)                     # 경고 강조 텍스트
-        palette.setColor(QPalette.Highlight, QColor(76, 163, 224))        # 하이라이트 색 (파란색)
-        palette.setColor(QPalette.HighlightedText, Qt.white)              # 하이라이트된 글씨 색
+        palette.setColor(QPalette.ColorRole.Window, QColor(240, 240, 240))
+        palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.black)
+        palette.setColor(QPalette.ColorRole.Base, Qt.GlobalColor.white)
+        palette.setColor(QPalette.ColorRole.AlternateBase, QColor(225, 225, 225))
+        palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.black)
+        palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
+        palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.black)
+        palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+        palette.setColor(QPalette.ColorRole.Highlight, QColor(76, 163, 224))
+        palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.white)
     else:
-        palette.setColor(QPalette.Window, QColor(53, 53, 53))
-        palette.setColor(QPalette.WindowText, Qt.white)
-        palette.setColor(QPalette.Base, QColor(35, 35, 35))
-        palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-        palette.setColor(QPalette.Text, Qt.white)
-        palette.setColor(QPalette.Button, QColor(53, 53, 53))
-        palette.setColor(QPalette.ButtonText, Qt.white)
-        palette.setColor(QPalette.BrightText, Qt.red)
-        palette.setColor(QPalette.Highlight, QColor(142, 45, 197).lighter())
-        palette.setColor(QPalette.HighlightedText, Qt.black)
+        palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
+        palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+        palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))
+        palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+        palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white)
+        palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+        palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
+        palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+        palette.setColor(QPalette.ColorRole.Highlight, QColor(142, 45, 197).lighter())
+        palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.black)
     app.setPalette(palette)
 
     return app, theme
@@ -118,7 +121,7 @@ def main():
 
     from windows.main_window import MainWindow
     window = MainWindow(splash)
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

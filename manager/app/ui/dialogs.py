@@ -1,13 +1,13 @@
-from PyQt5.QtCore import Qt, QDate
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import Qt, QDate
+from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
     QTextEdit, QDialogButtonBox, QComboBox, QLabel, QDateEdit, QLineEdit, QHBoxLayout,
-    QShortcut, QFileDialog, QInputDialog
+    QFileDialog, QInputDialog
 )
 from services.api import *
 from services.logging import *
-from PyQt5.QtGui import QKeySequence, QFont
+from PyQt6.QtGui import QKeySequence, QFont, QShortcut
 from datetime import datetime
 
 class BaseDialog(QDialog):
@@ -258,8 +258,11 @@ class SaveDbDialog(BaseDialog):
         self.layout.addWidget(self.word_input_form)
 
         # 다이얼로그의 OK/Cancel 버튼
-        self.button_box = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons = (
+            QDialogButtonBox.StandardButton.Ok |
+            QDialogButtonBox.StandardButton.Cancel
+        )
+        self.button_box = QDialogButtonBox(buttons)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
 
@@ -744,7 +747,7 @@ class StatAnalysisDialog(BaseDialog):
 
         self.checkbox_group: list[QCheckBox] = []
 
-        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
         main_layout.addWidget(btns)
