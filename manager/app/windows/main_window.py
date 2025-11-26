@@ -204,6 +204,9 @@ class MainWindow(QMainWindow):
             changeStatusbarAction(self, "DATABASE")
         # CRAWLER
         elif index == 1:
+            if not self.page_web_load:
+                self.managerWebObj = Manager_Web(self)
+                self.page_web_load = True
             printStatus(self, f"활성 크롤러 수: {self.activeCrawl}")
             changeStatusbarAction(self)
             resetShortcuts(self)
