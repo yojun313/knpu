@@ -26,6 +26,8 @@ def build_app():
 
     # High DPI 스케일링 활성화
     os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu" 
+    os.environ["QTWEBENGINE_DISABLE_SANDBOX"] = "1"
+    
     QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
     Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
 )
