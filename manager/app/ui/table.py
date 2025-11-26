@@ -1,6 +1,7 @@
-from PyQt5.QtGui import QKeySequence
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QShortcut, QVBoxLayout, QTextEdit, QHeaderView, QDialog, QPushButton, QApplication
+from PyQt6.QtGui import QKeySequence
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QTableWidget, QAbstractItemView, QTableWidgetItem, QVBoxLayout, QTextEdit, QHeaderView, QDialog, QPushButton, QApplication
+from PyQt6.QtGui import QShortcut
 
 def makeTable(parent, widgetname, data, column, right_click_function=None, popupsize=None):
     def show_details(item):
@@ -50,21 +51,21 @@ def makeTable(parent, widgetname, data, column, right_click_function=None, popup
         shortcut2.activated.connect(parent.details_dialog.close)
 
         # 다이얼로그 실행
-        parent.details_dialog.exec_()
+        parent.details_dialog.exec()
 
     widgetname.setRowCount(len(data))
     widgetname.setColumnCount(len(column))
     widgetname.setHorizontalHeaderLabels(column)
-    widgetname.setSelectionBehavior(QTableWidget.SelectRows)
-    widgetname.setSelectionMode(QTableWidget.SingleSelection)
-    widgetname.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
+    widgetname.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+    widgetname.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+    widgetname.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+    
     for i, row_data in enumerate(data):
         for j, cell_data in enumerate(row_data):
             item = QTableWidgetItem(str(cell_data))
-            item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 설정
+            item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)  # 가운데 정렬 설정
             item.setToolTip(str(cell_data)+"\n\n더블클릭 시 상세보기")  # Tooltip 설정
-            item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # 수정 불가능 설정
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             widgetname.setItem(i, j, item)
 
     # 셀을 더블 클릭하면 show_details 함수를 호출
@@ -76,7 +77,7 @@ def makeTable(parent, widgetname, data, column, right_click_function=None, popup
     widgetname.itemDoubleClicked.connect(show_details)
 
     if right_click_function:
-        widgetname.setContextMenuPolicy(Qt.CustomContextMenu)
+        widgetname.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         widgetname.customContextMenuRequested.connect(
             lambda pos: right_click_function(widgetname.rowAt(pos.y()))
         )

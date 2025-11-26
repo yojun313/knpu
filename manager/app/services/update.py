@@ -3,8 +3,8 @@ import requests
 import traceback
 import subprocess
 import webbrowser
-from PyQt5.QtWidgets import QDialog, QPushButton, QMessageBox
-from PyQt5.QtCore import pyqtSignal, QThread
+from PyQt6.QtWidgets import QDialog, QPushButton, QMessageBox
+from PyQt6.QtCore import pyqtSignal, QThread
 from services.pushover import sendPushOver
 from services.logging import userLogging, getUserLocation, programBugLog
 from ui.status import printStatus
@@ -96,7 +96,7 @@ def downloadProgram(parent, newVersionName, reinstall=False):
     ))
 
     worker.start()
-    dialog.exec_()
+    dialog.exec()
 
 def updateProgram(parent, sc=False):
     
@@ -141,7 +141,7 @@ def updateProgram(parent, sc=False):
 
             dialog.add_buttons(update_btn, cancel_btn)
 
-            if dialog.exec_() == QDialog.Accepted:
+            if dialog.exec() == QDialog.DialogCode.Accepted:
                 update_process()
 
         # 새 버전 없음 (재설치 여부 묻기)
@@ -151,10 +151,10 @@ def updateProgram(parent, sc=False):
                     parent,
                     "Reinstall",
                     "현재 버전이 최신 버전입니다\n\n현재 버전을 재설치하시겠습니까?",
-                    QMessageBox.Yes | QMessageBox.No,
-                    QMessageBox.Yes
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes
                 )
-                if reply == QMessageBox.Yes:
+                if reply == QMessageBox.StandardButton.Yes:
                     printStatus(parent, "버전 재설치 중...")
                     downloadProgram(parent, newVersionName, reinstall=True)
                 else:
@@ -167,9 +167,9 @@ def updateProgram(parent, sc=False):
             parent,
             "Reinstall",
             "다운로드 웹페이지를 열어 수동 업데이트를 진행하시겠습니까?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes
         )
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             webbrowser.open("https://knpu.re.kr/download_manager")
         return
