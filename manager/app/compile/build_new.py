@@ -163,7 +163,7 @@ if __name__ == "__main__":
             # 예: 1.3.5
             pass
 
-        same_version_path = os.path.join(output_directory, f"MANAGER_{version}")
+        same_version_path = os.path.join(output_directory, f"MANAGER_{version}.dist")
         if os.path.exists(same_version_path):
             shutil.rmtree(same_version_path)
             console.print(f"[yellow]이전 동일 버전({version}) 디렉토리 삭제됨: {same_version_path}")
