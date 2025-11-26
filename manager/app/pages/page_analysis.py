@@ -19,7 +19,7 @@ from googletrans import Translator
 import json
 import requests
 import time
-from PyQt5.QtWidgets import QMessageBox, QFileDialog, QInputDialog, QDialog
+from PyQt6.QtWidgets import QMessageBox, QFileDialog, QInputDialog, QDialog
 from libs.console import *
 from libs.path import *
 from ui.finder import *
@@ -34,7 +34,7 @@ from services.logging import *
 from services.llm import *
 from services.csv import *
 from config import *
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal
 from .page_worker import Manager_Worker
 
 warnings.filterwarnings("ignore")
@@ -158,10 +158,10 @@ class Manager_Analysis(Manager_Worker):
                 self.main,
                 'Notification',
                 f"선택하신 파일을 시간 분할하시겠습니까?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.Yes
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes
             )
-            if reply != QMessageBox.Yes:
+            if reply != QMessageBox.StandardButton.Yes:
                 return
 
             # 3. 로그 기록
@@ -298,11 +298,11 @@ class Manager_Analysis(Manager_Worker):
             self.main,
             "ANALYZER 없음",
             "ANALYZER가 설치되어 있지 않습니다.\n지금 설치하시겠습니까?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             try:
                 openConsole("ANALYZER Download Process")
                 temp_dir = tempfile.gettempdir()
@@ -419,7 +419,7 @@ class Manager_Analysis(Manager_Worker):
 
             # 2) 옵션 선택 Dialog
             dialog = StatAnalysisDialog(filename=os.path.basename(filepath))
-            if dialog.exec_() != QDialog.Accepted:
+            if dialog.exec() != QDialog.DialogCode.Accepted:
                 printStatus(self.main)
                 return
 
@@ -516,7 +516,7 @@ class Manager_Analysis(Manager_Worker):
             # 3. 옵션 설정
             printStatus(self.main, "워드클라우드 옵션을 설정하세요")
             dialog = WordcloudDialog(os.path.basename(filepath))
-            dialog.exec_()
+            dialog.exec()
             if dialog.data is None:
                 printStatus(self.main)
                 return
@@ -592,7 +592,7 @@ class Manager_Analysis(Manager_Worker):
     def select_kemkim(self):
         dialog = SelectKemkimDialog(
             self.run_kemkim, self.modify_kemkim, self.interpret_kemkim)
-        dialog.exec_()
+        dialog.exec()
 
     def run_kemkim(self):
         class KemkimWorker(BaseWorker):
@@ -637,9 +637,9 @@ class Manager_Analysis(Manager_Worker):
             printStatus(self.main, "KEM KIM 옵션을 설정하세요")
             while True:
                 dialog = RunKemkimDialog(tokenfile_name)
-                result = dialog.exec_()
+                result = dialog.exec()
                 try:
-                    if result != QDialog.Accepted or dialog.data is None:
+                    if result != QDialog.DialogCode.Accepted or dialog.data is None:
                         return
                     startdate = dialog.data['startDate']
                     enddate = dialog.data['endDate']
@@ -843,7 +843,7 @@ class Manager_Analysis(Manager_Worker):
             printStatus(self.main, "옵션을 선택하세요")
 
             self.word_selector = ModifyKemkimDialog(all_keyword)
-            if self.word_selector.exec_() == QDialog.Accepted:
+            if self.word_selector.exec() == QDialog.DialogCode.Accepted:
                 selected_words = self.word_selector.selected_words
                 size_input = self.word_selector.size_input
                 eng_auto_option = self.word_selector.eng_auto_checked
@@ -1101,7 +1101,7 @@ class Manager_Analysis(Manager_Worker):
 
             from ui.dialogs import InterpretKemkimDialog
             self.word_selector = InterpretKemkimDialog(all_keyword)
-            if self.word_selector.exec_() == QDialog.Accepted:
+            if self.word_selector.exec() == QDialog.DialogCode.Accepted:
                 selected_words_2dim = self.word_selector.selected_words
                 selected_words = [
                     word for group in selected_words_2dim for word in group]
@@ -1172,8 +1172,8 @@ class Manager_Analysis(Manager_Worker):
                 result_directory), analysis_directory_name)
 
             reply = QMessageBox.question(
-                self.main, 'Notification', f'CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n데이터를 저장하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
+                self.main, 'Notification', f'CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n데이터를 저장하시겠습니까?', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if reply == QMessageBox.StandardButton.Yes:
                 os.makedirs(analyze_directory, exist_ok=True)
                 os.makedirs(os.path.join(analyze_directory,
                             'keyword_context'), exist_ok=True)
@@ -1223,8 +1223,8 @@ class Manager_Analysis(Manager_Worker):
 
             if any('Title' in word for word in list(filtered_object_csv_df.keys())):
                 reply = QMessageBox.question(
-                    self.main, 'Notification', f'키워드 필터링 데이터 저장이 완료되었습니다\n\nAI 분석을 진행하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
+                    self.main, 'Notification', f'키워드 필터링 데이터 저장이 완료되었습니다\n\nAI 분석을 진행하시겠습니까?', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                if reply == QMessageBox.StandardButton.Yes:
                     gpt_key = get_setting('GPT_Key')
                     if gpt_key == 'default' or len(gpt_key) < 20:
                         QMessageBox.information(
@@ -1288,7 +1288,7 @@ class Manager_Analysis(Manager_Worker):
     def select_tokenize(self):
         dialog = SelectTokenizeDialog(
             self.run_tokenize_file, self.run_modify_token, self.run_common_tokens)
-        dialog.exec_()
+        dialog.exec()
 
     def run_tokenize_file(self):
         class TokenizeWorker(BaseWorker):
@@ -1351,7 +1351,7 @@ class Manager_Analysis(Manager_Worker):
 
             printStatus(self.main, "토큰화할 CSV 열을 선택하세요")
             dialog = SelectColumnsDialog(column_names, parent=self.main)
-            if dialog.exec_() != QDialog.Accepted:
+            if dialog.exec() != QDialog.DialogCode.Accepted:
                 printStatus(self.main)
                 return
 
@@ -1364,11 +1364,11 @@ class Manager_Analysis(Manager_Worker):
             reply = QMessageBox.question(
                 self.main, "필수 포함 명사 입력",
                 "필수 포함 단어사전 입력하시겠습니까?\n\nEx) \"포항, 공대\" X | \"포항공대\"",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
             )
 
             include_word_list = []
-            if reply == QMessageBox.Yes:
+            if reply == QMessageBox.StandardButton.Yes:
                 printStatus(self.main, "필수 포함 단어 리스트(CSV)을 선택하세요")
                 include_word_list_path = QFileDialog.getOpenFileName(
                     self.main,
@@ -1434,7 +1434,7 @@ class Manager_Analysis(Manager_Worker):
 
             printStatus(self.main, "토큰 데이터가 있는 열을 선택하세요")
             dialog = SelectColumnsDialog(column_names, parent=self.main)
-            if dialog.exec_() != QDialog.Accepted:
+            if dialog.exec() != QDialog.DialogCode.Accepted:
                 printStatus(self.main)
                 return
             selected_columns = dialog.get_selected_columns()
@@ -1524,10 +1524,10 @@ class Manager_Analysis(Manager_Worker):
                     self.main,
                     "추가 선택",
                     "파일이 추가되었습니다.\n\n다른 토큰 CSV를 더 선택하시겠습니까?",
-                    QMessageBox.Yes | QMessageBox.No,
-                    QMessageBox.Yes
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes
                 )
-                if reply != QMessageBox.Yes:
+                if reply != QMessageBox.StandardButton.Yes:
                     break
 
             # 선택된 파일이 2개 미만이면 중단
@@ -1573,7 +1573,7 @@ class Manager_Analysis(Manager_Worker):
             df_headers = pd.read_csv(token_paths[0], nrows=0)
             column_names = df_headers.columns.tolist()
             dialog = SelectColumnsDialog(column_names, parent=self.main)
-            if dialog.exec_() != QDialog.Accepted:
+            if dialog.exec() != QDialog.DialogCode.Accepted:
                 printStatus(self.main)
                 return
             token_columns = dialog.get_selected_columns()
@@ -1688,7 +1688,7 @@ class Manager_Analysis(Manager_Worker):
 
     def select_etc_analysis(self):
         dialog = SelectEtcAnalysisDialog(self.run_hate_measure)
-        dialog.exec_()
+        dialog.exec()
 
     def run_hate_measure(self):
         class HateMeasureWorker(BaseWorker):
@@ -1770,7 +1770,7 @@ class Manager_Analysis(Manager_Worker):
 
             dialog = SelectColumnsDialog(column_names, parent=self.main)
             dialog.setWindowTitle("혐오도 분석할 텍스트 열 선택")
-            if dialog.exec_() != QDialog.Accepted:
+            if dialog.exec() != QDialog.DialogCode.Accepted:
                 printStatus(self.main)
                 return
 

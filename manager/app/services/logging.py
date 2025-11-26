@@ -1,7 +1,7 @@
 from services.api import Request
 import traceback
 from ui.status import printStatus
-from PyQt5.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox
 from config import VERSION
 import requests
 
@@ -31,9 +31,9 @@ def programBugLog(parent, text):
 
     userBugging(text)
 
-    reply = QMessageBox.question(parent, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
-                                    QMessageBox.Yes)
-    if reply == QMessageBox.Yes:
+    reply = QMessageBox.question(parent, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                    QMessageBox.StandardButton.Yes)
+    if reply == QMessageBox.StandardButton.Yes:
         parent.managerBoardObj.addBug()
 
     printStatus(parent)

@@ -15,12 +15,12 @@ import zipfile
 import bcrypt
 import webbrowser
 
-from PyQt5.QtCore import QSize, QThread, pyqtSignal, QTimer
-from PyQt5.QtGui import QKeySequence, QIcon
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import QSize, QThread, pyqtSignal, QTimer
+from PyQt6.QtGui import QKeySequence, QIcon, QShortcut
+from PyQt6.QtWidgets import (
     QWidget, QMainWindow, QDialog, QVBoxLayout, QTableWidget,
     QPushButton, QTabWidget,
-    QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, QShortcut
+    QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, 
 )
 from urllib.parse import unquote
 from libs.viewer import *
@@ -73,8 +73,8 @@ class Manager_Database(Manager_Worker):
                     confirm_msg = f"'{DBname}'를 삭제하시겠습니까?"
 
                 reply = QMessageBox.question(
-                    self.main, 'Confirm Delete', confirm_msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
+                    self.main, 'Confirm Delete', confirm_msg, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                if reply == QMessageBox.StandardButton.Yes:
                     Request('delete', f'crawls/{DBuid}')
 
                     if status == 'Working':
@@ -142,7 +142,7 @@ class Manager_Database(Manager_Worker):
 
                 # 상단 버튼
                 self.button_layout = QHBoxLayout()
-                spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+                spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
                 self.button_layout.addItem(spacer)
 
                 self.refreshButton = QPushButton("새로고침", self)
@@ -209,10 +209,10 @@ class Manager_Database(Manager_Worker):
                 self.main,
                 'Confirm View',
                 'DB 조회는 데이터의 처음과 마지막 50개의 행만 불러옵니다\n\n진행하시겠습니까?',
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.Yes
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes
             )
-            if reply == QMessageBox.Yes:
+            if reply == QMessageBox.StandardButton.Yes:
                 printStatus(self.main, "불러오는 중...")
 
                 def destory_table():
@@ -303,9 +303,9 @@ class Manager_Database(Manager_Worker):
                 reply = QMessageBox.question(
                     self.main, 'Program Delete',
                     f"'C:/MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
                 )
-                if reply == QMessageBox.Yes:
+                if reply == QMessageBox.StandardButton.Yes:
                     # ── 1) QSettings 값 제거 ─────────────────────
                     settings = QSettings("BIGMACLAB", "MANAGER")
                     settings.clear()
@@ -355,7 +355,7 @@ class Manager_Database(Manager_Worker):
 
                     from ui.dialogs import LogViewerDialog
                     dialog = LogViewerDialog(self.main, DBuid, data["content"])
-                    dialog.exec_()
+                    dialog.exec()
 
                 except Exception as e:
                     programBugLog(self.main, traceback.format_exc())
@@ -372,8 +372,8 @@ class Manager_Database(Manager_Worker):
                 self.main.database_searchDB_lineinput.clear()
                 reply = QMessageBox.question(self.main, 'Local Data Delete',
                                             f"로컬 디렉토리 '{self.main.localDirectory}'가 제거됩니다\n\n진행하시겠습니까?",
-                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes and os.path.exists(self.main.localDirectory):
+                                            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                if reply == QMessageBox.StandardButton.Yes and os.path.exists(self.main.localDirectory):
                     shutil.rmtree(self.main.localDirectory)
                     os.makedirs(self.main.localDirectory, exist_ok=True)
                 return
@@ -457,7 +457,7 @@ class Manager_Database(Manager_Worker):
             dialog = SaveDbDialog()
             option = {}
 
-            if dialog.exec_() == QDialog.Accepted:
+            if dialog.exec() == QDialog.DialogCode.Accepted:
                 pid = str(uuid.uuid4())
                 option['pid'] = pid
                 option['dateOption'] = 'all' if dialog.radio_all.isChecked() else 'part'

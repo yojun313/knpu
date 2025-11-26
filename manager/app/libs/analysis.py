@@ -1,6 +1,6 @@
 import asyncio
 import warnings
-from PyQt5.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns

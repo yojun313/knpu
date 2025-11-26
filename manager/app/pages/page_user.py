@@ -1,6 +1,6 @@
 import warnings
 import traceback
-from PyQt5.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox
 import bcrypt
 from ui.table import *
 from core.shortcut import *
@@ -49,8 +49,8 @@ class Manager_User:
                     return
 
             reply = QMessageBox.question(
-                self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
+                self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if reply == QMessageBox.StandardButton.Yes:
                 data = {
                     'name': name,
                     'email': email,
@@ -73,8 +73,8 @@ class Manager_User:
             if selectedRow >= 0:
                 selectedUser = self.user_list[selectedRow]
                 reply = QMessageBox.question(
-                    self.main, 'Confirm Delete', f"{selectedUser['name']}님을 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
+                    self.main, 'Confirm Delete', f"{selectedUser['name']}님을 삭제하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                if reply == QMessageBox.StandardButton.Yes:
                     response = Request('delete', f'/users/{selectedUser['uid']}')
                     if response.status_code == 200:
                         QMessageBox.information(self.main, "Information", f"'{selectedUser['name']}'님이 삭제되었습니다")

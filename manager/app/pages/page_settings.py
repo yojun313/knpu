@@ -1,8 +1,8 @@
-from PyQt5.QtWidgets import QWidget, QShortcut, QVBoxLayout, \
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, \
     QHBoxLayout, QLabel, QDialog, QLineEdit, QMessageBox, \
     QPushButton, QStackedWidget, QListWidget, QComboBox, QFileDialog
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QKeySequence, QFont
+from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QKeySequence, QFont, QShortcut
 from core.setting import *
 from config import VERSION
 from datetime import datetime
@@ -120,7 +120,7 @@ class Manager_Setting(QDialog):
         # 앱 테마 설정 섹션
         theme_layout = QHBoxLayout()
         theme_label = QLabel("앱 테마 설정:")
-        theme_label.setAlignment(Qt.AlignLeft)
+        theme_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         theme_label.setToolTip("MANAGER의 색 테마를 설정합니다")
 
         self.light_mode_toggle = QPushButton("라이트 모드")
@@ -155,7 +155,7 @@ class Manager_Setting(QDialog):
         # 부팅 스크린 사이즈 설정 섹션
         screen_size_layout = QHBoxLayout()
         screen_size_label = QLabel("부팅 시 창 크기:")
-        screen_size_label.setAlignment(Qt.AlignLeft)
+        screen_size_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         screen_size_label.setToolTip("MANAGER 부팅 시 기본 창 크기를 설정합니다")
 
         self.default_size_toggle = QPushButton("기본값")
@@ -190,7 +190,7 @@ class Manager_Setting(QDialog):
         # 부팅 스크린 사이즈 설정 섹션
         boot_terminal_layout = QHBoxLayout()
         boot_terminal_label = QLabel("부팅 시 터미널:")
-        boot_terminal_label.setAlignment(Qt.AlignLeft)
+        boot_terminal_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         boot_terminal_label.setToolTip("MANAGER 부팅 시 터미널 창 여부를 설정합니다")
 
         self.default_bootterminal_toggle = QPushButton("끄기")
@@ -226,7 +226,7 @@ class Manager_Setting(QDialog):
         # 자동 업데이트 설정 섹션
         auto_update_layout = QHBoxLayout()
         auto_update_label = QLabel("자동 업데이트:")
-        auto_update_label.setAlignment(Qt.AlignLeft)
+        auto_update_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         auto_update_label.setToolTip("MANAGER 부팅 시 자동 업데이트 여부를 설정합니다")
 
         self.default_update_toggle = QPushButton("끄기")
@@ -261,7 +261,7 @@ class Manager_Setting(QDialog):
         # LLM 옵션 선택 섹션
         llm_option_layout = QHBoxLayout()
         llm_option_label = QLabel("LLM 모델")
-        llm_option_label.setAlignment(Qt.AlignLeft)
+        llm_option_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         llm_option_label.setToolTip("LLM 모델을 선택하세요: ")
 
         self.llm_option_selector = QComboBox()
@@ -317,7 +317,7 @@ class Manager_Setting(QDialog):
 
         api_key_layout = QHBoxLayout()
         api_key_label = QLabel("ChatGPT API:")
-        api_key_label.setAlignment(Qt.AlignLeft)
+        api_key_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         api_key_label.setToolTip("ChatGPT 기능을 사용하기 위한 API Key를 설정합니다")
 
         self.api_key_input = QLineEdit()
@@ -379,7 +379,7 @@ class Manager_Setting(QDialog):
         # 내 DB만 표시 설정 섹션
         db_display_layout = QHBoxLayout()
         mydb_label = QLabel("내 DB만 표시:")
-        mydb_label.setAlignment(Qt.AlignLeft)
+        mydb_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         mydb_label.setToolTip("DB 목록에서 자신이 크롤링한 DB만 표시할지 여부를 설정합니다")
 
         self.default_mydb_toggle = QPushButton("끄기")
@@ -414,7 +414,7 @@ class Manager_Setting(QDialog):
         # DB 자동 새로고침 설정 섹션
         db_refresh_layout = QHBoxLayout()
         db_refresh_label = QLabel("DB 자동 새로고침:")
-        db_refresh_label.setAlignment(Qt.AlignLeft)
+        db_refresh_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         db_refresh_label.setToolTip(
             "DATABASE 섹션으로 이동 시 자동으로 DB 목록을 새로고침할지 여부를 설정합니다\n'Ctrl+R'로 수동 새로고침 가능합니다")
 
@@ -450,7 +450,7 @@ class Manager_Setting(QDialog):
         # DB 키워드 정렬 설정 섹션
         db_keywordsort_layout = QHBoxLayout()
         db_keywordsort_label = QLabel("DB 목록 정렬:")
-        db_keywordsort_label.setAlignment(Qt.AlignLeft)
+        db_keywordsort_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         db_keywordsort_label.setToolTip("DATABASE 섹션에서 DB 목록의 정렬 기준을 설정힙니다")
 
         self.default_dbkeywordsort_toggle = QPushButton("최신순")
@@ -534,7 +534,7 @@ class Manager_Setting(QDialog):
         user_info_section = QVBoxLayout()
         user_title_label = QLabel("사용자 정보")
         user_title_label.setStyleSheet("font-weight: bold;")
-        user_title_label.setAlignment(Qt.AlignLeft)
+        user_title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         # 사용자 정보 추가 (예: 이름, 이메일, 디바이스)
         userName_label = QLabel(f"이름: {self.main.user}")
@@ -568,7 +568,7 @@ class Manager_Setting(QDialog):
         manager_info_section = QVBoxLayout()
         manager_title_label = QLabel("MANAGER 정보")
         manager_title_label.setStyleSheet("font-weight: bold;")
-        manager_title_label.setAlignment(Qt.AlignLeft)
+        manager_title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         # MANAGER 정보 추가
         manager_version_label = QLabel(f"버전: {VERSION}")
@@ -621,26 +621,26 @@ class Manager_Setting(QDialog):
         # === 사용 설명서 영역 ===
         help_title_label = QLabel("Instructions\n")
         help_title_label.setStyleSheet("font-weight: bold;")
-        help_title_label.setAlignment(Qt.AlignLeft)
+        help_title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         help_text_label = QLabel("아래 링크를 클릭하여 사용 설명서를 확인하세요.")
-        help_text_label.setAlignment(Qt.AlignLeft)
+        help_text_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         link1_label = QLabel('<a href="https://knpu.re.kr/manager">MANAGER</a>')
         link1_label.setOpenExternalLinks(True)
-        link1_label.setAlignment(Qt.AlignLeft)
+        link1_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         link2_label = QLabel('<a href="https://knpu.re.kr/kemkim">KEM KIM</a>')
         link2_label.setOpenExternalLinks(True)
-        link2_label.setAlignment(Qt.AlignLeft)
+        link2_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         # === CSV 양식 다운로드 영역 ===
         format_title_label = QLabel("\nFormats\n")
         format_title_label.setStyleSheet("font-weight: bold;")
-        format_title_label.setAlignment(Qt.AlignLeft)
+        format_title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         format_text_label = QLabel("아래 링크를 클릭하여 CSV 양식을 다운로드하세요.")
-        format_text_label.setAlignment(Qt.AlignLeft)
+        format_text_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         # 다운로드 가능한 링크들
         links = {
@@ -660,7 +660,7 @@ class Manager_Setting(QDialog):
         for label, url in links.items():
             link_label = QLabel(f'<a href="{url}">{label}</a>')
             link_label.setOpenExternalLinks(False)
-            link_label.setAlignment(Qt.AlignLeft)
+            link_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
             link_label.linkActivated.connect(
                 lambda url=url: self.download_csv(url))
             help_layout.addWidget(link_label)

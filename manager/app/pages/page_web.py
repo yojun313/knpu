@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QVBoxLayout, QMessageBox
-from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtCore import QUrl
+from PyQt6.QtWidgets import QVBoxLayout, QMessageBox
+from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtCore import QUrl
 import warnings
 import traceback
 from core.shortcut import *
@@ -139,7 +139,7 @@ class Manager_Web:
     def addHomePaper(self):
         try:
             dialog = EditHomePaperDialog(parent=self.main)
-            if dialog.exec_():
+            if dialog.exec():
                 payload = dialog.get_payload()
                 Request("post", "edit/paper", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
@@ -152,7 +152,7 @@ class Manager_Web:
     def addHomeMember(self):
         try:
             dialog = EditHomeMemberDialog(parent=self.main)
-            if dialog.exec_():
+            if dialog.exec():
                 payload = dialog.get_payload()
                 Request("post", "edit/member", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
@@ -165,7 +165,7 @@ class Manager_Web:
     def addHomeNews(self):
         try:
             dialog = EditHomeNewsDialog(parent=self.main)
-            if dialog.exec_():
+            if dialog.exec():
                 payload = dialog.get_payload()
                 Request("post", "edit/news", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
@@ -182,8 +182,8 @@ class Manager_Web:
                 return
             selectedUid = self.paper_uid_list[selectedRow]
             reply = QMessageBox.question(
-                self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
+                self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if reply == QMessageBox.StandardButton.Yes:
                 Request("delete", "edit/paper", HOMEPAGE_EDIT_API,
                         params={"uid": selectedUid})
                 userLogging(f"WEB -> deleteHomePaper({self.paper_data[selectedRow][0]})")
@@ -198,8 +198,8 @@ class Manager_Web:
                 return
             selectedUid = self.member_uid_list[selectedRow]
             reply = QMessageBox.question(
-                self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
+                self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if reply == QMessageBox.StandardButton.Yes:
                 Request("delete", "edit/member", HOMEPAGE_EDIT_API,
                         params={"uid": selectedUid})
                 userLogging(f"WEB -> deleteHomeMember({self.member_data[selectedRow][0]})")
@@ -214,8 +214,8 @@ class Manager_Web:
                 return
             selectedUid = self.news_uid_list[selectedRow]
             reply = QMessageBox.question(
-                self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
+                self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if reply == QMessageBox.StandardButton.Yes:
                 Request("delete", "edit/news", HOMEPAGE_EDIT_API,
                         params={"uid": selectedUid})
                 userLogging(f"WEB -> deleteHomeNews({self.news_data[selectedRow][0]})")
@@ -242,7 +242,7 @@ class Manager_Web:
                 return
 
             dialog = EditHomePaperDialog(data=origin, parent=self.main)
-            if dialog.exec_():
+            if dialog.exec():
                 payload = dialog.get_payload()
                 payload["paper"]["uid"] = selectedUid  # uid 유지
                 Request("post", "edit/paper", HOMEPAGE_EDIT_API, json=payload)
@@ -269,7 +269,7 @@ class Manager_Web:
                 return
 
             dialog = EditHomeMemberDialog(data=origin, parent=self.main)
-            if dialog.exec_():
+            if dialog.exec():
                 payload = dialog.get_payload()
                 payload["uid"] = selectedUid
                 Request("post", "edit/member", HOMEPAGE_EDIT_API, json=payload)
@@ -296,7 +296,7 @@ class Manager_Web:
                 return
 
             dialog = EditHomeNewsDialog(data=origin, parent=self.main)
-            if dialog.exec_():
+            if dialog.exec():
                 payload = dialog.get_payload()
                 payload["uid"] = selectedUid
                 Request("post", "edit/news", HOMEPAGE_EDIT_API, json=payload)
@@ -324,7 +324,7 @@ class Manager_Web:
                 QMessageBox.warning(self.main, "오류", "논문 정보를 찾을 수 없습니다.")
                 return
             dialog = ViewHomePaperDialog(data=origin, parent=self.main)
-            dialog.exec_()
+            dialog.exec()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 
@@ -343,7 +343,7 @@ class Manager_Web:
                 QMessageBox.warning(self.main, "오류", "멤버 정보를 찾을 수 없습니다.")
                 return
             dialog = ViewHomeMemberDialog(data=origin, parent=self.main)
-            dialog.exec_()
+            dialog.exec()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 
@@ -362,7 +362,7 @@ class Manager_Web:
                 QMessageBox.warning(self.main, "오류", "뉴스 정보를 찾을 수 없습니다.")
                 return
             dialog = ViewHomeNewsDialog(data=origin, parent=self.main)
-            dialog.exec_()
+            dialog.exec()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 

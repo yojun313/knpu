@@ -1,6 +1,6 @@
 import traceback
 import warnings
-from PyQt5.QtWidgets import  QMessageBox
+from PyQt6.QtWidgets import  QMessageBox
 import bcrypt
 from config import *
 from ui.table import *
@@ -55,7 +55,7 @@ class Manager_Board:
             # QDialog를 상속받은 클래스 생성
             from ui.dialogs import AddVersionDialog
             dialog = AddVersionDialog(VERSION)
-            dialog.exec_()
+            dialog.exec()
 
             # 데이터를 addVersion 함수에서 사용
             if dialog.data:
@@ -69,8 +69,8 @@ class Manager_Board:
                 }
 
                 reply = QMessageBox.question(
-                    self.main, 'Confirm Notification', "업데이트 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
+                    self.main, 'Confirm Notification', "업데이트 알림을 전송하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                if reply == QMessageBox.StandardButton.Yes:
                     data['sendPushOver'] = True
 
                 Request('post', '/board/version/add', json=data)
@@ -96,7 +96,7 @@ class Manager_Board:
             # Edit Dialog 열기
             from ui.dialogs import EditVersionDialog
             dialog = EditVersionDialog(origin)
-            dialog.exec_()
+            dialog.exec()
 
             if dialog.data:
                 version_data = dialog.data
@@ -118,8 +118,8 @@ class Manager_Board:
             selectedRow = self.main.board_version_tableWidget.currentRow()
             if selectedRow >= 0:
                 reply = QMessageBox.question(
-                    self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
+                    self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                if reply == QMessageBox.StandardButton.Yes:
                     version = self.version_name_list[selectedRow]
                     Request('delete', f'/board/version/{version}')
 
@@ -138,7 +138,7 @@ class Manager_Board:
 
                 from ui.dialogs import ViewVersionDialog
                 dialog = ViewVersionDialog(self.main, version_data)
-                dialog.exec_()
+                dialog.exec()
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
@@ -163,7 +163,7 @@ class Manager_Board:
             # QDialog를 상속받은 클래스 생성
             from ui.dialogs import AddBugDialog
             dialog = AddBugDialog(self.main, VERSION)
-            dialog.exec_()
+            dialog.exec()
 
             # 데이터를 addVersion 함수에서 사용
             if dialog.data:
@@ -191,8 +191,8 @@ class Manager_Board:
 
                 if bug['writerUid'] == self.main.userUid or self.main.user == 'admin':
                     reply = QMessageBox.question(
-                        self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                    if reply == QMessageBox.Yes:
+                        self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                    if reply == QMessageBox.StandardButton.Yes:
                         printStatus(self.main, "삭제 중...")
                         Request('delete', f'/board/bug/{bug["uid"]}')
                         self.refreshBugBoard()
@@ -214,7 +214,7 @@ class Manager_Board:
                 printStatus(self.main)
                 from ui.dialogs import ViewBugDialog
                 dialog = ViewBugDialog(self.main, bug_data)
-                dialog.exec_()
+                dialog.exec()
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
@@ -239,7 +239,7 @@ class Manager_Board:
         try:
             from ui.dialogs import AddPostDialog
             dialog = AddPostDialog(self.main)
-            dialog.exec_()
+            dialog.exec()
 
             if dialog.data:
                 post_data = dialog.data
@@ -253,8 +253,8 @@ class Manager_Board:
                 }
 
                 reply = QMessageBox.question(
-                    self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
+                    self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                if reply == QMessageBox.StandardButton.Yes:
                     json_data['sendPushOver'] = True
 
                 Request('post', '/board/post/add', json=json_data)
@@ -276,7 +276,7 @@ class Manager_Board:
 
                 from ui.dialogs import ViewPostDialog
                 dialog = ViewPostDialog(self.main, post_data)
-                dialog.exec_()
+                dialog.exec()
 
                 self.refreshPostBoard()
 
@@ -291,8 +291,8 @@ class Manager_Board:
 
                 if post['writerUid'] == self.main.userUid or self.main.user == 'admin':
                     reply = QMessageBox.question(
-                        self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-                    if reply == QMessageBox.Yes:
+                        self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                    if reply == QMessageBox.StandardButton.Yes:
                         printStatus(self.main, "삭제 중...")
                         Request(
                             'delete', f'/board/post/{post["uid"]}')
@@ -317,7 +317,7 @@ class Manager_Board:
 
                     from ui.dialogs import EditPostDialog
                     dialog = EditPostDialog(prev_post_data)
-                    dialog.exec_()
+                    dialog.exec()
 
                     if dialog.data:
                         post_data = dialog.data
