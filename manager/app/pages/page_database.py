@@ -238,7 +238,7 @@ class Manager_Database(Manager_Worker):
             DBdata = Request('get', f'crawls/{DBuid}/info').json()['data']
             
             from ui.dialogs import DBInfoDialog
-            dialog = DBInfoDialog(self.main, DBdata, self.main.style_html)
+            dialog = DBInfoDialog(self.main, DBdata)
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
             dialog.show()
 
