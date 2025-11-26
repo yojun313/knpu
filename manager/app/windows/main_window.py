@@ -9,9 +9,9 @@ from pathlib import Path
 from datetime import datetime
 from packaging import version
 
-from PyQt5 import uic
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QPushButton
+from PyQt6 import uic
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QPushButton
 
 from config import VERSION, ASSETS_PATH
 from libs.console import openConsole, closeConsole
@@ -174,14 +174,14 @@ class MainWindow(QMainWindow):
             confirm_btn = QPushButton("확인")
             confirm_btn.clicked.connect(dialog.accept)
             dialog.add_buttons(confirm_btn)
-            dialog.exec_()
+            dialog.exec()
     
     def showNewPostInfo(self):
         newpost = checkNewPost(self)
         if newpost == True:
             reply = QMessageBox.question(
-                self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
+                self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if reply == QMessageBox.StandardButton.Yes:
                 self.managerBoardObj.viewPost(selectedRow=0)
     
     def closeBootscreen(self):
@@ -233,7 +233,7 @@ class MainWindow(QMainWindow):
         elif index == 6:
             userLogging(f'User Setting')
             dialog = Manager_Setting(self)
-            if dialog.exec_() == QDialog.Accepted:
+            if dialog.exec() == QDialog.DialogCode.Accepted:
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
                 printStatus(self, "설정 반영 중...")
                 QApplication.instance().setStyleSheet(
@@ -249,9 +249,9 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         # 프로그램 종료 시 실행할 코드
-        reply = QMessageBox.question(self, 'Shutdown', "프로그램을 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No,
-                                     QMessageBox.Yes)
-        if reply == QMessageBox.Yes:
+        reply = QMessageBox.question(self, 'Shutdown', "프로그램을 종료하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                     QMessageBox.StandardButton.Yes)
+        if reply == QMessageBox.StandardButton.Yes:
             try:
                 userLogging('Shutdown')
                 self.cleanUpTemp()

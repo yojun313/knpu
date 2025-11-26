@@ -1,8 +1,7 @@
-from PyQt5.QtCore import QCoreApplication, QEventLoop
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QScrollArea, QWidget
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QShortcut
+from PyQt6.QtCore import QCoreApplication, QEventLoop
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QScrollArea, QWidget
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeySequence, QShortcut
 import webbrowser
 import re
 
@@ -57,7 +56,7 @@ def showActiveThreadsDialog():
     QShortcut(QKeySequence("Ctrl+W"), dialog).activated.connect(dialog.reject)
     QShortcut(QKeySequence("Ctrl+ㅈ"), dialog).activated.connect(dialog.reject)
 
-    dialog.exec_()
+    dialog.exec()
  
 def printStatus(parent, msg=''):
     if len(active_threads) > 0:
@@ -73,7 +72,10 @@ def printStatus(parent, msg=''):
 
     for i in range(3):
         parent.rightLabel.setText(msg)
-        QCoreApplication.processEvents(QEventLoop.AllEvents, 0)
+        QCoreApplication.processEvents(
+            QEventLoop.ProcessEventsFlag.AllEvents,
+            0
+        )
 
 def changeStatusbarAction(parent, option: str = "DEFAULT"):
     try:

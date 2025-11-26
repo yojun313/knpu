@@ -5,10 +5,10 @@ import traceback
 import requests
 from packaging import version
 
-from PyQt5.QtCore import QSize, Qt, pyqtSignal
-from PyQt5.QtGui import QIcon, QKeySequence, QCursor
-from PyQt5.QtWidgets import (
-    QStatusBar, QLabel, QInputDialog, QShortcut, QMessageBox
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
+from PyQt6.QtGui import QIcon, QKeySequence, QCursor, QShortcut
+from PyQt6.QtWidgets import (
+    QStatusBar, QLabel, QInputDialog, QMessageBox
 )
 
 from config import ASSETS_PATH, VERSION, MANAGER_SERVER_API
@@ -51,7 +51,7 @@ def loginProgram(parent):
         inputDialogId.setWindowTitle('Login')
         inputDialogId.setLabelText('User Name:')
         inputDialogId.resize(300, 200)
-        ok = inputDialogId.exec_()
+        ok = inputDialogId.exec()
         userName = inputDialogId.textValue()
 
         if not ok:
@@ -113,17 +113,21 @@ def initStatusbar(parent):
     parent.setStatusBar(parent.statusbar)
 
     parent.leftLabel = ClickableLabel('  ' + f'Version {VERSION}')
-    parent.leftLabel.clicked.connect(lambda: AboutDialog(VERSION, "light" if get_setting("Theme") == "default" else "dark", parent).exec_())
+    parent.leftLabel.clicked.connect(lambda: AboutDialog(VERSION, "light" if get_setting("Theme") == "default" else "dark", parent).exec())
     parent.rightLabel = ClickableLabel('')
     parent.rightLabel.clicked.connect(lambda: showActiveThreadsDialog())
-    
-    parent.leftLabel.setCursor(QCursor(Qt.PointingHandCursor))
-    parent.rightLabel.setCursor(QCursor(Qt.PointingHandCursor))
+        
+    parent.leftLabel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+    parent.rightLabel.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
     parent.leftLabel.setToolTip("새 버전 확인을 위해 Ctrl+U")
-    parent.leftLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+    parent.leftLabel.setAlignment(
+        Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+    )
     parent.rightLabel.setToolTip("실행 중인 작업 보기")
-    parent.rightLabel.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+    parent.rightLabel.setAlignment(
+        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+    )
     parent.statusbar.addPermanentWidget(parent.leftLabel, 1)
     parent.statusbar.addPermanentWidget(parent.rightLabel, 1)
 
@@ -207,8 +211,8 @@ def checkNetwork(parent):
             parent.closeBootscreen()
             reply = QMessageBox.question(parent, "Internet Connection Error",
                                             "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?",
-                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
+                                            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if reply == QMessageBox.StandardButton.Yes:
                 continue
             else:
                 os._exit(0)
@@ -224,8 +228,8 @@ def checkNetwork(parent):
             parent.closeBootscreen()
             reply = QMessageBox.question(parent, "서버 연결 실패",
                                             f"서버에 연결할 수 없습니다.\n\n관리자에게 문의하십시오\n\n재시도하시겠습니까?",
-                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if reply == QMessageBox.Yes:
+                                            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if reply == QMessageBox.StandardButton.Yes:
                 continue
             else:
                 os._exit(0)
