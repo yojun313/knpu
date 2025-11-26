@@ -1,5 +1,5 @@
-from PyQt5.QtCore import QModelIndex
-from PyQt5.QtWidgets import QFileDialog, QSizePolicy, QAbstractItemView, QMessageBox
+from PyQt6.QtCore import QModelIndex
+from PyQt6.QtWidgets import QFileDialog, QSizePolicy, QAbstractItemView, QMessageBox, QTreeView, QHeaderView
 import subprocess
 import os
 from ui.status import printStatus
@@ -9,16 +9,18 @@ import platform
 def makeFileFinder(main_window, localDirectory=None):
     class EmbeddedFileDialog(QFileDialog):
         def __init__(self, parent=main_window, localDirectory=None):
-            super().__init__(parent)
-            self.setFileMode(QFileDialog.ExistingFiles)
-            self.setOptions(QFileDialog.DontUseNativeDialog)
+            super().__init__(parent)             
+            self.setFileMode(QFileDialog.FileMode.ExistingFiles)
+            self.setOptions(QFileDialog.Option.DontUseNativeDialog)
             self.setNameFilters(
                 ["All Files (*.*)", "CSV Files (*.csv)", "Text Files (*.txt)", "Images (*.png *.jpg *.jpeg)"])
             self.currentChanged.connect(self.on_directory_change)
             self.accepted.connect(self.on_accepted)
             self.rejected.connect(self.on_rejected)
-            self.setSizePolicy(QSizePolicy.Expanding,
-                               QSizePolicy.Expanding)
+            self.setSizePolicy(
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Expanding
+            )
             self.main = parent
             if localDirectory:
                 self.setDirectory(localDirectory)
@@ -26,18 +28,16 @@ def makeFileFinder(main_window, localDirectory=None):
 
             # QTreeView 찾아서 헤더뷰 리사이즈 모드 설정
             # QFileDialog가 Detail 모드일 때 내부적으로 QTreeView를 사용하므로 findChildren 사용
-            from PyQt5.QtWidgets import QTreeView, QHeaderView
+            
             for treeview in self.findChildren(QTreeView):
                 # Size(1번 열)와 Kind(2번 열) 숨기기
                 treeview.setColumnHidden(1, True)  # Size 숨기기
                 treeview.setColumnHidden(2, True)  # Kind 숨기기
                 header = treeview.header()
                 # 파일명 컬럼(일반적으로 첫 번째 컬럼)만 크기 자동 조정
-                header.setSectionResizeMode(
-                    0, QHeaderView.ResizeToContents)
-                # 나머지 컬럼들은 창 크기에 따라 비례적으로 늘어나도록 설정
+                header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
                 for col in range(1, header.count()):
-                    header.setSectionResizeMode(col, QHeaderView.Stretch)
+                    header.setSectionResizeMode(col, QHeaderView.ResizeMode.Stretch)
 
         def setup_double_click_event(self):
             def handle_double_click(index: QModelIndex):
@@ -111,7 +111,7 @@ def openFileExplorer(path):
 
 def openFileResult(parent, msg, filepath):
     printStatus(parent)
-    reply = QMessageBox.question(parent, 'Notification', msg, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-    if reply == QMessageBox.Yes:
+    reply = QMessageBox.question(parent, 'Notification', msg, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+    if reply == QMessageBox.StandardButton.Yes:
         openFileExplorer(filepath)
     return
