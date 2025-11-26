@@ -125,7 +125,7 @@ def build_exe_with_nuitka(main_script: str, output_directory: str, version: str)
         f"--output-dir={output_directory}",
         f"--output-filename={exe_name}",
         # PyQt5를 쓴다면 주석 해제
-        # "--enable-plugin=pyqt5",
+        "--enable-plugin=pyqt5",
         main_script,
     ]
 
