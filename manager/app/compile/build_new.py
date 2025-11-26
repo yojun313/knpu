@@ -118,14 +118,12 @@ def build_exe_with_nuitka(main_script: str, output_directory: str, version: str)
         VENV_PYTHON,
         "-m",
         "nuitka",
-        "--onefile",              # 단일 exe
-        "--standalone",           # 필요한 모든 라이브러리 포함
-        "--remove-output",        # 이전 빌드 결과 제거
-        "--windows-console-mode=disable",  # 콘솔창 숨김 (GUI 앱일 경우)
+        "--standalone",                 
+        "--remove-output",
+        "--windows-console-mode=disable",
+        "--enable-plugin=pyqt6",
         f"--output-dir={output_directory}",
-        f"--output-filename={exe_name}",
-        # PyQt5를 쓴다면 주석 해제
-        "--enable-plugin=pyqt5",
+        f"--output-filename=MANAGER_{version}",  
         f"--python-for-scons={VENV_PYTHON}",
         main_script,
     ]
@@ -136,7 +134,7 @@ def build_exe_with_nuitka(main_script: str, output_directory: str, version: str)
     if result.returncode != 0:
         raise RuntimeError(f"Nuitka 빌드 실패 (exit code {result.returncode})")
 
-    console.print(f"[green]✅ Nuitka 빌드 완료: {exe_name}")
+    console.print(f"[green]✅ Nuitka 빌드 완료: MANAGER_{version}.dist 생성됨")
 
 
 # -------------------------------
@@ -146,7 +144,7 @@ if __name__ == "__main__":
     output_directory = OUTPUT_DIRECTORY
 
     # 기존에 쓰던 iss 파일 경로
-    iss_path = os.path.join(SCRIPT_DIR, "setup.iss")
+    iss_path = os.path.join(SCRIPT_DIR, "setup_new.iss")
 
     while True:
         console.rule("[bold green]MANAGER 빌드 시스템 시작 (Nuitka 버전)")
@@ -206,11 +204,12 @@ if __name__ == "__main__":
         # -----------------------
         # 업로드
         # -----------------------
-        filename = f"MANAGER_{version}.exe"  # Inno Setup 결과물 이름과 맞추기
+        dist_folder = os.path.join(output_directory, f"MANAGER_{version}.dist")
+        installer_exe = os.path.join(output_directory, f"MANAGER_{version}.exe")
         console.print(
-            Panel.fit(f"[bold blue]Uploading {filename}", title="파일 업로드")
+            Panel.fit(f"[bold blue]Uploading {installer_exe}", title="파일 업로드")
         )
-        upload_file(filename)
+        upload_file(installer_exe)
         console.print("[green]업로드 완료")
 
         console.rule("[bold green]모든 작업 완료")
