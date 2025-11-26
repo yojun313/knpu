@@ -24,9 +24,15 @@ def build_app():
         "QT_SCALE_FACTOR": "1"
     })
 
-    # High DPI 스케일링 활성화
-    os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu" 
-    os.environ["QTWEBENGINE_DISABLE_SANDBOX"] = "1"
+    if platform.system() == "Windows":
+        qt_bin = os.path.join(sys.prefix, "Lib", "site-packages", "PyQt6", "Qt6", "bin")
+        os.environ["PATH"] += os.pathsep + qt_bin
+        os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-features=RendererCodeIntegrity"
+
+    # macOS sandbox disable
+    elif platform.system() == "Darwin":
+        os.environ["QTWEBENGINE_DISABLE_SANDBOX"] = "1"
+        os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu"
     
     QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
     Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
