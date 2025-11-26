@@ -12,6 +12,7 @@ from packaging import version
 from PyQt6 import uic
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QPushButton
+from PyQt6.QtCore import QTimer
 
 from config import VERSION, ASSETS_PATH
 from libs.console import openConsole, closeConsole
@@ -151,6 +152,18 @@ class MainWindow(QMainWindow):
             self.closeBootscreen()
             openConsole()
             print(traceback.format_exc())
+    
+    
+    def showEvent(self, event):
+        super().showEvent(event)
+        QTimer.singleShot(0, self.centerWindow)
+
+    def centerWindow(self):
+        screen = self.screen() or QApplication.primaryScreen()
+        geo = screen.availableGeometry()
+        frame = self.frameGeometry()
+        frame.moveCenter(geo.center())
+        self.move(frame.topLeft())
 
     ################################## Booting ##################################
 
