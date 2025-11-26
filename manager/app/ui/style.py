@@ -1,6 +1,3 @@
-from core.setting import get_setting
-
-# 전역 스타일시트 설정
 light_style_sheet = """
     QMainWindow {
         background-color: #ffffff;
@@ -265,6 +262,30 @@ light_style_sheet = """
         padding: 8px;
         font-size: 14px;
     }
+    QLabel#downloadMsgLabel {
+        font-weight: bold;
+        color: #333333;
+        font-size: 13px;
+    }
+
+    QProgressBar#downloadProgressBar {
+        border: 1px solid #bcbcbc;
+        border-radius: 8px;
+        background-color: #f0f0f0;
+        height: 22px;
+        text-align: center;
+        font-size: 12px;
+    }
+
+    QProgressBar#downloadProgressBar::chunk {
+        background-color: #4CAF50;   /* 기본: 성공/진행 중 초록색 */
+        border-radius: 8px;
+    }
+
+    /* 에러 상태일 때 색상 */
+    QProgressBar#downloadProgressBar[state="error"]::chunk {
+        background-color: #E74C3C;
+    }
     """
 
 dark_style_sheet = """
@@ -272,6 +293,10 @@ dark_style_sheet = """
         background-color: #2b2b2b;
         font-size: 14px;
         color: #eaeaea;  /* 기본 텍스트 색상 */
+    }
+    QWidget {
+        background-color: #2b2b2b;
+        color: #eaeaea;
     }
     QPushButton {
         background-color: #34495e;
@@ -289,6 +314,14 @@ dark_style_sheet = """
     }
     QPushButton:hover {
         background-color: #3a539b;
+    }
+    QPlainTextEdit {
+        background-color: #3c3c3c;
+        color: #eaeaea;
+        border: 1px solid #5a5a5a;
+        border-radius: 4px;
+        padding: 8px;
+        font-size: 14px;
     }
     QLineEdit {
         border: 1px solid #5a5a5a;
@@ -488,6 +521,13 @@ dark_style_sheet = """
         font-size: 14px;
     }
     
+    QComboBox QAbstractItemView {
+        background-color: #3c3c3c;
+        color: #ecf0f1;
+        selection-background-color: #34495e;
+        selection-color: #ffffff;
+    }
+    
     /* 드롭다운 버튼 스타일 */
     QComboBox::drop-down {
         subcontrol-origin: padding;
@@ -581,82 +621,33 @@ dark_style_sheet = """
         font-size: 14px;
         padding: 5px;
     }
+    QLabel#downloadMsgLabel {
+        font-weight: bold;
+        color: #eaeaea;
+        font-size: 13px;
+    }
 
+    QProgressBar#downloadProgressBar {
+        border: 1px solid #5a5a5a;
+        border-radius: 8px;
+        background-color: #3c3c3c;
+        height: 22px;
+        text-align: center;
+        font-size: 12px;
+        color: #eaeaea;
+    }
+
+    QProgressBar#downloadProgressBar::chunk {
+        background-color: #4CAF50;
+        border-radius: 8px;
+    }
+
+    QProgressBar#downloadProgressBar[state="error"]::chunk {
+        background-color: #E74C3C;
+    }
     """
 
 theme_option = {
     'default': light_style_sheet,
     'dark': dark_style_sheet
 }
-
-
-def updateTableStyleHtml(parent):
-    if get_setting('Theme') != 'default':
-        parent.style_html = f"""
-            <style>
-                h2 {{
-                    color: #2c3e50;
-                    text-align: center;
-                }}
-                table {{
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-family: Arial, sans-serif;
-                    font-size: 14px;
-                    color: white;
-                }}
-                th, td {{
-                    border: 1px solid #bdc3c7;
-                    padding: 8px;
-                    text-align: left;
-                }}
-                th {{
-                    background-color: #34495e;
-                    color: white;
-                }}
-                td {{
-                    color: white;
-                }}
-                .detail-content {{
-                    white-space: pre-wrap;
-                    margin-top: 5px;
-                    font-family: Arial, sans-serif;
-                    font-size: 14px;
-                }}
-            </style>
-        """
-    else:
-        parent.style_html = f"""
-            <style>
-                h2 {{
-                    color: #2c3e50;
-                    text-align: center;
-                }}
-                table {{
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-family: Arial, sans-serif;
-                    font-size: 14px;
-                    color: black;
-                }}
-                th, td {{
-                    border: 1px solid #bdc3c7;
-                    padding: 8px;
-                    text-align: left;
-                    color: white;
-                }}
-                th {{
-                    background-color: #34495e;
-                }}
-                td {{
-                    color: black;
-                }}
-                .detail-content {{
-                    white-space: pre-wrap;
-                    margin-top: 5px;
-                    font-family: Arial, sans-serif;
-                    font-size: 14px;
-                    color: black;
-                }}
-            </style>
-        """

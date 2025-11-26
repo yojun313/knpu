@@ -17,69 +17,28 @@ def build_app():
     if version.parse(VERSION) < version.parse(get_setting("LastVersion")):
         set_setting("LastVersion", VERSION)
     
-    os.environ.update({
-        "QT_DEVICE_PIXEL_RATIO": "0",
-        "QT_AUTO_SCREEN_SCALE_FACTOR": "1",
-        "QT_SCREEN_SCALE_FACTORS": "1",
-        "QT_SCALE_FACTOR": "1"
-    })
+    os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
+    os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
 
-    QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
-        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
-    )
+    QGuiApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 
     app = QApplication(sys.argv)
     app.setApplicationName("MANAGER")
     app.setApplicationVersion(VERSION)
     app.setOrganizationName("PAILAB")
     app.setWindowIcon(QIcon(os.path.join(ASSETS_PATH, 'exe_icon.png')))
-    
-    if platform.system() == "Windows":
-        app.setStyle("WindowsVista")
-    elif platform.system() == "Darwin":
-        app.setStyle("Fusion")   # macOS도 Fusion이 안정적
-    else:
-        app.setStyle("Fusion")
+    app.setStyle("Fusion")
 
     # 글꼴
     font_path = os.path.join(ASSETS_PATH, "malgun.ttf")
     font_id = QFontDatabase.addApplicationFont(font_path)
-
     if font_id != -1:
         families = QFontDatabase.applicationFontFamilies(font_id)
         if families:
-            font = QFont(families[0])
-            font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)  # ✅ 변경됨
-            app.setFont(font)
-        else:
-            print("⚠️ 폰트 패밀리를 찾을 수 없음:", font_path)
-    else:
-        print("⚠️ 폰트 로딩 실패:", font_path)
+            app_font = QFont(families[0], 10)
+            app_font.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
+            app.setFont(app_font)
 
-    if platform.system() == 'Windows':
-        theme = get_setting("Theme", "default")
-    # else:
-    #     def is_mac_dark_mode():
-    #         """
-    #         macOS 시스템 설정에서 다크 모드 활성화 여부 확인
-    #         """
-    #         try:
-    #             import subprocess
-    #             # macOS 명령어를 사용하여 다크 모드 상태를 가져옴
-    #             result = subprocess.run(
-    #                 ["defaults", "read", "-g", "AppleInterfaceStyle"],
-    #                 stdout=subprocess.PIPE,
-    #                 stderr=subprocess.PIPE,
-    #                 text=True
-    #             )
-    #             # "Dark"가 반환되면 다크 모드가 활성화됨
-    #             #return "Dark" in result.stdout
-    #             return False
-    #         except Exception as e:
-    #             # 오류가 발생하면 기본적으로 라이트 모드로 간주
-    #             return False
-    #     theme = 'dark' if is_mac_dark_mode() else 'default'
-    #     set_setting("Theme", theme)
     theme = get_setting("Theme", "default")
     app.setStyleSheet(theme_option[theme])
     
@@ -115,6 +74,7 @@ def main():
     app, theme = build_app()
     splash = SplashDialog(version=VERSION, theme=theme)
     splash.show()
+    QApplication.processEvents()
     splash.updateStatus("Loading System Libraries")
 
     from windows.main_window import MainWindow

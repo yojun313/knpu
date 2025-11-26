@@ -81,24 +81,6 @@ class Manager_Setting(QDialog):
         main_layout.addLayout(content_layout)
         main_layout.addLayout(button_layout)
 
-        self.setStyleSheet('''
-            QPushButton {
-                border: none;
-                border-radius: 5px;
-                padding: 9px;
-                font-size: 15px;
-            }
-            QLabel {
-                font-size: 14px;
-                font-family: 'Malgun Gothic';
-            }
-            QListWidget {
-                color: white;
-                font-family: 'Malgun Gothic';
-            }
-        '''
-                           )
-
         default_font = QFont(os.path.join(os.path.dirname(
             __file__), '..', 'assets', 'malgun.ttf'))  # 폰트 이름과 크기 지정
         self.setFont(default_font)

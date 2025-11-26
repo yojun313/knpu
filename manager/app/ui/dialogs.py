@@ -62,10 +62,9 @@ class BaseDialog(QDialog):
 
 
 class DBInfoDialog(BaseDialog):
-    def __init__(self, parent, DBdata, style_html):
+    def __init__(self, parent, DBdata):
         super().__init__(parent)
         self.DBdata = DBdata
-        self.style_html = style_html
         self.setWindowTitle(f"{DBdata['name']}_Info")
         self.resize(540, 600)
 
@@ -510,7 +509,7 @@ class AddPostDialog(BaseDialog):
 
 
 class ViewBugDialog(BaseDialog):
-    def __init__(self, parent, bug_data: dict):  # style_html은 더 이상 사용하지 않지만 시그니처 유지
+    def __init__(self, parent, bug_data: dict): 
         super().__init__(parent)
         self.setWindowTitle(f"Version {bug_data.get('versionName','')} Bug Details")
         self.resize(500, 600)
@@ -530,7 +529,7 @@ class ViewBugDialog(BaseDialog):
 
 
 class ViewVersionDialog(BaseDialog):
-    def __init__(self, parent, version_data, title=None):  # style_html 유지
+    def __init__(self, parent, version_data, title=None):
         super().__init__(parent)
         self.version_data = version_data  # [num, date, changelog, features, detail]
         if not title:
@@ -557,7 +556,7 @@ class ViewVersionDialog(BaseDialog):
 
 
 class ViewPostDialog(BaseDialog):
-    def __init__(self, parent, post_data: dict):  # style_html 유지
+    def __init__(self, parent, post_data: dict):
         super().__init__(parent)
         self.post_data = post_data
         self.setWindowTitle("Post View")
