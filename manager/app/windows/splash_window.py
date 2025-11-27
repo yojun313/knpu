@@ -155,7 +155,12 @@ class AboutDialog(BaseDialog):
         # --- 이미지 ---
         image_label = QLabel(self)
         pixmap = QPixmap(os.path.join(ASSETS_PATH, "exe_icon.png"))
-        pixmap = pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmap = pixmap.scaled(
+            150,
+            150,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
         image_label.setPixmap(pixmap)
 
         # 이미지가 컬럼 안에서 중앙에 오도록 컨테이너로 감싸기
@@ -163,7 +168,10 @@ class AboutDialog(BaseDialog):
         ic_layout = QVBoxLayout(image_container)
         ic_layout.setContentsMargins(0, 0, 0, 0)
         ic_layout.addStretch(1)
-        ic_layout.addWidget(image_label, alignment=Qt.AlignHCenter | Qt.AlignVCenter)
+        ic_layout.addWidget(
+            image_label,
+            alignment=Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter
+        )
         ic_layout.addStretch(1)
 
         # 너무 왼쪽으로 붙지 않도록 컬럼 자체에 적당한 너비를 부여
@@ -192,7 +200,7 @@ class AboutDialog(BaseDialog):
         text_layout.addWidget(dev_label, alignment=Qt.AlignmentFlag.AlignLeft)
 
         # 그리드에 배치
-        grid.addWidget(image_container, 0, 0, alignment=Qt.AlignHCenter | Qt.AlignVCenter)
+        grid.addWidget(image_container, 0, 0, alignment=Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
         grid.addLayout(text_layout, 0, 1)
 
         main_layout.addLayout(grid)
