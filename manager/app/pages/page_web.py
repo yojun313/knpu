@@ -63,7 +63,6 @@ class Manager_Web:
             programBugLog(self.main, traceback.format_exc())
 
     def web_buttonMatch(self):
-        self.main.crawler_server_button.clicked.connect(partial(self.web_open_crawler))
         self.main.web_addpaper_button.clicked.connect(self.addHomePaper)
         self.main.web_addmember_button.clicked.connect(self.addHomeMember)
         self.main.web_addnews_button.clicked.connect(self.addHomeNews)
