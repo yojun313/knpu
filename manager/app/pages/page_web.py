@@ -12,9 +12,9 @@ from ui.table import *
 from ui.status import changeStatusbarAction
 from services.logging import userLogging
 from functools import partial
+from core.setting import get_setting
 
 warnings.filterwarnings("ignore")
-
 
 class Manager_Web:
 
@@ -43,10 +43,27 @@ class Manager_Web:
             self.browser.show()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
+            
+    def web_open_crawler(self):
+        try:
+            if self.browser is not None:
+                self.crawler_web_layout.removeWidget(self.browser)
+                self.browser.deleteLater()
+
+            if get_setting("Theme") == 'default':
+                url = "https://crawler.knpu.re.kr?theme=light"
+            else:
+                url = "https://crawler.knpu.re.kr?theme=dark"
+            
+            self.browser = QWebEngineView()
+            self.browser.setUrl(QUrl(url))
+            self.crawler_web_layout.addWidget(self.browser)
+            self.browser.show()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
 
     def web_buttonMatch(self):
-        self.main.crawler_server_button.clicked.connect(partial(
-            self.web_open_webbrowser, "https://crawler.knpu.re.kr", self.crawler_web_layout))
+        self.main.crawler_server_button.clicked.connect(partial(self.web_open_crawler))
         self.main.web_addpaper_button.clicked.connect(self.addHomePaper)
         self.main.web_addmember_button.clicked.connect(self.addHomeMember)
         self.main.web_addnews_button.clicked.connect(self.addHomeNews)
