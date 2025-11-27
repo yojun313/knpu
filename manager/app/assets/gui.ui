@@ -136,17 +136,6 @@
         <item>
          <widget class="QWidget" name="crawler_webview" native="true"/>
         </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QPushButton" name="crawler_server_button">
-            <property name="text">
-             <string>크롤러 서버</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="page_data_process">

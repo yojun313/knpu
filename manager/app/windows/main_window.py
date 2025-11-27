@@ -223,6 +223,7 @@ class MainWindow(QMainWindow):
         # CRAWLER
         elif index == 1:
             printStatus(self, f"활성 크롤러 수: {self.activeCrawl}")
+            self.managerWebObj.web_open_crawler()
             changeStatusbarAction(self)
             resetShortcuts(self)
         # ANALYSIS
