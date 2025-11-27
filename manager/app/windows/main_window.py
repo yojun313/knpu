@@ -279,34 +279,6 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            # OS 표준 Temp 폴더 사용
-            temp_dir = Path(tempfile.gettempdir())
-
-            # PyInstaller 실행 여부 체크
-            is_frozen = getattr(sys, "frozen", False)
-            current_mei = None
-            if is_frozen:
-                current_mei = Path(sys._MEIPASS).resolve()
-
-            # 안전하게 특정 패턴만 삭제
-            for entry in temp_dir.iterdir():
-                name = entry.name
-
-                # 현재 실행 중인 _MEI 폴더는 절대 삭제 금지
-                if name.startswith("_MEI") and current_mei and entry.resolve() == current_mei:
-                    continue
-
-                # 삭제 대상 패턴만 확실하게 제한
-                if name.startswith(("PAILAB", "_MEI")):
-                    try:
-                        if entry.is_dir():
-                            shutil.rmtree(entry)
-                        else:
-                            entry.unlink()
-                        print(f"[Cleanup] removed: {entry}")
-                    except Exception as e:
-                        print(f"[Cleanup] failed: {entry} -> {e}")
-
             # 이전 설치 exe 정리
             exe_dir = Path(os.getenv("LOCALAPPDATA")) / "MANAGER"
             exe_dir.mkdir(exist_ok=True)
