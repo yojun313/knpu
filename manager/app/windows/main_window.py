@@ -5,6 +5,8 @@ import shutil
 import traceback
 import platform
 import socket
+import sys
+import tempfile
 from pathlib import Path
 from datetime import datetime
 from packaging import version
@@ -37,7 +39,6 @@ from ui.style import theme_option
 from ui.status import printStatus, changeStatusbarAction
 from ui.dialogs import ViewVersionDialog
 
-
 class MainWindow(QMainWindow):
 
     def __init__(self, splashDialog):
@@ -55,7 +56,6 @@ class MainWindow(QMainWindow):
             self.setWindowTitle("MANAGER")  # 창의 제목 설정
             self.setWindowIcon(QIcon(iconPath))
             self.resize(1400, 1000)
-            self.installEventFilter(self)
 
             try:
                 self.listWidget.setCurrentRow(0)
@@ -63,24 +63,7 @@ class MainWindow(QMainWindow):
                 self.startTime = datetime.now()
                 checkNetwork(self)
                 self.listWidget.currentRowChanged.connect(self.display)
-
-                if platform.system() == "Windows":
-                    localAppdataPath = os.getenv("LOCALAPPDATA")
-                    self.programDirectory = os.path.join(
-                        localAppdataPath, "MANAGER")
-
-                    documents_path = Path().home() / "Documents" / "MANAGER"
-                    if not documents_path.exists():
-                        documents_path.mkdir(parents=True, exist_ok=True)
-                    self.localDirectory = str(documents_path)
-                else:
-                    self.programDirectory = os.path.dirname(__file__)
-                    self.localDirectory = '/Users/yojunsmacbookprp/Documents/MANAGER'
-                    if not os.path.exists(self.localDirectory):
-                        os.makedirs(self.localDirectory)
-
-                if os.path.isdir(self.localDirectory) == False:
-                    os.mkdir(self.localDirectory)
+                self._resolve_app_paths()
 
                 self.networkText = (
                     "\n\n[ DB 접속 반복 실패 시... ]\n"
@@ -164,6 +147,29 @@ class MainWindow(QMainWindow):
         frame = self.frameGeometry()
         frame.moveCenter(geo.center())
         self.move(frame.topLeft())
+        
+    def _resolve_app_paths(self):
+        # 유저 문서 폴더 안에 MANAGER 생성
+        documents_dir = Path.home() / "Documents" / "MANAGER"
+        documents_dir.mkdir(parents=True, exist_ok=True)
+        self.localDirectory = str(documents_dir)
+
+        # 프로그램 설치/동작 경로 구분
+        if platform.system() == "Windows":
+            # PyInstaller 실행 환경 고려
+            if getattr(sys, 'frozen', False):
+                base_dir = Path(os.getenv("LOCALAPPDATA")) / "MANAGER"
+            else:
+                base_dir = Path(os.getenv("APPDATA")) / "MANAGER"
+        else:
+            # macOS / Linux 공통
+            if getattr(sys, 'frozen', False):
+                base_dir = Path(sys.executable).parent
+            else:
+                base_dir = Path(__file__).resolve().parent
+
+        base_dir.mkdir(parents=True, exist_ok=True)
+        self.programDirectory = str(base_dir)
 
     ################################## Booting ##################################
 
@@ -238,7 +244,8 @@ class MainWindow(QMainWindow):
         elif index == 5:
             printStatus(self)
             self.managerUserObj.user_shortcut_setting()
-
+        
+        # SETTING
         elif index == 6:
             userLogging(f'User Setting')
             dialog = Manager_Setting(self)
@@ -270,38 +277,56 @@ class MainWindow(QMainWindow):
     def cleanUpTemp(self):
         if platform.system() != "Windows":
             return
+
         try:
-            folder_path = 'C:/Temp'
+            # OS 표준 Temp 폴더 사용
+            temp_dir = Path(tempfile.gettempdir())
 
-            # BIGMACLAB 또는 _MEI로 시작하는 파일 및 폴더 삭제
-            for file_name in os.listdir(folder_path):
-                if file_name.startswith('BIGMACLAB') or file_name.startswith('_MEI'):
-                    file_path = os.path.join(folder_path, file_name)
+            # PyInstaller 실행 여부 체크
+            is_frozen = getattr(sys, "frozen", False)
+            current_mei = None
+            if is_frozen:
+                current_mei = Path(sys._MEIPASS).resolve()
 
-                    # 폴더인지 파일인지 확인하고 삭제
-                    if os.path.isdir(file_path):
-                        shutil.rmtree(file_path)  # 폴더 삭제
-                        print(f"Deleted folder: {file_path}")
-                    else:
-                        os.remove(file_path)  # 파일 삭제
-                        print(f"Deleted file: {file_path}")
+            # 안전하게 특정 패턴만 삭제
+            for entry in temp_dir.iterdir():
+                name = entry.name
+
+                # 현재 실행 중인 _MEI 폴더는 절대 삭제 금지
+                if name.startswith("_MEI") and current_mei and entry.resolve() == current_mei:
+                    continue
+
+                # 삭제 대상 패턴만 확실하게 제한
+                if name.startswith(("PAILAB", "_MEI")):
+                    try:
+                        if entry.is_dir():
+                            shutil.rmtree(entry)
+                        else:
+                            entry.unlink()
+                        print(f"[Cleanup] removed: {entry}")
+                    except Exception as e:
+                        print(f"[Cleanup] failed: {entry} -> {e}")
+
+            # 이전 설치 exe 정리
+            exe_dir = Path(os.getenv("LOCALAPPDATA")) / "MANAGER"
+            exe_dir.mkdir(exist_ok=True)
 
             pattern = re.compile(r"MANAGER_(\d+\.\d+\.\d+)\.exe")
-            exe_file_path = os.path.join(os.environ['LOCALAPPDATA'], 'MANAGER')
-            currentVersion = version.Version(VERSION)
+            current_ver = version.Version(VERSION)
 
-            for file_name in os.listdir(exe_file_path):
-                match = pattern.match(file_name)
+            for file in exe_dir.iterdir():
+                match = pattern.match(file.name)
                 if match:
-                    # 버전 추출 및 비교를 위해 Version 객체로 변환
-                    file_version = version.Version(match.group(1))
-                    # 현재 버전을 제외한 파일 삭제
-                    if file_version != currentVersion:
-                        file_path = os.path.join(exe_file_path, file_name)
-                        os.remove(file_path)
+                    file_ver = version.Version(match.group(1))
+                    if file_ver != current_ver:
+                        try:
+                            file.unlink()
+                            print(f"[Cleanup] removed old installer: {file}")
+                        except Exception as e:
+                            print(f"[Cleanup] failed to remove: {file} -> {e}")
 
         except Exception as e:
-            print(e)
+            print(f"[Cleanup ERROR] {e}")
 
     def updateProgram(self, sc=False):  
         updateProgram(self, sc)
