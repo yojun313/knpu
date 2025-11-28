@@ -12,6 +12,7 @@ import requests
 from config import *
 from ui.finder import *
 from libs.path import *
+from services.logging import userLogging
 
 class Manager_Setting(QDialog):
     def __init__(self, main):
@@ -729,5 +730,7 @@ class Manager_Setting(QDialog):
         set_setting('BootTerminal',   boot_terminal)
         set_setting('DBKeywordSort',  db_keywordsort)
         set_setting('LLM_model',      llm_model)
+        
+        userLogging(f"Settings Updated | Theme: {theme} | ScreenSize: {screen_size} | AutoUpdate: {auto_update} | MyDB: {my_db} | GPT_Key: {'Set' if api_key != 'default' and len(api_key) >=20 else 'Not Set'} | DB_Refresh: {db_refresh} | BootTerminal: {boot_terminal} | DBKeywordSort: {db_keywordsort} | LLM_model: {llm_model}")
 
         self.accept()
