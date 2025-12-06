@@ -1325,7 +1325,7 @@ class InterpretKemkimDialog(BaseDialog):
             group_layout = QVBoxLayout()
 
             # '모두 선택' 체크박스 추가
-            select_all_checkbox = QCheckBox("모두 선택", self)
+            select_all_checkbox = QCheckBox("모두 선택", group_box)
             select_all_checkbox.stateChanged.connect(
                 self.create_select_all_handler(group_name))
             group_layout.addWidget(select_all_checkbox)
@@ -1343,7 +1343,7 @@ class InterpretKemkimDialog(BaseDialog):
                 grid_layout.setColumnStretch(col, 1)
 
             for i, word in enumerate(sorted_words):
-                checkbox = QCheckBox(word, self)
+                checkbox = QCheckBox(word, group_box)
                 checkbox.stateChanged.connect(
                     self.create_individual_handler(group_name))
                 self.checkboxes.append(checkbox)
@@ -1395,16 +1395,25 @@ class InterpretKemkimDialog(BaseDialog):
 
     def create_select_all_handler(self, group_name):
         def select_all_handler(state):
+
+            # PyQt6의 state는 int (0,1,2)이며 Qt.CheckState.Checked.value == 2
+            try:
+                checked = (state == Qt.CheckState.Checked.value)
+            except AttributeError:
+                # PyQt5 fallback (Qt.Checked == 2)
+                checked = (state == Qt.Checked)
+
             group_checkboxes = [
                 cb for cb in self.checkboxes if cb.parentWidget().title() == group_name
             ]
+
             for checkbox in group_checkboxes:
-                checkbox.blockSignals(True)  # 시그널을 일시적으로 비활성화
-                checkbox.setChecked(state == Qt.Checked)
-                checkbox.blockSignals(False)  # 시그널 다시 활성화
-            # 모두 선택/해제 시, 다른 개별 체크박스 핸들러의 영향 없이 동작하게 하기 위해 시그널을 임시로 막아둠
+                checkbox.blockSignals(True)
+                checkbox.setChecked(checked)
+                checkbox.blockSignals(False)
 
         return select_all_handler
+
 
     def create_individual_handler(self, group_name):
         def individual_handler():
@@ -1599,14 +1608,22 @@ class ModifyKemkimDialog(BaseDialog):
 
     def create_select_all_handler(self, group_name):
         def select_all_handler(state):
+
+            # PyQt6의 state는 int (0,1,2)이며 Qt.CheckState.Checked.value == 2
+            try:
+                checked = (state == Qt.CheckState.Checked.value)
+            except AttributeError:
+                # PyQt5 fallback (Qt.Checked == 2)
+                checked = (state == Qt.Checked)
+
             group_checkboxes = [
                 cb for cb in self.checkboxes if cb.parentWidget().title() == group_name
             ]
+
             for checkbox in group_checkboxes:
-                checkbox.blockSignals(True)  # 시그널을 일시적으로 비활성화
-                checkbox.setChecked(state == Qt.Checked)
-                checkbox.blockSignals(False)  # 시그널 다시 활성화
-            # 모두 선택/해제 시, 다른 개별 체크박스 핸들러의 영향 없이 동작하게 하기 위해 시그널을 임시로 막아둠
+                checkbox.blockSignals(True)
+                checkbox.setChecked(checked)
+                checkbox.blockSignals(False)
 
         return select_all_handler
 
