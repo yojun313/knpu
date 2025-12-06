@@ -2,7 +2,7 @@
 
 ## MANAGER
 
-- URL: [https://knpu.re.kr/manager](https://knpu.re.kr/manager)
+- [Webpage](https://knpu.re.kr/manager)
 - Architecture
     
     ```
@@ -128,7 +128,7 @@
 
 ## CRAWLER
 
-- URL: [https://crawler.knpu.re.kr](https://crawler.knpu.re.kr)
+- [Webpage](https://crawler.knpu.re.kr)
 - Architecture
     
     ```
