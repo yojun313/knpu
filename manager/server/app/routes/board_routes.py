@@ -10,6 +10,7 @@ from app.libs.jwt import verify_token
 router = APIRouter()
 
 # ---------------- Version ----------------
+
 @router.get("/version/newest")
 def create_version():
     return check_newest_version()

@@ -13,6 +13,5 @@ def verify_user(name: str = Query(...), code: str = Query(...), device: str = Qu
 
 @router.get("/login")
 def login_with_token(Authorization: str = Header(...)):
-    # 토큰 앞에 'Bearer ' 붙어서 올 경우 대비
     token = Authorization.replace("Bearer ", "")
     return loginWithToken(token)
