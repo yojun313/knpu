@@ -118,7 +118,7 @@ def deleteCrawlDbBg(name: str):
         shutil.rmtree(folder_path, ignore_errors=True)
 
 
-def processDbInfo(crawlDb: dict, mine: int = 0, username: str = 'admin'):
+def processDbInfo(crawlDb: dict):
     name = crawlDb["name"]
     parts = name.split('_')
     typ = parts[0]
@@ -134,12 +134,6 @@ def processDbInfo(crawlDb: dict, mine: int = 0, username: str = 'admin'):
     crawlDb['endDate'] = parts[3]
     crawlDb['crawlOption'] = str(crawlDb['crawlOption'])
     crawlDb['crawlSpeed'] = str(crawlDb['crawlSpeed'])
-    
-    if username != 'admin' and crawlDb['requester'] == 'admin':
-        return False
-
-    if mine == 1 and crawlDb['requester'] != username:
-        return False
 
     # 상태 처리
     activeCrawl = False
@@ -171,8 +165,14 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     user = user_db.find_one({"uid": userUid})
     username = user['name']
 
-    # 1) Mongo 에서 모두 불러오기
-    cursor = crawlList_db.find()
+    if mine == 0:
+        if username == 'admin':
+            cursor = crawlList_db.find()
+        else:
+            cursor = crawlList_db.find({'requester': {'$ne': 'admin'}})
+    else:
+        cursor = crawlList_db.find({'requester': username})
+        
     crawlDbList = [clean_doc(d) for d in cursor]
     if not crawlDbList:
         crawlDbList = []
@@ -184,8 +184,6 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     # 2) 각 doc 가공
     for crawlDb in crawlDbList:
         processed = processDbInfo(crawlDb, mine, username)
-        if not processed:
-            continue
         processed_crawlDb, active = processed
         if processed_crawlDb:
             fullStorage += processed_crawlDb['dbSize_int'] / (1024 ** 3)
