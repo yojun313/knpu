@@ -47,7 +47,7 @@ def verify_code(name: str, code: str, device: str):
         raise NotFoundException("Invalid verification code")
 
     token_data = {
-        "sub": existing_user["uid"],  # 또는 name/email 등 식별자
+        "sub": existing_user["uid"],
         "name": existing_user["name"],
         "device": device,
     }
