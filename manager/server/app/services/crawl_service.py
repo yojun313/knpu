@@ -136,13 +136,11 @@ def processDbInfo(crawlDb: dict):
     crawlDb['crawlSpeed'] = str(crawlDb['crawlSpeed'])
 
     # 상태 처리
-    activeCrawl = False
     status = "Done"
     endt = crawlDb.get('endTime')
     if "%" in endt or endt == "토큰화 중":
         crawlDb['endTime'] = endt
         status = endt
-        activeCrawl = True
     elif endt == 'X':
         crawlDb['endTime'] = '오류 중단'
         status = 'Error'
@@ -158,7 +156,7 @@ def processDbInfo(crawlDb: dict):
 
     crawlDb['dbSize'] = format_size(size)
     crawlDb['dbSize_int'] = size
-    return crawlDb, activeCrawl
+    return crawlDb
 
 
 def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
@@ -183,20 +181,23 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         crawlDbList = []
 
     fullStorage = 0
-    activeCrawl = 0
 
     filteredList = []
     # 2) 각 doc 가공
     for crawlDb in crawlDbList:
         processed = processDbInfo(crawlDb)
-        processed_crawlDb, active = processed
-        if processed_crawlDb:
-            fullStorage += processed_crawlDb['dbSize_int'] / (1024 ** 3)
-            if active:
-                activeCrawl += 1
-            filteredList.append(processed_crawlDb)
+        if processed:
+            fullStorage += processed['dbSize_int'] / (1024 ** 3)
+            filteredList.append(processed)
 
     crawlDbList = filteredList
+    
+    activeCrawl = crawlList_db.count_documents({
+        "$or": [
+            {'endTime': "토큰화 중"},
+            {"endTime": {"$regex": "%"}}
+        ]
+    })
 
     # 4) 응답
     return JSONResponse(
@@ -219,7 +220,7 @@ def getCrawlDbInfo(uid: str, userUid: str = None):
     targetDB = crawlDb['name']
     log_user(userUid, f"Requested info for crawl DB: {targetDB}")
     
-    crawlDb, activeCrawl = processDbInfo(clean_doc(crawlDb))
+    crawlDb = processDbInfo(clean_doc(crawlDb))
     return JSONResponse(
         status_code=200,
         content={"message": "CrawlDB retrieved", "data": clean_doc(crawlDb)},
