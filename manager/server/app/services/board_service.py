@@ -19,7 +19,6 @@ load_dotenv()
 
 # ----------- Version Board -----------
 
-
 def add_version(data: AddVersionDto, userUid: str):
     log_user(userUid, f"Added new version: {data.versionName}")
     doc = data.model_dump()
@@ -122,7 +121,6 @@ def check_newest_version():
 
 # ----------- Bug Board -----------
 
-
 def add_bug(data: AddBugDto, userUid: str):
     log_user(userUid, f"Added new bug: {data.bugTitle}")
     doc = data.model_dump()
@@ -188,7 +186,6 @@ def delete_bug(uid: str, userUid: str):
     return JSONResponse(status_code=200, content={"message": "Bug post deleted"})
 
 # ----------- Free Board -----------
-
 
 def add_post(data: AddPostDto, userUid: str):
     doc = data.model_dump()

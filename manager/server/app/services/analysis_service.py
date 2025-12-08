@@ -72,7 +72,6 @@ def unload_models():
 def start_kemkim(option: KemKimOption, token_data):
 
     def cleanup_folder_and_zip(folder_path: str, zip_path: str):
-        # 폴더와 ZIP 파일을 삭제
         shutil.rmtree(folder_path, ignore_errors=True)
         try:
             os.remove(zip_path)
@@ -121,14 +120,14 @@ def start_kemkim(option: KemKimOption, token_data):
                 background=background_task,
             )
         elif result_path == 2:
-            # ❗예외 상황 메시지 응답
+            # 예외 상황 메시지 응답
             return JSONResponse(
                 status_code=400,
                 content={"error": "KEMKIM 분석 중 오류 발생",
                          "message": "시간 가중치 오류가 발생했습니다"}
             )
         elif result_path == 3:
-            # ❗예외 상황 메시지 응답
+            # 예외 상황 메시지 응답
             return JSONResponse(
                 status_code=400,
                 content={"error": "KEMKIM 분석 중 오류 발생",
@@ -136,7 +135,7 @@ def start_kemkim(option: KemKimOption, token_data):
             )
 
     except Exception as e:
-        # ❗예외 상황 메시지 응답
+        # 예외 상황 메시지 응답
         return JSONResponse(
             status_code=500,
             content={"error": "KEMKIM 분석 중 오류 발생", "message": str(e)}
@@ -155,16 +154,16 @@ def tokenization(
     ▸ columns        : 토큰화할 열 이름 또는 이름 리스트
     ▸ update_interval: 이 개수마다 진행률 메시지 전송
     """
-    # 1) Kiwi 한 번만 초기화
+    # Kiwi 한 번만 초기화
     kiwi = get_kiwi()
     for word in include_words:
         kiwi.add_user_word(word, 'NNP', score=10)
 
-    # 2) 단일 str → list
+    # 단일 str → list
     if isinstance(columns, str):
         columns = [columns]
 
-    # 3) 각 열을 순회
+    # 각 열을 순회
     for col in columns:
         if col not in data.columns:
             send_message(pid, f"⚠️  열 '{col}'이(가) 존재하지 않습니다 → 건너뜀")
@@ -222,7 +221,6 @@ def measure_hate(
       3 → clean 확률               → Clean 열
     """
 
-    # ───────────────────── 내부 헬퍼 ──────────────────────
     def batch_scores(texts: list[str]) -> list[dict[str, float]]:
         """문장 리스트 → [{label: prob}, ...] (둘째 자리 반올림)"""
         pipe, _ = get_models()
@@ -235,11 +233,11 @@ def measure_hate(
             {o["label"]: round(o["score"], 2) for o in each}
             for each in outs
         ]
-    # ─────────────────────────────────────────────────────
+
 
     pid, mode = option.pid, option.option_num
 
-    # ① 대상 열 탐색 -----------------------------------------------------------
+    # 대상 열 탐색 
     if text_col not in data.columns:
         for c in data.columns:
             if "text" in c.lower():
@@ -256,7 +254,7 @@ def measure_hate(
     
     send_message(pid, f"[혐오도 분석] '{text_col}' 처리 시작 (총 {total:,} rows)")
 
-    # ② 결과 버퍼 --------------------------------------------------------------
+    # 결과 버퍼 
     if mode == 1:
         results = [0.0] * total
     elif mode == 2:
@@ -267,12 +265,12 @@ def measure_hate(
     else:
         raise ValueError("option_num must be 1, 2, 또는 3 이어야 합니다")
 
-    # ③ 미리 비어있지 않은 인덱스 필터링 ---------------------------------------
+    # 미리 비어있지 않은 인덱스 필터링 
     non_empty_indices = [i for i, t in enumerate(texts) if t.strip()]
     non_empty_texts = [texts[i].strip() for i in non_empty_indices]
     total_non_empty = len(non_empty_indices)
 
-    # ④ 배치 추론 --------------------------------------------------------------
+    # 배치 추론 
     for batch_start in range(0, total_non_empty, batch_size):
         batch_end = min(batch_start + batch_size, total_non_empty)
         batch_idx = non_empty_indices[batch_start:batch_end]
@@ -297,7 +295,7 @@ def measure_hate(
             pct = round(batch_end / total_non_empty * 100, 2)
             send_message(pid, f"[혐오도 분석] {pct}% 완료 ({batch_end:,}/{total_non_empty:,})")
 
-    # ⑤ 결과 열 붙이기 -----------------------------------------------------------
+    # 결과 열 붙이기
     if mode == 1:
         data["Hate"] = results
     elif mode == 2:
@@ -342,7 +340,7 @@ def extract_keywords(
             chunks.append(current.strip())
         return chunks
 
-    # ① 대상 열 탐색 -----------------------------------------------------------
+    # 대상 열 탐색 
     if text_col not in data.columns:
         matches = [c for c in data.columns if "text" in c.lower()]
         if not matches:
@@ -355,12 +353,12 @@ def extract_keywords(
 
     send_message(pid, f"[토픽 분석] '{text_col}' 처리 시작 (총 {total:,} rows)")
 
-    # ② Kiwi 초기화 (한 번만)
+    # Kiwi 초기화
     kiwi = get_kiwi()
 
     keywords_col = [""] * total
 
-    # ③ 루프 시작 ---------------------------------------------------------------
+    # 루프 시작 
     for idx, text in enumerate(texts, 1):
         cleaned = text.strip()
         if cleaned:
@@ -399,7 +397,7 @@ def extract_keywords(
             pct = round(idx / total * 100, 2)
             send_message(pid, f"[토픽 분석] {pct}% 완료 ({idx:,}/{total:,})")
 
-    # ④ 결과 열 추가 -----------------------------------------------------------
+    # 결과 열 추가
     data["Keywords"] = keywords_col
     send_message(pid, "[토픽 분석] 완료")
     unload_models()

@@ -183,7 +183,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     fullStorage = 0
 
     filteredList = []
-    # 2) 각 doc 가공
+    # 각 doc 가공
     for crawlDb in crawlDbList:
         processed = processDbInfo(crawlDb)
         if processed:
@@ -199,7 +199,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         ]
     })
 
-    # 4) 응답
+    # 응답
     return JSONResponse(
         status_code=200,
         content={

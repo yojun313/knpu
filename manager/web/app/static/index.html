@@ -118,7 +118,6 @@
       const wsUrl    = `${protocol}//${location.host}/ws/${id}`;
       const ws       = new WebSocket(wsUrl);
 
-      /* 1️⃣ 메시지 핸들러를 ‘먼저’ 등록 */
       ws.addEventListener('message', (ev) => {
         try {
           const msg = JSON.parse(ev.data);
@@ -128,11 +127,9 @@
         }
       });
 
-      /* 2️⃣ 그 다음 open / close */
       ws.addEventListener('open',  () => addMessage('서버 연결됨'));
       ws.addEventListener('close', () => addMessage('서버 연결 해제', 'status'));
 
-      /* (선택) 오류 처리도 추가해 두면 디버깅에 도움 */
       ws.addEventListener('error', (e) => console.error('WS error', e));
     }
 

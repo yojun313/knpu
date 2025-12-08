@@ -23,7 +23,7 @@ Image.MAX_IMAGE_PIXELS = None  # 크기 제한 해제
 
 warnings.filterwarnings("ignore")
 
-# 1) 폰트 파일 경로
+# 폰트 파일 경로
 if platform.system() == 'Linux':
     font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
     fm.fontManager.addfont(font_path)
