@@ -167,12 +167,17 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
 
     if mine == 0:
         if username == 'admin':
-            cursor = crawlList_db.find()
+            query = {}
         else:
-            cursor = crawlList_db.find({'requester': {'$ne': 'admin'}})
+            query = {'requester': {'$ne': 'admin'}}
     else:
-        cursor = crawlList_db.find({'requester': username})
-        
+        query = {'requester': username}
+                
+    if sort_by == "keyword":
+        cursor = crawlList_db.find(query).sort("keyword", 1)
+    else:
+        cursor = crawlList_db.find(query).sort("startTime", -1)
+    
     crawlDbList = [clean_doc(d) for d in cursor]
     if not crawlDbList:
         crawlDbList = []
@@ -192,23 +197,6 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
             filteredList.append(processed_crawlDb)
 
     crawlDbList = filteredList
-
-    # 3) 정렬
-    if sort_by == "keyword":
-        crawlDbList.sort(key=lambda d: d.get('keyword', '').replace('"', ''))
-    elif sort_by == "starttime":
-        def _key(d):
-            st = d.get('startTime')
-            # 문자열이면 파싱, datetime 이면 그대로, 아니면 최소값
-            if isinstance(st, str): 
-                try:
-                    return datetime.strptime(st, "%Y-%m-%d %H:%M")
-                except:
-                    return datetime.min
-            if isinstance(st, datetime):
-                return st
-            return datetime.min
-        crawlDbList.sort(key=_key, reverse=True)
 
     # 4) 응답
     return JSONResponse(
