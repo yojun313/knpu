@@ -27,10 +27,12 @@ def userBugging(text=''):
 def programBugLog(parent, text):
     print(text)
     printStatus(parent, "오류 발생")
-    QMessageBox.critical(parent, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
+    if parent.user == 'admin':
+        QMessageBox.critical(parent, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
+    else:
+        QMessageBox.critical(parent, "Error", f"오류가 발생했습니다")
 
     userBugging(text)
-
     reply = QMessageBox.question(parent, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                     QMessageBox.StandardButton.Yes)
     if reply == QMessageBox.StandardButton.Yes:
