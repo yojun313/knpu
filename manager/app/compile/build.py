@@ -129,8 +129,10 @@ if __name__ == "__main__":
 
     while True:
         console.rule("[bold green]🚀 MANAGER 빌드 시스템 시작")
-        version = input("📦 Enter the program version ('r'=reuse, 'n'=next): ")
+        version = input("Enter the program version ('r'=reuse, 'n'=next): ")
 
+        build_start = datetime.now()
+         
         if version == 'r':
             version = currentVersion
         elif version == 'n':
@@ -147,7 +149,7 @@ if __name__ == "__main__":
 
         # Build
         console.print(
-            Panel.fit(f"[bold cyan]📦 빌드 시작: MANAGER {version}", title="PyInstaller"))
+            Panel.fit(f"[bold cyan]빌드 시작: MANAGER {version}", title="PyInstaller"))
         build_exe_from_spec(spec_file, output_directory, version)
         console.print("[green]빌드 완료")
 
@@ -156,7 +158,7 @@ if __name__ == "__main__":
         current_time = now.strftime("%Y-%m-%d %H:%M")
         currentVersion = version
         console.print(
-            Panel.fit(f"[bold green]🕒 {current_time}\n빌드 완료: MANAGER_{version}"))
+            Panel.fit(f"[bold green]{current_time}\n빌드 완료: MANAGER_{version}"))
 
         # Inno Setup update
         console.print(Panel.fit(f"[bold magenta]⚙️ Inno Setup 버전 정보 업데이트", title="setup.iss 처리"))
@@ -164,7 +166,7 @@ if __name__ == "__main__":
         # 임시 파일 생성
         temp_iss_path = update_inno_version(iss_path, version)
 
-        console.print("[bold cyan]📦 Inno Setup 실행 중...")
+        console.print("[bold cyan]Inno Setup 실행 중...")
         subprocess.run(
             [r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe", temp_iss_path])
 
@@ -175,11 +177,17 @@ if __name__ == "__main__":
         # Upload
         filename = f"MANAGER_{version}.exe"
         console.print(
-            Panel.fit(f"[bold blue]☁️ Uploading {filename}", title="파일 업로드"))
+            Panel.fit(f"[bold blue]Uploading {filename}", title="파일 업로드"))
         upload_file(filename)
         console.print("[green]업로드 완료")
 
-        console.rule("[bold green]🎉 모든 작업 완료")
-        sendPushOver(f"MANAGER {version} 빌드 완료\n\n{current_time}")
+        console.rule("[bold green]컴파일 및 배포 완료")
+        
+        build_end = datetime.now()
+        elapsed = build_end - build_start
+        elapsed_min = elapsed.total_seconds() // 60
+        elapsed_sec = int(elapsed.total_seconds() % 60)
+        
+        sendPushOver(f"MANAGER {version} 빌드 완료\n\n소요시간: {int(elapsed_min)}분 {elapsed_sec}초")
         
         
