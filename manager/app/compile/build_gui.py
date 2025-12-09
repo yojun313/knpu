@@ -122,7 +122,21 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
             new_spec_file
         ]
         log(f"Running PyInstaller: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True)
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+        if result.stdout:
+            log(result.stdout)
+
+        if result.stderr:
+            log("[PyInstaller 오류]\n" + result.stderr)
+
+        if result.returncode != 0:
+            raise RuntimeError("PyInstaller 빌드 실패")
         log(f"Finished building {exe_name}.exe")
     finally:
         # cleanup
