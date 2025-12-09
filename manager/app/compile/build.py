@@ -128,7 +128,7 @@ if __name__ == "__main__":
     iss_path = os.path.join(os.path.dirname(__file__), 'setup.iss')
 
     while True:
-        console.rule("[bold green]🚀 MANAGER 빌드 시스템 시작")
+        console.rule("[bold green]MANAGER 빌드 및 배포 시스템")
         version = input("Enter the program version ('r'=reuse, 'n'=next): ")
 
         build_start = datetime.now()
@@ -145,7 +145,7 @@ if __name__ == "__main__":
             output_directory, f"MANAGER_{version}")
         if os.path.exists(same_version_path):
             shutil.rmtree(same_version_path)
-            console.print(f"[yellow]⚠️ 이전 동일 버전({version}) 디렉토리 삭제됨")
+            console.print(f"[yellow]이전 동일 버전({version}) 디렉토리 삭제됨")
 
         # Build
         console.print(
@@ -161,7 +161,7 @@ if __name__ == "__main__":
             Panel.fit(f"[bold green]{current_time}\n빌드 완료: MANAGER_{version}"))
 
         # Inno Setup update
-        console.print(Panel.fit(f"[bold magenta]⚙️ Inno Setup 버전 정보 업데이트", title="setup.iss 처리"))
+        console.print(Panel.fit(f"[bold magenta]Inno Setup 버전 정보 업데이트", title="setup.iss 처리"))
 
         # 임시 파일 생성
         temp_iss_path = update_inno_version(iss_path, version)
