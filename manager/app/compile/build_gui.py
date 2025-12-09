@@ -126,7 +126,8 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            cwd=os.path.dirname(spec_file)
         )
 
         if result.stdout:
