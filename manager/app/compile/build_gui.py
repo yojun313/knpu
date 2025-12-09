@@ -136,22 +136,27 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
         except Exception as e:
             log(f"[경고] 임시 파일 정리 중 오류 발생: {e}")
 
-
-def read_current_version_from_iss(iss_path: str) -> str | None:
+def read_latest_built_version() -> str | None:
     """
-    setup.iss 파일에서 MyAppVersion 값을 읽어옴.
+    OUTPUT_DIRECTORY 내부에서 MANAGER_x.y.z 형식의 폴더명을 읽고,
+    가장 최신 버전을 반환한다.
     """
-    if not os.path.exists(iss_path):
+    if not os.path.exists(OUTPUT_DIRECTORY):
         return None
 
-    pattern = r'#define\s+MyAppVersion\s+"([\w.\-]+)"'
-    with open(iss_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            m = re.search(pattern, line)
-            if m:
-                return m.group(1)
-    return None
+    versions = []
+    for name in os.listdir(OUTPUT_DIRECTORY):
+        match = re.match(r"MANAGER_([\w.\-]+)$", name)
+        if match:
+            try:
+                versions.append(Version(match.group(1)))
+            except:
+                continue
 
+    if not versions:
+        return None
+
+    return str(max(versions))
 
 # ----------------------------------------
 # 빌드 작업용 Worker (QThread에서 실행)
@@ -178,12 +183,12 @@ class BuildWorker(QObject):
     def _log(self, msg: str):
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.log_signal.emit(f"[{timestamp}] {msg}")
-
+    
     def run(self):
         start_time = datetime.now()
         try:
             # 1) 현재 버전 읽기
-            current_version = read_current_version_from_iss(self.iss_path)
+            current_version = read_latest_built_version()
             if not current_version:
                 raise RuntimeError("setup.iss 에서 현재 버전을 읽을 수 없습니다.")
 
@@ -434,7 +439,7 @@ class MainWindow(QMainWindow):
         )
 
     def load_current_version(self):
-        version = read_current_version_from_iss(self.iss_path)
+        version = read_latest_built_version()
         if version:
             self.current_version_label.setText(f"현재 버전: {version}")
         else:
