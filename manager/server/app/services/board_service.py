@@ -80,11 +80,9 @@ def edit_version(versionName: str, data: AddVersionDto, userUid: str):
         {"$set": update_fields}
     )
 
-    updated_doc = clean_doc(version_board_db.find_one({"versionName": update_fields["versionName"]}))
-
     return JSONResponse(
         status_code=200,
-        content={"message": "Version updated", "data": updated_doc},
+        content={"message": "Version updated"},
     )
     
 def get_version_list():
