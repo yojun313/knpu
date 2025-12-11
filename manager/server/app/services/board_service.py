@@ -72,8 +72,7 @@ def get_version(versionName: str):
 def edit_version(versionName: str, data: AddVersionDto, userUid: str):
     log_user(userUid, f"Edited version: {versionName}")
     update_fields = data.model_dump()
-    update_fields['releaseDate'] = datetime.now(
-        ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
+    update_fields['releaseDate'] = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
     
     version_board_db.update_one(
         {"versionName": versionName},
