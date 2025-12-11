@@ -81,19 +81,19 @@ class DataProcess:
         info = {}
 
         # 디렉토리 생성
-        os.mkdir(data_path + "/" + folder_name)
+        folder_path = os.path.join(data_path, folder_name)
+        os.makedirs(folder_path, exist_ok=True)
 
         # 데이터 그룹을 순회하며 파일 저장 및 정보 수집
         for group_name, group_data in data_group:
             info[str(group_name)] = len(group_data)
-            group_data.to_csv(f"{data_path}/{folder_name}/{tablename+'_'+str(group_name)}.csv",
+            safe_group_name = re.sub(r'[\/\\~\s:|]', '_', str(group_name))
+            group_data.to_csv(f"{data_path}/{folder_name}/{tablename+'_'+str(safe_group_name)}.csv",
                               index=False, encoding='utf-8-sig', header=True)
 
         # 정보 파일 생성
-        info_df = pd.DataFrame(list(info.items()), columns=[
-                               info_label, 'Count'])
-        info_df.to_csv(f"{data_path}/{folder_name}/{folder_name} Count.csv",
-                       index=False, encoding='utf-8-sig', header=True)
+        info_df = pd.DataFrame(list(info.items()), columns=[info_label, 'Count'])
+        info_df.to_csv(f"{data_path}/{folder_name}/{folder_name} Count.csv", index=False, encoding='utf-8-sig', header=True)
 
         info_df.set_index(info_label, inplace=True)
         keys = list(info_df.index)
@@ -693,7 +693,7 @@ class DataProcess:
             ascending=False).head(top_n).index
 
         filtered_reply_dir = os.path.join(csv_output_dir, 'user_replies')
-        os.makedirs(filtered_reply_dir)
+        os.makedirs(filtered_reply_dir, exist_ok=True)
         # 각 상위 작성자의 댓글을 별도 CSV 파일로 저장
         for index, writer in enumerate(top_writers):
             writer_data = data[data['Reply Writer'] == writer]
