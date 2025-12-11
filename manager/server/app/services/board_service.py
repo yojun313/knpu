@@ -75,13 +75,10 @@ def edit_version(versionName: str, data: AddVersionDto, userUid: str):
     update_fields['releaseDate'] = datetime.now(
         ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
     
-    update_result = version_board_db.update_one(
+    version_board_db.update_one(
         {"versionName": versionName},
         {"$set": update_fields}
     )
-
-    if update_result.matched_count == 0:
-        raise NotFoundException("Version not found")
 
     updated_doc = clean_doc(version_board_db.find_one({"versionName": update_fields["versionName"]}))
 

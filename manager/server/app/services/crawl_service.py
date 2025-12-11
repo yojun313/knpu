@@ -13,6 +13,7 @@ from fastapi.responses import StreamingResponse
 from starlette.responses import FileResponse
 from io import BytesIO
 import pandas as pd
+import itertools
 from app.libs.progress import send_message
 from app.services.user_service import log_user
 import time
@@ -384,12 +385,15 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
             dbname = '_'.join(parts)
 
     dbpath = os.path.join(temp_directory, dbname)
-    while True:
+    base_dbpath = dbpath
+    for i in itertools.count():
+        candidate = base_dbpath if i == 0 else f"{base_dbpath}_{i}"
         try:
-            os.makedirs(os.path.join(dbpath, 'token_data'), exist_ok=False)
+            os.makedirs(os.path.join(candidate, 'token_data'), exist_ok=False)
+            dbpath = candidate
             break
         except FileExistsError:
-            dbpath += "_copy"
+            continue
 
     for idx, tableName in enumerate(tableList):
         edited_tableName = replaceDatesInFilename(

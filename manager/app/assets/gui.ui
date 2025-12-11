@@ -166,7 +166,7 @@
                 <item>
                  <widget class="QPushButton" name="analysis_timesplitfile_btn">
                   <property name="text">
-                   <string>분할(년/월)</string>
+                   <string>시계열 분할</string>
                   </property>
                  </widget>
                 </item>
