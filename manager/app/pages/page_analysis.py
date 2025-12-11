@@ -39,7 +39,6 @@ from .page_worker import Manager_Worker
 
 warnings.filterwarnings("ignore")
 
-
 # 운영체제에 따라 한글 폰트를 설정
 if platform.system() == 'Darwin':  # macOS
     plt.rcParams['font.family'] = 'AppleGothic'
@@ -49,7 +48,6 @@ elif platform.system() == 'Windows':  # Windows
 # 폰트 설정 후 음수 기호가 깨지는 것을 방지
 plt.rcParams['axes.unicode_minus'] = False
 
-
 class Manager_Analysis(Manager_Worker):
     def __init__(self, main_window):
         self.main = main_window
@@ -57,7 +55,6 @@ class Manager_Analysis(Manager_Worker):
         self.analysis_makeFileFinder()
         self.anaylsis_buttonMatch()
         self.console_open = False
-
     
     def analysis_makeFileFinder(self):
         self.file_dialog = makeFileFinder(self.main, self.main.localDirectory)
@@ -417,8 +414,13 @@ class Manager_Analysis(Manager_Worker):
                 printStatus(self.main)
                 return
 
+            filename = os.path.basename(filepath)
+            if 'token' in filename:
+                QMessageBox.warning(self.main, "Warning", "토큰 파일은 통계 분석할 수 없습니다.")
+                return
+
             # 2) 옵션 선택 Dialog
-            dialog = StatAnalysisDialog(filename=os.path.basename(filepath))
+            dialog = StatAnalysisDialog(filename=filename)
             if dialog.exec() != QDialog.DialogCode.Accepted:
                 printStatus(self.main)
                 return
@@ -433,11 +435,11 @@ class Manager_Analysis(Manager_Worker):
 
             userLogging(f'ANALYSIS -> analysis_file({filepath})')
 
-            statusDialog = TaskStatusDialog(f"통계 분석: {os.path.basename(filepath)}", self.main)
+            statusDialog = TaskStatusDialog(f"통계 분석: {filename}", self.main)
             statusDialog.show()
             statusDialog.update_message("작업을 준비 중입니다...")
 
-            thread_name = f"통계 분석: {os.path.basename(filepath)}"
+            thread_name = f"통계 분석: {filename}"
             register_thread(thread_name)
             printStatus(self.main)
 
