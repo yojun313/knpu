@@ -18,7 +18,7 @@ import asyncio
 from googletrans import Translator
 import json
 import requests
-import time
+import itertools
 from PyQt6.QtWidgets import QMessageBox, QFileDialog, QInputDialog, QDialog
 from libs.console import *
 from libs.path import *
@@ -98,23 +98,25 @@ class Manager_Analysis(Manager_Worker):
                             f"{os.path.splitext(filename)[0]}_split_{datetime.now():%m%d%H%M}"
                         )
 
-                        # 디렉토리 중복 시 _copy 붙이기
-                        while True:
+                        base_table_path = table_path
+                        for i in itertools.count():
+                            candidate = base_table_path if i == 0 else f"{base_table_path}_{i}"
                             try:
-                                os.mkdir(table_path)
+                                os.makedirs(candidate, exist_ok=False)
+                                table_path = candidate
                                 break
                             except FileExistsError:
-                                table_path += "_copy"
-
+                                continue
+                        
                         self.message.emit(f"[{filename}] CSV 파일 읽는 중...")
                         table_df = readCSV(csv_path)
 
                         # 시간 컬럼 존재 여부 체크
                         if not any('Date' in col for col in table_df.columns.tolist()) or table_df.columns.tolist() == []:
-                            self.finished.emit(False, f"{filename}은(는) 시간 분할이 불가능한 파일입니다.", "")
+                            self.finished.emit(False, f"{filename}은(는) 시계열 분할이 불가능한 파일입니다.", "")
                             return
 
-                        self.message.emit(f"[{filename}] 시간 분할 중...")
+                        self.message.emit(f"[{filename}] 시계열 분할 중...")
                         table_df = self.dataprocess_obj.TimeSplitter(table_df)
 
                         year_group = table_df.groupby('year')
@@ -127,16 +129,15 @@ class Manager_Analysis(Manager_Worker):
                         self.message.emit(f"[{filename}] 월 단위 저장 중...")
                         self.dataprocess_obj.TimeSplitToCSV(2, month_group, table_path, os.path.splitext(filename)[0])
 
-                        # 필요시 주 단위도 저장 가능
-                        # self.dataprocess_obj.TimeSplitToCSV(3, week_group, table_path, os.path.splitext(filename)[0])
+                        self.message.emit(f"[{filename}] 주 단위 저장 중...")
+                        self.dataprocess_obj.TimeSplitToCSV(3, week_group, table_path, os.path.splitext(filename)[0])
 
                         del year_group
                         del month_group
                         del week_group
                         gc.collect()
 
-                    result_path = os.path.dirname(self.file_list[0])
-                    self.finished.emit(True, f"{os.path.basename(self.file_list[0])} 데이터 분할이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", result_path)
+                    self.finished.emit(True, f"{os.path.basename(self.file_list[0])} 데이터 분할이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", table_path)
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
@@ -154,7 +155,7 @@ class Manager_Analysis(Manager_Worker):
             reply = QMessageBox.question(
                 self.main,
                 'Notification',
-                f"선택하신 파일을 시간 분할하시겠습니까?",
+                f"선택하신 파일을 연/월/주 단위로 분할하시겠습니까?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.Yes
             )
@@ -164,7 +165,7 @@ class Manager_Analysis(Manager_Worker):
             # 3. 로그 기록
             userLogging(f'ANALYSIS -> timesplit_file({selected_directory[0]})')
 
-            thread_name = f"시간 분할: {os.path.basename(selected_directory[0])}"
+            thread_name = f"시계열 분할: {os.path.basename(selected_directory[0])}"
             register_thread(thread_name)
             printStatus(self.main)
             
