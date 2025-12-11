@@ -101,7 +101,7 @@ class Manager_Board:
             if dialog.data:
                 version_data = dialog.data
                 version_data['sendPushOver'] = False
-                Request('put', f'/board/version/{version_data["versionName"]}', json=version_data)
+                Request('put', f'/board/version/{origin[0]}', json=version_data)
                 QMessageBox.information(self.main, "완료", f"{version_data['versionName']} 수정 완료했습니다")
                 self.refreshVersionBoard()
 
