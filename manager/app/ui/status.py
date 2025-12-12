@@ -78,7 +78,7 @@ def printStatus(parent, msg=''):
         )
 
 def changeStatusbarAction(parent, option: str = "DEFAULT"):
-    try:
+    try:       
         parent.rightLabel.clicked.disconnect()  
     except TypeError:
         pass  
@@ -88,6 +88,9 @@ def changeStatusbarAction(parent, option: str = "DEFAULT"):
         parent.rightLabel.clicked.connect(lambda: showActiveThreadsDialog())
     elif option == "WEB":
         raw_text = parent.rightLabel.text().strip()
-        url = re.compile(r"(https?://[A-Za-z0-9\.\-_/:%#?=&]+)").search(raw_text).group(1)
+        match = re.search(r"(https?://[^\s|]+)", raw_text)
+        if not match:
+            return  
+        url = match.group(1)
         parent.rightLabel.setToolTip("클릭하여 웹페이지 열기")
         parent.rightLabel.clicked.connect(lambda: webbrowser.open(url))
