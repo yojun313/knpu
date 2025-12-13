@@ -42,7 +42,7 @@ def showActiveThreadsDialog():
 
     for t in active_threads:
         lbl = QLabel(t)
-        lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)  # 복사 가능
+        lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         container_layout.addWidget(lbl)
 
     container_layout.addStretch()
