@@ -72,15 +72,20 @@ class RichLoggerMiddleware(BaseHTTPMiddleware):
         if len(log_lines) > MAX_LOGS:
             log_lines.pop(0)
 
+        total_height = console.size.height
+        logs_height = total_height - 3 - 5 - 2 
+        visible_logs = log_lines[-logs_height:]
+
         layout["logs"].update(
             Panel(
-                "\n".join(log_lines),
+                "\n".join(visible_logs),
                 title="REQUEST LOGS",
                 border_style="cyan",
             )
         )
 
         return response
+
 
 # FastAPI App
 app = FastAPI()
