@@ -1,4 +1,5 @@
 import os
+import sys
 import socket
 import traceback
 
@@ -8,7 +9,7 @@ from packaging import version
 from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon, QKeySequence, QCursor, QShortcut
 from PyQt6.QtWidgets import (
-    QStatusBar, QLabel, QInputDialog, QMessageBox
+    QStatusBar, QLabel, QInputDialog, QMessageBox, QApplication
 )
 
 from config import ASSETS_PATH, VERSION, MANAGER_SERVER_API
@@ -88,11 +89,17 @@ def loginProgram(parent):
                                 f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
         return False
 
-def initListWidget(parent):
+def initListIcon(parent):
     try:
-        """리스트 위젯의 특정 항목에만 아이콘 추가 및 텍스트 제거"""
-
         iconPath = os.path.join(ASSETS_PATH, 'setting.png')
+        parent.database_searchDB_button.setText("") 
+        parent.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), '..', 'assets', 'search.png')))
+        parent.database_searchDB_button.setIconSize(QSize(18, 18))  
+
+        parent.database_chatgpt_button.setText("")  
+        parent.database_chatgpt_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), '..', 'assets', 'chatgpt_logo.png')))
+        parent.database_chatgpt_button.setIconSize(QSize(19, 19))  
+        
 
         # 리스트 위젯의 모든 항목 가져오기
         for index in range(parent.listWidget.count()):
@@ -203,33 +210,28 @@ def checkNewPost(parent):
 def checkNetwork(parent):
     while True:
         try:
-            # Google을 기본으로 확인 (URL은 다른 사이트로 변경 가능)
-            response = requests.get("http://www.google.com", timeout=5)
+            response = requests.get("https://www.google.com/generate_204", timeout=2)
             break
-        except requests.ConnectionError:
-            printStatus(parent)
-            parent.closeBootscreen()
+        except requests.RequestException:
             reply = QMessageBox.question(parent, "Internet Connection Error",
                                             "인터넷에 연결되어 있지 않습니다\n\n인터넷 연결 후 재시도해주십시오\n\n재시도하시겠습니까?",
                                             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
             if reply == QMessageBox.StandardButton.Yes:
                 continue
             else:
-                os._exit(0)
-
+                QApplication.quit()
+                sys.exit(0)
     while True:
         try:
-            # FastAPI 서버의 상태를 확인하는 핑 API 또는 기본 경로 사용
-            response = requests.get(f"{MANAGER_SERVER_API}/ping/", timeout=5)
-            if response.status_code == 200:
-                return True
+            response = requests.get(f"{MANAGER_SERVER_API}/ping/", timeout=2)
+            response.raise_for_status()
+            return True
         except requests.RequestException:
-            printStatus(parent)
-            parent.closeBootscreen()
             reply = QMessageBox.question(parent, "서버 연결 실패",
-                                            f"서버에 연결할 수 없습니다.\n\n관리자에게 문의하십시오\n\n재시도하시겠습니까?",
+                                            f"서버에 연결할 수 없습니다\n\n관리자에게 문의하십시오\n\n재시도하시겠습니까?",
                                             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
             if reply == QMessageBox.StandardButton.Yes:
                 continue
             else:
-                os._exit(0)
+                QApplication.quit()
+                sys.exit(0)
