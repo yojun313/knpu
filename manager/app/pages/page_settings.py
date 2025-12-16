@@ -11,10 +11,11 @@ import os
 import requests
 from config import *
 from ui.finder import *
+from ui.dialogs import *
 from libs.path import *
 from services.logging import userLogging
 
-class Manager_Setting(QDialog):
+class Manager_Setting(BaseDialog):
     def __init__(self, main):
         super().__init__()
         self.main = main
@@ -739,3 +740,5 @@ class Manager_Setting(QDialog):
         userLogging(f"Settings Updated | Theme: {theme} | ScreenSize: {screen_size} | AutoUpdate: {auto_update} | MyDB: {my_db} | GPT_Key: {'Set' if api_key != 'default' and len(api_key) >=20 else 'Not Set'} | DB_Refresh: {db_refresh} | BootTerminal: {boot_terminal} | DBKeywordSort: {db_keywordsort} | LLM_model: {llm_model}")
 
         self.accept()
+
+    
