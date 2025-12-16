@@ -1,5 +1,6 @@
 import os
 import gc
+import sys
 import copy
 import re
 import warnings
@@ -315,11 +316,13 @@ class Manager_Database(Manager_Worker):
                     if os.path.exists(self.main.localDirectory):
                         shutil.rmtree(self.main.localDirectory)
 
-                    # ── 3) 언인스톨러 실행 후 종료 ────────────────
-                    exe_file_path = os.path.join(
-                        os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
-                    subprocess.Popen([exe_file_path], shell=True)
-                    os._exit(0)
+                    if sys.platform == "win32":
+                        # ── 3) 언인스톨러 실행 후 종료 ────────────────
+                        exe_file_path = os.path.join(
+                            os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
+                        subprocess.Popen([exe_file_path], shell=True)
+                        
+                    sys.exit(0)
                 
             if search_text == '/admin' and self.main.user != 'admin':
                 self.main.database_searchDB_lineinput.clear()
@@ -518,14 +521,6 @@ class Manager_Database(Manager_Worker):
         self.main.database_saveDB_button.setToolTip("Ctrl+S")
         self.main.database_viewDB_button.setToolTip("Ctrl+V")
         self.main.database_deleteDB_button.setToolTip("Ctrl+D")
-
-        self.main.database_searchDB_button.setText("") 
-        self.main.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), '..', 'assets', 'search.png')))
-        self.main.database_searchDB_button.setIconSize(QSize(18, 18))  
-
-        self.main.database_chatgpt_button.setText("")  
-        self.main.database_chatgpt_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), '..', 'assets', 'chatgpt_logo.png')))
-        self.main.database_chatgpt_button.setIconSize(QSize(19, 19))  
 
     def setDatabaseShortcut(self):
         resetShortcuts(self.main)
