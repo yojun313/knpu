@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
     QTextEdit, QDialogButtonBox, QComboBox, QLabel, QDateEdit, QLineEdit, QHBoxLayout,
-    QFileDialog, QInputDialog
+    QFileDialog, QInputDialog, QApplication
 )
 from services.api import *
 from services.logging import *
@@ -19,10 +19,23 @@ class BaseDialog(QDialog):
         QShortcut(QKeySequence("Ctrl+ㅈ"), self).activated.connect(self.reject)
 
     def showEvent(self, event):
-        """다이얼로그가 보여질 때 QTextEdit에 Tab 이동 기능 부여"""
         super().showEvent(event)
         for te in self.findChildren(QTextEdit):
             te.setTabChangesFocus(True)
+        self.center_to_mainwindow()
+    
+    def center_to_mainwindow(self):
+        main = QApplication.activeWindow()
+
+        # 혹시 자기 자신이 activeWindow인 경우 대비
+        if main is self or main is None:
+            main = self.parent()
+
+        if main:
+            geo = main.frameGeometry()
+            self.move(
+                geo.center() - self.rect().center()
+            )
     
     def add_label(self, layout, title, content, multiline=False, monospace=False, readonly=True):
         # 제목 라벨
@@ -54,7 +67,6 @@ class BaseDialog(QDialog):
         return widget
     
     def add_buttons(self, *buttons):
-        """하단에 버튼 레이아웃을 추가하는 메서드"""
         button_layout = QHBoxLayout()
         for btn in buttons:
             button_layout.addWidget(btn)
@@ -134,7 +146,7 @@ class DBInfoDialog(BaseDialog):
         self.add_buttons(ok_btn)
 
 
-class LogViewerDialog(QDialog):
+class LogViewerDialog(BaseDialog):
     def __init__(self, parent, uid, log_content):
         super().__init__(parent)
         self.setWindowTitle(f"Log - {uid}")
