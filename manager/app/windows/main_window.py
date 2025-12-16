@@ -11,8 +11,9 @@ from packaging import version
 
 from PyQt6 import uic
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QPushButton
-from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QPushButton, QVBoxLayout
+from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtCore import QTimer, QUrl
 
 from config import VERSION, ASSETS_PATH
 from libs.console import openConsole, closeConsole
@@ -46,7 +47,7 @@ class MainWindow(QMainWindow):
             super(MainWindow, self).__init__()
             uiPath = os.path.join(ASSETS_PATH,  'gui.ui')
             iconPath = os.path.join(ASSETS_PATH, 'exe_icon.png')
-
+            
             uic.loadUi(uiPath, self)
             initListIcon(self)
             initStatusbar(self)
@@ -54,7 +55,8 @@ class MainWindow(QMainWindow):
             self.setWindowTitle("MANAGER")  # 창의 제목 설정
             self.setWindowIcon(QIcon(iconPath))
             self.resize(1400, 1000)
-
+            self.set_web_layout()
+            
             try:
                 self.listWidget.setCurrentRow(0)
                 if get_setting('BootTerminal') == 'on': openConsole("Boot Process")
@@ -173,7 +175,12 @@ class MainWindow(QMainWindow):
         self.programDirectory = str(base_dir)
 
     ################################## Booting ##################################
-
+    def set_web_layout(self):
+        self.browser = QWebEngineView()
+        self.web_layout = QVBoxLayout()
+        self.web_layout.addWidget(self.browser)
+        self.tab_webview.setLayout(self.web_layout)
+    
     def showNewVersionInfo(self):
         # Show New Version Info
         lastVersion = version.parse(get_setting('LastVersion'))
