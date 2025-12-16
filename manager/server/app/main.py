@@ -116,7 +116,3 @@ async def on_startup():
 
     asyncio.create_task(live_ui_loop())
     asyncio.create_task(periodic_gc(60))
-
-@app.get("/ping")
-async def ping():
-    return {"status": "ok"}
