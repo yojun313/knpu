@@ -297,7 +297,7 @@ class Manager_Database(Manager_Worker):
             programBugLog(self.main, traceback.format_exc())
 
     def searchAdminMode(self, search_text):
-        # ADMIN MODE
+        # PROMPT MODE
         try:
             if search_text == '/remove':
                 self.main.database_searchDB_lineinput.clear()
@@ -307,17 +307,14 @@ class Manager_Database(Manager_Worker):
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
                 )
                 if reply == QMessageBox.StandardButton.Yes:
-                    # ── 1) QSettings 값 제거 ─────────────────────
-                    settings = QSettings("BIGMACLAB", "MANAGER")
+                    settings = QSettings("KNPU", "MANAGER")
                     settings.clear()
                     settings.sync()
 
-                    # ── 2) 로컬 디렉토리 제거 ────────────────────
                     if os.path.exists(self.main.localDirectory):
                         shutil.rmtree(self.main.localDirectory)
 
                     if sys.platform == "win32":
-                        # ── 3) 언인스톨러 실행 후 종료 ────────────────
                         exe_file_path = os.path.join(
                             os.environ['LOCALAPPDATA'], 'MANAGER', 'unins000.exe')
                         subprocess.Popen([exe_file_path], shell=True)

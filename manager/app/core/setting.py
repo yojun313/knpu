@@ -13,7 +13,7 @@ from PyQt6.QtCore import QSettings
 from config import VERSION
 
 # ── 1) Persistent store 객체 ───────────────────────────────────────────────────
-_qsettings = QSettings("BIGMACLAB", "MANAGER")
+_qsettings = QSettings("KNPU", "MANAGER")
 
 # ── 2) 디폴트 값 정의 ─────────────────────────────────────────────────────────
 _DEFAULTS: dict[str, Any] = {

@@ -279,7 +279,6 @@ class MainWindow(QMainWindow):
     def cleanUpTemp(self):
         if platform.system() != "Windows":
             return
-
         try:
             # 이전 설치 exe 정리
             exe_dir = Path(os.getenv("LOCALAPPDATA")) / "MANAGER"
