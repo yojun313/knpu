@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from app.routes import api_router
 from starlette.middleware.base import BaseHTTPMiddleware
 
 import asyncio
@@ -84,6 +85,7 @@ class RichLoggerMiddleware(BaseHTTPMiddleware):
 # FastAPI App
 app = FastAPI()
 app.add_middleware(RichLoggerMiddleware)
+app.include_router(api_router, prefix="/api", tags=["API"])
 
 @app.on_event("startup")
 async def on_startup():
