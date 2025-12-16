@@ -1,9 +1,10 @@
 import os
+import sys
 import requests
 import traceback
 import subprocess
 import webbrowser
-from PyQt6.QtWidgets import QDialog, QPushButton, QMessageBox
+from PyQt6.QtWidgets import QDialog, QPushButton, QMessageBox, QApplication
 from PyQt6.QtCore import pyqtSignal, QThread
 from services.pushover import sendPushOver
 from services.logging import userLogging, getUserLocation, programBugLog
@@ -67,7 +68,8 @@ class DownloadWorker(QThread):
 
 def openAndExit(path):
     subprocess.Popen(f'"{path}"', shell=True)
-    os._exit(0)
+    QApplication.quit()
+    sys.exit(0)
 
 def downloadProgram(parent, newVersionName, reinstall=False):
     temp_dir = 'C:/Temp'

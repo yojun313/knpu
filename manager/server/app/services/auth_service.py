@@ -1,7 +1,7 @@
 from fastapi.responses import JSONResponse
 from app.db import user_db, auth_db
 from app.utils.mongo import clean_doc
-from app.libs.exceptions import NotFoundException
+from app.libs.exceptions import NotFoundException, UnauthorizedException
 from app.utils.mail import sendEmail
 import random
 import os
@@ -32,7 +32,7 @@ def request_verify(name: str):
     )
     sendEmail(email, "[MANAGER] 디바이스 등록 인증번호", msg)
     
-    return JSONResponse(status_code=200, content={"uid": existing_user["uid"], "message": "Verification code sent"})
+    return JSONResponse(status_code=200, content={"uid": existing_user["uid"], "message": "Verification code sent", "email": email})
     
 def verify_code(name: str, code: str, device: str):
     existing_user = user_db.find_one({"name": name})
@@ -44,7 +44,7 @@ def verify_code(name: str, code: str, device: str):
     
     auth_data = auth_db.find_one({"email": email})
     if not auth_data or auth_data["auth_code"] != code:
-        raise NotFoundException("Invalid verification code")
+        raise UnauthorizedException("Invalid verification code")
 
     token_data = {
         "sub": existing_user["uid"],

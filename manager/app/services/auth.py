@@ -50,43 +50,69 @@ def loginProgram(parent):
                 parent.usermail = userData['email']
                 return True
 
-        # 사용자 이름 입력 대화
         parent.closeBootscreen()
+        parent.show()
         printStatus(parent, "로그인 중...")
 
-        inputDialogId = QInputDialog(parent)
-        inputDialogId.setWindowTitle('Login')
-        inputDialogId.setLabelText('User Name:')
-        inputDialogId.resize(300, 200)
-        ok = inputDialogId.exec()
-        userName = inputDialogId.textValue()
+        while True:
+            inputDialogId = QInputDialog(parent)
+            inputDialogId.setWindowTitle('Login')
+            inputDialogId.setLabelText('User Name:')
+            inputDialogId.resize(300, 200)
+            ok = inputDialogId.exec()
+            userName = inputDialogId.textValue()
 
-        if not ok:
-            QMessageBox.warning(parent, 'Program Shutdown', '프로그램을 종료합니다')
-            return False
+            if not ok:
+                QMessageBox.warning(parent, 'Program Shutdown', '프로그램을 종료합니다')
+                return False
 
-        parent.user = userName
+            parent.user = userName
 
-        res = requests.get(f"{MANAGER_SERVER_API}/auth/request",
-                            params={"name": parent.user}).json()
+            res = requests.get(f"{MANAGER_SERVER_API}/auth/request",
+                                params={"name": parent.user})
+            if res.status_code == 404:
+                reply = QMessageBox.question(parent, "Error", f"사용자 {parent.user}을(를) 찾을 수 없습니다\n\n다시 시도하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                if reply == QMessageBox.StandardButton.Yes:
+                    continue
+                else:
+                    return False
+            else:
+                break
+        
+        email = res.json().get("email", "")
         printStatus(parent)
         QMessageBox.information(parent, "Information",
-                                f"{parent.user}님의 메일로 인증번호가 전송되었습니다\n\n"
+                                f"{parent.user}님의 {email}로 인증번호가 전송되었습니다\n\n"
                                 "인증번호를 확인 후 입력하십시오")
 
-        ok, password = checkPassword(parent, string="메일 인증번호")
-        if not ok:
-            QMessageBox.warning(parent, 'Error', '프로그램을 종료합니다')
-            return False
-
-        res = requests.post(f"{MANAGER_SERVER_API}/auth/verify",
-                            params={"name": parent.user, "code": password, "device": parent.userDevice}).json()
+        while True:
+            ok, password = checkPassword(parent, string="메일 인증번호")
+            if not ok:
+                QMessageBox.warning(parent, 'Error', '프로그램을 종료합니다')
+                return False
+            res = requests.post(f"{MANAGER_SERVER_API}/auth/verify", params={"name": parent.user, "code": password, "device": parent.userDevice})
+            if res.status_code != 200:
+                reply = QMessageBox.question(parent, 'Error', '인증번호가 올바르지 않습니다\n\n다시 인증번호를 받으시겠습니까?', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                if reply == QMessageBox.StandardButton.Yes:
+                    res = requests.get(f"{MANAGER_SERVER_API}/auth/request", params={"name": parent.user})
+                    QMessageBox.information(parent, "Information",
+                                            f"{parent.user}님의 메일로 다시 인증번호가 전송되었습니다\n\n"
+                                            "인증번호를 확인 후 입력하십시오")
+                    continue
+                else:
+                    return False
+            else:
+                res = res.json()
+                break
+            
         userData = res['user']
         access_token = res['access_token']
 
         parent.user = userData['name']
         parent.usermail = userData['email']
         parent.userUid = userData['uid']
+        
+        QMessageBox.information(parent, "기기 등록 완료", f"{parent.user}님 환영합니다!") 
         set_setting('auth_token', access_token)
 
     except Exception:

@@ -1,12 +1,10 @@
 import os
 import re
 import gc
-import shutil
 import traceback
 import platform
 import socket
 import sys
-import tempfile
 from pathlib import Path
 from datetime import datetime
 from packaging import version
@@ -25,7 +23,7 @@ from pages.page_web import Manager_Web
 from pages.page_database import Manager_Database
 from pages.page_settings import Manager_Setting
 from core.boot import (
-    initListWidget, initStatusbar,
+    initListIcon, initStatusbar,
     checkNetwork, checkNewPost, checkNewVersion, getVersionInfo
 )
 from core.shortcut import initShortcut, resetShortcuts
@@ -50,7 +48,7 @@ class MainWindow(QMainWindow):
             iconPath = os.path.join(ASSETS_PATH, 'exe_icon.png')
 
             uic.loadUi(uiPath, self)
-            initListWidget(self)
+            initListIcon(self)
             initStatusbar(self)
 
             self.setWindowTitle("MANAGER")  # 창의 제목 설정
@@ -61,7 +59,7 @@ class MainWindow(QMainWindow):
                 self.listWidget.setCurrentRow(0)
                 if get_setting('BootTerminal') == 'on': openConsole("Boot Process")
                 self.startTime = datetime.now()
-                checkNetwork(self)
+                checkNetwork(self.splashDialog)
                 self.listWidget.currentRowChanged.connect(self.display)
                 self._resolve_app_paths()
 
@@ -75,7 +73,8 @@ class MainWindow(QMainWindow):
                 print("\nI. Checking User... ", end='')
                 self.splashDialog.updateStatus("Checking User")
                 if loginProgram(self) == False:
-                    os._exit(0)
+                    QApplication.quit()
+                    sys.exit(0)
                 print("Done")
 
                 self.splashDialog.updateStatus("Loading Data")
@@ -105,6 +104,7 @@ class MainWindow(QMainWindow):
 
                 if get_setting('BootTerminal') == 'on': closeConsole()
                 self.closeBootscreen()
+                self.show()
 
                 if get_setting('ScreenSize') == 'max':
                     self.showMaximized()
@@ -129,7 +129,8 @@ class MainWindow(QMainWindow):
                 
                 QMessageBox.information(
                     self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
-                os._exit(0)
+                QApplication.quit()
+                sys.exit(0)
 
         except Exception as e:
             self.closeBootscreen()
@@ -204,8 +205,7 @@ class MainWindow(QMainWindow):
     
     def closeBootscreen(self):
         try:
-            self.splashDialog.accept()  # InfoDialog 닫기
-            self.show()  # MainWindow 표시
+            self.splashDialog.accept()
         except:
             print(traceback.format_exc())
 
@@ -262,7 +262,6 @@ class MainWindow(QMainWindow):
         gc.collect()
 
     def closeEvent(self, event):
-        # 프로그램 종료 시 실행할 코드
         reply = QMessageBox.question(self, 'Shutdown', "프로그램을 종료하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                      QMessageBox.StandardButton.Yes)
         if reply == QMessageBox.StandardButton.Yes:
@@ -271,7 +270,9 @@ class MainWindow(QMainWindow):
                 self.cleanUpTemp()
             except Exception as e:
                 print(traceback.format_exc())
-            event.accept()  # 창을 닫을지 결정 (accept는 창을 닫음)
+                
+            QApplication.quit()
+            event.accept() 
         else:
             event.ignore()
 
