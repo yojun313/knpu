@@ -220,7 +220,7 @@ def checkNetwork(parent):
     while True:
         try:
             # FastAPI 서버의 상태를 확인하는 핑 API 또는 기본 경로 사용
-            response = requests.get(f"{MANAGER_SERVER_API}/ping", timeout=5)
+            response = requests.get(f"{MANAGER_SERVER_API}/ping/", timeout=5)
             if response.status_code == 200:
                 return True
         except requests.RequestException:
