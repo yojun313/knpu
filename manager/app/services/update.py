@@ -66,10 +66,9 @@ class DownloadWorker(QThread):
             self.error.emit(str(e))
 
 
-def openAndExit(path):
+def openAndExit(parent, path):
     subprocess.Popen(f'"{path}"', shell=True)
-    QApplication.quit()
-    sys.exit(0)
+    parent.force_quit()
 
 def downloadProgram(parent, newVersionName, reinstall=False):
     temp_dir = 'C:/Temp'
@@ -90,7 +89,7 @@ def downloadProgram(parent, newVersionName, reinstall=False):
     ))
     worker.finished.connect(lambda path: (
         dialog.complete_task(True),
-        openAndExit(path)
+        openAndExit(parent, path)
     ))
     worker.error.connect(lambda e: (
         dialog.complete_task(False),
