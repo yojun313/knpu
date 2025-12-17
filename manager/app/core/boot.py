@@ -219,8 +219,7 @@ def checkNetwork(parent):
             if reply == QMessageBox.StandardButton.Yes:
                 continue
             else:
-                QApplication.quit()
-                sys.exit(0)
+                parent.force_quit()
     while True:
         try:
             response = requests.get(f"{MANAGER_SERVER_API}/ping/", timeout=2)
@@ -233,5 +232,4 @@ def checkNetwork(parent):
             if reply == QMessageBox.StandardButton.Yes:
                 continue
             else:
-                QApplication.quit()
-                sys.exit(0)
+                parent.force_quit()
