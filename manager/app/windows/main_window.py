@@ -58,6 +58,7 @@ class MainWindow(QMainWindow):
             self.set_web_layout()
             
             try:
+                self._force_quit = False
                 self.listWidget.setCurrentRow(0)
                 if get_setting('BootTerminal') == 'on': openConsole("Boot Process")
                 self.startTime = datetime.now()
@@ -75,8 +76,7 @@ class MainWindow(QMainWindow):
                 print("\nI. Checking User... ", end='')
                 self.splashDialog.updateStatus("Checking User")
                 if loginProgram(self) == False:
-                    QApplication.quit()
-                    sys.exit(0)
+                    self.force_quit()
                 print("Done")
 
                 self.splashDialog.updateStatus("Loading Data")
@@ -129,10 +129,9 @@ class MainWindow(QMainWindow):
                     self.closeBootscreen()
                     updateProgram(self)
                 
-                QMessageBox.information(
-                    self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
-                QApplication.quit()
-                sys.exit(0)
+                QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
+                self.force_quit()
+                
 
         except Exception as e:
             self.closeBootscreen()
@@ -268,7 +267,17 @@ class MainWindow(QMainWindow):
 
         gc.collect()
 
+    def force_quit(self):
+        self._force_quit = True
+        QApplication.quit()
+        sys.exit(0)
+    
     def closeEvent(self, event):
+        if self._force_quit:
+            QApplication.quit()
+            event.accept()
+            return
+        
         reply = QMessageBox.question(self, 'Shutdown', "프로그램을 종료하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                      QMessageBox.StandardButton.Yes)
         if reply == QMessageBox.StandardButton.Yes:
