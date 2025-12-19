@@ -1,7 +1,7 @@
 from services.api import Request
 import traceback
 from ui.status import printStatus
-from PyQt6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 from config import VERSION
 import requests
 from libs.console import openConsole

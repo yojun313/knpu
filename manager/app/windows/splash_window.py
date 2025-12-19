@@ -1,6 +1,6 @@
-from PyQt6.QtWidgets import QVBoxLayout, QLabel, QDialog, QProgressBar, QPushButton, QGridLayout, QWidget, QHBoxLayout, QApplication
-from PyQt6.QtCore import Qt, QCoreApplication, QEventLoop
-from PyQt6.QtGui import QPixmap, QPainter, QBrush, QColor, QPen
+from PySide6.QtWidgets import QVBoxLayout, QLabel, QDialog, QProgressBar, QPushButton, QGridLayout, QWidget, QHBoxLayout, QApplication
+from PySide6.QtCore import Qt, QCoreApplication, QEventLoop
+from PySide6.QtGui import QPixmap, QPainter, QBrush, QColor, QPen
 from ui.dialogs import BaseDialog
 import os
 from config import ASSETS_PATH
@@ -111,7 +111,7 @@ class SplashDialog(QDialog):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = self.rect()
         painter.setBrush(QBrush(self.bg_color))
-        painter.setPen(QPen(Qt.PenStyle.NoPen))  # PyQt6: PenStyle 스코프 사용
+        painter.setPen(QPen(Qt.PenStyle.NoPen))  # PySide6: PenStyle 스코프 사용
         painter.drawRoundedRect(rect, 30, 30)  # 모서리를 둥글게 (30px radius)
 
     def updateStatus(self, msg: str):

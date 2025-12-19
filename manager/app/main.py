@@ -1,14 +1,14 @@
-from PyQt6 import QtWebEngineWidgets
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QFont, QFontDatabase, QPalette, QColor
-from PyQt6.QtCore import Qt
+from PySide6 import QtWebEngineWidgets
+from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QFont, QFontDatabase, QPalette, QColor
+from PySide6.QtCore import Qt
 import os
 import sys
 from config import VERSION
 from windows.splash_window import SplashDialog
 from core.setting import get_setting, set_setting
 from ui.style import theme_option
-from PyQt6.QtGui import QIcon, QGuiApplication
+from PySide6.QtGui import QIcon, QGuiApplication
 from config import ASSETS_PATH
 from packaging import version
 

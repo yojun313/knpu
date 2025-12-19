@@ -18,7 +18,7 @@ from googletrans import Translator
 import json
 import requests
 import itertools
-from PyQt6.QtWidgets import QMessageBox, QFileDialog, QInputDialog, QDialog
+from PySide6.QtWidgets import QMessageBox, QFileDialog, QInputDialog, QDialog
 from libs.console import *
 from libs.path import *
 from ui.finder import *
@@ -33,7 +33,7 @@ from services.logging import *
 from services.llm import *
 from services.csv import *
 from config import *
-from PyQt6.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import QThread, Signal
 from .page_worker import Manager_Worker
 
 warnings.filterwarnings("ignore")
@@ -78,9 +78,9 @@ class Manager_Analysis(Manager_Worker):
 
     def run_timesplit(self):
         class TimeSplitWorker(QThread):
-            finished = pyqtSignal(bool, str, str)  # (성공 여부, 메시지, 결과 경로)
-            error = pyqtSignal(str)
-            message = pyqtSignal(str)             # 진행 상황 메시지 시그널
+            finished = Signal(bool, str, str)  # (성공 여부, 메시지, 결과 경로)
+            error = Signal(str)
+            message = Signal(str)             # 진행 상황 메시지 시그널
 
             def __init__(self, file_list, dataprocess_obj, parent=None):
                 super().__init__(parent)
@@ -184,9 +184,9 @@ class Manager_Analysis(Manager_Worker):
 
     def run_merge(self):
         class MergeWorker(QThread):
-            finished = pyqtSignal(bool, str, str)
-            error = pyqtSignal(str)
-            message = pyqtSignal(str)  
+            finished = Signal(bool, str, str)
+            error = Signal(str)
+            message = Signal(str)  
 
             def __init__(self, selected_directory, mergedfilename, parent=None):
                 super().__init__(parent)
@@ -346,9 +346,9 @@ class Manager_Analysis(Manager_Worker):
     
     def run_analysis(self):
         class RunAnalysisWorker(QThread):
-            finished = pyqtSignal(bool, str, str)   # (성공 여부, 메시지, 파일경로)
-            error = pyqtSignal(str)
-            message = pyqtSignal(str)              # 메시지 업데이트용 시그널
+            finished = Signal(bool, str, str)   # (성공 여부, 메시지, 파일경로)
+            error = Signal(str)
+            message = Signal(str)              # 메시지 업데이트용 시그널
 
             def __init__(self, csv_path, selected_options, dataprocess_obj, hate_mode, parent=None):
                 super().__init__(parent)
@@ -456,9 +456,9 @@ class Manager_Analysis(Manager_Worker):
        
     def run_wordcloud(self):
         class WordcloudWorker(QThread):
-            finished = pyqtSignal(bool, str, str)  # (성공 여부, 메시지, 결과 경로)
-            error = pyqtSignal(str)
-            message = pyqtSignal(str)
+            finished = Signal(bool, str, str)  # (성공 여부, 메시지, 결과 경로)
+            error = Signal(str)
+            message = Signal(str)
 
             def __init__(self, filepath, save_path, date, period, maxword,
                         exception_word_list, eng_yes_selected, filename, dataprocess_obj, parent=None):

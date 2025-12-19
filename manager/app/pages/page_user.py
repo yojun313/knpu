@@ -1,6 +1,6 @@
 import warnings
 import traceback
-from PyQt6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 import bcrypt
 from ui.table import *
 from core.shortcut import *
