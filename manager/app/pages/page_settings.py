@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, \
-    QHBoxLayout, QLabel, QDialog, QLineEdit, QMessageBox, \
+    QHBoxLayout, QLabel, QLineEdit, QMessageBox, \
     QPushButton, QStackedWidget, QListWidget, QComboBox, QFileDialog
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QKeySequence, QFont, QShortcut
@@ -629,6 +629,18 @@ class Manager_Setting(BaseDialog):
 
         format_text_label = QLabel("아래 링크를 클릭하여 CSV 양식을 다운로드하세요.")
         format_text_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        
+        # === 문의 영역 ===
+        inquiry_title_label = QLabel("\nAdmin 문의")
+        inquiry_title_label.setStyleSheet("font-weight: bold;")
+        inquiry_title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        contact_phone_label = QLabel("Phone: 010-4072-9190")
+        contact_phone_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        contact_email_label = QLabel('Email: <a href="mailto:yojun313@postech.ac.kr">yojun313@postech.ac.kr</a>')
+        contact_email_label.setOpenExternalLinks(True)
+        contact_email_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         # 다운로드 가능한 링크들
         links = {
@@ -645,7 +657,7 @@ class Manager_Setting(BaseDialog):
 
         help_layout.addWidget(format_title_label)
         help_layout.addWidget(format_text_label)
-
+        
         for label, url in links.items():
             link_label = QLabel(f'<a href="{url}">{label}</a>')
             link_label.setOpenExternalLinks(False)
@@ -654,6 +666,10 @@ class Manager_Setting(BaseDialog):
                 lambda url=url: self.download_csv(url))
             help_layout.addWidget(link_label)
 
+        help_layout.addWidget(inquiry_title_label)
+        help_layout.addWidget(contact_phone_label)
+        help_layout.addWidget(contact_email_label)
+        
         help_layout.addStretch()
 
         help_widget = QWidget()

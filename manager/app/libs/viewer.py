@@ -5,7 +5,7 @@ VIEW_SERVER = MANAGER_PROGRESS_API
 
 def register_process(process_id: str, title: str):
     """
-    뷰 서버에 프로세스 등록을 요청합니다.
+    뷰 서버에 프로세스 등록을 요청
     POST /process { title, process_id }
     """
     resp = requests.post(
@@ -24,22 +24,18 @@ def _notify(process_id, payload):
     resp = requests.post(url, json=payload)
     resp.raise_for_status()
 
-# ─────────────────────────────────────────────────────────────
-# 1) 일반 텍스트 메시지
 def send_message(process_id: str, text: str) -> None:
     """
     클라이언트 화면에 단순 텍스트를 표시한다.
     """
     _notify(process_id, {"type": "message", "text": text})
 
-# 2) 진행률 업데이트
 def send_progress(process_id: str, current: int, total: int) -> None:
     """
     current/total 로 진행률 바를 갱신한다.
     """
     _notify(process_id, {"type": "progress", "current": current, "total": total})
 
-# 3) 단계(phase) 상태 업데이트
 def send_status(process_id: str, phase: str) -> None:
     """
     단계명을 표시한다. (예: '다운로드', '변환 중' 등)

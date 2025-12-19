@@ -12,10 +12,8 @@ from typing import Any
 from PyQt6.QtCore import QSettings
 from config import VERSION
 
-# ── 1) Persistent store 객체 ───────────────────────────────────────────────────
 _qsettings = QSettings("KNPU", "MANAGER")
 
-# ── 2) 디폴트 값 정의 ─────────────────────────────────────────────────────────
 _DEFAULTS: dict[str, Any] = {
     "Theme":            "default",
     "ScreenSize":       "default",
@@ -32,13 +30,11 @@ _DEFAULTS: dict[str, Any] = {
     "LastVersion":    f"{VERSION}",
 }
 
-# ── 3) 최초 실행 시 한 번만 기본값 주입 ────────────────────────────────────────
 for key, val in _DEFAULTS.items():
     if _qsettings.value(key) is None:
         _qsettings.setValue(key, val)
 
 
-# ── 4) 편의 함수들 ────────────────────────────────────────────────────────────
 def get_setting(key: str, default: Any | None = None) -> Any:
     """단일 설정값 반환 (없으면 default)"""
     return _qsettings.value(key, default)
