@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QMessageBox    
-from PyQt6.QtCore import QUrl
+from PySide6.QtWidgets import QMessageBox    
+from PySide6.QtCore import QUrl
 import warnings
 import traceback
 from core.shortcut import *

@@ -21,7 +21,7 @@ pyarrow
 pydantic
 pymongo
 PyMySQL
-PyQt6
+PySide6
 PyQt6_sip
 python-dotenv
 python_bcrypt

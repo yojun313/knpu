@@ -1,7 +1,7 @@
-from PyQt6.QtCore import QCoreApplication, QEventLoop
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QScrollArea, QWidget
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QKeySequence, QShortcut
+from PySide6.QtCore import QCoreApplication, QEventLoop
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QScrollArea, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence, QShortcut
 import webbrowser
 import re
 

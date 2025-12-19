@@ -1,8 +1,8 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, \
+from PySide6.QtWidgets import QWidget, QVBoxLayout, \
     QHBoxLayout, QLabel, QLineEdit, QMessageBox, \
     QPushButton, QStackedWidget, QListWidget, QComboBox, QFileDialog
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QKeySequence, QFont, QShortcut
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QKeySequence, QFont, QShortcut
 from core.setting import *
 from config import VERSION
 from datetime import datetime

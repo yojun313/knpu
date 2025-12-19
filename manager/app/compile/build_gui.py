@@ -9,8 +9,8 @@ from datetime import datetime
 from packaging.version import Version
 import requests
 
-from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QObject, QThread, Signal
+from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
     QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QPlainTextEdit, QRadioButton, QButtonGroup,
@@ -163,9 +163,9 @@ def read_latest_built_version() -> str | None:
 # ----------------------------------------
 
 class BuildWorker(QObject):
-    log_signal = pyqtSignal(str)
-    finished = pyqtSignal(str, float)  # version, elapsed_seconds
-    error = pyqtSignal(str)
+    log_signal = Signal(str)
+    finished = Signal(str, float)  # version, elapsed_seconds
+    error = Signal(str)
 
     def __init__(self, version_mode: str, custom_version: str,
                  spec_file: str, iss_path: str, parent=None):

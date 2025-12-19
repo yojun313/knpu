@@ -1,5 +1,5 @@
 from ui.finder import openFileResult
-from PyQt6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 from services.logging import * 
 from ui.status import unregister_thread, printStatus
 

@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QInputDialog, QMessageBox
-from PyQt6.QtWidgets import QLineEdit
+from PySide6.QtWidgets import QInputDialog, QMessageBox
+from PySide6.QtWidgets import QLineEdit
 import re
 import socket
 import traceback
