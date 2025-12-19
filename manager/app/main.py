@@ -1,12 +1,11 @@
 from PyQt6 import QtWebEngineWidgets
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QFont, QFontDatabase, QPalette, QColor
+from PyQt6.QtCore import Qt
 import os
 import sys
-import platform
 from config import VERSION
 from windows.splash_window import SplashDialog
-from PyQt6.QtCore import QCoreApplication, Qt
 from core.setting import get_setting, set_setting
 from ui.style import theme_option
 from PyQt6.QtGui import QIcon, QGuiApplication
@@ -80,7 +79,6 @@ def main():
     from windows.main_window import MainWindow
     window = MainWindow(splash)
     sys.exit(app.exec())
-
 
 if __name__ == "__main__":
     main()

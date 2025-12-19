@@ -119,6 +119,7 @@ def _close_console_macos():
     sys.stdout = sys.stderr = _original_stdout
 
 def openConsole(msg: str = ""):
+    print("hello")
     """필요하면 콘솔(터미널) 창을 열고 stdout/stderr을 그쪽으로 보낸다."""
     if platform.system() == "Windows":
         _open_console_windows(msg)

@@ -65,7 +65,6 @@ class DownloadWorker(QThread):
         except Exception as e:
             self.error.emit(str(e))
 
-
 def openAndExit(parent, path):
     subprocess.Popen(f'"{path}"', shell=True)
     parent.force_quit()

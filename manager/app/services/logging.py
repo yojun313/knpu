@@ -4,6 +4,7 @@ from ui.status import printStatus
 from PyQt6.QtWidgets import QMessageBox
 from config import VERSION
 import requests
+from libs.console import openConsole
 
 def userLogging(text=''):
     try:
@@ -25,6 +26,8 @@ def userBugging(text=''):
         print(traceback.format_exc())
 
 def programBugLog(parent, text):
+    if parent.user == 'admin':
+        openConsole("Error Log")
     print(text)
     printStatus(parent, "오류 발생")
     if parent.user == 'admin':
@@ -33,8 +36,8 @@ def programBugLog(parent, text):
         QMessageBox.critical(parent, "Error", f"오류가 발생했습니다")
 
     userBugging(text)
-    reply = QMessageBox.question(parent, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                    QMessageBox.StandardButton.Yes)
+    
+    reply = QMessageBox.question(parent, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
     if reply == QMessageBox.StandardButton.Yes:
         parent.managerBoardObj.addBug()
 
