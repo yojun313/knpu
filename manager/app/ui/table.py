@@ -1,7 +1,7 @@
-from PyQt6.QtGui import QKeySequence
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QTableWidget, QAbstractItemView, QTableWidgetItem, QVBoxLayout, QTextEdit, QHeaderView, QDialog, QPushButton, QApplication
-from PyQt6.QtGui import QShortcut
+from PySide6.QtGui import QKeySequence
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QTableWidget, QAbstractItemView, QTableWidgetItem, QVBoxLayout, QTextEdit, QHeaderView, QDialog, QPushButton, QApplication
+from PySide6.QtGui import QShortcut
 
 def makeTable(parent, widgetname, data, column, right_click_function=None, popupsize=None):
     def show_details(item):

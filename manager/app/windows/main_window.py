@@ -9,11 +9,10 @@ from pathlib import Path
 from datetime import datetime
 from packaging import version
 
-from PyQt6 import uic
-from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QPushButton, QVBoxLayout
-from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtCore import QTimer
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QPushButton, QVBoxLayout
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtCore import QTimer
 
 from config import VERSION, ASSETS_PATH
 from libs.console import openConsole, closeConsole
@@ -24,7 +23,7 @@ from pages.page_web import Manager_Web
 from pages.page_database import Manager_Database
 from pages.page_settings import Manager_Setting
 from core.boot import (
-    initListIcon, initStatusbar,
+    initListWidget, initStatusbar,
     checkNetwork, checkNewPost, checkNewVersion, getVersionInfo
 )
 from core.shortcut import initShortcut, resetShortcuts
@@ -37,19 +36,19 @@ from services.auth import loginProgram
 from ui.style import theme_option
 from ui.status import printStatus, changeStatusbarAction
 from ui.dialogs import ViewVersionDialog
+from assets.gui import Ui_MainWindow
 
-class MainWindow(QMainWindow):
+class MainWindow(QMainWindow, Ui_MainWindow):
 
     def __init__(self, splashDialog):
         try:
             self.splashDialog = splashDialog
-
             super(MainWindow, self).__init__()
-            uiPath = os.path.join(ASSETS_PATH,  'gui.ui')
+            self.setupUi(self)  
+            
             iconPath = os.path.join(ASSETS_PATH, 'exe_icon.png')
             
-            uic.loadUi(uiPath, self)
-            initListIcon(self)
+            initListWidget(self)
             initStatusbar(self)
 
             self.setWindowTitle("MANAGER")  # 창의 제목 설정

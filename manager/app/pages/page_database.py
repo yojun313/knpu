@@ -16,9 +16,9 @@ import zipfile
 import bcrypt
 import webbrowser
 
-from PyQt6.QtCore import QThread, pyqtSignal
-from PyQt6.QtGui import QKeySequence, QShortcut
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import QThread, Signal
+from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtWidgets import (
     QWidget, QMainWindow, QDialog, QVBoxLayout, QTableWidget,
     QPushButton, QTabWidget,
     QFileDialog, QMessageBox, QSizePolicy, QSpacerItem, QHBoxLayout, 
@@ -94,9 +94,9 @@ class Manager_Database(Manager_Worker):
 
     def viewDB(self):
         class LoadDBWorker(QThread):
-            finished = pyqtSignal(object)   # 로드 완료 시 DataFrame 목록 반환
-            error = pyqtSignal(str)
-            message = pyqtSignal(str)
+            finished = Signal(object)   # 로드 완료 시 DataFrame 목록 반환
+            error = Signal(str)
+            message = Signal(str)
 
             def __init__(self, DBuid):
                 super().__init__()

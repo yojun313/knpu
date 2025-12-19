@@ -9,7 +9,7 @@ MANAGER · persistent settings helper
 from __future__ import annotations
 
 from typing import Any
-from PyQt6.QtCore import QSettings
+from PySide6.QtCore import QSettings
 from config import VERSION
 
 _qsettings = QSettings("KNPU", "MANAGER")

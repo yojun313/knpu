@@ -6,9 +6,9 @@ from libs.console import openConsole, closeConsole
 import requests
 from packaging import version
 
-from PyQt6.QtCore import QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QIcon, QKeySequence, QCursor, QShortcut
-from PyQt6.QtWidgets import QStatusBar, QLabel, QInputDialog, QMessageBox
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QIcon, QKeySequence, QCursor, QShortcut
+from PySide6.QtWidgets import QStatusBar, QLabel, QInputDialog, QMessageBox
 
 from config import ASSETS_PATH, VERSION, MANAGER_SERVER_API
 from ui.status import printStatus
@@ -19,7 +19,7 @@ from ui.status import showActiveThreadsDialog
 from windows.splash_window import AboutDialog
 
 class ClickableLabel(QLabel):
-    clicked = pyqtSignal()  # 클릭 시그널 정의
+    clicked = Signal()  # 클릭 시그널 정의
 
     def mousePressEvent(self, event):
         self.clicked.emit()  # 클릭되면 시그널 발생
@@ -87,8 +87,11 @@ def loginProgram(parent):
                                 f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
         return False
 
-def initListIcon(parent):
+def initListWidget(parent):
     try:
+        parent.centralWidget().layout().setContentsMargins(0, 0, 0, 0)
+        parent.centralWidget().layout().setSpacing(0)
+        
         iconPath = os.path.join(ASSETS_PATH, 'setting.png')
         parent.database_searchDB_button.setText("") 
         parent.database_searchDB_button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), '..', 'assets', 'search.png')))

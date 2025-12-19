@@ -1,5 +1,5 @@
-from PyQt6.QtCore import QModelIndex
-from PyQt6.QtWidgets import QFileDialog, QSizePolicy, QAbstractItemView, QMessageBox, QTreeView, QHeaderView
+from PySide6.QtCore import QModelIndex
+from PySide6.QtWidgets import QFileDialog, QSizePolicy, QAbstractItemView, QMessageBox, QTreeView, QHeaderView
 import subprocess
 import os
 from ui.status import printStatus

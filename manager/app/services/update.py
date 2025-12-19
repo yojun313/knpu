@@ -4,8 +4,8 @@ import requests
 import traceback
 import subprocess
 import webbrowser
-from PyQt6.QtWidgets import QDialog, QPushButton, QMessageBox, QApplication
-from PyQt6.QtCore import pyqtSignal, QThread
+from PySide6.QtWidgets import QDialog, QPushButton, QMessageBox, QApplication
+from PySide6.QtCore import Signal, QThread
 from services.pushover import sendPushOver
 from services.logging import userLogging, getUserLocation, programBugLog
 from ui.status import printStatus
@@ -17,9 +17,9 @@ from core.thread import DownloadDialog
 import time
 
 class DownloadWorker(QThread):
-    progress = pyqtSignal(int, str)
-    finished = pyqtSignal(str)
-    error = pyqtSignal(str)
+    progress = Signal(int, str)
+    finished = Signal(str)
+    error = Signal(str)
 
     def __init__(self, url, save_path, parent=None):
         super().__init__(parent)

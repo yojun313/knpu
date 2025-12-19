@@ -1,4 +1,4 @@
-from PyQt6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import QKeySequence, QShortcut
 from services.update import updateProgram
 from libs.console import openConsole, closeConsole  
 

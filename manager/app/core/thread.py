@@ -8,18 +8,18 @@ from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 import zipfile
 from urllib.parse import unquote
 from ui.dialogs import BaseDialog
-from PyQt6.QtCore import Qt, pyqtSignal, QUrl, QTimer, QThread
-from PyQt6.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QProgressBar
-from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtCore import Qt, Signal, QUrl, QTimer, QThread
+from PySide6.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QProgressBar
+from PySide6.QtWebEngineWidgets import QWebEngineView
 from services.api import *
 from services.logging import *
 from config import MANAGER_PROGRESS_API
 VIEW_SERVER = MANAGER_PROGRESS_API
 
 class BaseWorker(QThread):
-    finished = pyqtSignal(bool, str, str)
-    error = pyqtSignal(str)
-    progress = pyqtSignal(int, str)
+    finished = Signal(bool, str, str)
+    error = Signal(str)
+    progress = Signal(int, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -135,7 +135,7 @@ class BaseWorker(QThread):
         return local_path
 
 class DownloadDialog(BaseDialog):
-    update_text_signal = pyqtSignal(str)
+    update_text_signal = Signal(str)
 
     def __init__(self, display_name, pid=None, parent=None):
         super().__init__(parent)

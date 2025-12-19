@@ -1,5 +1,5 @@
-from PyQt6.QtCore import Qt, QDate
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QDate
+from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
     QTextEdit, QDialogButtonBox, QComboBox, QLabel, QDateEdit, QLineEdit, QHBoxLayout,
@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
 )
 from services.api import *
 from services.logging import *
-from PyQt6.QtGui import QKeySequence, QFont, QShortcut
+from PySide6.QtGui import QKeySequence, QFont, QShortcut
 from datetime import datetime
 
 class BaseDialog(QDialog):
@@ -1408,11 +1408,9 @@ class InterpretKemkimDialog(BaseDialog):
     def create_select_all_handler(self, group_name):
         def select_all_handler(state):
 
-            # PyQt6의 state는 int (0,1,2)이며 Qt.CheckState.Checked.value == 2
             try:
                 checked = (state == Qt.CheckState.Checked.value)
             except AttributeError:
-                # PyQt5 fallback (Qt.Checked == 2)
                 checked = (state == Qt.Checked)
 
             group_checkboxes = [
@@ -1621,11 +1619,9 @@ class ModifyKemkimDialog(BaseDialog):
     def create_select_all_handler(self, group_name):
         def select_all_handler(state):
 
-            # PyQt6의 state는 int (0,1,2)이며 Qt.CheckState.Checked.value == 2
             try:
                 checked = (state == Qt.CheckState.Checked.value)
             except AttributeError:
-                # PyQt5 fallback (Qt.Checked == 2)
                 checked = (state == Qt.Checked)
 
             group_checkboxes = [
