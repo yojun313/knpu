@@ -1,5 +1,6 @@
 from PyQt6.QtGui import QKeySequence, QShortcut
 from services.update import updateProgram
+from libs.console import openConsole, closeConsole  
 
 def initShortcut(parent):
     parent.ctrld = QShortcut(QKeySequence("Ctrl+D"), parent)
@@ -36,9 +37,13 @@ def initShortcut(parent):
 
     parent.ctrlu.activated.connect(lambda: updateProgram(parent, sc=True))
     parent.ctrlq.activated.connect(lambda: parent.close())
-
+    parent.ctrlp.activated.connect(lambda: openConsole("Developer Mode"))
+    parent.cmdpp.activated.connect(lambda: closeConsole()) 
+    
     parent.cmdu.activated.connect(lambda: updateProgram(parent, sc=True))
     parent.cmdq.activated.connect(lambda: parent.close())
+    parent.cmdp.activated.connect(lambda: openConsole("Developer Mode"))
+    parent.cmdpp.activated.connect(lambda: closeConsole())
 
 
 def resetShortcuts(parent):
@@ -48,5 +53,4 @@ def resetShortcuts(parent):
         try:
             shortcut.activated.disconnect()
         except TypeError:
-            # 연결된 슬롯이 없는 경우 발생하는 에러를 무시
             pass

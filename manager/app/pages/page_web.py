@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QVBoxLayout, QMessageBox
+from PyQt6.QtWidgets import QMessageBox    
 from PyQt6.QtCore import QUrl
 import warnings
 import traceback
@@ -52,8 +52,7 @@ class Manager_Web:
         self.main.web_addmember_button.clicked.connect(self.addHomeMember)
         self.main.web_addnews_button.clicked.connect(self.addHomeNews)
         self.main.web_deletepaper_button.clicked.connect(self.deleteHomePaper)
-        self.main.web_deletemember_button.clicked.connect(
-            self.deleteHomeMember)
+        self.main.web_deletemember_button.clicked.connect(self.deleteHomeMember)
         self.main.web_deletenews_button.clicked.connect(self.deleteHomeNews)
         self.main.web_editpaper_button.clicked.connect(self.editHomePaper)
         self.main.web_editmember_button.clicked.connect(self.editHomeMember)

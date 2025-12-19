@@ -16,8 +16,8 @@ import zipfile
 import bcrypt
 import webbrowser
 
-from PyQt6.QtCore import QSize, QThread, pyqtSignal, QTimer
-from PyQt6.QtGui import QKeySequence, QIcon, QShortcut
+from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QWidget, QMainWindow, QDialog, QVBoxLayout, QTableWidget,
     QPushButton, QTabWidget,
@@ -34,6 +34,7 @@ from services.auth import *
 from services.crawldb import *
 from services.api import *
 from services.logging import *
+from services.update import *
 from core.setting import *
 from core.shortcut import *
 from core.thread import *
@@ -365,7 +366,7 @@ class Manager_Database(Manager_Worker):
 
             if search_text == '/update':
                 self.main.database_searchDB_lineinput.clear()
-                self.main.updateProgram(sc=True)
+                updateProgram(self.main, sc=True)
                 return
 
             if search_text == '/delete':

@@ -13,7 +13,7 @@ from PyQt6 import uic
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QPushButton, QVBoxLayout
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtCore import QTimer, QUrl
+from PyQt6.QtCore import QTimer
 
 from config import VERSION, ASSETS_PATH
 from libs.console import openConsole, closeConsole
@@ -316,6 +316,6 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             print(f"[Cleanup ERROR] {e}")
-
-    def updateProgram(self, sc=False):  
-        updateProgram(self, sc)
+    
+    def updateProgram(self, sc=False):
+        updateProgram(self, sc=sc)
