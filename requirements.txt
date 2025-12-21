@@ -10,7 +10,6 @@ google_auth_oauthlib
 googletrans
 kiwipiepy
 matplotlib
-mySQL
 numpy
 openai
 packaging
@@ -22,7 +21,6 @@ pydantic
 pymongo
 PyMySQL
 PySide6
-PyQt6_sip
 python-dotenv
 python_bcrypt
 pytz

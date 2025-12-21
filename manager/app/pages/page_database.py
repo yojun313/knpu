@@ -30,7 +30,6 @@ from ui.table import *
 from ui.status import *
 from ui.finder import *
 from ui.dialogs import *
-from services.auth import *
 from services.crawldb import *
 from services.api import *
 from services.logging import *
@@ -38,6 +37,7 @@ from services.update import *
 from core.setting import *
 from core.shortcut import *
 from core.thread import *
+from core.auth import *
 from config import *
 from .page_worker import Manager_Worker
 
@@ -304,7 +304,7 @@ class Manager_Database(Manager_Worker):
                 self.main.database_searchDB_lineinput.clear()
                 reply = QMessageBox.question(
                     self.main, 'Program Delete',
-                    f"'C:/MANAGER'를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
+                    f"{self.main.localDirectory}를 비롯한 모든 구성요소가 제거됩니다\n\nMANAGER를 완전히 삭제하시겠습니까?",
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
                 )
                 if reply == QMessageBox.StandardButton.Yes:

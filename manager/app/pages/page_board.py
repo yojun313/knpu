@@ -5,10 +5,10 @@ import bcrypt
 from config import *
 from ui.table import *
 from ui.status import *
-from services.auth import *
 from services.api import *
 from services.logging import *
 from core.shortcut import *
+from core.auth import *
 
 warnings.filterwarnings("ignore")
 
