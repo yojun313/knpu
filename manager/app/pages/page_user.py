@@ -7,7 +7,7 @@ from core.shortcut import *
 from config import *
 from services.api import *
 from services.logging import *
-from services.auth import *
+from core.auth import *
 
 warnings.filterwarnings("ignore")
 

@@ -28,11 +28,11 @@ from core.boot import (
 )
 from core.shortcut import initShortcut, resetShortcuts
 from core.setting import get_setting, set_setting
+from core.auth import loginProgram
 from services.crawldb import updateDB
 from services.pushover import sendPushOver
 from services.update import updateProgram
 from services.logging import userLogging, getUserLocation
-from services.auth import loginProgram
 from ui.style import theme_option
 from ui.status import printStatus, changeStatusbarAction
 from ui.dialogs import ViewVersionDialog
