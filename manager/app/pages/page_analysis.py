@@ -1228,9 +1228,9 @@ class Manager_Analysis(Manager_Worker):
                     self.main, 'Notification', f'키워드 필터링 데이터 저장이 완료되었습니다\n\nAI 분석을 진행하시겠습니까?', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
                 if reply == QMessageBox.StandardButton.Yes:
                     gpt_key = get_setting('GPT_Key')
-                    if gpt_key == 'default' or len(gpt_key) < 20:
+                    if get_setting('LLM_model') == 'ChatGPT' and (gpt_key == 'default' or len(gpt_key) < 20):
                         QMessageBox.information(
-                            self.main, 'Notification', f'API Key가 설정되지 않았습니다\n\n환경설정에서 ChatGPT API Key를 입력해주십시오')
+                            self.main, 'Notification', f'OpenAI API Key가 설정되지 않았습니다\n\n환경설정에서 OpenAI API Key를 입력해주십시오')
                         printStatus(self.main)
                         openFileExplorer(analyze_directory)
                         return
@@ -1257,7 +1257,7 @@ class Manager_Analysis(Manager_Worker):
                         "...\n"
                         "토픽 5. ~~: (여기에 내용 기입)"
                     )
-                    gpt_response = generateLLM(gpt_query)
+                    gpt_response = generateLLM(gpt_query, get_setting('LLM_model'))
                     if type(gpt_response) != str:
                         QMessageBox.warning(
                             self.main, "Error", f"{gpt_response[1]}")

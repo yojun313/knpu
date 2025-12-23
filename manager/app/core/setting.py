@@ -25,7 +25,7 @@ _DEFAULTS: dict[str, Any] = {
     "BootTerminal":     "default",
     "DBKeywordSort":    "default",
     "ProcessConsole":   "default",
-    "LLM_model":        "ChatGPT",
+    "LLM_model":        "Server LLM",
     "LLM_model_name":   "ChatGPT 4",
     "LastVersion":    f"{VERSION}",
 }
