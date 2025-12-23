@@ -251,7 +251,7 @@ class Manager_Setting(BaseDialog):
         self.llm_option_selector = QComboBox()
 
         # 표시 이름과 실제 값을 매핑
-        llm_options = [("ChatGPT", "ChatGPT")]
+        llm_options = [("Server LLM", "Server LLM"), ("ChatGPT", "ChatGPT")]
         llm_options = sorted(llm_options, key=lambda x: x[0])
 
         # QComboBox에 항목 추가

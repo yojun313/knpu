@@ -1,6 +1,8 @@
 import traceback
-import requests
 from openai import OpenAI
+from services.api import *
+from config import *
+
 
 from core.setting import get_setting
 
@@ -30,28 +32,42 @@ def generateLLM(query, model = 'ChatGPT'):
             # 예외 발생 시 에러 메시지 반환
             return (0, traceback.format_exc())
 
-    else:
-        # 서버 URL
-        url = "http://121.152.225.232:3333/api/process"
-
-        # 전송할 데이터
-        data = {
-            "model_name": model,
-            "question": query
-        }
-
+    elif model == 'Server LLM':
         try:
-            # POST 요청 보내기
-            response = requests.post(url, json=data)
+            model_resp = Request(
+                method="get",
+                url="/llm/v1/models",
+                timeout=10,
+            )
 
-            # 응답 확인
-            if response.status_code == 200:
-                result = response.json()['result']
-                result = result.replace(
-                    '<think>', '').replace('</think>', '')
-                return result
-            else:
-                return f"Failed to get a valid response: {response.status_code} {response.text}"
+            model_data = model_resp.json().get("data", [])
+            if not model_data:
+                raise Exception("No model available on Server LLM")
 
-        except requests.exceptions.RequestException as e:
-            return f"Error communicating with the server: {e}"
+            model_id = model_data[0]["id"]
+
+            payload = {
+                "model": model_id,
+                "messages": [
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": query},
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1024,
+            }
+
+            response = Request(
+                method="post",
+                url="/llm/v1/chat/completions",
+                json=payload,
+                timeout=60,
+            )
+
+            result = response.json()
+            return result["choices"][0]["message"]["content"]
+
+        except Exception:
+            return (0, traceback.format_exc())
+
+
+        
