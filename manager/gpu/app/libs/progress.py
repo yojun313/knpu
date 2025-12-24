@@ -1,7 +1,11 @@
 import requests
 from typing import Optional
+from dotenv import load_dotenv
+import os
 
-VIEW_SERVER = "https://manager-progress.knpu.re.kr"
+load_dotenv()
+
+PROGRESS_SERVER_URL = os.getenv("PROGRESS_SERVER_URL")
 
 def register_process(process_id: str, title: str) -> None:
     """
@@ -9,7 +13,7 @@ def register_process(process_id: str, title: str) -> None:
     POST /process { title, process_id }
     """
     resp = requests.post(
-        f"{VIEW_SERVER}/process",
+        f"{PROGRESS_SERVER_URL}/process",
         json={"title": title, "process_id": process_id}
     )
     resp.raise_for_status()
@@ -23,7 +27,7 @@ def send_message(process_id: str, text: str) -> None:
         "type": "message",
         "text": text
     }
-    resp = requests.post(f"{VIEW_SERVER}/notify/{process_id}", json=payload)
+    resp = requests.post(f"{PROGRESS_SERVER_URL}/notify/{process_id}", json=payload)
     resp.raise_for_status()
 
 def send_progress(
@@ -43,7 +47,7 @@ def send_progress(
     }
     if message:
         payload["message"] = message
-    resp = requests.post(f"{VIEW_SERVER}/notify/{process_id}", json=payload)
+    resp = requests.post(f"{PROGRESS_SERVER_URL}/notify/{process_id}", json=payload)
     resp.raise_for_status()
 
 def send_status(process_id: str, phase: str) -> None:
@@ -52,7 +56,7 @@ def send_status(process_id: str, phase: str) -> None:
     POST /notify/{process_id} { type: "status", phase }
     """
     resp = requests.post(
-        f"{VIEW_SERVER}/notify/{process_id}",
+        f"{PROGRESS_SERVER_URL}/notify/{process_id}",
         json={"type": "status", "phase": phase}
     )
     resp.raise_for_status()
@@ -63,7 +67,7 @@ def send_complete(process_id: str, download_url: str) -> None:
     POST /notify/{process_id} { type: "complete", url }
     """
     resp = requests.post(
-        f"{VIEW_SERVER}/notify/{process_id}",
+        f"{PROGRESS_SERVER_URL}/notify/{process_id}",
         json={"type": "complete", "url": download_url}
     )
     resp.raise_for_status()

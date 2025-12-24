@@ -8,11 +8,12 @@ import json
 import io, os
 from urllib.parse import quote
 import httpx
+from dotenv import load_dotenv
   
 router = APIRouter()
 
 load_dotenv()
-ANALYZER_EXE_PATH = os.getenv("ANALYZER_EXE_PATH")
+
 GPU_SERVER_URL = os.getenv("GPU_SERVER_URL")
 
 @router.post("/kemkim")
@@ -55,7 +56,6 @@ async def tokenize_file(
         media_type=media_type,
         headers={"Content-Disposition": cd_header},
     )
-
 
 @router.post("/hate")
 async def hate_proxy(
