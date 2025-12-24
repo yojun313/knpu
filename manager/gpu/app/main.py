@@ -58,5 +58,5 @@ async def start_background_tasks():
 async def stop_background_tasks():
     pass  # 따로 종료할 작업 없음
 
-app.include_router(api_router, prefix="/api", tags=["API"])
+app.include_router(api_router, prefix="/gpu", tags=["GPU"])
 print("Server is running...")
