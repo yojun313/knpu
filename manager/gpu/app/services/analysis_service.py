@@ -49,7 +49,7 @@ def measure_hate(
     data: pd.DataFrame,
     text_col: str | None = "Text",
     update_interval: int = 1_000,
-    batch_size: int = 128,
+    batch_size: int = 64,
 ) -> pd.DataFrame:
     """
     option.option_num
