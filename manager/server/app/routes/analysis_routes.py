@@ -73,7 +73,7 @@ async def hate_proxy(
 
         # GPU 서버로 전달
         response = await client.post(
-            f"{GPU_SERVER_URL}/gpu/hate",
+            f"{GPU_SERVER_URL}/hate",
             data=data,
             files=files
         )
