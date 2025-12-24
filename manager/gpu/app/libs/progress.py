@@ -1,8 +1,7 @@
 import requests
 from typing import Optional
 
-# 뷰 서버 기본 URL (포트는 실제 설정에 맞춰 바꿔주세요)
-VIEW_SERVER = "http://localhost:8080"
+VIEW_SERVER = "https://manager-progress.knpu.re.kr"
 
 def register_process(process_id: str, title: str) -> None:
     """
