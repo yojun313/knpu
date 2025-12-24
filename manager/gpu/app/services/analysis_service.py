@@ -21,8 +21,8 @@ load_dotenv()
 
 kor_unsmile_pipe = None
 
-def get_models():
-    global kor_unsmile_pipe, topic_model
+def get_hate_model():
+    global kor_unsmile_pipe
     MODEL_DIR = os.getenv("MODEL_PATH")
     
     if kor_unsmile_pipe is None:
@@ -38,10 +38,9 @@ def get_models():
 
     return kor_unsmile_pipe
 
-def unload_models():
-    global kor_unsmile_pipe, topic_model
+def unload_hate_model():
+    global kor_unsmile_pipe
     kor_unsmile_pipe = None
-    topic_model = None
     torch.cuda.empty_cache()
     gc.collect()
 
@@ -61,7 +60,7 @@ def measure_hate(
 
     def batch_scores(texts: list[str]) -> list[dict[str, float]]:
         """문장 리스트 → [{label: prob}, ...] (둘째 자리 반올림)"""
-        pipe, _ = get_models()
+        pipe = get_hate_model()
         outs = pipe(
             texts,
             truncation=True,
@@ -87,7 +86,7 @@ def measure_hate(
 
     texts = data[text_col].fillna("").astype(str).tolist()
     total = len(texts)
-    pipe, _ = get_models()
+    pipe = get_hate_model()
     labels = list(pipe.model.config.id2label.values())
     
     send_message(pid, f"[혐오도 분석] '{text_col}' 처리 시작 (총 {total:,} rows)")
@@ -143,6 +142,6 @@ def measure_hate(
         data["Clean"] = results
 
     send_message(pid, "[혐오도 분석] 완료")
-    unload_models()
+    unload_hate_model()
     return data
 

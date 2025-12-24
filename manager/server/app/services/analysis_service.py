@@ -40,7 +40,7 @@ def get_kiwi():
         kiwi_instance = Kiwi(num_workers=-1)
     return kiwi_instance
 
-def get_models():
+def get_hate_model():
     global kor_unsmile_pipe, topic_model
     MODEL_DIR = os.getenv("MODEL_PATH")
     
@@ -62,7 +62,7 @@ def get_models():
 
     return kor_unsmile_pipe, topic_model
 
-def unload_models():
+def unload_hate_model():
     global kor_unsmile_pipe, topic_model
     kor_unsmile_pipe = None
     topic_model = None
@@ -223,7 +223,7 @@ def measure_hate(
 
     def batch_scores(texts: list[str]) -> list[dict[str, float]]:
         """문장 리스트 → [{label: prob}, ...] (둘째 자리 반올림)"""
-        pipe, _ = get_models()
+        pipe, _ = get_hate_model()
         outs = pipe(
             texts,
             truncation=True,
@@ -249,7 +249,7 @@ def measure_hate(
 
     texts = data[text_col].fillna("").astype(str).tolist()
     total = len(texts)
-    pipe, _ = get_models()
+    pipe, _ = get_hate_model()
     labels = list(pipe.model.config.id2label.values())
     
     send_message(pid, f"[혐오도 분석] '{text_col}' 처리 시작 (총 {total:,} rows)")
@@ -305,7 +305,7 @@ def measure_hate(
         data["Clean"] = results
 
     send_message(pid, "[혐오도 분석] 완료")
-    unload_models()
+    unload_hate_model()
     return data
 
 def extract_keywords(
@@ -375,7 +375,7 @@ def extract_keywords(
                     noun_candidates = noun_candidates[:500]
 
                     if noun_candidates:
-                        _, topic_model = get_models()
+                        _, topic_model = get_hate_model()
                         kw = topic_model.extract_keywords(
                             chunk,
                             candidates=noun_candidates,
@@ -400,6 +400,6 @@ def extract_keywords(
     # 결과 열 추가
     data["Keywords"] = keywords_col
     send_message(pid, "[토픽 분석] 완료")
-    unload_models()
+    unload_hate_model()
     return data
 
