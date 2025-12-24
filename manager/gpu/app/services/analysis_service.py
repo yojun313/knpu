@@ -33,7 +33,7 @@ def get_hate_model():
             tokenizer=tokenizer,
             function_to_apply="sigmoid",
             top_k=None,
-            device=0 if torch.cuda.is_available() else -1,
+            device=1 if torch.cuda.is_available() else -1,
         )
 
     return kor_unsmile_pipe
@@ -49,7 +49,7 @@ def measure_hate(
     data: pd.DataFrame,
     text_col: str | None = "Text",
     update_interval: int = 1_000,
-    batch_size: int = 32,
+    batch_size: int = 256,
 ) -> pd.DataFrame:
     """
     option.option_num
