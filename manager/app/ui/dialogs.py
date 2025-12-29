@@ -1769,9 +1769,10 @@ class SelectColumnsDialog(BaseDialog):
 
 
 class SelectEtcAnalysisDialog(BaseDialog):
-    def __init__(self, analyze_hate):
+    def __init__(self, analyze_hate, whisper):
         super().__init__()
         self.analyze_hate = analyze_hate
+        self.whisper = whisper
         self.initUI()
         self.data = None  # 데이터를 저장할 속성 추가
 
@@ -1782,6 +1783,10 @@ class SelectEtcAnalysisDialog(BaseDialog):
         hate_btn = QPushButton("혐오도 분석")
         hate_btn.clicked.connect(self.run_analyze_hate)
         layout.addWidget(hate_btn)
+        
+        whisper_btn = QPushButton("음성 인식")
+        whisper_btn.clicked.connect(self.run_whisper)
+        layout.addWidget(whisper_btn)
 
         self.setLayout(layout)
 
@@ -1789,9 +1794,9 @@ class SelectEtcAnalysisDialog(BaseDialog):
         self.accept()
         self.analyze_hate()
         
-    def run_analyze_topic(self):
+    def run_whisper(self):
         self.accept()
-        self.analyze_topic()
+        self.whisper()
 
 
 class EditHomeMemberDialog(BaseDialog):
