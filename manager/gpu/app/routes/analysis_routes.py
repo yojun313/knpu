@@ -60,17 +60,11 @@ async def whisper_route(
     option: str = Form("{}"),
     file: UploadFile = File(...)
 ):
-    """
-    option 예시:
-    {
-        "language": "ko"
-    }
-    """
-
     option_dict = json.loads(option)
-    language = option_dict.get("language", "ko")
 
-    # 임시 파일 저장
+    language = option_dict.get("language", "ko")
+    model_level = int(option_dict.get("model", 2))  # 기본 medium
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp.write(await file.read())
         audio_path = tmp.name
@@ -78,9 +72,9 @@ async def whisper_route(
     try:
         result = transcribe_audio(
             audio_path=audio_path,
-            language=language
+            language=language,
+            model_level=model_level
         )
+        return JSONResponse(result)
     finally:
         os.remove(audio_path)
-
-    return JSONResponse(result)
