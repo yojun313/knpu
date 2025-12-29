@@ -14,16 +14,23 @@ from transformers import (
 )
 logging.set_verbosity_error()
 import os
+from faster_whisper import WhisperModel
 from dotenv import load_dotenv
 import gc
 
 load_dotenv() 
+MODEL_DIR = os.getenv("MODEL_PATH")
 
 kor_unsmile_pipe = None
 
+whisper_model = WhisperModel(
+    os.path.join(MODEL_DIR, "faster-whisper-large-v3"),
+    device="cuda",
+    compute_type="float16"
+)
+
 def get_hate_model():
     global kor_unsmile_pipe
-    MODEL_DIR = os.getenv("MODEL_PATH")
     
     if kor_unsmile_pipe is None:
         tokenizer = AutoTokenizer.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
@@ -145,3 +152,21 @@ def measure_hate(
     unload_hate_model()
     return data
 
+def transcribe_audio(
+    audio_path: str,
+    language: str = "ko",
+):
+    segments, info = whisper_model.transcribe(
+        audio_path,
+        language=language,
+        beam_size=5,
+        vad_filter=True,
+    )
+
+    text = " ".join(seg.text for seg in segments)
+
+    return {
+        "language": info.language,
+        "duration": info.duration,
+        "text": text,
+    }
