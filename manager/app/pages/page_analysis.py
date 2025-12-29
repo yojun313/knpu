@@ -59,7 +59,7 @@ class Manager_Analysis(Manager_Worker):
         self.file_dialog = makeFileFinder(self.main, self.main.localDirectory)
         self.main.analysis_filefinder_layout.addWidget(self.file_dialog)
 
-    def analysis_getfiledirectory(self, file_dialog):
+    def analysis_getfiledirectory_csv(self, file_dialog):
         selected_directory = file_dialog.selectedFiles()
         if selected_directory == []:
             return selected_directory
@@ -73,6 +73,28 @@ class Manager_Analysis(Manager_Worker):
             if index != 0:
                 selected_directory[index] = os.path.join(
                     os.path.dirname(selected_directory[0]), directory)
+
+        return selected_directory
+    
+    def analysis_getfiledirectory_audio(self, file_dialog):
+        selected_directory = file_dialog.selectedFiles()
+        if selected_directory == []:
+            return selected_directory
+
+        selected_directory = selected_directory[0].split(', ')
+
+        allowed_ext = ('.wav', '.mp3', '.m4a', '.flac', '.ogg')
+
+        for directory in selected_directory:
+            if not directory.lower().endswith(allowed_ext):
+                return [False, directory]
+
+        for index, directory in enumerate(selected_directory):
+            if index != 0:
+                selected_directory[index] = os.path.join(
+                    os.path.dirname(selected_directory[0]),
+                    directory
+                )
 
         return selected_directory
 
@@ -143,7 +165,7 @@ class Manager_Analysis(Manager_Worker):
 
         try:
             # 1. 파일 선택
-            selected_directory = self.analysis_getfiledirectory(self.file_dialog)
+            selected_directory = self.analysis_getfiledirectory_csv(self.file_dialog)
             if len(selected_directory) == 0:
                 return
             if selected_directory[0] == False:
@@ -229,7 +251,7 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
             
         try:
-            selected_directory = self.analysis_getfiledirectory(self.file_dialog)
+            selected_directory = self.analysis_getfiledirectory_csv(self.file_dialog)
             if len(selected_directory) == 0:
                 return
             if selected_directory[0] == False:
@@ -409,7 +431,7 @@ class Manager_Analysis(Manager_Worker):
 
         try:
             # 1) 파일 선택
-            filepath = self.check_file()
+            filepath = self.check_csv_file()
             if not filepath:
                 printStatus(self.main)
                 return
@@ -502,7 +524,7 @@ class Manager_Analysis(Manager_Worker):
 
         try:
             # 1. 파일 선택
-            filepath = self.check_file(tokenCheck=True)
+            filepath = self.check_csv_file(tokenCheck=True)
             if not filepath:
                 printStatus(self.main)
                 return
@@ -622,7 +644,7 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
                     
         try:
-            filepath = self.check_file(tokenCheck=True)
+            filepath = self.check_csv_file(tokenCheck=True)
             if not filepath:
                 printStatus(self.main)
                 return
@@ -1326,7 +1348,7 @@ class Manager_Analysis(Manager_Worker):
 
         try:
             # ───────────────────────────── 1) 파일 선택
-            csv_path = self.check_file()
+            csv_path = self.check_csv_file()
             if not csv_path:
                 printStatus(self.main)
                 return
@@ -1417,7 +1439,7 @@ class Manager_Analysis(Manager_Worker):
 
     def run_modify_token(self):
         try:
-            token_filepath = self.check_file(tokenCheck=True)
+            token_filepath = self.check_csv_file(tokenCheck=True)
             if not token_filepath:
                 printStatus(self.main)
                 return
@@ -1689,7 +1711,7 @@ class Manager_Analysis(Manager_Worker):
             programBugLog(self.main, traceback.format_exc())
 
     def select_etc_analysis(self):
-        dialog = SelectEtcAnalysisDialog(self.run_hate_measure)
+        dialog = SelectEtcAnalysisDialog(self.run_hate_measure, self.run_whisper)
         dialog.exec()
 
     def run_hate_measure(self):
@@ -1750,7 +1772,7 @@ class Manager_Analysis(Manager_Worker):
                     return
             
             # 1) CSV 선택
-            csv_path = self.check_file()
+            csv_path = self.check_csv_file()
             if not csv_path:
                 printStatus(self.main)
                 return
@@ -1760,7 +1782,7 @@ class Manager_Analysis(Manager_Worker):
             # 2) 결과 저장 폴더
             printStatus(self.main, "결과 CSV를 저장할 위치를 선택하세요")
             save_dir = QFileDialog.getExistingDirectory(
-                self.main, "결과 CSV를 저장할 위치를 선택하세요", os.path.dirname(csv_path)
+                self.main, "결과 파일 저장 위치 선택", os.path.dirname(csv_path)
             )
             if save_dir == "":
                 printStatus(self.main)
@@ -1875,17 +1897,13 @@ class Manager_Analysis(Manager_Worker):
                         self.main, "Processing", "이미 음성 인식 작업이 진행 중입니다.")
                     return
 
-            # 1) 오디오 파일 선택
-            audio_path = self.check_file(
-                file_filter="Audio Files (*.wav *.mp3 *.m4a *.flac)"
-            )
+            audio_path = self.check_audio_file()
             if not audio_path:
                 printStatus(self.main)
                 return
-
+                
             audio_fname = os.path.basename(audio_path)
 
-            # 2) 저장 위치
             printStatus(self.main, "결과 파일 저장 위치를 선택하세요")
             save_dir = QFileDialog.getExistingDirectory(
                 self.main, "결과 파일 저장 위치 선택", os.path.dirname(audio_path)
@@ -1894,8 +1912,41 @@ class Manager_Analysis(Manager_Worker):
                 printStatus(self.main)
                 return
 
-            # 3) 언어 선택 (간단히 ko 고정 or 다이얼로그)
-            language = "ko"
+            WHISPER_LANGUAGES = {
+                "자동 감지": None,
+                "한국어": "ko",
+                "영어": "en",
+                "일본어": "ja",
+                "중국어": "zh",
+                "프랑스어": "fr",
+                "독일어": "de",
+                "스페인어": "es",
+                "이탈리아어": "it",
+                "포르투갈어": "pt",
+                "러시아어": "ru",
+                "아랍어": "ar",
+                "힌디어": "hi",
+                "태국어": "th",
+                "베트남어": "vi",
+                "인도네시아어": "id",
+            }
+
+            label_list = list(WHISPER_LANGUAGES.keys())
+
+            selected_label, ok = QInputDialog.getItem(
+                self.main,
+                "언어 선택",
+                "음성 인식 언어를 선택하세요:",
+                label_list,
+                0,          # 기본값 = 한국어
+                False
+            )
+
+            if not ok:
+                printStatus(self.main)
+                return
+
+            language = WHISPER_LANGUAGES[selected_label]
 
             pid = str(uuid.uuid4())
             register_process(pid, "음성 인식")
@@ -1929,8 +1980,8 @@ class Manager_Analysis(Manager_Worker):
         except Exception:
             programBugLog(self.main, traceback.format_exc())
     
-    def check_file(self, tokenCheck=False):
-        selected_directory = self.analysis_getfiledirectory(
+    def check_csv_file(self, tokenCheck=False):
+        selected_directory = self.analysis_getfiledirectory_csv(
             self.file_dialog)
         if len(selected_directory) == 0:
             QMessageBox.warning(
@@ -1948,6 +1999,24 @@ class Manager_Analysis(Manager_Worker):
             QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
             return 0
         return selected_directory[0]
+
+    def check_audio_file(self):
+        selected_directory = self.analysis_getfiledirectory_audio(self.file_dialog)
+
+        if len(selected_directory) == 0:
+            QMessageBox.warning(self.main, "Wrong Selection", "선택된 오디오 파일이 없습니다")
+            return 0
+
+        if selected_directory[0] == False:
+            QMessageBox.warning(self.main, "Wrong Format", f"{selected_directory[1]} 는 오디오 파일이 아닙니다.")
+            return 0
+
+        if len(selected_directory) != 1:
+            QMessageBox.warning(self.main, "Wrong Selection", "한 개의 오디오 파일만 선택하여 주십시오")
+            return 0
+
+        return selected_directory[0]
+
 
     def anaylsis_buttonMatch(self):
         self.main.analysis_timesplitfile_btn.clicked.connect(self.run_timesplit)
