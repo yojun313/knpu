@@ -1809,7 +1809,126 @@ class Manager_Analysis(Manager_Worker):
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
+    
+    def run_whisper(self):
+        class WhisperWorker(BaseWorker):
+            def __init__(self, pid, audio_path, save_dir, audio_fname, language, parent=None):
+                super().__init__(parent)
+                self.pid = pid
+                self.audio_path = audio_path
+                self.save_dir = save_dir
+                self.audio_fname = audio_fname
+                self.language = language
 
+            def run(self):
+                try:
+                    option_payload = {
+                        "language": self.language
+                    }
+
+                    url = MANAGER_SERVER_API + "/analysis/whisper"
+
+                    response = self.upload_file(
+                        self.audio_path,
+                        url,
+                        extra_fields={
+                            "option": (None, json.dumps(option_payload), "application/json")
+                        },
+                        label="음성 업로드 중"
+                    )
+
+                    # 응답 상태 확인
+                    if response.status_code != 200:
+                        try:
+                            err = response.json()
+                            msg = err.get("message") or err.get("error") or "음성 인식 실패"
+                        except Exception:
+                            msg = response.text or "음성 인식 중 알 수 없는 오류가 발생했습니다."
+                        self.error.emit(msg)
+                        return
+
+                    # 결과 파일명
+                    base, _ = os.path.splitext(self.audio_fname)
+                    filename = f"{base}_whisper.txt"
+
+                    # 다운로드 (JSON → txt)
+                    self.download_file(
+                        response,
+                        self.save_dir,
+                        filename,
+                        label="음성 인식 결과 다운로드 중"
+                    )
+
+                    self.finished.emit(
+                        True,
+                        f"{self.audio_fname} 음성 인식이 완료되었습니다.\n\n파일을 확인하시겠습니까?",
+                        self.save_dir
+                    )
+
+                except Exception:
+                    self.error.emit(traceback.format_exc())
+
+        try:
+            for thread in active_threads:
+                if "음성 인식" in thread:
+                    QMessageBox.information(
+                        self.main, "Processing", "이미 음성 인식 작업이 진행 중입니다.")
+                    return
+
+            # 1) 오디오 파일 선택
+            audio_path = self.check_file(
+                file_filter="Audio Files (*.wav *.mp3 *.m4a *.flac)"
+            )
+            if not audio_path:
+                printStatus(self.main)
+                return
+
+            audio_fname = os.path.basename(audio_path)
+
+            # 2) 저장 위치
+            printStatus(self.main, "결과 파일 저장 위치를 선택하세요")
+            save_dir = QFileDialog.getExistingDirectory(
+                self.main, "결과 파일 저장 위치 선택", os.path.dirname(audio_path)
+            )
+            if save_dir == "":
+                printStatus(self.main)
+                return
+
+            # 3) 언어 선택 (간단히 ko 고정 or 다이얼로그)
+            language = "ko"
+
+            pid = str(uuid.uuid4())
+            register_process(pid, "음성 인식")
+
+            thread_name = f"음성 인식: {audio_fname}"
+            register_thread(thread_name)
+            printStatus(self.main)
+
+            downloadDialog = DownloadDialog(thread_name, pid, self.main)
+            downloadDialog.show()
+
+            worker = WhisperWorker(
+                pid,
+                audio_path,
+                save_dir,
+                audio_fname,
+                language,
+                self.main
+            )
+
+            self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
+            worker.start()
+
+            if not hasattr(self, "_workers"):
+                self._workers = []
+            self._workers.append(worker)
+
+            # 로그
+            userLogging(f"ANALYSIS -> Whisper({audio_fname}) : lang={language}")
+
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+    
     def check_file(self, tokenCheck=False):
         selected_directory = self.analysis_getfiledirectory(
             self.file_dialog)

@@ -86,3 +86,31 @@ async def hate_proxy(
             "Content-Disposition": response.headers.get("content-disposition", "")
         }
     )
+
+@router.post("/whisper")
+async def whisper_proxy(
+    option: str = Form("{}"),
+    file: UploadFile = File(...)
+):
+    async with httpx.AsyncClient(timeout=None) as client:
+        files = {
+            "file": (file.filename, await file.read(), file.content_type)
+        }
+
+        data = {
+            "option": option
+        }
+
+        response = await client.post(
+            f"{GPU_SERVER_URL}/analysis/whisper",
+            data=data,
+            files=files
+        )
+
+    return StreamingResponse(
+        response.aiter_bytes(),
+        media_type=response.headers.get("content-type"),
+        headers={
+            "Content-Disposition": response.headers.get("content-disposition", "")
+        }
+    )
