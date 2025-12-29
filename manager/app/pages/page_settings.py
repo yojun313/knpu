@@ -621,6 +621,10 @@ class Manager_Setting(BaseDialog):
         link3_label = QLabel('<a href="https://knpu.re.kr/hate_analysis">혐오도 분석</a>')
         link3_label.setOpenExternalLinks(True)
         link3_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        
+        link4_label = QLabel('<a href="https://knpu.re.kr/whisper">음성 인식</a>')
+        link4_label.setOpenExternalLinks(True)
+        link4_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         # === CSV 양식 다운로드 영역 ===
         format_title_label = QLabel("\nFormats\n")
@@ -654,6 +658,7 @@ class Manager_Setting(BaseDialog):
         help_layout.addWidget(link1_label)
         help_layout.addWidget(link2_label)
         help_layout.addWidget(link3_label)
+        help_layout.addWidget(link4_label)
 
         help_layout.addWidget(format_title_label)
         help_layout.addWidget(format_text_label)
