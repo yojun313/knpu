@@ -1,3 +1,5 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 from app.models.analysis_model import *
 from app.libs.progress import *
 import os

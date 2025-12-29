@@ -1913,7 +1913,6 @@ class Manager_Analysis(Manager_Worker):
                 return
 
             WHISPER_LANGUAGES = {
-                "자동 감지": None,
                 "한국어": "ko",
                 "영어": "en",
                 "일본어": "ja",
@@ -1938,7 +1937,7 @@ class Manager_Analysis(Manager_Worker):
                 "언어 선택",
                 "음성 인식 언어를 선택하세요:",
                 label_list,
-                0,          # 기본값 = 한국어
+                0,         
                 False
             )
 
