@@ -1834,7 +1834,7 @@ class Manager_Analysis(Manager_Worker):
     
     def run_whisper(self):
         class WhisperWorker(BaseWorker):
-            def __init__(self, pid, audio_path, save_dir, audio_fname, language, parent=None):
+            def __init__(self, pid, audio_path, save_dir, audio_fname, language, model_level, parent=None):
                 super().__init__(parent)
                 self.pid = pid
                 self.audio_path = audio_path
@@ -1845,7 +1845,8 @@ class Manager_Analysis(Manager_Worker):
             def run(self):
                 try:
                     option_payload = {
-                        "language": self.language
+                        "language": self.language,
+                        "model": self.model_level,
                     }
 
                     url = MANAGER_SERVER_API + "/analysis/whisper"
@@ -1946,7 +1947,30 @@ class Manager_Analysis(Manager_Worker):
                 return
 
             language = WHISPER_LANGUAGES[selected_label]
+            
+            WHISPER_MODELS = {
+                "빠름 (small)": 1,
+                "중간 (medium, 권장)": 2,
+                "정확 (large)": 3,
+            }
 
+            model_labels = list(WHISPER_MODELS.keys())
+
+            selected_model_label, ok = QInputDialog.getItem(
+                self.main,
+                "모델 선택",
+                "음성 인식 모델을 선택하세요:",
+                model_labels,
+                1,   # 기본값: medium
+                False
+            )
+
+            if not ok:
+                printStatus(self.main)
+                return
+
+            model_level = WHISPER_MODELS[selected_model_label]
+            
             pid = str(uuid.uuid4())
             register_process(pid, "음성 인식")
 
@@ -1963,6 +1987,7 @@ class Manager_Analysis(Manager_Worker):
                 save_dir,
                 audio_fname,
                 language,
+                model_level,
                 self.main
             )
 
@@ -1974,7 +1999,9 @@ class Manager_Analysis(Manager_Worker):
             self._workers.append(worker)
 
             # 로그
-            userLogging(f"ANALYSIS -> Whisper({audio_fname}) : lang={language}")
+            userLogging(
+                f"ANALYSIS -> Whisper({audio_fname}) : lang={language}, model={model_level}"
+            )
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())

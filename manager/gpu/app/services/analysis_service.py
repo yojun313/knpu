@@ -24,6 +24,24 @@ load_dotenv()
 MODEL_DIR = os.getenv("MODEL_PATH")
 
 kor_unsmile_pipe = None
+_whisper_models = {}
+
+WHISPER_MODEL_MAP = {
+    1: {
+        "name": "faster-whisper-small",
+        "compute": "int8_float16",
+    },
+    2: {
+        "name": "faster-whisper-medium",
+        "compute": "int8_float16",
+    },
+    3: {
+        "name": "faster-whisper-large-v3",
+        "compute": "float16",
+    },
+}
+
+
 
 whisper_model = WhisperModel(
     os.path.join(MODEL_DIR, "faster-whisper-large-v3"),
@@ -46,6 +64,24 @@ def get_hate_model():
         )
 
     return kor_unsmile_pipe
+
+def get_whisper_model(level: int):
+    if level not in WHISPER_MODEL_MAP:
+        level = 2  # 기본값 medium
+
+    cfg = WHISPER_MODEL_MAP[level]
+
+    key = f"{cfg['name']}::{cfg['compute']}"
+
+    if key not in _whisper_models:
+        _whisper_models[key] = WhisperModel(
+            os.path.join(MODEL_DIR, cfg["name"]),
+            device="cuda",
+            compute_type=cfg["compute"],
+        )
+
+    return _whisper_models[key]
+
 
 def unload_hate_model():
     global kor_unsmile_pipe
@@ -157,11 +193,14 @@ def measure_hate(
 def transcribe_audio(
     audio_path: str,
     language: str = "ko",
+    model_level: int = 2,  
 ):
-    segments, info = whisper_model.transcribe(
+    model = get_whisper_model(model_level)
+
+    segments, info = model.transcribe(
         audio_path,
         language=language,
-        beam_size=5,
+        beam_size=1 if model_level < 3 else 5,
         vad_filter=True,
     )
 
@@ -171,4 +210,5 @@ def transcribe_audio(
         "language": info.language,
         "duration": info.duration,
         "text": text,
+        "model_level": model_level,
     }
