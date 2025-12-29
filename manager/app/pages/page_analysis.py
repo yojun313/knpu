@@ -1841,6 +1841,7 @@ class Manager_Analysis(Manager_Worker):
                 self.save_dir = save_dir
                 self.audio_fname = audio_fname
                 self.language = language
+                self.model_level = model_level
 
             def run(self):
                 try:
@@ -1860,27 +1861,28 @@ class Manager_Analysis(Manager_Worker):
                         label="음성 업로드 중"
                     )
 
-                    # 응답 상태 확인
                     if response.status_code != 200:
                         try:
                             err = response.json()
                             msg = err.get("message") or err.get("error") or "음성 인식 실패"
                         except Exception:
-                            msg = response.text or "음성 인식 중 알 수 없는 오류가 발생했습니다."
+                            msg = response.text or "음성 인식 중 오류 발생"
                         self.error.emit(msg)
                         return
 
-                    # 결과 파일명
+                    result = response.json()
+
+                    text = result.get("text", "")
+                    text_with_time = result.get("text_with_time", "")
+
+                    output_text = text_with_time or text
+
                     base, _ = os.path.splitext(self.audio_fname)
                     filename = f"{base}_whisper.txt"
+                    output_path = os.path.join(self.save_dir, filename)
 
-                    # 다운로드 (JSON → txt)
-                    self.download_file(
-                        response,
-                        self.save_dir,
-                        filename,
-                        label="음성 인식 결과 다운로드 중"
-                    )
+                    with open(output_path, "w", encoding="utf-8") as f:
+                        f.write(output_text)
 
                     self.finished.emit(
                         True,

@@ -46,7 +46,8 @@ WHISPER_MODEL_MAP = {
 whisper_model = WhisperModel(
     os.path.join(MODEL_DIR, "faster-whisper-large-v3"),
     device="cuda",
-    compute_type="float16"
+    compute_type="float16",
+    local_files_only=True,
 )
 
 def get_hate_model():
@@ -78,6 +79,7 @@ def get_whisper_model(level: int):
             os.path.join(MODEL_DIR, cfg["name"]),
             device="cuda",
             compute_type=cfg["compute"],
+            local_files_only=True,
         )
 
     return _whisper_models[key]
@@ -190,10 +192,47 @@ def measure_hate(
     unload_hate_model()
     return data
 
+def format_paragraphs(segments, max_len=120):
+    paragraphs = []
+    buf = ""
+
+    for seg in segments:
+        text = seg.text.strip()
+        if not text:
+            continue
+
+        if len(buf) + len(text) <= max_len:
+            buf += " " + text
+        else:
+            paragraphs.append(buf.strip())
+            buf = text
+
+    if buf:
+        paragraphs.append(buf.strip())
+
+    return "\n\n".join(paragraphs)
+
+
+def format_with_timestamps(segments):
+    def ts(t):
+        h = int(t // 3600)
+        m = int((t % 3600) // 60)
+        s = int(t % 60)
+        ms = int((t - int(t)) * 1000)
+        return f"{h:02}:{m:02}:{s:02},{ms:03}"
+
+    lines = []
+    for seg in segments:
+        line = f"[{ts(seg.start)} - {ts(seg.end)}] {seg.text.strip()}"
+        lines.append(line)
+
+    return "\n".join(lines)
+
+
 def transcribe_audio(
     audio_path: str,
     language: str = "ko",
-    model_level: int = 2,  
+    model_level: int = 2,
 ):
     model = get_whisper_model(model_level)
 
@@ -204,11 +243,24 @@ def transcribe_audio(
         vad_filter=True,
     )
 
-    text = " ".join(seg.text for seg in segments)
+    segments = list(segments)
+
+    text_paragraph = format_paragraphs(segments)
+    text_with_time = format_with_timestamps(segments)
 
     return {
         "language": info.language,
         "duration": info.duration,
-        "text": text,
         "model_level": model_level,
+        "text": text_paragraph,
+        "text_with_time": text_with_time,
+        "segments": [
+            {
+                "start": seg.start,
+                "end": seg.end,
+                "text": seg.text.strip(),
+            }
+            for seg in segments
+        ],
     }
+
