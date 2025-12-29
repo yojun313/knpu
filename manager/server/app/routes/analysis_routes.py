@@ -102,7 +102,7 @@ async def whisper_proxy(
         }
 
         response = await client.post(
-            f"{GPU_SERVER_URL}/whisper",
+            f"{GPU_SERVER_URL}/analysis/whisper",
             data=data,
             files=files
         )

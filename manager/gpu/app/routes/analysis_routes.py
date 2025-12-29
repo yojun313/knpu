@@ -1,9 +1,13 @@
 from fastapi import APIRouter, UploadFile, File, Form
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from app.services.analysis_service import *
 import pandas as pd
 import json
 import io
+import os
+from dotenv import load_dotenv
+from app.models.analysis_model import HateOption
+import tempfile
 from urllib.parse import quote  
 
 router = APIRouter()
@@ -50,3 +54,33 @@ async def hate_measure_route(
         media_type=media_type,
         headers={"Content-Disposition": cd_header},
     )
+    
+@router.post("/whisper")
+async def whisper_route(
+    option: str = Form("{}"),
+    file: UploadFile = File(...)
+):
+    """
+    option 예시:
+    {
+        "language": "ko"
+    }
+    """
+
+    option_dict = json.loads(option)
+    language = option_dict.get("language", "ko")
+
+    # 임시 파일 저장
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+        tmp.write(await file.read())
+        audio_path = tmp.name
+
+    try:
+        result = transcribe_audio(
+            audio_path=audio_path,
+            language=language
+        )
+    finally:
+        os.remove(audio_path)
+
+    return JSONResponse(result)
