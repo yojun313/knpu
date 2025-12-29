@@ -63,7 +63,7 @@ async def whisper_route(
     option_dict = json.loads(option)
 
     language = option_dict.get("language", "ko")
-    model_level = int(option_dict.get("model", 2))  # 기본 medium
+    model_level = int(option_dict.get("model", 2))
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp.write(await file.read())
@@ -73,8 +73,9 @@ async def whisper_route(
         result = transcribe_audio(
             audio_path=audio_path,
             language=language,
-            model_level=model_level
+            model_level=model_level,
         )
         return JSONResponse(result)
     finally:
         os.remove(audio_path)
+
