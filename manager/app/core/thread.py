@@ -146,7 +146,6 @@ class DownloadDialog(BaseDialog):
             self.setMinimumHeight(400)
         else:
             self.setMinimumHeight(60)
-        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
 
         self.layout = QVBoxLayout(self)
         self.update_text_signal.connect(self.update_message)
@@ -213,7 +212,6 @@ class TaskStatusDialog(BaseDialog):
         self.setWindowTitle(title)
         self.resize(400, 75)
         
-        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
         self.label = QLabel("작업을 준비 중입니다...", self)
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
