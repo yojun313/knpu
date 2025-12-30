@@ -64,7 +64,7 @@ class Manager_Analysis(Manager_Worker):
         if selected_directory == []:
             return selected_directory
         selected_directory = selected_directory[0].split(', ')
-
+        
         for directory in selected_directory:
             if not directory.endswith('.csv'):
                 return [False, directory]
@@ -78,13 +78,12 @@ class Manager_Analysis(Manager_Worker):
     
     def analysis_getfiledirectory_audio(self, file_dialog):
         selected_directory = file_dialog.selectedFiles()
+        
         if selected_directory == []:
             return selected_directory
-
-        selected_directory = selected_directory[0].split(', ')
-
+        
         allowed_ext = ('.wav', '.mp3', '.m4a', '.flac', '.ogg')
-
+        
         for directory in selected_directory:
             if not directory.lower().endswith(allowed_ext):
                 return [False, directory]
@@ -1764,13 +1763,7 @@ class Manager_Analysis(Manager_Worker):
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
-        try:
-            for thread in active_threads:
-                if "혐오도 분석" in thread:
-                    QMessageBox.information(
-                        self.main, "Processing", "이미 혐오도 분석이 진행 중입니다. 완료 후 다시 시도해주세요.")
-                    return
-            
+        try:            
             # 1) CSV 선택
             csv_path = self.check_csv_file()
             if not csv_path:
@@ -1846,6 +1839,7 @@ class Manager_Analysis(Manager_Worker):
             def run(self):
                 try:
                     option_payload = {
+                        "pid": self.pid,
                         "language": self.language,
                         "model": self.model_level,
                     }
@@ -1878,7 +1872,7 @@ class Manager_Analysis(Manager_Worker):
                     output_text = text_with_time or text
 
                     base, _ = os.path.splitext(self.audio_fname)
-                    filename = f"{base}_whisper.txt"
+                    filename = f"{base}_whisper_{datetime.now().strftime("%m%d%H%M")}.txt"
                     output_path = os.path.join(self.save_dir, filename)
 
                     with open(output_path, "w", encoding="utf-8") as f:
@@ -1894,12 +1888,6 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
 
         try:
-            for thread in active_threads:
-                if "음성 인식" in thread:
-                    QMessageBox.information(
-                        self.main, "Processing", "이미 음성 인식 작업이 진행 중입니다.")
-                    return
-
             audio_path = self.check_audio_file()
             if not audio_path:
                 printStatus(self.main)
@@ -2044,7 +2032,6 @@ class Manager_Analysis(Manager_Worker):
             return 0
 
         return selected_directory[0]
-
 
     def anaylsis_buttonMatch(self):
         self.main.analysis_timesplitfile_btn.clicked.connect(self.run_timesplit)

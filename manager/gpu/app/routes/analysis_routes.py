@@ -64,6 +64,7 @@ async def whisper_route(
 
     language = option_dict.get("language", "ko")
     model_level = int(option_dict.get("model", 2))
+    pid = option_dict.get("pid", None)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp.write(await file.read())
@@ -74,6 +75,7 @@ async def whisper_route(
             audio_path=audio_path,
             language=language,
             model_level=model_level,
+            pid = pid,
         )
         return JSONResponse(result)
     finally:
