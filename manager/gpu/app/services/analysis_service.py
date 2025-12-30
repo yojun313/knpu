@@ -233,9 +233,12 @@ def transcribe_audio(
     audio_path: str,
     language: str = "ko",
     model_level: int = 2,
+    pid = None,
 ):
+    send_message(pid, f"[음성 인식] {WHISPER_MODEL_MAP[model_level]['name']}] 모델 로드 중")
     model = get_whisper_model(model_level)
 
+    send_message(pid, "[음성 인식] Audio -> Text 변환 중")
     segments, info = model.transcribe(
         audio_path,
         language=language,
@@ -247,7 +250,8 @@ def transcribe_audio(
 
     text_paragraph = format_paragraphs(segments)
     text_with_time = format_with_timestamps(segments)
-
+    
+    send_message(pid, "[음성 인식] 완료")
     return {
         "language": info.language,
         "duration": info.duration,
@@ -263,4 +267,3 @@ def transcribe_audio(
             for seg in segments
         ],
     }
-
