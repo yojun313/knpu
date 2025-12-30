@@ -235,7 +235,7 @@ def transcribe_audio(
     model_level: int = 2,
     pid = None,
 ):
-    send_message(pid, f"[음성 인식] {WHISPER_MODEL_MAP[model_level]['name']}] 모델 로드 중")
+    send_message(pid, f"[음성 인식] {WHISPER_MODEL_MAP[model_level]['name']} 모델 로드 중")
     model = get_whisper_model(model_level)
 
     send_message(pid, "[음성 인식] Audio -> Text 변환 중")
