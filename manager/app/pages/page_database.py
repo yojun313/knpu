@@ -378,6 +378,36 @@ class Manager_Database(Manager_Worker):
                     shutil.rmtree(self.main.localDirectory)
                     os.makedirs(self.main.localDirectory, exist_ok=True)
                 return
+            
+            if search_text == '/token':
+                token = get_setting('auth_token')
+                dlg = QDialog(self.main)
+                dlg.setWindowTitle("Auth Token")
+                dlg.resize(600, 120)
+                layout = QVBoxLayout(dlg)
+
+                token_input = QLineEdit(dlg)
+                token_input.setReadOnly(True)
+                token_input.setText(token)
+                layout.addWidget(token_input)
+
+                btn_layout = QHBoxLayout()
+                copy_btn = QPushButton("복사", dlg)
+                close_btn = QPushButton("닫기", dlg)
+                btn_layout.addWidget(copy_btn)
+                btn_layout.addWidget(close_btn)
+                layout.addLayout(btn_layout)
+
+                def do_copy():
+                    QApplication.clipboard().setText(token)
+                    QMessageBox.information(self.main, "Information", "토큰이 클립보드에 복사되었습니다")
+
+                copy_btn.clicked.connect(do_copy)
+                close_btn.clicked.connect(dlg.accept)
+
+                dlg.exec()
+                return
+                
                     
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
