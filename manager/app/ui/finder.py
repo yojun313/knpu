@@ -1,5 +1,5 @@
 from PySide6.QtCore import QModelIndex
-from PySide6.QtWidgets import QFileDialog, QSizePolicy, QAbstractItemView, QMessageBox, QTreeView, QHeaderView
+from PySide6.QtWidgets import QFileDialog, QSizePolicy, QAbstractItemView, QMessageBox, QTreeView, QHeaderView, QDialogButtonBox
 import subprocess
 import os
 from ui.status import printStatus
@@ -12,9 +12,16 @@ def makeFileFinder(main_window, localDirectory=None):
             super().__init__(parent)             
             self.setFileMode(QFileDialog.FileMode.ExistingFiles)
             self.setOptions(QFileDialog.Option.DontUseNativeDialog)
-            self.setNameFilters(
-                ["All Files (*.*)", "CSV Files (*.csv)", "Text Files (*.txt)", "Images (*.png *.jpg *.jpeg)"])
+            self.setNameFilters([
+                "All Files (*.*)",
+                 "CSV Files (*.csv)",
+                 "Text Files (*.txt)",
+                 "Images (*.png *.jpg *.jpeg)",
+                 "Audio Files (*.mp3 *.wav *.m4a *.flac *.aac *.ogg)"
+            ])
             self.currentChanged.connect(self.on_directory_change)
+            self.setup_cancel_as_open_folder()
+
             self.accepted.connect(self.on_accepted)
             self.rejected.connect(self.on_rejected)
             self.setSizePolicy(
@@ -93,6 +100,36 @@ def makeFileFinder(main_window, localDirectory=None):
             self.show()
 
         def reject(self):
+            self.show()
+            
+        def setup_cancel_as_open_folder(self):
+            button_box = self.findChild(QDialogButtonBox)
+            if not button_box:
+                return
+
+            cancel_btn = button_box.button(QDialogButtonBox.StandardButton.Cancel)
+            if not cancel_btn:
+                return
+
+            # 버튼 이름 변경
+            cancel_btn.setText("파일 탐색기")
+
+            # 기본 reject 연결 제거
+            try:
+                cancel_btn.clicked.disconnect()
+            except TypeError:
+                pass
+
+            # 새 동작 연결
+            cancel_btn.clicked.connect(self.open_folder_from_cancel)
+
+        def open_folder_from_cancel(self):
+            try:
+                openFileExplorer(self.directory().absolutePath())
+            except Exception:
+                pass
+
+            # 다이얼로그 닫지 않음
             self.show()
 
     return EmbeddedFileDialog(main_window, localDirectory)
