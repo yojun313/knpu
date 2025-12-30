@@ -1,6 +1,6 @@
 from PySide6.QtGui import QKeySequence
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QTableWidget, QAbstractItemView, QTableWidgetItem, QVBoxLayout, QTextEdit, QHeaderView, QDialog, QPushButton, QApplication
+from PySide6.QtWidgets import QAbstractItemView, QTableWidgetItem, QVBoxLayout, QTextEdit, QHeaderView, QDialog, QPushButton, QApplication
 from PySide6.QtGui import QShortcut
 
 def makeTable(parent, widgetname, data, column, right_click_function=None, popupsize=None):
