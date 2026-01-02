@@ -18,7 +18,10 @@ def register_process(process_id: str, title: str) -> None:
     )
     resp.raise_for_status()
 
-def send_message(process_id: str, text: str) -> None:
+def send_message(process_id, text: str) -> None:
+    if not process_id:
+        return
+    
     """
     순수 문자열 메시지를 보냅니다.
     POST /notify/{process_id} { type: "message", text }
