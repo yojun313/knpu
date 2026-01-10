@@ -236,6 +236,34 @@ async def start_youtube_download(option: dict):
         except OSError:
             pass
     
+    def make_progress_hook(pid: str, index: int, total: int):
+        last_sent = {"percent": -1}
+
+        def hook(d):
+            if d.get("status") == "downloading":
+                total_bytes = d.get("total_bytes") or d.get("total_bytes_estimate")
+                downloaded = d.get("downloaded_bytes", 0)
+
+                if total_bytes:
+                    percent = int(downloaded * 100 / total_bytes)
+
+                    # 너무 자주 보내지 않게 (1% 단위)
+                    if percent != last_sent["percent"]:
+                        last_sent["percent"] = percent
+                        send_message(
+                            pid,
+                            f"[{index}/{total}] 다운로드 중: {percent}% "
+                            f"({d.get('_speed_str','')}, ETA {d.get('_eta_str','')})"
+                        )
+
+            elif d.get("status") == "finished":
+                send_message(
+                    pid,
+                    f"[{index}/{total}] 다운로드 완료, 후처리 중..."
+                )
+
+        return hook
+
     def safe_filename(name: str) -> str:
         # 유니코드 정규화 (Windows/macOS 호환)
         name = unicodedata.normalize("NFC", name)
@@ -251,11 +279,12 @@ async def start_youtube_download(option: dict):
 
         return name
     
-    def _ytdlp_opts(format_: str) -> dict:
+    def _ytdlp_opts(format_: str, pid: str, index: int, total: int) -> dict:
         opts = {
             "outtmpl": outtmpl,
             "quiet": True,  
             "no_warnings": False,
+            "progress_hooks": [make_progress_hook(pid, index, total)],
             # "extractor_args": {
             #     "youtube": {
             #         "player_client": ["android", "web"],
@@ -285,8 +314,8 @@ async def start_youtube_download(option: dict):
         
         return opts
 
-    def _download_one(url: str, format_: str) -> str:
-        with YoutubeDL(_ytdlp_opts(format_)) as ydl:
+    def _download_one(url: str, format_: str, pid: str, index: int, total: int) -> str:
+        with YoutubeDL(_ytdlp_opts(format_, pid, index, total)) as ydl:
             info = ydl.extract_info(url, download=True)
 
             # 원본 파일 경로
@@ -372,10 +401,10 @@ async def start_youtube_download(option: dict):
         )
 
         for i, url in enumerate(urls, 1):
-            send_message(pid, f"[{i}/{len(urls)}] 다운로드 중: {url}")
+            send_message(pid, f"[{i}/{len(urls)}] 다운로드 시작")
 
             media_path = await asyncio.to_thread(
-                _download_one, url, fmt
+                _download_one, url, fmt, pid, i, len(urls)
             )
 
             if not os.path.exists(media_path):
