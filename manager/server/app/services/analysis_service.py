@@ -263,6 +263,8 @@ async def start_youtube_download(option: dict):
 
         if format_ == "mp3":
             opts.update({
+                "format": "bestaudio/best",
+                "keepvideo": False,   
                 "postprocessors": [
                     {
                         "key": "FFmpegExtractAudio",
