@@ -14,6 +14,7 @@ from libs.analysis import DataProcess
 from libs.kemkim import KimKem
 import uuid
 import asyncio
+import zipfile
 from googletrans import Translator
 import json
 import requests
@@ -1710,7 +1711,7 @@ class Manager_Analysis(Manager_Worker):
             programBugLog(self.main, traceback.format_exc())
 
     def select_etc_analysis(self):
-        dialog = SelectEtcAnalysisDialog(self.run_hate_measure, self.run_whisper)
+        dialog = SelectEtcAnalysisDialog(self.run_hate_measure, self.run_whisper, self.run_youtube_download)
         dialog.exec()
 
     def run_hate_measure(self):
@@ -1992,6 +1993,159 @@ class Manager_Analysis(Manager_Worker):
             userLogging(
                 f"ANALYSIS -> Whisper({audio_fname}) : lang={language}, model={model_level}"
             )
+
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+    
+    def run_youtube_download(self):
+        class YouTubeDownloadWorker(BaseWorker):
+            def __init__(self, pid, urls, save_dir, fmt, save_whisper, parent=None):
+                super().__init__(parent)
+                self.pid = pid
+                self.urls = urls
+                self.save_dir = save_dir
+                self.fmt = fmt
+                self.save_whisper = save_whisper
+
+            def run(self):
+                try:
+                    option_payload = {
+                        "pid": self.pid,
+                        "urls": self.urls,
+                        "format": self.fmt,              # "mp3" | "mp4"
+                        "save_whisper": self.save_whisper
+                    }
+
+                    url = MANAGER_SERVER_API + "/analysis/youtube"
+
+                    # 이 라우트는 파일 업로드가 없고 Form(option)만 보내면 됨
+                    response = requests.post(
+                        url,
+                        data={"option": json.dumps(option_payload)},
+                        headers=get_api_headers(),
+                        stream=True,
+                        timeout=600
+                    )
+
+                    if response.status_code != 200:
+                        try:
+                            err = response.json()
+                            msg = err.get("message") or err.get("error") or "유튜브 다운로드 실패"
+                        except Exception:
+                            msg = response.text or "유튜브 다운로드 중 오류 발생"
+                        self.error.emit(msg)
+                        return
+
+                    # 서버는 zip(FileResponse) 반환
+                    zip_name = f"youtube_{datetime.now().strftime('%m%d%H%M')}.zip"
+                    zip_path = os.path.join(self.save_dir, zip_name)
+
+                    total = int(response.headers.get("content-length", 0))
+                    downloaded = 0
+
+                    with open(zip_path, "wb") as f:
+                        for chunk in response.iter_content(chunk_size=1024 * 256):
+                            if not chunk:
+                                continue
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            # 진행률 출력(있으면)
+                            if total > 0:
+                                pct = downloaded / total * 100
+                                self.message.emit(f"결과 다운로드 중... {pct:.0f}%")
+
+                    extract_dir = os.path.join(
+                        self.save_dir,
+                        f"youtube_result_{datetime.now().strftime('%m%d%H%M')}"
+                    )
+                    os.makedirs(extract_dir, exist_ok=True)
+
+                    with zipfile.ZipFile(zip_path, "r") as zf:
+                        zf.extractall(extract_dir)
+
+                    try:
+                        os.remove(zip_path)
+                    except Exception:
+                        pass
+
+                    self.finished.emit(
+                        True,
+                        "유튜브 다운로드가 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                        extract_dir
+                    )
+
+                except Exception:
+                    self.error.emit(traceback.format_exc())
+
+        try:
+            # 1) URL 입력 (여러 줄)
+            urls_text, ok = QInputDialog.getMultiLineText(
+                self.main,
+                "YouTube URL 입력",
+                "다운로드할 YouTube URL을 한 줄에 하나씩 입력하세요:"
+            )
+            if not ok:
+                printStatus(self.main)
+                return
+
+            urls = [u.strip() for u in urls_text.splitlines() if u.strip()]
+            if not urls:
+                QMessageBox.warning(self.main, "Wrong Input", "URL이 비어있습니다.")
+                printStatus(self.main)
+                return
+
+            # 2) 포맷 선택
+            fmt_label, ok = QInputDialog.getItem(
+                self.main,
+                "포맷 선택",
+                "다운로드 포맷을 선택하세요:",
+                ["mp3", "mp4"],
+                0,
+                False
+            )
+            if not ok:
+                printStatus(self.main)
+                return
+            fmt = fmt_label
+
+            # 3) whisper 저장 여부
+            reply = QMessageBox.question(
+                self.main,
+                "Whisper 변환",
+                "다운로드 후 Whisper로 텍스트 변환 파일(.txt)도 저장하시겠습니까?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            save_whisper = (reply == QMessageBox.StandardButton.Yes)
+
+            # 4) 저장 폴더
+            printStatus(self.main, "결과를 저장할 위치를 선택하세요")
+            save_dir = QFileDialog.getExistingDirectory(
+                self.main, "결과 저장 위치 선택", self.main.localDirectory
+            )
+            if save_dir == "":
+                printStatus(self.main)
+                return
+
+            pid = str(uuid.uuid4())
+            register_process(pid, "YouTube Download")
+
+            thread_name = "YouTube 다운로드"
+            register_thread(thread_name)
+            printStatus(self.main)
+
+            downloadDialog = DownloadDialog(thread_name, pid, self.main)
+            downloadDialog.show()
+
+            worker = YouTubeDownloadWorker(pid, urls, save_dir, fmt, save_whisper, self.main)
+            self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
+            worker.start()
+
+            if not hasattr(self, "_workers"):
+                self._workers = []
+            self._workers.append(worker)
+
+            userLogging(f"ANALYSIS -> YouTubeDownload(count={len(urls)}, fmt={fmt}, whisper={save_whisper})")
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())

@@ -62,6 +62,7 @@ class Manager_Web:
         self.main.web_viewnews_button.clicked.connect(self.viewNews)
 
     def refreshPaperBoard(self):
+        printStatus(self.main, "새로고침 중...")
         self.origin_paper_data = Request(
             'get',
             '/papers/',
@@ -83,8 +84,10 @@ class Manager_Web:
             'Title', 'Authors', 'Conference', 'Url', 'Year']
         makeTable(self.main, self.main.web_papers_tableWidget,
                   self.paper_data, self.paper_table_column)
+        printStatus(self.main, "https://knpu.re.kr/publications")
 
     def refreshMemberBoard(self):
+        printStatus(self.main, "새로고침 중...")
         self.origin_member_data = Request(
             'get',
             '/members/',
@@ -110,8 +113,10 @@ class Manager_Web:
         self.member_table_column = ['성명', '직책', '이메일', '학력', '경력', '연구']
         makeTable(self.main, self.main.web_members_tableWidget,
                   self.member_data, self.member_table_column)
+        printStatus(self.main, "https://knpu.re.kr/team")
 
     def refreshNewsBoard(self):
+        printStatus(self.main, "새로고침 중...")
         self.origin_news_data = Request(
             'get',
             '/news/',
@@ -135,6 +140,7 @@ class Manager_Web:
         self.news_table_column = ['제목', '내용', '날짜', 'URL']
         makeTable(self.main, self.main.web_news_tableWidget,
                   self.news_data, self.news_table_column)
+        printStatus(self.main, "https://knpu.re.kr#news")
 
     def addHomePaper(self):
         try:
@@ -379,11 +385,13 @@ class Manager_Web:
             self.main.ctrle.activated.connect(self.editHomePaper)
             self.main.ctrla.activated.connect(self.addHomePaper)
             self.main.ctrlv.activated.connect(self.viewPaper)
+            self.main.ctrlr.activated.connect(self.refreshPaperBoard)
 
             self.main.cmdd.activated.connect(self.deleteHomePaper)
             self.main.cmde.activated.connect(self.editHomePaper)
             self.main.cmda.activated.connect(self.addHomePaper)
             self.main.cmdv.activated.connect(self.viewPaper)
+            self.main.cmdr.activated.connect(self.refreshPaperBoard)
 
         if index == 1:
             printStatus(self.main, "https://knpu.re.kr/team")
@@ -391,21 +399,27 @@ class Manager_Web:
             self.main.ctrle.activated.connect(self.editHomeMember)
             self.main.ctrla.activated.connect(self.addHomeMember)
             self.main.ctrlv.activated.connect(self.viewMember)
+            self.main.ctrlr.activated.connect(self.refreshMemberBoard)
 
             self.main.cmdd.activated.connect(self.deleteHomeMember)
             self.main.cmde.activated.connect(self.editHomeMember)
             self.main.cmda.activated.connect(self.addHomeMember)
             self.main.cmdv.activated.connect(self.viewMember)
+            self.main.cmdr.activated.connect(self.refreshMemberBoard)
 
         if index == 2:
             printStatus(self.main, "https://knpu.re.kr#news")
             self.main.ctrla.activated.connect(self.addHomeNews)
+            self.main.ctrld.activated.connect(self.deleteHomeNews)
             self.main.ctrle.activated.connect(self.editHomeNews)
             self.main.ctrlv.activated.connect(self.viewNews)
-
-            self.main.cmdd.activated.connect(self.deleteHomeNews)
+            self.main.ctrlr.activated.connect(self.refreshNewsBoard)
+            
+            
             self.main.cmda.activated.connect(self.addHomeNews)
+            self.main.cmdd.activated.connect(self.deleteHomeNews)
             self.main.cmde.activated.connect(self.editHomeNews)
             self.main.cmdv.activated.connect(self.viewNews)
+            self.main.cmdr.activated.connect(self.refreshNewsBoard)
 
         changeStatusbarAction(self.main, "WEB")
