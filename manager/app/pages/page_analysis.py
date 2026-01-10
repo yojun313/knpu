@@ -1975,7 +1975,7 @@ class Manager_Analysis(Manager_Worker):
 
                     if response.status_code != 200:
                         try:
-                            msg = response.json().get("message", "유튜브 다운로드 실패")
+                            msg = response.json().get("message", "YouTube 다운로드 실패")
                         except Exception:
                             msg = response.text
                         self.error.emit(msg)
@@ -1992,7 +1992,7 @@ class Manager_Analysis(Manager_Worker):
 
                     self.finished.emit(
                         True,
-                        "유튜브 다운로드가 완료되었습니다.\n파일을 확인하시겠습니까?",
+                        "YouTube 다운로드가 완료되었습니다.\n파일을 확인하시겠습니까?",
                         extract_path
                     )
 
