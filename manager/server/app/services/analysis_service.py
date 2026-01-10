@@ -19,6 +19,14 @@ from transformers import (
 logging.set_verbosity_error()
 import os
 from app.utils.zip import fast_zip
+from typing import Literal
+import asyncio
+from yt_dlp import YoutubeDL
+from datetime import datetime
+import httpx
+import json
+
+GPU_SERVER_URL = os.getenv("GPU_SERVER_URL")
 
 kiwi_instance = None
 
@@ -165,3 +173,151 @@ def tokenization(
         send_message(pid, f"[{col}] 토큰화 완료")
 
     return data
+
+async def start_youtube_download(option: dict):
+    """
+    option 예시:
+    {
+      "pid": "xxx",
+      "urls": ["https://youtu.be/...", "https://www.youtube.com/watch?v=..."],
+      "format": "mp3",          # "mp3" | "mp4"
+      "save_whisper": true      # true면 whisper 결과(txt)도 저장
+    }
+    """
+    pid: str = option["pid"]
+    urls = option.get("urls", [])
+    fmt: Literal["mp3", "mp4"] = option.get("format", "mp3")
+    save_whisper: bool = bool(option.get("save_whisper", False))
+
+    if not urls:
+        return JSONResponse(status_code=400, content={"error": "urls가 비어있습니다"})
+
+    base_temp = os.path.join(os.path.dirname(__file__), "..", "temp")
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_dir = os.path.join(base_temp, f"youtube_{pid}_{ts}")
+    os.makedirs(out_dir, exist_ok=True)
+
+    def cleanup_folder_and_zip(folder_path: str, zip_path: str):
+        shutil.rmtree(folder_path, ignore_errors=True)
+        try:
+            os.remove(zip_path)
+        except OSError:
+            pass
+
+    def _ytdlp_opts(format_: str):
+        outtmpl = os.path.join(out_dir, "%(title).200s [%(id)s].%(ext)s")
+
+        if format_ == "mp3":
+            return {
+                "outtmpl": outtmpl,
+                "noplaylist": True,
+                "quiet": True,
+                "no_warnings": True,
+                "postprocessors": [
+                    {
+                        "key": "FFmpegExtractAudio",
+                        "preferredcodec": "mp3",
+                        "preferredquality": "192",
+                    }
+                ],
+            }
+
+        # mp4
+        return {
+            "outtmpl": outtmpl,
+            "noplaylist": True,
+            "quiet": True,
+            "no_warnings": True,
+            "format": "bv*+ba/best",
+            "merge_output_format": "mp4",
+        }
+
+    def _download_one(url: str, format_: str) -> str:
+        with YoutubeDL(_ytdlp_opts(format_)) as ydl:
+            info = ydl.extract_info(url, download=True)
+
+            base_path = ydl.prepare_filename(info)  # 원래 확장자 기준
+            root, _ = os.path.splitext(base_path)
+
+            if format_ == "mp3":
+                mp3_path = root + ".mp3"
+                return mp3_path if os.path.exists(mp3_path) else base_path
+
+            mp4_path = root + ".mp4"
+            return mp4_path if os.path.exists(mp4_path) else base_path
+
+    def _fallback_pick_latest_file() -> str | None:
+        files = [os.path.join(out_dir, p) for p in os.listdir(out_dir)]
+        files = [p for p in files if os.path.isfile(p)]
+        if not files:
+            return None
+        files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+        return files[0]
+
+    async def _whisper_to_txt(media_path: str) -> str:
+        """
+        GPU 서버 /analysis/whisper로 업로드 → 응답을 .txt로 저장
+        (응답이 json/text 무엇이든 저장)
+        """
+        filename = os.path.basename(media_path)
+        txt_path = os.path.join(out_dir, os.path.splitext(filename)[0] + ".txt")
+
+        async with httpx.AsyncClient(timeout=None) as client:
+            with open(media_path, "rb") as f:
+                files = {"file": (filename, f, "application/octet-stream")}
+                data = {"option": "{}"}
+                resp = await client.post(f"{GPU_SERVER_URL}/analysis/whisper", data=data, files=files)
+                resp.raise_for_status()
+                content = await resp.aread()
+
+        ctype = resp.headers.get("content-type", "")
+        try:
+            if "application/json" in ctype:
+                obj = json.loads(content.decode("utf-8", errors="ignore"))
+                with open(txt_path, "w", encoding="utf-8") as wf:
+                    wf.write(json.dumps(obj, ensure_ascii=False, indent=2))
+            else:
+                with open(txt_path, "wb") as wf:
+                    wf.write(content)
+        except Exception:
+            with open(txt_path, "wb") as wf:
+                wf.write(content)
+
+        return txt_path
+
+    try:
+        send_message(pid, f"유튜브 다운로드 시작 (총 {len(urls)}개, format={fmt}, whisper={save_whisper})")
+
+        for i, url in enumerate(urls, 1):
+            send_message(pid, f"[{i}/{len(urls)}] 다운로드 중: {url}")
+
+            media_path = await asyncio.to_thread(_download_one, url, fmt)
+
+            if not os.path.exists(media_path):
+                picked = _fallback_pick_latest_file()
+                if picked:
+                    media_path = picked
+
+            send_message(pid, f"[{i}/{len(urls)}] 다운로드 완료: {os.path.basename(media_path)}")
+
+            if save_whisper:
+                send_message(pid, f"[{i}/{len(urls)}] whisper 변환 중: {os.path.basename(media_path)}")
+                try:
+                    await _whisper_to_txt(media_path)
+                    send_message(pid, f"[{i}/{len(urls)}] whisper 저장 완료")
+                except Exception as e:
+                    send_message(pid, f"[{i}/{len(urls)}] whisper 실패: {str(e)}")
+
+        zip_path = out_dir + ".zip"
+        fast_zip(out_dir, zip_path)
+
+        background_task = BackgroundTask(cleanup_folder_and_zip, out_dir, zip_path)
+        return FileResponse(
+            path=zip_path,
+            media_type="application/zip",
+            filename=os.path.basename(zip_path),
+            background=background_task,
+        )
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": "유튜브 다운로드 중 오류", "message": str(e)})
