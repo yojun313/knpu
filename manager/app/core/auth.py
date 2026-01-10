@@ -130,3 +130,8 @@ def loginProgram(parent):
                                 f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
         return False
 
+def accessCheck(parent, exclude=[]):
+    if parent.user in exclude:
+        QMessageBox.critical(parent, "Access Denied", "이 기능에 대한 액세스 권한이 없습니다")
+        return False
+    return True
