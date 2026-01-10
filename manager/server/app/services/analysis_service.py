@@ -233,7 +233,7 @@ async def start_youtube_download(option: dict):
                     "node": {}
                 },
                 "remote_components": {
-                    "ejs": "github"
+                    "ejs:github": {}
                 },
                 "postprocessors": [
                     {
@@ -253,7 +253,7 @@ async def start_youtube_download(option: dict):
                 "node": {}
             },
             "remote_components": {
-                "ejs": "github"
+                "ejs:github": {}
             },
         }
 
