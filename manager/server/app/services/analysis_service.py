@@ -254,7 +254,7 @@ async def start_youtube_download(option: dict):
             "extractor_args": {
                 "youtube": {
                     "player_client": ["android", "web"],
-                    "po_token": ["web+auto", "android+auto"]
+                    "skip": ["dash", "hls"]
                 }
             },
             "nocheckcertificate": True,
