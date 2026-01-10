@@ -1808,6 +1808,95 @@ class SelectEtcAnalysisDialog(BaseDialog):
         self.youtube_download()
 
 
+class YouTubeDownloadDialog(BaseDialog):
+    def __init__(self, parent=None, base_dir=""):
+        super().__init__(parent)
+        self.setWindowTitle("YouTube 다운로드 설정")
+        self.resize(520, 420)
+        self.data = None
+
+        layout = QVBoxLayout(self)
+
+        # URL 입력
+        layout.addWidget(QLabel("YouTube URL (한 줄에 하나씩 입력):"))
+        self.url_edit = QTextEdit()
+        layout.addWidget(self.url_edit)
+
+        # 포맷 선택
+        layout.addWidget(QLabel("다운로드 포맷:"))
+        self.format_box = QComboBox()
+        self.format_box.addItems(["mp3", "mp4"])
+        layout.addWidget(self.format_box)
+        
+        # 화질 선택
+        layout.addWidget(QLabel("영상 화질 (mp4 전용):"))
+        self.quality_box = QComboBox()
+        self.quality_box.addItems([
+            "최고 화질 (자동)",
+            "1080p",
+            "720p",
+            "480p",
+            "360p"
+        ])
+        layout.addWidget(self.quality_box)
+
+
+        # Whisper 옵션
+        self.whisper_checkbox = QCheckBox("Whisper로 텍스트(.txt)도 생성")
+        layout.addWidget(self.whisper_checkbox)
+
+        # 저장 경로
+        path_layout = QHBoxLayout()
+        self.path_label = QLabel("저장 경로: 선택되지 않음")
+        self.path_btn = QPushButton("경로 선택")
+        path_layout.addWidget(self.path_label)
+        path_layout.addWidget(self.path_btn)
+        layout.addLayout(path_layout)
+
+        self.save_dir = ""
+        self.path_btn.clicked.connect(self.select_path)
+
+        # OK / Cancel
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok |
+            QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+        
+        self.format_box.currentTextChanged.connect(self._update_quality_state)
+        self._update_quality_state()
+        
+    def _update_quality_state(self):
+        is_mp4 = self.format_box.currentText() == "mp4"
+        self.quality_box.setEnabled(is_mp4)
+
+    def select_path(self):
+        path = QFileDialog.getExistingDirectory(self, "저장 경로 선택")
+        if path:
+            self.save_dir = path
+            self.path_label.setText(path)
+
+    def accept(self):
+        urls = [u.strip() for u in self.url_edit.toPlainText().splitlines() if u.strip()]
+        if not urls:
+            QMessageBox.warning(self, "입력 오류", "YouTube URL을 입력하세요.")
+            return
+        if not self.save_dir:
+            QMessageBox.warning(self, "입력 오류", "저장 경로를 선택하세요.")
+            return
+
+        self.data = {
+            "urls": urls,
+            "format": self.format_box.currentText(),
+            "quality": self.quality_box.currentText(),
+            "save_whisper": self.whisper_checkbox.isChecked(),
+            "save_dir": self.save_dir,
+        }
+        super().accept()
+
+
 class EditHomeMemberDialog(BaseDialog):
     def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)
