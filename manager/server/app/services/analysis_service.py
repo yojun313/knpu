@@ -229,7 +229,9 @@ async def start_youtube_download(option: dict):
             return {
                 "outtmpl": outtmpl,
                 "quiet": True,
-                "js_runtimes": ["node"],
+                "js_runtimes": {
+                    "node": {}
+                },
                 "postprocessors": [
                     {
                         "key": "FFmpegExtractAudio",
@@ -244,7 +246,9 @@ async def start_youtube_download(option: dict):
             "quiet": True,
             "format": _format_by_quality(q),
             "merge_output_format": "mp4",
-            "js_runtimes": ["node"],
+            "js_runtimes": {
+                "node": {}
+            }
         }
 
     def _download_one(url: str, format_: str, q: str) -> str:
