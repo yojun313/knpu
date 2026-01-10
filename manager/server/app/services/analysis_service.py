@@ -268,6 +268,21 @@ async def start_youtube_download(option: dict):
             return None
         files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
         return files[0]
+    
+    def format_with_timestamps(segments):
+        def ts(t):
+            h = int(t // 3600)
+            m = int((t % 3600) // 60)
+            s = int(t % 60)
+            ms = int((t - int(t)) * 1000)
+            return f"{h:02}:{m:02}:{s:02},{ms:03}"
+
+        lines = []
+        for seg in segments:
+            line = f"[{ts(seg.start)} - {ts(seg.end)}] {seg.text.strip()}"
+            lines.append(line)
+
+        return "\n".join(lines)
 
     async def _whisper_to_txt(media_path: str) -> str:
         filename = os.path.basename(media_path)
@@ -290,7 +305,7 @@ async def start_youtube_download(option: dict):
             if "application/json" in ctype:
                 obj = json.loads(content.decode("utf-8", errors="ignore"))
                 with open(txt_path, "w", encoding="utf-8") as wf:
-                    wf.write(json.dumps(obj, ensure_ascii=False, indent=2))
+                    wf.write(obj['text_with_time'])
             else:
                 with open(txt_path, "wb") as wf:
                     wf.write(content)

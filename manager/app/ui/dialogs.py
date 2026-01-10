@@ -1825,7 +1825,7 @@ class YouTubeDownloadDialog(BaseDialog):
         # 포맷 선택
         layout.addWidget(QLabel("다운로드 포맷:"))
         self.format_box = QComboBox()
-        self.format_box.addItems(["mp3", "mp4"])
+        self.format_box.addItems(["mp4", "mp3"])
         layout.addWidget(self.format_box)
         
         # 화질 선택
@@ -1840,9 +1840,8 @@ class YouTubeDownloadDialog(BaseDialog):
         ])
         layout.addWidget(self.quality_box)
 
-
         # Whisper 옵션
-        self.whisper_checkbox = QCheckBox("Whisper로 텍스트(.txt)도 생성")
+        self.whisper_checkbox = QCheckBox("음성 텍스트 변환 생성")
         layout.addWidget(self.whisper_checkbox)
 
         # 저장 경로
