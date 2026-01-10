@@ -1999,7 +1999,7 @@ class Manager_Analysis(Manager_Worker):
     
     def run_youtube_download(self):
         
-        def _create_youtube_worker(pid, urls, save_dir, fmt, quality, save_whisper, parent):
+        def _create_youtube_worker(pid, urls, save_dir, fmt, save_whisper, parent):
             class YouTubeDownloadWorker(BaseWorker):
                 def __init__(self):
                     super().__init__(parent)
@@ -2010,7 +2010,6 @@ class Manager_Analysis(Manager_Worker):
                             "pid": pid,
                             "urls": urls,
                             "format": fmt,
-                            "quality": quality,
                             "save_whisper": save_whisper
                         }
 
@@ -2066,7 +2065,6 @@ class Manager_Analysis(Manager_Worker):
         data = dialog.data
         urls = data["urls"]
         fmt = data["format"]
-        quality = data["quality"]
         save_whisper = data["save_whisper"]
         save_dir = data["save_dir"]
 
@@ -2085,7 +2083,6 @@ class Manager_Analysis(Manager_Worker):
             urls=urls,
             save_dir=save_dir,
             fmt=fmt,
-            quality=quality,
             save_whisper=save_whisper,
             parent=self.main
         )
