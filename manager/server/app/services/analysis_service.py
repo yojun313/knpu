@@ -26,6 +26,7 @@ from datetime import datetime
 import httpx
 import json
 from urllib.parse import urlparse, parse_qs, urlunparse
+import unicodedata
 
 GPU_SERVER_URL = os.getenv("GPU_SERVER_URL")
 
@@ -234,11 +235,25 @@ async def start_youtube_download(option: dict):
             os.remove(zip_path)
         except OSError:
             pass
+    
+    def safe_filename(name: str) -> str:
+        # 유니코드 정규화 (Windows/macOS 호환)
+        name = unicodedata.normalize("NFC", name)
 
+        # emoji 제거 (non-BMP)
+        name = re.sub(r"[\U00010000-\U0010ffff]", "", name)
+
+        # Windows 금지 문자 제거
+        name = re.sub(r'[<>:"/\\|?*]', "", name)
+
+        # 공백 정리
+        name = re.sub(r"\s+", " ", name).strip()
+
+        return name
+    
     def _ytdlp_opts(format_: str) -> dict:
         opts = {
             "outtmpl": outtmpl,
-            "restrictfilenames": True,
             "quiet": True,  
             "no_warnings": False,
             # "extractor_args": {
@@ -273,15 +288,37 @@ async def start_youtube_download(option: dict):
     def _download_one(url: str, format_: str) -> str:
         with YoutubeDL(_ytdlp_opts(format_)) as ydl:
             info = ydl.extract_info(url, download=True)
+
+            # 원본 파일 경로
             base_path = ydl.prepare_filename(info)
             root, _ = os.path.splitext(base_path)
 
             if format_ == "mp3":
-                mp3_path = root + ".mp3"
-                return mp3_path if os.path.exists(mp3_path) else base_path
+                origin_path = root + ".mp3"
+                if not os.path.exists(origin_path):
+                    origin_path = base_path
+                ext = "mp3"
+            else:
+                origin_path = root + ".mp4"
+                if not os.path.exists(origin_path):
+                    origin_path = base_path
+                ext = "mp4"
 
-            mp4_path = root + ".mp4"
-            return mp4_path if os.path.exists(mp4_path) else base_path
+            # 안전한 파일명 생성
+            safe_title = safe_filename(info.get("title", "video"))
+            final_path = os.path.join(
+                os.path.dirname(origin_path),
+                f"{safe_title} [{info['id']}].{ext}"
+            )
+
+            # 이미 이름이 다르면 rename
+            if origin_path != final_path:
+                try:
+                    os.rename(origin_path, final_path)
+                except FileExistsError:
+                    pass  # 동일 파일명 이미 존재 시 무시
+
+            return final_path
 
     def _fallback_pick_latest_file() -> str | None:
         files = [
