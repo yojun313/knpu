@@ -11,6 +11,7 @@ from ui.table import *
 from ui.status import changeStatusbarAction
 from services.logging import userLogging
 from core.setting import get_setting
+from core.auth import accessCheck
 
 warnings.filterwarnings("ignore")
 
@@ -144,6 +145,8 @@ class Manager_Web:
 
     def addHomePaper(self):
         try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
             dialog = EditHomePaperDialog(parent=self.main)
             if dialog.exec():
                 payload = dialog.get_payload()
@@ -157,6 +160,8 @@ class Manager_Web:
 
     def addHomeMember(self):
         try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
             dialog = EditHomeMemberDialog(parent=self.main)
             if dialog.exec():
                 payload = dialog.get_payload()
@@ -170,6 +175,8 @@ class Manager_Web:
 
     def addHomeNews(self):
         try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
             dialog = EditHomeNewsDialog(parent=self.main)
             if dialog.exec():
                 payload = dialog.get_payload()
@@ -183,6 +190,8 @@ class Manager_Web:
 
     def deleteHomePaper(self):
         try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
             selectedRow = self.main.web_papers_tableWidget.currentRow()
             if selectedRow < 0:
                 return
@@ -199,6 +208,8 @@ class Manager_Web:
 
     def deleteHomeMember(self):
         try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
             selectedRow = self.main.web_members_tableWidget.currentRow()
             if selectedRow < 0:
                 return
@@ -215,6 +226,8 @@ class Manager_Web:
 
     def deleteHomeNews(self):
         try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
             selectedRow = self.main.web_news_tableWidget.currentRow()
             if selectedRow < 0:
                 return
@@ -231,6 +244,8 @@ class Manager_Web:
 
     def editHomePaper(self):
         try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
             selectedRow = self.main.web_papers_tableWidget.currentRow()
             if selectedRow < 0:
                 return
@@ -261,6 +276,8 @@ class Manager_Web:
 
     def editHomeMember(self):
         try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
             selectedRow = self.main.web_members_tableWidget.currentRow()
             if selectedRow < 0:
                 return
@@ -288,6 +305,8 @@ class Manager_Web:
 
     def editHomeNews(self):
         try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
             selectedRow = self.main.web_news_tableWidget.currentRow()
             if selectedRow < 0:
                 return

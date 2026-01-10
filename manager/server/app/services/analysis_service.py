@@ -296,7 +296,7 @@ async def start_youtube_download(option: dict):
         opts = {
             "outtmpl": outtmpl,
             "quiet": True,  
-            "no_warnings": False,
+            "no_warnings": True,
             "progress_hooks": [make_progress_hook(pid, index, total)],
             # "extractor_args": {
             #     "youtube": {
