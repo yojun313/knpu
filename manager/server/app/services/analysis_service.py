@@ -251,13 +251,13 @@ async def start_youtube_download(option: dict):
             "outtmpl": outtmpl,
             "quiet": False,  
             "no_warnings": False,
-            "extractor_args": {
-                "youtube": {
-                    "player_client": ["android", "web"],
-                    "skip": ["dash", "hls"]
-                }
-            },
-            "nocheckcertificate": True,
+            # "extractor_args": {
+            #     "youtube": {
+            #         "player_client": ["android", "web"],
+            #         "skip": ["dash", "hls"]
+            #     }
+            # },
+            # "nocheckcertificate": True,
         }
 
         if format_ == "mp3":
