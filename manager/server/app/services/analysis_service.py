@@ -253,7 +253,7 @@ async def start_youtube_download(option: dict):
             "no_warnings": False,
             "extractor_args": {
                 "youtube": {
-                    "player_client": ["tv", "web"],
+                    "player_client": ["android", "web"],
                     "skip": ["dash", "hls"]
                 }
             },
@@ -274,7 +274,7 @@ async def start_youtube_download(option: dict):
             })
         else:
             opts.update({
-                "format": _format_by_quality(q),
+                "format": "bestvideo+bestaudio/best",
                 "merge_output_format": "mp4",
             })
         
