@@ -238,6 +238,7 @@ async def start_youtube_download(option: dict):
     def _ytdlp_opts(format_: str) -> dict:
         opts = {
             "outtmpl": outtmpl,
+            "restrictfilenames": True,
             "quiet": True,  
             "no_warnings": False,
             # "extractor_args": {
