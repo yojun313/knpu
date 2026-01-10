@@ -232,6 +232,9 @@ async def start_youtube_download(option: dict):
                 "js_runtimes": {
                     "node": {}
                 },
+                "remote_components": {
+                    "ejs": "github"
+                },
                 "postprocessors": [
                     {
                         "key": "FFmpegExtractAudio",
@@ -248,7 +251,10 @@ async def start_youtube_download(option: dict):
             "merge_output_format": "mp4",
             "js_runtimes": {
                 "node": {}
-            }
+            },
+            "remote_components": {
+                "ejs": "github"
+            },
         }
 
     def _download_one(url: str, format_: str, q: str) -> str:
