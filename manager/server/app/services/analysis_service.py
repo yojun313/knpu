@@ -227,16 +227,15 @@ async def start_youtube_download(option: dict):
     def _ytdlp_opts(format_: str, q: str) -> dict:
         opts = {
             "outtmpl": outtmpl,
-            "quiet": False,  # 에러 디버깅을 위해 잠시 False로 권장
-            "no_warnings": False,
-            # 최신 유튜브 차단 정책 우회를 위한 인자 추가
+            "quiet": True,
+            "no_warnings": True,
+            "nocheckcertificate": True,
             "extractor_args": {
                 "youtube": {
-                    "player_client": ["android", "web"],
+                    "player_client": ["ios"],
                     "skip": ["dash", "hls"]
                 }
             },
-            "nocheckcertificate": True,
         }
 
         if format_ == "mp3":
