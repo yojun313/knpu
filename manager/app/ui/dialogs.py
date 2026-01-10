@@ -1769,10 +1769,11 @@ class SelectColumnsDialog(BaseDialog):
 
 
 class SelectEtcAnalysisDialog(BaseDialog):
-    def __init__(self, analyze_hate, whisper):
+    def __init__(self, analyze_hate, whisper, youtube_download):
         super().__init__()
         self.analyze_hate = analyze_hate
         self.whisper = whisper
+        self.youtube_download = youtube_download
         self.initUI()
         self.data = None  # 데이터를 저장할 속성 추가
 
@@ -1787,6 +1788,10 @@ class SelectEtcAnalysisDialog(BaseDialog):
         whisper_btn = QPushButton("음성 인식")
         whisper_btn.clicked.connect(self.run_whisper)
         layout.addWidget(whisper_btn)
+        
+        youtube_btn = QPushButton("유튜브 다운로드")
+        youtube_btn.clicked.connect(self.run_youtube_download)
+        layout.addWidget(youtube_btn)
 
         self.setLayout(layout)
 
@@ -1797,6 +1802,10 @@ class SelectEtcAnalysisDialog(BaseDialog):
     def run_whisper(self):
         self.accept()
         self.whisper()
+    
+    def run_youtube_download(self):
+        self.accept()
+        self.youtube_download()
 
 
 class EditHomeMemberDialog(BaseDialog):

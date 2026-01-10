@@ -114,3 +114,8 @@ async def whisper_proxy(
             "Content-Disposition": response.headers.get("content-disposition", "")
         }
     )
+    
+@router.post("/youtube")
+async def youtube_download(option: str = Form(...)):
+    option = json.loads(option)
+    return await start_youtube_download(option)
