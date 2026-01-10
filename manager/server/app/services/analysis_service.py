@@ -253,7 +253,7 @@ async def start_youtube_download(option: dict):
             "no_warnings": False,
             "extractor_args": {
                 "youtube": {
-                    "player_client": ["android", "web"],
+                    "player_client": ["ios", "web"],
                     "skip": ["dash", "hls"]
                 }
             },
