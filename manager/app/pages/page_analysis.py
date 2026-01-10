@@ -1999,64 +1999,57 @@ class Manager_Analysis(Manager_Worker):
     
     def run_youtube_download(self):
         
-        def _create_youtube_worker(pid, urls, save_dir, fmt, save_whisper, parent):
-            class YouTubeDownloadWorker(BaseWorker):
-                def __init__(self):
-                    super().__init__(parent)
+        class YouTubeDownloadWorker(BaseWorker):
+            def __init__(self, pid, urls, save_dir, fmt, save_whisper, parent=None):
+                super().__init__(parent)
+                self.pid = pid
+                self.urls = urls
+                self.save_dir = save_dir
+                self.fmt = fmt
+                self.save_whisper = save_whisper
 
-                def run(self):
-                    try:
-                        option_payload = {
-                            "pid": pid,
-                            "urls": urls,
-                            "format": fmt,
-                            "save_whisper": save_whisper
-                        }
+            def run(self):
+                try:
+                    option_payload = {
+                        "pid": self.pid,
+                        "urls": self.urls,
+                        "format": self.fmt,
+                        "save_whisper": self.save_whisper
+                    }
 
-                        response = requests.post(
-                            MANAGER_SERVER_API + "/analysis/youtube",
-                            data={"option": json.dumps(option_payload)},
-                            headers=get_api_headers(),
-                            stream=True,
-                            timeout=600
-                        )
+                    response = requests.post(
+                        MANAGER_SERVER_API + "/analysis/youtube",
+                        data={"option": json.dumps(option_payload)},
+                        headers=get_api_headers(),
+                        stream=True,
+                        timeout=600
+                    )
 
-                        if response.status_code != 200:
-                            try:
-                                msg = response.json().get("message", "유튜브 다운로드 실패")
-                            except Exception:
-                                msg = response.text
-                            self.error.emit(msg)
-                            return
+                    if response.status_code != 200:
+                        try:
+                            msg = response.json().get("message", "유튜브 다운로드 실패")
+                        except Exception:
+                            msg = response.text
+                        self.error.emit(msg)
+                        return
 
-                        zip_path = os.path.join(
-                            save_dir,
-                            f"youtube_{datetime.now().strftime('%m%d%H%M')}.zip"
-                        )
+                    zip_name = f"youtube_{datetime.now().strftime('%m%d%H%M')}.zip"
 
-                        with open(zip_path, "wb") as f:
-                            for chunk in response.iter_content(chunk_size=1024 * 256):
-                                if chunk:
-                                    f.write(chunk)
+                    extract_path = self.download_file(
+                        response,
+                        self.save_dir,
+                        zip_name,
+                        extract=True
+                    )
 
-                        extract_dir = zip_path.replace(".zip", "")
-                        os.makedirs(extract_dir, exist_ok=True)
+                    self.finished.emit(
+                        True,
+                        "유튜브 다운로드가 완료되었습니다.\n파일을 확인하시겠습니까?",
+                        extract_path
+                    )
 
-                        with zipfile.ZipFile(zip_path, "r") as zf:
-                            zf.extractall(extract_dir)
-
-                        os.remove(zip_path)
-
-                        self.finished.emit(
-                            True,
-                            "유튜브 다운로드가 완료되었습니다.\n파일을 확인하시겠습니까?",
-                            extract_dir
-                        )
-
-                    except Exception:
-                        self.error.emit(traceback.format_exc())
-
-            return YouTubeDownloadWorker()
+                except Exception:
+                    self.error.emit(traceback.format_exc())
 
         dialog = YouTubeDownloadDialog(self.main, self.main.localDirectory)
         if dialog.exec() != QDialog.Accepted:
@@ -2078,15 +2071,7 @@ class Manager_Analysis(Manager_Worker):
         downloadDialog = DownloadDialog(thread_name, pid, self.main)
         downloadDialog.show()
 
-        worker = _create_youtube_worker(
-            pid=pid,
-            urls=urls,
-            save_dir=save_dir,
-            fmt=fmt,
-            save_whisper=save_whisper,
-            parent=self.main
-        )
-
+        worker = YouTubeDownloadWorker(pid, urls, save_dir, fmt, save_whisper, self.main)
         self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
         worker.start()
 
