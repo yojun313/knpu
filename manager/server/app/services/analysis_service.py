@@ -25,6 +25,7 @@ from yt_dlp import YoutubeDL
 from datetime import datetime
 import httpx
 import json
+from urllib.parse import urlparse, parse_qs, urlunparse
 
 GPU_SERVER_URL = os.getenv("GPU_SERVER_URL")
 
@@ -187,11 +188,32 @@ async def start_youtube_download(option: dict):
     """
 
     pid: str = option["pid"]
-    urls = option.get("urls", [])
+    raw_urls = option.get("urls", [])
     fmt: Literal["mp3", "mp4"] = option.get("format", "mp3")
     save_whisper: bool = bool(option.get("save_whisper", False))
     quality: str = option.get("quality", "최고 화질 (자동)")
 
+    urls = []
+    for url in raw_urls:
+        parsed_url = urlparse(url)
+        if "youtube.com" in parsed_url.netloc:
+            query_params = parse_qs(parsed_url.query)
+            video_id = query_params.get("v")
+            if video_id:
+                new_query = f"v={video_id[0]}"
+                clean_url = urlunparse(parsed_url._replace(query=new_query, fragment=""))
+                urls.append(clean_url)
+            else:
+                urls.append(url)
+        elif "youtu.be" in parsed_url.netloc:
+            clean_url = urlunparse(parsed_url._replace(query="", fragment=""))
+            urls.append(clean_url)
+        else:
+            urls.append(url)
+
+    if not urls:
+        return JSONResponse(status_code=400, content={"error": "urls가 비어있습니다"})
+    
     if not urls:
         return JSONResponse(status_code=400, content={"error": "urls가 비어있습니다"})
 
