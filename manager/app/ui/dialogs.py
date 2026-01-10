@@ -1827,18 +1827,6 @@ class YouTubeDownloadDialog(BaseDialog):
         self.format_box = QComboBox()
         self.format_box.addItems(["mp4", "mp3"])
         layout.addWidget(self.format_box)
-        
-        # 화질 선택
-        layout.addWidget(QLabel("영상 화질 (mp4 전용):"))
-        self.quality_box = QComboBox()
-        self.quality_box.addItems([
-            "최고 화질 (자동)",
-            "1080p",
-            "720p",
-            "480p",
-            "360p"
-        ])
-        layout.addWidget(self.quality_box)
 
         # Whisper 옵션
         self.whisper_checkbox = QCheckBox("음성 텍스트 변환 생성")
@@ -1863,13 +1851,6 @@ class YouTubeDownloadDialog(BaseDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
-        
-        self.format_box.currentTextChanged.connect(self._update_quality_state)
-        self._update_quality_state()
-        
-    def _update_quality_state(self):
-        is_mp4 = self.format_box.currentText() == "mp4"
-        self.quality_box.setEnabled(is_mp4)
 
     def select_path(self):
         path = QFileDialog.getExistingDirectory(self, "저장 경로 선택")
