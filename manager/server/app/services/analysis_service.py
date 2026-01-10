@@ -183,7 +183,6 @@ async def start_youtube_download(option: dict):
       "urls": ["https://youtu.be/...", "https://www.youtube.com/watch?v=..."],
       "format": "mp3",          # "mp3" | "mp4"
       "save_whisper": true,     # true면 whisper 결과(txt)도 저장
-      "quality": "1080p"        # 선택사항
     }
     """
 
@@ -191,7 +190,6 @@ async def start_youtube_download(option: dict):
     raw_urls = option.get("urls", [])
     fmt: Literal["mp3", "mp4"] = option.get("format", "mp3")
     save_whisper: bool = bool(option.get("save_whisper", False))
-    quality: str = option.get("quality", "최고 화질 (자동)")
 
     urls = []
     for url in raw_urls:
@@ -236,15 +234,6 @@ async def start_youtube_download(option: dict):
             os.remove(zip_path)
         except OSError:
             pass
-
-    def _format_by_quality(q: str) -> str:
-        return {
-            "최고 화질 (자동)": "bv*+ba/best",
-            "1080p": "bv*[height<=1080]+ba/best",
-            "720p": "bv*[height<=720]+ba/best",
-            "480p": "bv*[height<=480]+ba/best",
-            "360p": "bv*[height<=360]+ba/best",
-        }.get(q, "bv*+ba/best")
 
     def _ytdlp_opts(format_: str, q: str) -> dict:
         opts = {
@@ -341,14 +330,14 @@ async def start_youtube_download(option: dict):
     try:
         send_message(
             pid,
-            f"유튜브 다운로드 시작 (총 {len(urls)}개, format={fmt}, quality={quality}, whisper={save_whisper})"
+            f"유튜브 다운로드 시작 (총 {len(urls)}개, format={fmt}, whisper={save_whisper})"
         )
 
         for i, url in enumerate(urls, 1):
             send_message(pid, f"[{i}/{len(urls)}] 다운로드 중: {url}")
 
             media_path = await asyncio.to_thread(
-                _download_one, url, fmt, quality
+                _download_one, url, fmt
             )
 
             if not os.path.exists(media_path):
