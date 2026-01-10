@@ -1870,7 +1870,6 @@ class YouTubeDownloadDialog(BaseDialog):
         self.data = {
             "urls": urls,
             "format": self.format_box.currentText(),
-            "quality": self.quality_box.currentText(),
             "save_whisper": self.whisper_checkbox.isChecked(),
             "save_dir": self.save_dir,
         }
