@@ -229,6 +229,7 @@ async def start_youtube_download(option: dict):
             return {
                 "outtmpl": outtmpl,
                 "quiet": True,
+                "js_runtimes": ["node"],
                 "postprocessors": [
                     {
                         "key": "FFmpegExtractAudio",
@@ -243,6 +244,7 @@ async def start_youtube_download(option: dict):
             "quiet": True,
             "format": _format_by_quality(q),
             "merge_output_format": "mp4",
+            "js_runtimes": ["node"],
         }
 
     def _download_one(url: str, format_: str, q: str) -> str:
@@ -268,21 +270,6 @@ async def start_youtube_download(option: dict):
             return None
         files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
         return files[0]
-    
-    def format_with_timestamps(segments):
-        def ts(t):
-            h = int(t // 3600)
-            m = int((t % 3600) // 60)
-            s = int(t % 60)
-            ms = int((t - int(t)) * 1000)
-            return f"{h:02}:{m:02}:{s:02},{ms:03}"
-
-        lines = []
-        for seg in segments:
-            line = f"[{ts(seg.start)} - {ts(seg.end)}] {seg.text.strip()}"
-            lines.append(line)
-
-        return "\n".join(lines)
 
     async def _whisper_to_txt(media_path: str) -> str:
         filename = os.path.basename(media_path)
