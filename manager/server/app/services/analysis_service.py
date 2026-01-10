@@ -225,10 +225,22 @@ async def start_youtube_download(option: dict):
         }.get(q, "bv*+ba/best")
 
     def _ytdlp_opts(format_: str, q: str) -> dict:
+        opts = {
+            "outtmpl": outtmpl,
+            "quiet": False,  # 에러 디버깅을 위해 잠시 False로 권장
+            "no_warnings": False,
+            # 최신 유튜브 차단 정책 우회를 위한 인자 추가
+            "extractor_args": {
+                "youtube": {
+                    "player_client": ["android", "web"],
+                    "skip": ["dash", "hls"]
+                }
+            },
+            "nocheckcertificate": True,
+        }
+
         if format_ == "mp3":
-            return {
-                "outtmpl": outtmpl,
-                "quiet": True,
+            opts.update({
                 "postprocessors": [
                     {
                         "key": "FFmpegExtractAudio",
@@ -236,14 +248,14 @@ async def start_youtube_download(option: dict):
                         "preferredquality": "192",
                     }
                 ],
-            }
-
-        return {
-            "outtmpl": outtmpl,
-            "quiet": True,
-            "format": _format_by_quality(q),
-            "merge_output_format": "mp4",
-        }
+            })
+        else:
+            opts.update({
+                "format": _format_by_quality(q),
+                "merge_output_format": "mp4",
+            })
+        
+        return opts
 
     def _download_one(url: str, format_: str, q: str) -> str:
         with YoutubeDL(_ytdlp_opts(format_, q)) as ydl:
