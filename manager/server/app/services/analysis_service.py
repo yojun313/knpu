@@ -235,10 +235,10 @@ async def start_youtube_download(option: dict):
         except OSError:
             pass
 
-    def _ytdlp_opts(format_: str, q: str) -> dict:
+    def _ytdlp_opts(format_: str) -> dict:
         opts = {
             "outtmpl": outtmpl,
-            "quiet": False,  
+            "quiet": True,  
             "no_warnings": False,
             # "extractor_args": {
             #     "youtube": {
@@ -269,8 +269,8 @@ async def start_youtube_download(option: dict):
         
         return opts
 
-    def _download_one(url: str, format_: str, q: str) -> str:
-        with YoutubeDL(_ytdlp_opts(format_, q)) as ydl:
+    def _download_one(url: str, format_: str) -> str:
+        with YoutubeDL(_ytdlp_opts(format_)) as ydl:
             info = ydl.extract_info(url, download=True)
             base_path = ydl.prepare_filename(info)
             root, _ = os.path.splitext(base_path)
