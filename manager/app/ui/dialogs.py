@@ -1789,7 +1789,7 @@ class SelectEtcAnalysisDialog(BaseDialog):
         whisper_btn.clicked.connect(self.run_whisper)
         layout.addWidget(whisper_btn)
         
-        youtube_btn = QPushButton("유튜브 다운로드")
+        youtube_btn = QPushButton("YouTube 다운로드")
         youtube_btn.clicked.connect(self.run_youtube_download)
         layout.addWidget(youtube_btn)
 
@@ -1806,6 +1806,73 @@ class SelectEtcAnalysisDialog(BaseDialog):
     def run_youtube_download(self):
         self.accept()
         self.youtube_download()
+
+
+class WhisperOptionDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("음성 인식 옵션")
+        self.resize(360, 180)
+
+        layout = QVBoxLayout(self)
+
+        form = QFormLayout()
+
+        # 언어 선택
+        self.lang_map = {
+            "한국어": "ko",
+            "영어": "en",
+            "일본어": "ja",
+            "중국어": "zh",
+            "프랑스어": "fr",
+            "독일어": "de",
+            "스페인어": "es",
+            "이탈리아어": "it",
+            "포르투갈어": "pt",
+            "러시아어": "ru",
+            "아랍어": "ar",
+            "힌디어": "hi",
+            "태국어": "th",
+            "베트남어": "vi",
+            "인도네시아어": "id",
+        }
+
+        self.lang_combo = QComboBox()
+        self.lang_combo.addItems(self.lang_map.keys())
+        self.lang_combo.setCurrentText("한국어")
+
+        form.addRow("언어", self.lang_combo)
+
+        # 모델 선택
+        self.model_map = {
+            "빠름 (small)": 1,
+            "중간 (medium, 권장)": 2,
+            "정확 (large)": 3,
+        }
+
+        self.model_combo = QComboBox()
+        self.model_combo.addItems(self.model_map.keys())
+        self.model_combo.setCurrentText("중간 (medium, 권장)")
+
+        form.addRow("모델", self.model_combo)
+
+        layout.addLayout(form)
+
+        # 버튼
+        btns = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
+        btns.accepted.connect(self.accept)
+        btns.rejected.connect(self.reject)
+
+        layout.addWidget(btns)
+
+    def get_option(self) -> dict:
+        return {
+            "language": self.lang_map[self.lang_combo.currentText()],
+            "model_level": self.model_map[self.model_combo.currentText()],
+        }
+
 
 
 class YouTubeDownloadDialog(BaseDialog):

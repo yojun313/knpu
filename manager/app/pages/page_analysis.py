@@ -1866,14 +1866,12 @@ class Manager_Analysis(Manager_Worker):
                         return
 
                     result = response.json()
-
                     text = result.get("text", "")
                     text_with_time = result.get("text_with_time", "")
-
                     output_text = text_with_time or text
 
                     base, _ = os.path.splitext(self.audio_fname)
-                    filename = f"{base}_whisper_{datetime.now().strftime("%m%d%H%M")}.txt"
+                    filename = f"{base}_whisper_{datetime.now().strftime('%m%d%H%M')}.txt"
                     output_path = os.path.join(self.save_dir, filename)
 
                     with open(output_path, "w", encoding="utf-8") as f:
@@ -1887,13 +1885,12 @@ class Manager_Analysis(Manager_Worker):
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
-
         try:
             audio_path = self.check_audio_file()
             if not audio_path:
                 printStatus(self.main)
                 return
-                
+
             audio_fname = os.path.basename(audio_path)
 
             printStatus(self.main, "결과 파일 저장 위치를 선택하세요")
@@ -1904,64 +1901,16 @@ class Manager_Analysis(Manager_Worker):
                 printStatus(self.main)
                 return
 
-            WHISPER_LANGUAGES = {
-                "한국어": "ko",
-                "영어": "en",
-                "일본어": "ja",
-                "중국어": "zh",
-                "프랑스어": "fr",
-                "독일어": "de",
-                "스페인어": "es",
-                "이탈리아어": "it",
-                "포르투갈어": "pt",
-                "러시아어": "ru",
-                "아랍어": "ar",
-                "힌디어": "hi",
-                "태국어": "th",
-                "베트남어": "vi",
-                "인도네시아어": "id",
-            }
-
-            label_list = list(WHISPER_LANGUAGES.keys())
-
-            selected_label, ok = QInputDialog.getItem(
-                self.main,
-                "언어 선택",
-                "음성 인식 언어를 선택하세요:",
-                label_list,
-                0,         
-                False
-            )
-
-            if not ok:
+            # 🔥 옵션 다이얼로그
+            dialog = WhisperOptionDialog(self.main)
+            if dialog.exec() != QDialog.Accepted:
                 printStatus(self.main)
                 return
 
-            language = WHISPER_LANGUAGES[selected_label]
-            
-            WHISPER_MODELS = {
-                "빠름 (small)": 1,
-                "중간 (medium, 권장)": 2,
-                "정확 (large)": 3,
-            }
+            opt = dialog.get_option()
+            language = opt["language"]
+            model_level = opt["model_level"]
 
-            model_labels = list(WHISPER_MODELS.keys())
-
-            selected_model_label, ok = QInputDialog.getItem(
-                self.main,
-                "모델 선택",
-                "음성 인식 모델을 선택하세요:",
-                model_labels,
-                1,   # 기본값: medium
-                False
-            )
-
-            if not ok:
-                printStatus(self.main)
-                return
-
-            model_level = WHISPER_MODELS[selected_model_label]
-            
             pid = str(uuid.uuid4())
             register_process(pid, "음성 인식")
 
@@ -1989,14 +1938,13 @@ class Manager_Analysis(Manager_Worker):
                 self._workers = []
             self._workers.append(worker)
 
-            # 로그
             userLogging(
                 f"ANALYSIS -> Whisper({audio_fname}) : lang={language}, model={model_level}"
             )
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-    
+
     def run_youtube_download(self):
         
         class YouTubeDownloadWorker(BaseWorker):
