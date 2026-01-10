@@ -238,29 +238,42 @@ async def start_youtube_download(option: dict):
     
     def make_progress_hook(pid: str, index: int, total: int):
         last_sent = {"percent": -1}
+        active_filename = {"name": None}
 
         def hook(d):
-            if d.get("status") == "downloading":
+            status = d.get("status")
+
+            if status == "downloading":
+                filename = d.get("filename")
+
+                # 첫 다운로드 스트림만 고정
+                if active_filename["name"] is None:
+                    active_filename["name"] = filename
+
+                if filename != active_filename["name"]:
+                    return
+
                 total_bytes = d.get("total_bytes") or d.get("total_bytes_estimate")
-                downloaded = d.get("downloaded_bytes", 0)
+                if not total_bytes:
+                    return
 
-                if total_bytes:
-                    percent = int(downloaded * 100 / total_bytes)
+                percent = int(d.get("downloaded_bytes", 0) * 100 / total_bytes)
 
-                    # 너무 자주 보내지 않게 (1% 단위)
-                    if percent != last_sent["percent"]:
-                        last_sent["percent"] = percent
-                        send_message(
-                            pid,
-                            f"[{index}/{total}] 다운로드 중: {percent}% "
-                            f"({d.get('_speed_str','')}, ETA {d.get('_eta_str','')})"
-                        )
+                if percent != last_sent["percent"]:
+                    last_sent["percent"] = percent
+                    send_message(
+                        pid,
+                        f"[{index}/{total}] 다운로드 중: {percent}% "
+                        f"({d.get('_speed_str','')}, ETA {d.get('_eta_str','')})"
+                    )
 
-            elif d.get("status") == "finished":
-                send_message(
-                    pid,
-                    f"[{index}/{total}] 다운로드 완료, 후처리 중..."
-                )
+            elif status == "finished":
+                # finished도 동일한 filename에 대해서만
+                if d.get("filename") == active_filename["name"]:
+                    send_message(
+                        pid,
+                        f"[{index}/{total}] 다운로드 완료, 후처리 중..."
+                    )
 
         return hook
 
