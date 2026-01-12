@@ -121,6 +121,7 @@ async def youtube_download(option: str = Form(...)):
     option = json.loads(option)
     return await start_youtube_download(option)
 
+@router.post("/yolo")  
 async def yolo_proxy(
     option: str = Form("{}"),
     conf_thres: float = Form(0.25),
