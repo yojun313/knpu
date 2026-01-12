@@ -97,7 +97,7 @@ def get_yolo_model():
     global _yolo_model, _yolo_names
 
     if _yolo_model is None:
-        _yolo_model = YOLO(os.path.join(MODEL_DIR, "yolo11n.pt"))
+        _yolo_model = YOLO(os.path.join(MODEL_DIR, "yolo11n.pt"), verbose=False)
         _yolo_names = _yolo_model.names
 
     return _yolo_model, _yolo_names
@@ -344,7 +344,7 @@ async def yolo_detect_images_to_zip(
                     continue
 
                 h, w = img.shape[:2]
-                results = model(tmp_path, conf=conf_thres)
+                results = model(tmp_path, conf=conf_thres, verbose=False)
 
                 detections: List[Dict[str, Any]] = []
 
