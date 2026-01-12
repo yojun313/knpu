@@ -19,12 +19,23 @@ import os
 from faster_whisper import WhisperModel
 from dotenv import load_dotenv
 import gc
+from ultralytics import YOLO
+import io
+import zipfile
+import cv2
+from typing import List, Dict, Any
+import json
+from fastapi import UploadFile
+import tempfile
 
 load_dotenv() 
 MODEL_DIR = os.getenv("MODEL_PATH")
 
 kor_unsmile_pipe = None
 _whisper_models = {}
+
+_yolo_model = None
+_yolo_names = None
 
 WHISPER_MODEL_MAP = {
     1: {
@@ -40,8 +51,6 @@ WHISPER_MODEL_MAP = {
         "compute": "float16",
     },
 }
-
-
 
 whisper_model = WhisperModel(
     os.path.join(MODEL_DIR, "faster-whisper-large-v3"),
@@ -84,6 +93,14 @@ def get_whisper_model(level: int):
 
     return _whisper_models[key]
 
+def get_yolo_model():
+    global _yolo_model, _yolo_names
+
+    if _yolo_model is None:
+        _yolo_model = YOLO(os.path.join(MODEL_DIR, "yolo11n.pt"))
+        _yolo_names = _yolo_model.names
+
+    return _yolo_model, _yolo_names
 
 def unload_hate_model():
     global kor_unsmile_pipe
@@ -192,49 +209,47 @@ def measure_hate(
     unload_hate_model()
     return data
 
-def format_paragraphs(segments, max_len=120):
-    paragraphs = []
-    buf = ""
-
-    for seg in segments:
-        text = seg.text.strip()
-        if not text:
-            continue
-
-        if len(buf) + len(text) <= max_len:
-            buf += " " + text
-        else:
-            paragraphs.append(buf.strip())
-            buf = text
-
-    if buf:
-        paragraphs.append(buf.strip())
-
-    return "\n\n".join(paragraphs)
-
-
-def format_with_timestamps(segments):
-    def ts(t):
-        h = int(t // 3600)
-        m = int((t % 3600) // 60)
-        s = int(t % 60)
-        ms = int((t - int(t)) * 1000)
-        return f"{h:02}:{m:02}:{s:02},{ms:03}"
-
-    lines = []
-    for seg in segments:
-        line = f"[{ts(seg.start)} - {ts(seg.end)}] {seg.text.strip()}"
-        lines.append(line)
-
-    return "\n".join(lines)
-
-
 def transcribe_audio(
     audio_path: str,
     language: str = "ko",
     model_level: int = 2,
     pid = None,
 ):
+    def format_paragraphs(segments, max_len=120):
+        paragraphs = []
+        buf = ""
+
+        for seg in segments:
+            text = seg.text.strip()
+            if not text:
+                continue
+
+            if len(buf) + len(text) <= max_len:
+                buf += " " + text
+            else:
+                paragraphs.append(buf.strip())
+                buf = text
+
+        if buf:
+            paragraphs.append(buf.strip())
+
+        return "\n\n".join(paragraphs)
+
+    def format_with_timestamps(segments):
+        def ts(t):
+            h = int(t // 3600)
+            m = int((t % 3600) // 60)
+            s = int(t % 60)
+            ms = int((t - int(t)) * 1000)
+            return f"{h:02}:{m:02}:{s:02},{ms:03}"
+
+        lines = []
+        for seg in segments:
+            line = f"[{ts(seg.start)} - {ts(seg.end)}] {seg.text.strip()}"
+            lines.append(line)
+
+        return "\n".join(lines)
+
     send_message(pid, f"[음성 인식] {WHISPER_MODEL_MAP[model_level]['name']} 모델 로드 중")
     model = get_whisper_model(model_level)
 
@@ -267,3 +282,140 @@ def transcribe_audio(
             for seg in segments
         ],
     }
+
+async def yolo_detect_images_to_zip(
+    files: List[UploadFile],
+    conf_thres: float = 0.25,
+    pid=None,
+) -> io.BytesIO:
+    """
+    여러 이미지를 받아 YOLO 객체검출 후
+    - bbox 그려진 이미지
+    - detections json
+    을 zip(BytesIO)로 묶어 반환
+    zip 내부:
+      images/{stem}.jpg
+      json/{stem}.json
+    """
+    model, names = get_yolo_model()
+
+    # 파일 리스트 정리 (확장자 필터링)
+    valid_exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+    valid_files = []
+    skipped = 0
+    for f in files:
+        fname = f.filename or "image"
+        ext = os.path.splitext(fname)[1].lower()
+        if ext in valid_exts:
+            valid_files.append(f)
+        else:
+            skipped += 1
+
+    total = len(valid_files)
+    if pid is not None:
+        send_message(pid, f"[YOLO] 이미지 처리 시작 (총 {total}개, conf={conf_thres})"
+                         + (f", 스킵 {skipped}개" if skipped else ""))
+
+    zip_buffer = io.BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for i, up in enumerate(valid_files, start=1):
+            filename = up.filename or f"image_{i}"
+            ext = os.path.splitext(filename)[1].lower()
+
+            if pid is not None:
+                send_message(pid, f"[YOLO] ({i}/{total}) '{filename}' 로드/추론 중...")
+
+            data = await up.read()
+            if not data:
+                if pid is not None:
+                    send_message(pid, f"[YOLO] ({i}/{total}) '{filename}' 읽기 실패(빈 파일) - 스킵")
+                continue
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                tmp.write(data)
+                tmp_path = tmp.name
+
+            try:
+                img = cv2.imread(tmp_path)
+                if img is None:
+                    if pid is not None:
+                        send_message(pid, f"[YOLO] ({i}/{total}) '{filename}' 이미지 디코딩 실패 - 스킵")
+                    continue
+
+                h, w = img.shape[:2]
+                results = model(tmp_path, conf=conf_thres)
+
+                detections: List[Dict[str, Any]] = []
+
+                for r in results:
+                    for box in r.boxes:
+                        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                        conf = float(box.conf[0].item())
+                        cls = int(box.cls[0].item())
+
+                        # draw bbox
+                        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        label = f"{names.get(cls, str(cls))} {conf:.2f}"
+                        cv2.putText(
+                            img,
+                            label,
+                            (x1, max(0, y1 - 5)),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5,
+                            (0, 255, 0),
+                            1,
+                        )
+
+                        detections.append({
+                            "class_id": cls,
+                            "class_name": names.get(cls, str(cls)),
+                            "confidence": round(conf, 4),
+                            "bbox_xyxy": [x1, y1, x2, y2],
+                        })
+
+                # encode annotated image -> jpg bytes
+                encode_ext = ".jpg"
+                ok, enc = cv2.imencode(encode_ext, img)
+                if not ok:
+                    if pid is not None:
+                        send_message(pid, f"[YOLO] ({i}/{total}) '{filename}' 인코딩 실패 - 스킵")
+                    continue
+                annotated_bytes = enc.tobytes()
+
+                json_obj = {
+                    "image": filename,
+                    "width": w,
+                    "height": h,
+                    "detections": detections,
+                }
+                json_bytes = json.dumps(json_obj, ensure_ascii=False, indent=2).encode("utf-8")
+
+                stem = os.path.splitext(os.path.basename(filename))[0]
+                zf.writestr(f"images/{stem}{encode_ext}", annotated_bytes)
+                zf.writestr(f"json/{stem}.json", json_bytes)
+
+                if pid is not None:
+                    pct = round(i / total * 100, 2) if total else 100.0
+                    send_message(pid, f"[YOLO] ({i}/{total}) '{filename}' 완료 "
+                                      f"(det={len(detections)}개) / {pct}%")
+
+            except Exception as e:
+                if pid is not None:
+                    send_message(pid, f"[YOLO] ({i}/{total}) '{filename}' 처리 중 오류: {type(e).__name__}: {e}")
+                # 에러난 파일은 스킵하고 계속 진행
+                continue
+
+            finally:
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    pass
+
+    zip_buffer.seek(0)
+
+    if pid is not None:
+        send_message(pid, "[YOLO] 전체 완료: 결과 zip 생성 완료")
+
+    return zip_buffer
+

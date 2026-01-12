@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from app.models.analysis_model import HateOption
 import tempfile
 from urllib.parse import quote  
+from ultralytics import YOLO
+
 
 router = APIRouter()
 
@@ -81,3 +83,26 @@ async def whisper_route(
     finally:
         os.remove(audio_path)
 
+@router.post("/yolo")
+async def yolo_detect_images_route(
+    files: List[UploadFile] = File(...),
+    option: str = Form("{}"),
+    conf_thres: float = Form(0.25),
+):
+    option_dict = json.loads(option)
+    pid = option_dict.get("pid", None)
+
+    zip_buffer = await yolo_detect_images_to_zip(
+        files=files,
+        conf_thres=float(conf_thres),
+        pid=pid,
+    )
+
+    out_name = "yolo_results.zip"
+    cd_header = f"attachment; filename*=UTF-8''{quote(out_name)}"
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": cd_header},
+    )
