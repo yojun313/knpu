@@ -286,6 +286,38 @@ light_style_sheet = """
     QProgressBar#downloadProgressBar[state="error"]::chunk {
         background-color: #E74C3C;
     }
+    
+        QDoubleSpinBox {
+        background-color: #ffffff;
+        color: #000000;
+        border: 2px solid #bdc3c7;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 14px;
+    }
+
+    QDoubleSpinBox:hover {
+        border: 2px solid #aeb6bf;
+    }
+
+    QDoubleSpinBox:focus {
+        border: 2px solid #2c3e50;
+    }
+
+    QDoubleSpinBox::up-button {
+        subcontrol-position: top right;
+        border-top-right-radius: 6px;
+    }
+
+    QDoubleSpinBox::down-button {
+        subcontrol-position: bottom right;
+        border-bottom-right-radius: 6px;
+    }
+
+    QDoubleSpinBox::up-arrow, QDoubleSpinBox::down-arrow {
+        width: 10px;
+        height: 10px;
+    }
     """
 
 dark_style_sheet = """
@@ -644,6 +676,38 @@ dark_style_sheet = """
 
     QProgressBar#downloadProgressBar[state="error"]::chunk {
         background-color: #E74C3C;
+    }
+    
+        QDoubleSpinBox {
+        background-color: #2e2e2e;
+        color: #ecf0f1;
+        border: 2px solid #34495e;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 14px;
+    }
+
+    QDoubleSpinBox:hover {
+        border: 2px solid #3a539b;
+    }
+
+    QDoubleSpinBox:focus {
+        border: 2px solid #3a539b;
+    }
+
+    QDoubleSpinBox::up-button {
+        subcontrol-position: top right;
+        border-top-right-radius: 6px;
+    }
+
+    QDoubleSpinBox::down-button {
+        subcontrol-position: bottom right;
+        border-bottom-right-radius: 6px;
+    }
+
+    QDoubleSpinBox::up-arrow, QDoubleSpinBox::down-arrow {
+        width: 10px;
+        height: 10px;
     }
     """
 

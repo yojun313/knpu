@@ -3,11 +3,11 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QGroupBox, QCheckBox, QGridLayout, QButtonGroup,
     QRadioButton, QPushButton, QScrollArea, QMessageBox, QWidget, QFormLayout,
     QTextEdit, QDialogButtonBox, QComboBox, QLabel, QDateEdit, QLineEdit, QHBoxLayout,
-    QFileDialog, QInputDialog, QApplication
+    QFileDialog, QInputDialog, QApplication, QDoubleSpinBox
 )
 from services.api import *
 from services.logging import *
-from PySide6.QtGui import QKeySequence, QFont, QShortcut
+from PySide6.QtGui import QKeySequence, QFont, QShortcut, QFontMetrics
 from datetime import datetime
 
 class BaseDialog(QDialog):
@@ -733,6 +733,127 @@ class EditPostDialog(BaseDialog):
                                 f'Post Title: {post_title}\nPost Text: {post_text}')
         self.accept()
 
+
+class MergeOptionDialog(BaseDialog):
+    def __init__(self, parent=None, base_dir=""):
+        super().__init__(parent)
+        self.setWindowTitle("CSV 병합 설정")
+        self.resize(520, 260)
+        self.data = None
+
+        self.csv_paths = []
+        self.base_dir = base_dir or ""
+        self.save_dir = ""
+        self._default_dir = ""  # 기본 저장 경로(미선택일 때 표시용)
+
+        layout = QVBoxLayout(self)
+
+        # CSV 선택
+        layout.addWidget(QLabel("CSV 파일 선택 (2개 이상):"))
+        file_layout = QHBoxLayout()
+        self.file_label = QLabel("선택된 파일: 0개")
+        self.file_btn = QPushButton("CSV 선택")
+        file_layout.addWidget(self.file_label)
+        file_layout.addWidget(self.file_btn)
+        layout.addLayout(file_layout)
+        self.file_btn.clicked.connect(self.select_csvs)
+
+        # 병합 파일명
+        form = QFormLayout()
+        self.name_edit = QLineEdit()
+        self.name_edit.setText("merged_file")
+        form.addRow("병합 파일명", self.name_edit)
+        layout.addLayout(form)
+
+        # 저장 경로
+        path_layout = QHBoxLayout()
+        self.path_label = QLabel("저장 경로: 선택되지 않음")
+        self.path_label.setMinimumWidth(1)  # elide 계산이 안정적으로 되도록
+        self.path_btn = QPushButton("경로 선택")
+        path_layout.addWidget(self.path_label, 1)  # 라벨이 남는 공간을 먹게(중요)
+        path_layout.addWidget(self.path_btn)
+        layout.addLayout(path_layout)
+        self.path_btn.clicked.connect(self.select_path)
+
+        # OK / Cancel
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok |
+            QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def elide_path(self, text: str):
+        fm = QFontMetrics(self.path_label.font())
+        elided = fm.elidedText(text, Qt.ElideMiddle, self.path_label.width())
+        self.path_label.setText(elided)
+
+    def _refresh_path_label(self):
+        if self.save_dir:
+            full_text = f"저장 경로: {self.save_dir}"
+        elif self._default_dir:
+            full_text = f"저장 경로: (미선택) 기본={self._default_dir}"
+        else:
+            full_text = "저장 경로: 선택되지 않음"
+        self.elide_path(full_text)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._refresh_path_label()
+
+    def select_csvs(self):
+        paths, _ = QFileDialog.getOpenFileNames(
+            self,
+            "CSV 파일 선택 (2개 이상)",
+            self.base_dir,
+            "CSV Files (*.csv)"
+        )
+        if paths:
+            self.csv_paths = paths
+            self.file_label.setText(f"선택된 파일: {len(paths)}개")
+            self.base_dir = os.path.dirname(paths[0])  # 다음 선택 편의
+
+            
+            if not self.save_dir:
+                self._default_dir = self.base_dir
+                self._refresh_path_label()
+
+    def select_path(self):
+        path = QFileDialog.getExistingDirectory(self, "저장 경로 선택", self.base_dir)
+        if path:
+            self.save_dir = path
+            self._default_dir = ""  
+            self._refresh_path_label()
+
+    def accept(self):
+        if not self.csv_paths:
+            QMessageBox.warning(self, "입력 오류", "CSV 파일을 선택하세요.")
+            return
+
+        wrong = [p for p in self.csv_paths if not p.lower().endswith(".csv")]
+        if wrong:
+            QMessageBox.warning(self, "Wrong Format", f"{os.path.basename(wrong[0])}는 CSV 파일이 아닙니다")
+            return
+
+        if len(self.csv_paths) < 2:
+            QMessageBox.warning(self, "Wrong Selection", "2개 이상의 CSV 파일 선택이 필요합니다")
+            return
+
+        mergedfilename = self.name_edit.text().strip()
+        if not mergedfilename:
+            QMessageBox.warning(self, "입력 오류", "병합 파일명을 입력하세요.")
+            return
+
+        save_dir = self.save_dir or os.path.dirname(self.csv_paths[0])
+
+        self.data = {
+            "selected_directory": self.csv_paths,
+            "mergedfilename": mergedfilename,
+            "save_dir": save_dir,
+        }
+        super().accept()
+        
 
 class StatAnalysisDialog(BaseDialog):
     """
@@ -1883,7 +2004,6 @@ class WhisperOptionDialog(QDialog):
         }
 
 
-
 class YouTubeDownloadDialog(BaseDialog):
     def __init__(self, parent=None, base_dir=""):
         super().__init__(parent)
@@ -1947,6 +2067,98 @@ class YouTubeDownloadDialog(BaseDialog):
             "urls": urls,
             "format": self.format_box.currentText(),
             "save_whisper": self.whisper_checkbox.isChecked(),
+            "save_dir": self.save_dir,
+        }
+        super().accept()
+
+
+class YoloOptionDialog(BaseDialog):
+    def __init__(self, parent=None, base_dir=""):
+        super().__init__(parent)
+        self.setWindowTitle("이미지 객체 검출 설정")
+        self.resize(520, 260)
+        self.data = None
+
+        layout = QVBoxLayout(self)
+
+
+        img_layout = QHBoxLayout()
+        self.img_label = QLabel("선택된 파일: 0개")
+        self.img_btn = QPushButton("이미지 선택")
+        img_layout.addWidget(self.img_label)
+        img_layout.addWidget(self.img_btn)
+        layout.addLayout(img_layout)
+
+        self.image_paths = []
+        self.img_btn.clicked.connect(self.select_images)
+
+        # 저장 경로
+        path_layout = QHBoxLayout()
+        self.path_label = QLabel("저장 경로: 선택되지 않음")
+        self.path_btn = QPushButton("경로 선택")
+        path_layout.addWidget(self.path_label)
+        path_layout.addWidget(self.path_btn)
+        layout.addLayout(path_layout)
+        
+        # conf_thres
+        form = QFormLayout()
+
+        self.conf_spin = QDoubleSpinBox()
+        self.conf_spin.setRange(0.0, 1.0)
+        self.conf_spin.setSingleStep(0.05)
+        self.conf_spin.setDecimals(2)
+        self.conf_spin.setValue(0.25)
+
+        form.addRow("conf_thres", self.conf_spin)
+        layout.addLayout(form)
+        
+        conf_desc = QLabel("conf_thres: 검출 최소 신뢰도(0~1). 값이 높을수록 더 확실한 객체만 검출되고, 낮추면 더 많이 검출됩니다.")
+        conf_desc.setWordWrap(True)
+        layout.addWidget(conf_desc)
+
+        self.save_dir = ""
+        self.path_btn.clicked.connect(self.select_path)
+
+        # OK / Cancel
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok |
+            QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+        # 기본 경로(선택)
+        self.base_dir = base_dir or ""
+
+    def select_images(self):
+        paths, _ = QFileDialog.getOpenFileNames(
+            self,
+            "이미지 파일 선택",
+            self.base_dir,
+            "Images (*.jpg *.jpeg *.png *.webp *.bmp)"
+        )
+        if paths:
+            self.image_paths = paths
+            self.img_label.setText(f"선택된 파일: {len(paths)}개")
+
+    def select_path(self):
+        path = QFileDialog.getExistingDirectory(self, "저장 경로 선택")
+        if path:
+            self.save_dir = path
+            self.path_label.setText(path)
+
+    def accept(self):
+        if not self.image_paths:
+            QMessageBox.warning(self, "입력 오류", "이미지 파일을 선택하세요.")
+            return
+        if not self.save_dir:
+            QMessageBox.warning(self, "입력 오류", "저장 경로를 선택하세요.")
+            return
+
+        self.data = {
+            "image_paths": self.image_paths,
+            "conf_thres": float(self.conf_spin.value()),
             "save_dir": self.save_dir,
         }
         super().accept()
