@@ -9,6 +9,7 @@ import io, os
 from urllib.parse import quote
 import httpx
 from dotenv import load_dotenv
+from typing import List
   
 router = APIRouter()
 
@@ -114,8 +115,43 @@ async def whisper_proxy(
             "Content-Disposition": response.headers.get("content-disposition", "")
         }
     )
-    
+
 @router.post("/youtube")
 async def youtube_download(option: str = Form(...)):
     option = json.loads(option)
     return await start_youtube_download(option)
+
+async def yolo_proxy(
+    option: str = Form("{}"),
+    conf_thres: float = Form(0.25),
+    files: List[UploadFile] = File(...),
+):
+    async with httpx.AsyncClient(timeout=None) as client:
+        # 여러 파일을 같은 필드명("files")으로 반복해서 보내야 FastAPI List[UploadFile]로 받음
+        multipart_files = []
+        for f in files:
+            multipart_files.append(
+                ("files", (f.filename, await f.read(), f.content_type))
+            )
+
+        data = {
+            "option": option,
+            "conf_thres": str(conf_thres),  # Form 값은 문자열로 들어오는게 안전
+        }
+
+        response = await client.post(
+            f"{GPU_SERVER_URL}/analysis/yolo",
+            data=data,
+            files=multipart_files,
+        )
+
+    # GPU 서버가 zip을 스트리밍하든, 에러 json을 보내든 그대로 흘려보냄
+    return StreamingResponse(
+        response.aiter_bytes(),
+        status_code=response.status_code,
+        media_type=response.headers.get("content-type", "application/octet-stream"),
+        headers={
+            # zip 다운로드 유지
+            "Content-Disposition": response.headers.get("content-disposition", ""),
+        },
+    )
