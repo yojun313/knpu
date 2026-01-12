@@ -210,12 +210,13 @@ class Manager_Analysis(Manager_Worker):
         class MergeWorker(QThread):
             finished = Signal(bool, str, str)
             error = Signal(str)
-            message = Signal(str)  
+            message = Signal(str)
 
-            def __init__(self, selected_directory, mergedfilename, parent=None):
+            def __init__(self, selected_directory, mergedfilename, save_dir, parent=None):
                 super().__init__(parent)
                 self.selected_directory = selected_directory
                 self.mergedfilename = mergedfilename
+                self.save_dir = save_dir
 
             def run(self):
                 try:
@@ -224,6 +225,7 @@ class Manager_Analysis(Manager_Worker):
 
                     self.message.emit("파일 형식을 검사 중...")
                     all_columns = [df.columns.tolist() for df in all_df]
+
                     def find_different_element_index(lst):
                         if not lst: return None
                         if lst.count(lst[0]) == 1: return 0
@@ -243,42 +245,38 @@ class Manager_Analysis(Manager_Worker):
                         merged_df = pd.concat([merged_df, df], ignore_index=True)
 
                     self.message.emit("결과 파일 저장 중...")
-                    mergedfiledir = os.path.dirname(self.selected_directory[0])
-                    output_path = os.path.join(mergedfiledir, self.mergedfilename + ".csv")
+                    output_path = os.path.join(self.save_dir, self.mergedfilename + ".csv")
                     merged_df.to_csv(output_path, index=False, encoding="utf-8-sig")
 
-                    self.finished.emit(True, f"{os.path.basename(output_path)} 데이터 병합이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", mergedfiledir)
+                    self.finished.emit(
+                        True,
+                        f"{os.path.basename(output_path)} 데이터 병합이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                        self.save_dir
+                    )
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
-            
+
         try:
-            selected_directory = self.analysis_getfiledirectory_csv(self.file_dialog)
-            if len(selected_directory) == 0:
-                return
-            if selected_directory[0] == False:
-                QMessageBox.warning(self.main, "Wrong Format", f"{selected_directory[1]}는 CSV 파일이 아닙니다")
-                return
-            if len(selected_directory) < 2:
-                QMessageBox.warning(self.main, "Wrong Selection", "2개 이상의 CSV 파일 선택이 필요합니다")
+            dialog = MergeOptionDialog(self.main, base_dir=self.main.localDirectory)
+            if dialog.exec() != QDialog.Accepted:
                 return
 
-            mergedfilename, ok = QInputDialog.getText(
-                None, "파일명 입력", "병합 파일명을 입력하세요:", text="merged_file"
-            )
-            if not ok or not mergedfilename:
-                return
+            data = dialog.data
+            selected_directory = data["selected_directory"]
+            mergedfilename = data["mergedfilename"]
+            save_dir = data["save_dir"]
 
             userLogging(f'ANALYSIS -> merge_file({mergedfilename})')
-            
+
             thread_name = f"데이터 병합: {mergedfilename}"
             register_thread(thread_name)
             printStatus(self.main)
-            
+
             statusDialog = TaskStatusDialog(thread_name, self.main)
             statusDialog.show()
-            
-            worker = MergeWorker(selected_directory, mergedfilename, self.main)
+
+            worker = MergeWorker(selected_directory, mergedfilename, save_dir, self.main)
             self.connectWorkerForStatusDialog(worker, statusDialog, thread_name)
             worker.start()
 
@@ -1965,22 +1963,15 @@ class Manager_Analysis(Manager_Worker):
 
             def run(self):
                 try:
-                    option_payload = {
-                        "pid": self.pid,
-                    }
-
+                    option_payload = {"pid": self.pid}
                     url = MANAGER_SERVER_API + "/analysis/yolo"
 
-                    # 여러 파일을 안전하게 열고 닫기
                     with ExitStack() as stack:
                         files = []
                         for path in self.image_paths:
                             f = stack.enter_context(open(path, "rb"))
                             ctype, _ = mimetypes.guess_type(path)
                             ctype = ctype or "application/octet-stream"
-
-                            # 서버 라우트가 files: List[UploadFile] = File(...)
-                            # 이므로 필드명은 반드시 "files" 로 반복해서 넣어야 함
                             files.append(("files", (os.path.basename(path), f, ctype)))
 
                         response = requests.post(
@@ -1992,7 +1983,7 @@ class Manager_Analysis(Manager_Worker):
                             headers=get_api_headers(),
                             files=files,
                             stream=True,
-                            timeout=600,  # 필요하면 더 늘려도 됨
+                            timeout=600,
                         )
 
                     if response.status_code != 200:
@@ -2005,8 +1996,6 @@ class Manager_Analysis(Manager_Worker):
                         return
 
                     zip_name = f"yolo_{datetime.now().strftime('%m%d%H%M')}.zip"
-
-                    # zip 다운로드 + extract=True로 자동 압축 해제 (YouTube 방식 그대로)
                     extract_path = self.download_file(
                         response,
                         self.save_dir,
@@ -2024,42 +2013,15 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
 
         try:
-            # 여러 이미지 선택 (Merge의 다중 선택 흐름과 동일)
-            image_paths, _ = QFileDialog.getOpenFileNames(
-                self.main,
-                "이미지 파일 선택",
-                self.main.localDirectory,
-                "Images (*.jpg *.jpeg *.png *.webp *.bmp)"
-            )
-            if not image_paths:
+            # 다이얼로그 하나로 옵션/파일/경로 선택
+            dialog = YoloOptionDialog(self.main, base_dir=self.main.localDirectory)
+            if dialog.exec() != QDialog.Accepted:
                 return
 
-            printStatus(self.main, "결과 파일 저장 위치를 선택하세요")
-            save_dir = QFileDialog.getExistingDirectory(
-                self.main, "결과 파일 저장 위치 선택", os.path.dirname(image_paths[0])
-            )
-            if save_dir == "":
-                printStatus(self.main)
-                return
-
-            # conf_thres 입력 (기본값 0.25)
-            conf_str, ok = QInputDialog.getText(
-                self.main,
-                "YOLO 옵션",
-                "conf_thres 값을 입력하세요 (0~1):",
-                text="0.25"
-            )
-            if not ok:
-                printStatus(self.main)
-                return
-
-            try:
-                conf_thres = float(conf_str)
-                if not (0.0 <= conf_thres <= 1.0):
-                    raise ValueError
-            except Exception:
-                QMessageBox.warning(self.main, "Wrong Value", "conf_thres는 0~1 사이의 숫자여야 합니다")
-                return
+            data = dialog.data
+            image_paths = data["image_paths"]
+            conf_thres = data["conf_thres"]
+            save_dir = data["save_dir"]
 
             pid = str(uuid.uuid4())
             register_process(pid, "YOLO Detect")
@@ -2071,14 +2033,7 @@ class Manager_Analysis(Manager_Worker):
             downloadDialog = DownloadDialog(thread_name, pid, self.main)
             downloadDialog.show()
 
-            worker = YoloWorker(
-                pid=pid,
-                image_paths=image_paths,
-                save_dir=save_dir,
-                conf_thres=conf_thres,
-                parent=self.main
-            )
-
+            worker = YoloWorker(pid, image_paths, save_dir, conf_thres, self.main)
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
@@ -2086,9 +2041,7 @@ class Manager_Analysis(Manager_Worker):
                 self._workers = []
             self._workers.append(worker)
 
-            userLogging(
-                f"ANALYSIS -> YOLO(count={len(image_paths)}, conf={conf_thres})"
-            )
+            userLogging(f"ANALYSIS -> YOLO(count={len(image_paths)}, conf={conf_thres})")
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
