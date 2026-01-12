@@ -224,7 +224,7 @@ async def start_youtube_download(option: dict):
     out_dir = os.path.join(base_temp, f"youtube_{pid}_{ts}")
     os.makedirs(out_dir, exist_ok=True)
 
-    outtmpl = os.path.join(out_dir, "%(title).200s [%(id)s].%(ext)s")
+    outtmpl = os.path.join(out_dir, "%(title).200s.%(ext)s")
 
     # ───────────────────────
     # 유틸 함수들
@@ -350,7 +350,7 @@ async def start_youtube_download(option: dict):
             safe_title = safe_filename(info.get("title", "video"))
             final_path = os.path.join(
                 os.path.dirname(origin_path),
-                f"{safe_title} [{info['id']}].{ext}"
+                f"{safe_title}.{ext}"
             )
 
             # 이미 이름이 다르면 rename
