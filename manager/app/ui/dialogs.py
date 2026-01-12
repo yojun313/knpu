@@ -1769,11 +1769,12 @@ class SelectColumnsDialog(BaseDialog):
 
 
 class SelectEtcAnalysisDialog(BaseDialog):
-    def __init__(self, analyze_hate, whisper, youtube_download):
+    def __init__(self, analyze_hate, whisper, youtube_download, yolo):
         super().__init__()
         self.analyze_hate = analyze_hate
         self.whisper = whisper
         self.youtube_download = youtube_download
+        self.yolo = yolo
         self.initUI()
         self.data = None  # 데이터를 저장할 속성 추가
 
@@ -1792,6 +1793,10 @@ class SelectEtcAnalysisDialog(BaseDialog):
         youtube_btn = QPushButton("YouTube 다운로드")
         youtube_btn.clicked.connect(self.run_youtube_download)
         layout.addWidget(youtube_btn)
+        
+        yolo_btn = QPushButton("이미지 객체 탐지")  
+        yolo_btn.clicked.connect(self.run_yolo)
+        layout.addWidget(yolo_btn)
 
         self.setLayout(layout)
 
@@ -1806,6 +1811,10 @@ class SelectEtcAnalysisDialog(BaseDialog):
     def run_youtube_download(self):
         self.accept()
         self.youtube_download()
+    
+    def run_yolo(self):
+        self.accept()
+        self.yolo()
 
 
 class WhisperOptionDialog(QDialog):

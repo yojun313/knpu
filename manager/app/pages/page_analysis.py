@@ -16,6 +16,8 @@ import uuid
 import asyncio
 import zipfile
 from googletrans import Translator
+import mimetypes
+from contextlib import ExitStack
 import json
 import requests
 import itertools
@@ -287,85 +289,6 @@ class Manager_Analysis(Manager_Worker):
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 
-    def run_analyzer(self, csv_path, csv_filename):
-        analyzer_path = None
-        possible_paths = [
-            r"C:\Program Files\ANALYZER\ANALYZER.exe",
-            r"C:\Program Files (x86)\ANALYZER\ANALYZER.exe",
-            os.path.expanduser(r"~\AppData\Local\ANALYZER\ANALYZER.exe")
-        ]
-        for p in possible_paths:
-            if os.path.isfile(p):
-                analyzer_path = p
-                break
-
-        if not analyzer_path:
-            # PATH 환경 변수에서 찾기
-            import shutil
-            found = shutil.which("ANALYZER.exe")
-            if found:
-                analyzer_path = found
-
-        if analyzer_path:
-            # 설치되어 있으면 바로 실행
-            subprocess.Popen([analyzer_path, csv_path], shell=True)
-            printStatus(self.main, f"ANALYZER로 {csv_filename}을(를) 열었습니다.")
-            return
-
-        # 설치되어 있지 않으면 안내 후 설치 실행
-        reply = QMessageBox.question(
-            self.main,
-            "ANALYZER 없음",
-            "ANALYZER가 설치되어 있지 않습니다.\n지금 설치하시겠습니까?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes
-        )
-
-        if reply == QMessageBox.StandardButton.Yes:
-            try:
-                openConsole("ANALYZER Download Process")
-                temp_dir = tempfile.gettempdir()
-                installer_path = os.path.join(temp_dir, "ANALYZER.exe")
-
-                # 설치 파일 URL
-                download_url = MANAGER_SERVER_API + "/analysis/download/analyzer"
-
-                # 다운로드 진행
-                response = requests.get(download_url, stream=True, timeout=600, headers=get_api_headers())
-                response.raise_for_status()
-                total_size = int(response.headers.get('content-length', 0))
-                downloaded = 0
-                with open(installer_path, 'wb') as f:
-                    for chunk in response.iter_content(8192):
-                        if chunk:
-                            f.write(chunk)
-                            downloaded += len(chunk)
-                            percent = (downloaded / total_size) * 100
-                            print(f"\rANALYZER Installer Download: {percent:.0f}%", end="")
-                print("\nDownload Complete")
-                closeConsole()
-
-                # 설치 프로그램 실행
-                subprocess.Popen([installer_path], shell=True)
-                QMessageBox.information(
-                    self.main,
-                    "설치 시작됨",
-                    "ANALYZER 설치 프로그램이 실행되었습니다.\n설치 완료 후 다시 시도해주세요."
-                )
-
-            except Exception as e:
-                QMessageBox.critical(
-                    self.main,
-                    "설치 실패",
-                    f"ANALYZER 설치 파일 다운로드 또는 실행 중 오류가 발생했습니다.\n\n{e}"
-                )
-        else:
-            QMessageBox.warning(
-                self.main,
-                "ANALYZER 없음",
-                "ANALYZER 설치가 필요합니다."
-            )
-    
     def run_analysis(self):
         class RunAnalysisWorker(QThread):
             finished = Signal(bool, str, str)   # (성공 여부, 메시지, 파일경로)
@@ -1711,7 +1634,7 @@ class Manager_Analysis(Manager_Worker):
             programBugLog(self.main, traceback.format_exc())
 
     def select_etc_analysis(self):
-        dialog = SelectEtcAnalysisDialog(self.run_hate_measure, self.run_whisper, self.run_youtube_download)
+        dialog = SelectEtcAnalysisDialog(self.run_hate_measure, self.run_whisper, self.run_youtube_download, self.run_yolo)
         dialog.exec()
 
     def run_hate_measure(self):
@@ -2031,6 +1954,145 @@ class Manager_Analysis(Manager_Worker):
             f"ANALYSIS -> YouTubeDownload(count={len(urls)}, fmt={fmt}, whisper={save_whisper})"
         )
     
+    def run_yolo(self):
+        class YoloWorker(BaseWorker):
+            def __init__(self, pid, image_paths, save_dir, conf_thres, parent=None):
+                super().__init__(parent)
+                self.pid = pid
+                self.image_paths = image_paths
+                self.save_dir = save_dir
+                self.conf_thres = conf_thres
+
+            def run(self):
+                try:
+                    option_payload = {
+                        "pid": self.pid,
+                    }
+
+                    url = MANAGER_SERVER_API + "/analysis/yolo"
+
+                    # 여러 파일을 안전하게 열고 닫기
+                    with ExitStack() as stack:
+                        files = []
+                        for path in self.image_paths:
+                            f = stack.enter_context(open(path, "rb"))
+                            ctype, _ = mimetypes.guess_type(path)
+                            ctype = ctype or "application/octet-stream"
+
+                            # 서버 라우트가 files: List[UploadFile] = File(...)
+                            # 이므로 필드명은 반드시 "files" 로 반복해서 넣어야 함
+                            files.append(("files", (os.path.basename(path), f, ctype)))
+
+                        response = requests.post(
+                            url,
+                            data={
+                                "option": json.dumps(option_payload),
+                                "conf_thres": str(self.conf_thres),
+                            },
+                            headers=get_api_headers(),
+                            files=files,
+                            stream=True,
+                            timeout=600,  # 필요하면 더 늘려도 됨
+                        )
+
+                    if response.status_code != 200:
+                        try:
+                            err = response.json()
+                            msg = err.get("message") or err.get("error") or "YOLO 처리 실패"
+                        except Exception:
+                            msg = response.text or "YOLO 처리 중 오류 발생"
+                        self.error.emit(msg)
+                        return
+
+                    zip_name = f"yolo_{datetime.now().strftime('%m%d%H%M')}.zip"
+
+                    # zip 다운로드 + extract=True로 자동 압축 해제 (YouTube 방식 그대로)
+                    extract_path = self.download_file(
+                        response,
+                        self.save_dir,
+                        zip_name,
+                        extract=True
+                    )
+
+                    self.finished.emit(
+                        True,
+                        "YOLO 객체 검출이 완료되었습니다.\n파일을 확인하시겠습니까?",
+                        extract_path
+                    )
+
+                except Exception:
+                    self.error.emit(traceback.format_exc())
+
+        try:
+            # 여러 이미지 선택 (Merge의 다중 선택 흐름과 동일)
+            image_paths, _ = QFileDialog.getOpenFileNames(
+                self.main,
+                "이미지 파일 선택",
+                self.main.localDirectory,
+                "Images (*.jpg *.jpeg *.png *.webp *.bmp)"
+            )
+            if not image_paths:
+                return
+
+            printStatus(self.main, "결과 파일 저장 위치를 선택하세요")
+            save_dir = QFileDialog.getExistingDirectory(
+                self.main, "결과 파일 저장 위치 선택", os.path.dirname(image_paths[0])
+            )
+            if save_dir == "":
+                printStatus(self.main)
+                return
+
+            # conf_thres 입력 (기본값 0.25)
+            conf_str, ok = QInputDialog.getText(
+                self.main,
+                "YOLO 옵션",
+                "conf_thres 값을 입력하세요 (0~1):",
+                text="0.25"
+            )
+            if not ok:
+                printStatus(self.main)
+                return
+
+            try:
+                conf_thres = float(conf_str)
+                if not (0.0 <= conf_thres <= 1.0):
+                    raise ValueError
+            except Exception:
+                QMessageBox.warning(self.main, "Wrong Value", "conf_thres는 0~1 사이의 숫자여야 합니다")
+                return
+
+            pid = str(uuid.uuid4())
+            register_process(pid, "YOLO Detect")
+
+            thread_name = f"YOLO 객체 검출 ({len(image_paths)} files)"
+            register_thread(thread_name)
+            printStatus(self.main)
+
+            downloadDialog = DownloadDialog(thread_name, pid, self.main)
+            downloadDialog.show()
+
+            worker = YoloWorker(
+                pid=pid,
+                image_paths=image_paths,
+                save_dir=save_dir,
+                conf_thres=conf_thres,
+                parent=self.main
+            )
+
+            self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
+            worker.start()
+
+            if not hasattr(self, "_workers"):
+                self._workers = []
+            self._workers.append(worker)
+
+            userLogging(
+                f"ANALYSIS -> YOLO(count={len(image_paths)}, conf={conf_thres})"
+            )
+
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
     def check_csv_file(self, tokenCheck=False):
         selected_directory = self.analysis_getfiledirectory_csv(
             self.file_dialog)
