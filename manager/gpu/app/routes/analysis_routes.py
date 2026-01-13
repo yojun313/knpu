@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 from app.models.analysis_model import HateOption
 import tempfile
 from urllib.parse import quote  
-from ultralytics import YOLO
 from app.libs.exceptions import BadRequestException
 
 router = APIRouter()

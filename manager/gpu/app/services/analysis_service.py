@@ -1,11 +1,10 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-from app.models.analysis_model import *
-from app.libs.progress import *
-import os
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+from app.models.analysis_model import *
+from app.libs.progress import *
 import pandas as pd
 import torch
 from transformers import (
@@ -15,7 +14,6 @@ from transformers import (
     logging
 )
 logging.set_verbosity_error()
-import os
 from faster_whisper import WhisperModel
 from dotenv import load_dotenv
 import gc
