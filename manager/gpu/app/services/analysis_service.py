@@ -689,7 +689,6 @@ async def grounding_dino_detect_image(
         target_sizes=[image.size[::-1]],
     )[0]
 
-    # 🔥 threshold 수동 적용
     keep = [
         i for i, s in enumerate(results["scores"])
         if s >= box_threshold
