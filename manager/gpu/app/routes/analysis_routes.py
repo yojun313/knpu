@@ -10,7 +10,7 @@ from app.models.analysis_model import HateOption
 import tempfile
 from urllib.parse import quote  
 from ultralytics import YOLO
-from libs.exceptions import BadRequestException
+from app.libs.exceptions import BadRequestException
 
 router = APIRouter()
 

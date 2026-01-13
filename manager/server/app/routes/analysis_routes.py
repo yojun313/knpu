@@ -121,60 +121,38 @@ async def youtube_download(option: str = Form(...)):
     option = json.loads(option)
     return await start_youtube_download(option)
 
-@router.post("/yolo")
+@router.post("/yolo")  
 async def yolo_proxy(
     option: str = Form("{}"),
     conf_thres: float = Form(0.25),
     files: List[UploadFile] = File(...),
 ):
-    timeout = httpx.Timeout(
-        connect=None,
-        read=None,
-        write=None,
-        pool=None,
-    )
+    async with httpx.AsyncClient(timeout=None) as client:
+        # 여러 파일을 같은 필드명("files")으로 반복해서 보내야 FastAPI List[UploadFile]로 받음
+        multipart_files = []
+        for f in files:
+            multipart_files.append(
+                ("files", (f.filename, await f.read(), f.content_type))
+            )
 
-    async def stream_response():
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            multipart_files = []
-            for f in files:
-                multipart_files.append(
-                    (
-                        "files",
-                        (
-                            f.filename,
-                            f.file,  
-                            f.content_type or "application/octet-stream",
-                        ),
-                    )
-                )
+        data = {
+            "option": option,
+            "conf_thres": str(conf_thres),  # Form 값은 문자열로 들어오는게 안전
+        }
 
-            data = {
-                "option": option,
-                "conf_thres": str(conf_thres),
-            }
+        response = await client.post(
+            f"{GPU_SERVER_URL}/analysis/yolo",
+            data=data,
+            files=multipart_files,
+        )
 
-            async with client.stream(
-                "POST",
-                f"{GPU_SERVER_URL}/analysis/yolo",
-                data=data,
-                files=multipart_files,
-            ) as response:
-
-                if response.status_code != 200:
-                    # 에러 응답도 그대로 전달
-                    body = await response.aread()
-                    yield body
-                    return
-
-                async for chunk in response.aiter_bytes():
-                    yield chunk
-
+    # GPU 서버가 zip을 스트리밍하든, 에러 json을 보내든 그대로 흘려보냄
     return StreamingResponse(
-        stream_response(),
-        media_type="application/zip",
+        response.aiter_bytes(),
+        status_code=response.status_code,
+        media_type=response.headers.get("content-type", "application/octet-stream"),
         headers={
-            "Content-Disposition": "attachment; filename=yolo_results.zip"
+            # zip 다운로드 유지
+            "Content-Disposition": response.headers.get("content-disposition", ""),
         },
     )
-
