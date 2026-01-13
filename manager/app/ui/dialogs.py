@@ -1915,7 +1915,7 @@ class SelectEtcAnalysisDialog(BaseDialog):
         youtube_btn.clicked.connect(self.run_youtube_download)
         layout.addWidget(youtube_btn)
         
-        yolo_btn = QPushButton("이미지 객체 탐지")  
+        yolo_btn = QPushButton("영상/이미지 객체 탐지")  
         yolo_btn.clicked.connect(self.run_yolo)
         layout.addWidget(yolo_btn)
 
@@ -2075,7 +2075,7 @@ class YouTubeDownloadDialog(BaseDialog):
 class YoloOptionDialog(BaseDialog):
     def __init__(self, parent=None, base_dir=""):
         super().__init__(parent)
-        self.setWindowTitle("YOLO 객체 검출 설정")
+        self.setWindowTitle("영상/이미지 객체 검출 설정")
         self.resize(560, 300)
         self.data = None
 
@@ -2086,7 +2086,7 @@ class YoloOptionDialog(BaseDialog):
         media_layout.addWidget(QLabel("미디어 타입"))
 
         self.media_combo = QComboBox()
-        self.media_combo.addItems(["image", "video"])
+        self.media_combo.addItems(["video", "image"])
         media_layout.addWidget(self.media_combo)
         media_layout.addStretch()
         layout.addLayout(media_layout)

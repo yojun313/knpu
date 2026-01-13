@@ -125,3 +125,41 @@ async def yolo_detect_route(
         media_type="application/zip",
         headers={"Content-Disposition": cd_header},
     )
+
+@router.post("/dino")
+async def grounding_dino_route(
+    file: UploadFile = File(...),
+    prompt: str = Form(...),
+    option: str = Form("{}"),
+):
+    """
+    Grounding DINO
+    - image + prompt → bounding box 그린 이미지 반환
+    """
+
+    try:
+        option_dict = json.loads(option)
+    except json.JSONDecodeError:
+        option_dict = {}
+
+    pid = option_dict.get("pid")
+    box_threshold = float(option_dict.get("box_threshold", 0.4))
+    text_threshold = float(option_dict.get("text_threshold", 0.3))
+
+    # analysis_service 쪽 함수 호출
+    img_buffer = await grounding_dino_detect_image(
+        file=file,
+        prompt=prompt,
+        box_threshold=box_threshold,
+        text_threshold=text_threshold,
+        pid=pid,
+    )
+
+    filename = "grounding_dino_result.png"
+    cd_header = f"inline; filename*=UTF-8''{quote(filename)}"
+
+    return StreamingResponse(
+        img_buffer,
+        media_type="image/png",
+        headers={"Content-Disposition": cd_header},
+    )
