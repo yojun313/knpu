@@ -10,7 +10,7 @@ from app.models.analysis_model import HateOption
 import tempfile
 from urllib.parse import quote  
 from ultralytics import YOLO
-
+from libs.exceptions import BadRequestException
 
 router = APIRouter()
 
@@ -84,21 +84,40 @@ async def whisper_route(
         os.remove(audio_path)
 
 @router.post("/yolo")
-async def yolo_detect_images_route(
+async def yolo_detect_route(
     files: List[UploadFile] = File(...),
     option: str = Form("{}"),
     conf_thres: float = Form(0.25),
 ):
-    option_dict = json.loads(option)
-    pid = option_dict.get("pid", None)
+    try:
+        option_dict = json.loads(option)
+    except json.JSONDecodeError:
+        return BadRequestException("option JSON 파싱 실패")
 
-    zip_buffer = await yolo_detect_images_to_zip(
-        files=files,
-        conf_thres=float(conf_thres),
-        pid=pid,
-    )
+    pid = option_dict.get("pid")
+    media = option_dict.get("media", "image")  # image | video
 
-    out_name = "yolo_results.zip"
+    if media == "video":
+        zip_buffer = await yolo_detect_videos_to_zip(
+            files=files,
+            conf_thres=float(conf_thres),
+            pid=pid,
+        )
+        out_name = "yolo_video_results.zip"
+
+    elif media == "image":
+        zip_buffer = await yolo_detect_images_to_zip(
+            files=files,
+            conf_thres=float(conf_thres),
+            pid=pid,
+        )
+        out_name = "yolo_image_results.zip"
+
+    else:
+        return BadRequestException(
+            detail=f"지원하지 않는 media 타입: {media}",
+        )
+
     cd_header = f"attachment; filename*=UTF-8''{quote(out_name)}"
 
     return StreamingResponse(
