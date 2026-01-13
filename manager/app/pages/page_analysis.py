@@ -1954,25 +1954,32 @@ class Manager_Analysis(Manager_Worker):
     
     def run_yolo(self):
         class YoloWorker(BaseWorker):
-            def __init__(self, pid, image_paths, save_dir, conf_thres, parent=None):
+            def __init__(self, pid, media, file_paths, save_dir, conf_thres, parent=None):
                 super().__init__(parent)
                 self.pid = pid
-                self.image_paths = image_paths
+                self.media = media              # image | video
+                self.file_paths = file_paths
                 self.save_dir = save_dir
                 self.conf_thres = conf_thres
 
             def run(self):
                 try:
-                    option_payload = {"pid": self.pid}
+                    option_payload = {
+                        "pid": self.pid,
+                        "media": self.media,
+                    }
+
                     url = MANAGER_SERVER_API + "/analysis/yolo"
 
                     with ExitStack() as stack:
                         files = []
-                        for path in self.image_paths:
+                        for path in self.file_paths:
                             f = stack.enter_context(open(path, "rb"))
                             ctype, _ = mimetypes.guess_type(path)
                             ctype = ctype or "application/octet-stream"
-                            files.append(("files", (os.path.basename(path), f, ctype)))
+                            files.append(
+                                ("files", (os.path.basename(path), f, ctype))
+                            )
 
                         response = requests.post(
                             url,
@@ -1995,45 +2002,52 @@ class Manager_Analysis(Manager_Worker):
                         self.error.emit(msg)
                         return
 
-                    zip_name = f"yolo_{datetime.now().strftime('%m%d%H%M')}.zip"
+                    zip_name = f"yolo_{self.media}_{datetime.now().strftime('%m%d%H%M')}.zip"
                     extract_path = self.download_file(
                         response,
                         self.save_dir,
                         zip_name,
-                        extract=True
+                        extract=True,
                     )
 
                     self.finished.emit(
                         True,
                         "YOLO 객체 검출이 완료되었습니다.\n파일을 확인하시겠습니까?",
-                        extract_path
+                        extract_path,
                     )
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
         try:
-            # 다이얼로그 하나로 옵션/파일/경로 선택
             dialog = YoloOptionDialog(self.main, base_dir=self.main.localDirectory)
             if dialog.exec() != QDialog.Accepted:
                 return
 
             data = dialog.data
-            image_paths = data["image_paths"]
+            media = data["media"]
+            file_paths = data["file_paths"]
             conf_thres = data["conf_thres"]
             save_dir = data["save_dir"]
 
             pid = str(uuid.uuid4())
-            register_process(pid, "YOLO Detect")
+            register_process(pid, f"YOLO Detect ({media})")
 
-            thread_name = f"YOLO 객체 검출 ({len(image_paths)} files)"
+            thread_name = f"YOLO 객체 검출 ({media}, {len(file_paths)} files)"
             register_thread(thread_name)
             printStatus(self.main)
 
             downloadDialog = DownloadDialog(thread_name, pid, self.main)
             downloadDialog.show()
 
-            worker = YoloWorker(pid, image_paths, save_dir, conf_thres, self.main)
+            worker = YoloWorker(
+                pid,
+                media,
+                file_paths,
+                save_dir,
+                conf_thres,
+                self.main,
+            )
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
@@ -2041,7 +2055,9 @@ class Manager_Analysis(Manager_Worker):
                 self._workers = []
             self._workers.append(worker)
 
-            userLogging(f"ANALYSIS -> YOLO(count={len(image_paths)}, conf={conf_thres})")
+            userLogging(
+                f"ANALYSIS -> YOLO(media={media}, count={len(file_paths)}, conf={conf_thres})"
+            )
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())

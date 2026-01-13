@@ -419,3 +419,185 @@ async def yolo_detect_images_to_zip(
 
     return zip_buffer
 
+async def yolo_detect_videos_to_zip(
+    files: List[UploadFile],
+    conf_thres: float = 0.25,
+    pid=None,
+) -> io.BytesIO:
+    """
+    여러 비디오를 받아 YOLO 객체검출 후
+    - bbox가 그려진 비디오(mp4)
+    - 프레임별 detections json
+    을 zip(BytesIO)로 묶어 반환
+
+    zip 내부:
+      videos/{stem}.mp4
+      json/{stem}.json
+    """
+    model, names = get_yolo_model()
+
+    valid_exts = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
+    valid_files = []
+    skipped = 0
+
+    for f in files:
+        fname = f.filename or "video"
+        ext = os.path.splitext(fname)[1].lower()
+        if ext in valid_exts:
+            valid_files.append(f)
+        else:
+            skipped += 1
+
+    total = len(valid_files)
+    if pid is not None:
+        send_message(
+            pid,
+            f"[YOLO] 비디오 처리 시작 (총 {total}개, conf={conf_thres})"
+            + (f", 스킵 {skipped}개" if skipped else "")
+        )
+
+    zip_buffer = io.BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for i, up in enumerate(valid_files, start=1):
+            filename = up.filename or f"video_{i}"
+            stem, ext = os.path.splitext(os.path.basename(filename))
+
+            if pid is not None:
+                send_message(pid, f"[YOLO] ({i}/{total}) '{filename}' 로드 중...")
+
+            data = await up.read()
+            if not data:
+                if pid is not None:
+                    send_message(pid, f"[YOLO] ({i}/{total}) '{filename}' 빈 파일 - 스킵")
+                continue
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                tmp.write(data)
+                tmp_path = tmp.name
+
+            out_video_path = None
+
+            try:
+                cap = cv2.VideoCapture(tmp_path)
+                if not cap.isOpened():
+                    raise RuntimeError("VideoCapture open 실패")
+
+                fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                out_video_path = tempfile.NamedTemporaryFile(
+                    delete=False, suffix=".mp4"
+                ).name
+                writer = cv2.VideoWriter(out_video_path, fourcc, fps, (width, height))
+
+                detections_by_frame = []
+
+                frame_idx = 0
+                while True:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+
+                    results = model(frame, conf=conf_thres, verbose=False)
+
+                    frame_dets = []
+                    for r in results:
+                        for box in r.boxes:
+                            x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                            conf = float(box.conf[0].item())
+                            cls = int(box.cls[0].item())
+
+                            # draw bbox
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                            label = f"{names.get(cls, str(cls))} {conf:.2f}"
+                            cv2.putText(
+                                frame,
+                                label,
+                                (x1, max(0, y1 - 5)),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                0.5,
+                                (0, 255, 0),
+                                1,
+                            )
+
+                            frame_dets.append({
+                                "class_id": cls,
+                                "class_name": names.get(cls, str(cls)),
+                                "confidence": round(conf, 4),
+                                "bbox_xyxy": [x1, y1, x2, y2],
+                            })
+
+                    detections_by_frame.append({
+                        "frame_index": frame_idx,
+                        "detections": frame_dets,
+                    })
+
+                    writer.write(frame)
+                    frame_idx += 1
+
+                    if pid is not None and frame_idx % 30 == 0:
+                        pct = round(frame_idx / frame_count * 100, 2) if frame_count else 0
+                        send_message(
+                            pid,
+                            f"[YOLO] ({i}/{total}) '{filename}' "
+                            f"frame {frame_idx}/{frame_count} ({pct}%)"
+                        )
+
+                cap.release()
+                writer.release()
+
+                # zip write
+                with open(out_video_path, "rb") as vf:
+                    zf.writestr(f"videos/{stem}.mp4", vf.read())
+
+                json_obj = {
+                    "video": filename,
+                    "fps": fps,
+                    "width": width,
+                    "height": height,
+                    "frame_count": frame_idx,
+                    "detections": detections_by_frame,
+                }
+
+                zf.writestr(
+                    f"json/{stem}.json",
+                    json.dumps(json_obj, ensure_ascii=False, indent=2).encode("utf-8"),
+                )
+
+                if pid is not None:
+                    send_message(
+                        pid,
+                        f"[YOLO] ({i}/{total}) '{filename}' 완료 "
+                        f"(총 {frame_idx} 프레임)"
+                    )
+
+            except Exception as e:
+                if pid is not None:
+                    send_message(
+                        pid,
+                        f"[YOLO] ({i}/{total}) '{filename}' 오류: "
+                        f"{type(e).__name__}: {e}"
+                    )
+                continue
+
+            finally:
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    pass
+                if out_video_path:
+                    try:
+                        os.remove(out_video_path)
+                    except Exception:
+                        pass
+
+    zip_buffer.seek(0)
+
+    if pid is not None:
+        send_message(pid, "[YOLO] 전체 완료: 비디오 결과 zip 생성 완료")
+
+    return zip_buffer
