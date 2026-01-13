@@ -134,40 +134,47 @@ async def yolo_proxy(
         pool=None,
     )
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        multipart_files = []
-
-        for f in files:
-            multipart_files.append(
-                (
-                    "files",
+    async def stream_response():
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            multipart_files = []
+            for f in files:
+                multipart_files.append(
                     (
-                        f.filename,
-                        f.file,                 
-                        f.content_type or "application/octet-stream",
-                    ),
+                        "files",
+                        (
+                            f.filename,
+                            f.file,  
+                            f.content_type or "application/octet-stream",
+                        ),
+                    )
                 )
-            )
 
-        data = {
-            "option": option,
-            "conf_thres": str(conf_thres),
-        }
+            data = {
+                "option": option,
+                "conf_thres": str(conf_thres),
+            }
 
-        response = await client.post(
-            f"{GPU_SERVER_URL}/analysis/yolo",
-            data=data,
-            files=multipart_files,
-        )
+            async with client.stream(
+                "POST",
+                f"{GPU_SERVER_URL}/analysis/yolo",
+                data=data,
+                files=multipart_files,
+            ) as response:
+
+                if response.status_code != 200:
+                    # 에러 응답도 그대로 전달
+                    body = await response.aread()
+                    yield body
+                    return
+
+                async for chunk in response.aiter_bytes():
+                    yield chunk
 
     return StreamingResponse(
-        response.aiter_bytes(),
-        status_code=response.status_code,
-        media_type=response.headers.get(
-            "content-type",
-            "application/octet-stream",
-        ),
+        stream_response(),
+        media_type="application/zip",
         headers={
-            "Content-Disposition": response.headers.get("content-disposition", "")
+            "Content-Disposition": "attachment; filename=yolo_results.zip"
         },
     )
+
