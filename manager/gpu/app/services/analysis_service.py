@@ -27,80 +27,15 @@ from typing import List, Dict, Any
 import json
 from fastapi import UploadFile
 import tempfile
+from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
+from PIL import Image, ImageDraw
 
 load_dotenv() 
 MODEL_DIR = os.getenv("MODEL_PATH")
 
+
+# ---- Hate Analysis ----
 kor_unsmile_pipe = None
-_whisper_models = {}
-
-_yolo_model = None
-_yolo_names = None
-
-WHISPER_MODEL_MAP = {
-    1: {
-        "name": "faster-whisper-small",
-        "compute": "int8_float16",
-    },
-    2: {
-        "name": "faster-whisper-medium",
-        "compute": "int8_float16",
-    },
-    3: {
-        "name": "faster-whisper-large-v3",
-        "compute": "float16",
-    },
-}
-
-whisper_model = WhisperModel(
-    os.path.join(MODEL_DIR, "faster-whisper-large-v3"),
-    device="cuda",
-    compute_type="float16",
-    local_files_only=True,
-)
-
-def get_hate_model():
-    global kor_unsmile_pipe
-    
-    if kor_unsmile_pipe is None:
-        tokenizer = AutoTokenizer.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
-        kor_unsmile_model = AutoModelForSequenceClassification.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
-        kor_unsmile_pipe = TextClassificationPipeline(
-            model=kor_unsmile_model,
-            tokenizer=tokenizer,
-            function_to_apply="sigmoid",
-            top_k=None,
-            device=1 if torch.cuda.is_available() else -1,
-        )
-
-    return kor_unsmile_pipe
-
-def get_whisper_model(level: int):
-    if level not in WHISPER_MODEL_MAP:
-        level = 2  # 기본값 medium
-
-    cfg = WHISPER_MODEL_MAP[level]
-
-    key = f"{cfg['name']}::{cfg['compute']}"
-
-    if key not in _whisper_models:
-        _whisper_models[key] = WhisperModel(
-            os.path.join(MODEL_DIR, cfg["name"]),
-            device="cuda",
-            compute_type=cfg["compute"],
-            local_files_only=True,
-        )
-
-    return _whisper_models[key]
-
-def get_yolo_model():
-    global _yolo_model, _yolo_names
-
-    if _yolo_model is None:
-        _yolo_model = YOLO(os.path.join(MODEL_DIR, "yolo11n.pt"), verbose=False)
-        _yolo_names = _yolo_model.names
-
-    return _yolo_model, _yolo_names
 
 def unload_hate_model():
     global kor_unsmile_pipe
@@ -208,6 +143,80 @@ def measure_hate(
     send_message(pid, "[혐오도 분석] 완료")
     unload_hate_model()
     return data
+
+
+# ---- Whisper ----
+_whisper_models = {}
+
+WHISPER_MODEL_MAP = {
+    1: {
+        "name": "faster-whisper-small",
+        "compute": "int8_float16",
+    },
+    2: {
+        "name": "faster-whisper-medium",
+        "compute": "int8_float16",
+    },
+    3: {
+        "name": "faster-whisper-large-v3",
+        "compute": "float16",
+    },
+}
+
+whisper_model = WhisperModel(
+    os.path.join(MODEL_DIR, "faster-whisper-large-v3"),
+    device="cuda",
+    compute_type="float16",
+    local_files_only=True,
+)
+
+def get_hate_model():
+    global kor_unsmile_pipe
+    
+    if kor_unsmile_pipe is None:
+        tokenizer = AutoTokenizer.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
+        kor_unsmile_model = AutoModelForSequenceClassification.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
+        kor_unsmile_pipe = TextClassificationPipeline(
+            model=kor_unsmile_model,
+            tokenizer=tokenizer,
+            function_to_apply="sigmoid",
+            top_k=None,
+            device=1 if torch.cuda.is_available() else -1,
+        )
+
+    return kor_unsmile_pipe
+
+def get_whisper_model(level: int):
+    if level not in WHISPER_MODEL_MAP:
+        level = 2  # 기본값 medium
+
+    cfg = WHISPER_MODEL_MAP[level]
+
+    key = f"{cfg['name']}::{cfg['compute']}"
+
+    if key not in _whisper_models:
+        _whisper_models[key] = WhisperModel(
+            os.path.join(MODEL_DIR, cfg["name"]),
+            device="cuda",
+            compute_type=cfg["compute"],
+            local_files_only=True,
+        )
+
+    return _whisper_models[key]
+
+def get_yolo_model():
+    global _yolo_model, _yolo_names
+
+    if _yolo_model is None:
+        _yolo_model = YOLO(os.path.join(MODEL_DIR, "yolo11n.pt"), verbose=False)
+        _yolo_names = _yolo_model.names
+
+    return _yolo_model, _yolo_names
+
+
+# ---- YOLO ----
+_yolo_model = None
+_yolo_names = None
 
 def transcribe_audio(
     audio_path: str,
@@ -601,3 +610,112 @@ async def yolo_detect_videos_to_zip(
         send_message(pid, "[YOLO] 전체 완료: 비디오 결과 zip 생성 완료")
 
     return zip_buffer
+
+
+# ---- Grounding Dino ----
+_grounding_processor = None
+_grounding_model = None
+
+def get_grounding_dino_model():
+    global _grounding_processor, _grounding_model
+
+    if _grounding_processor is None or _grounding_model is None:
+        model_path = os.path.join(MODEL_DIR, "grounding-dino", "models--IDEA-Research--grounding-dino-base")
+
+        _grounding_processor = AutoProcessor.from_pretrained(
+            model_path,
+            local_files_only=True,
+        )
+
+        _grounding_model = AutoModelForZeroShotObjectDetection.from_pretrained(
+            model_path,
+            local_files_only=True,
+        ).to("cuda" if torch.cuda.is_available() else "cpu")
+
+        _grounding_model.eval()
+
+    return _grounding_processor, _grounding_model
+
+async def grounding_dino_detect_image(
+    file: UploadFile,
+    prompt: str,
+    box_threshold: float = 0.4,
+    text_threshold: float = 0.3,
+    pid=None,
+) -> io.BytesIO:
+    """
+    이미지 + 텍스트 프롬프트를 받아
+    Grounding DINO로 bbox를 그리고
+    결과 이미지를 BytesIO로 반환
+    """
+
+    if pid is not None:
+        send_message(pid, "[GroundingDINO] 모델 로드 중")
+
+    processor, model = get_grounding_dino_model()
+    device = model.device
+
+    # prompt 규칙 (중요)
+    prompt = prompt.lower().strip()
+    if not prompt.endswith("."):
+        prompt += "."
+
+    # 이미지 로드
+    image_bytes = await file.read()
+    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+
+    if pid is not None:
+        send_message(pid, "[GroundingDINO] 추론 시작")
+
+    inputs = processor(
+        images=image,
+        text=prompt,
+        return_tensors="pt",
+    ).to(device)
+
+    with torch.no_grad():
+        outputs = model(**inputs)
+
+    results = processor.post_process_grounded_object_detection(
+        outputs=outputs,
+        input_ids=inputs.input_ids,
+        box_threshold=box_threshold,
+        text_threshold=text_threshold,
+        target_sizes=[image.size[::-1]],
+    )[0]
+
+    # bbox draw
+    draw_img = image.copy()
+    drawer = ImageDraw.Draw(draw_img)
+
+    for box, label, score in zip(
+        results["boxes"],
+        results["labels"],
+        results["scores"],
+    ):
+        x1, y1, x2, y2 = box.tolist()
+        drawer.rectangle(
+            [(x1, y1), (x2, y2)],
+            outline="red",
+            width=3,
+        )
+        drawer.text(
+            (x1, y1),
+            f"{label} {score:.2f}",
+            fill="red",
+        )
+
+    if pid is not None:
+        send_message(
+            pid,
+            f"[GroundingDINO] 완료 (det={len(results['boxes'])}개)"
+        )
+
+    # 결과 이미지 → BytesIO
+    buffer = io.BytesIO()
+    draw_img.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    return buffer
+
+

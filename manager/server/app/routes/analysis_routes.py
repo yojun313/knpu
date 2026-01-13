@@ -10,7 +10,7 @@ from urllib.parse import quote
 import httpx
 from dotenv import load_dotenv
 from typing import List
-  
+from app.libs.exceptions import BadRequestException
 router = APIRouter()
 
 load_dotenv()
@@ -155,4 +155,58 @@ async def yolo_proxy(
             # zip 다운로드 유지
             "Content-Disposition": response.headers.get("content-disposition", ""),
         },
+    )
+    
+@router.post("/dino")
+async def grounding_dino_proxy_route(
+    file: UploadFile = File(...),
+    prompt: str = Form(...),
+    option: str = Form("{}"),
+):
+    """
+    Grounding DINO Proxy
+    - image + prompt → 외부 Dino 서버로 전달
+    - 결과 이미지 그대로 스트리밍 반환
+    """
+
+    try:
+        option_dict = json.loads(option)
+    except json.JSONDecodeError:
+        option_dict = {}
+
+    pid = option_dict.get("pid")
+    file_bytes = await file.read()
+    files = {
+        "file": (file.filename, file_bytes, file.content_type),
+    }
+
+    data = {
+        "prompt": prompt,
+        "option": json.dumps(option_dict, ensure_ascii=False),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=None) as client:
+            resp = await client.post(
+                f"{GPU_SERVER_URL}/analysis/dino",
+                files=files,
+                data=data,
+            )
+    except Exception as e:
+        raise BadRequestException(
+            detail=f"DINO 프록시 요청 실패: {type(e).__name__}: {e}"
+        )
+
+    if resp.status_code != 200:
+        raise BadRequestException(
+            detail=f"DINO 서버 오류 ({resp.status_code}): {resp.text}"
+        )
+
+    # 결과 그대로 반환 (image/png)
+    filename = "grounding_dino_result.png"
+    cd_header = f"inline; filename*=UTF-8''{quote(filename)}"
+
+    return StreamingResponse(
+        io.BytesIO(resp.content),
+        media_type=resp.headers.get("content-type", "image/png"),
+        headers={"Content-Disposition": cd_header},
     )
