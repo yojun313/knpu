@@ -1980,13 +1980,7 @@ class Manager_Analysis(Manager_Worker):
                 self.text_threshold = float(text_threshold)
 
             def _run_dino_for_images(self, image_paths, save_dir, prompt):
-                """
-                /analysis/dino 는 file 1개만 받으니 이미지별로 순차 요청해서 저장
-                """
-                dino_url = MANAGER_SERVER_API + "/analysis/dino"  # 라우트에 맞게 수정
-
-                out_dir = os.path.join(save_dir, "grounding_dino")
-                os.makedirs(out_dir, exist_ok=True)
+                dino_url = MANAGER_SERVER_API + "/analysis/dino"
 
                 option_payload = {
                     "pid": self.pid,
@@ -1994,60 +1988,50 @@ class Manager_Analysis(Manager_Worker):
                     "text_threshold": float(self.text_threshold),
                 }
 
-                saved = []
-                for img_path in image_paths:
-                    with ExitStack() as stack:
+                with ExitStack() as stack:
+                    files = []
+                    for img_path in image_paths:
                         f = stack.enter_context(open(img_path, "rb"))
                         ctype, _ = mimetypes.guess_type(img_path)
                         ctype = ctype or "application/octet-stream"
+                        files.append(("files", (os.path.basename(img_path), f, ctype)))
 
-                        files = {
-                            "file": (os.path.basename(img_path), f, ctype)
-                        }
+                    resp = requests.post(
+                        dino_url,
+                        data={
+                            "prompt": prompt,
+                            "option": json.dumps(option_payload),
+                        },
+                        headers=get_api_headers(),
+                        files=files,
+                        stream=True,
+                        timeout=600,
+                    )
 
-                        resp = requests.post(
-                            dino_url,
-                            data={
-                                "prompt": prompt,
-                                "option": json.dumps(option_payload),
-                            },
-                            headers=get_api_headers(),
-                            files=files,
-                            stream=True,
-                            timeout=600,
-                        )
+                if resp.status_code != 200:
+                    try:
+                        err = resp.json()
+                        msg = err.get("message") or err.get("error") or "Grounding DINO 처리 실패"
+                    except Exception:
+                        msg = resp.text or "Grounding DINO 처리 중 오류 발생"
+                    raise RuntimeError(msg)
 
-                    if resp.status_code != 200:
-                        try:
-                            err = resp.json()
-                            msg = err.get("message") or err.get("error") or "Grounding DINO 처리 실패"
-                        except Exception:
-                            msg = resp.text or "Grounding DINO 처리 중 오류 발생"
-                        raise RuntimeError(f"[{os.path.basename(img_path)}] {msg}")
+                cd = resp.headers.get("Content-Disposition", "")
+                server_name = self._safe_filename_from_cd(cd)
+                if server_name and server_name.lower().endswith(".zip"):
+                    zip_name = server_name
+                else:
+                    zip_name = f"grounding_dino_{datetime.now().strftime('%m%d%H%M')}.zip"
 
-                    cd = resp.headers.get("Content-Disposition", "")
-                    server_name = self._safe_filename_from_cd(cd)
+                extract_path = self.download_file(
+                    resp,
+                    save_dir,
+                    zip_name,
+                    extract=True,
+                )
 
-                    base = os.path.splitext(os.path.basename(img_path))[0]
-                    if server_name:
-                        # 서버가 항상 같은 이름을 주면 덮어쓰기 될 수 있으니 방지
-                        name = server_name
-                        if len(image_paths) > 1:
-                            root, ext = os.path.splitext(name)
-                            name = f"{root}_{base}{ext}"
-                    else:
-                        name = f"grounding_dino_{base}.png"
-
-                    out_path = os.path.join(out_dir, name)
-
-                    with open(out_path, "wb") as out:
-                        for chunk in resp.iter_content(chunk_size=1024 * 256):
-                            if chunk:
-                                out.write(chunk)
-
-                    saved.append(out_path)
-
-                return out_dir, saved
+                # 이 return이 없어서 None이 반환되고, 언패킹에서 터진 것
+                return extract_path, None
 
             def run(self):
                 try:
@@ -2096,12 +2080,11 @@ class Manager_Analysis(Manager_Worker):
                     dino_dir = None
                     if self.run_dino:
                         if self.media != "image":
-                            # UI에서 막아도 안전하게 한 번 더 가드
                             raise RuntimeError("Grounding DINO는 image에서만 실행할 수 있습니다.")
                         if not (self.dino_prompt or "").strip():
                             raise RuntimeError("Grounding DINO prompt가 비어있습니다.")
 
-                        dino_dir, _saved = self._run_dino_for_images(
+                        dino_dir, _ = self._run_dino_for_images(
                             self.file_paths,
                             self.save_dir,
                             self.dino_prompt.strip(),
