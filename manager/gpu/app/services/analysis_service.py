@@ -616,42 +616,22 @@ async def yolo_detect_videos_to_zip(
 _grounding_processor = None
 _grounding_model = None
 
-def _pick_latest_snapshot_dir(snapshots_dir: str) -> str:
-    if not os.path.isdir(snapshots_dir):
-        raise FileNotFoundError(f"snapshots dir not found: {snapshots_dir}")
-
-    subdirs = [
-        os.path.join(snapshots_dir, d)
-        for d in os.listdir(snapshots_dir)
-        if os.path.isdir(os.path.join(snapshots_dir, d))
-    ]
-    if not subdirs:
-        raise FileNotFoundError(f"No snapshot subdir in: {snapshots_dir}")
-
-    # 보통 최신 스냅샷(또는 임의 1개) 선택
-    subdirs.sort(key=lambda p: os.path.getmtime(p), reverse=True)
-    return subdirs[0]
-
 def get_grounding_dino_model():
     global _grounding_processor, _grounding_model
 
     if _grounding_processor is None or _grounding_model is None:
-        base_dir = os.path.join(
-            MODEL_DIR,
-            "grounding-dino",
-            "models--IDEA-Research--grounding-dino-base",
-            "snapshots",
-        )
-        model_path = _pick_latest_snapshot_dir(base_dir)
+        model_path = os.path.join(MODEL_DIR, "grounding_dino", "models--IDEA-Research--grounding-dino-base")
 
         _grounding_processor = AutoProcessor.from_pretrained(
             model_path,
             local_files_only=True,
         )
+
         _grounding_model = AutoModelForZeroShotObjectDetection.from_pretrained(
             model_path,
             local_files_only=True,
         ).to("cuda" if torch.cuda.is_available() else "cpu")
+
         _grounding_model.eval()
 
     return _grounding_processor, _grounding_model
