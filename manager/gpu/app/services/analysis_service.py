@@ -686,10 +686,20 @@ async def grounding_dino_detect_image(
     results = processor.post_process_grounded_object_detection(
         outputs=outputs,
         input_ids=inputs.input_ids,
-        box_threshold=box_threshold,
-        text_threshold=text_threshold,
         target_sizes=[image.size[::-1]],
     )[0]
+
+    # 🔥 threshold 수동 적용
+    keep = [
+        i for i, s in enumerate(results["scores"])
+        if s >= box_threshold
+    ]
+
+    results = {
+        "boxes": results["boxes"][keep],
+        "labels": [results["labels"][i] for i in keep],
+        "scores": results["scores"][keep],
+    }
 
     # bbox draw
     draw_img = image.copy()
