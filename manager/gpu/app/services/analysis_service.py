@@ -620,7 +620,14 @@ def get_grounding_dino_model():
     global _grounding_processor, _grounding_model
 
     if _grounding_processor is None or _grounding_model is None:
-        model_path = os.path.join(MODEL_DIR, "grounding_dino", "models--IDEA-Research--grounding-dino-base")
+        model_path = os.path.join(
+            MODEL_DIR,
+            "grounding_dino",
+            "grounding-dino-base",
+        )
+
+        if not os.path.isdir(model_path):
+            raise FileNotFoundError(f"Grounding DINO model path not found: {model_path}")
 
         _grounding_processor = AutoProcessor.from_pretrained(
             model_path,
