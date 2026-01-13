@@ -159,7 +159,7 @@ async def yolo_proxy(
     
 @router.post("/dino")
 async def grounding_dino_proxy_route(
-    file: UploadFile = File(...),
+    files: List[UploadFile] = File(...),
     prompt: str = Form(...),
     option: str = Form("{}"),
 ):
@@ -168,19 +168,24 @@ async def grounding_dino_proxy_route(
     except json.JSONDecodeError:
         option_dict = {}
 
-    file_bytes = await file.read()
-
-    files = {
-        "file": (file.filename, file_bytes, file.content_type),
-        "prompt": (None, prompt),
-        "option": (None, json.dumps(option_dict, ensure_ascii=False)),
-    }
+    # UploadFile.read()는 한 번 읽으면 포인터 끝이라, 여기서 모두 바이트로 확보
+    file_items = []
+    for f in files:
+        b = await f.read()
+        ctype = f.content_type or "application/octet-stream"
+        name = f.filename or "image.png"
+        # 필드명은 GPU 서버 라우트 파라미터명과 반드시 일치해야 함: files
+        file_items.append(("files", (name, b, ctype)))
 
     try:
         async with httpx.AsyncClient(timeout=None) as client:
             resp = await client.post(
                 f"{GPU_SERVER_URL}/analysis/dino",
-                files=files,
+                data={
+                    "prompt": prompt,
+                    "option": json.dumps(option_dict, ensure_ascii=False),
+                },
+                files=file_items,
             )
     except Exception as e:
         raise BadRequestException(
@@ -192,11 +197,15 @@ async def grounding_dino_proxy_route(
             detail=f"DINO 서버 오류 ({resp.status_code}): {resp.text}"
         )
 
-    return StreamingResponse(
-        io.BytesIO(resp.content),
-        media_type=resp.headers.get("content-type", "image/png"),
-        headers={
-            "Content-Disposition": "inline; filename*=UTF-8''grounding_dino_result.png"
-        },
+    # GPU 서버가 zip을 내려준다고 가정
+    content_type = resp.headers.get("content-type", "application/zip")
+    cd = resp.headers.get(
+        "content-disposition",
+        "attachment; filename*=UTF-8''grounding_dino_results.zip",
     )
 
+    return StreamingResponse(
+        io.BytesIO(resp.content),
+        media_type=content_type,
+        headers={"Content-Disposition": cd},
+    )

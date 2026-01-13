@@ -641,17 +641,17 @@ def get_grounding_dino_model():
 
     return _grounding_processor, _grounding_model
 
-async def grounding_dino_detect_image(
-    file: UploadFile,
+async def grounding_dino_detect_images_zip(
+    files: List[UploadFile],
     prompt: str,
     box_threshold: float = 0.4,
     text_threshold: float = 0.3,
     pid=None,
 ) -> io.BytesIO:
     """
-    이미지 + 텍스트 프롬프트를 받아
+    여러 이미지 + 텍스트 프롬프트를 받아
     Grounding DINO로 bbox를 그리고
-    결과 이미지를 BytesIO로 반환
+    결과들을 zip(BytesIO)로 반환
     """
 
     if pid is not None:
@@ -665,71 +665,72 @@ async def grounding_dino_detect_image(
     if not prompt.endswith("."):
         prompt += "."
 
-    # 이미지 로드
-    image_bytes = await file.read()
-    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    if pid is not None:
+        send_message(pid, f"[GroundingDINO] 배치 처리 시작 (count={len(files)})")
+
+    zip_bytes = io.BytesIO()
+    # ZIP_STORED(무압축) 또는 ZIP_DEFLATED(압축). 이미지 PNG는 압축 효율 낮지만 보통 DEFLATED 사용.
+    with zipfile.ZipFile(zip_bytes, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for idx, file in enumerate(files, start=1):
+            # 원본 파일명 기반 결과명
+            orig_name = file.filename or f"image_{idx}.png"
+            base, _ext = os.path.splitext(orig_name)
+            out_name = f"grounding_dino_{base}.png"
+
+            if pid is not None:
+                send_message(pid, f"[GroundingDINO] ({idx}/{len(files)}) {orig_name} 추론 시작")
+
+            # 이미지 로드
+            image_bytes = await file.read()
+            image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+
+            inputs = processor(
+                images=image,
+                text=prompt,
+                return_tensors="pt",
+            ).to(device)
+
+            with torch.no_grad():
+                outputs = model(**inputs)
+
+            results = processor.post_process_grounded_object_detection(
+                outputs=outputs,
+                input_ids=inputs.input_ids,
+                target_sizes=[image.size[::-1]],
+            )[0]
+
+            keep = [i for i, s in enumerate(results["scores"]) if float(s) >= box_threshold]
+
+            results = {
+                "boxes": results["boxes"][keep],
+                "labels": [results["labels"][i] for i in keep],
+                "scores": results["scores"][keep],
+            }
+
+            # bbox draw
+            draw_img = image.copy()
+            drawer = ImageDraw.Draw(draw_img)
+
+            for box, label, score in zip(results["boxes"], results["labels"], results["scores"]):
+                x1, y1, x2, y2 = box.tolist()
+                drawer.rectangle([(x1, y1), (x2, y2)], outline="red", width=3)
+                drawer.text((x1, y1), f"{label} {float(score):.2f}", fill="red")
+
+            # 결과 PNG → bytes
+            out_buf = io.BytesIO()
+            draw_img.save(out_buf, format="PNG")
+            out_buf.seek(0)
+
+            # zip에 기록
+            zf.writestr(out_name, out_buf.getvalue())
+
+            if pid is not None:
+                send_message(pid, f"[GroundingDINO] ({idx}/{len(files)}) 완료 (det={len(results['boxes'])}개)")
+
+    zip_bytes.seek(0)
 
     if pid is not None:
-        send_message(pid, "[GroundingDINO] 추론 시작")
+        send_message(pid, "[GroundingDINO] 전체 완료")
 
-    inputs = processor(
-        images=image,
-        text=prompt,
-        return_tensors="pt",
-    ).to(device)
-
-    with torch.no_grad():
-        outputs = model(**inputs)
-
-    results = processor.post_process_grounded_object_detection(
-        outputs=outputs,
-        input_ids=inputs.input_ids,
-        target_sizes=[image.size[::-1]],
-    )[0]
-
-    keep = [
-        i for i, s in enumerate(results["scores"])
-        if s >= box_threshold
-    ]
-
-    results = {
-        "boxes": results["boxes"][keep],
-        "labels": [results["labels"][i] for i in keep],
-        "scores": results["scores"][keep],
-    }
-
-    # bbox draw
-    draw_img = image.copy()
-    drawer = ImageDraw.Draw(draw_img)
-
-    for box, label, score in zip(
-        results["boxes"],
-        results["labels"],
-        results["scores"],
-    ):
-        x1, y1, x2, y2 = box.tolist()
-        drawer.rectangle(
-            [(x1, y1), (x2, y2)],
-            outline="red",
-            width=3,
-        )
-        drawer.text(
-            (x1, y1),
-            f"{label} {score:.2f}",
-            fill="red",
-        )
-
-    if pid is not None:
-        send_message(
-            pid,
-            f"[GroundingDINO] 완료 (det={len(results['boxes'])}개)"
-        )
-
-    # 결과 이미지 → BytesIO
-    buffer = io.BytesIO()
-    draw_img.save(buffer, format="PNG")
-    buffer.seek(0)
-
-    return buffer
-
+    return zip_bytes
 
