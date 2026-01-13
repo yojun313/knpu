@@ -2076,7 +2076,7 @@ class YoloOptionDialog(BaseDialog):
     def __init__(self, parent=None, base_dir=""):
         super().__init__(parent)
         self.setWindowTitle("영상/이미지 객체 검출 설정")
-        self.resize(560, 300)
+        self.resize(560, 420)  # 높이 늘림
         self.data = None
 
         layout = QVBoxLayout(self)
@@ -2113,7 +2113,7 @@ class YoloOptionDialog(BaseDialog):
         self.save_dir = ""
         self.path_btn.clicked.connect(self.select_path)
 
-        # ---------- conf_thres ----------
+        # ---------- YOLO conf_thres ----------
         form = QFormLayout()
 
         self.conf_spin = QDoubleSpinBox()
@@ -2123,11 +2123,36 @@ class YoloOptionDialog(BaseDialog):
         self.conf_spin.setValue(0.25)
 
         form.addRow("conf_thres", self.conf_spin)
+
+        # ---------- (추가) DINO 옵션 ----------
+        self.dino_check = QCheckBox("프롬프트 포함 (image 전용)")
+        layout.addWidget(self.dino_check)
+
+        self.dino_prompt = QTextEdit()
+        self.dino_prompt.setPlaceholderText("DINO prompt (예: person. red car. dog.)")
+        self.dino_prompt.setFixedHeight(70)
+
+        self.box_spin = QDoubleSpinBox()
+        self.box_spin.setRange(0.0, 1.0)
+        self.box_spin.setSingleStep(0.05)
+        self.box_spin.setDecimals(2)
+        self.box_spin.setValue(0.40)
+
+        self.text_spin = QDoubleSpinBox()
+        self.text_spin.setRange(0.0, 1.0)
+        self.text_spin.setSingleStep(0.05)
+        self.text_spin.setDecimals(2)
+        self.text_spin.setValue(0.30)
+
+        form.addRow("dino_prompt", self.dino_prompt)
+        form.addRow("box_threshold", self.box_spin)
+        form.addRow("text_threshold", self.text_spin)
+
         layout.addLayout(form)
 
         desc = QLabel(
-            "conf_thres: 검출 최소 신뢰도(0~1).\n"
-            "값이 높을수록 더 확실한 객체만 검출되고, 낮추면 더 많이 검출됩니다."
+            "객체 검출 conf_thres: 검출 최소 신뢰도(0~1)\n"
+            "프롬프트 포함: prompt + box/text threshold로 텍스트 기반 객체 검출 결과 PNG 저장\n"
         )
         desc.setWordWrap(True)
         layout.addWidget(desc)
@@ -2142,6 +2167,23 @@ class YoloOptionDialog(BaseDialog):
         layout.addWidget(buttons)
 
         self.base_dir = base_dir or ""
+
+        # media 바뀌면 dino 옵션 enable/disable
+        self.media_combo.currentTextChanged.connect(self._sync_dino_ui)
+        self.dino_check.toggled.connect(self._sync_dino_ui)
+        self._sync_dino_ui()
+
+    def _sync_dino_ui(self):
+        is_image = (self.media_combo.currentText() == "image")
+        # image가 아니면 체크도 꺼버리기
+        if not is_image and self.dino_check.isChecked():
+            self.dino_check.setChecked(False)
+
+        can_edit = is_image and self.dino_check.isChecked()
+        self.dino_check.setEnabled(is_image)
+        self.dino_prompt.setEnabled(can_edit)
+        self.box_spin.setEnabled(can_edit)
+        self.text_spin.setEnabled(can_edit)
 
     def select_files(self):
         media = self.media_combo.currentText()
@@ -2178,11 +2220,28 @@ class YoloOptionDialog(BaseDialog):
             QMessageBox.warning(self, "입력 오류", "저장 경로를 선택하세요.")
             return
 
+        run_dino = self.dino_check.isChecked()
+        media = self.media_combo.currentText()
+
+        if run_dino:
+            if media != "image":
+                QMessageBox.warning(self, "입력 오류", "DINO는 image에서만 실행할 수 있습니다.")
+                return
+            prompt = (self.dino_prompt.toPlainText() or "").strip()
+            if not prompt:
+                QMessageBox.warning(self, "입력 오류", "DINO prompt를 입력하세요.")
+                return
+
         self.data = {
-            "media": self.media_combo.currentText(),
+            "media": media,
             "file_paths": self.file_paths,
             "conf_thres": float(self.conf_spin.value()),
             "save_dir": self.save_dir,
+
+            "run_dino": run_dino,
+            "dino_prompt": (self.dino_prompt.toPlainText() or "").strip(),
+            "box_threshold": float(self.box_spin.value()),
+            "text_threshold": float(self.text_spin.value()),
         }
         super().accept()
 
