@@ -2075,32 +2075,45 @@ class YouTubeDownloadDialog(BaseDialog):
 class YoloOptionDialog(BaseDialog):
     def __init__(self, parent=None, base_dir=""):
         super().__init__(parent)
-        self.setWindowTitle("이미지 객체 검출 설정")
-        self.resize(520, 260)
+        self.setWindowTitle("YOLO 객체 검출 설정")
+        self.resize(560, 300)
         self.data = None
 
         layout = QVBoxLayout(self)
 
+        # ---------- media 선택 ----------
+        media_layout = QHBoxLayout()
+        media_layout.addWidget(QLabel("미디어 타입"))
 
-        img_layout = QHBoxLayout()
-        self.img_label = QLabel("선택된 파일: 0개")
-        self.img_btn = QPushButton("이미지 선택")
-        img_layout.addWidget(self.img_label)
-        img_layout.addWidget(self.img_btn)
-        layout.addLayout(img_layout)
+        self.media_combo = QComboBox()
+        self.media_combo.addItems(["image", "video"])
+        media_layout.addWidget(self.media_combo)
+        media_layout.addStretch()
+        layout.addLayout(media_layout)
 
-        self.image_paths = []
-        self.img_btn.clicked.connect(self.select_images)
+        # ---------- 파일 선택 ----------
+        file_layout = QHBoxLayout()
+        self.file_label = QLabel("선택된 파일: 0개")
+        self.file_btn = QPushButton("파일 선택")
+        file_layout.addWidget(self.file_label)
+        file_layout.addWidget(self.file_btn)
+        layout.addLayout(file_layout)
 
-        # 저장 경로
+        self.file_paths = []
+        self.file_btn.clicked.connect(self.select_files)
+
+        # ---------- 저장 경로 ----------
         path_layout = QHBoxLayout()
         self.path_label = QLabel("저장 경로: 선택되지 않음")
         self.path_btn = QPushButton("경로 선택")
         path_layout.addWidget(self.path_label)
         path_layout.addWidget(self.path_btn)
         layout.addLayout(path_layout)
-        
-        # conf_thres
+
+        self.save_dir = ""
+        self.path_btn.clicked.connect(self.select_path)
+
+        # ---------- conf_thres ----------
         form = QFormLayout()
 
         self.conf_spin = QDoubleSpinBox()
@@ -2111,15 +2124,15 @@ class YoloOptionDialog(BaseDialog):
 
         form.addRow("conf_thres", self.conf_spin)
         layout.addLayout(form)
-        
-        conf_desc = QLabel("conf_thres: 검출 최소 신뢰도(0~1). 값이 높을수록 더 확실한 객체만 검출되고, 낮추면 더 많이 검출됩니다.")
-        conf_desc.setWordWrap(True)
-        layout.addWidget(conf_desc)
 
-        self.save_dir = ""
-        self.path_btn.clicked.connect(self.select_path)
+        desc = QLabel(
+            "conf_thres: 검출 최소 신뢰도(0~1).\n"
+            "값이 높을수록 더 확실한 객체만 검출되고, 낮추면 더 많이 검출됩니다."
+        )
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
 
-        # OK / Cancel
+        # ---------- buttons ----------
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok |
             QDialogButtonBox.StandardButton.Cancel
@@ -2128,19 +2141,28 @@ class YoloOptionDialog(BaseDialog):
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
-        # 기본 경로(선택)
         self.base_dir = base_dir or ""
 
-    def select_images(self):
+    def select_files(self):
+        media = self.media_combo.currentText()
+
+        if media == "image":
+            filt = "Images (*.jpg *.jpeg *.png *.webp *.bmp)"
+            title = "이미지 파일 선택"
+        else:
+            filt = "Videos (*.mp4 *.avi *.mov *.mkv *.webm)"
+            title = "영상 파일 선택"
+
         paths, _ = QFileDialog.getOpenFileNames(
             self,
-            "이미지 파일 선택",
+            title,
             self.base_dir,
-            "Images (*.jpg *.jpeg *.png *.webp *.bmp)"
+            filt,
         )
+
         if paths:
-            self.image_paths = paths
-            self.img_label.setText(f"선택된 파일: {len(paths)}개")
+            self.file_paths = paths
+            self.file_label.setText(f"선택된 파일: {len(paths)}개")
 
     def select_path(self):
         path = QFileDialog.getExistingDirectory(self, "저장 경로 선택")
@@ -2149,15 +2171,16 @@ class YoloOptionDialog(BaseDialog):
             self.path_label.setText(path)
 
     def accept(self):
-        if not self.image_paths:
-            QMessageBox.warning(self, "입력 오류", "이미지 파일을 선택하세요.")
+        if not self.file_paths:
+            QMessageBox.warning(self, "입력 오류", "파일을 선택하세요.")
             return
         if not self.save_dir:
             QMessageBox.warning(self, "입력 오류", "저장 경로를 선택하세요.")
             return
 
         self.data = {
-            "image_paths": self.image_paths,
+            "media": self.media_combo.currentText(),
+            "file_paths": self.file_paths,
             "conf_thres": float(self.conf_spin.value()),
             "save_dir": self.save_dir,
         }
