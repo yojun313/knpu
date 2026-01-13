@@ -1822,7 +1822,6 @@ class Manager_Analysis(Manager_Worker):
                 printStatus(self.main)
                 return
 
-            # 🔥 옵션 다이얼로그
             dialog = WhisperOptionDialog(self.main)
             if dialog.exec() != QDialog.Accepted:
                 printStatus(self.main)
@@ -1954,22 +1953,107 @@ class Manager_Analysis(Manager_Worker):
     
     def run_yolo(self):
         class YoloWorker(BaseWorker):
-            def __init__(self, pid, media, file_paths, save_dir, conf_thres, parent=None):
+            def __init__(
+                self,
+                pid,
+                media,
+                file_paths,
+                save_dir,
+                conf_thres,
+                # dino options
+                run_dino=False,
+                dino_prompt="",
+                box_threshold=0.4,
+                text_threshold=0.3,
+                parent=None,
+            ):
                 super().__init__(parent)
                 self.pid = pid
-                self.media = media              # image | video
+                self.media = media
                 self.file_paths = file_paths
                 self.save_dir = save_dir
                 self.conf_thres = conf_thres
 
+                self.run_dino = run_dino
+                self.dino_prompt = dino_prompt
+                self.box_threshold = float(box_threshold)
+                self.text_threshold = float(text_threshold)
+
+            def _run_dino_for_images(self, image_paths, save_dir, prompt):
+                """
+                /analysis/dino 는 file 1개만 받으니 이미지별로 순차 요청해서 저장
+                """
+                dino_url = MANAGER_SERVER_API + "/analysis/dino"  # 라우트에 맞게 수정
+
+                out_dir = os.path.join(save_dir, "grounding_dino")
+                os.makedirs(out_dir, exist_ok=True)
+
+                option_payload = {
+                    "pid": self.pid,
+                    "box_threshold": float(self.box_threshold),
+                    "text_threshold": float(self.text_threshold),
+                }
+
+                saved = []
+                for img_path in image_paths:
+                    with ExitStack() as stack:
+                        f = stack.enter_context(open(img_path, "rb"))
+                        ctype, _ = mimetypes.guess_type(img_path)
+                        ctype = ctype or "application/octet-stream"
+
+                        files = {
+                            "file": (os.path.basename(img_path), f, ctype)
+                        }
+
+                        resp = requests.post(
+                            dino_url,
+                            data={
+                                "prompt": prompt,
+                                "option": json.dumps(option_payload),
+                            },
+                            headers=get_api_headers(),
+                            files=files,
+                            stream=True,
+                            timeout=600,
+                        )
+
+                    if resp.status_code != 200:
+                        try:
+                            err = resp.json()
+                            msg = err.get("message") or err.get("error") or "Grounding DINO 처리 실패"
+                        except Exception:
+                            msg = resp.text or "Grounding DINO 처리 중 오류 발생"
+                        raise RuntimeError(f"[{os.path.basename(img_path)}] {msg}")
+
+                    cd = resp.headers.get("Content-Disposition", "")
+                    server_name = self._safe_filename_from_cd(cd)
+
+                    base = os.path.splitext(os.path.basename(img_path))[0]
+                    if server_name:
+                        # 서버가 항상 같은 이름을 주면 덮어쓰기 될 수 있으니 방지
+                        name = server_name
+                        if len(image_paths) > 1:
+                            root, ext = os.path.splitext(name)
+                            name = f"{root}_{base}{ext}"
+                    else:
+                        name = f"grounding_dino_{base}.png"
+
+                    out_path = os.path.join(out_dir, name)
+
+                    with open(out_path, "wb") as out:
+                        for chunk in resp.iter_content(chunk_size=1024 * 256):
+                            if chunk:
+                                out.write(chunk)
+
+                    saved.append(out_path)
+
+                return out_dir, saved
+
             def run(self):
                 try:
-                    option_payload = {
-                        "pid": self.pid,
-                        "media": self.media,
-                    }
-
-                    url = MANAGER_SERVER_API + "/analysis/yolo"
+                    # -------- YOLO ----------
+                    option_payload = {"pid": self.pid, "media": self.media}
+                    yolo_url = MANAGER_SERVER_API + "/analysis/yolo"
 
                     with ExitStack() as stack:
                         files = []
@@ -1977,12 +2061,10 @@ class Manager_Analysis(Manager_Worker):
                             f = stack.enter_context(open(path, "rb"))
                             ctype, _ = mimetypes.guess_type(path)
                             ctype = ctype or "application/octet-stream"
-                            files.append(
-                                ("files", (os.path.basename(path), f, ctype))
-                            )
+                            files.append(("files", (os.path.basename(path), f, ctype)))
 
                         response = requests.post(
-                            url,
+                            yolo_url,
                             data={
                                 "option": json.dumps(option_payload),
                                 "conf_thres": str(self.conf_thres),
@@ -2010,15 +2092,55 @@ class Manager_Analysis(Manager_Worker):
                         extract=True,
                     )
 
-                    self.finished.emit(
-                        True,
-                        "YOLO 객체 검출이 완료되었습니다.\n파일을 확인하시겠습니까?",
-                        extract_path,
-                    )
+                    # -------- (옵션) DINO ----------
+                    dino_dir = None
+                    if self.run_dino:
+                        if self.media != "image":
+                            # UI에서 막아도 안전하게 한 번 더 가드
+                            raise RuntimeError("Grounding DINO는 image에서만 실행할 수 있습니다.")
+                        if not (self.dino_prompt or "").strip():
+                            raise RuntimeError("Grounding DINO prompt가 비어있습니다.")
+
+                        dino_dir, _saved = self._run_dino_for_images(
+                            self.file_paths,
+                            self.save_dir,
+                            self.dino_prompt.strip(),
+                        )
+
+                    # -------- 완료 메시지 ----------
+                    if self.run_dino and dino_dir:
+                        msg = (
+                            "YOLO 객체 검출 + Grounding DINO가 완료되었습니다.\n"
+                            f"- YOLO 결과: {extract_path}\n"
+                            f"- DINO 결과: {dino_dir}\n"
+                            "파일을 확인하시겠습니까?"
+                        )
+                        # finished의 path는 하나만 받는 구조면, 폴더 하나를 넘기는게 깔끔
+                        # 여기서는 save_dir(또는 dino_dir)을 넘겨서 사용자가 폴더 열게 처리
+                        self.finished.emit(True, msg, self.save_dir)
+                    else:
+                        self.finished.emit(
+                            True,
+                            "YOLO 객체 검출이 완료되었습니다.\n파일을 확인하시겠습니까?",
+                            extract_path,
+                        )
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
-
+            
+            def _safe_filename_from_cd(self, content_disposition: str) -> str | None:
+                if not content_disposition:
+                    return None
+                m = re.search(r"filename\*\s*=\s*UTF-8''([^;]+)", content_disposition, re.IGNORECASE)
+                if m:
+                    return unquote(m.group(1).strip())
+                m = re.search(r'filename\s*=\s*"([^"]+)"', content_disposition, re.IGNORECASE)
+                if m:
+                    return m.group(1).strip()
+                m = re.search(r"filename\s*=\s*([^;]+)", content_disposition, re.IGNORECASE)
+                if m:
+                    return m.group(1).strip()
+                return None
         try:
             dialog = YoloOptionDialog(self.main, base_dir=self.main.localDirectory)
             if dialog.exec() != QDialog.Accepted:
@@ -2030,10 +2152,16 @@ class Manager_Analysis(Manager_Worker):
             conf_thres = data["conf_thres"]
             save_dir = data["save_dir"]
 
-            pid = str(uuid.uuid4())
-            register_process(pid, f"YOLO Detect ({media})")
+            # dino 옵션 추가
+            run_dino = bool(data.get("run_dino", False))
+            dino_prompt = data.get("dino_prompt", "")
+            box_threshold = data.get("box_threshold", 0.4)
+            text_threshold = data.get("text_threshold", 0.3)
 
-            thread_name = f"YOLO 객체 검출 ({media}, {len(file_paths)} files)"
+            pid = str(uuid.uuid4())
+            register_process(pid, f"YOLO Detect ({media})" + (" + DINO" if run_dino else ""))
+
+            thread_name = f"YOLO 객체 검출 ({media}, {len(file_paths)} files)" + (" + DINO" if run_dino else "")
             register_thread(thread_name)
             printStatus(self.main)
 
@@ -2046,7 +2174,11 @@ class Manager_Analysis(Manager_Worker):
                 file_paths,
                 save_dir,
                 conf_thres,
-                self.main,
+                run_dino=run_dino,
+                dino_prompt=dino_prompt,
+                box_threshold=box_threshold,
+                text_threshold=text_threshold,
+                parent=self.main,
             )
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
@@ -2057,11 +2189,12 @@ class Manager_Analysis(Manager_Worker):
 
             userLogging(
                 f"ANALYSIS -> YOLO(media={media}, count={len(file_paths)}, conf={conf_thres})"
+                + (f", DINO(prompt={dino_prompt}, box={box_threshold}, text={text_threshold})" if run_dino else "")
             )
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-
+    
     def check_csv_file(self, tokenCheck=False):
         selected_directory = self.analysis_getfiledirectory_csv(
             self.file_dialog)
