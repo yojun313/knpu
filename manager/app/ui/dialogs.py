@@ -2132,27 +2132,13 @@ class YoloOptionDialog(BaseDialog):
         self.dino_prompt.setPlaceholderText("Prompt (예: person. red car. dog.)")
         self.dino_prompt.setFixedHeight(70)
 
-        self.box_spin = QDoubleSpinBox()
-        self.box_spin.setRange(0.0, 1.0)
-        self.box_spin.setSingleStep(0.05)
-        self.box_spin.setDecimals(2)
-        self.box_spin.setValue(0.40)
-
-        self.text_spin = QDoubleSpinBox()
-        self.text_spin.setRange(0.0, 1.0)
-        self.text_spin.setSingleStep(0.05)
-        self.text_spin.setDecimals(2)
-        self.text_spin.setValue(0.30)
-
         form.addRow("dino_prompt", self.dino_prompt)
-        form.addRow("box_threshold", self.box_spin)
-        form.addRow("text_threshold", self.text_spin)
 
         layout.addLayout(form)
 
         desc = QLabel(
-            "객체 검출 conf_thres: 검출 최소 신뢰도(0~1)\n"
-            "프롬프트 포함: prompt + box/text threshold로 텍스트 기반 객체 검출 결과 PNG 저장\n"
+            "conf_thres: 객체로 판단할 최소 신뢰도 기준(0~1)\n"
+            "값이 높을수록 확실한 객체만 남고, 낮을수록 더 많은 후보가 표시됩니다.\n"
         )
         desc.setWordWrap(True)
         layout.addWidget(desc)
@@ -2184,8 +2170,7 @@ class YoloOptionDialog(BaseDialog):
 
         self.dino_check.setEnabled(can_use_dino)
         self.dino_prompt.setEnabled(can_edit)
-        self.box_spin.setEnabled(can_edit)
-        self.text_spin.setEnabled(can_edit)
+        self.conf_spin.setEnabled(True)  
 
     def select_files(self):
         media = self.media_combo.currentText()
@@ -2236,12 +2221,10 @@ class YoloOptionDialog(BaseDialog):
             "file_paths": self.file_paths,
             "conf_thres": float(self.conf_spin.value()),
             "save_dir": self.save_dir,
-
             "run_dino": run_dino,
             "dino_prompt": (self.dino_prompt.toPlainText() or "").strip(),
-            "box_threshold": float(self.box_spin.value()),
-            "text_threshold": float(self.text_spin.value()),
         }
+
         super().accept()
 
 
