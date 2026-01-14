@@ -205,7 +205,8 @@ async def grounding_dino_proxy_route(
     )
 
     return StreamingResponse(
-        io.BytesIO(resp.content),
+        resp.aiter_bytes(),
+        status_code=resp.status_code,
         media_type=content_type,
         headers={"Content-Disposition": cd},
     )
