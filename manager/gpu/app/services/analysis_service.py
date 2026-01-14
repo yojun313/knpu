@@ -734,3 +734,107 @@ async def grounding_dino_detect_images_zip(
 
     return zip_bytes
 
+async def grounding_dino_detect_videos_zip(
+    files: List[UploadFile],
+    prompt: str,
+    box_threshold: float = 0.4,
+    text_threshold: float = 0.3,
+    pid=None,
+) -> io.BytesIO:
+    processor, model = get_grounding_dino_model()
+    device = model.device
+
+    prompt = prompt.lower().strip()
+    if not prompt.endswith("."):
+        prompt += "."
+
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for idx, up in enumerate(files, start=1):
+            name = up.filename or f"video_{idx}.mp4"
+            stem, ext = os.path.splitext(name)
+
+            # temp video
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                tmp.write(await up.read())
+                video_path = tmp.name
+
+            cap = cv2.VideoCapture(video_path)
+            fps = cap.get(cv2.CAP_PROP_FPS) or 30
+            w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+            out_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
+            writer = cv2.VideoWriter(
+                out_path,
+                cv2.VideoWriter_fourcc(*"mp4v"),
+                fps,
+                (w, h),
+            )
+
+            detections = []
+            frame_idx = 0
+
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                inputs = processor(images=image, text=prompt, return_tensors="pt").to(device)
+
+                with torch.no_grad():
+                    outputs = model(**inputs)
+
+                res = processor.post_process_grounded_object_detection(
+                    outputs,
+                    inputs.input_ids,
+                    target_sizes=[image.size[::-1]],
+                )[0]
+
+                frame_det = []
+                for box, label, score in zip(res["boxes"], res["labels"], res["scores"]):
+                    if float(score) < box_threshold:
+                        continue
+
+                    x1, y1, x2, y2 = map(int, box.tolist())
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                    cv2.putText(
+                        frame,
+                        f"{label} {float(score):.2f}",
+                        (x1, max(0, y1 - 5)),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (0, 0, 255),
+                        1,
+                    )
+
+                    frame_det.append({
+                        "label": label,
+                        "score": float(score),
+                        "bbox_xyxy": [x1, y1, x2, y2],
+                    })
+
+                detections.append({
+                    "frame": frame_idx,
+                    "detections": frame_det,
+                })
+
+                writer.write(frame)
+                frame_idx += 1
+
+            cap.release()
+            writer.release()
+
+            zf.write(out_path, f"videos/{stem}.mp4")
+            zf.writestr(
+                f"json/{stem}.json",
+                json.dumps(detections, ensure_ascii=False, indent=2),
+            )
+
+            os.remove(video_path)
+            os.remove(out_path)
+
+    zip_buf.seek(0)
+    return zip_buf
+
