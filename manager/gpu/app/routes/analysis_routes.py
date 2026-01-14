@@ -97,7 +97,7 @@ async def yolo_detect_route(
     media = option_dict.get("media", "image")  # image | video
 
     if media == "video":
-        zip_buffer = await yolo_detect_videos_to_zip(
+        zip_buffer = await yolo_detect_videos(
             files=files,
             conf_thres=float(conf_thres),
             pid=pid,
@@ -105,7 +105,7 @@ async def yolo_detect_route(
         out_name = "yolo_video_results.zip"
 
     elif media == "image":
-        zip_buffer = await yolo_detect_images_to_zip(
+        zip_buffer = await yolo_detect_images(
             files=files,
             conf_thres=float(conf_thres),
             pid=pid,
@@ -136,24 +136,21 @@ async def grounding_dino_route(
     media = option_dict.get("media", "image")
 
     box_threshold = float(option_dict.get("box_threshold", 0.4))
-    text_threshold = float(option_dict.get("text_threshold", 0.3))
 
     if media == "image":
-        zip_buffer = await grounding_dino_detect_images_zip(
+        zip_buffer = await grounding_dino_detect_images(
             files=files,
             prompt=prompt,
             box_threshold=box_threshold,
-            text_threshold=text_threshold,
             pid=pid,
         )
         filename = "grounding_dino_images.zip"
 
     elif media == "video":
-        zip_buffer = await grounding_dino_detect_videos_zip(
+        zip_buffer = await grounding_dino_detect_videos(
             files=files,
             prompt=prompt,
             box_threshold=box_threshold,
-            text_threshold=text_threshold,
             pid=pid,
         )
         filename = "grounding_dino_videos.zip"

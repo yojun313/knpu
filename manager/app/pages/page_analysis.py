@@ -1963,8 +1963,6 @@ class Manager_Analysis(Manager_Worker):
                 # dino options
                 run_dino=False,
                 dino_prompt="",
-                box_threshold=0.4,
-                text_threshold=0.3,
                 parent=None,
             ):
                 super().__init__(parent)
@@ -1976,16 +1974,13 @@ class Manager_Analysis(Manager_Worker):
 
                 self.run_dino = run_dino
                 self.dino_prompt = dino_prompt
-                self.box_threshold = float(box_threshold)
-                self.text_threshold = float(text_threshold)
 
             def _run_dino_for_images(self, image_paths, save_dir, prompt):
                 dino_url = MANAGER_SERVER_API + "/analysis/dino"
 
                 option_payload = {
                     "pid": self.pid,
-                    "box_threshold": float(self.box_threshold),
-                    "text_threshold": float(self.text_threshold),
+                    "box_threshold": self.conf_thres,
                 }
 
                 with ExitStack() as stack:
@@ -2041,8 +2036,7 @@ class Manager_Analysis(Manager_Worker):
                 option_payload = {
                     "pid": self.pid,
                     "media": "video",
-                    "box_threshold": float(self.box_threshold),
-                    "text_threshold": float(self.text_threshold),
+                    "box_threshold": float(self.conf_thres),
                 }
 
                 with ExitStack() as stack:
@@ -2195,8 +2189,6 @@ class Manager_Analysis(Manager_Worker):
             # dino 옵션
             run_dino = bool(data.get("run_dino", False))
             dino_prompt = data.get("dino_prompt", "")
-            box_threshold = data.get("box_threshold", 0.4)
-            text_threshold = data.get("text_threshold", 0.3)
 
             pid = str(uuid.uuid4())
 
@@ -2221,8 +2213,6 @@ class Manager_Analysis(Manager_Worker):
                 conf_thres=conf_thres,
                 run_dino=run_dino,
                 dino_prompt=dino_prompt,
-                box_threshold=box_threshold,
-                text_threshold=text_threshold,
                 parent=self.main,
             )
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
@@ -2234,7 +2224,7 @@ class Manager_Analysis(Manager_Worker):
 
             if run_dino:
                 userLogging(
-                    f"ANALYSIS -> DINO(count={len(file_paths)}, prompt={dino_prompt}, box={box_threshold}, text={text_threshold})"
+                    f"ANALYSIS -> DINO(count={len(file_paths)}, prompt={dino_prompt}, conf={conf_thres})"
                 )
             else:
                 userLogging(
