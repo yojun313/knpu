@@ -290,7 +290,7 @@ def transcribe_audio(
         ],
     }
 
-async def yolo_detect_images_to_zip(
+async def yolo_detect_images(
     files: List[UploadFile],
     conf_thres: float = 0.25,
     pid=None,
@@ -426,7 +426,7 @@ async def yolo_detect_images_to_zip(
 
     return zip_buffer
 
-async def yolo_detect_videos_to_zip(
+async def yolo_detect_videos(
     files: List[UploadFile],
     conf_thres: float = 0.25,
     pid=None,
@@ -641,11 +641,10 @@ def get_grounding_dino_model():
 
     return _grounding_processor, _grounding_model
 
-async def grounding_dino_detect_images_zip(
+async def grounding_dino_detect_images(
     files: List[UploadFile],
     prompt: str,
     box_threshold: float = 0.4,
-    text_threshold: float = 0.3,
     pid=None,
 ) -> io.BytesIO:
     """
@@ -734,13 +733,16 @@ async def grounding_dino_detect_images_zip(
 
     return zip_bytes
 
-async def grounding_dino_detect_videos_zip(
+async def grounding_dino_detect_videos(
     files: List[UploadFile],
     prompt: str,
     box_threshold: float = 0.4,
-    text_threshold: float = 0.3,
     pid=None,
 ) -> io.BytesIO:
+
+    if pid is not None:
+        send_message(pid, "[GroundingDINO] 모델 로드 중")
+
     processor, model = get_grounding_dino_model()
     device = model.device
 
@@ -748,18 +750,24 @@ async def grounding_dino_detect_videos_zip(
     if not prompt.endswith("."):
         prompt += "."
 
+    if pid is not None:
+        send_message(pid, f"[GroundingDINO] 영상 처리 시작 (count={len(files)})")
+
     zip_buf = io.BytesIO()
     with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        for idx, up in enumerate(files, start=1):
-            name = up.filename or f"video_{idx}.mp4"
+        for vid_idx, up in enumerate(files, start=1):
+            name = up.filename or f"video_{vid_idx}.mp4"
             stem, ext = os.path.splitext(name)
 
-            # temp video
+            if pid is not None:
+                send_message(pid, f"[GroundingDINO] ({vid_idx}/{len(files)}) {name} 로드 중")
+
             with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
                 tmp.write(await up.read())
                 video_path = tmp.name
 
             cap = cv2.VideoCapture(video_path)
+            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
             fps = cap.get(cv2.CAP_PROP_FPS) or 30
             w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -792,8 +800,10 @@ async def grounding_dino_detect_videos_zip(
                     target_sizes=[image.size[::-1]],
                 )[0]
 
+                labels = res.get("text_labels", res["labels"])
+
                 frame_det = []
-                for box, label, score in zip(res["boxes"], res["labels"], res["scores"]):
+                for box, label, score in zip(res["boxes"], labels, res["scores"]):
                     if float(score) < box_threshold:
                         continue
 
@@ -823,6 +833,15 @@ async def grounding_dino_detect_videos_zip(
                 writer.write(frame)
                 frame_idx += 1
 
+                # 🔔 진행률 로그 (30프레임마다)
+                if pid is not None and frame_idx % 30 == 0:
+                    pct = round(frame_idx / frame_count * 100, 2) if frame_count else 0
+                    send_message(
+                        pid,
+                        f"[GroundingDINO] ({vid_idx}/{len(files)}) {name} "
+                        f"frame {frame_idx}/{frame_count} ({pct}%)"
+                    )
+
             cap.release()
             writer.release()
 
@@ -835,6 +854,17 @@ async def grounding_dino_detect_videos_zip(
             os.remove(video_path)
             os.remove(out_path)
 
+            if pid is not None:
+                send_message(
+                    pid,
+                    f"[GroundingDINO] ({vid_idx}/{len(files)}) {name} 완료 "
+                    f"(총 {frame_idx} frames)"
+                )
+
     zip_buf.seek(0)
+
+    if pid is not None:
+        send_message(pid, "[GroundingDINO] 전체 완료")
+
     return zip_buf
 
