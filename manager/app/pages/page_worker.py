@@ -38,6 +38,7 @@ class Manager_Worker:
                 printStatus(self.main)
             )
         )
+    
     def connectWorkerForStatusDialog(self, worker, statusDialog, thread_name):
         worker.message.connect(lambda msg: statusDialog.update_message(msg))
         worker.finished.connect(
