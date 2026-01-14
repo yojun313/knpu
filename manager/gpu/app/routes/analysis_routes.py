@@ -131,32 +131,38 @@ async def grounding_dino_route(
     prompt: str = Form(...),
     option: str = Form("{}"),
 ):
-    """
-    Grounding DINO (batch)
-    - images(list) + prompt → bbox 그린 이미지들을 zip으로 반환
-    """
-    try:
-        option_dict = json.loads(option)
-    except json.JSONDecodeError:
-        option_dict = {}
-
+    option_dict = json.loads(option)
     pid = option_dict.get("pid")
+    media = option_dict.get("media", "image")
+
     box_threshold = float(option_dict.get("box_threshold", 0.4))
     text_threshold = float(option_dict.get("text_threshold", 0.3))
 
-    zip_buffer = await grounding_dino_detect_images_zip(
-        files=files,
-        prompt=prompt,
-        box_threshold=box_threshold,
-        text_threshold=text_threshold,
-        pid=pid,
-    )
+    if media == "image":
+        zip_buffer = await grounding_dino_detect_images_zip(
+            files=files,
+            prompt=prompt,
+            box_threshold=box_threshold,
+            text_threshold=text_threshold,
+            pid=pid,
+        )
+        filename = "grounding_dino_images.zip"
 
-    filename = "grounding_dino_results.zip"
-    cd_header = f"attachment; filename*=UTF-8''{quote(filename)}"
+    elif media == "video":
+        zip_buffer = await grounding_dino_detect_videos_zip(
+            files=files,
+            prompt=prompt,
+            box_threshold=box_threshold,
+            text_threshold=text_threshold,
+            pid=pid,
+        )
+        filename = "grounding_dino_videos.zip"
+
+    else:
+        raise BadRequestException(f"지원하지 않는 media 타입: {media}")
 
     return StreamingResponse(
         zip_buffer,
         media_type="application/zip",
-        headers={"Content-Disposition": cd_header},
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
