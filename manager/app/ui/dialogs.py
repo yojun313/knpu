@@ -2129,7 +2129,7 @@ class YoloOptionDialog(BaseDialog):
         layout.addWidget(self.dino_check)
 
         self.dino_prompt = QTextEdit()
-        self.dino_prompt.setPlaceholderText("DINO prompt (예: person. red car. dog.)")
+        self.dino_prompt.setPlaceholderText("Prompt (예: person. red car. dog.)")
         self.dino_prompt.setFixedHeight(70)
 
         self.box_spin = QDoubleSpinBox()
@@ -2174,13 +2174,15 @@ class YoloOptionDialog(BaseDialog):
         self._sync_dino_ui()
 
     def _sync_dino_ui(self):
-        is_image = (self.media_combo.currentText() == "image")
-        # image가 아니면 체크도 꺼버리기
-        if not is_image and self.dino_check.isChecked():
+        media = self.media_combo.currentText()
+        can_use_dino = media in ("image", "video")
+
+        if not can_use_dino and self.dino_check.isChecked():
             self.dino_check.setChecked(False)
 
-        can_edit = is_image and self.dino_check.isChecked()
-        self.dino_check.setEnabled(is_image)
+        can_edit = can_use_dino and self.dino_check.isChecked()
+
+        self.dino_check.setEnabled(can_use_dino)
         self.dino_prompt.setEnabled(can_edit)
         self.box_spin.setEnabled(can_edit)
         self.text_spin.setEnabled(can_edit)
@@ -2224,9 +2226,6 @@ class YoloOptionDialog(BaseDialog):
         media = self.media_combo.currentText()
 
         if run_dino:
-            if media != "image":
-                QMessageBox.warning(self, "입력 오류", "DINO는 image에서만 실행할 수 있습니다.")
-                return
             prompt = (self.dino_prompt.toPlainText() or "").strip()
             if not prompt:
                 QMessageBox.warning(self, "입력 오류", "DINO prompt를 입력하세요.")
