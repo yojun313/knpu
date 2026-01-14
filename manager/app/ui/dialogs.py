@@ -1916,7 +1916,7 @@ class SelectEtcAnalysisDialog(BaseDialog):
         layout.addWidget(youtube_btn)
         
         yolo_btn = QPushButton("영상/이미지 객체 탐지")  
-        yolo_btn.clicked.connect(self.run_yolo)
+        yolo_btn.clicked.connect(self.run_detection)
         layout.addWidget(yolo_btn)
 
         self.setLayout(layout)
@@ -1933,7 +1933,7 @@ class SelectEtcAnalysisDialog(BaseDialog):
         self.accept()
         self.youtube_download()
     
-    def run_yolo(self):
+    def run_detection(self):
         self.accept()
         self.yolo()
 
@@ -2072,7 +2072,7 @@ class YouTubeDownloadDialog(BaseDialog):
         super().accept()
 
 
-class YoloOptionDialog(BaseDialog):
+class DetectOptionDialog(BaseDialog):
     def __init__(self, parent=None, base_dir=""):
         super().__init__(parent)
         self.setWindowTitle("영상/이미지 객체 검출 설정")
@@ -2125,14 +2125,14 @@ class YoloOptionDialog(BaseDialog):
         form.addRow("conf_thres", self.conf_spin)
 
         # ---------- (추가) DINO 옵션 ----------
-        self.dino_check = QCheckBox("프롬프트 포함 (image 전용)")
+        self.dino_check = QCheckBox("프롬프트 포함")
         layout.addWidget(self.dino_check)
 
         self.dino_prompt = QTextEdit()
         self.dino_prompt.setPlaceholderText("Prompt (예: person. red car. dog.)")
         self.dino_prompt.setFixedHeight(70)
 
-        form.addRow("dino_prompt", self.dino_prompt)
+        form.addRow("prompt", self.dino_prompt)
 
         layout.addLayout(form)
 

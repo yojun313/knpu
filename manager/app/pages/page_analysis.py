@@ -14,7 +14,6 @@ from libs.analysis import DataProcess
 from libs.kemkim import KimKem
 import uuid
 import asyncio
-import zipfile
 from googletrans import Translator
 import mimetypes
 from contextlib import ExitStack
@@ -1632,7 +1631,7 @@ class Manager_Analysis(Manager_Worker):
             programBugLog(self.main, traceback.format_exc())
 
     def select_etc_analysis(self):
-        dialog = SelectEtcAnalysisDialog(self.run_hate_measure, self.run_whisper, self.run_youtube_download, self.run_yolo)
+        dialog = SelectEtcAnalysisDialog(self.run_hate_measure, self.run_whisper, self.run_youtube_download, self.run_detection)
         dialog.exec()
 
     def run_hate_measure(self):
@@ -1951,7 +1950,7 @@ class Manager_Analysis(Manager_Worker):
             f"ANALYSIS -> YouTubeDownload(count={len(urls)}, fmt={fmt}, whisper={save_whisper})"
         )
     
-    def run_yolo(self):
+    def run_detection(self):
         class YoloWorker(BaseWorker):
             def __init__(
                 self,
@@ -1975,73 +1974,22 @@ class Manager_Analysis(Manager_Worker):
                 self.run_dino = run_dino
                 self.dino_prompt = dino_prompt
 
-            def _run_dino_for_images(self, image_paths, save_dir, prompt):
+            def _run_dino(self):
                 dino_url = MANAGER_SERVER_API + "/analysis/dino"
 
                 option_payload = {
                     "pid": self.pid,
                     "box_threshold": self.conf_thres,
+                    "media": self.media,
                 }
+
+                prompt = (self.dino_prompt or "").strip()
+                if not prompt:
+                    raise RuntimeError("Prompt가 비어있습니다.")
 
                 with ExitStack() as stack:
                     files = []
-                    for img_path in image_paths:
-                        f = stack.enter_context(open(img_path, "rb"))
-                        ctype, _ = mimetypes.guess_type(img_path)
-                        ctype = ctype or "application/octet-stream"
-                        # 서버 파라미터명이 files: List[UploadFile] 이면 키는 "files"
-                        files.append(("files", (os.path.basename(img_path), f, ctype)))
-
-                    resp = requests.post(
-                        dino_url,
-                        data={
-                            "prompt": prompt,
-                            "option": json.dumps(option_payload),
-                        },
-                        headers=get_api_headers(),
-                        files=files,
-                        stream=True,
-                        timeout=600,
-                    )
-
-                if resp.status_code != 200:
-                    try:
-                        err = resp.json()
-                        msg = err.get("message") or err.get("error") or "Grounding DINO 처리 실패"
-                    except Exception:
-                        msg = resp.text or "프롬프트 이미지 객체 검출 처리 중 오류 발생"
-                    raise RuntimeError(msg)
-
-                cd = resp.headers.get("Content-Disposition", "")
-                server_name = self._safe_filename_from_cd(cd)
-
-                # DINO zip 기본 이름
-                if server_name and server_name.lower().endswith(".zip"):
-                    zip_name = server_name
-                else:
-                    zip_name = f"yolo_{datetime.now().strftime('%m%d%H%M')}.zip"
-
-                extract_path = self.download_file(
-                    resp,
-                    save_dir,
-                    zip_name,
-                    extract=True,
-                )
-
-                return extract_path, None
-
-            def _run_dino_for_videos(self, video_paths, save_dir, prompt):
-                dino_url = MANAGER_SERVER_API + "/analysis/dino"
-
-                option_payload = {
-                    "pid": self.pid,
-                    "media": "video",
-                    "box_threshold": float(self.conf_thres),
-                }
-
-                with ExitStack() as stack:
-                    files = []
-                    for path in video_paths:
+                    for path in self.file_paths:
                         f = stack.enter_context(open(path, "rb"))
                         ctype, _ = mimetypes.guess_type(path)
                         ctype = ctype or "application/octet-stream"
@@ -2056,33 +2004,29 @@ class Manager_Analysis(Manager_Worker):
                         headers=get_api_headers(),
                         files=files,
                         stream=True,
-                        timeout=1800,  # 영상이라 넉넉히
+                        timeout=1800 if self.media == "video" else 600,
                     )
 
                 if resp.status_code != 200:
                     try:
                         err = resp.json()
-                        msg = err.get("message") or err.get("error") or "Grounding DINO(video) 실패"
+                        msg = err.get("message") or err.get("error") or "Grounding DINO 처리 실패"
                     except Exception:
-                        msg = resp.text or "Grounding DINO(video) 처리 중 오류"
+                        msg = resp.text or "Grounding DINO 처리 중 오류"
                     raise RuntimeError(msg)
 
-                cd = resp.headers.get("Content-Disposition", "")
-                server_name = self._safe_filename_from_cd(cd)
-
                 zip_name = (
-                    server_name if server_name and server_name.endswith(".zip")
-                    else f"dino_video_{datetime.now().strftime('%m%d%H%M')}.zip"
+                    f"detect_{self.media}_{datetime.now().strftime('%m%d%H%M')}.zip"
                 )
 
                 extract_path = self.download_file(
                     resp,
-                    save_dir,
+                    self.save_dir,
                     zip_name,
                     extract=True,
                 )
 
-                return extract_path, None
+                return extract_path
 
             def _run_yolo(self):
                 option_payload = {"pid": self.pid, "media": self.media}
@@ -2116,7 +2060,7 @@ class Manager_Analysis(Manager_Worker):
                         msg = response.text or "YOLO 처리 중 오류 발생"
                     raise RuntimeError(msg)
 
-                zip_name = f"yolo_{self.media}_{datetime.now().strftime('%m%d%H%M')}.zip"
+                zip_name = f"detect_{self.media}_{datetime.now().strftime('%m%d%H%M')}.zip"
                 extract_path = self.download_file(
                     response,
                     self.save_dir,
@@ -2127,56 +2071,19 @@ class Manager_Analysis(Manager_Worker):
 
             def run(self):
                 try:
-                    # DINO ONLY 모드: 프롬프트 체크(run_dino=True)면 YOLO는 실행하지 않음
                     if self.run_dino:
-                        prompt = (self.dino_prompt or "").strip()
-                        if not prompt:
-                            raise RuntimeError("Prompt가 비어있습니다.")
-
-                        if self.media == "image":
-                            dino_dir, _ = self._run_dino_for_images(
-                                self.file_paths,
-                                self.save_dir,
-                                prompt,
-                            )
-                        elif self.media == "video":
-                            dino_dir, _ = self._run_dino_for_videos(
-                                self.file_paths,
-                                self.save_dir,
-                                prompt,
-                            )
-                        else:
-                            raise RuntimeError(f"지원하지 않는 media 타입: {self.media}")
-
+                        result_dir = self._run_dino()
                         msg = "Prompt 객체 검출이 완료되었습니다.\n파일을 확인하시겠습니까?"
-                        self.finished.emit(True, msg, dino_dir or self.save_dir)
-                        return
+                    else:
+                        result_dir = self._run_yolo()
+                        msg = "YOLO 객체 검출이 완료되었습니다.\n파일을 확인하시겠습니까?"
 
-                    # YOLO ONLY 모드: 프롬프트 체크 안 했으면 기존 YOLO만 실행
-                    yolo_dir = self._run_yolo()
-
-                    msg = "YOLO 객체 검출이 완료되었습니다.\n파일을 확인하시겠습니까?"
-                    self.finished.emit(True, msg, yolo_dir or self.save_dir)
+                    self.finished.emit(True, msg, result_dir or self.save_dir)
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
-
-            def _safe_filename_from_cd(self, content_disposition: str) -> str | None:
-                if not content_disposition:
-                    return None
-                m = re.search(r"filename\*\s*=\s*UTF-8''([^;]+)", content_disposition, re.IGNORECASE)
-                if m:
-                    return unquote(m.group(1).strip())
-                m = re.search(r'filename\s*=\s*"([^"]+)"', content_disposition, re.IGNORECASE)
-                if m:
-                    return m.group(1).strip()
-                m = re.search(r"filename\s*=\s*([^;]+)", content_disposition, re.IGNORECASE)
-                if m:
-                    return m.group(1).strip()
-                return None
-
         try:
-            dialog = YoloOptionDialog(self.main, base_dir=self.main.localDirectory)
+            dialog = DetectOptionDialog(self.main, base_dir=self.main.localDirectory)
             if dialog.exec() != QDialog.Accepted:
                 return
 
@@ -2233,8 +2140,7 @@ class Manager_Analysis(Manager_Worker):
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-
-    
+  
     def check_csv_file(self, tokenCheck=False):
         selected_directory = self.analysis_getfiledirectory_csv(
             self.file_dialog)
