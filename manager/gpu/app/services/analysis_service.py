@@ -674,8 +674,10 @@ async def grounding_dino_detect_images(
             detections: List[Dict[str, Any]] = []
             # 원본 파일명 기반 결과명
             orig_name = file.filename or f"image_{idx}.png"
-            base, _ext = os.path.splitext(orig_name)
-            out_name = f"grounding_dino_{base}.png"
+            stem = os.path.splitext(os.path.basename(orig_name))[0]  
+            out_img_name = f"{stem}.png"                             
+            out_json_name = f"{stem}.json"                           
+
 
             if pid is not None:
                 send_message(pid, f"[GroundingDINO] ({idx}/{len(files)}) {orig_name} 추론 시작")
@@ -728,10 +730,10 @@ async def grounding_dino_detect_images(
             out_buf.seek(0)
 
             # zip에 기록
-            zf.writestr(f"images/{out_name}", out_buf.getvalue())
+            zf.writestr(f"images/{out_img_name}", out_buf.getvalue())\
             
             json_obj = {
-                "image": orig_name,
+                "image": f"images/{out_img_name}",
                 "width": image.width,
                 "height": image.height,
                 "prompt": prompt,
@@ -739,7 +741,7 @@ async def grounding_dino_detect_images(
             }
 
             zf.writestr(
-                f"json/{base}.json",
+                f"json/{out_json_name}",
                 json.dumps(json_obj, ensure_ascii=False, indent=2).encode("utf-8")
             )
 
@@ -779,7 +781,11 @@ async def grounding_dino_detect_videos(
             detections_by_frame: List[Dict[str, Any]] = []
 
             name = up.filename or f"video_{vid_idx}.mp4"
-            stem, ext = os.path.splitext(name)
+            stem = os.path.splitext(os.path.basename(name))[0]  
+            ext = os.path.splitext(name)[1]
+            out_video_name = f"{stem}.mp4"
+            out_json_name = f"{stem}.json"
+
 
             if pid is not None:
                 send_message(pid, f"[GroundingDINO] ({vid_idx}/{len(files)}) {name} 로드 중")
@@ -866,10 +872,10 @@ async def grounding_dino_detect_videos(
             cap.release()
             writer.release()
 
-            zf.write(out_path, f"videos/{stem}.mp4")
+            zf.write(out_path, f"videos/{out_video_name}")
 
             json_obj = {
-                "video": name,
+                "video": f"videos/{out_video_name}",
                 "fps": fps,
                 "width": w,
                 "height": h,
@@ -879,7 +885,7 @@ async def grounding_dino_detect_videos(
             }
 
             zf.writestr(
-                f"json/{stem}.json",
+                f"json/{out_json_name}",
                 json.dumps(json_obj, ensure_ascii=False, indent=2).encode("utf-8"),
             )
 
