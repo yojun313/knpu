@@ -626,7 +626,7 @@ class Manager_Setting(BaseDialog):
         link4_label.setOpenExternalLinks(True)
         link4_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         
-        link5_label = QLabel('<a href="https://knpu.re.kr/manual/yolo">이미지 객체 검출</a>')
+        link5_label = QLabel('<a href="https://knpu.re.kr/manual/yolo">영상/이미지 객체 검출</a>')
         link5_label.setOpenExternalLinks(True)
         link5_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 

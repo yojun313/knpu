@@ -671,6 +671,7 @@ async def grounding_dino_detect_images(
     # ZIP_STORED(무압축) 또는 ZIP_DEFLATED(압축). 이미지 PNG는 압축 효율 낮지만 보통 DEFLATED 사용.
     with zipfile.ZipFile(zip_bytes, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         for idx, file in enumerate(files, start=1):
+            detections: List[Dict[str, Any]] = []
             # 원본 파일명 기반 결과명
             orig_name = file.filename or f"image_{idx}.png"
             base, _ext = os.path.splitext(orig_name)
@@ -711,7 +712,13 @@ async def grounding_dino_detect_images(
             drawer = ImageDraw.Draw(draw_img)
 
             for box, label, score in zip(results["boxes"], results["labels"], results["scores"]):
-                x1, y1, x2, y2 = box.tolist()
+                x1, y1, x2, y2 = map(int, box.tolist())
+                
+                detections.append({
+                    "label": label,
+                    "confidence": round(float(score), 4),
+                    "bbox_xyxy": [x1, y1, x2, y2],
+                })
                 drawer.rectangle([(x1, y1), (x2, y2)], outline="red", width=3)
                 drawer.text((x1, y1), f"{label} {float(score):.2f}", fill="red")
 
@@ -721,7 +728,20 @@ async def grounding_dino_detect_images(
             out_buf.seek(0)
 
             # zip에 기록
-            zf.writestr(out_name, out_buf.getvalue())
+            zf.writestr(f"images/{out_name}", out_buf.getvalue())
+            
+            json_obj = {
+                "image": orig_name,
+                "width": image.width,
+                "height": image.height,
+                "prompt": prompt,
+                "detections": detections,
+            }
+
+            zf.writestr(
+                f"json/{base}.json",
+                json.dumps(json_obj, ensure_ascii=False, indent=2).encode("utf-8")
+            )
 
             if pid is not None:
                 send_message(pid, f"[GroundingDINO] ({idx}/{len(files)}) 완료 (det={len(results['boxes'])}개)")
@@ -756,6 +776,8 @@ async def grounding_dino_detect_videos(
     zip_buf = io.BytesIO()
     with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for vid_idx, up in enumerate(files, start=1):
+            detections_by_frame: List[Dict[str, Any]] = []
+
             name = up.filename or f"video_{vid_idx}.mp4"
             stem, ext = os.path.splitext(name)
 
@@ -780,7 +802,6 @@ async def grounding_dino_detect_videos(
                 (w, h),
             )
 
-            detections = []
             frame_idx = 0
 
             while True:
@@ -808,6 +829,13 @@ async def grounding_dino_detect_videos(
                         continue
 
                     x1, y1, x2, y2 = map(int, box.tolist())
+
+                    frame_det.append({
+                        "label": label,
+                        "confidence": round(float(score), 4),
+                        "bbox_xyxy": [x1, y1, x2, y2],
+                    })
+
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                     cv2.putText(
                         frame,
@@ -819,21 +847,14 @@ async def grounding_dino_detect_videos(
                         1,
                     )
 
-                    frame_det.append({
-                        "label": label,
-                        "score": float(score),
-                        "bbox_xyxy": [x1, y1, x2, y2],
-                    })
-
-                detections.append({
-                    "frame": frame_idx,
+                detections_by_frame.append({
+                    "frame_index": frame_idx,
                     "detections": frame_det,
                 })
 
                 writer.write(frame)
                 frame_idx += 1
 
-                # 🔔 진행률 로그 (30프레임마다)
                 if pid is not None and frame_idx % 30 == 0:
                     pct = round(frame_idx / frame_count * 100, 2) if frame_count else 0
                     send_message(
@@ -846,9 +867,20 @@ async def grounding_dino_detect_videos(
             writer.release()
 
             zf.write(out_path, f"videos/{stem}.mp4")
+
+            json_obj = {
+                "video": name,
+                "fps": fps,
+                "width": w,
+                "height": h,
+                "frame_count": frame_idx,
+                "prompt": prompt,
+                "detections": detections_by_frame,
+            }
+
             zf.writestr(
                 f"json/{stem}.json",
-                json.dumps(detections, ensure_ascii=False, indent=2),
+                json.dumps(json_obj, ensure_ascii=False, indent=2).encode("utf-8"),
             )
 
             os.remove(video_path)
