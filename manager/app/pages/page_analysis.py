@@ -1959,6 +1959,7 @@ class Manager_Analysis(Manager_Worker):
                 file_paths,
                 save_dir,
                 conf_thres,
+                model_name = "yolo11n",
                 # dino options
                 run_dino=False,
                 dino_prompt="",
@@ -1970,6 +1971,7 @@ class Manager_Analysis(Manager_Worker):
                 self.file_paths = file_paths
                 self.save_dir = save_dir
                 self.conf_thres = conf_thres
+                self.model_name = model_name
 
                 self.run_dino = run_dino
                 self.dino_prompt = dino_prompt
@@ -2029,7 +2031,11 @@ class Manager_Analysis(Manager_Worker):
                 return extract_path
 
             def _run_yolo(self):
-                option_payload = {"pid": self.pid, "media": self.media}
+                option_payload = {
+                    "pid": self.pid, 
+                    "media": self.media,
+                    "model": self.model_name  # 서버가 이 키를 읽어서 모델을 로드함
+                }
                 yolo_url = MANAGER_SERVER_API + "/analysis/yolo"
 
                 with ExitStack() as stack:
@@ -2092,6 +2098,7 @@ class Manager_Analysis(Manager_Worker):
             file_paths = data["file_paths"]
             conf_thres = data["conf_thres"]
             save_dir = data["save_dir"]
+            model_name = data.get("model", "yolo11n")
 
             # dino 옵션
             run_dino = bool(data.get("run_dino", False))
@@ -2118,6 +2125,7 @@ class Manager_Analysis(Manager_Worker):
                 file_paths=file_paths,
                 save_dir=save_dir,
                 conf_thres=conf_thres,
+                model_name=model_name,
                 run_dino=run_dino,
                 dino_prompt=dino_prompt,
                 parent=self.main,
