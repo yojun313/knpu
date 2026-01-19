@@ -94,13 +94,17 @@ async def yolo_detect_route(
         return BadRequestException("option JSON 파싱 실패")
 
     pid = option_dict.get("pid")
-    media = option_dict.get("media", "image")  # image | video
+    media = option_dict.get("media", "image")
+    
+    # [추가] 모델명 추출 (기본값: yolo11n)
+    model_name = option_dict.get("model", "yolo11n") 
 
     if media == "video":
         zip_buffer = await yolo_detect_videos(
             files=files,
             conf_thres=float(conf_thres),
             pid=pid,
+            model_name=model_name,  # [추가] 인자 전달
         )
         out_name = "yolo_video_results.zip"
 
@@ -109,6 +113,7 @@ async def yolo_detect_route(
             files=files,
             conf_thres=float(conf_thres),
             pid=pid,
+            model_name=model_name,  # [추가] 인자 전달
         )
         out_name = "yolo_image_results.zip"
 
