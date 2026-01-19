@@ -194,7 +194,7 @@ def get_whisper_model(level: int):
 
     if key not in _whisper_models:
         _whisper_models[key] = WhisperModel(
-            os.path.join(MODEL_DIR, cfg["name"]),
+            os.path.join(MODEL_DIR, 'whisper', cfg["name"]),
             device="cuda",
             compute_type=cfg["compute"],
             local_files_only=True,
@@ -202,19 +202,35 @@ def get_whisper_model(level: int):
 
     return _whisper_models[key]
 
-def get_yolo_model():
-    global _yolo_model, _yolo_names
-
-    if _yolo_model is None:
-        _yolo_model = YOLO(os.path.join(MODEL_DIR, "yolo11n.pt"), verbose=False)
-        _yolo_names = _yolo_model.names
-
-    return _yolo_model, _yolo_names
 
 
 # ---- YOLO ----
-_yolo_model = None
-_yolo_names = None
+_yolo_models_cache = {}
+
+def get_yolo_model(model_name: str = "yolo11n"):
+    """
+    model_name 예시: 'yolo11n', 'yolo11s', 'yolo11m' 등
+    """
+    global _yolo_models_cache
+
+    if model_name not in _yolo_models_cache:
+        # 모델 파일 경로 구성 (확장자 .pt가 없는 경우 붙여줌)
+        if not model_name.endswith(".pt"):
+            filename = f"{model_name}.pt"
+        else:
+            filename = model_name
+            
+        model_path = os.path.join(MODEL_DIR, "yolo", filename)
+        
+        # 모델 로드 (처음 요청될 때만 메모리에 로드됨)
+        # 주의: 너무 큰 모델이나 여러 모델을 동시에 띄우면 메모리 부족이 발생할 수 있음
+        print(f"Loading YOLO Model: {model_path}")
+        model = YOLO(model_path, verbose=False)
+        
+        _yolo_models_cache[model_name] = model
+
+    model = _yolo_models_cache[model_name]
+    return model, model.names
 
 def transcribe_audio(
     audio_path: str,
@@ -294,17 +310,11 @@ async def yolo_detect_images(
     files: List[UploadFile],
     conf_thres: float = 0.25,
     pid=None,
+    model_name: str = "yolo11n",  # [추가] 파라미터 추가
 ) -> io.BytesIO:
-    """
-    여러 이미지를 받아 YOLO 객체검출 후
-    - bbox 그려진 이미지
-    - detections json
-    을 zip(BytesIO)로 묶어 반환
-    zip 내부:
-      images/{stem}.jpg
-      json/{stem}.json
-    """
-    model, names = get_yolo_model()
+    
+    # [수정] 모델 로드 시 이름 전달
+    model, names = get_yolo_model(model_name)
 
     # 파일 리스트 정리 (확장자 필터링)
     valid_exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
@@ -430,18 +440,13 @@ async def yolo_detect_videos(
     files: List[UploadFile],
     conf_thres: float = 0.25,
     pid=None,
+    model_name: str = "yolo11n",  # [추가] 파라미터 추가
 ) -> io.BytesIO:
-    """
-    여러 비디오를 받아 YOLO 객체검출 후
-    - bbox가 그려진 비디오(mp4)
-    - 프레임별 detections json
-    을 zip(BytesIO)로 묶어 반환
+    
+    # [수정] 모델 로드 시 이름 전달
+    model, names = get_yolo_model(model_name)
 
-    zip 내부:
-      videos/{stem}.mp4
-      json/{stem}.json
-    """
-    model, names = get_yolo_model()
+    # ... (나머지 로직 동일)
 
     valid_exts = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
     valid_files = []
