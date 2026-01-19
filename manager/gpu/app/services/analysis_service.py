@@ -162,7 +162,7 @@ WHISPER_MODEL_MAP = {
 }
 
 whisper_model = WhisperModel(
-    os.path.join(MODEL_DIR, "faster-whisper-large-v3"),
+    os.path.join(MODEL_DIR, "whisper", "faster-whisper-large-v3"),
     device="cuda",
     compute_type="float16",
     local_files_only=True,

@@ -2115,6 +2115,10 @@ class DetectOptionDialog(BaseDialog):
 
         # ---------- YOLO conf_thres ----------
         form = QFormLayout()
+        
+        self.model_combo = QComboBox()
+        self.model_combo.addItems(["yolo11n", "yolo11s", "yolo11m", "yolo11l", "yolo11x"])
+        form.addRow("Model", self.model_combo)
 
         self.conf_spin = QDoubleSpinBox()
         self.conf_spin.setRange(0.0, 1.0)
@@ -2163,15 +2167,18 @@ class DetectOptionDialog(BaseDialog):
         media = self.media_combo.currentText()
         can_use_dino = media in ("image", "video")
 
+        # 미디어 타입이 지원 안하면 체크박스 강제 해제
         if not can_use_dino and self.dino_check.isChecked():
             self.dino_check.setChecked(False)
 
-        can_edit = can_use_dino and self.dino_check.isChecked()
+        is_dino_active = can_use_dino and self.dino_check.isChecked()
 
         self.dino_check.setEnabled(can_use_dino)
-        self.dino_prompt.setEnabled(can_edit)
-        self.conf_spin.setEnabled(True)  
+        self.dino_prompt.setEnabled(is_dino_active)
+        self.model_combo.setEnabled(not is_dino_active)
 
+        self.conf_spin.setEnabled(True)
+        
     def select_files(self):
         media = self.media_combo.currentText()
 
@@ -2223,6 +2230,7 @@ class DetectOptionDialog(BaseDialog):
             "save_dir": self.save_dir,
             "run_dino": run_dino,
             "dino_prompt": (self.dino_prompt.toPlainText() or "").strip(),
+            "model": self.model_combo.currentText(),  # [추가] 선택된 모델명 저장
         }
 
         super().accept()
