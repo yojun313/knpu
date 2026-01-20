@@ -1,10 +1,14 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 def sendEmail(receiver, title, text):
     sender = "knpubigmac2024@gmail.com"
-    MailPassword = 'vygn nrmh erpf trji'
+    MailPassword = os.getenv('MAIL_PASSWORD')
 
     msg = MIMEMultipart()
     msg['Subject'] = title
