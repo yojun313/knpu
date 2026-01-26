@@ -27,13 +27,47 @@ from fastapi import UploadFile
 import tempfile
 from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
 from PIL import Image, ImageDraw
+import threading
+
+class ModelManager:
+    def __init__(self, timeout=900): # 15분 = 900초
+        self.timeout = timeout
+        self.timers = {}
+
+    def reset_timer(self, model_key, unload_func):
+        # 기존 타이머가 있다면 취소
+        if model_key in self.timers:
+            self.timers[model_key].cancel()
+        
+        # 새로운 타이머 설정
+        timer = threading.Timer(self.timeout, unload_func)
+        timer.start()
+        self.timers[model_key] = timer
+
+# 전역 관리자 인스턴스 생성
+manager = ModelManager(timeout=900)
 
 load_dotenv() 
 MODEL_DIR = os.getenv("MODEL_PATH")
 
-
-# ---- Hate Analysis ----
+# -------- Hate Analysis --------
 kor_unsmile_pipe = None
+def load_hate_model():
+    global kor_unsmile_pipe
+    
+    if kor_unsmile_pipe is None:
+        tokenizer = AutoTokenizer.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
+        kor_unsmile_model = AutoModelForSequenceClassification.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
+        kor_unsmile_pipe = TextClassificationPipeline(
+            model=kor_unsmile_model,
+            tokenizer=tokenizer,
+            function_to_apply="sigmoid",
+            top_k=None,
+            device=1 if torch.cuda.is_available() else -1,
+        )
+        
+    manager.reset_timer("hate", unload_hate_model)
+    return kor_unsmile_pipe
 
 def unload_hate_model():
     global kor_unsmile_pipe
@@ -57,7 +91,7 @@ def measure_hate(
 
     def batch_scores(texts: list[str]) -> list[dict[str, float]]:
         """문장 리스트 → [{label: prob}, ...] (둘째 자리 반올림)"""
-        pipe = get_hate_model()
+        pipe = load_hate_model()
         outs = pipe(
             texts,
             truncation=True,
@@ -83,7 +117,7 @@ def measure_hate(
 
     texts = data[text_col].fillna("").astype(str).tolist()
     total = len(texts)
-    pipe = get_hate_model()
+    pipe = load_hate_model()
     labels = list(pipe.model.config.id2label.values())
     
     send_message(pid, f"[혐오도 분석] '{text_col}' 처리 시작 (총 {total:,} rows)")
@@ -143,7 +177,7 @@ def measure_hate(
     return data
 
 
-# ---- Whisper ----
+# -------- Whisper --------
 _whisper_models = {}
 
 WHISPER_MODEL_MAP = {
@@ -161,28 +195,14 @@ WHISPER_MODEL_MAP = {
     },
 }
 
-whisper_model = WhisperModel(
-    os.path.join(MODEL_DIR, "whisper", "faster-whisper-large-v3"),
-    device="cuda",
-    compute_type="float16",
-    local_files_only=True,
-)
-
-def get_hate_model():
-    global kor_unsmile_pipe
-    
-    if kor_unsmile_pipe is None:
-        tokenizer = AutoTokenizer.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
-        kor_unsmile_model = AutoModelForSequenceClassification.from_pretrained(os.path.join(MODEL_DIR, "kor_unsmile"), local_files_only=True)
-        kor_unsmile_pipe = TextClassificationPipeline(
-            model=kor_unsmile_model,
-            tokenizer=tokenizer,
-            function_to_apply="sigmoid",
-            top_k=None,
-            device=1 if torch.cuda.is_available() else -1,
-        )
-
-    return kor_unsmile_pipe
+def unload_whisper_models():
+    global _whisper_models
+    if _whisper_models:
+        print("Unloading Whisper Models due to inactivity...")
+        _whisper_models.clear()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        gc.collect()
 
 def get_whisper_model(level: int):
     if level not in WHISPER_MODEL_MAP:
@@ -199,38 +219,9 @@ def get_whisper_model(level: int):
             compute_type=cfg["compute"],
             local_files_only=True,
         )
-
+        
+    manager.reset_timer("whisper", unload_whisper_models)
     return _whisper_models[key]
-
-
-
-# ---- YOLO ----
-_yolo_models_cache = {}
-
-def get_yolo_model(model_name: str = "yolo11n"):
-    """
-    model_name 예시: 'yolo11n', 'yolo11s', 'yolo11m' 등
-    """
-    global _yolo_models_cache
-
-    if model_name not in _yolo_models_cache:
-        # 모델 파일 경로 구성 (확장자 .pt가 없는 경우 붙여줌)
-        if not model_name.endswith(".pt"):
-            filename = f"{model_name}.pt"
-        else:
-            filename = model_name
-            
-        model_path = os.path.join(MODEL_DIR, "yolo", filename)
-        
-        # 모델 로드 (처음 요청될 때만 메모리에 로드됨)
-        # 주의: 너무 큰 모델이나 여러 모델을 동시에 띄우면 메모리 부족이 발생할 수 있음
-        print(f"Loading YOLO Model: {model_path}")
-        model = YOLO(model_path, verbose=False)
-        
-        _yolo_models_cache[model_name] = model
-
-    model = _yolo_models_cache[model_name]
-    return model, model.names
 
 def transcribe_audio(
     audio_path: str,
@@ -306,6 +297,45 @@ def transcribe_audio(
         ],
     }
 
+
+# -------- YOLO --------
+_yolo_models_cache = {}
+
+def unload_yolo_models():
+    global _yolo_models_cache
+    if _yolo_models_cache:
+        print("Unloading YOLO Models due to inactivity...")
+        _yolo_models_cache.clear()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        gc.collect()
+        
+def load_yolo_model(model_name: str = "yolo11n"):
+    """
+    model_name 예시: 'yolo11n', 'yolo11s', 'yolo11m' 등
+    """
+    global _yolo_models_cache
+
+    if model_name not in _yolo_models_cache:
+        # 모델 파일 경로 구성 (확장자 .pt가 없는 경우 붙여줌)
+        if not model_name.endswith(".pt"):
+            filename = f"{model_name}.pt"
+        else:
+            filename = model_name
+            
+        model_path = os.path.join(MODEL_DIR, "yolo", filename)
+        
+        # 모델 로드 (처음 요청될 때만 메모리에 로드됨)
+        # 주의: 너무 큰 모델이나 여러 모델을 동시에 띄우면 메모리 부족이 발생할 수 있음
+        print(f"Loading YOLO Model: {model_path}")
+        model = YOLO(model_path, verbose=False)
+        
+        _yolo_models_cache[model_name] = model
+
+    model = _yolo_models_cache[model_name]
+    manager.reset_timer("yolo", unload_yolo_models)
+    return model, model.names
+
 async def yolo_detect_images(
     files: List[UploadFile],
     conf_thres: float = 0.25,
@@ -314,7 +344,7 @@ async def yolo_detect_images(
 ) -> io.BytesIO:
     
     # [수정] 모델 로드 시 이름 전달
-    model, names = get_yolo_model(model_name)
+    model, names = load_yolo_model(model_name)
 
     # 파일 리스트 정리 (확장자 필터링)
     valid_exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
@@ -444,7 +474,7 @@ async def yolo_detect_videos(
 ) -> io.BytesIO:
     
     # [수정] 모델 로드 시 이름 전달
-    model, names = get_yolo_model(model_name)
+    model, names = load_yolo_model(model_name)
 
     # ... (나머지 로직 동일)
 
@@ -615,11 +645,21 @@ async def yolo_detect_videos(
     return zip_buffer
 
 
-# ---- Grounding Dino ----
+# -------- Grounding Dino --------
 _grounding_processor = None
 _grounding_model = None
 
-def get_grounding_dino_model():
+def unload_grounding_model():
+    global _grounding_processor, _grounding_model
+    if _grounding_model is not None:
+        print("Unloading Grounding DINO due to inactivity...")
+        _grounding_processor = None
+        _grounding_model = None
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        gc.collect()
+
+def load_grounding_dino_model():
     global _grounding_processor, _grounding_model
 
     if _grounding_processor is None or _grounding_model is None:
@@ -644,6 +684,7 @@ def get_grounding_dino_model():
 
         _grounding_model.eval()
 
+    manager.reset_timer("grounding", unload_grounding_model)
     return _grounding_processor, _grounding_model
 
 async def grounding_dino_detect_images(
@@ -661,7 +702,7 @@ async def grounding_dino_detect_images(
     if pid is not None:
         send_message(pid, "[GroundingDINO] 모델 로드 중")
 
-    processor, model = get_grounding_dino_model()
+    processor, model = load_grounding_dino_model()
     device = model.device
 
     # prompt 규칙 (중요)
@@ -770,7 +811,7 @@ async def grounding_dino_detect_videos(
     if pid is not None:
         send_message(pid, "[GroundingDINO] 모델 로드 중")
 
-    processor, model = get_grounding_dino_model()
+    processor, model = load_grounding_dino_model()
     device = model.device
 
     prompt = prompt.lower().strip()
