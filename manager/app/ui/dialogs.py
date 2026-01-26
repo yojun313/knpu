@@ -2117,7 +2117,7 @@ class DetectOptionDialog(BaseDialog):
         form = QFormLayout()
         
         self.model_combo = QComboBox()
-        self.model_combo.addItems(["yolo11n", "yolo11s", "yolo11m", "yolo11l", "yolo11x"])
+        self.model_combo.addItems(["yolo11n", "yolo11s", "yolo11m", "yolo11l", "yolo11x", "yolo11x_accident"])
         form.addRow("Model", self.model_combo)
 
         self.conf_spin = QDoubleSpinBox()
