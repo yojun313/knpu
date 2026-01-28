@@ -61,7 +61,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.listWidget.setCurrentRow(0)
                 if get_setting('BootTerminal') == 'on': openConsole("Boot Process")
                 self.startTime = datetime.now()
-                checkNetwork(self.splashDialog)
+                checkNetwork(self)
                 self.listWidget.currentRowChanged.connect(self.display)
                 self._resolve_app_paths()
 
