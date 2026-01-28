@@ -2073,7 +2073,7 @@ class YouTubeDownloadDialog(BaseDialog):
 
 
 class DetectOptionDialog(BaseDialog):
-    def __init__(self, parent=None, base_dir=""):
+    def __init__(self, parent=None, base_dir="", yolo_models=None):
         super().__init__(parent)
         self.setWindowTitle("영상/이미지 객체 검출 설정")
         self.resize(560, 420)  # 높이 늘림
@@ -2119,7 +2119,7 @@ class DetectOptionDialog(BaseDialog):
         form = QFormLayout()
         
         self.model_combo = QComboBox()
-        self.model_combo.addItems(["best", "yolo11n", "yolo11s", "yolo11m", "yolo11l", "yolo11x", "yolo11x_accident"])
+        self.model_combo.addItems(yolo_models)
         form.addRow("Model", self.model_combo)
 
         self.conf_spin = QDoubleSpinBox()
