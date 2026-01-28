@@ -5,7 +5,7 @@ from app.libs.jwt import verify_token
 
 router = APIRouter()
 
-LLM_BASE_URL = "http://localhost:9000"  
+LLM_BASE_URL = "http://localhost:9001"  
 
 @router.api_route(
     "/v1/{path:path}",
