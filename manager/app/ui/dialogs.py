@@ -2080,7 +2080,9 @@ class DetectOptionDialog(BaseDialog):
         self.data = None
 
         layout = QVBoxLayout(self)
-
+        
+        self.save_dir = parent.localDirectory
+        
         # ---------- media 선택 ----------
         media_layout = QHBoxLayout()
         media_layout.addWidget(QLabel("미디어 타입"))
@@ -2104,27 +2106,27 @@ class DetectOptionDialog(BaseDialog):
 
         # ---------- 저장 경로 ----------
         path_layout = QHBoxLayout()
-        self.path_label = QLabel("저장 경로: 선택되지 않음")
+        self.path_label = QLabel(f"저장 경로: {self.save_dir}")
         self.path_btn = QPushButton("경로 선택")
         path_layout.addWidget(self.path_label)
         path_layout.addWidget(self.path_btn)
         layout.addLayout(path_layout)
 
-        self.save_dir = ""
+        self.save_dir = self.save_dir
         self.path_btn.clicked.connect(self.select_path)
 
         # ---------- YOLO conf_thres ----------
         form = QFormLayout()
         
         self.model_combo = QComboBox()
-        self.model_combo.addItems(["yolo11n", "yolo11s", "yolo11m", "yolo11l", "yolo11x", "yolo11x_accident"])
+        self.model_combo.addItems(["best", "yolo11n", "yolo11s", "yolo11m", "yolo11l", "yolo11x", "yolo11x_accident"])
         form.addRow("Model", self.model_combo)
 
         self.conf_spin = QDoubleSpinBox()
         self.conf_spin.setRange(0.0, 1.0)
         self.conf_spin.setSingleStep(0.05)
         self.conf_spin.setDecimals(2)
-        self.conf_spin.setValue(0.25)
+        self.conf_spin.setValue(0.5)
 
         form.addRow("conf_thres", self.conf_spin)
 

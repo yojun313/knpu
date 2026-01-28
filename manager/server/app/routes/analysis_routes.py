@@ -121,6 +121,29 @@ async def youtube_download(option: str = Form(...)):
     option = json.loads(option)
     return await start_youtube_download(option)
 
+@router.get("/yolo/models")
+async def get_yolo_models_proxy():
+    """
+    GPU 서버로부터 사용 가능한 YOLO 모델 리스트를 가져와 반환하는 프록시 엔드포인트
+    """
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            # GPU 서버의 모델 리스트 엔드포인트 호출
+            response = await client.get(f"{GPU_SERVER_URL}/analysis/yolo/models")
+            
+            if response.status_code != 200:
+                return JSONResponse(
+                    status_code=response.status_code,
+                    content={"message": "GPU 서버에서 모델 리스트를 가져오지 못했습니다.", "detail": response.text}
+                )
+                
+            return JSONResponse(content=response.json())
+            
+        except Exception as e:
+            raise BadRequestException(
+                detail=f"GPU 서버 연결 실패: {type(e).__name__}: {e}"
+            )
+
 @router.post("/yolo")  
 async def yolo_proxy(
     option: str = Form("{}"),
