@@ -644,6 +644,21 @@ async def yolo_detect_videos(
 
     return zip_buffer
 
+def get_yolo_model_list() -> List[str]:
+    """
+    MODEL_PATH/yolo 디렉토리에 있는 .pt 파일 리스트를 반환합니다.
+    """
+    yolo_dir = os.path.join(MODEL_DIR, "yolo")
+    if not os.path.exists(yolo_dir):
+        return []
+    
+    # .pt 확장자를 가진 파일들을 찾아 확장자를 제외한 이름만 리스트로 반환
+    models = [
+        os.path.splitext(f)[0] 
+        for f in os.listdir(yolo_dir) 
+        if f.endswith(".pt")
+    ]
+    return sorted(models)
 
 # -------- Grounding Dino --------
 _grounding_processor = None

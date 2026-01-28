@@ -82,6 +82,20 @@ async def whisper_route(
     finally:
         os.remove(audio_path)
 
+@router.get("/yolo/models")
+async def get_yolo_models():
+    """
+    현재 서버에서 사용 가능한 YOLO 모델 리스트를 반환합니다.
+    """
+    try:
+        models = get_yolo_model_list()
+        return JSONResponse(content={"models": models})
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"message": f"모델 리스트를 가져오는 중 오류 발생: {str(e)}"}
+        )
+
 @router.post("/yolo")
 async def yolo_detect_route(
     files: List[UploadFile] = File(...),
