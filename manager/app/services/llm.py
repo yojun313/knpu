@@ -45,7 +45,7 @@ def generateLLM(query, model = 'ChatGPT'):
                 raise Exception("No model available on Server LLM")
 
             model_id = model_data[0]["id"]
-
+            print(model_id)
             payload = {
                 "model": model_id,
                 "messages": [

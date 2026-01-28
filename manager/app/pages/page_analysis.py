@@ -1951,6 +1951,20 @@ class Manager_Analysis(Manager_Worker):
         )
     
     def run_detection(self):
+
+        def fetch_yolo_models():
+            """서버로부터 .pt 모델 리스트를 가져옵니다."""
+            try:
+                # MANAGER_SERVER_API는 기존 코드에 정의된 서버 주소 변수입니다.
+                url = MANAGER_SERVER_API + "/analysis/yolo/models"
+                response = requests.get(url, headers=get_api_headers(), timeout=5)
+                if response.status_code == 200:
+                    return response.json().get("models", [])
+                return []
+            except Exception as e:
+                print(f"모델 리스트 로드 실패: {e}")
+                return []
+        
         class YoloWorker(BaseWorker):
             def __init__(
                 self,
@@ -2089,7 +2103,7 @@ class Manager_Analysis(Manager_Worker):
                 except Exception:
                     self.error.emit(traceback.format_exc())
         try:
-            dialog = DetectOptionDialog(self.main, base_dir=self.main.localDirectory)
+            dialog = DetectOptionDialog(self.main, base_dir=self.main.localDirectory, yolo_models=fetch_yolo_models())
             if dialog.exec() != QDialog.Accepted:
                 return
 
