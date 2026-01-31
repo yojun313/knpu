@@ -88,12 +88,12 @@ class DataProcess:
         for group_name, group_data in data_group:
             info[str(group_name)] = len(group_data)
             safe_group_name = re.sub(r'[\/\\~\s:|]', '_', str(group_name))
-            group_data.to_csv(f"{data_path}/{folder_name}/{tablename+'_'+str(safe_group_name)}.csv",
+            group_data.to_csv(safe_path(f"{data_path}/{folder_name}/{tablename+'_'+str(safe_group_name)}.csv"),
                               index=False, encoding='utf-8-sig', header=True)
 
         # 정보 파일 생성
         info_df = pd.DataFrame(list(info.items()), columns=[info_label, 'Count'])
-        info_df.to_csv(f"{data_path}/{folder_name}/{folder_name} Count.csv", index=False, encoding='utf-8-sig', header=True)
+        info_df.to_csv(safe_path(f"{data_path}/{folder_name}/{folder_name} Count.csv"), index=False, encoding='utf-8-sig', header=True)
 
         info_df.set_index(info_label, inplace=True)
         keys = list(info_df.index)
@@ -197,16 +197,15 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(
-            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(
-            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
-        day_analysis.to_csv(os.path.join(
-            csv_output_dir, "day_analysis.csv"), encoding='utf-8-sig', index=False)
-        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig',
+        basic_stats.to_csv(safe_path(os.path.join(csv_output_dir, "basic_stats.csv")), encoding='utf-8-sig')
+        time_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "time_analysis.csv")), encoding='utf-8-sig', index=False)
+        day_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "day_analysis.csv")), encoding='utf-8-sig', index=False)
+        article_type_analysis.to_csv(safe_path(os.path.join(csv_output_dir, "article_type_analysis.csv")), encoding='utf-8-sig',
                                      index=False)
-        press_analysis.to_csv(os.path.join(
-            csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig', index=False)
+        press_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "press_analysis.csv")), encoding='utf-8-sig', index=False)
         # correlation_matrix.to_csv(os.path.join(output_dir, "correlation_matrix.csv"), encoding='utf-8-sig', index=False)
 
         # For time_analysis graph
@@ -379,17 +378,17 @@ class DataProcess:
         correlation_matrix = data[numeric_columns].corr()
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(
-            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(
-            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
-        day_analysis.to_csv(os.path.join(
-            csv_output_dir, "day_analysis.csv"), encoding='utf-8-sig', index=False)
-        article_type_analysis.to_csv(os.path.join(csv_output_dir, "article_type_analysis.csv"), encoding='utf-8-sig',
+        basic_stats.to_csv(safe_path(os.path.join(
+            csv_output_dir, "basic_stats.csv")), encoding='utf-8-sig')
+        time_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "time_analysis.csv")), encoding='utf-8-sig', index=False)
+        day_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "day_analysis.csv")), encoding='utf-8-sig', index=False)
+        article_type_analysis.to_csv(safe_path(os.path.join(csv_output_dir, "article_type_analysis.csv")), encoding='utf-8-sig',
                                      index=False)
-        press_analysis.to_csv(os.path.join(
-            csv_output_dir, "press_analysis.csv"), encoding='utf-8-sig', index=False)
-        correlation_matrix.to_csv(os.path.join(csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig',
+        press_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "press_analysis.csv")), encoding='utf-8-sig', index=False)
+        correlation_matrix.to_csv(safe_path(os.path.join(csv_output_dir, "correlation_matrix.csv")), encoding='utf-8-sig',
                                   index=False)
 
         # 시각화 그래프를 이미지 파일로 저장
@@ -478,7 +477,7 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "gender_reply_count.png"))
         plt.close()
-        gender_reply_df.to_csv(os.path.join(csv_output_dir, "gender_reply_count.csv"), index=False,
+        gender_reply_df.to_csv(safe_path(os.path.join(csv_output_dir, "gender_reply_count.csv")), index=False,
                                encoding='utf-8-sig')
 
         # 6. 연령대별 댓글 수 분석
@@ -497,7 +496,7 @@ class DataProcess:
         plt.savefig(os.path.join(graph_output_dir,
                     "age_group_reply_count.png"))
         plt.close()
-        age_group_reply_df.to_csv(os.path.join(csv_output_dir, "age_group_reply_count.csv"), index=False,
+        age_group_reply_df.to_csv(safe_path(os.path.join(csv_output_dir, "age_group_reply_count.csv")), index=False,
                                   encoding='utf-8-sig')
 
         # 그래프 설명 작성 (한국어)
@@ -608,18 +607,18 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(
-            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(
-            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
-        month_analysis.to_csv(os.path.join(
-            csv_output_dir, "month_analysis.csv"), encoding='utf-8-sig', index=False)
-        sentiment_counts.to_csv(os.path.join(
-            csv_output_dir, "sentiment_counts.csv"), encoding='utf-8-sig')
-        correlation_matrix.to_csv(os.path.join(
-            csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
-        writer_reply_count.to_csv(os.path.join(
-            csv_output_dir, "writer_reply_count.csv"), encoding='utf-8-sig')
+        basic_stats.to_csv(safe_path(os.path.join(
+            csv_output_dir, "basic_stats.csv")), encoding='utf-8-sig')
+        time_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "time_analysis.csv")), encoding='utf-8-sig')
+        month_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "month_analysis.csv")), encoding='utf-8-sig', index=False)
+        sentiment_counts.to_csv(safe_path(os.path.join(
+            csv_output_dir, "sentiment_counts.csv")), encoding='utf-8-sig')
+        correlation_matrix.to_csv(safe_path(os.path.join(
+            csv_output_dir, "correlation_matrix.csv")), encoding='utf-8-sig')
+        writer_reply_count.to_csv(safe_path(os.path.join(
+            csv_output_dir, "writer_reply_count.csv")), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -633,7 +632,7 @@ class DataProcess:
         plt.ylabel('Number of Replies')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "daily_reply_count.png"))
+        plt.savefig(safe_path(os.path.join(graph_output_dir, "daily_reply_count.png")))
         plt.close()
 
         # For month_analysis graph
@@ -649,7 +648,7 @@ class DataProcess:
         plt.ylabel('Count')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "monthly_reply_count.png"))
+        plt.savefig(safe_path(os.path.join(graph_output_dir, "monthly_reply_count.png")))
         plt.close()
 
         # 2. 댓글 감성 분석 결과 분포
@@ -660,8 +659,8 @@ class DataProcess:
         plt.xlabel('Sentiment')
         plt.ylabel('Count')
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir,
-                    "reply_sentiment_distribution.png"))
+        plt.savefig(safe_path(os.path.join(graph_output_dir,
+                    "reply_sentiment_distribution.png")))
         plt.close()
 
         # 4. 상관관계 행렬 히트맵
@@ -671,7 +670,7 @@ class DataProcess:
                     cmap='coolwarm', vmin=-1, vmax=1)
         plt.title('Correlation Matrix of Key Metrics')
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "correlation_matrix.png"))
+        plt.savefig(safe_path(os.path.join(graph_output_dir, "correlation_matrix.png")))
         plt.close()
 
         # 5. 작성자별 댓글 수 분포 (상위 10명)
@@ -685,7 +684,7 @@ class DataProcess:
         plt.ylabel('Number of Replies')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "writer_reply_count.png"))
+        plt.savefig(safe_path(os.path.join(graph_output_dir, "writer_reply_count.png")))
         plt.close()
 
         top_n = 10
@@ -699,8 +698,7 @@ class DataProcess:
             writer_data = data[data['Reply Writer'] == writer]
             writer_csv_path = os.path.join(
                 filtered_reply_dir, f"{index+1}_{writer}_replies.csv").replace('*', '')
-            writer_data.to_csv(
-                writer_csv_path, encoding='utf-8-sig', index=False)
+            writer_data.to_csv(safe_path(writer_csv_path), encoding='utf-8-sig', index=False)
 
         # 그래프 설명 작성 (한국어)
         description_text = """
@@ -741,7 +739,7 @@ class DataProcess:
             }).sort_values(by='TotalUserComment', ascending=False)
 
             # 결과 저장
-            user_activity.to_csv(os.path.join(csv_output_dir, "user_activity.csv"), encoding='utf-8-sig')
+            user_activity.to_csv(safe_path(os.path.join(csv_output_dir, "user_activity.csv")), encoding='utf-8-sig')
 
             # 2. Top 10 사용자 그래프 (댓글 수, 대댓글 수, 좋아요 수)
             top_user_activity = user_activity.head(10)
@@ -819,12 +817,12 @@ class DataProcess:
             plt.savefig(os.path.join(graph_output_dir, "user_activity_correlation.png"))
             plt.close()
 
-            corr_user.to_csv(os.path.join(csv_output_dir, "user_activity_correlation.csv"), encoding='utf-8-sig')
+            corr_user.to_csv(safe_path(os.path.join(csv_output_dir, "user_activity_correlation.csv")), encoding='utf-8-sig')
 
             # ------------------- 5. 활동 상위 10% 사용자 파악 -------------------
             top_10_percent_threshold = user_activity['TotalUserComment'].quantile(0.9)
             top_active_users = user_activity[user_activity['TotalUserComment'] >= top_10_percent_threshold]
-            top_active_users.to_csv(os.path.join(csv_output_dir, "top_10_percent_users.csv"), encoding='utf-8-sig')
+            top_active_users.to_csv(safe_path(os.path.join(csv_output_dir, "top_10_percent_users.csv")), encoding='utf-8-sig')
 
             # ------------------- 6. 사용자 활동 지수 (가중치 지표) -------------------
             # 예: 댓글 1점, 대댓글 1.5점, 좋아요 0.5점
@@ -847,7 +845,7 @@ class DataProcess:
             plt.savefig(os.path.join(graph_output_dir, "top_users_activity_score.png"))
             plt.close()
 
-            user_activity_sorted.to_csv(os.path.join(csv_output_dir, "user_activity_with_score.csv"), encoding='utf-8-sig')
+            user_activity_sorted.to_csv(safe_path(os.path.join(csv_output_dir, "user_activity_with_score.csv")), encoding='utf-8-sig')
 
             # 설명 텍스트에 추가
             description_text += """
@@ -967,18 +965,18 @@ class DataProcess:
 
         # 결과를 CSV로 저장
         basic_stats = data.describe(include='all')
-        basic_stats.to_csv(os.path.join(
-            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(
-            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig', index=False)
-        month_analysis.to_csv(os.path.join(
-            csv_output_dir, "month_analysis.csv"), encoding='utf-8-sig', index=False)
-        sentiment_counts.to_csv(os.path.join(
-            csv_output_dir, "sentiment_counts.csv"), encoding='utf-8-sig')
-        correlation_matrix.to_csv(os.path.join(
-            csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
-        writer_reply_count.to_csv(os.path.join(
-            csv_output_dir, "writer_rereply_count.csv"), encoding='utf-8-sig')
+        basic_stats.to_csv(safe_path(os.path.join(
+            csv_output_dir, "basic_stats.csv")), encoding='utf-8-sig')
+        time_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "time_analysis.csv")), encoding='utf-8-sig', index=False)
+        month_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "month_analysis.csv")), encoding='utf-8-sig', index=False)
+        sentiment_counts.to_csv(safe_path(os.path.join(
+            csv_output_dir, "sentiment_counts.csv")), encoding='utf-8-sig')
+        correlation_matrix.to_csv(safe_path(os.path.join(
+            csv_output_dir, "correlation_matrix.csv")), encoding='utf-8-sig')
+        writer_reply_count.to_csv(safe_path(os.path.join(
+            csv_output_dir, "writer_rereply_count.csv")), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -990,7 +988,7 @@ class DataProcess:
         plt.ylabel('Number of Rereplies')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "daily_rereply_count.png"))
+        plt.savefig(safe_path(os.path.join(graph_output_dir, "daily_rereply_count.png")))
         plt.close()
 
         # For month_analysis graph
@@ -1139,17 +1137,16 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        basic_stats.to_csv(os.path.join(
-            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        cafe_analysis.to_csv(os.path.join(
-            csv_output_dir, "cafe_analysis.csv"), encoding='utf-8-sig')
-        writer_analysis.to_csv(os.path.join(
-            csv_output_dir, "writer_analysis.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(
-            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
-        correlation_matrix.to_csv(os.path.join(
-            csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
-
+        basic_stats.to_csv(safe_path(os.path.join(
+            csv_output_dir, "basic_stats.csv")), encoding='utf-8-sig')
+        cafe_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "cafe_analysis.csv")), encoding='utf-8-sig')
+        writer_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "writer_analysis.csv")), encoding='utf-8-sig')
+        time_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "time_analysis.csv")), encoding='utf-8-sig')
+        correlation_matrix.to_csv(safe_path(os.path.join(
+            csv_output_dir, "correlation_matrix.csv")), encoding='utf-8-sig')
         # 시각화 그래프를 이미지 파일로 저장
 
         # 1. 카페별 게시글 수 분포
@@ -1161,7 +1158,7 @@ class DataProcess:
         plt.ylabel('Number of Articles')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "cafe_article_count.png"))
+        plt.savefig(safe_path(os.path.join(graph_output_dir, "cafe_article_count.png")))
         plt.close()
 
         # 2. 시간별 게시글 수 추세
@@ -1174,8 +1171,8 @@ class DataProcess:
         plt.ylabel('Number of Articles')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir,
-                    "monthly_article_count.png"))
+        plt.savefig(safe_path(os.path.join(graph_output_dir,
+                    "monthly_article_count.png")))
         plt.close()
 
         # 4. 작성자별 게시글 수 분포 (상위 10명)
@@ -1255,10 +1252,10 @@ class DataProcess:
         os.makedirs(graph_output_dir, exist_ok=True)
 
         # 결과를 CSV로 저장
-        writer_analysis.to_csv(os.path.join(
-            csv_output_dir, "writer_analysis.csv"), encoding='utf-8-sig')
-        time_analysis.to_csv(os.path.join(
-            csv_output_dir, "time_analysis.csv"), encoding='utf-8-sig')
+        writer_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "writer_analysis.csv")), encoding='utf-8-sig')
+        time_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "time_analysis.csv")), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -1271,7 +1268,7 @@ class DataProcess:
         plt.ylabel('Number of Replies')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "writer_reply_count.png"))
+        plt.savefig(safe_path(os.path.join(graph_output_dir, "writer_reply_count.png")))
         plt.close()
 
         # 2. 시간별 댓글 수 추세
@@ -1284,7 +1281,7 @@ class DataProcess:
         plt.ylabel('Number of Replies')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir, "monthly_reply_count.png"))
+        plt.savefig(safe_path(os.path.join(graph_output_dir, "monthly_reply_count.png")))
         plt.close()
 
         # 그래프 설명 작성 (한국어)
@@ -1446,22 +1443,22 @@ class DataProcess:
         # --------------------------------------------------------------------------------
         # 11) 분석 결과 CSV 저장
         # --------------------------------------------------------------------------------
-        basic_stats.to_csv(os.path.join(
-            csv_output_dir, "basic_stats.csv"), encoding='utf-8-sig')
-        monthly_data.to_csv(os.path.join(
-            csv_output_dir, "monthly_analysis.csv"), encoding='utf-8-sig', index=False)
-        daily_data.to_csv(os.path.join(
-            csv_output_dir, "daily_analysis.csv"), encoding='utf-8-sig', index=False)
-        weekly_data.to_csv(os.path.join(
-            csv_output_dir, "weekly_analysis.csv"), encoding='utf-8-sig', index=False)
-        dow_analysis.to_csv(os.path.join(
-            csv_output_dir, "day_of_week_analysis.csv"), encoding='utf-8-sig', index=False)
-        channel_analysis.to_csv(os.path.join(
-            csv_output_dir, "channel_analysis.csv"), encoding='utf-8-sig', index=False)
-        top_10_videos.to_csv(os.path.join(
-            csv_output_dir, "top_10_videos.csv"), encoding='utf-8-sig', index=False)
-        correlation_matrix.to_csv(os.path.join(
-            csv_output_dir, "correlation_matrix.csv"), encoding='utf-8-sig')
+        basic_stats.to_csv(safe_path(os.path.join(
+            csv_output_dir, "basic_stats.csv")), encoding='utf-8-sig')
+        monthly_data.to_csv(safe_path(os.path.join(
+            csv_output_dir, "monthly_analysis.csv")), encoding='utf-8-sig', index=False)
+        daily_data.to_csv(safe_path(os.path.join(
+            csv_output_dir, "daily_analysis.csv")), encoding='utf-8-sig', index=False)
+        weekly_data.to_csv(safe_path(os.path.join(
+            csv_output_dir, "weekly_analysis.csv")), encoding='utf-8-sig', index=False)
+        dow_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "day_of_week_analysis.csv")), encoding='utf-8-sig', index=False)
+        channel_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "channel_analysis.csv")), encoding='utf-8-sig', index=False)
+        top_10_videos.to_csv(safe_path(os.path.join(
+            csv_output_dir, "top_10_videos.csv")), encoding='utf-8-sig', index=False)
+        correlation_matrix.to_csv(safe_path(os.path.join(
+            csv_output_dir, "correlation_matrix.csv")), encoding='utf-8-sig')
 
         # --------------------------------------------------------------------------------
         # 12) 시각화
@@ -1772,28 +1769,28 @@ class DataProcess:
         correlation_matrix = valid_data[numeric_cols].corr()
 
         # 10) CSV 저장
-        basic_stats.to_csv(os.path.join(
-            csv_output_dir, "basic_stats.csv"), encoding="utf-8-sig")
-        daily_data.to_csv(os.path.join(
-            csv_output_dir, "daily_analysis.csv"), encoding="utf-8-sig", index=False)
-        monthly_data.to_csv(os.path.join(
-            csv_output_dir, "monthly_analysis.csv"), encoding="utf-8-sig", index=False)
-        dow_data.to_csv(os.path.join(
-            csv_output_dir, "day_of_week_analysis.csv"), encoding="utf-8-sig", index=False)
-        article_analysis.to_csv(os.path.join(
-            csv_output_dir, "article_analysis.csv"), encoding="utf-8-sig", index=False)
-        day_post_analysis.to_csv(os.path.join(csv_output_dir, "article_day_analysis.csv"), encoding="utf-8-sig",
+        basic_stats.to_csv(safe_path(os.path.join(
+            csv_output_dir, "basic_stats.csv")), encoding="utf-8-sig")
+        daily_data.to_csv(safe_path(os.path.join(
+            csv_output_dir, "daily_analysis.csv")), encoding="utf-8-sig", index=False)
+        monthly_data.to_csv(safe_path(os.path.join(
+            csv_output_dir, "monthly_analysis.csv")), encoding="utf-8-sig", index=False)
+        dow_data.to_csv(safe_path(os.path.join(
+            csv_output_dir, "day_of_week_analysis.csv")), encoding="utf-8-sig", index=False)
+        article_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "article_analysis.csv")), encoding="utf-8-sig", index=False)
+        day_post_analysis.to_csv(safe_path(os.path.join(csv_output_dir, "article_day_analysis.csv")), encoding="utf-8-sig",
                                  index=False)
-        writer_analysis.to_csv(os.path.join(
-            csv_output_dir, "writer_analysis.csv"), encoding="utf-8-sig", index=False)
-        top_10_writers.to_csv(os.path.join(
-            csv_output_dir, "top_10_writers.csv"), encoding="utf-8-sig", index=False)
-        top_10_articles.to_csv(os.path.join(
-            csv_output_dir, "top_10_articles.csv"), encoding="utf-8-sig", index=False)
-        top_10_liked_replies.to_csv(os.path.join(csv_output_dir, "top_10_liked_replies.csv"), encoding="utf-8-sig",
+        writer_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "writer_analysis.csv")), encoding="utf-8-sig", index=False)
+        top_10_writers.to_csv(safe_path(os.path.join(
+            csv_output_dir, "top_10_writers.csv")), encoding="utf-8-sig", index=False)
+        top_10_articles.to_csv(safe_path(os.path.join(
+            csv_output_dir, "top_10_articles.csv")), encoding="utf-8-sig", index=False)
+        top_10_liked_replies.to_csv(safe_path(os.path.join(csv_output_dir, "top_10_liked_replies.csv")), encoding="utf-8-sig",
                                     index=False)
-        correlation_matrix.to_csv(os.path.join(
-            csv_output_dir, "correlation_matrix.csv"), encoding="utf-8-sig")
+        correlation_matrix.to_csv(safe_path(os.path.join(
+            csv_output_dir, "correlation_matrix.csv")), encoding="utf-8-sig")
 
         # 11) 시각화
         #     - calculate_figsize(len(x)) 함수가 있다고 가정. (없으면 (10,6) 등 직접 입력)
@@ -2080,28 +2077,28 @@ class DataProcess:
         correlation_matrix = valid_data[numeric_cols].corr()
 
         # 10) CSV 저장
-        basic_stats.to_csv(os.path.join(
-            csv_output_dir, "basic_stats.csv"), encoding="utf-8-sig")
-        daily_data.to_csv(os.path.join(
-            csv_output_dir, "daily_analysis.csv"), encoding="utf-8-sig", index=False)
-        monthly_data.to_csv(os.path.join(
-            csv_output_dir, "monthly_analysis.csv"), encoding="utf-8-sig", index=False)
-        dow_data.to_csv(os.path.join(
-            csv_output_dir, "day_of_week_analysis.csv"), encoding="utf-8-sig", index=False)
-        article_analysis.to_csv(os.path.join(
-            csv_output_dir, "article_analysis.csv"), encoding="utf-8-sig", index=False)
-        day_post_analysis.to_csv(os.path.join(csv_output_dir, "article_day_analysis.csv"), encoding="utf-8-sig",
+        basic_stats.to_csv(safe_path(os.path.join(
+            csv_output_dir, "basic_stats.csv")), encoding="utf-8-sig")
+        daily_data.to_csv(safe_path(os.path.join(
+            csv_output_dir, "daily_analysis.csv")), encoding="utf-8-sig", index=False)
+        monthly_data.to_csv(safe_path(os.path.join(
+            csv_output_dir, "monthly_analysis.csv")), encoding="utf-8-sig", index=False)
+        dow_data.to_csv(safe_path(os.path.join(
+            csv_output_dir, "day_of_week_analysis.csv")), encoding="utf-8-sig", index=False)
+        article_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "article_analysis.csv")), encoding="utf-8-sig", index=False)
+        day_post_analysis.to_csv(safe_path(os.path.join(csv_output_dir, "article_day_analysis.csv")), encoding="utf-8-sig",
                                  index=False)
-        writer_analysis.to_csv(os.path.join(
-            csv_output_dir, "writer_analysis.csv"), encoding="utf-8-sig", index=False)
-        top_10_writers.to_csv(os.path.join(
-            csv_output_dir, "top_10_writers.csv"), encoding="utf-8-sig", index=False)
-        top_10_articles.to_csv(os.path.join(
-            csv_output_dir, "top_10_articles.csv"), encoding="utf-8-sig", index=False)
-        top_10_liked_rereplies.to_csv(os.path.join(csv_output_dir, "top_10_liked_rereplies.csv"), encoding="utf-8-sig",
+        writer_analysis.to_csv(safe_path(os.path.join(
+            csv_output_dir, "writer_analysis.csv")), encoding="utf-8-sig", index=False)
+        top_10_writers.to_csv(safe_path(os.path.join(
+            csv_output_dir, "top_10_writers.csv")), encoding="utf-8-sig", index=False)
+        top_10_articles.to_csv(safe_path(os.path.join(
+            csv_output_dir, "top_10_articles.csv")), encoding="utf-8-sig", index=False)
+        top_10_liked_rereplies.to_csv(safe_path(os.path.join(csv_output_dir, "top_10_liked_rereplies.csv")), encoding="utf-8-sig",
                                       index=False)
-        correlation_matrix.to_csv(os.path.join(
-            csv_output_dir, "correlation_matrix.csv"), encoding="utf-8-sig")
+        correlation_matrix.to_csv(safe_path(os.path.join(
+            csv_output_dir, "correlation_matrix.csv")), encoding="utf-8-sig")
 
         # 11) 시각화
         #     - calculate_figsize(len(x)) 함수가 있다고 가정. (없으면 (10,6) 등 직접 입력)
@@ -2496,7 +2493,7 @@ class DataProcess:
         # 3) 기본 통계
         # ─────────────────────────────────────────────
         basic_stats = data[target_cols].describe()
-        basic_stats.to_csv(os.path.join(csv_dir, "basic_stats.csv"), encoding="utf-8-sig")
+        basic_stats.to_csv(safe_path(os.path.join(csv_dir, "basic_stats.csv")), encoding="utf-8-sig")
 
         # ─────────────────────────────────────────────
         # 4) 기간별 평균 & 7-일 Rolling
@@ -2506,7 +2503,7 @@ class DataProcess:
                 .mean().reset_index()
         )
         monthly[date_col] = monthly[date_col].dt.to_timestamp()
-        monthly.to_csv(os.path.join(csv_dir, "monthly_mean.csv"),
+        monthly.to_csv(safe_path(os.path.join(csv_dir, "monthly_mean.csv")),
                     encoding="utf-8-sig", index=False)
 
         daily = (
@@ -2514,7 +2511,7 @@ class DataProcess:
                 .mean().reset_index()
         )
         daily[date_col] = daily[date_col].dt.to_timestamp()
-        daily.to_csv(os.path.join(csv_dir, "daily_mean.csv"),
+        daily.to_csv(safe_path(os.path.join(csv_dir, "daily_mean.csv")),
                     encoding="utf-8-sig", index=False)
 
         # 7-일 이동평균(트렌드 부드럽게 보기용)
@@ -2524,7 +2521,7 @@ class DataProcess:
                 .rolling("7D").mean()
                 .reset_index()
         )
-        rolling7.to_csv(os.path.join(csv_dir, "rolling7_mean.csv"),
+        rolling7.to_csv(safe_path(os.path.join(csv_dir, "rolling7_mean.csv")),
                         encoding="utf-8-sig", index=False)
 
         # ─────────────────────────────────────────────
@@ -2535,14 +2532,14 @@ class DataProcess:
             daily.sort_values(target_cols[0], ascending=False)
                 .head(topN)
         )
-        top_days.to_csv(os.path.join(csv_dir, "top10_days.csv"),
+        top_days.to_csv(safe_path(os.path.join(csv_dir, "top10_days.csv")),
                         encoding="utf-8-sig", index=False)
 
         top_months = (
             monthly.sort_values(target_cols[0], ascending=False)
                 .head(topN)
         )
-        top_months.to_csv(os.path.join(csv_dir, "top10_months.csv"),
+        top_months.to_csv(safe_path(os.path.join(csv_dir, "top10_months.csv")),
                         encoding="utf-8-sig", index=False)
 
         # ─────────────────────────────────────────────
