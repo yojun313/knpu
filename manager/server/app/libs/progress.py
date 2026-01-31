@@ -28,7 +28,6 @@ def send_message(process_id: str, text: str) -> None:
         "text": text
     }
     resp = requests.post(f"{PROGRESS_SERVER_URL}/notify/{process_id}", json=payload)
-    resp.raise_for_status()
 
 def send_progress(
     process_id: str,
