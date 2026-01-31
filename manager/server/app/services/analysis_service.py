@@ -27,6 +27,7 @@ import httpx
 import json
 from urllib.parse import urlparse, parse_qs, urlunparse
 import unicodedata
+import uuid
 
 GPU_SERVER_URL = os.getenv("GPU_SERVER_URL")
 
@@ -186,281 +187,303 @@ async def start_youtube_download(option: dict):
       "save_whisper": true,     # true면 whisper 결과(txt)도 저장
     }
     """
+    try:
+        pid: str = option.get("pid", str(uuid.uuid4()))
+        raw_urls = option.get("urls", [])
+        fmt: Literal["mp3", "mp4"] = option.get("format", "mp3")
+        save_whisper: bool = bool(option.get("save_whisper", False))
 
-    pid: str = option["pid"]
-    raw_urls = option.get("urls", [])
-    fmt: Literal["mp3", "mp4"] = option.get("format", "mp3")
-    save_whisper: bool = bool(option.get("save_whisper", False))
-
-    urls = []
-    for url in raw_urls:
-        parsed_url = urlparse(url)
-        if "youtube.com" in parsed_url.netloc:
-            query_params = parse_qs(parsed_url.query)
-            video_id = query_params.get("v")
-            if video_id:
-                new_query = f"v={video_id[0]}"
-                clean_url = urlunparse(parsed_url._replace(query=new_query, fragment=""))
+        urls = []
+        for url in raw_urls:
+            parsed_url = urlparse(url)
+            if "youtube.com" in parsed_url.netloc:
+                query_params = parse_qs(parsed_url.query)
+                video_id = query_params.get("v")
+                if video_id:
+                    new_query = f"v={video_id[0]}"
+                    clean_url = urlunparse(parsed_url._replace(query=new_query, fragment=""))
+                    urls.append(clean_url)
+                else:
+                    urls.append(url)
+            elif "youtu.be" in parsed_url.netloc:
+                clean_url = urlunparse(parsed_url._replace(query="", fragment=""))
                 urls.append(clean_url)
             else:
                 urls.append(url)
-        elif "youtu.be" in parsed_url.netloc:
-            clean_url = urlunparse(parsed_url._replace(query="", fragment=""))
-            urls.append(clean_url)
-        else:
-            urls.append(url)
 
-    if not urls:
-        return JSONResponse(status_code=400, content={"error": "urls가 비어있습니다"})
-    
-    if not urls:
-        return JSONResponse(status_code=400, content={"error": "urls가 비어있습니다"})
-
-    # ───────────────────────
-    # 출력 디렉토리 준비
-    # ───────────────────────
-    base_temp = os.path.join(os.path.dirname(__file__), "..", "temp")
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_dir = os.path.join(base_temp, f"youtube_{pid}_{ts}")
-    os.makedirs(out_dir, exist_ok=True)
-
-    outtmpl = os.path.join(out_dir, "%(title).200s.%(ext)s")
-
-    # ───────────────────────
-    # 유틸 함수들
-    # ───────────────────────
-    def cleanup_folder_and_zip(folder_path: str, zip_path: str):
-        shutil.rmtree(folder_path, ignore_errors=True)
-        try:
-            os.remove(zip_path)
-        except OSError:
-            pass
-    
-    def make_progress_hook(pid: str, index: int, total: int):
-        last_sent = {"percent": -1}
-        active_filename = {"name": None}
-
-        def hook(d):
-            status = d.get("status")
-
-            if status == "downloading":
-                filename = d.get("filename")
-
-                # 첫 다운로드 스트림만 고정
-                if active_filename["name"] is None:
-                    active_filename["name"] = filename
-
-                if filename != active_filename["name"]:
-                    return
-
-                total_bytes = d.get("total_bytes") or d.get("total_bytes_estimate")
-                if not total_bytes:
-                    return
-
-                percent = int(d.get("downloaded_bytes", 0) * 100 / total_bytes)
-
-                if percent != last_sent["percent"]:
-                    last_sent["percent"] = percent
-                    send_message(
-                        pid,
-                        f"[{index}/{total}] 다운로드 중: {percent}% "
-                        f"({d.get('_speed_str','')}, ETA {d.get('_eta_str','')})"
-                    )
-
-            elif status == "finished":
-                # finished도 동일한 filename에 대해서만
-                if d.get("filename") == active_filename["name"]:
-                    send_message(
-                        pid,
-                        f"[{index}/{total}] 다운로드 완료, 후처리 중..."
-                    )
-
-        return hook
-
-    def safe_filename(name: str) -> str:
-        # 유니코드 정규화 (Windows/macOS 호환)
-        name = unicodedata.normalize("NFC", name)
-
-        # emoji 제거 (non-BMP)
-        name = re.sub(r"[\U00010000-\U0010ffff]", "", name)
-
-        # Windows 금지 문자 제거
-        name = re.sub(r'[<>:"/\\|?*]', "", name)
-
-        # 공백 정리
-        name = re.sub(r"\s+", " ", name).strip()
-
-        return name
-    
-    def _ytdlp_opts(format_: str, pid: str, index: int, total: int) -> dict:
-        opts = {
-            "outtmpl": outtmpl,
-            "quiet": True,  
-            "no_warnings": True,
-            "progress_hooks": [make_progress_hook(pid, index, total)],
-            # "extractor_args": {
-            #     "youtube": {
-            #         "player_client": ["android", "web"],
-            #         "skip": ["dash", "hls"]
-            #     }
-            # },
-            # "nocheckcertificate": True,
-        }
-
-        if format_ == "mp3":
-            opts.update({
-                "format": "bestaudio/best",
-                "keepvideo": False,   
-                "postprocessors": [
-                    {
-                        "key": "FFmpegExtractAudio",
-                        "preferredcodec": "mp3",
-                        "preferredquality": "192",
-                    }
-                ],
-            })
-        else:
-            opts.update({
-                "format": "bestvideo+bestaudio/best",
-                "merge_output_format": "mp4",
-            })
+        if not urls:
+            return JSONResponse(status_code=400, content={"error": "urls가 비어있습니다"})
         
-        return opts
+        if not urls:
+            return JSONResponse(status_code=400, content={"error": "urls가 비어있습니다"})
 
-    def _download_one(url: str, format_: str, pid: str, index: int, total: int) -> str:
-        with YoutubeDL(_ytdlp_opts(format_, pid, index, total)) as ydl:
-            info = ydl.extract_info(url, download=True)
+        # ───────────────────────
+        # 출력 디렉토리 준비
+        # ───────────────────────
+        base_temp = os.path.join(os.path.dirname(__file__), "..", "temp")
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_dir = os.path.join(base_temp, f"youtube_{pid}_{ts}")
+        os.makedirs(out_dir, exist_ok=True)
 
-            # 원본 파일 경로
-            base_path = ydl.prepare_filename(info)
-            root, _ = os.path.splitext(base_path)
+        outtmpl = os.path.join(out_dir, "%(title).200s.%(ext)s")
+
+        # ───────────────────────
+        # 유틸 함수들
+        # ───────────────────────
+        def cleanup_folder_and_zip(folder_path: str, zip_path: str):
+            shutil.rmtree(folder_path, ignore_errors=True)
+            try:
+                os.remove(zip_path)
+            except OSError:
+                pass
+        
+        def make_progress_hook(pid: str, index: int, total: int):
+            last_sent = {"percent": -1}
+            active_filename = {"name": None}
+
+            def hook(d):
+                status = d.get("status")
+
+                if status == "downloading":
+                    filename = d.get("filename")
+
+                    # 첫 다운로드 스트림만 고정
+                    if active_filename["name"] is None:
+                        active_filename["name"] = filename
+
+                    if filename != active_filename["name"]:
+                        return
+
+                    total_bytes = d.get("total_bytes") or d.get("total_bytes_estimate")
+                    if not total_bytes:
+                        return
+
+                    percent = int(d.get("downloaded_bytes", 0) * 100 / total_bytes)
+
+                    if percent != last_sent["percent"]:
+                        last_sent["percent"] = percent
+                        send_message(
+                            pid,
+                            f"[{index}/{total}] 다운로드 중: {percent}% "
+                            f"({d.get('_speed_str','')}, ETA {d.get('_eta_str','')})"
+                        )
+
+                elif status == "finished":
+                    # finished도 동일한 filename에 대해서만
+                    if d.get("filename") == active_filename["name"]:
+                        send_message(
+                            pid,
+                            f"[{index}/{total}] 다운로드 완료, 후처리 중..."
+                        )
+
+            return hook
+
+        def safe_filename(name: str) -> str:
+            # 유니코드 정규화 (Windows/macOS 호환)
+            name = unicodedata.normalize("NFC", name)
+
+            # emoji 제거 (non-BMP)
+            name = re.sub(r"[\U00010000-\U0010ffff]", "", name)
+
+            # Windows 금지 문자 제거
+            name = re.sub(r'[<>:"/\\|?*]', "", name)
+
+            # 공백 정리
+            name = re.sub(r"\s+", " ", name).strip()
+
+            return name
+        
+        def _ytdlp_opts(format_: str, pid: str, index: int, total: int) -> dict:
+            opts = {
+                "outtmpl": outtmpl,
+                "quiet": True,  
+                "no_warnings": True,
+                "progress_hooks": [make_progress_hook(pid, index, total)],
+                "nocheckcertificate": True,
+                "extractor_args": {
+                    "youtube": {
+                        # YouTube 최신 정책 대응을 위한 클라이언트 및 JS 설정
+                        "player_client": ["android", "web"],
+                        "player_js_version": "actual",
+                    }
+                },
+                # "extractor_args": {
+                #     "youtube": {
+                #         "player_client": ["android", "web"],
+                #         "skip": ["dash", "hls"]
+                #     }
+                # },
+                # "nocheckcertificate": True,
+            }
 
             if format_ == "mp3":
-                origin_path = root + ".mp3"
-                if not os.path.exists(origin_path):
-                    origin_path = base_path
-                ext = "mp3"
+                opts.update({
+                    "format": "bestaudio/best",
+                    "keepvideo": False,   
+                    "postprocessors": [
+                        {
+                            "key": "FFmpegExtractAudio",
+                            "preferredcodec": "mp3",
+                            "preferredquality": "192",
+                        }
+                    ],
+                })
             else:
-                origin_path = root + ".mp4"
-                if not os.path.exists(origin_path):
-                    origin_path = base_path
-                ext = "mp4"
+                opts.update({
+                    "format": "bestvideo+bestaudio/best",
+                    "merge_output_format": "mp4",
+                })
+            
+            return opts
 
-            # 안전한 파일명 생성
-            safe_title = safe_filename(info.get("title", "video"))
-            final_path = os.path.join(
-                os.path.dirname(origin_path),
-                f"{safe_title}.{ext}"
-            )
+        def _download_one(url: str, format_: str, pid: str, index: int, total: int) -> str:
+            with YoutubeDL(_ytdlp_opts(format_, pid, index, total)) as ydl:
+                info = ydl.extract_info(url, download=True)
 
-            # 이미 이름이 다르면 rename
-            if origin_path != final_path:
-                try:
-                    os.rename(origin_path, final_path)
-                except FileExistsError:
-                    pass  # 동일 파일명 이미 존재 시 무시
+                # 원본 파일 경로
+                base_path = ydl.prepare_filename(info)
+                root, _ = os.path.splitext(base_path)
 
-            return final_path
+                if format_ == "mp3":
+                    origin_path = root + ".mp3"
+                    if not os.path.exists(origin_path):
+                        origin_path = base_path
+                    ext = "mp3"
+                else:
+                    origin_path = root + ".mp4"
+                    if not os.path.exists(origin_path):
+                        origin_path = base_path
+                    ext = "mp4"
 
-    def _fallback_pick_latest_file() -> str | None:
-        files = [
-            os.path.join(out_dir, p)
-            for p in os.listdir(out_dir)
-            if os.path.isfile(os.path.join(out_dir, p))
-        ]
-        if not files:
-            return None
-        files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
-        return files[0]
-
-    async def _whisper_to_txt(media_path: str) -> str:
-        filename = os.path.basename(media_path)
-        txt_path = os.path.join(out_dir, os.path.splitext(filename)[0] + ".txt")
-
-        async with httpx.AsyncClient(timeout=None) as client:
-            with open(media_path, "rb") as f:
-                files = {"file": (filename, f, "application/octet-stream")}
-                data = {"option": "{}"}
-                resp = await client.post(
-                    f"{GPU_SERVER_URL}/analysis/whisper",
-                    data=data,
-                    files=files,
+                # 안전한 파일명 생성
+                safe_title = safe_filename(info.get("title", "video"))
+                final_path = os.path.join(
+                    os.path.dirname(origin_path),
+                    f"{safe_title}.{ext}"
                 )
-                resp.raise_for_status()
-                content = await resp.aread()
 
-        ctype = resp.headers.get("content-type", "")
-        try:
-            if "application/json" in ctype:
-                obj = json.loads(content.decode("utf-8", errors="ignore"))
-                with open(txt_path, "w", encoding="utf-8") as wf:
-                    wf.write(obj['text_with_time'])
-            else:
+                # 이미 이름이 다르면 rename
+                if origin_path != final_path:
+                    try:
+                        os.rename(origin_path, final_path)
+                    except FileExistsError:
+                        pass  # 동일 파일명 이미 존재 시 무시
+
+                return final_path
+
+        def _fallback_pick_latest_file() -> str | None:
+            files = [
+                os.path.join(out_dir, p)
+                for p in os.listdir(out_dir)
+                if os.path.isfile(os.path.join(out_dir, p))
+            ]
+            if not files:
+                return None
+            files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+            return files[0]
+
+        async def _whisper_to_txt(media_path: str) -> str:
+            filename = os.path.basename(media_path)
+            txt_path = os.path.join(out_dir, os.path.splitext(filename)[0] + ".txt")
+
+            async with httpx.AsyncClient(timeout=None) as client:
+                with open(media_path, "rb") as f:
+                    files = {"file": (filename, f, "application/octet-stream")}
+                    data = {"option": "{}"}
+                    resp = await client.post(
+                        f"{GPU_SERVER_URL}/analysis/whisper",
+                        data=data,
+                        files=files,
+                    )
+                    resp.raise_for_status()
+                    content = await resp.aread()
+
+            ctype = resp.headers.get("content-type", "")
+            try:
+                if "application/json" in ctype:
+                    obj = json.loads(content.decode("utf-8", errors="ignore"))
+                    with open(txt_path, "w", encoding="utf-8") as wf:
+                        wf.write(obj['text_with_time'])
+                else:
+                    with open(txt_path, "wb") as wf:
+                        wf.write(content)
+            except Exception:
                 with open(txt_path, "wb") as wf:
                     wf.write(content)
-        except Exception:
-            with open(txt_path, "wb") as wf:
-                wf.write(content)
 
-        return txt_path
+            return txt_path
 
-    # ───────────────────────
-    # 메인 로직
-    # ───────────────────────
-    try:
-        send_message(
-            pid,
-            f"유튜브 다운로드 시작 (총 {len(urls)}개, format={fmt}, whisper={save_whisper})"
-        )
-
-        for i, url in enumerate(urls, 1):
-            send_message(pid, f"[{i}/{len(urls)}] 다운로드 시작")
-
-            media_path = await asyncio.to_thread(
-                _download_one, url, fmt, pid, i, len(urls)
-            )
-
-            if not os.path.exists(media_path):
-                picked = _fallback_pick_latest_file()
-                if picked:
-                    media_path = picked
-
+        # ───────────────────────
+        # 메인 로직
+        # ───────────────────────
+        try:
             send_message(
                 pid,
-                f"[{i}/{len(urls)}] 다운로드 완료: {os.path.basename(media_path)}"
+                f"유튜브 다운로드 시작 (총 {len(urls)}개, format={fmt}, whisper={save_whisper})"
             )
 
-            if save_whisper:
+            for i, url in enumerate(urls, 1):
+                send_message(pid, f"[{i}/{len(urls)}] 다운로드 시작")
+
+                media_path = await asyncio.to_thread(
+                    _download_one, url, fmt, pid, i, len(urls)
+                )
+
+                if not os.path.exists(media_path):
+                    picked = _fallback_pick_latest_file()
+                    if picked:
+                        media_path = picked
+
                 send_message(
                     pid,
-                    f"[{i}/{len(urls)}] whisper 변환 중: {os.path.basename(media_path)}"
+                    f"[{i}/{len(urls)}] 다운로드 완료: {os.path.basename(media_path)}"
                 )
-                try:
-                    await _whisper_to_txt(media_path)
-                    send_message(pid, f"[{i}/{len(urls)}] whisper 저장 완료")
-                except Exception as e:
-                    send_message(pid, f"[{i}/{len(urls)}] whisper 실패: {str(e)}")
 
-        zip_path = out_dir + ".zip"
-        fast_zip(out_dir, zip_path)
+                if save_whisper:
+                    send_message(
+                        pid,
+                        f"[{i}/{len(urls)}] whisper 변환 중: {os.path.basename(media_path)}"
+                    )
+                    try:
+                        await _whisper_to_txt(media_path)
+                        send_message(pid, f"[{i}/{len(urls)}] whisper 저장 완료")
+                    except Exception as e:
+                        send_message(pid, f"[{i}/{len(urls)}] whisper 실패: {str(e)}")
 
-        background_task = BackgroundTask(
-            cleanup_folder_and_zip, out_dir, zip_path
-        )
+            zip_path = out_dir + ".zip"
+            fast_zip(out_dir, zip_path)
 
-        return FileResponse(
-            path=zip_path,
-            media_type="application/zip",
-            filename=os.path.basename(zip_path),
-            background=background_task,
-        )
+            background_task = BackgroundTask(
+                cleanup_folder_and_zip, out_dir, zip_path
+            )
 
+            return FileResponse(
+                path=zip_path,
+                media_type="application/zip",
+                filename=os.path.basename(zip_path),
+                background=background_task,
+            )
+
+        except Exception as e:
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "error": "유튜브 다운로드 중 오류",
+                    "message": str(e),
+                },
+            )
     except Exception as e:
+        # 서버 터미널에 상세한 에러 경로(Traceback) 출력
+        error_trace = traceback.format_exc()
+        print(f"[YOUTUBE ERROR]\n{error_trace}") 
+        
+        # 클라이언트에게도 구체적인 원인 전달
         return JSONResponse(
             status_code=500,
             content={
                 "error": "유튜브 다운로드 중 오류",
                 "message": str(e),
+                "traceback": error_trace # 디버깅을 위해 추가
             },
         )
  
