@@ -60,7 +60,6 @@ def generateLLM(query, model = 'ChatGPT'):
                 method="post",
                 url="/llm/v1/chat/completions",
                 json=payload,
-                timeout=60,
             )
 
             result = response.json()
