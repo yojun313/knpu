@@ -352,7 +352,7 @@ class Crawler(CrawlerModule):
             import nltk
             from nltk.tokenize import word_tokenize
             from nltk.tag import pos_tag
-            nltk_path = os.path.join(os.getenv('MODELS_PATH'), 'nltk_data')
+            nltk_path = os.path.join(os.getenv('MODEL_PATH'), 'nltk_data')
             if nltk_path not in nltk.data.path:
                 nltk.data.path.append(nltk_path)
 
