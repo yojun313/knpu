@@ -1889,6 +1889,108 @@ class SelectColumnsDialog(BaseDialog):
         return [cb.text() for cb in self.checkboxes if cb.isChecked()]
 
 
+class TokenizeDialog(BaseDialog):
+    def __init__(self, column_names, default_save_path, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("CSV 토큰화 설정")
+        self.resize(500, 600)
+        self.data = None
+        self.column_names = column_names
+        self.save_dir = default_save_path
+        self.include_word_path = ""
+
+        layout = QVBoxLayout(self)
+
+        # 1. 열 선택 섹션 (Scroll Area)
+        layout.addWidget(QLabel("<b>1. 토큰화할 열 선택:</b>"))
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll_widget = QWidget()
+        self.scroll_layout = QVBoxLayout(scroll_widget)
+        self.checkboxes = []
+        for col in self.column_names:
+            cb = QCheckBox(col)
+            if "text" in col.lower():
+                cb.setChecked(True)
+            self.scroll_layout.addWidget(cb)
+            self.checkboxes.append(cb)
+        scroll.setWidget(scroll_widget)
+        layout.addWidget(scroll)
+
+        # 2. 언어 선택 섹션
+        lang_layout = QHBoxLayout()
+        lang_layout.addWidget(QLabel("<b>2. 텍스트 언어:</b>"))
+        self.lang_combo = QComboBox()
+        self.lang_combo.addItems(["한국어 (ko)", "영어 (en)"])
+        lang_layout.addWidget(self.lang_combo)
+        layout.addLayout(lang_layout)
+
+        # 3. 저장 경로 선택 섹션
+        path_group = QGroupBox("3. 저장 설정")
+        path_layout = QFormLayout(path_group)
+        
+        self.path_label = QLabel(self.save_dir)
+        self.path_label.setWordWrap(True)
+        path_btn = QPushButton("경로 변경")
+        path_btn.clicked.connect(self.select_save_path)
+        
+        path_layout.addRow("저장 위치:", self.path_label)
+        path_layout.addRow("", path_btn)
+        layout.addWidget(path_group)
+
+        # 4. 필수 포함 단어 섹션
+        word_group = QGroupBox("4. 기타 옵션")
+        word_layout = QVBoxLayout(word_group)
+        self.include_check = QCheckBox("필수 포함 단어 사전(CSV) 사용")
+        self.include_label = QLabel("선택된 파일 없음")
+        self.include_label.setStyleSheet("color: gray;")
+        self.word_btn = QPushButton("사전 파일 선택")
+        self.word_btn.setEnabled(False)
+        self.word_btn.clicked.connect(self.select_word_file)
+        
+        self.include_check.toggled.connect(self.word_btn.setEnabled)
+        
+        word_layout.addWidget(self.include_check)
+        word_layout.addWidget(self.include_label)
+        word_layout.addWidget(self.word_btn)
+        layout.addWidget(word_group)
+
+        # 하단 버튼
+        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btns.accepted.connect(self.validate_and_accept)
+        btns.rejected.connect(self.reject)
+        layout.addWidget(btns)
+
+    def select_save_path(self):
+        path = QFileDialog.getExistingDirectory(self, "저장 위치 선택", self.save_dir)
+        if path:
+            self.save_dir = path
+            self.path_label.setText(path)
+
+    def select_word_file(self):
+        path, _ = QFileDialog.getOpenFileName(self, "필수 포함 단어 리스트(CSV) 선택", self.save_dir, "CSV Files (*.csv)")
+        if path:
+            self.include_word_path = path
+            self.include_label.setText(os.path.basename(path))
+            self.include_label.setStyleSheet("color: black;")
+
+    def validate_and_accept(self):
+        selected_cols = [cb.text() for cb in self.checkboxes if cb.isChecked()]
+        if not selected_cols:
+            QMessageBox.warning(self, "알림", "최소 하나 이상의 열을 선택해야 합니다.")
+            return
+
+        lang = "ko" if "한국어" in self.lang_combo.currentText() else "en"
+        
+        self.data = {
+            "selected_columns": selected_cols,
+            "language": lang,
+            "save_path": self.save_dir,
+            "include_word_path": self.include_word_path if self.include_check.isChecked() else ""
+        }
+        self.accept()
+
+
 class SelectEtcAnalysisDialog(BaseDialog):
     def __init__(self, analyze_hate, whisper, youtube_download, yolo):
         super().__init__()
