@@ -1235,16 +1235,17 @@ class Manager_Analysis(Manager_Worker):
         dialog.exec()
 
     def run_tokenize_file(self):
+        # Worker 클래스는 동일 (생략 가능하나 구조 유지를 위해 포함)
         class TokenizeWorker(BaseWorker):
             def __init__(self, pid, csv_path, save_path, tokenfile_name, selected_columns, include_word_list, language, parent=None):
                 super().__init__(parent)
+                self.pid = pid
                 self.csv_path = csv_path
                 self.save_path = save_path
                 self.tokenfile_name = tokenfile_name
                 self.selected_columns = selected_columns
                 self.include_word_list = include_word_list
                 self.language = language
-                self.pid = pid
 
             def run(self):
                 try:
@@ -1264,117 +1265,68 @@ class Manager_Analysis(Manager_Worker):
 
                     local_csv = self.download_file(response, self.save_path, f"token_{self.tokenfile_name}", label="결과 다운로드 중")
                     self.finished.emit(True, f"{self.tokenfile_name} 토큰화가 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", os.path.dirname(local_csv))
-
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
         try:
-            # ───────────────────────────── 1) 파일 선택
+            # 1. 대상 파일 체크
             csv_path = self.check_csv_file()
-            if not csv_path:
-                printStatus(self.main)
-                return
-
+            if not csv_path: return
+            
             tokenfile_name = os.path.basename(csv_path)
             if "token" in tokenfile_name:
-                QMessageBox.warning(
-                    self.main, "Wrong File", "이미 토큰화된 파일입니다.\n다른 CSV 파일을 선택해주세요.")
-                printStatus(self.main)
+                QMessageBox.warning(self.main, "Wrong File", "이미 토큰화된 파일입니다.")
                 return
 
-            # ───────────────────────────── 2) 저장 경로 선택
-            printStatus(self.main, "토큰 데이터를 저장할 위치를 선택하세요")
-            save_path = QFileDialog.getExistingDirectory(
-                self.main, "토큰 데이터를 저장할 위치를 선택하세요", os.path.dirname(csv_path)
-            )
-            if save_path == '':
-                printStatus(self.main)
-                return
-
-            # ───────────────────────────── 3) 열 선택
+            # 2. 다이얼로그 실행
             df_headers = pd.read_csv(csv_path, nrows=0)
             column_names = df_headers.columns.tolist()
-
-            printStatus(self.main, "토큰화할 CSV 열을 선택하세요")
-            dialog = SelectColumnsDialog(column_names, parent=self.main)
-            if dialog.exec() != QDialog.DialogCode.Accepted:
+            
+            dialog = TokenizeDialog(column_names, os.path.dirname(csv_path), self.main)
+            if dialog.exec() != QDialog.Accepted:
                 printStatus(self.main)
                 return
 
-            selected_columns = dialog.get_selected_columns()
-            if not selected_columns:
-                printStatus(self.main)
-                return
-
-            languages = ["ko", "en"]
-            lang_display = ["한국어 (Korean)", "영어 (English)"]
-            
-            item, ok = QInputDialog.getItem(
-                self.main, "언어 선택", 
-                "토큰화할 텍스트의 언어를 선택하세요:", 
-                lang_display, 0, False
-            )
-            
-            if not ok:
-                printStatus(self.main)
-                return
-            
-            # 선택된 텍스트에 따라 'ko' 또는 'en' 할당
-            selected_language = languages[lang_display.index(item)]
-
-            # ───────────────────────────── 4) 필수 포함 단어
-            reply = QMessageBox.question(
-                self.main, "필수 포함 명사 입력",
-                "필수 포함 단어사전 입력하시겠습니까?\n\nEx) \"포항, 공대\" X | \"포항공대\"",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
-            )
-
+            # 3. 데이터 추출
+            res = dialog.data
+            selected_columns = res["selected_columns"]
+            selected_language = res["language"]
+            save_path = res["save_path"]
             include_word_list = []
-            if reply == QMessageBox.StandardButton.Yes:
-                printStatus(self.main, "필수 포함 단어 리스트(CSV)을 선택하세요")
-                include_word_list_path = QFileDialog.getOpenFileName(
-                    self.main,
-                    "필수 포함 단어 리스트(CSV)를 선택하세요",
-                    self.main.localDirectory,
-                    "CSV Files (*.csv);;All Files (*)"
-                )[0]
-                if include_word_list_path == "":
-                    return
-                if not os.path.exists(include_word_list_path):
-                    raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{include_word_list_path}")
 
-                with open(safe_path(include_word_list_path), 'rb') as f:
+            # 4. 필수 포함 단어 파일 처리 (필요한 경우)
+            if res["include_word_path"]:
+                with open(safe_path(res["include_word_path"]), 'rb') as f:
                     codec = chardet.detect(f.read())['encoding']
-
-                df = pd.read_csv(include_word_list_path, low_memory=False, encoding=codec)
-                if 'word' not in list(df.keys()):
-                    QMessageBox.warning(
-                        self.main, "Wrong Format", "필수 포함 단어 리스트 형식과 일치하지 않습니다")
-                    printStatus(self.main)
+                df = pd.read_csv(res["include_word_path"], low_memory=False, encoding=codec)
+                if 'word' not in df.columns:
+                    QMessageBox.warning(self.main, "Error", "단어 사전 CSV에 'word' 열이 없습니다.")
                     return
                 include_word_list = df['word'].tolist()
 
+            # 5. 프로세스 등록 및 실행
             pid = str(uuid.uuid4())
             register_process(pid, "Tokenizing File")
-            
             thread_name = f"CSV 토큰화: {tokenfile_name}"
             register_thread(thread_name)
-            printStatus(self.main)
             
+            printStatus(self.main)
             downloadDialog = DownloadDialog(thread_name, pid, self.main)
             downloadDialog.show()
 
-            worker = TokenizeWorker(pid, csv_path, save_path, tokenfile_name, selected_columns, include_word_list, self.main)
+            worker = TokenizeWorker(
+                pid, csv_path, save_path, tokenfile_name, 
+                selected_columns, include_word_list, selected_language, self.main
+            )
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
-            if not hasattr(self, "_workers"):
-                self._workers = []
+            if not hasattr(self, "_workers"): self._workers = []
             self._workers.append(worker)
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-
+    
     def run_modify_token(self):
         try:
             token_filepath = self.check_csv_file(tokenCheck=True)
