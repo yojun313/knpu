@@ -28,6 +28,9 @@ import json
 from urllib.parse import urlparse, parse_qs, urlunparse
 import unicodedata
 import uuid
+from dotenv import load_dotenv
+
+load_dotenv()
 
 GPU_SERVER_URL = os.getenv("GPU_SERVER_URL")
 
@@ -116,50 +119,61 @@ def tokenization(
     data: pd.DataFrame,
     columns,
     include_words: list = None,
+    language: str = "ko",
     update_interval: int = 3000,
 ) -> pd.DataFrame:
-    """
-    ▸ pid            : 진행 상황을 send_message(pid, …)로 전달할 때 사용
-    ▸ data           : 원본 DataFrame (in-place 수정)
-    ▸ columns        : 토큰화할 열 이름 또는 이름 리스트
-    ▸ update_interval: 이 개수마다 진행률 메시지 전송
-    """
-    # Kiwi 한 번만 초기화
-    kiwi = get_kiwi()
-    for word in include_words:
-        kiwi.add_user_word(word, 'NNP', score=10)
+    
+    if language == 'en':
+        import nltk
+        from nltk.tokenize import word_tokenize
+        from nltk.tag import pos_tag
+        
+        nltk_path = os.path.join(os.getenv('MODELS_PATH'), 'nltk_data')
+        if nltk_path not in nltk.data.path:
+            nltk.data.path.append(nltk_path)
+        kiwi = None
+    else:
+        kiwi = get_kiwi()
+        if include_words:
+            for word in include_words:
+                kiwi.add_user_word(word, 'NNP', score=10)
 
-    # 단일 str → list
     if isinstance(columns, str):
         columns = [columns]
 
-    # 각 열을 순회
     for col in columns:
         if col not in data.columns:
             send_message(pid, f"⚠️  열 '{col}'이(가) 존재하지 않습니다 → 건너뜀")
             continue
 
-        texts        = data[col].tolist()
-        total        = len(texts)
+        texts         = data[col].tolist()
+        total         = len(texts)
         tokenized_col = []
 
-        send_message(pid, f"[{col}] 토큰화 시작 (총 {total:,} rows)")
+        send_message(pid, f"[{col}] ({language}) 토큰화 시작 (총 {total:,} rows)")
 
         total_time = 0.0
         for idx, text in enumerate(texts, 1):
             start = time.time()
 
-            if isinstance(text, str):
-                # 전처리
-                cleaned = re.sub(r"[^가-힣a-zA-Z\s]", "", text)
-                # splitComplex=False → 복합어를 분해하지 않고 처리
-                tokens   = kiwi.tokenize(cleaned, split_complex=False)
-                nouns    = [t.form for t in tokens if t.tag in ("NNG", "NNP")]
-                tokenized_col.append(", ".join(nouns))
-            else:
+            try:
+                if isinstance(text, str):
+                    if language == 'ko':
+                        cleaned = re.sub(r"[^가-힣a-zA-Z\s]", "", text)
+                        tokens   = kiwi.tokenize(cleaned, split_complex=False)
+                        nouns    = [t.form for t in tokens if t.tag in ("NNG", "NNP")]
+                    else:
+                        cleaned = re.sub(r"[^a-zA-Z\s]", "", text)
+                        tokens   = word_tokenize(cleaned)
+                        tagged   = pos_tag(tokens)
+                        nouns    = [word for word, tag in tagged if tag in ('NN', 'NNS', 'NNP', 'NNPS')]
+                    
+                    tokenized_col.append(", ".join(nouns))
+                else:
+                    tokenized_col.append("")
+            except Exception:
                 tokenized_col.append("")
 
-            # 진행률 계산
             total_time += time.time() - start
             if idx % update_interval == 0 or idx == total:
                 pct   = round(idx / total * 100, 2)
@@ -168,12 +182,11 @@ def tokenization(
                 m, s  = divmod(int(remain_sec), 60)
                 send_message(
                     pid,
-                    f"[{col}] 진행률 {pct}% ({idx:,}/{total:,}) • 예상 남은 시간 {m}분 {s}초"
+                    f"[{col}] ({language}) 진행률 {pct}% ({idx:,}/{total:,}) • 예상 남은 시간 {m}분 {s}초"
                 )
 
-        # 열 덮어쓰기
         data[col] = tokenized_col
-        send_message(pid, f"[{col}] 토큰화 완료")
+        send_message(pid, f"[{col}] ({language}) 토큰화 완료")
 
     return data
 
