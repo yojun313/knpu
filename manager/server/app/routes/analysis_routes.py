@@ -36,11 +36,13 @@ async def tokenize_file(
     content   = await file.read()
     csv_data  = pd.read_csv(io.StringIO(content.decode("utf-8")))
 
+    # option["language"] 추가 (기본값 'ko')
     result_df = tokenization(
-        pid     = option["pid"],
-        data    = csv_data,
-        columns = option["column_names"],
-        include_words = option["include_words"],
+        pid      = option["pid"],
+        data     = csv_data,
+        columns  = option["column_names"],
+        include_words = option.get("include_words", []),
+        language = option.get("language", "ko"),
         update_interval = 500,   
     )
 

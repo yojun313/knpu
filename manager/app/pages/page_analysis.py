@@ -1236,13 +1236,14 @@ class Manager_Analysis(Manager_Worker):
 
     def run_tokenize_file(self):
         class TokenizeWorker(BaseWorker):
-            def __init__(self, pid, csv_path, save_path, tokenfile_name, selected_columns, include_word_list, parent=None):
+            def __init__(self, pid, csv_path, save_path, tokenfile_name, selected_columns, include_word_list, language, parent=None):
                 super().__init__(parent)
                 self.csv_path = csv_path
                 self.save_path = save_path
                 self.tokenfile_name = tokenfile_name
                 self.selected_columns = selected_columns
                 self.include_word_list = include_word_list
+                self.language = language
                 self.pid = pid
 
             def run(self):
@@ -1251,6 +1252,7 @@ class Manager_Analysis(Manager_Worker):
                         "pid": self.pid,
                         "column_names": self.selected_columns,
                         "include_words": self.include_word_list,
+                        "language": self.language,
                     }
                     upload_url = MANAGER_SERVER_API + "/analysis/tokenize"
                     response = self.upload_file(
@@ -1303,6 +1305,22 @@ class Manager_Analysis(Manager_Worker):
             if not selected_columns:
                 printStatus(self.main)
                 return
+
+            languages = ["ko", "en"]
+            lang_display = ["한국어 (Korean)", "영어 (English)"]
+            
+            item, ok = QInputDialog.getItem(
+                self.main, "언어 선택", 
+                "토큰화할 텍스트의 언어를 선택하세요:", 
+                lang_display, 0, False
+            )
+            
+            if not ok:
+                printStatus(self.main)
+                return
+            
+            # 선택된 텍스트에 따라 'ko' 또는 'en' 할당
+            selected_language = languages[lang_display.index(item)]
 
             # ───────────────────────────── 4) 필수 포함 단어
             reply = QMessageBox.question(

@@ -284,7 +284,8 @@ class Crawler(CrawlerModule):
 
 
                 # Step 4: Tokenization
-                token_df = self.tokenization(data_df)
+                lang = 'en' if self.DBtype in ['chinadaily'] else 'ko'
+                token_df = self.tokenization(data_df, language=lang)
 
                 # Step 5: 저장 (선택 사항: parquet 저장 or print only)
                 for col in token_df.columns:
@@ -346,47 +347,57 @@ class Crawler(CrawlerModule):
             error_data = self.error_dump(1002, error_msg, self.currentDate_str)
             self.ReturnChecker(error_data)
 
-    def tokenization(self, data):
-        kiwi = Kiwi(num_workers=-1)
+    def tokenization(self, data, language='ko'):
+        if language == 'en':
+            import nltk
+            from nltk.tokenize import word_tokenize
+            from nltk.tag import pos_tag
+            nltk_path = os.path.join(os.getenv('MODELS_PATH'), 'nltk_data')
+            if nltk_path not in nltk.data.path:
+                nltk.data.path.append(nltk_path)
+
+        kiwi = Kiwi(num_workers=-1) if language == 'ko' else None
+        
+        textColumn_name = ""
         for column in data.columns.tolist():
             if 'Text' in column:
                 textColumn_name = column
+                break
 
         text_list = list(data[textColumn_name])
         tokenized_data = []
-
         total_texts = len(text_list)
-        total_time = 0  # 전체 소요시간 계산
+        total_time = 0
 
         for index, text in enumerate(text_list):
             start_time = time.time()
 
             try:
                 if not isinstance(text, str):
-                    tokenized_data.append([])
+                    tokenized_data.append("")
                     continue
 
-                # 한글, 영문, 공백만 남김
-                text = re.sub(r'[^가-힣a-zA-Z\s]', '', text)
-
-                # splitComplex=False로 복합어 분리하지 않고 형태소 분석
-                tokens = kiwi.tokenize(text, split_complex=False)
-
-                # NNG 또는 NNP 품사만 추출
-                tokenized_text = [token.form for token in tokens if token.tag in ('NNG', 'NNP')]
+                if language == 'ko':
+                    text = re.sub(r'[^가-힣a-zA-Z\s]', '', text)
+                    tokens = kiwi.tokenize(text, split_complex=False)
+                    tokenized_text = [token.form for token in tokens if token.tag in ('NNG', 'NNP')]
+                else:
+                    text = re.sub(r'[^a-zA-Z\s]', '', text)
+                    tokens = word_tokenize(text)
+                    tagged = pos_tag(tokens)
+                    tokenized_text = [word for word, tag in tagged if tag in ('NN', 'NNS', 'NNP', 'NNPS')]
 
                 tokenized_text_str = ", ".join(tokenized_text)
                 tokenized_data.append(tokenized_text_str)
 
-            except Exception as e:
-                tokenized_data.append([])
+            except Exception:
+                tokenized_data.append("")
 
             end_time = time.time()
             total_time += end_time - start_time
 
             avg_time_per_text = total_time / (index + 1)
             remaining_time = avg_time_per_text * (total_texts - (index + 1))
-
             remaining_minutes = int(remaining_time // 60)
             remaining_seconds = int(remaining_time % 60)
 
@@ -394,13 +405,12 @@ class Crawler(CrawlerModule):
             if (index + 1) % update_interval == 0 or index + 1 == total_texts:
                 progress_value = round((index + 1) / total_texts * 100, 2)
                 print(
-                    f'\r{textColumn_name.split(" ")[0]} Tokenization Progress: {progress_value}% | '
+                    f'\r{textColumn_name.split(" ")[0]} ({language}) Tokenization Progress: {progress_value}% | '
                     f'예상 남은 시간: {remaining_minutes}분 {remaining_seconds}초', end=''
                 )
 
         data[textColumn_name] = tokenized_data
         return data
-
 
     def makeCSV(self, tableName, columns):
         df = pd.DataFrame(columns=columns)
