@@ -1201,8 +1201,7 @@ class Manager_Analysis(Manager_Worker):
                     )
                     gpt_response = generateLLM(gpt_query, get_setting('LLM_model'))
                     if type(gpt_response) != str:
-                        QMessageBox.warning(
-                            self.main, "Error", f"{gpt_response[1]}")
+                        QMessageBox.warning(self.main, "Error", f"AI 분석 중 오류가 발생했습니다")
                         printStatus(self.main)
                         openFileExplorer(analyze_directory)
                         return
