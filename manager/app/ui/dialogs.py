@@ -1119,7 +1119,7 @@ class SelectKemkimDialog(BaseDialog):
         self.data = None  # 데이터를 저장할 속성 추가
 
     def initUI(self):
-        self.setWindowTitle('KEMKIM Start')
+        self.setWindowTitle('KEMKIM')
         self.resize(300, 100)  # 창 크기를 조정
         # 레이아웃 생성
         layout = QVBoxLayout()

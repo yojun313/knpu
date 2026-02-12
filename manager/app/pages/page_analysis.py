@@ -245,7 +245,7 @@ class Manager_Analysis(Manager_Worker):
 
                     self.message.emit("결과 파일 저장 중...")
                     output_path = os.path.join(self.save_dir, self.mergedfilename + ".csv")
-                    merged_df.to_csv(output_path, index=False, encoding="utf-8-sig")
+                    merged_df.to_csv(safe_path(output_path), index=False, encoding="utf-8-sig")
 
                     self.finished.emit(
                         True,
@@ -933,8 +933,8 @@ class Manager_Analysis(Manager_Worker):
                 DoV_signal, DoD_signal, new_signal_folder)
 
             delete_word_list.extend(selected_words)
-            pd.DataFrame(delete_word_list, columns=['word']).to_csv(os.path.join(
-                new_result_folder, 'filtered_words.csv'), index=False, encoding='utf-8-sig')
+            pd.DataFrame(delete_word_list, columns=['word']).to_csv(safe_path(os.path.join(
+                new_result_folder, 'filtered_words.csv')), index=False, encoding='utf-8-sig')
 
             with open(safe_path(os.path.join(new_graph_folder, 'graph_size.txt')), 'w+', encoding="utf-8", errors="ignore") as graph_size:
                 info = (
@@ -1121,10 +1121,10 @@ class Manager_Analysis(Manager_Worker):
                 os.makedirs(analyze_directory, exist_ok=True)
                 os.makedirs(os.path.join(analyze_directory,
                             'keyword_context'), exist_ok=True)
-                filtered_object_csv_df.to_csv(os.path.join(
-                    analyze_directory, f"{object_csv_name}(키워드 {selected_option}).csv"), index=False, encoding='utf-8-sig')
-                pd.DataFrame([selected_words_dic]).to_csv(os.path.join(
-                    analyze_directory, f"filtered_words.csv"), index=False, encoding='utf-8-sig')
+                filtered_object_csv_df.to_csv(safe_path(os.path.join(
+                    analyze_directory, f"{object_csv_name}(키워드 {selected_option}).csv")), index=False, encoding='utf-8-sig')
+                pd.DataFrame([selected_words_dic]).to_csv(safe_path(os.path.join(
+                    analyze_directory, f"filtered_words.csv")), index=False, encoding='utf-8-sig')
 
                 def extract_surrounding_text(text, keyword, chars_before=200, chars_after=200):
                     # 키워드 위치 찾기
@@ -1159,8 +1159,8 @@ class Manager_Analysis(Manager_Worker):
                 context_df = pd.DataFrame(list(context_dict.items()), columns=[
                                           'Keyword', 'Context Text'])
                 # 데이터프레임을 CSV 파일로 저장
-                context_df.to_csv(os.path.join(analyze_directory,  'keyword_context',
-                                  'keyword_context.csv'), index=False, encoding='utf-8-sig')
+                context_df.to_csv(safe_path(os.path.join(analyze_directory,  'keyword_context',
+                                  'keyword_context.csv')), index=False, encoding='utf-8-sig')
             else:
                 printStatus(self.main)
                 return
@@ -1394,7 +1394,7 @@ class Manager_Analysis(Manager_Worker):
 
             printStatus(self.main, "조정된 토큰 파일 저장 중...")
             token_df.to_csv(
-                os.path.join(save_path, new_filename),
+                safe_path(os.path.join(save_path, new_filename)),
                 index=False,
                 encoding='utf-8-sig'
             )
@@ -1588,7 +1588,7 @@ class Manager_Analysis(Manager_Worker):
             # 8) CSV 저장 ------------------------------------------------------------
             out_df = pd.DataFrame(results)
             out_file = os.path.join(save_path, file_name)
-            out_df.to_csv(out_file, index=False, encoding='utf-8-sig')
+            out_df.to_csv(safe_path(out_file), index=False, encoding='utf-8-sig')
 
             printStatus(self.main)
             openFileResult(
