@@ -172,6 +172,7 @@ class KimKem:
             # Step 4: TF, DF, DoV, DoD 계산 -> 결과: {key: 키워드, value: 계산값} 형식의 딕셔너리
             tf_counts = self.cal_tf(keyword_list, period_divided_dic_merged)
             df_counts = self.cal_df(keyword_list, period_divided_dic)
+            tfidf_counts = self.cal_tfidf(keyword_list, period_divided_dic, tf_counts, df_counts)
 
             del top_common_words
             del period_divided_dic_merged
@@ -256,12 +257,9 @@ class KimKem:
                     self.trace_folder, 'Final_signal_trace.csv'), encoding='utf-8-sig', header=signal_column_list)
 
                 # Signal 추적 데이터에서 시계 방향으로 시그널 이동하지 않은 키워드들을 걸러냄
-                DoV_signal_trace, DoV_signal_deletewords = self.filter_clockwise_movements(
-                    DoV_signal_trace)
-                DoV_signal_trace, DoD_signal_deletewords = self.filter_clockwise_movements(
-                    DoV_signal_trace)
-                add_list = sorted(
-                    list(set(DoV_signal_deletewords+DoD_signal_deletewords)))
+                DoV_signal_trace, DoV_signal_deletewords = self.filter_clockwise_movements(DoV_signal_trace)
+                DoD_signal_trace, DoD_signal_deletewords = self.filter_clockwise_movements(DoD_signal_trace)
+                add_list = sorted(list(set(DoV_signal_deletewords+DoD_signal_deletewords)))
 
                 # 좌표 추적에서 키워드 필터링
                 for period in DoV_coordinates_record:
@@ -307,7 +305,7 @@ class KimKem:
                 keyword_list, period_divided_dic, tf_counts, trace=False)
             DoD_dict = self.cal_DoD(
                 keyword_list, period_divided_dic, df_counts, trace=False)
-            self._save_kimkem_results(tf_counts, df_counts, DoV_dict, DoD_dict)
+            self._save_kimkem_results(tf_counts, df_counts, tfidf_counts, DoV_dict, DoD_dict)
             send_message(self.pid, "최종 KEM KIM 생성 중...")
             avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(
                 keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, self.period_list[0], self.period_list[-1])
@@ -730,6 +728,7 @@ class KimKem:
         self.data_folder = os.path.join(article_kimkem_folder, "Data")
         self.tf_folder = os.path.join(self.data_folder, "TF")
         self.df_folder = os.path.join(self.data_folder, "DF")
+        self.tfidf_folder = os.path.join(self.data_folder, "TF-IDF")
         self.DoV_folder = os.path.join(self.data_folder, "DoV")
         self.DoD_folder = os.path.join(self.data_folder, "DoD")
         self.result_folder = os.path.join(article_kimkem_folder, "Result")
@@ -743,6 +742,7 @@ class KimKem:
         # Final
         os.makedirs(self.tf_folder, exist_ok=True)
         os.makedirs(self.df_folder, exist_ok=True)
+        os.makedirs(self.tfidf_folder, exist_ok=True)
         os.makedirs(self.DoV_folder, exist_ok=True)
         os.makedirs(self.DoD_folder, exist_ok=True)
         os.makedirs(self.result_folder, exist_ok=True)
@@ -763,10 +763,11 @@ class KimKem:
                 os.makedirs(os.path.join(period_path, 'Graph'), exist_ok=True)
                 os.makedirs(os.path.join(period_path, 'Signal'), exist_ok=True)
 
-    def _save_kimkem_results(self, tf_counts, df_counts, DoV_dict, DoD_dict):
+    def _save_kimkem_results(self, tf_counts, df_counts, tfidf_counts, DoV_dict, DoD_dict):
         for period in tf_counts:
             self._save_period_data(self.tf_folder, period, tf_counts, 'TF')
             self._save_period_data(self.df_folder, period, df_counts, 'DF')
+            self._save_period_data(self.tfidf_folder, period, tfidf_counts, 'TF-IDF')
             self._save_period_data(self.DoV_folder, period, DoV_dict, 'DoV')
             self._save_period_data(self.DoD_folder, period, DoD_dict, 'DoD')
 
@@ -775,6 +776,8 @@ class KimKem:
                 self.tf_folder, 'tf_counts_animation.gif'), self.graph_wordcnt)
             self.create_top_words_animation(df_counts, os.path.join(
                 self.df_folder, 'df_counts_animation.gif'), self.graph_wordcnt)
+            self.create_top_words_animation(tfidf_counts, os.path.join(
+                self.tfidf_folder, 'tfidf_counts_animation.gif'), self.graph_wordcnt)
             self.create_top_words_animation(DoV_dict, os.path.join(
                 self.DoV_folder, 'DOV_animation.gif'), self.graph_wordcnt, 100)
             self.create_top_words_animation(DoD_dict, os.path.join(
@@ -1062,6 +1065,35 @@ class KimKem:
 
         return df_counts
 
+    def cal_tfidf(self, keyword_list, period_divided_dic, tf_counts, df_counts):
+        tfidf_dict = {}
+        
+        for period in period_divided_dic:
+            keyword_tfidf_dic = {}
+            # N: 해당 기간의 전체 문서 수
+            total_docs = len(period_divided_dic[period])
+            
+            for keyword in keyword_list:
+                # TF: 해당 기간 내 단어의 총 빈도 (tf_counts 참조)
+                tf = tf_counts[period].get(keyword, 0)
+                # DF: 해당 기간 내 단어가 등장한 문서 수 (df_counts 참조)
+                df = df_counts[period].get(keyword, 0)
+                
+                # TF-IDF 계산: TF * log(N / DF)
+                # DF가 0일 경우를 대비해 분모에 1을 더하거나 예외처리 (여기선 키워드 리스트가 이미 존재하는 단어이므로 df>0 가정)
+                if df > 0:
+                    idf = np.log(total_docs / df)
+                    tfidf_value = tf * idf
+                else:
+                    tfidf_value = 0
+                    
+                keyword_tfidf_dic[keyword] = tfidf_value
+            
+            # 값 기준으로 내림차순 정렬
+            tfidf_dict[period] = dict(sorted(keyword_tfidf_dic.items(), key=lambda x: x[1], reverse=True))
+            
+        return tfidf_dict
+    
     # 연도별 keyword DoV 딕셔너리 반환
     def cal_DoV(self, keyword_list, period_divided_dic, tf_counts, trace=True):
         DoV_dict = {}
