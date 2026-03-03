@@ -43,7 +43,7 @@ class Manager_User:
             email = self.main.user_email_lineinput.text()
             key = self.main.user_key_lineinput.text()
 
-            if self.main.user != 'admin':
+            if self.main.user_role != 'admin':
                 ok, password = checkPassword(self.main, True)
                 if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
@@ -64,7 +64,7 @@ class Manager_User:
 
     def deleteUser(self):
         try:
-            if self.main.user != 'admin':
+            if self.main.user_role != 'admin':
                 ok, password = checkPassword(self.main, True)
                 if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
