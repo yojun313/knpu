@@ -1,7 +1,7 @@
+requests
 aiohttp
 beautifulsoup4
 boto3
-chardet
 cryptography
 fastapi
 fastparquet
@@ -29,7 +29,6 @@ rich
 seaborn
 starlette
 tqdm
-urllib3
 user_agent
 uvicorn
 wordcloud
