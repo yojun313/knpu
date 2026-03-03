@@ -47,7 +47,7 @@ class Manager_Board:
 
     def addVersion(self):
         try:
-            if self.main.user != 'admin':
+            if self.main.user_role != 'admin':
                 ok, password = checkPassword(self.main, True)
                 if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
@@ -81,7 +81,7 @@ class Manager_Board:
 
     def editVersion(self):
         try:
-            if self.main.user != 'admin':
+            if self.main.user_role != 'admin':
                 ok, password = checkPassword(self.main, True)
                 if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
@@ -110,7 +110,7 @@ class Manager_Board:
 
     def deleteVersion(self):
         try:
-            if self.main.user != 'admin':
+            if self.main.user_role != 'admin':
                 ok, password = checkPassword(self.main, True)
                 if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
