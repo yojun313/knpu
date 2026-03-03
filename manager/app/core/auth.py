@@ -48,6 +48,7 @@ def loginProgram(parent):
                 parent.user = userData['name']
                 parent.userUid = userData['uid']
                 parent.usermail = userData['email']
+                parent.user_role = userData['role']
                 return True
 
         parent.closeBootscreen()
@@ -117,6 +118,7 @@ def loginProgram(parent):
         access_token = res['access_token']
 
         parent.user = userData['name']
+        parent.user_role = userData['role']
         parent.usermail = userData['email']
         parent.userUid = userData['uid']
         
