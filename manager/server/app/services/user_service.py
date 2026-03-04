@@ -17,6 +17,7 @@ def create_user(user: UserCreate):
     
     user_dict['uid'] = str(uuid.uuid4())
     user_dict['device_list'] = []
+    user_dict['role'] = "user"
     user_db.insert_one(user_dict)
     
     return JSONResponse(

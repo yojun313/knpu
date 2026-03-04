@@ -1,4 +1,5 @@
 requests
+chardet
 aiohttp
 beautifulsoup4
 boto3
