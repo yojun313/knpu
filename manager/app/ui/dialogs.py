@@ -9,6 +9,7 @@ from services.api import *
 from services.logging import *
 from PySide6.QtGui import QKeySequence, QFont, QShortcut, QFontMetrics
 from datetime import datetime
+from services.api import Request
 
 class BaseDialog(QDialog):
     def __init__(self, *args, **kwargs):
@@ -2343,6 +2344,7 @@ class DetectOptionDialog(BaseDialog):
 class EditHomeMemberDialog(BaseDialog):
     def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)
+        self.parent = parent
         self.setWindowTitle("멤버 편집" if data else "멤버 추가")
         self.resize(400, 600)
         self.data = data or {}
@@ -2398,7 +2400,7 @@ class EditHomeMemberDialog(BaseDialog):
 
     def load_options(self):
         try:
-            response = requests.get(f"{HOMEPAGE_EDIT_API}/member/options")
+            response = Request("get", 'edit/member/options', HOMEPAGE_EDIT_API)
             if response.status_code == 200:
                 options = response.json()
                 self.in_pos.addItems(options.get("positions", []))
@@ -2594,6 +2596,7 @@ class ViewHomeMemberDialog(BaseDialog):
         layout = QVBoxLayout(self)
 
         self.add_label(layout, "성명", data.get("name", ""))
+        self.add_label(layout, "구분", data.get("section", ""))
         self.add_label(layout, "직책", data.get("position", ""))
         self.add_label(layout, "소속", data.get("affiliation", ""))
         self.add_label(layout, "이메일", data.get("email", ""))

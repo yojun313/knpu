@@ -103,17 +103,17 @@ class Manager_Web:
                 'name': str(member.get('name', '')),
                 'position': str(member.get('position', '')),
                 'email': str(member.get('email', '')),
+                'section': str(member.get('section', '')),
                 "학력": "\n".join(member.get("학력", [])) if isinstance(member.get("학력"), list) else str(member.get("학력", "")),
                 "경력": "\n".join(member.get("경력", [])) if isinstance(member.get("경력"), list) else str(member.get("경력", "")),
                 "연구": "\n".join(member.get("연구", [])) if isinstance(member.get("연구"), list) else str(member.get("연구", "")),
             }
             parsed_items.append(member_info)
 
-        self.member_data = [[item['name'], item['position'], item['email'],
+        self.member_data = [[item['name'], item['section'], item['position'], item['email'],
                              item['학력'], item['경력'], item['연구']] for item in parsed_items]
-        self.member_table_column = ['성명', '직책', '이메일', '학력', '경력', '연구']
-        makeTable(self.main, self.main.web_members_tableWidget,
-                  self.member_data, self.member_table_column)
+        self.member_table_column = ['성명', '구분', '직책', '이메일', '학력', '경력', '연구']
+        makeTable(self.main, self.main.web_members_tableWidget, self.member_data, self.member_table_column)
         printStatus(self.main, "https://knpu.re.kr/team")
 
     def refreshNewsBoard(self):
