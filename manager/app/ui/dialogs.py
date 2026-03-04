@@ -2352,11 +2352,19 @@ class EditHomeMemberDialog(BaseDialog):
             vbox.addWidget(QLabel(label))
             vbox.addWidget(widget)
 
-        # ----- 필드 -----
         self.in_name = QLineEdit(self.data.get("name", ""))
-        self.in_pos = QLineEdit(self.data.get("position", ""))
+        
+        self.in_pos = QComboBox()
+        self.in_section = QComboBox()
+        
+        self.load_options()
+
+        if self.data.get("position"):
+            self.in_pos.setCurrentText(self.data["position"])
+        if self.data.get("section"):
+            self.in_section.setCurrentText(self.data["section"])
+
         self.in_aff = QLineEdit(self.data.get("affiliation", ""))
-        self.in_section = QLineEdit(self.data.get("section", ""))
         self.in_email = QLineEdit(self.data.get("email", ""))
         self.in_school = QTextEdit()
         self.in_school.setPlainText("\n".join(self.data.get("학력", [])))
@@ -2373,14 +2381,12 @@ class EditHomeMemberDialog(BaseDialog):
         ]:
             add_row(lbl, wid)
 
-        # 이미지 선택
         img_row = QHBoxLayout()
         self.img_btn = QPushButton("프로필 이미지 선택")
         self.img_btn.clicked.connect(self.pick_image)
         img_row.addWidget(self.img_btn)
         vbox.addLayout(img_row)
 
-        # OK / Cancel
         ok = QPushButton("저장")
         cancel = QPushButton("취소")
         ok.clicked.connect(self.accept)
@@ -2389,6 +2395,16 @@ class EditHomeMemberDialog(BaseDialog):
         vbox.addWidget(cancel)
 
         self.new_image_url = None
+
+    def load_options(self):
+        try:
+            response = requests.get(f"{HOMEPAGE_EDIT_API}/member/options")
+            if response.status_code == 200:
+                options = response.json()
+                self.in_pos.addItems(options.get("positions", []))
+                self.in_section.addItems(options.get("sections", []))
+        except Exception as e:
+            QMessageBox.warning(self, "경고", "옵션 목록을 불러오지 못했습니다.")
 
     def pick_image(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -2410,24 +2426,24 @@ class EditHomeMemberDialog(BaseDialog):
     def get_payload(self):
         payload = {
             "name": self.in_name.text().strip(),
-            "position": self.in_pos.text().strip(),
+            "position": self.in_pos.currentText(),
             "affiliation": self.in_aff.text().strip(),
-            "section": self.in_section.text().strip(),
+            "section": self.in_section.currentText(),
             "email": self.in_email.text().strip(),
             "학력": self.in_school.toPlainText().strip().splitlines(),
             "경력": self.in_career.toPlainText().strip().splitlines(),
             "연구": self.in_research.toPlainText().strip().splitlines(),
         }
-        # image 필드 지정
+        
         if self.new_image_url:
             payload["image"] = self.new_image_url
         elif self.data.get("image"):
             payload["image"] = self.data["image"]
         else:
-            payload["image"] = ""  # 비어 있으면 서버가 기본 이미지 지정하게
+            payload["image"] = ""
 
         return payload
-
+       
 
 class EditHomeNewsDialog(BaseDialog):
     def __init__(self, data: dict | None = None, parent=None):
