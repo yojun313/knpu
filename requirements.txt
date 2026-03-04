@@ -10,7 +10,6 @@ fastparquet
 google_api_python_client
 google_auth_oauthlib
 googletrans
-kiwipiepy
 matplotlib
 numpy
 openai
@@ -37,3 +36,8 @@ wordcloud
 PyQtWebEngine
 python-multipart
 sshtunnel
+psutil
+pyjwt
+kiwipiepy
+transformers
+yt-dlp
