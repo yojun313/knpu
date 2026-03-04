@@ -11,7 +11,7 @@ from ui.style import theme_option
 from PySide6.QtGui import QIcon, QGuiApplication
 from config import ASSETS_PATH
 from packaging import version
-#wcchoi
+
 def build_app():
     if version.parse(VERSION) < version.parse(get_setting("LastVersion")):
         set_setting("LastVersion", VERSION)
