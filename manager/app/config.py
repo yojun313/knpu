@@ -1,5 +1,5 @@
 import os
-VERSION = '3.0.14'
+VERSION = '3.0.15'
 
 '''
     0: local
@@ -7,7 +7,6 @@ VERSION = '3.0.14'
 '''
 
 ASSETS_PATH = os.path.join(os.path.dirname(__file__), "assets")
-ADMIN_PUSHOVERKEY = 'uvz7oczixno7daxvgxmq65g2gbnsd5'
 ADMIN_PASSWORD = "$2b$12$y92zRYAOVwDC0UCXnuG5ZuiJXxiT.drxRFVBu4HoYKmDMB.e.y5kq"
 
 mode = 1
