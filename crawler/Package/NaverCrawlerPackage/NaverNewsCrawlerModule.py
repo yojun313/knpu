@@ -114,14 +114,14 @@ class NaverNewsCrawler(CrawlerModule):
                 "pd": "3",
                 "photo": "0",
                 "query": f"{keyword}",
-                "query_original": "",
+                "query_original": f"{keyword}",
                 "rev": "0",
                 "service_area": "0",
                 "sm": "tab_smr",
                 "sort": "0",
                 "spq": "0",
                 "ssc": "tab.news.all",
-                "start": "1"  # 이미지에서 31로 표시됨 (필요에 따라 변경)
+                "start": "1"  
             }
                         
             # 파라미터를 쿼리 문자열로 변환
