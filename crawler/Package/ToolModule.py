@@ -145,6 +145,7 @@ class ToolModule:
             1001: '[Internal Error] CrawlerPackage -> Requester: Internal unexpected error',
             1002: '[Internal Error] CRAWLER.py : Internal unexpected error',
             1003: '[Internal Error] CrawlerPackage -> asyncRequester: Internal unexpected error',
+            2000: '[Parameter Error] NaverNewsCrawler -> urlCollector: Http Request error',
             2001: '[Parameter Error] NaverNewsCrawler -> urlCollector: Keyword type error',
             2002: '[Parameter Error] NaverNewsCrawler -> urlCollector: DateForm error',
             2003: '[Internal Error] NaverNewsCrawler -> urlCollector: Internal unexpected error',
