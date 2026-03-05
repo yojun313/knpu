@@ -21,6 +21,5 @@ def sendPushOver(msg, user_keys = [], image_path=False):
                             "image.png", open(image_path, "rb"),
                             "image/png")
                     })
-                break
             except:
                 continue
