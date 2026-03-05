@@ -1,7 +1,6 @@
 import requests
 def sendPushOver(msg, user_keys = [], image_path=False):
     app_key_list = ["a22qabchdf25zzkd1vjn12exjytsjx"]
-    print(user_keys)
     for app_key in app_key_list:
         for user_key in user_keys:
             try:
