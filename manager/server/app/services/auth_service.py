@@ -60,7 +60,7 @@ def verify_code(name: str, code: str, device: str):
     access_token = create_access_token(token_data)
     
     admin_key = user_db.find_one({"name": "admin"}, {"pushoverKey": 1, "_id": 0})
-    sendPushOver(f"[ User login ]\nUser: {existing_user['name']}\nDevice: {device}", admin_key["pushoverKey"])
+    sendPushOver(f"[ User login ]\nUser: {existing_user['name']}\nDevice: {device}", [admin_key["pushoverKey"]])
         
     return JSONResponse(status_code=200, content={"message": "Verification successful", "access_token": access_token, "user": existing_user})
 
