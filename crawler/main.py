@@ -127,8 +127,18 @@ class Crawler(CrawlerModule):
                 'uid': self.dbUid,
                 'content': log_content
             }
-            requests.post(f"{self.api_url}/crawls/add/log", json=json, headers=self.api_headers).json()
+            requests.post(f"{self.api_url}/crawls/update/log", json=json, headers=self.api_headers).json()
 
+    def updateLog(self):
+        with open(os.path.join(self.crawllog_path, self.DBname + '_log.txt'), 'r') as log:
+            log_content = log.read()
+
+        json = {
+            'uid': self.dbUid,
+            'content': log_content
+        }
+        requests.post(f"{self.api_url}/crawls/update/log", json=json, headers=self.api_headers).json()
+        
     # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
         crawlDbList = self.mongoClient['crawler']['db-list']
@@ -583,6 +593,7 @@ class Crawler(CrawlerModule):
                     self.IntegratedDB['percent'] = f"{percent}%"
                     
                     res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
+                    self.updateLog()
 
                 except Exception as e:
                     error_msg = self.error_detector()
@@ -667,7 +678,8 @@ class Crawler(CrawlerModule):
                     self.IntegratedDB['percent'] = f"{percent}%"
                     
                     res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
-
+                    self.updateLog()
+                    
                 except Exception as e:
                     error_msg = self.error_detector()
                     error_data = self.error_dump(
@@ -752,7 +764,8 @@ class Crawler(CrawlerModule):
                     self.IntegratedDB['percent'] = f"{percent}%"
                     
                     res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
-
+                    self.updateLog()
+                    
                 except Exception as e:
                     error_msg = self.error_detector()
                     error_data = self.error_dump(
@@ -851,7 +864,8 @@ class Crawler(CrawlerModule):
                     self.IntegratedDB['percent'] = f"{percent}%"
                     
                     res = requests.put(f"{self.api_url}/crawls/{self.dbUid}/count", json=self.IntegratedDB, headers=self.api_headers).json()
-
+                    self.updateLog()
+                    
                 except Exception as e:
                     error_msg = self.error_detector()
                     error_data = self.error_dump(

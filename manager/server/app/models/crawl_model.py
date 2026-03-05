@@ -37,7 +37,7 @@ class CrawlDbCreateDto(BaseModel):
     crawlCom: str
     crawlSpeed: int
     
-class CrawlLogCreateDto(BaseModel):
+class CrawlLogUpdateDto(BaseModel):
     uid: str
     content: str
     

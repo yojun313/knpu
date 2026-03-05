@@ -1,6 +1,6 @@
 from app.db import crawlList_db, crawlLog_db, user_db, crawldata_path
 from app.libs.exceptions import ConflictException, NotFoundException
-from app.models.crawl_model import CrawlDbCreateDto, CrawlLogCreateDto, SaveCrawlDbOption
+from app.models.crawl_model import CrawlDbCreateDto, CrawlLogUpdateDto, SaveCrawlDbOption
 from app.utils.mongo import clean_doc
 from app.utils.zip import fast_zip
 from app.utils.getsize import getFolderSize, format_size
@@ -55,23 +55,25 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
     )
 
 
-def createCrawlLog(crawlLog: CrawlLogCreateDto):
+def updateCrawlLog(crawlLog: CrawlLogUpdateDto):
     crawlLog_dict = crawlLog.model_dump()
 
     existing_crawlLog = crawlLog_db.find_one({"uid": crawlLog_dict["uid"]})
     if existing_crawlLog:
-        raise ConflictException("CrawlLog with this uid already exists")
+        crawlLog_db.update_one({
+            "uid": crawlLog_dict['uid']
+        }, {
+            "$set": {"content": crawlLog_dict['content']}
+        })
 
-    dict = {
+    crawlLog_db.insert_one({
         'uid': crawlLog_dict['uid'],
         'content': crawlLog_dict['content'],
-    }
-
-    crawlLog_db.insert_one(dict)
+    })
 
     return JSONResponse(
         status_code=201,
-        content={"message": "CrawlLog created",
+        content={"message": "CrawlLog update",
                  "data": clean_doc(crawlLog_dict)},
     )
 
