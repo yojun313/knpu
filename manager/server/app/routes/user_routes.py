@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Body
 from app.models.user_model import UserCreate
-from app.services.user_service import create_user, delete_user, get_all_users, log_user, bug_user
+from app.services.user_service import create_user, delete_user, get_all_users, log_user, bug_user, get_all_admins
 from app.libs.jwt import verify_token
 from starlette.background import BackgroundTask
 from fastapi.responses import JSONResponse
@@ -32,3 +32,7 @@ def loadUsers():
 @router.delete("/{userUid}")
 def deleteUser(userUid: str):
     return delete_user(userUid)
+
+@router.get("/admin/list")
+def loadAdminUsers():
+    return get_all_admins()
