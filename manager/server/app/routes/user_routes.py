@@ -44,7 +44,6 @@ def loadAdminUsers():
     
 @router.post('/admin/pushover')
 def sendAdminPushOver(message: str = Body(..., embed=True)):
-    print([admin['pushoverKey'] for admin in get_all_admins()])
     sendPushOver(message, [admin['pushoverKey'] for admin in get_all_admins()])
     return JSONResponse(
         status_code=200,
