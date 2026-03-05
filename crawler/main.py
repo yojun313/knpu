@@ -524,8 +524,7 @@ class Crawler(CrawlerModule):
                         return
 
                     # News URL Part
-                    urlList_returnData = NaverNewsCrawler_obj.urlCollector(
-                        keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
+                    urlList_returnData = NaverNewsCrawler_obj.urlCollector(keyword=self.keyword, startDate=self.currentDate_str, endDate=self.currentDate_str)
                     if self.ReturnChecker(urlList_returnData) == False:
                         if dayCount == 0:
                             self.fail_first_crawl()
