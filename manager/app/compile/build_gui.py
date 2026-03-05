@@ -30,35 +30,8 @@ INNO_SETUP_EXE = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 from upload import upload_file  # 기존 모듈 그대로 사용
 
 
-def sendPushOver(msg, user_key='uvz7oczixno7daxvgxmq65g2gbnsd5', image_path=False):
-    app_key_list = ["a22qabchdf25zzkd1vjn12exjytsjx"]
-
-    for app_key in app_key_list:
-        try:
-            url = 'https://api.pushover.net/1/messages.json'
-            message = {
-                'token': app_key,
-                'user': user_key,
-                'message': msg
-            }
-            if not image_path:
-                response = requests.post(url, data=message)
-            else:
-                response = requests.post(
-                    url,
-                    data=message,
-                    files={
-                        "attachment": (
-                            "image.png",
-                            open(image_path, "rb"),
-                            "image/png"
-                        )
-                    }
-                )
-            break
-        except Exception:
-            continue
-
+def sendPushOver(msg):
+    requests.post('https://manager.knpu.re.kr/api/users/admin/pushover', json={"message": msg})
 
 def update_inno_version(iss_path: str, new_version: str):
     temp_iss_path = os.path.join(os.path.dirname(iss_path), 'setup_temp.iss')
