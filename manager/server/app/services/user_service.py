@@ -36,10 +36,7 @@ def get_all_users():
 def get_all_admins():
     admins = user_db.find({"role": "admin"})
     admin_list = [clean_doc(admin) for admin in admins]
-    return JSONResponse(
-        status_code=200,
-        content={"message": "Admins retrieved", "data": admin_list},
-    )
+    return admin_list
 
 def delete_user(userUid: str):
     result = user_db.delete_one({"uid": userUid})

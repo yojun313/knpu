@@ -4,6 +4,7 @@ from app.services.user_service import create_user, delete_user, get_all_users, l
 from app.libs.jwt import verify_token
 from starlette.background import BackgroundTask
 from fastapi.responses import JSONResponse
+from app.utils.pushover import sendPushOver
 
 
 router = APIRouter()
@@ -35,4 +36,16 @@ def deleteUser(userUid: str):
 
 @router.get("/admin/list")
 def loadAdminUsers():
-    return get_all_admins()
+    admin_list = get_all_admins()
+    return JSONResponse(
+        status_code=200,
+        content={"message": "Admins retrieved", "data": admin_list},
+    )
+    
+@router.post('/admin/pushover')
+def sendAdminPushOver(message: str = Body(..., embed=True)):
+    sendPushOver(message, get_all_admins())
+    return JSONResponse(
+        status_code=200,
+        content={"message": "PushOver sent to admin"},
+    )

@@ -41,16 +41,15 @@ def add_version_bg(doc):
         keys = list(user_db.find({}, {"pushoverKey": 1, "_id": 0}))
         pushover_keys = [doc["pushoverKey"]
                          for doc in keys if doc["pushoverKey"] != 'n']
-        for key in pushover_keys:
-            msg = (
-                "[ New Version Released! ]\n\n"
-                f"Version Num: {doc["versionName"]}\n"
-                f"Release Date: {doc["releaseDate"]}\n"
-                f"ChangeLog: {doc["changeLog"]}\n"
-                f"Version Features: {doc["features"]}\n"
-                f"Version Detail: \n{doc["details"]}\n"
-            )
-            sendPushOver(msg, key)
+        msg = (
+            "[ New Version Released! ]\n\n"
+            f"Version Num: {doc["versionName"]}\n"
+            f"Release Date: {doc["releaseDate"]}\n"
+            f"ChangeLog: {doc["changeLog"]}\n"
+            f"Version Features: {doc["features"]}\n"
+            f"Version Detail: \n{doc["details"]}\n"
+        )
+        sendPushOver(msg, pushover_keys)
 
 
 def get_version(versionName: str):
@@ -148,7 +147,7 @@ def add_bug(data: AddBugDto, userUid: str):
         f"Detail: \n{doc['bugText']}\n"
         f"log: \n\n{doc['programLog']}\n"
     )
-    sendPushOver(msg, os.getenv("ADMIN_PUSHOVER"))
+    sendPushOver(msg, [os.getenv("ADMIN_PUSHOVER")])
 
     return JSONResponse(status_code=201, content={"message": "Bug post created", "data": clean_doc(doc)})
 
@@ -195,15 +194,14 @@ def add_post(data: AddPostDto, userUid: str):
         keys = list(user_db.find({}, {"pushoverKey": 1, "_id": 0}))
         pushover_keys = [doc["pushoverKey"]
                          for doc in keys if doc["pushoverKey"] != 'n']
-        for key in pushover_keys:
-            msg = (
-                "[ New Post Added! ]\n"
-                f"User: {doc['writerName']}\n"
-                f"Post Title: {doc['title']}\n"
-                f"Post Date: {doc['datetime']}\n"
-                f"Post Text: {doc['text']}\n"
-            )
-            sendPushOver(msg, key)
+        msg = (
+            "[ New Post Added! ]\n"
+            f"User: {doc['writerName']}\n"
+            f"Post Title: {doc['title']}\n"
+            f"Post Date: {doc['datetime']}\n"
+            f"Post Text: {doc['text']}\n"
+        )
+        sendPushOver(msg, pushover_keys)
     log_user(userUid, f"Added new post: {data.title}")
 
     return JSONResponse(status_code=201, content={"message": "Post added", "data": clean_doc(doc)})
