@@ -63,7 +63,7 @@ def load_hate_model():
             tokenizer=tokenizer,
             function_to_apply="sigmoid",
             top_k=None,
-            device=1 if torch.cuda.is_available() else -1,
+            device=0 if torch.cuda.is_available() else -1,
         )
         
     manager.reset_timer("hate", unload_hate_model)
