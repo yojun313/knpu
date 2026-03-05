@@ -206,7 +206,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             reply = QMessageBox.question(
                 self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
             if reply == QMessageBox.StandardButton.Yes:
-                self.managerBoardObj.viewPost(selectedRow=0)
+                self.managerBoardObj.viewPost(new=True)
     
     def closeBootscreen(self):
         try:
