@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
 import socket
+from app.config import mode
 
 load_dotenv()
 
@@ -44,8 +45,15 @@ else:
         f"@127.0.0.1:{server.local_bind_port}/?authSource={MONGO_AUTH_DB}"
     )
 
-manager_db = client["manager"]
-crawler_db = client["crawler"]
+if mode == 0:
+    manager_db_name = 'manager_dev'
+    crawler_db_name = 'crawler_dev'
+else:    
+    manager_db_name = 'manager'
+    crawler_db_name = 'crawler'
+    
+manager_db = client[manager_db_name]
+crawler_db = client[crawler_db_name]
 
 crawlList_db = crawler_db["db-list"]
 crawlLog_db = crawler_db["log-list"]
