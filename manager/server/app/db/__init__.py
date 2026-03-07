@@ -67,3 +67,10 @@ free_board_db = manager_db["free-board"]
 auth_db = manager_db["auth"]
 
 crawldata_path = os.getenv('CRAWLDATA_PATH')
+
+crawl_uid_list = [data['uid'] for data in crawlList_db.find({}, {"uid": 1, "_id": 0})]
+log_uid_list = [data['uid'] for data in crawlLog_db.find({}, {"uid": 1, "_id": 0})]
+
+for uid in log_uid_list:
+    if uid not in crawl_uid_list:
+        crawlLog_db.delete_one({"uid": uid})
