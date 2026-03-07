@@ -112,7 +112,7 @@ class ToolModule:
         user = db.find_one({'name': input_name})
         if user is None:
             return False
-        return {'Email': user['email'], 'PushOver': user['pushoverKey']}
+        return {'Email': user['email'], 'PushOver': user['pushoverKey'], 'userUid': user['uid']}
 
     def sendPushOver(self, msg, user_key):
         app_key_list  = ["a273soeggkmq1eafdyghexusve42bq", "a39cudwdti3ap97kax9pmvp6gdm2b9"]

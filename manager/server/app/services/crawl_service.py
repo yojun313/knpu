@@ -31,6 +31,8 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
     existing_crawlDb = crawlList_db.find_one({"name": crawlDb_dict["name"]})
     if existing_crawlDb:
         raise ConflictException("CrawlDB with this name already exists")
+    
+    userUid = crawlDb_dict["userUid"]
 
     ordered_dict = OrderedDict([("uid", str(uuid.uuid4()))])
     ordered_dict.update(crawlDb_dict)
@@ -47,6 +49,7 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
     ordered_dict['endTime'] = "0%"
 
     crawlList_db.insert_one(ordered_dict)
+    log_user(userUid, f"Created crawl DB: {crawlDb_dict['name']}")
 
     return JSONResponse(
         status_code=201,
