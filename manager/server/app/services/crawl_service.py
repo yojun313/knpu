@@ -105,7 +105,9 @@ def deleteCrawlDb(uid: str, userUid: str):
     targetDB = crawlDb['name']
     log_user(userUid, f"Requested to delete crawl DB: {targetDB}")
     
-    result = crawlList_db.delete_one({"uid": uid})
+    crawlList_db.delete_one({"uid": uid})
+    crawlLog_db.delete_one({"uid": uid})   
+    
     task = BackgroundTask(deleteCrawlDbBg, crawlDb['name'])
 
     return JSONResponse(
