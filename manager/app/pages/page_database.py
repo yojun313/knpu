@@ -116,7 +116,7 @@ class Manager_Database(Manager_Worker):
                         for file_name in file_list:
                             table_name = file_name.replace('.parquet', '')
 
-                            with zf.open(file_name) as f:
+                            with zf.open(safe_path(file_name)) as f:
                                 df = pd.read_parquet(f)
 
                             if 'id' in df.columns:

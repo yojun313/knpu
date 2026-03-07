@@ -14,6 +14,7 @@ from config import VERSION
 from core.setting import get_setting
 from core.boot import checkNewVersion
 from core.thread import DownloadDialog
+from libs.path import safe_path
 import time
 
 class DownloadWorker(QThread):
@@ -37,7 +38,7 @@ class DownloadWorker(QThread):
             last_emit_time = 0
             last_percent = -1
 
-            with open(self.save_path, 'wb') as f:
+            with open(safe_path(self.save_path), 'wb') as f:
                 for chunk in response.iter_content(chunk_size=chunkSize):
                     if chunk:
                         f.write(chunk)

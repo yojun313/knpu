@@ -29,7 +29,7 @@ class BaseWorker(QThread):
         파일 업로드를 공통으로 처리하는 메서드
         """
         try:
-            file_size = os.path.getsize(file_path)
+            file_size = os.path.getsize(safe_path(file_path))
             uploaded = 0
             last_percent = -1
             last_emit_time = 0
@@ -50,7 +50,7 @@ class BaseWorker(QThread):
                     last_emit_time = now
 
             fields = extra_fields or {}
-            fields["file"] = (os.path.basename(file_path), open(file_path, "rb"), "application/octet-stream")
+            fields["file"] = (os.path.basename(safe_path(file_path)), open(safe_path(file_path), "rb"), "application/octet-stream")
             encoder = MultipartEncoder(fields=fields)
             monitor = MultipartEncoderMonitor(encoder, upload_callback)
 
