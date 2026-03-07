@@ -30,6 +30,7 @@ class CrawlDbListSchema(BaseModel):
 
 class CrawlDbCreateDto(BaseModel):
     name: str
+    userUid: str
     crawlOption: int
     requester: str
     keyword: str

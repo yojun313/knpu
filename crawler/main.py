@@ -73,6 +73,7 @@ class Crawler(CrawlerModule):
 
         self.userEmail = userData['Email']
         self.pushoverKey = userData['PushOver']
+        self.userUid = userData['userUid']
 
         # For Web Version
         self.weboption = int(weboption)
@@ -176,6 +177,7 @@ class Crawler(CrawlerModule):
 
         json = {
             "name": self.DBname,
+            "userUid": self.userUid,
             "crawlOption": option,
             "requester": requester,
             "keyword": keyword,
