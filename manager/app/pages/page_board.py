@@ -265,9 +265,11 @@ class Manager_Board:
     def viewPost(self, new=False):
         try:
             selectedRow = self.main.board_post_tableWidget.currentRow()
+            if new:
+                selectedRow = 0
+                
             if selectedRow >= 0:
-                if new:
-                    selectedRow = 0
+                print(f"Selected Row: {selectedRow}")
                 printStatus(self.main, "불러오는 중...")
                 post_data = self.origin_post_data[selectedRow]
 
@@ -277,7 +279,6 @@ class Manager_Board:
                 from ui.dialogs import ViewPostDialog
                 dialog = ViewPostDialog(self.main, post_data)
                 dialog.exec()
-
                 self.refreshPostBoard()
 
         except Exception as e:
