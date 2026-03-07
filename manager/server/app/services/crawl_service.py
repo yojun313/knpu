@@ -58,23 +58,18 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
 def updateCrawlLog(crawlLog: CrawlLogUpdateDto):
     crawlLog_dict = crawlLog.model_dump()
 
-    existing_crawlLog = crawlLog_db.find_one({"uid": crawlLog_dict["uid"]})
-    if existing_crawlLog:
-        crawlLog_db.update_one({
-            "uid": crawlLog_dict['uid']
-        }, {
-            "$set": {"content": crawlLog_dict['content']}
-        })
-
-    crawlLog_db.insert_one({
-        'uid': crawlLog_dict['uid'],
-        'content': crawlLog_dict['content'],
-    })
+    crawlLog_db.update_one(
+        {"uid": crawlLog_dict["uid"]},
+        {"$set": {"content": crawlLog_dict["content"]}},
+        upsert=True
+    )
 
     return JSONResponse(
         status_code=201,
-        content={"message": "CrawlLog update",
-                 "data": clean_doc(crawlLog_dict)},
+        content={
+            "message": "CrawlLog updated/created",
+            "data": clean_doc(crawlLog_dict)
+        },
     )
 
 
