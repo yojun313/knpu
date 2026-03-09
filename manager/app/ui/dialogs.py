@@ -560,6 +560,7 @@ class ViewVersionDialog(BaseDialog):
         self.add_label(self.layout, "ChangeLog",        self.version_data[2])
         self.add_label(self.layout, "Version Features", self.version_data[3])
         self.add_label(self.layout, "Detail",           self.version_data[4], multiline=True)
+        self.add_label(self.layout, "Publisher",        self.version_data[5])
     
     def add_buttons(self, *buttons):
         button_layout = QHBoxLayout()

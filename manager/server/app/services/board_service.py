@@ -25,6 +25,7 @@ def add_version(data: AddVersionDto, userUid: str):
     doc["uid"] = str(uuid.uuid4())
     doc["releaseDate"] = datetime.now(
         ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
+    doc['publisher'] = userUid
 
     version_board_db.insert_one(doc)
 
@@ -62,7 +63,8 @@ def get_version(versionName: str):
             "changeLog": "",
             "features": "",
             "details": "",
-            "uid": str(uuid.uuid4())
+            "uid": str(uuid.uuid4()),
+            "publisher": user_db.find_one({"uid": doc['publisher']})['name']
         }
         return JSONResponse(status_code=200, content={"message": "Version not found, returning temporary data", "data": temp_doc})
     
@@ -72,7 +74,7 @@ def edit_version(versionName: str, data: AddVersionDto, userUid: str):
     log_user(userUid, f"Edited version: {versionName}")
     update_fields = data.model_dump()
     update_fields['releaseDate'] = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
-    
+
     version_board_db.update_one(
         {"versionName": versionName},
         {"$set": update_fields}
@@ -85,8 +87,10 @@ def edit_version(versionName: str, data: AddVersionDto, userUid: str):
     
 def get_version_list():
     docs = [clean_doc(d) for d in version_board_db.find()]
+    for docs in docs:
+        publisher_info = user_db.find_one({"uid": docs['publisher']}, {"name": 1, "_id": 0})
+        docs['publisher'] = publisher_info['name']
     return JSONResponse(status_code=200, content={"message": "Version list retrieved", "data": docs})
-
 
 def delete_version(versionName: str, userUid: str):
     log_user(userUid, f"Deleted version: {versionName}")
