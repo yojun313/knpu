@@ -17,30 +17,9 @@ from upload import upload_file
 
 OUTPUT_DIRECTORY = "D:/knpu/MANAGER/exe"
 VENV_PYTHON = r"C:/GitHub/knpu/venv/Scripts/python.exe"
-INNO_SETUP_EXE = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 
 def sendPushOver(msg):
     requests.post('https://manager.knpu.re.kr/api/users/admin/pushover', json={"message": msg})
-
-def update_inno_version(iss_path: str, new_version: str):
-    temp_iss_path = os.path.join(os.path.dirname(iss_path), 'setup_temp.iss')
-    with open(iss_path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    
-    updated_lines = []
-    pattern = r'^\s*#define\s+MyAppVersion\s+"[\w.\-]+"'
-    
-    for line in lines:
-        if re.match(pattern, line):
-            new_line = f'#define MyAppVersion "{new_version}"\n'
-            updated_lines.append(new_line)
-        else:
-            updated_lines.append(line)
-            
-    with open(temp_iss_path, 'w', encoding='utf-8') as f:
-        f.writelines(updated_lines)
-        
-    return temp_iss_path
 
 def create_spec_file(original_spec_file, new_spec_file, exe_name):
     with open(original_spec_file, 'r', encoding='utf-8') as file:
@@ -104,12 +83,11 @@ class BuildWorker(QObject):
     finished = Signal(str, float)
     error = Signal(str)
 
-    def __init__(self, version_mode: str, custom_version: str, spec_file: str, iss_path: str, parent=None):
+    def __init__(self, version_mode: str, custom_version: str, spec_file: str, parent=None):
         super().__init__(parent)
         self.version_mode = version_mode
         self.custom_version = custom_version.strip()
         self.spec_file = spec_file
-        self.iss_path = iss_path
         self.output_directory = OUTPUT_DIRECTORY
         self._is_running = True
 
@@ -149,7 +127,6 @@ class BuildWorker(QObject):
             if os.path.exists(same_version_path):
                 shutil.rmtree(same_version_path)
 
-            self._log("업데이트용 실행 파일 빌드 시작")
             build_exe_from_spec(
                 self.spec_file,
                 self.output_directory,
@@ -157,39 +134,11 @@ class BuildWorker(QObject):
                 log_func=self._log
             )
 
-            raw_exe_path = os.path.join(self.output_directory, f"MANAGER_{target_version}", f"MANAGER_{target_version}.exe")
-            if not os.path.exists(raw_exe_path):
-                raw_exe_path = os.path.join(self.output_directory, f"MANAGER_{target_version}.exe")
+            exe_path = os.path.join(self.output_directory, f"MANAGER_{target_version}", f"MANAGER_{target_version}.exe")
+            if not os.path.exists(exe_path):
+                exe_path = os.path.join(self.output_directory, f"MANAGER_{target_version}.exe")
 
-            update_exe_name = f"MANAGER_{target_version}_update.exe"
-            update_exe_path = os.path.join(self.output_directory, update_exe_name)
-            shutil.copy2(raw_exe_path, update_exe_path)
-
-            self._log(f"업데이트용 파일 업로드: {update_exe_name}")
-            upload_file(update_exe_path)
-
-            self._log("신규 설치용 Inno Setup 빌드 시작")
-            temp_iss_path = update_inno_version(self.iss_path, target_version)
-            subprocess.run([INNO_SETUP_EXE, temp_iss_path], check=True)
-            
-            try:
-                os.remove(temp_iss_path)
-            except Exception:
-                pass
-
-            setup_exe_name = f"MANAGER_{target_version}.exe"
-            setup_exe_path = os.path.join(self.output_directory, "Output", setup_exe_name)
-            
-            if not os.path.exists(setup_exe_path):
-                setup_exe_path = os.path.join(os.path.dirname(self.iss_path), "Output", setup_exe_name)
-            if not os.path.exists(setup_exe_path):
-                setup_exe_path = setup_exe_name
-
-            if os.path.exists(setup_exe_path):
-                self._log(f"신규 설치용 파일 업로드: {setup_exe_name}")
-                upload_file(setup_exe_path)
-            else:
-                self._log(f"설치 파일을 찾을 수 없습니다: {setup_exe_path}")
+            upload_file(exe_path)
 
             end_time = datetime.now()
             elapsed = end_time - start_time
@@ -197,7 +146,7 @@ class BuildWorker(QObject):
             elapsed_sec = int(elapsed.total_seconds() % 60)
 
             sendPushOver(
-                f"MANAGER {target_version} 빌드 및 이중 배포 완료\n\n"
+                f"MANAGER {target_version} 빌드 완료\n\n"
                 f"소요시간: {elapsed_min}분 {elapsed_sec}초"
             )
 
@@ -205,12 +154,11 @@ class BuildWorker(QObject):
 
         except Exception as e:
             self.error.emit(str(e))
-            
+
 class MainWindow(QMainWindow):
-    def __init__(self, spec_file: str, iss_path: str):
+    def __init__(self, spec_file: str):
         super().__init__()
         self.spec_file = spec_file
-        self.iss_path = iss_path
         self.thread = None
         self.worker = None
         self.init_ui()
@@ -334,8 +282,7 @@ class MainWindow(QMainWindow):
         self.worker = BuildWorker(
             version_mode=mode,
             custom_version=custom_version,
-            spec_file=self.spec_file,
-            iss_path=self.iss_path
+            spec_file=self.spec_file
         )
         self.worker.moveToThread(self.thread)
 
@@ -380,8 +327,7 @@ def main():
     app = QApplication(sys.argv)
     base_dir = os.path.dirname(os.path.abspath(__file__))
     spec_file = os.path.join(base_dir, "build.spec")
-    iss_path = os.path.join(base_dir, "setup.iss")
-    window = MainWindow(spec_file, iss_path)
+    window = MainWindow(spec_file)
     window.show()
     sys.exit(app.exec())
 
