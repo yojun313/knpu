@@ -88,7 +88,7 @@ def downloadProgram(parent, newVersionName, is_update=True):
     else:
         downloadFile_path = os.path.join(temp_dir, f"MANAGER_{newVersionName}.exe")
         download_url = f"https://knpu.re.kr/download/MANAGER_{newVersionName}.exe"
-        msg = "재설치 다운로드"
+        msg = "전체 패키지 다운로드"
 
     dialog = DownloadDialog(f"{msg}: {newVersionName}", parent=parent)
     worker = DownloadWorker(download_url, downloadFile_path)
@@ -98,11 +98,10 @@ def downloadProgram(parent, newVersionName, is_update=True):
         
         if is_update:
             current_exe = sys.executable
-            old_exe = current_exe + ".old"
+            # 파일 충돌을 방지하기 위해 타임스탬프 추가
+            old_exe = current_exe + f".old_{int(time.time())}"
             
             try:
-                if os.path.exists(old_exe):
-                    os.remove(old_exe)
                 os.rename(current_exe, old_exe)
                 shutil.copy2(path, current_exe)
                 
@@ -128,34 +127,39 @@ def downloadProgram(parent, newVersionName, is_update=True):
     worker.start()
     dialog.exec()
 
+
 def updateProgram(parent, sc=False):
     try:
-        newVersionInfo = checkNewVersion()
-        if not newVersionInfo:
+        newVersionCheck = checkNewVersion()
+        if not newVersionCheck:
             newVersionName = VERSION
         else:
-            newVersionName = newVersionInfo[0]
+            newVersionName = newVersionCheck[0]
 
-        def update_process():
+        def update_process(is_full_update):
             msg = f"{parent.user} updated {VERSION} -> {newVersionName}\n\n{getUserLocation(parent)}"
             sendPushOver(msg)
             userLogging(f'Program Update ({VERSION} -> {newVersionName})')
             printStatus(parent, "버전 업데이트 중...")
-            downloadProgram(parent, newVersionName, is_update=True)
+            
+            downloadProgram(parent, newVersionName, is_update=not is_full_update)
 
-        if newVersionInfo:
+        if newVersionCheck:
+            newVersionInfo = getVersionInfo(newVersionName)
+            is_full_update = newVersionInfo.get('fullUpdate', False)
+
             if get_setting('AutoUpdate') == 'auto':
                 parent.closeBootscreen()
-                update_process()
+                update_process(is_full_update)
                 return
-            newVersionInfo = getVersionInfo(newVersionName)
+            
             version_data = [
-                str(newVersionInfo['versionName']),
-                str(newVersionInfo['releaseDate']),
-                str(newVersionInfo['changeLog']),
-                str(newVersionInfo['features']),
-                str(newVersionInfo['publisher']),
-                str(newVersionInfo['details'])
+                str(newVersionInfo.get('versionName', '')),
+                str(newVersionInfo.get('releaseDate', '')),
+                str(newVersionInfo.get('changeLog', '')),
+                str(newVersionInfo.get('features', '')),
+                str(newVersionInfo.get('publisher', '')),
+                str(newVersionInfo.get('details', ''))
             ]
 
             dialog = ViewVersionDialog(parent, version_data)
@@ -168,7 +172,7 @@ def updateProgram(parent, sc=False):
             dialog.add_buttons(update_btn, cancel_btn)
 
             if dialog.exec() == QDialog.DialogCode.Accepted:
-                update_process()
+                update_process(is_full_update)
 
         else:
             if sc is True:
@@ -181,6 +185,7 @@ def updateProgram(parent, sc=False):
                 )
                 if reply == QMessageBox.StandardButton.Yes:
                     printStatus(parent, "버전 재설치 중...")
+                    # 재설치는 항상 전체 설치 패키지로 진행
                     downloadProgram(parent, newVersionName, is_update=False)
                 else:
                     return

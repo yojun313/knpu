@@ -69,9 +69,6 @@ def create_spec_file(original_spec_file, new_spec_file, exe_name):
 
 
 def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
-    """
-    log_func: 로그를 GUI에 출력하기 위한 콜백 (str -> None)
-    """
     def log(msg):
         if log_func:
             log_func(msg)
@@ -99,7 +96,6 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
         subprocess.run(cmd, check=True)
         log(f"Finished building {exe_name}.exe")
     finally:
-        # cleanup
         try:
             if os.path.exists(new_spec_file):
                 os.remove(new_spec_file)
@@ -108,7 +104,7 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
                 shutil.rmtree(build_path)
             log(f"Cleaned temporary files in {os.path.dirname(new_spec_file)}")
         except Exception as e:
-            log(f"[경고] 임시 파일 정리 중 오류 발생: {e}")
+            log(f"Error: {e}")
 
 def read_latest_built_version() -> str | None:
     """
@@ -210,17 +206,20 @@ class BuildWorker(QObject):
             )
             self._log("PyInstaller 빌드 완료")
 
-            raw_exe_path = os.path.join(self.output_directory, f"MANAGER_{target_version}", f"MANAGER_{target_version}.exe")
-            if not os.path.exists(raw_exe_path):
-                raw_exe_path = os.path.join(self.output_directory, f"MANAGER_{target_version}.exe")
-
+            built_folder_path = os.path.join(self.output_directory, f"MANAGER_{target_version}")
+            raw_exe_old_path = os.path.join(built_folder_path, f"MANAGER_{target_version}.exe")
+            raw_exe_new_path = os.path.join(built_folder_path, "MANAGER.exe")
+            
+            if os.path.exists(raw_exe_old_path):
+                os.rename(raw_exe_old_path, raw_exe_new_path)
+            
             update_exe_name = f"MANAGER_{target_version}_update.exe"
             update_exe_path = os.path.join(self.output_directory, update_exe_name)
-            shutil.copy2(raw_exe_path, update_exe_path)
-            self._log(f"업데이트용 파일 복사 완료: {update_exe_name}")
             
-            self._log(f"업데이트용 파일 업로드 시작: {update_exe_name}")
-            upload_file(os.path.join(EXE_DIRECTORY, update_exe_name))
+            if os.path.exists(raw_exe_new_path):
+                shutil.copy2(raw_exe_new_path, update_exe_path)
+            
+            upload_file(os.path.join(self.output_directory, update_exe_name))
             self._log("업로드 완료")
 
             self._log("Inno Setup 버전 정보 업데이트")

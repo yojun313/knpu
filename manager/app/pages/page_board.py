@@ -52,12 +52,10 @@ class Manager_Board:
                 if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     return
 
-            # QDialog를 상속받은 클래스 생성
             from ui.dialogs import AddVersionDialog
             dialog = AddVersionDialog(VERSION)
             dialog.exec()
 
-            # 데이터를 addVersion 함수에서 사용
             if dialog.data:
                 version_data = dialog.data
                 data = {
@@ -65,6 +63,7 @@ class Manager_Board:
                     "changeLog": version_data[1],
                     "features": version_data[2],
                     "details": version_data[3],
+                    "fullUpdate": version_data[4],
                     'sendPushOver': False,
                 }
 
@@ -78,7 +77,7 @@ class Manager_Board:
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
-
+    
     def editVersion(self):
         try:
             if self.main.user_role != 'admin':

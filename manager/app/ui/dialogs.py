@@ -363,26 +363,24 @@ class AddVersionDialog(BaseDialog):
 
     def initUI(self):
         self.setWindowTitle('Add Version')
-        self.resize(480, 520)
+        self.resize(480, 550)
 
         layout = QVBoxLayout(self)
 
-        # Version Num (QLineEdit)
         layout.addWidget(QLabel('<b>Version Num:</b>'))
         self.version_num_input = QLineEdit()
         self.version_num_input.setText(self.version)
         layout.addWidget(self.version_num_input)
 
-        # ChangeLog (monospace=True, editable)
         self.changelog_input = self.add_label(layout, "ChangeLog:", "", readonly=False)
 
-        # Version Features (일반 글꼴, editable)
         self.version_features_input = self.add_label(layout, "Version Features:", "", readonly=False)
 
-        # Detail (monospace=True, editable)
         self.detail_input = self.add_label(layout, "Detail:", "", readonly=False, multiline=True)
 
-        # Submit
+        self.full_update_checkbox = QCheckBox("설치 파일 업데이트")
+        layout.addWidget(self.full_update_checkbox)
+
         self.submit_button = QPushButton('Submit')
         self.submit_button.clicked.connect(self.submit)
         layout.addWidget(self.submit_button)
@@ -392,15 +390,17 @@ class AddVersionDialog(BaseDialog):
         changelog = self.changelog_input.text() 
         version_features = self.version_features_input.text()  
         detail = self.detail_input.toPlainText()  
+        is_full_update = self.full_update_checkbox.isChecked()
 
-        self.data = [version_num, changelog, version_features, detail]
+        self.data = [version_num, changelog, version_features, detail, is_full_update]
 
         QMessageBox.information(
             self, 'Input Data',
             f'Version Num: {version_num}\n'
             f'ChangeLog: {changelog}\n'
             f'Version Features: {version_features}\n'
-            f'Detail: {detail}'
+            f'Detail: {detail}\n'
+            f'Full Update: {is_full_update}'
         )
         self.accept()
 

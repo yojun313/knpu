@@ -6,7 +6,7 @@
 #define MyAppPublisher "MANAGER"
 
 #define MyAppURL "https://knpu.re.kr"
-#define MyAppExeName MyAppPublisher + "_" + MyAppVersion + ".exe"
+#define MyAppExeName "MANAGER.exe"
 #define MyAppAssocName MyAppName + " File"
 #define MyAppAssocExt ".myp"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
