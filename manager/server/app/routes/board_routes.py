@@ -15,7 +15,6 @@ router = APIRouter()
 def create_version():
     return check_newest_version()
 
-
 @router.post("/version/add")
 def create_version(data: AddVersionDto, userUid: str = Depends(verify_token)):
     return add_version(data, userUid)

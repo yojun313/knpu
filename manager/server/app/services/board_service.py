@@ -101,19 +101,8 @@ def delete_version(versionName: str, userUid: str):
 
 
 def check_newest_version():
-    def sort_by_version(two_dim_list):
-        # 버전 번호를 파싱하여 비교하는 함수
-        def version_key(version_str):
-            return [int(part) for part in version_str.split('.')]
-
-        sorted_list = sorted(
-            two_dim_list, key=lambda x: version_key(x[0]), reverse=True)
-        return sorted_list
-
-    docs = version_board_db.find()
-    docs_list = [clean_doc(d) for d in docs]
-    version_data = sort_by_version([list(map(str, item.values())) for item in docs_list])
-    newest_version = version_data[0]
+    version_data = version_board_db.find().sort('versionName', -1)
+    newest_version = [version_data[0]['versionName']]
     return JSONResponse(status_code=200, content={"message": "Newest version retrieved", "data": newest_version})
 
 # ----------- Bug Board -----------

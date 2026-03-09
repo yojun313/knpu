@@ -83,10 +83,10 @@ def checkNewVersion():
     return newestVersion if currentVersion < newVersion else None
 
 def checkNewPost(parent):
-    if len(parent.managerBoardObj.origin_post_data) == 0:
+    if len(parent.managerBoardObj.post_data) == 0:
         return False
-    new_post_uid = parent.managerBoardObj.origin_post_data[0]['uid']
-    new_post_writer = parent.managerBoardObj.origin_post_data[0]['writerName']
+    new_post_uid = parent.managerBoardObj.post_data[0]['uid']
+    new_post_writer = parent.managerBoardObj.post_data[0]['writerName']
     old_post_uid = get_setting('OldPostUid')
     
     if new_post_uid == old_post_uid:

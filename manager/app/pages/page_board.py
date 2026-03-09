@@ -24,10 +24,10 @@ class Manager_Board:
     def refreshVersionBoard(self):
         try:
             self.version_data = Request('get', '/board/version').json()['data']
-            self.version_data_for_table = [data.pop('details') for data in self.version_data]
+            self.version_data_for_table = [[data['versionName'], data['releaseDate'], data['changeLog'], data['features'], data['publisher']] for data in self.version_data]
             self.version_table_column = ['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Publisher']
             makeTable(self.main, self.main.board_version_tableWidget, self.version_data_for_table, self.version_table_column)
-            self.version_name_list = [version_data[0] for version_data in self.version_data_for_table]
+            self.version_name_list = [data['versionName'] for data in self.version_data]
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
@@ -44,22 +44,15 @@ class Manager_Board:
             dialog.exec()
 
             if dialog.data:
-                version_data = dialog.data
-                data = {
-                    "versionName": version_data[0],
-                    "changeLog": version_data[1],
-                    "features": version_data[2],
-                    "details": version_data[3],
-                    "fullUpdate": version_data[4],
-                    'sendPushOver': False,
-                }
-
+                json_data = dialog.data
+                json_data['sendPushOver'] = False
+                
                 reply = QMessageBox.question(
                     self.main, 'Confirm Notification', "업데이트 알림을 전송하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
                 if reply == QMessageBox.StandardButton.Yes:
-                    data['sendPushOver'] = True
+                    json_data['sendPushOver'] = True
 
-                Request('post', '/board/version/add', json=data)
+                Request('post', '/board/version/add', json=json_data)
             self.refreshVersionBoard()
 
         except Exception as e:
@@ -76,7 +69,6 @@ class Manager_Board:
             if selectedRow < 0:
                 return
 
-            # 기존 데이터
             origin = self.version_data[selectedRow]
         
             # Edit Dialog 열기
@@ -129,19 +121,17 @@ class Manager_Board:
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
-
+            
     def refreshBugBoard(self):
         try:
-            self.origin_bug_data = Request(
-                'get', '/board/bug').json()['data']
+            self.bug_data = Request('get', '/board/bug').json()['data']
             self.bug_data_for_table = [
-                [sub_list['writerName'], sub_list['versionName'],
-                    sub_list['bugTitle'], sub_list['datetime']]
-                for sub_list in self.origin_bug_data]
-            self.bug_table_column = [
-                'User', 'Version Num', 'Title', 'DateTime']
-            makeTable(self.main, self.main.board_bug_tableWidget,
-                      self.bug_data_for_table, self.bug_table_column)
+                [sub_list['writerName'], sub_list['versionName'], sub_list['bugTitle'], sub_list['datetime']]
+                for sub_list in self.bug_data
+            ]
+            self.bug_table_column = ['User', 'Version Num', 'Title', 'DateTime']
+            makeTable(self.main, self.main.board_bug_tableWidget, self.bug_data_for_table, self.bug_table_column)
+                    
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
@@ -152,19 +142,10 @@ class Manager_Board:
             dialog = AddBugDialog(self.main, VERSION)
             dialog.exec()
 
-            # 데이터를 addVersion 함수에서 사용
             if dialog.data:
-                bug_data = dialog.data
-                bug_data = list(bug_data.values())
-
-                json_data = {
-                    "writerUid": self.main.userUid,
-                    "versionName": bug_data[1],
-                    "bugTitle": bug_data[2],
-                    "bugText": bug_data[3],
-                    "programLog": "",
-                }
-
+                json_data = dialog.data
+                json_data['writerUid'] = self.main.userUid
+                json_data['programLog'] = ""
                 Request('post', '/board/bug/add', json=json_data)
                 self.refreshBugBoard()
         except Exception as e:
@@ -174,7 +155,7 @@ class Manager_Board:
         try:
             selectedRow = self.main.board_bug_tableWidget.currentRow()
             if selectedRow >= 0:
-                bug = self.origin_bug_data[selectedRow]
+                bug = self.bug_data[selectedRow]
 
                 if bug['writerUid'] == self.main.userUid or self.main.user == 'admin':
                     reply = QMessageBox.question(
@@ -197,7 +178,7 @@ class Manager_Board:
             selectedRow = self.main.board_bug_tableWidget.currentRow()
             if selectedRow >= 0:
                 printStatus(self.main, "불러오는 중...")
-                bug_data = self.origin_bug_data[selectedRow]
+                bug_data = self.bug_data[selectedRow]
                 printStatus(self.main)
                 from ui.dialogs import ViewBugDialog
                 dialog = ViewBugDialog(self.main, bug_data)
@@ -205,20 +186,25 @@ class Manager_Board:
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
+            
+    def refreshVersionBoard(self):
+        try:
+            self.version_data = Request('get', '/board/version').json()['data']
+            self.version_data_for_table = [[data['versionName'], data['releaseDate'], data['changeLog'], data['features'], data['publisher']] for data in self.version_data]
+            self.version_table_column = ['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Publisher']
+            makeTable(self.main, self.main.board_version_tableWidget, self.version_data_for_table, self.version_table_column)
+            self.version_name_list = [data['versionName'] for data in self.version_data]
+
+        except Exception as e:
+            programBugLog(self.main, traceback.format_exc())
 
     def refreshPostBoard(self):
         try:
-            self.origin_post_data = Request(
-                'get', '/board/post').json()['data']
-            self.post_data_for_table = [
-                [sub_list['writerName'], sub_list['title'],
-                    sub_list['datetime'], str(sub_list['viewCnt'])]
-                for sub_list in self.origin_post_data
-            ]
-            self.post_table_column = [
-                'User', 'Title', 'DateTime', 'View Count']
-            makeTable(self.main, self.main.board_post_tableWidget,
-                      self.post_data_for_table, self.post_table_column)
+            
+            self.post_data = Request('get', '/board/post').json()['data']
+            self.post_data_for_table = [[sub_list['writerName'], sub_list['title'], sub_list['datetime'], str(sub_list['viewCnt'])] for sub_list in self.post_data]
+            self.post_table_column = ['User', 'Title', 'DateTime', 'View Count']
+            makeTable(self.main, self.main.board_post_tableWidget,self.post_data_for_table, self.post_table_column)
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
@@ -229,16 +215,10 @@ class Manager_Board:
             dialog.exec()
 
             if dialog.data:
-                post_data = dialog.data
-                post_data = list(post_data.values())
-
-                json_data = {
-                    "writerUid": self.main.userUid,
-                    "title": post_data[0],
-                    "text": post_data[1],
-                    "sendPushOver": False,
-                }
-
+                json_data = dialog.data
+                json_data['writerUid'] = self.main.userUid
+                json_data['sendPushOver'] = False
+                
                 reply = QMessageBox.question(
                     self.main, 'Confirm Notification', "현재 게시글에 대한 전체 알림을 전송하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
                 if reply == QMessageBox.StandardButton.Yes:
@@ -258,7 +238,7 @@ class Manager_Board:
             if selectedRow >= 0:
                 print(f"Selected Row: {selectedRow}")
                 printStatus(self.main, "불러오는 중...")
-                post_data = self.origin_post_data[selectedRow]
+                post_data = self.post_data[selectedRow]
 
                 Request('get', f'/board/post/{post_data["uid"]}')
                 printStatus(self.main)
@@ -275,7 +255,7 @@ class Manager_Board:
         try:
             selectedRow = self.main.board_post_tableWidget.currentRow()
             if selectedRow >= 0:
-                post = self.origin_post_data[selectedRow]
+                post = self.post_data[selectedRow]
 
                 if post['writerUid'] == self.main.userUid or self.main.user == 'admin':
                     reply = QMessageBox.question(
@@ -298,33 +278,25 @@ class Manager_Board:
         try:
             selectedRow = self.main.board_post_tableWidget.currentRow()
             if selectedRow >= 0:
-                post = self.origin_post_data[selectedRow]
+                post = self.post_data[selectedRow]
                 postUid = post['uid']
                 if post['writerUid'] == self.main.userUid or self.main.user == 'admin':
-                    prev_post_data = self.origin_post_data[selectedRow]
+                    prev_post_data = self.post_data[selectedRow]
 
                     from ui.dialogs import EditPostDialog
                     dialog = EditPostDialog(prev_post_data)
                     dialog.exec()
 
                     if dialog.data:
-                        post_data = dialog.data
-                        post_data = list(post_data.values())
-
-                        json_data = {
-                            "writerUid": self.main.userUid,
-                            "title": post_data[0],
-                            "text": post_data[1],
-                            "sendPushOver": False,
-                        }
-                        Request(
-                            'put', f'/board/post/{postUid}', json=json_data)
+                        json_data = dialog.data
+                        json_data['writerUid'] = self.main.userUid
+                        json_data['sendPushOver'] = False
+                        
+                        Request('put', f'/board/post/{postUid}', json=json_data)
                         self.refreshPostBoard()
-                        QMessageBox.information(
-                            self.main, "Information", f"게시물이 수정되었습니다")
+                        QMessageBox.information(self.main, "Information", f"게시물이 수정되었습니다")
                 else:
-                    QMessageBox.warning(
-                        self.main, "Wrong Password", f"비밀번호가 일치하지 않습니다")
+                    QMessageBox.warning(self.main, "Wrong Password", f"비밀번호가 일치하지 않습니다")
                     printStatus(self.main)
                     return
         except Exception as e:
