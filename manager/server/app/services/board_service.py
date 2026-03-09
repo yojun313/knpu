@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from fastapi.responses import JSONResponse
 from app.db import version_board_db, bug_board_db, free_board_db, user_db, user_bugs_db
 from app.models.board_model import AddVersionDto, AddBugDto, AddPostDto
@@ -12,8 +12,6 @@ import os
 from starlette.background import BackgroundTask
 from zoneinfo import ZoneInfo
 from app.services.user_service import log_user
-
-
 
 load_dotenv()
 
@@ -64,7 +62,7 @@ def get_version(versionName: str):
             "features": "",
             "details": "",
             "uid": str(uuid.uuid4()),
-            "publisher": user_db.find_one({"uid": doc['publisher']})['name']
+            "publisher": user_db.find_one({"uid": doc['publisher']})['name'] if doc and 'publisher' in doc else "Unknown"
         }
         return JSONResponse(status_code=200, content={"message": "Version not found, returning temporary data", "data": temp_doc})
     
@@ -89,7 +87,7 @@ def get_version_list():
     docs = [clean_doc(d) for d in version_board_db.find()]
     for doc in docs:
         publisher_info = user_db.find_one({"uid": doc['publisher']}, {"name": 1, "_id": 0})
-        doc['publisher'] = publisher_info['name']
+        doc['publisher'] = publisher_info['name'] if publisher_info else "Unknown"
     return JSONResponse(status_code=200, content={"message": "Version list retrieved", "data": docs})
 
 def delete_version(versionName: str, userUid: str):
