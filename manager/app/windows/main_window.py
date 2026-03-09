@@ -46,6 +46,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             super(MainWindow, self).__init__()
             self.setupUi(self)  
             
+            self.cleanup_old_exe()  
+            
             iconPath = os.path.join(ASSETS_PATH, 'exe_icon.png')
             
             initListWidget(self)
@@ -137,7 +139,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             openConsole()
             print(traceback.format_exc())
     
-    
+    def cleanup_old_exe(self):
+        if getattr(sys, 'frozen', False):
+            old_exe = sys.executable + ".old"
+            if os.path.exists(old_exe):
+                try:
+                    os.remove(old_exe)
+                except Exception:
+                    pass
+                
     def showEvent(self, event):
         super().showEvent(event)
         QTimer.singleShot(0, self.centerWindow)
