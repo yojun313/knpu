@@ -105,13 +105,11 @@ def downloadProgram(parent, newVersionName, is_update=True):
                 os.rename(current_exe, old_exe)
                 shutil.copy2(path, current_exe)
                 
-                QMessageBox.information(parent, "업데이트 완료", "업데이트가 완료되었습니다.\n프로그램을 재시작합니다.")
                 subprocess.Popen([current_exe])
                 parent.force_quit()
             except Exception as e:
                 QMessageBox.critical(parent, "업데이트 실패", f"파일 교체 중 오류가 발생했습니다:\n{e}")
         else:
-            QMessageBox.information(parent, "다운로드 완료", "설치 파일을 실행합니다.\n프로그램을 종료합니다.")
             openAndExit(parent, path)
 
     worker.progress.connect(lambda percent, msg: (
