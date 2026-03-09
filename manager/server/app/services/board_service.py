@@ -62,7 +62,7 @@ def get_version(versionName: str):
             "features": "",
             "details": "",
             "uid": str(uuid.uuid4()),
-            "publisher": user_db.find_one({"uid": doc['publisher']})['name'] if doc and 'publisher' in doc else "Unknown"
+            "publisher": "Unknown"
         }
         return JSONResponse(status_code=200, content={"message": "Version not found, returning temporary data", "data": temp_doc})
     
