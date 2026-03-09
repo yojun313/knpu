@@ -65,6 +65,7 @@ def get_version(versionName: str):
             "publisher": "Unknown"
         }
         return JSONResponse(status_code=200, content={"message": "Version not found, returning temporary data", "data": temp_doc})
+    doc['publisher'] = user_db.find_one({"uid": doc['publisher']}, {"name": 1, "_id": 0})['name']
     
     return JSONResponse(status_code=200, content={"message": "Version post retrieved", "data": clean_doc(doc)})
 
