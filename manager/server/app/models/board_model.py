@@ -7,6 +7,7 @@ class AddVersionDto(BaseModel):
     features: str
     details: str
     sendPushOver: bool
+    fullUpdate: bool
     
 
 class VersionBoardSchema(BaseModel):
