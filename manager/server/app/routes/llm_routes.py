@@ -22,17 +22,28 @@ async def proxy_openai_chat(
         "Content-Type": "application/json",
     }
 
-    async with httpx.AsyncClient(timeout=None) as client:
+    async with httpx.AsyncClient(timeout=60.0) as client:
         resp = await client.post(
             OPENAI_CHAT_URL,
             headers=headers,
             json=body,
         )
 
+    excluded_headers = [
+        "content-encoding",
+        "content-length",
+        "transfer-encoding",
+        "connection",
+    ]
+    response_headers = {
+        k: v for k, v in resp.headers.items() 
+        if k.lower() not in excluded_headers
+    }
+
     return Response(
         content=resp.content,
         status_code=resp.status_code,
-        headers=dict(resp.headers),
+        headers=response_headers,
         media_type=resp.headers.get("content-type"),
     )
 
