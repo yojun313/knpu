@@ -111,8 +111,7 @@ def check_newest_version():
 
     docs = version_board_db.find()
     docs_list = [clean_doc(d) for d in docs]
-    version_data = sort_by_version(
-        [list(map(str, item.values())) for item in docs_list])
+    version_data = sort_by_version([list(map(str, item.values())) for item in docs_list])
     newest_version = version_data[0]
     return JSONResponse(status_code=200, content={"message": "Newest version retrieved", "data": newest_version})
 
