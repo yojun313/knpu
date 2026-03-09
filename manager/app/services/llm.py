@@ -8,7 +8,7 @@ def generateLLM(query, model='ChatGPT'):
     if model == 'ChatGPT':
         try:
             client = OpenAI(api_key=get_setting('GPT_Key'))
-            model_name = "gpt-4-turbo"
+            model_name = "gpt-5-mini"
 
             response = client.chat.completions.create(
                 model=model_name,
@@ -71,16 +71,13 @@ def generateLLM(query, model='ChatGPT'):
                     ],
                 }
 
-                # 이전에 만든 OpenAI 프록시 엔드포인트 호출
                 proxy_response = Request(
                     method="post",
                     url="/llm/v1/openai/chat/completions",
                     json=proxy_payload,
                 )
-                
                 proxy_content = proxy_response.json()["choices"][0]["message"]["content"]
                 
-                # 프록시 응답조차 비어있을 경우에 대한 마지막 처리
                 if not proxy_content:
                     return (0, "Both Server LLM and OpenAI Proxy returned empty results.")
                     
