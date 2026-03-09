@@ -21,7 +21,8 @@ from PySide6.QtWidgets import (
 # 기존 상수/함수들
 # ----------------------------------------
 
-OUTPUT_DIRECTORY = "D:/knpu/MANAGER/exe"
+EXE_DIRECTORY = "D:/knpu/MANAGER/exe"
+OUTPUT_DIRECTORY = "D:/knpu/MANAGER/output"
 
 # 사용자 환경에 맞게 수정
 VENV_PYTHON = r"C:/GitHub/knpu/venv/Scripts/python.exe"
@@ -111,14 +112,14 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
 
 def read_latest_built_version() -> str | None:
     """
-    OUTPUT_DIRECTORY 내부에서 MANAGER_x.y.z 형식의 폴더명을 읽고,
+    EXE_DIRECTORY 내부에서 MANAGER_x.y.z 형식의 폴더명을 읽고,
     가장 최신 버전을 반환한다.
     """
-    if not os.path.exists(OUTPUT_DIRECTORY):
+    if not os.path.exists(EXE_DIRECTORY):
         return None
 
     versions = []
-    for name in os.listdir(OUTPUT_DIRECTORY):
+    for name in os.listdir(EXE_DIRECTORY):
         match = re.match(r"MANAGER_([\w.\-]+)$", name)
         if match:
             try:
@@ -147,7 +148,7 @@ class BuildWorker(QObject):
         self.custom_version = custom_version.strip()
         self.spec_file = spec_file
         self.iss_path = iss_path
-        self.output_directory = OUTPUT_DIRECTORY
+        self.output_directory = EXE_DIRECTORY
         self._is_running = True
 
     def stop(self):
@@ -195,6 +196,11 @@ class BuildWorker(QObject):
                 shutil.rmtree(same_version_path)
                 self._log(f"이전 동일 버전 디렉토리 삭제: {same_version_path}")
 
+            old_update_exe_path = os.path.join(self.output_directory, f"MANAGER_{target_version}_update.exe")
+            if os.path.exists(old_update_exe_path):
+                os.remove(old_update_exe_path)
+                self._log(f"이전 동일 버전 업데이트 파일 삭제: {old_update_exe_path}")
+
             self._log("PyInstaller 빌드 시작")
             build_exe_from_spec(
                 self.spec_file,
@@ -231,10 +237,10 @@ class BuildWorker(QObject):
 
             setup_filename = f"MANAGER_{target_version}.exe"
             self._log(f"신규 설치용 파일 업로드 시작: {setup_filename}")
-            upload_file(setup_filename)
+            upload_file(os.path.join(OUTPUT_DIRECTORY, setup_filename))
 
             self._log(f"업데이트용 파일 업로드 시작: {update_exe_name}")
-            upload_file(update_exe_name)
+            upload_file(os.path.join(EXE_DIRECTORY, update_exe_name))
             self._log("업로드 완료")
 
             # 8) Pushover 알림
