@@ -23,21 +23,8 @@ class Manager_Board:
 
     def refreshVersionBoard(self):
         try:
-            def sort_by_version(two_dim_list):
-                # 버전 번호를 파싱하여 비교하는 함수
-                def version_key(version_str):
-                    return [int(part) for part in version_str.split('.')]
-
-                sorted_list = sorted(
-                    two_dim_list, key=lambda x: version_key(x[0]), reverse=True)
-                return sorted_list
-
-            self.origin_version_data = Request(
-                'get', '/board/version').json()['data']
-
-            self.version_data = [[item['versionName'], item['releaseDate'], item['changeLog'], item['features'], item['publisher'], item['details']] for item in self.origin_version_data]
-            self.version_data = sort_by_version(self.version_data)
-            self.version_data_for_table = [sub_list[:-1] for sub_list in self.version_data]
+            self.version_data = Request('get', '/board/version').json()['data']
+            self.version_data_for_table = [data.pop('details') for data in self.version_data]
             self.version_table_column = ['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Publisher']
             makeTable(self.main, self.main.board_version_tableWidget, self.version_data_for_table, self.version_table_column)
             self.version_name_list = [version_data[0] for version_data in self.version_data_for_table]
@@ -100,7 +87,8 @@ class Manager_Board:
             if dialog.data:
                 version_data = dialog.data
                 version_data['sendPushOver'] = False
-                Request('put', f'/board/version/{origin[0]}', json=version_data)
+                
+                Request('put', f'/board/version/{origin["versionName"]}', json=version_data)
                 QMessageBox.information(self.main, "완료", f"{version_data['versionName']} 수정 완료했습니다")
                 self.refreshVersionBoard()
 

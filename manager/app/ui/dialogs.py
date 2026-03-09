@@ -546,7 +546,7 @@ class ViewVersionDialog(BaseDialog):
         super().__init__(parent)
         self.version_data = version_data  # [num, date, changelog, features, detail]
         if not title:
-            self.setWindowTitle(f"Version {version_data[0]} Details")
+            self.setWindowTitle(f"Version {version_data['versionName']} Details")
         else:
             self.setWindowTitle(title)
         self.resize(500, 500)
@@ -555,12 +555,12 @@ class ViewVersionDialog(BaseDialog):
     def _build_ui(self):
         self.layout = QVBoxLayout(self)
 
-        self.add_label(self.layout, "Version Num",      self.version_data[0])
-        self.add_label(self.layout, "Publisher",        self.version_data[4])
-        self.add_label(self.layout, "Release Date",     self.version_data[1])
-        self.add_label(self.layout, "ChangeLog",        self.version_data[2])
-        self.add_label(self.layout, "Version Features", self.version_data[3])
-        self.add_label(self.layout, "Detail",           self.version_data[5], multiline=True)
+        self.add_label(self.layout, "Version Num",      self.version_data['versionName'])
+        self.add_label(self.layout, "Publisher",        self.version_data['publisher'])
+        self.add_label(self.layout, "Release Date",     self.version_data['releaseDate'])
+        self.add_label(self.layout, "ChangeLog",        self.version_data['changeLog'])
+        self.add_label(self.layout, "Version Features", self.version_data['features'])
+        self.add_label(self.layout, "Detail",           self.version_data['details'], multiline=True)
         
     
     def add_buttons(self, *buttons):
@@ -605,27 +605,27 @@ class EditVersionDialog(BaseDialog):
         # Version Num
         layout.addWidget(QLabel('<b>Version Num:</b>'))
         self.version_num_input = QLineEdit()
-        self.version_num_input.setText(self.version_data[0])
+        self.version_num_input.setText(self.version_data['versionName'])
         layout.addWidget(self.version_num_input)
 
         # ChangeLog
         self.changelog_input = self.add_label(
             layout, "ChangeLog:", 
-            self.version_data[2], 
+            self.version_data['changeLog'], 
             readonly=False
         )
 
         # Version Features
         self.version_features_input = self.add_label(
             layout, "Version Features:", 
-            self.version_data[3], 
+            self.version_data['features'], 
             readonly=False
         )
 
         # Detail (multiline)
         self.detail_input = self.add_label(
             layout, "Detail:", 
-            self.version_data[5], 
+            self.version_data['details'], 
             readonly=False, 
             multiline=True
         )
