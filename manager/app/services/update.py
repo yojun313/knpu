@@ -13,7 +13,7 @@ from ui.status import printStatus
 from ui.dialogs import ViewVersionDialog
 from config import VERSION
 from core.setting import get_setting
-from core.boot import checkNewVersion
+from core.boot import checkNewVersion, getVersionInfo
 from core.thread import DownloadDialog
 from libs.path import safe_path
 import time
@@ -148,13 +148,15 @@ def updateProgram(parent, sc=False):
                 parent.closeBootscreen()
                 update_process()
                 return
-            ver  = str(newVersionInfo[0]) if len(newVersionInfo) > 0 else ""
-            chg  = str(newVersionInfo[1]) if len(newVersionInfo) > 1 else ""
-            feat = str(newVersionInfo[2]) if len(newVersionInfo) > 2 else ""
-            rel  = str(newVersionInfo[-1]) if len(newVersionInfo) > 0 else ""
-            detail = "" if len(newVersionInfo) < 5 else str(newVersionInfo[3])
-
-            version_data = [ver, rel, chg, feat, detail]
+            newVersionInfo = getVersionInfo(newVersionName)
+            version_data = [
+                str(newVersionInfo['versionName']),
+                str(newVersionInfo['releaseDate']),
+                str(newVersionInfo['changeLog']),
+                str(newVersionInfo['features']),
+                str(newVersionInfo['publisher']),
+                str(newVersionInfo['details'])
+            ]
 
             dialog = ViewVersionDialog(parent, version_data)
             update_btn = QPushButton("Update")
