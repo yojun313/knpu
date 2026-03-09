@@ -201,6 +201,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 str(newVersionInfo['releaseDate']),
                 str(newVersionInfo['changeLog']),
                 str(newVersionInfo['features']),
+                str(newVersionInfo['publisher']),
                 str(newVersionInfo['details'])
             ]
             set_setting('LastVersion', VERSION)
