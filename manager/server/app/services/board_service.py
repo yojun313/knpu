@@ -86,7 +86,7 @@ def edit_version(versionName: str, data: AddVersionDto, userUid: str):
     )
     
 def get_version_list():
-    docs = [clean_doc(d) for d in version_board_db.find()]
+    docs = [clean_doc(d) for d in version_board_db.find().sort('versionName', -1)]
     for doc in docs:
         publisher_info = user_db.find_one({"uid": doc['publisher']}, {"name": 1, "_id": 0})
         doc['publisher'] = publisher_info['name'] if publisher_info else "Unknown"
