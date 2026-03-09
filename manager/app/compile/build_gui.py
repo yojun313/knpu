@@ -218,6 +218,10 @@ class BuildWorker(QObject):
             update_exe_path = os.path.join(self.output_directory, update_exe_name)
             shutil.copy2(raw_exe_path, update_exe_path)
             self._log(f"업데이트용 파일 복사 완료: {update_exe_name}")
+            
+            self._log(f"업데이트용 파일 업로드 시작: {update_exe_name}")
+            upload_file(os.path.join(EXE_DIRECTORY, update_exe_name))
+            self._log("업로드 완료")
 
             self._log("Inno Setup 버전 정보 업데이트")
             temp_iss_path = update_inno_version(self.iss_path, target_version)
@@ -238,10 +242,6 @@ class BuildWorker(QObject):
             setup_filename = f"MANAGER_{target_version}.exe"
             self._log(f"신규 설치용 파일 업로드 시작: {setup_filename}")
             upload_file(os.path.join(OUTPUT_DIRECTORY, setup_filename))
-
-            self._log(f"업데이트용 파일 업로드 시작: {update_exe_name}")
-            upload_file(os.path.join(EXE_DIRECTORY, update_exe_name))
-            self._log("업로드 완료")
 
             # 8) Pushover 알림
             end_time = datetime.now()
