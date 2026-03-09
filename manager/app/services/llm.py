@@ -24,7 +24,6 @@ def generateLLM(query, model='ChatGPT'):
 
     elif model == 'Server LLM':
         try:
-            # 1. 자체 Server LLM 시도
             model_resp = Request(
                 method="get",
                 url="/llm/v1/models",
@@ -55,13 +54,12 @@ def generateLLM(query, model='ChatGPT'):
             result = response.json()
             content = result.get("choices", [{}])[0].get("message", {}).get("content")
 
-            if content is None or str(content).strip() == "":
+            if not content:
                 raise Exception("Server LLM returned empty content.")
 
             return content
 
-        except Exception as e:
-            print(f"Fallback triggered: {e}")
+        except Exception:
             try:
                 proxy_payload = {
                     "model": "gpt-5-mini",
@@ -76,12 +74,9 @@ def generateLLM(query, model='ChatGPT'):
                     url="/llm/v1/openai/chat/completions",
                     json=proxy_payload,
                 )
-                proxy_content = proxy_response.json()["choices"][0]["message"]["content"]
                 
-                if not proxy_content:
-                    return (0, "Both Server LLM and OpenAI Proxy returned empty results.")
-                    
-                return proxy_content
+                proxy_result = proxy_response.json()
+                return proxy_result["choices"][0]["message"]["content"]
             
             except Exception:
                 return (0, traceback.format_exc())
