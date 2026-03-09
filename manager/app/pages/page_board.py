@@ -35,10 +35,10 @@ class Manager_Board:
             self.origin_version_data = Request(
                 'get', '/board/version').json()['data']
 
-            self.version_data = [[item['versionName'], item['releaseDate'], item['changeLog'], item['features'], item['details']] for item in self.origin_version_data]
+            self.version_data = [[item['versionName'], item['releaseDate'], item['changeLog'], item['features'], item['publisher'], item['details']] for item in self.origin_version_data]
             self.version_data = sort_by_version(self.version_data)
             self.version_data_for_table = [sub_list[:-1] for sub_list in self.version_data]
-            self.version_table_column = ['Version Num', 'Release Date', 'ChangeLog', 'Version Features']
+            self.version_table_column = ['Version Num', 'Release Date', 'ChangeLog', 'Version Features', 'Publisher']
             makeTable(self.main, self.main.board_version_tableWidget, self.version_data_for_table, self.version_table_column)
             self.version_name_list = [version_data[0] for version_data in self.version_data_for_table]
 
