@@ -167,10 +167,10 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     username = user['name']
 
     if mine == 0:
-        if username == 'admin':
+        if username == '문요준':
             query = {}
         else:
-            query = {'requester': {'$ne': 'admin'}}
+            query = {'requester': {'$ne': '문요준'}}
     else:
         query = {'requester': username}
                 
