@@ -107,14 +107,18 @@ class Manager_Database(Manager_Worker):
                     self.message.emit("DB 데이터를 불러오는 중...")
                     response = Request('get', f'crawls/{self.DBuid}/preview', stream=True)
 
-                    tab_data = []  # [(table_name, df), ...] 형태로 저장
+                    tab_data = []
 
                     with zipfile.ZipFile(BytesIO(response.content)) as zf:
                         file_list = zf.namelist()
                         file_list.sort()
 
                         for file_name in file_list:
-                            table_name = file_name.replace('.parquet', '')
+                            if not file_name.endswith('.parquet'):
+                                continue
+                            
+                            pure_file_name = file_name.split('/')[-1].split('\\')[-1]
+                            table_name = pure_file_name.replace('.parquet', '')
 
                             with zf.open(file_name) as f:
                                 df = pd.read_parquet(f)
@@ -128,7 +132,7 @@ class Manager_Database(Manager_Worker):
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
-
+                    
         class TableWindow(QMainWindow):
             def __init__(self, parent=None, DBuid=None, DBname=None):
                 super(TableWindow, self).__init__(parent)

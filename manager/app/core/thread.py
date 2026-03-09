@@ -3,7 +3,7 @@ import re
 import requests
 import time
 from services.api import get_api_headers
-from libs.path import safe_path
+from libs.path import safe_path, get_file_size
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 import zipfile
 from urllib.parse import unquote
@@ -29,7 +29,7 @@ class BaseWorker(QThread):
         파일 업로드를 공통으로 처리하는 메서드
         """
         try:
-            file_size = os.path.getsize(safe_path(file_path))
+            file_size = get_file_size(safe_path(file_path))
             uploaded = 0
             last_percent = -1
             last_emit_time = 0
