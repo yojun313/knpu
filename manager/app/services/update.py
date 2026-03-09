@@ -4,6 +4,7 @@ import requests
 import traceback
 import subprocess
 import webbrowser
+import shutil
 from PySide6.QtWidgets import QDialog, QPushButton, QMessageBox, QApplication
 from PySide6.QtCore import Signal, QThread
 from services.pushover import sendPushOver
@@ -30,6 +31,7 @@ class DownloadWorker(QThread):
     def run(self):
         try:
             response = requests.get(self.url, stream=True)
+            response.raise_for_status()
             totalSize = int(response.headers.get('content-length', 0))
             chunkSize = 8192
             downloaded = 0
@@ -48,9 +50,9 @@ class DownloadWorker(QThread):
 
                             elapsed = time.time() - start_time
                             if elapsed <= 0:
-                                elapsed = 0.001  # 0 division 방지
+                                elapsed = 0.001
 
-                            speed = downloaded / (1024 * 1024) / elapsed  # MB/s
+                            speed = downloaded / (1024 * 1024) / elapsed
                             current_mb = downloaded / (1024 * 1024)
                             total_mb = totalSize / (1024 * 1024)
 
@@ -70,27 +72,54 @@ def openAndExit(parent, path):
     subprocess.Popen(f'"{path}"', shell=True)
     parent.force_quit()
 
-def downloadProgram(parent, newVersionName, reinstall=False):
+def downloadProgram(parent, newVersionName, is_update=True):
+    if is_update and not getattr(sys, 'frozen', False):
+        QMessageBox.warning(parent, "Warning", "개발 환경에서는 파일 교체 업데이트를 진행할 수 없습니다.\n전체 설치 패키지로 다운로드합니다.")
+        is_update = False
+
     temp_dir = 'C:/Temp'
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir, exist_ok=True)
         
-    downloadFile_path = os.path.join(temp_dir, f"MANAGER_{newVersionName}.exe")
-    download_url = f"https://knpu.re.kr/download/MANAGER_{newVersionName}.exe"
+    if is_update:
+        downloadFile_path = os.path.join(temp_dir, f"MANAGER_{newVersionName}_update.exe")
+        download_url = f"https://knpu.re.kr/download/MANAGER_{newVersionName}_update.exe"
+        msg = "업데이트 다운로드"
+    else:
+        downloadFile_path = os.path.join(temp_dir, f"MANAGER_{newVersionName}.exe")
+        download_url = f"https://knpu.re.kr/download/MANAGER_{newVersionName}.exe"
+        msg = "재설치 다운로드"
 
-    # 다운로드 진행창 생성
-    msg = "업데이트 다운로드" if not reinstall else "재설치 다운로드"
     dialog = DownloadDialog(f"{msg}: {newVersionName}", parent=parent)
     worker = DownloadWorker(download_url, downloadFile_path)
+
+    def on_finished(path):
+        dialog.complete_task(True)
+        
+        if is_update:
+            current_exe = sys.executable
+            old_exe = current_exe + ".old"
+            
+            try:
+                if os.path.exists(old_exe):
+                    os.remove(old_exe)
+                os.rename(current_exe, old_exe)
+                shutil.copy2(path, current_exe)
+                
+                QMessageBox.information(parent, "업데이트 완료", "업데이트가 완료되었습니다.\n프로그램을 재시작합니다.")
+                subprocess.Popen([current_exe])
+                parent.force_quit()
+            except Exception as e:
+                QMessageBox.critical(parent, "업데이트 실패", f"파일 교체 중 오류가 발생했습니다:\n{e}")
+        else:
+            QMessageBox.information(parent, "다운로드 완료", "설치 파일을 실행합니다.\n프로그램을 종료합니다.")
+            openAndExit(parent, path)
 
     worker.progress.connect(lambda percent, msg: (
         dialog.update_progress(percent),
         dialog.update_text_signal.emit(msg)
     ))
-    worker.finished.connect(lambda path: (
-        dialog.complete_task(True),
-        openAndExit(parent, path)
-    ))
+    worker.finished.connect(on_finished)
     worker.error.connect(lambda e: (
         dialog.complete_task(False),
         QMessageBox.critical(parent, "Error", f"다운로드 실패: {e}")
@@ -100,7 +129,6 @@ def downloadProgram(parent, newVersionName, reinstall=False):
     dialog.exec()
 
 def updateProgram(parent, sc=False):
-    
     try:
         newVersionInfo = checkNewVersion()
         if not newVersionInfo:
@@ -113,26 +141,21 @@ def updateProgram(parent, sc=False):
             sendPushOver(msg)
             userLogging(f'Program Update ({VERSION} -> {newVersionName})')
             printStatus(parent, "버전 업데이트 중...")
-            downloadProgram(parent, newVersionName)
+            downloadProgram(parent, newVersionName, is_update=True)
 
-        # 새 버전 있음
         if newVersionInfo:
-            # 자동 업데이트 모드일 경우 바로 실행
             if get_setting('AutoUpdate') == 'auto':
                 parent.closeBootscreen()
                 update_process()
                 return
-            # newVersionInfo: [versionNum, changeLog, features, status, releaseDate]
             ver  = str(newVersionInfo[0]) if len(newVersionInfo) > 0 else ""
             chg  = str(newVersionInfo[1]) if len(newVersionInfo) > 1 else ""
             feat = str(newVersionInfo[2]) if len(newVersionInfo) > 2 else ""
             rel  = str(newVersionInfo[-1]) if len(newVersionInfo) > 0 else ""
-            # detail은 없다면 빈 값으로
             detail = "" if len(newVersionInfo) < 5 else str(newVersionInfo[3])
 
             version_data = [ver, rel, chg, feat, detail]
 
-            # ViewVersionDialog를 이용해 UI 띄우기
             dialog = ViewVersionDialog(parent, version_data)
             update_btn = QPushButton("Update")
             cancel_btn = QPushButton("Cancel")
@@ -145,7 +168,6 @@ def updateProgram(parent, sc=False):
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 update_process()
 
-        # 새 버전 없음 (재설치 여부 묻기)
         else:
             if sc is True:
                 reply = QMessageBox.question(
@@ -157,7 +179,7 @@ def updateProgram(parent, sc=False):
                 )
                 if reply == QMessageBox.StandardButton.Yes:
                     printStatus(parent, "버전 재설치 중...")
-                    downloadProgram(parent, newVersionName, reinstall=True)
+                    downloadProgram(parent, newVersionName, is_update=False)
                 else:
                     return
             return
