@@ -1,5 +1,5 @@
 import os
-VERSION = '4.0.1'
+VERSION = '3.0.1'
 
 '''
     0: local
