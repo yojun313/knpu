@@ -150,17 +150,8 @@ def updateProgram(parent, sc=False):
                 parent.closeBootscreen()
                 update_process(is_full_update)
                 return
-            
-            version_data = [
-                str(newVersionInfo.get('versionName', '')),
-                str(newVersionInfo.get('releaseDate', '')),
-                str(newVersionInfo.get('changeLog', '')),
-                str(newVersionInfo.get('features', '')),
-                str(newVersionInfo.get('publisher', '')),
-                str(newVersionInfo.get('details', ''))
-            ]
-
-            dialog = ViewVersionDialog(parent, version_data)
+        
+            dialog = ViewVersionDialog(parent, newVersionInfo)
             update_btn = QPushButton("Update")
             cancel_btn = QPushButton("Cancel")
 

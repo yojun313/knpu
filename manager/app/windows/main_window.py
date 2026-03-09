@@ -89,6 +89,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.managerUserObj = Manager_User(self)
                 self.managerDatabaseObj = Manager_Database(self)
                 self.managerAnalysisObj = Manager_Analysis(self)
+                printStatus(self, f"{self.fullStorage} GB / 2 TB")
                 print("Done")
                 
                 self.splashDialog.updateStatus("Checking New Version")
@@ -196,16 +197,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # 최신 버전으로 업데이트 되었을 때
         if version.parse(VERSION) > lastVersion:
             newVersionInfo = getVersionInfo(VERSION)
-            version_data = [
-                str(newVersionInfo['versionName']),
-                str(newVersionInfo['releaseDate']),
-                str(newVersionInfo['changeLog']),
-                str(newVersionInfo['features']),
-                str(newVersionInfo['publisher']),
-                str(newVersionInfo['details'])
-            ]
             set_setting('LastVersion', VERSION)
-            dialog = ViewVersionDialog(self, version_data, title = f"새로운 버전으로 업데이트되었습니다")
+            dialog = ViewVersionDialog(self, newVersionInfo, title = f"새로운 버전으로 업데이트되었습니다")
             confirm_btn = QPushButton("확인")
             confirm_btn.clicked.connect(dialog.accept)
             dialog.add_buttons(confirm_btn)

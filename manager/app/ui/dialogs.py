@@ -392,7 +392,13 @@ class AddVersionDialog(BaseDialog):
         detail = self.detail_input.toPlainText()  
         is_full_update = self.full_update_checkbox.isChecked()
 
-        self.data = [version_num, changelog, version_features, detail, is_full_update]
+        self.data = {
+            'versionName': version_num,
+            'changeLog': changelog,
+            'features': version_features,
+            'details': detail,
+            'fullUpdate': is_full_update
+        }
 
         QMessageBox.information(
             self, 'Input Data',
@@ -455,9 +461,9 @@ class AddBugDialog(BaseDialog):
 
         self.data = {
             'userName': userName,
-            'version_num': version_num,
-            'bug_title': bug_title,
-            'bug_detail': bug_detail
+            'versionName': version_num,
+            'bugTitle': bug_title,
+            'bugText': bug_detail
         }
 
         QMessageBox.information(
@@ -508,8 +514,8 @@ class AddPostDialog(BaseDialog):
         post_text = self.post_text_input.toPlainText()
 
         self.data = {
-            'post_title': post_title,
-            'post_text': post_text,
+            'title': post_title,
+            'text': post_text,
         }
 
         QMessageBox.information(
@@ -728,8 +734,8 @@ class EditPostDialog(BaseDialog):
         post_text = self.post_text_input.toPlainText()
 
         self.data = {
-            'post_title': post_title,
-            'post_text': post_text,
+            'title': post_title,
+            'text': post_text,
         }
 
         QMessageBox.information(self, 'Input Data',
