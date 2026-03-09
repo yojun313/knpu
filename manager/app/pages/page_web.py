@@ -93,6 +93,7 @@ class Manager_Web:
         self.member_data = []
         for member in self.origin_member_data:
             member_info = {
+                'uid': member.get('uid', ''),
                 'name': str(member.get('name', '')),
                 'position': str(member.get('position', '')),
                 'email': str(member.get('email', '')),
