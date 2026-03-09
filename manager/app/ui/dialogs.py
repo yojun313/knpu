@@ -625,7 +625,7 @@ class EditVersionDialog(BaseDialog):
         # Detail (multiline)
         self.detail_input = self.add_label(
             layout, "Detail:", 
-            self.version_data[4], 
+            self.version_data[5], 
             readonly=False, 
             multiline=True
         )
