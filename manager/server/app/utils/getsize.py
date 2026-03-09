@@ -1,8 +1,7 @@
 from pathlib import Path
-from app.libs.path import safe_path
 
 def getFolderSize(path):
-    total_bytes = sum(f.stat().st_size for f in Path(safe_path(path)).rglob('*') if f.is_file())
+    total_bytes = sum(f.stat().st_size for f in Path(path).rglob('*') if f.is_file())
     return total_bytes
 
 def format_size(bytes_size):
