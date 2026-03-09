@@ -87,9 +87,9 @@ def edit_version(versionName: str, data: AddVersionDto, userUid: str):
     
 def get_version_list():
     docs = [clean_doc(d) for d in version_board_db.find()]
-    for docs in docs:
-        publisher_info = user_db.find_one({"uid": docs['publisher']}, {"name": 1, "_id": 0})
-        docs['publisher'] = publisher_info['name']
+    for doc in docs:
+        publisher_info = user_db.find_one({"uid": doc['publisher']}, {"name": 1, "_id": 0})
+        doc['publisher'] = publisher_info['name']
     return JSONResponse(status_code=200, content={"message": "Version list retrieved", "data": docs})
 
 def delete_version(versionName: str, userUid: str):
