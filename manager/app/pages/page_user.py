@@ -21,15 +21,13 @@ class Manager_User:
         # 데이터베이스 연결 및 데이터 가져오기
 
         self.user_list = Request('get', '/users').json()['data']
-        user_data = [(user['name'], user['email'], user['pushoverKey'])
-                     for user in self.user_list]
+        user_data = [(user['name'], user['email'], user['pushoverKey'], user['role']) for user in self.user_list]
         self.userNameList = [user['name'] for user in self.user_list]
         # userNameList 및 userKeyList 업데이트
-        self.userKeyList = [user['pushoverKey']
-                            for user in self.user_list if user['pushoverKey'] != 'n']
+        self.userKeyList = [user['pushoverKey'] for user in self.user_list if user['pushoverKey'] != 'n']
 
         # 테이블 설정
-        columns = ['Name', 'Email', 'PushOverKey']
+        columns = ['Name', 'Email', 'PushOverKey', 'Role']
         makeTable(
             self.main,
             widgetname=self.main.user_tablewidget,
