@@ -567,8 +567,10 @@ class ViewVersionDialog(BaseDialog):
         self.add_label(self.layout, "ChangeLog",        self.version_data['changeLog'])
         self.add_label(self.layout, "Version Features", self.version_data['features'])
         self.add_label(self.layout, "Detail",           self.version_data['details'], multiline=True)
-        
-    
+        is_full = self.version_data.get('fullUpdate', False)
+        full_update_text = "Yes" if is_full else "No"
+        self.add_label(self.layout, "Full Update", full_update_text)
+            
     def add_buttons(self, *buttons):
         button_layout = QHBoxLayout()
         for btn in buttons:
@@ -604,31 +606,26 @@ class EditVersionDialog(BaseDialog):
         self.setWindowTitle('Edit Version')
         self.resize(480, 520)
 
-        # 컨테이너 위젯 생성
         container = QDialog()
         layout = QVBoxLayout(container)
 
-        # Version Num
         layout.addWidget(QLabel('<b>Version Num:</b>'))
         self.version_num_input = QLineEdit()
         self.version_num_input.setText(self.version_data['versionName'])
         layout.addWidget(self.version_num_input)
 
-        # ChangeLog
         self.changelog_input = self.add_label(
             layout, "ChangeLog:", 
             self.version_data['changeLog'], 
             readonly=False
         )
 
-        # Version Features
         self.version_features_input = self.add_label(
             layout, "Version Features:", 
             self.version_data['features'], 
             readonly=False
         )
 
-        # Detail (multiline)
         self.detail_input = self.add_label(
             layout, "Detail:", 
             self.version_data['details'], 
@@ -636,22 +633,24 @@ class EditVersionDialog(BaseDialog):
             multiline=True
         )
 
-        # Submit button
+        self.full_update_checkbox = QCheckBox("설치 파일 업데이트")
+        is_full = self.version_data.get('fullUpdate', False)
+        self.full_update_checkbox.setChecked(is_full)
+        layout.addWidget(self.full_update_checkbox)
+        # --------------------------------------
+
         self.submit_button = QPushButton('Edit')
         self.submit_button.clicked.connect(self.submit)
         layout.addWidget(self.submit_button)
 
-        # ScrollArea
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(container)
 
-        # Final layout
         final_layout = QVBoxLayout()
         final_layout.addWidget(scroll)
         self.setLayout(final_layout)
 
-        # TAB 키를 QTextEdit에서 빠져나가도록 설정
         for te in self.findChildren(QTextEdit):
             te.setTabChangesFocus(True)
 
@@ -660,13 +659,14 @@ class EditVersionDialog(BaseDialog):
         changelog = self.changelog_input.text()
         version_features = self.version_features_input.text()
         detail = self.detail_input.toPlainText()
+        is_full_update = self.full_update_checkbox.isChecked()
 
-        # 반환 데이터
         self.data = {
             "versionName": version_num,
             "changeLog": changelog,
             "features": version_features,
-            "details": detail
+            "details": detail,
+            "fullUpdate": is_full_update 
         }
 
         QMessageBox.information(
@@ -674,7 +674,8 @@ class EditVersionDialog(BaseDialog):
             f"Version Num: {version_num}\n"
             f"ChangeLog: {changelog}\n"
             f"Features: {version_features}\n"
-            f"Detail: {detail}"
+            f"Detail: {detail}\n"
+            f"Full Update: {is_full_update}"
         )
 
         self.accept()

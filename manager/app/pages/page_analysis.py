@@ -9,7 +9,6 @@ import traceback
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
-import chardet
 from libs.analysis import DataProcess
 from libs.kemkim import KimKem
 import uuid
@@ -41,10 +40,10 @@ from .page_worker import Manager_Worker
 warnings.filterwarnings("ignore")
 
 # 운영체제에 따라 한글 폰트를 설정
-if platform.system() == 'Darwin':  # macOS
+if platform.system() == 'Darwin':                  
     plt.rcParams['font.family'] = 'AppleGothic'
-elif platform.system() == 'Windows':  # Windows
-    plt.rcParams['font.family'] = 'Malgun Gothic'  # 맑은 고딕 폰트 사용
+elif platform.system() == 'Windows':               
+    plt.rcParams['font.family'] = 'Malgun Gothic'  
 
 # 폰트 설정 후 음수 기호가 깨지는 것을 방지
 plt.rcParams['axes.unicode_minus'] = False
@@ -165,7 +164,6 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
 
         try:
-            # 1. 파일 선택
             selected_directory = self.analysis_getfiledirectory_csv(self.file_dialog)
             if len(selected_directory) == 0:
                 return
@@ -173,7 +171,6 @@ class Manager_Analysis(Manager_Worker):
                 QMessageBox.warning(self.main, "Wrong Format", f"{selected_directory[1]}는 CSV 파일이 아닙니다")
                 return
 
-            # 2. 사용자 확인
             reply = QMessageBox.question(
                 self.main,
                 'Notification',
@@ -184,7 +181,6 @@ class Manager_Analysis(Manager_Worker):
             if reply != QMessageBox.StandardButton.Yes:
                 return
 
-            # 3. 로그 기록
             userLogging(f'ANALYSIS -> timesplit_file({selected_directory[0]})')
 
             thread_name = f"시계열 분할: {os.path.basename(selected_directory[0])}"
@@ -290,7 +286,7 @@ class Manager_Analysis(Manager_Worker):
         class RunAnalysisWorker(QThread):
             finished = Signal(bool, str, str)   # (성공 여부, 메시지, 파일경로)
             error = Signal(str)
-            message = Signal(str)              # 메시지 업데이트용 시그널
+            message = Signal(str)               # 메시지 업데이트용 시그널
 
             def __init__(self, csv_path, selected_options, dataprocess_obj, hate_mode, parent=None):
                 super().__init__(parent)
@@ -350,7 +346,6 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
 
         try:
-            # 1) 파일 선택
             filepath = self.check_csv_file()
             if not filepath:
                 printStatus(self.main)
@@ -360,8 +355,7 @@ class Manager_Analysis(Manager_Worker):
             if 'token' in filename:
                 QMessageBox.warning(self.main, "Warning", "토큰 파일은 통계 분석할 수 없습니다.")
                 return
-
-            # 2) 옵션 선택 Dialog
+            
             dialog = StatAnalysisDialog(filename=filename)
             if dialog.exec() != QDialog.DialogCode.Accepted:
                 printStatus(self.main)
@@ -443,13 +437,11 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
 
         try:
-            # 1. 파일 선택
             filepath = self.check_csv_file(tokenCheck=True)
             if not filepath:
                 printStatus(self.main)
                 return
 
-            # 2. 저장 경로 설정
             printStatus(self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요")
             save_path = QFileDialog.getExistingDirectory(
                 self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요", self.main.localDirectory)
@@ -457,7 +449,6 @@ class Manager_Analysis(Manager_Worker):
                 printStatus(self.main)
                 return
 
-            # 3. 옵션 설정
             printStatus(self.main, "워드클라우드 옵션을 설정하세요")
             dialog = WordcloudDialog(os.path.basename(filepath))
             dialog.exec()
@@ -477,7 +468,6 @@ class Manager_Analysis(Manager_Worker):
             filename = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})',
                             f'{startdate}~{enddate}_{period}', filename)
 
-            # 4. 예외어 처리
             exception_word_list = []
             if except_yes_selected:
                 QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
@@ -490,9 +480,6 @@ class Manager_Analysis(Manager_Worker):
 
                 if not os.path.exists(exception_word_list_path):
                     raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}")
-
-                with open(safe_path(exception_word_list_path), 'rb') as f:
-                    codec = chardet.detect(f.read())['encoding']
 
                 df = readCSV(exception_word_list_path)
                 if 'word' not in list(df.keys()):
@@ -510,7 +497,6 @@ class Manager_Analysis(Manager_Worker):
             register_thread(thread_name)
             printStatus(self.main)
 
-            # 7. 워커 실행
             worker = WordcloudWorker(
                 filepath,
                 save_path,
@@ -688,10 +674,7 @@ class Manager_Analysis(Manager_Worker):
                 if not os.path.exists(exception_word_list_path):
                     raise FileNotFoundError(
                         f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}")
-
-                with open(safe_path(exception_word_list_path), 'rb') as f:
-                    codec = chardet.detect(f.read())['encoding']
-
+                    
                 df = readCSV(exception_word_list_path)
                 if 'word' not in list(df.keys()):
                     QMessageBox.warning(
@@ -829,8 +812,6 @@ class Manager_Analysis(Manager_Worker):
                         raise FileNotFoundError(
                             f"파일을 찾을 수 없습니다\n\n{eng_keyword_list_path}")
 
-                    with open(safe_path(eng_keyword_list_path), 'rb') as f:
-                        codec = chardet.detect(f.read())['encoding']
                     df = readCSV(eng_keyword_list_path)
                     if 'english' not in list(df.keys()) or 'korean' not in list(df.keys()):
                         QMessageBox.warning(
@@ -847,22 +828,18 @@ class Manager_Analysis(Manager_Worker):
                         translator = Translator()
                         translate_history = {}
 
-                        # 병렬 번역 수행 (이미 번역된 단어 제외)
                         if words_to_translate:
                             async def translate_word(word):
                                 """ 개별 단어를 비동기적으로 번역하고 반환하는 함수 """
                                 result = await translator.translate(word, dest='en', src='auto')  # await 추가
-                                return word, result.text  # 원래 단어와 번역된 단어 튜플 반환
+                                return word, result.text
 
-                            # 번역 실행 (병렬 처리)
                             translated_results = await asyncio.gather(
                                 *(translate_word(word) for word in words_to_translate))
 
-                            # 번역 결과를 캐시에 저장
                             for original, translated in translated_results:
                                 translate_history[original] = translated
 
-                        # (원래 단어, 번역된 단어) 튜플 리스트로 변환
                         translated_tuple_list = [(word, translate_history[word]) for word in words_to_translate if
                                                  word in translate_history]
 
@@ -884,7 +861,7 @@ class Manager_Analysis(Manager_Worker):
             DoV_coordinates_dict = {}
             for index, row in DoV_coordinates_df.iterrows():
                 key = row['key']
-                value = ast.literal_eval(row['value'])  # 문자열을 튜플로 변환
+                value = ast.literal_eval(row['value']) 
                 DoV_coordinates_dict[key] = value
 
             DoD_coordinates_path = os.path.join(
@@ -898,7 +875,7 @@ class Manager_Analysis(Manager_Worker):
             DoD_coordinates_dict = {}
             for index, row in DoD_coordinates_df.iterrows():
                 key = row['key']
-                value = ast.literal_eval(row['value'])  # 문자열을 튜플로 변환
+                value = ast.literal_eval(row['value']) 
                 DoD_coordinates_dict[key] = value
 
             delete_word_list = readCSV(os.path.join(result_directory, 'filtered_words.csv'))['word'].tolist()
@@ -1296,8 +1273,6 @@ class Manager_Analysis(Manager_Worker):
 
             # 4. 필수 포함 단어 파일 처리 (필요한 경우)
             if res["include_word_path"]:
-                with open(safe_path(res["include_word_path"]), 'rb') as f:
-                    codec = chardet.detect(f.read())['encoding']
                 df = readCSV(res["include_word_path"])
                 if 'word' not in df.columns:
                     QMessageBox.warning(self.main, "Error", "단어 사전 CSV에 'word' 열이 없습니다.")
@@ -2012,7 +1987,7 @@ class Manager_Analysis(Manager_Worker):
                 option_payload = {
                     "pid": self.pid, 
                     "media": self.media,
-                    "model": self.model_name  # 서버가 이 키를 읽어서 모델을 로드함
+                    "model": self.model_name  
                 }
                 yolo_url = MANAGER_SERVER_API + "/analysis/yolo"
 
