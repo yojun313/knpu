@@ -303,7 +303,7 @@ class Manager_Analysis(Manager_Worker):
                 try:
                     csv_filename = os.path.basename(self.csv_path)
                     self.message.emit("CSV 파일을 불러오는 중...")
-                    csv_data = pd.read_csv(safe_path(self.csv_path), low_memory=False)
+                    csv_data = readCSV(self.csv_path)
 
                     self.message.emit("분석 작업 실행 중...")
                     opt = self.selected_options
@@ -418,7 +418,7 @@ class Manager_Analysis(Manager_Worker):
             def run(self):
                 try:
                     self.message.emit("토큰 데이터를 불러오는 중...")
-                    token_data = pd.read_csv(safe_path(self.filepath), low_memory=False)
+                    token_data = readCSV(safe_path(self.filepath))
 
                     folder_path = os.path.join(
                         self.save_path,
@@ -494,7 +494,7 @@ class Manager_Analysis(Manager_Worker):
                 with open(safe_path(exception_word_list_path), 'rb') as f:
                     codec = chardet.detect(f.read())['encoding']
 
-                df = pd.read_csv(safe_path(exception_word_list_path), low_memory=False, encoding=codec)
+                df = readCSV(exception_word_list_path)
                 if 'word' not in list(df.keys()):
                     printStatus(self.main)
                     QMessageBox.warning(self.main, "Wrong Format", "예외어 사전 형식과 일치하지 않습니다")
@@ -645,6 +645,18 @@ class Manager_Analysis(Manager_Worker):
                         # 일 단위 가정
                         total_days = (end_dt - start_dt).days
                         total_periods = total_days
+                    
+                    if total_periods < 2:
+                        period_name = {
+                            '1y': '1년', '6m': '6개월', '3m': '3개월', 
+                            '1m': '1개월', '1w': '1주일'
+                        }.get(period, f"{period} 단위")
+                        
+                        QMessageBox.warning(self.main, "Wrong Form",
+                                            f"분석 기간이 너무 짧습니다.\n\n"
+                                            f"선택하신 단위({period_name})의 최소 2배 이상의 기간이 필요합니다.\n"
+                                            f"(현재 분석 구간: {total_periods:.2f}개)")
+                        continue
 
                     # Check if the total periods exceed the limit when multiplied by the weight
                     if total_periods * weight >= 1:
@@ -680,8 +692,7 @@ class Manager_Analysis(Manager_Worker):
                 with open(safe_path(exception_word_list_path), 'rb') as f:
                     codec = chardet.detect(f.read())['encoding']
 
-                df = pd.read_csv(safe_path(exception_word_list_path),
-                                 low_memory=False, encoding=codec)
+                df = readCSV(exception_word_list_path)
                 if 'word' not in list(df.keys()):
                     QMessageBox.warning(
                         self.main, "Wrong Format", "예외어 사전 형식과 일치하지 않습니다")
@@ -776,7 +787,7 @@ class Manager_Analysis(Manager_Worker):
                     self.main, 'Import Failed', 'Final_signal.csv 파일을 불러오는데 실패했습니다\n\nResult/Signal 디렉토리에 파일이 위치하는지 확인하여 주십시오')
                 printStatus(self.main)
                 return
-            final_signal_df = pd.read_csv(safe_path(final_signal_csv_path), low_memory=False)
+            final_signal_df = readCSV(final_signal_csv_path)
             words = final_signal_df['word'].tolist()
             all_keyword = []
             for word_list_str in words:
@@ -820,8 +831,7 @@ class Manager_Analysis(Manager_Worker):
 
                     with open(safe_path(eng_keyword_list_path), 'rb') as f:
                         codec = chardet.detect(f.read())['encoding']
-                    df = pd.read_csv(safe_path(eng_keyword_list_path),
-                                     low_memory=False, encoding=codec)
+                    df = readCSV(eng_keyword_list_path)
                     if 'english' not in list(df.keys()) or 'korean' not in list(df.keys()):
                         QMessageBox.warning(
                             self.main, "Wrong Form", "키워드-영단어 사전 형식과 일치하지 않습니다")
@@ -870,7 +880,7 @@ class Manager_Analysis(Manager_Worker):
                     self.main, 'Import Failed', 'DOV_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오')
                 printStatus(self.main)
                 return
-            DoV_coordinates_df = pd.read_csv(safe_path(DoV_coordinates_path))
+            DoV_coordinates_df = readCSV(DoV_coordinates_path)
             DoV_coordinates_dict = {}
             for index, row in DoV_coordinates_df.iterrows():
                 key = row['key']
@@ -884,16 +894,14 @@ class Manager_Analysis(Manager_Worker):
                     self.main, 'Import Failed', 'DOD_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오')
                 printStatus(self.main)
                 return
-            DoD_coordinates_df = pd.read_csv(safe_path(os.path.join(
-                result_directory, "Graph", "DOD_coordinates.csv")))
+            DoD_coordinates_df = readCSV(os.path.join(result_directory, "Graph", "DOD_coordinates.csv"))
             DoD_coordinates_dict = {}
             for index, row in DoD_coordinates_df.iterrows():
                 key = row['key']
                 value = ast.literal_eval(row['value'])  # 문자열을 튜플로 변환
                 DoD_coordinates_dict[key] = value
 
-            delete_word_list = pd.read_csv(safe_path(os.path.join(
-                result_directory, 'filtered_words.csv')))['word'].tolist()
+            delete_word_list = readCSV(os.path.join(result_directory, 'filtered_words.csv'))['word'].tolist()
 
             kimkem_obj = KimKem(
                 self.main, exception_word_list=selected_words, rekemkim=True)
@@ -981,7 +989,7 @@ class Manager_Analysis(Manager_Worker):
                 printStatus(self.main)
                 return
 
-            final_signal_df = pd.read_csv(safe_path(final_signal_csv_path), low_memory=False)
+            final_signal_df = readCSV(final_signal_csv_path)
             words = final_signal_df['word'].tolist()
             all_keyword = []
             for word_list_str in words:
@@ -1061,9 +1069,7 @@ class Manager_Analysis(Manager_Worker):
             if not os.path.exists(object_csv_path):
                 raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{object_csv_path}")
 
-            with open(safe_path(object_csv_path), 'rb') as f:
-                codec = chardet.detect(f.read())['encoding']
-            object_csv_df = pd.read_csv(safe_path(object_csv_path), low_memory=False, encoding=codec)
+            object_csv_df = readCSV(object_csv_path)
             if all('Text' not in word for word in list(object_csv_df.keys())):
                 QMessageBox.warning(self.main, "Wrong Format",
                                     "크롤링 데이터 CSV 형식과 일치하지 않습니다")
@@ -1274,9 +1280,7 @@ class Manager_Analysis(Manager_Worker):
                 QMessageBox.warning(self.main, "Wrong File", "이미 토큰화된 파일입니다.")
                 return
 
-            # 2. 다이얼로그 실행
-            df_headers = pd.read_csv(safe_path(csv_path), nrows=0)
-            column_names = df_headers.columns.tolist()
+            column_names = getCSVHeaders(csv_path)
             
             dialog = TokenizeDialog(column_names, os.path.dirname(csv_path), self.main)
             if dialog.exec() != QDialog.Accepted:
@@ -1294,7 +1298,7 @@ class Manager_Analysis(Manager_Worker):
             if res["include_word_path"]:
                 with open(safe_path(res["include_word_path"]), 'rb') as f:
                     codec = chardet.detect(f.read())['encoding']
-                df = pd.read_csv(safe_path(res["include_word_path"]), low_memory=False, encoding=codec)
+                df = readCSV(res["include_word_path"])
                 if 'word' not in df.columns:
                     QMessageBox.warning(self.main, "Error", "단어 사전 CSV에 'word' 열이 없습니다.")
                     return
@@ -1339,8 +1343,7 @@ class Manager_Analysis(Manager_Worker):
                 printStatus(self.main)
                 return
 
-            df_headers = pd.read_csv(safe_path(token_filepath), nrows=0)
-            column_names = df_headers.columns.tolist()
+            column_names = getCSVHeaders(token_filepath)
 
             printStatus(self.main, "토큰 데이터가 있는 열을 선택하세요")
             dialog = SelectColumnsDialog(column_names, parent=self.main)
@@ -1480,8 +1483,7 @@ class Manager_Analysis(Manager_Worker):
                 file_name += ".csv"
 
             # 4) 토큰 열 선택(모든 파일에 동일한 열이라고 가정) -------------------------
-            df_headers = pd.read_csv(safe_path(token_paths[0]), nrows=0)
-            column_names = df_headers.columns.tolist()
+            column_names = getCSVHeaders(token_paths[0])
             dialog = SelectColumnsDialog(column_names, parent=self.main)
             if dialog.exec() != QDialog.DialogCode.Accepted:
                 printStatus(self.main)
@@ -1493,7 +1495,7 @@ class Manager_Analysis(Manager_Worker):
 
             missing_info = []  # (파일명, 빠진 열) 리스트
             for p in token_paths:
-                cols = pd.read_csv(safe_path(p), nrows=0).columns
+                cols = getCSVHeaders(p)
                 for tc in token_columns:
                     if tc not in cols:
                         missing_info.append((os.path.basename(p), tc))
@@ -1651,15 +1653,13 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
 
         try:            
-            # 1) CSV 선택
             csv_path = self.check_csv_file()
             if not csv_path:
                 printStatus(self.main)
                 return
 
             csv_fname = os.path.basename(csv_path)
-
-            # 2) 결과 저장 폴더
+            
             printStatus(self.main, "결과 CSV를 저장할 위치를 선택하세요")
             save_dir = QFileDialog.getExistingDirectory(
                 self.main, "결과 파일 저장 위치 선택", os.path.dirname(csv_path)
@@ -1668,9 +1668,7 @@ class Manager_Analysis(Manager_Worker):
                 printStatus(self.main)
                 return
 
-            # 3) 텍스트 열 선택
-            df_headers = pd.read_csv(safe_path(csv_path), nrows=0)
-            column_names = df_headers.columns.tolist()
+            column_names = getCSVHeaders(csv_path)
 
             dialog = SelectColumnsDialog(column_names, parent=self.main)
             dialog.setWindowTitle("혐오도 분석할 텍스트 열 선택")
