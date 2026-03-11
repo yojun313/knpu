@@ -5,58 +5,64 @@ import asyncio
 from datetime import datetime
 from rich.console import Console
 from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.responses import JSONResponse
+import traceback
 
 console = Console()
 
-# 주기적으로 GC 실행
 async def periodic_gc(interval_seconds: int = 60):
     while True:
         await asyncio.sleep(interval_seconds)
         gc.collect()
 
-# 요청 로그 미들웨어 (텍스트 출력)
 class RichLoggerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = datetime.now()
-        response = await call_next(request)
+        
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            time_str = datetime.now().strftime("%H:%M:%S")
+            console.print(f"[dim]{time_str}[/dim] [red]CRITICAL[/red] [cyan]{request.method}[/cyan] [green]{request.url.path}[/green]")
+            console.print(f"[red]{traceback.format_exc()}[/red]")
+            return JSONResponse(
+                status_code=500,
+                content={"status": "error", "message": "Internal Server Error"}
+            )
+
         duration = (datetime.now() - start_time).total_seconds()
-
-        method = request.method
-        path = request.url.path
         status = response.status_code
-        duration_str = f"{duration:.2f}s"
-        time_str = start_time.strftime("%H:%M:%S")
-
-        status_str = str(status)
-        if 200 <= status < 300:
-            status_str = f"[green]{status}[/green]"
-        elif 300 <= status < 400:
-            status_str = f"[yellow]{status}[/yellow]"
-        else:
-            status_str = f"[red]{status}[/red]"
-
+        
+        status_str = f"[green]{status}[/green]" if 200 <= status < 300 else f"[red]{status}[/red]"
+        
         log_message = (
-            f"[dim]{time_str}[/dim] "
+            f"[dim]{datetime.now().strftime('%H:%M:%S')}[/dim] "
             f"{status_str} "
-            f"[cyan]{method}[/cyan] "
-            f"[green]{path}[/green] "
-            f"[yellow]{duration_str}[/yellow]"
+            f"[cyan]{request.method}[/cyan] "
+            f"[green]{request.url.path}[/green] "
+            f"[yellow]{duration:.2f}s[/yellow]"
         )
-
         console.print(log_message)
         return response
 
-# FastAPI 앱 구성
 app = FastAPI()
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    console.print(f"[bold red]Global Exception Caught:[/bold red] {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "message": "서버 내부에서 오류가 발생했습니다.",
+            "path": request.url.path
+        },
+    )
+
 app.add_middleware(RichLoggerMiddleware)
 
 @app.on_event("startup")
 async def start_background_tasks():
     asyncio.create_task(periodic_gc(60))
 
-@app.on_event("shutdown")
-async def stop_background_tasks():
-    pass  # 따로 종료할 작업 없음
-
 app.include_router(api_router, prefix="/api", tags=["API"])
-print("Server is running...")
