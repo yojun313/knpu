@@ -11,7 +11,11 @@ def get_file_size(file_path: str) -> int:
     return path_obj.stat().st_size
 
 def safe_path(path: str) -> str:
+    if not path:
+        return path
     abs_path = os.path.abspath(path)
     if os.name == 'nt' and not abs_path.startswith("\\\\?\\"):
-        abs_path = "\\\\?\\" + abs_path
+        if abs_path.startswith("\\\\"):
+            return "\\\\?\\UNC\\" + abs_path[2:]
+        return "\\\\?\\" + abs_path
     return abs_path
