@@ -26,36 +26,36 @@ class BaseWorker(QThread):
 
     def upload_file(self, file_path: str, url: str, extra_fields: dict = None, label: str = "업로드 중"):
         f = None
-        try:
-            s_path = safe_path(file_path)
-            file_size = get_file_size(s_path)
-            uploaded = 0
-            last_percent = -1
-            last_emit_time = 0
-            start_time = time.time()
+        
+        s_path = safe_path(file_path)
+        file_size = get_file_size(s_path)
+        uploaded = 0
+        last_percent = -1
+        last_emit_time = 0
+        start_time = time.time()
 
-            def upload_callback(monitor):
-                nonlocal uploaded, last_percent, last_emit_time
-                uploaded = monitor.bytes_read
-                
-                if file_size > 0:
-                    percent = int(uploaded / file_size * 100)
-                else:
-                    percent = 100
-                    
-                now = time.time()
-                if percent != last_percent or now - last_emit_time > 0.2:
-                    mb_up = uploaded / (1024 * 1024)
-                    mb_total = file_size / (1024 * 1024)
-                    elapsed = now - start_time
-                    speed = mb_up / elapsed if elapsed > 0 else 0
-                    msg = f"{label} {mb_up:.1f}MB/{mb_total:.1f}MB ({speed:.1f}MB/s)"
-                    self.progress.emit(percent, msg)
-                    last_percent = percent
-                    last_emit_time = now
-
-            f = open(s_path, "rb")
+        def upload_callback(monitor):
+            nonlocal uploaded, last_percent, last_emit_time
+            uploaded = monitor.bytes_read
             
+            if file_size > 0:
+                percent = int(uploaded / file_size * 100)
+            else:
+                percent = 100
+                
+            now = time.time()
+            if percent != last_percent or now - last_emit_time > 0.2:
+                mb_up = uploaded / (1024 * 1024)
+                mb_total = file_size / (1024 * 1024)
+                elapsed = now - start_time
+                speed = mb_up / elapsed if elapsed > 0 else 0
+                msg = f"{label} {mb_up:.1f}MB/{mb_total:.1f}MB ({speed:.1f}MB/s)"
+                self.progress.emit(percent, msg)
+                last_percent = percent
+                last_emit_time = now
+
+        f = open(s_path, "rb")
+        try:
             filename = os.path.basename(file_path)
             
             fields = extra_fields or {}
@@ -63,7 +63,7 @@ class BaseWorker(QThread):
             
             encoder = MultipartEncoder(fields=fields)
             monitor = MultipartEncoderMonitor(encoder, upload_callback)
-
+            
             response = requests.post(
                 url,
                 data=monitor,
@@ -73,13 +73,10 @@ class BaseWorker(QThread):
             )
             response.raise_for_status()
             return response
+        finally:           
+            f.close()
 
-        except Exception as e:
-            raise e
-        finally:
-            if f:
-                f.close()
-    
+
     def download_file(
         self,
         response,

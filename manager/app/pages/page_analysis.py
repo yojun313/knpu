@@ -543,9 +543,12 @@ class Manager_Analysis(Manager_Worker):
                         extra_fields={"option": json.dumps(self.option)},
                         label="토큰 데이터 업로드 중"
                     )
+                    
                     extract_path = self.download_file(response, self.save_path, label="결과 다운로드 중", extract=True)
                     self.finished.emit(True, f"{self.tokenfile_name} KEMKIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
 
+                except requests.exceptions.HTTPError as e:
+                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
                 except Exception:
                     self.error.emit(traceback.format_exc())
                     
@@ -1214,7 +1217,6 @@ class Manager_Analysis(Manager_Worker):
         dialog.exec()
 
     def run_tokenize_file(self):
-        # Worker 클래스는 동일 (생략 가능하나 구조 유지를 위해 포함)
         class TokenizeWorker(BaseWorker):
             def __init__(self, pid, csv_path, save_path, tokenfile_name, selected_columns, include_word_list, language, parent=None):
                 super().__init__(parent)
@@ -1244,6 +1246,9 @@ class Manager_Analysis(Manager_Worker):
 
                     local_csv = self.download_file(response, self.save_path, f"token_{self.tokenfile_name}", label="결과 다운로드 중")
                     self.finished.emit(True, f"{self.tokenfile_name} 토큰화가 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", os.path.dirname(local_csv))
+                
+                except requests.exceptions.HTTPError as e:
+                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
@@ -1597,8 +1602,6 @@ class Manager_Analysis(Manager_Worker):
                     }
 
                     url = MANAGER_SERVER_API + "/analysis/hate"
-
-                    # 1. 업로드
                     response = self.upload_file(
                         self.csv_path,
                         url,
@@ -1608,22 +1611,13 @@ class Manager_Analysis(Manager_Worker):
                         label="CSV 업로드 중"
                     )
 
-                    # 2. 응답 코드 검사
-                    if response.status_code != 200:
-                        try:
-                            err = response.json()
-                            msg = err.get("message") or err.get("error") or "분석 실패"
-                        except Exception:
-                            msg = response.text or "분석 중 알 수 없는 오류가 발생했습니다."
-                        self.error.emit(msg)
-                        return
-
-                    # 3. 다운로드
                     filename = f"hate_{self.csv_fname}"
                     self.download_file(response, self.save_dir, filename, label="결과 다운로드 중")
 
                     self.finished.emit(True, f"{self.csv_fname} 혐오도 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", self.save_dir)
-
+                
+                except requests.exceptions.HTTPError as e:
+                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
@@ -1714,16 +1708,7 @@ class Manager_Analysis(Manager_Worker):
                         },
                         label="음성 업로드 중"
                     )
-
-                    if response.status_code != 200:
-                        try:
-                            err = response.json()
-                            msg = err.get("message") or err.get("error") or "음성 인식 실패"
-                        except Exception:
-                            msg = response.text or "음성 인식 중 오류 발생"
-                        self.error.emit(msg)
-                        return
-
+                    
                     result = response.json()
                     text = result.get("text", "")
                     text_with_time = result.get("text_with_time", "")
@@ -1742,6 +1727,8 @@ class Manager_Analysis(Manager_Worker):
                         self.save_dir
                     )
 
+                except requests.exceptions.HTTPError as e:
+                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
                 except Exception:
                     self.error.emit(traceback.format_exc())
         try:
@@ -1822,22 +1809,7 @@ class Manager_Analysis(Manager_Worker):
                         "format": self.fmt,
                         "save_whisper": self.save_whisper
                     }
-
-                    response = requests.post(
-                        MANAGER_SERVER_API + "/analysis/youtube",
-                        data={"option": json.dumps(option_payload)},
-                        headers=get_api_headers(),
-                        stream=True,
-                        timeout=600
-                    )
-
-                    if response.status_code != 200:
-                        try:
-                            msg = response.json().get("message", "YouTube 다운로드 실패")
-                        except Exception:
-                            msg = response.text
-                        self.error.emit(msg)
-                        return
+                    response = Request('post', "/analysis/youtube", data={"option": json.dumps(option_payload)}, stream=True, timeout=600)
 
                     zip_name = f"youtube_{datetime.now().strftime('%m%d%H%M')}.zip"
 
@@ -1854,6 +1826,8 @@ class Manager_Analysis(Manager_Worker):
                         extract_path
                     )
 
+                except requests.exceptions.HTTPError as e:
+                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
