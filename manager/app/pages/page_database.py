@@ -467,7 +467,7 @@ class Manager_Database(Manager_Worker):
                     self.finished.emit(True, f"{self.dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
                     
                 except requests.exceptions.HTTPError:
-                    self.error.emit(f"서버 에러 발생 ({response.status_code}):\n{response.text}")
+                    self.error.emit(f"Server error detected ({response.status_code}):\n{response.text}")
                 except Exception:
                     self.error.emit(traceback.format_exc())
         try:

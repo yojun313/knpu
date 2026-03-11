@@ -39,17 +39,14 @@ app = FastAPI()
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    # 서버 콘솔에도 찍고
-    error_traceback = traceback.format_exc()
-    console.print(f"[bold red]Global Exception Caught:[/bold red]\n{error_traceback}")
+    error_traceback = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
     
-    # 클라이언트에게 상세 내용을 통째로 보냅니다.
     return JSONResponse(
         status_code=500,
         content={
             "status": "error",
-            "message": str(exc), # 에러 메시지 (예: 'NoneType' object is not subscriptable)
-            "detail": error_traceback, # 에러 발생 위치 전체 (Traceback)
+            "message": f"[{type(exc).__name__}] {str(exc)}", 
+            "detail": error_traceback, 
             "path": request.url.path
         },
     )
