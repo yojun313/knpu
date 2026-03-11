@@ -465,10 +465,11 @@ class Manager_Database(Manager_Worker):
                     # 1) 다운로드
                     extract_path = self.download_file(response, self.folder_path, zip_name, extract=True)
                     self.finished.emit(True, f"{self.dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
-
+                    
+                except requests.exceptions.HTTPError:
+                    self.error.emit(f"서버 에러 발생 ({response.status_code}):\n{response.text}")
                 except Exception:
                     self.error.emit(traceback.format_exc())
-    
         try:
             selectedRow = self.main.database_tablewidget.currentRow()
             if not selectedRow >= 0:
