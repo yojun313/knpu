@@ -49,16 +49,21 @@ app = FastAPI()
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    console.print(f"[bold red]Global Exception Caught:[/bold red] {str(exc)}")
+    # 서버 콘솔에도 찍고
+    error_traceback = traceback.format_exc()
+    console.print(f"[bold red]Global Exception Caught:[/bold red]\n{error_traceback}")
+    
+    # 클라이언트에게 상세 내용을 통째로 보냅니다.
     return JSONResponse(
         status_code=500,
         content={
             "status": "error",
-            "message": "서버 내부에서 오류가 발생했습니다.",
+            "message": str(exc), # 에러 메시지 (예: 'NoneType' object is not subscriptable)
+            "detail": error_traceback, # 에러 발생 위치 전체 (Traceback)
             "path": request.url.path
         },
     )
-
+    
 app.add_middleware(RichLoggerMiddleware)
 
 @app.on_event("startup")
