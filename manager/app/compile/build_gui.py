@@ -2,7 +2,6 @@ import sys
 import os
 import re
 import shutil
-import socket
 import subprocess
 from datetime import datetime
 
@@ -16,6 +15,9 @@ from PySide6.QtWidgets import (
     QPushButton, QPlainTextEdit, QRadioButton, QButtonGroup,
     QMessageBox, QFrame
 )
+from dotenv import load_dotenv
+
+load_dotenv()  
 
 # ----------------------------------------
 # 기존 상수/함수들
@@ -32,7 +34,7 @@ from upload import upload_file  # 기존 모듈 그대로 사용
 
 
 def sendPushOver(msg):
-    requests.post('https://manager.knpu.re.kr/api/users/admin/pushover', json={"message": msg})
+    requests.post('https://manager.knpu.re.kr/api/users/admin/pushover', json={"message": msg}, headers={"Authorization": f"Bearer {os.getenv('ADMIN_TOKEN')}"})
 
 def update_inno_version(iss_path: str, new_version: str):
     temp_iss_path = os.path.join(os.path.dirname(iss_path), 'setup_temp.iss')
