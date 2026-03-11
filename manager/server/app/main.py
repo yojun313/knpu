@@ -18,17 +18,7 @@ async def periodic_gc(interval_seconds: int = 60):
 class RichLoggerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = datetime.now()
-        
-        try:
-            response = await call_next(request)
-        except Exception as exc:
-            time_str = datetime.now().strftime("%H:%M:%S")
-            console.print(f"[dim]{time_str}[/dim] [red]CRITICAL[/red] [cyan]{request.method}[/cyan] [green]{request.url.path}[/green]")
-            console.print(f"[red]{traceback.format_exc()}[/red]")
-            return JSONResponse(
-                status_code=500,
-                content={"status": "error", "message": "Internal Server Error"}
-            )
+        response = await call_next(request)
 
         duration = (datetime.now() - start_time).total_seconds()
         status = response.status_code
