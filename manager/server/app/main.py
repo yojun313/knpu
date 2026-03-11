@@ -1,7 +1,3 @@
-import warnings
-from requests.exceptions import RequestsDependencyWarning
-warnings.filterwarnings("ignore", category=RequestsDependencyWarning)
-
 from fastapi import FastAPI, Request
 from app.routes import api_router
 import gc
