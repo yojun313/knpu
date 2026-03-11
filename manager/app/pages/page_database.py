@@ -106,7 +106,7 @@ class Manager_Database(Manager_Worker):
                 try:
                     self.message.emit("DB 데이터를 불러오는 중...")
                     response = Request('get', f'crawls/{self.DBuid}/preview', stream=True)
-
+                    
                     tab_data = []
 
                     with zipfile.ZipFile(BytesIO(response.content)) as zf:
@@ -130,9 +130,11 @@ class Manager_Database(Manager_Worker):
 
                     self.finished.emit(tab_data)
 
+                except requests.exceptions.HTTPError as e:
+                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
                 except Exception:
                     self.error.emit(traceback.format_exc())
-                    
+                        
         class TableWindow(QMainWindow):
             def __init__(self, parent=None, DBuid=None, DBname=None):
                 super(TableWindow, self).__init__(parent)
@@ -188,6 +190,7 @@ class Manager_Database(Manager_Worker):
                 self.worker.message.connect(lambda msg: printStatus(self.main, msg))
                 self.worker.finished.connect(self.render_tabs)
                 self.worker.error.connect(lambda err: programBugLog(self.main, err))
+                self.worker.error.connect(self.closeWindow)
                 self.worker.start()
 
                 if not hasattr(self.main, "_workers"):
@@ -440,17 +443,8 @@ class Manager_Database(Manager_Worker):
 
             def run(self):
                 try:
-                    download_url = MANAGER_SERVER_API + f"/crawls/{self.targetUid}/save"
-                    response = requests.post(
-                        download_url,
-                        json=self.option,
-                        stream=True,
-                        headers=get_api_headers(),
-                        timeout=3600
-                    )
-                    response.raise_for_status()
+                    response = Request('post', f'crawls/{self.targetUid}/save', json=self.option, stream=True, timeout=3600)
 
-                    # 파일 이름 파싱
                     content_disp = response.headers.get("Content-Disposition", "")
                     m = re.search(r'filename="(?P<fname>[^"]+)"', content_disp)
                     if m:
@@ -462,12 +456,11 @@ class Manager_Database(Manager_Worker):
                         else:
                             zip_name = f"{self.targetUid}.zip"
 
-                    # 1) 다운로드
                     extract_path = self.download_file(response, self.folder_path, zip_name, extract=True)
                     self.finished.emit(True, f"{self.dbname} 저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
                     
-                except requests.exceptions.HTTPError:
-                    self.error.emit(f"Server error detected ({response.status_code}):\n{response.text}")
+                except requests.exceptions.HTTPError as e:
+                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
                 except Exception:
                     self.error.emit(traceback.format_exc())
         try:
@@ -523,7 +516,6 @@ class Manager_Database(Manager_Worker):
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
-            # 여러 다운로드를 관리할 수 있도록 worker를 리스트에 저장
             if not hasattr(self, "_workers"):
                 self._workers = []
             self._workers.append(worker)
