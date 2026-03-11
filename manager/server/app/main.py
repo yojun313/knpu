@@ -39,14 +39,29 @@ app = FastAPI()
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    error_traceback = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+
+    tb = exc.__traceback__
+    frames = traceback.extract_tb(tb)
+    
+    filtered_frames = []
+    for frame in frames:
+        if "site-packages" not in frame.filename and "lib/python" not in frame.filename:
+            filtered_frames.append(frame)
+    
+    if not filtered_frames and frames:
+        filtered_frames = [frames[-1]]
+
+    custom_traceback = "".join(traceback.format_list(filtered_frames))
+    custom_traceback += f"\n{type(exc).__name__}: {str(exc)}"
+
+    console.print(f"[bold red]Exception at {request.url.path}:[/bold red]\n{traceback.format_exc()}")
     
     return JSONResponse(
         status_code=500,
         content={
             "status": "error",
             "message": f"[{type(exc).__name__}] {str(exc)}", 
-            "detail": error_traceback, 
+            "detail": custom_traceback, # 이제 필터링된 내용만 클라이언트로 전송됨
             "path": request.url.path
         },
     )
