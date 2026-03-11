@@ -15,7 +15,7 @@ class Manager_Worker:
     
     def worker_failed(self, error_message: str):
         programBugLog(self.main, error_message)
-    
+        
     def connectWorkerForDownloadDialog(self, worker, downloadDialog, thread_name):
         worker.progress.connect(lambda val, msg: (
             downloadDialog.update_progress(val), 
