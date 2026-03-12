@@ -3,6 +3,8 @@ from app.db import user_db, auth_db
 from app.utils.mongo import clean_doc
 from app.libs.exceptions import NotFoundException, UnauthorizedException
 from app.utils.mail import sendEmail
+from app.services.user_service import get_all_admins
+
 import random
 import os
 import jwt
@@ -58,9 +60,8 @@ def verify_code(name: str, code: str, device: str):
     )
     
     access_token = create_access_token(token_data)
-    
-    admin_key = user_db.find_one({"name": "admin"}, {"pushoverKey": 1, "_id": 0})
-    sendPushOver(f"[ User login ]\nUser: {existing_user['name']}\nDevice: {device}", [admin_key["pushoverKey"]])
+    admins = [admin['pushoverKey'] for admin in get_all_admins()]
+    sendPushOver(f"[ User login ]\nUser: {existing_user['name']}\nDevice: {device}", admins)
         
     return JSONResponse(status_code=200, content={"message": "Verification successful", "access_token": access_token, "user": existing_user})
 
