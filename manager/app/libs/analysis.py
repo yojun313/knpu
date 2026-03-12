@@ -88,8 +88,7 @@ class DataProcess:
         for group_name, group_data in data_group:
             info[str(group_name)] = len(group_data)
             safe_group_name = re.sub(r'[\/\\~\s:|]', '_', str(group_name))
-            group_data.to_csv(safe_path(f"{data_path}/{folder_name}/{tablename+'_'+str(safe_group_name)}.csv"),
-                              index=False, encoding='utf-8-sig', header=True)
+            group_data.to_csv(safe_path(f"{data_path}/{folder_name}/{tablename+'_'+str(safe_group_name)}.csv"), index=False, encoding='utf-8-sig', header=True)
 
         # 정보 파일 생성
         info_df = pd.DataFrame(list(info.items()), columns=[info_label, 'Count'])

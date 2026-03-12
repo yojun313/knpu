@@ -1,21 +1,18 @@
 import os
 from pathlib import Path
 
-def get_file_size(file_path: str) -> int:
-    path_obj = Path(file_path).resolve()
-    
-    if not path_obj.exists():
-        print(f"파일이 존재하지 않습니다: {path_obj}")
-        return 0
-        
-    return path_obj.stat().st_size
-
-def safe_path(path: str) -> str:
+def safe_path(path: str | Path) -> Path:
     if not path:
-        return path
-    abs_path = os.path.abspath(path)
-    if os.name == 'nt' and not abs_path.startswith("\\\\?\\"):
-        if abs_path.startswith("\\\\"):
-            return "\\\\?\\UNC\\" + abs_path[2:]
-        return "\\\\?\\" + abs_path
-    return abs_path
+        return Path(".")
+    
+    p = Path(path).absolute()
+    
+    if os.name == 'nt':
+        path_str = str(p)
+        if len(path_str) >= 250 and not path_str.startswith("\\\\?\\"):
+            if path_str.startswith("\\\\"):
+                p = Path("\\\\?\\UNC\\" + path_str[2:])
+            else:
+                p = Path("\\\\?\\" + path_str)
+                
+    return p
