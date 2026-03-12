@@ -45,6 +45,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.splashDialog = splashDialog
             super(MainWindow, self).__init__()
             self.setupUi(self)  
+            self.user_role = None
             
             self.cleanup_old_exe()  
             
@@ -124,7 +125,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.closeBootscreen()
                 printStatus(self)
                 msg = f'[ CRITICAL ]\n\nThere is Error in MANAGER Booting\n\nPC: {socket.gethostname()}\n\nError Log: {traceback.format_exc()}'
-                sendPushOver(msg)
+                
+                if self.user_role and self.user_role != 'admin':
+                    sendPushOver(msg)
                 QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
                 
                 if checkNewVersion():
@@ -133,7 +136,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 
                 QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
                 self.force_quit()
-                
 
         except Exception as e:
             self.closeBootscreen()
