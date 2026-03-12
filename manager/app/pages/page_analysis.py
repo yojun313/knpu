@@ -679,7 +679,6 @@ class Manager_Analysis(Manager_Worker):
                         f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}")
                     
                 df = readCSV(exception_word_list_path)
-                print(list(df.keys()))
                 if 'word' not in list(df.keys()):
                     QMessageBox.warning(
                         self.main, "Wrong Format", "예외어 사전 형식과 일치하지 않습니다")
