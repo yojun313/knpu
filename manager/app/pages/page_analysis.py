@@ -412,7 +412,7 @@ class Manager_Analysis(Manager_Worker):
             def run(self):
                 try:
                     self.message.emit("토큰 데이터를 불러오는 중...")
-                    token_data = readCSV(safe_path(self.filepath))
+                    token_data = readCSV(self.filepath)
 
                     folder_path = os.path.join(
                         self.save_path,
@@ -679,6 +679,7 @@ class Manager_Analysis(Manager_Worker):
                         f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}")
                     
                 df = readCSV(exception_word_list_path)
+                print(list(df.keys()))
                 if 'word' not in list(df.keys()):
                     QMessageBox.warning(
                         self.main, "Wrong Format", "예외어 사전 형식과 일치하지 않습니다")

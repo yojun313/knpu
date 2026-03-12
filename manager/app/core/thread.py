@@ -3,7 +3,7 @@ import re
 import requests
 import time
 from services.api import get_api_headers
-from libs.path import safe_path, get_file_size
+from libs.path import safe_path
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 import zipfile
 from urllib.parse import unquote
@@ -28,7 +28,7 @@ class BaseWorker(QThread):
         f = None
         
         s_path = safe_path(file_path)
-        file_size = get_file_size(s_path)
+        file_size = s_path.stat().st_size
         uploaded = 0
         last_percent = -1
         last_emit_time = 0
