@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Body
 from app.models.user_model import UserCreate
-from app.services.user_service import create_user, delete_user, get_all_users, log_user, bug_user, get_all_admins
+from app.services.user_service import create_user, delete_user, get_all_users, log_user, bug_user, get_all_admins, update_user_version
 from app.libs.jwt import verify_token
 from starlette.background import BackgroundTask
 from fastapi.responses import JSONResponse
@@ -25,6 +25,10 @@ def addUserLog(message: str = Body(..., embed=True), userUid = Depends(verify_to
 @router.post("/bug")
 def addUserBug(message: str = Body(..., embed=True), userUid = Depends(verify_token)):
     return bug_user(userUid, message)
+
+@router.post('/version')
+def updateVersion(oldVersionName: str = Body(..., embed=True), newVersionName: str = Body(..., embed=True), userUid = Depends(verify_token)):
+    return update_user_version(userUid, oldVersionName, newVersionName)
 
 @router.get("")
 def loadUsers():

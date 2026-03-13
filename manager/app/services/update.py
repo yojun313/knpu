@@ -7,8 +7,7 @@ import webbrowser
 import shutil
 from PySide6.QtWidgets import QDialog, QPushButton, QMessageBox, QApplication
 from PySide6.QtCore import Signal, QThread
-from services.pushover import sendPushOver
-from services.logging import userLogging, getUserLocation, programBugLog
+from services.logging import programBugLog
 from ui.status import printStatus
 from ui.dialogs import ViewVersionDialog
 from config import VERSION
@@ -16,6 +15,7 @@ from core.setting import get_setting
 from core.boot import checkNewVersion, getVersionInfo
 from core.thread import DownloadDialog
 from libs.path import safe_path
+from services.api import Request
 import time
 
 class DownloadWorker(QThread):
@@ -135,11 +135,8 @@ def updateProgram(parent, sc=False):
             newVersionName = newVersionCheck[0]
 
         def update_process(is_full_update):
-            msg = f"{parent.user} updated {VERSION} -> {newVersionName}\n\n{getUserLocation(parent)}"
-            sendPushOver(msg)
-            userLogging(f'Program Update ({VERSION} -> {newVersionName})')
+            Request('post', 'user/version', data={"oldVersionName": VERSION, "newVersionName": newVersionName})
             printStatus(parent, "버전 업데이트 중...")
-            
             downloadProgram(parent, newVersionName, is_update=not is_full_update)
 
         if newVersionCheck:
