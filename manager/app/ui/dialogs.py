@@ -568,8 +568,8 @@ class ViewVersionDialog(BaseDialog):
         self.add_label(self.layout, "Version Features", self.version_data['features'])
         self.add_label(self.layout, "Detail",           self.version_data['details'], multiline=True)
         is_full = self.version_data.get('fullUpdate', False)
-        full_update_text = "Yes" if is_full else "No"
-        self.add_label(self.layout, "Full Update", full_update_text)
+        full_update_text = "N" if is_full else "Y"
+        self.add_label(self.layout, "Fast Update", full_update_text)
             
     def add_buttons(self, *buttons):
         button_layout = QHBoxLayout()

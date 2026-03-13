@@ -98,9 +98,7 @@ def downloadProgram(parent, newVersionName, is_update=True):
         
         if is_update:
             current_exe = sys.executable
-            # 파일 충돌을 방지하기 위해 타임스탬프 추가
             old_exe = current_exe + f".old_{int(time.time())}"
-            
             try:
                 os.rename(current_exe, old_exe)
                 shutil.copy2(path, current_exe)
@@ -135,7 +133,7 @@ def updateProgram(parent, sc=False):
             newVersionName = newVersionCheck[0]
 
         def update_process(is_full_update):
-            Request('post', 'user/version', data={"oldVersionName": VERSION, "newVersionName": newVersionName})
+            Request('post', 'users/version', json={"oldVersionName": VERSION, "newVersionName": newVersionName})
             printStatus(parent, "버전 업데이트 중...")
             downloadProgram(parent, newVersionName, is_update=not is_full_update)
 

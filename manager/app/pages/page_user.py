@@ -19,12 +19,12 @@ class Manager_User:
 
     def refreshUserTable(self):
         self.user_list = Request('get', '/users').json()['data']
-        user_data = [(user['name'], user['email'], user['pushoverKey'], user['role']) for user in self.user_list]
+        user_data = [(user['name'], user['email'], user['pushoverKey'], user['role'], user.get('version', 'Unknown')) for user in self.user_list]
         self.userNameList = [user['name'] for user in self.user_list]
         self.userKeyList = [user['pushoverKey'] for user in self.user_list if user['pushoverKey'] != 'n']
 
         # 테이블 설정
-        columns = ['Name', 'Email', 'PushOverKey', 'Role']
+        columns = ['Name', 'Email', 'PushOverKey', 'Role', 'Version']
         makeTable(
             self.main,
             widgetname=self.main.user_tablewidget,
