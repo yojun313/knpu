@@ -1,5 +1,5 @@
 from services.api import Request
 
-def sendPushOver(msg):
+def sendAdminPushOver(msg):
     Request('post', '/users/admin/pushover', json={"message": msg})
     

@@ -30,7 +30,7 @@ from core.shortcut import initShortcut, resetShortcuts
 from core.setting import get_setting, set_setting
 from core.auth import loginProgram
 from services.crawldb import updateDB
-from services.pushover import sendPushOver
+from services.pushover import sendAdminPushOver
 from services.update import updateProgram
 from services.logging import userLogging, getUserLocation
 from ui.style import theme_option
@@ -127,7 +127,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 msg = f'[ CRITICAL ]\n\nThere is Error in MANAGER Booting\n\nPC: {socket.gethostname()}\n\nError Log: {traceback.format_exc()}'
                 
                 if self.user_role and self.user_role != 'admin':
-                    sendPushOver(msg)
+                    sendAdminPushOver(msg)
                 QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
                 
                 if checkNewVersion():
