@@ -4,8 +4,10 @@ from app.libs.exceptions import ConflictException, BadRequestException
 from app.models.user_model import UserCreate
 from app.utils.mongo import clean_doc
 from fastapi.responses import JSONResponse
+from pymongo import ReturnDocument
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from app.utils.pushover import sendPushOver
 import uuid
 
 def create_user(user: UserCreate):
@@ -78,4 +80,23 @@ def bug_user(userUid: str, message: str):
         {"uid": userUid},
         {"$push": {date_key: log_entry}, "$setOnInsert": {"uid": userUid}},
         upsert=True
+    )
+
+def update_user_version(userUid: str, oldVersionName: str, newVersionName: str):
+    updated_user = user_db.find_one_and_update(
+        {"uid": userUid},
+        {"$set": {"version": newVersionName}},
+        return_document=ReturnDocument.AFTER
+    )
+    if not updated_user:
+        raise BadRequestException("User not found")
+    
+    userName = updated_user.get("name", "Unknown")
+    msg = f"{userName} updated {oldVersionName} -> {newVersionName}"
+    sendPushOver(msg, [admin['pushoverKey'] for admin in get_all_admins()])
+    log_user(userUid, f"Updated version: {oldVersionName} -> {newVersionName}")
+    
+    return JSONResponse(
+        status_code=200,
+        content={"message": "User version updated", "data": clean_doc(updated_user)},
     )
