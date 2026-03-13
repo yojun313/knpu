@@ -144,12 +144,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     
     def cleanup_old_exe(self):
         if getattr(sys, 'frozen', False):
-            old_exe = sys.executable + ".old"
-            if os.path.exists(old_exe):
-                try:
-                    os.remove(old_exe)
-                except Exception:
-                    pass
+            exe_dir = os.path.dirname(sys.executable)
+            exe_name = os.path.basename(sys.executable)
+            
+            for filename in os.listdir(exe_dir):
+                if filename.startswith(exe_name + ".old_"):
+                    file_path = os.path.join(exe_dir, filename)
+                    try:
+                        os.remove(file_path)
+                    except Exception:
+                        pass
                 
     def showEvent(self, event):
         super().showEvent(event)
