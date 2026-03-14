@@ -42,9 +42,6 @@ class Crawler(CrawlerModule):
             self.proxy_option = False
         super().__init__(proxy_option=self.proxy_option)
 
-        if user == '문요준':
-            user = 'admin'
-
         self.running = True
         self.speed = int(speed)
         self.saveInterval = 90

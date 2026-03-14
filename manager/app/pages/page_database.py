@@ -64,7 +64,7 @@ class Manager_Database(Manager_Worker):
                 status = DBdata['status']
                 owner = DBdata['requester']
 
-                if owner != self.main.user and self.main.user != 'admin':
+                if owner != self.main.user and self.main.user_role != 'admin':
                     QMessageBox.warning(
                         self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
                     return
@@ -329,14 +329,14 @@ class Manager_Database(Manager_Worker):
                         
                     sys.exit(0)
                 
-            if search_text == '/admin' and self.main.user != 'admin':
+            if search_text == '/admin' and self.main.user_role != 'admin':
                 self.main.database_searchDB_lineinput.clear()
                 ok, password = checkPassword(self.main, True)
                 if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
                     QMessageBox.warning(
                         self.main, 'Wrong Password', "비밀번호가 올바르지 않습니다")
                     return
-                self.main.user = 'admin'
+                self.main.user_role = 'admin'
                 QMessageBox.information(
                     self.main, "Admin Mode", f"관리자 권한이 부여되었습니다")
                 
