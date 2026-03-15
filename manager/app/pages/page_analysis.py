@@ -606,9 +606,7 @@ class Manager_Analysis(Manager_Worker):
                     startdate = start_dt.strftime('%Y%m%d')
                     enddate   = end_dt.strftime('%Y%m%d')
                     
-                    # Calculate total periods based on the input period
                     def months_between_inclusive(s: datetime, e: datetime) -> int:
-                        # s와 e가 같은 달이면 1, 그 이상이면 월 차이 + 1 (양끝 달 포함)
                         return (e.year - s.year) * 12 + (e.month - s.month) + 1
 
                     if period == '1y':
@@ -647,7 +645,6 @@ class Manager_Analysis(Manager_Worker):
                                             f"(현재 분석 구간: {total_periods:.2f}개)")
                         continue
 
-                    # Check if the total periods exceed the limit when multiplied by the weight
                     if total_periods * weight >= 1:
                         QMessageBox.warning(self.main, "Wrong Form",
                                             "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
@@ -661,7 +658,40 @@ class Manager_Analysis(Manager_Worker):
                 except Exception as e:
                     QMessageBox.warning(
                         self.main, "Wrong Form", f"입력 형식이 올바르지 않습니다, {e}")
+        
+            printStatus(self.main, "데이터 유효성 검사 중...")
+            
+            headers = getCSVHeaders(filepath)
+            
+            date_col = next((col for col in headers if 'Date' in col), None)
+            text_col = next((col for col in headers if 'Text' in col), None)
 
+            if not date_col or not text_col:
+                QMessageBox.warning(self.main, "Data Error", 
+                                    f"필수 컬럼이 부족합니다.\n찾은 컬럼: {headers}\n(Date와 Text를 포함하는 컬럼이 필요합니다.)")
+                printStatus(self.main)
+                return
+
+            with open(filepath, 'rb') as f:
+                detected = chardet.detect(f.read(10000))
+                encoding = detected['encoding'] or 'utf-8'
+
+            df_date_check = pd.read_csv(filepath, encoding=encoding, usecols=[date_col])
+            df_date_check[date_col] = pd.to_datetime(df_date_check[date_col], errors='coerce')
+            
+            sel_start = pd.to_datetime(startdate, format='%Y%m%d')
+            sel_end = pd.to_datetime(enddate, format='%Y%m%d')
+
+            valid_data = df_date_check[(df_date_check[date_col] >= sel_start) & 
+                                        (df_date_check[date_col] <= sel_end)]
+
+            if valid_data.empty:
+                QMessageBox.warning(self.main, "Data Error", f"선택하신 기간({startdate}~{enddate}) 내에 분석할 데이터가 없습니다.")
+                printStatus(self.main)
+                return
+
+            del df_date_check, valid_data
+        
             exception_word_list = []
             exception_word_list_path = 'N'
             if except_yes_selected == True:
@@ -710,7 +740,6 @@ class Manager_Analysis(Manager_Worker):
             downloadDialog = DownloadDialog(f"KEMKIM 분석: {tokenfile_name}", pid, self.main)
             downloadDialog.show()
 
-            # thread_name 설정 및 등록
             thread_name = f"KEMKIM 분석: {tokenfile_name}"
             register_thread(thread_name)
             printStatus(self.main)
@@ -719,7 +748,6 @@ class Manager_Analysis(Manager_Worker):
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
-            # GC 방지용 리스트에 저장
             if not hasattr(self, "_workers"):
                 self._workers = []
             self._workers.append(worker)
@@ -729,21 +757,16 @@ class Manager_Analysis(Manager_Worker):
     
     def modify_kemkim(self):
         def copy_csv(input_file_path, output_file_path):
-            # CSV 파일 읽기
             if not os.path.exists(input_file_path):
                 raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{input_file_path}")
 
             with open(safe_path(input_file_path), 'r') as csvfile:
                 reader = csv.reader(csvfile)
-
-                # 모든 데이터를 읽어옵니다 (헤더 포함)
                 rows = list(reader)
 
-            # 읽은 데이터를 그대로 새로운 CSV 파일로 저장하기
             with open(safe_path(output_file_path), 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile)
 
-                # 데이터를 행 단위로 다시 작성합니다
                 for row in rows:
                     writer.writerow(row)
 
