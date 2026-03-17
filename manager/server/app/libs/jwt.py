@@ -1,5 +1,5 @@
 
-import jwt#
+import jwt
 import os
 from jwt import PyJWTError
 from fastapi import Depends, HTTPException
