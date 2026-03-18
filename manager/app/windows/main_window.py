@@ -84,7 +84,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 self.splashDialog.updateStatus("Loading Data")
                 print("\nII. Loading Data... ", end='')
-
+                
+                Request('post', 'users/version', json={"newVersionName": VERSION})
                 self.DB = updateDB(self)
                 self.managerWebObj = Manager_Web(self)
                 self.managerBoardObj = Manager_Board(self)
@@ -99,7 +100,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 if checkNewVersion():
                     self.closeBootscreen()
                     updateProgram(self)
-                Request('post', 'users/version', json={"newVersionName": VERSION})
+                
                 print("Done")
 
                 self.splashDialog.updateStatus(f"안녕하세요, {self.user}님!")
