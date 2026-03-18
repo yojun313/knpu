@@ -37,6 +37,7 @@ from ui.style import theme_option
 from ui.status import printStatus, changeStatusbarAction
 from ui.dialogs import ViewVersionDialog
 from assets.gui import Ui_MainWindow
+from services.api import Request
 
 class MainWindow(QMainWindow, Ui_MainWindow):
 
@@ -98,10 +99,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 if checkNewVersion():
                     self.closeBootscreen()
                     updateProgram(self)
+                Request('post', 'users/version', json={"newVersionName": VERSION})
                 print("Done")
 
                 self.splashDialog.updateStatus(f"안녕하세요, {self.user}님!")
                 print(f"\n{self.user}님 환영합니다!")
+                
 
                 initShortcut(self)
                 self.managerDatabaseObj.setDatabaseShortcut()

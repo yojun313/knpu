@@ -82,7 +82,7 @@ def bug_user(userUid: str, message: str):
         upsert=True
     )
 
-def update_user_version(userUid: str, oldVersionName: str, newVersionName: str):
+def update_user_version(userUid: str, oldVersionName: str | None, newVersionName: str):
     updated_user = user_db.find_one_and_update(
         {"uid": userUid},
         {"$set": {"version": newVersionName}},
@@ -91,9 +91,10 @@ def update_user_version(userUid: str, oldVersionName: str, newVersionName: str):
     if not updated_user:
         raise BadRequestException("User not found")
     
-    userName = updated_user.get("name", "Unknown")
-    msg = f"{userName} updated {oldVersionName} -> {newVersionName}"
-    sendPushOver(msg, [admin['pushoverKey'] for admin in get_all_admins()])
+    if oldVersionName:
+        userName = updated_user.get("name", "Unknown")
+        msg = f"{userName} updated {oldVersionName} -> {newVersionName}"
+        sendPushOver(msg, [admin['pushoverKey'] for admin in get_all_admins()])
     log_user(userUid, f"Updated version: {oldVersionName} -> {newVersionName}")
     
     return JSONResponse(
