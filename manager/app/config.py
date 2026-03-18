@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 VERSION = '3.1.8'
 
 '''
@@ -9,7 +13,7 @@ VERSION = '3.1.8'
 ASSETS_PATH = os.path.join(os.path.dirname(__file__), "assets")
 ADMIN_PASSWORD = "***REMOVED***"
 
-mode = 1
+mode = int(os.getenv('MODE'))
 
 if mode == 0:
     MANAGER_SERVER_API = "http://localhost:8000/api"

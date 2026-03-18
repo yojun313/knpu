@@ -67,3 +67,21 @@ free_board_db = manager_db["free-board"]
 auth_db = manager_db["auth"]
 
 crawldata_path = os.getenv('CRAWLDATA_PATH')
+
+def sync_manager_databases(src_db_name='manager', target_db_name='manager_dev'):
+    client.drop_database(target_db_name)
+    
+    src_db = client[src_db_name]
+    target_db = client[target_db_name]
+    
+    for coll_name in src_db.list_collection_names():
+        src_db[coll_name].aggregate([{"$out": {"db": target_db_name, "coll": coll_name}}])
+        
+        indexes = src_db[coll_name].index_information()
+        for index_name, index_info in indexes.items():
+            if index_name == "_id_":
+                continue
+            
+            keys = index_info['key']
+            options = {k: v for k, v in index_info.items() if k not in ['v', 'key', 'ns']}
+            target_db[coll_name].create_index(keys, **options)

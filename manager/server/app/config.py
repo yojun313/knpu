@@ -2,4 +2,10 @@
     0: local
     1: production
 '''
-mode = 1
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+mode = int(os.getenv('MODE'))
