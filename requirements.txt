@@ -41,3 +41,4 @@ pyjwt
 kiwipiepy
 transformers
 yt-dlp
+FlagEmbedding

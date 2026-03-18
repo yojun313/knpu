@@ -95,7 +95,7 @@ def update_user_version(userUid: str, oldVersionName: str | None, newVersionName
         userName = updated_user.get("name", "Unknown")
         msg = f"{userName} updated {oldVersionName} -> {newVersionName}"
         sendPushOver(msg, [admin['pushoverKey'] for admin in get_all_admins()])
-    log_user(userUid, f"Updated version: {oldVersionName} -> {newVersionName}")
+        log_user(userUid, f"Updated version: {oldVersionName} -> {newVersionName}")
     
     return JSONResponse(
         status_code=200,
