@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Form
+from fastapi import APIRouter, UploadFile, File, Form, Body
 from fastapi.responses import StreamingResponse, JSONResponse
 from app.services.analysis_service import *
 import pandas as pd
@@ -181,4 +181,80 @@ async def grounding_dino_route(
         zip_buffer,
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+    )
+
+@router.post("/embed")
+async def embed_text_route(
+    sentences: List[str] = Body(..., description="임베딩할 문장 리스트"),
+    option: str = Form("{}")
+):
+    try:
+        option_dict = json.loads(option)
+        batch_size = int(option_dict.get("batch_size", 12))
+        
+        embeddings = generate_embeddings(sentences, batch_size=batch_size)
+        
+        return JSONResponse(content={
+            "model": "BAAI/bge-m3",
+            "dim": len(embeddings[0]) if embeddings else 0,
+            "count": len(embeddings),
+            "embeddings": embeddings
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": str(e)})
+
+@router.post("/embed/csv")
+async def embed_csv_route(
+    file: UploadFile = File(...),
+    option: str = Form("{}")
+):
+    try:
+        option_dict = json.loads(option)
+    except json.JSONDecodeError:
+        return BadRequestException("option JSON 파싱 실패")
+
+    pid = option_dict.get("pid")
+    text_col = option_dict.get("text_col", "Text")
+    batch_size = int(option_dict.get("batch_size", 12))
+
+    content = await file.read()
+    try:
+        df = pd.read_csv(io.StringIO(content.decode("utf-8")))
+    except:
+        df = pd.read_csv(io.StringIO(content.decode("cp949")))
+    
+    if text_col not in df.columns:
+        for c in df.columns:
+            if "text" in c.lower():
+                text_col = c
+                break
+        else:
+            raise BadRequestException(f"Column '{text_col}' not found in CSV")
+
+    if pid:
+        send_message(pid, f"[임베딩] '{text_col}' 열 데이터 추출 중...")
+
+    sentences = df[text_col].fillna("").astype(str).tolist()
+    
+    if pid:
+        send_message(pid, f"[임베딩] BGE-M3 모델로 {len(sentences):, Joyce}개 문장 벡터화 시작")
+    
+    embeddings = generate_embeddings(sentences, batch_size=batch_size)
+    
+    df['embedding'] = [json.dumps(e) for e in embeddings]
+    
+    if pid:
+        send_message(pid, "[임베딩] 분석 완료 및 결과 생성 중")
+
+    buffer = io.BytesIO()
+    df.to_csv(buffer, index=False, encoding="utf-8-sig")
+    buffer.seek(0)
+    
+    filename = f"embed_result_{pid if pid else 'data'}.csv"
+    cd_header = f"attachment; filename*=UTF-8''{quote(filename)}"
+    
+    return StreamingResponse(
+        buffer,
+        media_type="text/csv",
+        headers={"Content-Disposition": cd_header},
     )
