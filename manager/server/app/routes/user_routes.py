@@ -27,7 +27,11 @@ def addUserBug(message: str = Body(..., embed=True), userUid = Depends(verify_to
     return bug_user(userUid, message)
 
 @router.post('/version')
-def updateVersion(oldVersionName: str = Body(..., embed=True), newVersionName: str = Body(..., embed=True), userUid = Depends(verify_token)):
+def updateVersion(
+    oldVersionName: str | None = Body(None, embed=True), 
+    newVersionName: str = Body(..., embed=True), 
+    userUid = Depends(verify_token)
+):
     return update_user_version(userUid, oldVersionName, newVersionName)
 
 @router.get("")

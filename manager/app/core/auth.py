@@ -4,7 +4,6 @@ import re
 import socket
 import traceback
 import requests
-
 from config import MANAGER_SERVER_API
 from ui.status import printStatus
 from services.api import get_api_headers
