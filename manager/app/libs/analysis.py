@@ -186,10 +186,33 @@ class DataProcess:
         # 상관관계 분석 (숫자형 컬럼만 선택)
         numeric_columns = ['Article ReplyCnt']
         correlation_matrix = data[numeric_columns].corr()
+        
+        # 1. 언론사별/유형별 평균 댓글 수 (효율성 분석)
+        press_analysis['Replies per Article'] = press_analysis['Article ReplyCnt'] / press_analysis['Article Count']
+        article_type_analysis['Replies per Article'] = article_type_analysis['Article ReplyCnt'] / article_type_analysis['Article Count']
+
+        # 2. 요일 및 시간대별 분석
+        data['Day of Week'] = data['Article Date'].dt.day_name()
+        data['Hour'] = data['Article Date'].dt.hour
+        
+        day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        dow_analysis = data.groupby('Day of Week').agg({
+            'id': 'count',
+            'Article ReplyCnt': 'mean'
+        }).reindex(day_order).rename(columns={'id': 'Article Count', 'Article ReplyCnt': 'Avg Replies'}).reset_index()
+
+        hour_analysis = data.groupby('Hour').agg({
+            'id': 'count',
+            'Article ReplyCnt': 'mean'
+        }).rename(columns={'id': 'Article Count', 'Article ReplyCnt': 'Avg Replies'}).reset_index()
+
+        # 3. 제목 길이 분석
+        data['Title Length'] = data['Article Title'].str.len()
+        title_length_corr = data[['Title Length', 'Article ReplyCnt']].corr()
 
         # 시각화 및 분석 결과 저장 디렉토리 설정
         output_dir = os.path.join(os.path.dirname(file_path),
-                                  os.path.basename(file_path).replace('.csv', '') + '_analysis')
+os.path.basename(file_path).replace('.csv', '') + '_analysis')
         csv_output_dir = os.path.join(output_dir, "csv_files")
         graph_output_dir = os.path.join(output_dir, "graphs")
         os.makedirs(csv_output_dir, exist_ok=True)
@@ -205,7 +228,8 @@ class DataProcess:
                                      index=False)
         press_analysis.to_csv(safe_path(os.path.join(
             csv_output_dir, "press_analysis.csv")), encoding='utf-8-sig', index=False)
-        # correlation_matrix.to_csv(os.path.join(output_dir, "correlation_matrix.csv"), encoding='utf-8-sig', index=False)
+        dow_analysis.to_csv(safe_path(os.path.join(csv_output_dir, "day_of_week_analysis.csv")), encoding='utf-8-sig', index=False)
+        hour_analysis.to_csv(safe_path(os.path.join(csv_output_dir, "hour_analysis.csv")), encoding='utf-8-sig', index=False)
 
         # For time_analysis graph
         plt.figure(figsize=self.calculate_figsize(len(time_analysis)))
@@ -220,21 +244,6 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir,
                     "monthly_article_reply_count.png"))
-        plt.close()
-
-        # For day_analysis graph
-        plt.figure(figsize=self.calculate_figsize(len(day_analysis)))
-        sns.lineplot(data=day_analysis, x='Article Date',
-                     y='Article Count', label='Article Count')
-        sns.lineplot(data=day_analysis, x='Article Date',
-                     y='Article ReplyCnt', label='Reply Count')
-        plt.title('Daily Article and Reply Count Over Time')
-        plt.xlabel('Date')
-        plt.ylabel('Count')
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.savefig(os.path.join(graph_output_dir,
-                    "daily_article_reply_count.png"))
         plt.close()
 
         # For article_type_analysis graph
@@ -264,6 +273,22 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(os.path.join(graph_output_dir, "press_article_count.png"))
         plt.close()
+        
+        plt.figure(figsize=self.calculate_figsize(len(dow_analysis)))
+        sns.barplot(x='Day of Week', y='Article Count', data=dow_analysis, palette="magma")
+        plt.title('Article Count by Day of Week')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "dow_article_count.png"))
+        plt.close()
+
+        plt.figure(figsize=self.calculate_figsize(len(press_analysis)))
+        press_analysis_sorted = press_analysis.sort_values('Replies per Article', ascending=False)
+        sns.barplot(x='Article Press', y='Replies per Article', data=press_analysis_sorted, palette="coolwarm")
+        plt.title('Average Replies per Article by Press')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "press_engagement.png"))
+        plt.close()
 
         # 그래프 설명 작성 (한국어)
         description_text = """
@@ -288,6 +313,12 @@ class DataProcess:
            - 이 선 그래프는 시간에 따른 일별 기사 수와 댓글 수를 보여줍니다.
            - x축은 날짜를, y축은 수량을 나타냅니다.
            - 특정 일에 기사 및 댓글 수가 급증하는 패턴을 파악하는 데 유용합니다.
+           
+        5. 요일별 분석 (dow_article_count.png):
+           - 주간 발행 패턴을 보여줍니다. 어느 요일에 기사가 가장 많이 쏟아지는지 확인할 수 있습니다.
+
+        6. 언론사별 기사당 댓글 수 (press_engagement.png):
+           - 단순히 기사를 많이 쓰는 곳이 아니라, 독자의 참여를 가장 잘 이끌어내는 언론사를 보여줍니다.
         """
 
         # 설명을 txt 파일로 저장
@@ -375,7 +406,28 @@ class DataProcess:
         numeric_columns = ['Article ReplyCnt', 'Male',
                            'Female', '10Y', '20Y', '30Y', '40Y', '50Y', '60Y']
         correlation_matrix = data[numeric_columns].corr()
+        
+        age_cols = ['10Y', '20Y', '30Y', '40Y', '50Y', '60Y']
+        gender_cols = ['Male', 'Female']
 
+        type_demographic = data.groupby('Article Type')[gender_cols + age_cols].sum()
+        type_demographic_norm = type_demographic.div(type_demographic.sum(axis=1), axis=0)
+        
+        press_demographic = data[data['Article Press'].isin(top_10_press)].groupby('Article Press')[gender_cols + age_cols].sum()
+        press_demographic_norm = press_demographic.div(press_demographic.sum(axis=1), axis=0)
+        
+        press_analysis['Reply per Article'] = press_analysis['Article ReplyCnt'] / press_analysis['Article Count']
+        press_analysis_sorted = press_analysis.sort_values('Reply per Article', ascending=False)
+
+        top_articles = {}
+        for col in gender_cols + age_cols:
+            top_idx = data[col].idxmax()
+            top_articles[col] = {
+                'Title': data.loc[top_idx, 'Article Title'],
+                'Value': data.loc[top_idx, col],
+                'Press': data.loc[top_idx, 'Article Press']
+            }
+            
         # 결과를 CSV로 저장
         basic_stats.to_csv(safe_path(os.path.join(
             csv_output_dir, "basic_stats.csv")), encoding='utf-8-sig')
@@ -389,6 +441,8 @@ class DataProcess:
             csv_output_dir, "press_analysis.csv")), encoding='utf-8-sig', index=False)
         correlation_matrix.to_csv(safe_path(os.path.join(csv_output_dir, "correlation_matrix.csv")), encoding='utf-8-sig',
                                   index=False)
+        top_articles_df = pd.DataFrame(top_articles).T
+        top_articles_df.to_csv(safe_path(os.path.join(csv_output_dir, "top_articles_by_demographic.csv")), encoding='utf-8-sig')
 
         # 시각화 그래프를 이미지 파일로 저장
 
@@ -498,6 +552,29 @@ class DataProcess:
         age_group_reply_df.to_csv(safe_path(os.path.join(csv_output_dir, "age_group_reply_count.csv")), index=False,
                                   encoding='utf-8-sig')
 
+        plt.figure(figsize=self.calculate_figsize(len(type_demographic), base_width=12))
+        sns.heatmap(type_demographic_norm, annot=True, fmt=".2f", cmap="YlGnBu")
+        plt.title('Demographic Distribution by Article Type (Normalized)')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "type_demographic_heatmap.png"))
+        plt.close()
+        type_demographic.to_csv(safe_path(os.path.join(csv_output_dir, "type_demographic.csv")), encoding='utf-8-sig')
+        
+        plt.figure(figsize=self.calculate_figsize(len(press_demographic), base_width=12))
+        sns.heatmap(press_demographic_norm, annot=True, fmt=".2f", cmap="OrRd")
+        plt.title('Demographic Distribution by Top 10 Press (Normalized)')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "press_demographic_heatmap.png"))
+        plt.close()
+        
+        plt.figure(figsize=self.calculate_figsize(len(press_analysis_sorted)))
+        sns.barplot(x='Article Press', y='Reply per Article', data=press_analysis_sorted, palette="mako")
+        plt.title('Average Replies per Article by Press')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "press_engagement_rate.png"))
+        plt.close()
+        
         # 그래프 설명 작성 (한국어)
         description_text = """
         그래프 설명:
@@ -524,6 +601,20 @@ class DataProcess:
            - 이 선 그래프는 시간에 따른 일별 기사 수와 댓글 수를 보여줍니다.
            - x축은 날짜를, y축은 수량을 나타냅니다.
            - 특정 일에 기사 및 댓글 수가 급증하는 패턴을 파악하는 데 유용합니다.
+           
+        8. 기사 유형별 인구통계 분포 (type_demographic_heatmap.png):
+           - 각 기사 카테고리별로 어떤 성별/연령대가 가장 많이 반응했는지 비율(0~1)로 보여줍니다.
+           - 예를 들어 '정치'는 4050 남성, '생활'은 2030 여성 식의 패턴을 한눈에 볼 수 있습니다.
+
+        9. 언론사별 인구통계 분포 (press_demographic_heatmap.png):
+           - 상위 10개 언론사별로 주된 댓글 작성자 층이 누구인지 보여줍니다. 
+           - 언론사마다 독자층의 고령화 정도나 성별 편중도를 비교하기에 유용합니다.
+
+        10. 언론사별 기사당 평균 댓글 수 (press_engagement_rate.png):
+            - 단순히 기사를 많이 쓰는 곳이 아니라, 독자의 반응을 가장 효율적으로 이끌어내는 언론사를 파악합니다.
+
+        11. 계층별 관심 기사 (top_articles_by_demographic.csv):
+            - 각 성별 및 연령대별로 가장 많은 댓글을 작성하게 만든 '1등 기사' 목록입니다.
         """
 
         # 설명을 txt 파일로 저장
@@ -597,6 +688,18 @@ class DataProcess:
         # 작성자별 댓글 수 계산
         writer_reply_count = data['Reply Writer'].value_counts()
 
+        sentiment_engagement = data.groupby('Reply Sentiment').agg({
+            'Reply Like': 'mean',
+            'Reply Bad': 'mean',
+            'Rereply Count': 'mean'
+        }).reset_index()
+        
+        data['Controversy Score'] = (data['Reply Like'] + data['Reply Bad']) * (data['Rereply Count'] + 1)
+        top_controversial = data.sort_values(by='Controversy Score', ascending=False).head(20)
+        top_controversial_output = top_controversial[[
+            'Reply Writer', 'Reply Text', 'Reply Like', 'Reply Bad', 'Rereply Count', 'Reply Sentiment', 'Controversy Score'
+        ]]
+        
         # 결과를 저장할 디렉토리 생성
         output_dir = os.path.join(os.path.dirname(file_path),
                                   os.path.basename(file_path).replace('.csv', '') + '_analysis')
@@ -618,7 +721,7 @@ class DataProcess:
             csv_output_dir, "correlation_matrix.csv")), encoding='utf-8-sig')
         writer_reply_count.to_csv(safe_path(os.path.join(
             csv_output_dir, "writer_reply_count.csv")), encoding='utf-8-sig')
-
+        top_controversial_output.to_csv(safe_path(os.path.join(csv_output_dir, "top_controversial_replies.csv")), encoding='utf-8-sig', index=False)
         # 시각화 그래프를 이미지 파일로 저장
 
         # 1. 날짜별 댓글 수 추세
@@ -685,6 +788,24 @@ class DataProcess:
         plt.tight_layout()
         plt.savefig(safe_path(os.path.join(graph_output_dir, "writer_reply_count.png")))
         plt.close()
+        
+        plt.figure(figsize=(10, 6))
+        sentiment_melted = sentiment_engagement.melt(id_vars='Reply Sentiment', value_vars=['Reply Like', 'Reply Bad'])
+        sns.barplot(data=sentiment_melted, x='Reply Sentiment', y='value', hue='variable', palette='RdYlGn_r')
+        plt.title('Average Likes/Bad by Sentiment Type')
+        plt.ylabel('Average Count')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "sentiment_engagement_comparison.png"))
+        plt.close()
+        
+        plt.figure(figsize=(10, 6))
+        sns.scatterplot(data=data, x='Reply Like', y='Reply Bad', hue='Reply Sentiment', alpha=0.5)
+        plt.title('Reply Like vs Bad Correlation')
+        plt.xlabel('Likes')
+        plt.ylabel('Dislikes (Bad)')
+        plt.tight_layout()
+        plt.savefig(os.path.join(graph_output_dir, "like_bad_scatter.png"))
+        plt.close()
 
         top_n = 10
         top_writers = writer_reply_count.sort_values(
@@ -727,6 +848,18 @@ class DataProcess:
            - 이 그래프는 월별 댓글 수, 좋아요 수, 싫어요 수의 변화를 보여줍니다.
            - x축은 날짜를, y축은 수량을 나타냅니다.
            - 이를 통해 특정 월에 댓글 활동이 증가하거나 감소한 패턴을 파악할 수 있습니다.
+        
+        6. 감성별 참여도 비교 (sentiment_engagement_comparison.png):
+            - 긍정, 부정, 중립 댓글 중 어떤 성격의 댓글이 더 많은 '좋아요'나 '싫어요'를 받는지 분석합니다.
+            - 예를 들어, 부정적인 댓글에 공감이 더 많이 쏠리는지 아니면 대댓글(논쟁)이 더 많이 달리는지 확인할 수 있습니다.
+
+        7. 논란의 댓글 분석 (top_controversial_replies.csv):
+            - 좋아요와 싫어요가 모두 많거나, 대댓글이 폭발적으로 달린 '논란의 댓글' 상위 20개를 추출합니다.
+            - 단순히 인기 있는 댓글이 아니라, 커뮤니티 내에서 뜨거운 감자였던 의견을 식별하는 데 유용합니다.
+
+        8. 좋아요 vs 싫어요 상관관계 (like_bad_scatter.png):
+            - 댓글의 긍정적 반응(좋아요)과 부정적 반응(싫어요)의 분포를 산점도로 보여줍니다.
+            - 두 지표가 모두 높은 댓글은 '논쟁적'임을 나타내며, 감성 분석 결과와 결합하여 입체적인 해석이 가능합니다.
         """
         
         if all(col in data.columns for col in ['TotalUserComment', 'TotalUserReply', 'TotalUserLike']):
