@@ -28,6 +28,7 @@ import tempfile
 from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
 from PIL import Image, ImageDraw
 import threading
+from FlagEmbedding import BGEM3FlagModel
 
 class ModelManager:
     def __init__(self, timeout=900): # 15분 = 900초
@@ -967,3 +968,101 @@ async def grounding_dino_detect_videos(
 
     return zip_buf
 
+# -------- BGE-M3 Embedding --------
+_bge_m3_model = None
+
+def unload_bge_m3_model():
+    global _bge_m3_model
+    if _bge_m3_model is not None:
+        print("Unloading BGE-M3 Model due to inactivity...")
+        _bge_m3_model = None
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        gc.collect()
+
+def load_bge_m3_model():
+    global _bge_m3_model
+    if _bge_m3_model is None:
+        model_path = os.path.join(MODEL_DIR, "bge-m3")
+        # use_fp16=True로 메모리 절약 및 속도 향상
+        _bge_m3_model = BGEM3FlagModel(
+            model_path, 
+            use_fp16=True, 
+            device="cuda" if torch.cuda.is_available() else "cpu",
+            local_files_only=True
+        )
+    
+    manager.reset_timer("bge_m3", unload_bge_m3_model)
+    return _bge_m3_model
+
+def measure_embeddings(
+    data: pd.DataFrame,
+    text_col: str = "Text",
+    batch_size: int = 12,
+    pid: str = None
+) -> pd.DataFrame:
+    """
+    DataFrame의 특정 열을 기반으로 BGE-M3 임베딩을 생성하여 
+    'embedding' 열(JSON 문자열 형태)을 추가합니다.
+    """
+    # 대상 열 자동 탐색 (기존 measure_hate 로직 활용)
+    if text_col not in data.columns:
+        for c in data.columns:
+            if "text" in c.lower():
+                text_col = c
+                if pid: send_message(pid, f"🔍 '{text_col}' 열 자동 선택")
+                break
+        else:
+            raise ValueError("'Text'라는 글자를 포함한 열을 찾을 수 없습니다")
+
+    texts = data[text_col].fillna("").astype(str).tolist()
+    total = len(texts)
+    
+    if pid: send_message(pid, f"[임베딩 분석] '{text_col}' 벡터화 시작 (총 {total:,} rows)")
+
+    model = load_bge_m3_model()
+    
+    # 임베딩 수행 (Dense Vector만 추출)
+    # BGE-M3의 encode는 {'dense_vecs': ..., 'lexical_weights': ..., 'colbert_vecs': ...}를 반환할 수 있음
+    all_embeddings = []
+    
+    # 진행률 표시를 위한 배치 처리
+    for i in range(0, total, batch_size):
+        batch_texts = texts[i : i + batch_size]
+        # return_dense=True를 통해 고정 차원 벡터 추출 (1024 dim)
+        batch_out = model.encode(
+            batch_texts, 
+            batch_size=batch_size, 
+            max_length=8192, # BGE-M3는 최대 8192 토큰 지원
+            return_dense=True,
+            return_sparse=False,
+            return_colbert_vecs=False
+        )
+        
+        # 결과를 리스트로 변환하여 추가
+        batch_vecs = batch_out['dense_vecs'].tolist()
+        all_embeddings.extend([json.dumps(v) for v in batch_vecs])
+        
+        if pid and (len(all_embeddings) % 100 == 0 or len(all_embeddings) == total):
+            pct = round(len(all_embeddings) / total * 100, 2)
+            send_message(pid, f"[임베딩 분석] {pct}% 완료 ({len(all_embeddings):,}/{total:,})")
+
+    data["embedding"] = all_embeddings
+    
+    if pid: send_message(pid, "[임베딩 분석] 완료")
+    
+    return data
+
+def generate_embeddings(sentences: List[str], batch_size: int = 12) -> List[List[float]]:
+    model = load_bge_m3_model()
+    
+    out = model.encode(
+        sentences, 
+        batch_size=batch_size, 
+        max_length=8192, 
+        return_dense=True,
+        return_sparse=False,
+        return_colbert_vecs=False
+    )
+    
+    return out['dense_vecs'].tolist()
