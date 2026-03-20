@@ -1,6 +1,6 @@
 import requests
 from config import API_URL
-from libs.req import api_headers
+from common.req import api_headers
 
 def get_user(username:str = ""):
     res = requests.post(API_URL + '/users/', headers=api_headers()).json()

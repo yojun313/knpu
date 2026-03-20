@@ -1,20 +1,9 @@
-
-
-
-import urllib3
 from datetime import datetime, timedelta, timezone
 import requests
-
-import socket
-import re
-import warnings
-import asyncio
-import traceback
 import time
 import os
-import sys
 from config import CRAWL_PATH, CRAWL_LOG_PATH, API_URL, CRAWLCOM
-from libs.req import api_headers
+from common.req import api_headers
 
 
 def makeDB(DBname, DBtype, startdate, enddate, option, keyword, requester, requesterUid):
