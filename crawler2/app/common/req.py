@@ -9,6 +9,12 @@ api_headers = {
     "Authorization": "Bearer " + os.getenv('ADMIN_TOKEN'),
 }
 
+_CURRENT_PROXY_LIST = []
+
+def set_proxy_list(proxy_list: list):
+    global _CURRENT_PROXY_LIST
+    _CURRENT_PROXY_LIST = proxy_list
+
 def Request(url: str, sleep: float = 0, **kwargs):
     headers = random_heador()
     params = kwargs.pop('params', None)
@@ -45,13 +51,11 @@ def Request(url: str, sleep: float = 0, **kwargs):
             **kwargs
         )
     
-    
-def random_proxy(self):
-    proxy_server = random.choice(self.proxy_list)
-    if PROXY:
-        return {"http": 'http://' + proxy_server, 'https': 'http://' + proxy_server}
-    else:
-        return None
+def random_proxy():
+    if PROXY and _CURRENT_PROXY_LIST:
+        proxy_server = random.choice(_CURRENT_PROXY_LIST)
+        return {"http": f'http://{proxy_server}', 'https': f'http://{proxy_server}'}
+    return None
 
 def random_heador():
     navigator = generate_navigator()
