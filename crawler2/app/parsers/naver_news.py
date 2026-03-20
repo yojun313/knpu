@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import time
 import json
 import re
@@ -10,14 +9,15 @@ from bs4 import BeautifulSoup
 from user_agent import generate_navigator
 import urllib.parse
 import random
-from config import SLEEP_TIME
-from libs.req import Request
-from libs.naver_lib import parse_naver_query
-from libs.normalize import makeDBname
-from libs.storage import makeDB
-from libs.users import get_user
-from libs.csv import makeCSV, addToCSV
-from data.columns import navernews_article_column, navernews_statistics_column, navernews_reply_column, navernews_rereply_column, navernews_4_reply_column
+from db import load_proxy_list
+from config import SLEEP_TIME, PROXY
+from common.req import Request, set_proxy_list
+from common.naver_lib import parse_naver_query
+from common.normalize import makeDBname
+from common.storage import makeDB
+from common.users import get_user
+from common.csv import makeCSV, addToCSV
+from common.columns import navernews_article_column, navernews_statistics_column, navernews_reply_column, navernews_rereply_column, navernews_4_reply_column
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -25,6 +25,11 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 class NaverNewsCrawler:
     
     def __init__(self, requester, keyword, startDate, endDate, option, speed):
+        
+        if PROXY:
+            proxy_list = load_proxy_list()
+            set_proxy_list(proxy_list)
+        
         self.requester = requester
         self.keyword = keyword
         self.DBkeyword = makeDBname(keyword)
