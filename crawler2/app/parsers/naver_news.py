@@ -9,15 +9,15 @@ from bs4 import BeautifulSoup
 from user_agent import generate_navigator
 import urllib.parse
 import random
-from db import load_proxy_list
+from db import load_proxy_list, checkDB, get_userinfo
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
 from common.naver_lib import parse_naver_query
 from common.normalize import makeDBname
 from common.storage import makeDB
-from common.users import get_user
 from common.csv import makeCSV, addToCSV
 from common.columns import navernews_article_column, navernews_statistics_column, navernews_reply_column, navernews_rereply_column, navernews_4_reply_column
+from common.controller import StopOperator, FinalOperator
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -52,7 +52,12 @@ class NaverNewsCrawler:
         self.currentDate = self.startDate_form
         self.date_range = (self.endDate_form - self.startDate_form).days + 1
         self.deltaD = timedelta(days=1)
-            
+        self.running = True
+
+        notification = get_userinfo(self.requester)
+        self.Email = notification['Email']
+        self.PushoverKey = notification['PushOver']
+                    
         
     def collectUrl(self, keyword, startDate, endDate): 
         try:
@@ -180,7 +185,7 @@ class NaverNewsCrawler:
             oid  = newsURL[39:42]
             aid  = newsURL[43:53]
             page = 1
-            headers = {"User-agent":generate_navigator()['user_agent'], "referer":newsURL}  
+            headers = {"User-agent":generate_navigator()['user_agent'], "referer":newsURL}
             
             nickname_list   = []
             replyDate_list  = []
@@ -276,7 +281,7 @@ class NaverNewsCrawler:
                 except:
                     pass
 
-                returnParentCommentNo_list = []
+            returnParentCommentNo_list = []
             for i in range(len(parentCommentNo_list)):
                 if rere_count_list[i] > 0:
                     returnParentCommentNo_list.append(parentCommentNo_list[i])
@@ -329,7 +334,7 @@ class NaverNewsCrawler:
 
             return returnData
 
-        except Exception:
+        except Exception as e:
             pass
 
     def collectUsername(self, oid, aid, commentNo, newsURL):
@@ -472,8 +477,9 @@ class NaverNewsCrawler:
             option=self.option,
             keyword=self.keyword,
             requester=self.requester,
-            requesterUid=get_user(self.requester)['uid']
+            requesterUid='test' #get_user(self.requester)['uid']
         )
+
         makeCSV(self.DBPath, self.articleDB, navernews_article_column)
 
         if self.option in [1, 2, 4]:
@@ -489,6 +495,19 @@ class NaverNewsCrawler:
             currentDate_str = self.currentDate.strftime('%Y%m%d')
             if self.date_range > 0:
                 percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
+            
+            if self.running == False:
+                StopOperator() # 현재까지 크롤링 완료 된 파일 저장
+                break
+            
+            if dayCount == self.date_range: # 토큰화 및 파일 저장, 알림
+
+                FinalOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBkeyword , startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email)
+                break
+            
+            if checkDB(self.DBuid) == False:
+                self.running = False
+                break
             
             urlList = self.collectUrl(
                 keyword=self.keyword,
@@ -551,4 +570,61 @@ class NaverNewsCrawler:
                     print(f"\nError processing {newsUrl}: {e}")
                     continue
             
+            self.currentDate += self.deltaD
             
+def controller():
+    option_dic = {
+        1: "\n1. 기사 + 댓글\n2. 기사 + 댓글/대댓글\n3. 기사\n4. 기사 + 댓글(추가정보)\n",
+        2: "\n1. 블로그 본문\n2. 블로그 본문 + 댓글/대댓글\n",
+        3: "\n1. 카페 본문\n2. 카페 본문 + 댓글/대댓글\n",
+        4: "\n1. 영상 정보 + 댓글/대댓글 (100개 제한)\n2. 영상 정보 + 댓글/대댓글(무제한)\n",
+        5: "\n1. 기사\n",
+        6: "\n1. 기사\n2. 기사 + 댓글\n"
+    }
+    print("================ Crawler Controller ================")
+    name = input("본인의 이름을 입력하세요: ")
+
+    print("\n[ 크롤링 대상 ]\n")
+    print("1. Naver News\n2. Naver Blog\n3. Naver Cafe\n4. YouTube\n5. ChinaDaily\n6. ChinaSina")
+
+    while True:
+        control_ask = int(input("\n입력: "))
+        if control_ask in [1, 2, 3, 4, 5, 6]:
+            break
+        else:
+            print("다시 입력하세요")
+
+    startDate = input("\nStart Date (ex: 20230101): ")
+    endDate = input("End Date (ex: 20231231): ")
+    keyword = input("\nKeyword: ")
+
+    print(option_dic[control_ask])
+
+    while True:
+        option = int(input("Option: "))
+        if option in [1, 2, 3, 4]:
+            break
+        else:
+            print("다시 입력하세요")
+
+    speed = input("\n속도를 입력하십시오(1~10):  ")
+    weboption = 0
+    
+    NaverNewsCrawler_obj = NaverNewsCrawler(name, keyword, startDate, endDate, option, speed)
+    NaverNewsCrawler_obj.main()
+        
+def tester(name= '최우철', startDate = str(20260301), endDate = str(20260302), keyword = '경찰대', option = 1, speed = 1):
+    option_dic = {
+        1: "\n1. 기사 + 댓글\n2. 기사 + 댓글/대댓글\n3. 기사\n4. 기사 + 댓글(추가정보)\n",
+        2: "\n1. 블로그 본문\n2. 블로그 본문 + 댓글/대댓글\n",
+        3: "\n1. 카페 본문\n2. 카페 본문 + 댓글/대댓글\n",
+        4: "\n1. 영상 정보 + 댓글/대댓글 (100개 제한)\n2. 영상 정보 + 댓글/대댓글(무제한)\n",
+        5: "\n1. 기사\n",
+        6: "\n1. 기사\n2. 기사 + 댓글\n"
+    }
+    
+    NaverNewsCrawler_obj = NaverNewsCrawler(name, keyword, startDate, endDate, option, speed)
+    NaverNewsCrawler_obj.main()
+
+if __name__ == "__main__":
+    tester()
