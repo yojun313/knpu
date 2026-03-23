@@ -54,3 +54,15 @@ def load_proxy_list():
     return client[crawler_db_name]['ip-list'].find_one(
         {"_id": "proxy_list"}
     )['list']
+
+def checkDB(dbUid):
+    crawlDbList = client[crawler_db_name]['db-list']
+    targetDB = crawlDbList.find_one({'uid': dbUid})
+    return targetDB is not None
+
+def get_userinfo(requester:str):
+    userDBList = client['manager']['users']
+    user = userDBList.find_one({'name': requester})
+    if user is None:
+        return False
+    return {'Email': user['email'], 'PushOver': user['pushoverKey'], 'userUid': user['uid']}
