@@ -15,8 +15,9 @@ def set_proxy_list(proxy_list: list):
     global _CURRENT_PROXY_LIST
     _CURRENT_PROXY_LIST = proxy_list
 
-def Request(url: str, sleep: float = 0, **kwargs):
-    headers = random_heador()
+def Request(url: str, headers=None, sleep: float = 0, **kwargs):
+    if headers is None:
+        headers = random_heador()
     params = kwargs.pop('params', None)
     timeout = kwargs.pop('timeout', TIMEOUT)
 

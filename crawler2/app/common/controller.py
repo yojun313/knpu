@@ -1,0 +1,199 @@
+import os
+import pandas as pd
+from datetime import datetime, timedelta
+import time
+
+from common.tokenization import tokenization
+from common.notification import SendMail, sendPushOver
+
+def convertToParquet(folder_path):
+    try:
+        if not os.path.exists(folder_path):
+            print(f"경로가 존재하지 않습니다: {folder_path}")
+            return
+
+        file_list = os.listdir(folder_path)
+        csv_files = [f for f in file_list if f.lower().endswith('.csv')]
+
+        if not csv_files:
+            print("CSV 파일이 없습니다.")
+            return
+
+        for csv_file in csv_files:
+            csv_path = os.path.join(folder_path, csv_file)
+            parquet_path = os.path.join(
+                folder_path, csv_file.rsplit('.', 1)[0] + '.parquet')
+            try:
+                df = pd.read_csv(csv_path)
+                df.to_parquet(parquet_path, index=False)
+                os.remove(csv_path)  # 변환 성공 후 원본 CSV 삭제
+            except Exception as e:
+                print(f"변환 실패: {csv_file} → 오류: {e}")
+    except Exception as e:
+        pass
+
+def StopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail):
+    try:
+        convertToParquet(DBpath)
+        parquet_files = [f for f in os.listdir(
+            DBpath) if f.endswith('.parquet')]
+        for file_name in parquet_files:
+            table_name = file_name.rsplit('.', 1)[0]
+            file_path = os.path.join(DBpath, file_name)
+            print(f"{table_name} 읽는 중...")
+
+            data_df = pd.read_parquet(file_path)
+
+            # Step 3: Reply 관련 테이블이면 전처리 수행
+            # 전처리 부분 수정 예시
+            if 'reply' in table_name or 'rereply' in table_name:
+                date_column = 'Rereply Date' if 'rereply' in table_name else 'Reply Date'
+                text_column = 'Rereply Text' if 'rereply' in table_name else 'Reply Text'
+
+                data_df[date_column] = pd.to_datetime(data_df[date_column], errors='coerce').dt.date
+
+                # 결측치를 빈 문자열로 치환
+                data_df[text_column] = data_df[text_column].fillna('')
+
+                grouped = data_df.groupby('Article URL')
+                data_df = grouped.agg({
+                    text_column: lambda x: ' '.join(x),
+                    'Article Day': 'first'
+                }).reset_index()
+
+                data_df = data_df.rename(
+                    columns={'Article Day': date_column})
+                data_df = data_df.sort_values(by=date_column)
+
+            #Stop은 Step 4, 5 생략
+            """
+            # Step 4: Tokenization
+            lang = 'en' if DBtype in ['chinadaily'] else 'ko'
+            token_df = tokenization(data_df, language=lang)
+
+            # Step 5: 저장 (선택 사항: parquet 저장 or print only)
+            for col in token_df.columns:
+                if token_df[col].apply(lambda x: isinstance(x, list)).any():
+                    token_df[col] = token_df[col].apply(lambda x: ' '.join(
+                        map(str, x)) if isinstance(x, list) else x)
+
+            token_file_path = os.path.join(
+                DBpath, f"token_{table_name}.parquet")
+            token_df.to_parquet(token_file_path, index=False)
+            """
+        
+        title = '[크롤링 중단] ' + DBname
+
+        starttime = datetime.fromtimestamp(
+            startTime).strftime('%Y-%m-%d %H:%M')
+        endtime = datetime.fromtimestamp(
+            time.time()).strftime('%Y-%m-%d %H:%M')
+        crawltime = str(
+            timedelta(seconds=int(time.time() - startTime)))
+        
+        
+        text = f'\n크롤링 시작: {starttime}' + \
+            f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
+        
+        if pushoverKey == 'n' or pushoverKey == None:
+            SendMail(userEmail, title, text)
+        else:
+            sendPushOver(msg=title + '\n' + text,
+                                user_key=pushoverKey)
+        
+        end_msg = (
+            f"|| 크롤링 중단 | 시작: {starttime} "
+            f"| 종료: {endtime} "
+            f"| 소요시간: {crawltime} ||"
+        )
+
+        os.makedirs(os.path.join(DBpath, DBname), exist_ok=True)
+        with open(os.path.join(DBpath, DBname, 'crawllog' + '_log.txt'), 'a') as log:
+            log.write('\n\n' + end_msg)
+
+        print(f'{end_msg}')
+
+    except Exception as e:
+        pass
+
+def FinalOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail):
+    try:
+        convertToParquet(DBpath)
+        parquet_files = [f for f in os.listdir(
+            DBpath) if f.endswith('.parquet')]
+        for file_name in parquet_files:
+            table_name = file_name.rsplit('.', 1)[0]
+            file_path = os.path.join(DBpath, file_name)
+            print(f"{table_name} 읽는 중...")
+
+            data_df = pd.read_parquet(file_path)
+
+            # Step 3: Reply 관련 테이블이면 전처리 수행
+            # 전처리 부분 수정 예시
+            if 'reply' in table_name or 'rereply' in table_name:
+                date_column = 'Rereply Date' if 'rereply' in table_name else 'Reply Date'
+                text_column = 'Rereply Text' if 'rereply' in table_name else 'Reply Text'
+
+                data_df[date_column] = pd.to_datetime(data_df[date_column], errors='coerce').dt.date
+
+                # 결측치를 빈 문자열로 치환
+                data_df[text_column] = data_df[text_column].fillna('')
+
+                grouped = data_df.groupby('Article URL')
+                data_df = grouped.agg({
+                    text_column: lambda x: ' '.join(x),
+                    'Article Day': 'first'
+                }).reset_index()
+
+                data_df = data_df.rename(
+                    columns={'Article Day': date_column})
+                data_df = data_df.sort_values(by=date_column)
+
+
+            # Step 4: Tokenization
+            lang = 'en' if DBtype in ['chinadaily'] else 'ko'
+            token_df = tokenization(data_df, language=lang)
+
+            # Step 5: 저장 (선택 사항: parquet 저장 or print only)
+            for col in token_df.columns:
+                if token_df[col].apply(lambda x: isinstance(x, list)).any():
+                    token_df[col] = token_df[col].apply(lambda x: ' '.join(
+                        map(str, x)) if isinstance(x, list) else x)
+
+            token_file_path = os.path.join(
+                DBpath, f"token_{table_name}.parquet")
+            token_df.to_parquet(token_file_path, index=False)
+        
+        title = '[크롤링 완료] ' + DBname
+
+        starttime = datetime.fromtimestamp(
+            startTime).strftime('%Y-%m-%d %H:%M')
+        endtime = datetime.fromtimestamp(
+            time.time()).strftime('%Y-%m-%d %H:%M')
+        crawltime = str(
+            timedelta(seconds=int(time.time() - startTime)))
+        
+        
+        text = f'\n크롤링 시작: {starttime}' + \
+            f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
+        
+        if pushoverKey == 'n' or pushoverKey == None:
+            SendMail(userEmail, title, text)
+        else:
+            sendPushOver(msg=title + '\n' + text,
+                                user_key=pushoverKey)
+
+        end_msg = (
+            f"|| 크롤링 종료 | 시작: {starttime} "
+            f"| 종료: {endtime} "
+            f"| 소요시간: {crawltime} ||"
+        )
+
+        os.makedirs(os.path.join(DBpath, DBname), exist_ok=True)
+        with open(os.path.join(DBpath, DBname, 'crawllog' + '_log.txt'), 'a') as log:
+            log.write('\n\n' + end_msg)
+
+        print(f'{end_msg}')
+
+    except Exception as e:
+        pass
