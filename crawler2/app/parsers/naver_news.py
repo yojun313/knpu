@@ -2,7 +2,7 @@ import time
 import json
 import re
 import warnings
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pandas as pd
 import urllib3
 from bs4 import BeautifulSoup
@@ -10,10 +10,10 @@ from user_agent import generate_navigator
 import urllib.parse
 import random
 from db import load_proxy_list, checkDB, get_userinfo
+from db.util import makeDBname 
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
 from common.naver_lib import parse_naver_query
-from common.normalize import makeDBname
 from common.storage import makeDB
 from common.csv import makeCSV, addToCSV
 from common.columns import navernews_article_column, navernews_statistics_column, navernews_reply_column, navernews_rereply_column, navernews_4_reply_column
@@ -30,18 +30,18 @@ class NaverNewsCrawler:
             proxy_list = load_proxy_list()
             set_proxy_list(proxy_list)
         
+        self.DBname = makeDBname('navernews', keyword, startDate, endDate)
         self.requester = requester
         self.keyword = keyword
-        self.DBkeyword = makeDBname(keyword)
         self.startDate = startDate
         self.endDate = endDate
         self.option = option
         self.speed = speed
         
-        self.articleDB = self.DBkeyword + '_article'
-        self.statisticsDB = self.DBkeyword + '_statistics'
-        self.replyDB = self.DBkeyword + '_reply'
-        self.rereplyDB = self.DBkeyword + '_rereply'
+        self.articleDB = self.DBname + '_article'
+        self.statisticsDB = self.DBname + '_statistics'
+        self.replyDB = self.DBname + '_reply'
+        self.rereplyDB = self.DBname + '_rereply'
         
         self.startTime = time.time()
         self.now = datetime.now()
@@ -470,7 +470,7 @@ class NaverNewsCrawler:
     
     def main(self):
         self.DBPath, self.DBuid = makeDB(
-            DBname=self.DBkeyword,
+            DBname=self.DBname,
             DBtype='navernews',
             startdate=self.startDate,
             enddate=self.endDate,
@@ -496,17 +496,13 @@ class NaverNewsCrawler:
             if self.date_range > 0:
                 percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
             
-            if self.running == False:
-                StopOperator() # 현재까지 크롤링 완료 된 파일 저장
-                break
-            
             if dayCount == self.date_range: # 토큰화 및 파일 저장, 알림
-
-                FinalOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBkeyword , startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email)
+                FinalOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname , startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email)
                 break
             
             if checkDB(self.DBuid) == False:
                 self.running = False
+                StopOperator()
                 break
             
             urlList = self.collectUrl(

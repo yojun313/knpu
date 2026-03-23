@@ -50,6 +50,8 @@ crawler_db_name = 'crawler'
 crawler_db = client[crawler_db_name]
 
 
+
+
 def load_proxy_list():
     return client[crawler_db_name]['ip-list'].find_one(
         {"_id": "proxy_list"}
