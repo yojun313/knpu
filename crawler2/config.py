@@ -12,3 +12,4 @@ CRAWLCOM = socket.gethostname()
 
 TRYNUM = 3
 SLEEP_TIME = 1
+TIMEOUT = 300
