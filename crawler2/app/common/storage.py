@@ -2,19 +2,12 @@ from datetime import datetime, timedelta, timezone
 import requests
 import time
 import os
-from config import CRAWL_PATH, CRAWL_LOG_PATH, API_URL, CRAWLCOM
+from config import CRAWL_DATA_PATH, CRAWL_LOG_PATH, API_URL, CRAWLCOM
 from common.req import api_headers
 
 
 def makeDB(DBname, DBtype, startdate, enddate, option, keyword, requester, requesterUid):
-    dbname_date = "_{}_{}".format(startdate, enddate)
-
-    now_kst = datetime.now(timezone.utc).astimezone(
-        timezone(timedelta(hours=9))
-    ).strftime('%m%d_%H%M')
-
-    DBname = f"{DBtype}_{DBname}{dbname_date}_{now_kst}"
-    DBpath = os.path.join(CRAWL_PATH, DBname)
+    DBpath = os.path.join(CRAWL_DATA_PATH, DBname)
 
     json = {
         "name": DBname,
