@@ -5,6 +5,7 @@ import time
 
 from common.tokenization import tokenization
 from common.notification import SendMail, sendPushOver
+from config import CRAWL_LOG_PATH
 
 def convertToParquet(folder_path):
     try:
@@ -107,8 +108,7 @@ def StopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail):
             f"| 소요시간: {crawltime} ||"
         )
 
-        os.makedirs(os.path.join(DBpath, DBname), exist_ok=True)
-        with open(os.path.join(DBpath, DBname, 'crawllog' + '_log.txt'), 'a') as log:
+        with open(os.path.join(CRAWL_LOG_PATH, DBname + '_log.txt'), 'a') as log:
             log.write('\n\n' + end_msg)
 
         print(f'{end_msg}')
@@ -189,8 +189,7 @@ def FinalOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail):
             f"| 소요시간: {crawltime} ||"
         )
 
-        os.makedirs(os.path.join(DBpath, DBname), exist_ok=True)
-        with open(os.path.join(DBpath, DBname, 'crawllog' + '_log.txt'), 'a') as log:
+        with open(os.path.join(CRAWL_LOG_PATH, DBname + '_log.txt'), 'a') as log:
             log.write('\n\n' + end_msg)
 
         print(f'{end_msg}')

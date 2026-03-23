@@ -1,4 +1,6 @@
-def makeDBname(keyword):
+from datetime import datetime, timedelta, timezone
+
+def makeDBname(type, keyword, startDate, endDate):
     replacements = {
             '\\': '＼',  # U+FF3C
             '/': '／',   # U+FF0F
@@ -14,4 +16,9 @@ def makeDBname(keyword):
     for illegal, safe in replacements.items():
         keyword = keyword.replace(illegal, safe)
         
-    return keyword
+    now_kst = datetime.now(timezone.utc).astimezone(
+        timezone(timedelta(hours=9))
+    ).strftime('%m%d_%H%M')
+    
+    DBname = f"{type}_{keyword}_{startDate}_{endDate}_{now_kst}"        
+    return DBname

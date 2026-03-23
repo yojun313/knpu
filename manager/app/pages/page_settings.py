@@ -609,6 +609,10 @@ class Manager_Setting(BaseDialog):
 
         help_text_label = QLabel("아래 링크를 클릭하여 사용 설명서를 확인하세요.")
         help_text_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        
+        link0_label = QLabel('<a href="https://www.youtube.com/watch?v=gcbYH_uvqRs">MANAGER 사용 가이드(영상)</a>')
+        link0_label.setOpenExternalLinks(True)
+        link0_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         link1_label = QLabel('<a href="https://knpu.re.kr/manager">MANAGER</a>')
         link1_label.setOpenExternalLinks(True)
@@ -659,6 +663,7 @@ class Manager_Setting(BaseDialog):
 
         help_layout.addWidget(help_title_label)
         help_layout.addWidget(help_text_label)
+        help_layout.addWidget(link0_label)
         help_layout.addWidget(link1_label)
         help_layout.addWidget(link2_label)
         help_layout.addWidget(link3_label)
