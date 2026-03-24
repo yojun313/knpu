@@ -33,7 +33,7 @@ def convertToParquet(folder_path):
     except Exception as e:
         pass
 
-def StopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail):
+def StopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status):
     try:
         convertToParquet(DBpath)
         parquet_files = [f for f in os.listdir(
@@ -93,8 +93,15 @@ def StopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail):
             timedelta(seconds=int(time.time() - startTime)))
         
         
-        text = f'\n크롤링 시작: {starttime}' + \
-            f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
+        text  = f"\n크롤링 시작 : {starttime}"
+        text += f"\n크롤링 종료 : {endtime}"
+        text += f"\n소요시간 : {crawltime}\n"        
+        text += f"\n완료율 : {status.get('percentage', 'N/A')}%"
+        text += f"\n최종 수집일 : {status.get('currentdate', 'N/A')}"
+        text += f"\n수집된 URL 수 : {status.get('urlCnt', 'N/A')}"
+        text += f"\n수집된 기사 수 : {status.get('articleCnt', 'N/A')}"
+        text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
+        text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
         
         if pushoverKey == 'n' or pushoverKey == None:
             SendMail(userEmail, title, text)
@@ -102,21 +109,15 @@ def StopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail):
             sendPushOver(msg=title + '\n' + text,
                                 user_key=pushoverKey)
         
-        end_msg = (
-            f"|| 크롤링 중단 | 시작: {starttime} "
-            f"| 종료: {endtime} "
-            f"| 소요시간: {crawltime} ||"
-        )
-
         with open(os.path.join(CRAWL_LOG_PATH, DBname + '_log.txt'), 'a') as log:
-            log.write('\n\n' + end_msg)
+            log.write('\n\n' + text)
 
-        print(f'{end_msg}')
+        print(f'{text}')
 
     except Exception as e:
         pass
 
-def FinalOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail):
+def FinalOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status):
     try:
         convertToParquet(DBpath)
         parquet_files = [f for f in os.listdir(
@@ -174,8 +175,17 @@ def FinalOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail):
             timedelta(seconds=int(time.time() - startTime)))
         
         
-        text = f'\n크롤링 시작: {starttime}' + \
-            f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
+        text  = f"\n크롤링 시작 : {starttime}"
+        text += f"\n크롤링 종료 : {endtime}"
+        text += f"\n소요시간 : {crawltime}\n"        
+        text += f"\n완료율 : {status.get('percentage', 'N/A')}%"
+        text += f"\n최종 수집일 : {status.get('currentdate', 'N/A')}"
+        text += f"\n수집된 URL 수 : {status.get('urlCnt', 'N/A')}"
+        text += f"\n수집된 기사 수 : {status.get('articleCnt', 'N/A')}"
+        text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
+        text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
+
+        print(text)
         
         if pushoverKey == 'n' or pushoverKey == None:
             SendMail(userEmail, title, text)
@@ -183,16 +193,8 @@ def FinalOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail):
             sendPushOver(msg=title + '\n' + text,
                                 user_key=pushoverKey)
 
-        end_msg = (
-            f"|| 크롤링 종료 | 시작: {starttime} "
-            f"| 종료: {endtime} "
-            f"| 소요시간: {crawltime} ||"
-        )
-
         with open(os.path.join(CRAWL_LOG_PATH, DBname + '_log.txt'), 'a') as log:
-            log.write('\n\n' + end_msg)
-
-        print(f'{end_msg}')
+            log.write('\n\n' + text)
 
     except Exception as e:
         pass

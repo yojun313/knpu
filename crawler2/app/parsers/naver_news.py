@@ -52,11 +52,21 @@ class NaverNewsCrawler:
         self.currentDate = self.startDate_form
         self.date_range = (self.endDate_form - self.startDate_form).days + 1
         self.deltaD = timedelta(days=1)
-        self.running = True
 
         notification = get_userinfo(self.requester)
         self.Email = notification['Email']
         self.PushoverKey = notification['PushOver']
+        self.requesterUid = notification['userUid']
+        
+        self.running = True
+        self.status = {
+            'percentage': '0',
+            'currentdate': self.currentDate.strftime('%Y-%m-%d'),
+            'urlCnt': 0,
+            'articleCnt': 0,
+            'commentCnt': 0,
+            'replyCnt': 0,
+        }
                     
         
     def collectUrl(self, keyword, startDate, endDate): 
@@ -141,6 +151,7 @@ class NaverNewsCrawler:
                 for url in pre_urlList:
                     if url not in urlList and 'sid=106' not in url:
                         urlList.append(url)
+                        self.status['urlCnt'] += 1
 
                 nextUrl = extract_nexturl(json_text)
                 if nextUrl == None:
@@ -468,6 +479,9 @@ class NaverNewsCrawler:
         except Exception:
             pass
     
+    def report_status(self):
+        return self.status
+    
     def main(self):
         self.DBPath, self.DBuid = makeDB(
             DBname=self.DBname,
@@ -477,7 +491,7 @@ class NaverNewsCrawler:
             option=self.option,
             keyword=self.keyword,
             requester=self.requester,
-            requesterUid='test' #get_user(self.requester)['uid']
+            requesterUid=self.requesterUid
         )
 
         makeCSV(self.DBPath, self.articleDB, navernews_article_column)
@@ -493,17 +507,22 @@ class NaverNewsCrawler:
         
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime('%Y%m%d')
-            if self.date_range > 0:
-                percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
-            
-            if dayCount == self.date_range: # 토큰화 및 파일 저장, 알림
-                FinalOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname , startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email)
-                break
             
             if checkDB(self.DBuid) == False:
                 self.running = False
-                StopOperator()
+            
+            if self.running == False: #DB 외 경로로 중단 신호 오는 것 고려해 checkDB와 분리, self.status 업데이트 전 중단
+                StopOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname , startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status = self.status)
                 break
+            
+            if dayCount == self.date_range: # 토큰화 및 파일 저장, 알림
+                FinalOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname , startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status = self.status)
+                break
+            
+            if self.date_range > 0:
+                percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
+                self.status['percentage'] = percent
+                self.status['currentdate'] = currentDate_str
             
             urlList = self.collectUrl(
                 keyword=self.keyword,
@@ -517,6 +536,8 @@ class NaverNewsCrawler:
                     articleData = self.collectArticle(newsUrl)
                     if not articleData:
                         continue
+                    else:
+                        self.status['articleCnt'] += 1
                         
                     # 기사 날짜 저장 (댓글 행의 마지막 컬럼인 'Article Day'용)
                     article_day = articleData[5] 
@@ -532,6 +553,7 @@ class NaverNewsCrawler:
                         cmtData = self.collectCmt(newsUrl, username=is_username)
                         
                         reply_cnt = cmtData.get('replyCnt', 0)
+                        self.status['commentCnt'] += reply_cnt
                         
                         # 기사 저장 (실제 댓글수 포함)
                         addToCSV(self.DBPath, self.articleDB, [articleData + [reply_cnt]], navernews_article_column)
@@ -558,6 +580,7 @@ class NaverNewsCrawler:
                                 rereplies = rereplyData.get('rereplyList', [])
                                 if rereplies:
                                     processed_rereplies = [rr + [article_day] for rr in rereplies]
+                                    self.status['replyCnt'] += rereplyData.get('rereplyCnt', 0)
                                     addToCSV(self.DBPath, self.rereplyDB, processed_rereplies, navernews_rereply_column)
                     
                     time.sleep(SLEEP_TIME)
