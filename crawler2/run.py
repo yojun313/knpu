@@ -1,14 +1,14 @@
-# gunicorn app.main:app -c run.py
-# uvicorn app.main:app --host 0.0.0.0 --port 8000
+# 크롤러 실행 서버
+# 실행: cd crawler2 && python run.py
+# workers=1 필수: CrawlerRegistry가 in-process 상태를 유지하므로 단일 워커만 가능
 
-import warnings
-from requests.exceptions import RequestsDependencyWarning
-warnings.filterwarnings("ignore", category=RequestsDependencyWarning)
+import uvicorn
 
-bind = "0.0.0.0:8000"
-workers = 5
-worker_class = "uvicorn.workers.UvicornWorker"
-timeout = 0
-loglevel = "warning"
-accesslog = None          
-keepalive = 86400
+if __name__ == "__main__":
+    uvicorn.run(
+        "server.main:app",
+        host="0.0.0.0",
+        port=3005,
+        reload=True,
+        reload_dirs=["server"],
+    )
