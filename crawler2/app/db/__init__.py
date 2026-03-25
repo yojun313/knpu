@@ -68,3 +68,7 @@ def get_userinfo(requester:str):
     if user is None:
         return False
     return {'Email': user['email'], 'PushOver': user['pushoverKey'], 'userUid': user['uid']}
+
+def recordDB(dbUid, status):
+    crawlDbList = client[crawler_db_name]['db-list']
+    crawlDbList.update_one({'uid': dbUid}, {'$set': {'status': status}})
