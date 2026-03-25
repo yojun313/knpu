@@ -17,7 +17,7 @@ from common.naver_lib import parse_naver_query
 from common.storage import makeDB
 from common.csv import makeCSV, addToCSV
 from common.columns import navernews_article_column, navernews_statistics_column, navernews_reply_column, navernews_rereply_column, navernews_4_reply_column
-from common.controller import StopOperator, FinalOperator
+from common.controller import stopOperator, finishOperator
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -144,6 +144,8 @@ class NaverNewsCrawler:
             json_text = response.text
             
             while True:
+                if self.running == False: break
+                
                 pre_urlList = extract_newsurls(json_text)
                 if not pre_urlList:
                     time.sleep(SLEEP_TIME)
@@ -216,6 +218,8 @@ class NaverNewsCrawler:
             }
             
             while True:
+                
+                if self.running == False: break
                 
                 if page == 101:
                     break
@@ -408,6 +412,8 @@ class NaverNewsCrawler:
             
             for i in range(len(parentCommentNum_list)):
                 try:
+                    if self.running == False: break
+                    
                     target_url = (base_url.format(oid, aid, 100, 1, "reply") + "&parentCommentNo=" + parentCommentNum_list[i])
                     
                     response = Request(target_url, headers=headers)
@@ -512,11 +518,11 @@ class NaverNewsCrawler:
                 self.running = False
             
             if self.running == False: #DB 외 경로로 중단 신호 오는 것 고려해 checkDB와 분리, self.status 업데이트 전 중단
-                StopOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname , startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status = self.status)
+                stopOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname , startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status = self.status)
                 break
             
             if dayCount == self.date_range: # 토큰화 및 파일 저장, 알림
-                FinalOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname , startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status = self.status)
+                finishOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname , startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status = self.status)
                 break
             
             if self.date_range > 0:
@@ -532,6 +538,7 @@ class NaverNewsCrawler:
             
             for newsUrl in urlList:
                 try:
+                    if self.running == False: break
                     # 기사 본문 수집
                     articleData = self.collectArticle(newsUrl)
                     if not articleData:

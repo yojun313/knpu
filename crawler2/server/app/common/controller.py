@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import time
 
 from common.tokenization import tokenization
-from common.notification import SendMail, sendPushOver
+from common.notification import sendMail, sendPushOver
 from config import CRAWL_LOG_PATH
 
 def convertToParquet(folder_path):
@@ -33,7 +33,7 @@ def convertToParquet(folder_path):
     except Exception as e:
         pass
 
-def StopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status):
+def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status):
     try:
         convertToParquet(DBpath)
         parquet_files = [f for f in os.listdir(
@@ -104,7 +104,7 @@ def StopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, stat
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
         
         if pushoverKey == 'n' or pushoverKey == None:
-            SendMail(userEmail, title, text)
+            sendMail(userEmail, title, text)
         else:
             sendPushOver(msg=title + '\n' + text,
                                 user_key=pushoverKey)
@@ -117,7 +117,7 @@ def StopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, stat
     except Exception as e:
         pass
 
-def FinalOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status):
+def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status):
     try:
         convertToParquet(DBpath)
         parquet_files = [f for f in os.listdir(
@@ -188,7 +188,7 @@ def FinalOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, sta
         print(text)
         
         if pushoverKey == 'n' or pushoverKey == None:
-            SendMail(userEmail, title, text)
+            sendMail(userEmail, title, text)
         else:
             sendPushOver(msg=title + '\n' + text,
                                 user_key=pushoverKey)
