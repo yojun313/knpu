@@ -479,7 +479,7 @@ class NaverNewsCrawler:
         except Exception:
             pass
     
-    def report_status(self):
+    def reportStatus(self):
         return self.status
     
     def main(self):
