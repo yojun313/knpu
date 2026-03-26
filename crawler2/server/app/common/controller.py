@@ -2,10 +2,15 @@ import os
 import pandas as pd
 from datetime import datetime, timedelta
 import time
+import logging
 
 from common.tokenization import tokenization
 from common.notification import sendMail, sendPushOver
+from common.storage import endCrawl, errorCrawl
 from config import CRAWL_LOG_PATH
+
+logger = logging.getLogger(__name__)
+
 
 def convertToParquet(folder_path):
     try:
@@ -31,9 +36,10 @@ def convertToParquet(folder_path):
             except Exception as e:
                 print(f"변환 실패: {csv_file} → 오류: {e}")
     except Exception as e:
-        pass
+        logger.exception(f"convertToParquet 실패: {folder_path}")
 
-def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status):
+
+def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status, DBuid=None):
     try:
         convertToParquet(DBpath)
         parquet_files = [f for f in os.listdir(
@@ -45,15 +51,12 @@ def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, stat
 
             data_df = pd.read_parquet(file_path)
 
-            # Step 3: Reply 관련 테이블이면 전처리 수행
-            # 전처리 부분 수정 예시
+            # Reply 관련 테이블이면 전처리 수행
             if 'reply' in table_name or 'rereply' in table_name:
                 date_column = 'Rereply Date' if 'rereply' in table_name else 'Reply Date'
                 text_column = 'Rereply Text' if 'rereply' in table_name else 'Reply Text'
 
                 data_df[date_column] = pd.to_datetime(data_df[date_column], errors='coerce').dt.date
-
-                # 결측치를 빈 문자열로 치환
                 data_df[text_column] = data_df[text_column].fillna('')
 
                 grouped = data_df.groupby('Article URL')
@@ -66,23 +69,6 @@ def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, stat
                     columns={'Article Day': date_column})
                 data_df = data_df.sort_values(by=date_column)
 
-            #Stop은 Step 4, 5 생략
-            """
-            # Step 4: Tokenization
-            lang = 'en' if DBtype in ['chinadaily'] else 'ko'
-            token_df = tokenization(data_df, language=lang)
-
-            # Step 5: 저장 (선택 사항: parquet 저장 or print only)
-            for col in token_df.columns:
-                if token_df[col].apply(lambda x: isinstance(x, list)).any():
-                    token_df[col] = token_df[col].apply(lambda x: ' '.join(
-                        map(str, x)) if isinstance(x, list) else x)
-
-            token_file_path = os.path.join(
-                DBpath, f"token_{table_name}.parquet")
-            token_df.to_parquet(token_file_path, index=False)
-            """
-        
         title = '[크롤링 중단] ' + DBname
 
         starttime = datetime.fromtimestamp(
@@ -91,33 +77,37 @@ def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, stat
             time.time()).strftime('%Y-%m-%d %H:%M')
         crawltime = str(
             timedelta(seconds=int(time.time() - startTime)))
-        
-        
+
         text  = f"\n크롤링 시작 : {starttime}"
         text += f"\n크롤링 종료 : {endtime}"
-        text += f"\n소요시간 : {crawltime}\n"        
+        text += f"\n소요시간 : {crawltime}\n"
         text += f"\n완료율 : {status.get('percentage', 'N/A')}%"
         text += f"\n최종 수집일 : {status.get('currentdate', 'N/A')}"
         text += f"\n수집된 URL 수 : {status.get('urlCnt', 'N/A')}"
         text += f"\n수집된 기사 수 : {status.get('articleCnt', 'N/A')}"
         text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
-        
+
         if pushoverKey == 'n' or pushoverKey == None:
             sendMail(userEmail, title, text)
         else:
             sendPushOver(msg=title + '\n' + text,
                                 user_key=pushoverKey)
-        
+
         with open(os.path.join(CRAWL_LOG_PATH, DBname + '_log.txt'), 'a') as log:
             log.write('\n\n' + text)
 
         print(f'{text}')
 
-    except Exception as e:
-        pass
+        # DB 상태 업데이트: 중단 → endTime = 'X'
+        if DBuid:
+            errorCrawl(DBuid)
 
-def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status):
+    except Exception as e:
+        logger.exception(f"stopOperator 실패: {DBname}")
+
+
+def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status, DBuid=None):
     try:
         convertToParquet(DBpath)
         parquet_files = [f for f in os.listdir(
@@ -129,15 +119,12 @@ def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, st
 
             data_df = pd.read_parquet(file_path)
 
-            # Step 3: Reply 관련 테이블이면 전처리 수행
-            # 전처리 부분 수정 예시
+            # Reply 관련 테이블이면 전처리 수행
             if 'reply' in table_name or 'rereply' in table_name:
                 date_column = 'Rereply Date' if 'rereply' in table_name else 'Reply Date'
                 text_column = 'Rereply Text' if 'rereply' in table_name else 'Reply Text'
 
                 data_df[date_column] = pd.to_datetime(data_df[date_column], errors='coerce').dt.date
-
-                # 결측치를 빈 문자열로 치환
                 data_df[text_column] = data_df[text_column].fillna('')
 
                 grouped = data_df.groupby('Article URL')
@@ -150,12 +137,10 @@ def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, st
                     columns={'Article Day': date_column})
                 data_df = data_df.sort_values(by=date_column)
 
-
-            # Step 4: Tokenization
+            # Tokenization
             lang = 'en' if DBtype in ['chinadaily'] else 'ko'
             token_df = tokenization(data_df, language=lang)
 
-            # Step 5: 저장 (선택 사항: parquet 저장 or print only)
             for col in token_df.columns:
                 if token_df[col].apply(lambda x: isinstance(x, list)).any():
                     token_df[col] = token_df[col].apply(lambda x: ' '.join(
@@ -164,7 +149,7 @@ def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, st
             token_file_path = os.path.join(
                 DBpath, f"token_{table_name}.parquet")
             token_df.to_parquet(token_file_path, index=False)
-        
+
         title = '[크롤링 완료] ' + DBname
 
         starttime = datetime.fromtimestamp(
@@ -173,11 +158,10 @@ def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, st
             time.time()).strftime('%Y-%m-%d %H:%M')
         crawltime = str(
             timedelta(seconds=int(time.time() - startTime)))
-        
-        
+
         text  = f"\n크롤링 시작 : {starttime}"
         text += f"\n크롤링 종료 : {endtime}"
-        text += f"\n소요시간 : {crawltime}\n"        
+        text += f"\n소요시간 : {crawltime}\n"
         text += f"\n완료율 : {status.get('percentage', 'N/A')}%"
         text += f"\n최종 수집일 : {status.get('currentdate', 'N/A')}"
         text += f"\n수집된 URL 수 : {status.get('urlCnt', 'N/A')}"
@@ -186,7 +170,7 @@ def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, st
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
 
         print(text)
-        
+
         if pushoverKey == 'n' or pushoverKey == None:
             sendMail(userEmail, title, text)
         else:
@@ -196,5 +180,9 @@ def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, st
         with open(os.path.join(CRAWL_LOG_PATH, DBname + '_log.txt'), 'a') as log:
             log.write('\n\n' + text)
 
+        # DB 상태 업데이트: 완료 → endTime = 현재 시각
+        if DBuid:
+            endCrawl(DBuid)
+
     except Exception as e:
-        pass
+        logger.exception(f"finishOperator 실패: {DBname}")

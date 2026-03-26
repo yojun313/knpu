@@ -2,6 +2,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
 import socket
+import logging
+
 from config import MODE
 
 load_dotenv()
@@ -20,6 +22,8 @@ MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
 
 hostname = socket.gethostname()
 is_server = ("knpu" in hostname or "server" in hostname)  # 서버 이름 기준으로 판단
+
+logger = logging.getLogger(__name__)
 
 if is_server:
     # 서버 내부에서 실행 → 로컬 MongoDB 바로 사용
@@ -67,11 +71,15 @@ def checkDB(dbUid):
     return targetDB is not None
 
 def get_userinfo(requester:str):
-    userDBList = client['manager']['users']
-    user = userDBList.find_one({'name': requester})
-    if user is None:
+    try:
+        userDBList = client['manager']['users']
+        user = userDBList.find_one({'name': requester})
+        if user is None:
+            return False
+        return {'Email': user['email'], 'PushOver': user['pushoverKey'], 'userUid': user['uid']}
+    except Exception as e:
+        logger.info(f"DB 유저 정보 가져오기 : {requester}, 에러: {e}")
         return False
-    return {'Email': user['email'], 'PushOver': user['pushoverKey'], 'userUid': user['uid']}
 
 def recordDB(dbUid, status):
     crawlDbList = client[crawler_db_name]['db-list']
