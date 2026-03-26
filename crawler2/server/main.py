@@ -90,7 +90,21 @@ app.add_middleware(RichLoggerMiddleware)
 # ── Startup ──────────────────────────────────────────────────────────
 @app.on_event("startup")
 async def on_startup():
-    #asyncio.create_task(periodic_gc(60))
+    from app.routes import queue_manager
+
+    # 이전 세션에서 남은 작업 복원
+    restore_result = queue_manager.restore_from_db()
+    if restore_result["needed"]:
+        console.print(
+            f"[bold yellow]큐 복원: "
+            f"에러 처리 {restore_result['marked_error']}건, "
+            f"대기 복원 {restore_result['restored']}건, "
+            f"즉시 시작 {restore_result['started']}건[/bold yellow]"
+        )
+    else:
+        console.print("[dim]이전 세션 잔여 작업 없음[/dim]")
+
+    asyncio.create_task(periodic_gc(60))
     console.print("[bold green]Crawler Execution Server started on port 3005[/bold green]")
 
 
