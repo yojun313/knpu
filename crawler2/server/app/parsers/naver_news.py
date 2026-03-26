@@ -3,7 +3,6 @@ import json
 import re
 import warnings
 from datetime import datetime, timedelta, timezone
-import pandas as pd
 import urllib3
 from bs4 import BeautifulSoup
 from user_agent import generate_navigator
@@ -265,15 +264,14 @@ class NaverNewsCrawler:
                 for comment_json in temp.get("result", {}).get("commentList", []):
                     parentCommentNo_list.append(comment_json["parentCommentNo"])
                 
-                df = pd.DataFrame(temp['result']['commentList']) #test
-
                 try:
-                    masked_user_ids  = list(df['maskedUserId'])
-                    mod_times        = list(df['modTime'])
-                    contents         = list(df['contents'])
-                    reply_counts     = list(df['replyCount'])
-                    sympathy_counts  = list(df['sympathyCount'])
-                    antipathy_counts = list(df['antipathyCount'])
+                    comments = temp.get('result', {}).get('commentList', [])
+                    masked_user_ids  = [c['maskedUserId'] for c in comments]
+                    mod_times        = [c['modTime'] for c in comments]
+                    contents         = [c['contents'] for c in comments]
+                    reply_counts     = [c['replyCount'] for c in comments]
+                    sympathy_counts  = [c['sympathyCount'] for c in comments]
+                    antipathy_counts = [c['antipathyCount'] for c in comments]
                 except:
                     return returnData
 
@@ -446,14 +444,12 @@ class NaverNewsCrawler:
                     if not comment_data:
                         continue
 
-                    df = pd.DataFrame(comment_data)
-                    
                     try:
-                        masked_user_ids  = list(df['maskedUserId'])
-                        mod_times        = list(df['modTime'])
-                        contents         = list(df['contents'])
-                        sympathy_counts  = list(df['sympathyCount'])
-                        antipathy_counts = list(df['antipathyCount'])
+                        masked_user_ids  = [c['maskedUserId'] for c in comment_data]
+                        mod_times        = [c['modTime'] for c in comment_data]
+                        contents         = [c['contents'] for c in comment_data]
+                        sympathy_counts  = [c['sympathyCount'] for c in comment_data]
+                        antipathy_counts = [c['antipathyCount'] for c in comment_data]
                     except:
                         continue
 
