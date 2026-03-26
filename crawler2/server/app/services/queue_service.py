@@ -110,9 +110,9 @@ class QueueManager:
 
         return {"active": active, "queued": queued, "recent": recent}
 
-    def restore_from_db(self):
-        """서버 재시작 시 MongoDB에서 큐 복원"""
-        self.persistence.mark_running_as_error("서버 재시작으로 중단됨")
+    def restore_from_db(self) -> dict:
+        """서버 재시작 시 MongoDB에서 큐 복원. 복원 결과를 dict로 반환."""
+        marked_error = self.persistence.mark_running_as_error("서버 재시작으로 중단됨")
 
         queued_docs = self.persistence.get_by_state("queued")
         for doc in queued_docs:
@@ -129,8 +129,18 @@ class QueueManager:
             self._start(jid, req)
             started += 1
 
-        if queued_docs or started:
-            logger.info(f"DB 복원: {len(queued_docs)}개 로드, {started}개 즉시 시작")
+        needed = marked_error > 0 or len(queued_docs) > 0
+        result = {
+            "needed": needed,
+            "marked_error": marked_error,
+            "restored": len(queued_docs),
+            "started": started,
+        }
+
+        if needed:
+            logger.info(f"DB 복원: 에러 처리 {marked_error}건, 대기 복원 {len(queued_docs)}건, 즉시 시작 {started}건")
+
+        return result
 
     # ── 내부 ──────────────────────────────────────────────────────────
 

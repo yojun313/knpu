@@ -4,9 +4,10 @@ from app.services.persistence import JobPersistence
 from app.services.queue_service import QueueManager
 from app.routes.job_routes import router as job_router, set_queue_manager as set_job_qm
 from app.routes.ws_routes import router as ws_router, set_queue_manager as set_ws_qm
+from config import MAX_CONCURRENT_JOBS
 
 # ── 서비스 초기화 ────────────────────────────────────────────────────
-registry = CrawlerRegistry(max_concurrent=3)
+registry = CrawlerRegistry(max_concurrent=MAX_CONCURRENT_JOBS)
 persistence = JobPersistence()
 queue_manager = QueueManager(registry, persistence)
 

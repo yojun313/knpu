@@ -64,14 +64,15 @@ class JobPersistence:
             return []
         return list(col.find().sort("created_at", -1).limit(limit))
 
-    def mark_running_as_error(self, message: str):
+    def mark_running_as_error(self, message: str) -> int:
         col = _get_collection()
         if col is None:
-            return
-        col.update_many(
+            return 0
+        result = col.update_many(
             {"state": "running"},
             {"$set": {"state": "error", "error_message": message, "finished_at": datetime.now()}},
         )
+        return result.modified_count
 
     def delete(self, job_id: str):
         col = _get_collection()
