@@ -47,6 +47,13 @@ class CrawlerRegistry:
         except Exception as e:
             logger.exception(f"Crawler {job_id} failed")
             self._mark_done(job_id, "error", str(e))
+            # crawler.main()이 예외로 종료 → stopOperator가 호출되지 않았을 수 있음
+            if hasattr(crawler, 'DBuid') and crawler.DBuid:
+                try:
+                    from common.storage import errorCrawl
+                    errorCrawl(crawler.DBuid)
+                except Exception:
+                    logger.warning(f"DB 에러 상태 업데이트 실패: {job_id}")
 
     def _mark_done(self, job_id: str, state: str, error: str = None):
         with self.lock:
