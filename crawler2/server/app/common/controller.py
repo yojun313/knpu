@@ -47,8 +47,6 @@ def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, stat
         for file_name in parquet_files:
             table_name = file_name.rsplit('.', 1)[0]
             file_path = os.path.join(DBpath, file_name)
-            print(f"{table_name} 읽는 중...")
-
             data_df = pd.read_parquet(file_path)
 
             # Reply 관련 테이블이면 전처리 수행
@@ -97,7 +95,6 @@ def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, stat
         with open(os.path.join(CRAWL_LOG_PATH, DBname + '_log.txt'), 'a') as log:
             log.write('\n\n' + text)
 
-        print(f'{text}')
 
         # DB 상태 업데이트: 중단 → endTime = 'X'
         if DBuid:
@@ -115,7 +112,6 @@ def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, st
         for file_name in parquet_files:
             table_name = file_name.rsplit('.', 1)[0]
             file_path = os.path.join(DBpath, file_name)
-            print(f"{table_name} 읽는 중...")
 
             data_df = pd.read_parquet(file_path)
 
@@ -168,8 +164,6 @@ def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, st
         text += f"\n수집된 기사 수 : {status.get('articleCnt', 'N/A')}"
         text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
-
-        print(text)
 
         if pushoverKey == 'n' or pushoverKey == None:
             sendMail(userEmail, title, text)
