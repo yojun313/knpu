@@ -50,7 +50,8 @@ class CrawlerRegistry:
             # crawler.main()이 예외로 종료 → stopOperator가 호출되지 않았을 수 있음
             if hasattr(crawler, 'DBuid') and crawler.DBuid:
                 try:
-                    from common.storage import errorCrawl
+                    from common.storage import errorCrawl, appendCrawlLog
+                    appendCrawlLog(crawler.DBuid, "error", f"크롤러 비정상 종료: {e}")
                     errorCrawl(crawler.DBuid)
                 except Exception:
                     logger.warning(f"DB 에러 상태 업데이트 실패: {job_id}")

@@ -13,6 +13,6 @@ CRAWL_LOG_PATH = os.getenv('CRAWLLOG_PATH', './crawllog')
 CRAWLCOM = socket.gethostname()
 
 TRYNUM = 3
-SLEEP_TIME = 10
+SLEEP_TIME = 1
 TIMEOUT = 300
 MAX_CONCURRENT_JOBS = 1
