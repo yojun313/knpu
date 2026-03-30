@@ -1,5 +1,9 @@
 import asyncio
+import logging
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -12,8 +16,19 @@ def set_queue_manager(qm):
     queue_manager = qm
 
 
+@router.get("/ws/dashboard")
+def dashboard_ws_http_hint():
+    return {
+        "detail": "This endpoint is WebSocket-only. Use ws://<host>:3005/api/ws/dashboard",
+    }
+
+
 @router.websocket("/ws/dashboard")
 async def dashboard_ws(websocket: WebSocket):
+    if queue_manager is None:
+        await websocket.close(code=1011, reason="queue_manager not initialized")
+        return
+
     await websocket.accept()
     try:
         while True:
@@ -21,6 +36,6 @@ async def dashboard_ws(websocket: WebSocket):
             await websocket.send_json(statuses)
             await asyncio.sleep(1)
     except WebSocketDisconnect:
-        pass
+        logger.info("dashboard websocket disconnected")
     except Exception:
-        pass
+        logger.exception("dashboard websocket error")

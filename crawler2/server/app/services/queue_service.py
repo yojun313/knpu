@@ -52,14 +52,29 @@ class QueueManager:
 
     def cancel_job(self, job_id: str) -> bool:
         """큐에서 대기 중인 작업 제거"""
+        success, removed_from = self.remove_job(job_id)
+        return success and removed_from == "queued"
+
+    def remove_job(self, job_id: str) -> tuple[bool, str]:
+        """작업 삭제(queued, completed/stopped/error 가능). running은 삭제 불가."""
         with self.lock:
             for i, item in enumerate(self.queue):
                 if item[2] == job_id:
                     self.queue.pop(i)
                     heapq.heapify(self.queue)
                     self.persistence.delete(job_id)
-                    return True
-        return False
+                    return True, "queued"
+
+        entry = self.registry.get_entry(job_id)
+        if entry is None:
+            return False, "not_found"
+
+        if entry.state == "running":
+            return False, "running"
+
+        self.registry.remove_finished(job_id)
+        self.persistence.delete(job_id)
+        return True, entry.state
 
     def get_job_status(self, job_id: str) -> Optional[dict]:
         """단일 작업의 상태 조회"""
@@ -86,27 +101,34 @@ class QueueManager:
     def get_all_statuses(self) -> dict:
         """대시보드용 전체 상태. active + queued + recent 분류."""
         active = []
-        recent = []
 
         for entry in self.registry.all_entries():
-            status_data = {
-                "job_id": entry.job_id,
-                "state": entry.state,
-                "started_at": entry.started_at.isoformat() if entry.started_at else None,
-                "finished_at": entry.finished_at.isoformat() if entry.finished_at else None,
-                "error_message": entry.error_message,
-                **entry.meta,
-            }
             if entry.state == "running":
-                status_data["crawler_status"] = self.registry.get_status(entry.job_id)
+                status_data = {
+                    "job_id": entry.job_id,
+                    "state": entry.state,
+                    "started_at": entry.started_at.isoformat() if entry.started_at else None,
+                    "crawler_status": self.registry.get_status(entry.job_id),
+                    **entry.meta,
+                }
                 active.append(status_data)
-            else:
-                recent.append(status_data)
 
         queued = []
         with self.lock:
             for item in self.queue:
                 queued.append({"job_id": item[2], "state": "queued", **item[3]})
+
+        # 최근 7일 완료/에러/중단 작업을 DB에서 조회
+        recent = []
+        for doc in self.persistence.get_recent_days(days=7):
+            recent.append({
+                "job_id": doc["job_id"],
+                "state": doc["state"],
+                "started_at": doc["started_at"].isoformat() if doc.get("started_at") else None,
+                "finished_at": doc["finished_at"].isoformat() if doc.get("finished_at") else None,
+                "error_message": doc.get("error_message"),
+                **doc.get("request", {}),
+            })
 
         return {"active": active, "queued": queued, "recent": recent}
 

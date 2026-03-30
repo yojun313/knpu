@@ -41,10 +41,12 @@ def stop_job(job_id: str):
 
 @router.delete("/jobs/{job_id}")
 def cancel_job(job_id: str):
-    success = queue_manager.cancel_job(job_id)
+    success, removed_from = queue_manager.remove_job(job_id)
     if not success:
-        raise HTTPException(status_code=404, detail=f"Job {job_id} not in queue")
-    return {"status": "ok", "message": f"Job {job_id} removed from queue"}
+        if removed_from == "running":
+            raise HTTPException(status_code=409, detail=f"Job {job_id} is running; stop first")
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+    return {"status": "ok", "message": f"Job {job_id} removed ({removed_from})"}
 
 
 @router.get("/queue/config")
