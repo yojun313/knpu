@@ -6,7 +6,7 @@ import logging
 
 from common.tokenization import tokenization
 from common.notification import sendMail, sendPushOver
-from common.storage import endCrawl, errorCrawl
+from common.storage import endCrawl, errorCrawl, appendCrawlLog
 from config import CRAWL_LOG_PATH
 
 logger = logging.getLogger(__name__)
@@ -95,9 +95,9 @@ def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, stat
         with open(os.path.join(CRAWL_LOG_PATH, DBname + '_log.txt'), 'a') as log:
             log.write('\n\n' + text)
 
-
         # DB 상태 업데이트: 중단 → endTime = 'X'
         if DBuid:
+            appendCrawlLog(DBuid, "end", f"[크롤링 중단] {DBname}\n{text}")
             errorCrawl(DBuid)
 
     except Exception as e:
@@ -176,6 +176,7 @@ def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, st
 
         # DB 상태 업데이트: 완료 → endTime = 현재 시각
         if DBuid:
+            appendCrawlLog(DBuid, "end", f"[크롤링 완료] {DBname}\n{text}")
             endCrawl(DBuid)
 
     except Exception as e:

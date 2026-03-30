@@ -14,7 +14,7 @@ from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
 from common.naver_lib import parse_naver_query
-from common.storage import makeDB, updateCrawlStatus
+from common.storage import makeDB, updateCrawlStatus, initCrawlLog, appendCrawlLog
 from common.csv import makeCSV, addToCSV
 from common.columns import navernews_article_column, navernews_statistics_column, navernews_reply_column, navernews_rereply_column, navernews_4_reply_column
 from common.controller import stopOperator, finishOperator
@@ -62,6 +62,7 @@ class NaverNewsCrawler:
         self.requesterUid = notification['userUid']
         
         self.running = True
+        self.DBuid = None
         self.status = {
             'percentage': '0',
             'currentdate': self.currentDate.strftime('%Y-%m-%d'),
@@ -172,6 +173,7 @@ class NaverNewsCrawler:
             return urlList
         except Exception as e:
             logger.info(f"Error occurred while collecting news URLs: {e}")
+            appendCrawlLog(self.DBuid, "error", f"URL 수집 실패 ({keyword}): {e}")
             return []
 
     def collectArticle(self, newsURL):        
@@ -198,6 +200,7 @@ class NaverNewsCrawler:
 
         except Exception as e:
             logger.info(f"Error occurred while collecting article data: {e}")
+            appendCrawlLog(self.DBuid, "error", f"기사 수집 실패 ({newsURL}): {e}")
             return []
 
     def collectCmt(self, newsURL, username=False):
@@ -358,6 +361,7 @@ class NaverNewsCrawler:
 
         except Exception as e:
             logger.info(f"Error occurred while collecting comment data: {e}")
+            appendCrawlLog(self.DBuid, "error", f"댓글 수집 실패 ({newsURL}): {e}")
             return returnData
 
     def collectUsername(self, oid, aid, commentNo, newsURL):
@@ -499,6 +503,7 @@ class NaverNewsCrawler:
         
         except Exception as e:
             logger.info(f"Error occurred while collecting reply data: {e}")
+            appendCrawlLog(self.DBuid, "error", f"대댓글 수집 실패 ({newsURL}): {e}")
             return returnData
     
     def reportStatus(self):
@@ -515,6 +520,14 @@ class NaverNewsCrawler:
             requester=self.requester,
             requesterUid=self.requesterUid
         )
+
+        initCrawlLog(self.DBuid, (
+            f"User: {self.requester}\n"
+            f"Object: navernews\n"
+            f"Option: {self.option}\n"
+            f"Keyword: {self.keyword}\n"
+            f"Date Range: {self.startDate} ~ {self.endDate}"
+        ))
 
         makeCSV(self.DBPath, self.articleDB, navernews_article_column)
 
@@ -620,6 +633,7 @@ class NaverNewsCrawler:
 
                 except Exception as e:
                     logger.info(f"Error occurred while processing {newsUrl}: {e}")
+                    appendCrawlLog(self.DBuid, "error", f"기사 처리 실패 ({newsUrl}): {e}")
                     continue
             
             # 날짜 단위 진행률을 DB에 직접 업데이트
