@@ -13,12 +13,13 @@ if CRAWLER_APP_PATH not in sys.path:
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from app.routes import api_router
+from fastapi.middleware.cors import CORSMiddleware
+from app.auth.middleware import AuthMiddleware
+from app.config import MODE
 import gc
 import asyncio
 from datetime import datetime
 from rich.console import Console
-from starlette.middleware.base import BaseHTTPMiddleware
 import traceback
 
 console = Console()
@@ -31,32 +32,23 @@ async def periodic_gc(interval_seconds: int = 60):
         gc.collect()
 
 
-# ── 로깅 미들웨어 ────────────────────────────────────────────────────
-class RichLoggerMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        start_time = datetime.now()
-        response = await call_next(request)
-        duration = (datetime.now() - start_time).total_seconds()
-        status = response.status_code
-
-        status_str = f"[green]{status}[/green]" if 200 <= status < 300 else f"[red]{status}[/red]"
-        log_message = (
-            f"[dim]{datetime.now().strftime('%H:%M:%S')}[/dim] "
-            f"{status_str} "
-            f"[cyan]{request.method}[/cyan] "
-            f"[green]{request.url.path}[/green] "
-            f"[yellow]{duration:.2f}s[/yellow]"
-        )
-        console.print(log_message)
-        return response
-
-
 # ── FastAPI 앱 ────────────────────────────────────────────────────────
-app = FastAPI(title="Crawler Execution Server", version="0.1.0")
+fastapi_app = FastAPI(title="Crawler Execution Server", version="0.1.0")
+
+
+# ── CORS ──────────────────────────────────────────────────────────────
+cors_origins = ["http://localhost:3005"] if MODE == 0 else [os.getenv("CORS_ORIGIN", "")]
+fastapi_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
 
 # ── 전역 예외 핸들러 ─────────────────────────────────────────────────
-@app.exception_handler(Exception)
+@fastapi_app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     tb = exc.__traceback__
     frames = traceback.extract_tb(tb)
@@ -84,11 +76,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-app.add_middleware(RichLoggerMiddleware)
-
-
 # ── Startup ──────────────────────────────────────────────────────────
-@app.on_event("startup")
+@fastapi_app.on_event("startup")
 async def on_startup():
     from app.routes import queue_manager
 
@@ -109,4 +98,15 @@ async def on_startup():
 
 
 # ── 라우터 등록 ──────────────────────────────────────────────────────
-app.include_router(api_router, prefix="/api", tags=["API"])
+from app.routes import api_router
+from app.routes.auth_routes import router as auth_router
+from app.routes.dashboard_routes import router as dashboard_router
+fastapi_app.include_router(auth_router, tags=["Auth"])              # /login, /auth/*
+fastapi_app.include_router(dashboard_router, tags=["Dashboard"])    # /
+fastapi_app.include_router(api_router, prefix="/api", tags=["API"])
+
+
+# ── 순수 ASGI 미들웨어 래핑 ──────────────────────────────────────────
+# uvicorn이 참조하는 최종 app 객체
+# 실행 순서: Auth → FastAPI(CORS → 라우터)
+app = AuthMiddleware(fastapi_app)
