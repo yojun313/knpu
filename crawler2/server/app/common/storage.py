@@ -11,6 +11,7 @@ from db import crawler_db
 logger = logging.getLogger(__name__)
 
 crawlList_db = crawler_db['db-list']
+crawlLog_db = crawler_db['log-list']
 
 
 def makeDB(DBname, DBtype, startdate, enddate, option, keyword, requester, requesterUid):
@@ -123,3 +124,41 @@ def errorCrawl(DBuid):
         logger.info(f"크롤링 에러 처리 (uid: {DBuid})")
     except Exception as e:
         logger.warning(f"에러 상태 업데이트 실패 (uid: {DBuid}): {e}")
+
+
+# ── log-list (크롤링 로그 MongoDB 즉시 기록) ──────────────────────────
+
+def _now_kst_str():
+    return datetime.now(timezone.utc).astimezone(
+        timezone(timedelta(hours=9))
+    ).strftime('%Y-%m-%d %H:%M:%S')
+
+
+def initCrawlLog(DBuid, message):
+    """크롤링 시작 시 log-list 문서 생성 (옵션 정보 등)"""
+    try:
+        crawlLog_db.update_one(
+            {"uid": DBuid},
+            {"$set": {"uid": DBuid, "logs": [
+                {"time": _now_kst_str(), "type": "start", "message": message}
+            ]}},
+            upsert=True,
+        )
+    except Exception as e:
+        logger.warning(f"로그 초기화 실패 (uid: {DBuid}): {e}")
+
+
+def appendCrawlLog(DBuid, log_type, message):
+    """log-list에 로그 항목 즉시 추가. log_type: 'error' | 'info' | 'end'"""
+    try:
+        crawlLog_db.update_one(
+            {"uid": DBuid},
+            {"$push": {"logs": {
+                "time": _now_kst_str(),
+                "type": log_type,
+                "message": message,
+            }}},
+            upsert=True,
+        )
+    except Exception as e:
+        logger.warning(f"로그 추가 실패 (uid: {DBuid}): {e}")
