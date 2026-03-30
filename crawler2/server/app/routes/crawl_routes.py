@@ -12,7 +12,7 @@ from app.services.crawl_service import (
     previewCrawlDb,
     getCrawlLog
 )
-from app.libs.jwt import verify_token
+from auth.jwt import verify_token
 
 router = APIRouter()
 

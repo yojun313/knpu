@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crawler Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f6f7f4;
+            --surface: #ffffff;
+            --ink: #202124;
+            --muted: #5f6368;
+            --line: #d3d6cf;
+            --brand: #0f766e;
+            --brand-soft: #d7f2ed;
+            --danger: #b42318;
+            --danger-soft: #fde4e2;
+            --warning: #9a3412;
+            --warning-soft: #ffedd5;
+            --ok: #166534;
+            --ok-soft: #dcfce7;
+            --queued: #1d4ed8;
+            --queued-soft: #dbeafe;
+            --shadow: 0 10px 22px rgba(22, 24, 35, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background:
+                radial-gradient(circle at 8% 2%, #f4fbf9 0, #f6f7f4 30%),
+                linear-gradient(145deg, #f8f8f4, #f1f4ef);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(110deg, #121926 0%, #213248 55%, #0f766e 100%);
+            color: white;
+            padding: 18px 26px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .header .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .header .connected { background: #4ade80; }
+        .header .disconnected { background: #ef4444; }
+        .header .conn-text { font-size: 13px; color: #d5deea; }
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 24px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .panel {
+            background: var(--surface);
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .panel-head {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(180deg, #fcfdfa, #f7f8f5);
+        }
+
+        .panel-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-count {
+            font-size: 12px;
+            color: var(--muted);
+            background: #ebeee8;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        .panel-body { padding: 14px; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        .field label {
+            display: block;
+            font-size: 11px;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .field input, .field select {
+            width: 100%;
+            border: 1px solid #c8cdc3;
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 14px;
+            background: #fff;
+            color: #162124;
+        }
+
+        .field input:focus, .field select:focus {
+            outline: none;
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+        }
+
+        .span-2 { grid-column: span 2; }
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .status-box {
+            margin-top: 10px;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            display: none;
+            border: 1px solid transparent;
+        }
+        .status-ok { display: block; background: var(--ok-soft); color: var(--ok); border-color: #86efac; }
+        .status-err { display: block; background: var(--danger-soft); color: var(--danger); border-color: #fda29b; }
+
+        .cards {
+            display: grid;
+            gap: 10px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px 16px;
+            border: 1px solid #dde2d7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            transition: transform 180ms ease, box-shadow 180ms ease;
+        }
+        .card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(20, 24, 31, 0.08);
+        }
+        .card-left { flex: 1; }
+        .card-right { display: flex; align-items: center; gap: 12px; }
+
+        .job-keyword {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+        .job-meta { font-size: 13px; color: #6d6f72; margin-top: 4px; }
+        .job-meta span { margin-right: 12px; }
+
+        .progress-bar {
+            width: 200px; height: 7px;
+            background: #e6ebe4; border-radius: 999px;
+            overflow: hidden;
+        }
+        .progress-bar .fill {
+            height: 100%; background: linear-gradient(90deg, #0f766e, #0ea5a8);
+            border-radius: 999px; transition: width 0.5s;
+        }
+        .progress-text { font-size: 13px; color: #444; min-width: 45px; text-align: right; font-weight: 700; }
+
+        .stats { font-size: 12px; color: #757a80; margin-top: 6px; }
+        .stats span { margin-right: 10px; }
+
+        .btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: transform 150ms ease, filter 150ms ease;
+        }
+        .btn:hover { filter: brightness(0.97); transform: translateY(-1px); }
+
+        .btn-primary {
+            background: linear-gradient(125deg, #0f766e, #0e9f9f);
+            color: #fff;
+        }
+        .btn-ghost {
+            border: 1px solid #c4cbc0;
+            background: #fff;
+            color: #303236;
+        }
+        .btn-stop { background: var(--danger-soft); color: var(--danger); }
+        .btn-delete { background: #f0f2ef; color: #4d5560; }
+
+        .state-badge {
+            font-size: 11px; padding: 3px 8px;
+            border-radius: 4px; font-weight: 500;
+        }
+        .state-completed { background: var(--ok-soft); color: var(--ok); }
+        .state-error { background: var(--danger-soft); color: var(--danger); }
+        .state-stopped { background: var(--warning-soft); color: var(--warning); }
+        .state-queued { background: var(--queued-soft); color: var(--queued); }
+
+        .empty {
+            color: #959ba2;
+            font-size: 14px;
+            padding: 20px;
+            text-align: center;
+            border: 1px dashed #d6dbd1;
+            border-radius: 10px;
+            background: #fafbf8;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: #e4ebf7;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .logout-btn:hover { border-color: #fff; color: #fff; }
+
+        @media (max-width: 1024px) {
+            .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .span-2 { grid-column: span 2; }
+            .card { flex-direction: column; align-items: flex-start; }
+            .card-right { width: 100%; justify-content: flex-end; }
+            .progress-bar { width: 100%; }
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 14px; }
+            .header { padding: 14px; }
+            .header h1 { font-size: 20px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .span-2 { grid-column: span 1; }
+            .actions { justify-content: flex-end; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>Crawler Dashboard</h1>
+        </div>
+        <div style="display:flex; align-items:center; gap:16px;">
+            <span class="conn-text">
+                <span class="status-dot disconnected" id="conn-dot"></span>
+                <span id="conn-text">연결 중...</span>
+            </span>
+            <button class="logout-btn" onclick="logout()">로그아웃</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-title">Crawler Control</div>
+                <div class="panel-count">새 작업 추가</div>
+            </div>
+            <div class="panel-body">
+                <form id="create-form" class="form-grid" onsubmit="submitJob(event)">
+                    <div class="field">
+                        <label>요청자</label>
+                        <input type="text" id="f-name" readonly style="background:#f0f2ef; cursor:default;">
+                    </div>
+                    <div class="field span-2">
+                        <label>키워드</label>
+                        <input type="text" id="f-keyword" placeholder="예: 반도체 산업" required>
+                    </div>
+                    <div class="field">
+                        <label>크롤러</label>
+                        <select id="f-object" required>
+                            <option value="1">Naver News</option>
+                            <option value="2">Naver Blog</option>
+                            <option value="3">Naver Cafe</option>
+                            <option value="4">YouTube</option>
+                            <option value="5">ChinaDaily</option>
+                            <option value="6">ChinaSina</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>옵션</label>
+                        <select id="f-option" required>
+                            <option value="1">기사+댓글</option>
+                            <option value="2">기사+댓글/대댓글</option>
+                            <option value="3">기사만</option>
+                            <option value="4">기사+댓글(추가정보)</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>시작일 (YYYYMMDD)</label>
+                        <input type="text" id="f-start" placeholder="20250101" maxlength="8" pattern="[0-9]{8}" inputmode="numeric" required>
+                    </div>
+                    <div class="field">
+                        <label>종료일 (YYYYMMDD)</label>
+                        <input type="text" id="f-end" placeholder="20251231" maxlength="8" pattern="[0-9]{8}" inputmode="numeric" required>
+                    </div>
+                    <div class="field">
+                        <label>우선순위</label>
+                        <input type="number" id="f-priority" value="0" min="0" max="99" required>
+                    </div>
+                    <div class="actions">
+                        <button type="button" class="btn btn-ghost" onclick="fillToday()">오늘 날짜</button>
+                        <button type="submit" class="btn btn-primary">작업 추가</button>
+                    </div>
+                </form>
+                <div id="submit-status" class="status-box"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-title">Running Jobs</div>
+                <div class="panel-count" id="active-count">0</div>
+            </div>
+            <div class="panel-body cards" id="active-list"><div class="empty">실행 중인 크롤링 없음</div></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-title">Queued Jobs</div>
+                <div class="panel-count" id="queued-count">0</div>
+            </div>
+            <div class="panel-body cards" id="queued-list"><div class="empty">대기 중인 작업 없음</div></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-title">Recent Jobs</div>
+                <div class="panel-count" id="recent-count">0</div>
+            </div>
+            <div class="panel-body cards" id="recent-list"><div class="empty">최근 완료된 작업 없음</div></div>
+        </div>
+    </div>
+
+    <script>
+        const CRAWL_OBJECTS = {1:"Naver News", 2:"Naver Blog", 3:"Naver Cafe", 4:"YouTube", 5:"ChinaDaily", 6:"ChinaSina"};
+        const OPTIONS = {1:"기사+댓글", 2:"기사+댓글/대댓글", 3:"기사만", 4:"기사+댓글(추가정보)"};
+
+        let ws;
+        let reconnectTimer;
+
+        function setStatus(message, isError=false) {
+            const el = document.getElementById('submit-status');
+            el.textContent = message;
+            el.className = isError ? 'status-box status-err' : 'status-box status-ok';
+            setTimeout(() => {
+                el.className = 'status-box';
+                el.textContent = '';
+            }, 3800);
+        }
+
+        function fillToday() {
+            const d = new Date();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const val = `${d.getFullYear()}${mm}${dd}`;
+            document.getElementById('f-start').value = val;
+            document.getElementById('f-end').value = val;
+        }
+
+        async function submitJob(e) {
+            e.preventDefault();
+
+            const body = {
+                name: document.getElementById('f-name').value.trim(),
+                keyword: document.getElementById('f-keyword').value.trim(),
+                crawl_object: Number(document.getElementById('f-object').value),
+                option_select: Number(document.getElementById('f-option').value),
+                start_day: document.getElementById('f-start').value.trim(),
+                end_day: document.getElementById('f-end').value.trim(),
+                priority: Number(document.getElementById('f-priority').value || 0),
+            };
+
+            if (!body.name || !body.keyword || !body.start_day || !body.end_day) {
+                setStatus('필수 필드를 모두 입력해 주세요.', true);
+                return;
+            }
+
+            if (body.start_day > body.end_day) {
+                setStatus('시작일은 종료일보다 늦을 수 없습니다.', true);
+                return;
+            }
+
+            const res = await fetch('/api/jobs/submit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setStatus(data.detail || '작업 추가에 실패했습니다.', true);
+                return;
+            }
+
+            setStatus(`작업이 추가되었습니다: ${data.job_id}`);
+            document.getElementById('f-keyword').value = '';
+            document.getElementById('f-priority').value = '0';
+            fillToday();
+        }
+
+        function connectWS() {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${location.host}/api/ws/dashboard`);
+
+            ws.onopen = () => {
+                document.getElementById('conn-dot').className = 'status-dot connected';
+                document.getElementById('conn-text').textContent = '실시간 연결';
+                if (reconnectTimer) clearInterval(reconnectTimer);
+            };
+
+            ws.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                render(data);
+            };
+
+            ws.onclose = () => {
+                document.getElementById('conn-dot').className = 'status-dot disconnected';
+                document.getElementById('conn-text').textContent = '연결 끊김';
+                reconnectTimer = setTimeout(connectWS, 3000);
+            };
+
+            ws.onerror = () => ws.close();
+        }
+
+        function render(data) {
+            renderActive(data.active || []);
+            renderQueued(data.queued || []);
+            renderRecent(data.recent || []);
+        }
+
+        function renderActive(jobs) {
+            const el = document.getElementById('active-list');
+            document.getElementById('active-count').textContent = jobs.length;
+
+            if (!jobs.length) {
+                el.innerHTML = '<div class="empty">실행 중인 크롤링 없음</div>';
+                return;
+            }
+
+            el.innerHTML = jobs.map(job => {
+                const cs = job.crawler_status || {};
+                const pct = cs.percentage || '0';
+                const date = formatDate(job.start_day) + ' ~ ' + formatDate(job.end_day);
+                return `
+                <div class="card">
+                    <div class="card-left">
+                        <div class="job-keyword">${esc(job.keyword)}</div>
+                        <div class="job-meta">
+                            <span>${CRAWL_OBJECTS[job.crawl_object] || ''}</span>
+                            <span>${OPTIONS[job.option_select] || ''}</span>
+                            <span>${date}</span>
+                            <span>${esc(job.name)}</span>
+                        </div>
+                        <div class="stats">
+                            <span>수집일: ${cs.currentdate || '-'}</span>
+                            <span>URL: ${cs.urlCnt || 0}</span>
+                            <span>기사: ${cs.articleCnt || 0}</span>
+                            <span>댓글: ${cs.commentCnt || 0}</span>
+                            <span>대댓글: ${cs.replyCnt || 0}</span>
+                        </div>
+                    </div>
+                    <div class="card-right">
+                        <div>
+                            <div class="progress-bar"><div class="fill" style="width:${pct}%"></div></div>
+                        </div>
+                        <div class="progress-text">${pct}%</div>
+                        <button class="btn btn-stop" onclick="stopJob('${job.job_id}')">중단</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderQueued(jobs) {
+            const el = document.getElementById('queued-list');
+            document.getElementById('queued-count').textContent = jobs.length;
+
+            if (!jobs.length) {
+                el.innerHTML = '<div class="empty">대기 중인 작업 없음</div>';
+                return;
+            }
+
+            el.innerHTML = jobs.map(job => {
+                const date = formatDate(job.start_day) + ' ~ ' + formatDate(job.end_day);
+                return `
+                <div class="card">
+                    <div class="card-left">
+                        <div class="job-keyword">${esc(job.keyword)}</div>
+                        <div class="job-meta">
+                            <span>${CRAWL_OBJECTS[job.crawl_object] || ''}</span>
+                            <span>${OPTIONS[job.option_select] || ''}</span>
+                            <span>${date}</span>
+                            <span>${esc(job.name)}</span>
+                            <span>우선순위: ${job.priority || 0}</span>
+                        </div>
+                    </div>
+                    <div class="card-right">
+                        <span class="state-badge state-queued">대기</span>
+                        <button class="btn btn-delete" onclick="deleteJob('${job.job_id}')">삭제</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderRecent(jobs) {
+            const el = document.getElementById('recent-list');
+            document.getElementById('recent-count').textContent = jobs.length;
+
+            if (!jobs.length) {
+                el.innerHTML = '<div class="empty">최근 완료된 작업 없음</div>';
+                return;
+            }
+
+            el.innerHTML = jobs.map(job => {
+                const stateClass = 'state-' + job.state;
+                const stateText = {completed:'완료', error:'에러', stopped:'중단'}[job.state] || job.state;
+                const date = formatDate(job.start_day) + ' ~ ' + formatDate(job.end_day);
+                const finishedAt = job.finished_at ? new Date(job.finished_at).toLocaleString('ko-KR') : '';
+                return `
+                <div class="card">
+                    <div class="card-left">
+                        <div class="job-keyword">${esc(job.keyword)}</div>
+                        <div class="job-meta">
+                            <span>${CRAWL_OBJECTS[job.crawl_object] || ''}</span>
+                            <span>${date}</span>
+                            <span>${esc(job.name)}</span>
+                            ${job.error_message ? '<span style="color:#dc2626">' + esc(job.error_message) + '</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="card-right">
+                        <span style="font-size:12px;color:#888">${finishedAt}</span>
+                        <span class="state-badge ${stateClass}">${stateText}</span>
+                        <button class="btn btn-delete" onclick="deleteJob('${job.job_id}')">삭제</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function formatDate(d) {
+            if (!d || d.length !== 8) return d || '';
+            return d.slice(0,4) + '.' + d.slice(4,6) + '.' + d.slice(6,8);
+        }
+
+        function esc(s) {
+            if (!s) return '';
+            const div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
+
+        async function stopJob(jobId) {
+            if (!confirm('크롤링을 중단하시겠습니까?')) return;
+            await fetch(`/api/jobs/${jobId}/stop`, {method:'POST'});
+        }
+
+        async function deleteJob(jobId) {
+            if (!confirm('작업을 삭제하시겠습니까?')) return;
+            const res = await fetch(`/api/jobs/${jobId}`, {method:'DELETE'});
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                setStatus(data.detail || '작업 삭제에 실패했습니다.', true);
+                return;
+            }
+            setStatus(`작업 ${jobId} 삭제 완료`);
+        }
+
+        async function logout() {
+            await fetch('/auth/logout', {method:'POST'});
+            window.location.href = '/login';
+        }
+
+        // 로그인 사용자 이름 자동 입력
+        document.getElementById('f-name').value = '{{ username }}';
+
+        fillToday();
+        connectWS();
+    </script>
+</body>
+</html>

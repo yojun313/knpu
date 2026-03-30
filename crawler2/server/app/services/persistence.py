@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 import logging
 
@@ -63,6 +63,17 @@ class JobPersistence:
         if col is None:
             return []
         return list(col.find().sort("created_at", -1).limit(limit))
+
+    def get_recent_days(self, days: int = 7) -> list:
+        """최근 N일 내 완료/에러/중단된 작업 조회"""
+        col = _get_collection()
+        if col is None:
+            return []
+        cutoff = datetime.now() - timedelta(days=days)
+        return list(col.find({
+            "state": {"$in": ["completed", "error", "stopped"]},
+            "finished_at": {"$gte": cutoff},
+        }).sort("finished_at", -1))
 
     def mark_running_as_error(self, message: str) -> int:
         col = _get_collection()

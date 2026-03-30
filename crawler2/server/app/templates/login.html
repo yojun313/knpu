@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crawler Server - 로그인</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 360px;
+        }
+        h2 { margin-bottom: 8px; color: #333; }
+        .subtitle { color: #888; font-size: 14px; margin-bottom: 24px; }
+        label { display: block; font-size: 14px; color: #555; margin-bottom: 6px; }
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            margin-bottom: 16px;
+            outline: none;
+        }
+        input:focus { border-color: #4a90d9; }
+        button {
+            width: 100%;
+            padding: 11px;
+            background: #4a90d9;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        button:hover { background: #3a7bc8; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .error { color: #e74c3c; font-size: 13px; margin-bottom: 12px; display: none; }
+        .success { color: #27ae60; font-size: 13px; margin-bottom: 12px; display: none; }
+        #code-section { display: none; }
+        .timer { color: #888; font-size: 12px; text-align: right; margin-top: -12px; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>Crawler Server</h2>
+        <p class="subtitle">KNPU PAI Lab</p>
+
+        <div id="name-section">
+            <label for="name">이름</label>
+            <input type="text" id="name" placeholder="등록된 이름을 입력하세요" />
+            <div class="error" id="name-error"></div>
+            <button onclick="requestCode()">인증코드 요청</button>
+        </div>
+
+        <div id="code-section">
+            <div class="success" id="code-sent"></div>
+            <label for="code">인증코드</label>
+            <input type="text" id="code" placeholder="이메일로 전송된 6자리 코드" maxlength="6" />
+            <div class="timer" id="timer"></div>
+            <div class="error" id="code-error"></div>
+            <button onclick="verifyCode()">로그인</button>
+        </div>
+    </div>
+
+    <script>
+        let timerInterval;
+
+        async function requestCode() {
+            const name = document.getElementById('name').value.trim();
+            if (!name) return;
+
+            const errorEl = document.getElementById('name-error');
+            errorEl.style.display = 'none';
+
+            try {
+                const res = await fetch('/auth/request-code', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name})
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    errorEl.textContent = data.detail || '오류가 발생했습니다';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('name-section').style.display = 'none';
+                document.getElementById('code-section').style.display = 'block';
+
+                const sentEl = document.getElementById('code-sent');
+                sentEl.textContent = '인증코드를 전송했습니다';
+                sentEl.style.display = 'block';
+
+                let remaining = 300;
+                timerInterval = setInterval(() => {
+                    remaining--;
+                    const m = Math.floor(remaining / 60);
+                    const s = remaining % 60;
+                    document.getElementById('timer').textContent = m + ':' + String(s).padStart(2, '0');
+                    if (remaining <= 0) {
+                        clearInterval(timerInterval);
+                        document.getElementById('timer').textContent = '만료됨';
+                    }
+                }, 1000);
+
+            } catch (e) {
+                errorEl.textContent = '서버 연결 실패';
+                errorEl.style.display = 'block';
+            }
+        }
+
+        async function verifyCode() {
+            const name = document.getElementById('name').value.trim();
+            const code = document.getElementById('code').value.trim();
+            if (!code) return;
+
+            const errorEl = document.getElementById('code-error');
+            errorEl.style.display = 'none';
+
+            try {
+                const res = await fetch('/auth/verify-code', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name, code})
+                });
+
+                if (res.ok) {
+                    clearInterval(timerInterval);
+                    window.location.href = '/';
+                } else {
+                    const data = await res.json();
+                    errorEl.textContent = data.detail || '인증 실패';
+                    errorEl.style.display = 'block';
+                }
+            } catch (e) {
+                errorEl.textContent = '서버 연결 실패';
+                errorEl.style.display = 'block';
+            }
+        }
+
+        document.getElementById('name').addEventListener('keypress', e => {
+            if (e.key === 'Enter') requestCode();
+        });
+        document.getElementById('code').addEventListener('keypress', e => {
+            if (e.key === 'Enter') verifyCode();
+        });
+    </script>
+</body>
+</html>

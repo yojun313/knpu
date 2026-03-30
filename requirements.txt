@@ -32,6 +32,7 @@ starlette
 tqdm
 user_agent
 uvicorn
+websockets
 wordcloud
 PyQtWebEngine
 python-multipart
