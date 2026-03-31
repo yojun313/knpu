@@ -16,7 +16,7 @@ ADMIN_PASSWORD = "***REMOVED***"
 mode = os.getenv('MODE', None)
 
 if mode is None:
-    mode = 0
+    mode = 1
 else:
     mode = int(mode)
 
