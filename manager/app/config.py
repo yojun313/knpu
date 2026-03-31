@@ -16,7 +16,7 @@ ADMIN_PASSWORD = "$2b$12$y92zRYAOVwDC0UCXnuG5ZuiJXxiT.drxRFVBu4HoYKmDMB.e.y5kq"
 mode = os.getenv('MODE', None)
 
 if mode is None:
-    mode = 0
+    mode = 1
 else:
     mode = int(mode)
 
