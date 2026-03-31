@@ -736,6 +736,7 @@ class Manager_Analysis(Manager_Worker):
                 "exception_word_list": exception_word_list,
                 "exception_filename": exception_word_list_path,
             }
+            userLogging(f'ANALYSIS -> kemkim_file({tokenfile_name}, {option})')
 
             downloadDialog = DownloadDialog(f"KEMKIM 분석: {tokenfile_name}", pid, self.main)
             downloadDialog.show()
@@ -2100,24 +2101,31 @@ class Manager_Analysis(Manager_Worker):
             programBugLog(self.main, traceback.format_exc())
   
     def check_csv_file(self, tokenCheck=False):
-        selected_directory = self.analysis_getfiledirectory_csv(
-            self.file_dialog)
-        if len(selected_directory) == 0:
+        printStatus(self.main, "CSV 파일을 선택하세요")
+        file_path, _ = QFileDialog.getOpenFileName(
+            self.main,
+            "CSV 파일 선택",
+            "",
+            "CSV Files (*.csv);;All Files (*)"
+        )
+
+        if not file_path:
             QMessageBox.warning(
-                self.main, f"Wrong Selection", f"선택된 CSV 토큰 파일이 없습니다")
+                self.main, "Wrong Selection", "선택된 CSV 토큰 파일이 없습니다")
             return 0
-        if selected_directory[0] == False:
-            QMessageBox.warning(self.main, f"Wrong Format",
-                                f"{selected_directory[1]}는 CSV 파일이 아닙니다.")
-            return 0
-        if len(selected_directory) != 1:
+
+        if not file_path.lower().endswith('.csv'):
             QMessageBox.warning(
-                self.main, f"Wrong Selection", "한 개의 CSV 파일만 선택하여 주십시오")
+                self.main, "Wrong Format", f"{file_path}는 CSV 파일이 아닙니다.")
             return 0
-        if tokenCheck == True and 'token' not in selected_directory[0]:
-            QMessageBox.warning(self.main, f"Wrong File", "토큰 파일이 아닙니다")
+
+        if tokenCheck == True and 'token' not in file_path.lower():
+            QMessageBox.warning(
+                self.main, "Wrong File", "토큰 파일이 아닙니다")
             return 0
-        return selected_directory[0]
+        
+        printStatus(self.main)
+        return file_path
 
     def check_audio_file(self):
         selected_directory = self.analysis_getfiledirectory_audio(self.file_dialog)
