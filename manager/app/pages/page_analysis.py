@@ -736,7 +736,8 @@ class Manager_Analysis(Manager_Worker):
                 "exception_word_list": exception_word_list,
                 "exception_filename": exception_word_list_path,
             }
-            userLogging(f'ANALYSIS -> kemkim_file({tokenfile_name}, {option})')
+            option_for_log = {k: v for k, v in option.items() if k not in ("exception_word_list", "pid")}
+            userLogging(f'ANALYSIS -> kemkim_file({tokenfile_name}, {option_for_log})')
 
             downloadDialog = DownloadDialog(f"KEMKIM 분석: {tokenfile_name}", pid, self.main)
             downloadDialog.show()
