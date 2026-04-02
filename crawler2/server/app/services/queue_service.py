@@ -191,10 +191,56 @@ class QueueManager:
                 option=req.option_select,
                 speed=SLEEP_TIME,
             )
-        # 추후 확장:
-        # elif req.crawl_object == 2:
-        #     from parsers.naver_blog import NaverBlogCrawler
-        #     return NaverBlogCrawler(...)
+        elif req.crawl_object == 2:
+            from parsers.naver_blog import NaverBlogCrawler
+            return NaverBlogCrawler(
+                requester=req.name,
+                keyword=req.keyword,
+                startDate=req.start_day,
+                endDate=req.end_day,
+                option=req.option_select,
+                speed=SLEEP_TIME,
+            )
+        elif req.crawl_object == 3:
+            from parsers.naver_cafe import NaverCafeCrawler
+            return NaverCafeCrawler(
+                requester=req.name,
+                keyword=req.keyword,
+                startDate=req.start_day,
+                endDate=req.end_day,
+                option=req.option_select,
+                speed=SLEEP_TIME,
+            )
+        elif req.crawl_object == 4:
+            from parsers.youtube import YouTubeCrawler
+            return YouTubeCrawler(
+                requester=req.name,
+                keyword=req.keyword,
+                startDate=req.start_day,
+                endDate=req.end_day,
+                option=req.option_select,
+                speed=SLEEP_TIME,
+            )
+        elif req.crawl_object == 5:
+            from parsers.china_daily import ChinaDailyCrawler
+            return ChinaDailyCrawler(
+                requester=req.name,
+                keyword=req.keyword,
+                startDate=req.start_day,
+                endDate=req.end_day,
+                option=req.option_select,
+                speed=SLEEP_TIME,
+            )
+        elif req.crawl_object == 6:
+            from parsers.china_sina import ChinaSinaCrawler
+            return ChinaSinaCrawler(
+                requester=req.name,
+                keyword=req.keyword,
+                startDate=req.start_day,
+                endDate=req.end_day,
+                option=req.option_select,
+                speed=SLEEP_TIME,
+            )
         raise ValueError(f"지원하지 않는 크롤러 타입: {req.crawl_object}")
 
     def _on_finished(self, job_id: str):
