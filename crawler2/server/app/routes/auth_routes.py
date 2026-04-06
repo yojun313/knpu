@@ -20,7 +20,10 @@ templates = Jinja2Templates(directory=TEMPLATE_DIR)
 @router.get("/login")
 async def login_page(request: Request):
     """로그인 페이지 렌더링"""
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html"
+    )
 
 
 @router.post("/auth/request-code")

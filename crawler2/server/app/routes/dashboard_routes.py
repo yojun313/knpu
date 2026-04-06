@@ -12,7 +12,11 @@ templates = Jinja2Templates(directory=TEMPLATE_DIR)
 async def dashboard_page(request: Request):
     user = getattr(request.state, "user", None)
     username = user.get("name", "") if user else ""
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "username": username,
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard.html",
+        context={
+            "request": request,
+            "username": username,
+        }
+    )
