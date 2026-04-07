@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 from app.services.user_service import log_user
 
 load_dotenv()
+import re
 
 # ----------- Version Board -----------
 
@@ -86,10 +87,22 @@ def edit_version(versionName: str, data: AddVersionDto, userUid: str):
     )
     
 def get_version_list():
-    docs = [clean_doc(d) for d in version_board_db.find().sort('versionName', -1)]
+    docs = [clean_doc(d) for d in version_board_db.find()]
+
+    def _version_key(doc):
+        ver = doc.get('versionName', '')
+        nums = re.findall(r"\d+", ver)
+        try:
+            return tuple(int(x) for x in nums) if nums else ()
+        except Exception:
+            return ()
+
+    docs.sort(key=_version_key, reverse=True)
+
     for doc in docs:
         publisher_info = user_db.find_one({"uid": doc['publisher']}, {"name": 1, "_id": 0})
         doc['publisher'] = publisher_info['name'] if publisher_info else "Unknown"
+
     return JSONResponse(status_code=200, content={"message": "Version list retrieved", "data": docs})
 
 def delete_version(versionName: str, userUid: str):
