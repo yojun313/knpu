@@ -249,25 +249,19 @@ class NaverBlogCrawler:
             objectID   = f'{blogNo}_201_{logNo}'
             
             page       = 1
-            
-            nickname_list   = []
-            replyDate_list  = []
-            text_list       = []
-            rere_count_list = []
-            r_like_list     = []
-            r_bad_list      = []
-            replyList       = []
-            parentCommentNo_list = []
+            PAGE_SIZE  = 50
 
+            all_comments = []
+            replyList    = []
 
             headers = {
                 'user-agent':generate_navigator()['user_agent'],
                 'referer': url}
-            
+
             while True:
                 if page == 101:
                     break
-                
+
                 params = {
                             'ticket': "blog",
                             'templateId': 'default',
@@ -276,54 +270,50 @@ class NaverBlogCrawler:
                             'country': 'KR',
                             'objectId': objectID,
                             'groupId': blogNo,
-                            'pageSize': '50',
+                            'pageSize': str(PAGE_SIZE),
                             'indexSize': '10',
                             'page': str(page),
                             'morePage.prev': '051v2o4l34sgr1t0txuehz9fxg',
                             'morePage.next': '051sz9hwab3fe1t0w1916s34yt',
                         }
-                
+
                 res = Request('https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json', headers=headers, params=params)
                 res.raise_for_status()
                 res = res.text
                 temp = json.loads(res)
-                
-                # parentCommentNo_list PART
-                for comment_json in temp.get("result", {}).get("commentList", []):
-                    parentCommentNo_list.append(comment_json["parentCommentNo"])
-                
+
                 try:
                     comments = temp.get('result', {}).get('commentList', [])
-                    masked_user_ids  = [c['maskedUserId'] for c in comments]
-                    mod_times        = [c['modTime'] for c in comments]
-                    contents         = [c['contents'] for c in comments]
-                    reply_counts     = [c['replyCount'] for c in comments]
-                    sympathy_counts  = [c['sympathyCount'] for c in comments]
-                    antipathy_counts = [c['antipathyCount'] for c in comments]
                 except Exception as e:
                     logger.info(f"Error occurred while parsing comment list: {e}")
                     return returnData
 
-                nickname_list.extend(masked_user_ids)
-                replyDate_list.extend(mod_times)
-                text_list.extend(contents)
-                rere_count_list.extend(reply_counts)
-                r_like_list.extend(sympathy_counts)
-                r_bad_list.extend(antipathy_counts)
-    
-                if len(masked_user_ids) < 97:
+                all_comments.extend(comments)
+
+                if len(comments) < PAGE_SIZE:
                     break
-        
+
                 page += 1
 
             # comment_list PART
             reply_idx = 1
-            for i in range(len(nickname_list)):
+            for c in all_comments:
+                contents = c.get('contents', '')
+                if not contents or c.get('deleted', False) or c.get('secret', False):
+                    continue
+
+                masked_user_id   = c.get('maskedUserId') or ''
+                mod_time         = c.get('modTime', '')
+                reply_count      = c.get('replyCount', 0)
+                sympathy_count   = c.get('sympathyCount', 0)
+                antipathy_count  = c.get('antipathyCount', 0)
+                reply_level      = c.get('replyLevel', 1)
+                parent_comment_no = c.get('parentCommentNo', '')
+
                 r_per_like = 0.0
-                r_sum_like_angry = int(r_like_list[i]) + int(r_bad_list[i])
-                if r_sum_like_angry != 0:
-                    r_per_like = float(int(r_like_list[i]) / r_sum_like_angry)
-                    r_per_like = float(format(r_per_like, ".2f"))
+                r_sum = int(sympathy_count) + int(antipathy_count)
+                if r_sum != 0:
+                    r_per_like = float(format(int(sympathy_count) / r_sum, ".2f"))
 
                 if r_per_like > 0.5:
                     r_sentiment = 1
@@ -334,22 +324,22 @@ class NaverBlogCrawler:
                 else:
                     r_sentiment = 0
 
-                if text_list[i] != '':
-                    targetlist = [
-                        str(reply_idx),
-                        str(nickname_list[i]),
-                        datetime.strptime(replyDate_list[i], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
-                        str(text_list[i].replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', '')),
-                        str(rere_count_list[i]),
-                        str(r_like_list[i]),
-                        str(r_bad_list[i]),
-                        str(r_per_like),
-                        str(r_sentiment),
-                        str(blogURL),
-                        parentCommentNo_list[i]
-                    ]
-                    replyList.append(targetlist)
-                    reply_idx += 1
+                targetlist = [
+                    str(reply_idx),
+                    str(masked_user_id),
+                    datetime.strptime(mod_time, "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"),
+                    contents.replace("\n", " ").replace("\r", " ").replace("\t", " ").replace('<br>', ''),
+                    str(reply_level),
+                    str(reply_count),
+                    str(sympathy_count),
+                    str(antipathy_count),
+                    str(r_per_like),
+                    str(r_sentiment),
+                    str(blogURL),
+                    parent_comment_no
+                ]
+                replyList.append(targetlist)
+                reply_idx += 1
 
             returnData['replyList'] = replyList
             returnData['replyCnt'] = len(replyList)
@@ -515,53 +505,8 @@ def controller():
     NaverBlogCrawler_obj.main()
         
 def tester(name= '최우철', startDate = str(20260301), endDate = str(20260305), keyword = '경찰대', option = 1, speed = 1):
-    """
-    url = "https://s.search.naver.com/p/review/50/search.naver"
-
-    # 핵심 헤더 설정
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Referer": "https://search.naver.com/search.naver?where=view&query=%EA%B2%BD%EC%B0%B0%EB%8C%80",
-        "Accept": "*/*",
-        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-    }
-
-    # 요청 파라미터 (제공해주신 URL에서 핵심적인 것 위주로 구성)
-    params = {
-        "query": "경찰대",
-        "start": "1",
-        "page": "1",
-        "ssc": "tab.blog.all",
-        "api_type": "8",
-        # 아래 값들은 실제 브라우저 네트워크 탭에서 실시간 값을 복사해야 합니다.
-        "enlu_query": "IggCANmDULivAAAAtdoURqXUdp9ygLuVMM8qJjRQR2lcS0I2uWjdRWojAIEqlvwfYIkM/JSbMePlrOj0WOU1x1lDSmSMxhAUh4YfpZ8PADfmUfCM1gbHmDtefEzBnXmIoteuR9ATwx1TxD+a/8B6eGOOjD35qN6NLOBGSqlpx1jSARv6f74eqBzQ4Mb8uNE4CBAQ1+vLKn9VXjdMz6Nx6JGASbhVQ843uvmgHrSvMbiRbC7OquNB50SCLS+dQW47hkDDPS5hQZHofvh4kcgIjMcWyshBAWzTSuSR5+VPxIUYo6RHCrc+Fc19YiqZzRi64ppm00xs6e1Rsq4i9TfM/3NlU9tIdYygdsUmBiQEJq1BX2PWzLMLy4IPeNPMlH5SHF57kYhBgpLfajgc8vjbP3PMiV7xcvBcTa79ZK1FP0nZFzLRPd7psCSOu4LH6P0BBGyQVjqRlZrwVrJ6Ztv8uaRR2cOvFd8CO3gukC+fW1SRpc3QDdXJCB6Mlu6k6WkKf91ihYelFiO/BFOcSlxjOe7wpPuFIotNr3MYStAMYCetQt2ezLL0Y5GU9DzFqLQkilpjeRegy+BW4l3saZfOdszuEisGt6qCyfGG3R3bwyx746Lws+/+h261hmyfsGQRn3tzAiBDF5HN9Zx2ZkWWlUp2oa8Qtnc06llY5PgK4Em12MN23HOxmCvWbQo=",
-        "enqx_theme": "IggCABqCULjvAAAAh/DtntZaiMLGh3DOFtIyqyhawT/RmEJoqBIeDZwybxC8ayW35x3PEVp091n0PqhO3IbC7WD8I+IgUVGV7Q2dNQ==",
-        "equery": "IggCACSCULgRAAAAMBLVzqVFN+0kPL9E1njzrA==",
-        "lgl_lat": "36.803708",
-        "lgl_long": "126.936100",
-    }
-
-    res = Request(url, headers=headers, params=params)
-
-    if res.status_code == 200:
-        print("성공적으로 데이터를 가져왔습니다.")
-        # 보통 JSON 형태나 JSONP(콜백 함수로 감싸진 텍스트) 형태로 응답이 옵니다.
-        print(res.text[:500]) 
-    else:
-        print(f"오류 발생: {res.status_code}")"""
-    
-    
-    option_dic = {
-        1: "\n1. 기사 + 댓글\n2. 기사 + 댓글/대댓글\n3. 기사\n4. 기사 + 댓글(추가정보)\n",
-        2: "\n1. 블로그 본문\n2. 블로그 본문 + 댓글/대댓글\n",
-        3: "\n1. 카페 본문\n2. 카페 본문 + 댓글/대댓글\n",
-        4: "\n1. 영상 정보 + 댓글/대댓글 (100개 제한)\n2. 영상 정보 + 댓글/대댓글(무제한)\n",
-        5: "\n1. 기사\n",
-        6: "\n1. 기사\n2. 기사 + 댓글\n"
-    }
-    
     NaverBlogCrawler_obj = NaverBlogCrawler(name, keyword, startDate, endDate, option, speed)
     NaverBlogCrawler_obj.main()
 
 if __name__ == "__main__":
-    tester()
+    controller()
