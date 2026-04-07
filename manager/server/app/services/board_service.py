@@ -18,6 +18,14 @@ import re
 
 # ----------- Version Board -----------
 
+def _version_key(doc):
+    ver = doc.get('versionName', '')
+    nums = re.findall(r"\d+", ver)
+    try:
+        return tuple(int(x) for x in nums) if nums else ()
+    except Exception:
+        return ()
+
 def add_version(data: AddVersionDto, userUid: str):
     log_user(userUid, f"Added new version: {data.versionName}")
     doc = data.model_dump()
@@ -88,15 +96,6 @@ def edit_version(versionName: str, data: AddVersionDto, userUid: str):
     
 def get_version_list():
     docs = [clean_doc(d) for d in version_board_db.find()]
-
-    def _version_key(doc):
-        ver = doc.get('versionName', '')
-        nums = re.findall(r"\d+", ver)
-        try:
-            return tuple(int(x) for x in nums) if nums else ()
-        except Exception:
-            return ()
-
     docs.sort(key=_version_key, reverse=True)
 
     for doc in docs:
@@ -114,8 +113,12 @@ def delete_version(versionName: str, userUid: str):
 
 
 def check_newest_version():
-    version_data = version_board_db.find().sort('versionName', -1)
-    newest_version = [version_data[0]['versionName']]
+    docs = [clean_doc(d) for d in version_board_db.find()]
+    if not docs:
+        return JSONResponse(status_code=200, content={"message": "Newest version retrieved", "data": []})
+
+    docs.sort(key=_version_key, reverse=True)
+    newest_version = [docs[0].get('versionName')]
     return JSONResponse(status_code=200, content={"message": "Newest version retrieved", "data": newest_version})
 
 # ----------- Bug Board -----------
