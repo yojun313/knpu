@@ -60,115 +60,74 @@ class Manager_Analysis(Manager_Worker):
         self.file_dialog = makeFileFinder(self.main, self.main.localDirectory)
         self.main.analysis_filefinder_layout.addWidget(self.file_dialog)
 
-    def analysis_getfiledirectory_csv(self, file_dialog):
-        selected_directory = file_dialog.selectedFiles()
-        if selected_directory == []:
-            return selected_directory
-        selected_directory = selected_directory[0].split(', ')
-        
-        for directory in selected_directory:
-            if not directory.endswith('.csv'):
-                return [False, directory]
-
-        for index, directory in enumerate(selected_directory):
-            if index != 0:
-                selected_directory[index] = os.path.join(
-                    os.path.dirname(selected_directory[0]), directory)
-
-        return selected_directory
-    
-    def analysis_getfiledirectory_audio(self, file_dialog):
-        selected_directory = file_dialog.selectedFiles()
-        
-        if selected_directory == []:
-            return selected_directory
-        
-        allowed_ext = ('.wav', '.mp3', '.m4a', '.flac', '.ogg')
-        
-        for directory in selected_directory:
-            if not directory.lower().endswith(allowed_ext):
-                return [False, directory]
-
-        for index, directory in enumerate(selected_directory):
-            if index != 0:
-                selected_directory[index] = os.path.join(
-                    os.path.dirname(selected_directory[0]),
-                    directory
-                )
-
-        return selected_directory
-
     def run_timesplit(self):
         class TimeSplitWorker(QThread):
             finished = Signal(bool, str, str)  # (성공 여부, 메시지, 결과 경로)
             error = Signal(str)
             message = Signal(str)             # 진행 상황 메시지 시그널
 
-            def __init__(self, file_list, dataprocess_obj, parent=None):
+            def __init__(self, csv_path, dataprocess_obj, parent=None):
                 super().__init__(parent)
-                self.file_list = file_list
+                self.csv_path = csv_path
                 self.dataprocess_obj = dataprocess_obj
 
             def run(self):
                 try:
-                    for csv_path in self.file_list:
-                        filename = os.path.basename(csv_path)
-                        self.message.emit(f"[{filename}] 출력 폴더 생성 중...")
-                        table_path = os.path.join(
-                            os.path.dirname(csv_path),
-                            f"{os.path.splitext(filename)[0]}_split_{datetime.now():%m%d%H%M}"
-                        )
+                    filename = os.path.basename(self.csv_path)
+                    self.message.emit(f"[{filename}] 출력 폴더 생성 중...")
+                    table_path = os.path.join(
+                        os.path.dirname(self.csv_path),
+                        f"{os.path.splitext(filename)[0]}_split_{datetime.now():%m%d%H%M}"
+                    )
 
-                        base_table_path = table_path
-                        for i in itertools.count():
-                            candidate = base_table_path if i == 0 else f"{base_table_path}_{i}"
-                            try:
-                                os.makedirs(candidate, exist_ok=False)
-                                table_path = candidate
-                                break
-                            except FileExistsError:
-                                continue
-                        
-                        self.message.emit(f"[{filename}] CSV 파일 읽는 중...")
-                        table_df = readCSV(csv_path)
+                    base_table_path = table_path
+                    for i in itertools.count():
+                        candidate = base_table_path if i == 0 else f"{base_table_path}_{i}"
+                        try:
+                            os.makedirs(candidate, exist_ok=False)
+                            table_path = candidate
+                            break
+                        except FileExistsError:
+                            continue
+                    
+                    self.message.emit(f"[{filename}] CSV 파일 읽는 중...")
+                    table_df = readCSV(self.csv_path)
 
-                        # 시간 컬럼 존재 여부 체크
-                        if not any('Date' in col for col in table_df.columns.tolist()) or table_df.columns.tolist() == []:
-                            self.finished.emit(False, f"{filename}은(는) 시계열 분할이 불가능한 파일입니다.", "")
-                            return
+                    # 시간 컬럼 존재 여부 체크
+                    if not any('Date' in col for col in table_df.columns.tolist()) or table_df.columns.tolist() == []:
+                        self.finished.emit(False, f"{filename}은(는) 시계열 분할이 불가능한 파일입니다.", "")
+                        return
 
-                        self.message.emit(f"[{filename}] 시계열 분할 중...")
-                        table_df = self.dataprocess_obj.TimeSplitter(table_df)
+                    self.message.emit(f"[{filename}] 시계열 분할 중...")
+                    table_df = self.dataprocess_obj.TimeSplitter(table_df)
 
-                        year_group = table_df.groupby('year')
-                        month_group = table_df.groupby('year_month')
-                        week_group = table_df.groupby('week')
+                    year_group = table_df.groupby('year')
+                    month_group = table_df.groupby('year_month')
+                    week_group = table_df.groupby('week')
 
-                        self.message.emit(f"[{filename}] 연 단위 저장 중...")
-                        self.dataprocess_obj.TimeSplitToCSV(1, year_group, table_path, os.path.splitext(filename)[0])
+                    self.message.emit(f"[{filename}] 연 단위 저장 중...")
+                    self.dataprocess_obj.TimeSplitToCSV(1, year_group, table_path, os.path.splitext(filename)[0])
 
-                        self.message.emit(f"[{filename}] 월 단위 저장 중...")
-                        self.dataprocess_obj.TimeSplitToCSV(2, month_group, table_path, os.path.splitext(filename)[0])
+                    self.message.emit(f"[{filename}] 월 단위 저장 중...")
+                    self.dataprocess_obj.TimeSplitToCSV(2, month_group, table_path, os.path.splitext(filename)[0])
 
-                        self.message.emit(f"[{filename}] 주 단위 저장 중...")
-                        self.dataprocess_obj.TimeSplitToCSV(3, week_group, table_path, os.path.splitext(filename)[0])
+                    self.message.emit(f"[{filename}] 주 단위 저장 중...")
+                    self.dataprocess_obj.TimeSplitToCSV(3, week_group, table_path, os.path.splitext(filename)[0])
 
-                        del year_group
-                        del month_group
-                        del week_group
-                        gc.collect()
+                    del year_group
+                    del month_group
+                    del week_group
+                    gc.collect()
 
-                    self.finished.emit(True, f"{os.path.basename(self.file_list[0])} 데이터 분할이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", table_path)
+                    self.finished.emit(True, f"{os.path.basename(self.csv_path)} 데이터 분할이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", table_path)
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
         try:
-            selected_directory = self.analysis_getfiledirectory_csv(self.file_dialog)
-            if len(selected_directory) == 0:
-                return
-            if selected_directory[0] == False:
-                QMessageBox.warning(self.main, "Wrong Format", f"{selected_directory[1]}는 CSV 파일이 아닙니다")
+            filepath = self.select_csv_file()
+            if not filepath:
+                printStatus(self.main)
                 return
 
             reply = QMessageBox.question(
@@ -181,16 +140,16 @@ class Manager_Analysis(Manager_Worker):
             if reply != QMessageBox.StandardButton.Yes:
                 return
 
-            userLogging(f'ANALYSIS -> timesplit_file({selected_directory[0]})')
+            userLogging(f'ANALYSIS -> timesplit_file({filepath})')
 
-            thread_name = f"시계열 분할: {os.path.basename(selected_directory[0])}"
+            thread_name = f"시계열 분할: {os.path.basename(filepath)}"
             register_thread(thread_name)
             printStatus(self.main)
             
             statusDialog = TaskStatusDialog(thread_name, self.main)
             statusDialog.show()
 
-            worker = TimeSplitWorker(selected_directory, self.dataprocess_obj, self.main)
+            worker = TimeSplitWorker(filepath, self.dataprocess_obj, self.main)
             self.connectWorkerForStatusDialog(worker, statusDialog, thread_name)
             worker.start()
 
@@ -346,7 +305,7 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
 
         try:
-            filepath = self.check_csv_file()
+            filepath = self.select_csv_file()
             if not filepath:
                 printStatus(self.main)
                 return
@@ -437,7 +396,7 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
 
         try:
-            filepath = self.check_csv_file(tokenCheck=True)
+            filepath = self.select_csv_file(tokenCheck=True)
             if not filepath:
                 printStatus(self.main)
                 return
@@ -469,6 +428,7 @@ class Manager_Analysis(Manager_Worker):
                             f'{startdate}~{enddate}_{period}', filename)
 
             exception_word_list = []
+            exception_word_list_path = 'N'
             if except_yes_selected:
                 QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
                 printStatus(self.main, f"예외어 사전(CSV)을 선택하세요")
@@ -488,7 +448,7 @@ class Manager_Analysis(Manager_Worker):
                     return
                 exception_word_list = df['word'].tolist()
 
-            userLogging(f'ANALYSIS -> WordCloud({filename})')
+            userLogging(f"ANALYSIS -> WordCloud({filename}) options: date={date}, period={period}, maxword={maxword}, except_word_path={exception_word_list_path}, eng={eng_yes_selected}")
             
             thread_name = f"워드클라우드: {filename}"
             statusDialog = TaskStatusDialog(thread_name, self.main)
@@ -553,7 +513,7 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
                     
         try:
-            filepath = self.check_csv_file(tokenCheck=True)
+            filepath = self.select_csv_file(tokenCheck=True)
             if not filepath:
                 printStatus(self.main)
                 return
@@ -737,7 +697,7 @@ class Manager_Analysis(Manager_Worker):
                 "exception_filename": exception_word_list_path,
             }
             option_for_log = {k: v for k, v in option.items() if k not in ("exception_word_list", "pid")}
-            userLogging(f'ANALYSIS -> kemkim_file({tokenfile_name}, {option_for_log})')
+            userLogging(f"ANALYSIS -> kemkim_file({tokenfile_name}) options: {option_for_log}")
 
             downloadDialog = DownloadDialog(f"KEMKIM 분석: {tokenfile_name}", pid, self.main)
             downloadDialog.show()
@@ -1279,7 +1239,7 @@ class Manager_Analysis(Manager_Worker):
 
         try:
             # 1. 대상 파일 체크
-            csv_path = self.check_csv_file()
+            csv_path = self.select_csv_file()
             if not csv_path: return
             
             tokenfile_name = os.path.basename(csv_path)
@@ -1334,7 +1294,7 @@ class Manager_Analysis(Manager_Worker):
     
     def run_modify_token(self):
         try:
-            token_filepath = self.check_csv_file(tokenCheck=True)
+            token_filepath = self.select_csv_file(tokenCheck=True)
             if not token_filepath:
                 printStatus(self.main)
                 return
@@ -1604,7 +1564,7 @@ class Manager_Analysis(Manager_Worker):
             programBugLog(self.main, traceback.format_exc())
 
     def select_etc_analysis(self):
-        dialog = SelectEtcAnalysisDialog(self.run_hate_measure, self.run_whisper, self.run_youtube_download, self.run_detection)
+        dialog = SelectEtcAnalysisDialog(self.run_whisper, self.run_youtube_download, self.run_detection)
         dialog.exec()
 
     def run_hate_measure(self):
@@ -1647,7 +1607,7 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
 
         try:            
-            csv_path = self.check_csv_file()
+            csv_path = self.select_csv_file()
             if not csv_path:
                 printStatus(self.main)
                 return
@@ -1699,7 +1659,7 @@ class Manager_Analysis(Manager_Worker):
             self._workers.append(worker)
 
             # 로그
-            userLogging(f'ANALYSIS -> HateMeasure({csv_fname}) : col={text_col}, opt={option_num}')
+            userLogging(f'ANALYSIS -> HateMeasure({csv_fname}) options: col={text_col}, opt={option_num}')
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -1757,7 +1717,7 @@ class Manager_Analysis(Manager_Worker):
                 except Exception:
                     self.error.emit(traceback.format_exc())
         try:
-            audio_path = self.check_audio_file()
+            audio_path = self.select_audio_file()
             if not audio_path:
                 printStatus(self.main)
                 return
@@ -1809,7 +1769,7 @@ class Manager_Analysis(Manager_Worker):
             self._workers.append(worker)
 
             userLogging(
-                f"ANALYSIS -> Whisper({audio_fname}) : lang={language}, model={model_level}"
+                f"ANALYSIS -> Whisper({audio_fname}) options: lang={language}, model={model_level}"
             )
 
         except Exception:
@@ -2101,7 +2061,7 @@ class Manager_Analysis(Manager_Worker):
         except Exception:
             programBugLog(self.main, traceback.format_exc())
   
-    def check_csv_file(self, tokenCheck=False):
+    def select_csv_file(self, tokenCheck=False):
         printStatus(self.main, "CSV 파일을 선택하세요")
         file_path, _ = QFileDialog.getOpenFileName(
             self.main,
@@ -2111,8 +2071,6 @@ class Manager_Analysis(Manager_Worker):
         )
 
         if not file_path:
-            QMessageBox.warning(
-                self.main, "Wrong Selection", "선택된 CSV 토큰 파일이 없습니다")
             return 0
 
         if not file_path.lower().endswith('.csv'):
@@ -2128,22 +2086,26 @@ class Manager_Analysis(Manager_Worker):
         printStatus(self.main)
         return file_path
 
-    def check_audio_file(self):
-        selected_directory = self.analysis_getfiledirectory_audio(self.file_dialog)
+    def select_audio_file(self):
+        printStatus(self.main, "오디오 파일을 선택하세요")
+        file_path, _ = QFileDialog.getOpenFileName(
+            self.main,
+            "오디오 파일 선택",
+            "",
+            "Audio Files (*.mp3 *.wav *.m4a *.flac *.ogg);;All Files (*)"
+        )
 
-        if len(selected_directory) == 0:
-            QMessageBox.warning(self.main, "Wrong Selection", "선택된 오디오 파일이 없습니다")
+        if not file_path:
             return 0
 
-        if selected_directory[0] == False:
-            QMessageBox.warning(self.main, "Wrong Format", f"{selected_directory[1]} 는 오디오 파일이 아닙니다.")
+        valid_exts = ('.mp3', '.wav', '.m4a', '.flac', '.ogg')
+        if not file_path.lower().endswith(valid_exts):
+            QMessageBox.warning(
+                self.main, "Wrong Format", f"{file_path}는 지원되지 않는 오디오 파일 형식입니다.")
             return 0
 
-        if len(selected_directory) != 1:
-            QMessageBox.warning(self.main, "Wrong Selection", "한 개의 오디오 파일만 선택하여 주십시오")
-            return 0
-
-        return selected_directory[0]
+        printStatus(self.main)
+        return file_path
 
     def anaylsis_buttonMatch(self):
         self.main.analysis_timesplitfile_btn.clicked.connect(self.run_timesplit)
@@ -2151,6 +2113,7 @@ class Manager_Analysis(Manager_Worker):
         self.main.analysis_mergefile_btn.clicked.connect(self.run_merge)
         self.main.analysis_wordcloud_btn.clicked.connect(self.run_wordcloud)
         self.main.analysis_kemkim_btn.clicked.connect(self.select_kemkim)
+        self.main.analysis_hate_btn.clicked.connect(self.run_hate_measure)
         self.main.analysis_tokenization_btn.clicked.connect(self.select_tokenize)
         self.main.analysis_etc_btn.clicked.connect(self.select_etc_analysis)
 
