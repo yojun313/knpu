@@ -71,9 +71,9 @@ class NaverBlogCrawler:
         }
                     
         
-    def collectUrl(self, keyword, startDate, endDate): 
+    def collectUrl(self, keyword, startDate, endDate):
         try:
-            def extract_newsurls(text):
+            def extractUrl(text):
                 # 정규식 패턴 정의 (조금 더 일반화된 형태로)
                 pattern = r'https://blog\.naver\.com/[a-zA-Z0-9_-]+/\d+'
 
@@ -82,8 +82,8 @@ class NaverBlogCrawler:
                 urls = list(dict.fromkeys(urls))
 
                 return urls
-            
-            def extract_nexturl(text):
+
+            def extractNextAPI(text):
                 try:
                     json_data = json.loads(text)
                     if 'url' in json_data and json_data['url']:
@@ -94,39 +94,56 @@ class NaverBlogCrawler:
                     logger.info(f"Error occurred while extracting next URL: {e}")
                     return None
 
-            query_dict = parse_naver_query(keyword)
+            def extractAPI(html_text):
+                pattern = r'url:\s*"(https://s\.search\.naver\.com/p/review/50/search\.naver\?[^"]+)"'
+                match = re.search(pattern, html_text)
+                if match:
+                    return match.group(1)
+                return None
 
+            query_dict = parse_naver_query(keyword)
             urlList = []
-            params = {
-                "query": f"{keyword}",
-                "start": "1",
-                "page": "1",
-                "ssc": "tab.blog.app",
-                "api_type": "8",
-                "nx_search_query": f"{query_dict['nx_search_query']}",
-                "nx_and_query": f"{query_dict['nx_and_query']}",
-                "nx_sub_query": f"{query_dict['nx_sub_query']}",
-                "ac": "1",
-                "aq": "0",
-                "spq": "0",
+
+            # 1단계: 상세검색(날짜 범위 + nx 쿼리 파라미터) 조건으로 최초 검색 페이지 요청 후 API URL 추출
+            search_params = {
+                "ssc": "tab.blog.all",
+                "query": keyword,
+                "query_original": f"{keyword}",
                 "sm": "tab_opt",
                 "nso": f"so:r,p:from{startDate}to{endDate}",
-                "prank": "30",
-                "ngn_country": "KR",
-                "fgn_region": "",
-                "fgn_city": "",
-                "abt": ""
+                "nx_and_query": f"{query_dict['nx_and_query']}",
+                "nx_search_hlquery": f"{query_dict['nx_search_hlquery']}",
+                "nx_search_query": f"{query_dict['nx_search_query']}",
+                "nx_sub_query":f"{query_dict['nx_sub_query']}",
+                "qdt": "1",
             }
-            base_url = "https://s.search.naver.com/p/review/50/search.naver"
-                        
-            response = Request(base_url, params=params)
+            search_headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            }
+            search_response = Request("https://search.naver.com/search.naver", params=search_params, headers=search_headers)
+            search_response.raise_for_status()
+            html_text = search_response.text
+
+            # 1단계 HTML에서 블로그 URL 수집
+            for url in extractUrl(html_text):
+                if url not in urlList and 'book' not in url:
+                    urlList.append(url)
+                    self.status['urlCnt'] += 1
+
+            api_url = extractAPI(html_text)
+            if api_url is None:
+                logger.info(f"No API URL found in search page HTML for keyword: {keyword}, date: {startDate}~{endDate}")
+                return urlList
+
+            # 2단계: 추출된 API로 요청 (기존 방식 유지)
+            response = Request(api_url)
             response.raise_for_status()
             json_text = response.text
             
             while True:
                 if self.running == False: break
                 
-                pre_urlList = extract_newsurls(json_text)
+                pre_urlList = extractUrl(json_text)
                 if not pre_urlList:
                     time.sleep(SLEEP_TIME)
                     
@@ -135,7 +152,7 @@ class NaverBlogCrawler:
                         urlList.append(url)
                         self.status['urlCnt'] += 1
 
-                nextUrl = extract_nexturl(json_text)
+                nextUrl = extractNextAPI(json_text)
                 if nextUrl is None:
                     break
                 else:
@@ -208,20 +225,26 @@ class NaverBlogCrawler:
             trynum = 1
             while True:
                 if self.running == False: break
-                
+
                 try:
                     res = Request(url)
                     res.raise_for_status()
                     res = res.text
                     bs = BeautifulSoup(res, "html.parser")
-                    script_tag = bs.find('script', string=re.compile(r'var\s+blogNo\s*=\s*\'(\d+)\''))
-                    blogNo     = re.search(r'var\s+blogNo\s*=\s* \'(\d+)\'', script_tag.text).group(1)
-                    break
                 except Exception as e:
-                    logger.info(f"Error occurred while extracting blogNo (attempt {trynum}): {e}")
+                    logger.info(f"Request failed (attempt {trynum}): {e}")
                     trynum += 1
                     if trynum >= 5:
                         return returnData
+                    continue
+
+                script_tag = bs.find('script', string=re.compile(r'var\s+blogNo\s*=\s*\'(\d+)\''))  # type: ignore[arg-type]
+                match = re.search(r'var\s+blogNo\s*=\s*\'(\d+)\'', script_tag.text if script_tag else '')
+                if match:
+                    blogNo = match.group(1)
+                    break
+                else:
+                    return returnData
                 
             objectID   = f'{blogNo}_201_{logNo}'
             
@@ -491,8 +514,8 @@ def controller():
     NaverBlogCrawler_obj = NaverBlogCrawler(name, keyword, startDate, endDate, option, speed)
     NaverBlogCrawler_obj.main()
         
-def tester(name= '최우철', startDate = str(20260301), endDate = str(20260302), keyword = '경찰대', option = 1, speed = 1):
-    
+def tester(name= '최우철', startDate = str(20260301), endDate = str(20260305), keyword = '경찰대', option = 1, speed = 1):
+    """
     url = "https://s.search.naver.com/p/review/50/search.naver"
 
     # 핵심 헤더 설정
@@ -525,7 +548,7 @@ def tester(name= '최우철', startDate = str(20260301), endDate = str(20260302)
         # 보통 JSON 형태나 JSONP(콜백 함수로 감싸진 텍스트) 형태로 응답이 옵니다.
         print(res.text[:500]) 
     else:
-        print(f"오류 발생: {res.status_code}")
+        print(f"오류 발생: {res.status_code}")"""
     
     
     option_dic = {
