@@ -2002,9 +2002,8 @@ class TokenizeDialog(BaseDialog):
 
 
 class SelectEtcAnalysisDialog(BaseDialog):
-    def __init__(self, analyze_hate, whisper, youtube_download, yolo):
+    def __init__(self, whisper, youtube_download, yolo):
         super().__init__()
-        self.analyze_hate = analyze_hate
         self.whisper = whisper
         self.youtube_download = youtube_download
         self.yolo = yolo
@@ -2013,11 +2012,6 @@ class SelectEtcAnalysisDialog(BaseDialog):
 
     def initUI(self):
         layout = QVBoxLayout()
-
-        # 기존 혐오도 분석 버튼
-        hate_btn = QPushButton("혐오도 분석")
-        hate_btn.clicked.connect(self.run_analyze_hate)
-        layout.addWidget(hate_btn)
         
         whisper_btn = QPushButton("음성 인식")
         whisper_btn.clicked.connect(self.run_whisper)
@@ -2033,10 +2027,6 @@ class SelectEtcAnalysisDialog(BaseDialog):
 
         self.setLayout(layout)
 
-    def run_analyze_hate(self):
-        self.accept()
-        self.analyze_hate()
-        
     def run_whisper(self):
         self.accept()
         self.whisper()

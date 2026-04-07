@@ -287,7 +287,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     
     def closeEvent(self, event):
         if self._force_quit:
-            QApplication.quit()
             event.accept()
             return
         

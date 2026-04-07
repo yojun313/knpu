@@ -206,6 +206,13 @@
                  </widget>
                 </item>
                 <item>
+                 <widget class="QPushButton" name="analysis_hate_btn">
+                  <property name="text">
+                   <string>혐오도 분석</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <widget class="QPushButton" name="analysis_etc_btn">
                   <property name="text">
                    <string>기타 분석</string>
