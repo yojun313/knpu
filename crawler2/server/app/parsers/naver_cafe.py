@@ -135,37 +135,55 @@ class NaverCafeCrawler:
                     logger.info(f"Error occurred while extracting next URL: {e}")
                     return None
 
+            def extract_api_url_from_html(html_text):
+                pattern = r'url:\s*"(https://s\.search\.naver\.com/p/cafe/48/search\.naver\?[^"]+)"'
+                match = re.search(pattern, html_text)
+                if match:
+                    return match.group(1)
+                return None
+
             query_dict = parse_naver_query(keyword)
-
             urlList = []
-            params = {
-                "abt": "",
-                "ac": 1,
-                "aq": 0,
-                "cafe_where": "",
-                "date_from": f"{startDate}",
-                "date_option": 8,
-                "date_to": f"{endDate}",
-                "display": 30,
-                "m": 0,
-                "nlu_query": '',
-                "nx_and_query": f"{query_dict['nx_and_query']}",
-                "nx_search_query": f"{query_dict['nx_search_query']}",
-                "nx_sub_query": f"{query_dict['nx_sub_query']}",
-                "prdtype": 0,
-                "prmore": 1,
-                "qdt": 1,
-                "query": keyword,
-                "qvt": 1,
-                "spq": 0,
-                "ssc": "tab.cafe.all",
-                "st": "date",
-                "start": "01",
-                "stnm": "date"
-            }
-            base_url = 'https://s.search.naver.com/p/cafe/48/search.naver'
 
-            response = Request(base_url, params=params)
+            # 1단계: 검색 페이지 HTML 요청 후 API URL 추출
+            search_params = {
+                "ssc": "tab.cafe.all",
+                "query": keyword,
+                "sm": "mtb_opt",
+                "st": "rel",
+                "stnm": "date",
+                "nso": f"so:r,p:from{startDate}to{endDate}",
+                "date_from": startDate,
+                "date_to": endDate,
+                "prdtype": "0",
+                "qdt": "1",
+                "opt_tab": "0",
+                "cafe_where": "",
+                "nx_search_query": query_dict['nx_search_query'],
+                "nx_and_query": query_dict['nx_and_query'],
+                "nx_sub_query": query_dict['nx_sub_query'],
+                "nx_search_hlquery": query_dict['nx_search_hlquery'],
+            }
+            search_headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+            }
+            search_response = Request("https://search.naver.com/search.naver", headers=search_headers, params=search_params)
+            search_response.raise_for_status()
+            html_text = search_response.text
+
+            # 1단계 HTML에서 카페 URL 수집
+            for url in extract_cafeurls(html_text):
+                if url not in urlList:
+                    urlList.append(url)
+                    self.status['urlCnt'] += 1
+
+            api_url = extract_api_url_from_html(html_text)
+            if api_url is None:
+                logger.info(f"No API URL found in search page HTML for keyword: {keyword}, date: {startDate}~{endDate}")
+                return urlList
+
+            # 2단계: 추출된 API URL로 요청 (기존 방식 유지)
+            response = Request(api_url)
             response.raise_for_status()
             json_text = response.text
 
@@ -178,7 +196,7 @@ class NaverCafeCrawler:
                     time.sleep(SLEEP_TIME)
 
                 for url in pre_urlList:
-                    if url not in urlList and 'book' not in url:
+                    if url not in urlList:
                         urlList.append(url)
                         self.status['urlCnt'] += 1
 
@@ -250,12 +268,24 @@ class NaverCafeCrawler:
             page = 1
             reply_idx = 1
 
+            headers = {
+                "accept": "application/json, text/plain, */*",
+                "accept-language": "ko-KR,ko;q=0.9",
+                "origin": "https://cafe.naver.com",
+                "referer": cafeURL,
+                "x-cafe-product": "pc",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-site",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+            }
+
             while True:
                 if self.running == False: break
 
-                api_url = "https://apis.naver.com/cafe-web/cafe-articleapi/v2/cafes/{}/articles/{}/comments/pages/{}?requestFrom=A&orderBy=asc&art={}".format(
+                api_url = "https://article.cafe.naver.com/gw/v4/cafes/{}/articles/{}/comments/pages/{}?requestFrom=A&orderBy=asc&art={}".format(
                     cafeID, articleID, page, artID)
-                res = Request(api_url)
+                res = Request(api_url, headers=headers)
                 res.raise_for_status()
                 bs = BeautifulSoup(res.text, 'html.parser')
                 json_string = self.escape_content_html(bs.text)
@@ -270,12 +300,15 @@ class NaverCafeCrawler:
                     break
 
                 for comment in comment_json:
-                    writer = comment['writer']['id']
+                    if comment.get('isDeleted', False):
+                        continue
+                    writer = comment['writer']['nick']
                     date = self.extractTime(comment['updateDate'])
                     content = comment['content'].replace("\n", " ").replace(
                         "\r", " ").replace("\t", " ").replace('<br>', '')
+                    is_reply = comment.get('isRef', False)
                     if content != '':
-                        replyList.append([reply_idx, writer, date, content, cafeURL])
+                        replyList.append([reply_idx, writer, date, content, is_reply, cafeURL])
                         reply_idx += 1
 
                 if len(comment_json) < 100:
@@ -316,7 +349,7 @@ class NaverCafeCrawler:
         ))
 
         makeCSV(self.DBPath, self.articleDB, navercafe_article_column)
-        if self.option == 2:
+        if self.option == 1:
             makeCSV(self.DBPath, self.replyDB, navercafe_reply_column)
 
         for dayCount in range(self.date_range + 1):
@@ -356,10 +389,10 @@ class NaverCafeCrawler:
                     self.status['articleCnt'] += 1
                     article_day = articleData[5]
 
-                    if self.option == 1:
+                    if self.option == 2:
                         addToCSV(self.DBPath, self.articleDB, [articleData], navercafe_article_column)
 
-                    elif self.option == 2:
+                    elif self.option == 1:
                         try:
                             cmtData = self.collectCmt(cafeUrl, cafeID)
 
@@ -392,3 +425,11 @@ class NaverCafeCrawler:
             )
 
             self.currentDate += self.deltaD
+
+
+def tester(name='최우철', startDate=str(20260301), endDate=str(20260305), keyword='"경찰대"', option=1, speed=1):
+    NaverCafeCrawler_obj = NaverCafeCrawler(name, keyword, startDate, endDate, option, speed)
+    NaverCafeCrawler_obj.main()
+
+if __name__ == "__main__":
+    tester()
