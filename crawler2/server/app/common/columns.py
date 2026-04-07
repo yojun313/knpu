@@ -12,14 +12,14 @@ navernews_4_reply_column = ["Reply Num", "Reply Writer", "Reply Date", "Reply Te
 
 #naverblog
 naverblog_article_column = ["Article ID", "Article URL", "Article Text", "Article Date", "Article ReplyCnt"]
-naverblog_reply_column = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Rereply Count", "Reply Like",
+naverblog_reply_column = ["Reply Num", "Reply Writer", "Reply Date", "Reply Text", "Reply Level", "Rereply Count", "Reply Like",
                 "Reply Bad", "Reply LikeRatio", 'Reply Sentiment', 'Article URL', 'Reply ID', 'Article Day']
 
 #navercafe
 navercafe_article_column = ["NaverCafe Name", "NaverCafe MemberCount", "Article Writer", "Article Title",
                             "Article Text", "Article Date", "Article ReadCount", "Article ReplyCount", "Article URL"]
 navercafe_reply_column = ["Reply Num", "Reply Writer", "Reply Date",
-                          'Reply Text', 'Article URL', 'Article Day']
+                          'Reply Text', 'Is Reply', 'Article URL', 'Article Day']
 
 #youtube
 youtube_article_column = ['YouTube Channel', 'Article URL', 'Article Title', 'Article Text',
