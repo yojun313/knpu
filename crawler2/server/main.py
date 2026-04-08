@@ -14,6 +14,7 @@ if CRAWLER_APP_PATH not in sys.path:
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.auth.middleware import AuthMiddleware
 from app.config import MODE
 import gc
@@ -96,6 +97,11 @@ async def on_startup():
     asyncio.create_task(periodic_gc(60))
     console.print("[bold green]Crawler Execution Server started on port 3005[/bold green]")
 
+
+# ── 정적 파일 ──────────────────────────────────────────────────────
+import os as _os
+_static_path = _os.path.join(_os.path.dirname(__file__), "app", "static")
+fastapi_app.mount("/static", StaticFiles(directory=_static_path), name="static")
 
 # ── 라우터 등록 ──────────────────────────────────────────────────────
 from app.routes import api_router

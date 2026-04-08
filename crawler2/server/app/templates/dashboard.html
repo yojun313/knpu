@@ -3,149 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crawler Dashboard</title>
+    <title>PAI Lab Crawler Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #f6f7f4;
+            --navy:    #0B1226;
+            --blue:    #416BBF;
+            --deep:    #2D4473;
+            --sky:     #05AFF2;
+            --mist:    #9AC7D9;
+
+            --bg:      #f0f4f8;
             --surface: #ffffff;
-            --ink: #202124;
-            --muted: #5f6368;
-            --line: #d3d6cf;
-            --brand: #0f766e;
-            --brand-soft: #d7f2ed;
-            --danger: #b42318;
+            --ink:     #0B1226;
+            --muted:   #4a5a72;
+            --line:    #c8d6e5;
+
+            --ok:       #166534;
+            --ok-soft:  #dcfce7;
+            --danger:   #b42318;
             --danger-soft: #fde4e2;
-            --warning: #9a3412;
+            --warning:  #9a3412;
             --warning-soft: #ffedd5;
-            --ok: #166534;
-            --ok-soft: #dcfce7;
-            --queued: #1d4ed8;
             --queued-soft: #dbeafe;
-            --shadow: 0 10px 22px rgba(22, 24, 35, 0.08);
+
+            --shadow:  0 8px 24px rgba(11, 18, 38, 0.10);
+            --shadow-sm: 0 2px 8px rgba(11, 18, 38, 0.07);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background:
-                radial-gradient(circle at 8% 2%, #f4fbf9 0, #f6f7f4 30%),
-                linear-gradient(145deg, #f8f8f4, #f1f4ef);
+            font-family: 'Nanum Gothic', 'Apple SD Gothic Neo', sans-serif;
+            font-weight: 700;
+            background: var(--bg);
             color: var(--ink);
             min-height: 100vh;
         }
 
+        /* ── Header ──────────────────────────────────── */
         .header {
-            background: linear-gradient(110deg, #121926 0%, #213248 55%, #0f766e 100%);
-            color: white;
-            padding: 18px 26px;
+            background: linear-gradient(110deg, var(--navy) 0%, var(--deep) 60%, var(--blue) 100%);
+            padding: 0 28px;
+            height: 58px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            box-shadow: var(--shadow);
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: 0 2px 12px rgba(11,18,38,0.30);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .header h1 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: 0.3px;
+        .header-logo {
+            height: 34px;
+            object-fit: contain;
+            display: block;
         }
 
-        .header .status-dot {
-            width: 8px; height: 8px;
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .conn-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--mist);
+            white-space: nowrap;
+        }
+        .status-dot {
+            width: 7px; height: 7px;
             border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
+            flex-shrink: 0;
         }
-        .header .connected { background: #4ade80; }
-        .header .disconnected { background: #ef4444; }
-        .header .conn-text { font-size: 13px; color: #d5deea; }
+        .connected    { background: #4ade80; box-shadow: 0 0 6px #4ade8088; }
+        .disconnected { background: #ef4444; }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.22);
+            color: var(--mist);
+            padding: 5px 13px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: inherit;
+            white-space: nowrap;
+            transition: border-color 150ms, color 150ms;
+        }
+        .logout-btn:hover { border-color: #fff; color: #fff; }
+
+        /* ── Layout ───────────────────────────────────── */
         .container {
             max-width: 1240px;
             margin: 0 auto;
-            padding: 24px;
+            padding: 22px 20px;
             display: grid;
             gap: 16px;
         }
 
+        /* ── Panel ────────────────────────────────────── */
         .panel {
             background: var(--surface);
             border-radius: 14px;
             border: 1px solid var(--line);
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-sm);
             overflow: hidden;
         }
 
         .panel-head {
-            padding: 14px 18px;
+            padding: 12px 18px;
             border-bottom: 1px solid var(--line);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: linear-gradient(180deg, #fcfdfa, #f7f8f5);
+            background: linear-gradient(180deg, #f8fafd 0%, #f0f5fb 100%);
         }
 
         .panel-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 15px;
-            font-weight: 700;
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--deep);
             letter-spacing: 0.2px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .panel-count {
-            font-size: 12px;
-            color: var(--muted);
-            background: #ebeee8;
-            padding: 2px 8px;
+            font-size: 11px;
+            color: var(--blue);
+            background: #e8eef8;
+            padding: 2px 9px;
             border-radius: 999px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .panel-body { padding: 14px; }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
+        /* ── Control Form ─────────────────────────────── */
+        .requester-bar {
+            display: flex;
+            align-items: center;
             gap: 10px;
-            align-items: end;
+            padding: 8px 14px;
+            background: linear-gradient(90deg, #eef3fc, #f4f8ff);
+            border: 1px solid #c8d6e5;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .r-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--blue);
+            font-weight: 700;
+        }
+        .r-sep { color: var(--line); }
+        .r-val {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--navy);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .form-row + .form-row { margin-top: 10px; }
+
+        .f-crawler  { width: 148px; flex-shrink: 0; }
+        .f-option   { width: 172px; flex-shrink: 0; }
+        .f-priority { width: 82px;  flex-shrink: 0; }
+
+        .date-pair {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .date-pair .field input { width: 116px; }
+        .date-sep {
+            padding-bottom: 10px;
+            color: var(--blue);
+            font-weight: 800;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+            flex-shrink: 0;
+            align-items: flex-end;
         }
 
         .field label {
             display: block;
-            font-size: 11px;
-            letter-spacing: 0.4px;
+            font-size: 10px;
+            letter-spacing: 0.5px;
             text-transform: uppercase;
-            color: var(--muted);
+            color: var(--blue);
             margin-bottom: 4px;
             font-weight: 700;
         }
 
         .field input, .field select {
             width: 100%;
-            border: 1px solid #c8cdc3;
+            border: 1px solid var(--line);
             border-radius: 8px;
             padding: 9px 10px;
-            font-size: 14px;
+            font-size: 13px;
             background: #fff;
-            color: #162124;
+            color: var(--ink);
+            font-family: inherit;
+            font-weight: 700;
+            transition: border-color 150ms, box-shadow 150ms;
         }
-
         .field input:focus, .field select:focus {
             outline: none;
-            border-color: var(--brand);
-            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
-        }
-
-        .span-2 { grid-column: span 2; }
-        .actions {
-            display: flex;
-            gap: 8px;
+            border-color: var(--sky);
+            box-shadow: 0 0 0 3px rgba(5, 175, 242, 0.15);
         }
 
         .status-box {
@@ -156,55 +242,233 @@
             display: none;
             border: 1px solid transparent;
         }
-        .status-ok { display: block; background: var(--ok-soft); color: var(--ok); border-color: #86efac; }
-        .status-err { display: block; background: var(--danger-soft); color: var(--danger); border-color: #fda29b; }
+        .status-ok  { display: block; background: var(--ok-soft);      color: var(--ok);      border-color: #86efac; }
+        .status-err { display: block; background: var(--danger-soft);   color: var(--danger);  border-color: #fda29b; }
 
-        .cards {
-            display: grid;
-            gap: 10px;
+        /* ── Keyword section ─────────────────────────── */
+        .keyword-section {
+            flex: 1;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
         }
 
+        .keyword-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .keyword-row > .field { flex: 1; margin: 0; }
+
+        .op-btns {
+            display: none;
+            align-items: flex-end;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .op-btns.visible { display: flex; }
+
+        .op-btn {
+            height: 36px;
+            padding: 0 10px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: #f8fafd;
+            color: var(--deep);
+            font-size: 13px;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 150ms, border-color 150ms;
+            white-space: nowrap;
+        }
+        .op-btn:hover { background: #e8eef8; border-color: var(--blue); }
+
+        /* ── Search op rows ──────────────────────────── */
+        #search-ops {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .search-op-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .search-op-tag {
+            font-size: 12px;
+            font-weight: 800;
+            padding: 0 8px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            border-radius: 6px;
+            background: #e8eef8;
+            color: var(--deep);
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 36px;
+            justify-content: center;
+        }
+
+        .search-op-input {
+            flex: 1;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            padding: 8px 10px;
+            font-size: 13px;
+            font-family: inherit;
+            font-weight: 700;
+            color: var(--ink);
+            background: #fff;
+            transition: border-color 150ms, box-shadow 150ms;
+        }
+        .search-op-input:focus {
+            outline: none;
+            border-color: var(--sky);
+            box-shadow: 0 0 0 3px rgba(5,175,242,0.15);
+        }
+
+        .search-op-del {
+            height: 34px;
+            padding: 0 10px;
+            border: 1px solid #fda29b;
+            border-radius: 6px;
+            background: var(--danger-soft);
+            color: var(--danger);
+            font-size: 13px;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: filter 150ms;
+        }
+        .search-op-del:hover { filter: brightness(0.93); }
+
+        /* ── Cards ────────────────────────────────────── */
+        .cards { display: grid; gap: 10px; }
+
         .card {
-            background: white;
+            background: #fff;
             border-radius: 12px;
             padding: 14px 16px;
-            border: 1px solid #dde2d7;
+            border: 1px solid var(--line);
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+            user-select: none;
+        }
+        .card:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+            border-color: var(--mist);
+        }
+
+        .card-main {
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 10px;
-            transition: transform 180ms ease, box-shadow 180ms ease;
         }
-        .card:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 16px rgba(20, 24, 31, 0.08);
-        }
-        .card-left { flex: 1; }
-        .card-right { display: flex; align-items: center; gap: 12px; }
+
+        .card-left  { flex: 1; min-width: 0; }
+        .card-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
         .job-keyword {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 18px;
-            font-weight: 700;
-            letter-spacing: 0.2px;
-        }
-        .job-meta { font-size: 13px; color: #6d6f72; margin-top: 4px; }
-        .job-meta span { margin-right: 12px; }
-
-        .progress-bar {
-            width: 200px; height: 7px;
-            background: #e6ebe4; border-radius: 999px;
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--navy);
             overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
+
+        .job-meta {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px 10px;
+        }
+        .job-meta span { white-space: nowrap; }
+
+        .progress-wrap { display: flex; align-items: center; gap: 8px; }
+        .progress-bar  { width: 150px; height: 6px; background: #e2ecf5; border-radius: 999px; overflow: hidden; flex-shrink: 0; }
         .progress-bar .fill {
-            height: 100%; background: linear-gradient(90deg, #0f766e, #0ea5a8);
-            border-radius: 999px; transition: width 0.5s;
+            height: 100%;
+            background: linear-gradient(90deg, var(--blue), var(--sky));
+            border-radius: 999px;
+            transition: width 0.5s;
         }
-        .progress-text { font-size: 13px; color: #444; min-width: 45px; text-align: right; font-weight: 700; }
+        .progress-text { font-size: 13px; color: var(--deep); min-width: 40px; text-align: right; font-weight: 800; }
 
-        .stats { font-size: 12px; color: #757a80; margin-top: 6px; }
-        .stats span { margin-right: 10px; }
+        .stats { font-size: 12px; color: var(--muted); margin-top: 5px; display: flex; flex-wrap: wrap; gap: 2px 10px; }
 
+        /* ── Card detail ──────────────────────────────── */
+        .card-detail {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 280ms ease, padding-top 280ms ease, margin-top 280ms ease, border-top-color 280ms ease;
+            border-top: 1px solid transparent;
+            margin-top: 0;
+            padding-top: 0;
+        }
+        .card-detail.open {
+            max-height: 400px;
+            border-top-color: var(--line);
+            margin-top: 12px;
+            padding-top: 12px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px 16px;
+        }
+
+        .detail-label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--blue);
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .detail-val {
+            display: block;
+            font-size: 13px;
+            color: var(--ink);
+            word-break: break-all;
+            font-weight: 700;
+        }
+
+        .detail-val.mono {
+            font-size: 11px;
+            letter-spacing: 0.3px;
+            color: var(--muted);
+        }
+
+        .detail-error-msg {
+            margin-top: 10px;
+            padding: 8px 10px;
+            background: var(--danger-soft);
+            color: var(--danger);
+            border-radius: 6px;
+            font-size: 12px;
+            border: 1px solid #fda29b;
+            word-break: break-word;
+        }
+
+        /* ── Buttons ──────────────────────────────────── */
         .btn {
             padding: 8px 14px;
             border: none;
@@ -212,104 +476,107 @@
             font-size: 13px;
             cursor: pointer;
             font-weight: 700;
+            font-family: inherit;
             transition: transform 150ms ease, filter 150ms ease;
+            white-space: nowrap;
         }
-        .btn:hover { filter: brightness(0.97); transform: translateY(-1px); }
+        .btn:hover { filter: brightness(0.93); transform: translateY(-1px); }
 
         .btn-primary {
-            background: linear-gradient(125deg, #0f766e, #0e9f9f);
+            background: linear-gradient(125deg, var(--deep), var(--blue));
             color: #fff;
+            box-shadow: 0 2px 8px rgba(65,107,191,0.30);
         }
         .btn-ghost {
-            border: 1px solid #c4cbc0;
+            border: 1px solid var(--line);
             background: #fff;
-            color: #303236;
+            color: var(--deep);
         }
-        .btn-stop { background: var(--danger-soft); color: var(--danger); }
-        .btn-delete { background: #f0f2ef; color: #4d5560; }
+        .btn-stop   { background: var(--danger-soft); color: var(--danger); }
+        .btn-delete { background: #edf1f7; color: var(--muted); }
 
-        .state-badge {
-            font-size: 11px; padding: 3px 8px;
-            border-radius: 4px; font-weight: 500;
-        }
-        .state-completed { background: var(--ok-soft); color: var(--ok); }
-        .state-error { background: var(--danger-soft); color: var(--danger); }
-        .state-stopped { background: var(--warning-soft); color: var(--warning); }
-        .state-queued { background: var(--queued-soft); color: var(--queued); }
+        /* ── Badges ───────────────────────────────────── */
+        .state-badge { font-size: 11px; padding: 3px 9px; border-radius: 4px; font-weight: 700; }
+        .state-completed { background: var(--ok-soft);      color: var(--ok); }
+        .state-error     { background: var(--danger-soft);   color: var(--danger); }
+        .state-stopped   { background: var(--warning-soft);  color: var(--warning); }
+        .state-queued    { background: var(--queued-soft);   color: var(--deep); }
 
+        /* ── Empty ────────────────────────────────────── */
         .empty {
-            color: #959ba2;
-            font-size: 14px;
+            color: var(--muted);
+            font-size: 13px;
             padding: 20px;
             text-align: center;
-            border: 1px dashed #d6dbd1;
+            border: 1px dashed var(--line);
             border-radius: 10px;
-            background: #fafbf8;
+            background: #f8fafd;
         }
 
-        .logout-btn {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.25);
-            color: #e4ebf7;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 700;
+        /* ── Responsive ───────────────────────────────── */
+        @media (max-width: 960px) {
+            .f-crawler { width: 130px; }
+            .f-option  { width: 150px; }
+            .progress-bar { width: 110px; }
         }
-        .logout-btn:hover { border-color: #fff; color: #fff; }
 
-        @media (max-width: 1024px) {
-            .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .span-2 { grid-column: span 2; }
-            .card { flex-direction: column; align-items: flex-start; }
+        @media (max-width: 640px) {
+            .container { padding: 14px 12px; }
+            .header { padding: 0 14px; height: 52px; }
+            .header-logo { height: 28px; }
+            .f-crawler  { flex: 1; width: auto; }
+            .f-option   { flex: 1; width: auto; }
+            .keyword-section { flex-basis: 100%; }
+            .date-pair  { flex: 1 0 100%; }
+            .date-pair .field { flex: 1; }
+            .date-pair .field input { width: 100%; }
+            .f-priority { flex: 1; width: auto; }
+            .form-actions { margin-left: 0; }
+            .card-main { flex-wrap: wrap; }
             .card-right { width: 100%; justify-content: flex-end; }
-            .progress-bar { width: 100%; }
+            .progress-wrap { flex: 1; }
+            .progress-bar { flex: 1; width: auto; }
         }
 
-        @media (max-width: 600px) {
-            .container { padding: 14px; }
-            .header { padding: 14px; }
-            .header h1 { font-size: 20px; }
-            .form-grid { grid-template-columns: 1fr; }
-            .span-2 { grid-column: span 1; }
-            .actions { justify-content: flex-end; }
+        @media (max-width: 420px) {
+            .f-crawler, .f-option { flex-basis: 100%; }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div>
-            <h1>Crawler Dashboard</h1>
-        </div>
-        <div style="display:flex; align-items:center; gap:16px;">
-            <span class="conn-text">
-                <span class="status-dot disconnected" id="conn-dot"></span>
-                <span id="conn-text">연결 중...</span>
-            </span>
-            <button class="logout-btn" onclick="logout()">로그아웃</button>
-        </div>
-    </div>
 
-    <div class="container">
-        <div class="panel">
-            <div class="panel-head">
-                <div class="panel-title">Crawler Control</div>
-                <div class="panel-count">새 작업 추가</div>
-            </div>
-            <div class="panel-body">
-                <form id="create-form" class="form-grid" onsubmit="submitJob(event)">
-                    <div class="field">
-                        <label>요청자</label>
-                        <input type="text" id="f-name" readonly style="background:#f0f2ef; cursor:default;">
-                    </div>
-                    <div class="field span-2">
-                        <label>키워드</label>
-                        <input type="text" id="f-keyword" placeholder="예: 반도체 산업" required>
-                    </div>
-                    <div class="field">
+<div class="header">
+    <img src="/static/logo_white.png" alt="PAI Lab" class="header-logo">
+    <div class="header-right">
+        <span class="conn-badge">
+            <span class="status-dot disconnected" id="conn-dot"></span>
+            <span id="conn-text">연결 중...</span>
+        </span>
+        <button class="logout-btn" onclick="logout()">로그아웃</button>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- ── Control Panel ── -->
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Crawler Control</div>
+            <div class="panel-count">새 작업 추가</div>
+        </div>
+        <div class="panel-body">
+            <form id="create-form" onsubmit="submitJob(event)">
+                <div class="requester-bar">
+                    <span class="r-label">요청자</span>
+                    <span class="r-sep">|</span>
+                    <span class="r-val" id="f-name"></span>
+                </div>
+
+                <!-- Row 1: 크롤러 + 옵션 -->
+                <div class="form-row">
+                    <div class="field f-crawler">
                         <label>크롤러</label>
-                        <select id="f-object" required>
+                        <select id="f-object" required onchange="updateOptions()">
                             <option value="1">Naver News</option>
                             <option value="2">Naver Blog</option>
                             <option value="3">Naver Cafe</option>
@@ -318,303 +585,425 @@
                             <option value="6">ChinaSina</option>
                         </select>
                     </div>
-                    <div class="field">
+                    <div class="field f-option">
                         <label>옵션</label>
-                        <select id="f-option" required>
-                            <option value="1">기사+댓글</option>
-                            <option value="2">기사+댓글/대댓글</option>
-                            <option value="3">기사만</option>
-                            <option value="4">기사+댓글(추가정보)</option>
-                        </select>
+                        <select id="f-option" required></select>
                     </div>
-                    <div class="field">
-                        <label>시작일 (YYYYMMDD)</label>
-                        <input type="text" id="f-start" placeholder="20250101" maxlength="8" pattern="[0-9]{8}" inputmode="numeric" required>
+                </div>
+
+                <!-- Row 2: 키워드 + 상세검색 연산자 버튼 -->
+                <div class="form-row">
+                    <div class="keyword-section">
+                        <div class="keyword-row">
+                            <div class="field">
+                                <label>키워드</label>
+                                <input type="text" id="f-keyword" placeholder="예: 반도체 산업">
+                            </div>
+                            <div class="op-btns" id="op-btns">
+                                <button type="button" class="op-btn" onclick="addSearchRow('quote')" title='정확히 일치 ("")'>&quot;&quot;</button>
+                                <button type="button" class="op-btn" onclick="addSearchRow('pipe')"  title='하나 이상 포함 (|)'>|</button>
+                                <button type="button" class="op-btn" onclick="addSearchRow('plus')"  title='반드시 포함 (+)'>+</button>
+                                <button type="button" class="op-btn" onclick="addSearchRow('minus')" title='제외 (−)'>−</button>
+                            </div>
+                        </div>
+                        <div id="search-ops"></div>
                     </div>
-                    <div class="field">
-                        <label>종료일 (YYYYMMDD)</label>
-                        <input type="text" id="f-end" placeholder="20251231" maxlength="8" pattern="[0-9]{8}" inputmode="numeric" required>
+                </div>
+
+                <!-- Row 3: 날짜 + 우선순위 + 제출 -->
+                <div class="form-row">
+                    <div class="date-pair">
+                        <div class="field">
+                            <label>시작일 (YYYYMMDD)</label>
+                            <input type="text" id="f-start" placeholder="20250101" maxlength="8" pattern="[0-9]{8}" inputmode="numeric" required>
+                        </div>
+                        <span class="date-sep">~</span>
+                        <div class="field">
+                            <label>종료일 (YYYYMMDD)</label>
+                            <input type="text" id="f-end" placeholder="20251231" maxlength="8" pattern="[0-9]{8}" inputmode="numeric" required>
+                        </div>
                     </div>
-                    <div class="field">
+                    <div class="field f-priority">
                         <label>우선순위</label>
                         <input type="number" id="f-priority" value="0" min="0" max="99" required>
                     </div>
-                    <div class="actions">
-                        <button type="button" class="btn btn-ghost" onclick="fillToday()">오늘 날짜</button>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-ghost" onclick="fillToday()">오늘</button>
                         <button type="submit" class="btn btn-primary">작업 추가</button>
                     </div>
-                </form>
-                <div id="submit-status" class="status-box"></div>
-            </div>
-        </div>
-
-        <div class="panel">
-            <div class="panel-head">
-                <div class="panel-title">Running Jobs</div>
-                <div class="panel-count" id="active-count">0</div>
-            </div>
-            <div class="panel-body cards" id="active-list"><div class="empty">실행 중인 크롤링 없음</div></div>
-        </div>
-
-        <div class="panel">
-            <div class="panel-head">
-                <div class="panel-title">Queued Jobs</div>
-                <div class="panel-count" id="queued-count">0</div>
-            </div>
-            <div class="panel-body cards" id="queued-list"><div class="empty">대기 중인 작업 없음</div></div>
-        </div>
-
-        <div class="panel">
-            <div class="panel-head">
-                <div class="panel-title">Recent Jobs</div>
-                <div class="panel-count" id="recent-count">0</div>
-            </div>
-            <div class="panel-body cards" id="recent-list"><div class="empty">최근 완료된 작업 없음</div></div>
+                </div>
+            </form>
+            <div id="submit-status" class="status-box"></div>
         </div>
     </div>
 
-    <script>
-        const CRAWL_OBJECTS = {1:"Naver News", 2:"Naver Blog", 3:"Naver Cafe", 4:"YouTube", 5:"ChinaDaily", 6:"ChinaSina"};
-        const OPTIONS = {1:"기사+댓글", 2:"기사+댓글/대댓글", 3:"기사만", 4:"기사+댓글(추가정보)"};
+    <!-- ── Running Jobs ── -->
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Running Jobs</div>
+            <div class="panel-count" id="active-count">0</div>
+        </div>
+        <div class="panel-body cards" id="active-list">
+            <div class="empty">실행 중인 크롤링 없음</div>
+        </div>
+    </div>
 
-        let ws;
-        let reconnectTimer;
+    <!-- ── Queued Jobs ── -->
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Queued Jobs</div>
+            <div class="panel-count" id="queued-count">0</div>
+        </div>
+        <div class="panel-body cards" id="queued-list">
+            <div class="empty">대기 중인 작업 없음</div>
+        </div>
+    </div>
 
-        function setStatus(message, isError=false) {
-            const el = document.getElementById('submit-status');
-            el.textContent = message;
-            el.className = isError ? 'status-box status-err' : 'status-box status-ok';
-            setTimeout(() => {
-                el.className = 'status-box';
-                el.textContent = '';
-            }, 3800);
+    <!-- ── Recent Jobs ── -->
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Recent Jobs</div>
+            <div class="panel-count" id="recent-count">0</div>
+        </div>
+        <div class="panel-body cards" id="recent-list">
+            <div class="empty">최근 완료된 작업 없음</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const CRAWL_OBJECTS = {
+        1:"Naver News", 2:"Naver Blog", 3:"Naver Cafe",
+        4:"YouTube", 5:"ChinaDaily", 6:"ChinaSina"
+    };
+
+    const CRAWLER_OPTIONS = {
+        1:[{v:1,t:"기사+댓글"},{v:2,t:"기사+댓글/대댓글"},{v:3,t:"기사만"},{v:4,t:"기사+댓글(추가정보)"}],
+        2:[{v:1,t:"본문+댓글"},{v:2,t:"본문만"}],
+        3:[{v:1,t:"본문+댓글"},{v:2,t:"본문만"}],
+        4:[{v:1,t:"영상정보+댓글(100개)"},{v:2,t:"영상정보+댓글(무제한)"}],
+        5:[{v:1,t:"기사만"}],
+        6:[{v:1,t:"기사만"},{v:2,t:"기사+댓글"}],
+    };
+
+    const NAVER_IDS = new Set([1, 2, 3]);
+
+    function getOptionLabel(obj, opt) {
+        const o = (CRAWLER_OPTIONS[obj]||[]).find(x => x.v === opt);
+        return o ? o.t : String(opt);
+    }
+
+    const jobCache    = {};
+    const expandedIds = new Set();
+    let ws, reconnectTimer;
+
+    function updateOptions() {
+        const obj  = Number(document.getElementById('f-object').value);
+        const sel  = document.getElementById('f-option');
+        const opts = CRAWLER_OPTIONS[obj] || [];
+        sel.innerHTML = opts.map(o => `<option value="${o.v}">${o.t}</option>`).join('');
+
+        const isNaver = NAVER_IDS.has(obj);
+        document.getElementById('op-btns').classList.toggle('visible', isNaver);
+        if (!isNaver) {
+            document.getElementById('search-ops').innerHTML = '';
         }
+    }
 
-        function fillToday() {
-            const d = new Date();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            const val = `${d.getFullYear()}${mm}${dd}`;
-            document.getElementById('f-start').value = val;
-            document.getElementById('f-end').value = val;
-        }
+    /* ── 상세검색 연산자 행 추가 ── */
+    const OP_META = {
+        quote: { tag: '""',  placeholder: '정확히 일치할 문장 (공백 허용)',      noSpace: false },
+        pipe:  { tag: '|',   placeholder: '하나 이상 포함할 단어 (공백 불가)',    noSpace: true  },
+        plus:  { tag: '+',   placeholder: '반드시 포함할 단어 (공백 불가)',       noSpace: true  },
+        minus: { tag: '−',   placeholder: '제외할 단어 (공백 불가)',             noSpace: true  },
+    };
 
-        async function submitJob(e) {
-            e.preventDefault();
+    function addSearchRow(type) {
+        const meta = OP_META[type];
+        const container = document.getElementById('search-ops');
+        const row = document.createElement('div');
+        row.className = 'search-op-row';
+        row.dataset.opType = type;
 
-            const body = {
-                name: document.getElementById('f-name').value.trim(),
-                keyword: document.getElementById('f-keyword').value.trim(),
-                crawl_object: Number(document.getElementById('f-object').value),
-                option_select: Number(document.getElementById('f-option').value),
-                start_day: document.getElementById('f-start').value.trim(),
-                end_day: document.getElementById('f-end').value.trim(),
-                priority: Number(document.getElementById('f-priority').value || 0),
-            };
+        row.innerHTML = `
+            <span class="search-op-tag">${meta.tag}</span>
+            <input class="search-op-input" type="text" placeholder="${meta.placeholder}">
+            <button type="button" class="search-op-del" onclick="this.closest('.search-op-row').remove()">✕</button>
+        `;
 
-            if (!body.name || !body.keyword || !body.start_day || !body.end_day) {
-                setStatus('필수 필드를 모두 입력해 주세요.', true);
-                return;
-            }
-
-            if (body.start_day > body.end_day) {
-                setStatus('시작일은 종료일보다 늦을 수 없습니다.', true);
-                return;
-            }
-
-            const res = await fetch('/api/jobs/submit', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(body),
+        if (meta.noSpace) {
+            row.querySelector('.search-op-input').addEventListener('input', function () {
+                const pos = this.selectionStart - (this.value.length - this.value.replace(/\s/g, '').length);
+                this.value = this.value.replace(/\s/g, '');
+                try { this.setSelectionRange(pos, pos); } catch (_) {}
             });
-
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                setStatus(data.detail || '작업 추가에 실패했습니다.', true);
-                return;
-            }
-
-            setStatus(`작업이 추가되었습니다: ${data.job_id}`);
-            document.getElementById('f-keyword').value = '';
-            document.getElementById('f-priority').value = '0';
-            fillToday();
         }
 
-        function connectWS() {
-            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(`${protocol}//${location.host}/api/ws/dashboard`);
+        container.appendChild(row);
+        row.querySelector('.search-op-input').focus();
+    }
 
-            ws.onopen = () => {
-                document.getElementById('conn-dot').className = 'status-dot connected';
-                document.getElementById('conn-text').textContent = '실시간 연결';
-                if (reconnectTimer) clearInterval(reconnectTimer);
-            };
+    /* ── 키워드 조합 ── */
+    function buildKeyword() {
+        const base  = document.getElementById('f-keyword').value.trim();
+        const parts = base ? [base] : [];
 
-            ws.onmessage = (e) => {
-                const data = JSON.parse(e.data);
-                render(data);
-            };
+        document.querySelectorAll('#search-ops .search-op-row').forEach(row => {
+            const type = row.dataset.opType;
+            const val  = row.querySelector('.search-op-input').value.trim();
+            if (!val) return;
+            if      (type === 'quote') parts.push(`"${val}"`);
+            else if (type === 'plus')  parts.push(`+${val}`);
+            else if (type === 'minus') parts.push(`-${val}`);
+            else if (type === 'pipe')  parts.push(`| ${val}`);
+        });
 
-            ws.onclose = () => {
-                document.getElementById('conn-dot').className = 'status-dot disconnected';
-                document.getElementById('conn-text').textContent = '연결 끊김';
-                reconnectTimer = setTimeout(connectWS, 3000);
-            };
+        return parts.join(' ');
+    }
 
-            ws.onerror = () => ws.close();
+    function fillToday() {
+        const d  = new Date();
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const dd = String(d.getDate()).padStart(2,'0');
+        const v  = `${d.getFullYear()}${mm}${dd}`;
+        document.getElementById('f-start').value = v;
+        document.getElementById('f-end').value   = v;
+    }
+
+    function setStatus(msg, isErr=false) {
+        const el = document.getElementById('submit-status');
+        el.textContent = msg;
+        el.className   = isErr ? 'status-box status-err' : 'status-box status-ok';
+        setTimeout(() => { el.className='status-box'; el.textContent=''; }, 3800);
+    }
+
+    async function submitJob(e) {
+        e.preventDefault();
+        const keyword = buildKeyword();
+        if (!keyword) {
+            setStatus('키워드를 입력해 주세요.', true); return;
         }
-
-        function render(data) {
-            renderActive(data.active || []);
-            renderQueued(data.queued || []);
-            renderRecent(data.recent || []);
+        const body = {
+            name:          document.getElementById('f-name').textContent.trim(),
+            keyword,
+            crawl_object:  Number(document.getElementById('f-object').value),
+            option_select: Number(document.getElementById('f-option').value),
+            start_day:     document.getElementById('f-start').value.trim(),
+            end_day:       document.getElementById('f-end').value.trim(),
+            priority:      Number(document.getElementById('f-priority').value || 0),
+        };
+        if (!body.name || !body.start_day || !body.end_day) {
+            setStatus('필수 필드를 모두 입력해 주세요.', true); return;
         }
+        if (body.start_day > body.end_day) {
+            setStatus('시작일은 종료일보다 늦을 수 없습니다.', true); return;
+        }
+        const res  = await fetch('/api/jobs/submit', {
+            method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+        });
+        const data = await res.json().catch(()=>({}));
+        if (!res.ok) { setStatus(data.detail||'작업 추가에 실패했습니다.', true); return; }
+        setStatus(`작업이 추가되었습니다: ${data.job_id}`);
+        document.getElementById('f-keyword').value  = '';
+        document.getElementById('f-priority').value = '0';
+        document.getElementById('search-ops').innerHTML = '';
+        fillToday();
+    }
 
-        function renderActive(jobs) {
-            const el = document.getElementById('active-list');
-            document.getElementById('active-count').textContent = jobs.length;
+    function connectWS() {
+        const proto = location.protocol==='https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(`${proto}//${location.host}/api/ws/dashboard`);
+        ws.onopen = () => {
+            document.getElementById('conn-dot').className  = 'status-dot connected';
+            document.getElementById('conn-text').textContent = '실시간 연결';
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+        };
+        ws.onmessage = e => render(JSON.parse(e.data));
+        ws.onclose   = () => {
+            document.getElementById('conn-dot').className  = 'status-dot disconnected';
+            document.getElementById('conn-text').textContent = '연결 끊김';
+            reconnectTimer = setTimeout(connectWS, 3000);
+        };
+        ws.onerror = () => ws.close();
+    }
 
-            if (!jobs.length) {
-                el.innerHTML = '<div class="empty">실행 중인 크롤링 없음</div>';
-                return;
-            }
+    function render(data) {
+        [...(data.active||[]),...(data.queued||[]),...(data.recent||[])].forEach(j => { jobCache[j.job_id]=j; });
+        renderActive(data.active  || []);
+        renderQueued(data.queued  || []);
+        renderRecent(data.recent  || []);
+    }
 
-            el.innerHTML = jobs.map(job => {
-                const cs = job.crawler_status || {};
-                const pct = cs.percentage || '0';
-                const date = formatDate(job.start_day) + ' ~ ' + formatDate(job.end_day);
-                return `
-                <div class="card">
+    function renderActive(jobs) {
+        const el = document.getElementById('active-list');
+        document.getElementById('active-count').textContent = jobs.length;
+        if (!jobs.length) { el.innerHTML='<div class="empty">실행 중인 크롤링 없음</div>'; return; }
+        el.innerHTML = jobs.map(job => {
+            const cs  = job.crawler_status || {};
+            const pct = parseFloat(cs.percentage) || 0;
+            const exp = expandedIds.has(job.job_id);
+            return `
+            <div class="card" onclick="toggleDetail(event,'${job.job_id}')">
+                <div class="card-main">
                     <div class="card-left">
                         <div class="job-keyword">${esc(job.keyword)}</div>
                         <div class="job-meta">
-                            <span>${CRAWL_OBJECTS[job.crawl_object] || ''}</span>
-                            <span>${OPTIONS[job.option_select] || ''}</span>
-                            <span>${date}</span>
+                            <span>${esc(CRAWL_OBJECTS[job.crawl_object]||'')}</span>
+                            <span>${esc(getOptionLabel(job.crawl_object,job.option_select))}</span>
+                            <span>${formatDate(job.start_day)} ~ ${formatDate(job.end_day)}</span>
                             <span>${esc(job.name)}</span>
                         </div>
                         <div class="stats">
-                            <span>수집일: ${cs.currentdate || '-'}</span>
-                            <span>URL: ${cs.urlCnt || 0}</span>
-                            <span>기사: ${cs.articleCnt || 0}</span>
-                            <span>댓글: ${cs.commentCnt || 0}</span>
-                            <span>대댓글: ${cs.replyCnt || 0}</span>
+                            <span>수집일: ${cs.currentdate||'-'}</span>
+                            <span>URL ${cs.urlCnt||0}</span>
+                            <span>기사 ${cs.articleCnt||0}</span>
+                            <span>댓글 ${cs.commentCnt||0}</span>
+                            <span>대댓글 ${cs.replyCnt||0}</span>
                         </div>
                     </div>
                     <div class="card-right">
-                        <div>
+                        <div class="progress-wrap">
                             <div class="progress-bar"><div class="fill" style="width:${pct}%"></div></div>
+                            <div class="progress-text">${pct}%</div>
                         </div>
-                        <div class="progress-text">${pct}%</div>
-                        <button class="btn btn-stop" onclick="stopJob('${job.job_id}')">중단</button>
+                        <button class="btn btn-stop" onclick="event.stopPropagation();stopJob('${job.job_id}')">중단</button>
                     </div>
-                </div>`;
-            }).join('');
-        }
+                </div>
+                <div class="card-detail${exp?' open':''}" id="detail-${job.job_id}">${exp?renderDetail(job):''}</div>
+            </div>`;
+        }).join('');
+    }
 
-        function renderQueued(jobs) {
-            const el = document.getElementById('queued-list');
-            document.getElementById('queued-count').textContent = jobs.length;
-
-            if (!jobs.length) {
-                el.innerHTML = '<div class="empty">대기 중인 작업 없음</div>';
-                return;
-            }
-
-            el.innerHTML = jobs.map(job => {
-                const date = formatDate(job.start_day) + ' ~ ' + formatDate(job.end_day);
-                return `
-                <div class="card">
+    function renderQueued(jobs) {
+        const el = document.getElementById('queued-list');
+        document.getElementById('queued-count').textContent = jobs.length;
+        if (!jobs.length) { el.innerHTML='<div class="empty">대기 중인 작업 없음</div>'; return; }
+        el.innerHTML = jobs.map((job,idx) => {
+            const exp = expandedIds.has(job.job_id);
+            return `
+            <div class="card" onclick="toggleDetail(event,'${job.job_id}')">
+                <div class="card-main">
                     <div class="card-left">
                         <div class="job-keyword">${esc(job.keyword)}</div>
                         <div class="job-meta">
-                            <span>${CRAWL_OBJECTS[job.crawl_object] || ''}</span>
-                            <span>${OPTIONS[job.option_select] || ''}</span>
-                            <span>${date}</span>
+                            <span>${esc(CRAWL_OBJECTS[job.crawl_object]||'')}</span>
+                            <span>${esc(getOptionLabel(job.crawl_object,job.option_select))}</span>
+                            <span>${formatDate(job.start_day)} ~ ${formatDate(job.end_day)}</span>
                             <span>${esc(job.name)}</span>
-                            <span>우선순위: ${job.priority || 0}</span>
                         </div>
                     </div>
                     <div class="card-right">
-                        <span class="state-badge state-queued">대기</span>
-                        <button class="btn btn-delete" onclick="deleteJob('${job.job_id}')">삭제</button>
+                        <span class="state-badge state-queued">#${idx+1} 대기</span>
+                        <button class="btn btn-delete" onclick="event.stopPropagation();deleteJob('${job.job_id}')">삭제</button>
                     </div>
-                </div>`;
-            }).join('');
-        }
+                </div>
+                <div class="card-detail${exp?' open':''}" id="detail-${job.job_id}">${exp?renderDetail(job):''}</div>
+            </div>`;
+        }).join('');
+    }
 
-        function renderRecent(jobs) {
-            const el = document.getElementById('recent-list');
-            document.getElementById('recent-count').textContent = jobs.length;
-
-            if (!jobs.length) {
-                el.innerHTML = '<div class="empty">최근 완료된 작업 없음</div>';
-                return;
-            }
-
-            el.innerHTML = jobs.map(job => {
-                const stateClass = 'state-' + job.state;
-                const stateText = {completed:'완료', error:'에러', stopped:'중단'}[job.state] || job.state;
-                const date = formatDate(job.start_day) + ' ~ ' + formatDate(job.end_day);
-                const finishedAt = job.finished_at ? new Date(job.finished_at).toLocaleString('ko-KR') : '';
-                return `
-                <div class="card">
+    function renderRecent(jobs) {
+        const el = document.getElementById('recent-list');
+        document.getElementById('recent-count').textContent = jobs.length;
+        if (!jobs.length) { el.innerHTML='<div class="empty">최근 완료된 작업 없음</div>'; return; }
+        el.innerHTML = jobs.map(job => {
+            const stateText = {completed:'완료',error:'에러',stopped:'중단'}[job.state] || job.state;
+            const finishedAt = job.finished_at ? new Date(job.finished_at).toLocaleString('ko-KR') : '';
+            const exp = expandedIds.has(job.job_id);
+            return `
+            <div class="card" onclick="toggleDetail(event,'${job.job_id}')">
+                <div class="card-main">
                     <div class="card-left">
                         <div class="job-keyword">${esc(job.keyword)}</div>
                         <div class="job-meta">
-                            <span>${CRAWL_OBJECTS[job.crawl_object] || ''}</span>
-                            <span>${date}</span>
+                            <span>${esc(CRAWL_OBJECTS[job.crawl_object]||'')}</span>
+                            <span>${esc(getOptionLabel(job.crawl_object,job.option_select))}</span>
+                            <span>${formatDate(job.start_day)} ~ ${formatDate(job.end_day)}</span>
                             <span>${esc(job.name)}</span>
-                            ${job.error_message ? '<span style="color:#dc2626">' + esc(job.error_message) + '</span>' : ''}
                         </div>
                     </div>
                     <div class="card-right">
-                        <span style="font-size:12px;color:#888">${finishedAt}</span>
-                        <span class="state-badge ${stateClass}">${stateText}</span>
-                        <button class="btn btn-delete" onclick="deleteJob('${job.job_id}')">삭제</button>
+                        <span style="font-size:11px;color:var(--muted);white-space:nowrap">${finishedAt}</span>
+                        <span class="state-badge state-${job.state}">${stateText}</span>
+                        <button class="btn btn-delete" onclick="event.stopPropagation();deleteJob('${job.job_id}')">삭제</button>
                     </div>
-                </div>`;
-            }).join('');
+                </div>
+                <div class="card-detail${exp?' open':''}" id="detail-${job.job_id}">${exp?renderDetail(job):''}</div>
+            </div>`;
+        }).join('');
+    }
+
+    function renderDetail(job) {
+        const items = [
+            {label:'Job ID',   val:job.job_id, mono:true},
+            {label:'옵션',      val:getOptionLabel(job.crawl_object, job.option_select)},
+            {label:'우선순위',  val:String(job.priority??0)},
+        ];
+        if (job.started_at)  items.push({label:'시작',    val:new Date(job.started_at).toLocaleString('ko-KR')});
+        if (job.finished_at) items.push({label:'완료',    val:new Date(job.finished_at).toLocaleString('ko-KR')});
+        if (job.started_at && job.finished_at) {
+            const ms   = new Date(job.finished_at)-new Date(job.started_at);
+            const mins = Math.floor(ms/60000);
+            const secs = Math.floor((ms%60000)/1000);
+            items.push({label:'소요 시간', val:`${mins}분 ${secs}초`});
         }
+        let html = '<div class="detail-grid">'
+            + items.map(it=>`<div>
+                <span class="detail-label">${it.label}</span>
+                <span class="detail-val${it.mono?' mono':''}">${esc(String(it.val??'-'))}</span>
+            </div>`).join('')
+            + '</div>';
+        if (job.error_message) html += `<div class="detail-error-msg">${esc(job.error_message)}</div>`;
+        return html;
+    }
 
-        function formatDate(d) {
-            if (!d || d.length !== 8) return d || '';
-            return d.slice(0,4) + '.' + d.slice(4,6) + '.' + d.slice(6,8);
+    function toggleDetail(e, jobId) {
+        if (e.target.tagName==='BUTTON') return;
+        expandedIds.has(jobId) ? expandedIds.delete(jobId) : expandedIds.add(jobId);
+        const el = document.getElementById('detail-'+jobId);
+        if (!el) return;
+        if (expandedIds.has(jobId)) {
+            el.innerHTML = renderDetail(jobCache[jobId]||{});
+            el.classList.add('open');
+        } else {
+            el.classList.remove('open');
         }
+    }
 
-        function esc(s) {
-            if (!s) return '';
-            const div = document.createElement('div');
-            div.textContent = s;
-            return div.innerHTML;
-        }
+    async function stopJob(jobId) {
+        if (!confirm('크롤링을 중단하시겠습니까?')) return;
+        await fetch(`/api/jobs/${jobId}/stop`, {method:'POST'});
+    }
 
-        async function stopJob(jobId) {
-            if (!confirm('크롤링을 중단하시겠습니까?')) return;
-            await fetch(`/api/jobs/${jobId}/stop`, {method:'POST'});
-        }
+    async function deleteJob(jobId) {
+        if (!confirm('작업을 삭제하시겠습니까?')) return;
+        const res = await fetch(`/api/jobs/${jobId}`, {method:'DELETE'});
+        if (!res.ok) { const d=await res.json().catch(()=>({})); setStatus(d.detail||'삭제에 실패했습니다.', true); return; }
+        setStatus(`작업 ${jobId} 삭제 완료`);
+    }
 
-        async function deleteJob(jobId) {
-            if (!confirm('작업을 삭제하시겠습니까?')) return;
-            const res = await fetch(`/api/jobs/${jobId}`, {method:'DELETE'});
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                setStatus(data.detail || '작업 삭제에 실패했습니다.', true);
-                return;
-            }
-            setStatus(`작업 ${jobId} 삭제 완료`);
-        }
+    async function logout() {
+        await fetch('/auth/logout', {method:'POST'});
+        window.location.href = '/login';
+    }
 
-        async function logout() {
-            await fetch('/auth/logout', {method:'POST'});
-            window.location.href = '/login';
-        }
+    function formatDate(d) {
+        if (!d||d.length!==8) return d||'';
+        return d.slice(0,4)+'.'+d.slice(4,6)+'.'+d.slice(6,8);
+    }
 
-        // 로그인 사용자 이름 자동 입력
-        document.getElementById('f-name').value = '{{ username }}';
+    function esc(s) {
+        if (s==null) return '';
+        const div = document.createElement('div');
+        div.textContent = String(s);
+        return div.innerHTML;
+    }
 
-        fillToday();
-        connectWS();
-    </script>
+    document.getElementById('f-name').textContent = '{{ username }}';
+    updateOptions();
+    fillToday();
+    connectWS();
+</script>
 </body>
 </html>
