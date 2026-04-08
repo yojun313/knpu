@@ -62,10 +62,11 @@ def tokenization(data: pd.DataFrame, language='ko'):
         update_interval = 500
         if (index + 1) % update_interval == 0 or index + 1 == total_texts:
             progress_value = round((index + 1) / total_texts * 100, 2)
+            '''
             print(
                 f'\r{textColumn_name.split(" ")[0]} ({language}) Tokenization Progress: {progress_value}% | '
                 f'예상 남은 시간: {remaining_minutes}분 {remaining_seconds}초', end=''
             )
-
+            '''
     data[textColumn_name] = tokenized_data
     return data

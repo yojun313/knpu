@@ -47,8 +47,7 @@ if not creds or not creds.valid:
 
 drive_service = build('drive', 'v3', credentials=creds)
 """
-def SendMail(receiver, title, text):
-    
+def sendMail(receiver, title, text):
     msg = MIMEMultipart()
     msg['Subject'] = title
     msg['From'] = sender
@@ -70,7 +69,7 @@ def SendMail(receiver, title, text):
 object = GooglePackage('/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER_ASYNC')
 path = object.UploadFolder('/Users/yojunsmacbookprp/Documents/BIGMACLAB/CRAWLER_ASYNC/scrapdata/Naver_News_무고죄_20230101_20230101_0716_2008')
 print(path)
-object.SendMail('moonyojun@naver.com', 'test', 'path')
+object.sendMail('moonyojun@naver.com', 'test', 'path')
 '''
 
 def sendPushOver(msg, user_key):
