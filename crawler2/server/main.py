@@ -95,7 +95,7 @@ async def on_startup():
         console.print("[dim]이전 세션 잔여 작업 없음[/dim]")
 
     asyncio.create_task(periodic_gc(60))
-    console.print("[bold green]Crawler Execution Server started on port 3005[/bold green]")
+    console.print("[bold green]Crawler Execution Server started[/bold green]")
 
 
 # ── 정적 파일 ──────────────────────────────────────────────────────

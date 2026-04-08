@@ -43,3 +43,4 @@ kiwipiepy
 transformers
 yt-dlp
 FlagEmbedding
+jinja2
