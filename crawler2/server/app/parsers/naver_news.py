@@ -3,24 +3,26 @@ import json
 import re
 import warnings
 from datetime import datetime, timedelta, timezone
-import pandas as pd
 import urllib3
 from bs4 import BeautifulSoup
 from user_agent import generate_navigator
 import urllib.parse
 import random
+import logging
 from db import load_proxy_list, checkDB, get_userinfo
 from db.util import makeDBname 
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
 from common.naver_lib import parse_naver_query
-from common.storage import makeDB
+from common.storage import makeDB, updateCrawlStatus, initCrawlLog, appendCrawlLog
 from common.csv import makeCSV, addToCSV
 from common.columns import navernews_article_column, navernews_statistics_column, navernews_reply_column, navernews_rereply_column, navernews_4_reply_column
-from common.controller import StopOperator, FinalOperator
+from common.controller import stopOperator, finishOperator
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
+
+logger = logging.getLogger(__name__)
 
 class NaverNewsCrawler:
     
@@ -44,7 +46,6 @@ class NaverNewsCrawler:
         self.rereplyDB = self.DBname + '_rereply'
         
         self.startTime = time.time()
-        self.now = datetime.now()
         
         self.startDate_form = datetime.strptime(startDate, '%Y%m%d').date()
         self.endDate_form = datetime.strptime(endDate, '%Y%m%d').date()
@@ -52,11 +53,24 @@ class NaverNewsCrawler:
         self.currentDate = self.startDate_form
         self.date_range = (self.endDate_form - self.startDate_form).days + 1
         self.deltaD = timedelta(days=1)
-        self.running = True
 
         notification = get_userinfo(self.requester)
+        if not notification:
+            raise ValueError(f"사용자 정보를 찾을 수 없습니다: {self.requester}")
         self.Email = notification['Email']
         self.PushoverKey = notification['PushOver']
+        self.requesterUid = notification['userUid']
+        
+        self.running = True
+        self.DBuid = None
+        self.status = {
+            'percentage': '0',
+            'currentdate': self.currentDate.strftime('%Y-%m-%d'),
+            'urlCnt': 0,
+            'articleCnt': 0,
+            'commentCnt': 0,
+            'replyCnt': 0,
+        }
                     
         
     def collectUrl(self, keyword, startDate, endDate): 
@@ -81,7 +95,8 @@ class NaverNewsCrawler:
                         return json_data['url']
                     else:
                         return None
-                except:
+                except Exception as e:
+                    logger.info(f"Error occurred while extracting next URL: {e}")
                     return None
 
             query_dict = parse_naver_query(keyword)
@@ -90,8 +105,8 @@ class NaverNewsCrawler:
             params = {
                 "abt": "null",
                 "cluster_rank": str(random.choice([63, 64, 65])),
-                "de": f"{endDate_formed}",
-                "ds": f"{startDate_formed}",
+                "de": endDate_formed,
+                "ds": startDate_formed,
                 "eid": "",
                 "field": "0",
                 "force_original": random.choice(["", "1"]),
@@ -134,6 +149,8 @@ class NaverNewsCrawler:
             json_text = response.text
             
             while True:
+                if self.running == False: break
+                
                 pre_urlList = extract_newsurls(json_text)
                 if not pre_urlList:
                     time.sleep(SLEEP_TIME)
@@ -141,9 +158,10 @@ class NaverNewsCrawler:
                 for url in pre_urlList:
                     if url not in urlList and 'sid=106' not in url:
                         urlList.append(url)
+                        self.status['urlCnt'] += 1
 
                 nextUrl = extract_nexturl(json_text)
-                if nextUrl == None:
+                if nextUrl is None:
                     break
                 else:
                     time.sleep(SLEEP_TIME)
@@ -153,8 +171,10 @@ class NaverNewsCrawler:
                     json_text = response.text
 
             return urlList
-        except Exception:
-            pass
+        except Exception as e:
+            logger.info(f"Error occurred while collecting news URLs: {e}")
+            appendCrawlLog(self.DBuid, "error", f"URL 수집 실패 ({keyword}): {e}")
+            return []
 
     def collectArticle(self, newsURL):        
         try:
@@ -172,14 +192,17 @@ class NaverNewsCrawler:
                 article_date = date_obj.strftime("%Y-%m-%d")
 
                 articleData = [article_press, article_type, newsURL, article_title, news, article_date]
-            except:
+            except Exception as e:
+                logger.info(f"Error occurred while extracting article data: {e}")
                 articleData = []
 
             return articleData
 
-        except Exception:
-            pass
-    
+        except Exception as e:
+            logger.info(f"Error occurred while collecting article data: {e}")
+            appendCrawlLog(self.DBuid, "error", f"기사 수집 실패 ({newsURL}): {e}")
+            return []
+
     def collectCmt(self, newsURL, username=False):
         try:
             oid  = newsURL[39:42]
@@ -205,6 +228,8 @@ class NaverNewsCrawler:
             }
             
             while True:
+                
+                if self.running == False: break
                 
                 if page == 101:
                     break
@@ -242,15 +267,14 @@ class NaverNewsCrawler:
                 for comment_json in temp.get("result", {}).get("commentList", []):
                     parentCommentNo_list.append(comment_json["parentCommentNo"])
                 
-                df = pd.DataFrame(temp['result']['commentList'])
-
                 try:
-                    masked_user_ids  = list(df['maskedUserId'])
-                    mod_times        = list(df['modTime'])
-                    contents         = list(df['contents'])
-                    reply_counts     = list(df['replyCount'])
-                    sympathy_counts  = list(df['sympathyCount'])
-                    antipathy_counts = list(df['antipathyCount'])
+                    comments = temp.get('result', {}).get('commentList', [])
+                    masked_user_ids  = [c['maskedUserId'] for c in comments]
+                    mod_times        = [c['modTime'] for c in comments]
+                    contents         = [c['contents'] for c in comments]
+                    reply_counts     = [c['replyCount'] for c in comments]
+                    sympathy_counts  = [c['sympathyCount'] for c in comments]
+                    antipathy_counts = [c['antipathyCount'] for c in comments]
                 except:
                     return returnData
 
@@ -318,10 +342,11 @@ class NaverNewsCrawler:
                         parentCommentNo_list[i]
                     ]
 
-                    if username == True:
+                    if username:
                         add_data = self.collectUsername(oid, aid, parentCommentNo_list[i], newsURL)
-                        targetlist[1] = f"{targetlist[1]}_{add_data[0]}_{add_data[1]}"
-                        targetlist.extend(add_data[1:])
+                        if add_data:
+                            targetlist[1] = f"{targetlist[1]}_{add_data[0]}_{add_data[1]}"
+                            targetlist.extend(add_data[1:])
 
                     replyList.append(targetlist)
                     reply_idx += 1
@@ -335,44 +360,50 @@ class NaverNewsCrawler:
             return returnData
 
         except Exception as e:
-            pass
+            logger.info(f"Error occurred while collecting comment data: {e}")
+            appendCrawlLog(self.DBuid, "error", f"댓글 수집 실패 ({newsURL}): {e}")
+            return returnData
 
     def collectUsername(self, oid, aid, commentNo, newsURL):
-        url = "https://apis.naver.com/commentBox/cbox/web_naver_user_info_jsonp.json"
-        params = {
-            "ticket": "news",
-            "templateId": "default_society",
-            "pool": "cbox5",
-            "lang": "ko",
-            "country": "KR",
-            "objectId": f'news{oid},{aid}',
-            "categoryId": "",
-            "pageSize": 1,
-            "indexSize": 10,
-            "groupId": "",
-            "listType": "user",
-            "pageType": "more",
-            "commentNo": commentNo,
-            "targetUserInKey": "",
-            "_": "1739271277330"
-        }
-        
-        headers = {"User-agent": generate_navigator()['user_agent'], "referer": newsURL}
-        
-        response = Request(url, params=params, headers=headers)
-        response.raise_for_status()
-        
-        res_text = response.text
-        json_str = res_text[res_text.find("(") + 1 : res_text.rfind(")")]
-        data = json.loads(json_str)
+        try:
+            url = "https://apis.naver.com/commentBox/cbox/web_naver_user_info_jsonp.json"
+            params = {
+                "ticket": "news",
+                "templateId": "default_society",
+                "pool": "cbox5",
+                "lang": "ko",
+                "country": "KR",
+                "objectId": f'news{oid},{aid}',
+                "categoryId": "",
+                "pageSize": 1,
+                "indexSize": 10,
+                "groupId": "",
+                "listType": "user",
+                "pageType": "more",
+                "commentNo": commentNo,
+                "targetUserInKey": "",
+                "_": "1739271277330"
+            }
 
-        nickname = data['result']['user']['nickname']
-        stats = data['result']['commentUserStats']
-        commentCnt = stats['commentCount']
-        replyCnt = stats['replyCount']
-        likecnt = stats['sympathyCount']
+            headers = {"User-agent": generate_navigator()['user_agent'], "referer": newsURL}
 
-        return [nickname, commentCnt, replyCnt, likecnt]
+            response = Request(url, params=params, headers=headers)
+            response.raise_for_status()
+
+            res_text = response.text
+            json_str = res_text[res_text.find("(") + 1 : res_text.rfind(")")]
+            data = json.loads(json_str)
+
+            nickname = data['result']['user']['nickname']
+            stats = data['result']['commentUserStats']
+            commentCnt = stats['commentCount']
+            replyCnt = stats['replyCount']
+            likecnt = stats['sympathyCount']
+
+            return [nickname, commentCnt, replyCnt, likecnt]
+        except Exception as e:
+            logger.info(f"collectUsername 실패 (commentNo: {commentNo}): {e}")
+            return None
 
     def collectReply(self, newsURL, parentCommentNum_list):        
         try:
@@ -395,8 +426,15 @@ class NaverNewsCrawler:
             rereplyList        = []
             parentReplynum_list = []
             
+            returnData = {
+                'rereplyList': rereplyList,
+                'rereplyCnt': len(rereplyList)
+            }
+            
             for i in range(len(parentCommentNum_list)):
                 try:
+                    if self.running == False: break
+                    
                     target_url = (base_url.format(oid, aid, 100, 1, "reply") + "&parentCommentNo=" + parentCommentNum_list[i])
                     
                     response = Request(target_url, headers=headers)
@@ -410,14 +448,12 @@ class NaverNewsCrawler:
                     if not comment_data:
                         continue
 
-                    df = pd.DataFrame(comment_data)
-                    
                     try:
-                        masked_user_ids  = list(df['maskedUserId'])
-                        mod_times        = list(df['modTime'])
-                        contents         = list(df['contents'])
-                        sympathy_counts  = list(df['sympathyCount'])
-                        antipathy_counts = list(df['antipathyCount'])
+                        masked_user_ids  = [c['maskedUserId'] for c in comment_data]
+                        mod_times        = [c['modTime'] for c in comment_data]
+                        contents         = [c['contents'] for c in comment_data]
+                        sympathy_counts  = [c['sympathyCount'] for c in comment_data]
+                        antipathy_counts = [c['antipathyCount'] for c in comment_data]
                     except:
                         continue
 
@@ -428,7 +464,8 @@ class NaverNewsCrawler:
                     r_bad_list.extend(antipathy_counts)
                     parentReplynum_list.extend([parentCommentNum_list[i]] * len(masked_user_ids))     
 
-                except:
+                except Exception as e:
+                    logger.info(f"Error occurred while collecting reply data: {e}")
                     continue
             
             for i in range(len(nickname_list)):
@@ -459,14 +496,18 @@ class NaverNewsCrawler:
                         str(r_sentiment),
                         str(newsURL)
                     ])
-
-            return {
-                'rereplyList': rereplyList,
-                'rereplyCnt': len(rereplyList)
-            }
+            
+            returnData['rereplyList'] = rereplyList
+            returnData['rereplyCnt'] = len(rereplyList)
+            return returnData
         
-        except Exception:
-            pass
+        except Exception as e:
+            logger.info(f"Error occurred while collecting reply data: {e}")
+            appendCrawlLog(self.DBuid, "error", f"대댓글 수집 실패 ({newsURL}): {e}")
+            return returnData
+    
+    def reportStatus(self):
+        return self.status
     
     def main(self):
         self.DBPath, self.DBuid = makeDB(
@@ -477,8 +518,16 @@ class NaverNewsCrawler:
             option=self.option,
             keyword=self.keyword,
             requester=self.requester,
-            requesterUid='test' #get_user(self.requester)['uid']
+            requesterUid=self.requesterUid
         )
+
+        initCrawlLog(self.DBuid, (
+            f"User: {self.requester}\n"
+            f"Object: navernews\n"
+            f"Option: {self.option}\n"
+            f"Keyword: {self.keyword}\n"
+            f"Date Range: {self.startDate} ~ {self.endDate}"
+        ))
 
         makeCSV(self.DBPath, self.articleDB, navernews_article_column)
 
@@ -493,17 +542,22 @@ class NaverNewsCrawler:
         
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime('%Y%m%d')
-            if self.date_range > 0:
-                percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
-            
-            if dayCount == self.date_range: # 토큰화 및 파일 저장, 알림
-                FinalOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname , startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email)
-                break
             
             if checkDB(self.DBuid) == False:
                 self.running = False
-                StopOperator()
+            
+            if self.running == False: #DB 외 경로로 중단 신호 오는 것 고려해 checkDB와 분리, self.status 업데이트 전 중단
+                stopOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
                 break
+
+            if dayCount == self.date_range: # 토큰화 및 파일 저장, 알림
+                finishOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
+                break
+            
+            if self.date_range > 0:
+                percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
+                self.status['percentage'] = percent
+                self.status['currentdate'] = currentDate_str
             
             urlList = self.collectUrl(
                 keyword=self.keyword,
@@ -513,10 +567,13 @@ class NaverNewsCrawler:
             
             for newsUrl in urlList:
                 try:
+                    if self.running == False: break
                     # 기사 본문 수집
                     articleData = self.collectArticle(newsUrl)
                     if not articleData:
                         continue
+                    else:
+                        self.status['articleCnt'] += 1
                         
                     # 기사 날짜 저장 (댓글 행의 마지막 컬럼인 'Article Day'용)
                     article_day = articleData[5] 
@@ -526,18 +583,25 @@ class NaverNewsCrawler:
                         addToCSV(self.DBPath, self.articleDB, [articleData + [0]], navernews_article_column)
                     
                     # 옵션 1, 2, 4: 댓글 및 통계 포함
+                    
                     elif self.option in [1, 2, 4]:
-                        # 댓글 수집 (옵션 4일 때만 유저 정보 포함)
-                        is_username = True if self.option == 4 else False
-                        cmtData = self.collectCmt(newsUrl, username=is_username)
+                        try:
+                            # 댓글 수집 (옵션 4일 때만 유저 정보 포함)
+                            is_username = True if self.option == 4 else False
+                            cmtData = self.collectCmt(newsUrl, username=is_username)
+                            
+                            reply_cnt = cmtData.get('replyCnt', 0)
+                            self.status['commentCnt'] += reply_cnt
+                            
+                            # 기사 저장 (실제 댓글수 포함)
+                            addToCSV(self.DBPath, self.articleDB, [articleData + [reply_cnt]], navernews_article_column)
+                            
+                            # 통계 데이터 저장
+                            stats = cmtData.get('statisticsData', [])
                         
-                        reply_cnt = cmtData.get('replyCnt', 0)
+                        except Exception as e:
+                            logger.info(f"Error occurred while processing comment data for {newsUrl}: {e}")
                         
-                        # 기사 저장 (실제 댓글수 포함)
-                        addToCSV(self.DBPath, self.articleDB, [articleData + [reply_cnt]], navernews_article_column)
-                        
-                        # 통계 데이터 저장
-                        stats = cmtData.get('statisticsData', [])
                         if stats:
                             # 통계 컬럼 구성에 맞춰 기사 정보 + 통계 데이터 결합
                             addToCSV(self.DBPath, self.statisticsDB, [articleData + stats], navernews_statistics_column)
@@ -552,20 +616,35 @@ class NaverNewsCrawler:
                         
                         # 옵션 2: 대댓글 수집 및 저장
                         if self.option == 2:
-                            parent_nos = cmtData.get('parentCommentNo_list', [])
-                            if parent_nos:
-                                rereplyData = self.collectReply(newsUrl, parent_nos)
-                                rereplies = rereplyData.get('rereplyList', [])
-                                if rereplies:
-                                    processed_rereplies = [rr + [article_day] for rr in rereplies]
-                                    addToCSV(self.DBPath, self.rereplyDB, processed_rereplies, navernews_rereply_column)
+                            try:
+                                parent_nos = cmtData.get('parentCommentNo_list', [])
+                                if parent_nos:
+                                    rereplyData = self.collectReply(newsUrl, parent_nos)
+                                    rereplies = rereplyData.get('rereplyList', [])
+                                    if rereplies:
+                                        processed_rereplies = [rr + [article_day] for rr in rereplies]
+                                        self.status['replyCnt'] += rereplyData.get('rereplyCnt', 0)
+                                        addToCSV(self.DBPath, self.rereplyDB, processed_rereplies, navernews_rereply_column)
+                                    
+                            except Exception as e:
+                                logger.info(f"Error occurred while processing reply data for {newsUrl}: {e}")
                     
                     time.sleep(SLEEP_TIME)
 
                 except Exception as e:
-                    print(f"\nError processing {newsUrl}: {e}")
+                    logger.info(f"Error occurred while processing {newsUrl}: {e}")
+                    appendCrawlLog(self.DBuid, "error", f"기사 처리 실패 ({newsUrl}): {e}")
                     continue
             
+            # 날짜 단위 진행률을 DB에 직접 업데이트
+            updateCrawlStatus(
+                self.DBuid,
+                self.status['percentage'] + "%",
+                self.status['articleCnt'],
+                self.status['commentCnt'],
+                self.status['replyCnt'],
+            )
+
             self.currentDate += self.deltaD
             
 def controller():
@@ -604,7 +683,6 @@ def controller():
             print("다시 입력하세요")
 
     speed = input("\n속도를 입력하십시오(1~10):  ")
-    weboption = 0
     
     NaverNewsCrawler_obj = NaverNewsCrawler(name, keyword, startDate, endDate, option, speed)
     NaverNewsCrawler_obj.main()
