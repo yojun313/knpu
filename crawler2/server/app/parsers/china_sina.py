@@ -357,7 +357,6 @@ class ChinaSinaCrawler:
 
                 self.status['commentCnt'] += len(comment_json)
                 page += 1
-                time.sleep(SLEEP_TIME)
 
             returnData['replyList'] = replyList
             returnData['replyCnt'] = len(replyList)

@@ -99,6 +99,7 @@ class NaverNewsCrawler:
                     logger.info(f"Error occurred while extracting next URL: {e}")
                     return None
 
+            # TODO - html에 query 한번에 요청보내서 파싱하는 방식으로 바꿔주세요~~
             query_dict = parse_naver_query(keyword)
 
             urlList = []
@@ -543,6 +544,8 @@ class NaverNewsCrawler:
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime('%Y%m%d')
             
+            # TODO - db데이터의 status가 Stopped이면 중단, db데이터 자체가 존재하지 않는 경우는 삭제로 분리
+            # 중단일 떄만 stopOperator 실행, 나머지는 프로세스 죽이기
             if checkDB(self.DBuid) == False:
                 self.running = False
             

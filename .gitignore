@@ -56,3 +56,4 @@ htmlcov/
 # 기타
 *.log
 .DS_Store
+crawllog/
