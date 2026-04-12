@@ -357,12 +357,24 @@ class Manager_Database(Manager_Worker):
                     response = Request('get', f'crawls/{DBuid}/log')
                     data = response.json().get("data")
 
-                    if not data or "content" not in data:
+                    if not data:
+                        QMessageBox.warning(self.main, "Information", "로그가 비어있습니다")
+                        return
+
+                    # 배열 구조(logs) 또는 기존 문자열 구조(content) 모두 지원
+                    if "logs" in data:
+                        log_text = "\n".join(
+                            f"[{l.get('time', '')}] [{l.get('type', '')}] {l.get('message', '')}"
+                            for l in data["logs"]
+                        )
+                    elif "content" in data:
+                        log_text = data["content"]
+                    else:
                         QMessageBox.warning(self.main, "Information", "로그가 비어있습니다")
                         return
 
                     from ui.dialogs import LogViewerDialog
-                    dialog = LogViewerDialog(self.main, DBuid, data["content"])
+                    dialog = LogViewerDialog(self.main, DBuid, log_text)
                     dialog.exec()
 
                 except Exception as e:

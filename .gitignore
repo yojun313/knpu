@@ -1,5 +1,6 @@
 # Python 가상환경
 venv/
+venvWindows/
 ENV/
 env/
 .venv/
@@ -55,3 +56,4 @@ htmlcov/
 # 기타
 *.log
 .DS_Store
+crawllog/
