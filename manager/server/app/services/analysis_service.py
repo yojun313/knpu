@@ -1,5 +1,5 @@
 from app.models.analysis_model import *
-from app.libs.kemkim import KimKem
+from app.libs.kemkim import KemKim
 from app.libs.progress import *
 import os
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
@@ -54,7 +54,7 @@ def start_kemkim(option: KemKimOption, token_data):
     option = option.model_dump()
     save_path = os.path.join(os.path.dirname(__file__), '..', 'temp')
 
-    kemkim_obj = KimKem(
+    kemkim_obj = KemKim(
         pid=option["pid"],
         token_data=token_data,
         csv_name=option["tokenfile_name"],
@@ -75,7 +75,7 @@ def start_kemkim(option: KemKimOption, token_data):
         modify_kemkim=False
     )
     try:
-        result_path = kemkim_obj.make_kimkem()
+        result_path = kemkim_obj.make_kemkim()
         
         if type(result_path) == str:
             zip_path = f"{result_path}.zip"

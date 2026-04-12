@@ -10,7 +10,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 from libs.analysis import DataProcess
-from libs.kemkim import KimKem
+from libs.kemkim import KemKim
 import uuid
 import asyncio
 from googletrans import Translator
@@ -747,7 +747,7 @@ class Manager_Analysis(Manager_Worker):
                                     f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
                 return
 
-            userLogging(f'ANALYSIS -> rekimkem_file({result_directory[0]})')
+            userLogging(f'ANALYSIS -> rekemkim_file({result_directory[0]})')
             printStatus(self.main, "파일 불러오는 중...")
 
             result_directory = result_directory[0]
@@ -868,7 +868,7 @@ class Manager_Analysis(Manager_Worker):
 
             delete_word_list = readCSV(os.path.join(result_directory, 'filtered_words.csv'))['word'].tolist()
 
-            kimkem_obj = KimKem(
+            kemkim_obj = KemKim(
                 self.main, exception_word_list=selected_words, rekemkim=True)
 
             new_result_folder = os.path.join(os.path.dirname(
@@ -886,22 +886,22 @@ class Manager_Analysis(Manager_Worker):
             copy_csv(os.path.join(result_directory, "Graph", "DOD_statistics.csv"),
                      os.path.join(new_graph_folder, "DOD_statistics.csv"))
 
-            DoV_signal, DoV_coordinates = kimkem_obj.DoV_draw_graph(
+            DoV_signal, DoV_coordinates = kemkim_obj.DoV_draw_graph(
                 graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict, graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
-            DoD_signal, DoD_coordinates = kimkem_obj.DoD_draw_graph(
+            DoD_signal, DoD_coordinates = kemkim_obj.DoD_draw_graph(
                 graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict, graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
 
-            final_signal = kimkem_obj._get_communal_signals(
+            final_signal = kemkim_obj._get_communal_signals(
                 DoV_signal, DoD_signal)
             final_signal_list = []
             for value in final_signal.values():
                 final_signal_list.extend(value)
 
-            kimkem_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict,
+            kemkim_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict,
                                       final_signal_list=final_signal_list, graph_name='KEM_graph.png', graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
-            kimkem_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict,
+            kemkim_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict,
                                       final_signal_list=final_signal_list, graph_name='KIM_graph.png', graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
-            kimkem_obj._save_final_signals(
+            kemkim_obj._save_final_signals(
                 DoV_signal, DoD_signal, new_signal_folder)
 
             delete_word_list.extend(selected_words)
@@ -918,7 +918,7 @@ class Manager_Analysis(Manager_Worker):
                     f'Grade Size: {size_input[5]}'
                 )
                 graph_size.write(info)
-            del kimkem_obj
+            del kemkim_obj
             gc.collect()
             openFileResult(
                 self.main, f"KEMKIM 재분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", new_result_folder)
@@ -943,7 +943,7 @@ class Manager_Analysis(Manager_Worker):
                 return
 
             result_directory = result_directory[0]
-            userLogging(f'ANALYSIS -> interpret_kimkem_file({result_directory})')
+            userLogging(f'ANALYSIS -> interpret_kemkim_file({result_directory})')
 
             final_signal_csv_path = os.path.join(
                 result_directory, "Signal", "Final_signal.csv")

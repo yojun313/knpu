@@ -22,7 +22,7 @@ elif platform.system() == 'Windows':  # Windows
 plt.rcParams['axes.unicode_minus'] = False
 
 
-class KimKem:
+class KemKim:
     def __init__(self,
                  parent=None,
                  token_data=None,
@@ -88,11 +88,11 @@ class KimKem:
             else:
                 self.folder_name = re.sub(
                     r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startdate}~{self.enddate}_{period}', self.folder_name)
-                self.kimkem_folder_path = os.path.join(
+                self.kemkim_folder_path = os.path.join(
                     self.save_path,
                     f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
                 )
-                os.makedirs(self.kimkem_folder_path, exist_ok=True)
+                os.makedirs(self.kemkim_folder_path, exist_ok=True)
                 self.write_status()
 
     def _save_final_signals(self, DoV_signal, DoD_signal, result_folder):
@@ -433,9 +433,9 @@ class KimKem:
 if __name__ == '__main__':
     token_data = pd.read_csv(
         "/Users/yojunsmacbookprp/Desktop/MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/token_data/token_navernews_바이오의료_20100101_20240731_0815_2036_article.csv", low_memory=False, encoding='utf-8-sig')
-    kimkem_obj = KimKem(token_data=token_data,
+    kemkim_obj = KemKim(token_data=token_data,
                         csv_name='navernews_바이오의료_20100101_20240731_0815_2036_article.csv',
-                        save_path='C:/MANAGER/바이오의료 KIMKEM 데이터',
+                        save_path='C:/MANAGER/바이오의료 kemkim 데이터',
                         startdate=20240301,
                         enddate=20240331,
                         period='1d',
@@ -446,4 +446,4 @@ if __name__ == '__main__':
                         ani_option=False,
                         exception_word_list=[]
                         )
-    kimkem_obj.make_kimkem()
+    kemkim_obj.make_kemkim()
