@@ -1120,11 +1120,11 @@ class WordcloudDialog(BaseDialog):
 
 
 class SelectKemkimDialog(BaseDialog):
-    def __init__(self, kimkem_file, rekimkem_file, interpret_kimkem):
+    def __init__(self, kemkim_file, rekemkim_file, interpret_kemkim):
         super().__init__()
-        self.kimkem_file = kimkem_file
-        self.rekimkem_file = rekimkem_file
-        self.interpret_kimkem = interpret_kimkem
+        self.kemkim_file = kemkim_file
+        self.rekemkim_file = rekemkim_file
+        self.interpret_kemkim = interpret_kemkim
         self.initUI()
         self.data = None  # 데이터를 저장할 속성 추가
 
@@ -1140,9 +1140,9 @@ class SelectKemkimDialog(BaseDialog):
         btn3 = QPushButton('KEMKIM 키워드 해석', self)
 
         # 버튼에 이벤트 연결
-        btn1.clicked.connect(self.run_kimkem_file)
-        btn2.clicked.connect(self.run_rekimkem_file)
-        btn3.clicked.connect(self.run_interpretkimkem_file)
+        btn1.clicked.connect(self.run_kemkim_file)
+        btn2.clicked.connect(self.run_rekemkim_file)
+        btn3.clicked.connect(self.run_interpretkemkim_file)
 
         # 버튼 배치를 위한 가로 레이아웃
         button_layout = QVBoxLayout()
@@ -1159,17 +1159,17 @@ class SelectKemkimDialog(BaseDialog):
         for te in self.findChildren(QTextEdit):
             te.setTabChangesFocus(True)
 
-    def run_kimkem_file(self):
+    def run_kemkim_file(self):
         self.accept()
-        self.kimkem_file()
+        self.kemkim_file()
 
-    def run_rekimkem_file(self):
+    def run_rekemkim_file(self):
         self.accept()
-        self.rekimkem_file()
+        self.rekemkim_file()
 
-    def run_interpretkimkem_file(self):
+    def run_interpretkemkim_file(self):
         self.accept()
-        self.interpret_kimkem()
+        self.interpret_kemkim()
 
 
 class RunKemkimDialog(BaseDialog):
