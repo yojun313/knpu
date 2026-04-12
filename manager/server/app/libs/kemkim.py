@@ -31,7 +31,7 @@ if platform.system() == 'Linux':
     plt.rcParams['axes.unicode_minus'] = False
 
 
-class KimKem:
+class KemKim:
     def __init__(self,
                  pid=None,
                  token_data=None,
@@ -98,11 +98,11 @@ class KimKem:
             else:
                 self.folder_name = re.sub(
                     r'(\d{8})_(\d{8})_(\d{4})_(\d{4})', f'{self.startdate}~{self.enddate}_{period}', self.folder_name)
-                self.kimkem_folder_path = os.path.join(
+                self.kemkim_folder_path = os.path.join(
                     self.save_path,
                     f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}"
                 )
-                os.makedirs(self.kimkem_folder_path, exist_ok=True)
+                os.makedirs(self.kemkim_folder_path, exist_ok=True)
                 self.write_status()
 
     def clear_console(self):
@@ -132,10 +132,10 @@ class KimKem:
         )
         self.info += f'\n진행 상황: {msg}'
 
-        with open(os.path.join(self.kimkem_folder_path, 'kemkim_info.txt'), 'w+') as info_txt:
+        with open(os.path.join(self.kemkim_folder_path, 'kemkim_info.txt'), 'w+') as info_txt:
             info_txt.write(self.info)
 
-    def make_kimkem(self):
+    def make_kemkim(self):
         try:
             if self.weighterror == True:
                 return 2
@@ -305,7 +305,7 @@ class KimKem:
                 keyword_list, period_divided_dic, tf_counts, trace=False)
             DoD_dict = self.cal_DoD(
                 keyword_list, period_divided_dic, df_counts, trace=False)
-            self._save_kimkem_results(tf_counts, df_counts, tfidf_counts, DoV_dict, DoD_dict)
+            self._save_kemkim_results(tf_counts, df_counts, tfidf_counts, DoV_dict, DoD_dict)
             send_message(self.pid, "최종 KEM KIM 생성 중...")
             avg_DoV_increase_rate, avg_DoD_increase_rate, avg_term_frequency, avg_doc_frequency = self._calculate_averages(
                 keyword_list, DoV_dict, DoD_dict, tf_counts, df_counts, self.period_list[0], self.period_list[-1])
@@ -318,7 +318,7 @@ class KimKem:
             self.write_status("완료")
             send_message(self.pid, "완료")
 
-            return self.kimkem_folder_path
+            return self.kemkim_folder_path
         except Exception as e:
             self.write_status("오류 중단")
             send_message(self.pid, "오류 중단")
@@ -724,15 +724,15 @@ class KimKem:
         return [word for word in common_elements if len(word) >= 2]
 
     def _create_output_directories(self):
-        article_kimkem_folder = self.kimkem_folder_path
-        self.data_folder = os.path.join(article_kimkem_folder, "Data")
+        article_kemkim_folder = self.kemkim_folder_path
+        self.data_folder = os.path.join(article_kemkim_folder, "Data")
         self.tf_folder = os.path.join(self.data_folder, "TF")
         self.df_folder = os.path.join(self.data_folder, "DF")
         self.tfidf_folder = os.path.join(self.data_folder, "TF-IDF")
         self.DoV_folder = os.path.join(self.data_folder, "DoV")
         self.DoD_folder = os.path.join(self.data_folder, "DoD")
-        self.result_folder = os.path.join(article_kimkem_folder, "Result")
-        self.trace_folder = os.path.join(article_kimkem_folder, "Trace")
+        self.result_folder = os.path.join(article_kemkim_folder, "Result")
+        self.trace_folder = os.path.join(article_kemkim_folder, "Trace")
         self.trace_result_folder = os.path.join(
             self.trace_folder, 'Trace_Result')
         self.trace_data_folder = os.path.join(self.trace_folder, 'Trace_Data')
@@ -763,7 +763,7 @@ class KimKem:
                 os.makedirs(os.path.join(period_path, 'Graph'), exist_ok=True)
                 os.makedirs(os.path.join(period_path, 'Signal'), exist_ok=True)
 
-    def _save_kimkem_results(self, tf_counts, df_counts, tfidf_counts, DoV_dict, DoD_dict):
+    def _save_kemkim_results(self, tf_counts, df_counts, tfidf_counts, DoV_dict, DoD_dict):
         for period in tf_counts:
             self._save_period_data(self.tf_folder, period, tf_counts, 'TF')
             self._save_period_data(self.df_folder, period, df_counts, 'DF')
@@ -1443,9 +1443,9 @@ class KimKem:
 if __name__ == '__main__':
     token_data = pd.read_csv(
         "/Users/yojunsmacbookprp/Desktop/MANAGER/navernews_바이오의료_20100101_20240731_0815_2036/token_data/token_navernews_바이오의료_20100101_20240731_0815_2036_article.csv", low_memory=False, encoding='utf-8-sig')
-    kimkem_obj = KimKem(token_data=token_data,
+    kemkim_obj = KemKim(token_data=token_data,
                         csv_name='navernews_바이오의료_20100101_20240731_0815_2036_article.csv',
-                        save_path='C:/MANAGER/바이오의료 KIMKEM 데이터',
+                        save_path='C:/MANAGER/바이오의료 kemkim 데이터',
                         startdate=20240301,
                         enddate=20240331,
                         period='1d',
@@ -1456,4 +1456,4 @@ if __name__ == '__main__':
                         ani_option=False,
                         exception_word_list=[]
                         )
-    kimkem_obj.make_kimkem()
+    kemkim_obj.make_kemkim()
