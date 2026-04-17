@@ -5,7 +5,7 @@ import warnings
 from requests.exceptions import RequestsDependencyWarning
 warnings.filterwarnings("ignore", category=RequestsDependencyWarning)
 
-bind = "0.0.0.0:8000"
+bind = "0.0.0.0:3004"
 workers = 5
 worker_class = "uvicorn.workers.UvicornWorker"
 timeout = 0
