@@ -1,7 +1,6 @@
 from app.db import crawlList_db, crawlLog_db, user_db, crawldata_path
 from app.libs.exceptions import ConflictException, NotFoundException
 from app.models.crawl_model import CrawlDbCreateDto, CrawlLogUpdateDto, SaveCrawlDbOption
-from app.utils.mongo import clean_doc
 from app.utils.zip import fast_zip
 from app.utils.getsize import getFolderSize, format_size
 from fastapi.responses import JSONResponse
@@ -54,7 +53,7 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
     return JSONResponse(
         status_code=201,
         content={"message": "CrawlDB created",
-                 "data": clean_doc(ordered_dict)},
+                 "data": ordered_dict},
     )
 
 
@@ -71,26 +70,22 @@ def updateCrawlLog(crawlLog: CrawlLogUpdateDto):
         status_code=201,
         content={
             "message": "CrawlLog updated/created",
-            "data": clean_doc(crawlLog_dict)
         },
     )
 
 
 def getCrawlLog(uid: str):
     # DB에서 uid로 crawlLog 검색
-    crawlLog = crawlLog_db.find_one({"uid": uid})
+    crawlLog = crawlLog_db.find_one({"uid": uid}, {"_id": 0})
 
     if not crawlLog:
         raise NotFoundException("CrawlLog not found")
-
-    # MongoDB ObjectId 등 정리
-    cleaned = clean_doc(crawlLog)
 
     return JSONResponse(
         status_code=200,
         content={
             "message": "CrawlLog fetched",
-            "data": cleaned
+            "data": crawlLog
         }
     )
     
@@ -175,11 +170,10 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         query = {'requester': username}
                 
     if sort_by == "keyword":
-        cursor = crawlList_db.find(query).sort("keyword", 1)
+        crawlDbList = crawlList_db.find(query, {"_id": 0}).sort("keyword", 1)
     else:
-        cursor = crawlList_db.find(query).sort("startTime", -1)
+        crawlDbList = crawlList_db.find(query, {"_id": 0}).sort("startTime", -1)
     
-    crawlDbList = [clean_doc(d) for d in cursor]
     if not crawlDbList:
         crawlDbList = []
 
@@ -215,7 +209,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
 
 
 def getCrawlDbInfo(uid: str, userUid: str = None):
-    crawlDb = crawlList_db.find_one({"uid": uid})
+    crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
 
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
@@ -223,10 +217,10 @@ def getCrawlDbInfo(uid: str, userUid: str = None):
     targetDB = crawlDb['name']
     log_user(userUid, f"Requested info for crawl DB: {targetDB}")
     
-    crawlDb = processDbInfo(clean_doc(crawlDb))
+    crawlDb = processDbInfo(crawlDb)
     return JSONResponse(
         status_code=200,
-        content={"message": "CrawlDB retrieved", "data": clean_doc(crawlDb)},
+        content={"message": "CrawlDB retrieved", "data": crawlDb},
     )
 
 
