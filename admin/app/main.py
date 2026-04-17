@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import auth_routes, main_routes, log_routes, bug_routes, crawler_routes
+from app.routes import auth_routes, main_routes, log_routes, bug_routes, crawler_routes, user_routes
 
 app = FastAPI(title="PAILAB Dashboard")
 
@@ -9,6 +9,7 @@ app.include_router(main_routes.router)
 app.include_router(log_routes.router)
 app.include_router(bug_routes.router)
 app.include_router(crawler_routes.router)
+app.include_router(user_routes.router)
 
 if __name__ == "__main__":
     import uvicorn
