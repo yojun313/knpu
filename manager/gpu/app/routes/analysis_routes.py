@@ -18,6 +18,8 @@ import zipfile
 import platform
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
+from multiprocessing import Pool, cpu_count
+from functools import partial
 
 if platform.system() == 'Linux':
     font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
@@ -278,6 +280,21 @@ async def graph_network_route(
     file: UploadFile = File(...),
     option: str = Form("{}")
 ):
+    def process_text_chunk(texts):
+        """
+        할당받은 텍스트 리스트에서 단어 조합(Counter)을 추출합니다.
+        """
+        local_counter = Counter()
+        for text in texts:
+            # 콤마로 구분된 토큰 추출 및 정렬
+            tokens = [t.strip() for t in text.split(',') if t.strip()]
+            unique_tokens = sorted(list(set(tokens)))
+            
+            # 조합 생성 후 카운터 업데이트 (메모리 절약을 위해 바로 업데이트)
+            if len(unique_tokens) >= 2:
+                local_counter.update(combinations(unique_tokens, 2))
+        return local_counter
+
     try:
         option_dict = json.loads(option)
         mode = option_dict.get("mode", "keyword")
@@ -293,22 +310,25 @@ async def graph_network_route(
         G = nx.Graph()
 
         if mode == "keyword":
-            # 1. Stopwords 및 글자 수 제한 제거, 모든 쌍 추출
-            all_pairs = []
+            # 1. 병렬 처리를 위한 데이터 분할
+            texts = df[text_col].fillna("").astype(str).tolist()
+            num_cores = cpu_count()  # 현재 서버의 CPU 코어 수
+            
+            # 데이터를 코어 수에 맞춰 덩어리(chunk)로 나눔
+            chunk_size = len(texts) // num_cores if len(texts) > num_cores else 1
+            chunks = [texts[i:i + chunk_size] for i in range(0, len(texts), chunk_size)]
 
-            for text in df[text_col].fillna("").astype(str):
-                # 콤마로 구분된 토큰들 추출 (공백 제거)
-                tokens = [t.strip() for t in text.split(',') if t.strip()]
-                # 중복 제거 후 정렬 (A-B와 B-A가 중복 계산되지 않게)
-                unique_tokens = sorted(list(set(tokens)))
-                # 기사 내 모든 단어 조합 생성
-                all_pairs.extend(list(combinations(unique_tokens, 2)))
+            # 2. Multiprocessing Pool 가동
+            # process_text_chunk 함수를 병렬로 실행
+            with Pool(processes=num_cores) as pool:
+                results = pool.map(process_text_chunk, chunks)
 
-            # 2. 모든 조합의 빈도수 계산 (제한 없음)
-            pair_counts = Counter(all_pairs)
+            # 3. 각 프로세스의 결과(Counter)를 하나로 병합
+            pair_counts = Counter()
+            for res in results:
+                pair_counts.update(res)
 
-            # 3. 계산된 모든 쌍을 그래프에 에지로 추가
-            # threshold가 빈도수(w) 기준이 됨 (기본값 2 이상 권장이나, 1로 하면 모든 관계 포함)
+            # 4. 임계값(Threshold) 필터링 및 그래프 생성
             min_freq = int(threshold) if threshold >= 1 else 1 
             
             for (u, v), w in pair_counts.items():
