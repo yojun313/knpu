@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta
 from app.db import user_logs_col, bug_board_col, db_list_col, users_col, user_bugs_col
 
+def get_all_users():
+    return list(users_col.find().sort("name", 1))
+
 def get_user_mapping():
     """uid를 이름으로 매핑하는 딕셔너리 생성"""
     users = users_col.find({}, {"uid": 1, "name": 1})
@@ -60,7 +63,6 @@ def get_recent_logs(limit=10, name=None, date_str=None):
     return logs
 
 def get_user_bugs(limit=50, name=None, date_str=None):
-    """새로 추가된 user-bugs 데이터를 가져오는 함수"""
     user_map = get_user_mapping()
     query = build_search_query(name, date_str, user_map)
     
