@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full flex items-center justify-center">
+    <div class="card p-8 rounded-xl w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-2">Admin Login</h2>
+        <p class="text-zinc-400 text-sm mb-6">Enter your name to receive a code.</p>
+        <form method="POST" action="/login">
+            <input type="text" name="name" placeholder="Full Name" required
+                   class="w-full bg-[#09090b] border border-zinc-700 rounded-md px-4 py-3 text-zinc-200 mb-4 focus:outline-none focus:border-zinc-500">
+            {% if error %}<p class="text-red-500 text-xs mb-4">{{ error }}</p>{% endif %}
+            <button type="submit" class="w-full bg-white text-black font-bold py-3 rounded-md hover:bg-zinc-200 transition">
+                Send Verification Code
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
