@@ -2,7 +2,6 @@
 from app.db import user_db, user_logs_db, user_bugs_db
 from app.libs.exceptions import ConflictException, BadRequestException
 from app.models.user_model import UserCreate
-from app.utils.mongo import clean_doc
 from fastapi.responses import JSONResponse
 from pymongo import ReturnDocument
 from datetime import datetime, timezone
@@ -23,22 +22,19 @@ def create_user(user: UserCreate):
     user_db.insert_one(user_dict)
     
     return JSONResponse(
-        status_code=201,
-        content={"message": "User created", "data": clean_doc(user_dict)},
+        status_code=201
     )
 
 def get_all_users():
-    users = user_db.find()
-    user_list = [clean_doc(user) for user in users]
+    users = user_db.find({}, {"_id": 0})
     return JSONResponse(
         status_code=200,
-        content={"message": "Users retrieved", "data": user_list},
+        content={"message": "Users retrieved", "data": users},
     )
 
 def get_all_admins():
-    admins = user_db.find({"role": "admin"})
-    admin_list = [clean_doc(admin) for admin in admins]
-    return admin_list
+    admins = user_db.find({"role": "admin"}, {"_id": 0})
+    return admins
 
 def delete_user(userUid: str):
     result = user_db.delete_one({"uid": userUid})
@@ -93,5 +89,5 @@ def update_user_version(userUid: str, oldVersionName: str | None, newVersionName
     
     return JSONResponse(
         status_code=200,
-        content={"message": "User version updated", "data": clean_doc(updated_user)},
+        content={"message": "User version updated"},
     )

@@ -1,6 +1,5 @@
 from fastapi.responses import JSONResponse
 from app.db import user_db, auth_db
-from app.utils.mongo import clean_doc
 from app.libs.exceptions import NotFoundException, UnauthorizedException
 from app.utils.mail import sendEmail
 from app.services.user_service import get_all_admins
@@ -14,11 +13,10 @@ from app.utils.pushover import sendPushOver
 load_dotenv()
 
 def request_verify(name: str):
-    existing_user = user_db.find_one({"name": name})
+    existing_user = user_db.find_one({"name": name}, {"_id": 0})
     if not existing_user:
         raise NotFoundException("User not found")
     
-    existing_user = clean_doc(existing_user)
     name = existing_user["name"]
     email = existing_user["email"]
     random_pw = ''.join(random.choices('0123456789', k=6))
@@ -38,11 +36,10 @@ def request_verify(name: str):
     return JSONResponse(status_code=200, content={"uid": existing_user["uid"], "message": "Verification code sent", "email": email})
     
 def verify_code(name: str, code: str, device: str):
-    existing_user = user_db.find_one({"name": name})
+    existing_user = user_db.find_one({"name": name}, {'_id': 0})
     if not existing_user:
         raise NotFoundException("User not found")
     
-    existing_user = clean_doc(existing_user)
     email = existing_user["email"]
     
     auth_data = auth_db.find_one({"email": email})
@@ -68,14 +65,13 @@ def verify_code(name: str, code: str, device: str):
 def loginWithToken(token: str):
     try:
         payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=[os.getenv("JWT_ALGORITHM")])
-        user = user_db.find_one({"uid": payload["sub"]})
+        user = user_db.find_one({"uid": payload["sub"]}, {"_id": 0})
         if not user:
             raise NotFoundException("User not found")
 
         if payload["device"] not in user["device_list"]:
             raise NotFoundException("Device not registered")
         
-        user = clean_doc(user)
         return JSONResponse(status_code=200, content={"message": "Login successful", "user": user})
     except jwt.InvalidTokenError:
         raise NotFoundException("Invalid token")
