@@ -25,17 +25,22 @@ def get_dashboard_stats():
         "total_size_gb": total_size_gb
     }
 
+def get_admin_uids():
+    admins = users_col.find({"role": "admin"}, {"uid": 1})
+    return [a["uid"] for a in admins]
+
 def build_search_query(name=None, date_str=None, user_map=None):
     query = {}
+    admin_uids = get_admin_uids()
     
     if name and user_map:
-        # 이름으로 부분 일치하는 uid들 찾기
         matched_uids = [uid for uid, uname in user_map.items() if name.lower() in uname.lower()]
         query["uid"] = {"$in": matched_uids}
+    else:
+        query["uid"] = {"$nin": admin_uids}
         
     if date_str:
         try:
-            # 해당 날짜의 00:00:00 부터 23:59:59 까지 검색
             start_date = datetime.strptime(date_str, "%Y-%m-%d")
             end_date = start_date + timedelta(days=1)
             query["datetime"] = {"$gte": start_date, "$lt": end_date}
