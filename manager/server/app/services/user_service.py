@@ -5,7 +5,7 @@ from app.models.user_model import UserCreate
 from app.utils.mongo import clean_doc
 from fastapi.responses import JSONResponse
 from pymongo import ReturnDocument
-from datetime import datetime
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from app.utils.pushover import sendPushOver
 import uuid
@@ -51,22 +51,26 @@ def delete_user(userUid: str):
         )
         
 def log_user(userUid: str, message: str):
-    now = datetime.now(ZoneInfo("Asia/Seoul"))
+    kst = ZoneInfo("Asia/Seoul")
+    now_kst = datetime.now(kst)
     
     log_entry = {
         "uid": userUid,
-        "datetime": now,
+        "datetime": now_kst,
+        "datetime_kst": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
         "message": message
     }
 
     user_logs_db.insert_one(log_entry)
 
 def bug_user(userUid: str, message: str):
-    now = datetime.now(ZoneInfo("Asia/Seoul"))
+    kst = ZoneInfo("Asia/Seoul")
+    now_kst = datetime.now(kst)
     
     log_entry = {
         "uid": userUid,
-        "datetime": now,
+        "datetime": now_kst,
+        "datetime_kst": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
         "message": message
     }
 
