@@ -10,6 +10,7 @@ from services.logging import *
 from PySide6.QtGui import QKeySequence, QFont, QShortcut, QFontMetrics
 from datetime import datetime
 from services.api import Request
+from typing import Callable, Optional
 
 class BaseDialog(QDialog):
     def __init__(self, *args, **kwargs):
@@ -72,6 +73,33 @@ class BaseDialog(QDialog):
         for btn in buttons:
             button_layout.addWidget(btn)
         self.layout().addLayout(button_layout)
+
+    def make_path_widgets(self, initial_path: str = "", on_selected: Callable[[str], None] | None = None,
+                          button_text: str = "경로 변경", dialog_title: str = "저장 경로 선택",
+                          placeholder: str = "선택되지 않음"):
+        """Create a path selection button and label.
+
+        Returns: (button, label)
+        If a path is chosen, the label is updated and `on_selected(path)` is called if provided.
+        """
+        btn = QPushButton(button_text)
+        btn.setFixedWidth(100)
+        label = QLabel(initial_path if initial_path else placeholder)
+        label.setWordWrap(True)
+        label.setStyleSheet("color: #444; background: #f0f0f0; padding: 5px; border-radius: 3px;")
+
+        def _on_click():
+            path = QFileDialog.getExistingDirectory(self, dialog_title, initial_path or "")
+            if path:
+                label.setText(path)
+                if on_selected:
+                    try:
+                        on_selected(path)
+                    except Exception:
+                        pass
+
+        btn.clicked.connect(_on_click)
+        return btn, label
 
 
 class DBInfoDialog(BaseDialog):
@@ -1935,18 +1963,17 @@ class TokenizeDialog(BaseDialog):
         lang_layout.addWidget(self.lang_combo)
         layout.addLayout(lang_layout)
 
-        # 3. 저장 경로 선택 섹션
-        path_group = QGroupBox("3. 저장 설정")
-        path_layout = QFormLayout(path_group)
-        
-        self.path_label = QLabel(self.save_dir)
-        self.path_label.setWordWrap(True)
-        path_btn = QPushButton("경로 변경")
-        path_btn.clicked.connect(self.select_save_path)
-        
-        path_layout.addRow("저장 위치:", self.path_label)
-        path_layout.addRow("", path_btn)
-        layout.addWidget(path_group)
+        path_section = QVBoxLayout()
+        path_header = QHBoxLayout()
+        path_header.addWidget(QLabel("<b>저장 위치 설정:</b>"))
+        path_header.addStretch()
+
+        btn, lbl = self.make_path_widgets(self.save_dir, lambda p: setattr(self, 'save_dir', p))
+        path_header.addWidget(btn)
+
+        path_section.addLayout(path_header)
+        path_section.addWidget(lbl)
+        layout.addLayout(path_section)
 
         # 4. 필수 포함 단어 섹션
         word_group = QGroupBox("4. 기타 옵션")
@@ -2131,15 +2158,18 @@ class YouTubeDownloadDialog(BaseDialog):
         layout.addWidget(self.whisper_checkbox)
 
         # 저장 경로
-        path_layout = QHBoxLayout()
-        self.path_label = QLabel("저장 경로: 선택되지 않음")
-        self.path_btn = QPushButton("경로 선택")
-        path_layout.addWidget(self.path_label)
-        path_layout.addWidget(self.path_btn)
-        layout.addLayout(path_layout)
+        path_section = QVBoxLayout()
+        path_header = QHBoxLayout()
+        path_header.addWidget(QLabel("<b>저장 위치 설정:</b>"))
+        path_header.addStretch()
 
-        self.save_dir = ""
-        self.path_btn.clicked.connect(self.select_path)
+        btn, lbl = self.make_path_widgets("", lambda p: setattr(self, 'save_dir', p))
+        path_header.addWidget(btn)
+
+        path_section.addLayout(path_header)
+        path_section.addWidget(lbl)
+        layout.addLayout(path_section)
+
 
         # OK / Cancel
         buttons = QDialogButtonBox(
@@ -2207,15 +2237,17 @@ class DetectOptionDialog(BaseDialog):
         self.file_btn.clicked.connect(self.select_files)
 
         # ---------- 저장 경로 ----------
-        path_layout = QHBoxLayout()
-        self.path_label = QLabel(f"저장 경로: {self.save_dir}")
-        self.path_btn = QPushButton("경로 선택")
-        path_layout.addWidget(self.path_label)
-        path_layout.addWidget(self.path_btn)
-        layout.addLayout(path_layout)
+        path_section = QVBoxLayout()
+        path_header = QHBoxLayout()
+        path_header.addWidget(QLabel("<b>저장 위치 설정:</b>"))
+        path_header.addStretch()
 
-        self.save_dir = self.save_dir
-        self.path_btn.clicked.connect(self.select_path)
+        btn, lbl = self.make_path_widgets(self.save_dir, lambda p: setattr(self, 'save_dir', p))
+        path_header.addWidget(btn)
+
+        path_section.addLayout(path_header)
+        path_section.addWidget(lbl)
+        layout.addLayout(path_section)
 
         # ---------- YOLO conf_thres ----------
         form = QFormLayout()
@@ -2340,7 +2372,7 @@ class DetectOptionDialog(BaseDialog):
         super().accept()
 
 
-class NetworkAnalysisDialog(QDialog):
+class NetworkAnalysisDialog(BaseDialog):
     def __init__(self, csv_path, column_names, parent=None):
         super().__init__(parent)
         self.setWindowTitle("네트워크 그래프 분석 (Network 스타일)")
@@ -2387,27 +2419,18 @@ class NetworkAnalysisDialog(QDialog):
 
         layout.addLayout(form)
 
-        # --- 4. 저장 경로 섹션 (가로 -> 세로 레이아웃 변경) ---
+        # 재사용 가능한 저장 경로 선택 UI
         path_section = QVBoxLayout()
         path_header = QHBoxLayout()
         path_header.addWidget(QLabel("<b>저장 위치 설정:</b>"))
         path_header.addStretch()
-        
-        self.path_btn = QPushButton("경로 변경")
-        self.path_btn.setFixedWidth(100)
-        path_header.addWidget(self.path_btn)
-        
-        # 경로 표시 라벨 (자동 줄바꿈 설정)
-        self.path_label = QLabel(self.save_dir if self.save_dir else "선택되지 않음")
-        self.path_label.setWordWrap(True) # 💡 핵심: 글자가 길어지면 다음 줄로 넘김
-        self.path_label.setStyleSheet("color: #444; background: #f0f0f0; padding: 5px; border-radius: 3px;")
-        
-        path_section.addLayout(path_header)
-        path_section.addWidget(self.path_label)
-        layout.addLayout(path_section)
-        # -----------------------------------------------
 
-        self.path_btn.clicked.connect(self.select_path)
+        btn, lbl = self.make_path_widgets(self.save_dir, lambda p: setattr(self, 'save_dir', p))
+        path_header.addWidget(btn)
+
+        path_section.addLayout(path_header)
+        path_section.addWidget(lbl)
+        layout.addLayout(path_section)
 
         # 설명 추가
         info_label = QLabel("\n* 키워드 분석: 같은 기사 내 단어 동시 출현 빈도 기준\n* 의미 분석: AI 임베딩 벡터의 코사인 유사도 기준")

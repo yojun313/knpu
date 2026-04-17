@@ -2092,7 +2092,7 @@ class Manager_Analysis(Manager_Worker):
                         response, 
                         target_dir, 
                         label="결과 파일 다운로드 및 정리 중", 
-                        zip_name=zip_name,
+                        filename=zip_name,
                         extract=True
                     )
                     
@@ -2145,51 +2145,91 @@ class Manager_Analysis(Manager_Worker):
             programBugLog(self.main, traceback.format_exc())
                    
     def select_csv_file(self, tokenCheck=False):
-        printStatus(self.main, "CSV 파일을 선택하세요")
-        file_path, _ = QFileDialog.getOpenFileName(
-            self.main,
-            "CSV 파일 선택",
-            "",
-            "CSV Files (*.csv);;All Files (*)"
-        )
+        try:
+            selected_files = self.file_dialog.selectedFiles()
+            
+            if not selected_files:
+                raise ValueError("CSV 파일을 선택하세요")
+                
+            file_path = selected_files[0]
 
-        if not file_path:
-            return 0
-
-        if not file_path.lower().endswith('.csv'):
-            QMessageBox.warning(
-                self.main, "Wrong Format", f"{file_path}는 CSV 파일이 아닙니다.")
-            return 0
-
-        if tokenCheck == True and 'token' not in file_path.lower():
-            QMessageBox.warning(
-                self.main, "Wrong File", "토큰 파일이 아닙니다")
-            return 0
+            if not file_path.lower().endswith('.csv'):
+                raise ValueError(f"{file_path}는 CSV 파일이 아닙니다.")
+            
+            if tokenCheck and 'token' not in os.path.basename(file_path).lower():
+                raise ValueError(f"{file_path}는 토큰 파일이 아닙니다.")
+            
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"파일을 찾을 수 없습니다:\n{file_path}")
+            
+            return file_path
         
-        printStatus(self.main)
-        return file_path
+        except Exception:
+            printStatus(self.main, "CSV 파일을 선택하세요")
+            file_path, _ = QFileDialog.getOpenFileName(
+                self.main,
+                "CSV 파일 선택",
+                "",
+                "CSV Files (*.csv);;All Files (*)"
+            )
+
+            if not file_path:
+                return 0
+
+            if not file_path.lower().endswith('.csv'):
+                QMessageBox.warning(
+                    self.main, "Wrong Format", f"{file_path}는 CSV 파일이 아닙니다.")
+                return 0
+
+            if tokenCheck == True and 'token' not in file_path.lower():
+                QMessageBox.warning(
+                    self.main, "Wrong File", "토큰 파일이 아닙니다")
+                return 0
+            
+            printStatus(self.main)
+            return file_path
 
     def select_audio_file(self):
-        printStatus(self.main, "오디오 파일을 선택하세요")
-        file_path, _ = QFileDialog.getOpenFileName(
-            self.main,
-            "오디오 파일 선택",
-            "",
-            "Audio Files (*.mp3 *.wav *.m4a *.flac *.ogg);;All Files (*)"
-        )
-
-        if not file_path:
-            return 0
-
         valid_exts = ('.mp3', '.wav', '.m4a', '.flac', '.ogg')
-        if not file_path.lower().endswith(valid_exts):
-            QMessageBox.warning(
-                self.main, "Wrong Format", f"{file_path}는 지원되지 않는 오디오 파일 형식입니다.")
-            return 0
+        
+        try:
+            selected_files = self.file_dialog.selectedFiles()
+            
+            if not selected_files:
+                raise ValueError("오디오 파일을 선택하세요")
+                
+            file_path = selected_files[0]
 
-        printStatus(self.main)
-        return file_path
+            if not file_path.lower().endswith(valid_exts):
+                raise ValueError(f"지원되지 않는 형식입니다: {os.path.basename(file_path)}")
+            
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"파일을 찾을 수 없습니다: {file_path}")
+            
+            return file_path
+            
+        except Exception:
+            printStatus(self.main, "오디오 파일을 선택하세요")
+            file_path, _ = QFileDialog.getOpenFileName(
+                self.main,
+                "오디오 파일 선택",
+                "",
+                f"Audio Files ({' '.join(['*' + ext for ext in valid_exts])});;All Files (*)"
+            )
 
+            if not file_path:
+                return 0
+
+            if not file_path.lower().endswith(valid_exts):
+                QMessageBox.warning(
+                    self.main, "Wrong Format", 
+                    f"{os.path.basename(file_path)}는 지원되지 않는 오디오 파일 형식입니다."
+                )
+                return 0
+
+            printStatus(self.main)
+            return file_path
+        
     def anaylsis_buttonMatch(self):
         self.main.analysis_timesplitfile_btn.clicked.connect(self.run_timesplit)
         self.main.analysis_dataanalysisfile_btn.clicked.connect(self.run_analysis)
