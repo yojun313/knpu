@@ -2340,6 +2340,102 @@ class DetectOptionDialog(BaseDialog):
         super().accept()
 
 
+class NetworkAnalysisDialog(QDialog):
+    def __init__(self, column_names, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("네트워크 그래프 분석 (Network 스타일)")
+        self.resize(450, 350)
+        self.data = None
+
+        layout = QVBoxLayout(self)
+        form = QFormLayout()
+
+        # 1. 분석 모드 선택
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItems(["키워드 공출현 분석 (토큰화 데이터용)", "의미론적 유사도 분석 (원문 데이터용)"])
+        form.addRow("분석 모드", self.mode_combo)
+
+        # 2. 텍스트 열 선택
+        self.column_combo = QComboBox()
+        self.column_combo.addItems(column_names)
+        # 기본값 설정 (Text가 포함된 열 우선)
+        for i in range(self.column_combo.count()):
+            if "text" in self.column_combo.itemText(i).lower():
+                self.column_combo.setCurrentIndex(i)
+                break
+        form.addRow("대상 데이터 열", self.column_combo)
+
+        # 3. 임계값 설정 (모드에 따라 설명 변경)
+        self.threshold_spin = QDoubleSpinBox()
+        self.threshold_spin.setRange(0.0, 100.0)
+        self.threshold_spin.setValue(0.8) # 기본값 (Semantic용)
+        self.threshold_spin.setSingleStep(0.1)
+        self.threshold_label = QLabel("유사도 임계값 (0.0~1.0)")
+        form.addRow(self.threshold_label, self.threshold_spin)
+
+        # 모드 변경 시 라벨 및 범위 조정
+        self.mode_combo.currentIndexChanged.connect(self.update_ui_by_mode)
+
+        layout.addLayout(form)
+
+        # 4. 저장 경로
+        path_layout = QHBoxLayout()
+        self.path_label = QLabel("저장 위치: 선택되지 않음")
+        self.path_btn = QPushButton("경로 선택")
+        path_layout.addWidget(self.path_label)
+        path_layout.addWidget(self.path_btn)
+        layout.addLayout(path_layout)
+
+        self.save_dir = parent.localDirectory if hasattr(parent, 'localDirectory') else ""
+        if self.save_dir:
+            self.path_label.setText(self.save_dir)
+            
+        self.path_btn.clicked.connect(self.select_path)
+
+        # 설명 추가
+        info_label = QLabel("\n* 키워드 분석: 같은 기사 내 단어 동시 출현 빈도 기준\n* 의미 분석: AI 임베딩 벡터의 코사인 유사도 기준")
+        info_label.setStyleSheet("color: gray; font-size: 10px;")
+        layout.addWidget(info_label)
+
+        # OK / Cancel
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.validate_and_accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def update_ui_by_mode(self, index):
+        if index == 0:  # Keyword
+            self.threshold_label.setText("최소 동시 출현 빈도 (회)")
+            self.threshold_spin.setDecimals(0)
+            self.threshold_spin.setValue(2)
+            self.threshold_spin.setRange(1, 1000)
+        else:  # Semantic
+            self.threshold_label.setText("유사도 임계값 (0.0~1.0)")
+            self.threshold_spin.setDecimals(2)
+            self.threshold_spin.setValue(0.8)
+            self.threshold_spin.setRange(0.0, 1.0)
+
+    def select_path(self):
+        path = QFileDialog.getExistingDirectory(self, "저장 경로 선택")
+        if path:
+            self.save_dir = path
+            self.path_label.setText(path)
+
+    def validate_and_accept(self):
+        if not self.save_dir:
+            QMessageBox.warning(self, "입력 오류", "저장 경로를 선택하세요.")
+            return
+        
+        mode = "keyword" if self.mode_combo.currentIndex() == 0 else "semantic"
+        self.data = {
+            "mode": mode,
+            "text_col": self.column_combo.currentText(),
+            "threshold": self.threshold_spin.value(),
+            "save_dir": self.save_dir
+        }
+        self.accept()
+
+
 class EditHomeMemberDialog(BaseDialog):
     def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)

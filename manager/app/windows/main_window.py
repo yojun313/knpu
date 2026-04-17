@@ -36,7 +36,7 @@ from services.logging import userLogging, getUserLocation
 from ui.style import theme_option
 from ui.status import printStatus, changeStatusbarAction
 from ui.dialogs import ViewVersionDialog
-from assets.gui import Ui_MainWindow
+from assets.gui_ui import Ui_MainWindow
 from services.api import Request
 
 class MainWindow(QMainWindow, Ui_MainWindow):

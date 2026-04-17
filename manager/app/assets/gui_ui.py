@@ -162,6 +162,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5.addWidget(self.analysis_hate_btn)
 
+        self.analysis_network_btn = QPushButton(self.tab_file)
+        self.analysis_network_btn.setObjectName(u"analysis_network_btn")
+
+        self.verticalLayout_5.addWidget(self.analysis_network_btn)
+
         self.analysis_etc_btn = QPushButton(self.tab_file)
         self.analysis_etc_btn.setObjectName(u"analysis_etc_btn")
 
@@ -541,6 +546,7 @@ class Ui_MainWindow(object):
         self.analysis_tokenization_btn.setText(QCoreApplication.translate("MainWindow", u"\ud1a0\ud070\ud654", None))
         self.analysis_kemkim_btn.setText(QCoreApplication.translate("MainWindow", u"KEM KIM", None))
         self.analysis_hate_btn.setText(QCoreApplication.translate("MainWindow", u"\ud610\uc624\ub3c4 \ubd84\uc11d", None))
+        self.analysis_network_btn.setText(QCoreApplication.translate("MainWindow", u"\ub124\ud2b8\uc6cc\ud06c \ubd84\uc11d", None))
         self.analysis_etc_btn.setText(QCoreApplication.translate("MainWindow", u"\uae30\ud0c0 \ubd84\uc11d", None))
         self.tabWidget_data_process.setTabText(self.tabWidget_data_process.indexOf(self.tab_file), QCoreApplication.translate("MainWindow", u"\ud30c\uc77c \ubd88\ub7ec\uc624\uae30", None))
         self.board_addversion_button.setText(QCoreApplication.translate("MainWindow", u"\ucd94\uac00", None))
