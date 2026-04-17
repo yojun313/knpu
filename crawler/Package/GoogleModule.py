@@ -24,7 +24,7 @@ class GoogleModule:
 
         toolmodule_obj = ToolModule()
         # Gmail
-        self.sender = "knpubigmac2024@gmail.com"
+        self.sender = os.getenv('MAIL_SENDER')
         self.MailPassword = os.getenv('MAIL_PASSWORD')
 
         path_data = toolmodule_obj.pathFinder()

@@ -22,7 +22,7 @@ token_path = os.getenv('DATA_PATH')
 storage_json_path = os.path.join(token_path, 'storage.json')
 
 # Gmail
-sender = "knpubigmac2024@gmail.com"
+sender = os.getenv('MAIL_SENDER')
 MailPassword = os.getenv('MAIL_PASSWORD')
 SCOPES = ['https://www.googleapis.com/auth/drive']
 creds = None

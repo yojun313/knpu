@@ -7,7 +7,7 @@ import os
 load_dotenv()
 
 def sendEmail(receiver, title, text):
-    sender = "knpubigmac2024@gmail.com"
+    sender = os.getenv('MAIL_SENDER')
     MailPassword = os.getenv('MAIL_PASSWORD')
 
     msg = MIMEMultipart()
