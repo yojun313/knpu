@@ -2060,7 +2060,85 @@ class Manager_Analysis(Manager_Worker):
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-  
+    
+    def run_network_analysis(self):
+        class NetworkWorker(BaseWorker):
+            def __init__(self, pid, filepath, option, save_path, parent=None):
+                super().__init__(parent)
+                self.pid = pid
+                self.filepath = filepath
+                self.option = option
+                self.save_path = save_path
+
+            def run(self):
+                try:
+                    # 매니저 서버의 프록시 라우트 호출
+                    upload_url = MANAGER_SERVER_API + "/analysis/graph-network"
+                    
+                    response = self.upload_file(
+                        self.filepath,
+                        upload_url,
+                        extra_fields={"option": json.dumps(self.option)},
+                        label="데이터 업로드 및 그래프 분석 중..."
+                    )
+                    
+                    # 서버가 ZIP 파일을 반환하므로 extract=True 설정
+                    extract_path = self.download_file(
+                        response, 
+                        self.save_path, 
+                        label="결과 다운로드 및 압축 해제 중", 
+                        extract=True
+                    )
+                    
+                    self.finished.emit(
+                        True, 
+                        f"그래프 분석이 완료되었습니다.\nNode/Edge 리스트가 저장되었습니다.", 
+                        extract_path
+                    )
+
+                except requests.exceptions.HTTPError as e:
+                    self.error.emit(f"서버 에러 발생: {e.response.status_code}\n{e.response.text}")
+                except Exception:
+                    self.error.emit(traceback.format_exc())
+
+        try:
+            # 1. 파일 선택
+            filepath = self.select_csv_file()
+            if not filepath: return
+
+            # 2. CSV 헤더 추출 (다이얼로그 표시용)
+            headers = getCSVHeaders(filepath)
+            
+            # 3. 옵션 설정 다이얼로그
+            dialog = NetworkAnalysisDialog(headers, self.main)
+            if dialog.exec() != QDialog.Accepted or dialog.data is None:
+                return
+
+            res = dialog.data
+            save_path = res.pop("save_dir")
+            
+            # 4. 프로세스 및 스레드 등록
+            pid = str(uuid.uuid4())
+            res["pid"] = pid
+            
+            thread_name = f"네트워크 분석: {os.path.basename(filepath)}"
+            register_thread(thread_name)
+            userLogging(f"ANALYSIS -> NetworkGraph({os.path.basename(filepath)}) mode={res['mode']}")
+
+            # 5. 상태 창 표시 및 워커 실행
+            downloadDialog = DownloadDialog(thread_name, pid, self.main)
+            downloadDialog.show()
+
+            worker = NetworkWorker(pid, filepath, res, save_path, self.main)
+            self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
+            worker.start()
+
+            if not hasattr(self, "_workers"): self._workers = []
+            self._workers.append(worker)
+
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+            
     def select_csv_file(self, tokenCheck=False):
         printStatus(self.main, "CSV 파일을 선택하세요")
         file_path, _ = QFileDialog.getOpenFileName(
@@ -2114,6 +2192,7 @@ class Manager_Analysis(Manager_Worker):
         self.main.analysis_wordcloud_btn.clicked.connect(self.run_wordcloud)
         self.main.analysis_kemkim_btn.clicked.connect(self.select_kemkim)
         self.main.analysis_hate_btn.clicked.connect(self.run_hate_measure)
+        self.main.analysis_network_btn.clicked.connect(self.run_network_analysis)
         self.main.analysis_tokenization_btn.clicked.connect(self.select_tokenize)
         self.main.analysis_etc_btn.clicked.connect(self.select_etc_analysis)
 
