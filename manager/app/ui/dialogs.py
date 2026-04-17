@@ -2341,11 +2341,12 @@ class DetectOptionDialog(BaseDialog):
 
 
 class NetworkAnalysisDialog(QDialog):
-    def __init__(self, column_names, parent=None):
+    def __init__(self, csv_name, column_names, parent=None):
         super().__init__(parent)
         self.setWindowTitle("네트워크 그래프 분석 (Network 스타일)")
         self.resize(450, 350)
         self.data = None
+        self.csv_name = csv_name    
 
         layout = QVBoxLayout(self)
         form = QFormLayout()
@@ -2353,7 +2354,14 @@ class NetworkAnalysisDialog(QDialog):
         # 1. 분석 모드 선택
         self.mode_combo = QComboBox()
         self.mode_combo.addItems(["키워드 공출현 분석 (토큰화 데이터용)", "의미론적 유사도 분석 (원문 데이터용)"])
+    
+        if self.csv_name and "token" in self.csv_name.lower():
+            self.mode_combo.setCurrentIndex(0)
+        else:
+            self.mode_combo.setCurrentIndex(1)
+    
         form.addRow("분석 모드", self.mode_combo)
+        self.update_ui_by_mode(self.mode_combo.currentIndex())
 
         # 2. 텍스트 열 선택
         self.column_combo = QComboBox()

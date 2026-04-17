@@ -15,6 +15,15 @@ from collections import Counter
 from sklearn.metrics.pairwise import cosine_similarity
 import networkx as nx
 import zipfile
+import platform
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+
+if platform.system() == 'Linux':
+    font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
+    fm.fontManager.addfont(font_path)
+    plt.rcParams['font.family'] = 'NanumGothic'
+    plt.rcParams['axes.unicode_minus'] = False
 
 router = APIRouter()
 
@@ -325,9 +334,36 @@ async def graph_network_route(
                     if sim_matrix[i][j] >= threshold:
                         G.add_edge(i, j, weight=float(sim_matrix[i][j]))
 
-        # 중심성 지표 계산
+        # 1. 중심성 및 레이아웃 계산
         deg_cent = nx.degree_centrality(G)
         bet_cent = nx.betweenness_centrality(G)
+        pos = nx.spring_layout(G, k=0.5, iterations=50) # 그래프 형태 결정
+
+        # 2. 시각화 이미지 생성 (Matplotlib)
+        plt.figure(figsize=(12, 12))
+        
+        # 노드 크기를 중심성에 비례하게 설정
+        node_sizes = [v * 5000 for v in deg_cent.values()]
+        
+        # 연결선 두께를 가중치(Weight)에 비례하게 설정
+        edges = G.edges(data=True)
+        weights = [d['weight'] for u, v, d in edges]
+        # 가중치 정규화 (선이 너무 굵어지는 것 방지)
+        max_weight = max(weights) if weights else 1
+        edge_widths = [(w / max_weight) * 5 for w in weights]
+
+        nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color="skyblue", alpha=0.7)
+        nx.draw_networkx_edges(G, pos, width=edge_widths, edge_color="gray", alpha=0.4)
+        nx.draw_networkx_labels(G, pos, font_family=plt.rcParams['font.family'], font_size=10)
+
+        plt.title(f"Network Analysis ({mode} mode)", size=15)
+        plt.axis('off')
+
+        # 이미지를 버퍼에 저장
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', bbox_inches='tight')
+        img_buffer.seek(0)
+        plt.close() # 메모리 해제
 
         nodes_df = pd.DataFrame([
             {
@@ -356,3 +392,4 @@ async def graph_network_route(
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
+    

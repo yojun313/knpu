@@ -2110,7 +2110,7 @@ class Manager_Analysis(Manager_Worker):
             headers = getCSVHeaders(filepath)
             
             # 3. 옵션 설정 다이얼로그
-            dialog = NetworkAnalysisDialog(headers, self.main)
+            dialog = NetworkAnalysisDialog(os.path.basename(filepath), headers, self.main)
             if dialog.exec() != QDialog.Accepted or dialog.data is None:
                 return
 
@@ -2119,6 +2119,7 @@ class Manager_Analysis(Manager_Worker):
             
             # 4. 프로세스 및 스레드 등록
             pid = str(uuid.uuid4())
+            register_process(pid, "네트워크 분석")
             res["pid"] = pid
             
             thread_name = f"네트워크 분석: {os.path.basename(filepath)}"
