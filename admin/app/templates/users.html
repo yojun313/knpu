@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-2xl font-bold">User Management</h2>
+    <p class="text-zinc-400 text-sm">Monitor registered users and their devices</p>
+</div>
+
+<div class="card rounded-xl overflow-hidden">
+    <table class="w-full text-left text-sm">
+        <thead class="bg-zinc-900/50 border-b border-zinc-800 text-zinc-400">
+            <tr>
+                <th class="px-6 py-4 font-semibold">Name / Role</th>
+                <th class="px-6 py-4 font-semibold">Email / Version</th>
+                <th class="px-6 py-4 font-semibold">Device List</th>
+                <th class="px-6 py-4 font-semibold">Pushover Key</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-800">
+            {% for u in users %}
+            <tr class="hover:bg-zinc-900/30 transition">
+                <td class="px-6 py-4">
+                    <div class="font-bold text-zinc-100">{{ u.name }}</div>
+                    <div class="text-xs mt-1">
+                        {% if u.role == 'admin' %}
+                        <span class="text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded border border-blue-400/20">Admin</span>
+                        {% else %}
+                        <span class="text-zinc-500 bg-zinc-500/10 px-2 py-0.5 rounded border border-zinc-500/20">User</span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-zinc-300">{{ u.email }}</div>
+                    <div class="text-xs text-zinc-500 mt-1">v{{ u.version }}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex flex-wrap gap-1">
+                        {% for device in u.device_list %}
+                        <span class="bg-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 rounded">
+                            {{ device }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <code class="text-xs text-zinc-500 font-mono">{{ u.pushoverKey[:10] }}...</code>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
