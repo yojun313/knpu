@@ -2341,12 +2341,12 @@ class DetectOptionDialog(BaseDialog):
 
 
 class NetworkAnalysisDialog(QDialog):
-    def __init__(self, csv_name, column_names, parent=None):
+    def __init__(self, csv_path, column_names, parent=None):
         super().__init__(parent)
         self.setWindowTitle("네트워크 그래프 분석 (Network 스타일)")
         self.resize(450, 350)
         self.data = None
-        self.csv_name = csv_name    
+        self.csv_path = csv_path
 
         layout = QVBoxLayout(self)
         form = QFormLayout()
@@ -2395,9 +2395,8 @@ class NetworkAnalysisDialog(QDialog):
         path_layout.addWidget(self.path_btn)
         layout.addLayout(path_layout)
 
-        self.save_dir = parent.localDirectory if hasattr(parent, 'localDirectory') else ""
-        if self.save_dir:
-            self.path_label.setText(self.save_dir)
+        
+        self.path_label.setText(os.path.dirname(self.csv_path) if self.csv_path else "저장 위치: 선택되지 않음")
             
         self.path_btn.clicked.connect(self.select_path)
 

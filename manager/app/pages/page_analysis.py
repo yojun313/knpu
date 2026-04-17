@@ -2073,12 +2073,10 @@ class Manager_Analysis(Manager_Worker):
 
             def run(self):
                 try:
-                    # 1. 결과가 저장될 최종 디렉토리 경로 생성
                     target_dir = os.path.join(self.save_path, self.folder_name)
                     if not os.path.exists(target_dir):
                         os.makedirs(target_dir, exist_ok=True)
 
-                    # 2. 매니저 서버 API 호출
                     upload_url = MANAGER_SERVER_API + "/analysis/graph-network"
                     
                     response = self.upload_file(
@@ -2088,20 +2086,20 @@ class Manager_Analysis(Manager_Worker):
                         label="데이터 업로드 및 네트워크 분석 중..."
                     )
                     
-                    # 3. 결과 다운로드 및 압축 해제 (extract=True)
-                    # download_file 내부에서 압축 해제 후 원본 zip을 삭제하도록 설계되어 있다면 그대로 사용
-                    # 만약 삭제되지 않는다면 아래 extract_path를 통해 후처리가 가능합니다.
+                    
+                    zip_name = f"network_{os.path.splitext(os.path.basename(self.filepath))[0]}_{datetime.now().strftime('%m%d%H%M')}.zip"
                     extract_path = self.download_file(
                         response, 
                         target_dir, 
                         label="결과 파일 다운로드 및 정리 중", 
+                        zip_name=zip_name,
                         extract=True
                     )
                     
                     self.finished.emit(
                         True, 
-                        f"네트워크 분석이 완료되었습니다.\n시각화 이미지 및 노드/에지 리스트가 저장되었습니다.", 
-                        target_dir # 최종 폴더 경로 반환
+                        f"네트워크 분석이 완료되었습니다.", 
+                        target_dir 
                     )
 
                 except requests.exceptions.HTTPError as e:
@@ -2110,27 +2108,21 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
 
         try:
-            # 1. 대상 CSV 파일 선택
             filepath = self.select_csv_file()
             if not filepath: return
 
-            # 2. CSV 헤더 추출
             headers = getCSVHeaders(filepath)
             filename = os.path.basename(filepath)
             
-            # 3. 분석 옵션 설정 다이얼로그
-            dialog = NetworkAnalysisDialog(filename, headers, self.main)
+            dialog = NetworkAnalysisDialog(filepath, headers, self.main)
             if dialog.exec() != QDialog.Accepted or dialog.data is None:
                 return
 
             res = dialog.data
-            base_save_path = res.pop("save_dir") # 사용자가 선택한 상위 경로
+            base_save_path = res.pop("save_dir")
             
-            # 4. 결과 폴더명 규칙 생성 (다른 기능들과 일관성 유지)
-            # 형식: network_파일명_MMDDHHMM
             folder_name = f"network_{os.path.splitext(filename)[0]}_{datetime.now():%m%d%H%M}"
             
-            # 5. 프로세스 및 스레드 등록
             pid = str(uuid.uuid4())
             register_process(pid, "네트워크 분석")
             res["pid"] = pid
@@ -2139,7 +2131,6 @@ class Manager_Analysis(Manager_Worker):
             register_thread(thread_name)
             userLogging(f"ANALYSIS -> NetworkGraph({filename}) mode={res['mode']}")
 
-            # 6. 상태창 표시 및 워커 시작
             downloadDialog = DownloadDialog(thread_name, pid, self.main)
             downloadDialog.show()
 
