@@ -275,7 +275,6 @@ async def embed_csv_route(
         headers={"Content-Disposition": cd_header},
     )
 
-
 def process_text_chunk(texts):
         """
         할당받은 텍스트 리스트에서 단어 조합(Counter)을 추출합니다.
