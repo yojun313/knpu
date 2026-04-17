@@ -44,8 +44,5 @@ transformers
 yt-dlp
 FlagEmbedding
 jinja2
-faster_whisper
-ultralytics
 asyncio
 discord
-aiosqlite

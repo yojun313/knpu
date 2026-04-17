@@ -1,59 +1,87 @@
 import discord
 from discord.ext import commands, tasks
-import aiosqlite # 혹은 사용하는 DB 라이브러리
+import motor.motor_asyncio
+import os
+from datetime import datetime
 
 class ErrorLog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.db_path = "manager/server/app/db/your_db.db" # 실제 경로에 맞게 수정
-        self.check_logs.start() # 10초 주기 루프 시작
+        
+        # .env에서 몽고DB URI를 가져오거나 직접 입력하세요.
+        # 예: mongodb+srv://username:password@cluster.mongodb.net/
+        self.mongo_uri = os.getenv('MONGO_URI') 
+        self.client = motor.motor_asyncio.AsyncIOMotorClient(self.mongo_uri)
+        
+        # 데이터베이스와 컬렉션 이름 설정
+        self.db = self.client['your_database_name'] # DB 이름
+        self.log_col = self.db['error_logs']        # 로그 컬렉션
+        self.config_col = self.db['bot_config']     # 설정 컬렉션 (채널 ID 저장용)
+
+        # 10초마다 실행되는 루프 시작
+        self.check_logs_loop.start()
 
     def cog_unload(self):
-        self.check_logs.cancel()
+        self.check_logs_loop.cancel()
 
     @tasks.loop(seconds=10.0)
-    async def check_logs(self):
-        # 봇이 완전히 준비될 때까지 대기
+    async def check_logs_loop(self):
+        """10초마다 DB를 확인하여 새로운 로그를 전송합니다."""
         await self.bot.wait_until_ready()
-        
+
         try:
-            async with aiosqlite.connect(self.db_path) as db:
-                # 1. 설정된 로그 채널 가져오기
-                async with db.execute("SELECT channel_id FROM settings WHERE key = 'log_channel'") as cursor:
-                    row = await cursor.fetchone()
-                    if not row: return
-                    channel_id = row[0]
+            # 1. 로그를 보낼 채널 정보 가져오기
+            config = await self.config_col.find_one({"type": "log_settings"})
+            if not config or "channel_id" not in config:
+                return # 채널 설정이 없으면 패스
 
-                # 2. 아직 전송되지 않은 에러 로그 가져오기
-                async with db.execute("SELECT id, message, created_at FROM error_logs WHERE is_sent = 0") as cursor:
-                    rows = await cursor.fetchall()
+            channel = self.bot.get_channel(config["channel_id"])
+            if not channel:
+                return # 채널을 찾을 수 없으면 패스
 
-                if not rows: return
+            # 2. 아직 전송되지 않은(is_sent: false) 로그들 찾기 (최대 5개씩 처리해 부하 방지)
+            cursor = self.log_col.find({"is_sent": False}).limit(5)
+            logs = await cursor.to_list(length=5)
 
-                channel = self.bot.get_channel(channel_id)
-                if channel:
-                    for log_id, message, created_at in rows:
-                        embed = discord.Embed(title="🚨 에러 감지", description=message, color=0xff0000)
-                        embed.set_footer(text=f"발생 시간: {created_at}")
-                        await channel.send(embed=embed)
-                        
-                        # 3. 전송 완료 표시
-                        await db.execute("UPDATE error_logs SET is_sent = 1 WHERE id = ?", (log_id,))
-                
-                await db.commit()
+            if not logs:
+                return
+
+            for log in logs:
+                # 임베드 생성
+                embed = discord.Embed(
+                    title="🚨 시스템 에러 감지",
+                    description=log.get('message', '내용 없음'),
+                    color=discord.Color.red(),
+                    timestamp=log.get('created_at', datetime.utcnow())
+                )
+                # 추가 정보가 있다면 필드로 넣기
+                if 'source' in log:
+                    embed.add_field(name="발생 위치", value=log['source'])
+
+                await channel.send(embed=embed)
+
+                # 3. 전송 완료 표시 업데이트
+                await self.log_col.update_one(
+                    {"_id": log["_id"]},
+                    {"$set": {"is_sent": True}}
+                )
+
         except Exception as e:
-            print(f"로그 폴링 중 오류 발생: {e}")
+            print(f"❌ [MongoDB Loop Error] {e}")
 
-    @commands.hybrid_command(name="로그채널설정", description="로그가 출력될 채널을 지정합니다.")
+    # --- 명령어: 로그 채널 설정 ---
+    @commands.hybrid_command(name="로그채널설정", description="에러 로그가 올라올 채널을 DB에 저장합니다.")
     @commands.has_permissions(administrator=True)
     async def set_log_channel(self, ctx, channel: discord.TextChannel):
-        async with aiosqlite.connect(self.db_path) as db:
-            await db.execute(
-                "INSERT OR REPLACE INTO settings (key, channel_id) VALUES ('log_channel', ?)",
-                (channel.id,)
+        try:
+            await self.config_col.update_one(
+                {"type": "log_settings"},
+                {"$set": {"channel_id": channel.id}},
+                upsert=True # 데이터가 없으면 새로 생성
             )
-            await db.commit()
-        await ctx.send(f"✅ 로그 채널이 {channel.mention}으로 설정되었습니다.")
+            await ctx.send(f"✅ 로그 채널이 {channel.mention}으로 설정되었습니다. (DB 반영 완료)")
+        except Exception as e:
+            await ctx.send(f"❌ 설정 저장 중 오류 발생: {e}")
 
 async def setup(bot):
     await bot.add_cog(ErrorLog(bot))
