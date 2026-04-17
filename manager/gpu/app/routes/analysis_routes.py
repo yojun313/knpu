@@ -275,12 +275,8 @@ async def embed_csv_route(
         headers={"Content-Disposition": cd_header},
     )
 
-@router.post("/graph-network")
-async def graph_network_route(
-    file: UploadFile = File(...),
-    option: str = Form("{}")
-):
-    def process_text_chunk(texts):
+
+def process_text_chunk(texts):
         """
         할당받은 텍스트 리스트에서 단어 조합(Counter)을 추출합니다.
         """
@@ -294,7 +290,12 @@ async def graph_network_route(
             if len(unique_tokens) >= 2:
                 local_counter.update(combinations(unique_tokens, 2))
         return local_counter
-
+    
+@router.post("/graph-network")
+async def graph_network_route(
+    file: UploadFile = File(...),
+    option: str = Form("{}")
+):
     try:
         option_dict = json.loads(option)
         mode = option_dict.get("mode", "keyword")
