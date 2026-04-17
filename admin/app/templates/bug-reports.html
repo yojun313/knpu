@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-2xl font-bold">Bug Reports</h2>
+    <p class="text-zinc-400 text-sm">System errors and issue tracking</p>
+</div>
+
+<div class="card rounded-xl">
+    <div class="p-2">
+        {% for bug in bugs %}
+        <div class="list-item p-5">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold bg-red-900/30 text-red-400 border border-red-900 px-2 py-1 rounded">v{{ bug.versionName }}</span>
+                    <span class="text-sm font-bold">{{ bug.bugTitle }}</span>
+                </div>
+                <span class="text-xs text-zinc-500">Reporter: {{ bug.writerName }}</span>
+            </div>
+            <div class="text-sm text-zinc-300 mb-3">{{ bug.bugText }}</div>
+            <div class="bg-black border border-zinc-800 p-3 rounded-md overflow-x-auto">
+                <pre class="text-xs text-red-300 font-mono">{{ bug.programLog }}</pre>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
