@@ -51,37 +51,27 @@ def delete_user(userUid: str):
         )
         
 def log_user(userUid: str, message: str):
-    now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
-    date_key = now_kst.strftime("%Y-%m-%d")
-    time_str = now_kst.strftime("%H:%M:%S")
-
+    now = datetime.now(ZoneInfo("Asia/Seoul"))
+    
     log_entry = {
-        "time": time_str,
+        "uid": userUid,
+        "datetime": now,
         "message": message
     }
 
-    user_logs_db.update_one(
-        {"uid": userUid},
-        {"$push": {date_key: log_entry}, "$setOnInsert": {"uid": userUid}},
-        upsert=True
-    )
+    user_logs_db.insert_one(log_entry)
 
 def bug_user(userUid: str, message: str):
-    now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
-    date_key = now_kst.strftime("%Y-%m-%d")
-    time_str = now_kst.strftime("%H:%M:%S")
-
+    now = datetime.now(ZoneInfo("Asia/Seoul"))
+    
     log_entry = {
-        "time": time_str,
+        "uid": userUid,
+        "datetime": now,
         "message": message
     }
 
-    user_bugs_db.update_one(
-        {"uid": userUid},
-        {"$push": {date_key: log_entry}, "$setOnInsert": {"uid": userUid}},
-        upsert=True
-    )
-
+    user_bugs_db.insert_one(log_entry)
+    
 def update_user_version(userUid: str, oldVersionName: str | None, newVersionName: str):
     updated_user = user_db.find_one_and_update(
         {"uid": userUid},
