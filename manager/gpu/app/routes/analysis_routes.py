@@ -380,14 +380,15 @@ async def graph_network_route(
             for u, v, d in G.edges(data=True)
         ])
 
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, 'w') as zf:
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w') as zf:
             zf.writestr("nodes.csv", nodes_df.to_csv(index=False, encoding="utf-8-sig"))
             zf.writestr("edges.csv", edges_df.to_csv(index=False, encoding="utf-8-sig"))
+            zf.writestr("network_graph.png", img_buffer.getvalue()) # 시각화 이미지 추가
 
-        buffer.seek(0)
-        return StreamingResponse(buffer, media_type="application/zip", headers={
-            "Content-Disposition": f"attachment; filename=network_full_analysis.zip"
+        zip_buffer.seek(0)
+        return StreamingResponse(zip_buffer, media_type="application/zip", headers={
+            "Content-Disposition": f"attachment; filename=network_analysis_result.zip"
         })
 
     except Exception as e:

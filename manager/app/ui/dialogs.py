@@ -2361,7 +2361,6 @@ class NetworkAnalysisDialog(QDialog):
             self.mode_combo.setCurrentIndex(1)
     
         form.addRow("분석 모드", self.mode_combo)
-        self.update_ui_by_mode(self.mode_combo.currentIndex())
 
         # 2. 텍스트 열 선택
         self.column_combo = QComboBox()
@@ -2383,6 +2382,8 @@ class NetworkAnalysisDialog(QDialog):
 
         # 모드 변경 시 라벨 및 범위 조정
         self.mode_combo.currentIndexChanged.connect(self.update_ui_by_mode)
+        # 현재 선택된 모드에 맞춰 UI 초기화 (threshold_label 생성 후 호출)
+        self.update_ui_by_mode(self.mode_combo.currentIndex())
 
         layout.addLayout(form)
 
