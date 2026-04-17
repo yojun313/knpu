@@ -46,3 +46,4 @@ FlagEmbedding
 jinja2
 asyncio
 discord
+aiosmtplib
