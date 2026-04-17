@@ -1,5 +1,7 @@
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import os
 import socket
 from app.config import mode
@@ -85,3 +87,26 @@ def sync_manager_databases(src_db_name='manager', target_db_name='manager_dev'):
             keys = index_info['key']
             options = {k: v for k, v in index_info.items() if k not in ['v', 'key', 'ns']}
             target_db[coll_name].create_index(keys, **options)
+
+def migrate_kst(collection_name):
+    coll = manager_db[collection_name]
+    kst = ZoneInfo("Asia/Seoul")
+    
+    all_docs = coll.find()
+    
+    for doc in all_docs:
+        dt = doc.get("datetime")
+        if not dt or not isinstance(dt, datetime):
+            continue
+            
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+            
+        dt_kst = dt.astimezone(kst)
+        datetime_kst_str = dt_kst.strftime("%Y-%m-%d %H:%M:%S")
+        
+        coll.update_one(
+            {"_id": doc["_id"]},
+            {"$set": {"datetime_kst": datetime_kst_str}}
+        )
+
