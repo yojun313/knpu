@@ -14,7 +14,9 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from ToolModule import ToolModule
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class GoogleModule:
     
@@ -23,7 +25,7 @@ class GoogleModule:
         toolmodule_obj = ToolModule()
         # Gmail
         self.sender = "knpubigmac2024@gmail.com"
-        self.MailPassword = 'vygn nrmh erpf trji'
+        self.MailPassword = os.getenv('MAIL_PASSWORD')
 
         path_data = toolmodule_obj.pathFinder()
         # Google Drive
