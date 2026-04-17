@@ -10,6 +10,11 @@ from app.models.analysis_model import HateOption
 import tempfile
 from urllib.parse import quote  
 from app.libs.exceptions import BadRequestException
+from itertools import combinations
+from collections import Counter
+from sklearn.metrics.pairwise import cosine_similarity
+import networkx as nx
+import zipfile
 
 router = APIRouter()
 
@@ -258,3 +263,96 @@ async def embed_csv_route(
         media_type="text/csv",
         headers={"Content-Disposition": cd_header},
     )
+
+@router.post("/graph-network")
+async def graph_network_route(
+    file: UploadFile = File(...),
+    option: str = Form("{}")
+):
+    try:
+        option_dict = json.loads(option)
+        mode = option_dict.get("mode", "keyword")
+        text_col = option_dict.get("text_col", "Article Text")
+        threshold = float(option_dict.get("threshold", 0.8))
+
+        content = await file.read()
+        try:
+            df = pd.read_csv(io.StringIO(content.decode("utf-8-sig")))
+        except:
+            df = pd.read_csv(io.StringIO(content.decode("cp949")))
+
+        G = nx.Graph()
+
+        if mode == "keyword":
+            # 1. Stopwords 및 글자 수 제한 제거, 모든 쌍 추출
+            all_pairs = []
+
+            for text in df[text_col].fillna("").astype(str):
+                # 콤마로 구분된 토큰들 추출 (공백 제거)
+                tokens = [t.strip() for t in text.split(',') if t.strip()]
+                # 중복 제거 후 정렬 (A-B와 B-A가 중복 계산되지 않게)
+                unique_tokens = sorted(list(set(tokens)))
+                # 기사 내 모든 단어 조합 생성
+                all_pairs.extend(list(combinations(unique_tokens, 2)))
+
+            # 2. 모든 조합의 빈도수 계산 (제한 없음)
+            pair_counts = Counter(all_pairs)
+
+            # 3. 계산된 모든 쌍을 그래프에 에지로 추가
+            # threshold가 빈도수(w) 기준이 됨 (기본값 2 이상 권장이나, 1로 하면 모든 관계 포함)
+            min_freq = int(threshold) if threshold >= 1 else 1 
+            
+            for (u, v), w in pair_counts.items():
+                if w >= min_freq:
+                    G.add_edge(u, v, weight=w)
+
+        elif mode == "semantic":
+            # (Semantic 모드는 기존과 동일하게 유지하되, 모든 문서를 대상으로 분석)
+            if 'embedding' not in df.columns:
+                sentences = df[text_col].fillna("").astype(str).tolist()
+                embeddings = generate_embeddings(sentences, batch_size=12)
+            else:
+                embeddings = [json.loads(e) for e in df['embedding']]
+
+            sim_matrix = cosine_similarity(embeddings)
+            
+            for i in range(len(df)):
+                label = df.iloc[i]['Article Title'] if 'Article Title' in df.columns else f"Doc_{i}"
+                G.add_node(i, label=label)
+
+            for i in range(len(sim_matrix)):
+                for j in range(i + 1, len(sim_matrix)):
+                    if sim_matrix[i][j] >= threshold:
+                        G.add_edge(i, j, weight=float(sim_matrix[i][j]))
+
+        # 중심성 지표 계산
+        deg_cent = nx.degree_centrality(G)
+        bet_cent = nx.betweenness_centrality(G)
+
+        nodes_df = pd.DataFrame([
+            {
+                "ID": n, 
+                "Label": G.nodes[n].get('label', n), 
+                "DegreeCentrality": deg_cent.get(n, 0), 
+                "BetweennessCentrality": bet_cent.get(n, 0)
+            }
+            for n in G.nodes()
+        ])
+
+        edges_df = pd.DataFrame([
+            {"Source": u, "Target": v, "Weight": d['weight']}
+            for u, v, d in G.edges(data=True)
+        ])
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, 'w') as zf:
+            zf.writestr("nodes.csv", nodes_df.to_csv(index=False, encoding="utf-8-sig"))
+            zf.writestr("edges.csv", edges_df.to_csv(index=False, encoding="utf-8-sig"))
+
+        buffer.seek(0)
+        return StreamingResponse(buffer, media_type="application/zip", headers={
+            "Content-Disposition": f"attachment; filename=network_full_analysis.zip"
+        })
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": str(e)})
