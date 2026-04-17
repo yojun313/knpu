@@ -983,15 +983,15 @@ def unload_bge_m3_model():
 def load_bge_m3_model():
     global _bge_m3_model
     if _bge_m3_model is None:
-        model_path = os.path.join(MODEL_DIR, "bge-m3")
-        # use_fp16=True로 메모리 절약 및 속도 향상
+        # 특정 경로 대신 모델 이름(Repo ID)을 직접 사용
+        # 이 경우 Hugging Face 캐시 디렉토리에 자동으로 다운로드 및 로드됩니다.
         _bge_m3_model = BGEM3FlagModel(
-            model_path, 
+            "BAAI/bge-m3", 
             use_fp16=True, 
-            device="cuda" if torch.cuda.is_available() else "cpu",
-            local_files_only=True
+            device="cuda" if torch.cuda.is_available() else "cpu"
         )
     
+    # 타이머 리셋 (manager 객체가 전역에 존재해야 함)
     manager.reset_timer("bge_m3", unload_bge_m3_model)
     return _bge_m3_model
 
