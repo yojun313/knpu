@@ -170,9 +170,9 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         query = {'requester': username}
                 
     if sort_by == "keyword":
-        crawlDbList = crawlList_db.find(query, {"_id": 0}).sort("keyword", 1)
+        crawlDbList = list(crawlList_db.find(query, {"_id": 0}).sort("keyword", 1))
     else:
-        crawlDbList = crawlList_db.find(query, {"_id": 0}).sort("startTime", -1)
+        crawlDbList = list(crawlList_db.find(query, {"_id": 0}).sort("startTime", -1))
     
     if not crawlDbList:
         crawlDbList = []

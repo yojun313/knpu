@@ -26,14 +26,14 @@ def create_user(user: UserCreate):
     )
 
 def get_all_users():
-    users = user_db.find({}, {"_id": 0})
+    users = list(user_db.find({}, {"_id": 0}))
     return JSONResponse(
         status_code=200,
         content={"message": "Users retrieved", "data": users},
     )
 
 def get_all_admins():
-    admins = user_db.find({"role": "admin"}, {"_id": 0})
+    admins = list(user_db.find({"role": "admin"}, {"_id": 0}))
     return admins
 
 def delete_user(userUid: str):
