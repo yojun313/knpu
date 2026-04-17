@@ -114,6 +114,7 @@ async def main():
     
     try:
         async with bot:
+            
             await bot.start(TOKEN)
     finally:
         # 3. 종료 시 터널 닫기

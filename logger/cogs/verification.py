@@ -7,9 +7,9 @@ import random
 import datetime
 import os
 
-# --- 이메일 설정 (본인의 정보로 수정) ---
 GMAIL_USER = "knpubigmac2024@gmail.com"
 GMAIL_APP_PW = os.getenv('MAIL_PASSWORD')  
+
 class VerificationModal(discord.ui.Modal, title='이메일 인증하기'):
     def __init__(self, bot):
         super().__init__()
@@ -34,7 +34,7 @@ class VerificationModal(discord.ui.Modal, title='이메일 인증하기'):
         code = str(random.randint(100000, 999999))
         
         # 유저 인증 정보 임시 저장 (전역 DB 사용)
-        await self.bot.db.verification.update_one(
+        await self.bot.manager_db.verification.update_one(
             {"user_id": interaction.user.id},
             {"$set": {
                 "name": self.user_name.value,
@@ -79,8 +79,8 @@ class CodeInputModal(discord.ui.Modal, title='인증 코드 입력'):
 
     async def on_submit(self, interaction: discord.Interaction):
         # DB에서 유저 데이터 및 서버 설정 가져오기
-        data = await self.bot.db.verification.find_one({"user_id": interaction.user.id})
-        config = await self.bot.db.config.find_one({"guild_id": interaction.guild.id})
+        data = await self.bot.manager_db.verification.find_one({"user_id": interaction.user.id})
+        config = await self.bot.manager_db.auth_config.find_one({"guild_id": interaction.guild.id})
 
         if not config or 'role_id' not in config:
             return await interaction.response.send_message("서버에 설정된 인증 역할이 없습니다. /인증설정 명령어를 먼저 사용하세요.", ephemeral=True)
@@ -89,7 +89,7 @@ class CodeInputModal(discord.ui.Modal, title='인증 코드 입력'):
             role = interaction.guild.get_role(config['role_id'])
             if role:
                 await interaction.user.add_roles(role)
-                await self.bot.db.verification.delete_one({"user_id": interaction.user.id})
+                await self.bot.manager_db.verification.delete_one({"user_id": interaction.user.id})
                 await interaction.response.send_message(f"인증 성공! {role.name} 역할이 부여되었습니다.", ephemeral=True)
             else:
                 await interaction.response.send_message("설정된 역할을 서버에서 찾을 수 없습니다.", ephemeral=True)
@@ -122,7 +122,7 @@ class VerificationCog(commands.Cog):
     @app_commands.describe(role="인증된 유저에게 줄 역할")
     @commands.has_permissions(administrator=True)
     async def set_role(self, interaction: discord.Interaction, role: discord.Role):
-        await self.bot.db.config.update_one(
+        await self.bot.manager_db.auth_config.update_one(
             {"guild_id": interaction.guild.id},
             {"$set": {"role_id": role.id}},
             upsert=True
