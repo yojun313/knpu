@@ -2344,9 +2344,12 @@ class NetworkAnalysisDialog(QDialog):
     def __init__(self, csv_path, column_names, parent=None):
         super().__init__(parent)
         self.setWindowTitle("네트워크 그래프 분석 (Network 스타일)")
-        self.resize(450, 350)
+        self.resize(500, 400) # 줄바꿈을 고려해 세로 높이를 조금 늘림
         self.data = None
         self.csv_path = csv_path
+        
+        # 중요: 초기 저장 경로 설정 (사용자가 버튼 안 눌러도 기본값 유지)
+        self.save_dir = os.path.dirname(self.csv_path) if self.csv_path else ""
 
         layout = QVBoxLayout(self)
         form = QFormLayout()
@@ -2355,7 +2358,7 @@ class NetworkAnalysisDialog(QDialog):
         self.mode_combo = QComboBox()
         self.mode_combo.addItems(["키워드 공출현 분석 (토큰화 데이터용)", "의미론적 유사도 분석 (원문 데이터용)"])
     
-        if self.csv_name and "token" in self.csv_name.lower():
+        if "token" in os.path.basename(csv_path).lower():
             self.mode_combo.setCurrentIndex(0)
         else:
             self.mode_combo.setCurrentIndex(1)
@@ -2365,39 +2368,45 @@ class NetworkAnalysisDialog(QDialog):
         # 2. 텍스트 열 선택
         self.column_combo = QComboBox()
         self.column_combo.addItems(column_names)
-        # 기본값 설정 (Text가 포함된 열 우선)
         for i in range(self.column_combo.count()):
             if "text" in self.column_combo.itemText(i).lower():
                 self.column_combo.setCurrentIndex(i)
                 break
         form.addRow("대상 데이터 열", self.column_combo)
 
-        # 3. 임계값 설정 (모드에 따라 설명 변경)
+        # 3. 임계값 설정
         self.threshold_spin = QDoubleSpinBox()
         self.threshold_spin.setRange(0.0, 100.0)
-        self.threshold_spin.setValue(0.8) # 기본값 (Semantic용)
+        self.threshold_spin.setValue(0.8)
         self.threshold_spin.setSingleStep(0.1)
         self.threshold_label = QLabel("유사도 임계값 (0.0~1.0)")
         form.addRow(self.threshold_label, self.threshold_spin)
 
-        # 모드 변경 시 라벨 및 범위 조정
         self.mode_combo.currentIndexChanged.connect(self.update_ui_by_mode)
-        # 현재 선택된 모드에 맞춰 UI 초기화 (threshold_label 생성 후 호출)
         self.update_ui_by_mode(self.mode_combo.currentIndex())
 
         layout.addLayout(form)
 
-        # 4. 저장 경로
-        path_layout = QHBoxLayout()
-        self.path_label = QLabel("저장 위치: 선택되지 않음")
-        self.path_btn = QPushButton("경로 선택")
-        path_layout.addWidget(self.path_label)
-        path_layout.addWidget(self.path_btn)
-        layout.addLayout(path_layout)
-
+        # --- 4. 저장 경로 섹션 (가로 -> 세로 레이아웃 변경) ---
+        path_section = QVBoxLayout()
+        path_header = QHBoxLayout()
+        path_header.addWidget(QLabel("<b>저장 위치 설정:</b>"))
+        path_header.addStretch()
         
-        self.path_label.setText(os.path.dirname(self.csv_path) if self.csv_path else "저장 위치: 선택되지 않음")
-            
+        self.path_btn = QPushButton("경로 변경")
+        self.path_btn.setFixedWidth(100)
+        path_header.addWidget(self.path_btn)
+        
+        # 경로 표시 라벨 (자동 줄바꿈 설정)
+        self.path_label = QLabel(self.save_dir if self.save_dir else "선택되지 않음")
+        self.path_label.setWordWrap(True) # 💡 핵심: 글자가 길어지면 다음 줄로 넘김
+        self.path_label.setStyleSheet("color: #444; background: #f0f0f0; padding: 5px; border-radius: 3px;")
+        
+        path_section.addLayout(path_header)
+        path_section.addWidget(self.path_label)
+        layout.addLayout(path_section)
+        # -----------------------------------------------
+
         self.path_btn.clicked.connect(self.select_path)
 
         # 설명 추가
@@ -2424,7 +2433,7 @@ class NetworkAnalysisDialog(QDialog):
             self.threshold_spin.setRange(0.0, 1.0)
 
     def select_path(self):
-        path = QFileDialog.getExistingDirectory(self, "저장 경로 선택")
+        path = QFileDialog.getExistingDirectory(self, "저장 경로 선택", self.save_dir)
         if path:
             self.save_dir = path
             self.path_label.setText(path)
@@ -2442,7 +2451,7 @@ class NetworkAnalysisDialog(QDialog):
             "save_dir": self.save_dir
         }
         self.accept()
-
+        
 
 class EditHomeMemberDialog(BaseDialog):
     def __init__(self, data: dict | None = None, parent=None):
