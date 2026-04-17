@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from app.db import user_logs_col, bug_board_col, db_list_col, users_col, user_bugs_col
 
 def get_all_users():
@@ -13,9 +14,9 @@ def get_dashboard_stats():
     total_logs = user_logs_col.count_documents({})
     total_bugs = bug_board_col.count_documents({})
     total_crawls = db_list_col.count_documents({})
-    total_user_bugs = user_bugs_col.count_documents({}) # user-bugs 통계 추가
+    total_user_bugs = user_bugs_col.count_documents({})
     
-    pipeline = [{"$group": {"_id": "$dbSize"}}, {"$group": {"_id": None, "total": {"$sum": "$_id"}}}]
+    pipeline = [{"$group": {"_id": None, "total": {"$sum": "$dbSize"}}}]
     size_agg = list(db_list_col.aggregate(pipeline))
     total_size_bytes = size_agg[0]["total"] if size_agg else 0
     total_size_gb = round(total_size_bytes / (1024 ** 3), 2)
@@ -44,9 +45,10 @@ def build_search_query(name=None, date_str=None, user_map=None):
         
     if date_str:
         try:
-            start_date = datetime.strptime(date_str, "%Y-%m-%d")
-            end_date = start_date + timedelta(days=1)
-            query["datetime"] = {"$gte": start_date, "$lt": end_date}
+            kst = ZoneInfo("Asia/Seoul")
+            start_dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=kst)
+            end_dt = start_dt + timedelta(days=1)
+            query["datetime"] = {"$gte": start_dt, "$lt": end_dt}
         except ValueError:
             pass
             
@@ -59,6 +61,7 @@ def get_recent_logs(limit=10, name=None, date_str=None):
     logs = list(user_logs_col.find(query).sort("datetime", -1).limit(limit))
     
     for log in logs:
+        log["datetime"] = log.get("datetime_kst") or log.get("datetime").strftime("%Y-%m-%d %H:%M:%S")
         log["user_name"] = user_map.get(log.get("uid"), log.get("uid")[:8])
     return logs
 
@@ -69,16 +72,25 @@ def get_user_bugs(limit=50, name=None, date_str=None):
     bugs = list(user_bugs_col.find(query).sort("datetime", -1).limit(limit))
     
     for bug in bugs:
+        bug["datetime"] = bug.get("datetime_kst") or bug.get("datetime").strftime("%Y-%m-%d %H:%M:%S")
         bug["user_name"] = user_map.get(bug.get("uid"), bug.get("uid")[:8])
     return bugs
 
 def get_recent_crawlers(limit=10):
     crawlers = list(db_list_col.find().sort("startTime", -1).limit(limit))
     for c in crawlers:
-        size_mb = c.get("dbSize", 0) / (1024 * 1024)
-        c["size_formatted"] = f"{size_mb:.1f} MB"
+        size_bytes = c.get("dbSize", 0)
+        if size_bytes > 1024 * 1024 * 1024:
+            c["size_formatted"] = f"{size_bytes / (1024**3):.2f} GB"
+        else:
+            c["size_formatted"] = f"{size_bytes / (1024**2):.1f} MB"
     return crawlers
 
 def get_recent_bugs(limit=10):
+    """Bug Reports 페이지용 데이터 포맷팅"""
     bugs = list(bug_board_col.find().sort("datetime", -1).limit(limit))
+    for bug in bugs:
+        dt = bug.get("datetime")
+        if isinstance(dt, datetime):
+            bug["datetime"] = dt.strftime("%Y-%m-%d %H:%M:%S")
     return bugs
