@@ -28,5 +28,14 @@ async def handle_verify(response: Response, name: str = Form(...), code: str = F
         return RedirectResponse(url=f"/verify?name={name}&error=invalid", status_code=302)
     
     res = RedirectResponse(url="/", status_code=302)
-    res.set_cookie(key="session_id", value=session_id, httponly=True, max_age=60*60*24*30)
+    
+    res.set_cookie(
+        key="session_id", 
+        value=session_id, 
+        httponly=True, 
+        max_age=60*60*24*30,  
+        expires=60*60*24*30,  
+        samesite="lax",       
+        path="/"              
+    )
     return res
