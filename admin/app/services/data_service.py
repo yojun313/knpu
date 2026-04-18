@@ -10,12 +10,21 @@ def get_user_mapping():
     users = users_col.find({}, {"uid": 1, "name": 1})
     return {u["uid"]: u.get("name", "알 수 없음") for u in users}
 
-def get_dashboard_stats():
+def get_dashboard_stats(date_str=None):
     total_logs = user_logs_col.count_documents({})
     total_bugs = bug_board_col.count_documents({})
-    total_crawls = db_list_col.count_documents({})
     total_user_bugs = user_bugs_col.count_documents({})
     
+    today_query = {}
+    if date_str:
+        kst = ZoneInfo("Asia/Seoul")
+        start_dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=kst)
+        end_dt = start_dt + timedelta(days=1)
+        today_query = {"datetime": {"$gte": start_dt, "$lt": end_dt}}
+    
+    today_logs = user_logs_col.count_documents(today_query)
+    today_user_bugs = user_bugs_col.count_documents(today_query)
+
     pipeline = [{"$group": {"_id": None, "total": {"$sum": "$dbSize"}}}]
     size_agg = list(db_list_col.aggregate(pipeline))
     total_size_bytes = size_agg[0]["total"] if size_agg else 0
@@ -23,9 +32,10 @@ def get_dashboard_stats():
 
     return {
         "total_logs": total_logs,
+        "today_logs": today_logs, 
         "total_bugs": total_bugs,
-        "total_crawls": total_crawls,
         "total_user_bugs": total_user_bugs,
+        "today_user_bugs": today_user_bugs, 
         "total_size_gb": total_size_gb
     }
 
