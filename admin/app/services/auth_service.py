@@ -40,7 +40,6 @@ def verify_login(name: str, code: str):
         
     session_id = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
     
-    # 동일 컬렉션에 type: "session"으로 저장
     auth_col.insert_one({
         "type": "session",
         "session_id": session_id,
@@ -48,15 +47,20 @@ def verify_login(name: str, code: str):
         "created_at": datetime.now()
     })
     
-    # 인증에 성공했으므로 해당 이름의 "code" 문서만 삭제
     auth_col.delete_one({"name": name, "type": "code"})
     
     return session_id
 
 def check_session(session_id: str):
     if not session_id:
-        return False
+        return None
     
-    # type: "session"인 문서에서 검색
     session = auth_col.find_one({"session_id": session_id, "type": "session"})
-    return session["name"] if session else None
+    if not session:
+        return None
+    
+    if datetime.now() > session["created_at"] + timedelta(days=30):
+        auth_col.delete_one({"session_id": session_id, "type": "session"})
+        return None
+        
+    return session["name"]

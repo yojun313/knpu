@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Form, Response
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.services.auth_service import request_login, verify_login
+from datetime import datetime, timedelta
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -33,8 +34,7 @@ async def handle_verify(response: Response, name: str = Form(...), code: str = F
         key="session_id", 
         value=session_id, 
         httponly=True, 
-        max_age=60*60*24*30,  
-        expires=60*60*24*30,  
+        max_age=60*60*24*30,
         samesite="lax",       
         path="/"              
     )
