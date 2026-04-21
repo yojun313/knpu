@@ -15,7 +15,7 @@ load_dotenv()
 # 환경 변수 로드
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 MODE = os.getenv('MODE')
-
+    
 SSH_HOST = os.getenv("SSH_HOST")
 SSH_PORT = int(os.getenv("SSH_PORT", 22))
 SSH_USER = os.getenv("SSH_USER")

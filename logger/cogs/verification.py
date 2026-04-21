@@ -34,20 +34,23 @@ class VerificationModal(discord.ui.Modal, title='이메일 인증하기'):
         code = str(random.randint(100000, 999999))
         
         # 유저 인증 정보 임시 저장 (전역 DB 사용)
-        await self.bot.manager_db.verification.update_one(
+        await self.bot.manager_db.auth.update_one(
             {"user_id": interaction.user.id},
             {"$set": {
+                "type": "discord",
                 "name": self.user_name.value,
                 "email": self.user_email.value,
                 "code": code,
-                "timestamp": datetime.datetime.utcnow()
+                "created_at": datetime.datetime.utcnow(),
+                "log_sent": False
             }},
             upsert=True
         )
 
         # 이메일 구성 및 발송
+        #TODO
         msg = EmailMessage()
-        msg["Subject"] = "디스코드 서버 인증 번호"
+        msg["Subject"] = "[인증 코드] Discord 서버 인증을 위한 코드입니다"
         msg["From"] = GMAIL_USER
         msg["To"] = self.user_email.value
         msg.set_content(f"{self.user_name.value}님, 인증 번호는 [ {code} ] 입니다.")
