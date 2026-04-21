@@ -47,3 +47,4 @@ jinja2
 asyncio
 discord
 aiosmtplib
+motor
