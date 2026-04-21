@@ -43,7 +43,7 @@ def verify_code(name: str, code: str, device: str):
     email = existing_user["email"]
     
     # 💡 호환성을 위해 type: "app_code"로 검색
-    auth_data = auth_db.find_one({"email": email, "type": "app_code"})
+    auth_data = auth_db.find_one({"email": email, "type": "app_code"}, {"_id": 0})
     if not auth_data or auth_data["code"] != code:
         raise UnauthorizedException("Invalid verification code")
 

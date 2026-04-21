@@ -27,7 +27,7 @@ import shutil
 def createCrawlDb(crawlDb: CrawlDbCreateDto):
     crawlDb_dict = crawlDb.model_dump()
 
-    existing_crawlDb = crawlList_db.find_one({"name": crawlDb_dict["name"]})
+    existing_crawlDb = crawlList_db.find_one({"name": crawlDb_dict["name"]}, {'_id': 0})
     if existing_crawlDb:
         raise ConflictException("CrawlDB with this name already exists")
     
@@ -91,7 +91,7 @@ def getCrawlLog(uid: str):
     
 
 def deleteCrawlDb(uid: str, userUid: str):
-    crawlDb = crawlList_db.find_one({"uid": uid})
+    crawlDb = crawlList_db.find_one({"uid": uid}, {'_id': 0})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
     
@@ -158,7 +158,7 @@ def processDbInfo(crawlDb: dict):
 
 
 def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
-    user = user_db.find_one({"uid": userUid})
+    user = user_db.find_one({"uid": userUid}, {"_id": 0})
     username = user['name']
 
     if mine == 0:
@@ -225,7 +225,7 @@ def getCrawlDbInfo(uid: str, userUid: str = None):
 
 
 def endCrawlDb(uid: str, error: bool = False):
-    crawlDb = crawlList_db.find_one({"uid": uid})
+    crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
@@ -256,7 +256,7 @@ def endCrawlDb(uid: str, error: bool = False):
 
 
 def updateCount(uid: str, dataInfo):
-    crawlDb = crawlList_db.find_one({"uid": uid})
+    crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
@@ -289,7 +289,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
             pass
 
     saveOption = saveOption.model_dump()
-    crawlDb = crawlList_db.find_one({"uid": uid})
+    crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
@@ -496,7 +496,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
 
 
 def previewCrawlDb(uid: str, userUid: str):
-    crawlDb = crawlList_db.find_one({"uid": uid})
+    crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
     targetDB = crawlDb['name']

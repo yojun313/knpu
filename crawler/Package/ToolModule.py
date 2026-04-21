@@ -109,7 +109,7 @@ class ToolModule:
     def get_userInfo(self, input_name):
         self.mongoDB()
         db = self.mongoClient['manager']['users']
-        user = db.find_one({'name': input_name})
+        user = db.find_one({'name': input_name}, {"_id": 0})
         if user is None:
             return False
         return {'Email': user['email'], 'PushOver': user['pushoverKey'], 'userUid': user['uid']}

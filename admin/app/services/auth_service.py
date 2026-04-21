@@ -10,7 +10,7 @@ def generate_code():
     return ''.join(random.choices(string.digits, k=6))
 
 def request_login(name: str):
-    user = users_col.find_one({"name": name, "role": "admin"})
+    user = users_col.find_one({"name": name, "role": "admin"}, {"_id": 0})
     if not user:
         return None
     
@@ -31,7 +31,7 @@ def request_login(name: str):
     return user["email"]
 
 def verify_login(name: str, code: str):
-    record = auth_col.find_one({"name": name, "code": code, "type": "code"})
+    record = auth_col.find_one({"name": name, "code": code, "type": "code"}, {"_id": 0})
     if not record:
         return False
     
@@ -55,7 +55,7 @@ def check_session(session_id: str):
     if not session_id:
         return None
     
-    session = auth_col.find_one({"session_id": session_id, "type": "session"})
+    session = auth_col.find_one({"session_id": session_id, "type": "session"}, {"_id": 0})
     if not session:
         return None
     
