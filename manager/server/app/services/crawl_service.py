@@ -48,6 +48,8 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
     ordered_dict['endTime'] = "0%"
 
     crawlList_db.insert_one(ordered_dict)
+    if "_id" in ordered_dict:
+        del ordered_dict["_id"]
     log_user(userUid, f"Created crawl DB: {crawlDb_dict['name']}")
 
     return JSONResponse(
