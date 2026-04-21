@@ -10,6 +10,7 @@ import motor.motor_asyncio
 from sshtunnel import SSHTunnelForwarder
 
 load_dotenv()
+# test
 
 # 환경 변수 로드
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
