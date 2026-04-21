@@ -12,7 +12,7 @@ import uuid
 def create_user(user: UserCreate):
     user_dict = user.model_dump()
     
-    existing_user = user_db.find_one({"email": user_dict["email"]})
+    existing_user = user_db.find_one({"email": user_dict["email"]}, {"_id": 0})
     if existing_user:
         raise ConflictException("User with this email already exists")
     

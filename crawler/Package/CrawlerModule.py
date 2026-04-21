@@ -52,7 +52,7 @@ class CrawlerModule(ToolModule):
         if proxy_option == True:
             self.mongoDB()
             self.proxy_list = self.mongoClient['crawler']['ip-list'].find_one(
-                {"_id": "proxy_list"})['list']
+                {"_id": "proxy_list"}, {"_id": 0})['list']
 
         self.PrintData = {
             'currentDate': '',

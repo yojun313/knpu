@@ -140,7 +140,7 @@ class Crawler(CrawlerModule):
     # 크롤링 중단 검사
     def webCrawlerRunCheck(self):
         crawlDbList = self.mongoClient['crawler']['db-list']
-        targetDB = crawlDbList.find_one({'uid': self.dbUid})
+        targetDB = crawlDbList.find_one({'uid': self.dbUid}, {"_id": 0})
 
         if not targetDB:
             self.running = False

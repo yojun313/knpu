@@ -30,7 +30,7 @@ console = Console()
 
 
 def get_username(uid):
-    user = users.find_one({"uid": uid})
+    user = users.find_one({"uid": uid}, {"_id": 0})
     return user.get("name", "Unknown") if user else "Unknown"
 
 
