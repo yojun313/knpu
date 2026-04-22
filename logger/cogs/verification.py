@@ -87,6 +87,7 @@ class CodeInputModal(discord.ui.Modal, title='인증 코드 입력'):
             role = interaction.guild.get_role(config['role_id'])
             if role:
                 await interaction.user.add_roles(role)
+                await interaction.user.remove_roles(interaction.guild.get_role(config.get('unverified_role_id', 0)))  # 인증 전 역할 제거
                 await self.bot.manager_db.auth.delete_one({"user_id": interaction.user.id})
                 await interaction.response.send_message(f"인증 성공! {role.name} 역할이 부여되었습니다.", ephemeral=True)
             else:
@@ -115,6 +116,14 @@ class VerifyButtonView(discord.ui.View):
 class VerificationCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        config = await self.bot.manager_db.auth_config.find_one({"guild_id": member.guild.id})
+        if config and 'unverified_role_id' in config:
+            role = member.guild.get_role(config['unverified_role_id'])
+            if role:
+                await member.add_roles(role)
 
     @app_commands.command(name="인증설정", description="인증 완료 시 부여할 역할을 설정합니다.")
     @app_commands.describe(role="인증된 유저에게 줄 역할")
@@ -159,6 +168,17 @@ class VerificationCog(commands.Cog):
         
         except Exception as e:
             await interaction.followup.send(content=f"메시지 전송 중 오류가 발생했습니다: {e}", ephemeral=True)
+
+    @app_commands.command(name="인증전역할", description="인증되지 않은 유저에게 부여할 역할을 설정합니다.")
+    @app_commands.describe(role="인증 전 유저에게 줄 역할")
+    @commands.has_permissions(administrator=True)
+    async def set_unverified_role(self, interaction: discord.Interaction, role: discord.Role):
+        await self.bot.manager_db.auth_config.update_one(
+            {"guild_id": interaction.guild.id},
+            {"$set": {"unverified_role_id": role.id}},
+            upsert=True
+        )
+        await interaction.response.send_message(f"인증 전 역할이 {role.mention}으로 설정되었습니다.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(VerificationCog(bot))
