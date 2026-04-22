@@ -1,15 +1,10 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import aiosmtplib
-from email.message import EmailMessage
 import random
 import datetime
 import os
 from libs.mail import sendEmail
-
-GMAIL_USER = "knpubigmac2024@gmail.com"
-GMAIL_APP_PW = os.getenv('MAIL_PASSWORD')  
 
 class VerificationModal(discord.ui.Modal, title='이메일 인증하기'):
     def __init__(self, bot):
@@ -32,38 +27,42 @@ class VerificationModal(discord.ui.Modal, title='이메일 인증하기'):
         self.add_item(self.user_email)
 
     async def on_submit(self, interaction: discord.Interaction):
-        code = str(random.randint(100000, 999999))
+        await interaction.response.defer(ephemeral=True)
         
-        # 유저 인증 정보 임시 저장 (전역 DB 사용)
-        await self.bot.manager_db.auth.update_one(
-            {"user_id": interaction.user.id},
-            {"$set": {
-                "type": "discord",
-                "name": self.user_name.value,
-                "email": self.user_email.value,
-                "code": code,
-                "created_at": datetime.datetime.utcnow(),
-                "log_sent": False
-            }},
-            upsert=True
-        )
-
-        # 이메일 구성 및 발송
-        #TODO
-        msg = sendEmail(
-            receiver=self.user_email.value,
-            title="Knpu 디스코드 서버 인증",
-            text=f"안녕하세요, {self.user_name.value}님,\n\n인증 번호는 [ {code} ] 입니다.")
-
         try:
-            await interaction.response.send_message(
-                f"{self.user_email.value}로 인증 코드를 보냈습니다. 아래 버튼을 눌러 입력하세요.",
+            code = str(random.randint(100000, 999999))
+            
+            await self.bot.manager_db.auth.update_one(
+                {"user_id": interaction.user.id},
+                {"$set": {
+                    "type": "discord",
+                    "name": self.user_name.value,
+                    "email": self.user_email.value,
+                    "code": code,
+                    "created_at": datetime.datetime.utcnow(),
+                    "log_sent": False
+                }},
+                upsert=True
+            )
+
+            await sendEmail(
+                receiver=self.user_email.value,
+                title="Knpu 디스코드 서버 인증",
+                text=f"안녕하세요, {self.user_name.value}님,\n\n인증 번호는 [ {code} ] 입니다.")
+
+            await interaction.followup.send(
+                content=f"{self.user_email.value}로 인증 코드를 보냈습니다. 아래 버튼을 눌러 입력하세요.",
                 view=CodeInputView(self.bot), 
                 ephemeral=True
             )
-        except Exception as e:
-            await interaction.response.send_message(f"이메일 발송 중 오류가 발생했습니다: {e}", ephemeral=True)
 
+        except Exception as e:
+            print(f"Email Error: {e}") 
+            await interaction.followup.send(
+                content=f"이메일 발송 중 오류가 발생했습니다: {e}", 
+                ephemeral=True
+            )
+    
 class CodeInputModal(discord.ui.Modal, title='인증 코드 입력'):
     def __init__(self, bot):
         super().__init__()
@@ -117,7 +116,7 @@ class VerificationCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="인증 설정", description="인증 완료 시 부여할 역할을 설정합니다.")
+    @app_commands.command(name="인증설정", description="인증 완료 시 부여할 역할을 설정합니다.")
     @app_commands.describe(role="인증된 유저에게 줄 역할")
     @commands.has_permissions(administrator=True)
     async def set_role(self, interaction: discord.Interaction, role: discord.Role):
@@ -132,14 +131,20 @@ class VerificationCog(commands.Cog):
     @app_commands.describe(channel="인증 메시지를 보낼 채널")
     @commands.has_permissions(administrator=True)
     async def start_verification(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        await interaction.response.defer(ephemeral=True)
+
         embed = discord.Embed(
             title="Verification",
             description="해당 서버는 서버를 이용하기 전에 이메일을 통한 인증이 필요합니다. 아래 버튼을 눌러 인증을 시작하세요.",
             color=0x5865F2
         )
         
-        await channel.send(embed=embed, view=VerifyButtonView(self.bot))
-        await interaction.response.send_message(f"{channel.mention} 채널에 인증 메시지를 보냈습니다.", ephemeral=True)
+        try:
+            await channel.send(embed=embed, view=VerifyButtonView(self.bot))
+            await interaction.followup.send(content=f"{channel.mention} 채널에 인증 메시지를 보냈습니다.", ephemeral=True)
+        except Exception as e:
+            
+            await interaction.followup.send(content=f"메시지 전송 중 오류가 발생했습니다: {e}", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(VerificationCog(bot))
