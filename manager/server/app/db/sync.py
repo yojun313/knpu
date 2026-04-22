@@ -53,6 +53,10 @@ def migrate_kst(collection_name):
             {"_id": doc["_id"]},
             {"$set": {"datetime_kst": datetime_kst_str}}
         )
+        
+def set_notified_true(collection_name):
+    coll = manager_db[collection_name]
+    coll.update_many({}, {"$set": {"notified": True}})
 
 if __name__ == '__main__':
     sync_manager_databases()
