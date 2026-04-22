@@ -6,6 +6,7 @@ from email.message import EmailMessage
 import random
 import datetime
 import os
+from libs.mail import sendEmail
 
 GMAIL_USER = "knpubigmac2024@gmail.com"
 GMAIL_APP_PW = os.getenv('MAIL_PASSWORD')  
@@ -49,17 +50,12 @@ class VerificationModal(discord.ui.Modal, title='이메일 인증하기'):
 
         # 이메일 구성 및 발송
         #TODO
-        msg = EmailMessage()
-        msg["Subject"] = "[인증 코드] Discord 서버 인증을 위한 코드입니다"
-        msg["From"] = GMAIL_USER
-        msg["To"] = self.user_email.value
-        msg.set_content(f"{self.user_name.value}님, 인증 번호는 [ {code} ] 입니다.")
+        msg = sendEmail(
+            receiver=self.user_email.value,
+            title="Knpu 디스코드 서버 인증",
+            text=f"안녕하세요, {self.user_name.value}님,\n\n인증 번호는 [ {code} ] 입니다.")
 
         try:
-            await aiosmtplib.send(
-                msg, hostname="smtp.gmail.com", port=465, use_tls=True, 
-                username=GMAIL_USER, password=GMAIL_APP_PW
-            )
             await interaction.response.send_message(
                 f"{self.user_email.value}로 인증 코드를 보냈습니다. 아래 버튼을 눌러 입력하세요.",
                 view=CodeInputView(self.bot), 
@@ -82,7 +78,7 @@ class CodeInputModal(discord.ui.Modal, title='인증 코드 입력'):
 
     async def on_submit(self, interaction: discord.Interaction):
         # DB에서 유저 데이터 및 서버 설정 가져오기
-        data = await self.bot.manager_db.verification.find_one({"user_id": interaction.user.id})
+        data = await self.bot.manager_db.auth.find_one({"user_id": interaction.user.id})
         config = await self.bot.manager_db.auth_config.find_one({"guild_id": interaction.guild.id})
 
         if not config or 'role_id' not in config:
@@ -92,7 +88,7 @@ class CodeInputModal(discord.ui.Modal, title='인증 코드 입력'):
             role = interaction.guild.get_role(config['role_id'])
             if role:
                 await interaction.user.add_roles(role)
-                await self.bot.manager_db.verification.delete_one({"user_id": interaction.user.id})
+                await self.bot.manager_db.auth.delete_one({"user_id": interaction.user.id})
                 await interaction.response.send_message(f"인증 성공! {role.name} 역할이 부여되었습니다.", ephemeral=True)
             else:
                 await interaction.response.send_message("설정된 역할을 서버에서 찾을 수 없습니다.", ephemeral=True)
@@ -121,7 +117,7 @@ class VerificationCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="인증설정", description="인증 완료 시 부여할 역할을 설정합니다.")
+    @app_commands.command(name="인증 설정", description="인증 완료 시 부여할 역할을 설정합니다.")
     @app_commands.describe(role="인증된 유저에게 줄 역할")
     @commands.has_permissions(administrator=True)
     async def set_role(self, interaction: discord.Interaction, role: discord.Role):
@@ -138,11 +134,9 @@ class VerificationCog(commands.Cog):
     async def start_verification(self, interaction: discord.Interaction, channel: discord.TextChannel):
         embed = discord.Embed(
             title="Verification",
-            description="This server requires you to verify yourself to get access to other channels, you can simply verify by clicking on the verify button.",
+            description="해당 서버는 서버를 이용하기 전에 이메일을 통한 인증이 필요합니다. 아래 버튼을 눌러 인증을 시작하세요.",
             color=0x5865F2
         )
-        # 이미지 링크가 있다면 아래 주석을 해제하고 넣으세요
-        # embed.set_image(url="이미지주소")
         
         await channel.send(embed=embed, view=VerifyButtonView(self.bot))
         await interaction.response.send_message(f"{channel.mention} 채널에 인증 메시지를 보냈습니다.", ephemeral=True)
