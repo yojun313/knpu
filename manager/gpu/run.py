@@ -1,9 +1,18 @@
-# gunicorn app.main:app -c run.py
-# uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-bind = "0.0.0.0:8002"
-workers = 1
-worker_class = "uvicorn.workers.UvicornWorker"
-timeout = 0
-loglevel = "warning"
-accesslog = None          
-keepalive = 86400
+# uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
+
+import uvicorn
+import warnings
+from requests.exceptions import RequestsDependencyWarning
+
+warnings.filterwarnings("ignore", category=RequestsDependencyWarning)
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8002,
+        workers=5,
+        log_level="warning",
+        timeout_keep_alive=86400,
+        access_log=False
+    )
