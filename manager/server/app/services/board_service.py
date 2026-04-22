@@ -32,6 +32,7 @@ def add_version(data: AddVersionDto, userUid: str):
     doc["datetime"] = now_kst
     doc["datetime_kst"] = now_kst.strftime("%Y-%m-%d %H:%M:%S")
     doc['publisher'] = userUid
+    doc['notified'] = False
 
     version_board_db.insert_one(doc)
 
@@ -143,7 +144,8 @@ def add_bug(data: AddBugDto, userUid: str):
     doc["datetime"] = now_kst
     doc["datetime_kst"] = now_kst.strftime("%Y-%m-%d %H:%M:%S")
     doc['writerName'] = writer['name'] if writer else "Unknown"
-
+    doc['notified'] = False
+    
     if bug_logs:
         messages = [f"[{b.get('datetime_kst', '')}] {b.get('message', '')}" for b in bug_logs]
         doc["programLog"] = "\n".join(messages)
@@ -196,7 +198,7 @@ def delete_bug(uid: str, userUid: str):
 
 def add_post(data: AddPostDto, userUid: str):
     doc = data.model_dump()
-    
+    doc['notified'] = False
     now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
     doc["uid"] = str(uuid.uuid4())
     doc["datetime"] = now_kst
