@@ -133,17 +133,31 @@ class VerificationCog(commands.Cog):
     async def start_verification(self, interaction: discord.Interaction, channel: discord.TextChannel):
         await interaction.response.defer(ephemeral=True)
 
+        banner_file = discord.File("assets/imgs/auth_banner.png", filename="auth_banner.png")
+        profile_file = discord.File("assets/imgs/thumbnail.png", filename="thumbnail.png")
+
+        # 2. 임베드 설정
         embed = discord.Embed(
             title="Verification",
-            description="해당 서버는 서버를 이용하기 전에 이메일을 통한 인증이 필요합니다. 아래 버튼을 눌러 인증을 시작하세요.",
+            description="해당 서버는 서버를 이용하기 전에 이메일을 통한 인증이 필요합니다.\n아래 버튼을 눌러 인증을 시작하세요.",
             color=0x5865F2
         )
-        
+
+        embed.set_image(url="attachment://auth_banner.png")
+        embed.set_thumbnail(url="attachment://thumbnail.png") 
+        embed.set_author(name="경찰대학 관리 시스템", icon_url="attachment://thumbnail.png")
+        embed.set_footer(text="KNPU PAILAB")
+
         try:
-            await channel.send(embed=embed, view=VerifyButtonView(self.bot))
-            await interaction.followup.send(content=f"{channel.mention} 채널에 인증 메시지를 보냈습니다.", ephemeral=True)
-        except Exception as e:
+            await channel.send(
+                embed=embed, 
+                view=VerifyButtonView(self.bot),
+                files=[banner_file, profile_file]
+            )
             
+            await interaction.followup.send(content=f"{channel.mention} 채널에 인증 메시지를 보냈습니다.", ephemeral=True)
+        
+        except Exception as e:
             await interaction.followup.send(content=f"메시지 전송 중 오류가 발생했습니다: {e}", ephemeral=True)
 
 async def setup(bot):
