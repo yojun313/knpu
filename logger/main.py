@@ -7,7 +7,6 @@ import socket
 import warnings
 from dotenv import load_dotenv
 import motor.motor_asyncio
-from sshtunnel import SSHTunnelForwarder
 
 load_dotenv()
 # test
@@ -85,7 +84,6 @@ async def main():
     # 1. 서버/로컬 판단 및 SSH 터널 설정
     hostname = socket.gethostname()
     is_server = ("knpu" in hostname or "server" in hostname)
-    
     ssh_tunnel = None
     
     if is_server:
@@ -95,6 +93,7 @@ async def main():
             f"@localhost:{MONGO_PORT}/?authSource={MONGO_AUTH_DB}"
         )
     else:
+        from sshtunnel import SSHTunnelForwarder
         warnings.filterwarnings("ignore", module="paramiko")
         
         ssh_tunnel = SSHTunnelForwarder(
