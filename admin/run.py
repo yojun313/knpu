@@ -11,8 +11,8 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=3004,
-        workers=5,
         log_level="warning",
         access_log=False,
-        timeout_keep_alive=86400
+        timeout_keep_alive=86400,
+        reload=True
     )
