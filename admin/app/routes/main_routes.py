@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, Depends, Query
 from fastapi.templating import Jinja2Templates
 from app.services.data_service import get_dashboard_stats, get_recent_logs, get_recent_crawlers
+from app.services.pm2_service import PM2Service
 from app.routes.dependencies import get_current_user
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -16,20 +17,22 @@ async def read_overview(
     user=Depends(get_current_user)
 ):
     today_str = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
-    
     target_date = date if date else today_str
     
     stats = get_dashboard_stats(date_str=target_date)
     logs = get_recent_logs(limit=10, date_str=target_date)
     crawlers = get_recent_crawlers(5)
     
+    # PM2 프로세스 리스트 가져오기
+    pm2_processes = PM2Service.get_processes()
+    
     return templates.TemplateResponse("overview.html", {
         "request": request, 
         "stats": stats, 
         "logs": logs, 
-        "crawlers": crawlers, 
+        "crawlers": crawlers,
+        "processes": pm2_processes, # 템플릿에 데이터 추가
         "active_page": "overview",
         "today": today_str,
         "search_date": target_date
     })
-    
