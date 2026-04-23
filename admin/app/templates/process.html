@@ -1,48 +1,70 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-8 flex justify-between items-end">
+<div class="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
     <div>
-        <h2 class="text-2xl font-bold text-white">Process Manager</h2>
-        <p class="text-zinc-400 text-sm">Manage running processes</p>
+        <h2 class="text-2xl font-bold text-white tracking-tight">Process Manager</h2>
+        <p class="text-zinc-400 text-sm">실시간 프로세스 모니터링 및 자원 제어</p>
     </div>
-    <button onclick="location.reload()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
-        새로고침
-    </button>
+
+    <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+        <div class="relative w-full sm:w-64">
+            <input type="text" id="procSearch" onkeyup="filterProcesses()" placeholder="프로세스 검색..." 
+                   class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none transition shadow-inner">
+            <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+        <button onclick="location.reload()" class="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+            새로고침
+        </button>
+    </div>
 </div>
 
-<div class="card rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/50">
+<div class="card rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/30">
     <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
+        <table class="w-full text-left text-sm whitespace-nowrap">
             <thead>
-                <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900">
-                    <th class="p-4 font-medium">Name</th>
-                    <th class="p-4 font-medium">Status</th>
-                    <th class="p-4 font-medium">CPU</th>
-                    <th class="p-4 font-medium">Memory</th>
-                    <th class="p-4 font-medium">Uptime</th>
-                    <th class="p-4 font-medium text-right">Actions</th>
+                <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Name & ID</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Status</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">CPU Usage</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Memory</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Uptime</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Actions</th>
                 </tr>
             </thead>
             <tbody id="pm2-list-body">
                 {% for proc in processes %}
-                <tr id="proc-{{ proc.name }}" class="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
+                <tr id="proc-{{ proc.name }}" class="proc-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors" data-name="{{ proc.name }}">
                     <td class="p-4">
-                        <div class="font-semibold text-zinc-200">{{ proc.name }}</div>
-                        <div class="text-[10px] text-zinc-500 uppercase">ID: {{ proc.pm_id }}</div>
+                        <div class="font-bold text-zinc-100">{{ proc.name }}</div>
+                        <div class="text-[10px] text-zinc-500 uppercase font-mono mt-0.5">PM2 ID: {{ proc.pm_id }}</div>
                     </td>
                     <td class="p-4 status-cell">
-                        <span class="status-badge"></span>
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-800 text-zinc-500">
+                            LOADING
+                        </span>
                     </td>
-                    <td class="p-4 font-mono text-zinc-400 cpu-cell">0%</td>
-                    <td class="p-4 font-mono text-zinc-400 mem-cell">0 MB</td>
-                    <td class="p-4 text-zinc-500 text-xs uptime-cell">-</td>
+                    <td class="p-4">
+                        <span class="cpu-cell font-mono text-zinc-400 bg-black/40 px-2 py-1 rounded border border-zinc-800/50 text-xs">0%</span>
+                    </td>
+                    <td class="p-4">
+                        <span class="mem-cell font-mono text-zinc-400 text-xs">0 MB</span>
+                    </td>
+                    <td class="p-4">
+                        <span class="uptime-cell text-zinc-500 text-xs">-</span>
+                    </td>
                     <td class="p-4 text-right">
                         <div class="flex justify-end gap-2">
-                            <button onclick="openLogModal('{{ proc.name }}')" class="px-3 py-1.5 bg-blue-900/30 text-blue-400 hover:bg-blue-900/50 border border-blue-800 rounded-lg text-xs font-medium transition">Logs</button>
-                            <button onclick="controlPM2('restart', '{{ proc.name }}')" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-medium transition shadow-sm">Restart</button>
-                            <button onclick="controlPM2('stop', '{{ proc.name }}')" class="px-3 py-1.5 bg-zinc-900 hover:bg-red-950/30 text-zinc-500 hover:text-red-400 border border-zinc-800 rounded-lg text-xs font-medium transition">Stop</button>
+                            <button onclick="openLogModal('{{ proc.name }}')" class="p-2 bg-blue-900/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg transition" title="Logs">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 18 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>
+                            </button>
+                            <button onclick="controlPM2('restart', '{{ proc.name }}')" class="p-2 bg-zinc-800 text-zinc-300 hover:bg-zinc-100 hover:text-black rounded-lg transition" title="Restart">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg>
+                            </button>
+                            <button onclick="controlPM2('stop', '{{ proc.name }}')" class="p-2 bg-red-900/10 text-red-500 hover:bg-red-600 hover:text-white rounded-lg transition" title="Stop">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -53,18 +75,22 @@
 </div>
 
 <div id="logModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-5xl h-[75vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-5xl h-[75vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl scale-up-animation">
         <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900">
             <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                <h3 id="logTitle" class="font-bold text-white">Process Logs</h3>
+                <div class="flex gap-1.5 mr-2">
+                    <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+                </div>
+                <h3 id="logTitle" class="font-bold text-white text-sm font-mono tracking-wider">PROCESS LOGS</h3>
             </div>
-            <button onclick="closeLogModal()" class="text-zinc-500 hover:text-white transition">
+            <button onclick="closeLogModal()" class="text-zinc-500 hover:text-white transition p-1">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
         </div>
-        <div id="logContainer" class="flex-1 p-4 font-mono text-[11px] overflow-y-auto bg-black text-zinc-300 space-y-0.5">
-            <div class="text-zinc-500">Connecting to log stream...</div>
+        <div id="logContainer" class="flex-1 p-4 font-mono text-[11px] overflow-y-auto bg-black text-zinc-300 space-y-0.5 selection:bg-blue-500/30">
+            <div class="text-zinc-500 italic">Connecting to log stream...</div>
         </div>
     </div>
 </div>
@@ -72,7 +98,7 @@
 <script>
 let logSocket = null;
 
-// [1] 실시간 수치 업데이트 (CPU, Memory, Status)
+// [1] 실시간 수치 업데이트
 async function updateStats() {
     try {
         const response = await fetch('/process/status'); 
@@ -88,12 +114,12 @@ async function updateStats() {
             const status = proc.pm2_env.status;
             const isOnline = status === 'online';
             statusCell.innerHTML = `
-                <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold ${isOnline ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}">
-                    <span class="w-1 h-1 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}"></span> ${status.toUpperCase()}
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${isOnline ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}">
+                    <span class="w-1 h-1 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}"></span> ${status.toUpperCase()}
                 </span>
             `;
 
-            // CPU & Memory 업데이트
+            // CPU & Memory 업데이트 (변화 가독성을 위해 innerText 사용)
             row.querySelector('.cpu-cell').innerText = `${proc.monit.cpu}%`;
             const memMB = (proc.monit.memory / 1024 / 1024).toFixed(1);
             row.querySelector('.mem-cell').innerText = `${memMB} MB`;
@@ -103,6 +129,15 @@ async function updateStats() {
         });
     } catch (err) {
         console.error("Update failed:", err);
+    }
+}
+
+function filterProcesses() {
+    const query = document.getElementById('procSearch').value.toLowerCase();
+    const rows = document.getElementsByClassName('proc-row');
+    for (let row of rows) {
+        const name = row.getAttribute('data-name').toLowerCase();
+        row.style.display = name.includes(query) ? "" : "none";
     }
 }
 
@@ -117,7 +152,7 @@ function formatUptime(ms) {
     return `${Math.floor(hours / 24)}d`;
 }
 
-// [2] 프로세스 제어 (Restart, Stop)
+// [2] 프로세스 제어
 async function controlPM2(action, name) {
     if (!confirm(`${name} 프로세스를 ${action} 하시겠습니까?`)) return;
     const response = await fetch(`/process/control/${action}/${name}`, { method: 'POST' });
@@ -128,37 +163,34 @@ async function controlPM2(action, name) {
     }
 }
 
-// [3] 실시간 로그 WebSocket 연결
+// [3] 로그 WebSocket 연결
 function openLogModal(name) {
     const modal = document.getElementById('logModal');
     const container = document.getElementById('logContainer');
     const title = document.getElementById('logTitle');
     
     modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
-    title.innerText = `Real-time Logs: ${name}`;
-    container.innerHTML = '<div class="text-zinc-500 italic">연결 중...</div>';
+    document.body.style.overflow = 'hidden';
+    title.innerText = `REAL-TIME LOGS: ${name}`;
+    container.innerHTML = '<div class="text-zinc-600 italic px-2">데이터를 불러오는 중입니다...</div>';
 
     if (logSocket) logSocket.close();
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // 백엔드 라우터 구조에 맞춘 경로 (/process/ws/logs/{name})
     logSocket = new WebSocket(`${protocol}//${window.location.host}/process/ws/logs/${name}`);
 
     logSocket.onmessage = function(event) {
         const line = document.createElement('div');
-        line.className = 'border-l border-zinc-800 pl-3 py-0.5 hover:bg-zinc-800/20 whitespace-pre-wrap break-all';
+        line.className = 'border-l border-zinc-800 pl-3 py-0.5 hover:bg-zinc-800/40 transition-colors whitespace-pre-wrap break-all';
         line.innerText = event.data;
         container.appendChild(line);
-        
-        // 자동 스크롤
         container.scrollTop = container.scrollHeight;
     };
 
     logSocket.onclose = function() {
         const msg = document.createElement('div');
-        msg.className = 'text-zinc-600 text-[10px] mt-4 text-center border-t border-zinc-800 pt-2';
-        msg.innerText = "로그 스트림이 종료되었습니다.";
+        msg.className = 'text-zinc-600 text-[10px] mt-4 text-center border-t border-zinc-800 pt-4 font-bold tracking-widest';
+        msg.innerText = "로그 스트림 종료됨 (STREAM ENDED)";
         container.appendChild(msg);
     };
 }
@@ -172,11 +204,9 @@ function closeLogModal() {
     document.body.style.overflow = 'auto';
 }
 
-// 주기적 실행 설정
 setInterval(updateStats, 1000);
 updateStats();
 
-// 단축키 (Esc로 모달 닫기)
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeLogModal();
 });
