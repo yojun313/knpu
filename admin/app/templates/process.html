@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-end">
+    <div>
+        <h2 class="text-2xl font-bold text-white">Process Manager</h2>
+    </div>
+    <button onclick="location.reload()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+        새로고침
+    </button>
+</div>
+
+<div class="card rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/50">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead>
+                <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900">
+                    <th class="p-4 font-medium">Name</th>
+                    <th class="p-4 font-medium">Status</th>
+                    <th class="p-4 font-medium">CPU</th>
+                    <th class="p-4 font-medium">Memory</th>
+                    <th class="p-4 font-medium">Uptime</th>
+                    <th class="p-4 font-medium text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="pm2-list-body">
+                {% for proc in processes %}
+                <tr id="proc-{{ proc.name }}" class="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
+                    <td class="p-4">
+                        <div class="font-semibold text-zinc-200">{{ proc.name }}</div>
+                        <div class="text-[10px] text-zinc-500 uppercase">ID: {{ proc.pm_id }}</div>
+                    </td>
+                    <td class="p-4 status-cell">
+                        <span class="status-badge"></span>
+                    </td>
+                    <td class="p-4 font-mono text-zinc-400 cpu-cell">0%</td>
+                    <td class="p-4 font-mono text-zinc-400 mem-cell">0 MB</td>
+                    <td class="p-4 text-zinc-500 text-xs uptime-cell">-</td>
+                    <td class="p-4 text-right">
+                        <div class="flex justify-end gap-2">
+                            <button onclick="openLogModal('{{ proc.name }}')" class="px-3 py-1.5 bg-blue-900/30 text-blue-400 hover:bg-blue-900/50 border border-blue-800 rounded-lg text-xs font-medium transition">Logs</button>
+                            <button onclick="controlPM2('restart', '{{ proc.name }}')" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-medium transition shadow-sm">Restart</button>
+                            <button onclick="controlPM2('stop', '{{ proc.name }}')" class="px-3 py-1.5 bg-zinc-900 hover:bg-red-950/30 text-zinc-500 hover:text-red-400 border border-zinc-800 rounded-lg text-xs font-medium transition">Stop</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="logModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-5xl h-[75vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+        <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                <h3 id="logTitle" class="font-bold text-white">Process Logs</h3>
+            </div>
+            <button onclick="closeLogModal()" class="text-zinc-500 hover:text-white transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div id="logContainer" class="flex-1 p-4 font-mono text-[11px] overflow-y-auto bg-black text-zinc-300 space-y-0.5">
+            <div class="text-zinc-500">Connecting to log stream...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+let logSocket = null;
+
+// [1] 실시간 수치 업데이트 (CPU, Memory, Status)
+async function updateStats() {
+    try {
+        const response = await fetch('/process/status'); 
+        if (!response.ok) return;
+        const processes = await response.json();
+
+        processes.forEach(proc => {
+            const row = document.getElementById(`proc-${proc.name}`);
+            if (!row) return;
+
+            // 상태 업데이트
+            const statusCell = row.querySelector('.status-cell');
+            const status = proc.pm2_env.status;
+            const isOnline = status === 'online';
+            statusCell.innerHTML = `
+                <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold ${isOnline ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}">
+                    <span class="w-1 h-1 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}"></span> ${status.toUpperCase()}
+                </span>
+            `;
+
+            // CPU & Memory 업데이트
+            row.querySelector('.cpu-cell').innerText = `${proc.monit.cpu}%`;
+            const memMB = (proc.monit.memory / 1024 / 1024).toFixed(1);
+            row.querySelector('.mem-cell').innerText = `${memMB} MB`;
+
+            // 업타임 업데이트
+            row.querySelector('.uptime-cell').innerText = formatUptime(proc.pm2_env.pm_uptime);
+        });
+    } catch (err) {
+        console.error("Update failed:", err);
+    }
+}
+
+function formatUptime(ms) {
+    if (!ms) return "-";
+    const seconds = Math.floor((Date.now() - ms) / 1000);
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h`;
+    return `${Math.floor(hours / 24)}d`;
+}
+
+// [2] 프로세스 제어 (Restart, Stop)
+async function controlPM2(action, name) {
+    if (!confirm(`${name} 프로세스를 ${action} 하시겠습니까?`)) return;
+    const response = await fetch(`/process/control/${action}/${name}`, { method: 'POST' });
+    if (response.ok) {
+        updateStats();
+    } else {
+        alert('명령 실행 실패');
+    }
+}
+
+// [3] 실시간 로그 WebSocket 연결
+function openLogModal(name) {
+    const modal = document.getElementById('logModal');
+    const container = document.getElementById('logContainer');
+    const title = document.getElementById('logTitle');
+    
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+    title.innerText = `Real-time Logs: ${name}`;
+    container.innerHTML = '<div class="text-zinc-500 italic">연결 중...</div>';
+
+    if (logSocket) logSocket.close();
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    // 백엔드 라우터 구조에 맞춘 경로 (/process/ws/logs/{name})
+    logSocket = new WebSocket(`${protocol}//${window.location.host}/process/ws/logs/${name}`);
+
+    logSocket.onmessage = function(event) {
+        const line = document.createElement('div');
+        line.className = 'border-l border-zinc-800 pl-3 py-0.5 hover:bg-zinc-800/20 whitespace-pre-wrap break-all';
+        line.innerText = event.data;
+        container.appendChild(line);
+        
+        // 자동 스크롤
+        container.scrollTop = container.scrollHeight;
+    };
+
+    logSocket.onclose = function() {
+        const msg = document.createElement('div');
+        msg.className = 'text-zinc-600 text-[10px] mt-4 text-center border-t border-zinc-800 pt-2';
+        msg.innerText = "로그 스트림이 종료되었습니다.";
+        container.appendChild(msg);
+    };
+}
+
+function closeLogModal() {
+    if (logSocket) {
+        logSocket.close();
+        logSocket = null;
+    }
+    document.getElementById('logModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// 주기적 실행 설정
+setInterval(updateStats, 1000);
+updateStats();
+
+// 단축키 (Esc로 모달 닫기)
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLogModal();
+});
+</script>
+{% endblock %}
