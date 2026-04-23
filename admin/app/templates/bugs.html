@@ -1,48 +1,100 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-8 flex justify-between items-end">
+<div class="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
     <div>
-        <h2 class="text-2xl font-bold">User Bugs (Auto-detected)</h2>
-        <p class="text-zinc-400 text-sm">View system generated bug logs</p>
+        <h2 class="text-2xl font-bold text-white">User Bugs <span class="text-red-500 text-sm font-medium ml-2">Auto-detected</span></h2>
+        <p class="text-zinc-400 text-sm">시스템에서 자동으로 감지된 오류 로그를 확인합니다.</p>
     </div>
     
-    <form method="GET" action="/bugs" class="flex gap-3"> <input type="date" name="date" value="{{ search_date or '' }}" 
-        class="bg-[#09090b] border border-zinc-700 text-sm rounded-md px-3 py-2 text-zinc-300 focus:outline-none focus:border-zinc-500"
-        onchange="this.form.submit()">
- 
-    <input type="text" name="name" value="{{ search_name or '' }}" list="user-names-list" placeholder="Search by Name..." autocomplete="off"
-            class="bg-[#09090b] border border-zinc-700 text-sm rounded-md px-3 py-2 text-zinc-300 focus:outline-none focus:border-zinc-500">
-    
-    <datalist id="user-names-list">
-        {% for uname in user_names %}
-        <option value="{{ uname }}"></option>
-        {% endfor %}
-    </datalist>
-    
-    <button type="submit" class="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md text-sm font-semibold transition">
-        Filter
-    </button>
-    <a href="/logs" class="px-4 py-2 rounded-md text-sm font-semibold text-zinc-400 hover:text-white transition flex items-center">
-        Reset </a>
+    <form method="GET" action="/bugs" class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+        <div class="grid grid-cols-1 sm:flex gap-3 w-full">
+            <div class="relative w-full sm:w-auto">
+                <input type="date" name="date" value="{{ search_date or '' }}" 
+                    class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-red-500 transition appearance-none"
+                    onchange="this.form.submit()">
+            </div>
+            
+            <div class="relative w-full sm:w-64">
+                <input type="text" name="name" value="{{ search_name or '' }}" list="user-names-list" placeholder="사용자 이름 검색..." autocomplete="off"
+                    class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-red-500 transition">
+                <datalist id="user-names-list">
+                    {% for uname in user_names %}
+                    <option value="{{ uname }}"></option>
+                    {% endfor %}
+                </datalist>
+            </div>
+        </div>
+
+        <div class="flex gap-2 w-full sm:w-auto">
+            <button type="submit" class="flex-1 sm:flex-none bg-zinc-100 hover:bg-white text-black px-6 py-2 rounded-lg text-sm font-bold transition shadow-lg shadow-white/5">
+                Filter
+            </button>
+            <a href="/bugs" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-zinc-500 hover:text-white hover:bg-zinc-800 transition flex items-center justify-center">
+                Reset
+            </a>
+        </div>
     </form>
 </div>
 
-<div class="card rounded-xl">
-    <div class="p-2">
-        {% if bugs %}
-            {% for bug in bugs %}
-            <div class="list-item p-4">
-                <div class="flex items-center gap-3 mb-2">
-                    <span class="text-xs font-semibold bg-red-900/30 border border-red-900 px-2 py-1 rounded text-red-400">{{ bug.user_name }}</span>
-                    <span class="text-xs text-zinc-500">{{ bug.datetime }}</span>
+<div class="space-y-3">
+    {% if bugs %}
+        {% for bug in bugs %}
+        <div class="group card rounded-xl border border-zinc-800 bg-zinc-900/20 hover:bg-zinc-900/40 hover:border-zinc-700 transition-all p-4 md:p-5 relative overflow-hidden">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-red-900/50 group-hover:bg-red-500 transition-colors"></div>
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex-1">
+                    <div class="flex items-center flex-wrap gap-3 mb-2">
+                        <span class="text-[10px] font-bold bg-red-900/20 text-red-400 border border-red-900/30 px-2 py-0.5 rounded uppercase tracking-wider">
+                            {{ bug.user_name }}
+                        </span>
+                        <span class="text-xs text-zinc-500 flex items-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            {{ bug.datetime }}
+                        </span>
+                    </div>
+                    <div class="text-sm text-zinc-200 leading-relaxed font-medium break-all mr-10">
+                        {{ bug.message }}
+                    </div>
                 </div>
-                <div class="text-sm text-zinc-200">{{ bug.message }}</div>
+
+                <button onclick="copyToClipboard('{{ bug.message | replace("'", "\\'") }}', this)" 
+                        class="md:opacity-0 group-hover:opacity-100 absolute top-4 right-4 p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-all shadow-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
             </div>
-            {% endfor %}
-        {% else %}
-            <div class="p-8 text-center text-zinc-500 text-sm">No bug logs found for the given criteria.</div>
-        {% endif %}
-    </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="p-20 text-center border border-dashed border-zinc-800 rounded-2xl">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-zinc-900 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <p class="text-zinc-500 text-sm">해당 조건에 맞는 버그 로그가 없습니다.</p>
+        </div>
+    {% endif %}
 </div>
+
+<script>
+    // 로그 내용 복사 함수
+    function copyToClipboard(text, btn) {
+        const tempTextArea = document.createElement("textarea");
+        tempTextArea.value = text;
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempTextArea);
+
+        // 시각적 피드백
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        btn.classList.add('bg-green-900/20');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalIcon;
+            btn.classList.remove('bg-green-900/20');
+        }, 2000);
+    }
+</script>
 {% endblock %}

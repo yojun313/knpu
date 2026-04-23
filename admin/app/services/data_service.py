@@ -89,11 +89,21 @@ def get_user_bugs(limit=50, name=None, date_str=None):
 def get_recent_crawlers(limit=10):
     crawlers = list(db_list_col.find().sort("startTime", -1).limit(limit))
     for c in crawlers:
+        if "_id" in c:
+            c["_id"] = str(c["_id"])
+            
         size_bytes = c.get("dbSize", 0)
         if size_bytes > 1024 * 1024 * 1024:
             c["size_formatted"] = f"{size_bytes / (1024**3):.2f} GB"
         else:
             c["size_formatted"] = f"{size_bytes / (1024**2):.1f} MB"
+            
+        end_time_str = str(c.get("endTime", ""))
+        if "%" in end_time_str or not end_time_str or end_time_str == "0":
+            c["is_running"] = True
+        else:
+            c["is_running"] = False
+                
     return crawlers
 
 def get_recent_bugs(limit=10):

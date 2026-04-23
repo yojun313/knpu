@@ -1,28 +1,122 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-8">
-    <h2 class="text-2xl font-bold">Bug Reports</h2>
-    <p class="text-zinc-400 text-sm">System errors and issue tracking</p>
-</div>
-
-<div class="card rounded-xl">
-    <div class="p-2">
-        {% for bug in bugs %}
-        <div class="list-item p-5">
-            <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-3">
-                    <span class="text-xs font-bold bg-red-900/30 text-red-400 border border-red-900 px-2 py-1 rounded">v{{ bug.versionName }}</span>
-                    <span class="text-sm font-bold">{{ bug.bugTitle }}</span>
-                </div>
-                <span class="text-xs text-zinc-500">Reporter: {{ bug.writerName }}</span>
-            </div>
-            <div class="text-sm text-zinc-300 mb-3">{{ bug.bugText }}</div>
-            <div class="bg-black border border-zinc-800 p-3 rounded-md overflow-x-auto">
-                <pre class="text-xs text-red-300 font-mono">{{ bug.programLog }}</pre>
-            </div>
-        </div>
-        {% endfor %}
+<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div>
+        <h2 class="text-2xl font-bold text-white">Bug Reports</h2>
+        <p class="text-zinc-400 text-sm">시스템 오류 및 이슈 트래킹</p>
+    </div>
+    
+    <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+        <input type="text" id="bugSearch" onkeyup="filterBugs()" placeholder="제목 또는 내용 검색..." 
+               class="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-red-500 outline-none transition w-full sm:w-64">
+        <select id="versionFilter" onchange="filterBugs()" 
+                class="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-red-500 outline-none transition cursor-pointer">
+            <option value="">모든 버전</option>
+            {% set versions = [] %}
+            {% for bug in bugs %}
+                {% if bug.versionName not in versions %}
+                    {% set _ = versions.append(bug.versionName) %}
+                    <option value="v{{ bug.versionName }}">v{{ bug.versionName }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
     </div>
 </div>
+
+<div class="space-y-4" id="bugList">
+    {% for bug in bugs %}
+    <div class="bug-card card rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/30 transition-all hover:border-zinc-700" 
+         data-version="v{{ bug.versionName }}" data-content="{{ bug.bugTitle }} {{ bug.bugText }}">
+        
+        <div class="p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex items-center gap-3">
+                    <span class="version-badge text-[10px] font-bold bg-red-900/20 text-red-400 border border-red-900/30 px-2 py-0.5 rounded uppercase">
+                        v{{ bug.versionName }}
+                    </span>
+                    <h3 class="text-base font-bold text-zinc-100">{{ bug.bugTitle }}</h3>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-zinc-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    {{ bug.writerName }}
+                </div>
+            </div>
+
+            <p class="text-sm text-zinc-400 leading-relaxed mb-4 line-clamp-3">
+                {{ bug.bugText }}
+            </p>
+
+            <div class="space-y-2">
+                <button onclick="toggleLog('log-{{ loop.index }}')" 
+                        class="text-xs font-medium text-zinc-500 hover:text-zinc-200 flex items-center gap-1.5 transition-colors">
+                    <svg id="icon-log-{{ loop.index }}" class="transition-transform rotate-0" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    프로그램 로그 보기
+                </button>
+                
+                <div id="log-{{ loop.index }}" class="hidden">
+                    <div class="bg-black/50 border border-zinc-800 rounded-lg p-4 mt-2 overflow-x-auto relative group">
+                        <button onclick="copyLog(this)" class="absolute top-2 right-2 p-1.5 bg-zinc-800 rounded text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                        <pre class="text-[11px] text-red-300/80 font-mono leading-tight">{{ bug.programLog }}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="p-20 text-center border border-dashed border-zinc-800 rounded-xl">
+        <p class="text-zinc-500">리포트된 버그가 없습니다.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    // 로그 펼치기/접기
+    function toggleLog(id) {
+        const logDiv = document.getElementById(id);
+        const icon = document.getElementById('icon-' + id);
+        const isHidden = logDiv.classList.contains('hidden');
+        
+        if (isHidden) {
+            logDiv.classList.remove('hidden');
+            icon.classList.add('rotate-180');
+        } else {
+            logDiv.classList.add('hidden');
+            icon.classList.remove('rotate-180');
+        }
+    }
+
+    // 필터 및 검색 로직
+    function filterBugs() {
+        const searchValue = document.getElementById('bugSearch').value.toLowerCase();
+        const versionValue = document.getElementById('versionFilter').value;
+        const cards = document.getElementsByClassName('bug-card');
+
+        for (let card of cards) {
+            const content = card.getAttribute('data-content').toLowerCase();
+            const version = card.getAttribute('data-version');
+            
+            const matchesSearch = content.includes(searchValue);
+            const matchesVersion = versionValue === "" || version === versionValue;
+
+            if (matchesSearch && matchesVersion) {
+                card.style.display = "block";
+            } else {
+                card.style.display = "none";
+            }
+        }
+    }
+
+    // 로그 복사 기능
+    function copyLog(btn) {
+        const pre = btn.nextElementSibling;
+        navigator.clipboard.writeText(pre.innerText).then(() => {
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            setTimeout(() => { btn.innerHTML = originalIcon; }, 2000);
+        });
+    }
+</script>
 {% endblock %}
