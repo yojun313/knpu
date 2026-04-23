@@ -1,53 +1,132 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-8">
-    <h2 class="text-2xl font-bold">User Management</h2>
-    <p class="text-zinc-400 text-sm">Monitor registered users and their devices</p>
+<div class="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
+    <div>
+        <h2 class="text-2xl font-bold text-white tracking-tight">User Management</h2>
+        <p class="text-zinc-400 text-sm">등록된 사용자 권한 및 기기 연결 상태를 관리합니다.</p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+        <div class="relative w-full sm:w-80">
+            <input type="text" id="userSearch" onkeyup="filterUsers()" placeholder="이름, 이메일 또는 역할 검색..." 
+                   class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none transition">
+            <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+    </div>
 </div>
 
-<div class="card rounded-xl overflow-hidden">
-    <table class="w-full text-left text-sm">
-        <thead class="bg-zinc-900/50 border-b border-zinc-800 text-zinc-400">
-            <tr>
-                <th class="px-6 py-4 font-semibold">Name / Role</th>
-                <th class="px-6 py-4 font-semibold">Email / Version</th>
-                <th class="px-6 py-4 font-semibold">Device List</th>
-                <th class="px-6 py-4 font-semibold">Pushover Key</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-zinc-800">
-            {% for u in users %}
-            <tr class="hover:bg-zinc-900/30 transition">
-                <td class="px-6 py-4">
-                    <div class="font-bold text-zinc-100">{{ u.name }}</div>
-                    <div class="text-xs mt-1">
-                        {% if u.role == 'admin' %}
-                        <span class="text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded border border-blue-400/20">Admin</span>
-                        {% else %}
-                        <span class="text-zinc-500 bg-zinc-500/10 px-2 py-0.5 rounded border border-zinc-500/20">User</span>
-                        {% endif %}
-                    </div>
-                </td>
-                <td class="px-6 py-4">
-                    <div class="text-zinc-300">{{ u.email }}</div>
-                    <div class="text-xs text-zinc-500 mt-1">v{{ u.version }}</div>
-                </td>
-                <td class="px-6 py-4">
-                    <div class="flex flex-wrap gap-1">
-                        {% for device in u.device_list %}
-                        <span class="bg-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 rounded">
-                            {{ device }}
-                        </span>
-                        {% endfor %}
-                    </div>
-                </td>
-                <td class="px-6 py-4">
-                    <code class="text-xs text-zinc-500 font-mono">{{ u.pushoverKey[:10] }}...</code>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+    <div class="card p-6 rounded-2xl border border-zinc-800 bg-zinc-900/40">
+        <div class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">Total Users</div>
+        <div class="text-3xl font-black text-white tracking-tighter">{{ users|length }}</div>
+    </div>
+    <div class="card p-6 rounded-2xl border border-zinc-800 bg-zinc-900/40">
+        <div class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">Active Admins</div>
+        <div class="text-3xl font-black text-blue-500 tracking-tighter">
+            {% set admin_count = 0 %}
+            {% for u in users %}{% if u.role == 'admin' %}{% set admin_count = admin_count + 1 %}{% endif %}{% endfor %}
+            {{ admin_count }}
+        </div>
+    </div>
+    <div class="card p-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 sm:col-span-2 lg:col-span-1">
+        <div class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">Latest Version</div>
+        <div class="text-3xl font-black text-zinc-300 tracking-tighter">v{{ users[0].version if users else '0.0.0' }}</div>
+    </div>
 </div>
+
+<div class="card rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/30">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+            <thead>
+                <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Name / Role</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Email / Version</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Connected Devices</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Pushover Key</th>
+                </tr>
+            </thead>
+            <tbody id="userListBody">
+                {% for u in users %}
+                <tr class="user-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors" data-search="{{ u.name }} {{ u.email }} {{ u.role }}">
+                    <td class="p-4">
+                        <div class="font-bold text-zinc-100">{{ u.name }}</div>
+                        <div class="mt-1.5">
+                            {% if u.role == 'admin' %}
+                            <span class="text-[10px] font-black bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded uppercase tracking-tighter">Admin</span>
+                            {% else %}
+                            <span class="text-[10px] font-bold bg-zinc-800 text-zinc-500 border border-zinc-700 px-2 py-0.5 rounded uppercase tracking-tighter">User</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="p-4">
+                        <div class="text-zinc-300">{{ u.email }}</div>
+                        <div class="text-[10px] text-zinc-500 font-mono mt-1">Version: v{{ u.version }}</div>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex flex-wrap gap-1.5 max-w-xs">
+                            {% for device in u.device_list %}
+                            <span class="bg-black/40 text-zinc-400 text-[10px] px-2 py-0.5 rounded border border-zinc-800/50 font-medium">
+                                {{ device }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td class="p-4 text-right">
+                        <div class="flex items-center justify-end gap-2 group">
+                            <code class="text-[11px] text-zinc-600 font-mono bg-black/20 px-2 py-1 rounded select-none">
+                                {{ u.pushoverKey[:6] }}••••••••
+                            </code>
+                            <button onclick="copyToClipboard('{{ u.pushoverKey }}', this)" 
+                                    class="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-white rounded transition shadow-sm"
+                                    title="전체 키 복사">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="p-20 text-center">
+                        <div class="text-zinc-600 italic">등록된 사용자가 없습니다.</div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // 실시간 유저 필터링
+    function filterUsers() {
+        const query = document.getElementById('userSearch').value.toLowerCase();
+        const rows = document.getElementsByClassName('user-row');
+        
+        for (let row of rows) {
+            const searchData = row.getAttribute('data-search').toLowerCase();
+            row.style.display = searchData.includes(query) ? "" : "none";
+        }
+    }
+
+    // 푸시오버 키 복사 함수
+    function copyToClipboard(text, btn) {
+        const temp = document.createElement("textarea");
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand("copy");
+        document.body.removeChild(temp);
+
+        // 시각적 피드백
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        btn.classList.add('bg-green-900/20');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalIcon;
+            btn.classList.remove('bg-green-900/20');
+        }, 2000);
+    }
+</script>
 {% endblock %}

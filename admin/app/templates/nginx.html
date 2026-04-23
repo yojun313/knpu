@@ -1,117 +1,154 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-8 flex justify-between items-end">
+<div class="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
     <div>
         <h2 class="text-2xl font-bold text-white">Nginx Proxy Manager</h2>
-        <p class="text-zinc-400 text-sm">Configure your proxies and manage SSL certificates</p>
+        <p class="text-zinc-400 text-sm">도메인 연결 및 SSL(HTTPS) 인증서 관리</p>
     </div>
-    <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-lg shadow-blue-900/20">
-        + 새 도메인 추가
-    </button>
+
+    <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+        <div class="relative w-full sm:w-64">
+            <input type="text" id="domainSearch" onkeyup="filterDomains()" placeholder="도메인 검색..." 
+                   class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none transition">
+            <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+        <button onclick="openAddModal()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg text-sm font-bold transition shadow-lg shadow-blue-900/20 whitespace-nowrap">
+            + 새 도메인 추가
+        </button>
+    </div>
 </div>
 
-<div class="card rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/50">
-    <table class="w-full text-left text-sm">
-        <thead>
-            <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900">
-                <th class="p-4 font-medium">Domain Name</th>
-                <th class="p-4 font-medium">Internal Port</th>
-                <th class="p-4 font-medium">Config File</th>
-                <th class="p-4 font-medium text-right">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for d in domains %}
-            <tr class="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
-                <td class="p-4 font-semibold text-zinc-200">
-                    <a href="https://{{ d.domain }}" target="_blank" class="hover:underline flex items-center gap-1.5">
-                        {{ d.domain }}
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-500"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                    </a>
-                </td>
-                <td class="p-4 text-zinc-400 font-mono">{{ d.port }}</td>
-                <td class="p-4 text-zinc-500 text-xs">{{ d.filename }}</td>
-                <td class="p-4 text-right">
-                    <button onclick="deleteDomain('{{ d.domain }}')" class="p-2 text-zinc-500 hover:text-red-400 transition" title="삭제">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                    </button>
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4" class="p-16 text-center text-zinc-500">등록된 도메인이 없습니다.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="card rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/30">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+            <thead>
+                <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Domain Name</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Internal Port</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Config File</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="domainListBody">
+                {% for d in domains %}
+                <tr class="domain-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors" data-domain="{{ d.domain }}">
+                    <td class="p-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                            <a href="https://{{ d.domain }}" target="_blank" class="font-bold text-zinc-100 hover:text-blue-400 hover:underline transition-colors">
+                                {{ d.domain }}
+                            </a>
+                        </div>
+                    </td>
+                    <td class="p-4">
+                        <span class="font-mono text-zinc-400 bg-black/40 px-2 py-1 rounded border border-zinc-800/50 text-xs">
+                            :{{ d.port }}
+                        </span>
+                    </td>
+                    <td class="p-4 text-zinc-500 text-xs font-mono">{{ d.filename }}</td>
+                    <td class="p-4 text-right">
+                        <button onclick="deleteDomain('{{ d.domain }}')" class="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-900/10 rounded-lg transition" title="삭제">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="p-20 text-center">
+                        <div class="text-zinc-600 mb-2 italic">등록된 도메인이 없습니다.</div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div id="addModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-6 shadow-2xl">
-        <h3 class="text-xl font-bold mb-4 text-white">새 Nginx 프록시 추가</h3>
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-6 shadow-2xl scale-up-animation">
+        <h3 class="text-xl font-bold mb-4 text-white flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            새 Nginx 프록시 추가
+        </h3>
         <form id="addForm" class="space-y-4">
             <div>
-                <label class="block text-xs text-zinc-500 mb-1">도메인 주소</label>
-                <input type="text" name="domain" placeholder="example.com" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition" required>
+                <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">도메인 주소</label>
+                <input type="text" name="domain" placeholder="example.com" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition text-white" required>
             </div>
             <div>
-                <label class="block text-xs text-zinc-500 mb-1">SSL 인증용 이메일</label>
-                <input type="email" name="email" placeholder="admin@example.com" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition" required>
+                <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">SSL 인증용 이메일</label>
+                <input type="email" name="email" placeholder="admin@example.com" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition text-white" required>
             </div>
             <div>
-                <label class="block text-xs text-zinc-500 mb-1">내부 연결 포트</label>
-                <input type="number" name="port" placeholder="3000" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition" required>
+                <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">내부 연결 포트</label>
+                <input type="number" name="port" placeholder="3000" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition text-white" required>
             </div>
             <div class="flex gap-2 pt-4">
-                <button type="button" onclick="closeAddModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-lg text-sm font-bold transition text-zinc-300">취소</button>
-                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 p-3 rounded-lg text-sm font-bold transition text-white">생성 시작</button>
+                <button type="button" onclick="closeAddModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl text-sm font-bold transition text-zinc-300">취소</button>
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 p-3 rounded-xl text-sm font-bold transition text-white shadow-lg shadow-blue-900/20">생성 시작</button>
             </div>
         </form>
     </div>
 </div>
 
 <div id="consoleModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-3xl h-[60vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-3xl h-[65vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
         <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900">
             <div class="flex items-center gap-2">
-                <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                <span class="ml-2 font-mono text-xs text-zinc-500">Terminal Output</span>
+                <div class="flex gap-1.5 mr-2">
+                    <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+                </div>
+                <span class="font-mono text-xs text-zinc-500 tracking-wider">TERMINAL OUTPUT</span>
             </div>
-            <button onclick="closeConsole()" id="closeConsoleBtn" class="hidden text-zinc-400 hover:text-white transition text-sm flex items-center gap-1">
+            <button onclick="closeConsole()" id="closeConsoleBtn" class="hidden px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs transition border border-zinc-700 font-bold">
                 닫기(Close) ✕
             </button>
         </div>
-        <div id="consoleContainer" class="flex-1 p-6 font-mono text-[12px] overflow-y-auto bg-black text-zinc-300 space-y-1">
+        <div id="consoleContainer" class="flex-1 p-6 font-mono text-[12px] overflow-y-auto bg-black text-zinc-300 space-y-1.5 selection:bg-blue-500/30">
             </div>
     </div>
 </div>
 
 <div id="deleteConfirmModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
     <div class="bg-zinc-900 border border-red-900/30 w-full max-w-md rounded-2xl p-6 shadow-2xl">
+        <div class="w-12 h-12 bg-red-900/20 rounded-full flex items-center justify-center mb-4 mx-auto text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </div>
         <h3 class="text-xl font-bold mb-2 text-white text-center">정말 삭제하시겠습니까?</h3>
-        <p class="text-zinc-400 text-sm text-center mb-6">
-            이 작업은 되돌릴 수 없습니다. 삭제를 확정하려면 아래에 도메인 이름을 똑같이 입력하세요: <br>
-            <span id="targetDomainDisplay" class="text-red-400 font-bold select-none"></span>
+        <p class="text-zinc-400 text-sm text-center mb-6 leading-relaxed">
+            이 작업은 되돌릴 수 없으며 인증서도 함께 파기됩니다. 삭제를 확정하려면 아래에 도메인 이름을 똑같이 입력하세요: <br>
+            <span id="targetDomainDisplay" class="text-red-400 font-black mt-2 inline-block px-2 py-1 bg-red-950/20 rounded border border-red-900/30"></span>
         </p>
         
-        <input type="text" id="deleteConfirmInput" placeholder="도메인 이름을 입력하세요" 
-               class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-red-500 outline-none transition mb-4">
+        <input type="text" id="deleteConfirmInput" placeholder="도메인 주소를 그대로 입력..." 
+               class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-red-500 outline-none transition mb-4 text-white">
         
         <div class="flex gap-2">
-            <button onclick="closeDeleteModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-lg text-sm font-bold transition text-zinc-300">취소</button>
+            <button onclick="closeDeleteModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl text-sm font-bold transition text-zinc-300">취소</button>
             <button id="finalDeleteBtn" onclick="executeDelete()" disabled
-                    class="flex-1 bg-red-900/20 text-red-500 border border-red-900/50 p-3 rounded-lg text-sm font-bold transition disabled:opacity-30 disabled:cursor-not-allowed hover:bg-red-600 hover:text-white">삭제 확정</button>
+                    class="flex-1 bg-red-900/20 text-red-500 border border-red-900/50 p-3 rounded-xl text-sm font-bold transition disabled:opacity-30 disabled:cursor-not-allowed hover:bg-red-600 hover:text-white">삭제 확정</button>
         </div>
     </div>
 </div>
 
 <script>
 let consoleSocket = null;
+let domainToDelete = "";
 
-// 모달 제어 함수들
 function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
 function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
+
+function filterDomains() {
+    const query = document.getElementById('domainSearch').value.toLowerCase();
+    const rows = document.getElementsByClassName('domain-row');
+    for (let row of rows) {
+        const domain = row.getAttribute('data-domain').toLowerCase();
+        row.style.display = domain.includes(query) ? "" : "none";
+    }
+}
 
 function runConsoleTask(payload) {
     const modal = document.getElementById('consoleModal');
@@ -120,10 +157,9 @@ function runConsoleTask(payload) {
     
     modal.classList.remove('hidden');
     closeBtn.classList.add('hidden');
-    container.innerHTML = '<div class="text-blue-400 font-bold mb-2 animate-pulse">명령을 실행 중입니다...</div>';
+    container.innerHTML = '<div class="text-blue-400 font-bold mb-2 animate-pulse flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> 명령을 실행 중입니다...</div>';
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // 라우터의 prefix(/process)를 확인하세요. 만약 /nginx라면 아래 주소를 수정하세요.
     consoleSocket = new WebSocket(`${protocol}//${window.location.host}/nginx/ws/console`);
 
     consoleSocket.onopen = () => {
@@ -132,7 +168,7 @@ function runConsoleTask(payload) {
 
     consoleSocket.onmessage = (event) => {
         const line = document.createElement('div');
-        line.className = 'py-0.5 border-l border-zinc-800 pl-3 hover:bg-white/5 transition-colors';
+        line.className = 'py-0.5 border-l border-zinc-800 pl-3 hover:bg-white/5 transition-colors whitespace-pre-wrap break-all';
         line.innerText = event.data;
         container.appendChild(line);
         container.scrollTop = container.scrollHeight;
@@ -141,26 +177,20 @@ function runConsoleTask(payload) {
     consoleSocket.onclose = () => {
         closeBtn.classList.remove('hidden');
         const end = document.createElement('div');
-        end.className = 'mt-6 p-3 bg-zinc-800/50 text-center text-xs text-zinc-400 rounded-lg border border-zinc-700';
-        end.innerText = "프로세스가 종료되었습니다. 결과를 확인하고 창을 닫아주세요.";
+        end.className = 'mt-6 p-3 bg-zinc-800/30 text-center text-[10px] text-zinc-500 rounded-lg border border-zinc-800 font-bold tracking-widest';
+        end.innerText = "✨ PROCESS TERMINATED";
         container.appendChild(end);
     };
 }
 
-// 도메인 추가 폼 제출
 document.getElementById('addForm').onsubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
-    
-    closeAddModal(); // 입력 모달 닫기
+    closeAddModal();
     runConsoleTask({ action: 'add', ...data });
 };
 
-// 도메인 삭제 버튼
-let domainToDelete = "";
-
-// 삭제 모달 열기
 function deleteDomain(domain) {
     domainToDelete = domain;
     const modal = document.getElementById('deleteConfirmModal');
@@ -169,42 +199,37 @@ function deleteDomain(domain) {
     const btn = document.getElementById('finalDeleteBtn');
 
     display.innerText = domain;
-    input.value = ""; // 입력창 초기화
-    btn.disabled = true; // 버튼 초기화
-    
+    input.value = "";
+    btn.disabled = true;
     modal.classList.remove('hidden');
     input.focus();
 
-    // 입력창 감시 이벤트 등록
     input.oninput = (e) => {
         btn.disabled = (e.target.value !== domainToDelete);
     };
 }
 
-// 삭제 모달 닫기
 function closeDeleteModal() {
     document.getElementById('deleteConfirmModal').classList.add('hidden');
     domainToDelete = "";
 }
 
-// 실제 삭제 프로세스(콘솔) 실행
 function executeDelete() {
     if (document.getElementById('deleteConfirmInput').value !== domainToDelete) return;
-    
     const domain = domainToDelete;
-    closeDeleteModal(); // 확인 모달 닫고
-    runConsoleTask({ action: 'delete', domain: domain }); // 터미널 모달 실행
+    closeDeleteModal();
+    runConsoleTask({ action: 'delete', domain: domain });
 }
 
 function closeConsole() {
     document.getElementById('consoleModal').classList.add('hidden');
-    location.reload(); // 리스트 갱신을 위해 새로고침
+    location.reload();
 }
 
-// Esc 키로 닫기 지원
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeAddModal();
+        closeDeleteModal();
         if(!document.getElementById('closeConsoleBtn').classList.contains('hidden')) {
             closeConsole();
         }
