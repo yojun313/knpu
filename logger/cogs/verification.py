@@ -86,7 +86,7 @@ class CodeInputModal(discord.ui.Modal, title='인증 코드 입력'):
         if data and data['code'] == self.code_input.value:
             role = interaction.guild.get_role(config['role_id'])
             if role:
-                if interaction.self.bot.manager_db.users.find_one({"name": self.user_name.value}):
+                if await self.bot.manager_db.users.find_one({"name": self.user_name.value}):
                     await interaction.user.add_roles(role)
                     await interaction.user.remove_roles(interaction.guild.get_role(config.get('unverified_role_id', 0)))  # 인증 전 역할 제거
                     await self.bot.manager_db.auth.delete_one({"user_id": interaction.user.id})
