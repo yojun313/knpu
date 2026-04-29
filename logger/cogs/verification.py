@@ -86,10 +86,13 @@ class CodeInputModal(discord.ui.Modal, title='인증 코드 입력'):
         if data and data['code'] == self.code_input.value:
             role = interaction.guild.get_role(config['role_id'])
             if role:
-                await interaction.user.add_roles(role)
-                await interaction.user.remove_roles(interaction.guild.get_role(config.get('unverified_role_id', 0)))  # 인증 전 역할 제거
-                await self.bot.manager_db.auth.delete_one({"user_id": interaction.user.id})
-                await interaction.response.send_message(f"인증 성공! {role.name} 역할이 부여되었습니다.", ephemeral=True)
+                if interaction.bot.manager_db.users.find_one({"name": self.user_name.value}):
+                    await interaction.user.add_roles(role)
+                    await interaction.user.remove_roles(interaction.guild.get_role(config.get('unverified_role_id', 0)))  # 인증 전 역할 제거
+                    await self.bot.manager_db.auth.delete_one({"user_id": interaction.user.id})
+                    await interaction.response.send_message(f"인증 성공! {role.name} 역할이 부여되었습니다.", ephemeral=True)
+                else:
+                    await interaction.response.send_message("인증에 실패했습니다. 입력한 이름이 등록된 사용자가 아닙니다.", ephemeral=True)
             else:
                 await interaction.response.send_message("설정된 역할을 서버에서 찾을 수 없습니다.", ephemeral=True)
         else:
