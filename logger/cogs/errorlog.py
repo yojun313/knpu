@@ -1,25 +1,17 @@
-# cogs/error_watcher.py
-
 import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 import datetime
 
 
-# =========================================================
 # 버튼 View
-# =========================================================
-
 class ErrorManageView(discord.ui.View):
 
     def __init__(self, bot):
         super().__init__(timeout=None)
         self.bot = bot
-
-    # =====================================================
-    # 고침 완료
-    # =====================================================
-
+    
+    # 패치 완료
     @discord.ui.button(
         label="패치 완료",
         style=discord.ButtonStyle.green,
@@ -36,7 +28,7 @@ class ErrorManageView(discord.ui.View):
         bug_id = None
 
         for field in embed.fields:
-            if field.name == "버그 ID":
+            if field.name == "버그 UID":
                 bug_id = field.value.replace("`", "")
                 break
 
@@ -46,9 +38,8 @@ class ErrorManageView(discord.ui.View):
                 ephemeral=True
             )
 
-        # DB 업데이트
         await self.bot.manager_db["user-bugs"].update_one(
-            {"_id": bug_id},
+            {"uid": bug_id},
             {
                 "$set": {
                     "status": "fixed",
@@ -73,10 +64,7 @@ class ErrorManageView(discord.ui.View):
             ephemeral=True
         )
 
-    # =====================================================
-    # 수정중
-    # =====================================================
-
+    # 패치 중
     @discord.ui.button(
         label="패치 중",
         style=discord.ButtonStyle.gray,
@@ -93,18 +81,18 @@ class ErrorManageView(discord.ui.View):
         bug_id = None
 
         for field in embed.fields:
-            if field.name == "버그 ID":
+            if field.name == "버그 UID":
                 bug_id = field.value.replace("`", "")
                 break
 
         if not bug_id:
             return await interaction.response.send_message(
-                "버그 ID를 찾을 수 없습니다.",
+                "버그 UID를 찾을 수 없습니다.",
                 ephemeral=True
             )
 
         await self.bot.manager_db["user-bugs"].update_one(
-            {"_id": bug_id},
+            {"uid": bug_id},
             {
                 "$set": {
                     "status": "working",
@@ -129,10 +117,8 @@ class ErrorManageView(discord.ui.View):
             ephemeral=True
         )
 
-    # =====================================================
-    # 패치 실패
-    # =====================================================
 
+    # 패치 실패
     @discord.ui.button(
         label="패치 실패",
         style=discord.ButtonStyle.red,
@@ -149,7 +135,7 @@ class ErrorManageView(discord.ui.View):
         bug_id = None
 
         for field in embed.fields:
-            if field.name == "버그 ID":
+            if field.name == "버그 UID":
                 bug_id = field.value.replace("`", "")
                 break
 
@@ -160,7 +146,7 @@ class ErrorManageView(discord.ui.View):
             )
 
         await self.bot.manager_db["user-bugs"].update_one(
-            {"_id": bug_id},
+            {"uid": bug_id},
             {
                 "$set": {
                     "status": "failed",
@@ -186,10 +172,7 @@ class ErrorManageView(discord.ui.View):
         )
 
 
-# =========================================================
 # 메인 Cog
-# =========================================================
-
 class ErrorWatcher(commands.Cog):
 
     def __init__(self, bot):
@@ -197,10 +180,8 @@ class ErrorWatcher(commands.Cog):
 
         self.watch_errors.start()
 
-    # =====================================================
-    # 로그 채널 설정
-    # =====================================================
 
+    # 로그 채널 설정
     @app_commands.command(
         name="버그로그채널",
         description="버그 로그 채널 설정"
@@ -227,10 +208,7 @@ class ErrorWatcher(commands.Cog):
             ephemeral=True
         )
 
-    # =====================================================
     # DB 풀링
-    # =====================================================
-
     @tasks.loop(seconds=10)
     async def watch_errors(self):
 
@@ -257,23 +235,17 @@ class ErrorWatcher(commands.Cog):
             if not channel:
                 continue
 
-            # ============================================
             # notified=False 인 버그들 가져오기
-            # ============================================
-
             bugs = self.bot.manager_db["user-bugs"].find({
                 "notified": False
             })
 
             async for bug in bugs:
-
                 try:
-
                     # 상태 없으면 자동 추가
                     if "status" not in bug:
-
                         await self.bot.manager_db["user-bugs"].update_one(
-                            {"_id": bug["_id"]},
+                            {"uid": bug["uid"]},
                             {
                                 "$set": {
                                     "status": "pending"
@@ -293,8 +265,8 @@ class ErrorWatcher(commands.Cog):
                     )
 
                     embed.add_field(
-                        name="버그 ID",
-                        value=f"`{bug['_id']}`",
+                        name="버그 UID",
+                        value=f"`{bug['uid']}`",
                         inline=False
                     )
 
@@ -340,12 +312,9 @@ class ErrorWatcher(commands.Cog):
                         view=ErrorManageView(self.bot)
                     )
 
-                    # ====================================
                     # notified true 처리
-                    # ====================================
-
                     await self.bot.manager_db["user-bugs"].update_one(
-                        {"_id": bug["_id"]},
+                        {"uid": bug["uid"]},
                         {
                             "$set": {
                                 "notified": True
@@ -356,10 +325,6 @@ class ErrorWatcher(commands.Cog):
                 except Exception as e:
                     print(f"Bug Watch Error: {e}")
 
-
-# =========================================================
 # setup
-# =========================================================
-
 async def setup(bot):
     await bot.add_cog(ErrorWatcher(bot))
