@@ -68,7 +68,8 @@ def bug_user(userUid: str, message: str):
         "datetime": now_kst,
         "datetime_kst": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
         "message": message,
-        "notified": False
+        "notified": False,
+        "status": "pending",
     }
 
     user_bugs_db.insert_one(log_entry)
