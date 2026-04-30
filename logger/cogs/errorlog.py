@@ -298,9 +298,13 @@ class ErrorWatcher(commands.Cog):
                         inline=False
                     )
 
+                    name = await self.bot.manager_db.users.find_one(
+                        {"uid": bug["uid"]},
+                        {"name": 1}
+                    )
                     embed.add_field(
-                        name="유저 UID",
-                        value=f"`{bug.get('uid', 'Unknown')}`",
+                        name="유저 이름",
+                        value=f"`{name.get('name', 'Unknown')}`",
                         inline=True
                     )
 
