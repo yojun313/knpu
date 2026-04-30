@@ -54,3 +54,25 @@ async def websocket_endpoint(websocket: WebSocket, name: str):
     finally:
         if process.returncode is None:
             process.terminate()
+
+@router.post("/toggle-watch/{name}")
+async def toggle_watch(name: str, user=Depends(get_current_user)):
+    processes = PM2Service.get_processes()
+    target_proc = next((p for p in processes if p['name'] == name), None)
+    
+    if not target_proc:
+        raise HTTPException(status_code=404, detail="Process not found")
+
+    current_watch = target_proc.get('pm2_env', {}).get('watch', False)
+    
+    # --no-watch 대신 --watch false를 사용합니다.
+    new_flag = ["--watch", "false"] if current_watch else ["--watch"]
+    
+    # restart 시 환경 변수를 강제 업데이트하도록 --update-env를 추가하면 더 확실합니다.
+    new_flag.append("--update-env")
+    
+    success = PM2Service.run_command("restart", name, new_flag)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to toggle watch mode")
+        
+    return {"status": "success", "watch": not current_watch}
