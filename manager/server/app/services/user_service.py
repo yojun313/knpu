@@ -51,7 +51,8 @@ def log_user(userUid: str, message: str):
     now_kst = datetime.now(kst)
     
     log_entry = {
-        "uid": userUid,
+        "uid": str(uuid.uuid4()),
+        "userUid": userUid,
         "datetime": now_kst,
         "datetime_kst": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
         "message": message
@@ -64,7 +65,8 @@ def bug_user(userUid: str, message: str):
     now_kst = datetime.now(kst)
     
     log_entry = {
-        "uid": userUid,
+        "uid": str(uuid.uuid4()),
+        "userUid": userUid,
         "datetime": now_kst,
         "datetime_kst": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
         "message": message,

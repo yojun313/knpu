@@ -78,6 +78,12 @@ class MyBot(commands.Bot):
             print(f"[Sync Error] {e}")
 
     async def on_ready(self):
+        try:
+            from cogs.errorlog import ErrorManageView
+            self.add_view(ErrorManageView(self))
+        except ImportError:
+            print("ErrorManageView를 찾을 수 없어 View 등록을 건너뜁니다.")
+        
         print(f"봇 이름: {self.user.name} | 서버: {len(self.guilds)}개")
 
 async def main():

@@ -49,9 +49,9 @@ def build_search_query(name=None, date_str=None, user_map=None):
     
     if name and user_map:
         matched_uids = [uid for uid, uname in user_map.items() if name.lower() in uname.lower()]
-        query["uid"] = {"$in": matched_uids}
+        query["userUid"] = {"$in": matched_uids}
     else:
-        query["uid"] = {"$nin": admin_uids}
+        query["userUid"] = {"$nin": admin_uids}
         
     if date_str:
         try:
@@ -72,7 +72,7 @@ def get_recent_logs(limit=10, name=None, date_str=None):
     
     for log in logs:
         log["datetime"] = log.get("datetime_kst") or log.get("datetime").strftime("%Y-%m-%d %H:%M:%S")
-        log["user_name"] = user_map.get(log.get("uid"), log.get("uid")[:8])
+        log["user_name"] = user_map.get(log.get("userUid"), log.get("userUid")[:8])
     return logs
 
 def get_user_bugs(limit=50, name=None, date_str=None):
@@ -83,7 +83,7 @@ def get_user_bugs(limit=50, name=None, date_str=None):
     
     for bug in bugs:
         bug["datetime"] = bug.get("datetime_kst") or bug.get("datetime").strftime("%Y-%m-%d %H:%M:%S")
-        bug["user_name"] = user_map.get(bug.get("uid"), bug.get("uid")[:8])
+        bug["user_name"] = user_map.get(bug.get("userUid"), bug.get("userUid")[:8])
     return bugs
 
 def get_recent_crawlers(limit=10):
