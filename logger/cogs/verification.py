@@ -62,41 +62,139 @@ class VerificationModal(discord.ui.Modal, title='이메일 인증하기'):
                 content=f"이메일 발송 중 오류가 발생했습니다: {e}", 
                 ephemeral=True
             )
-    
+
 class CodeInputModal(discord.ui.Modal, title='인증 코드 입력'):
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
+
         self.code_input = discord.ui.TextInput(
-            label='인증 번호', 
-            placeholder='6자리 숫자를 입력하세요', 
-            min_length=6, 
+            label='인증 번호',
+            placeholder='6자리 숫자를 입력하세요',
+            min_length=6,
             max_length=6
         )
+
         self.add_item(self.code_input)
 
     async def on_submit(self, interaction: discord.Interaction):
-        # DB에서 유저 데이터 및 서버 설정 가져오기
-        data = await self.bot.manager_db.auth.find_one({"user_id": interaction.user.id})
-        config = await self.bot.manager_db.auth_config.find_one({"guild_id": interaction.guild.id})
+
+        data = await self.bot.manager_db.auth.find_one(
+            {"user_id": interaction.user.id}
+        )
+
+        config = await self.bot.manager_db.auth_config.find_one(
+            {"guild_id": interaction.guild.id}
+        )
 
         if not config or 'role_id' not in config:
-            return await interaction.response.send_message("서버에 설정된 인증 역할이 없습니다. /인증설정 명령어를 먼저 사용하세요.", ephemeral=True)
+            return await interaction.response.send_message(
+                "서버에 설정된 인증 역할이 없습니다.",
+                ephemeral=True
+            )
 
-        if data and data['code'] == self.code_input.value:
-            role = interaction.guild.get_role(config['role_id'])
-            if role:
-                if data and await self.bot.manager_db.users.find_one({"name": data.get('name')}):
-                    await interaction.user.add_roles(role)
-                    await interaction.user.remove_roles(interaction.guild.get_role(config.get('unverified_role_id', 0)))  # 인증 전 역할 제거
-                    await self.bot.manager_db.auth.delete_one({"user_id": interaction.user.id})
-                    await interaction.response.send_message(f"인증 성공! {role.name} 역할이 부여되었습니다.", ephemeral=True)
-                else:
-                    await interaction.response.send_message("인증에 실패했습니다. 입력한 이름이 등록된 사용자가 아닙니다.", ephemeral=True)
-            else:
-                await interaction.response.send_message("설정된 역할을 서버에서 찾을 수 없습니다.", ephemeral=True)
-        else:
-            await interaction.response.send_message("코드가 틀렸거나 만료되었습니다.", ephemeral=True)
+        if not data:
+            return await interaction.response.send_message(
+                "인증 데이터가 존재하지 않습니다.",
+                ephemeral=True
+            )
+
+        # 코드 검사
+        if data['code'] != self.code_input.value:
+            return await interaction.response.send_message(
+                "코드가 틀렸거나 만료되었습니다.",
+                ephemeral=True
+            )
+
+        role = interaction.guild.get_role(config['role_id'])
+
+        if not role:
+            return await interaction.response.send_message(
+                "설정된 역할을 찾을 수 없습니다.",
+                ephemeral=True
+            )
+
+        # 등록된 이름 검사
+        user_exist = await self.bot.manager_db.users.find_one({
+            "name": data.get('name')
+        })
+
+        if not user_exist:
+            return await interaction.response.send_message(
+                "등록된 사용자가 아닙니다.",
+                ephemeral=True
+            )
+
+        # 역할 지급
+        await interaction.user.add_roles(role)
+
+        # 인증 전 역할 제거
+        unverified_role = interaction.guild.get_role(
+            config.get('unverified_role_id', 0)
+        )
+
+        if unverified_role:
+            await interaction.user.remove_roles(unverified_role)
+
+        # auth 데이터 삭제
+        await self.bot.manager_db.auth.delete_one({
+            "user_id": interaction.user.id
+        })
+
+        await interaction.response.send_message(
+            f"인증 성공! {role.mention} 역할이 지급되었습니다.",
+            ephemeral=True
+        )
+
+        # =========================
+        # 인증 로그 전송
+        # =========================
+
+        log_channel_id = config.get("verify_log_channel")
+
+        if not log_channel_id:
+            return
+
+        channel = interaction.guild.get_channel(log_channel_id)
+
+        if not channel:
+            return
+
+        member = interaction.user
+
+        created_at = int(member.created_at.timestamp())
+
+        embed = discord.Embed(
+            title="서버 인증 로그",
+            color=discord.Color.green(),
+            timestamp=datetime.datetime.utcnow()
+        )
+
+        embed.set_thumbnail(url=member.display_avatar.url)
+
+        embed.add_field(
+            name="유저",
+            value=f"{member.mention}\n`{member}`",
+            inline=False
+        )
+
+        embed.add_field(
+            name="유저 ID",
+            value=f"`{member.id}`",
+            inline=True
+        )
+
+        embed.add_field(
+            name="계정 생성일",
+            value=f"<t:{created_at}:F>",
+            inline=True
+        )
+
+        embed.set_footer(
+            text=f"{interaction.guild.name}"
+        )
+
+        await channel.send(embed=embed)
 
 class CodeInputView(discord.ui.View):
     def __init__(self, bot):
@@ -183,5 +281,33 @@ class VerificationCog(commands.Cog):
         )
         await interaction.response.send_message(f"인증 전 역할이 {role.mention}으로 설정되었습니다.", ephemeral=True)
 
+    @app_commands.command(
+        name="인증로그채널",
+        description="인증 로그 채널 설정"
+    )
+    @app_commands.describe(channel="인증 로그를 보낼 채널")
+    @commands.has_permissions(administrator=True)
+    async def set_log_channel(
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel
+    ):
+
+        await self.bot.manager_db.auth_config.update_one(
+            {"guild_id": interaction.guild.id},
+            {
+                "$set": {
+                    "verify_log_channel": channel.id
+                }
+            },
+            upsert=True
+        )
+
+        await interaction.response.send_message(
+            f"인증 로그 채널이 {channel.mention} 으로 설정되었습니다.",
+            ephemeral=True
+        )
+
 async def setup(bot):
     await bot.add_cog(VerificationCog(bot))
+
