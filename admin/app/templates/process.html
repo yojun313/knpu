@@ -11,7 +11,7 @@
         <div class="relative w-full sm:w-64">
             <input type="text" id="procSearch" onkeyup="filterProcesses()" placeholder="프로세스 검색..." 
                    class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none transition shadow-inner">
-            <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" x1="21" x2="16.65" y2="16.65"></line></svg>
         </div>
         <button onclick="location.reload()" class="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
@@ -30,6 +30,7 @@
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">CPU Usage</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Memory</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Uptime</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Watch</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Actions</th>
                 </tr>
             </thead>
@@ -53,6 +54,13 @@
                     </td>
                     <td class="p-4">
                         <span class="uptime-cell text-zinc-500 text-xs">-</span>
+                    </td>
+                    <td class="p-4">
+                        <button onclick="toggleWatch('{{ proc.name }}')" class="hover:opacity-80 transition-opacity">
+                            <span class="watch-status-badge inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-800 text-zinc-600 border border-zinc-700">
+                                -
+                            </span>
+                        </button>
                     </td>
                     <td class="p-4 text-right">
                         <div class="flex justify-end gap-2">
@@ -98,7 +106,6 @@
 <script>
 let logSocket = null;
 
-// [1] 실시간 수치 업데이트
 async function updateStats() {
     try {
         const response = await fetch('/process/status'); 
@@ -109,7 +116,6 @@ async function updateStats() {
             const row = document.getElementById(`proc-${proc.name}`);
             if (!row) return;
 
-            // 상태 업데이트
             const statusCell = row.querySelector('.status-cell');
             const status = proc.pm2_env.status;
             const isOnline = status === 'online';
@@ -119,13 +125,19 @@ async function updateStats() {
                 </span>
             `;
 
-            // CPU & Memory 업데이트 (변화 가독성을 위해 innerText 사용)
             row.querySelector('.cpu-cell').innerText = `${proc.monit.cpu}%`;
             const memMB = (proc.monit.memory / 1024 / 1024).toFixed(1);
             row.querySelector('.mem-cell').innerText = `${memMB} MB`;
-
-            // 업타임 업데이트
             row.querySelector('.uptime-cell').innerText = formatUptime(proc.pm2_env.pm_uptime);
+
+            const watchBadge = row.querySelector('.watch-status-badge');
+            const isWatching = proc.pm2_env.watch;
+            watchBadge.innerText = isWatching ? "WATCH ON" : "WATCH OFF";
+            watchBadge.className = `watch-status-badge inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                isWatching 
+                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' 
+                : 'bg-zinc-800 text-zinc-500 border border-zinc-700'
+            }`;
         });
     } catch (err) {
         console.error("Update failed:", err);
@@ -152,7 +164,6 @@ function formatUptime(ms) {
     return `${Math.floor(hours / 24)}d`;
 }
 
-// [2] 프로세스 제어
 async function controlPM2(action, name) {
     if (!confirm(`${name} 프로세스를 ${action} 하시겠습니까?`)) return;
     const response = await fetch(`/process/control/${action}/${name}`, { method: 'POST' });
@@ -163,7 +174,15 @@ async function controlPM2(action, name) {
     }
 }
 
-// [3] 로그 WebSocket 연결
+async function toggleWatch(name) {
+    const response = await fetch(`/process/toggle-watch/${name}`, { method: 'POST' });
+    if (response.ok) {
+        updateStats();
+    } else {
+        alert('Watch 모드 변경 실패 (프로세스가 재시작됩니다)');
+    }
+}
+
 function openLogModal(name) {
     const modal = document.getElementById('logModal');
     const container = document.getElementById('logContainer');
