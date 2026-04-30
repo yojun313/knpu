@@ -286,7 +286,7 @@ class VerificationCog(commands.Cog):
         description="인증 로그 채널 설정"
     )
     @app_commands.describe(channel="인증 로그를 보낼 채널")
-    @commands.has_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def set_log_channel(
         self,
         interaction: discord.Interaction,
