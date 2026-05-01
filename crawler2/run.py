@@ -13,6 +13,4 @@ if __name__ == "__main__":
         "server.main:app",
         host="0.0.0.0",
         port=3002,
-        reload=True,
-        reload_dirs=[SERVER_DIR],
     )
