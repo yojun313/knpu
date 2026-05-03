@@ -12,6 +12,6 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=3004,
         log_level="warning",
-        access_log=False,
+        access_log=True,
         timeout_keep_alive=86400,
     )
