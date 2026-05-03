@@ -8,12 +8,24 @@
     </div>
 
     <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+        <!-- Startup 상태 배지 -->
+        <div id="startupBadge" class="px-3 py-2 rounded-lg text-[11px] font-bold border border-zinc-800 bg-zinc-900/50 text-zinc-500 transition-all">
+            STARTUP: CHECKING...
+        </div>
+
         <div class="relative w-full sm:w-64">
             <input type="text" id="procSearch" onkeyup="filterProcesses()" placeholder="프로세스 검색..." 
-                   class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none transition shadow-inner">
+                   class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none transition shadow-inner text-white">
             <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" x1="21" x2="16.65" y2="16.65"></line></svg>
         </div>
-        <button onclick="location.reload()" class="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
+
+        <!-- Save 버튼 (pm2 save) -->
+        <button onclick="savePM2()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            저장 (Save)
+        </button>
+
+        <button onclick="location.reload()" class="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 border border-zinc-700">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
             새로고침
         </button>
@@ -108,6 +120,39 @@
 
 <script>
 let logSocket = null;
+
+// Startup 등록 여부 확인
+async function checkStartupStatus() {
+    try {
+        const response = await fetch('/process/startup-status');
+        const data = await response.json();
+        const badge = document.getElementById('startupBadge');
+        if (data.is_registered) {
+            badge.innerText = "STARTUP: REGISTERED";
+            badge.className = "px-3 py-2 rounded-lg text-[11px] font-bold border border-green-500/20 bg-green-500/10 text-green-500 transition-all";
+        } else {
+            badge.innerText = "STARTUP: NOT REGISTERED";
+            badge.className = "px-3 py-2 rounded-lg text-[11px] font-bold border border-orange-500/20 bg-orange-500/10 text-orange-400 transition-all";
+        }
+    } catch (err) {
+        console.error("Startup check failed");
+    }
+}
+
+// PM2 Save (덤프 저장)
+async function savePM2() {
+    if (!confirm("현재 프로세스 리스트를 저장하시겠습니까? 재부팅 시 이 상태로 자동 복구됩니다.")) return;
+    try {
+        const response = await fetch('/process/save', { method: 'POST' });
+        if (response.ok) {
+            alert("성공적으로 저장되었습니다 (pm2 save 완료)");
+        } else {
+            alert("저장 실패");
+        }
+    } catch (err) {
+        alert("서버 통신 오류");
+    }
+}
 
 async function updateStats() {
     try {
@@ -243,6 +288,7 @@ function closeLogModal() {
 
 setInterval(updateStats, 1000);
 updateStats();
+checkStartupStatus(); // 초기 로드 시 Startup 상태 확인
 
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeLogModal();

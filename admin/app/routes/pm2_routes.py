@@ -65,10 +65,8 @@ async def toggle_watch(name: str, user=Depends(get_current_user)):
 
     current_watch = target_proc.get('pm2_env', {}).get('watch', False)
     
-    # --no-watch 대신 --watch false를 사용합니다.
     new_flag = ["--watch", "false"] if current_watch else ["--watch"]
     
-    # restart 시 환경 변수를 강제 업데이트하도록 --update-env를 추가하면 더 확실합니다.
     new_flag.append("--update-env")
     
     success = PM2Service.run_command("restart", name, new_flag)
@@ -76,3 +74,15 @@ async def toggle_watch(name: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=500, detail="Failed to toggle watch mode")
         
     return {"status": "success", "watch": not current_watch}
+
+@router.get("/startup-status")
+async def get_startup_status():
+    status = PM2Service.get_startup_status()
+    return {"is_registered": status}
+
+@router.post("/save")
+async def save_pm2_list():
+    success = PM2Service.save_processes()
+    if not success:
+        raise HTTPException(status_code=500, detail="Save failed")
+    return {"status": "success"}
