@@ -23,12 +23,10 @@ class PM2Service:
         if not pm2_path:
             return False
         
-        # 인자들을 공백으로 합침
         args_str = " ".join(extra_args) if extra_args else ""
         command = f"{pm2_path} {action} {name} {args_str}"
         
         try:
-            # shell=True를 사용하여 터미널 환경과 동일하게 실행
             result = subprocess.run(command, shell=True, capture_output=True, text=True)
             
             if result.returncode != 0:
@@ -39,4 +37,22 @@ class PM2Service:
             return True
         except Exception as e:
             print(f"General Error: {e}")
+            return False
+    
+    @staticmethod
+    def save_processes():
+        pm2_path = shutil.which("pm2")
+        try:
+            subprocess.run(f"{pm2_path} save", shell=True, check=True)
+            return True
+        except:
+            return False
+
+    @staticmethod
+    def get_startup_status():
+        pm2_path = shutil.which("pm2")
+        try:
+            result = subprocess.run(f"{pm2_path} startup", shell=True, capture_output=True, text=True)
+            return "already configured" in result.stdout.lower() or "sudo" in result.stdout.lower()
+        except:
             return False
