@@ -42,8 +42,7 @@ def convertToParquet(folder_path):
 def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status, DBuid=None):
     try:
         convertToParquet(DBpath)
-        parquet_files = [f for f in os.listdir(
-            DBpath) if f.endswith('.parquet')]
+        parquet_files = [f for f in os.listdir(DBpath) if f.endswith('.parquet')]
         for file_name in parquet_files:
             table_name = file_name.rsplit('.', 1)[0]
             file_path = os.path.join(DBpath, file_name)
@@ -69,19 +68,14 @@ def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, stat
 
         title = '[크롤링 중단] ' + DBname
 
-        starttime = datetime.fromtimestamp(
-            startTime).strftime('%Y-%m-%d %H:%M')
-        endtime = datetime.fromtimestamp(
-            time.time()).strftime('%Y-%m-%d %H:%M')
-        crawltime = str(
-            timedelta(seconds=int(time.time() - startTime)))
+        starttime = datetime.fromtimestamp(startTime).strftime('%Y-%m-%d %H:%M')
+        endtime = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M')
+        crawltime = str(timedelta(seconds=int(time.time() - startTime)))
 
         text  = f"\n크롤링 시작 : {starttime}"
         text += f"\n크롤링 종료 : {endtime}"
         text += f"\n소요시간 : {crawltime}\n"
         text += f"\n완료율 : {status.get('percentage', 'N/A')}%"
-        text += f"\n최종 수집일 : {status.get('currentdate', 'N/A')}"
-        text += f"\n수집된 URL 수 : {status.get('urlCnt', 'N/A')}"
         text += f"\n수집된 기사 수 : {status.get('articleCnt', 'N/A')}"
         text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
@@ -89,20 +83,17 @@ def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, stat
         if pushoverKey == 'n' or pushoverKey == None:
             sendMail(userEmail, title, text)
         else:
-            sendPushOver(msg=title + '\n' + text,
-                                user_key=pushoverKey)
+            sendPushOver(msg=title + '\n' + text, user_key=pushoverKey)
 
         with open(os.path.join(CRAWL_LOG_PATH, DBname + '_log.txt'), 'a') as log:
             log.write('\n\n' + text)
 
-        # DB 상태 업데이트: 중단 → endTime = 'X'
         if DBuid:
             appendCrawlLog(DBuid, "end", f"[크롤링 중단] {DBname}\n{text}")
-            errorCrawl(DBuid)
+            stopCrawl(DBuid)
 
     except Exception as e:
         logger.exception(f"stopOperator 실패: {DBname}")
-
 
 def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status, DBuid=None):
     try:
@@ -158,9 +149,6 @@ def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, st
         text  = f"\n크롤링 시작 : {starttime}"
         text += f"\n크롤링 종료 : {endtime}"
         text += f"\n소요시간 : {crawltime}\n"
-        text += f"\n완료율 : {status.get('percentage', 'N/A')}%"
-        text += f"\n최종 수집일 : {status.get('currentdate', 'N/A')}"
-        text += f"\n수집된 URL 수 : {status.get('urlCnt', 'N/A')}"
         text += f"\n수집된 기사 수 : {status.get('articleCnt', 'N/A')}"
         text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
@@ -174,7 +162,6 @@ def finishOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, st
         with open(os.path.join(CRAWL_LOG_PATH, DBname + '_log.txt'), 'a') as log:
             log.write('\n\n' + text)
 
-        # DB 상태 업데이트: 완료 → endTime = 현재 시각
         if DBuid:
             appendCrawlLog(DBuid, "end", f"[크롤링 완료] {DBname}\n{text}")
             endCrawl(DBuid)

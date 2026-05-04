@@ -544,15 +544,13 @@ class NaverNewsCrawler:
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime('%Y%m%d')
             
-            # TODO - db데이터의 status가 Stopped이면 중단, db데이터 자체가 존재하지 않는 경우는 삭제로 분리
-            # 중단일 떄만 stopOperator 실행, 나머지는 프로세스 죽이기
-            if checkDB(self.DBuid) == False:
-                self.running = False
-            
-            if self.running == False: #DB 외 경로로 중단 신호 오는 것 고려해 checkDB와 분리, self.status 업데이트 전 중단
+            status = checkDB(self.DBuid)
+            if status == "stopped":
                 stopOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
-                break
-
+            elif status == "deleted":
+                logger.info(f"DB has been deleted. Terminating crawl: {self.DBname}")
+                return
+            
             if dayCount == self.date_range: # 토큰화 및 파일 저장, 알림
                 finishOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
                 break

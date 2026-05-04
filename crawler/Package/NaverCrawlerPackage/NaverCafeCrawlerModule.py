@@ -229,7 +229,7 @@ class NaverCafeCrawler(CrawlerModule):
             except:
                 return returnData
 
-            self.IntegratedDB['totalArticleCnt'] += 1
+            self.IntegratedDB['article'] += 1
             if self.print_status_option == True:
                 self.printStatus('NaverCafe', 3, self.PrintData)
 
@@ -292,8 +292,8 @@ class NaverCafeCrawler(CrawlerModule):
                             [reply_idx, writer, date, content, url])
                         reply_idx += 1
 
-                self.IntegratedDB['totalReplyCnt'] += len(comment_json)
-                self.IntegratedDB['totalRereplyCnt'] += len(comment_json)
+                self.IntegratedDB['cmt'] += len(comment_json)
+                self.IntegratedDB['reply'] += len(comment_json)
 
                 if self.print_status_option == True:
                     self.printStatus('NaverCafe', 6, self.PrintData)

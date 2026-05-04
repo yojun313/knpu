@@ -124,7 +124,7 @@ class YouTubeCrawler(CrawlerModule):
             except:
                 return returnData
 
-            self.IntegratedDB['totalArticleCnt'] += 1
+            self.IntegratedDB['article'] += 1
             if self.print_status_option == True:
                 self.printStatus('YouTube', 3, self.PrintData)
 
@@ -175,7 +175,7 @@ class YouTubeCrawler(CrawlerModule):
                         replyList.append(replyData)
 
                         reply_idx += 1
-                        self.IntegratedDB['totalReplyCnt'] += 1
+                        self.IntegratedDB['cmt'] += 1
 
                         try:
                             if item['snippet']['totalReplyCount'] > 0:
@@ -183,7 +183,7 @@ class YouTubeCrawler(CrawlerModule):
                                     reply = reply_item['snippet']
                                     rereplyList.append([rereply_idx, reply['authorDisplayName'], datetime.strptime(comment['publishedAt'], "%Y-%m-%dT%H:%M:%S%z").strftime("%Y-%m-%d"), reply['textDisplay'], reply['likeCount'], url])
                                     rereply_idx += 1
-                                    self.IntegratedDB['totalRereplyCnt'] += 1
+                                    self.IntegratedDB['reply'] += 1
                         except Exception as e:
                             pass
                     except Exception as e:

@@ -35,10 +35,10 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
 
     ordered_dict = OrderedDict([("uid", str(uuid.uuid4()))])
     ordered_dict.update(crawlDb_dict)
-    ordered_dict['dataInfo'] = {
-        "totalArticleCnt": 0,
-        "totalReplyCnt": 0,
-        "totalRereplyCnt": 0
+    ordered_dict['stat'] = {
+        "article": 0,
+        "cmt": 0,
+        "reply": 0
     }
     now_kst = datetime.now(timezone.utc).astimezone(
         timezone(timedelta(hours=9))
@@ -136,15 +136,12 @@ def processDbInfo(crawlDb: dict):
     crawlDb['crawlSpeed'] = str(crawlDb['crawlSpeed'])
 
     # 상태 처리
-    status = "Done"
-    endt = crawlDb.get('endTime')
-    if "%" in endt or endt == "토큰화 중":
-        crawlDb['endTime'] = endt
-        status = endt
-    elif endt == 'X':
-        crawlDb['endTime'] = '오류 중단'
-        status = 'Error'
-    crawlDb['status'] = status
+    if crawlDb['status'] == "completed":
+        crawlDb['status'] = "Done"
+    elif crawlDB['status'] == "error":
+        crawlDb['status'] = "Error"
+    elif crawlDb['status'] == "stopped":
+        crawlDb['status'] = "Stopped"
 
     # dbSize 처리
     size = crawlDb.get('dbSize') or 0
@@ -257,20 +254,20 @@ def endCrawlDb(uid: str, error: bool = False):
     )
 
 
-def updateCount(uid: str, dataInfo):
+def updateCount(uid: str, stat):
     crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
     dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb['name']))
-    data_info_dict = dataInfo.model_dump()
+    data_info_dict = stat.model_dump()
     percent = data_info_dict['percent']
     
     del data_info_dict['percent']
 
     crawlList_db.update_one(
         {"uid": uid},
-        {"$set": {"dataInfo": data_info_dict, "dbSize": dbsize, "endTime": percent}},
+        {"$set": {"stat": data_info_dict, "dbSize": dbsize, "endTime": percent}},
     )
 
     return JSONResponse(

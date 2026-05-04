@@ -61,7 +61,7 @@
                     </div>
                     <div class="flex items-center gap-1.5 font-bold">
                         <span class="text-zinc-600 uppercase">Articles</span>
-                        <span class="text-blue-400">{{ "{:,}".format(db.dataInfo.totalArticleCnt if db.dataInfo else 0) }}</span>
+                        <span class="text-blue-400">{{ "{:,}".format(db.stat.article if db.stat else 0) }}</span>
                     </div>
                 </div>
             </div>
@@ -190,9 +190,9 @@
         document.getElementById('modalOption').innerText = "Option " + (db.crawlOption || "1");
         document.getElementById('modalSpeed').innerText = (db.crawlSpeed || "0") + "x";
 
-        // dataInfo 안전하게 매핑 (숫자 콤마 추가)
-        const articles = db.dataInfo?.totalArticleCnt || 0;
-        const replies = db.dataInfo?.totalReplyCnt || 0;
+        // stat 안전하게 매핑 (숫자 콤마 추가)
+        const articles = db.stat?.article || 0;
+        const replies = db.stat?.cmt || 0;
         document.getElementById('modalArticles').innerText = articles.toLocaleString();
         document.getElementById('modalReplies').innerText = replies.toLocaleString();
 

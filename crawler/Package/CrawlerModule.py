@@ -63,9 +63,9 @@ class CrawlerModule(ToolModule):
 
         self.IntegratedDB = {
             'UrlCnt': 0,
-            'totalArticleCnt': 0,
-            'totalReplyCnt': 0,
-            'totalRereplyCnt': 0
+            'article': 0,
+            'cmt': 0,
+            'reply': 0
         }
 
     def setCrawlSpeed(self, speed):
@@ -133,9 +133,9 @@ class CrawlerModule(ToolModule):
                         f"| 경과: {YELLOW}{loadingtime}{WHITE} "
                         f"| 날짜: {color['date']}{printData['currentDate']}{WHITE} "
                         f"| URL: {color['url']}{self.IntegratedDB['UrlCnt']}{WHITE} "
-                        f"| {type_word}: {color['type']}{self.IntegratedDB['totalArticleCnt']}{WHITE} "
-                        f"| 댓글: {color['reply']}{self.IntegratedDB['totalReplyCnt']}{WHITE} "
-                        f"| 대댓글: {color['re_reply']}{self.IntegratedDB['totalRereplyCnt']}{WHITE} ||{RESET}"
+                        f"| {type_word}: {color['type']}{self.IntegratedDB['article']}{WHITE} "
+                        f"| 댓글: {color['reply']}{self.IntegratedDB['cmt']}{WHITE} "
+                        f"| 대댓글: {color['re_reply']}{self.IntegratedDB['reply']}{WHITE} ||{RESET}"
                     )
 
                 else:
@@ -144,9 +144,9 @@ class CrawlerModule(ToolModule):
                         f"| 경과: {loadingtime} "
                         f"| 날짜: {printData['currentDate']} "
                         f"| URL: {self.IntegratedDB['UrlCnt']} "
-                        f"| {type_word}: {self.IntegratedDB['totalArticleCnt']} "
-                        f"| 댓글: {self.IntegratedDB['totalReplyCnt']} "
-                        f"| 대댓글: {self.IntegratedDB['totalRereplyCnt']} ||"
+                        f"| {type_word}: {self.IntegratedDB['article']} "
+                        f"| 댓글: {self.IntegratedDB['cmt']} "
+                        f"| 대댓글: {self.IntegratedDB['reply']} ||"
                     )
 
                 if type == 'YouTube':
@@ -173,9 +173,9 @@ class CrawlerModule(ToolModule):
                 table.add_row("날짜", str(printData['currentDate']))
                 table.add_row("URL", str(self.IntegratedDB['UrlCnt']))
                 table.add_row(f"{type_word}", str(
-                    self.IntegratedDB['totalArticleCnt']))
-                table.add_row("댓글", str(self.IntegratedDB['totalReplyCnt']))
-                table.add_row("대댓글", str(self.IntegratedDB['totalRereplyCnt']))
+                    self.IntegratedDB['article']))
+                table.add_row("댓글", str(self.IntegratedDB['cmt']))
+                table.add_row("대댓글", str(self.IntegratedDB['reply']))
                 if type == 'YouTube':
                     table.add_row("API NUM", str(self.PrintData['api_num']))
 

@@ -4,14 +4,14 @@ from typing import Optional
 from typing import List
 
 class DataInfo(BaseModel):
-    totalArticleCnt: int
-    totalReplyCnt: int
-    totalRereplyCnt: int
+    article: int
+    cmt: int
+    reply: int
 
 class CountDataInfo(BaseModel):
-    totalArticleCnt: int
-    totalReplyCnt: int
-    totalRereplyCnt: int
+    article: int
+    cmt: int
+    reply: int
     percent: str
 
 
@@ -26,7 +26,7 @@ class CrawlDbListSchema(BaseModel):
     dbSize: float
     crawlCom: str
     crawlSpeed: int
-    dataInfo: DataInfo
+    stat: DataInfo
 
 class CrawlDbCreateDto(BaseModel):
     name: str

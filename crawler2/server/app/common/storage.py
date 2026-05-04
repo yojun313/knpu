@@ -32,10 +32,10 @@ def makeDB(DBname, DBtype, startdate, enddate, option, keyword, requester, reque
         ("dbSize", 0),
         ("crawlCom", CRAWLCOM),
         ("crawlSpeed", 1),
-        ("dataInfo", {
-            "totalArticleCnt": 0,
-            "totalReplyCnt": 0,
-            "totalRereplyCnt": 0,
+        ("stat", {
+            "article": 0,
+            "cmt": 0,
+            "reply": 0,
         }),
         ("startTime", now_kst),
         ("endTime", "0%"),
@@ -85,13 +85,13 @@ def updateCrawlStatus(DBuid, percent, articleCnt, replyCnt, rereplyCnt):
         crawlList_db.update_one(
             {"uid": DBuid},
             {"$set": {
-                "dataInfo": {
-                    "totalArticleCnt": articleCnt,
-                    "totalReplyCnt": replyCnt,
-                    "totalRereplyCnt": rereplyCnt,
+                "stat": {
+                    "article": articleCnt,
+                    "cmt": replyCnt,
+                    "reply": rereplyCnt,
                 },
                 "dbSize": dbSize,
-                "endTime": percent,
+                "status": percent,
             }},
         )
     except Exception as e:
@@ -107,11 +107,26 @@ def endCrawl(DBuid):
 
         crawlList_db.update_one(
             {"uid": DBuid},
-            {"$set": {"endTime": now_kst}},
+            {"$set": {"endTime": now_kst, "status": "completed"}},
         )
         logger.info(f"크롤링 완료 (uid: {DBuid})")
     except Exception as e:
         logger.warning(f"완료 상태 업데이트 실패 (uid: {DBuid}): {e}")
+        
+def stopCrawl(DBuid):
+    """크롤링 정지 → endTime에 현재 시각 기록"""
+    try:
+        now_kst = datetime.now(timezone.utc).astimezone(
+            timezone(timedelta(hours=9))
+        ).strftime('%Y-%m-%d %H:%M')
+
+        crawlList_db.update_one(
+            {"uid": DBuid},
+            {"$set": {"endTime": now_kst, "status": "stopped"}},
+        )
+        logger.info(f"크롤링 정지 (uid: {DBuid})")
+    except Exception as e:
+        logger.warning(f"정지 상태 업데이트 실패 (uid: {DBuid}): {e}")
 
 
 def errorCrawl(DBuid):
@@ -119,7 +134,7 @@ def errorCrawl(DBuid):
     try:
         crawlList_db.update_one(
             {"uid": DBuid},
-            {"$set": {"endTime": "X"}},
+            {"$set": {"endTime": "", "status": "error"}},
         )
         logger.info(f"크롤링 에러 처리 (uid: {DBuid})")
     except Exception as e:
