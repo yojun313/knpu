@@ -10,7 +10,6 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# 인증 없이 접근 가능한 경로
 PUBLIC_PATHS = [
     "/login",
     "/auth/",
@@ -18,6 +17,7 @@ PUBLIC_PATHS = [
     "/openapi.json",
     "/docs",
     "/redoc",
+    "/api/proxy/update",
 ]
 
 # 매니저 서버 경유 요청 확인용 내부 키
