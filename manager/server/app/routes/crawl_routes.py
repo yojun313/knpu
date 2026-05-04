@@ -53,8 +53,8 @@ def update_crawl_db_datainfo(uid: str):
 
 
 @router.put("/{uid}/count")
-def update_crawl_db_count(uid: str, dataInfo: CountDataInfo):
-    return updateCount(uid, dataInfo)
+def update_crawl_db_count(uid: str, stat: CountDataInfo):
+    return updateCount(uid, stat)
 
 
 @router.get("/{uid}/preview")

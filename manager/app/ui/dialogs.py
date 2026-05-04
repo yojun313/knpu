@@ -118,15 +118,12 @@ class DBInfoDialog(BaseDialog):
         crawlType = self.DBdata['crawlType']
         crawlOption_int = int(self.DBdata['crawlOption'])
 
-        CountText = self.DBdata['dataInfo']
-        if CountText['totalArticleCnt'] == '0' and CountText['totalReplyCnt'] == '0' and CountText['totalRereplyCnt'] == '0':
-            CountText = self.DBdata['status']
-        else:
-            CountText = (
-                f"Article: {CountText['totalArticleCnt']}\n"
-                f"Reply: {CountText['totalReplyCnt']}\n"
-                f"Rereply: {CountText['totalRereplyCnt']}"
-            )
+        CountStat = self.DBdata['stat']
+        CountText = (
+            f"Article: {CountStat['article']}\n"
+            f"Reply: {CountStat['cmt']}\n"
+            f"Rereply: {CountStat['reply']}"
+        )
 
         crawlOption = {
             'Naver News': {1: '기사 + 댓글', 2: '기사 + 댓글/대댓글', 3: '기사', 4: '기사 + 댓글(추가 정보)'},
