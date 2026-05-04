@@ -28,11 +28,6 @@ def health_check():
         "max_concurrent": registry.max_concurrent,
     }
 
-# Job 관리 API
 api_router.include_router(job_router, tags=["Jobs"])
-
-# WebSocket (prefix 없이 — /ws/dashboard)
 api_router.include_router(ws_router, tags=["WebSocket"])
-
-# 프록시 관리 API
 api_router.include_router(proxy_router, tags=["Proxy"])
