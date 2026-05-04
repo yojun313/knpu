@@ -52,11 +52,11 @@ else:
 
 manager_db_name = 'manager'
 crawler_db_name = 'crawler'
-#if MODE == 0:  # 개발 모드에서는 dev suffix 붙인 DB 사용 but navercrawler에서 db 인식 오류로 즉시 종료되는 문제 발생
-#    crawler_db_name = 'crawler-dev'
 
 crawler_db = client[crawler_db_name]
+manager_db = client[manager_db_name]
 
+user_db = manager_db['users']
 
 
 
