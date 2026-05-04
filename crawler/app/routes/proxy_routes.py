@@ -4,6 +4,8 @@ from typing import List
 import logging
 from db import client, crawler_db_name, load_proxy_list, user_db, crawler_db
 from common.req import set_proxy_list
+import jwt
+import os
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
