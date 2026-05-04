@@ -321,9 +321,9 @@ class Crawler(CrawlerModule):
 
             text = f'\n크롤링 시작: {starttime}' + \
                 f'\n크롤링 종료: {endtime}' + f'\n소요시간: {crawltime}'
-            text += f'\n\nArticle: {self.IntegratedDB['totalArticleCnt']}' + \
-                f'\nReply: {self.IntegratedDB['totalReplyCnt']}' + \
-                f'\nRereply: {self.IntegratedDB['totalRereplyCnt']}'
+            text += f'\n\nArticle: {self.IntegratedDB['article']}' + \
+                f'\nReply: {self.IntegratedDB['cmt']}' + \
+                f'\nRereply: {self.IntegratedDB['reply']}'
 
             if self.upload == True:
                 driveURL = self.GooglePackage_obj.UploadFolder(self.DBpath)
