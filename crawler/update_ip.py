@@ -37,7 +37,7 @@ def main():
         progress.update(task, description="서버로 프록시 리스트 전송 중...")
         try:
             res = requests.post(
-                f"{CRAWLER_SERVER_URL}/api/proxy/update",
+                f"{CRAWLER_SERVER_URL}/proxy/update",
                 headers={"X-Internal-Key": INTERNAL_API_KEY or ""},
                 json={"proxies": proxy_list}, # JSON 바디에 리스트 포함
                 timeout=15,
