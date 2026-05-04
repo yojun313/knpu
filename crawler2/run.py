@@ -6,9 +6,8 @@ SERVER_DIR = os.path.join(BASE_DIR, "server")
 
 if __name__ == "__main__":
     uvicorn.run(
-        "server.main:app",
+        "app.main:app",
         host="0.0.0.0",
         port=3002,
         workers=1,
-        reload=True,
     )
