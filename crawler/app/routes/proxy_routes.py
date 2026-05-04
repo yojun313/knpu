@@ -1,20 +1,41 @@
-from fastapi import APIRouter
-from db import load_proxy_list
-from common.req import set_proxy_list
+from fastapi import APIRouter, HTTPException, Header
+from pydantic import BaseModel
+from typing import List
 import logging
+from db import client, crawler_db_name, load_proxy_list, user_db, crawler_db
+from common.req import set_proxy_list
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+class ProxyUpdatePayload(BaseModel):
+    proxies: List[str]
 
-@router.post("/proxy/reload")
-def reload_proxy_list():
-    """MongoDB의 ip-list에서 프록시 목록을 읽어 메모리에 적재"""
+@router.post("/proxy/update")
+def update_proxy_list(payload: ProxyUpdatePayload, x_internal_key: str = Header(None)):
+    token = x_internal_key
+    payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=[os.getenv("JWT_ALGORITHM")])
+    user = user_db.find_one({"uid": payload["sub"]}, {"_id": 0})
+
+    if not user:
+        raise NotFoundException("User not found")
+
+    if payload["device"] not in user.get("device_list", []):
+        raise NotFoundException("Device not registered")
+    
     try:
-        proxy_list = load_proxy_list()
-        set_proxy_list(proxy_list)
-        logger.info(f"프록시 목록 갱신 완료: {len(proxy_list)}개")
-        return {"status": "ok", "count": len(proxy_list)}
+        collection = crawler_db['ip-list']
+        collection.update_one(
+            {"_id": "proxy_list"},
+            {"$set": {"list": payload.proxies}},
+            upsert=True
+        )
+
+        set_proxy_list(payload.proxies)
+        
+        logger.info(f"프록시 리스트 업데이트 및 갱신 완료: {len(payload.proxies)}개")
+        return {"status": "ok", "count": len(payload.proxies)}
+        
     except Exception as e:
-        logger.error(f"프록시 목록 갱신 실패: {e}")
-        return {"status": "error", "message": str(e)}
+        logger.error(f"프록시 업데이트 중 서버 에러: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
