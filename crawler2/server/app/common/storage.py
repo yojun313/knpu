@@ -38,7 +38,9 @@ def makeDB(DBname, DBtype, startdate, enddate, option, keyword, requester, reque
             "reply": 0,
         }),
         ("startTime", now_kst),
-        ("endTime", "0%"),
+        ("endTime", ""),
+        ("percent", 0),
+        ("status", "running"),
     ])
 
     crawlList_db.insert_one(doc)
@@ -91,7 +93,7 @@ def updateCrawlStatus(DBuid, percent, articleCnt, replyCnt, rereplyCnt):
                     "reply": rereplyCnt,
                 },
                 "dbSize": dbSize,
-                "status": percent,
+                "percent": percent,
             }},
         )
     except Exception as e:
