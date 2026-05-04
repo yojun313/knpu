@@ -96,6 +96,7 @@ from app.routes.dashboard_routes import router as dashboard_router
 
 fastapi_app.include_router(auth_router, tags=["Auth"])             
 fastapi_app.include_router(dashboard_router, tags=["Dashboard"])   
+fastapi_app.include_router(proxy_router, tags=["Proxy"])
 fastapi_app.include_router(api_router, prefix="/api", tags=["API"])
 
 app = AuthMiddleware(fastapi_app)
