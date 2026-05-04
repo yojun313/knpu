@@ -38,13 +38,10 @@ class Manager_Web:
             
     def web_open_crawler(self):
         try:
-            if get_setting("Theme") == 'default':
-                url = "https://crawler.knpu.re.kr?theme=light"
-            else:
-                url = "https://crawler.knpu.re.kr?theme=dark"
+            token = get_setting('auth_token')
+            url = f"https://crawler.knpu.re.kr/auth/direct-login?token={token}"
             
             self.main.browser.setUrl(QUrl(url))
-            #self.browser.show()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 
