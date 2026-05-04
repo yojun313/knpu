@@ -16,14 +16,18 @@ class ProxyUpdatePayload(BaseModel):
 @router.post("/proxy/update")
 def update_proxy_list(payload: ProxyUpdatePayload, x_internal_key: str = Header(None)):
     token = x_internal_key
-    payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=[os.getenv("JWT_ALGORITHM")])
-    user = user_db.find_one({"uid": payload["sub"]}, {"_id": 0})
+    try:
+        token_payload = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=[os.getenv("JWT_ALGORITHM")])
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+
+    user = user_db.find_one({"uid": token_payload["sub"]}, {"_id": 0})
 
     if not user:
-        raise NotFoundException("User not found")
+        raise HTTPException(status_code=404, detail="User not found")
 
-    if payload["device"] not in user.get("device_list", []):
-        raise NotFoundException("Device not registered")
+    if token_payload.get("device") not in user.get("device_list", []):
+        raise HTTPException(status_code=403, detail="Device not registered")
     
     try:
         collection = crawler_db['ip-list']
