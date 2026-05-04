@@ -9,7 +9,7 @@ from user_agent import generate_navigator
 import urllib.parse
 import random
 import logging
-from db import load_proxy_list, checkDB, get_userinfo
+from db import load_proxy_list, checkStatus, get_userinfo
 from db.util import makeDBname 
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
@@ -69,6 +69,17 @@ class NaverBlogCrawler:
             'commentCnt': 0,
             'replyCnt': 0,
         }
+        
+        self.DBPath, self.DBuid = makeDB(
+            DBname=self.DBname,
+            DBtype='naverblog',
+            startdate=self.startDate,
+            enddate=self.endDate,
+            option=self.option,
+            keyword=self.keyword,
+            requester=self.requester,
+            requesterUid=self.requesterUid
+        )
                     
         
     def collectUrl(self, keyword, startDate, endDate):
@@ -355,17 +366,6 @@ class NaverBlogCrawler:
         return self.status
     
     def main(self):
-        self.DBPath, self.DBuid = makeDB(
-            DBname=self.DBname,
-            DBtype='naverblog',
-            startdate=self.startDate,
-            enddate=self.endDate,
-            option=self.option,
-            keyword=self.keyword,
-            requester=self.requester,
-            requesterUid=self.requesterUid
-        )
-
         initCrawlLog(self.DBuid, (
             f"User: {self.requester}\n"
             f"Object: naverblog\n"
@@ -382,7 +382,7 @@ class NaverBlogCrawler:
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime('%Y%m%d')
             
-            if checkDB(self.DBuid) == False:
+            if checkStatus(self.DBuid) == False:
                 self.running = False
             
             if self.running == False: #DB 외 경로로 중단 신호 오는 것 고려해 checkDB와 분리, self.status 업데이트 전 중단

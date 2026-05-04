@@ -7,7 +7,6 @@ router = APIRouter()
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
-
 @router.get("/")
 async def dashboard_page(request: Request):
     user = getattr(request.state, "user", None)

@@ -45,7 +45,6 @@ def cancel_job(job_id: str):
     if not success:
         if removed_from == "running":
             raise HTTPException(status_code=409, detail=f"Job {job_id} is running; stop first")
-        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
     return {"status": "ok", "message": f"Job {job_id} removed ({removed_from})"}
 
 

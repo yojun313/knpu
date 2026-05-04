@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from user_agent import generate_navigator
 from urllib.parse import urlparse, parse_qs
 import logging
-from db import load_proxy_list, checkDB, get_userinfo
+from db import load_proxy_list, checkStatus, get_userinfo
 from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
@@ -70,6 +70,17 @@ class NaverCafeCrawler:
             'commentCnt': 0,
             'replyCnt': 0,
         }
+
+        self.DBPath, self.DBuid = makeDB(
+            DBname=self.DBname,
+            DBtype='navercafe',
+            startdate=self.startDate,
+            enddate=self.endDate,
+            option=self.option,
+            keyword=self.keyword,
+            requester=self.requester,
+            requesterUid=self.requesterUid
+        )
 
     # ── 유틸리티 ──────────────────────────────────────────────
 
@@ -329,17 +340,6 @@ class NaverCafeCrawler:
         return self.status
 
     def main(self):
-        self.DBPath, self.DBuid = makeDB(
-            DBname=self.DBname,
-            DBtype='navercafe',
-            startdate=self.startDate,
-            enddate=self.endDate,
-            option=self.option,
-            keyword=self.keyword,
-            requester=self.requester,
-            requesterUid=self.requesterUid
-        )
-
         initCrawlLog(self.DBuid, (
             f"User: {self.requester}\n"
             f"Object: navercafe\n"
@@ -355,7 +355,7 @@ class NaverCafeCrawler:
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime('%Y%m%d')
 
-            if checkDB(self.DBuid) == False:
+            if checkStatus(self.DBuid) == False:
                 self.running = False
 
             if self.running == False:

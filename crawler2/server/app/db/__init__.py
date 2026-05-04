@@ -63,15 +63,12 @@ crawler_db = client[crawler_db_name]
 def load_proxy_list():
     return client[crawler_db_name]['ip-list'].find_one({"_id": "proxy_list"})['list']
 
-def checkDB(dbUid):
+def checkStatus(dbUid):
     crawlDbList = client[crawler_db_name]['db-list']
     targetDB = crawlDbList.find_one({'uid': dbUid})
-    
     if targetDB:
-        if targetDB.get('status') == 'error':
-            return "stopped"
-    else:
-        return "deleted"
+        return targetDB['status']
+    return None
 
 def get_userinfo(requester:str):
     try:

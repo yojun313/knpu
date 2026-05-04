@@ -90,7 +90,6 @@ def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, stat
 
         if DBuid:
             appendCrawlLog(DBuid, "end", f"[크롤링 중단] {DBname}\n{text}")
-            stopCrawl(DBuid)
 
     except Exception as e:
         logger.exception(f"stopOperator 실패: {DBname}")
