@@ -2108,6 +2108,8 @@ class Manager_Analysis(Manager_Worker):
                     self.error.emit(traceback.format_exc())
 
         try:
+            QMessageBox.warning(self.main, "Not prepared", f"준비 중인 기능입니다")
+            return
             filepath = self.select_csv_file()
             if not filepath: return
 
