@@ -29,3 +29,4 @@ def health_check():
 
 api_router.include_router(job_router, tags=["Jobs"])
 api_router.include_router(ws_router, tags=["WebSocket"])
+api_router.include_router(proxy_router, tags=["Proxy"])
