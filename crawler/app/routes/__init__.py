@@ -7,7 +7,6 @@ from app.routes.ws_routes import router as ws_router, set_queue_manager as set_w
 from app.routes.proxy_routes import router as proxy_router
 from config import MAX_CONCURRENT_JOBS
 
-# ── 서비스 초기화 ────────────────────────────────────────────────────
 registry = CrawlerRegistry(max_concurrent=MAX_CONCURRENT_JOBS)
 persistence = JobPersistence()
 queue_manager = QueueManager(registry, persistence)
