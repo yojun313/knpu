@@ -48,6 +48,7 @@ class QueueManager:
 
     def stop_job(self, job_id: str) -> bool:
         """실행 중 작업 중단"""
+        self.persistence.update_state(job_id, "stopped")
         return self.registry.stop(job_id)
 
     def cancel_job(self, job_id: str) -> bool:
@@ -66,15 +67,12 @@ class QueueManager:
                     return True, "queued"
 
         entry = self.registry.get_entry(job_id)
-        if entry is None:
-            return False, "not_found"
-
-        if entry.state == "running":
+        if entry and entry.state == "running":
             return False, "running"
 
         self.registry.remove_finished(job_id)
         self.persistence.delete(job_id)
-        return True, entry.state
+        return True, ""
 
     def get_job_status(self, job_id: str) -> Optional[dict]:
         """단일 작업의 상태 조회"""
@@ -170,6 +168,9 @@ class QueueManager:
         """크롤러 인스턴스 생성 후 registry에 제출"""
         try:
             crawler = self._create_crawler(req)
+            if hasattr(crawler, 'DBuid'): 
+                db_uid = crawler.DBuid
+                self.persistence.link_db_uid(job_id, db_uid)
         except Exception as e:
             logger.exception(f"크롤러 생성 실패: {job_id}")
             self.persistence.update_state(job_id, "error", str(e))

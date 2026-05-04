@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from user_agent import generate_navigator
 from urllib.parse import urlunparse, urlencode
 import logging
-from db import load_proxy_list, checkDB, get_userinfo
+from db import load_proxy_list, checkStatus, get_userinfo
 from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
@@ -67,6 +67,17 @@ class ChinaSinaCrawler:
             'commentCnt': 0,
             'replyCnt': 0,
         }
+        
+        self.DBPath, self.DBuid = makeDB(
+            DBname=self.DBname,
+            DBtype='chinasina',
+            startdate=self.startDate,
+            enddate=self.endDate,
+            option=self.option,
+            keyword=self.keyword,
+            requester=self.requester,
+            requesterUid=self.requesterUid
+        )
 
     # ── 유틸리티 ──────────────────────────────────────────────
 
@@ -371,17 +382,6 @@ class ChinaSinaCrawler:
         return self.status
 
     def main(self):
-        self.DBPath, self.DBuid = makeDB(
-            DBname=self.DBname,
-            DBtype='chinasina',
-            startdate=self.startDate,
-            enddate=self.endDate,
-            option=self.option,
-            keyword=self.keyword,
-            requester=self.requester,
-            requesterUid=self.requesterUid
-        )
-
         initCrawlLog(self.DBuid, (
             f"User: {self.requester}\n"
             f"Object: chinasina\n"
@@ -402,7 +402,7 @@ class ChinaSinaCrawler:
             currentDate_start = dateRange[0]
             currentDate_end = dateRange[1]
 
-            if checkDB(self.DBuid) == False:
+            if checkStatus(self.DBuid) == False:
                 self.running = False
 
             if not self.running:

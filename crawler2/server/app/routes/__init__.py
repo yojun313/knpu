@@ -12,11 +12,9 @@ registry = CrawlerRegistry(max_concurrent=MAX_CONCURRENT_JOBS)
 persistence = JobPersistence()
 queue_manager = QueueManager(registry, persistence)
 
-# 라우터에 queue_manager 주입
 set_job_qm(queue_manager)
 set_ws_qm(queue_manager)
 
-# ── 라우터 조립 ──────────────────────────────────────────────────────
 api_router = APIRouter()
 
 # Health check

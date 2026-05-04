@@ -138,10 +138,12 @@ def processDbInfo(crawlDb: dict):
     # 상태 처리
     if crawlDb['status'] == "completed":
         crawlDb['status'] = "Done"
-    elif crawlDB['status'] == "error":
+    elif crawlDb['status'] == "error":
         crawlDb['status'] = "Error"
     elif crawlDb['status'] == "stopped":
-        crawlDb['status'] = "Stopped"
+        crawlDb['status'] = "Stop"
+    elif crawlDb['status'] == 'running':
+        crawlDb['status'] = crawlDb['percent']
 
     # dbSize 처리
     size = crawlDb.get('dbSize') or 0
