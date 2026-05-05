@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import time
 import logging
-
+from db import crawler_db
 from common.tokenization import tokenization
 from common.notification import sendMail, sendPushOver
 from common.storage import endCrawl, errorCrawl, appendCrawlLog
@@ -41,6 +41,9 @@ def convertToParquet(folder_path):
 
 def stopOperator(DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status, DBuid=None):
     try:
+        job_col = crawler_db['job-queue']
+        job_col.update_one({"db_uid": DBuid}, {"$set": {"state": "stopped", "finished_at": datetime.now()}})
+        
         convertToParquet(DBpath)
         parquet_files = [f for f in os.listdir(DBpath) if f.endswith('.parquet')]
         for file_name in parquet_files:

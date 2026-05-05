@@ -39,7 +39,7 @@ def makeDB(DBname, DBtype, startdate, enddate, option, keyword, requester, reque
         }),
         ("startTime", now_kst),
         ("endTime", "진행 중"),
-        ("percent", 0),
+        ("percent", "0%"),
         ("status", "running"),
     ])
 
