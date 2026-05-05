@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRAWLER</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script>
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const theme = params.get("theme");
+    
+            if (theme === "dark") {
+                document.documentElement.classList.add("force-dark");
+            } 
+            else if (theme === "light") {
+                document.documentElement.classList.add("force-light");
+            }
+        })();
+    </script>
+    
+    <style>
+        /* 기본 라이트모드 */
+        :root {
+            --background-color: #f0f2f5;
+            --text-color: #333333;
+            --container-background-color: #ffffff;
+            --container-shadow: rgba(0, 0, 0, 0.1);
+            --btn-background-color: #007bff;
+            --btn-hover-color: #0056b3;
+        }
+
+        /* 다크모드 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #333;
+                --text-color: #f8f9fa;
+                --container-background-color: #444;
+                --container-shadow: rgba(255, 255, 255, 0.1);
+                --btn-background-color: #6c757d;
+                --btn-hover-color: #5a6268;
+            }
+        }
+
+        body {
+            padding-top: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: 'Roboto', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 600px;
+            background-color: var(--container-background-color);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px var(--container-shadow);
+            margin: auto;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .btn-custom {
+            background-color: var(--btn-background-color);
+            color: #ffffff;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-weight: bold;
+        }
+
+        .btn-custom:hover {
+            background-color: var(--btn-hover-color);
+        }
+
+        .form-label {
+            font-weight: 600;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        h2 {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: var(--text-color);
+        }
+
+        .form-control {
+            border-radius: 25px;
+            padding: 10px 15px;
+        }
+
+        .form-select {
+            border-radius: 25px;
+            padding: 10px 15px;
+        }
+
+        .dark-mode-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, color 0.3s, transform 0.3s;
+            z-index: 1000;
+        }
+
+        .dark-mode-toggle:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
+        :root.force-dark {
+            --background-color: #333;
+            --text-color: #f8f9fa;
+            --container-background-color: #444;
+            --container-shadow: rgba(255, 255, 255, 0.1);
+            --btn-background-color: #6c757d;
+            --btn-hover-color: #5a6268;
+        }
+        
+        /* URL 파라미터 강제 라이트모드 */
+        :root.force-light {
+            --background-color: #f0f2f5;
+            --text-color: #333333;
+            --container-background-color: #ffffff;
+            --container-shadow: rgba(0, 0, 0, 0.1);
+            --btn-background-color: #007bff;
+            --btn-hover-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>CRAWLER</h2>
+        <form id="crawlForm">
+            <div class="mb-3">
+                <label for="nameInput" class="form-label">이름</label>
+                <input type="text" class="form-control" id="nameInput" placeholder="본인의 이름을 입력하세요">
+            </div>
+
+            <div class="mb-3">
+                <label for="crawlTargetSelect" class="form-label">크롤링 대상을 입력하세요</label>
+                <select class="form-select" id="crawlTargetSelect">
+                    <option value="1">1. Naver News</option>
+                    <option value="2">2. Naver Blog</option>
+                    <option value="3">3. Naver Cafe</option>
+                    <option value="4">4. YouTube</option>
+                    <option value="5">5. ChinaDaily</option>
+                    <option value="6">6. China Sina</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="dateInput1" class="form-label">시작일을 입력하세요</label>
+                <input type="text" class="form-control" id="dateInput1" placeholder="YYYYMMDD">
+            </div>
+            <div class="mb-3">
+                <label for="dateInput2" class="form-label">종료일을 입력하세요</label>
+                <input type="text" class="form-control" id="dateInput2" placeholder="YYYYMMDD">
+            </div>
+
+            <div class="mb-3">
+                <label for="optionSelect" class="form-label">옵션을 선택하세요</label>
+                <select class="form-select" id="optionSelect"></select>
+            </div>
+
+            <div class="mb-3">
+                <label for="keywordInput" class="form-label">Keyword</label>
+                <input type="text" class="form-control" id="keywordInput" placeholder="키워드를 입력하세요">
+                <div class="mt-2">
+                    <details>
+                        <summary style="cursor: pointer; font-weight: 600;">
+                            Naver 키워드 입력 시 주의사항
+                        </summary>
+                        <div class="mt-2" style="font-size: 0.9rem;">
+                            <p style="margin-bottom: 6px;">
+                                <strong>※ 검색 옵션 조합 주의사항</strong><br>
+                                키워드 입력 시 &quot;(따옴표), +, -, | 등의 
+                                <strong>검색 옵션</strong>을 사용할 수 있습니다.<br>
+                                단, 
+                                <a href="https://help.naver.com/service/5626/contents/959?lang=ko&osType=COMMONOS" 
+                                target="_blank">
+                                네이버 검색 도움말
+                                </a> 
+                                에 명시된 <strong>검색 옵션들의 조합</strong>만 지원됩니다.<br>
+                                이외의 검색 옵션 조합은 올바르게 작동하지 않을 수 있습니다.
+                            </p>
+                            <p style="margin-bottom: 0;">
+                                예시: <code>파리 "여행"</code>, <code>"파리 여행"</code>, <code>파리 +여행 -호텔</code>, <code>파리|런던</code>, <code>파리 "여행" +루브르 -에펠탑</code>
+                            </p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="btn-group">
+                    <button id="runBtn" class="btn btn-custom" type="button">시작</button>
+                    <button type="button" id="dashboardBtn" class="btn btn-custom">대쉬보드</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    <!--<button id="toggleDarkMode" onclick="toggleDarkMode()" class="btn btn-secondary dark-mode-toggle">Dark Mode</button>-->
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        function goToDashboardPage() {
+            const root = document.documentElement;
+        
+            if (root.classList.contains("force-dark")) {
+                window.location.href = "/?theme=dark";
+            }
+            else if (root.classList.contains("force-light")) {
+                window.location.href = "/?theme=light";
+            }
+            else {
+                window.location.href = "/";
+            }
+        }
+        
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const activeElement = document.activeElement;
+                if (activeElement && activeElement.id !== 'submitBtn' && activeElement.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    const inputs = Array.from(document.querySelectorAll('input, select, button'));
+                    const nextInput = inputs[inputs.indexOf(activeElement) + 1];
+                    if (nextInput) {
+                        nextInput.focus();
+                    }
+                }
+            }
+        });
+
+        document.getElementById('crawlTargetSelect').addEventListener('change', function() {
+            const targetValue = this.value;
+            const optionSelect = document.getElementById('optionSelect');
+            optionSelect.innerHTML = '';
+
+            let options = [];
+
+            if (targetValue === '1') {
+                options = [
+                    { value: '1', text: '1. 기사 + 댓글' },
+                    { value: '2', text: '2. 기사 + 댓글 & 대댓글' },
+                    { value: '3', text: '3. 기사' },
+                    { value: '4', text: '4. 기사 + 댓글(추가정보)' }
+                ];
+            } else if (targetValue === '2' || targetValue === '3') {
+                options = [
+                    { value: '1', text: '1. 본문' },
+                    { value: '2', text: '2. 본문 + 댓글&대댓글' }
+                ];
+            } else if (targetValue === '4') {
+                options = [
+                    { value: '1', text: '1. 영상 정보 + 댓글&대댓글 (100개 제한)' },
+                    { value: '2', text: '2. 영상 정보 + 댓글&대댓글 (무제한)' }
+                ];
+            } else if (targetValue === '5') {
+                options = [{ value: '1', text: '1. 기사' }];
+            } else if (targetValue === '6') {
+                options = [
+                    { value: '1', text: '1. 기사' },
+                    { value: '2', text: '2. 기사 + 댓글' }
+                ];
+            }
+
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.text = option.text;
+                optionSelect.add(opt);
+            });
+        });
+
+        document.getElementById('crawlTargetSelect').dispatchEvent(new Event('change'));
+        
+        const socket = io();
+        document.getElementById('runBtn').addEventListener('click', () => {
+            const name = document.getElementById('nameInput').value;
+            const crawl_object = document.getElementById('crawlTargetSelect').value;
+            const start_day = document.getElementById('dateInput1').value;
+            const end_day = document.getElementById('dateInput2').value;
+            const option_select = document.getElementById('optionSelect').value;
+            const keyword = document.getElementById('keywordInput').value;
+            const uploadToDrive = 0;
+            socket.emit('crawlInfo_submit', { name, crawl_object, start_day, end_day, option_select, keyword, uploadToDrive });
+        });
+
+        document.getElementById('dashboardBtn').addEventListener('click', () => {
+            goToDashboardPage();
+        });
+
+        socket.on('redirect', function(newUrl) {
+            const root = document.documentElement;
+        
+            if (root.classList.contains("force-dark")) {
+                window.location.href = newUrl + "?theme=dark";
+            }
+            else if (root.classList.contains("force-light")) {
+                window.location.href = newUrl + "?theme=light";
+            }
+            else {
+                window.location.href = newUrl;
+            }
+        });
+        
+
+        function initializeDarkMode() {
+            const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const body = document.body;
+            const toggleButton = document.getElementById('toggleDarkMode');
+
+            if (prefersDarkMode) {
+                body.classList.add('dark-mode');
+                toggleButton.textContent = 'Light Mode';
+            } else {
+                body.classList.remove('dark-mode');
+                toggleButton.textContent = 'Dark Mode';
+            }
+        }
+
+        function toggleDarkMode() {
+            const body = document.body;
+            const toggleButton = document.getElementById('toggleDarkMode');
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                toggleButton.textContent = 'Light Mode';
+            } else {
+                toggleButton.textContent = 'Dark Mode';
+            }
+        }
+
+        initializeDarkMode();
+    </script>
+</body>
+</html>
