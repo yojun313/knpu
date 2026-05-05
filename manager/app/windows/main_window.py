@@ -10,7 +10,14 @@ from datetime import datetime
 from packaging import version
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QDialog, QMessageBox, QMainWindow, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QMessageBox,
+    QMainWindow,
+    QPushButton,
+    QVBoxLayout,
+)
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QTimer
 
@@ -23,8 +30,12 @@ from pages.page_web import Manager_Web
 from pages.page_database import Manager_Database
 from pages.page_settings import Manager_Setting
 from core.boot import (
-    initListWidget, initStatusbar,
-    checkNetwork, checkNewPost, checkNewVersion, getVersionInfo
+    initListWidget,
+    initStatusbar,
+    checkNetwork,
+    checkNewPost,
+    checkNewVersion,
+    getVersionInfo,
 )
 from core.shortcut import initShortcut, resetShortcuts
 from core.setting import get_setting, set_setting
@@ -39,19 +50,19 @@ from ui.dialogs import ViewVersionDialog
 from assets.gui_ui import Ui_MainWindow
 from services.api import Request
 
-class MainWindow(QMainWindow, Ui_MainWindow):
 
+class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, splashDialog):
         try:
             self.splashDialog = splashDialog
             super(MainWindow, self).__init__()
-            self.setupUi(self)  
+            self.setupUi(self)
             self.user_role = None
-            
-            self.cleanup_old_exe()  
-            
-            iconPath = os.path.join(ASSETS_PATH, 'exe_icon.png')
-            
+
+            self.cleanup_old_exe()
+
+            iconPath = os.path.join(ASSETS_PATH, "exe_icon.png")
+
             initListWidget(self)
             initStatusbar(self)
 
@@ -59,11 +70,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.setWindowIcon(QIcon(iconPath))
             self.resize(1400, 1000)
             self.set_web_layout()
-            
+
             try:
                 self._force_quit = False
                 self.listWidget.setCurrentRow(0)
-                if get_setting('BootTerminal') == 'on': openConsole("Boot Process")
+                if get_setting("BootTerminal") == "on":
+                    openConsole("Boot Process")
                 self.startTime = datetime.now()
                 checkNetwork(self)
                 self.listWidget.currentRowChanged.connect(self.display)
@@ -74,18 +86,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     "\n1. Wi-Fi 또는 유선 네트워크가 정상적으로 동작하는지 확인하십시오"
                     "\n2. 네트워크 호환성에 따라 DB 접속이 불가능한 경우가 있습니다. 다른 네트워크 연결을 시도해보십시오\n"
                 )
-                
+
                 # User Checking & Login Process
-                print("\nI. Checking User... ", end='')
+                print("\nI. Checking User... ", end="")
                 self.splashDialog.updateStatus("Checking User")
                 if loginProgram(self) == False:
                     self.force_quit()
                 print("Done")
 
                 self.splashDialog.updateStatus("Loading Data")
-                print("\nII. Loading Data... ", end='')
-                
-                Request('post', 'users/version', json={"newVersionName": VERSION})
+                print("\nII. Loading Data... ", end="")
+
+                Request("post", "users/version", json={"newVersionName": VERSION})
                 self.DB = updateDB(self)
                 self.managerWebObj = Manager_Web(self)
                 self.managerBoardObj = Manager_Board(self)
@@ -94,28 +106,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.managerAnalysisObj = Manager_Analysis(self)
                 printStatus(self, f"{self.fullStorage} GB / 2 TB")
                 print("Done")
-                
+
                 self.splashDialog.updateStatus("Checking New Version")
-                print("\nIII. Checking New Version... ", end='')
+                print("\nIII. Checking New Version... ", end="")
                 if checkNewVersion():
                     self.closeBootscreen()
                     updateProgram(self)
-                
+
                 print("Done")
 
                 self.splashDialog.updateStatus(f"안녕하세요, {self.user}님!")
                 print(f"\n{self.user}님 환영합니다!")
-                
 
                 initShortcut(self)
                 self.managerDatabaseObj.setDatabaseShortcut()
-                userLogging(f'Booting ({getUserLocation(self)})')
+                userLogging(f"Booting ({getUserLocation(self)})")
 
-                if get_setting('BootTerminal') == 'on': closeConsole()
+                if get_setting("BootTerminal") == "on":
+                    closeConsole()
                 self.closeBootscreen()
                 self.show()
 
-                if get_setting('ScreenSize') == 'max':
+                if get_setting("ScreenSize") == "max":
                     self.showMaximized()
                 printStatus(self, f"{self.fullStorage} GB / 2 TB")
 
@@ -128,29 +140,37 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 print(traceback.format_exc())
                 self.closeBootscreen()
                 printStatus(self)
-                msg = f'[ CRITICAL ]\n\nThere is Error in MANAGER Booting\n\nPC: {socket.gethostname()}\n\nError Log: {traceback.format_exc()}'
-                
-                if self.user_role and self.user_role != 'admin':
+                msg = f"[ CRITICAL ]\n\nThere is Error in MANAGER Booting\n\nPC: {socket.gethostname()}\n\nError Log: {traceback.format_exc()}"
+
+                if self.user_role and self.user_role != "admin":
                     sendAdminPushOver(msg)
-                QMessageBox.critical(self, "Error", f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}")
-                
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    f"부팅 과정에서 오류가 발생했습니다\n\nError Log: {traceback.format_exc()}",
+                )
+
                 if checkNewVersion():
                     self.closeBootscreen()
                     updateProgram(self)
-                
-                QMessageBox.information(self, "Information", f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다")
+
+                QMessageBox.information(
+                    self,
+                    "Information",
+                    f"관리자에게 에러 상황과 로그가 전달되었습니다\n\n프로그램을 종료합니다",
+                )
                 self.force_quit()
 
         except Exception as e:
             self.closeBootscreen()
             openConsole()
             print(traceback.format_exc())
-    
+
     def cleanup_old_exe(self):
-        if getattr(sys, 'frozen', False):
+        if getattr(sys, "frozen", False):
             exe_dir = os.path.dirname(sys.executable)
             exe_name = os.path.basename(sys.executable)
-            
+
             for filename in os.listdir(exe_dir):
                 if filename.startswith(exe_name + ".old_"):
                     file_path = os.path.join(exe_dir, filename)
@@ -158,7 +178,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         os.remove(file_path)
                     except Exception:
                         pass
-                
+
     def showEvent(self, event):
         super().showEvent(event)
         QTimer.singleShot(0, self.centerWindow)
@@ -169,7 +189,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         frame = self.frameGeometry()
         frame.moveCenter(geo.center())
         self.move(frame.topLeft())
-        
+
     def _resolve_app_paths(self):
         # 유저 문서 폴더 안에 MANAGER 생성
         documents_dir = Path.home() / "Documents" / "MANAGER"
@@ -179,13 +199,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # 프로그램 설치/동작 경로 구분
         if platform.system() == "Windows":
             # PyInstaller 실행 환경 고려
-            if getattr(sys, 'frozen', False):
+            if getattr(sys, "frozen", False):
                 base_dir = Path(os.getenv("LOCALAPPDATA")) / "MANAGER"
             else:
                 base_dir = Path(os.getenv("APPDATA")) / "MANAGER"
         else:
             # macOS / Linux 공통
-            if getattr(sys, 'frozen', False):
+            if getattr(sys, "frozen", False):
                 base_dir = Path(sys.executable).parent
             else:
                 base_dir = Path(__file__).resolve().parent
@@ -199,29 +219,36 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.web_layout = QVBoxLayout()
         self.web_layout.addWidget(self.browser)
         self.tab_webview.setLayout(self.web_layout)
-    
+
     def showNewVersionInfo(self):
         # Show New Version Info
-        lastVersion = version.parse(get_setting('LastVersion'))
-        
+        lastVersion = version.parse(get_setting("LastVersion"))
+
         # 최신 버전으로 업데이트 되었을 때
         if version.parse(VERSION) > lastVersion:
             newVersionInfo = getVersionInfo(VERSION)
-            set_setting('LastVersion', VERSION)
-            dialog = ViewVersionDialog(self, newVersionInfo, title = f"새로운 버전으로 업데이트되었습니다")
+            set_setting("LastVersion", VERSION)
+            dialog = ViewVersionDialog(
+                self, newVersionInfo, title=f"새로운 버전으로 업데이트되었습니다"
+            )
             confirm_btn = QPushButton("확인")
             confirm_btn.clicked.connect(dialog.accept)
             dialog.add_buttons(confirm_btn)
             dialog.exec()
-    
+
     def showNewPostInfo(self):
         newpost = checkNewPost(self)
         if newpost == True:
             reply = QMessageBox.question(
-                self, "New Post", "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                self,
+                "New Post",
+                "새로운 게시물이 업로드되었습니다\n\n확인하시겠습니까?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
             if reply == QMessageBox.StandardButton.Yes:
                 self.managerBoardObj.viewPost(new=True)
-    
+
     def closeBootscreen(self):
         try:
             self.splashDialog.accept()
@@ -235,7 +262,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # DATABASE
         if index == 0:
             self.managerDatabaseObj.setDatabaseShortcut()
-            if get_setting('DB_Refresh') == 'default':
+            if get_setting("DB_Refresh") == "default":
                 self.managerDatabaseObj.refreshDB()
             printStatus(self, f"{self.fullStorage} GB / 2 TB")
             changeStatusbarAction(self, "DATABASE")
@@ -264,19 +291,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         elif index == 5:
             printStatus(self)
             self.managerUserObj.user_shortcut_setting()
-        
+
         # SETTING
         elif index == 6:
-            userLogging(f'User Setting')
+            userLogging(f"User Setting")
             dialog = Manager_Setting(self)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
                 printStatus(self, "설정 반영 중...")
-                QApplication.instance().setStyleSheet(theme_option[get_setting('Theme')])
+                QApplication.instance().setStyleSheet(
+                    theme_option[get_setting("Theme")]
+                )
                 self.managerDatabaseObj.refreshDB()
                 printStatus(self)
-            previous_index = self.stackedWidget.currentIndex()  # 현재 활성 화면의 인덱스
-            self.listWidget.setCurrentRow(previous_index)  # 선택 상태를 이전 인덱스로 변경
+            previous_index = (
+                self.stackedWidget.currentIndex()
+            )  # 현재 활성 화면의 인덱스
+            self.listWidget.setCurrentRow(
+                previous_index
+            )  # 선택 상태를 이전 인덱스로 변경
 
         gc.collect()
 
@@ -284,23 +317,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._force_quit = True
         QApplication.quit()
         sys.exit(0)
-    
+
     def closeEvent(self, event):
         if self._force_quit:
             event.accept()
             return
-        
-        reply = QMessageBox.question(self, 'Shutdown', "프로그램을 종료하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                     QMessageBox.StandardButton.Yes)
+
+        reply = QMessageBox.question(
+            self,
+            "Shutdown",
+            "프로그램을 종료하시겠습니까?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
+        )
         if reply == QMessageBox.StandardButton.Yes:
             try:
-                userLogging('Shutdown')
+                userLogging("Shutdown")
                 self.cleanUpTemp()
             except Exception as e:
                 print(traceback.format_exc())
-                
+
             QApplication.quit()
-            event.accept() 
+            event.accept()
         else:
             event.ignore()
 
@@ -328,6 +366,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         except Exception as e:
             print(f"[Cleanup ERROR] {e}")
-    
+
     def updateProgram(self, sc=False):
         updateProgram(self, sc=sc)

@@ -12,20 +12,23 @@ from PySide6.QtGui import QIcon, QGuiApplication
 from config import ASSETS_PATH
 from packaging import version
 
+
 def build_app():
     if version.parse(VERSION) < version.parse(get_setting("LastVersion")):
         set_setting("LastVersion", VERSION)
-    
+
     os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
     os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
 
-    QGuiApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+    )
 
     app = QApplication(sys.argv)
     app.setApplicationName("MANAGER")
     app.setApplicationVersion(VERSION)
     app.setOrganizationName("PAILAB")
-    app.setWindowIcon(QIcon(os.path.join(ASSETS_PATH, 'exe_icon.png')))
+    app.setWindowIcon(QIcon(os.path.join(ASSETS_PATH, "exe_icon.png")))
     app.setStyle("Fusion")
 
     # 글꼴
@@ -40,9 +43,9 @@ def build_app():
 
     theme = get_setting("Theme", "default")
     app.setStyleSheet(theme_option[theme])
-    
+
     palette = QPalette()
-    if theme == 'default':
+    if theme == "default":
         palette.setColor(QPalette.ColorRole.Window, QColor(240, 240, 240))
         palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.black)
         palette.setColor(QPalette.ColorRole.Base, Qt.GlobalColor.white)
@@ -68,6 +71,7 @@ def build_app():
 
     return app, theme
 
+
 def main():
     shared_memory = QSharedMemory("PAILAB_MANAGER_UNIQUE_KEY")
     if not shared_memory.create(1):
@@ -75,16 +79,18 @@ def main():
         sys.exit(0)
 
     app, theme = build_app()
-    
+
     splash = SplashDialog(version=VERSION, theme=theme)
     splash.show()
     QApplication.processEvents()
     splash.updateStatus("Loading System Libraries")
 
     from windows.main_window import MainWindow
+
     window = MainWindow(splash)
-    
+
     sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     main()

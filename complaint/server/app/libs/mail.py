@@ -8,33 +8,30 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def sendEmail(receiver, title, text, attachment_path=None):
     sender = "knpubigmac2024@gmail.com"
     MailPassword = os.getenv("MAIL_PASSWORD")
 
     msg = MIMEMultipart()
-    msg['Subject'] = title
-    msg['From'] = sender
-    msg['To'] = receiver
+    msg["Subject"] = title
+    msg["From"] = sender
+    msg["To"] = receiver
 
-    msg.attach(MIMEText(text, 'plain'))
+    msg.attach(MIMEText(text, "plain"))
 
     if attachment_path and os.path.exists(attachment_path):
         try:
             with open(attachment_path, "rb") as attachment:
                 part = MIMEBase("application", "octet-stream")
                 part.set_payload(attachment.read())
-            
+
             encoders.encode_base64(part)
-            
+
             filename = os.path.basename(attachment_path)
 
-            part.add_header(
-                "Content-Disposition",
-                "attachment",
-                filename=filename 
-            )
-            
+            part.add_header("Content-Disposition", "attachment", filename=filename)
+
             msg.attach(part)
         except Exception as e:
             print(f"파일 첨부 중 오류 발생: {e}")

@@ -1,23 +1,34 @@
 from PySide6.QtCore import QCoreApplication, QEventLoop
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QScrollArea, QWidget
+from PySide6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QWidget,
+)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QShortcut
 import webbrowser
 import re
 
-active_threads = []  
+active_threads = []
+
 
 def register_thread(thread):
-    active_threads.append(thread)  
+    active_threads.append(thread)
+
 
 def unregister_thread(thread):
     try:
-        active_threads.remove(thread)  
+        active_threads.remove(thread)
     except ValueError:
         pass  # 등록되지 않은 스레드일 경우 무시
 
+
 def get_active_thread_count():
     return len(active_threads)
+
 
 def showActiveThreadsDialog():
 
@@ -52,37 +63,35 @@ def showActiveThreadsDialog():
     close_btn = QPushButton("닫기")
     close_btn.clicked.connect(dialog.accept)
     layout.addWidget(close_btn)
-    
+
     QShortcut(QKeySequence("Ctrl+W"), dialog).activated.connect(dialog.reject)
     QShortcut(QKeySequence("Ctrl+ㅈ"), dialog).activated.connect(dialog.reject)
 
     dialog.exec()
- 
-def printStatus(parent, msg=''):
+
+
+def printStatus(parent, msg=""):
     if len(active_threads) > 0:
         add_msg = f"{len(active_threads)}개의 작업 진행 중"
         if msg:
             msg += f" | {add_msg}"
-        else: 
+        else:
             msg = add_msg
-        
+
         tooltipMsg = "\n".join(active_threads)
         parent.rightLabel.setToolTip(tooltipMsg)
 
-
     for i in range(3):
         parent.rightLabel.setText(msg)
-        QCoreApplication.processEvents(
-            QEventLoop.ProcessEventsFlag.AllEvents,
-            0
-        )
+        QCoreApplication.processEvents(QEventLoop.ProcessEventsFlag.AllEvents, 0)
+
 
 def changeStatusbarAction(parent, option: str = "DEFAULT"):
-    try:       
-        parent.rightLabel.clicked.disconnect()  
+    try:
+        parent.rightLabel.clicked.disconnect()
     except TypeError:
-        pass  
-        
+        pass
+
     if option in ["DATABASE", "ANALYSIS"]:
         parent.rightLabel.setToolTip("실행 중인 작업 보기")
         parent.rightLabel.clicked.connect(lambda: showActiveThreadsDialog())
@@ -90,7 +99,7 @@ def changeStatusbarAction(parent, option: str = "DEFAULT"):
         raw_text = parent.rightLabel.text().strip()
         match = re.search(r"(https?://[^\s|]+)", raw_text)
         if not match:
-            return  
+            return
         url = match.group(1)
         parent.rightLabel.setToolTip("클릭하여 웹페이지 열기")
         parent.rightLabel.clicked.connect(lambda: webbrowser.open(url))

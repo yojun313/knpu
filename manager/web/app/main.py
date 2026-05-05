@@ -14,17 +14,18 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # 정적 파일 디렉토리 경로 계산
-BASE_DIR   = os.path.dirname(__file__)          
-STATIC_DIR = os.path.join(BASE_DIR, "static")  
+BASE_DIR = os.path.dirname(__file__)
+STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 # StaticFiles 마운트
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 
 # 루트 라우트: index.html 반환
 @app.get("/", response_class=HTMLResponse)
@@ -33,21 +34,24 @@ async def index():
     return HTMLResponse(open(html_path, encoding="utf-8").read())
 
 
-# 프로세스 관리 
+# 프로세스 관리
 class ProcessInfo(BaseModel):
     title: str
     process_id: Optional[str] = Field(
         None, description="클라이언트에서 미리 생성한 프로세스 ID"
     )
 
+
 # 메모리 저장소: process_id → title
 processes: Dict[str, str] = {}
 # process_id → WebSocket 리스트
 clients: Dict[str, List[WebSocket]] = {}
 
+
 class ProcessInfoOut(BaseModel):
     process_id: str
     title: str
+
 
 # 프로세스 메타데이터 조회
 @app.get("/process/{process_id}", response_model=ProcessInfoOut)
@@ -55,6 +59,7 @@ async def get_process(process_id: str):
     if process_id not in processes:
         raise HTTPException(status_code=404, detail="Unknown process")
     return {"process_id": process_id, "title": processes[process_id]}
+
 
 # 프로세스 생성 엔드포인트
 @app.post("/process", response_model=dict)
@@ -65,6 +70,7 @@ async def create_process(info: ProcessInfo):
     processes[pid] = info.title
     clients[pid] = []
     return {"process_id": pid}
+
 
 # WebSocket 연결 엔드포인트
 @app.websocket("/ws/{process_id}")
@@ -80,6 +86,7 @@ async def ws_endpoint(ws: WebSocket, process_id: str):
             await ws.receive_text()
     except WebSocketDisconnect:
         clients[process_id].remove(ws)
+
 
 # 진행상황 알림 엔드포인트
 @app.post("/notify/{process_id}")

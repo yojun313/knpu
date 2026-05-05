@@ -11,9 +11,7 @@ def get_api_headers():
     Returns the API headers with the current token.
     """
     token = get_setting("auth_token")
-    return {
-        "Authorization": f"Bearer {token}"
-    }
+    return {"Authorization": f"Bearer {token}"}
 
 
 def Request(method, url, base_api=MANAGER_SERVER_API, **kwargs):
@@ -22,9 +20,11 @@ def Request(method, url, base_api=MANAGER_SERVER_API, **kwargs):
     response = requests.request(method.upper(), full_url, **kwargs)
     response.raise_for_status()
     return response
-    
 
-def upload_homepage_image(src_path: str, folder: str = "misc", file_name: str = "default") -> str:
+
+def upload_homepage_image(
+    src_path: str, folder: str = "misc", file_name: str = "default"
+) -> str:
     if not os.path.exists(src_path):
         raise FileNotFoundError(f"{src_path} 파일을 찾을 수 없습니다.")
     mimetypes.init()  # mimetypes 초기화
@@ -33,17 +33,12 @@ def upload_homepage_image(src_path: str, folder: str = "misc", file_name: str = 
         raise ValueError(f"{src_path}의 MIME 타입을 알 수 없음")
 
     with open(safe_path(src_path), "rb") as file:
-        files = {
-            "file": (os.path.basename(src_path), file, mime_type)
-        }
-        data = {
-            "folder": folder,
-            "object_name": f"{folder}/{file_name}.jpg"
-        }
-        
-        response = Request('post', f"image/", base_api=HOMEPAGE_EDIT_API, files=files, data=data)
+        files = {"file": (os.path.basename(src_path), file, mime_type)}
+        data = {"folder": folder, "object_name": f"{folder}/{file_name}.jpg"}
+
+        response = Request(
+            "post", f"image/", base_api=HOMEPAGE_EDIT_API, files=files, data=data
+        )
     print(response.status_code, response.text)
-        
+
     return response.json()["url"]
-
-

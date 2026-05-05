@@ -6,51 +6,60 @@ from config import VERSION
 import requests
 from libs.console import openConsole
 
-def userLogging(text=''):
+
+def userLogging(text=""):
     try:
-        jsondata = {
-            "message": text
-        }
-        Request('post', '/users/log', json=jsondata)
+        jsondata = {"message": text}
+        Request("post", "/users/log", json=jsondata)
     except Exception as e:
         print(traceback.format_exc())
 
 
-def userBugging(text=''):
+def userBugging(text=""):
     try:
-        jsondata = {
-            "message": text
-        }
-        Request('post', '/users/bug', json=jsondata)
+        jsondata = {"message": text}
+        Request("post", "/users/bug", json=jsondata)
     except Exception as e:
         print(traceback.format_exc())
+
 
 def programBugLog(parent, text):
-    if parent.user_role == 'admin':
+    if parent.user_role == "admin":
         openConsole("Error Log")
     print(text)
     printStatus(parent, "오류 발생")
-    if parent.user_role == 'admin':
-        QMessageBox.critical(parent, "Error", f"오류가 발생했습니다\n\nError Log: {text}")
+    if parent.user_role == "admin":
+        QMessageBox.critical(
+            parent, "Error", f"오류가 발생했습니다\n\nError Log: {text}"
+        )
     else:
         QMessageBox.critical(parent, "Error", f"오류가 발생했습니다")
 
     userBugging(text)
-    
-    if parent.user_role != 'admin':
-        reply = QMessageBox.question(parent, 'Bug Report', "버그 리포트를 전송하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+
+    if parent.user_role != "admin":
+        reply = QMessageBox.question(
+            parent,
+            "Bug Report",
+            "버그 리포트를 전송하시겠습니까?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
+        )
         if reply == QMessageBox.StandardButton.Yes:
             parent.managerBoardObj.addBug()
 
     printStatus(parent)
 
+
 def getUserLocation(parent, detail=False):
     try:
         response = requests.get("https://ipinfo.io")
         data = response.json()
-        returnData = f"{VERSION} | {parent.userDevice} | {data.get("ip")} | {data.get("city")}"
+        returnData = (
+            f"{VERSION} | {parent.userDevice} | {data.get('ip')} | {data.get('city')}"
+        )
         if detail == True:
-            returnData = f"{data.get("ip")} | {data.get("city")} | {data.get('region')} | {data.get('country')} | {data.get('loc')} | {VERSION}"
+            returnData = f"{data.get('ip')} | {data.get('city')} | {data.get('region')} | {data.get('country')} | {data.get('loc')} | {VERSION}"
         return returnData
     except requests.RequestException as e:
         return ""

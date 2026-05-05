@@ -23,10 +23,12 @@ import traceback
 
 console = Console()
 
+
 async def periodic_gc(interval_seconds: int = 60):
     while True:
         await asyncio.sleep(interval_seconds)
         gc.collect()
+
 
 fastapi_app = FastAPI(title="CRAWLER")
 
@@ -39,13 +41,15 @@ fastapi_app.add_middleware(
     allow_credentials=True,
 )
 
+
 @fastapi_app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     tb = exc.__traceback__
     frames = traceback.extract_tb(tb)
 
     filtered_frames = [
-        f for f in frames
+        f
+        for f in frames
         if "site-packages" not in f.filename and "lib/python" not in f.filename
     ]
     if not filtered_frames and frames:
@@ -54,7 +58,9 @@ async def global_exception_handler(request: Request, exc: Exception):
     custom_traceback = "".join(traceback.format_list(filtered_frames))
     custom_traceback += f"\n{type(exc).__name__}: {str(exc)}"
 
-    console.print(f"[bold red]Exception at {request.url.path}:[/bold red]\n{traceback.format_exc()}")
+    console.print(
+        f"[bold red]Exception at {request.url.path}:[/bold red]\n{traceback.format_exc()}"
+    )
 
     return JSONResponse(
         status_code=500,
@@ -65,6 +71,7 @@ async def global_exception_handler(request: Request, exc: Exception):
             "path": request.url.path,
         },
     )
+
 
 @fastapi_app.on_event("startup")
 async def on_startup():
@@ -87,6 +94,7 @@ async def on_startup():
 
 
 import os as _os
+
 _static_path = _os.path.join(_os.path.dirname(__file__), "static")
 fastapi_app.mount("/static", StaticFiles(directory=_static_path), name="static")
 
@@ -94,8 +102,8 @@ from app.routes import api_router
 from app.routes.auth_routes import router as auth_router
 from app.routes.dashboard_routes import router as dashboard_router
 
-fastapi_app.include_router(auth_router, tags=["Auth"])             
-fastapi_app.include_router(dashboard_router, tags=["Dashboard"])   
+fastapi_app.include_router(auth_router, tags=["Auth"])
+fastapi_app.include_router(dashboard_router, tags=["Dashboard"])
 fastapi_app.include_router(api_router, prefix="/api", tags=["API"])
 
 app = AuthMiddleware(fastapi_app)

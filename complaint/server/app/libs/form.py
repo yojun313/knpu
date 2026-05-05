@@ -20,6 +20,7 @@ output_data = {
     "6": "(기타 사항을 적어야해. 너가 위에서 말하지 못한 것들을 여기에 입력해줘. 없으면 공백으로 놓으면 돼)",
 }
 
+
 def make_query(form_data):
     query = f"""
         너는 법률 문서 자동 작성 시스템이다.
@@ -53,7 +54,8 @@ def make_query(form_data):
     """.strip()
 
     return query
-    
+
+
 def safe_json_load(llm_result: str) -> dict:
     if not llm_result or not isinstance(llm_result, str):
         raise ValueError("Empty or non-string LLM response")
@@ -74,6 +76,6 @@ def safe_json_load(llm_result: str) -> dict:
     if start == -1:
         raise ValueError("No opening brace '{' found before '}'")
 
-    json_str = text[start:end + 1].strip()
-    
+    json_str = text[start : end + 1].strip()
+
     return json_str

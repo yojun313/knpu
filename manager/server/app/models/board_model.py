@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+
 class AddVersionDto(BaseModel):
     versionName: str
     changeLog: str
@@ -8,7 +9,7 @@ class AddVersionDto(BaseModel):
     details: str
     sendPushOver: bool
     fullUpdate: bool
-    
+
 
 class VersionBoardSchema(BaseModel):
     uid: str
@@ -19,12 +20,14 @@ class VersionBoardSchema(BaseModel):
     status: str
     details: str
 
+
 class AddBugDto(BaseModel):
     writerUid: str
     versionName: str
     bugTitle: str
     bugText: str
     programLog: str
+
 
 class BugBoardSchema(BaseModel):
     uid: str
@@ -36,11 +39,13 @@ class BugBoardSchema(BaseModel):
     datetime: datetime
     programLog: str
 
+
 class AddPostDto(BaseModel):
     writerUid: str
     title: str
     text: str
     sendPushOver: bool
+
 
 class FreeBoardSchema(BaseModel):
     uid: str
@@ -50,4 +55,3 @@ class FreeBoardSchema(BaseModel):
     text: str
     datetime: datetime
     viewCnt: list
-    

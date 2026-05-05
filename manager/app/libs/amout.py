@@ -1,5 +1,6 @@
 import os
 
+
 def count_py_lines(directory: str) -> None:
     total_lines = 0
     file_count = 0
@@ -10,7 +11,7 @@ def count_py_lines(directory: str) -> None:
             if file.endswith(".py"):
                 file_path = os.path.join(root, file)
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         lines = f.readlines()
                         line_count = len(lines)
                         total_lines += line_count
@@ -21,6 +22,7 @@ def count_py_lines(directory: str) -> None:
 
     print(f"\n총 {file_count}개의 .py 파일")
     print(f"총 줄 수: {total_lines} 줄")
+
 
 if __name__ == "__main__":
     target_dir = input("디렉토리 경로를 입력하세요: ").strip()

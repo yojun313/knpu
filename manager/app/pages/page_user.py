@@ -11,6 +11,7 @@ from core.auth import *
 
 warnings.filterwarnings("ignore")
 
+
 class Manager_User:
     def __init__(self, main_window):
         self.main = main_window
@@ -18,13 +19,24 @@ class Manager_User:
         self.matchButton()
 
     def refreshUserTable(self):
-        self.user_list = Request('get', '/users').json()['data']
-        user_data = [(user['name'], user['email'], user['pushoverKey'], user['role'], user.get('version', 'Unknown')) for user in self.user_list]
-        self.userNameList = [user['name'] for user in self.user_list]
-        self.userKeyList = [user['pushoverKey'] for user in self.user_list if user['pushoverKey'] != 'n']
+        self.user_list = Request("get", "/users").json()["data"]
+        user_data = [
+            (
+                user["name"],
+                user["email"],
+                user["pushoverKey"],
+                user["role"],
+                user.get("version", "Unknown"),
+            )
+            for user in self.user_list
+        ]
+        self.userNameList = [user["name"] for user in self.user_list]
+        self.userKeyList = [
+            user["pushoverKey"] for user in self.user_list if user["pushoverKey"] != "n"
+        ]
 
         # 테이블 설정
-        columns = ['Name', 'Email', 'PushOverKey', 'Role', 'Version']
+        columns = ["Name", "Email", "PushOverKey", "Role", "Version"]
         makeTable(
             self.main,
             widgetname=self.main.user_tablewidget,
@@ -38,20 +50,27 @@ class Manager_User:
             email = self.main.user_email_lineinput.text()
             key = self.main.user_key_lineinput.text()
 
-            if self.main.user_role != 'admin':
+            if self.main.user_role != "admin":
                 ok, password = checkPassword(self.main, True)
-                if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
+                if (
+                    not ok
+                    or bcrypt.checkpw(
+                        password.encode("utf-8"), ADMIN_PASSWORD.encode("utf-8")
+                    )
+                    == False
+                ):
                     return
 
             reply = QMessageBox.question(
-                self.main, 'Confirm Add', f"{name}님을 추가하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                self.main,
+                "Confirm Add",
+                f"{name}님을 추가하시겠습니까?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
             if reply == QMessageBox.StandardButton.Yes:
-                data = {
-                    'name': name,
-                    'email': email,
-                    'pushoverKey': key
-                }
-                response = Request('post', '/users/add', json=data)
+                data = {"name": name, "email": email, "pushoverKey": key}
+                response = Request("post", "/users/add", json=data)
                 self.refreshUserTable()
 
         except Exception as e:
@@ -59,24 +78,42 @@ class Manager_User:
 
     def deleteUser(self):
         try:
-            if self.main.user_role != 'admin':
+            if self.main.user_role != "admin":
                 ok, password = checkPassword(self.main, True)
-                if not ok or bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASSWORD.encode('utf-8')) == False:
+                if (
+                    not ok
+                    or bcrypt.checkpw(
+                        password.encode("utf-8"), ADMIN_PASSWORD.encode("utf-8")
+                    )
+                    == False
+                ):
                     return
 
             selectedRow = self.main.user_tablewidget.currentRow()
             if selectedRow >= 0:
                 selectedUser = self.user_list[selectedRow]
                 reply = QMessageBox.question(
-                    self.main, 'Confirm Delete', f"{selectedUser['name']}님을 삭제하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                    self.main,
+                    "Confirm Delete",
+                    f"{selectedUser['name']}님을 삭제하시겠습니까?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes,
+                )
                 if reply == QMessageBox.StandardButton.Yes:
-                    response = Request('delete', f'/users/{selectedUser['uid']}')
+                    response = Request("delete", f"/users/{selectedUser['uid']}")
                     if response.status_code == 200:
-                        QMessageBox.information(self.main, "Information", f"'{selectedUser['name']}'님이 삭제되었습니다")
+                        QMessageBox.information(
+                            self.main,
+                            "Information",
+                            f"'{selectedUser['name']}'님이 삭제되었습니다",
+                        )
                         self.refreshUserTable()
                     else:
                         QMessageBox.warning(
-                            self.main, "Error", f"'{selectedUser['name']}'님을 삭제할 수 없습니다")
+                            self.main,
+                            "Error",
+                            f"'{selectedUser['name']}'님을 삭제할 수 없습니다",
+                        )
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())

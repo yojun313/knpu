@@ -14,7 +14,7 @@ from rich import box
 import boto3
 
 # ---------- 환경 변수 & Cloudflare R2 설정 ----------
-load_dotenv()                                     # .env 로부터 ↓ 값들 읽기
+load_dotenv()  # .env 로부터 ↓ 값들 읽기
 
 # 서버 API 엔드포인트 (원하면 수정)
 API_BASE = "https://home.knpu.re.kr/api"
@@ -28,9 +28,10 @@ MEMBER_DELETE_URL = f"{API_BASE}/member"
 NEWS_DELETE_URL = f"{API_BASE}/news"
 PAPER_DELETE_URL = f"{API_BASE}/paper"
 
-LOCAL_TEMP_DIR = "./uploads"   # 업로드 전 임시 복사 폴더
+LOCAL_TEMP_DIR = "./uploads"  # 업로드 전 임시 복사 폴더
 os.makedirs(LOCAL_TEMP_DIR, exist_ok=True)
 console = Console()
+
 
 def upload_image(src_path: str, object_name: Optional[str] = None) -> str:
     """
@@ -55,7 +56,9 @@ def upload_image(src_path: str, object_name: Optional[str] = None) -> str:
     else:
         raise RuntimeError(f"업로드 실패: {response.status_code}, {response.text}")
 
+
 # ---------- 헬퍼 ----------
+
 
 def prompt_list(label: str, default: Optional[List[str]] = None) -> List[str]:
     """
@@ -64,8 +67,11 @@ def prompt_list(label: str, default: Optional[List[str]] = None) -> List[str]:
     """
     default_str = "; ".join(default) if default else ""
     value = Prompt.ask(
-        f"{label}  (세미콜론 ; 로 여러 개 입력 / Enter=유지)", default=default_str)
-    return [x.strip() for x in value.split(";") if x.strip()] if value else (default or [])
+        f"{label}  (세미콜론 ; 로 여러 개 입력 / Enter=유지)", default=default_str
+    )
+    return (
+        [x.strip() for x in value.split(";") if x.strip()] if value else (default or [])
+    )
 
 
 def show_object(obj: dict, title="객체"):
@@ -74,8 +80,12 @@ def show_object(obj: dict, title="객체"):
     table.add_column("값", style="white")
 
     for k, v in obj.items():
-        table.add_row(str(k), json.dumps(v, ensure_ascii=False)
-                      if isinstance(v, (list, dict)) else str(v))
+        table.add_row(
+            str(k),
+            json.dumps(v, ensure_ascii=False)
+            if isinstance(v, (list, dict))
+            else str(v),
+        )
     console.print(table)
 
 
@@ -85,8 +95,7 @@ def choose_local_file(title="이미지 선택") -> Optional[str]:
         root = tk.Tk()
         # root.withdraw()  # Tk 창 숨기기
         path = filedialog.askopenfilename(
-            title=title,
-            filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.webp")]
+            title=title, filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.webp")]
         )
         root.destroy()
         return path or None
@@ -94,32 +103,31 @@ def choose_local_file(title="이미지 선택") -> Optional[str]:
         console.print(f"[red]파일 다이얼로그 오류:[/] {e}")
         return None
 
+
 # ---------- 멤버/뉴스 CRUD ----------
 def upsert_to_server(url: str, payload: dict):
-    headers = {
-        "Authorization": f"Bearer {os.getenv('ADMIN_TOKEN')}"
-    }
+    headers = {"Authorization": f"Bearer {os.getenv('ADMIN_TOKEN')}"}
     res = requests.post(url, headers=headers, json=payload)
     if res.status_code == 200:
         console.print(Panel("✅ 성공적으로 반영되었습니다!", style="bold green"))
         show_object(res.json(), title="서버 응답")
     else:
         console.print(
-            Panel(f"❌ 실패 ({res.status_code})\n{res.text}", style="bold red"))
+            Panel(f"❌ 실패 ({res.status_code})\n{res.text}", style="bold red")
+        )
         sys.exit(1)
 
 
 def delete_from_server(url: str, params: dict):
-    headers = {
-        "Authorization": f"Bearer {os.getenv('ADMIN_TOKEN')}"
-    }
+    headers = {"Authorization": f"Bearer {os.getenv('ADMIN_TOKEN')}"}
     res = requests.delete(url, headers=headers, params=params)
     if res.status_code == 200:
         console.print(Panel("✅ 성공적으로 삭제되었습니다!", style="bold green"))
         show_object(res.json() if res.text else {}, title="서버 응답")
     else:
         console.print(
-            Panel(f"❌ 실패 ({res.status_code})\n{res.text}", style="bold red"))
+            Panel(f"❌ 실패 ({res.status_code})\n{res.text}", style="bold red")
+        )
 
 
 def fetch_members() -> List[dict]:
@@ -146,8 +154,7 @@ def select_member() -> Optional[dict]:
         return None
 
     # 목록 표시
-    list_table = Table(
-        title="멤버 목록", box=box.MINIMAL_DOUBLE_HEAD, show_lines=True)
+    list_table = Table(title="멤버 목록", box=box.MINIMAL_DOUBLE_HEAD, show_lines=True)
     list_table.add_column("No", justify="right")
     list_table.add_column("이름")
     list_table.add_column("포지션")
@@ -155,8 +162,11 @@ def select_member() -> Optional[dict]:
         list_table.add_row(str(idx), m["name"], m.get("position", ""))
     console.print(list_table)
 
-    idx = int(Prompt.ask("수정할 멤버 번호", choices=[
-              str(i) for i in range(1, len(members) + 1)]))
+    idx = int(
+        Prompt.ask(
+            "수정할 멤버 번호", choices=[str(i) for i in range(1, len(members) + 1)]
+        )
+    )
     return members[idx - 1]
 
 
@@ -180,23 +190,21 @@ def add_or_edit_member(edit: bool = False):
         if src:
             # 파일명을 이름_확장명으로 변경해 버킷에 저장
             ext = os.path.splitext(src)[1]
-            safe_name = (data.get("name", "image").replace(
-                " ", "_") or "image")
+            safe_name = data.get("name", "image").replace(" ", "_") or "image"
             object_name = f"members/{ask('저장될 파일명(공백=자동, 영문/숫자만)', default=safe_name)}{ext}"
             # R2 에 업로드 후 URL
             image_url = upload_image(src, object_name)
             data["image"] = image_url
 
     # 기본 필드
-    data["name"] = ask("이름",           default=data.get("name", ""))
-    data["position"] = ask("포지션",         default=data.get("position", ""))
-    data["affiliation"] = ask(
-        "소속(affiliation)", default=data.get("affiliation", ""))
+    data["name"] = ask("이름", default=data.get("name", ""))
+    data["position"] = ask("포지션", default=data.get("position", ""))
+    data["affiliation"] = ask("소속(affiliation)", default=data.get("affiliation", ""))
     data["section"] = ask("구분(section)", default=data.get("section", ""))
-    data["email"] = ask("이메일",        default=data.get("email", ""))
-    data["학력"] = prompt_list("학력",  default=data.get("학력", []))
-    data["경력"] = prompt_list("경력",  default=data.get("경력", []))
-    data["연구"] = prompt_list("연구",  default=data.get("연구", []))
+    data["email"] = ask("이메일", default=data.get("email", ""))
+    data["학력"] = prompt_list("학력", default=data.get("학력", []))
+    data["경력"] = prompt_list("경력", default=data.get("경력", []))
+    data["연구"] = prompt_list("연구", default=data.get("연구", []))
 
     show_object(data, title="보낼 데이터")
     if Confirm.ask("서버에 저장할까요?", default=True):
@@ -219,8 +227,7 @@ def select_news() -> Optional[dict]:
         return None
 
     # 목록 표시
-    list_table = Table(
-        title="뉴스 목록", box=box.MINIMAL_DOUBLE_HEAD, show_lines=True)
+    list_table = Table(title="뉴스 목록", box=box.MINIMAL_DOUBLE_HEAD, show_lines=True)
     list_table.add_column("No", justify="right")
     list_table.add_column("제목")
     list_table.add_column("날짜")
@@ -228,8 +235,11 @@ def select_news() -> Optional[dict]:
         list_table.add_row(str(idx), n["title"], n.get("date", ""))
     console.print(list_table)
 
-    idx = int(Prompt.ask("수정할 뉴스 번호", choices=[
-              str(i) for i in range(1, len(news_list) + 1)]))
+    idx = int(
+        Prompt.ask(
+            "수정할 뉴스 번호", choices=[str(i) for i in range(1, len(news_list) + 1)]
+        )
+    )
     return news_list[idx - 1]
 
 
@@ -254,8 +264,7 @@ def add_or_edit_news(edit: bool = False):
 
     data["title"] = ask("제목", default=data.get("title", ""))
     data["content"] = ask("내용", default=data.get("content", ""))
-    data["date"] = ask("날짜 (YYYY.MM 또는 YYYY.MM.DD)",
-                       default=data.get("date", ""))
+    data["date"] = ask("날짜 (YYYY.MM 또는 YYYY.MM.DD)", default=data.get("date", ""))
     data["url"] = ask("원본 기사 URL", default=data.get("url", ""))
 
     show_object(data, title="보낼 뉴스 데이터")
@@ -293,9 +302,7 @@ def select_paper() -> Optional[dict]:
     papers = papers_by_year[year]
 
     list_table = Table(
-        title=f"{year}년도 논문 목록",
-        box=box.MINIMAL_DOUBLE_HEAD,
-        show_lines=True
+        title=f"{year}년도 논문 목록", box=box.MINIMAL_DOUBLE_HEAD, show_lines=True
     )
     list_table.add_column("No", justify="right")
     list_table.add_column("제목")
@@ -306,14 +313,13 @@ def select_paper() -> Optional[dict]:
             str(idx),
             p.get("title", ""),
             ", ".join(p.get("authors", [])),
-            p.get("conference", "")
+            p.get("conference", ""),
         )
     console.print(list_table)
 
     idx = int(
         Prompt.ask(
-            "수정할 논문 번호",
-            choices=[str(i) for i in range(1, len(papers) + 1)]
+            "수정할 논문 번호", choices=[str(i) for i in range(1, len(papers) + 1)]
         )
     )
     return papers[idx - 1]
@@ -361,9 +367,7 @@ def delete_paper_ui():
     papers = papers_by_year[year]
 
     list_table = Table(
-        title=f"{year}년도 논문 목록",
-        box=box.MINIMAL_DOUBLE_HEAD,
-        show_lines=True
+        title=f"{year}년도 논문 목록", box=box.MINIMAL_DOUBLE_HEAD, show_lines=True
     )
     list_table.add_column("No", justify="right")
     list_table.add_column("제목")
@@ -371,10 +375,11 @@ def delete_paper_ui():
         list_table.add_row(str(idx), p.get("title", ""))
     console.print(list_table)
 
-    idx = int(Prompt.ask(
-        "삭제할 논문 번호",
-        choices=[str(i) for i in range(1, len(papers) + 1)]
-    ))
+    idx = int(
+        Prompt.ask(
+            "삭제할 논문 번호", choices=[str(i) for i in range(1, len(papers) + 1)]
+        )
+    )
     title = papers[idx - 1]["title"]
 
     if Confirm.ask(f"{year}년도의 '{title}' 논문을 삭제할까요?", default=False):
@@ -466,4 +471,3 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         console.print("\n[bold yellow]사용자 종료[/]")
-

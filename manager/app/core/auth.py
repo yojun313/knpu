@@ -9,16 +9,17 @@ from ui.status import printStatus
 from services.api import get_api_headers
 from core.setting import get_setting, set_setting
 
+
 def checkPassword(parent, admin=False, title="", msg="Enter password:"):
     while True:
         input_dialog = QInputDialog(parent)
         if admin == False:
             if title == "":
-                input_dialog.setWindowTitle('Password')
+                input_dialog.setWindowTitle("Password")
             else:
                 input_dialog.setWindowTitle(title)
         else:
-            input_dialog.setWindowTitle('Admin Mode')
+            input_dialog.setWindowTitle("Admin Mode")
 
         input_dialog.setLabelText(msg)
         input_dialog.setTextEchoMode(QLineEdit.EchoMode.Password)
@@ -32,22 +33,24 @@ def checkPassword(parent, admin=False, title="", msg="Enter password:"):
         else:
             QMessageBox.warning(parent, "Invalid Input", "영어로만 입력 가능합니다")
 
+
 def loginProgram(parent):
     try:
         parent.userDevice = socket.gethostname()
 
         # 이전에 발급된 토큰이 있는지 확인
-        saved_token = get_setting('auth_token')
+        saved_token = get_setting("auth_token")
 
         if saved_token:
             res = requests.get(
-                f"{MANAGER_SERVER_API}/auth/login", headers=get_api_headers())
+                f"{MANAGER_SERVER_API}/auth/login", headers=get_api_headers()
+            )
             if res.status_code == 200:
-                userData = res.json()['user']
-                parent.user = userData['name']
-                parent.userUid = userData['uid']
-                parent.usermail = userData['email']
-                parent.user_role = userData['role']
+                userData = res.json()["user"]
+                parent.user = userData["name"]
+                parent.userUid = userData["uid"]
+                parent.usermail = userData["email"]
+                parent.user_role = userData["role"]
                 return True
 
         parent.closeBootscreen()
@@ -56,23 +59,30 @@ def loginProgram(parent):
 
         while True:
             inputDialogId = QInputDialog(parent)
-            inputDialogId.setWindowTitle('Login')
-            inputDialogId.setLabelText('User Name:')
+            inputDialogId.setWindowTitle("Login")
+            inputDialogId.setLabelText("User Name:")
             inputDialogId.resize(300, 200)
             ok = inputDialogId.exec()
             userName = inputDialogId.textValue()
 
             if not ok:
-                QMessageBox.warning(parent, 'Program Shutdown', '프로그램을 종료합니다')
+                QMessageBox.warning(parent, "Program Shutdown", "프로그램을 종료합니다")
                 return False
 
             parent.user = userName
             printStatus(parent, "인증번호 전송 중...")
-            res = requests.get(f"{MANAGER_SERVER_API}/auth/request",
-                                params={"name": parent.user})
+            res = requests.get(
+                f"{MANAGER_SERVER_API}/auth/request", params={"name": parent.user}
+            )
             if res.status_code == 404:
                 printStatus(parent, "인증 실패")
-                reply = QMessageBox.question(parent, "Error", f"사용자 {parent.user}을(를) 찾을 수 없습니다\n\n다시 시도하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                reply = QMessageBox.question(
+                    parent,
+                    "Error",
+                    f"사용자 {parent.user}을(를) 찾을 수 없습니다\n\n다시 시도하시겠습니까?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes,
+                )
                 if reply == QMessageBox.StandardButton.Yes:
                     continue
                 else:
@@ -80,30 +90,54 @@ def loginProgram(parent):
             else:
                 printStatus(parent, "")
                 break
-        
+
         email = res.json().get("email", "")
-        QMessageBox.information(parent, "Information",
-                                f"{parent.user}님의 {email}로 인증번호가 전송되었습니다\n\n"
-                                "인증번호를 확인 후 입력하십시오")
+        QMessageBox.information(
+            parent,
+            "Information",
+            f"{parent.user}님의 {email}로 인증번호가 전송되었습니다\n\n"
+            "인증번호를 확인 후 입력하십시오",
+        )
 
         while True:
             printStatus(parent, f"{email}의 인증번호를 확인하십시오")
-            ok, password = checkPassword(parent, title="메일 인증번호", msg="Enter verification code:")
+            ok, password = checkPassword(
+                parent, title="메일 인증번호", msg="Enter verification code:"
+            )
             if not ok:
                 printStatus(parent)
-                QMessageBox.warning(parent, 'Error', '프로그램을 종료합니다')
+                QMessageBox.warning(parent, "Error", "프로그램을 종료합니다")
                 return False
-            res = requests.post(f"{MANAGER_SERVER_API}/auth/verify", params={"name": parent.user, "code": password, "device": parent.userDevice})
+            res = requests.post(
+                f"{MANAGER_SERVER_API}/auth/verify",
+                params={
+                    "name": parent.user,
+                    "code": password,
+                    "device": parent.userDevice,
+                },
+            )
             if res.status_code != 200:
                 printStatus(parent, "인증 실패")
-                reply = QMessageBox.question(parent, 'Error', '인증번호가 올바르지 않습니다\n\n다시 인증번호를 받으시겠습니까?', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                reply = QMessageBox.question(
+                    parent,
+                    "Error",
+                    "인증번호가 올바르지 않습니다\n\n다시 인증번호를 받으시겠습니까?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes,
+                )
                 if reply == QMessageBox.StandardButton.Yes:
                     printStatus(parent, "인증번호 전송 중...")
-                    res = requests.get(f"{MANAGER_SERVER_API}/auth/request", params={"name": parent.user})
+                    res = requests.get(
+                        f"{MANAGER_SERVER_API}/auth/request",
+                        params={"name": parent.user},
+                    )
                     printStatus(parent, "인증번호 전송 완료")
-                    QMessageBox.information(parent, "Information",
-                                            f"{parent.user}님의 메일로 다시 인증번호가 전송되었습니다\n\n"
-                                            "인증번호를 확인 후 입력하십시오")
+                    QMessageBox.information(
+                        parent,
+                        "Information",
+                        f"{parent.user}님의 메일로 다시 인증번호가 전송되었습니다\n\n"
+                        "인증번호를 확인 후 입력하십시오",
+                    )
                     continue
                 else:
                     printStatus(parent)
@@ -112,27 +146,35 @@ def loginProgram(parent):
                 printStatus(parent, "인증 완료")
                 res = res.json()
                 break
-        
-        userData = res['user']
-        access_token = res['access_token']
 
-        parent.user = userData['name']
-        parent.user_role = userData['role']
-        parent.usermail = userData['email']
-        parent.userUid = userData['uid']
-        
-        QMessageBox.information(parent, "기기 등록 완료", f"{parent.user}님 환영합니다!") 
+        userData = res["user"]
+        access_token = res["access_token"]
+
+        parent.user = userData["name"]
+        parent.user_role = userData["role"]
+        parent.usermail = userData["email"]
+        parent.userUid = userData["uid"]
+
+        QMessageBox.information(
+            parent, "기기 등록 완료", f"{parent.user}님 환영합니다!"
+        )
         printStatus(parent, "Loading...")
-        set_setting('auth_token', access_token)
+        set_setting("auth_token", access_token)
 
     except Exception:
         parent.closeBootscreen()
-        QMessageBox.critical(parent, "Error",
-                                f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}")
+        QMessageBox.critical(
+            parent,
+            "Error",
+            f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}",
+        )
         return False
+
 
 def accessCheck(parent, exclude=[]):
     if parent.user in exclude:
-        QMessageBox.critical(parent, "Access Denied", "이 기능에 대한 액세스 권한이 없습니다")
+        QMessageBox.critical(
+            parent, "Access Denied", "이 기능에 대한 액세스 권한이 없습니다"
+        )
         return False
     return True

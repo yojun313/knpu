@@ -14,6 +14,7 @@ load_dotenv()
 # Set timezone (KST)
 try:
     import pytz
+
     KST = pytz.timezone("Asia/Seoul")
 except ModuleNotFoundError:
     KST = None
@@ -43,7 +44,12 @@ def is_valid_date(date_string):
 
 
 def get_today_str():
-    return datetime.now(KST).strftime("%Y-%m-%d") if KST else datetime.now().strftime("%Y-%m-%d")
+    return (
+        datetime.now(KST).strftime("%Y-%m-%d")
+        if KST
+        else datetime.now().strftime("%Y-%m-%d")
+    )
+
 
 # ────────────────────── Shared Display Function ─────────────────────
 
@@ -56,13 +62,16 @@ def display_logs(documents, date_str, title):
     for doc in documents:
         uid = doc.get("uid")
         username = get_username(uid)
-        if username == 'admin':
+        if username == "admin":
             continue
         logs = doc.get(date_str, [])
 
         panel_title = f"👤 {username}"
         table = Table(
-            title=f"[bold yellow]{date_str}[/] {title} 로그", show_lines=True, box=box.SIMPLE)
+            title=f"[bold yellow]{date_str}[/] {title} 로그",
+            show_lines=True,
+            box=box.SIMPLE,
+        )
         table.add_column("Time", style="bold green", width=12)
         table.add_column("Message", style="white")
 
@@ -72,6 +81,7 @@ def display_logs(documents, date_str, title):
         console.print(Panel(table, title=panel_title, title_align="left"))
 
     console.rule("[bold blue]메인 메뉴로 돌아갑니다[/]")
+
 
 # ────────────────────── Display Functions ───────────────────────────
 
@@ -104,7 +114,8 @@ def display_user_logs():
             continue
 
         console.print(
-            "\n[bold magenta]날짜를 선택하세요 ('q' 입력 시 유저 목록으로 돌아감):[/bold magenta]")
+            "\n[bold magenta]날짜를 선택하세요 ('q' 입력 시 유저 목록으로 돌아감):[/bold magenta]"
+        )
         for i, date in enumerate(date_keys):
             console.print(f"[{i}] {date} ({len(doc[date])} 개 로그)")
 
@@ -143,7 +154,8 @@ def display_user_bug_reports():
             continue
 
         console.print(
-            "\n[bold magenta]날짜를 선택하세요 ('q' 입력 시 유저 목록으로 돌아감):[/bold magenta]")
+            "\n[bold magenta]날짜를 선택하세요 ('q' 입력 시 유저 목록으로 돌아감):[/bold magenta]"
+        )
         for i, date in enumerate(date_keys):
             console.print(f"[{i}] {date} ({len(doc[date])} 개 버그)")
 
@@ -160,22 +172,25 @@ def display_user_bug_reports():
 def display_logs_by_date():
     while True:
         today = get_today_str()  # 예: "2025-06-06"
-        today_mmdd = today[5:]   # "06-06"
-        date_input = Prompt.ask(f"\n조회할 날짜 입력 (기본값 {today_mmdd}, 'q' → 종료)", default=today_mmdd)
+        today_mmdd = today[5:]  # "06-06"
+        date_input = Prompt.ask(
+            f"\n조회할 날짜 입력 (기본값 {today_mmdd}, 'q' → 종료)", default=today_mmdd
+        )
         if date_input.lower() in ["q", "quit", "exit"]:
             break
 
         # MMDD 형식을 MM-DD로 자동 변환
         if len(date_input) == 4 and date_input.isdigit():
             date_input = f"{date_input[:2]}-{date_input[2:]}"
-        
+
         date_str = f"2025-{date_input}"
         if not is_valid_date(date_str):
             console.print("[red]유효한 날짜 형식이 아닙니다. (MMDD 또는 MM-DD)[/red]")
             continue
 
-        display_logs(list(user_logs.find({date_str: {"$exists": True}})), date_str, "유저")
-
+        display_logs(
+            list(user_logs.find({date_str: {"$exists": True}})), date_str, "유저"
+        )
 
 
 def display_todays_logs():
@@ -228,10 +243,12 @@ def manage_user_devices():
                         console.print("[yellow]이미 등록된 디바이스입니다.[/yellow]")
                     else:
                         users.update_one(
-                            {"uid": uid}, {"$push": {"device_list": new_device}})
+                            {"uid": uid}, {"$push": {"device_list": new_device}}
+                        )
                         device_list.append(new_device)
                         console.print(
-                            f"[green]'{new_device}' 디바이스가 추가되었습니다.[/green]")
+                            f"[green]'{new_device}' 디바이스가 추가되었습니다.[/green]"
+                        )
 
             elif choice == "2":
                 if not device_list:
@@ -240,15 +257,18 @@ def manage_user_devices():
                 del_index = Prompt.ask("삭제할 디바이스 번호", default="q")
                 if del_index.lower() in ["q", "quit"]:
                     continue
-                if not del_index.isdigit() or int(del_index) not in range(len(device_list)):
+                if not del_index.isdigit() or int(del_index) not in range(
+                    len(device_list)
+                ):
                     console.print("[red]유효한 번호를 입력하세요.[/red]")
                     continue
                 device = device_list[int(del_index)]
                 if Confirm.ask(f"정말로 '{device}'를 삭제하시겠습니까?"):
-                    users.update_one(
-                        {"uid": uid}, {"$pull": {"device_list": device}})
+                    users.update_one({"uid": uid}, {"$pull": {"device_list": device}})
                     device_list.remove(device)
-                    console.print(f"[green]'{device}' 디바이스가 삭제되었습니다.[/green]")
+                    console.print(
+                        f"[green]'{device}' 디바이스가 삭제되었습니다.[/green]"
+                    )
 
             elif choice.lower() in ["q", "quit", "exit"]:
                 break

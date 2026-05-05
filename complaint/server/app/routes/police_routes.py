@@ -5,7 +5,10 @@ from collections import defaultdict
 
 router = APIRouter()
 
-csv_path = os.path.join(os.path.dirname(__file__), '..', 'forms', '경찰청_전국 경찰서 명칭 및 주소.csv')
+csv_path = os.path.join(
+    os.path.dirname(__file__), "..", "forms", "경찰청_전국 경찰서 명칭 및 주소.csv"
+)
+
 
 @router.get("/stations")
 def get_police_stations():

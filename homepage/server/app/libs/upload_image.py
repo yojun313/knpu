@@ -5,20 +5,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # === 사용자 설정 ===
-ACCESS_KEY_ID = os.getenv('ACCESS_KEY_ID')
-SECRET_ACCESS_KEY = os.getenv('SECRET_ACCESS_KEY')
-ACCOUNT_ID = os.getenv('ACCOUNT_ID')
-BUCKET_NAME = os.getenv('BUCKET_NAME')
+ACCESS_KEY_ID = os.getenv("ACCESS_KEY_ID")
+SECRET_ACCESS_KEY = os.getenv("SECRET_ACCESS_KEY")
+ACCOUNT_ID = os.getenv("ACCOUNT_ID")
+BUCKET_NAME = os.getenv("BUCKET_NAME")
 LOCAL_FOLDER = "D:/PAILAB/MANAGER/Output"
 R2_ENDPOINT = f"https://{ACCOUNT_ID}.r2.cloudflarestorage.com"
 
 # S3 클라이언트 생성
 s3 = boto3.client(
-    's3',
+    "s3",
     endpoint_url=R2_ENDPOINT,
     aws_access_key_id=ACCESS_KEY_ID,
     aws_secret_access_key=SECRET_ACCESS_KEY,
-    region_name='auto'  # R2의 경우 region을 auto로 지정
+    region_name="auto",  # R2의 경우 region을 auto로 지정
 )
 
 

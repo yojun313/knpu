@@ -3,10 +3,12 @@ from datetime import datetime
 from typing import Optional
 from typing import List
 
+
 class DataInfo(BaseModel):
     article: int
     cmt: int
     reply: int
+
 
 class CountDataInfo(BaseModel):
     article: int
@@ -28,6 +30,7 @@ class CrawlDbListSchema(BaseModel):
     crawlSpeed: int
     stat: DataInfo
 
+
 class CrawlDbCreateDto(BaseModel):
     name: str
     userUid: str
@@ -37,11 +40,13 @@ class CrawlDbCreateDto(BaseModel):
     dbSize: float
     crawlCom: str
     crawlSpeed: int
-    
+
+
 class CrawlLogUpdateDto(BaseModel):
     uid: str
     content: str
-    
+
+
 class SaveCrawlDbOption(BaseModel):
     pid: str
     dateOption: str
@@ -52,4 +57,3 @@ class SaveCrawlDbOption(BaseModel):
     excl_words: List[str]
     include_all: bool
     filename_edit: bool
-    

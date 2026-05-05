@@ -1,32 +1,42 @@
 from PySide6.QtCore import QModelIndex
-from PySide6.QtWidgets import QFileDialog, QSizePolicy, QAbstractItemView, QMessageBox, QTreeView, QHeaderView, QDialogButtonBox
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QSizePolicy,
+    QAbstractItemView,
+    QMessageBox,
+    QTreeView,
+    QHeaderView,
+    QDialogButtonBox,
+)
 import subprocess
 import os
 from ui.status import printStatus
 from libs.path import safe_path
 import platform
 
+
 def makeFileFinder(main_window, localDirectory=None):
     class EmbeddedFileDialog(QFileDialog):
         def __init__(self, parent=main_window, localDirectory=None):
-            super().__init__(parent)             
+            super().__init__(parent)
             self.setFileMode(QFileDialog.FileMode.ExistingFiles)
             self.setOptions(QFileDialog.Option.DontUseNativeDialog)
-            self.setNameFilters([
-                "All Files (*.*)",
-                 "CSV Files (*.csv)",
-                 "Text Files (*.txt)",
-                 "Images (*.png *.jpg *.jpeg)",
-                 "Audio Files (*.mp3 *.wav *.m4a *.flac *.aac *.ogg)"
-            ])
+            self.setNameFilters(
+                [
+                    "All Files (*.*)",
+                    "CSV Files (*.csv)",
+                    "Text Files (*.txt)",
+                    "Images (*.png *.jpg *.jpeg)",
+                    "Audio Files (*.mp3 *.wav *.m4a *.flac *.aac *.ogg)",
+                ]
+            )
             self.currentChanged.connect(self.on_directory_change)
             self.setup_cancel_as_open_folder()
 
             self.accepted.connect(self.on_accepted)
             self.rejected.connect(self.on_rejected)
             self.setSizePolicy(
-                QSizePolicy.Policy.Expanding,
-                QSizePolicy.Policy.Expanding
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
             )
             self.main = parent
             if localDirectory:
@@ -35,7 +45,7 @@ def makeFileFinder(main_window, localDirectory=None):
 
             # QTreeView 찾아서 헤더뷰 리사이즈 모드 설정
             # QFileDialog가 Detail 모드일 때 내부적으로 QTreeView를 사용하므로 findChildren 사용
-            
+
             for treeview in self.findChildren(QTreeView):
                 # Size(1번 열)와 Kind(2번 열) 숨기기
                 treeview.setColumnHidden(1, True)  # Size 숨기기
@@ -60,13 +70,16 @@ def makeFileFinder(main_window, localDirectory=None):
         def open_in_external_app(self, file_path):
             try:
                 file_path = safe_path(file_path)
-                printStatus(self.main,
-                    f"{os.path.basename(file_path)} 여는 중...")
-                if os.name == 'nt':  # Windows
+                printStatus(self.main, f"{os.path.basename(file_path)} 여는 중...")
+                if os.name == "nt":  # Windows
                     os.startfile(file_path)
-                elif os.name == 'posix':  # macOS, Linux
+                elif os.name == "posix":  # macOS, Linux
                     subprocess.run(
-                        ["open" if os.uname().sysname == "Darwin" else "xdg-open", file_path])
+                        [
+                            "open" if os.uname().sysname == "Darwin" else "xdg-open",
+                            file_path,
+                        ]
+                    )
                 printStatus(self.main)
             except Exception as e:
                 printStatus(self.main, f"파일 열기 실패")
@@ -78,7 +91,8 @@ def makeFileFinder(main_window, localDirectory=None):
             selected_files = self.selectedFiles()
             if selected_files:
                 self.selectFile(
-                    ', '.join([os.path.basename(file) for file in selected_files]))
+                    ", ".join([os.path.basename(file) for file in selected_files])
+                )
             if len(selected_files) == 0:
                 printStatus(self.main)
             else:
@@ -92,7 +106,8 @@ def makeFileFinder(main_window, localDirectory=None):
             selected_files = self.selectedFiles()
             if selected_files:
                 self.selectFile(
-                    ', '.join([os.path.basename(file) for file in selected_files]))
+                    ", ".join([os.path.basename(file) for file in selected_files])
+                )
             if len(selected_files) == 0:
                 printStatus(self.main)
             else:
@@ -101,7 +116,7 @@ def makeFileFinder(main_window, localDirectory=None):
 
         def reject(self):
             self.show()
-            
+
         def setup_cancel_as_open_folder(self):
             button_box = self.findChild(QDialogButtonBox)
             if not button_box:
@@ -134,6 +149,7 @@ def makeFileFinder(main_window, localDirectory=None):
 
     return EmbeddedFileDialog(main_window, localDirectory)
 
+
 def openFileExplorer(path):
     if not path:
         return
@@ -146,9 +162,16 @@ def openFileExplorer(path):
     else:  # Linux and other OS
         os.system(f"xdg-open '{path}'")
 
+
 def openFileResult(parent, msg, filepath):
     printStatus(parent)
-    reply = QMessageBox.question(parent, 'Notification', msg, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+    reply = QMessageBox.question(
+        parent,
+        "Notification",
+        msg,
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        QMessageBox.StandardButton.Yes,
+    )
     if reply == QMessageBox.StandardButton.Yes:
         openFileExplorer(filepath)
     return

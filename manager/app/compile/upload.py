@@ -6,10 +6,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # === 사용자 설정 ===
-ACCESS_KEY_ID = os.getenv('ACCESS_KEY_ID')
-SECRET_ACCESS_KEY = os.getenv('SECRET_ACCESS_KEY')
-ACCOUNT_ID = os.getenv('ACCOUNT_ID')
-BUCKET_NAME = os.getenv('BUCKET_NAME')
+ACCESS_KEY_ID = os.getenv("ACCESS_KEY_ID")
+SECRET_ACCESS_KEY = os.getenv("SECRET_ACCESS_KEY")
+ACCOUNT_ID = os.getenv("ACCOUNT_ID")
+BUCKET_NAME = os.getenv("BUCKET_NAME")
 LOCAL_FOLDER = "D:/knpu/MANAGER/output"  # 파일이 있는 경로
 R2_ENDPOINT = f"https://{ACCOUNT_ID}.r2.cloudflarestorage.com"
 
@@ -18,6 +18,7 @@ R2_ENDPOINT = f"https://{ACCOUNT_ID}.r2.cloudflarestorage.com"
 
 def parse_version(version_str):
     return tuple(map(int, version_str.split(".")))
+
 
 # 폴더 내 가장 최신 버전 파일 찾기
 
@@ -47,8 +48,8 @@ def upload_file(local_path):
 
     session = boto3.session.Session()
     client = session.client(
-        's3',
-        region_name='auto',
+        "s3",
+        region_name="auto",
         endpoint_url=R2_ENDPOINT,
         aws_access_key_id=ACCESS_KEY_ID,
         aws_secret_access_key=SECRET_ACCESS_KEY,
@@ -58,7 +59,8 @@ def upload_file(local_path):
         print(f"[⏫] 업로드 중: {filename} → R2 버킷 '{BUCKET_NAME}'")
         client.upload_file(local_path, BUCKET_NAME, filename)
         print(
-            f"[] 업로드 완료: https://{ACCOUNT_ID}.r2.cloudflarestorage.com/{BUCKET_NAME}/{filename}")
+            f"[] 업로드 완료: https://{ACCOUNT_ID}.r2.cloudflarestorage.com/{BUCKET_NAME}/{filename}"
+        )
     except Exception as e:
         print(f"[❌] 업로드 실패: {e}")
 
@@ -68,7 +70,7 @@ if __name__ == "__main__":
     while True:
         version_input = input("업로드할 버전을 입력하세요: ").strip()
 
-        if version_input.lower() == 'n':
+        if version_input.lower() == "n":
             latest_file = find_latest_version_file()
             if latest_file:
                 print(f"[🔍] 최신 버전 파일: {latest_file}")

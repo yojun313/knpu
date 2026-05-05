@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CrawlerEntry:
     job_id: str
-    crawler: object                         # NaverNewsCrawler 등
-    meta: dict                              # JobSubmitRequest.dict()
-    state: str = "running"                  # running → completed / stopped / error
+    crawler: object  # NaverNewsCrawler 등
+    meta: dict  # JobSubmitRequest.dict()
+    state: str = "running"  # running → completed / stopped / error
     started_at: datetime = field(default_factory=datetime.now)
     finished_at: Optional[datetime] = None
     error_message: Optional[str] = None
@@ -48,9 +48,10 @@ class CrawlerRegistry:
             logger.exception(f"Crawler {job_id} failed")
             self._mark_done(job_id, "error", str(e))
             # crawler.main()이 예외로 종료 → stopOperator가 호출되지 않았을 수 있음
-            if hasattr(crawler, 'DBuid') and crawler.DBuid:
+            if hasattr(crawler, "DBuid") and crawler.DBuid:
                 try:
                     from common.storage import errorCrawl, appendCrawlLog
+
                     appendCrawlLog(crawler.DBuid, "error", f"크롤러 비정상 종료: {e}")
                     errorCrawl(crawler.DBuid)
                 except Exception:
@@ -75,7 +76,11 @@ class CrawlerRegistry:
         """crawler.reportStatus() 직접 호출 — thread-safe (GIL)"""
         with self.lock:
             entry = self.active_jobs.get(job_id)
-        if entry and entry.state == "running" and hasattr(entry.crawler, "reportStatus"):
+        if (
+            entry
+            and entry.state == "running"
+            and hasattr(entry.crawler, "reportStatus")
+        ):
             return entry.crawler.reportStatus()
         return None
 

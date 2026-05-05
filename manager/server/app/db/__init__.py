@@ -21,7 +21,7 @@ MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
 MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
 
 hostname = socket.gethostname()
-is_server = ("knpu" in hostname or "server" in hostname)  # 서버 이름 기준으로 판단
+is_server = "knpu" in hostname or "server" in hostname  # 서버 이름 기준으로 판단
 
 if is_server:
     # 서버 내부에서 실행 → 로컬 MongoDB 바로 사용
@@ -31,14 +31,16 @@ if is_server:
     )
 else:
     import warnings
+
     warnings.filterwarnings("ignore", module="paramiko")
     from sshtunnel import SSHTunnelForwarder
+
     # 외부에서 실행 → SSH 터널 사용
     server = SSHTunnelForwarder(
         (SSH_HOST, SSH_PORT),
         ssh_username=SSH_USER,
         ssh_pkey=SSH_KEY,
-        remote_bind_address=(MONGO_HOST, MONGO_PORT)
+        remote_bind_address=(MONGO_HOST, MONGO_PORT),
     )
     server.start()
 
@@ -48,12 +50,12 @@ else:
     )
 
 if mode == 0:
-    manager_db_name = 'manager_dev'
-    crawler_db_name = 'crawler_dev'
-else:    
-    manager_db_name = 'manager'
-    crawler_db_name = 'crawler'
-    
+    manager_db_name = "manager_dev"
+    crawler_db_name = "crawler_dev"
+else:
+    manager_db_name = "manager"
+    crawler_db_name = "crawler"
+
 manager_db = client[manager_db_name]
 crawler_db = client[crawler_db_name]
 
@@ -68,4 +70,4 @@ bug_board_db = manager_db["bug-board"]
 free_board_db = manager_db["free-board"]
 auth_db = manager_db["auth"]
 
-crawldata_path = os.getenv('CRAWLDATA_PATH')
+crawldata_path = os.getenv("CRAWLDATA_PATH")

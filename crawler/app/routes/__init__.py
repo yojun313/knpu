@@ -16,6 +16,7 @@ set_ws_qm(queue_manager)
 
 api_router = APIRouter()
 
+
 # Health check
 @api_router.get("/health")
 def health_check():
@@ -26,6 +27,7 @@ def health_check():
         "queued_jobs": len(queue_manager.queue),
         "max_concurrent": registry.max_concurrent,
     }
+
 
 api_router.include_router(job_router, tags=["Jobs"])
 api_router.include_router(ws_router, tags=["WebSocket"])

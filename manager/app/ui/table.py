@@ -1,9 +1,21 @@
 from PySide6.QtGui import QKeySequence
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QAbstractItemView, QTableWidgetItem, QVBoxLayout, QTextEdit, QHeaderView, QDialog, QPushButton, QApplication
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QTextEdit,
+    QHeaderView,
+    QDialog,
+    QPushButton,
+    QApplication,
+)
 from PySide6.QtGui import QShortcut
 
-def makeTable(parent, widgetname, data, column, right_click_function=None, popupsize=None):
+
+def makeTable(
+    parent, widgetname, data, column, right_click_function=None, popupsize=None
+):
     def show_details(item):
         # 이미 창이 열려있는지 확인
         if hasattr(parent, "details_dialog") and parent.details_dialog.isVisible():
@@ -15,7 +27,7 @@ def makeTable(parent, widgetname, data, column, right_click_function=None, popup
 
         if popupsize is None:
             parent.details_dialog.resize(200, 150)
-        elif popupsize == 'max':
+        elif popupsize == "max":
             parent.details_dialog.showMaximized()
         else:
             parent.details_dialog.resize(popupsize[0], popupsize[1])
@@ -31,6 +43,7 @@ def makeTable(parent, widgetname, data, column, right_click_function=None, popup
 
         # 복사 버튼 생성
         copy_button = QPushButton("복사")
+
         def copy_text():
             clipboard = QApplication.clipboard()
             clipboard.setText(text_edit.toPlainText())
@@ -59,12 +72,12 @@ def makeTable(parent, widgetname, data, column, right_click_function=None, popup
     widgetname.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     widgetname.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
     widgetname.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-    
+
     for i, row_data in enumerate(data):
         for j, cell_data in enumerate(row_data):
             item = QTableWidgetItem(str(cell_data))
             item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)  # 가운데 정렬 설정
-            item.setToolTip(str(cell_data)+"\n\n더블클릭 시 상세보기")  # Tooltip 설정
+            item.setToolTip(str(cell_data) + "\n\n더블클릭 시 상세보기")  # Tooltip 설정
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             widgetname.setItem(i, j, item)
 

@@ -14,36 +14,26 @@ class ServerLogger(commands.Cog):
     # 로그 채널 설정 명령어
     # =========================
     @app_commands.command(
-        name="입장로그채널설정",
-        description="서버 입장 로그 채널을 설정합니다."
+        name="입장로그채널설정", description="서버 입장 로그 채널을 설정합니다."
     )
     @app_commands.checks.has_permissions(administrator=True)
     async def set_log_channel(
-        self,
-        interaction: discord.Interaction,
-        channel: discord.TextChannel
+        self, interaction: discord.Interaction, channel: discord.TextChannel
     ):
 
         await self.bot.manager_db.auth_config.update_one(
             {"guild_id": interaction.guild.id},
-            {
-                "$set": {
-                    "join_log_channel": channel.id
-                }
-            },
-            upsert=True
+            {"$set": {"join_log_channel": channel.id}},
+            upsert=True,
         )
 
         embed = discord.Embed(
             title="입장 로그 채널 설정 완료",
             description=f"이제부터 입장 로그가 {channel.mention} 채널로 전송됩니다.",
-            color=discord.Color.green()
+            color=discord.Color.green(),
         )
 
-        await interaction.response.send_message(
-            embed=embed,
-            ephemeral=True
-        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # =========================
     # 서버 입장 감지
@@ -74,38 +64,24 @@ class ServerLogger(commands.Cog):
         embed = discord.Embed(
             title="서버 입장 로그",
             color=discord.Color.blurple(),
-            timestamp=datetime.datetime.utcnow()
+            timestamp=datetime.datetime.utcnow(),
         )
 
         embed.set_thumbnail(url=member.display_avatar.url)
 
         embed.add_field(
-            name="유저",
-            value=f"{member.mention}\n`{member}`",
-            inline=False
+            name="유저", value=f"{member.mention}\n`{member}`", inline=False
         )
+
+        embed.add_field(name="유저 ID", value=f"`{member.id}`", inline=True)
+
+        embed.add_field(name="계정 생성일", value=f"<t:{created_at}:F>", inline=True)
 
         embed.add_field(
-            name="유저 ID",
-            value=f"`{member.id}`",
-            inline=True
+            name="현재 멤버 수", value=f"`{member.guild.member_count}명`", inline=False
         )
 
-        embed.add_field(
-            name="계정 생성일",
-            value=f"<t:{created_at}:F>",
-            inline=True
-        )
-
-        embed.add_field(
-            name="현재 멤버 수",
-            value=f"`{member.guild.member_count}명`",
-            inline=False
-        )
-
-        embed.set_footer(
-            text=f"{member.guild.name}"
-        )
+        embed.set_footer(text=f"{member.guild.name}")
 
         await channel.send(embed=embed)
 

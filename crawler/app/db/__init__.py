@@ -22,7 +22,7 @@ MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
 MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
 
 hostname = socket.gethostname()
-is_server = ("knpu" in hostname or "server" in hostname)  # 서버 이름 기준으로 판단
+is_server = "knpu" in hostname or "server" in hostname  # 서버 이름 기준으로 판단
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +34,10 @@ if is_server:
     )
 else:
     import warnings
+
     warnings.filterwarnings("ignore", module="paramiko")
     from sshtunnel import SSHTunnelForwarder
+
     # 외부에서 실행 → SSH 터널 사용
     server = SSHTunnelForwarder(
         (SSH_HOST, SSH_PORT),
@@ -51,37 +53,48 @@ else:
         f"@127.0.0.1:{server.local_bind_port}/?authSource={MONGO_AUTH_DB}"
     )
 
-manager_db_name = 'manager'
-crawler_db_name = 'crawler'
+manager_db_name = "manager"
+crawler_db_name = "crawler"
 
 crawler_db = client[crawler_db_name]
 manager_db = client[manager_db_name]
 
-user_db = manager_db['users']
+user_db = manager_db["users"]
+
 
 def load_proxy_list():
-    return client[crawler_db_name]['ip-list'].find_one({"_id": "proxy_list"})['list']
+    return client[crawler_db_name]["ip-list"].find_one({"_id": "proxy_list"})["list"]
+
 
 def checkState(dbUid):
-    crawlDbList = client[crawler_db_name]['db-list']
-    targetDB = crawlDbList.find_one({'uid': dbUid})
+    crawlDbList = client[crawler_db_name]["db-list"]
+    targetDB = crawlDbList.find_one({"uid": dbUid})
     if targetDB:
-        return targetDB['status']
+        return targetDB["status"]
     else:
-        crawler_db['job-queue'].update_one({'db_uid': dbUid}, {'$set': {'state': 'stopped', 'finished_at': datetime.now()}})
+        crawler_db["job-queue"].update_one(
+            {"db_uid": dbUid},
+            {"$set": {"state": "stopped", "finished_at": datetime.now()}},
+        )
         return None
 
-def get_userinfo(requester:str):
+
+def get_userinfo(requester: str):
     try:
-        userDBList = client['manager']['users']
-        user = userDBList.find_one({'name': requester})
+        userDBList = client["manager"]["users"]
+        user = userDBList.find_one({"name": requester})
         if user is None:
             return False
-        return {'Email': user['email'], 'PushOver': user['pushoverKey'], 'userUid': user['uid']}
+        return {
+            "Email": user["email"],
+            "PushOver": user["pushoverKey"],
+            "userUid": user["uid"],
+        }
     except Exception as e:
         logger.info(f"DB 유저 정보 가져오기 : {requester}, 에러: {e}")
         return False
 
+
 def recordDB(dbUid, status):
-    crawlDbList = client[crawler_db_name]['db-list']
-    crawlDbList.update_one({'uid': dbUid}, {'$set': {'status': status}})
+    crawlDbList = client[crawler_db_name]["db-list"]
+    crawlDbList.update_one({"uid": dbUid}, {"$set": {"status": status}})

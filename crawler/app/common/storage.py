@@ -10,47 +10,56 @@ from db import crawler_db
 
 logger = logging.getLogger(__name__)
 
-crawlList_db = crawler_db['db-list']
-crawlLog_db = crawler_db['log-list']
+crawlList_db = crawler_db["db-list"]
+crawlLog_db = crawler_db["log-list"]
 
 
-def makeDB(DBname, DBtype, startdate, enddate, option, keyword, requester, requesterUid):
+def makeDB(
+    DBname, DBtype, startdate, enddate, option, keyword, requester, requesterUid
+):
     DBpath = os.path.join(CRAWL_DATA_PATH, DBname)
     DBuid = str(uuid.uuid4())
 
-    now_kst = datetime.now(timezone.utc).astimezone(
-        timezone(timedelta(hours=9))
-    ).strftime('%Y-%m-%d %H:%M')
+    now_kst = (
+        datetime.now(timezone.utc)
+        .astimezone(timezone(timedelta(hours=9)))
+        .strftime("%Y-%m-%d %H:%M")
+    )
 
-    doc = OrderedDict([
-        ("uid", DBuid),
-        ("name", DBname),
-        ("userUid", requesterUid),
-        ("crawlOption", option),
-        ("requester", requester),
-        ("keyword", keyword),
-        ("dbSize", 0),
-        ("crawlCom", CRAWLCOM),
-        ("crawlSpeed", 1),
-        ("stat", {
-            "article": 0,
-            "cmt": 0,
-            "reply": 0,
-        }),
-        ("startTime", now_kst),
-        ("endTime", "진행 중"),
-        ("percent", "0%"),
-        ("status", "running"),
-    ])
+    doc = OrderedDict(
+        [
+            ("uid", DBuid),
+            ("name", DBname),
+            ("userUid", requesterUid),
+            ("crawlOption", option),
+            ("requester", requester),
+            ("keyword", keyword),
+            ("dbSize", 0),
+            ("crawlCom", CRAWLCOM),
+            ("crawlSpeed", 1),
+            (
+                "stat",
+                {
+                    "article": 0,
+                    "cmt": 0,
+                    "reply": 0,
+                },
+            ),
+            ("startTime", now_kst),
+            ("endTime", "진행 중"),
+            ("percent", "0%"),
+            ("status", "running"),
+        ]
+    )
 
     crawlList_db.insert_one(doc)
     logger.info(f"DB 레코드 생성: {DBname} (uid: {DBuid})")
 
     os.makedirs(DBpath, exist_ok=True)
 
-    log_path = os.path.join(CRAWL_LOG_PATH, DBname + '_log.txt')
+    log_path = os.path.join(CRAWL_LOG_PATH, DBname + "_log.txt")
     os.makedirs(CRAWL_LOG_PATH, exist_ok=True)
-    with open(log_path, 'w+') as log:
+    with open(log_path, "w+") as log:
         msg = (
             f"=======================================================================================================================================\n"
             f"{'User:':<15} {requester}\n"
@@ -63,7 +72,7 @@ def makeDB(DBname, DBtype, startdate, enddate, option, keyword, requester, reque
             f"{'DB path:':<15} {DBpath}\n"
             f"=======================================================================================================================================\n"
         )
-        log.write(msg + '\n\n')
+        log.write(msg + "\n\n")
 
     return DBpath, DBuid
 
@@ -75,7 +84,7 @@ def updateCrawlStatus(DBuid, percent, articleCnt, replyCnt, rereplyCnt):
             return
 
         dbSize = 0
-        folder_path = os.path.join(CRAWL_DATA_PATH, folder['name'])
+        folder_path = os.path.join(CRAWL_DATA_PATH, folder["name"])
         if os.path.exists(folder_path):
             dbSize = sum(
                 os.path.getsize(os.path.join(folder_path, f))
@@ -85,15 +94,17 @@ def updateCrawlStatus(DBuid, percent, articleCnt, replyCnt, rereplyCnt):
 
         crawlList_db.update_one(
             {"uid": DBuid},
-            {"$set": {
-                "stat": {
-                    "article": articleCnt,
-                    "cmt": replyCnt,
-                    "reply": rereplyCnt,
-                },
-                "dbSize": dbSize,
-                "percent": percent,
-            }},
+            {
+                "$set": {
+                    "stat": {
+                        "article": articleCnt,
+                        "cmt": replyCnt,
+                        "reply": rereplyCnt,
+                    },
+                    "dbSize": dbSize,
+                    "percent": percent,
+                }
+            },
         )
     except Exception as e:
         logger.warning(f"진행률 업데이트 실패 (uid: {DBuid}): {e}")
@@ -101,9 +112,11 @@ def updateCrawlStatus(DBuid, percent, articleCnt, replyCnt, rereplyCnt):
 
 def endCrawl(DBuid):
     try:
-        now_kst = datetime.now(timezone.utc).astimezone(
-            timezone(timedelta(hours=9))
-        ).strftime('%Y-%m-%d %H:%M')
+        now_kst = (
+            datetime.now(timezone.utc)
+            .astimezone(timezone(timedelta(hours=9)))
+            .strftime("%Y-%m-%d %H:%M")
+        )
 
         crawlList_db.update_one(
             {"uid": DBuid},
@@ -112,13 +125,15 @@ def endCrawl(DBuid):
         logger.info(f"크롤링 완료 (uid: {DBuid})")
     except Exception as e:
         logger.warning(f"완료 상태 업데이트 실패 (uid: {DBuid}): {e}")
-     
-        
+
+
 def stopCrawl(DBuid):
     try:
-        now_kst = datetime.now(timezone.utc).astimezone(
-            timezone(timedelta(hours=9))
-        ).strftime('%Y-%m-%d %H:%M')
+        now_kst = (
+            datetime.now(timezone.utc)
+            .astimezone(timezone(timedelta(hours=9)))
+            .strftime("%Y-%m-%d %H:%M")
+        )
 
         crawlList_db.update_one(
             {"uid": DBuid},
@@ -138,21 +153,28 @@ def errorCrawl(DBuid):
         logger.info(f"크롤링 에러 처리 (uid: {DBuid})")
     except Exception as e:
         logger.warning(f"에러 상태 업데이트 실패 (uid: {DBuid}): {e}")
-        
+
 
 def _now_kst_str():
-    return datetime.now(timezone.utc).astimezone(
-        timezone(timedelta(hours=9))
-    ).strftime('%Y-%m-%d %H:%M:%S')
+    return (
+        datetime.now(timezone.utc)
+        .astimezone(timezone(timedelta(hours=9)))
+        .strftime("%Y-%m-%d %H:%M:%S")
+    )
 
 
 def initCrawlLog(DBuid, message):
     try:
         crawlLog_db.update_one(
             {"uid": DBuid},
-            {"$set": {"uid": DBuid, "logs": [
-                {"time": _now_kst_str(), "type": "start", "message": message}
-            ]}},
+            {
+                "$set": {
+                    "uid": DBuid,
+                    "logs": [
+                        {"time": _now_kst_str(), "type": "start", "message": message}
+                    ],
+                }
+            },
             upsert=True,
         )
     except Exception as e:
@@ -164,11 +186,15 @@ def appendCrawlLog(DBuid, log_type, message):
     try:
         crawlLog_db.update_one(
             {"uid": DBuid},
-            {"$push": {"logs": {
-                "time": _now_kst_str(),
-                "type": log_type,
-                "message": message,
-            }}},
+            {
+                "$push": {
+                    "logs": {
+                        "time": _now_kst_str(),
+                        "type": log_type,
+                        "message": message,
+                    }
+                }
+            },
             upsert=True,
         )
     except Exception as e:
