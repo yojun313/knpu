@@ -7,7 +7,7 @@ Research System for **PAILAB** at **Korea National Police University**.
 ## MANAGER
 > An integrated platform supporting research resource management and big data analysis.
 
-![Manager Service](homepage/app/public/assets/img/systems/manager.png)
+![Manager Service](homepage/app/public/assets/imgs/systems/manager.png)
 
 [**Launch**](https://knpu.re.kr/manager)
 
@@ -16,7 +16,7 @@ Research System for **PAILAB** at **Korea National Police University**.
 ## CRAWLER
 > Builds datasets through large-scale data collection.
 
-![Crawler Service](homepage/app/public/assets/img/systems/crawler.png)
+![Crawler Service](homepage/app/public/assets/imgs/systems/crawler.png)
 
 [**Launch**](https://crawler.knpu.re.kr)
 
@@ -25,7 +25,7 @@ Research System for **PAILAB** at **Korea National Police University**.
 ## AI Legal Complaint Generation Service
 > A service that assists in generating draft legal complaints meeting legal requirements using LLMs.
 
-![Legal Service](homepage/app/public/assets/img/systems/complaint.png)
+![Legal Service](homepage/app/public/assets/imgs/systems/complaint.png)
 
 [**Launch**](https://complaint.knpu.re.kr)
 
