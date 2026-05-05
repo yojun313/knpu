@@ -1,7 +1,7 @@
 [project]
 name = "knpu"
 version = "0.1.0"
-description = "KNPU PAILAB Project"
+description = "Research System for PAILAB @ Korea National Police University"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
