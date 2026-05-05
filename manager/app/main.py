@@ -1,7 +1,7 @@
 from PySide6 import QtWebEngineWidgets
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QFont, QFontDatabase, QPalette, QColor
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSharedMemory
 import os
 import sys
 from config import VERSION
@@ -68,9 +68,14 @@ def build_app():
 
     return app, theme
 
-
 def main():
+    shared_memory = QSharedMemory("PAILAB_MANAGER_UNIQUE_KEY")
+    if not shared_memory.create(1):
+        print("프로그램이 이미 실행 중입니다.")
+        sys.exit(0)
+
     app, theme = build_app()
+    
     splash = SplashDialog(version=VERSION, theme=theme)
     splash.show()
     QApplication.processEvents()
@@ -78,6 +83,7 @@ def main():
 
     from windows.main_window import MainWindow
     window = MainWindow(splash)
+    
     sys.exit(app.exec())
 
 if __name__ == "__main__":
