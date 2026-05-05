@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="assets/img/pailab_logo_favicon.ico" />
+    <title>MANAGER | User Guide</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0062ff;
+            --primary-bg: #f0f7ff;
+            --dark: #111827;
+            --text-main: #374151;
+            --text-muted: #6b7280;
+            --bg-body: #ffffff;
+            --bg-side: #f9fafb;
+            --border: #e5e7eb;
+            --radius: 12px;
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+
+        /* Hero Header */
+        header {
+            background-color: var(--dark);
+            color: white;
+            padding: 60px 24px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            font-size: 1rem;
+            color: #9ca3af;
+            font-weight: 500;
+        }
+
+        /* Layout */
+        .main-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 60px;
+            padding: 40px 24px;
+        }
+
+        /* Navigation Sidebar */
+        nav.sidebar {
+            position: sticky;
+            top: 40px;
+            height: fit-content;
+        }
+
+        nav.sidebar h2 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            padding-left: 12px;
+        }
+
+        nav.sidebar ul {
+            list-style: none;
+        }
+
+        nav.sidebar li {
+            margin-bottom: 4px;
+        }
+
+        nav.sidebar a {
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 500;
+            font-size: 0.935rem;
+            padding: 10px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: var(--transition);
+        }
+
+        nav.sidebar a i {
+            width: 18px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        nav.sidebar a:hover {
+            background-color: var(--bg-side);
+            color: var(--primary);
+        }
+
+        nav.sidebar a:hover i {
+            color: var(--primary);
+        }
+
+        /* Content Area */
+        .content-body {
+            max-width: 800px;
+        }
+
+        section {
+            padding-bottom: 80px;
+            margin-bottom: 80px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        section:last-child {
+            border-bottom: none;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: var(--dark);
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            margin-bottom: 24px;
+            font-size: 1.05rem;
+            color: var(--text-main);
+        }
+
+        /* Image Styling */
+        .img-container {
+            background-color: var(--bg-side);
+            padding: 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            margin: 24px 0;
+        }
+
+        img {
+            width: 100%;
+            height: auto;
+            border-radius: 6px;
+            display: block;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Simplified Download Card */
+        .download-card-simple {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--primary-bg);
+            padding: 32px;
+            border-radius: 16px;
+            border: 1px solid #d0e3ff;
+            margin-bottom: 60px;
+        }
+
+        .download-text h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0056b3;
+        }
+
+        .download-btn-simple {
+            background-color: var(--primary);
+            color: white !important;
+            padding: 12px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .download-btn-simple:hover {
+            opacity: 0.9;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--bg-side);
+            border-top: 1px solid var(--border);
+            padding: 80px 24px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .footer-content h2 {
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+        }
+
+        .footer-content p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .contact-list {
+            list-style: none;
+        }
+
+        .contact-list li {
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-main);
+        }
+
+        .contact-list i {
+            color: var(--text-muted);
+            width: 20px;
+        }
+
+        .contact-list a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-list a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 992px) {
+            .main-wrapper {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+            nav.sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .download-card-simple {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>MANAGER</h1>
+        <p>Unified Research Management Platform</p>
+    </header>
+
+    <div class="main-wrapper">
+        <nav class="sidebar">
+            <h2>Documentation</h2>
+            <ul>
+                <li><a href="#database"><i class="fas fa-database"></i> 1. DATABASE</a></li>
+                <li><a href="#crawler"><i class="fas fa-spider"></i> 2. CRAWLER</a></li>
+                <li><a href="#analysis"><i class="fas fa-chart-bar"></i> 3. ANALYSIS</a></li>
+                <li><a href="#board"><i class="fas fa-clipboard-list"></i> 4. BOARD</a></li>
+                <li><a href="#web"><i class="fas fa-globe"></i> 5. WEB</a></li>
+                <li><a href="#user"><i class="fas fa-users"></i> 6. USER</a></li>
+                <li><a href="#setting"><i class="fas fa-cog"></i> 7. SETTING</a></li>
+            </ul>
+        </nav>
+
+        <div class="content-body">
+            <!-- Download Section -->
+            <div class="download-card-simple">
+                <div class="download-text">
+                    <h3>Download MANAGER</h3>
+                </div>
+                <a href="/download_manager" target="_blank" class="download-btn-simple">
+                    <i class="fas fa-download"></i> 최신 버전 다운로드
+                </a>
+            </div>
+
+            <!-- 1. DATABASE -->
+            <section id="database">
+                <h2>1. DATABASE</h2>
+                <p>DATABASE 섹션에서 Resource DB와 관련된 모든 작업을 처리할 수 있습니다. 데이터 조회, 검색, 병합 및 저장 등의 다양한 인터페이스를 제공합니다.</p>
+                <div class="img-container">
+                    <img src="assets/img/manager/database.png" alt="Database Overview" />
+                </div>
+            </section>
+
+            <!-- 2. CRAWLER -->
+            <section id="crawler">
+                <h2>2. CRAWLER</h2>
+                <p>CRAWLER 섹션에서 지정된 웹사이트의 데이터를 자동 수집하고 데이터베이스애 저장할 수 있습니다.</p>
+                <div class="img-container">
+                    <img src="assets/img/manager/crawler.png" alt="Crawler Overview" />
+                </div>
+            </section>
+
+            <!-- 3. ANALYSIS -->
+            <section id="analysis">
+                <h2>3. ANALYSIS</h2>
+                <p>ANALYSIS 섹션에서 빅데이터 분석, 시각화할 수 있습니다.</p>
+                <div class="img-container">
+                    <img src="assets/img/manager/analysis.png" alt="Analysis Overview" />
+                </div>
+            </section>
+
+            <!-- 4. BOARD -->
+            <section id="board">
+                <h2>4. BOARD</h2>
+                <p>BOARD 섹션은 릴리스 정보 확인, 버그 제보 및 커뮤니티 소통을 위한 공간입니다.</p>
+                <div class="img-container">
+                    <img src="assets/img/manager/board.png" alt="Board Overview" />
+                </div>
+            </section>
+
+            <!-- 5. WEB -->
+            <section id="web">
+                <h2>5. WEB</h2>
+                <p>WEB 섹션에서 Homepage의 데이터를 관리할 수 있습니다.</p>
+                <div class="img-container">
+                    <img src="assets/img/manager/web.png" alt="Web Overview" />
+                </div>
+            </section>
+
+            <!-- 6. USER -->
+            <section id="user">
+                <h2>6. USER</h2>
+                <p>USER 섹션은 사용자 계정 관리를 위한 공간입니다.</p>
+                <div class="img-container">
+                    <img src="assets/img/manager/user.png" alt="User Overview" />
+                </div>
+            </section>
+
+            <!-- 7. SETTING -->
+            <section id="setting">
+                <h2>7. SETTING</h2>
+                <p>SETTING 섹션은 프로그램 전반의 환경 설정을 제어합니다.</p>
+                <div class="img-container">
+                    <img src="assets/img/manager/settings.png" alt="Settings Overview" />
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div>
+                <h2>Developer Support</h2>
+                <p>MANAGER에 대한 기술 지원 및 문의사항은 아래 연락처를 확인하세요.</p>
+            </div>
+            <div>
+                <ul class="contact-list">
+                    <li><i class="fas fa-envelope"></i> <a href="mailto:yojun313@postech.ac.kr">yojun313@postech.ac.kr</a></li>
+                    <li><i class="fas fa-phone"></i> <a href="tel:+8201040729190">+82 010-4072-9190</a></li>
+                    <li><i class="fab fa-github"></i> <a href="https://github.com/yojun313" target="_blank">github.com/yojun313</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>
