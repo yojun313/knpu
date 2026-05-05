@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 import socket
 import logging
+from datetime import datetime
 
 from config import MODE
 
@@ -66,7 +67,9 @@ def checkState(dbUid):
     targetDB = crawlDbList.find_one({'uid': dbUid})
     if targetDB:
         return targetDB['status']
-    return None
+    else:
+        crawler_db['job-queue'].update_one({'db_uid': dbUid}, {'$set': {'state': 'stopped', 'finished_at': datetime.now()}})
+        return None
 
 def get_userinfo(requester:str):
     try:
