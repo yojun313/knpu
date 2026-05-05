@@ -9,7 +9,7 @@ from user_agent import generate_navigator
 import urllib.parse
 import random
 import logging
-from db import load_proxy_list, checkStatus, get_userinfo
+from db import load_proxy_list, checkState, get_userinfo
 from db.util import makeDBname 
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
@@ -544,11 +544,11 @@ class NaverNewsCrawler:
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime('%Y%m%d')
             
-            status = checkStatus(self.DBuid)
-            if not status:
+            state = checkState(self.DBuid)
+            if not state:
                 logger.info(f"DB has been deleted. Terminating crawl: {self.DBname}")
                 return
-            elif status == "stopped":
+            elif state == "stopped":
                 stopOperator(DBpath=self.DBPath, DBtype='navernews', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
                 return
             

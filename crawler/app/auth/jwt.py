@@ -13,12 +13,7 @@ SECRET_KEY = os.getenv("JWT_SECRET")
 ALGORITHM = os.getenv("JWT_ALGORITHM")
 TOKEN_EXPIRE_DAYS = 90
 
-
 def create_token(user_data: dict) -> str:
-    """
-    JWT 토큰 생성
-    user_data: {"uid": "abc123", "name": "최우철"}
-    """
     payload = {
         "sub": user_data["uid"],
         "name": user_data["name"],
@@ -29,11 +24,6 @@ def create_token(user_data: dict) -> str:
 
 
 def verify_token(token: str) -> dict | None:
-    """
-    JWT 토큰 검증
-    성공 → {"sub": "abc123", "name": "최우철", ...} 반환
-    실패 → None 반환
-    """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload

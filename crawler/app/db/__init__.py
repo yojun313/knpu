@@ -58,12 +58,10 @@ manager_db = client[manager_db_name]
 
 user_db = manager_db['users']
 
-
-
 def load_proxy_list():
     return client[crawler_db_name]['ip-list'].find_one({"_id": "proxy_list"})['list']
 
-def checkStatus(dbUid):
+def checkState(dbUid):
     crawlDbList = client[crawler_db_name]['db-list']
     targetDB = crawlDbList.find_one({'uid': dbUid})
     if targetDB:

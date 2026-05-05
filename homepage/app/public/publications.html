@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>PAILAB</title>
+    <!-- Favicon-->
+    <!-- Font Awesome icons (free version)-->
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+    <!-- Google fonts-->
+    <link rel="icon" type="image/x-icon" href="assets/img/pailab_logo_favicon.ico" />
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700" rel="stylesheet" type="text/css" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="css/styles.css" rel="stylesheet" />
+</head>
+
+<body id="page-top">
+    <!-- Navigation-->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
+        <div class="container">
+            <a class="navbar-brand" href="/"><img src="assets/img/pailab_logo.png" alt="..." /></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
+                aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu
+                <i class="fas fa-bars ms-1"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav text-uppercase ms-auto py-4 py-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="/">RESEARCH</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/publications">PUBLICATIONS</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/">NEWS</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/team">OUR TEAM</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/tool">TOOL</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- Masthead-->
+    <header class="masthead_paper">
+        <div class="container">
+            <div class="masthead_paper-subheading">PAILAB</div>
+            <div class="masthead_paper-heading text-uppercase">PUBLICATIONS</div>
+        </div>
+    </header>
+    <section class="publications-section" id="PUBLICATIONS">
+        <div class="container">
+            <div class="text-center">
+            <h2 class="section-heading text-uppercase"><br />PAPERS</h2>
+            </div>
+            <!-- 연도/논문 목록이 동적으로 삽입될 부분 -->
+            <div id="publications-list"></div>
+        </div>
+    </section>
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Core theme JS-->
+    <script src="js/scripts.js"></script>
+    <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *-->
+    <!-- * *                               SB Forms JS                               * *-->
+    <!-- * * Activate your form at https://startbootstrap.com/solution/contact-forms * *-->
+    <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *-->
+    <script src="https://cdn.startbootstrap.com/sb-forms-latest.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+            const res = await fetch('https://home.knpu.re.kr/api/papers/');
+            if (!res.ok) throw new Error('Failed to fetch publications');
+
+            const data = await res.json();
+
+            const listEl = document.getElementById('publications-list');
+            listEl.innerHTML = ''; // 초기화
+
+            data.sort((a, b) => b.year - a.year); // 연도 내림차순 정렬
+
+            data.forEach(yearData => {
+                if (!yearData.papers || yearData.papers.length === 0) return; // 비어있으면 넘어감
+
+                const yearBlock = document.createElement('div');
+                yearBlock.classList.add('publication-year');
+
+                yearBlock.innerHTML = `
+                <h4 class="year-title">${yearData.year}</h4>
+                <hr class="year-separator">
+                `;
+
+                yearData.papers.forEach(paper => {
+                const paperEl = document.createElement('div');
+                paperEl.classList.add('publication-item');
+
+                paperEl.innerHTML = `
+                    <div class="publication-info">
+                    <h5 class="publication-title">${paper.title}</h5>
+                    ${paper.authors ? `<p class="authors">${paper.authors}</p>` : ''}
+                    ${paper.conference ? `<p class="conference">${paper.conference}</p>` : ''}
+                    ${paper.link ? `<a href="${paper.link}" class="publication-link" target="_blank">[Paper]</a>` : ''}
+                    </div>
+                `;
+
+                yearBlock.appendChild(paperEl);
+                });
+
+                listEl.appendChild(yearBlock);
+            });
+
+            if (listEl.innerHTML.trim() === '') {
+                listEl.innerHTML = '<p class="text-center text-muted">등록된 논문이 없습니다.</p>';
+            }
+            } catch (e) {
+            console.error('Error loading publications:', e);
+            document.getElementById('publications-list').innerHTML = '<p class="text-center text-danger">논문을 불러오는 데 실패했습니다.</p>';
+            }
+        });
+    </script>
+</body>
+
+</html>
+<!-- Footer-->
+<footer class="footer py-4">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-12 text-center"> <!-- col-lg-4를 col-12로 변경하고 text-center 클래스 추가 -->
+                Copyright &copy; KNPU PAILAB
+            </div>
+        </div>
+    </div>
+</footer>

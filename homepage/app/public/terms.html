@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이용약관 | 경찰대학 PAILAB</title>
+    <style>
+        :root {
+            --primary-color: #002d56; /* 경찰대학 상징색 느낌의 네이비 */
+            --secondary-color: #f4f7f9;
+            --text-color: #333;
+            --accent-color: #0056b3;
+        }
+        
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--secondary-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        header {
+            border-bottom: 2px solid var(--primary-color);
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            margin-top: 30px;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 15px;
+        }
+
+        .update-date {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: right;
+        }
+
+        .content {
+            font-size: 0.95rem;
+            color: #444;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .highlight {
+            background-color: #fff9c4;
+            font-weight: 600;
+        }
+
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>PAILAB 연구 시스템 서비스 이용약관</h1>
+        <p class="update-date">최근 수정일: 2026년 4월 22일</p>
+    </header>
+
+    <div class="content">
+        <p>본 약관은 경찰대학 PAILAB에서 개발한 <strong>MANAGER</strong> 및 <strong>CRAWLER</strong> 프로그램(이하 "서비스")과 Discord 봇 연동 기능을 이용함에 있어 서비스와 사용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
+
+        <h2>제 1 조 (목적)</h2>
+        <p>본 서비스는 연구 및 업무 효율화를 위한 서버 관리(MANAGER) 및 데이터 수집(CRAWLER) 자동화 도구이며, Discord를 통해 실시간 알림 및 로그 확인 기능을 제공합니다.</p>
+
+        <h2>제 2 조 (Discord 연동 및 데이터 처리)</h2>
+        <p>본 서비스는 원활한 알림 송신을 위해 사용자의 Discord 웹훅(Webhook) 또는 봇 토큰을 활용하며, 다음과 같은 정보를 처리합니다.</p>
+        <ul>
+            <li><strong>수집 항목:</strong> 서비스 수행 로그, 크롤링 상태값, 서버 리소스 상태, 에러 메시지.</li>
+            <li><strong>목적:</strong> Discord 채널을 통한 실시간 모니터링 알림 및 장애 대응.</li>
+            <li><span class="highlight">데이터 보관:</span> 발생한 로그 데이터는 시스템 내부 DB에 기록될 수 있으며, Discord에 전송된 메시지는 Discord의 운영 정책에 따라 관리됩니다.</li>
+        </ul>
+
+        <h2>제 3 조 (이용자의 의무)</h2>
+        <ul>
+            <li>사용자는 본 서비스를 경찰대학 PAILAB 내부 지침 및 관련 법령에 따라 사용해야 합니다.</li>
+            <li>CRAWLER 사용 시 대상 사이트의 robots.txt 규약을 준수하며, 과도한 트래픽 발생으로 인한 업무 방해를 유발하지 않아야 합니다.</li>
+            <li>Discord 봇의 접근 권한(Token, API Key)이 외부에 유출되지 않도록 관리 책임은 사용자에게 있습니다.</li>
+        </ul>
+
+        <h2>제 4 조 (서비스 이용의 제한)</h2>
+        <p>다음 각 호에 해당하는 경우 서비스 이용이 제한되거나 중단될 수 있습니다.</p>
+        <ul>
+            <li>비정상적인 방법으로 서버 자원을 점유하는 경우</li>
+            <li>허가되지 않은 데이터에 접근하거나 수집을 시도하는 경우</li>
+            <li>기타 연구실 운영 보안 정책에 위배되는 행위</li>
+        </ul>
+
+        <h2>제 5 조 (책임의 한계)</h2>
+        <p>본 서비스는 연구용으로 제공되며, Discord 플랫폼 자체의 장애나 네트워크 환경으로 인한 알림 지연 또는 누락에 대해서는 책임을 지지 않습니다.</p>
+
+        <h2>제 6 조 (문의 사항)</h2>
+        <p>서비스 이용 중 발생하는 기술적인 문제나 보안 관련 문의는 연구실 관리자에게 연락하시기 바랍니다.</p>
+    </div>
+
+    <footer>
+        &copy; 2026 Korean National Police University PAILAB. All Rights Reserved.
+    </footer>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Service Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header {
+      background-color: #212529;
+      color: white;
+      padding: 1.5rem 2rem;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      letter-spacing: 0.5px;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 2rem;
+      width: 90%;
+      max-width: 1000px;
+      margin-top: 3rem;
+    }
+
+    .card {
+      background: white;
+      padding: 2rem;
+      border-radius: 14px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      transition: all 0.3s ease;
+      border: 1px solid #e6e8eb;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .card h3 {
+      margin-bottom: 1rem;
+      color: #333;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .button-link {
+      background-color: #212529;
+      color: white;
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      display: inline-block;
+      font-weight: 500;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    .button-link:hover {
+      background-color: #3a78c2;
+      transform: translateY(-2px);
+    }
+
+    footer {
+      margin-top: auto;
+      padding: 1rem 0;
+      width: 100%;
+      text-align: center;
+      background: #212529;
+      color: #ccc;
+      font-size: 0.95rem;
+    }
+
+    footer a {
+      color: #3a78c2;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Lab Tool Dashboard</h1>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h3>MANAGER</h3>
+      <a href="/manager" class="button-link">Open</a>
+    </div>
+    <div class="card">
+      <h3>CRAWLER</h3>
+      <a href="https://crawler.knpu.re.kr" class="button-link">Open</a>
+    </div>
+    <div class="card">
+      <h3>Lab LLM</h3>
+      <a href="https://llm.knpu.re.kr" class="button-link">Open</a>
+    </div>
+    <div class="card">
+      <h3>AI 고소장 서비스</h3>
+      <a href="https://complaint.knpu.re.kr" class="button-link">Open</a>
+    </div>
+    <div class="card">
+      <h3>LecAI</h3>
+      <a href="https://lec.knpu.re.kr" class="button-link">Open</a>
+    </div>
+  </div>
+
+  <footer>
+    Developed by <a href="https://github.com/yojun313" target="_blank">github.com/yojun313</a>
+  </footer>
+</body>
+
+</html>

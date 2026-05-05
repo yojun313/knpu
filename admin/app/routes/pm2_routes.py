@@ -10,11 +10,14 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/")
 async def pm2_manager_page(request: Request, user=Depends(get_current_user)):
     processes = PM2Service.get_processes()
-    return templates.TemplateResponse("process.html", {
-        "request": request,
-        "processes": processes,
-        "active_page": "pm2"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="process.html",
+        context={
+            "processes": processes,
+            "active_page": "pm2"
+        }
+    )
 
 @router.post("/control/{action}/{name}")
 async def control_process(action: str, name: str):

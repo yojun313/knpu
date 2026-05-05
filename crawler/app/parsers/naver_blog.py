@@ -9,7 +9,7 @@ from user_agent import generate_navigator
 import urllib.parse
 import random
 import logging
-from db import load_proxy_list, checkStatus, get_userinfo
+from db import load_proxy_list, checkState, get_userinfo
 from db.util import makeDBname 
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
@@ -382,12 +382,13 @@ class NaverBlogCrawler:
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime('%Y%m%d')
             
-            if checkStatus(self.DBuid) == False:
-                self.running = False
-            
-            if self.running == False: #DB 외 경로로 중단 신호 오는 것 고려해 checkDB와 분리, self.status 업데이트 전 중단
+            state = checkState(self.DBuid)
+            if not state:
+                logger.info(f"DB has been deleted. Terminating crawl: {self.DBname}")
+                return
+            elif state == "stopped":
                 stopOperator(DBpath=self.DBPath, DBtype='naverblog', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
-                break
+                return
 
             if dayCount == self.date_range: # 토큰화 및 파일 저장, 알림
                 finishOperator(DBpath=self.DBPath, DBtype='naverblog', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)

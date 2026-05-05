@@ -4,7 +4,6 @@ import re
 import os
 import pandas as pd
 
-
 def tokenization(data: pd.DataFrame, language='ko'):
     if language == 'en':
         import nltk
