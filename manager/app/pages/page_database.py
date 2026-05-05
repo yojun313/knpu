@@ -64,34 +64,57 @@ class Manager_Database(Manager_Worker):
                 status = DBdata['status']
                 owner = DBdata['requester']
 
+                # 권한 체크
                 if owner != self.main.user and self.main.user_role != 'admin':
-                    QMessageBox.warning(
-                        self.main, "Information", f"DB와 사용자 정보가 일치하지 않습니다")
+                    QMessageBox.warning(self.main, "Information", "DB와 사용자 정보가 일치하지 않습니다")
                     return
 
-                if status == 'Working':
-                    confirm_msg = f"현재 크롤링이 진행 중입니다.\n\n'{DBname}' 크롤링을 중단하고 DB를 삭제하시겠습니까?"
-                else:
-                    confirm_msg = f"'{DBname}'를 삭제하시겠습니까?"
+                if '%' in status:
+                    msgBox = QMessageBox(self.main)
+                    msgBox.setIcon(QMessageBox.Icon.Question)
+                    msgBox.setWindowTitle('Confirm Action')
+                    msgBox.setText(f"'{DBname}'는 현재 크롤링이 진행 중입니다.")
+                    msgBox.setInformativeText("수행하실 작업을 선택해주세요.")
 
-                reply = QMessageBox.question(
-                    self.main, 'Confirm Delete', confirm_msg, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
-                if reply == QMessageBox.StandardButton.Yes:
-                    Request('delete', f'crawls/{DBuid}')
+                    # 버튼 정의
+                    stopDeleteBtn = msgBox.addButton("삭제", QMessageBox.ButtonRole.ActionRole)
+                    stopOnlyBtn = msgBox.addButton("중단", QMessageBox.ButtonRole.ActionRole)
+                    cancelBtn = msgBox.addButton("취소", QMessageBox.ButtonRole.RejectRole)
 
-                    if status == 'Working':
+                    msgBox.exec()
+
+                    clickedBtn = msgBox.clickedButton()
+
+                    if clickedBtn == stopDeleteBtn:
+                        Request('delete', f'crawls/{DBuid}')
                         self.main.activeCrawl -= 1
-                        QMessageBox.information(
-                            self.main, "Information", f"크롤러 서버에 중단 요청을 전송했습니다")
+                        QMessageBox.information(self.main, "Information", "크롤링을 중단하고 DB를 삭제했습니다")
+                        self.refreshDB()
+                    
+                    elif clickedBtn == stopOnlyBtn:
+                        Request('put', f'crawls/{DBuid}/stop')
+                        self.main.activeCrawl -= 1
+                        QMessageBox.information(self.main, "Information", "크롤링 중단 요청을 전송했습니다")
+                        self.refreshDB()
+                    
                     else:
-                        QMessageBox.information(
-                            self.main, "Information", f"'{DBname}'가 삭제되었습니다")
-                    self.refreshDB()
+                        return
+
+                else:
+                    reply = QMessageBox.question(
+                        self.main, 'Confirm Delete', f"'{DBname}'를 삭제하시겠습니까?",
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+                        QMessageBox.StandardButton.Yes
+                    )
+                    if reply == QMessageBox.StandardButton.Yes:
+                        Request('delete', f'crawls/{DBuid}')
+                        QMessageBox.information(self.main, "Information", f"'{DBname}'가 삭제되었습니다")
+                        self.refreshDB()
 
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
-
+    
     def viewDB(self):
         class LoadDBWorker(QThread):
             finished = Signal(object)   # 로드 완료 시 DataFrame 목록 반환
