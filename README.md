@@ -1,6 +1,6 @@
-# KNPU Research System
+# KNPU PAILAB Research System
 
-A dashboard of core services designed for an efficient research environment.
+Research System for **PAILAB** at **Korea National Police University**.
 
 ---
 
