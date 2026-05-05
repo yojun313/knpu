@@ -13,6 +13,7 @@ SECRET_KEY = os.getenv("JWT_SECRET")
 ALGORITHM = os.getenv("JWT_ALGORITHM")
 TOKEN_EXPIRE_DAYS = 90
 
+
 def create_token(user_data: dict) -> str:
     payload = {
         "sub": user_data["uid"],
@@ -30,5 +31,3 @@ def verify_token(token: str) -> dict | None:
     except PyJWTError as e:
         logger.debug(f"토큰 검증 실패: {type(e).__name__}: {e}")
         return None
-
-

@@ -19,7 +19,7 @@ MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
 MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
 
 hostname = socket.gethostname()
-is_server = ("knpu" in hostname or "server" in hostname)  # 서버 이름 기준으로 판단
+is_server = "knpu" in hostname or "server" in hostname  # 서버 이름 기준으로 판단
 
 if is_server:
     # 서버 내부에서 실행 → 로컬 MongoDB 바로 사용
@@ -33,7 +33,7 @@ else:
         (SSH_HOST, SSH_PORT),
         ssh_username=SSH_USER,
         ssh_pkey=SSH_KEY,
-        remote_bind_address=(MONGO_HOST, MONGO_PORT)
+        remote_bind_address=(MONGO_HOST, MONGO_PORT),
     )
     server.start()
 

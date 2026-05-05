@@ -6,16 +6,17 @@ import os
 
 load_dotenv()
 
+
 def sendEmail(receiver, title, text):
-    sender = os.getenv('MAIL_SENDER')
-    MailPassword = os.getenv('MAIL_PASSWORD')
+    sender = os.getenv("MAIL_SENDER")
+    MailPassword = os.getenv("MAIL_PASSWORD")
 
     msg = MIMEMultipart()
-    msg['Subject'] = title
-    msg['From'] = sender
-    msg['To'] = receiver
+    msg["Subject"] = title
+    msg["From"] = sender
+    msg["To"] = receiver
 
-    msg.attach(MIMEText(text, 'plain'))
+    msg.attach(MIMEText(text, "plain"))
 
     smtp_server = "smtp.gmail.com"
     smtp_port = 587

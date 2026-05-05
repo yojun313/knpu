@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
+
 class KemKimOption(BaseModel):
     pid: str
     tokenfile_name: str
@@ -17,10 +18,12 @@ class KemKimOption(BaseModel):
     ani_option: bool
     exception_word_list: list
     exception_filename: str
-    
+
+
 class TokenizeOption(BaseModel):
     pid: str
     column_names: list
+
 
 class HateOption(BaseModel):
     pid: str

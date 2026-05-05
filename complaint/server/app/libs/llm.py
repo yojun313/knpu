@@ -32,10 +32,10 @@ def llm_generate(query):
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": query},
-            ]
+            ],
         )
 
-        model_id = model_id.replace('/models/', '').replace('__', '/')
+        model_id = model_id.replace("/models/", "").replace("__", "/")
         return response.choices[0].message.content, model_id
     except Exception:
         # 로컬 실패 시 공식 OpenAI로 폴백
@@ -45,6 +45,6 @@ def llm_generate(query):
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": query},
-            ]
+            ],
         )
         return response.choices[0].message.content, "gpt-5-mini"

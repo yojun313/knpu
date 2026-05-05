@@ -81,8 +81,12 @@ class QueueManager:
             return {
                 "job_id": entry.job_id,
                 "state": entry.state,
-                "started_at": entry.started_at.isoformat() if entry.started_at else None,
-                "finished_at": entry.finished_at.isoformat() if entry.finished_at else None,
+                "started_at": entry.started_at.isoformat()
+                if entry.started_at
+                else None,
+                "finished_at": entry.finished_at.isoformat()
+                if entry.finished_at
+                else None,
                 "error_message": entry.error_message,
                 "crawler_status": self.registry.get_status(job_id),
                 **entry.meta,
@@ -105,7 +109,9 @@ class QueueManager:
                 status_data = {
                     "job_id": entry.job_id,
                     "state": entry.state,
-                    "started_at": entry.started_at.isoformat() if entry.started_at else None,
+                    "started_at": entry.started_at.isoformat()
+                    if entry.started_at
+                    else None,
                     "crawler_status": self.registry.get_status(entry.job_id),
                     **entry.meta,
                 }
@@ -119,14 +125,20 @@ class QueueManager:
         # 최근 7일 완료/에러/중단 작업을 DB에서 조회
         recent = []
         for doc in self.persistence.get_recent_days(days=7):
-            recent.append({
-                "job_id": doc["job_id"],
-                "state": doc["state"],
-                "started_at": doc["started_at"].isoformat() if doc.get("started_at") else None,
-                "finished_at": doc["finished_at"].isoformat() if doc.get("finished_at") else None,
-                "error_message": doc.get("error_message"),
-                **doc.get("request", {}),
-            })
+            recent.append(
+                {
+                    "job_id": doc["job_id"],
+                    "state": doc["state"],
+                    "started_at": doc["started_at"].isoformat()
+                    if doc.get("started_at")
+                    else None,
+                    "finished_at": doc["finished_at"].isoformat()
+                    if doc.get("finished_at")
+                    else None,
+                    "error_message": doc.get("error_message"),
+                    **doc.get("request", {}),
+                }
+            )
 
         return {"active": active, "queued": queued, "recent": recent}
 
@@ -143,7 +155,9 @@ class QueueManager:
 
         # max_concurrent만큼 시작
         started = 0
-        while self.queue and self.registry.active_count() < self.registry.max_concurrent:
+        while (
+            self.queue and self.registry.active_count() < self.registry.max_concurrent
+        ):
             _, _, jid, req_dict = heapq.heappop(self.queue)
             req = JobSubmitRequest(**req_dict)
             self._start(jid, req)
@@ -158,7 +172,9 @@ class QueueManager:
         }
 
         if needed:
-            logger.info(f"DB 복원: 에러 처리 {marked_error}건, 대기 복원 {len(queued_docs)}건, 즉시 시작 {started}건")
+            logger.info(
+                f"DB 복원: 에러 처리 {marked_error}건, 대기 복원 {len(queued_docs)}건, 즉시 시작 {started}건"
+            )
 
         return result
 
@@ -168,7 +184,7 @@ class QueueManager:
         """크롤러 인스턴스 생성 후 registry에 제출"""
         try:
             crawler = self._create_crawler(req)
-            if hasattr(crawler, 'DBuid'): 
+            if hasattr(crawler, "DBuid"):
                 db_uid = crawler.DBuid
                 self.persistence.link_db_uid(job_id, db_uid)
         except Exception as e:
@@ -178,12 +194,15 @@ class QueueManager:
 
         self.persistence.update_state(job_id, "running")
         self.registry.submit(job_id, crawler, req.model_dump())
-        logger.info(f"Job {job_id} started: {req.keyword} ({req.start_day}~{req.end_day})")
+        logger.info(
+            f"Job {job_id} started: {req.keyword} ({req.start_day}~{req.end_day})"
+        )
 
     def _create_crawler(self, req: JobSubmitRequest):
         """크롤러 팩토리 — crawl_object에 따라 적절한 클래스 생성"""
         if req.crawl_object == 1:
             from parsers.naver_news import NaverNewsCrawler
+
             return NaverNewsCrawler(
                 requester=req.name,
                 keyword=req.keyword,
@@ -194,6 +213,7 @@ class QueueManager:
             )
         elif req.crawl_object == 2:
             from parsers.naver_blog import NaverBlogCrawler
+
             return NaverBlogCrawler(
                 requester=req.name,
                 keyword=req.keyword,
@@ -204,6 +224,7 @@ class QueueManager:
             )
         elif req.crawl_object == 3:
             from parsers.naver_cafe import NaverCafeCrawler
+
             return NaverCafeCrawler(
                 requester=req.name,
                 keyword=req.keyword,
@@ -214,6 +235,7 @@ class QueueManager:
             )
         elif req.crawl_object == 4:
             from parsers.youtube import YouTubeCrawler
+
             return YouTubeCrawler(
                 requester=req.name,
                 keyword=req.keyword,
@@ -224,6 +246,7 @@ class QueueManager:
             )
         elif req.crawl_object == 5:
             from parsers.china_daily import ChinaDailyCrawler
+
             return ChinaDailyCrawler(
                 requester=req.name,
                 keyword=req.keyword,
@@ -234,6 +257,7 @@ class QueueManager:
             )
         elif req.crawl_object == 6:
             from parsers.china_sina import ChinaSinaCrawler
+
             return ChinaSinaCrawler(
                 requester=req.name,
                 keyword=req.keyword,
@@ -253,7 +277,10 @@ class QueueManager:
 
         # 큐에서 다음 작업 시작
         with self.lock:
-            if self.queue and self.registry.active_count() < self.registry.max_concurrent:
+            if (
+                self.queue
+                and self.registry.active_count() < self.registry.max_concurrent
+            ):
                 _, _, next_id, next_req_dict = heapq.heappop(self.queue)
                 next_req = JobSubmitRequest(**next_req_dict)
                 self._start(next_id, next_req)

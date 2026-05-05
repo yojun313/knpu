@@ -1,15 +1,16 @@
 import re
 
+
 def parse_naver_query(query):
     # 큰따옴표 감싼 문구 추출
     quoted_terms = re.findall(r'"[^"]+"', query)
-    
+
     # 기본 분리 (큰따옴표는 제외하고 나머지 처리)
     terms = query.split()
 
     # +, - 단어 추출
-    and_terms = [term[1:] for term in terms if term.startswith('+')]
-    sub_terms = [term[1:] for term in terms if term.startswith('-')]
+    and_terms = [term[1:] for term in terms if term.startswith("+")]
+    sub_terms = [term[1:] for term in terms if term.startswith("-")]
 
     for qt in quoted_terms:
         and_terms.append(qt)
@@ -20,16 +21,22 @@ def parse_naver_query(query):
     else:
         # 1️⃣ 큰따옴표만 있을 경우
         if re.fullmatch(r'"[^"]+"', query.strip()):
-            nx_search_query = query.replace('"', '')
+            nx_search_query = query.replace('"', "")
         else:
             # 2️⃣ 일반 단어만 추출
             normal_terms = [
-                t for t in terms if not (t.startswith('+') or t.startswith('-') or '"' in t)
+                t
+                for t in terms
+                if not (t.startswith("+") or t.startswith("-") or '"' in t)
             ]
-            nx_search_query = " ".join([t.replace('"', '') for t in normal_terms]) if normal_terms else ""
+            nx_search_query = (
+                " ".join([t.replace('"', "") for t in normal_terms])
+                if normal_terms
+                else ""
+            )
             # 3️⃣ 만약 큰따옴표만 있었는데 split에서 잘렸을 경우 보정
             if not nx_search_query and quoted_terms:
-                nx_search_query = quoted_terms[0].replace('"', '')
+                nx_search_query = quoted_terms[0].replace('"', "")
 
     # nx_and_query: 큰따옴표 + +단어
     nx_and_query = " ".join(and_terms) if and_terms else ""
@@ -52,4 +59,3 @@ def parse_naver_query(query):
     }
 
     return query_params
-

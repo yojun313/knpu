@@ -6,6 +6,7 @@ MANAGER · persistent settings helper
 - 기본값 자동 채우기
 - 편의 함수: `get_setting`, `set_setting`, `update_settings`, `all_settings`
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -15,19 +16,19 @@ from config import VERSION
 _qsettings = QSettings("KNPU", "MANAGER")
 
 _DEFAULTS: dict[str, Any] = {
-    "Theme":            "default",
-    "ScreenSize":       "default",
-    "OldPostUid":       "default",
-    "AutoUpdate":       "default",
-    "MyDB":             "default",
-    "GPT_Key":          "default",
-    "DB_Refresh":       "default",
-    "BootTerminal":     "default",
-    "DBKeywordSort":    "default",
-    "ProcessConsole":   "default",
-    "LLM_model":        "Server LLM",
-    "LLM_model_name":   "ChatGPT 4",
-    "LastVersion":    f"{VERSION}",
+    "Theme": "default",
+    "ScreenSize": "default",
+    "OldPostUid": "default",
+    "AutoUpdate": "default",
+    "MyDB": "default",
+    "GPT_Key": "default",
+    "DB_Refresh": "default",
+    "BootTerminal": "default",
+    "DBKeywordSort": "default",
+    "ProcessConsole": "default",
+    "LLM_model": "Server LLM",
+    "LLM_model_name": "ChatGPT 4",
+    "LastVersion": f"{VERSION}",
 }
 
 for key, val in _DEFAULTS.items():
@@ -47,8 +48,8 @@ def set_setting(key: str, value: Any) -> None:
 
 
 def update_settings(**kwargs: Any) -> None:
-    """여러 값을 한꺼번에 저장  
-       `update_settings(Theme='dark', ScreenSize='max')`
+    """여러 값을 한꺼번에 저장
+    `update_settings(Theme='dark', ScreenSize='max')`
     """
     for k, v in kwargs.items():
         _qsettings.setValue(k, v)

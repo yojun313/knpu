@@ -1,6 +1,10 @@
 from app.db import crawlList_db, crawlLog_db, user_db, crawldata_path
 from app.libs.exceptions import ConflictException, NotFoundException
-from app.models.crawl_model import CrawlDbCreateDto, CrawlLogUpdateDto, SaveCrawlDbOption
+from app.models.crawl_model import (
+    CrawlDbCreateDto,
+    CrawlLogUpdateDto,
+    SaveCrawlDbOption,
+)
 from app.utils.zip import fast_zip
 from app.utils.getsize import getFolderSize, format_size
 from fastapi.responses import JSONResponse
@@ -27,25 +31,23 @@ import shutil
 def createCrawlDb(crawlDb: CrawlDbCreateDto):
     crawlDb_dict = crawlDb.model_dump()
 
-    existing_crawlDb = crawlList_db.find_one({"name": crawlDb_dict["name"]}, {'_id': 0})
+    existing_crawlDb = crawlList_db.find_one({"name": crawlDb_dict["name"]}, {"_id": 0})
     if existing_crawlDb:
         raise ConflictException("CrawlDB with this name already exists")
-    
+
     userUid = crawlDb_dict["userUid"]
 
     ordered_dict = OrderedDict([("uid", str(uuid.uuid4()))])
     ordered_dict.update(crawlDb_dict)
-    ordered_dict['stat'] = {
-        "article": 0,
-        "cmt": 0,
-        "reply": 0
-    }
-    now_kst = datetime.now(timezone.utc).astimezone(
-        timezone(timedelta(hours=9))
-    ).strftime('%Y-%m-%d %H:%M')
+    ordered_dict["stat"] = {"article": 0, "cmt": 0, "reply": 0}
+    now_kst = (
+        datetime.now(timezone.utc)
+        .astimezone(timezone(timedelta(hours=9)))
+        .strftime("%Y-%m-%d %H:%M")
+    )
 
-    ordered_dict['startTime'] = now_kst
-    ordered_dict['endTime'] = "0%"
+    ordered_dict["startTime"] = now_kst
+    ordered_dict["endTime"] = "0%"
 
     crawlList_db.insert_one(ordered_dict)
     if "_id" in ordered_dict:
@@ -54,8 +56,7 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
 
     return JSONResponse(
         status_code=201,
-        content={"message": "CrawlDB created",
-                 "data": ordered_dict},
+        content={"message": "CrawlDB created", "data": ordered_dict},
     )
 
 
@@ -65,7 +66,7 @@ def updateCrawlLog(crawlLog: CrawlLogUpdateDto):
     crawlLog_db.update_one(
         {"uid": crawlLog_dict["uid"]},
         {"$set": {"content": crawlLog_dict["content"]}},
-        upsert=True
+        upsert=True,
     )
 
     return JSONResponse(
@@ -84,26 +85,22 @@ def getCrawlLog(uid: str):
         raise NotFoundException("CrawlLog not found")
 
     return JSONResponse(
-        status_code=200,
-        content={
-            "message": "CrawlLog fetched",
-            "data": crawlLog
-        }
+        status_code=200, content={"message": "CrawlLog fetched", "data": crawlLog}
     )
-    
+
 
 def deleteCrawlDb(uid: str, userUid: str):
-    crawlDb = crawlList_db.find_one({"uid": uid}, {'_id': 0})
+    crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
-    
-    targetDB = crawlDb['name']
+
+    targetDB = crawlDb["name"]
     log_user(userUid, f"Requested to delete crawl DB: {targetDB}")
-    
+
     crawlList_db.delete_one({"uid": uid})
-    crawlLog_db.delete_one({"uid": uid})   
-    
-    task = BackgroundTask(deleteCrawlDbBg, crawlDb['name'])
+    crawlLog_db.delete_one({"uid": uid})
+
+    task = BackgroundTask(deleteCrawlDbBg, crawlDb["name"])
 
     return JSONResponse(
         status_code=200,
@@ -114,25 +111,21 @@ def deleteCrawlDb(uid: str, userUid: str):
 
 def stopCrawlDb(uid: str, userUid: str):
     target_data = crawlList_db.find_one({"uid": uid})
-    
+
     if not target_data:
         raise HTTPException(status_code=404, detail="DB를 찾을 수 없습니다.")
-    
-    if target_data.get('status') == 'stopped':
+
+    if target_data.get("status") == "stopped":
         return JSONResponse(
-            status_code=200,
-            content={"message": "이미 중단된 작업입니다."}
+            status_code=200, content={"message": "이미 중단된 작업입니다."}
         )
 
-    result = crawlList_db.update_one(
-        {"uid": uid}, 
-        {'$set': {'status': 'stopped'}}
-    )
+    result = crawlList_db.update_one({"uid": uid}, {"$set": {"status": "stopped"}})
 
     if result.modified_count > 0:
-        target_name = target_data.get('name', 'Unknown')
+        target_name = target_data.get("name", "Unknown")
         log_user(userUid, f"Requested to stop crawl DB: {target_name}")
-        
+
         return JSONResponse(
             status_code=200,
             content={"message": f"'{target_name}' 크롤링이 중단되었습니다."},
@@ -142,7 +135,7 @@ def stopCrawlDb(uid: str, userUid: str):
             status_code=500,
             content={"message": "상태 업데이트에 실패했습니다."},
         )
-    
+
 
 def deleteCrawlDbBg(name: str):
     folder_path = os.path.join(crawldata_path, name)
@@ -152,61 +145,66 @@ def deleteCrawlDbBg(name: str):
 
 def processDbInfo(crawlDb: dict):
     name = crawlDb["name"]
-    parts = name.split('_')
+    parts = name.split("_")
     typ = parts[0]
     match typ:
-        case 'navernews':  crawlType = 'Naver News'
-        case 'naverblog':  crawlType = 'Naver Blog'
-        case 'navercafe':  crawlType = 'Naver Cafe'
-        case 'youtube':    crawlType = 'YouTube'
-        case _:            crawlType = typ
+        case "navernews":
+            crawlType = "Naver News"
+        case "naverblog":
+            crawlType = "Naver Blog"
+        case "navercafe":
+            crawlType = "Naver Cafe"
+        case "youtube":
+            crawlType = "YouTube"
+        case _:
+            crawlType = typ
 
-    crawlDb['crawlType'] = crawlType
-    crawlDb['startDate'] = parts[2]
-    crawlDb['endDate'] = parts[3]
-    crawlDb['crawlOption'] = str(crawlDb['crawlOption'])
-    crawlDb['crawlSpeed'] = str(crawlDb['crawlSpeed'])
+    crawlDb["crawlType"] = crawlType
+    crawlDb["startDate"] = parts[2]
+    crawlDb["endDate"] = parts[3]
+    crawlDb["crawlOption"] = str(crawlDb["crawlOption"])
+    crawlDb["crawlSpeed"] = str(crawlDb["crawlSpeed"])
 
     # 상태 처리
-    if crawlDb['status'] == "completed":
-        crawlDb['status'] = "Done"
-    elif crawlDb['status'] == "error":
-        crawlDb['status'] = "Error"
-    elif crawlDb['status'] == "stopped":
-        crawlDb['status'] = "Stop"
-    elif crawlDb['status'] == 'running':
-        crawlDb['status'] = crawlDb['percent']
+    if crawlDb["status"] == "completed":
+        crawlDb["status"] = "Done"
+    elif crawlDb["status"] == "error":
+        crawlDb["status"] = "Error"
+    elif crawlDb["status"] == "stopped":
+        crawlDb["status"] = "Stop"
+    elif crawlDb["status"] == "running":
+        crawlDb["status"] = crawlDb["percent"]
 
     # dbSize 처리
-    size = crawlDb.get('dbSize') or 0
-    size = int(size)  
+    size = crawlDb.get("dbSize") or 0
+    size = int(size)
 
     if size == 0:
         byte_size = getFolderSize(os.path.join(crawldata_path, name))
         size = byte_size
 
-    crawlDb['dbSize'] = format_size(size)
-    crawlDb['dbSize_int'] = size
+    crawlDb["dbSize"] = format_size(size)
+    crawlDb["dbSize_int"] = size
     return crawlDb
 
 
 def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     user = user_db.find_one({"uid": userUid}, {"_id": 0})
-    username = user['name']
+    username = user["name"]
 
     if mine == 0:
-        if username == '문요준':
+        if username == "문요준":
             query = {}
         else:
-            query = {'requester': {'$ne': '문요준'}}
+            query = {"requester": {"$ne": "문요준"}}
     else:
-        query = {'requester': username}
-                
+        query = {"requester": username}
+
     if sort_by == "keyword":
         crawlDbList = list(crawlList_db.find(query, {"_id": 0}).sort("keyword", 1))
     else:
         crawlDbList = list(crawlList_db.find(query, {"_id": 0}).sort("startTime", -1))
-    
+
     if not crawlDbList:
         crawlDbList = []
 
@@ -217,17 +215,14 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     for crawlDb in crawlDbList:
         processed = processDbInfo(crawlDb)
         if processed:
-            fullStorage += processed['dbSize_int'] / (1024 ** 3)
+            fullStorage += processed["dbSize_int"] / (1024**3)
             filteredList.append(processed)
 
     crawlDbList = filteredList
-    
-    activeCrawl = crawlList_db.count_documents({
-        "$or": [
-            {'endTime': "토큰화 중"},
-            {"endTime": {"$regex": "%"}}
-        ]
-    })
+
+    activeCrawl = crawlList_db.count_documents(
+        {"$or": [{"endTime": "토큰화 중"}, {"endTime": {"$regex": "%"}}]}
+    )
 
     # 응답
     return JSONResponse(
@@ -236,7 +231,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
             "message": "CrawlDB list retrieved",
             "data": crawlDbList,
             "fullStorage": round(fullStorage, 1),
-            "activeCrawl": activeCrawl
+            "activeCrawl": activeCrawl,
         },
     )
 
@@ -247,9 +242,9 @@ def getCrawlDbInfo(uid: str, userUid: str = None):
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
-    targetDB = crawlDb['name']
+    targetDB = crawlDb["name"]
     log_user(userUid, f"Requested info for crawl DB: {targetDB}")
-    
+
     crawlDb = processDbInfo(crawlDb)
     return JSONResponse(
         status_code=200,
@@ -265,12 +260,14 @@ def endCrawlDb(uid: str, error: bool = False):
     if error:
         result = crawlList_db.update_one(
             {"uid": uid},
-            {"$set": {"endTime": 'X'}},
+            {"$set": {"endTime": "X"}},
         )
     else:
-        now_kst = datetime.now(timezone.utc).astimezone(
-            timezone(timedelta(hours=9))
-        ).strftime('%Y-%m-%d %H:%M')
+        now_kst = (
+            datetime.now(timezone.utc)
+            .astimezone(timezone(timedelta(hours=9)))
+            .strftime("%Y-%m-%d %H:%M")
+        )
 
         result = crawlList_db.update_one(
             {"uid": uid},
@@ -293,11 +290,11 @@ def updateCount(uid: str, stat):
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
-    dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb['name']))
+    dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb["name"]))
     data_info_dict = stat.model_dump()
-    percent = data_info_dict['percent']
-    
-    del data_info_dict['percent']
+    percent = data_info_dict["percent"]
+
+    del data_info_dict["percent"]
 
     crawlList_db.update_one(
         {"uid": uid},
@@ -326,52 +323,52 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
 
-    targetDB = crawlDb['name']
+    targetDB = crawlDb["name"]
     log_user(userUid, f"Requested to save crawl DB: {targetDB}")
 
-    pid = saveOption['pid']
+    pid = saveOption["pid"]
 
-    temp_directory = os.path.join(os.path.dirname(__file__), '..', 'temp')
-    
+    temp_directory = os.path.join(os.path.dirname(__file__), "..", "temp")
+
     time.sleep(1)
     send_message(pid, f"DB에서 테이블 목록을 가져오는 중...")
     localDbpath = os.path.join(crawldata_path, targetDB)
 
     tableList = [
-        f[:-8] for f in os.listdir(localDbpath)
-        if f.endswith('.parquet') and 'info' not in f
+        f[:-8]
+        for f in os.listdir(localDbpath)
+        if f.endswith(".parquet") and "info" not in f
     ]
 
     # 정렬: article > statistics > 나머지
-    tableList = sorted(tableList, key=lambda x: (
-        'article' not in x, 'statistics' not in x, x
-    ))
+    tableList = sorted(
+        tableList, key=lambda x: ("article" not in x, "statistics" not in x, x)
+    )
 
     def replaceDatesInFilename(filename, new_start_date, new_end_date):
         pattern = r"_(\d{8})_(\d{8})_"
-        new_filename = re.sub(
-            pattern, f"_{new_start_date}_{new_end_date}_", filename)
+        new_filename = re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
         return new_filename
 
     def replaceKeywordInFilename(name: str, new_keyword: str) -> str:
-        parts = name.split('_')
+        parts = name.split("_")
 
-        if 'token' in name:
+        if "token" in name:
             parts[2] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
         else:
             parts[1] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
-        dbname = '_'.join(parts)
+        dbname = "_".join(parts)
 
         replacements = {
-            '\\': '＼',  # U+FF3C
-            '/': '／',   # U+FF0F
-            ':': '：',   # U+FF1A
-            '*': '＊',   # U+FF0A
-            '?': '？',   # U+FF1F
-            '"': '＂',   # U+FF02
-            '<': '＜',   # U+FF1C
-            '>': '＞',   # U+FF1E
-            '|': '¦',    # U+00A6
+            "\\": "＼",  # U+FF3C
+            "/": "／",  # U+FF0F
+            ":": "：",  # U+FF1A
+            "*": "＊",  # U+FF0A
+            "?": "？",  # U+FF1F
+            '"': "＂",  # U+FF02
+            "<": "＜",  # U+FF1C
+            ">": "＞",  # U+FF1E
+            "|": "¦",  # U+00A6
         }
 
         # 3) 매핑 테이블을 이용해 한 번에 replace
@@ -384,131 +381,165 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
     kst_now = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%m%d_%H%M")
 
     # targetDB 구조 예시:
-    parts = targetDB.split('_')[:-2] + kst_now.split('_')
-    dbname = '_'.join(parts)
-    dbname = replaceKeywordInFilename(dbname, crawlDb['keyword'])
+    parts = targetDB.split("_")[:-2] + kst_now.split("_")
+    dbname = "_".join(parts)
+    dbname = replaceKeywordInFilename(dbname, crawlDb["keyword"])
 
-    dateOption = saveOption['dateOption']
-    filterOption = saveOption['filterOption']
+    dateOption = saveOption["dateOption"]
+    filterOption = saveOption["filterOption"]
 
-    if dateOption == 'part':
-        start_date = saveOption['start_date']
-        end_date = saveOption['end_date']
-        start_date_formed = datetime.strptime(
-            start_date, "%Y%m%d").strftime("%Y-%m-%d")
-        end_date_formed = datetime.strptime(
-            end_date, "%Y%m%d").strftime("%Y-%m-%d")
+    if dateOption == "part":
+        start_date = saveOption["start_date"]
+        end_date = saveOption["end_date"]
+        start_date_formed = datetime.strptime(start_date, "%Y%m%d").strftime("%Y-%m-%d")
+        end_date_formed = datetime.strptime(end_date, "%Y%m%d").strftime("%Y-%m-%d")
         dbname = replaceDatesInFilename(
-            dbname, saveOption['start_date'], saveOption['end_date'])
+            dbname, saveOption["start_date"], saveOption["end_date"]
+        )
     if filterOption:
-        include_all = saveOption['include_all']
-        incl_words = saveOption['incl_words']
-        excl_words = saveOption['excl_words']
+        include_all = saveOption["include_all"]
+        incl_words = saveOption["incl_words"]
+        excl_words = saveOption["excl_words"]
 
-        if saveOption['filename_edit']:
-            inclexcl = 'all' if include_all else 'any'
-            add_keyword = f"(+{','.join(incl_words)} _ -{','.join(excl_words)} _{inclexcl})"
-            parts = dbname.split('_', 2)
+        if saveOption["filename_edit"]:
+            inclexcl = "all" if include_all else "any"
+            add_keyword = (
+                f"(+{','.join(incl_words)} _ -{','.join(excl_words)} _{inclexcl})"
+            )
+            parts = dbname.split("_", 2)
             old_keyword = parts[1]
             parts[1] = old_keyword + add_keyword
-            dbname = '_'.join(parts)
+            dbname = "_".join(parts)
 
     dbpath = os.path.join(temp_directory, dbname)
     base_dbpath = dbpath
     for i in itertools.count():
         candidate = base_dbpath if i == 0 else f"{base_dbpath}_{i}"
         try:
-            os.makedirs(os.path.join(candidate, 'token_data'), exist_ok=False)
+            os.makedirs(os.path.join(candidate, "token_data"), exist_ok=False)
             dbpath = candidate
             break
         except FileExistsError:
             continue
 
     for idx, tableName in enumerate(tableList):
-        edited_tableName = replaceDatesInFilename(
-            tableName, start_date, end_date) if dateOption == 'part' else tableName
+        edited_tableName = (
+            replaceDatesInFilename(tableName, start_date, end_date)
+            if dateOption == "part"
+            else tableName
+        )
         edited_tableName = replaceKeywordInFilename(
-            edited_tableName, crawlDb['keyword'])
+            edited_tableName, crawlDb["keyword"]
+        )
 
-        send_message(
-            pid, f"[{idx+1}/{len(tableList)}] '{edited_tableName}' 처리 중")
+        send_message(pid, f"[{idx + 1}/{len(tableList)}] '{edited_tableName}' 처리 중")
 
         parquet_path = os.path.join(localDbpath, f"{tableName}.parquet")
         tableDF = pd.read_parquet(parquet_path)
 
         # 날짜 필터링 (dateOption이 'part'일 경우)
-        if saveOption.get('dateOption') == 'part':
-            date_columns = ['Article Date', 'Reply Date', 'Rereply Date']
+        if saveOption.get("dateOption") == "part":
+            date_columns = ["Article Date", "Reply Date", "Rereply Date"]
 
             for col in date_columns:
                 if col in tableDF.columns:
-                    tableDF[col] = pd.to_datetime(
-                        tableDF[col], errors='coerce')
+                    tableDF[col] = pd.to_datetime(tableDF[col], errors="coerce")
                     tableDF = tableDF[
-                        (tableDF[col] >= start_date_formed) &
-                        (tableDF[col] <= end_date_formed)
+                        (tableDF[col] >= start_date_formed)
+                        & (tableDF[col] <= end_date_formed)
                     ]
                     break  # 첫 번째 매칭된 날짜 컬럼 기준으로 필터링 후 종료
 
         # 단어 필터링 옵션이 켜져있을 때
-        if filterOption == True and 'article' in tableName:
-            if 'token' not in tableName:
+        if filterOption == True and "article" in tableName:
+            if "token" not in tableName:
                 recover_columns = tableDF.columns
                 if include_all == True:
                     if incl_words != []:
-                        tableDF = tableDF[tableDF['Article Text'].apply(
-                            lambda cell: all(word in str(cell) for word in incl_words))]
+                        tableDF = tableDF[
+                            tableDF["Article Text"].apply(
+                                lambda cell: all(
+                                    word in str(cell) for word in incl_words
+                                )
+                            )
+                        ]
                     if excl_words != []:
-                        tableDF = tableDF[tableDF['Article Text'].apply(
-                            lambda cell: all(word not in str(cell) for word in excl_words))]
+                        tableDF = tableDF[
+                            tableDF["Article Text"].apply(
+                                lambda cell: all(
+                                    word not in str(cell) for word in excl_words
+                                )
+                            )
+                        ]
                 else:
                     if incl_words != []:
-                        tableDF = tableDF[tableDF['Article Text'].apply(
-                            lambda cell: any(word in str(cell) for word in incl_words))]
+                        tableDF = tableDF[
+                            tableDF["Article Text"].apply(
+                                lambda cell: any(
+                                    word in str(cell) for word in incl_words
+                                )
+                            )
+                        ]
                     if excl_words != []:
-                        tableDF = tableDF[tableDF['Article Text'].apply(
-                            lambda cell: any(word not in str(cell) for word in excl_words))]
+                        tableDF = tableDF[
+                            tableDF["Article Text"].apply(
+                                lambda cell: any(
+                                    word not in str(cell) for word in excl_words
+                                )
+                            )
+                        ]
 
                 if tableDF.empty:
                     tableDF = pd.DataFrame(columns=recover_columns)  # 기존 열만 유지
-                articleURL = tableDF['Article URL'].tolist()
+                articleURL = tableDF["Article URL"].tolist()
             else:
-                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+                tableDF = tableDF[tableDF["Article URL"].isin(articleURL)]
 
         # statistics 테이블 처리
-        if 'statistics' in tableName:
+        if "statistics" in tableName:
             if filterOption == True:
-                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
-            statisticsURL = tableDF['Article URL'].tolist()
+                tableDF = tableDF[tableDF["Article URL"].isin(articleURL)]
+            statisticsURL = tableDF["Article URL"].tolist()
             save_path = os.path.join(
-                dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName}.csv")
-            tableDF.to_csv(save_path, index=False,
-                           encoding='utf-8-sig', header=True)
+                dbpath,
+                "token_data" if "token" in tableName else "",
+                f"{edited_tableName}.csv",
+            )
+            tableDF.to_csv(save_path, index=False, encoding="utf-8-sig", header=True)
             continue
 
-        if 'reply' in tableName:
+        if "reply" in tableName:
             if filterOption == True:
-                tableDF = tableDF[tableDF['Article URL'].isin(articleURL)]
+                tableDF = tableDF[tableDF["Article URL"].isin(articleURL)]
 
         # reply_statistics 테이블 처리
-        if 'reply' in tableName and 'statisticsURL' in locals() and 'navernews' in targetDB:
+        if (
+            "reply" in tableName
+            and "statisticsURL" in locals()
+            and "navernews" in targetDB
+        ):
             if filterOption == True:
-                filteredDF = tableDF[tableDF['Article URL'].isin(articleURL)]
-            filteredDF = tableDF[tableDF['Article URL'].isin(statisticsURL)]
+                filteredDF = tableDF[tableDF["Article URL"].isin(articleURL)]
+            filteredDF = tableDF[tableDF["Article URL"].isin(statisticsURL)]
             save_path = os.path.join(
-                dbpath, 'token_data' if 'token' in tableName else '', f"{edited_tableName + '_statistics'}.csv")
-            filteredDF.to_csv(save_path, index=False,
-                              encoding='utf-8-sig', header=True)
+                dbpath,
+                "token_data" if "token" in tableName else "",
+                f"{edited_tableName + '_statistics'}.csv",
+            )
+            filteredDF.to_csv(save_path, index=False, encoding="utf-8-sig", header=True)
 
         # 기타 테이블 처리
-        save_dir = os.path.join(
-            dbpath, 'token_data' if 'token' in tableName else '')
+        save_dir = os.path.join(dbpath, "token_data" if "token" in tableName else "")
 
-        tableDF.to_csv(os.path.join(
-            save_dir, f"{edited_tableName}.csv"), index=False, encoding='utf-8-sig', header=True)
+        tableDF.to_csv(
+            os.path.join(save_dir, f"{edited_tableName}.csv"),
+            index=False,
+            encoding="utf-8-sig",
+            header=True,
+        )
         tableDF = None
         gc.collect()
-    
+
     send_message(pid, f"데이터 압축 중")
 
     zip_path = f"{dbpath}.zip"
@@ -517,8 +548,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
 
     send_message(pid, f"데이터 처리 완료")
     send_message(pid, f"데이터 전송 중")
-    background_task = BackgroundTask(
-        cleanup_folder_and_zip, dbpath, zip_path)
+    background_task = BackgroundTask(cleanup_folder_and_zip, dbpath, zip_path)
 
     return FileResponse(
         path=zip_path,
@@ -532,10 +562,10 @@ def previewCrawlDb(uid: str, userUid: str):
     crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
-    targetDB = crawlDb['name']
+    targetDB = crawlDb["name"]
     log_user(userUid, f"Requested preview for crawl DB: {targetDB}")
 
-    target_folder = crawlDb['name']  # 이 이름이 곧 디렉토리명
+    target_folder = crawlDb["name"]  # 이 이름이 곧 디렉토리명
     base_path = os.path.join(crawldata_path, target_folder)  # 경로에 맞게 수정
 
     if not os.path.exists(base_path):
@@ -550,23 +580,22 @@ def previewCrawlDb(uid: str, userUid: str):
 
             file_path = os.path.join(base_path, file)
             try:
-                if file.endswith('.parquet'):
+                if file.endswith(".parquet"):
                     df = pd.read_parquet(file_path)
-                elif file.endswith('.csv'):
-                    df = pd.read_csv(file_path, encoding='utf-8-sig')
-                df_preview = pd.concat(
-                    [df.head(50), df.tail(50)]).drop_duplicates()
+                elif file.endswith(".csv"):
+                    df = pd.read_csv(file_path, encoding="utf-8-sig")
+                df_preview = pd.concat([df.head(50), df.tail(50)]).drop_duplicates()
 
                 # ID 열 제거 (있을 경우)
-                if 'id' in df_preview.columns:
-                    df_preview = df_preview.drop(columns=['id'])
+                if "id" in df_preview.columns:
+                    df_preview = df_preview.drop(columns=["id"])
 
                 # DataFrame을 BytesIO로 저장
                 df_buffer = BytesIO()
                 df_preview.to_parquet(df_buffer, index=False)
                 df_buffer.seek(0)
 
-                table_name = file.replace('.parquet', '')
+                table_name = file.replace(".parquet", "")
                 zip_file.writestr(f"{table_name}.parquet", df_buffer.read())
 
             except Exception as e:
@@ -576,5 +605,5 @@ def previewCrawlDb(uid: str, userUid: str):
     return StreamingResponse(
         zip_buffer,
         media_type="application/zip",
-        headers={"Content-Disposition": "attachment; filename=preview_data.zip"}
+        headers={"Content-Disposition": "attachment; filename=preview_data.zip"},
     )

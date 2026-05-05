@@ -4,13 +4,15 @@ from datetime import datetime
 
 
 class JobSubmitRequest(BaseModel):
-    name: str                       # 요청자
-    crawl_object: int               # 1=NaverNews, 2=Blog, 3=Cafe, 4=YouTube, 5=ChinaDaily, 6=ChinaSina
-    start_day: str                  # "20250101"
-    end_day: str                    # "20251231"
-    option_select: int              # 1,2,3,4
+    name: str  # 요청자
+    crawl_object: (
+        int  # 1=NaverNews, 2=Blog, 3=Cafe, 4=YouTube, 5=ChinaDaily, 6=ChinaSina
+    )
+    start_day: str  # "20250101"
+    end_day: str  # "20251231"
+    option_select: int  # 1,2,3,4
     keyword: str
-    priority: int = 0               # 높을수록 먼저 실행
+    priority: int = 0  # 높을수록 먼저 실행
 
 
 class JobStatus(BaseModel):
@@ -26,7 +28,7 @@ class JobStatus(BaseModel):
     created_at: datetime
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
-    crawler_status: Optional[dict] = None   # crawler.reportStatus() 결과
+    crawler_status: Optional[dict] = None  # crawler.reportStatus() 결과
     error_message: Optional[str] = None
 
 

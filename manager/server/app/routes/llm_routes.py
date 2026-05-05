@@ -1,14 +1,15 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import Response, StreamingResponse
 import httpx
-from app.libs.jwt import verify_token 
+from app.libs.jwt import verify_token
 import os
 
 router = APIRouter()
 
-LLM_BASE_URL = "http://localhost:9001"  
+LLM_BASE_URL = "http://localhost:9001"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions"
+
 
 @router.post("/v1/openai/chat/completions")
 async def proxy_openai_chat(
@@ -36,8 +37,7 @@ async def proxy_openai_chat(
         "connection",
     ]
     response_headers = {
-        k: v for k, v in resp.headers.items() 
-        if k.lower() not in excluded_headers
+        k: v for k, v in resp.headers.items() if k.lower() not in excluded_headers
     }
 
     return Response(
@@ -47,9 +47,9 @@ async def proxy_openai_chat(
         media_type=resp.headers.get("content-type"),
     )
 
+
 @router.api_route(
-    "/v1/{path:path}",
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    "/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 )
 async def proxy_llm(
     path: str,
@@ -79,6 +79,7 @@ async def proxy_llm(
         media_type=resp.headers.get("content-type"),
     )
 
+
 @router.post("/v1/{path:path}/stream")
 async def proxy_llm_stream(
     path: str,
@@ -107,4 +108,3 @@ async def proxy_llm_stream(
         event_stream(),
         media_type="text/event-stream",
     )
-

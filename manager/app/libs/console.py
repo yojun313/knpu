@@ -1,21 +1,25 @@
 import platform, sys, os, ctypes, subprocess, tempfile, textwrap, shlex
 
+
 class SMALL_RECT(ctypes.Structure):
-    _fields_ = [("Left", ctypes.c_short),
-                ("Top",  ctypes.c_short),
-                ("Right", ctypes.c_short),
-                ("Bottom", ctypes.c_short)]
+    _fields_ = [
+        ("Left", ctypes.c_short),
+        ("Top", ctypes.c_short),
+        ("Right", ctypes.c_short),
+        ("Bottom", ctypes.c_short),
+    ]
+
 
 _original_stdout = sys.stdout
-_log_file = None          # macOS용 로그 파일 핸들
-_log_path   = None
-_term_win_id = None  
+_log_file = None  # macOS용 로그 파일 핸들
+_log_path = None
+_term_win_id = None
 
 
 def _open_console_windows(msg: str):
     global _original_stdout
     try:
-        if platform.system() != 'Windows':
+        if platform.system() != "Windows":
             return
         ctypes.windll.kernel32.AllocConsole()  # 새로운 콘솔 창 할당
         sys.stdout = open("CONOUT$", "w")  # 표준 출력을 콘솔로 리다이렉트
@@ -24,19 +28,19 @@ def _open_console_windows(msg: str):
         # STD_OUTPUT_HANDLE = -11
         hConsole = ctypes.windll.kernel32.GetStdHandle(-11)
         rect = SMALL_RECT(0, 0, 79, 29)  # 콘솔 창 크기 설정 (가로 80, 세로 30)
-        ctypes.windll.kernel32.SetConsoleWindowInfo(
-            hConsole, True, ctypes.byref(rect))
+        ctypes.windll.kernel32.SetConsoleWindowInfo(hConsole, True, ctypes.byref(rect))
 
         print("[ MANAGER ]")
-        print(f'\n< {msg} >\n')  # 테스트 출력
+        print(f"\n< {msg} >\n")  # 테스트 출력
     except Exception as e:
         sys.stdout = _original_stdout  # 에러 발생 시 stdout 복구
         print(e)
 
+
 def _close_console_windows():
     global _original_stdout
     try:
-        if platform.system() != 'Windows':
+        if platform.system() != "Windows":
             return
         sys.stdout.close()  # 콘솔 창 출력 닫기
         sys.stdout = _original_stdout  # stdout 복구
@@ -45,18 +49,19 @@ def _close_console_windows():
         sys.stdout = _original_stdout  # 에러 발생 시 stdout 복구
         print(e)
 
+
 def _open_console_macos(msg: str = ""):
     global _log_file, _log_path, _term_win_id
 
     # 터미널에서 직접 실행된 경우 → 그냥 출력
     if sys.stdout.isatty():
         print("[ MANAGER ]")
-        if msg: print(f"< {msg} >")
+        if msg:
+            print(f"< {msg} >")
         return
 
     # 1) 로그 파일 준비
-    _log_path = os.path.join(tempfile.gettempdir(),
-                             f"pyqt_console_{os.getpid()}.log")
+    _log_path = os.path.join(tempfile.gettempdir(), f"pyqt_console_{os.getpid()}.log")
     _log_file = open(_log_path, "w", buffering=1, encoding="utf-8")
     sys.stdout = sys.stderr = _log_file
 
@@ -79,14 +84,17 @@ def _open_console_macos(msg: str = ""):
     """).strip()
 
     try:
-        _term_win_id = int(subprocess.check_output(
-            ["osascript", "-e", osa], text=True).strip())
+        _term_win_id = int(
+            subprocess.check_output(["osascript", "-e", osa], text=True).strip()
+        )
     except Exception as e:
         _term_win_id = None
         print(f"[WARN] 창 ID 획득 실패: {e}", file=_original_stdout)
 
     print("[ MANAGER ]")
-    if msg: print(f"< {msg} >")
+    if msg:
+        print(f"< {msg} >")
+
 
 def _close_console_macos():
     global _log_file, _log_path
@@ -112,11 +120,13 @@ def _close_console_macos():
 
     # 3) 로그 파일 삭제
     if _log_path and os.path.exists(_log_path):
-        try: os.remove(_log_path)
+        try:
+            os.remove(_log_path)
         except Exception as e:
             print(f"[WARN] 로그 파일 삭제 실패: {e}", file=_original_stdout)
 
     sys.stdout = sys.stderr = _original_stdout
+
 
 def openConsole(msg: str = ""):
     print("hello")
@@ -127,6 +137,7 @@ def openConsole(msg: str = ""):
         _open_console_macos(msg)
     # Linux 등 그 외 OS 는 생략했지만, gnome-terminal / xterm 호출 방식으로 확장 가능
 
+
 def closeConsole():
     """열어 둔 콘솔 자원을 해제한다."""
     if platform.system() == "Windows":
@@ -134,12 +145,14 @@ def closeConsole():
     elif platform.system() == "Darwin":
         _close_console_macos()
 
+
 # ===== 편의 함수 =====
 def clear_console():
     if platform.system() == "Windows":
         os.system("cls")
     else:
         os.system("clear")
+
 
 # ===== 예시 =====
 if __name__ == "__main__":

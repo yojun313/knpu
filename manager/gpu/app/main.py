@@ -8,11 +8,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 console = Console()
 
+
 # 주기적으로 GC 실행
 async def periodic_gc(interval_seconds: int = 60):
     while True:
         await asyncio.sleep(interval_seconds)
         gc.collect()
+
 
 # 요청 로그 미들웨어 (텍스트 출력)
 class RichLoggerMiddleware(BaseHTTPMiddleware):
@@ -46,17 +48,21 @@ class RichLoggerMiddleware(BaseHTTPMiddleware):
         console.print(log_message)
         return response
 
+
 # FastAPI 앱 구성
 app = FastAPI()
 app.add_middleware(RichLoggerMiddleware)
+
 
 @app.on_event("startup")
 async def start_background_tasks():
     asyncio.create_task(periodic_gc(60))
 
+
 @app.on_event("shutdown")
 async def stop_background_tasks():
     pass  # 따로 종료할 작업 없음
+
 
 app.include_router(api_router, prefix="/gpu", tags=["GPU"])
 print("Server is running...")

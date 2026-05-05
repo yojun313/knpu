@@ -40,13 +40,14 @@ from .page_worker import Manager_Worker
 warnings.filterwarnings("ignore")
 
 # 운영체제에 따라 한글 폰트를 설정
-if platform.system() == 'Darwin':                  
-    plt.rcParams['font.family'] = 'AppleGothic'
-elif platform.system() == 'Windows':               
-    plt.rcParams['font.family'] = 'Malgun Gothic'  
+if platform.system() == "Darwin":
+    plt.rcParams["font.family"] = "AppleGothic"
+elif platform.system() == "Windows":
+    plt.rcParams["font.family"] = "Malgun Gothic"
 
 # 폰트 설정 후 음수 기호가 깨지는 것을 방지
-plt.rcParams['axes.unicode_minus'] = False
+plt.rcParams["axes.unicode_minus"] = False
+
 
 class Manager_Analysis(Manager_Worker):
     def __init__(self, main_window):
@@ -55,7 +56,7 @@ class Manager_Analysis(Manager_Worker):
         self.analysis_makeFileFinder()
         self.anaylsis_buttonMatch()
         self.console_open = False
-    
+
     def analysis_makeFileFinder(self):
         self.file_dialog = makeFileFinder(self.main, self.main.localDirectory)
         self.main.analysis_filefinder_layout.addWidget(self.file_dialog)
@@ -64,7 +65,7 @@ class Manager_Analysis(Manager_Worker):
         class TimeSplitWorker(QThread):
             finished = Signal(bool, str, str)  # (성공 여부, 메시지, 결과 경로)
             error = Signal(str)
-            message = Signal(str)             # 진행 상황 메시지 시그널
+            message = Signal(str)  # 진행 상황 메시지 시그널
 
             def __init__(self, csv_path, dataprocess_obj, parent=None):
                 super().__init__(parent)
@@ -77,49 +78,68 @@ class Manager_Analysis(Manager_Worker):
                     self.message.emit(f"[{filename}] 출력 폴더 생성 중...")
                     table_path = os.path.join(
                         os.path.dirname(self.csv_path),
-                        f"{os.path.splitext(filename)[0]}_split_{datetime.now():%m%d%H%M}"
+                        f"{os.path.splitext(filename)[0]}_split_{datetime.now():%m%d%H%M}",
                     )
 
                     base_table_path = table_path
                     for i in itertools.count():
-                        candidate = base_table_path if i == 0 else f"{base_table_path}_{i}"
+                        candidate = (
+                            base_table_path if i == 0 else f"{base_table_path}_{i}"
+                        )
                         try:
                             os.makedirs(candidate, exist_ok=False)
                             table_path = candidate
                             break
                         except FileExistsError:
                             continue
-                    
+
                     self.message.emit(f"[{filename}] CSV 파일 읽는 중...")
                     table_df = readCSV(self.csv_path)
 
                     # 시간 컬럼 존재 여부 체크
-                    if not any('Date' in col for col in table_df.columns.tolist()) or table_df.columns.tolist() == []:
-                        self.finished.emit(False, f"{filename}은(는) 시계열 분할이 불가능한 파일입니다.", "")
+                    if (
+                        not any("Date" in col for col in table_df.columns.tolist())
+                        or table_df.columns.tolist() == []
+                    ):
+                        self.finished.emit(
+                            False,
+                            f"{filename}은(는) 시계열 분할이 불가능한 파일입니다.",
+                            "",
+                        )
                         return
 
                     self.message.emit(f"[{filename}] 시계열 분할 중...")
                     table_df = self.dataprocess_obj.TimeSplitter(table_df)
 
-                    year_group = table_df.groupby('year')
-                    month_group = table_df.groupby('year_month')
-                    week_group = table_df.groupby('week')
+                    year_group = table_df.groupby("year")
+                    month_group = table_df.groupby("year_month")
+                    week_group = table_df.groupby("week")
 
                     self.message.emit(f"[{filename}] 연 단위 저장 중...")
-                    self.dataprocess_obj.TimeSplitToCSV(1, year_group, table_path, os.path.splitext(filename)[0])
+                    self.dataprocess_obj.TimeSplitToCSV(
+                        1, year_group, table_path, os.path.splitext(filename)[0]
+                    )
 
                     self.message.emit(f"[{filename}] 월 단위 저장 중...")
-                    self.dataprocess_obj.TimeSplitToCSV(2, month_group, table_path, os.path.splitext(filename)[0])
+                    self.dataprocess_obj.TimeSplitToCSV(
+                        2, month_group, table_path, os.path.splitext(filename)[0]
+                    )
 
                     self.message.emit(f"[{filename}] 주 단위 저장 중...")
-                    self.dataprocess_obj.TimeSplitToCSV(3, week_group, table_path, os.path.splitext(filename)[0])
+                    self.dataprocess_obj.TimeSplitToCSV(
+                        3, week_group, table_path, os.path.splitext(filename)[0]
+                    )
 
                     del year_group
                     del month_group
                     del week_group
                     gc.collect()
 
-                    self.finished.emit(True, f"{os.path.basename(self.csv_path)} 데이터 분할이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", table_path)
+                    self.finished.emit(
+                        True,
+                        f"{os.path.basename(self.csv_path)} 데이터 분할이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                        table_path,
+                    )
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
@@ -132,20 +152,20 @@ class Manager_Analysis(Manager_Worker):
 
             reply = QMessageBox.question(
                 self.main,
-                'Notification',
+                "Notification",
                 f"선택하신 파일을 연/월/주 단위로 분할하시겠습니까?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.Yes
+                QMessageBox.StandardButton.Yes,
             )
             if reply != QMessageBox.StandardButton.Yes:
                 return
 
-            userLogging(f'ANALYSIS -> timesplit_file({filepath})')
+            userLogging(f"ANALYSIS -> timesplit_file({filepath})")
 
             thread_name = f"시계열 분할: {os.path.basename(filepath)}"
             register_thread(thread_name)
             printStatus(self.main)
-            
+
             statusDialog = TaskStatusDialog(thread_name, self.main)
             statusDialog.show()
 
@@ -166,7 +186,9 @@ class Manager_Analysis(Manager_Worker):
             error = Signal(str)
             message = Signal(str)
 
-            def __init__(self, selected_directory, mergedfilename, save_dir, parent=None):
+            def __init__(
+                self, selected_directory, mergedfilename, save_dir, parent=None
+            ):
                 super().__init__(parent)
                 self.selected_directory = selected_directory
                 self.mergedfilename = mergedfilename
@@ -175,14 +197,18 @@ class Manager_Analysis(Manager_Worker):
             def run(self):
                 try:
                     self.message.emit("CSV 파일 읽는 중...")
-                    all_df = [readCSV(directory) for directory in self.selected_directory]
+                    all_df = [
+                        readCSV(directory) for directory in self.selected_directory
+                    ]
 
                     self.message.emit("파일 형식을 검사 중...")
                     all_columns = [df.columns.tolist() for df in all_df]
 
                     def find_different_element_index(lst):
-                        if not lst: return None
-                        if lst.count(lst[0]) == 1: return 0
+                        if not lst:
+                            return None
+                        if lst.count(lst[0]) == 1:
+                            return 0
                         for i in range(1, len(lst)):
                             if lst[i] != lst[0]:
                                 return i
@@ -190,7 +216,11 @@ class Manager_Analysis(Manager_Worker):
 
                     same_check_result = find_different_element_index(all_columns)
                     if same_check_result is not None:
-                        self.finished.emit(False, f"{os.path.basename(self.selected_directory[same_check_result])}의 CSV 형식이 다릅니다.", "")
+                        self.finished.emit(
+                            False,
+                            f"{os.path.basename(self.selected_directory[same_check_result])}의 CSV 형식이 다릅니다.",
+                            "",
+                        )
                         return
 
                     self.message.emit("CSV 파일을 병합 중...")
@@ -199,13 +229,17 @@ class Manager_Analysis(Manager_Worker):
                         merged_df = pd.concat([merged_df, df], ignore_index=True)
 
                     self.message.emit("결과 파일 저장 중...")
-                    output_path = os.path.join(self.save_dir, self.mergedfilename + ".csv")
-                    merged_df.to_csv(safe_path(output_path), index=False, encoding="utf-8-sig")
+                    output_path = os.path.join(
+                        self.save_dir, self.mergedfilename + ".csv"
+                    )
+                    merged_df.to_csv(
+                        safe_path(output_path), index=False, encoding="utf-8-sig"
+                    )
 
                     self.finished.emit(
                         True,
                         f"{os.path.basename(output_path)} 데이터 병합이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                        self.save_dir
+                        self.save_dir,
                     )
 
                 except Exception:
@@ -221,7 +255,7 @@ class Manager_Analysis(Manager_Worker):
             mergedfilename = data["mergedfilename"]
             save_dir = data["save_dir"]
 
-            userLogging(f'ANALYSIS -> merge_file({mergedfilename})')
+            userLogging(f"ANALYSIS -> merge_file({mergedfilename})")
 
             thread_name = f"데이터 병합: {mergedfilename}"
             register_thread(thread_name)
@@ -230,7 +264,9 @@ class Manager_Analysis(Manager_Worker):
             statusDialog = TaskStatusDialog(thread_name, self.main)
             statusDialog.show()
 
-            worker = MergeWorker(selected_directory, mergedfilename, save_dir, self.main)
+            worker = MergeWorker(
+                selected_directory, mergedfilename, save_dir, self.main
+            )
             self.connectWorkerForStatusDialog(worker, statusDialog, thread_name)
             worker.start()
 
@@ -243,11 +279,18 @@ class Manager_Analysis(Manager_Worker):
 
     def run_analysis(self):
         class RunAnalysisWorker(QThread):
-            finished = Signal(bool, str, str)   # (성공 여부, 메시지, 파일경로)
+            finished = Signal(bool, str, str)  # (성공 여부, 메시지, 파일경로)
             error = Signal(str)
-            message = Signal(str)               # 메시지 업데이트용 시그널
+            message = Signal(str)  # 메시지 업데이트용 시그널
 
-            def __init__(self, csv_path, selected_options, dataprocess_obj, hate_mode, parent=None):
+            def __init__(
+                self,
+                csv_path,
+                selected_options,
+                dataprocess_obj,
+                hate_mode,
+                parent=None,
+            ):
                 super().__init__(parent)
                 self.csv_path = csv_path
                 self.selected_options = selected_options
@@ -263,26 +306,46 @@ class Manager_Analysis(Manager_Worker):
                     self.message.emit("분석 작업 실행 중...")
                     opt = self.selected_options
                     match opt:
-                        case ['article 분석', 'Naver News']:
-                            result = self.dataprocess_obj.NaverNewsArticleAnalysis(csv_data, self.csv_path)
-                        case ['statistics 분석', 'Naver News']:
-                            result = self.dataprocess_obj.NaverNewsStatisticsAnalysis(csv_data, self.csv_path)
-                        case ['reply 분석', 'Naver News']:
-                            result = self.dataprocess_obj.NaverNewsReplyAnalysis(csv_data, self.csv_path)
-                        case ['rereply 분석', 'Naver News']:
-                            result = self.dataprocess_obj.NaverNewsRereplyAnalysis(csv_data, self.csv_path)
-                        case ['article 분석', 'Naver Cafe']:
-                            result = self.dataprocess_obj.NaverCafeArticleAnalysis(csv_data, self.csv_path)
-                        case ['reply 분석', 'Naver Cafe']:
-                            result = self.dataprocess_obj.NaverCafeReplyAnalysis(csv_data, self.csv_path)
-                        case ['article 분석', 'Google YouTube']:
-                            result = self.dataprocess_obj.YouTubeArticleAnalysis(csv_data, self.csv_path)
-                        case ['reply 분석', 'Google YouTube']:
-                            result = self.dataprocess_obj.YouTubeReplyAnalysis(csv_data, self.csv_path)
-                        case ['rereply 분석', 'Google YouTube']:
-                            result = self.dataprocess_obj.YouTubeRereplyAnalysis(csv_data, self.csv_path)
+                        case ["article 분석", "Naver News"]:
+                            result = self.dataprocess_obj.NaverNewsArticleAnalysis(
+                                csv_data, self.csv_path
+                            )
+                        case ["statistics 분석", "Naver News"]:
+                            result = self.dataprocess_obj.NaverNewsStatisticsAnalysis(
+                                csv_data, self.csv_path
+                            )
+                        case ["reply 분석", "Naver News"]:
+                            result = self.dataprocess_obj.NaverNewsReplyAnalysis(
+                                csv_data, self.csv_path
+                            )
+                        case ["rereply 분석", "Naver News"]:
+                            result = self.dataprocess_obj.NaverNewsRereplyAnalysis(
+                                csv_data, self.csv_path
+                            )
+                        case ["article 분석", "Naver Cafe"]:
+                            result = self.dataprocess_obj.NaverCafeArticleAnalysis(
+                                csv_data, self.csv_path
+                            )
+                        case ["reply 분석", "Naver Cafe"]:
+                            result = self.dataprocess_obj.NaverCafeReplyAnalysis(
+                                csv_data, self.csv_path
+                            )
+                        case ["article 분석", "Google YouTube"]:
+                            result = self.dataprocess_obj.YouTubeArticleAnalysis(
+                                csv_data, self.csv_path
+                            )
+                        case ["reply 분석", "Google YouTube"]:
+                            result = self.dataprocess_obj.YouTubeReplyAnalysis(
+                                csv_data, self.csv_path
+                            )
+                        case ["rereply 분석", "Google YouTube"]:
+                            result = self.dataprocess_obj.YouTubeRereplyAnalysis(
+                                csv_data, self.csv_path
+                            )
                         case [o, _] if o.lower().startswith("hate") or "혐오" in o:
-                            result = self.dataprocess_obj.HateAnalysis(csv_data, self.csv_path)
+                            result = self.dataprocess_obj.HateAnalysis(
+                                csv_data, self.csv_path
+                            )
                         case _:
                             self.finished.emit(False, "지원되지 않는 옵션입니다.", "")
                             return
@@ -294,10 +357,15 @@ class Manager_Analysis(Manager_Worker):
                     if result:
                         output_dir = os.path.join(
                             os.path.dirname(self.csv_path),
-                            f"{os.path.splitext(csv_filename)[0]}_analysis" if not self.hate_mode
-                            else f"{os.path.splitext(csv_filename)[0]}_hate_analysis"
+                            f"{os.path.splitext(csv_filename)[0]}_analysis"
+                            if not self.hate_mode
+                            else f"{os.path.splitext(csv_filename)[0]}_hate_analysis",
                         )
-                        self.finished.emit(True, f"{csv_filename} 통계 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", output_dir)
+                        self.finished.emit(
+                            True,
+                            f"{csv_filename} 통계 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                            output_dir,
+                        )
                     else:
                         self.finished.emit(False, "분석 실패", "")
 
@@ -311,24 +379,31 @@ class Manager_Analysis(Manager_Worker):
                 return
 
             filename = os.path.basename(filepath)
-            if 'token' in filename:
-                QMessageBox.warning(self.main, "Warning", "토큰 파일은 통계 분석할 수 없습니다.")
+            if "token" in filename:
+                QMessageBox.warning(
+                    self.main, "Warning", "토큰 파일은 통계 분석할 수 없습니다."
+                )
                 return
-            
+
             dialog = StatAnalysisDialog(filename=filename)
             if dialog.exec() != QDialog.DialogCode.Accepted:
                 printStatus(self.main)
                 return
 
-            selected_options = [cb.text() for cb in dialog.checkbox_group if cb.isChecked()]
+            selected_options = [
+                cb.text() for cb in dialog.checkbox_group if cb.isChecked()
+            ]
             selected_options.append(dialog.combobox.currentText())
             if len(selected_options) < 2:
                 QMessageBox.warning(self.main, "Error", "선택 옵션이 부족합니다.")
                 return
 
-            hate_mode = selected_options[0].lower().startswith("hate") or "혐오" in selected_options[0]
+            hate_mode = (
+                selected_options[0].lower().startswith("hate")
+                or "혐오" in selected_options[0]
+            )
 
-            userLogging(f'ANALYSIS -> analysis_file({filepath})')
+            userLogging(f"ANALYSIS -> analysis_file({filepath})")
 
             statusDialog = TaskStatusDialog(f"통계 분석: {filename}", self.main)
             statusDialog.show()
@@ -338,7 +413,9 @@ class Manager_Analysis(Manager_Worker):
             register_thread(thread_name)
             printStatus(self.main)
 
-            worker = RunAnalysisWorker(filepath, selected_options, self.dataprocess_obj, hate_mode, self.main)
+            worker = RunAnalysisWorker(
+                filepath, selected_options, self.dataprocess_obj, hate_mode, self.main
+            )
             self.connectWorkerForStatusDialog(worker, statusDialog, thread_name)
             worker.start()
 
@@ -348,15 +425,26 @@ class Manager_Analysis(Manager_Worker):
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-       
+
     def run_wordcloud(self):
         class WordcloudWorker(QThread):
             finished = Signal(bool, str, str)  # (성공 여부, 메시지, 결과 경로)
             error = Signal(str)
             message = Signal(str)
 
-            def __init__(self, filepath, save_path, date, period, maxword,
-                        exception_word_list, eng_yes_selected, filename, dataprocess_obj, parent=None):
+            def __init__(
+                self,
+                filepath,
+                save_path,
+                date,
+                period,
+                maxword,
+                exception_word_list,
+                eng_yes_selected,
+                filename,
+                dataprocess_obj,
+                parent=None,
+            ):
                 super().__init__(parent)
                 self.filepath = filepath
                 self.save_path = save_path
@@ -375,7 +463,7 @@ class Manager_Analysis(Manager_Worker):
 
                     folder_path = os.path.join(
                         self.save_path,
-                        f"wordcloud_{self.filename}_{datetime.now().strftime('%m%d%H%M')}"
+                        f"wordcloud_{self.filename}_{datetime.now().strftime('%m%d%H%M')}",
                     )
 
                     self.message.emit("워드클라우드 분석 중...")
@@ -387,10 +475,14 @@ class Manager_Analysis(Manager_Worker):
                         self.maxword,
                         self.period,
                         self.exception_word_list,
-                        eng=self.eng_yes_selected
+                        eng=self.eng_yes_selected,
                     )
 
-                    self.finished.emit(True, f"{self.filename} 워드클라우드 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", folder_path)
+                    self.finished.emit(
+                        True,
+                        f"{self.filename} 워드클라우드 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                        folder_path,
+                    )
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
@@ -403,8 +495,11 @@ class Manager_Analysis(Manager_Worker):
 
             printStatus(self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요")
             save_path = QFileDialog.getExistingDirectory(
-                self.main, "워드클라우드 데이터를 저장할 위치를 선택하세요", self.main.localDirectory)
-            if save_path == '':
+                self.main,
+                "워드클라우드 데이터를 저장할 위치를 선택하세요",
+                self.main.localDirectory,
+            )
+            if save_path == "":
                 printStatus(self.main)
                 return
 
@@ -415,41 +510,59 @@ class Manager_Analysis(Manager_Worker):
                 printStatus(self.main)
                 return
 
-            startdate = dialog.data['startdate']
-            enddate = dialog.data['enddate']
+            startdate = dialog.data["startdate"]
+            enddate = dialog.data["enddate"]
             date = (startdate, enddate)
-            period = dialog.data['period']
-            maxword = int(dialog.data['maxword'])
-            except_yes_selected = dialog.data['except_yes_selected']
-            eng_yes_selected = dialog.data['eng_yes_selected']
+            period = dialog.data["period"]
+            maxword = int(dialog.data["maxword"])
+            except_yes_selected = dialog.data["except_yes_selected"]
+            eng_yes_selected = dialog.data["eng_yes_selected"]
 
-            filename = os.path.basename(filepath).replace('token_', '').replace('.csv', '')
-            filename = re.sub(r'(\d{8})_(\d{8})_(\d{4})_(\d{4})',
-                            f'{startdate}~{enddate}_{period}', filename)
+            filename = (
+                os.path.basename(filepath).replace("token_", "").replace(".csv", "")
+            )
+            filename = re.sub(
+                r"(\d{8})_(\d{8})_(\d{4})_(\d{4})",
+                f"{startdate}~{enddate}_{period}",
+                filename,
+            )
 
             exception_word_list = []
-            exception_word_list_path = 'N'
+            exception_word_list_path = "N"
             if except_yes_selected:
-                QMessageBox.information(self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
+                QMessageBox.information(
+                    self.main, "Information", f"예외어 사전(CSV)을 선택하세요"
+                )
                 printStatus(self.main, f"예외어 사전(CSV)을 선택하세요")
                 exception_word_list_path = QFileDialog.getOpenFileName(
-                    self.main, "예외어 사전(CSV)를 선택하세요",
-                    self.main.localDirectory, "CSV Files (*.csv);;All Files (*)")[0]
+                    self.main,
+                    "예외어 사전(CSV)를 선택하세요",
+                    self.main.localDirectory,
+                    "CSV Files (*.csv);;All Files (*)",
+                )[0]
                 if exception_word_list_path == "":
                     return
 
                 if not os.path.exists(exception_word_list_path):
-                    raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}")
+                    raise FileNotFoundError(
+                        f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}"
+                    )
 
                 df = readCSV(exception_word_list_path)
-                if 'word' not in list(df.keys()):
+                if "word" not in list(df.keys()):
                     printStatus(self.main)
-                    QMessageBox.warning(self.main, "Wrong Format", "예외어 사전 형식과 일치하지 않습니다")
+                    QMessageBox.warning(
+                        self.main,
+                        "Wrong Format",
+                        "예외어 사전 형식과 일치하지 않습니다",
+                    )
                     return
-                exception_word_list = df['word'].tolist()
+                exception_word_list = df["word"].tolist()
 
-            userLogging(f"ANALYSIS -> WordCloud({filename}) options: date={date}, period={period}, maxword={maxword}, except_word_path={exception_word_list_path}, eng={eng_yes_selected}")
-            
+            userLogging(
+                f"ANALYSIS -> WordCloud({filename}) options: date={date}, period={period}, maxword={maxword}, except_word_path={exception_word_list_path}, eng={eng_yes_selected}"
+            )
+
             thread_name = f"워드클라우드: {filename}"
             statusDialog = TaskStatusDialog(thread_name, self.main)
             statusDialog.show()
@@ -467,7 +580,7 @@ class Manager_Analysis(Manager_Worker):
                 eng_yes_selected,
                 filename,
                 self.dataprocess_obj,
-                self.main
+                self.main,
             )
             self.connectWorkerForStatusDialog(worker, statusDialog, thread_name)
             worker.start()
@@ -481,12 +594,15 @@ class Manager_Analysis(Manager_Worker):
 
     def select_kemkim(self):
         dialog = SelectKemkimDialog(
-            self.run_kemkim, self.modify_kemkim, self.interpret_kemkim)
+            self.run_kemkim, self.modify_kemkim, self.interpret_kemkim
+        )
         dialog.exec()
 
     def run_kemkim(self):
         class KemkimWorker(BaseWorker):
-            def __init__(self, pid, filepath, option, save_path, tokenfile_name, parent=None):
+            def __init__(
+                self, pid, filepath, option, save_path, tokenfile_name, parent=None
+            ):
                 super().__init__(parent)
                 self.pid = pid
                 self.filepath = filepath
@@ -501,17 +617,25 @@ class Manager_Analysis(Manager_Worker):
                         self.filepath,
                         upload_url,
                         extra_fields={"option": json.dumps(self.option)},
-                        label="토큰 데이터 업로드 중"
+                        label="토큰 데이터 업로드 중",
                     )
-                    
-                    extract_path = self.download_file(response, self.save_path, label="결과 다운로드 중", extract=True)
-                    self.finished.emit(True, f"{self.tokenfile_name} KEMKIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", extract_path)
+
+                    extract_path = self.download_file(
+                        response, self.save_path, label="결과 다운로드 중", extract=True
+                    )
+                    self.finished.emit(
+                        True,
+                        f"{self.tokenfile_name} KEMKIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                        extract_path,
+                    )
 
                 except requests.exceptions.HTTPError as e:
-                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
+                    self.error.emit(
+                        f"Server error detected ({e.response.status_code}):\n{e.response.text}"
+                    )
                 except Exception:
                     self.error.emit(traceback.format_exc())
-                    
+
         try:
             filepath = self.select_csv_file(tokenCheck=True)
             if not filepath:
@@ -522,8 +646,11 @@ class Manager_Analysis(Manager_Worker):
 
             printStatus(self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요")
             save_path = QFileDialog.getExistingDirectory(
-                self.main, "KEM KIM 데이터를 저장할 위치를 선택하세요", self.main.localDirectory)
-            if save_path == '':
+                self.main,
+                "KEM KIM 데이터를 저장할 위치를 선택하세요",
+                self.main.localDirectory,
+            )
+            if save_path == "":
                 printStatus(self.main)
                 return
 
@@ -534,57 +661,73 @@ class Manager_Analysis(Manager_Worker):
                 try:
                     if result != QDialog.DialogCode.Accepted or dialog.data is None:
                         return
-                    startdate = dialog.data['startDate']
-                    enddate = dialog.data['endDate']
-                    period = dialog.data['period']
-                    topword = int(dialog.data['topword'])
-                    weight = float(dialog.data['weight'])
-                    graph_wordcnt = int(dialog.data['graph_wordcnt'])
-                    filter_yes_selected = dialog.data['filter_yes_selected']
-                    trace_standard_selected = dialog.data['trace_standard_selected']
-                    ani_yes_selected = dialog.data['ani_yes_selected']
-                    except_yes_selected = dialog.data['except_yes_selected']
-                    split_option = dialog.data['split_option']
-                    split_custom = dialog.data['split_custom']
-                    
+                    startdate = dialog.data["startDate"]
+                    enddate = dialog.data["endDate"]
+                    period = dialog.data["period"]
+                    topword = int(dialog.data["topword"])
+                    weight = float(dialog.data["weight"])
+                    graph_wordcnt = int(dialog.data["graph_wordcnt"])
+                    filter_yes_selected = dialog.data["filter_yes_selected"]
+                    trace_standard_selected = dialog.data["trace_standard_selected"]
+                    ani_yes_selected = dialog.data["ani_yes_selected"]
+                    except_yes_selected = dialog.data["except_yes_selected"]
+                    split_option = dialog.data["split_option"]
+                    split_custom = dialog.data["split_custom"]
+
                     try:
-                        start_dt = pd.to_datetime(str(startdate), format='%Y%m%d', errors='coerce')
-                        end_dt   = pd.to_datetime(str(enddate),   format='%Y%m%d', errors='coerce')
+                        start_dt = pd.to_datetime(
+                            str(startdate), format="%Y%m%d", errors="coerce"
+                        )
+                        end_dt = pd.to_datetime(
+                            str(enddate), format="%Y%m%d", errors="coerce"
+                        )
                     except Exception:
                         start_dt = end_dt = pd.NaT
 
                     if pd.isna(start_dt) or pd.isna(end_dt):
-                        QMessageBox.warning(self.main, "Wrong Form",
-                                            "시작일/종료일 형식이 올바르지 않습니다.\nYYYYMMDD 형식으로 입력하세요.")
+                        QMessageBox.warning(
+                            self.main,
+                            "Wrong Form",
+                            "시작일/종료일 형식이 올바르지 않습니다.\nYYYYMMDD 형식으로 입력하세요.",
+                        )
                         continue
 
                     if end_dt < start_dt:
-                        QMessageBox.warning(self.main, "Wrong Form",
-                                            "종료일이 시작일보다 앞설 수 없습니다.")
+                        QMessageBox.warning(
+                            self.main,
+                            "Wrong Form",
+                            "종료일이 시작일보다 앞설 수 없습니다.",
+                        )
                         continue
 
-                    startdate = start_dt.strftime('%Y%m%d')
-                    enddate   = end_dt.strftime('%Y%m%d')
-                    
+                    startdate = start_dt.strftime("%Y%m%d")
+                    enddate = end_dt.strftime("%Y%m%d")
+
                     def months_between_inclusive(s: datetime, e: datetime) -> int:
                         return (e.year - s.year) * 12 + (e.month - s.month) + 1
 
-                    if period == '1y':
+                    if period == "1y":
                         # 연도 포함 개수(양끝 포함)
                         years = (end_dt.year - start_dt.year) + 1
                         total_periods = years / int(period[:-1])  # period[:-1] == '1'
-                    elif period in ['6m', '3m', '1m']:
+                    elif period in ["6m", "3m", "1m"]:
                         months = months_between_inclusive(start_dt, end_dt)
                         step = int(period[:-1])  # 6, 3, 1
                         total_periods = months / step
-                    elif period == '1w':
-                        if start_dt.strftime('%A') != 'Monday':
-                            QMessageBox.warning(self.main, "Wrong Form",
-                                                "분석 시작일이 월요일이 아닙니다\n\n1주 단위 분석에서는 시작일=월요일, 종료일=일요일")
+                    elif period == "1w":
+                        if start_dt.strftime("%A") != "Monday":
+                            QMessageBox.warning(
+                                self.main,
+                                "Wrong Form",
+                                "분석 시작일이 월요일이 아닙니다\n\n1주 단위 분석에서는 시작일=월요일, 종료일=일요일",
+                            )
                             continue
-                        if end_dt.strftime('%A') != 'Sunday':
-                            QMessageBox.warning(self.main, "Wrong Form",
-                                                "분석 종료일이 일요일이 아닙니다\n\n1주 단위 분석에서는 시작일=월요일, 종료일=일요일")
+                        if end_dt.strftime("%A") != "Sunday":
+                            QMessageBox.warning(
+                                self.main,
+                                "Wrong Form",
+                                "분석 종료일이 일요일이 아닙니다\n\n1주 단위 분석에서는 시작일=월요일, 종료일=일요일",
+                            )
                             continue
                         total_days = (end_dt - start_dt).days + 1  # ← 양끝 포함
                         total_periods = total_days // 7
@@ -592,89 +735,120 @@ class Manager_Analysis(Manager_Worker):
                         # 일 단위 가정
                         total_days = (end_dt - start_dt).days
                         total_periods = total_days
-                    
+
                     if total_periods < 2:
                         period_name = {
-                            '1y': '1년', '6m': '6개월', '3m': '3개월', 
-                            '1m': '1개월', '1w': '1주일'
+                            "1y": "1년",
+                            "6m": "6개월",
+                            "3m": "3개월",
+                            "1m": "1개월",
+                            "1w": "1주일",
                         }.get(period, f"{period} 단위")
-                        
-                        QMessageBox.warning(self.main, "Wrong Form",
-                                            f"분석 기간이 너무 짧습니다.\n\n"
-                                            f"선택하신 단위({period_name})의 최소 2배 이상의 기간이 필요합니다.\n"
-                                            f"(현재 분석 구간: {total_periods:.2f}개)")
+
+                        QMessageBox.warning(
+                            self.main,
+                            "Wrong Form",
+                            f"분석 기간이 너무 짧습니다.\n\n"
+                            f"선택하신 단위({period_name})의 최소 2배 이상의 기간이 필요합니다.\n"
+                            f"(현재 분석 구간: {total_periods:.2f}개)",
+                        )
                         continue
 
                     if total_periods * weight >= 1:
-                        QMessageBox.warning(self.main, "Wrong Form",
-                                            "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오")
+                        QMessageBox.warning(
+                            self.main,
+                            "Wrong Form",
+                            "분석 가능 기간 개수를 초과합니다\n시간가중치를 줄이거나, Period 값을 늘리거나 시작일~종료일 사이의 간격을 줄이십시오",
+                        )
                         continue
 
-                    if split_option in ['평균(Mean)', '중앙값(Median)'] and (split_custom is None or str(split_custom).strip() == ''):
+                    if split_option in ["평균(Mean)", "중앙값(Median)"] and (
+                        split_custom is None or str(split_custom).strip() == ""
+                    ):
                         pass
                     else:
                         split_custom = float(split_custom)
                     break
                 except Exception as e:
                     QMessageBox.warning(
-                        self.main, "Wrong Form", f"입력 형식이 올바르지 않습니다, {e}")
-        
+                        self.main, "Wrong Form", f"입력 형식이 올바르지 않습니다, {e}"
+                    )
+
             printStatus(self.main, "데이터 유효성 검사 중...")
-            
+
             headers = getCSVHeaders(filepath)
-            
-            date_col = next((col for col in headers if 'Date' in col), None)
-            text_col = next((col for col in headers if 'Text' in col), None)
+
+            date_col = next((col for col in headers if "Date" in col), None)
+            text_col = next((col for col in headers if "Text" in col), None)
 
             if not date_col or not text_col:
-                QMessageBox.warning(self.main, "Data Error", 
-                                    f"필수 컬럼이 부족합니다.\n찾은 컬럼: {headers}\n(Date와 Text를 포함하는 컬럼이 필요합니다.)")
+                QMessageBox.warning(
+                    self.main,
+                    "Data Error",
+                    f"필수 컬럼이 부족합니다.\n찾은 컬럼: {headers}\n(Date와 Text를 포함하는 컬럼이 필요합니다.)",
+                )
                 printStatus(self.main)
                 return
 
-            with open(filepath, 'rb') as f:
+            with open(filepath, "rb") as f:
                 detected = chardet.detect(f.read(10000))
-                encoding = detected['encoding'] or 'utf-8'
+                encoding = detected["encoding"] or "utf-8"
 
             df_date_check = pd.read_csv(filepath, encoding=encoding, usecols=[date_col])
-            df_date_check[date_col] = pd.to_datetime(df_date_check[date_col], errors='coerce')
-            
-            sel_start = pd.to_datetime(startdate, format='%Y%m%d')
-            sel_end = pd.to_datetime(enddate, format='%Y%m%d')
+            df_date_check[date_col] = pd.to_datetime(
+                df_date_check[date_col], errors="coerce"
+            )
 
-            valid_data = df_date_check[(df_date_check[date_col] >= sel_start) & 
-                                        (df_date_check[date_col] <= sel_end)]
+            sel_start = pd.to_datetime(startdate, format="%Y%m%d")
+            sel_end = pd.to_datetime(enddate, format="%Y%m%d")
+
+            valid_data = df_date_check[
+                (df_date_check[date_col] >= sel_start)
+                & (df_date_check[date_col] <= sel_end)
+            ]
 
             if valid_data.empty:
-                QMessageBox.warning(self.main, "Data Error", f"선택하신 기간({startdate}~{enddate}) 내에 분석할 데이터가 없습니다.")
+                QMessageBox.warning(
+                    self.main,
+                    "Data Error",
+                    f"선택하신 기간({startdate}~{enddate}) 내에 분석할 데이터가 없습니다.",
+                )
                 printStatus(self.main)
                 return
 
             del df_date_check, valid_data
-        
+
             exception_word_list = []
-            exception_word_list_path = 'N'
+            exception_word_list_path = "N"
             if except_yes_selected == True:
                 QMessageBox.information(
-                    self.main, "Information", f"예외어 사전(CSV)을 선택하세요")
+                    self.main, "Information", f"예외어 사전(CSV)을 선택하세요"
+                )
                 printStatus(self.main, f"예외어 사전(CSV)을 선택하세요")
-                exception_word_list_path = QFileDialog.getOpenFileName(self.main, "예외어 사전(CSV)를 선택하세요",
-                                                                       self.main.localDirectory,
-                                                                       "CSV Files (*.csv);;All Files (*)")
+                exception_word_list_path = QFileDialog.getOpenFileName(
+                    self.main,
+                    "예외어 사전(CSV)를 선택하세요",
+                    self.main.localDirectory,
+                    "CSV Files (*.csv);;All Files (*)",
+                )
                 exception_word_list_path = exception_word_list_path[0]
                 if exception_word_list_path == "":
                     return
                 if not os.path.exists(exception_word_list_path):
                     raise FileNotFoundError(
-                        f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}")
-                    
+                        f"파일을 찾을 수 없습니다\n\n{exception_word_list_path}"
+                    )
+
                 df = readCSV(exception_word_list_path)
-                if 'word' not in list(df.keys()):
+                if "word" not in list(df.keys()):
                     QMessageBox.warning(
-                        self.main, "Wrong Format", "예외어 사전 형식과 일치하지 않습니다")
+                        self.main,
+                        "Wrong Format",
+                        "예외어 사전 형식과 일치하지 않습니다",
+                    )
                     printStatus(self.main)
                     return
-                exception_word_list = df['word'].tolist()
+                exception_word_list = df["word"].tolist()
 
             pid = str(uuid.uuid4())
             register_process(pid, "KEMKIM")
@@ -696,17 +870,27 @@ class Manager_Analysis(Manager_Worker):
                 "exception_word_list": exception_word_list,
                 "exception_filename": exception_word_list_path,
             }
-            option_for_log = {k: v for k, v in option.items() if k not in ("exception_word_list", "pid")}
-            userLogging(f"ANALYSIS -> kemkim_file({tokenfile_name}) options: {option_for_log}")
+            option_for_log = {
+                k: v
+                for k, v in option.items()
+                if k not in ("exception_word_list", "pid")
+            }
+            userLogging(
+                f"ANALYSIS -> kemkim_file({tokenfile_name}) options: {option_for_log}"
+            )
 
-            downloadDialog = DownloadDialog(f"KEMKIM 분석: {tokenfile_name}", pid, self.main)
+            downloadDialog = DownloadDialog(
+                f"KEMKIM 분석: {tokenfile_name}", pid, self.main
+            )
             downloadDialog.show()
 
             thread_name = f"KEMKIM 분석: {tokenfile_name}"
             register_thread(thread_name)
             printStatus(self.main)
 
-            worker = KemkimWorker(pid, filepath, option, save_path, tokenfile_name, self.main)
+            worker = KemkimWorker(
+                pid, filepath, option, save_path, tokenfile_name, self.main
+            )
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
@@ -716,17 +900,17 @@ class Manager_Analysis(Manager_Worker):
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-    
+
     def modify_kemkim(self):
         def copy_csv(input_file_path, output_file_path):
             if not os.path.exists(input_file_path):
                 raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{input_file_path}")
 
-            with open(safe_path(input_file_path), 'r') as csvfile:
+            with open(safe_path(input_file_path), "r") as csvfile:
                 reader = csv.reader(csvfile)
                 rows = list(reader)
 
-            with open(safe_path(output_file_path), 'w', newline='') as csvfile:
+            with open(safe_path(output_file_path), "w", newline="") as csvfile:
                 writer = csv.writer(csvfile)
 
                 for row in rows:
@@ -735,31 +919,44 @@ class Manager_Analysis(Manager_Worker):
         try:
             result_directory = self.file_dialog.selectedFiles()
             if len(result_directory) == 0:
-                QMessageBox.warning(self.main, f"Wrong Selection",
-                                    f"선택된 'Result' 디렉토리가 없습니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
+                QMessageBox.warning(
+                    self.main,
+                    f"Wrong Selection",
+                    f"선택된 'Result' 디렉토리가 없습니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오",
+                )
                 return
             if len(result_directory) > 1:
                 QMessageBox.warning(
-                    self.main, f"Wrong Selection", f"KemKim 폴더에 있는 하나의 'Result' 디렉토리만 선택하여 주십시오")
+                    self.main,
+                    f"Wrong Selection",
+                    f"KemKim 폴더에 있는 하나의 'Result' 디렉토리만 선택하여 주십시오",
+                )
                 return
-            if 'Result' not in os.path.basename(result_directory[0]):
-                QMessageBox.warning(self.main, f"Wrong Directory",
-                                    f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
+            if "Result" not in os.path.basename(result_directory[0]):
+                QMessageBox.warning(
+                    self.main,
+                    f"Wrong Directory",
+                    f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오",
+                )
                 return
 
-            userLogging(f'ANALYSIS -> rekemkim_file({result_directory[0]})')
+            userLogging(f"ANALYSIS -> rekemkim_file({result_directory[0]})")
             printStatus(self.main, "파일 불러오는 중...")
 
             result_directory = result_directory[0]
             final_signal_csv_path = os.path.join(
-                result_directory, "Signal", "Final_signal.csv")
+                result_directory, "Signal", "Final_signal.csv"
+            )
             if not os.path.exists(final_signal_csv_path):
                 QMessageBox.information(
-                    self.main, 'Import Failed', 'Final_signal.csv 파일을 불러오는데 실패했습니다\n\nResult/Signal 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                    self.main,
+                    "Import Failed",
+                    "Final_signal.csv 파일을 불러오는데 실패했습니다\n\nResult/Signal 디렉토리에 파일이 위치하는지 확인하여 주십시오",
+                )
                 printStatus(self.main)
                 return
             final_signal_df = readCSV(final_signal_csv_path)
-            words = final_signal_df['word'].tolist()
+            words = final_signal_df["word"].tolist()
             all_keyword = []
             for word_list_str in words:
                 word_list = ast.literal_eval(word_list_str)
@@ -778,7 +975,10 @@ class Manager_Analysis(Manager_Worker):
                     size_input = tuple(map(int, size_input))
                 except:
                     QMessageBox.warning(
-                        self.main, "Wrong Form", "그래프 사이즈를 숫자로 입력하여 주십시오")
+                        self.main,
+                        "Wrong Form",
+                        "그래프 사이즈를 숫자로 입력하여 주십시오",
+                    )
                     printStatus(self.main)
                     return
             else:
@@ -788,25 +988,37 @@ class Manager_Analysis(Manager_Worker):
             if eng_no_option == False:
                 if eng_manual_option == True:
                     QMessageBox.information(
-                        self.main, "Information", f"키워드-영단어 사전(CSV)를 선택하세요")
+                        self.main,
+                        "Information",
+                        f"키워드-영단어 사전(CSV)를 선택하세요",
+                    )
                     printStatus(self.main, "키워드-영단어 사전(CSV)를 선택하세요")
                     eng_keyword_list_path = QFileDialog.getOpenFileName(
-                        self.main, "키워드-영단어 사전(CSV)를 선택하세요", self.main.localDirectory, "CSV Files (*.csv);;All Files (*)")
+                        self.main,
+                        "키워드-영단어 사전(CSV)를 선택하세요",
+                        self.main.localDirectory,
+                        "CSV Files (*.csv);;All Files (*)",
+                    )
                     eng_keyword_list_path = eng_keyword_list_path[0]
                     if eng_keyword_list_path == "":
                         return
 
                     if not os.path.exists(eng_keyword_list_path):
                         raise FileNotFoundError(
-                            f"파일을 찾을 수 없습니다\n\n{eng_keyword_list_path}")
+                            f"파일을 찾을 수 없습니다\n\n{eng_keyword_list_path}"
+                        )
 
                     df = readCSV(eng_keyword_list_path)
-                    if 'english' not in list(df.keys()) or 'korean' not in list(df.keys()):
+                    if "english" not in list(df.keys()) or "korean" not in list(
+                        df.keys()
+                    ):
                         QMessageBox.warning(
-                            self.main, "Wrong Form", "키워드-영단어 사전 형식과 일치하지 않습니다")
+                            self.main,
+                            "Wrong Form",
+                            "키워드-영단어 사전 형식과 일치하지 않습니다",
+                        )
                         return
-                    eng_keyword_tupleList = list(
-                        zip(df['korean'], df['english']))
+                    eng_keyword_tupleList = list(zip(df["korean"], df["english"]))
 
                 elif eng_auto_option == True:
                     target_words = sum(all_keyword, [])
@@ -817,111 +1029,172 @@ class Manager_Analysis(Manager_Worker):
                         translate_history = {}
 
                         if words_to_translate:
+
                             async def translate_word(word):
-                                """ 개별 단어를 비동기적으로 번역하고 반환하는 함수 """
-                                result = await translator.translate(word, dest='en', src='auto')  # await 추가
+                                """개별 단어를 비동기적으로 번역하고 반환하는 함수"""
+                                result = await translator.translate(
+                                    word, dest="en", src="auto"
+                                )  # await 추가
                                 return word, result.text
 
                             translated_results = await asyncio.gather(
-                                *(translate_word(word) for word in words_to_translate))
+                                *(translate_word(word) for word in words_to_translate)
+                            )
 
                             for original, translated in translated_results:
                                 translate_history[original] = translated
 
-                        translated_tuple_list = [(word, translate_history[word]) for word in words_to_translate if
-                                                 word in translate_history]
+                        translated_tuple_list = [
+                            (word, translate_history[word])
+                            for word in words_to_translate
+                            if word in translate_history
+                        ]
 
                         return translated_tuple_list
+
                     eng_keyword_tupleList = asyncio.run(
-                        wordcloud_translator(target_words))
+                        wordcloud_translator(target_words)
+                    )
             else:
                 eng_keyword_tupleList = []
 
             printStatus(self.main, "KEMKIM 조정 중...")
             DoV_coordinates_path = os.path.join(
-                result_directory, "Graph", "DOV_coordinates.csv")
+                result_directory, "Graph", "DOV_coordinates.csv"
+            )
             if not os.path.exists(DoV_coordinates_path):
                 QMessageBox.warning(
-                    self.main, 'Import Failed', 'DOV_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                    self.main,
+                    "Import Failed",
+                    "DOV_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오",
+                )
                 printStatus(self.main)
                 return
             DoV_coordinates_df = readCSV(DoV_coordinates_path)
             DoV_coordinates_dict = {}
             for index, row in DoV_coordinates_df.iterrows():
-                key = row['key']
-                value = ast.literal_eval(row['value']) 
+                key = row["key"]
+                value = ast.literal_eval(row["value"])
                 DoV_coordinates_dict[key] = value
 
             DoD_coordinates_path = os.path.join(
-                result_directory, "Graph", "DOD_coordinates.csv")
+                result_directory, "Graph", "DOD_coordinates.csv"
+            )
             if not os.path.exists(DoD_coordinates_path):
                 QMessageBox.warning(
-                    self.main, 'Import Failed', 'DOD_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                    self.main,
+                    "Import Failed",
+                    "DOD_coordinates.csv 파일을 불러오는데 실패했습니다\n\nResult/Graph 디렉토리에 파일이 위치하는지 확인하여 주십시오",
+                )
                 printStatus(self.main)
                 return
-            DoD_coordinates_df = readCSV(os.path.join(result_directory, "Graph", "DOD_coordinates.csv"))
+            DoD_coordinates_df = readCSV(
+                os.path.join(result_directory, "Graph", "DOD_coordinates.csv")
+            )
             DoD_coordinates_dict = {}
             for index, row in DoD_coordinates_df.iterrows():
-                key = row['key']
-                value = ast.literal_eval(row['value']) 
+                key = row["key"]
+                value = ast.literal_eval(row["value"])
                 DoD_coordinates_dict[key] = value
 
-            delete_word_list = readCSV(os.path.join(result_directory, 'filtered_words.csv'))['word'].tolist()
+            delete_word_list = readCSV(
+                os.path.join(result_directory, "filtered_words.csv")
+            )["word"].tolist()
 
             kemkim_obj = KemKim(
-                self.main, exception_word_list=selected_words, rekemkim=True)
+                self.main, exception_word_list=selected_words, rekemkim=True
+            )
 
-            new_result_folder = os.path.join(os.path.dirname(
-                result_directory), f'Result_{datetime.now().strftime('%m%d%H%M')}')
-            new_graph_folder = os.path.join(new_result_folder, 'Graph')
-            new_signal_folder = os.path.join(new_result_folder, 'Signal')
+            new_result_folder = os.path.join(
+                os.path.dirname(result_directory),
+                f"Result_{datetime.now().strftime('%m%d%H%M')}",
+            )
+            new_graph_folder = os.path.join(new_result_folder, "Graph")
+            new_signal_folder = os.path.join(new_result_folder, "Signal")
 
             os.makedirs(new_result_folder, exist_ok=True)
             os.makedirs(new_graph_folder, exist_ok=True)
             os.makedirs(new_signal_folder, exist_ok=True)
 
             # 그래프 Statistics csv 복사
-            copy_csv(os.path.join(result_directory, "Graph", "DOV_statistics.csv"),
-                     os.path.join(new_graph_folder, "DOV_statistics.csv"))
-            copy_csv(os.path.join(result_directory, "Graph", "DOD_statistics.csv"),
-                     os.path.join(new_graph_folder, "DOD_statistics.csv"))
+            copy_csv(
+                os.path.join(result_directory, "Graph", "DOV_statistics.csv"),
+                os.path.join(new_graph_folder, "DOV_statistics.csv"),
+            )
+            copy_csv(
+                os.path.join(result_directory, "Graph", "DOD_statistics.csv"),
+                os.path.join(new_graph_folder, "DOD_statistics.csv"),
+            )
 
             DoV_signal, DoV_coordinates = kemkim_obj.DoV_draw_graph(
-                graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict, graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
+                graph_folder=new_graph_folder,
+                redraw_option=True,
+                coordinates=DoV_coordinates_dict,
+                graph_size=size_input,
+                eng_keyword_list=eng_keyword_tupleList,
+            )
             DoD_signal, DoD_coordinates = kemkim_obj.DoD_draw_graph(
-                graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict, graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
+                graph_folder=new_graph_folder,
+                redraw_option=True,
+                coordinates=DoD_coordinates_dict,
+                graph_size=size_input,
+                eng_keyword_list=eng_keyword_tupleList,
+            )
 
-            final_signal = kemkim_obj._get_communal_signals(
-                DoV_signal, DoD_signal)
+            final_signal = kemkim_obj._get_communal_signals(DoV_signal, DoD_signal)
             final_signal_list = []
             for value in final_signal.values():
                 final_signal_list.extend(value)
 
-            kemkim_obj.DoV_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoV_coordinates_dict,
-                                      final_signal_list=final_signal_list, graph_name='KEM_graph.png', graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
-            kemkim_obj.DoD_draw_graph(graph_folder=new_graph_folder, redraw_option=True, coordinates=DoD_coordinates_dict,
-                                      final_signal_list=final_signal_list, graph_name='KIM_graph.png', graph_size=size_input, eng_keyword_list=eng_keyword_tupleList)
-            kemkim_obj._save_final_signals(
-                DoV_signal, DoD_signal, new_signal_folder)
+            kemkim_obj.DoV_draw_graph(
+                graph_folder=new_graph_folder,
+                redraw_option=True,
+                coordinates=DoV_coordinates_dict,
+                final_signal_list=final_signal_list,
+                graph_name="KEM_graph.png",
+                graph_size=size_input,
+                eng_keyword_list=eng_keyword_tupleList,
+            )
+            kemkim_obj.DoD_draw_graph(
+                graph_folder=new_graph_folder,
+                redraw_option=True,
+                coordinates=DoD_coordinates_dict,
+                final_signal_list=final_signal_list,
+                graph_name="KIM_graph.png",
+                graph_size=size_input,
+                eng_keyword_list=eng_keyword_tupleList,
+            )
+            kemkim_obj._save_final_signals(DoV_signal, DoD_signal, new_signal_folder)
 
             delete_word_list.extend(selected_words)
-            pd.DataFrame(delete_word_list, columns=['word']).to_csv(safe_path(os.path.join(
-                new_result_folder, 'filtered_words.csv')), index=False, encoding='utf-8-sig')
+            pd.DataFrame(delete_word_list, columns=["word"]).to_csv(
+                safe_path(os.path.join(new_result_folder, "filtered_words.csv")),
+                index=False,
+                encoding="utf-8-sig",
+            )
 
-            with open(safe_path(os.path.join(new_graph_folder, 'graph_size.txt')), 'w+', encoding="utf-8", errors="ignore") as graph_size:
+            with open(
+                safe_path(os.path.join(new_graph_folder, "graph_size.txt")),
+                "w+",
+                encoding="utf-8",
+                errors="ignore",
+            ) as graph_size:
                 info = (
-                    f'X Scale: {size_input[0]}\n'
-                    f'Y Scale: {size_input[1]}\n'
-                    f'Font Size: {size_input[2]}\n'
-                    f'Dot Size: {size_input[3]}\n'
-                    f'Label Size: {size_input[4]}\n'
-                    f'Grade Size: {size_input[5]}'
+                    f"X Scale: {size_input[0]}\n"
+                    f"Y Scale: {size_input[1]}\n"
+                    f"Font Size: {size_input[2]}\n"
+                    f"Dot Size: {size_input[3]}\n"
+                    f"Label Size: {size_input[4]}\n"
+                    f"Grade Size: {size_input[5]}"
                 )
                 graph_size.write(info)
             del kemkim_obj
             gc.collect()
             openFileResult(
-                self.main, f"KEMKIM 재분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", new_result_folder)
+                self.main,
+                f"KEMKIM 재분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                new_result_folder,
+            )
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
@@ -930,32 +1203,45 @@ class Manager_Analysis(Manager_Worker):
         try:
             result_directory = self.file_dialog.selectedFiles()
             if len(result_directory) == 0:
-                QMessageBox.warning(self.main, f"Wrong Selection",
-                                    f"선택된 'Result' 디렉토리가 없습니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
+                QMessageBox.warning(
+                    self.main,
+                    f"Wrong Selection",
+                    f"선택된 'Result' 디렉토리가 없습니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오",
+                )
                 return
             elif len(result_directory) > 1:
                 QMessageBox.warning(
-                    self.main, f"Wrong Selection", f"KemKim 폴더에 있는 하나의 'Result' 디렉토리만 선택하여 주십시오")
+                    self.main,
+                    f"Wrong Selection",
+                    f"KemKim 폴더에 있는 하나의 'Result' 디렉토리만 선택하여 주십시오",
+                )
                 return
-            elif 'Result' not in os.path.basename(result_directory[0]):
-                QMessageBox.warning(self.main, f"Wrong Directory",
-                                    f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오")
+            elif "Result" not in os.path.basename(result_directory[0]):
+                QMessageBox.warning(
+                    self.main,
+                    f"Wrong Directory",
+                    f"'Result' 디렉토리가 아닙니다\n\nKemKim 폴더의 'Result'폴더를 선택해주십시오",
+                )
                 return
 
             result_directory = result_directory[0]
-            userLogging(f'ANALYSIS -> interpret_kemkim_file({result_directory})')
+            userLogging(f"ANALYSIS -> interpret_kemkim_file({result_directory})")
 
             final_signal_csv_path = os.path.join(
-                result_directory, "Signal", "Final_signal.csv")
+                result_directory, "Signal", "Final_signal.csv"
+            )
 
             if not os.path.exists(final_signal_csv_path):
                 QMessageBox.warning(
-                    self.main, 'Import Failed', 'Final_signal.csv 파일을 불러오는데 실패했습니다\n\nResult/Signal 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                    self.main,
+                    "Import Failed",
+                    "Final_signal.csv 파일을 불러오는데 실패했습니다\n\nResult/Signal 디렉토리에 파일이 위치하는지 확인하여 주십시오",
+                )
                 printStatus(self.main)
                 return
 
             final_signal_df = readCSV(final_signal_csv_path)
-            words = final_signal_df['word'].tolist()
+            words = final_signal_df["word"].tolist()
             all_keyword = []
             for word_list_str in words:
                 word_list = ast.literal_eval(word_list_str)
@@ -965,61 +1251,79 @@ class Manager_Analysis(Manager_Worker):
             enddate = 0
             topic = 0
 
-            infotxt_path = os.path.join(os.path.dirname(
-                result_directory), "kemkim_info.txt")
+            infotxt_path = os.path.join(
+                os.path.dirname(result_directory), "kemkim_info.txt"
+            )
             if not os.path.exists(final_signal_csv_path):
                 QMessageBox.warning(
-                    self.main, 'Import Failed', 'kemkim_info.txt 파일을 불러오는데 실패했습니다\n\nResult 디렉토리에 파일이 위치하는지 확인하여 주십시오')
+                    self.main,
+                    "Import Failed",
+                    "kemkim_info.txt 파일을 불러오는데 실패했습니다\n\nResult 디렉토리에 파일이 위치하는지 확인하여 주십시오",
+                )
                 printStatus(self.main)
                 return
 
             if not os.path.exists(infotxt_path):
                 raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{infotxt_path}")
 
-            with open(safe_path(infotxt_path), 'r', encoding='utf-8') as info_txt:
+            with open(safe_path(infotxt_path), "r", encoding="utf-8") as info_txt:
                 lines = info_txt.readlines()
 
             for line in lines:
-                if line.startswith('분석 데이터:'):
+                if line.startswith("분석 데이터:"):
                     # '분석 데이터:' 뒤에 오는 값을 파싱
-                    recommend_csv_name = line.split(
-                        '분석 데이터:')[-1].strip().replace('token_', '')
-                    topic = recommend_csv_name.split('_')[1]
-                if line.startswith('분석 시작일:'):
+                    recommend_csv_name = (
+                        line.split("분석 데이터:")[-1].strip().replace("token_", "")
+                    )
+                    topic = recommend_csv_name.split("_")[1]
+                if line.startswith("분석 시작일:"):
                     # '분석 데이터:' 뒤에 오는 값을 파싱
-                    startdate = line.split(
-                        '분석 시작일:')[-1].strip().replace('token_', '')
+                    startdate = (
+                        line.split("분석 시작일:")[-1].strip().replace("token_", "")
+                    )
                     startdate = int(startdate)
-                if line.startswith('분석 종료일:'):
+                if line.startswith("분석 종료일:"):
                     # '분석 데이터:' 뒤에 오는 값을 파싱
-                    enddate = line.split(
-                        '분석 종료일:')[-1].strip().replace('token_', '')
+                    enddate = (
+                        line.split("분석 종료일:")[-1].strip().replace("token_", "")
+                    )
                     enddate = int(enddate)
 
             if startdate == 0 or enddate == 0 or topic == 0:
                 QMessageBox.warning(
-                    self.main, 'Import Failed', 'kemkim_info.txt 파일에서 정보를 불러오는데 실패했습니다\n\nResult 디렉토리 선택 유무와 수정되지 않은 info.txt 원본 파일이 올바른 위치에 있는지 확인하여 주십시오')
+                    self.main,
+                    "Import Failed",
+                    "kemkim_info.txt 파일에서 정보를 불러오는데 실패했습니다\n\nResult 디렉토리 선택 유무와 수정되지 않은 info.txt 원본 파일이 올바른 위치에 있는지 확인하여 주십시오",
+                )
                 printStatus(self.main)
                 return
 
             QMessageBox.information(
-                self.main, "Information", f'Keyword를 추출할 CSV 파일을 선택하세요\n\n"{recommend_csv_name}"를 선택하세요')
+                self.main,
+                "Information",
+                f'Keyword를 추출할 CSV 파일을 선택하세요\n\n"{recommend_csv_name}"를 선택하세요',
+            )
             object_csv_path = QFileDialog.getOpenFileName(
-                self.main, "Keyword 추출 대상 CSV 파일을 선택하세요", self.main.localDirectory, "CSV Files (*.csv);;All Files (*)")
+                self.main,
+                "Keyword 추출 대상 CSV 파일을 선택하세요",
+                self.main.localDirectory,
+                "CSV Files (*.csv);;All Files (*)",
+            )
             object_csv_path = object_csv_path[0]
-            object_csv_name = os.path.basename(
-                object_csv_path).replace('.csv', '')
+            object_csv_name = os.path.basename(object_csv_path).replace(".csv", "")
             if object_csv_path == "":
                 return
 
             printStatus(self.main, "CSV 데이터 키워드 필터링 중...")
 
             from ui.dialogs import InterpretKemkimDialog
+
             self.word_selector = InterpretKemkimDialog(all_keyword)
             if self.word_selector.exec() == QDialog.DialogCode.Accepted:
                 selected_words_2dim = self.word_selector.selected_words
                 selected_words = [
-                    word for group in selected_words_2dim for word in group]
+                    word for group in selected_words_2dim for word in group
+                ]
                 selected_option = self.word_selector.selected_option
             else:
                 printStatus(self.main)
@@ -1028,73 +1332,115 @@ class Manager_Analysis(Manager_Worker):
             # 단어 선택 안했을 때
             if len(selected_words) == 0:
                 QMessageBox.warning(
-                    self.main, 'Wrong Selection', '선택된 필터링 단어가 없습니다')
+                    self.main, "Wrong Selection", "선택된 필터링 단어가 없습니다"
+                )
                 return
 
             if not os.path.exists(object_csv_path):
                 raise FileNotFoundError(f"파일을 찾을 수 없습니다\n\n{object_csv_path}")
 
             object_csv_df = readCSV(object_csv_path)
-            if all('Text' not in word for word in list(object_csv_df.keys())):
-                QMessageBox.warning(self.main, "Wrong Format",
-                                    "크롤링 데이터 CSV 형식과 일치하지 않습니다")
+            if all("Text" not in word for word in list(object_csv_df.keys())):
+                QMessageBox.warning(
+                    self.main,
+                    "Wrong Format",
+                    "크롤링 데이터 CSV 형식과 일치하지 않습니다",
+                )
                 return
             for column in object_csv_df.columns.tolist():
-                if 'Text' in column:
+                if "Text" in column:
                     textColumn_name = column
-                elif 'Date' in column:
+                elif "Date" in column:
                     dateColumn_name = column
 
             # 날짜 범위 설정
             object_csv_df[dateColumn_name] = pd.to_datetime(
-                object_csv_df[dateColumn_name], format='%Y-%m-%d', errors='coerce')
-            start_date = pd.to_datetime(str(startdate), format='%Y%m%d')
-            end_date = pd.to_datetime(str(enddate), format='%Y%m%d')
+                object_csv_df[dateColumn_name], format="%Y-%m-%d", errors="coerce"
+            )
+            start_date = pd.to_datetime(str(startdate), format="%Y%m%d")
+            end_date = pd.to_datetime(str(enddate), format="%Y%m%d")
             # 날짜 범위 필터링
-            object_csv_df = object_csv_df[object_csv_df[dateColumn_name].between(
-                start_date, end_date)]
+            object_csv_df = object_csv_df[
+                object_csv_df[dateColumn_name].between(start_date, end_date)
+            ]
 
             if selected_option == "모두 포함":
-                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(
-                    lambda x: all(word in str(x) for word in selected_words))]
+                filtered_object_csv_df = object_csv_df[
+                    object_csv_df[textColumn_name].apply(
+                        lambda x: all(word in str(x) for word in selected_words)
+                    )
+                ]
             else:
-                filtered_object_csv_df = object_csv_df[object_csv_df[textColumn_name].apply(
-                    lambda x: any(word in str(x) for word in selected_words))]
+                filtered_object_csv_df = object_csv_df[
+                    object_csv_df[textColumn_name].apply(
+                        lambda x: any(word in str(x) for word in selected_words)
+                    )
+                ]
 
             if filtered_object_csv_df.shape[0] < 1:
-                QMessageBox.warning(self.main, "No Data",
-                                    "필터링 키워드를 포함하는 데이터가 존재하지 않습니다")
+                QMessageBox.warning(
+                    self.main,
+                    "No Data",
+                    "필터링 키워드를 포함하는 데이터가 존재하지 않습니다",
+                )
                 return
 
             selected_words_dic = {
-                'Filter Option': selected_option,
-                'Strong Signal': ','.join(selected_words_2dim[0]),
-                'Weak Signal': ','.join(selected_words_2dim[1]),
-                'Latent Signal': ','.join(selected_words_2dim[2]),
-                'Well-known Signal': ','.join(selected_words_2dim[3]),
+                "Filter Option": selected_option,
+                "Strong Signal": ",".join(selected_words_2dim[0]),
+                "Weak Signal": ",".join(selected_words_2dim[1]),
+                "Latent Signal": ",".join(selected_words_2dim[2]),
+                "Well-known Signal": ",".join(selected_words_2dim[3]),
             }
             # 존재 여부에 따라 파일명에 S, W, L, W를 추가
             signals = ["strong", "weak", "latent", "wellknown"]  # 각 신호의 약자
-            included_signals = ','.join([signals[i] for i in range(
-                len(selected_words_2dim)) if selected_words_2dim[i]])
+            included_signals = ",".join(
+                [
+                    signals[i]
+                    for i in range(len(selected_words_2dim))
+                    if selected_words_2dim[i]
+                ]
+            )
 
             # 파일명 생성
-            analysis_directory_name = f'Analysis_({included_signals})_{datetime.now().strftime("%m%d%H%M")}'
-            analyze_directory = os.path.join(os.path.dirname(
-                result_directory), analysis_directory_name)
+            analysis_directory_name = (
+                f"Analysis_({included_signals})_{datetime.now().strftime('%m%d%H%M')}"
+            )
+            analyze_directory = os.path.join(
+                os.path.dirname(result_directory), analysis_directory_name
+            )
 
             reply = QMessageBox.question(
-                self.main, 'Notification', f'CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n데이터를 저장하시겠습니까?', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                self.main,
+                "Notification",
+                f"CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다\n\n데이터를 저장하시겠습니까?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
             if reply == QMessageBox.StandardButton.Yes:
                 os.makedirs(analyze_directory, exist_ok=True)
-                os.makedirs(os.path.join(analyze_directory,
-                            'keyword_context'), exist_ok=True)
-                filtered_object_csv_df.to_csv(safe_path(os.path.join(
-                    analyze_directory, f"{object_csv_name}(키워드 {selected_option}).csv")), index=False, encoding='utf-8-sig')
-                pd.DataFrame([selected_words_dic]).to_csv(safe_path(os.path.join(
-                    analyze_directory, f"filtered_words.csv")), index=False, encoding='utf-8-sig')
+                os.makedirs(
+                    os.path.join(analyze_directory, "keyword_context"), exist_ok=True
+                )
+                filtered_object_csv_df.to_csv(
+                    safe_path(
+                        os.path.join(
+                            analyze_directory,
+                            f"{object_csv_name}(키워드 {selected_option}).csv",
+                        )
+                    ),
+                    index=False,
+                    encoding="utf-8-sig",
+                )
+                pd.DataFrame([selected_words_dic]).to_csv(
+                    safe_path(os.path.join(analyze_directory, f"filtered_words.csv")),
+                    index=False,
+                    encoding="utf-8-sig",
+                )
 
-                def extract_surrounding_text(text, keyword, chars_before=200, chars_after=200):
+                def extract_surrounding_text(
+                    text, keyword, chars_before=200, chars_after=200
+                ):
                     # 키워드 위치 찾기
                     match = re.search(keyword, text)
                     if match:
@@ -1102,12 +1448,13 @@ class Manager_Analysis(Manager_Worker):
                         end = min(match.end() + chars_after, len(text))
 
                         # 키워드를 강조 표시
-                        highlighted_keyword = f'_____{keyword}_____'
+                        highlighted_keyword = f"_____{keyword}_____"
                         extracted_text = text[start:end]
 
                         # 키워드를 강조 표시된 버전으로 대체
                         extracted_text = extracted_text.replace(
-                            keyword, highlighted_keyword)
+                            keyword, highlighted_keyword
+                        )
 
                         return extracted_text
                     else:
@@ -1116,47 +1463,78 @@ class Manager_Analysis(Manager_Worker):
                 context_dict = {}
                 for keyword in selected_words:
                     extracted_texts = filtered_object_csv_df[textColumn_name].apply(
-                        lambda x: extract_surrounding_text(x, keyword))
+                        lambda x: extract_surrounding_text(x, keyword)
+                    )
                     keyword_texts = extracted_texts.dropna().tolist()
                     add_text = "\n\n".join(keyword_texts)
                     if keyword_texts:
                         context_dict[keyword] = add_text
-                    with open(safe_path(os.path.join(analyze_directory, 'keyword_context', f'{keyword}_context.txt')), 'w', encoding="utf-8", errors="ignore") as context:
+                    with open(
+                        safe_path(
+                            os.path.join(
+                                analyze_directory,
+                                "keyword_context",
+                                f"{keyword}_context.txt",
+                            )
+                        ),
+                        "w",
+                        encoding="utf-8",
+                        errors="ignore",
+                    ) as context:
                         context.write(add_text)
 
-                context_df = pd.DataFrame(list(context_dict.items()), columns=[
-                                          'Keyword', 'Context Text'])
+                context_df = pd.DataFrame(
+                    list(context_dict.items()), columns=["Keyword", "Context Text"]
+                )
                 # 데이터프레임을 CSV 파일로 저장
-                context_df.to_csv(safe_path(os.path.join(analyze_directory,  'keyword_context',
-                                  'keyword_context.csv')), index=False, encoding='utf-8-sig')
+                context_df.to_csv(
+                    safe_path(
+                        os.path.join(
+                            analyze_directory, "keyword_context", "keyword_context.csv"
+                        )
+                    ),
+                    index=False,
+                    encoding="utf-8-sig",
+                )
             else:
                 printStatus(self.main)
                 return
 
-            if any('Title' in word for word in list(filtered_object_csv_df.keys())):
+            if any("Title" in word for word in list(filtered_object_csv_df.keys())):
                 reply = QMessageBox.question(
-                    self.main, 'Notification', f'키워드 필터링 데이터 저장이 완료되었습니다\n\nAI 분석을 진행하시겠습니까?', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                    self.main,
+                    "Notification",
+                    f"키워드 필터링 데이터 저장이 완료되었습니다\n\nAI 분석을 진행하시겠습니까?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes,
+                )
                 if reply == QMessageBox.StandardButton.Yes:
-                    gpt_key = get_setting('GPT_Key')
-                    if get_setting('LLM_model') == 'ChatGPT' and (gpt_key == 'default' or len(gpt_key) < 20):
+                    gpt_key = get_setting("GPT_Key")
+                    if get_setting("LLM_model") == "ChatGPT" and (
+                        gpt_key == "default" or len(gpt_key) < 20
+                    ):
                         QMessageBox.information(
-                            self.main, 'Notification', f'OpenAI API Key가 설정되지 않았습니다\n\n환경설정에서 OpenAI API Key를 입력해주십시오')
+                            self.main,
+                            "Notification",
+                            f"OpenAI API Key가 설정되지 않았습니다\n\n환경설정에서 OpenAI API Key를 입력해주십시오",
+                        )
                         printStatus(self.main)
                         openFileExplorer(analyze_directory)
                         return
 
                     printStatus(self.main, "AI 분석 중...")
                     for column in filtered_object_csv_df.columns.tolist():
-                        if 'Title' in column:
+                        if "Title" in column:
                             titleColumn_name = column
 
                     if filtered_object_csv_df[titleColumn_name].count() > 50:
                         random_titles = filtered_object_csv_df[titleColumn_name].sample(
-                            n=50, random_state=42)
+                            n=50, random_state=42
+                        )
                     else:
                         random_titles = filtered_object_csv_df[titleColumn_name]
 
-                    merged_title = ' '.join(random_titles.tolist())
+                    merged_title = " ".join(random_titles.tolist())
                     gpt_query = (
                         "한국어로 대답해. 지금 밑에 있는 텍스트는 신문기사의 제목들을 모아놓은거야\n\n"
                         f"{merged_title}\n\n"
@@ -1167,21 +1545,31 @@ class Manager_Analysis(Manager_Worker):
                         "...\n"
                         "토픽 5. ~~: (여기에 내용 기입)"
                     )
-                    gpt_response = generateLLM(gpt_query, get_setting('LLM_model'))
+                    gpt_response = generateLLM(gpt_query, get_setting("LLM_model"))
                     if type(gpt_response) != str:
-                        QMessageBox.warning(self.main, "Error", f"AI 분석 중 오류가 발생했습니다\n{gpt_response[1]}")  
+                        QMessageBox.warning(
+                            self.main,
+                            "Error",
+                            f"AI 분석 중 오류가 발생했습니다\n{gpt_response[1]}",
+                        )
                         printStatus(self.main)
                         openFileExplorer(analyze_directory)
                         return
 
-                    with open(safe_path(
+                    with open(
+                        safe_path(
                             os.path.join(
-                                analyze_directory, f"{object_csv_name}(키워드 {selected_option})_AI_analyze.txt")),
-                            'w+', encoding="utf-8", errors="ignore") as gpt_txt:
+                                analyze_directory,
+                                f"{object_csv_name}(키워드 {selected_option})_AI_analyze.txt",
+                            )
+                        ),
+                        "w+",
+                        encoding="utf-8",
+                        errors="ignore",
+                    ) as gpt_txt:
                         gpt_txt.write(gpt_response)
 
-                    QMessageBox.information(
-                        self.main, "AI 분석 결과", gpt_response)
+                    QMessageBox.information(self.main, "AI 분석 결과", gpt_response)
                     printStatus(self.main)
                     openFileExplorer(analyze_directory)
 
@@ -1190,7 +1578,10 @@ class Manager_Analysis(Manager_Worker):
                     openFileExplorer(analyze_directory)
             else:
                 QMessageBox.information(
-                    self.main, "Notification", f"CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다")
+                    self.main,
+                    "Notification",
+                    f"CSV 키워드 필터링이 완료되었습니다\n키워드를 포함하는 데이터는 {filtered_object_csv_df.shape[0]}개입니다",
+                )
                 openFileExplorer(analyze_directory)
 
         except Exception as e:
@@ -1198,12 +1589,23 @@ class Manager_Analysis(Manager_Worker):
 
     def select_tokenize(self):
         dialog = SelectTokenizeDialog(
-            self.run_tokenize_file, self.run_modify_token, self.run_common_tokens)
+            self.run_tokenize_file, self.run_modify_token, self.run_common_tokens
+        )
         dialog.exec()
 
     def run_tokenize_file(self):
         class TokenizeWorker(BaseWorker):
-            def __init__(self, pid, csv_path, save_path, tokenfile_name, selected_columns, include_word_list, language, parent=None):
+            def __init__(
+                self,
+                pid,
+                csv_path,
+                save_path,
+                tokenfile_name,
+                selected_columns,
+                include_word_list,
+                language,
+                parent=None,
+            ):
                 super().__init__(parent)
                 self.pid = pid
                 self.csv_path = csv_path
@@ -1226,29 +1628,43 @@ class Manager_Analysis(Manager_Worker):
                         self.csv_path,
                         upload_url,
                         extra_fields={"option": json.dumps(option)},
-                        label="CSV 업로드 중"
+                        label="CSV 업로드 중",
                     )
 
-                    local_csv = self.download_file(response, self.save_path, f"token_{self.tokenfile_name}", label="결과 다운로드 중")
-                    self.finished.emit(True, f"{self.tokenfile_name} 토큰화가 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", os.path.dirname(local_csv))
-                
+                    local_csv = self.download_file(
+                        response,
+                        self.save_path,
+                        f"token_{self.tokenfile_name}",
+                        label="결과 다운로드 중",
+                    )
+                    self.finished.emit(
+                        True,
+                        f"{self.tokenfile_name} 토큰화가 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                        os.path.dirname(local_csv),
+                    )
+
                 except requests.exceptions.HTTPError as e:
-                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
+                    self.error.emit(
+                        f"Server error detected ({e.response.status_code}):\n{e.response.text}"
+                    )
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
         try:
             # 1. 대상 파일 체크
             csv_path = self.select_csv_file()
-            if not csv_path: return
-            
+            if not csv_path:
+                return
+
             tokenfile_name = os.path.basename(csv_path)
             if "token" in tokenfile_name:
-                QMessageBox.warning(self.main, "Wrong File", "이미 토큰화된 파일입니다.")
+                QMessageBox.warning(
+                    self.main, "Wrong File", "이미 토큰화된 파일입니다."
+                )
                 return
 
             column_names = getCSVHeaders(csv_path)
-            
+
             dialog = TokenizeDialog(column_names, os.path.dirname(csv_path), self.main)
             if dialog.exec() != QDialog.Accepted:
                 printStatus(self.main)
@@ -1264,34 +1680,43 @@ class Manager_Analysis(Manager_Worker):
             # 4. 필수 포함 단어 파일 처리 (필요한 경우)
             if res["include_word_path"]:
                 df = readCSV(res["include_word_path"])
-                if 'word' not in df.columns:
-                    QMessageBox.warning(self.main, "Error", "단어 사전 CSV에 'word' 열이 없습니다.")
+                if "word" not in df.columns:
+                    QMessageBox.warning(
+                        self.main, "Error", "단어 사전 CSV에 'word' 열이 없습니다."
+                    )
                     return
-                include_word_list = df['word'].tolist()
+                include_word_list = df["word"].tolist()
 
             # 5. 프로세스 등록 및 실행
             pid = str(uuid.uuid4())
             register_process(pid, "Tokenizing File")
             thread_name = f"CSV 토큰화: {tokenfile_name}"
             register_thread(thread_name)
-            
+
             printStatus(self.main)
             downloadDialog = DownloadDialog(thread_name, pid, self.main)
             downloadDialog.show()
 
             worker = TokenizeWorker(
-                pid, csv_path, save_path, tokenfile_name, 
-                selected_columns, include_word_list, selected_language, self.main
+                pid,
+                csv_path,
+                save_path,
+                tokenfile_name,
+                selected_columns,
+                include_word_list,
+                selected_language,
+                self.main,
             )
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
-            if not hasattr(self, "_workers"): self._workers = []
+            if not hasattr(self, "_workers"):
+                self._workers = []
             self._workers.append(worker)
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-    
+
     def run_modify_token(self):
         try:
             token_filepath = self.select_csv_file(tokenCheck=True)
@@ -1301,10 +1726,11 @@ class Manager_Analysis(Manager_Worker):
 
             printStatus(self.main, "조정된 토큰 데이터를 저장할 위치를 선택하세요")
             save_path = QFileDialog.getExistingDirectory(
-                self.main, "토큰 데이터를 저장할 위치를 선택하세요", os.path.dirname(
-                    token_filepath)
+                self.main,
+                "토큰 데이터를 저장할 위치를 선택하세요",
+                os.path.dirname(token_filepath),
             )
-            if save_path == '':
+            if save_path == "":
                 printStatus(self.main)
                 return
 
@@ -1321,10 +1747,7 @@ class Manager_Analysis(Manager_Worker):
                 return
 
             window_size, ok = QInputDialog.getInt(
-                self.main,
-                "윈도우 크기 입력",
-                "토큰 윈도우 크기를 입력하세요:",
-                1, 1
+                self.main, "윈도우 크기 입력", "토큰 윈도우 크기를 입력하세요:", 1, 1
             )
             if not ok:
                 printStatus(self.main)
@@ -1332,16 +1755,18 @@ class Manager_Analysis(Manager_Worker):
 
             def sliding_window_tokens(text, window_size):
                 if not isinstance(text, str):
-                    return ''
+                    return ""
 
-                tokens = [token.strip() for token in text.split(',')]
+                tokens = [token.strip() for token in text.split(",")]
                 if window_size <= 1:
                     candidates = tokens
                 else:
-                    candidates = [''.join(tokens[i:i+window_size])
-                                  for i in range(len(tokens)-window_size+1)]
+                    candidates = [
+                        "".join(tokens[i : i + window_size])
+                        for i in range(len(tokens) - window_size + 1)
+                    ]
 
-                return ', '.join(candidates)
+                return ", ".join(candidates)
 
             printStatus(self.main, "토큰 파일 읽는 중...")
             token_df = readCSV(token_filepath)
@@ -1360,14 +1785,14 @@ class Manager_Analysis(Manager_Worker):
             token_df.to_csv(
                 safe_path(os.path.join(save_path, new_filename)),
                 index=False,
-                encoding='utf-8-sig'
+                encoding="utf-8-sig",
             )
 
             printStatus(self.main)
             openFileResult(
                 self.main,
                 f"토큰 파일 조정이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                save_path
+                save_path,
             )
             return
 
@@ -1383,16 +1808,20 @@ class Manager_Analysis(Manager_Worker):
                 fpath, _ = QFileDialog.getOpenFileName(
                     self.main,
                     "토큰 CSV 파일을 선택하세요",
-                    self.main.localDirectory if not token_paths else os.path.dirname(
-                        token_paths[-1]),
-                    "CSV Files (*.csv);;All Files (*)"
+                    self.main.localDirectory
+                    if not token_paths
+                    else os.path.dirname(token_paths[-1]),
+                    "CSV Files (*.csv);;All Files (*)",
                 )
-                if fpath == "":                       # 취소 → 루프 종료
+                if fpath == "":  # 취소 → 루프 종료
                     break
 
-                if 'token' not in fpath:
-                    QMessageBox.warning(self.main, "Wrong File",
-                                        f"토큰 CSV 가 아닙니다:\n{os.path.basename(fpath)}")
+                if "token" not in fpath:
+                    QMessageBox.warning(
+                        self.main,
+                        "Wrong File",
+                        f"토큰 CSV 가 아닙니다:\n{os.path.basename(fpath)}",
+                    )
                     continue
 
                 token_paths.append(fpath)
@@ -1403,23 +1832,30 @@ class Manager_Analysis(Manager_Worker):
                     "추가 선택",
                     "파일이 추가되었습니다.\n\n다른 토큰 CSV를 더 선택하시겠습니까?",
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.Yes
+                    QMessageBox.StandardButton.Yes,
                 )
                 if reply != QMessageBox.StandardButton.Yes:
                     break
 
             # 선택된 파일이 2개 미만이면 중단
             if len(token_paths) < 2:
-                QMessageBox.information(self.main, "No Enough File",
-                                        "두 개 이상의 토큰 CSV를 선택하셔야 합니다.")
+                QMessageBox.information(
+                    self.main,
+                    "No Enough File",
+                    "두 개 이상의 토큰 CSV를 선택하셔야 합니다.",
+                )
                 printStatus(self.main)
                 return
 
             # 2) 기간(주기) 선택 ----------------------------------------------------
-            period_options = ['1일', '1주일', '1달', '3달', '6달', '1년']
+            period_options = ["1일", "1주일", "1달", "3달", "6달", "1년"]
             period_choice, ok = QInputDialog.getItem(
-                self.main, "기간 선택", "토큰을 묶을 기간을 선택하세요:",
-                period_options, 0, False
+                self.main,
+                "기간 선택",
+                "토큰을 묶을 기간을 선택하세요:",
+                period_options,
+                0,
+                False,
             )
             if not ok:
                 printStatus(self.main)
@@ -1430,7 +1866,7 @@ class Manager_Analysis(Manager_Worker):
             save_path = QFileDialog.getExistingDirectory(
                 self.main, "결과를 저장할 위치를 선택하세요", self.main.localDirectory
             )
-            if save_path == '':
+            if save_path == "":
                 printStatus(self.main)
                 return
 
@@ -1438,10 +1874,10 @@ class Manager_Analysis(Manager_Worker):
                 self.main,
                 "파일명 입력",
                 "저장할 CSV 파일명을 입력하세요:",
-                text=f"common_tokens_{period_choice}"
+                text=f"common_tokens_{period_choice}",
             )
             if not ok or not file_name.strip():
-                printStatus(self.main)          # 취소 / 빈 입력 → 종료
+                printStatus(self.main)  # 취소 / 빈 입력 → 종료
                 return
             file_name = file_name.strip()
             if not file_name.lower().endswith(".csv"):
@@ -1468,11 +1904,12 @@ class Manager_Analysis(Manager_Worker):
             if missing_info:
                 # 파일별 누락 열 목록을 문자열로 정리
                 msg_lines = [
-                    f"{fname}  →  '{col}' 열 없음" for fname, col in missing_info]
+                    f"{fname}  →  '{col}' 열 없음" for fname, col in missing_info
+                ]
                 QMessageBox.warning(
                     self.main,
                     "Wrong Format",
-                    "다음 파일에 선택한 토큰 열이 없습니다:\n\n" + "\n".join(msg_lines)
+                    "다음 파일에 선택한 토큰 열이 없습니다:\n\n" + "\n".join(msg_lines),
                 )
                 printStatus(self.main)
                 return
@@ -1483,43 +1920,50 @@ class Manager_Analysis(Manager_Worker):
                 choice : '1일'|'1주일'|'1달'|'3달'|'6달'|'1년'
                 return  : Series[str]  (기간별 key)
                 """
-                if choice == '1일':
-                    return series.dt.strftime('%Y-%m-%d')
-                if choice == '1주일':      # ISO 주(월~일) 기준
-                    return series.dt.to_period('W').astype(str)
-                if choice == '1달':
-                    return series.dt.to_period('M').astype(str)
-                if choice == '3달':        # 분기
-                    return series.dt.to_period('Q').astype(str)
-                if choice == '6달':        # 반기
+                if choice == "1일":
+                    return series.dt.strftime("%Y-%m-%d")
+                if choice == "1주일":  # ISO 주(월~일) 기준
+                    return series.dt.to_period("W").astype(str)
+                if choice == "1달":
+                    return series.dt.to_period("M").astype(str)
+                if choice == "3달":  # 분기
+                    return series.dt.to_period("Q").astype(str)
+                if choice == "6달":  # 반기
                     # to_period('2Q')는 pandas>=2.2 필요. fallback 수동 계산
-                    return (series.dt.year.astype(str) + '-' +
-                            ((series.dt.month.sub(1)//6)+1).astype(str) + 'H')
-                if choice == '1년':
-                    return series.dt.to_period('A').astype(str)
+                    return (
+                        series.dt.year.astype(str)
+                        + "-"
+                        + ((series.dt.month.sub(1) // 6) + 1).astype(str)
+                        + "H"
+                    )
+                if choice == "1년":
+                    return series.dt.to_period("A").astype(str)
 
             # 6) 개별 파일 → {period: set(tokens)} dict 로 변환 ------------------------
             def extract_token_set(cell):
                 if pd.isna(cell):
                     return []
-                return [tok.strip() for tok in str(cell).split(',') if tok.strip()]
+                return [tok.strip() for tok in str(cell).split(",") if tok.strip()]
 
             file_period_dicts = []  # 각 파일별 {period: set(...)} 저장
             for path in token_paths:
                 df = readCSV(path)
                 # 날짜 컬럼 찾기
-                date_col = next((c for c in df.columns if 'Date' in c), None)
+                date_col = next((c for c in df.columns if "Date" in c), None)
                 if date_col is None:
-                    QMessageBox.warning(self.main, "Wrong Format",
-                                        f"'Date' 컬럼이 없습니다: {os.path.basename(path)}")
+                    QMessageBox.warning(
+                        self.main,
+                        "Wrong Format",
+                        f"'Date' 컬럼이 없습니다: {os.path.basename(path)}",
+                    )
                     return
-                df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+                df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
                 df = df.dropna(subset=[date_col])
 
-                df['period_key'] = period_key(df[date_col], period_choice)
+                df["period_key"] = period_key(df[date_col], period_choice)
 
                 period_group = {}
-                for p_key, g in df.groupby('period_key'):
+                for p_key, g in df.groupby("period_key"):
                     tok_set = set()
                     for col in token_columns:
                         tok_lists = g[col].dropna().apply(extract_token_set)
@@ -1531,45 +1975,58 @@ class Manager_Analysis(Manager_Worker):
             # 7) 교집합 계산 ---------------------------------------------------------
             #   (모든 파일에 존재하는 기간만, 그리고 토큰 교집합도 존재해야)
             common_periods = set.intersection(
-                *[set(d.keys()) for d in file_period_dicts])
+                *[set(d.keys()) for d in file_period_dicts]
+            )
             results = []
             for per in sorted(common_periods):
-                common_tok = set.intersection(
-                    *[d[per] for d in file_period_dicts])
+                common_tok = set.intersection(*[d[per] for d in file_period_dicts])
                 if common_tok:  # 교집합 비어있을 때 제외
-                    results.append({
-                        'Period': per,
-                        'Common Tokens': ', '.join(sorted(common_tok))
-                    })
+                    results.append(
+                        {"Period": per, "Common Tokens": ", ".join(sorted(common_tok))}
+                    )
 
             if not results:
-                QMessageBox.information(self.main, "No Intersection",
-                                        "선택한 기간·파일 조합에서 교집합 토큰이 없습니다.")
+                QMessageBox.information(
+                    self.main,
+                    "No Intersection",
+                    "선택한 기간·파일 조합에서 교집합 토큰이 없습니다.",
+                )
                 printStatus(self.main)
                 return
 
             # 8) CSV 저장 ------------------------------------------------------------
             out_df = pd.DataFrame(results)
             out_file = os.path.join(save_path, file_name)
-            out_df.to_csv(safe_path(out_file), index=False, encoding='utf-8-sig')
+            out_df.to_csv(safe_path(out_file), index=False, encoding="utf-8-sig")
 
             printStatus(self.main)
             openFileResult(
                 self.main,
                 f"교집합 토큰 추출이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                save_path
+                save_path,
             )
 
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
     def select_etc_analysis(self):
-        dialog = SelectEtcAnalysisDialog(self.run_whisper, self.run_youtube_download, self.run_detection)
+        dialog = SelectEtcAnalysisDialog(
+            self.run_whisper, self.run_youtube_download, self.run_detection
+        )
         dialog.exec()
 
     def run_hate_measure(self):
         class HateMeasureWorker(BaseWorker):
-            def __init__(self, pid, csv_path, save_dir, csv_fname, text_col, option_num, parent=None):
+            def __init__(
+                self,
+                pid,
+                csv_path,
+                save_dir,
+                csv_fname,
+                text_col,
+                option_num,
+                parent=None,
+            ):
                 super().__init__(parent)
                 self.pid = pid
                 self.csv_path = csv_path
@@ -1591,29 +2048,41 @@ class Manager_Analysis(Manager_Worker):
                         self.csv_path,
                         url,
                         extra_fields={
-                            "option": (None, json.dumps(option_payload), "application/json")
+                            "option": (
+                                None,
+                                json.dumps(option_payload),
+                                "application/json",
+                            )
                         },
-                        label="CSV 업로드 중"
+                        label="CSV 업로드 중",
                     )
 
                     filename = f"hate_{self.csv_fname}"
-                    self.download_file(response, self.save_dir, filename, label="결과 다운로드 중")
+                    self.download_file(
+                        response, self.save_dir, filename, label="결과 다운로드 중"
+                    )
 
-                    self.finished.emit(True, f"{self.csv_fname} 혐오도 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?", self.save_dir)
-                
+                    self.finished.emit(
+                        True,
+                        f"{self.csv_fname} 혐오도 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
+                        self.save_dir,
+                    )
+
                 except requests.exceptions.HTTPError as e:
-                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
+                    self.error.emit(
+                        f"Server error detected ({e.response.status_code}):\n{e.response.text}"
+                    )
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
-        try:            
+        try:
             csv_path = self.select_csv_file()
             if not csv_path:
                 printStatus(self.main)
                 return
 
             csv_fname = os.path.basename(csv_path)
-            
+
             printStatus(self.main, "결과 CSV를 저장할 위치를 선택하세요")
             save_dir = QFileDialog.getExistingDirectory(
                 self.main, "결과 파일 저장 위치 선택", os.path.dirname(csv_path)
@@ -1633,7 +2102,8 @@ class Manager_Analysis(Manager_Worker):
             sel_cols = dialog.get_selected_columns()
             if len(sel_cols) != 1:
                 QMessageBox.warning(
-                    self.main, "Wrong Selection", "텍스트 열을 하나만 선택해 주세요.")
+                    self.main, "Wrong Selection", "텍스트 열을 하나만 선택해 주세요."
+                )
                 printStatus(self.main)
                 return
 
@@ -1642,15 +2112,17 @@ class Manager_Analysis(Manager_Worker):
 
             pid = str(uuid.uuid4())
             register_process(pid, "혐오도 분석")
-            
+
             thread_name = f"혐오도 분석: {csv_fname}"
             register_thread(thread_name)
             printStatus(self.main)
-            
+
             downloadDialog = DownloadDialog(thread_name, pid, self.main)
             downloadDialog.show()
-        
-            worker = HateMeasureWorker(pid, csv_path, save_dir, csv_fname, text_col, option_num, self.main)
+
+            worker = HateMeasureWorker(
+                pid, csv_path, save_dir, csv_fname, text_col, option_num, self.main
+            )
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
@@ -1659,14 +2131,25 @@ class Manager_Analysis(Manager_Worker):
             self._workers.append(worker)
 
             # 로그
-            userLogging(f'ANALYSIS -> HateMeasure({csv_fname}) options: col={text_col}, opt={option_num}')
+            userLogging(
+                f"ANALYSIS -> HateMeasure({csv_fname}) options: col={text_col}, opt={option_num}"
+            )
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-    
+
     def run_whisper(self):
         class WhisperWorker(BaseWorker):
-            def __init__(self, pid, audio_path, save_dir, audio_fname, language, model_level, parent=None):
+            def __init__(
+                self,
+                pid,
+                audio_path,
+                save_dir,
+                audio_fname,
+                language,
+                model_level,
+                parent=None,
+            ):
                 super().__init__(parent)
                 self.pid = pid
                 self.audio_path = audio_path
@@ -1689,18 +2172,24 @@ class Manager_Analysis(Manager_Worker):
                         self.audio_path,
                         url,
                         extra_fields={
-                            "option": (None, json.dumps(option_payload), "application/json")
+                            "option": (
+                                None,
+                                json.dumps(option_payload),
+                                "application/json",
+                            )
                         },
-                        label="음성 업로드 중"
+                        label="음성 업로드 중",
                     )
-                    
+
                     result = response.json()
                     text = result.get("text", "")
                     text_with_time = result.get("text_with_time", "")
                     output_text = text_with_time or text
 
                     base, _ = os.path.splitext(self.audio_fname)
-                    filename = f"{base}_whisper_{datetime.now().strftime('%m%d%H%M')}.txt"
+                    filename = (
+                        f"{base}_whisper_{datetime.now().strftime('%m%d%H%M')}.txt"
+                    )
                     output_path = os.path.join(self.save_dir, filename)
 
                     with open(safe_path(output_path), "w", encoding="utf-8") as f:
@@ -1709,13 +2198,16 @@ class Manager_Analysis(Manager_Worker):
                     self.finished.emit(
                         True,
                         f"{self.audio_fname} 음성 인식이 완료되었습니다.\n\n파일을 확인하시겠습니까?",
-                        self.save_dir
+                        self.save_dir,
                     )
 
                 except requests.exceptions.HTTPError as e:
-                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
+                    self.error.emit(
+                        f"Server error detected ({e.response.status_code}):\n{e.response.text}"
+                    )
                 except Exception:
                     self.error.emit(traceback.format_exc())
+
         try:
             audio_path = self.select_audio_file()
             if not audio_path:
@@ -1752,13 +2244,7 @@ class Manager_Analysis(Manager_Worker):
             downloadDialog.show()
 
             worker = WhisperWorker(
-                pid,
-                audio_path,
-                save_dir,
-                audio_fname,
-                language,
-                model_level,
-                self.main
+                pid, audio_path, save_dir, audio_fname, language, model_level, self.main
             )
 
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
@@ -1776,7 +2262,7 @@ class Manager_Analysis(Manager_Worker):
             programBugLog(self.main, traceback.format_exc())
 
     def run_youtube_download(self):
-        
+
         class YouTubeDownloadWorker(BaseWorker):
             def __init__(self, pid, urls, save_dir, fmt, save_whisper, parent=None):
                 super().__init__(parent)
@@ -1792,27 +2278,32 @@ class Manager_Analysis(Manager_Worker):
                         "pid": self.pid,
                         "urls": self.urls,
                         "format": self.fmt,
-                        "save_whisper": self.save_whisper
+                        "save_whisper": self.save_whisper,
                     }
-                    response = Request('post', "/analysis/youtube", data={"option": json.dumps(option_payload)}, stream=True, timeout=600)
+                    response = Request(
+                        "post",
+                        "/analysis/youtube",
+                        data={"option": json.dumps(option_payload)},
+                        stream=True,
+                        timeout=600,
+                    )
 
                     zip_name = f"youtube_{datetime.now().strftime('%m%d%H%M')}.zip"
 
                     extract_path = self.download_file(
-                        response,
-                        self.save_dir,
-                        zip_name,
-                        extract=True
+                        response, self.save_dir, zip_name, extract=True
                     )
 
                     self.finished.emit(
                         True,
                         "YouTube 다운로드가 완료되었습니다.\n파일을 확인하시겠습니까?",
-                        extract_path
+                        extract_path,
                     )
 
                 except requests.exceptions.HTTPError as e:
-                    self.error.emit(f"Server error detected ({e.response.status_code}):\n{e.response.text}")
+                    self.error.emit(
+                        f"Server error detected ({e.response.status_code}):\n{e.response.text}"
+                    )
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
@@ -1836,7 +2327,9 @@ class Manager_Analysis(Manager_Worker):
         downloadDialog = DownloadDialog(thread_name, pid, self.main)
         downloadDialog.show()
 
-        worker = YouTubeDownloadWorker(pid, urls, save_dir, fmt, save_whisper, self.main)
+        worker = YouTubeDownloadWorker(
+            pid, urls, save_dir, fmt, save_whisper, self.main
+        )
         self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
         worker.start()
 
@@ -1847,7 +2340,7 @@ class Manager_Analysis(Manager_Worker):
         userLogging(
             f"ANALYSIS -> YouTubeDownload(count={len(urls)}, fmt={fmt}, whisper={save_whisper})"
         )
-    
+
     def run_detection(self):
 
         def fetch_yolo_models():
@@ -1862,7 +2355,7 @@ class Manager_Analysis(Manager_Worker):
             except Exception as e:
                 print(f"모델 리스트 로드 실패: {e}")
                 return []
-        
+
         class YoloWorker(BaseWorker):
             def __init__(
                 self,
@@ -1871,7 +2364,7 @@ class Manager_Analysis(Manager_Worker):
                 file_paths,
                 save_dir,
                 conf_thres,
-                model_name = "yolo11n",
+                model_name="yolo11n",
                 # dino options
                 run_dino=False,
                 dino_prompt="",
@@ -1924,7 +2417,11 @@ class Manager_Analysis(Manager_Worker):
                 if resp.status_code != 200:
                     try:
                         err = resp.json()
-                        msg = err.get("message") or err.get("error") or "Grounding DINO 처리 실패"
+                        msg = (
+                            err.get("message")
+                            or err.get("error")
+                            or "Grounding DINO 처리 실패"
+                        )
                     except Exception:
                         msg = resp.text or "Grounding DINO 처리 중 오류"
                     raise RuntimeError(msg)
@@ -1944,9 +2441,9 @@ class Manager_Analysis(Manager_Worker):
 
             def _run_yolo(self):
                 option_payload = {
-                    "pid": self.pid, 
+                    "pid": self.pid,
                     "media": self.media,
-                    "model": self.model_name  
+                    "model": self.model_name,
                 }
                 yolo_url = MANAGER_SERVER_API + "/analysis/yolo"
 
@@ -1978,7 +2475,9 @@ class Manager_Analysis(Manager_Worker):
                         msg = response.text or "YOLO 처리 중 오류 발생"
                     raise RuntimeError(msg)
 
-                zip_name = f"detect_{self.media}_{datetime.now().strftime('%m%d%H%M')}.zip"
+                zip_name = (
+                    f"detect_{self.media}_{datetime.now().strftime('%m%d%H%M')}.zip"
+                )
                 extract_path = self.download_file(
                     response,
                     self.save_dir,
@@ -1994,14 +2493,21 @@ class Manager_Analysis(Manager_Worker):
                         msg = "Prompt 객체 검출이 완료되었습니다.\n파일을 확인하시겠습니까?"
                     else:
                         result_dir = self._run_yolo()
-                        msg = "YOLO 객체 검출이 완료되었습니다.\n파일을 확인하시겠습니까?"
+                        msg = (
+                            "YOLO 객체 검출이 완료되었습니다.\n파일을 확인하시겠습니까?"
+                        )
 
                     self.finished.emit(True, msg, result_dir or self.save_dir)
 
                 except Exception:
                     self.error.emit(traceback.format_exc())
+
         try:
-            dialog = DetectOptionDialog(self.main, base_dir=self.main.localDirectory, yolo_models=fetch_yolo_models())
+            dialog = DetectOptionDialog(
+                self.main,
+                base_dir=self.main.localDirectory,
+                yolo_models=fetch_yolo_models(),
+            )
             if dialog.exec() != QDialog.Accepted:
                 return
 
@@ -2060,10 +2566,12 @@ class Manager_Analysis(Manager_Worker):
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-    
+
     def run_network_analysis(self):
         class NetworkWorker(BaseWorker):
-            def __init__(self, pid, filepath, option, save_path, folder_name, parent=None):
+            def __init__(
+                self, pid, filepath, option, save_path, folder_name, parent=None
+            ):
                 super().__init__(parent)
                 self.pid = pid
                 self.filepath = filepath
@@ -2078,32 +2586,31 @@ class Manager_Analysis(Manager_Worker):
                         os.makedirs(target_dir, exist_ok=True)
 
                     upload_url = MANAGER_SERVER_API + "/analysis/graph-network"
-                    
+
                     response = self.upload_file(
                         self.filepath,
                         upload_url,
                         extra_fields={"option": json.dumps(self.option)},
-                        label="데이터 업로드 및 네트워크 분석 중..."
+                        label="데이터 업로드 및 네트워크 분석 중...",
                     )
-                    
-                    
+
                     zip_name = f"network_{os.path.splitext(os.path.basename(self.filepath))[0]}_{datetime.now().strftime('%m%d%H%M')}.zip"
                     extract_path = self.download_file(
-                        response, 
-                        target_dir, 
-                        label="결과 파일 다운로드 및 정리 중", 
+                        response,
+                        target_dir,
+                        label="결과 파일 다운로드 및 정리 중",
                         filename=zip_name,
-                        extract=True
+                        extract=True,
                     )
-                    
+
                     self.finished.emit(
-                        True, 
-                        f"네트워크 분석이 완료되었습니다.", 
-                        target_dir 
+                        True, f"네트워크 분석이 완료되었습니다.", target_dir
                     )
 
                 except requests.exceptions.HTTPError as e:
-                    self.error.emit(f"서버 에러 발생: {e.response.status_code}\n{e.response.text}")
+                    self.error.emit(
+                        f"서버 에러 발생: {e.response.status_code}\n{e.response.text}"
+                    )
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
@@ -2111,24 +2618,27 @@ class Manager_Analysis(Manager_Worker):
             QMessageBox.warning(self.main, "Not prepared", f"준비 중인 기능입니다")
             return
             filepath = self.select_csv_file()
-            if not filepath: return
+            if not filepath:
+                return
 
             headers = getCSVHeaders(filepath)
             filename = os.path.basename(filepath)
-            
+
             dialog = NetworkAnalysisDialog(filepath, headers, self.main)
             if dialog.exec() != QDialog.Accepted or dialog.data is None:
                 return
 
             res = dialog.data
             base_save_path = res.pop("save_dir")
-            
-            folder_name = f"network_{os.path.splitext(filename)[0]}_{datetime.now():%m%d%H%M}"
-            
+
+            folder_name = (
+                f"network_{os.path.splitext(filename)[0]}_{datetime.now():%m%d%H%M}"
+            )
+
             pid = str(uuid.uuid4())
             register_process(pid, "네트워크 분석")
             res["pid"] = pid
-            
+
             thread_name = f"네트워크 분석: {filename}"
             register_thread(thread_name)
             userLogging(f"ANALYSIS -> NetworkGraph({filename}) mode={res['mode']}")
@@ -2136,87 +2646,89 @@ class Manager_Analysis(Manager_Worker):
             downloadDialog = DownloadDialog(thread_name, pid, self.main)
             downloadDialog.show()
 
-            worker = NetworkWorker(pid, filepath, res, base_save_path, folder_name, self.main)
+            worker = NetworkWorker(
+                pid, filepath, res, base_save_path, folder_name, self.main
+            )
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
             worker.start()
 
-            if not hasattr(self, "_workers"): self._workers = []
+            if not hasattr(self, "_workers"):
+                self._workers = []
             self._workers.append(worker)
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-                   
+
     def select_csv_file(self, tokenCheck=False):
         try:
             selected_files = self.file_dialog.selectedFiles()
-            
+
             if not selected_files:
                 raise ValueError("CSV 파일을 선택하세요")
-                
+
             file_path = selected_files[0]
 
-            if not file_path.lower().endswith('.csv'):
+            if not file_path.lower().endswith(".csv"):
                 raise ValueError(f"{file_path}는 CSV 파일이 아닙니다.")
-            
-            if tokenCheck and 'token' not in os.path.basename(file_path).lower():
+
+            if tokenCheck and "token" not in os.path.basename(file_path).lower():
                 raise ValueError(f"{file_path}는 토큰 파일이 아닙니다.")
-            
+
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"파일을 찾을 수 없습니다:\n{file_path}")
-            
+
             return file_path
-        
+
         except Exception:
             printStatus(self.main, "CSV 파일을 선택하세요")
             file_path, _ = QFileDialog.getOpenFileName(
-                self.main,
-                "CSV 파일 선택",
-                "",
-                "CSV Files (*.csv);;All Files (*)"
+                self.main, "CSV 파일 선택", "", "CSV Files (*.csv);;All Files (*)"
             )
 
             if not file_path:
                 return 0
 
-            if not file_path.lower().endswith('.csv'):
+            if not file_path.lower().endswith(".csv"):
                 QMessageBox.warning(
-                    self.main, "Wrong Format", f"{file_path}는 CSV 파일이 아닙니다.")
+                    self.main, "Wrong Format", f"{file_path}는 CSV 파일이 아닙니다."
+                )
                 return 0
 
-            if tokenCheck == True and 'token' not in file_path.lower():
-                QMessageBox.warning(
-                    self.main, "Wrong File", "토큰 파일이 아닙니다")
+            if tokenCheck == True and "token" not in file_path.lower():
+                QMessageBox.warning(self.main, "Wrong File", "토큰 파일이 아닙니다")
                 return 0
-            
+
             printStatus(self.main)
             return file_path
 
     def select_audio_file(self):
-        valid_exts = ('.mp3', '.wav', '.m4a', '.flac', '.ogg')
-        
+        valid_exts = (".mp3", ".wav", ".m4a", ".flac", ".ogg")
+
         try:
             selected_files = self.file_dialog.selectedFiles()
-            
+
             if not selected_files:
                 raise ValueError("오디오 파일을 선택하세요")
-                
+
             file_path = selected_files[0]
 
             if not file_path.lower().endswith(valid_exts):
-                raise ValueError(f"지원되지 않는 형식입니다: {os.path.basename(file_path)}")
-            
+                raise ValueError(
+                    f"지원되지 않는 형식입니다: {os.path.basename(file_path)}"
+                )
+
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"파일을 찾을 수 없습니다: {file_path}")
-            
+
             return file_path
-            
+
         except Exception:
             printStatus(self.main, "오디오 파일을 선택하세요")
             file_path, _ = QFileDialog.getOpenFileName(
                 self.main,
                 "오디오 파일 선택",
                 "",
-                f"Audio Files ({' '.join(['*' + ext for ext in valid_exts])});;All Files (*)"
+                f"Audio Files ({' '.join(['*' + ext for ext in valid_exts])});;All Files (*)",
             )
 
             if not file_path:
@@ -2224,14 +2736,15 @@ class Manager_Analysis(Manager_Worker):
 
             if not file_path.lower().endswith(valid_exts):
                 QMessageBox.warning(
-                    self.main, "Wrong Format", 
-                    f"{os.path.basename(file_path)}는 지원되지 않는 오디오 파일 형식입니다."
+                    self.main,
+                    "Wrong Format",
+                    f"{os.path.basename(file_path)}는 지원되지 않는 오디오 파일 형식입니다.",
                 )
                 return 0
 
             printStatus(self.main)
             return file_path
-        
+
     def anaylsis_buttonMatch(self):
         self.main.analysis_timesplitfile_btn.clicked.connect(self.run_timesplit)
         self.main.analysis_dataanalysisfile_btn.clicked.connect(self.run_analysis)
@@ -2250,8 +2763,7 @@ class Manager_Analysis(Manager_Worker):
 
     def analysis_shortcut_setting(self):
         self.updateShortcut(0)
-        self.main.tabWidget_data_process.currentChanged.connect(
-            self.updateShortcut)
+        self.main.tabWidget_data_process.currentChanged.connect(self.updateShortcut)
 
     def updateShortcut(self, index):
         resetShortcuts(self.main)

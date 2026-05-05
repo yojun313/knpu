@@ -2,6 +2,7 @@ from app.models.analysis_model import *
 from app.libs.kemkim import KemKim
 from app.libs.progress import *
 import os
+
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
@@ -13,9 +14,8 @@ import time
 import pandas as pd
 import re
 from kiwipiepy import Kiwi
-from transformers import (
-    logging
-)
+from transformers import logging
+
 logging.set_verbosity_error()
 import os
 from app.utils.zip import fast_zip
@@ -36,11 +36,13 @@ GPU_SERVER_URL = os.getenv("GPU_SERVER_URL")
 
 kiwi_instance = None
 
+
 def get_kiwi():
     global kiwi_instance
     if kiwi_instance is None:
         kiwi_instance = Kiwi(num_workers=-1)
     return kiwi_instance
+
 
 def start_kemkim(option: KemKimOption, token_data):
 
@@ -52,7 +54,7 @@ def start_kemkim(option: KemKimOption, token_data):
             pass
 
     option = option.model_dump()
-    save_path = os.path.join(os.path.dirname(__file__), '..', 'temp')
+    save_path = os.path.join(os.path.dirname(__file__), "..", "temp")
 
     kemkim_obj = KemKim(
         pid=option["pid"],
@@ -72,18 +74,19 @@ def start_kemkim(option: KemKimOption, token_data):
         ani_option=option["ani_option"],
         exception_word_list=option["exception_word_list"],
         exception_filename=option["exception_filename"],
-        modify_kemkim=False
+        modify_kemkim=False,
     )
     try:
         result_path = kemkim_obj.make_kemkim()
-        
+
         if type(result_path) == str:
             zip_path = f"{result_path}.zip"
-            fast_zip(result_path, zip_path)   
+            fast_zip(result_path, zip_path)
             filename = os.path.basename(zip_path)
 
             background_task = BackgroundTask(
-                cleanup_folder_and_zip, result_path, zip_path)
+                cleanup_folder_and_zip, result_path, zip_path
+            )
 
             # 4) FileResponse에 filename= 으로 넘기기
             return FileResponse(
@@ -96,23 +99,28 @@ def start_kemkim(option: KemKimOption, token_data):
             # 예외 상황 메시지 응답
             return JSONResponse(
                 status_code=400,
-                content={"error": "KEMKIM 분석 중 오류 발생",
-                         "message": "시간 가중치 오류가 발생했습니다"}
+                content={
+                    "error": "KEMKIM 분석 중 오류 발생",
+                    "message": "시간 가중치 오류가 발생했습니다",
+                },
             )
         elif result_path == 3:
             # 예외 상황 메시지 응답
             return JSONResponse(
                 status_code=400,
-                content={"error": "KEMKIM 분석 중 오류 발생",
-                         "message": "키워드가 없어 분석이 종료되었습니다"}
+                content={
+                    "error": "KEMKIM 분석 중 오류 발생",
+                    "message": "키워드가 없어 분석이 종료되었습니다",
+                },
             )
 
     except Exception as e:
         # 예외 상황 메시지 응답
         return JSONResponse(
             status_code=500,
-            content={"error": "KEMKIM 분석 중 오류 발생", "message": str(e)}
+            content={"error": "KEMKIM 분석 중 오류 발생", "message": str(e)},
         )
+
 
 def tokenization(
     pid: str,
@@ -122,13 +130,13 @@ def tokenization(
     language: str = "ko",
     update_interval: int = 3000,
 ) -> pd.DataFrame:
-    
-    if language == 'en':
+
+    if language == "en":
         import nltk
         from nltk.tokenize import word_tokenize
         from nltk.tag import pos_tag
-        
-        nltk_path = os.path.join(os.getenv('MODEL_PATH'), 'nltk_data')
+
+        nltk_path = os.path.join(os.getenv("MODEL_PATH"), "nltk_data")
         if nltk_path not in nltk.data.path:
             nltk.data.path.append(nltk_path)
         kiwi = None
@@ -136,7 +144,7 @@ def tokenization(
         kiwi = get_kiwi()
         if include_words:
             for word in include_words:
-                kiwi.add_user_word(word, 'NNP', score=10)
+                kiwi.add_user_word(word, "NNP", score=10)
 
     if isinstance(columns, str):
         columns = [columns]
@@ -146,8 +154,8 @@ def tokenization(
             send_message(pid, f"⚠️  열 '{col}'이(가) 존재하지 않습니다 → 건너뜀")
             continue
 
-        texts         = data[col].tolist()
-        total         = len(texts)
+        texts = data[col].tolist()
+        total = len(texts)
         tokenized_col = []
 
         send_message(pid, f"[{col}] ({language}) 토큰화 시작 (총 {total:,} rows)")
@@ -158,16 +166,20 @@ def tokenization(
 
             try:
                 if isinstance(text, str):
-                    if language == 'ko':
+                    if language == "ko":
                         cleaned = re.sub(r"[^가-힣a-zA-Z\s]", "", text)
-                        tokens   = kiwi.tokenize(cleaned, split_complex=False)
-                        nouns    = [t.form for t in tokens if t.tag in ("NNG", "NNP")]
+                        tokens = kiwi.tokenize(cleaned, split_complex=False)
+                        nouns = [t.form for t in tokens if t.tag in ("NNG", "NNP")]
                     else:
                         cleaned = re.sub(r"[^a-zA-Z\s]", "", text)
-                        tokens   = word_tokenize(cleaned)
-                        tagged   = pos_tag(tokens)
-                        nouns    = [word for word, tag in tagged if tag in ('NN', 'NNS', 'NNP', 'NNPS')]
-                    
+                        tokens = word_tokenize(cleaned)
+                        tagged = pos_tag(tokens)
+                        nouns = [
+                            word
+                            for word, tag in tagged
+                            if tag in ("NN", "NNS", "NNP", "NNPS")
+                        ]
+
                     tokenized_col.append(", ".join(nouns))
                 else:
                     tokenized_col.append("")
@@ -176,19 +188,20 @@ def tokenization(
 
             total_time += time.time() - start
             if idx % update_interval == 0 or idx == total:
-                pct   = round(idx / total * 100, 2)
-                avg   = total_time / idx
+                pct = round(idx / total * 100, 2)
+                avg = total_time / idx
                 remain_sec = avg * (total - idx)
-                m, s  = divmod(int(remain_sec), 60)
+                m, s = divmod(int(remain_sec), 60)
                 send_message(
                     pid,
-                    f"[{col}] ({language}) 진행률 {pct}% ({idx:,}/{total:,}) • 예상 남은 시간 {m}분 {s}초"
+                    f"[{col}] ({language}) 진행률 {pct}% ({idx:,}/{total:,}) • 예상 남은 시간 {m}분 {s}초",
                 )
 
         data[col] = tokenized_col
         send_message(pid, f"[{col}] ({language}) 토큰화 완료")
 
     return data
+
 
 async def start_youtube_download(option: dict):
     """
@@ -214,7 +227,9 @@ async def start_youtube_download(option: dict):
                 video_id = query_params.get("v")
                 if video_id:
                     new_query = f"v={video_id[0]}"
-                    clean_url = urlunparse(parsed_url._replace(query=new_query, fragment=""))
+                    clean_url = urlunparse(
+                        parsed_url._replace(query=new_query, fragment="")
+                    )
                     urls.append(clean_url)
                 else:
                     urls.append(url)
@@ -225,10 +240,14 @@ async def start_youtube_download(option: dict):
                 urls.append(url)
 
         if not urls:
-            return JSONResponse(status_code=400, content={"error": "urls가 비어있습니다"})
-        
+            return JSONResponse(
+                status_code=400, content={"error": "urls가 비어있습니다"}
+            )
+
         if not urls:
-            return JSONResponse(status_code=400, content={"error": "urls가 비어있습니다"})
+            return JSONResponse(
+                status_code=400, content={"error": "urls가 비어있습니다"}
+            )
 
         # ───────────────────────
         # 출력 디렉토리 준비
@@ -249,7 +268,7 @@ async def start_youtube_download(option: dict):
                 os.remove(zip_path)
             except OSError:
                 pass
-        
+
         def make_progress_hook(pid: str, index: int, total: int):
             last_sent = {"percent": -1}
             active_filename = {"name": None}
@@ -278,15 +297,14 @@ async def start_youtube_download(option: dict):
                         send_message(
                             pid,
                             f"[{index}/{total}] 다운로드 중: {percent}% "
-                            f"({d.get('_speed_str','')}, ETA {d.get('_eta_str','')})"
+                            f"({d.get('_speed_str', '')}, ETA {d.get('_eta_str', '')})",
                         )
 
                 elif status == "finished":
                     # finished도 동일한 filename에 대해서만
                     if d.get("filename") == active_filename["name"]:
                         send_message(
-                            pid,
-                            f"[{index}/{total}] 다운로드 완료, 후처리 중..."
+                            pid, f"[{index}/{total}] 다운로드 완료, 후처리 중..."
                         )
 
             return hook
@@ -305,11 +323,11 @@ async def start_youtube_download(option: dict):
             name = re.sub(r"\s+", " ", name).strip()
 
             return name
-        
+
         def _ytdlp_opts(format_: str, pid: str, index: int, total: int) -> dict:
             opts = {
                 "outtmpl": outtmpl,
-                "quiet": True,  
+                "quiet": True,
                 "no_warnings": True,
                 "progress_hooks": [make_progress_hook(pid, index, total)],
                 "nocheckcertificate": True,
@@ -330,26 +348,32 @@ async def start_youtube_download(option: dict):
             }
 
             if format_ == "mp3":
-                opts.update({
-                    "format": "bestaudio/best",
-                    "keepvideo": False,   
-                    "postprocessors": [
-                        {
-                            "key": "FFmpegExtractAudio",
-                            "preferredcodec": "mp3",
-                            "preferredquality": "192",
-                        }
-                    ],
-                })
+                opts.update(
+                    {
+                        "format": "bestaudio/best",
+                        "keepvideo": False,
+                        "postprocessors": [
+                            {
+                                "key": "FFmpegExtractAudio",
+                                "preferredcodec": "mp3",
+                                "preferredquality": "192",
+                            }
+                        ],
+                    }
+                )
             else:
-                opts.update({
-                    "format": "bestvideo+bestaudio/best",
-                    "merge_output_format": "mp4",
-                })
-            
+                opts.update(
+                    {
+                        "format": "bestvideo+bestaudio/best",
+                        "merge_output_format": "mp4",
+                    }
+                )
+
             return opts
 
-        def _download_one(url: str, format_: str, pid: str, index: int, total: int) -> str:
+        def _download_one(
+            url: str, format_: str, pid: str, index: int, total: int
+        ) -> str:
             with YoutubeDL(_ytdlp_opts(format_, pid, index, total)) as ydl:
                 info = ydl.extract_info(url, download=True)
 
@@ -371,8 +395,7 @@ async def start_youtube_download(option: dict):
                 # 안전한 파일명 생성
                 safe_title = safe_filename(info.get("title", "video"))
                 final_path = os.path.join(
-                    os.path.dirname(origin_path),
-                    f"{safe_title}.{ext}"
+                    os.path.dirname(origin_path), f"{safe_title}.{ext}"
                 )
 
                 # 이미 이름이 다르면 rename
@@ -416,7 +439,7 @@ async def start_youtube_download(option: dict):
                 if "application/json" in ctype:
                     obj = json.loads(content.decode("utf-8", errors="ignore"))
                     with open(txt_path, "w", encoding="utf-8") as wf:
-                        wf.write(obj['text_with_time'])
+                        wf.write(obj["text_with_time"])
                 else:
                     with open(txt_path, "wb") as wf:
                         wf.write(content)
@@ -432,7 +455,7 @@ async def start_youtube_download(option: dict):
         try:
             send_message(
                 pid,
-                f"유튜브 다운로드 시작 (총 {len(urls)}개, format={fmt}, whisper={save_whisper})"
+                f"유튜브 다운로드 시작 (총 {len(urls)}개, format={fmt}, whisper={save_whisper})",
             )
 
             for i, url in enumerate(urls, 1):
@@ -449,13 +472,13 @@ async def start_youtube_download(option: dict):
 
                 send_message(
                     pid,
-                    f"[{i}/{len(urls)}] 다운로드 완료: {os.path.basename(media_path)}"
+                    f"[{i}/{len(urls)}] 다운로드 완료: {os.path.basename(media_path)}",
                 )
 
                 if save_whisper:
                     send_message(
                         pid,
-                        f"[{i}/{len(urls)}] whisper 변환 중: {os.path.basename(media_path)}"
+                        f"[{i}/{len(urls)}] whisper 변환 중: {os.path.basename(media_path)}",
                     )
                     try:
                         await _whisper_to_txt(media_path)
@@ -466,9 +489,7 @@ async def start_youtube_download(option: dict):
             zip_path = out_dir + ".zip"
             fast_zip(out_dir, zip_path)
 
-            background_task = BackgroundTask(
-                cleanup_folder_and_zip, out_dir, zip_path
-            )
+            background_task = BackgroundTask(cleanup_folder_and_zip, out_dir, zip_path)
 
             return FileResponse(
                 path=zip_path,
@@ -488,15 +509,14 @@ async def start_youtube_download(option: dict):
     except Exception as e:
         # 서버 터미널에 상세한 에러 경로(Traceback) 출력
         error_trace = traceback.format_exc()
-        print(f"[YOUTUBE ERROR]\n{error_trace}") 
-        
+        print(f"[YOUTUBE ERROR]\n{error_trace}")
+
         # 클라이언트에게도 구체적인 원인 전달
         return JSONResponse(
             status_code=500,
             content={
                 "error": "유튜브 다운로드 중 오류",
                 "message": str(e),
-                "traceback": error_trace # 디버깅을 위해 추가
+                "traceback": error_trace,  # 디버깅을 위해 추가
             },
         )
- 
