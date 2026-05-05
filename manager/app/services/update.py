@@ -185,5 +185,5 @@ def updateProgram(parent, sc=False):
             QMessageBox.StandardButton.Yes
         )
         if reply == QMessageBox.StandardButton.Yes:
-            webbrowser.open("https://knpu.re.kr/download_manager")
+            webbrowser.open("https://knpu.re.kr/manager/download")
         return
