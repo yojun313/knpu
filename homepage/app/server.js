@@ -48,7 +48,7 @@ app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ter
 
 app.get('/systems', (req, res) => res.sendFile(path.join(__dirname, 'public', 'systems.html')));
 
-app.get('/manager', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_manager.html')));
+app.get('/manager', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manager.html')));
 app.get('/manual/kemkim', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_kemkim.html')));
 app.get('/manual/hate_analysis', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_hateanalysis.html')));
 app.get('/manual/whisper', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_whisper.html')));
