@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab Tool/Service Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <style>
+    :root {
+      --primary-color: #007bff;
+      --secondary-color: #6c757d;
+      --dark-color: #1a1d20;
+      --light-bg: #f8f9fa;
+      --card-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      --transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--light-bg);
+      color: #333;
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1d20 0%, #2c3e50 100%);
+      color: white;
+      padding: 100px 20px;
+      text-align: center;
+      clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);
+    }
+
+    header h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      letter-spacing: -1.5px;
+    }
+
+    header p {
+      font-size: 1.25rem;
+      opacity: 0.85;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: -60px auto 120px;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      transition: var(--transition);
+      display: flex;
+      flex-direction: row;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      min-height: 320px;
+    }
+
+    .card:hover {
+      transform: translateY(-8px) scale(1.01);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-image {
+      flex: 0 0 45%;
+      background-color: #eee;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: var(--transition);
+    }
+
+    .card:hover .card-image img {
+      transform: scale(1.08);
+    }
+
+    .card-content {
+      flex: 1;
+      padding: 45px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .card h3 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 15px;
+      color: var(--dark-color);
+      letter-spacing: -0.5px;
+    }
+
+    .card p {
+      color: var(--secondary-color);
+      font-size: 1.05rem;
+      margin-bottom: 30px;
+      text-align: left;
+    }
+
+    .button-link {
+      background-color: var(--dark-color);
+      color: white;
+      padding: 14px 28px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .button-link:hover {
+      background-color: var(--primary-color);
+      transform: translateX(5px);
+    }
+
+    .button-link i {
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+
+    .button-link:hover i {
+      transform: translateX(4px);
+    }
+
+    footer {
+      background-color: var(--dark-color);
+      color: #777;
+      padding: 80px 20px;
+      text-align: center;
+    }
+
+    footer p {
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+    }
+
+    footer a {
+      color: #eee;
+      text-decoration: none;
+      font-weight: 600;
+      transition: var(--transition);
+      border-bottom: 1px solid transparent;
+    }
+
+    footer a:hover {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+
+    @media (max-width: 850px) {
+      header h1 {
+        font-size: 2.5rem;
+      }
+      
+      .card {
+        flex-direction: column;
+      }
+
+      .card-image {
+        flex: 0 0 250px;
+      }
+
+      .card-content {
+        padding: 35px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Research System</h1>
+    <p>효율적인 연구 환경을 위한 핵심 서비스 대시보드입니다.</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-image">
+        <img src="assets/img/systems/manager.png" alt="Manager Service">
+      </div>
+      <div class="card-content">
+        <h3>MANAGER</h3>
+        <p>연구 리소스 관리, 빅데이터 분석을 지원하는 통합 플랫폼입니다.</p>
+        <a href="/manager" class="button-link">Launch App <i class="fas fa-arrow-right"></i></a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-image">
+        <img src="assets/img/systems/crawler.png" alt="Crawler Service">
+      </div>
+      <div class="card-content">
+        <h3>CRAWLER</h3>
+        <p>대규모 데이터 수집을 통해 데이터셋을 구축합니다.</p>
+        <a href="https://crawler.knpu.re.kr" class="button-link">Launch App <i class="fas fa-arrow-right"></i></a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-image">
+        <img src="assets/img/systems/labllm.png" alt="Lab LLM Service">
+      </div>
+      <div class="card-content">
+        <h3>Lab LLM</h3>
+        <p>연구실 내부 GPU 자원을 활용한 대규모 언어 모델을 제공합니다.</p>
+        <a href="https://llm.knpu.re.kr" class="button-link">Launch App <i class="fas fa-arrow-right"></i></a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-image">
+        <img src="assets/img/systems/complaint.png" alt="Legal Service">
+      </div>
+      <div class="card-content">
+        <h3>AI 고소장 생성 서비스</h3>
+        <p>LLM을 활용한 법률적 요건에 맞는 고소장 초안 생성을 돕는 서비스입니다.</p>
+        <a href="https://complaint.knpu.re.kr" class="button-link">Launch App <i class="fas fa-arrow-right"></i></a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-image">
+        <img src="assets/img/systems/lecai.png" alt="LecAI Service">
+      </div>
+      <div class="card-content">
+        <h3>LecAI</h3>
+        <p>강의 자료를 AI로 분석하고 학습 효율을 극대화하는 서비스입니다.</p>
+        <a href="https://lec.knpu.re.kr" class="button-link">Launch App <i class="fas fa-arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2026 PAILAB. All rights reserved.</p>
+    <div>
+      Developed by <a href="https://github.com/yojun313" target="_blank">Yojun Moon</a>
+    </div>
+  </footer>
+</body>
+
+</html>
