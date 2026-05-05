@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAILAB ANALYSIS: Hate Measurement</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 40px;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 36px;
+            color: #34495e;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 30px;
+            border-bottom: 3px solid #bdc3c7;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 24px;
+            margin-top: 40px;
+            border-bottom: 2px solid #bdc3c7;
+            padding-bottom: 10px;
+        }
+
+        p, ul {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #34495e;
+        }
+
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+
+        ul ul {
+            list-style-type: circle;
+            margin-top: 10px;
+        }
+
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #2980b9;
+        }
+
+        code {
+            background-color: #e0e7ef;
+            padding: 6px 10px;
+            border-radius: 5px;
+            font-size: 90%;
+            color: #d35400;
+        }
+
+        .important {
+            background-color: #fceceb;
+            border-left: 6px solid #e74c3c;
+            padding: 20px;
+            margin: 40px 0;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 30px;
+            }
+            h2 {
+                font-size: 26px;
+            }
+            h3 {
+                font-size: 20px;
+            }
+            p, ul {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>Hate Measurement</h1>
+
+        <h2>1. 분석 개요</h2>
+        <p>
+            혐오도 분석은 업로드된 텍스트 데이터(CSV)에 대해 문장 단위로 혐오 표현 가능성을 분석합니다.
+            CSV의 각 행 데이터는 여러 혐오 카테고리에 대해 <strong>확률(백분율)</strong> 형태의 점수로 평가됩니다.
+        </p>
+
+        <p>
+            분석에는 HuggingFace에 공개된 한국어 혐오 표현 분석 모델
+            <a href="https://huggingface.co/smilegate-ai/kor_unsmile" target="_blank">
+                <code>smilegate-ai/kor_unsmile</code>
+            </a>
+            이 사용되었습니다.
+        </p>
+
+        <h2>2. 사용 모델</h2>
+        <ul>
+            <li><strong>모델명:</strong> kor_unsmile</li>
+            <li><strong>제공:</strong> Smilegate AI</li>
+            <li><strong>분석 방식:</strong> 문장 단위 다중 혐오 카테고리 확률 추정</li>
+            <li><strong>출력 값:</strong> 각 카테고리별 0~1 범위의 확률 값</li>
+        </ul>
+
+        <h2>3. 결과 파일(CSV) 구조</h2>
+
+        <h3>혐오 카테고리별 확률 값</h3>
+        <p>
+            결과 CSV 파일에는 각 문장에 대해 다음과 같은 혐오 관련 카테고리 열이 포함됩니다.
+            각 값은 해당 문장이 특정 혐오 유형에 해당할 <strong>확률</strong>을 의미합니다.
+        </p>
+
+        <ul>
+            <li><code>여성/가족</code></li>
+            <li><code>남성</code></li>
+            <li><code>성소수자</code></li>
+            <li><code>인종/국적</code></li>
+            <li><code>연령</code></li>
+            <li><code>지역</code></li>
+            <li><code>종교</code></li>
+            <li><code>기타 혐오</code></li>
+            <li><code>악플/욕설</code></li>
+            <li><code>clean</code></li>
+        </ul>
+
+        <p>
+            예를 들어 <code>악플/욕설 = 0.46</code> 인 경우,  
+            해당 문장이 악플 또는 욕설에 해당할 가능성이 <strong>46%</strong>임을 의미합니다.
+        </p>
+
+        <div class="important">
+            <p>
+                모든 카테고리 값은 하나의 문장에 대해 동시에 계산되며,
+                각 카테고리는 서로 독립적인 확률로 해석됩니다.
+            </p>
+        </div>
+
+    </div>
+</body>
+
+</html>

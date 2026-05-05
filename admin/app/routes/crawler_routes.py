@@ -10,6 +10,12 @@ templates = Jinja2Templates(directory="app/templates")
 async def read_crawlers(request: Request, user=Depends(get_current_user)):
     stats = get_dashboard_stats()
     crawlers = get_recent_crawlers(1000)
-    return templates.TemplateResponse("crawlers.html", {
-        "request": request, "crawlers": crawlers, "stats": stats, "active_page": "crawlers"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="crawlers.html",
+        context={
+            "crawlers": crawlers, 
+            "stats": stats, 
+            "active_page": "crawlers"
+        }
+    )

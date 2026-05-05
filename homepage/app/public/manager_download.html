@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MANAGER Download</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    a {
+      color: #0d6efd;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 16px;
+      color: #fff;
+      background-color: #2c3e50;
+      border-radius: 5px;
+      text-decoration: none;
+      transition: background-color 0.3s;
+    }
+
+    .button:hover {
+      background-color: #2c3e50;
+    }
+
+    .latest-version {
+      background-color: #eafaf1;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      text-align: center; /* 추가하여 텍스트를 가운데 정렬 */
+    }
+    
+    .latest-version h3 {
+      margin-top: 0;
+      color: #2c3e50;
+      font-size: 24px; /* 폰트 크기 살짝 키움 */
+    }
+    
+    .latest-version p {
+      margin: 10px 0;
+      font-size: 16px; /* 폰트 크기 조정 */
+      color: #555; /* 텍스트 색상을 조금 어둡게 변경 */
+    }
+    
+    .latest-version a {
+      display: inline-block; /* 가운데 정렬을 위한 display 속성 변경 */
+      margin-top: 15px;
+      padding: 10px 25px; /* 버튼 패딩을 살짝 키움 */
+      font-size: 18px; /* 폰트 크기 키움 */
+      background-color: #007bff; /* 버튼 색상 개선 */
+      border-radius: 5px;
+      color: white; /* 버튼 텍스트 색상 흰색 */
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+    }
+    
+    .latest-version a:hover {
+      background-color: #0056b3; /* 버튼 호버 시 색상 변경 */
+    }
+  
+    .toggle-button {
+      cursor: pointer;
+      color: #2c3e50;
+      font-size: 18px;
+      text-align: center;
+      margin: 10px 0;
+      display: block;
+    }
+
+    .toggle-button i {
+      margin-right: 8px;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+  <link rel="icon" type="image/x-icon" href="assets/img/pailab_logo_favicon.ico" />
+  <script>
+    function toggleTable() {
+      const table = document.getElementById('fileTable');
+      const toggleButton = document.getElementById('toggleButton');
+      if (table.classList.contains('hidden')) {
+        table.classList.remove('hidden');
+        toggleButton.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Previous Versions';
+      } else {
+        table.classList.add('hidden');
+        toggleButton.innerHTML = '<i class="fas fa-chevron-down"></i> Show Previous Versions';
+      }
+    }
+
+    async function loadFiles() {
+      const response = await fetch('/files');
+      let files = await response.json();
+
+      // ==========================================
+      // [수정된 부분] _update.exe 가 포함된 파일 제외
+      // ==========================================
+      files = files.filter(file => !file.name.includes('_update.exe'));
+
+      // 남은 파일이 없을 경우 처리
+      if (files.length === 0) {
+        document.getElementById('latestVersion').innerHTML = '<p>등록된 파일이 없습니다.</p>';
+        return;
+      }
+
+      // 파일을 최신순으로 정렬 (파일의 'created' 필드가 있다고 가정)
+      files.sort((a, b) => new Date(b.created) - new Date(a.created));
+
+      // 가장 최근 파일을 가져옴
+      const latestFile = files[0];
+
+      // 최신 파일 섹션 업데이트
+      const latestVersionContainer = document.getElementById('latestVersion');
+      latestVersionContainer.innerHTML = `
+        <h3>Latest Version: ${latestFile.name}</h3>
+        <p>Size: ${latestFile.size}</p>
+        <p>Released Date: ${latestFile.created}</p>
+        <a href="/download/${latestFile.name}" class="button"><i class="fas fa-download"></i> Download</a>
+      `;
+
+      // 나머지 파일 목록 업데이트
+      const fileList = document.getElementById('fileList');
+      fileList.innerHTML = '';
+  
+      files.slice(1).forEach(file => {
+        const row = document.createElement('tr');
+  
+        const fileNameCell = document.createElement('td');
+        fileNameCell.className = 'center';
+        const downloadLink = document.createElement('a');
+        downloadLink.href = `/download/${file.name}`;
+        downloadLink.textContent = file.name;
+        downloadLink.download = file.name;
+        fileNameCell.appendChild(downloadLink);
+  
+        const fileSizeCell = document.createElement('td');
+        fileSizeCell.className = 'center';
+        fileSizeCell.textContent = file.size;
+
+        const fileCreatedCell = document.createElement('td');
+        fileCreatedCell.className = 'center';
+        fileCreatedCell.textContent = file.created;
+
+        const actionCell = document.createElement('td');
+        actionCell.className = 'center';
+        const downloadButton = document.createElement('a');
+        downloadButton.href = `/download/${file.name}`;
+        downloadButton.innerHTML = '<i class="fas fa-download"></i> Download';
+        downloadButton.className = 'button';
+        actionCell.appendChild(downloadButton);
+  
+        row.appendChild(fileNameCell);
+        row.appendChild(fileSizeCell);
+        row.appendChild(fileCreatedCell);
+        row.appendChild(actionCell);
+  
+        fileList.appendChild(row);
+      });
+    }
+  
+    document.addEventListener('DOMContentLoaded', loadFiles);
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1><i class="fas fa-file-download"></i> MANAGER DOWNLOAD</h1>
+    <h2>Developed by <a href="https://github.com/yojun313" target="_blank">Yojun Moon</a></h2>
+    
+    <!-- 최신 파일 섹션 -->
+    <div id="latestVersion" class="latest-version">
+      <!-- 최신 파일 정보가 여기에 동적으로 생성됩니다 -->
+    </div>
+    
+    <!-- 접기/펼치기 버튼 -->
+    <a id="toggleButton" class="toggle-button" onclick="toggleTable()">
+      <i class="fas fa-chevron-down"></i> Show Previous Versions
+    </a>
+
+    <!-- 이전 버전 테이블 -->
+    <table id="fileTable" class="hidden">
+      <thead>
+        <tr>
+          <th class="center">File Name</th>
+          <th class="center">Size</th>
+          <th class="center">Released Date</th>
+          <th class="center">Download</th>
+        </tr>
+      </thead>
+      <tbody id="fileList">
+        <!-- 나머지 파일 목록이 여기에 동적으로 생성됩니다 -->
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

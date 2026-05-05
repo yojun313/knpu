@@ -18,7 +18,14 @@ async def read_logs(request: Request, name: Optional[str] = None, date: Optional
     user_map = get_user_mapping()
     user_names = sorted(list(set([u_name for u_name in user_map.values() if u_name and u_name != "알 수 없음"])))
     
-    return templates.TemplateResponse("logs.html", {
-        "request": request, "logs": logs, "active_page": "logs", 
-        "search_name": name, "search_date": date, "user_names": user_names 
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="logs.html",
+        context={
+            "logs": logs, 
+            "active_page": "logs", 
+            "search_name": name, 
+            "search_date": date, 
+            "user_names": user_names 
+        }
+    )

@@ -15,18 +15,26 @@ async def read_user_bugs(request: Request, name: Optional[str] = None, date: Opt
     user_map = get_user_mapping()
     user_names = sorted(list(set([u_name for u_name in user_map.values() if u_name and u_name != "알 수 없음"])))
     
-    return templates.TemplateResponse("bugs.html", {
-        "request": request, 
-        "bugs": bugs, 
-        "active_page": "user_bugs", 
-        "search_name": name, 
-        "search_date": date, 
-        "user_names": user_names
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="bugs.html",
+        context={
+            "bugs": bugs, 
+            "active_page": "user_bugs", 
+            "search_name": name, 
+            "search_date": date, 
+            "user_names": user_names
+        }
+    )
 
 @router.get("/bug-reports")
 async def read_bugs(request: Request, user=Depends(get_current_user)):
     bugs = get_recent_bugs(50)
-    return templates.TemplateResponse("bug-reports.html", {
-        "request": request, "bugs": bugs, "active_page": "bugs"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="bug-reports.html",
+        context={
+            "bugs": bugs, 
+            "active_page": "bugs"
+        }
+    )

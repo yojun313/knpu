@@ -5,7 +5,7 @@ import warnings
 from datetime import datetime, timedelta, timezone
 from bs4 import BeautifulSoup
 import logging
-from db import load_proxy_list, checkStatus, get_userinfo
+from db import load_proxy_list, checkState, get_userinfo
 from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
@@ -216,13 +216,14 @@ class ChinaDailyCrawler:
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime('%Y%m%d')
 
-            if checkStatus(self.DBuid) == False:
-                self.running = False
-
-            if not self.running:
+            state = checkState(self.DBuid)
+            if not state:
+                logger.info(f"DB has been deleted. Terminating crawl: {self.DBname}")
+                return
+            elif state == "stopped":
                 stopOperator(DBpath=self.DBPath, DBtype='chinadaily', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
-                break
-
+                return
+            
             if dayCount == self.date_range:
                 finishOperator(DBpath=self.DBPath, DBtype='chinadaily', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
                 break

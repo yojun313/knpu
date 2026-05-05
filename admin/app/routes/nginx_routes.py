@@ -11,11 +11,14 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/")
 async def nginx_manager_page(request: Request, user=Depends(get_current_user)):
     domains = NginxService.get_domains()
-    return templates.TemplateResponse("nginx.html", {
-        "request": request,
-        "domains": domains,
-        "active_page": "nginx"
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="nginx.html",
+        context={
+            "domains": domains,
+            "active_page": "nginx"
+        }
+    )
 
 @router.websocket("/ws/console")
 async def nginx_console_ws(websocket: WebSocket):

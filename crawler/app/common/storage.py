@@ -38,7 +38,7 @@ def makeDB(DBname, DBtype, startdate, enddate, option, keyword, requester, reque
             "reply": 0,
         }),
         ("startTime", now_kst),
-        ("endTime", ""),
+        ("endTime", "진행 중"),
         ("percent", 0),
         ("status", "running"),
     ])
@@ -69,7 +69,6 @@ def makeDB(DBname, DBtype, startdate, enddate, option, keyword, requester, reque
 
 
 def updateCrawlStatus(DBuid, percent, articleCnt, replyCnt, rereplyCnt):
-    """크롤링 진행률 + 수집 건수를 DB에 직접 업데이트"""
     try:
         folder = crawlList_db.find_one({"uid": DBuid})
         if not folder:
@@ -101,7 +100,6 @@ def updateCrawlStatus(DBuid, percent, articleCnt, replyCnt, rereplyCnt):
 
 
 def endCrawl(DBuid):
-    """크롤링 정상 완료 → endTime에 현재 시각 기록"""
     try:
         now_kst = datetime.now(timezone.utc).astimezone(
             timezone(timedelta(hours=9))
@@ -114,9 +112,9 @@ def endCrawl(DBuid):
         logger.info(f"크롤링 완료 (uid: {DBuid})")
     except Exception as e:
         logger.warning(f"완료 상태 업데이트 실패 (uid: {DBuid}): {e}")
+     
         
 def stopCrawl(DBuid):
-    """크롤링 정지 → endTime에 현재 시각 기록"""
     try:
         now_kst = datetime.now(timezone.utc).astimezone(
             timezone(timedelta(hours=9))
@@ -132,18 +130,15 @@ def stopCrawl(DBuid):
 
 
 def errorCrawl(DBuid):
-    """크롤링 에러/중단 → endTime에 'X' 기록"""
     try:
         crawlList_db.update_one(
             {"uid": DBuid},
-            {"$set": {"endTime": "", "status": "error"}},
+            {"$set": {"endTime": "에러 발생", "status": "error"}},
         )
         logger.info(f"크롤링 에러 처리 (uid: {DBuid})")
     except Exception as e:
         logger.warning(f"에러 상태 업데이트 실패 (uid: {DBuid}): {e}")
-
-
-# ── log-list (크롤링 로그 MongoDB 즉시 기록) ──────────────────────────
+        
 
 def _now_kst_str():
     return datetime.now(timezone.utc).astimezone(
@@ -152,7 +147,6 @@ def _now_kst_str():
 
 
 def initCrawlLog(DBuid, message):
-    """크롤링 시작 시 log-list 문서 생성 (옵션 정보 등)"""
     try:
         crawlLog_db.update_one(
             {"uid": DBuid},

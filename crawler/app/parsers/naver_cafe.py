@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 from user_agent import generate_navigator
 from urllib.parse import urlparse, parse_qs
 import logging
-from db import load_proxy_list, checkStatus, get_userinfo
+from db import load_proxy_list, checkState, get_userinfo
 from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
@@ -355,12 +355,13 @@ class NaverCafeCrawler:
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime('%Y%m%d')
 
-            if checkStatus(self.DBuid) == False:
-                self.running = False
-
-            if self.running == False:
+            state = checkState(self.DBuid)
+            if not state:
+                logger.info(f"DB has been deleted. Terminating crawl: {self.DBname}")
+                return
+            elif state == "stopped":
                 stopOperator(DBpath=self.DBPath, DBtype='navercafe', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
-                break
+                return
 
             if dayCount == self.date_range:
                 finishOperator(DBpath=self.DBPath, DBtype='navercafe', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
