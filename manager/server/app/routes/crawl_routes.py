@@ -2,6 +2,7 @@ from fastapi import APIRouter, Query, Body, Depends
 from app.models.crawl_model import CrawlDbCreateDto, CrawlLogUpdateDto, CountDataInfo, SaveCrawlDbOption
 from app.services.crawl_service import (
     createCrawlDb,
+    stopCrawlDb,
     deleteCrawlDb,
     getCrawlDbList,
     getCrawlDbInfo,
