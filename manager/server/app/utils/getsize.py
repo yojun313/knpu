@@ -1,8 +1,10 @@
 from pathlib import Path
 
+
 def getFolderSize(path):
-    total_bytes = sum(f.stat().st_size for f in Path(path).rglob('*') if f.is_file())
+    total_bytes = sum(f.stat().st_size for f in Path(path).rglob("*") if f.is_file())
     return total_bytes
+
 
 def format_size(bytes_size):
     if bytes_size < 1024:  # 1KB 미만

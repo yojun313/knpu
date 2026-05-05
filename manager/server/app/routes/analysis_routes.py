@@ -11,48 +11,45 @@ import httpx
 from dotenv import load_dotenv
 from typing import List
 from app.libs.exceptions import BadRequestException
+
 router = APIRouter()
 
 load_dotenv()
 
 GPU_SERVER_URL = os.getenv("GPU_SERVER_URL")
 
+
 @router.post("/kemkim")
-async def analysis_kemkim(
-    option: str = Form(...),
-    file: UploadFile = File(...)
-):
+async def analysis_kemkim(option: str = Form(...), file: UploadFile = File(...)):
     option = json.loads(option)
     content = await file.read()
     token_data = pd.read_csv(StringIO(content.decode("utf-8")))
     return start_kemkim(KemKimOption(**option), token_data)
 
+
 @router.post("/tokenize")
-async def tokenize_file(
-    option: str = Form(...),
-    file: UploadFile = File(...)
-):
-    option    = json.loads(option)
-    content   = await file.read()
-    csv_data  = pd.read_csv(io.StringIO(content.decode("utf-8")))
+async def tokenize_file(option: str = Form(...), file: UploadFile = File(...)):
+    option = json.loads(option)
+    content = await file.read()
+    csv_data = pd.read_csv(io.StringIO(content.decode("utf-8")))
 
     # option["language"] 추가 (기본값 'ko')
     result_df = tokenization(
-        pid      = option["pid"],
-        data     = csv_data,
-        columns  = option["column_names"],
-        include_words = option.get("include_words", []),
-        language = option.get("language", "ko"),
-        update_interval = 500,   
+        pid=option["pid"],
+        data=csv_data,
+        columns=option["column_names"],
+        include_words=option.get("include_words", []),
+        language=option.get("language", "ko"),
+        update_interval=500,
     )
 
     byte_buffer = io.BytesIO()
     result_df.to_csv(byte_buffer, index=False, encoding="utf-8-sig")
     byte_buffer.seek(0)
 
-    filename   = f'tokenized.csv'
+    filename = f"tokenized.csv"
     media_type = "text/csv"
-    cd_header  = f"attachment; filename*=UTF-8''{quote(filename)}"
+    cd_header = f"attachment; filename*=UTF-8''{quote(filename)}"
 
     return StreamingResponse(
         byte_buffer,
@@ -60,25 +57,17 @@ async def tokenize_file(
         headers={"Content-Disposition": cd_header},
     )
 
+
 @router.post("/hate")
-async def hate_proxy(
-    option: str = Form(...),
-    file: UploadFile = File(...)
-):
+async def hate_proxy(option: str = Form(...), file: UploadFile = File(...)):
     async with httpx.AsyncClient(timeout=None) as client:
         # multipart 그대로 구성
-        files = {
-            "file": (file.filename, await file.read(), file.content_type)
-        }
-        data = {
-            "option": option
-        }
+        files = {"file": (file.filename, await file.read(), file.content_type)}
+        data = {"option": option}
 
         # GPU 서버로 전달
         response = await client.post(
-            f"{GPU_SERVER_URL}/analysis/hate",
-            data=data,
-            files=files
+            f"{GPU_SERVER_URL}/analysis/hate", data=data, files=files
         )
 
     # GPU 서버가 StreamingResponse를 주기 때문에 그대로 반환
@@ -87,27 +76,19 @@ async def hate_proxy(
         media_type=response.headers.get("content-type"),
         headers={
             "Content-Disposition": response.headers.get("content-disposition", "")
-        }
+        },
     )
 
-@router.post("/whisper")
-async def whisper_proxy(
-    option: str = Form("{}"),
-    file: UploadFile = File(...)
-):
-    async with httpx.AsyncClient(timeout=None) as client:
-        files = {
-            "file": (file.filename, await file.read(), file.content_type)
-        }
 
-        data = {
-            "option": option
-        }
+@router.post("/whisper")
+async def whisper_proxy(option: str = Form("{}"), file: UploadFile = File(...)):
+    async with httpx.AsyncClient(timeout=None) as client:
+        files = {"file": (file.filename, await file.read(), file.content_type)}
+
+        data = {"option": option}
 
         response = await client.post(
-            f"{GPU_SERVER_URL}/analysis/whisper",
-            data=data,
-            files=files
+            f"{GPU_SERVER_URL}/analysis/whisper", data=data, files=files
         )
 
     return StreamingResponse(
@@ -115,13 +96,15 @@ async def whisper_proxy(
         media_type=response.headers.get("content-type"),
         headers={
             "Content-Disposition": response.headers.get("content-disposition", "")
-        }
+        },
     )
+
 
 @router.post("/youtube")
 async def youtube_download(option: str = Form(...)):
     option = json.loads(option)
     return await start_youtube_download(option)
+
 
 @router.get("/yolo/models")
 async def get_yolo_models_proxy():
@@ -132,21 +115,25 @@ async def get_yolo_models_proxy():
         try:
             # GPU 서버의 모델 리스트 엔드포인트 호출
             response = await client.get(f"{GPU_SERVER_URL}/analysis/yolo/models")
-            
+
             if response.status_code != 200:
                 return JSONResponse(
                     status_code=response.status_code,
-                    content={"message": "GPU 서버에서 모델 리스트를 가져오지 못했습니다.", "detail": response.text}
+                    content={
+                        "message": "GPU 서버에서 모델 리스트를 가져오지 못했습니다.",
+                        "detail": response.text,
+                    },
                 )
-                
+
             return JSONResponse(content=response.json())
-            
+
         except Exception as e:
             raise BadRequestException(
                 detail=f"GPU 서버 연결 실패: {type(e).__name__}: {e}"
             )
 
-@router.post("/yolo")  
+
+@router.post("/yolo")
 async def yolo_proxy(
     option: str = Form("{}"),
     conf_thres: float = Form(0.25),
@@ -181,7 +168,8 @@ async def yolo_proxy(
             "Content-Disposition": response.headers.get("content-disposition", ""),
         },
     )
-    
+
+
 @router.post("/dino")
 async def grounding_dino_proxy_route(
     files: List[UploadFile] = File(...),
@@ -235,30 +223,22 @@ async def grounding_dino_proxy_route(
         media_type=content_type,
         headers={"Content-Disposition": cd},
     )
-    
+
+
 @router.post("/graph-network")
-async def graph_network_proxy(
-    option: str = Form("{}"),
-    file: UploadFile = File(...)
-):
+async def graph_network_proxy(option: str = Form("{}"), file: UploadFile = File(...)):
     async with httpx.AsyncClient(timeout=None) as client:
         # 파일 데이터를 바이트로 읽어 준비
         file_content = await file.read()
-        files = {
-            "file": (file.filename, file_content, file.content_type)
-        }
-        
+        files = {"file": (file.filename, file_content, file.content_type)}
+
         # 클라이언트로부터 받은 option Form 데이터를 그대로 전달
-        data = {
-            "option": option
-        }
+        data = {"option": option}
 
         # GPU 서버의 /analysis/graph-network 호출 (기본 URL 뒤의 경로 확인 필요)
         # GPU 서버 코드에서 router가 /analysis로 시작한다면 경로에 포함시켜야 합니다.
         response = await client.post(
-            f"{GPU_SERVER_URL}/analysis/graph-network",
-            data=data,
-            files=files
+            f"{GPU_SERVER_URL}/analysis/graph-network", data=data, files=files
         )
 
     # GPU 서버에서 생성한 ZIP 파일을 StreamingResponse로 사용자에게 그대로 전달
@@ -268,5 +248,5 @@ async def graph_network_proxy(
         media_type=response.headers.get("content-type", "application/zip"),
         headers={
             "Content-Disposition": response.headers.get("content-disposition", "")
-        }
+        },
     )

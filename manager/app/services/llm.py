@@ -4,10 +4,11 @@ from services.api import *
 from config import *
 from core.setting import get_setting
 
-def generateLLM(query, model='ChatGPT'):
-    if model == 'ChatGPT':
+
+def generateLLM(query, model="ChatGPT"):
+    if model == "ChatGPT":
         try:
-            client = OpenAI(api_key=get_setting('GPT_Key'))
+            client = OpenAI(api_key=get_setting("GPT_Key"))
             model_name = "gpt-5-mini"
 
             response = client.chat.completions.create(
@@ -15,14 +16,14 @@ def generateLLM(query, model='ChatGPT'):
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": query},
-                ]
+                ],
             )
             return response.choices[0].message.content
 
         except Exception:
             return (0, traceback.format_exc())
 
-    elif model == 'Server LLM':
+    elif model == "Server LLM":
         try:
             model_resp = Request(
                 method="get",
@@ -50,7 +51,7 @@ def generateLLM(query, model='ChatGPT'):
                 url="/llm/v1/chat/completions",
                 json=payload,
             )
-            
+
             result = response.json()
             content = result.get("choices", [{}])[0].get("message", {}).get("content")
 
@@ -74,9 +75,9 @@ def generateLLM(query, model='ChatGPT'):
                     url="/llm/v1/openai/chat/completions",
                     json=proxy_payload,
                 )
-                
+
                 proxy_result = proxy_response.json()
                 return proxy_result["choices"][0]["message"]["content"]
-            
+
             except Exception:
                 return (0, traceback.format_exc())

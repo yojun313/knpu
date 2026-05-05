@@ -27,14 +27,13 @@ logger = logging.getLogger(__name__)
 
 
 class ChinaSinaCrawler:
-
     def __init__(self, requester, keyword, startDate, endDate, option, speed):
 
         if PROXY:
             proxy_list = load_proxy_list()
             set_proxy_list(proxy_list)
 
-        self.DBname = makeDBname('chinasina', keyword, startDate, endDate)
+        self.DBname = makeDBname("chinasina", keyword, startDate, endDate)
         self.requester = requester
         self.keyword = keyword
         self.startDate = startDate
@@ -42,49 +41,49 @@ class ChinaSinaCrawler:
         self.option = option
         self.speed = speed
 
-        self.articleDB = self.DBname + '_article'
-        self.replyDB = self.DBname + '_reply'
+        self.articleDB = self.DBname + "_article"
+        self.replyDB = self.DBname + "_reply"
 
         self.startTime = time.time()
 
-        self.startDate_form = datetime.strptime(startDate, '%Y%m%d').date()
-        self.endDate_form = datetime.strptime(endDate, '%Y%m%d').date()
+        self.startDate_form = datetime.strptime(startDate, "%Y%m%d").date()
+        self.endDate_form = datetime.strptime(endDate, "%Y%m%d").date()
 
         notification = get_userinfo(self.requester)
         if not notification:
             raise ValueError(f"사용자 정보를 찾을 수 없습니다: {self.requester}")
-        self.Email = notification['Email']
-        self.PushoverKey = notification['PushOver']
-        self.requesterUid = notification['userUid']
+        self.Email = notification["Email"]
+        self.PushoverKey = notification["PushOver"]
+        self.requesterUid = notification["userUid"]
 
         self.running = True
         self.DBuid = None
         self.status = {
-            'percentage': '0',
-            'currentdate': '',
-            'urlCnt': 0,
-            'articleCnt': 0,
-            'commentCnt': 0,
-            'replyCnt': 0,
+            "percentage": "0",
+            "currentdate": "",
+            "urlCnt": 0,
+            "articleCnt": 0,
+            "commentCnt": 0,
+            "replyCnt": 0,
         }
-        
+
         self.DBPath, self.DBuid = makeDB(
             DBname=self.DBname,
-            DBtype='chinasina',
+            DBtype="chinasina",
             startdate=self.startDate,
             enddate=self.endDate,
             option=self.option,
             keyword=self.keyword,
             requester=self.requester,
-            requesterUid=self.requesterUid
+            requesterUid=self.requesterUid,
         )
 
     # ── 유틸리티 ──────────────────────────────────────────────
 
     def _dateSplitter(self, start_date, end_date):
         """날짜 범위를 월 단위로 분할"""
-        start = datetime.strptime(str(start_date), '%Y%m%d')
-        end = datetime.strptime(str(end_date), '%Y%m%d')
+        start = datetime.strptime(str(start_date), "%Y%m%d")
+        end = datetime.strptime(str(end_date), "%Y%m%d")
 
         result = []
         current = start
@@ -96,7 +95,7 @@ class ChinaSinaCrawler:
             if month_end > end:
                 month_end = end
 
-            result.append([current.strftime('%Y%m%d'), month_end.strftime('%Y%m%d')])
+            result.append([current.strftime("%Y%m%d"), month_end.strftime("%Y%m%d")])
 
             next_month = current.replace(day=28) + timedelta(days=4)
             current = next_month.replace(day=1)
@@ -104,48 +103,48 @@ class ChinaSinaCrawler:
         return result
 
     def _dateInverter(self, date_str):
-        return int(time.mktime(time.strptime(date_str, '%Y%m%d')))
+        return int(time.mktime(time.strptime(date_str, "%Y%m%d")))
 
     def _sortUrlList(self, urls):
-        date_pattern = re.compile(r'/(\d{4}-\d{2}-\d{2})/')
+        date_pattern = re.compile(r"/(\d{4}-\d{2}-\d{2})/")
 
         def extract_date(url):
             match = date_pattern.search(url)
             if match:
-                return datetime.strptime(match.group(1), '%Y-%m-%d')
+                return datetime.strptime(match.group(1), "%Y-%m-%d")
             return datetime.min
 
         return sorted(urls, key=extract_date)
 
     def _newsURLChecker(self, newsURL):
-        if 'https://news.sina.com.cn' in newsURL:
+        if "https://news.sina.com.cn" in newsURL:
             return 1
-        elif 'https://news.sina.cn' in newsURL:
+        elif "https://news.sina.cn" in newsURL:
             return 2
-        elif 'https://mil.news.sina.com.cn' in newsURL:
+        elif "https://mil.news.sina.com.cn" in newsURL:
             return 3
         else:
             return False
 
     def _newsChannelChecker(self, newsURL):
-        param = newsURL.split('/')[3]
-        if param in ['c', 'gov', 'sx']:
-            return 'gn'
-        elif param in ['o', 'zx', 'znl', 's', 'sh']:
-            return 'sh'
+        param = newsURL.split("/")[3]
+        if param in ["c", "gov", "sx"]:
+            return "gn"
+        elif param in ["o", "zx", "znl", "s", "sh"]:
+            return "sh"
         else:
-            return ['gn', 'sh']
+            return ["gn", "sh"]
 
     def _newsidFormChecker(self, newsURL):
         try:
-            int(newsURL.split('/')[4][0])
+            int(newsURL.split("/")[4][0])
             return 1
         except Exception:
             return 2
 
     def _jsonFormatter(self, input_str):
-        start_index = input_str.index('{')
-        end_index = input_str.rindex('}') + 1
+        start_index = input_str.index("{")
+        end_index = input_str.rindex("}") + 1
         return input_str[start_index:end_index]
 
     # ── 수집 함수 ─────────────────────────────────────────────
@@ -156,10 +155,10 @@ class ChinaSinaCrawler:
             endCnt = 0
             urlList = []
             previous_links = []
-            previous_search_url = 'https://www.baidu.com/'
+            previous_search_url = "https://www.baidu.com/"
             startDate_ts = self._dateInverter(str(startDate))
             endDate_ts = self._dateInverter(str(endDate))
-            site = 'news.sina.com.cn'
+            site = "news.sina.com.cn"
 
             page = 0
             while True:
@@ -170,21 +169,23 @@ class ChinaSinaCrawler:
                     break
 
                 query_params = {
-                    'wd': keyword,
-                    'pn': page,
-                    'oq': keyword,
-                    'ct': '2097152',
-                    'ie': 'utf-8',
-                    'si': site,
-                    'fenlei': '256',
-                    'rsv_idx': '1',
-                    'gpc': f'stf={startDate_ts},{endDate_ts}|stftype=2'
+                    "wd": keyword,
+                    "pn": page,
+                    "oq": keyword,
+                    "ct": "2097152",
+                    "ie": "utf-8",
+                    "si": site,
+                    "fenlei": "256",
+                    "rsv_idx": "1",
+                    "gpc": f"stf={startDate_ts},{endDate_ts}|stftype=2",
                 }
 
-                search_url = urlunparse(('https', 'www.baidu.com', '/s', '', urlencode(query_params), ''))
+                search_url = urlunparse(
+                    ("https", "www.baidu.com", "/s", "", urlencode(query_params), "")
+                )
                 headers = {
-                    'User-Agent': generate_navigator()['user_agent'],
-                    'Referer': previous_search_url
+                    "User-Agent": generate_navigator()["user_agent"],
+                    "Referer": previous_search_url,
                 }
 
                 try:
@@ -194,18 +195,20 @@ class ChinaSinaCrawler:
                     logger.info(f"Baidu 검색 요청 실패: {e}")
                     break
 
-                soup = BeautifulSoup(res.text, 'html.parser')
-                result_divs = soup.find_all('div', class_='result')
-                links = [div.get('mu') for div in result_divs if div.get('mu')]
+                soup = BeautifulSoup(res.text, "html.parser")
+                result_divs = soup.find_all("div", class_="result")
+                links = [div.get("mu") for div in result_divs if div.get("mu")]
 
                 if links == previous_links or not links:
                     endCnt += 1
 
                 for url in links:
                     if url not in urlList:
-                        if 'news.sina.cn' in url or ('news.sina.com.cn' in url and url.count('/') >= 5):
+                        if "news.sina.cn" in url or (
+                            "news.sina.com.cn" in url and url.count("/") >= 5
+                        ):
                             urlList.append(url)
-                            self.status['urlCnt'] += 1
+                            self.status["urlCnt"] += 1
 
                 previous_links = copy.deepcopy(links)
                 previous_search_url = search_url
@@ -236,22 +239,26 @@ class ChinaSinaCrawler:
                 logger.info(f"Sina 기사 요청 실패 ({newsURL}): {e}")
                 return []
 
-            soup = BeautifulSoup(res.text, 'html.parser')
+            soup = BeautifulSoup(res.text, "html.parser")
 
             # 날짜 추출
             if self._newsidFormChecker(newsURL) == 1:
-                date = newsURL.split('/')[4]
+                date = newsURL.split("/")[4]
             else:
-                date = newsURL.split('/')[5]
+                date = newsURL.split("/")[5]
 
             try:
                 if newsURL_type in (1, 3):
-                    title = soup.find('h1', {'class': 'main-title'}).text
-                    paragraphs = soup.find('div', {'class': 'article', 'id': 'article'}).find_all('p')
+                    title = soup.find("h1", {"class": "main-title"}).text
+                    paragraphs = soup.find(
+                        "div", {"class": "article", "id": "article"}
+                    ).find_all("p")
                     text = " ".join(p.get_text(strip=True) for p in paragraphs)
                 elif newsURL_type == 2:
-                    title = soup.find('h1', {'class': 'art_tit_h1'}).text
-                    paragraphs = soup.find('section', {'class': 'art_pic_card art_content'}).find_all('p')
+                    title = soup.find("h1", {"class": "art_tit_h1"}).text
+                    paragraphs = soup.find(
+                        "section", {"class": "art_pic_card art_content"}
+                    ).find_all("p")
                     text = " ".join(p.get_text(strip=True) for p in paragraphs)
                 else:
                     return []
@@ -269,10 +276,7 @@ class ChinaSinaCrawler:
 
     def collectReply(self, newsURL):
         """Sina 뉴스 댓글 수집"""
-        returnData = {
-            'replyList': [],
-            'replyCnt': 0
-        }
+        returnData = {"replyList": [], "replyCnt": 0}
         try:
             newsURL_type = self._newsURLChecker(newsURL)
             if not isinstance(newsURL_type, int):
@@ -280,14 +284,14 @@ class ChinaSinaCrawler:
 
             # newsid 추출
             if self._newsidFormChecker(newsURL) == 1:
-                newsid = newsURL.split('/')[5].split('-')[1]
+                newsid = newsURL.split("/")[5].split("-")[1]
             else:
-                newsid = newsURL.split('/')[6].split('-')[1]
+                newsid = newsURL.split("/")[6].split("-")[1]
 
-            if newsid[0] == 'i':
-                newsid = newsid[1:].split('.')[0]
+            if newsid[0] == "i":
+                newsid = newsid[1:].split(".")[0]
             else:
-                newsid = newsid.split('.')[0]
+                newsid = newsid.split(".")[0]
 
             channelid = self._newsChannelChecker(newsURL)
             channelidList_exists = False
@@ -307,30 +311,30 @@ class ChinaSinaCrawler:
                 try:
                     if newsURL_type == 1:
                         api_url = (
-                            f'https://comment.sina.com.cn/page/info?version=1&format=json'
-                            f'&channel={channelid}&newsid=comos-{newsid}'
-                            f'&group=undefined&compress=0&ie=utf-8&oe=utf-8'
-                            f'&page={page}&page_size=10&t_size=3&h_size=3&thread=1'
-                            f'&uid=unlogin_user&callback=jsonp_{int(time.time())}&_={int(time.time())}'
+                            f"https://comment.sina.com.cn/page/info?version=1&format=json"
+                            f"&channel={channelid}&newsid=comos-{newsid}"
+                            f"&group=undefined&compress=0&ie=utf-8&oe=utf-8"
+                            f"&page={page}&page_size=10&t_size=3&h_size=3&thread=1"
+                            f"&uid=unlogin_user&callback=jsonp_{int(time.time())}&_={int(time.time())}"
                         )
                         res = Request(api_url)
                         res.raise_for_status()
                         main_text = res.text
 
                     elif newsURL_type == 2:
-                        default_url = 'https://cmnt.sina.cn/aj/v2/list'
-                        refer_url = f'https://cmnt.sina.cn/index?product=comos&index={newsid}&tj_ch=news&is_clear=0'
+                        default_url = "https://cmnt.sina.cn/aj/v2/list"
+                        refer_url = f"https://cmnt.sina.cn/index?product=comos&index={newsid}&tj_ch=news&is_clear=0"
                         params = {
-                            'channel': str(channelid),
-                            'newsid': f'comos-{newsid}',
-                            'group': 'group',
-                            'thread': '1',
-                            'page': page,
-                            '_callback': 'jsonp1'
+                            "channel": str(channelid),
+                            "newsid": f"comos-{newsid}",
+                            "group": "group",
+                            "thread": "1",
+                            "page": page,
+                            "_callback": "jsonp1",
                         }
                         headers = {
-                            'User-Agent': generate_navigator()['user_agent'],
-                            'Referer': refer_url
+                            "User-Agent": generate_navigator()["user_agent"],
+                            "Referer": refer_url,
                         }
                         res = Request(default_url, headers=headers, params=params)
                         res.raise_for_status()
@@ -346,7 +350,7 @@ class ChinaSinaCrawler:
                 try:
                     main_text = self._jsonFormatter(main_text)
                     temp = json.loads(main_text)
-                    comment_json = temp['result']['cmntlist']
+                    comment_json = temp["result"]["cmntlist"]
                 except Exception:
                     if channelidList_exists and len(channelidList) > 1:
                         channelidList.pop(0)
@@ -358,19 +362,19 @@ class ChinaSinaCrawler:
                     break
 
                 for data in comment_json:
-                    nickname = data['nick']
-                    date = data['time'].split()[0]
-                    like = data['rank']
-                    text = data['content'].replace('\u200b', '')
+                    nickname = data["nick"]
+                    date = data["time"].split()[0]
+                    like = data["rank"]
+                    text = data["content"].replace("\u200b", "")
 
                     replyList.append([reply_num, nickname, date, text, like, newsURL])
                     reply_num += 1
 
-                self.status['commentCnt'] += len(comment_json)
+                self.status["commentCnt"] += len(comment_json)
                 page += 1
 
-            returnData['replyList'] = replyList
-            returnData['replyCnt'] = len(replyList)
+            returnData["replyList"] = replyList
+            returnData["replyCnt"] = len(replyList)
             return returnData
 
         except Exception as e:
@@ -382,13 +386,16 @@ class ChinaSinaCrawler:
         return self.status
 
     def main(self):
-        initCrawlLog(self.DBuid, (
-            f"User: {self.requester}\n"
-            f"Object: chinasina\n"
-            f"Option: {self.option}\n"
-            f"Keyword: {self.keyword}\n"
-            f"Date Range: {self.startDate} ~ {self.endDate}"
-        ))
+        initCrawlLog(
+            self.DBuid,
+            (
+                f"User: {self.requester}\n"
+                f"Object: chinasina\n"
+                f"Option: {self.option}\n"
+                f"Keyword: {self.keyword}\n"
+                f"Date Range: {self.startDate} ~ {self.endDate}"
+            ),
+        )
 
         makeCSV(self.DBPath, self.articleDB, chinasina_article_column)
         if self.option == 2:
@@ -407,20 +414,33 @@ class ChinaSinaCrawler:
                 logger.info(f"DB has been deleted. Terminating crawl: {self.DBname}")
                 return
             elif state == "stopped":
-                stopOperator(DBpath=self.DBPath, DBtype='chinasina', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
+                stopOperator(
+                    DBpath=self.DBPath,
+                    DBtype="chinasina",
+                    DBname=self.DBname,
+                    startTime=self.startTime,
+                    pushoverKey=self.PushoverKey,
+                    userEmail=self.Email,
+                    status=self.status,
+                    DBuid=self.DBuid,
+                )
                 return
 
             if total_ranges > 0:
                 percent = str(round(((rangeCount + 1) / total_ranges) * 100, 1))
-                self.status['percentage'] = percent
-                start_fmt = datetime.strptime(currentDate_start, '%Y%m%d').strftime('%Y-%m-%d')
-                end_fmt = datetime.strptime(currentDate_end, '%Y%m%d').strftime('%Y-%m-%d')
-                self.status['currentdate'] = f"{start_fmt} ~ {end_fmt}"
+                self.status["percentage"] = percent
+                start_fmt = datetime.strptime(currentDate_start, "%Y%m%d").strftime(
+                    "%Y-%m-%d"
+                )
+                end_fmt = datetime.strptime(currentDate_end, "%Y%m%d").strftime(
+                    "%Y-%m-%d"
+                )
+                self.status["currentdate"] = f"{start_fmt} ~ {end_fmt}"
 
             urlList = self.collectUrl(
                 keyword=self.keyword,
                 startDate=currentDate_start,
-                endDate=currentDate_end
+                endDate=currentDate_end,
             )
 
             articleList = []
@@ -433,45 +453,70 @@ class ChinaSinaCrawler:
                     if not articleData:
                         continue
 
-                    self.status['articleCnt'] += 1
+                    self.status["articleCnt"] += 1
                     articleList.append(articleData)
 
                     if self.option == 2:
                         try:
                             cmtData = self.collectReply(newsUrl)
-                            reply_cnt = cmtData.get('replyCnt', 0)
+                            reply_cnt = cmtData.get("replyCnt", 0)
 
-                            replies = cmtData.get('replyList', [])
+                            replies = cmtData.get("replyList", [])
                             if replies:
                                 article_day = articleData[2]  # date
                                 processed_replies = [r + [article_day] for r in replies]
-                                addToCSV(self.DBPath, self.replyDB, processed_replies, chinasina_reply_column)
+                                addToCSV(
+                                    self.DBPath,
+                                    self.replyDB,
+                                    processed_replies,
+                                    chinasina_reply_column,
+                                )
 
                         except Exception as e:
-                            logger.info(f"Error occurred while processing Sina comment data for {newsUrl}: {e}")
+                            logger.info(
+                                f"Error occurred while processing Sina comment data for {newsUrl}: {e}"
+                            )
 
                     time.sleep(SLEEP_TIME)
 
                 except Exception as e:
                     logger.info(f"Error occurred while processing {newsUrl}: {e}")
-                    appendCrawlLog(self.DBuid, "error", f"Sina 처리 실패 ({newsUrl}): {e}")
+                    appendCrawlLog(
+                        self.DBuid, "error", f"Sina 처리 실패 ({newsUrl}): {e}"
+                    )
                     continue
 
             # 기사는 날짜순 정렬 후 일괄 저장 (원본 동작 유지)
             if articleList:
                 try:
-                    articleList_sorted = sorted(articleList, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d"))
+                    articleList_sorted = sorted(
+                        articleList, key=lambda x: datetime.strptime(x[2], "%Y-%m-%d")
+                    )
                 except Exception:
                     articleList_sorted = articleList
-                addToCSV(self.DBPath, self.articleDB, articleList_sorted, chinasina_article_column)
+                addToCSV(
+                    self.DBPath,
+                    self.articleDB,
+                    articleList_sorted,
+                    chinasina_article_column,
+                )
 
             updateCrawlStatus(
                 self.DBuid,
-                self.status['percentage'] + "%",
-                self.status['articleCnt'],
-                self.status['commentCnt'],
-                self.status['replyCnt'],
+                self.status["percentage"] + "%",
+                self.status["articleCnt"],
+                self.status["commentCnt"],
+                self.status["replyCnt"],
             )
 
         # 모든 월 범위 완료
-        finishOperator(DBpath=self.DBPath, DBtype='chinasina', DBname=self.DBname, startTime=self.startTime, pushoverKey=self.PushoverKey, userEmail=self.Email, status=self.status, DBuid=self.DBuid)
+        finishOperator(
+            DBpath=self.DBPath,
+            DBtype="chinasina",
+            DBname=self.DBname,
+            startTime=self.startTime,
+            pushoverKey=self.PushoverKey,
+            userEmail=self.Email,
+            status=self.status,
+            DBuid=self.DBuid,
+        )

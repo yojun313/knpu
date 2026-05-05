@@ -6,51 +6,58 @@ logger = logging.getLogger(__name__)
 
 _collection = None
 
+
 def _get_collection():
     global _collection
     if _collection is None:
         try:
             from db import client
+
             _collection = client["crawler"]["job-queue"]
         except Exception as e:
             logger.warning(f"MongoDB 연결 실패, 영속화 비활성화: {e}")
             return None
     return _collection
 
+
 class JobPersistence:
     """MongoDB crawler.job-queue 컬렉션을 통한 작업 영속화.
     MongoDB가 없으면 no-op으로 동작한다 (in-memory only).
     """
+
     def link_db_uid(self, job_id: str, db_uid: str):
         """job-queue 문서에 db-list의 식별자인 DBuid를 기록하여 연결"""
         col = _get_collection()
         if col is not None:
             col.update_one({"job_id": job_id}, {"$set": {"db_uid": db_uid}})
-            
+
     def save(self, job_id: str, request_dict: dict, state: str = "queued"):
         col = _get_collection()
         if col is None:
             return
-        col.insert_one({
-            "job_id": job_id,
-            "state": state,
-            "request": request_dict,
-            "created_at": datetime.now(),
-            "started_at": None,
-            "finished_at": None,
-            "error_message": None,
-        })
+        col.insert_one(
+            {
+                "job_id": job_id,
+                "state": state,
+                "request": request_dict,
+                "created_at": datetime.now(),
+                "started_at": None,
+                "finished_at": None,
+                "error_message": None,
+            }
+        )
 
     def update_state(self, job_id: str, state: str, error_message: str = None):
         col = _get_collection()
-        if col is None: return
-        
+        if col is None:
+            return
+
         current_job = col.find_one({"job_id": job_id}, {"state": 1, "db_uid": 1})
         if current_job:
             current_state = current_job.get("state")
             if current_state in ("stopped", "error") and state == "completed":
                 return
-            
+
         update = {"$set": {"state": state}}
         if state == "running":
             update["$set"]["started_at"] = datetime.now()
@@ -58,7 +65,7 @@ class JobPersistence:
             update["$set"]["finished_at"] = datetime.now()
         if error_message:
             update["$set"]["error_message"] = error_message
-        
+
         col.update_one({"job_id": job_id}, update)
 
         job_doc = col.find_one({"job_id": job_id})
@@ -83,10 +90,14 @@ class JobPersistence:
         if col is None:
             return []
         cutoff = datetime.now() - timedelta(days=days)
-        return list(col.find({
-            "state": {"$in": ["completed", "error", "stopped"]},
-            "finished_at": {"$gte": cutoff},
-        }).sort("finished_at", -1))
+        return list(
+            col.find(
+                {
+                    "state": {"$in": ["completed", "error", "stopped"]},
+                    "finished_at": {"$gte": cutoff},
+                }
+            ).sort("finished_at", -1)
+        )
 
     def mark_running_as_error(self, message: str) -> int:
         col = _get_collection()
@@ -94,7 +105,13 @@ class JobPersistence:
             return 0
         result = col.update_many(
             {"state": "running"},
-            {"$set": {"state": "error", "error_message": message, "finished_at": datetime.now()}},
+            {
+                "$set": {
+                    "state": "error",
+                    "error_message": message,
+                    "finished_at": datetime.now(),
+                }
+            },
         )
         return result.modified_count
 
@@ -103,15 +120,13 @@ class JobPersistence:
         if col is None:
             return
         col.delete_one({"job_id": job_id})
-    
+
     def _update_db_list_status(self, db_uid: str, state: str):
         """db-list 컬렉션(실제 크롤링 리스트)의 status 필드 동기화"""
         try:
             from db import client
-            db_list_col = client["crawler"]["db-list"]  
-            db_list_col.update_one(
-                {"uid": db_uid}, 
-                {"$set": {"status": state}}
-            )
+
+            db_list_col = client["crawler"]["db-list"]
+            db_list_col.update_one({"uid": db_uid}, {"$set": {"status": state}})
         except Exception as e:
             logger.error(f"db-list 상태 동기화 실패: {e}")

@@ -711,7 +711,4 @@ dark_style_sheet = """
     }
     """
 
-theme_option = {
-    'default': light_style_sheet,
-    'dark': dark_style_sheet
-}
+theme_option = {"default": light_style_sheet, "dark": dark_style_sheet}

@@ -9,8 +9,9 @@ _codes: dict[str, dict] = {}
 
 CODE_TTL = 300  # 5분
 
+
 def generate_code(name: str, email: str, uid: str) -> str:
-    code = ''.join(random.choices(string.digits, k=6))
+    code = "".join(random.choices(string.digits, k=6))
     _codes[name] = {
         "code": code,
         "email": email,

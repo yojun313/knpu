@@ -6,15 +6,16 @@ import os
 
 load_dotenv()
 
+
 async def sendEmail(receiver, title, text):
-    sender = os.getenv('MAIL_SENDER')
-    MailPassword = os.getenv('MAIL_PASSWORD')
+    sender = os.getenv("MAIL_SENDER")
+    MailPassword = os.getenv("MAIL_PASSWORD")
 
     msg = MIMEMultipart()
-    msg['Subject'] = title
-    msg['From'] = sender
-    msg['To'] = receiver
-    msg.attach(MIMEText(text, 'plain'))
+    msg["Subject"] = title
+    msg["From"] = sender
+    msg["To"] = receiver
+    msg.attach(MIMEText(text, "plain"))
 
     await aiosmtplib.send(
         msg,
@@ -22,5 +23,5 @@ async def sendEmail(receiver, title, text):
         port=587,
         username=sender,
         password=MailPassword,
-        start_tls=True
+        start_tls=True,
     )

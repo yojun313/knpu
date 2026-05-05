@@ -1,5 +1,10 @@
 from fastapi import APIRouter, Query, Body, Depends
-from app.models.crawl_model import CrawlDbCreateDto, CrawlLogUpdateDto, CountDataInfo, SaveCrawlDbOption
+from app.models.crawl_model import (
+    CrawlDbCreateDto,
+    CrawlLogUpdateDto,
+    CountDataInfo,
+    SaveCrawlDbOption,
+)
 from app.services.crawl_service import (
     createCrawlDb,
     stopCrawlDb,
@@ -11,11 +16,12 @@ from app.services.crawl_service import (
     updateCrawlLog,
     saveCrawlDb,
     previewCrawlDb,
-    getCrawlLog
+    getCrawlLog,
 )
 from app.libs.jwt import verify_token
 
 router = APIRouter()
+
 
 @router.post("/add")
 def create_crawl_db(crawlDb: CrawlDbCreateDto):
@@ -27,28 +33,34 @@ def create_crawl_db(crawlLog: CrawlLogUpdateDto):
     return updateCrawlLog(crawlLog)
 
 
-@router.get('/{uid}/log')
+@router.get("/{uid}/log")
 def get_crawl_db_log(uid: str):
     return getCrawlLog(uid)
 
 
-@router.delete("/{uid}",)
-def delete_crawl_db(uid: str, userUid = Depends(verify_token)):
+@router.delete(
+    "/{uid}",
+)
+def delete_crawl_db(uid: str, userUid=Depends(verify_token)):
     return deleteCrawlDb(uid, userUid)
 
+
 @router.put("/{uid}/stop")
-def stop_crawl_db(uid: str, userUid = Depends(verify_token)):
+def stop_crawl_db(uid: str, userUid=Depends(verify_token)):
     return stopCrawlDb(uid, userUid)
 
+
 @router.get("/list")
-def get_crawl_db_list(sort_by: str = Query("starttime", enum=["starttime", "keyword"]), 
-                      mine: int = Query("mine", enum=[0, 1]),
-                      userUid = Depends(verify_token)):
+def get_crawl_db_list(
+    sort_by: str = Query("starttime", enum=["starttime", "keyword"]),
+    mine: int = Query("mine", enum=[0, 1]),
+    userUid=Depends(verify_token),
+):
     return getCrawlDbList(sort_by, mine, userUid)
 
 
 @router.get("/{uid}/info")
-def get_crawl_db_info(uid: str, userUid = Depends(verify_token)):
+def get_crawl_db_info(uid: str, userUid=Depends(verify_token)):
     return getCrawlDbInfo(uid, userUid)
 
 
@@ -63,7 +75,7 @@ def update_crawl_db_count(uid: str, stat: CountDataInfo):
 
 
 @router.get("/{uid}/preview")
-def get_crawl_db_info(uid: str, userUid = Depends(verify_token)):
+def get_crawl_db_info(uid: str, userUid=Depends(verify_token)):
     return previewCrawlDb(uid, userUid)
 
 
@@ -73,5 +85,7 @@ def update_crawl_db_datainfo_error(uid: str):
 
 
 @router.post("/{uid}/save")
-def save_crawl_db(uid: str, save_option: SaveCrawlDbOption = Body(...), userUid = Depends(verify_token)):
+def save_crawl_db(
+    uid: str, save_option: SaveCrawlDbOption = Body(...), userUid=Depends(verify_token)
+):
     return saveCrawlDb(uid, save_option, userUid)

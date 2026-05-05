@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 
+
 def parquet_to_csv(parquet_path: str) -> str:
     """
     주어진 Parquet 파일을 읽어 같은 위치에 CSV 파일로 저장하고,
@@ -16,11 +17,12 @@ def parquet_to_csv(parquet_path: str) -> str:
 
     # 확장자만 .csv로 교체
     base, _ = os.path.splitext(parquet_path)
-    csv_path = base + '.csv'
+    csv_path = base + ".csv"
 
     # CSV로 저장 (인덱스 제외)
     df.to_csv(csv_path, index=False)
     return csv_path
+
 
 if __name__ == "__main__":
     parquet_file = input("변환할 Parquet 파일 경로를 입력하세요: ").strip()

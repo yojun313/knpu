@@ -3,17 +3,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-VERSION = '3.2.0'
+VERSION = "3.2.0"
 
-'''
+"""
     0: local
     1: production
-'''
+"""
 
 ASSETS_PATH = os.path.join(os.path.dirname(__file__), "assets")
 ADMIN_PASSWORD = "$2b$12$y92zRYAOVwDC0UCXnuG5ZuiJXxiT.drxRFVBu4HoYKmDMB.e.y5kq"
 
-mode = os.getenv('MODE', None)
+mode = os.getenv("MODE", None)
 
 if mode is None:
     mode = 1

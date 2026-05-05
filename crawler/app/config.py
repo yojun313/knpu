@@ -1,13 +1,13 @@
 import os
 from dotenv import load_dotenv
-import socket   
+import socket
 
 load_dotenv()
 
-MODE = int(os.getenv('MODE', 1))
-PROXY = os.getenv('PROXY', 'false').lower() == 'true'
-CRAWL_DATA_PATH = os.getenv('CRAWLDATA_PATH', './crawldata')
-CRAWL_LOG_PATH = os.getenv('CRAWLLOG_PATH', './crawllog')
+MODE = int(os.getenv("MODE", 1))
+PROXY = os.getenv("PROXY", "false").lower() == "true"
+CRAWL_DATA_PATH = os.getenv("CRAWLDATA_PATH", "./crawldata")
+CRAWL_LOG_PATH = os.getenv("CRAWLLOG_PATH", "./crawllog")
 CRAWLCOM = socket.gethostname()
 
 TRYNUM = 3

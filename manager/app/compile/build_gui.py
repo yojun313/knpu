@@ -10,14 +10,23 @@ import requests
 
 from PySide6.QtCore import Qt, QObject, QThread, Signal
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget,
-    QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QPlainTextEdit, QRadioButton, QButtonGroup,
-    QMessageBox, QFrame
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QPlainTextEdit,
+    QRadioButton,
+    QButtonGroup,
+    QMessageBox,
+    QFrame,
 )
 from dotenv import load_dotenv
 
-load_dotenv()  
+load_dotenv()
 
 # ----------------------------------------
 # 기존 상수/함수들
@@ -34,12 +43,17 @@ from upload import upload_file  # 기존 모듈 그대로 사용
 
 
 def sendPushOver(msg):
-    requests.post('https://manager.knpu.re.kr/api/users/admin/pushover', json={"message": msg}, headers={"Authorization": f"Bearer {os.getenv('ADMIN_TOKEN')}"})
+    requests.post(
+        "https://manager.knpu.re.kr/api/users/admin/pushover",
+        json={"message": msg},
+        headers={"Authorization": f"Bearer {os.getenv('ADMIN_TOKEN')}"},
+    )
+
 
 def update_inno_version(iss_path: str, new_version: str):
-    temp_iss_path = os.path.join(os.path.dirname(iss_path), 'setup_temp.iss')
+    temp_iss_path = os.path.join(os.path.dirname(iss_path), "setup_temp.iss")
 
-    with open(iss_path, 'r', encoding='utf-8') as f:
+    with open(iss_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     updated_lines = []
@@ -52,21 +66,19 @@ def update_inno_version(iss_path: str, new_version: str):
         else:
             updated_lines.append(line)
 
-    with open(temp_iss_path, 'w', encoding='utf-8') as f:
+    with open(temp_iss_path, "w", encoding="utf-8") as f:
         f.writelines(updated_lines)
 
     return temp_iss_path
 
 
 def create_spec_file(original_spec_file, new_spec_file, exe_name):
-    with open(original_spec_file, 'r', encoding='utf-8') as file:
+    with open(original_spec_file, "r", encoding="utf-8") as file:
         spec_content = file.read()
 
-    spec_content = spec_content.replace(
-        "name='MANAGER'", f"name='{exe_name}'"
-    )
+    spec_content = spec_content.replace("name='MANAGER'", f"name='{exe_name}'")
 
-    with open(new_spec_file, 'w', encoding='utf-8') as file:
+    with open(new_spec_file, "w", encoding="utf-8") as file:
         file.write(spec_content)
 
 
@@ -89,10 +101,13 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
     try:
         cmd = [
             VENV_PYTHON,
-            "-m", "PyInstaller",
-            "--distpath", output_directory,
-            "--workpath", os.path.join(output_directory, "build"),
-            new_spec_file
+            "-m",
+            "PyInstaller",
+            "--distpath",
+            output_directory,
+            "--workpath",
+            os.path.join(output_directory, "build"),
+            new_spec_file,
         ]
         log(f"Running PyInstaller: {' '.join(cmd)}")
         subprocess.run(cmd, check=True)
@@ -107,6 +122,7 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
             log(f"Cleaned temporary files in {os.path.dirname(new_spec_file)}")
         except Exception as e:
             log(f"Error: {e}")
+
 
 def read_latest_built_version() -> str | None:
     """
@@ -130,19 +146,27 @@ def read_latest_built_version() -> str | None:
 
     return str(max(versions))
 
+
 # ----------------------------------------
 # 빌드 작업용 Worker (QThread에서 실행)
 # ----------------------------------------
+
 
 class BuildWorker(QObject):
     log_signal = Signal(str)
     finished = Signal(str, float)  # version, elapsed_seconds
     error = Signal(str)
 
-    def __init__(self, version_mode: str, custom_version: str,
-                 spec_file: str, iss_path: str, parent=None):
+    def __init__(
+        self,
+        version_mode: str,
+        custom_version: str,
+        spec_file: str,
+        iss_path: str,
+        parent=None,
+    ):
         super().__init__(parent)
-        self.version_mode = version_mode    # 'reuse', 'next', 'custom'
+        self.version_mode = version_mode  # 'reuse', 'next', 'custom'
         self.custom_version = custom_version.strip()
         self.spec_file = spec_file
         self.iss_path = iss_path
@@ -155,7 +179,7 @@ class BuildWorker(QObject):
     def _log(self, msg: str):
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.log_signal.emit(f"[{timestamp}] {msg}")
-    
+
     def run(self):
         start_time = datetime.now()
         try:
@@ -194,7 +218,9 @@ class BuildWorker(QObject):
                 shutil.rmtree(same_version_path)
                 self._log(f"이전 동일 버전 디렉토리 삭제: {same_version_path}")
 
-            old_update_exe_path = os.path.join(self.output_directory, f"MANAGER_{target_version}_update.exe")
+            old_update_exe_path = os.path.join(
+                self.output_directory, f"MANAGER_{target_version}_update.exe"
+            )
             if os.path.exists(old_update_exe_path):
                 os.remove(old_update_exe_path)
                 self._log(f"이전 동일 버전 업데이트 파일 삭제: {old_update_exe_path}")
@@ -204,23 +230,27 @@ class BuildWorker(QObject):
                 self.spec_file,
                 self.output_directory,
                 target_version,
-                log_func=self._log
+                log_func=self._log,
             )
             self._log("PyInstaller 빌드 완료")
 
-            built_folder_path = os.path.join(self.output_directory, f"MANAGER_{target_version}")
-            raw_exe_old_path = os.path.join(built_folder_path, f"MANAGER_{target_version}.exe")
+            built_folder_path = os.path.join(
+                self.output_directory, f"MANAGER_{target_version}"
+            )
+            raw_exe_old_path = os.path.join(
+                built_folder_path, f"MANAGER_{target_version}.exe"
+            )
             raw_exe_new_path = os.path.join(built_folder_path, "MANAGER.exe")
-            
+
             if os.path.exists(raw_exe_old_path):
                 os.rename(raw_exe_old_path, raw_exe_new_path)
-            
+
             update_exe_name = f"MANAGER_{target_version}_update.exe"
             update_exe_path = os.path.join(self.output_directory, update_exe_name)
-            
+
             if os.path.exists(raw_exe_new_path):
                 shutil.copy2(raw_exe_new_path, update_exe_path)
-            
+
             upload_file(os.path.join(self.output_directory, update_exe_name))
             self._log("업로드 완료")
 
@@ -228,10 +258,7 @@ class BuildWorker(QObject):
             temp_iss_path = update_inno_version(self.iss_path, target_version)
 
             self._log("Inno Setup 실행 중...")
-            subprocess.run(
-                [INNO_SETUP_EXE, temp_iss_path],
-                check=True
-            )
+            subprocess.run([INNO_SETUP_EXE, temp_iss_path], check=True)
             self._log("Inno Setup 완료")
 
             try:
@@ -265,6 +292,7 @@ class BuildWorker(QObject):
 # ----------------------------------------
 # 메인 윈도우
 # ----------------------------------------
+
 
 class MainWindow(QMainWindow):
     def __init__(self, spec_file: str, iss_path: str):
@@ -460,7 +488,7 @@ class MainWindow(QMainWindow):
             version_mode=mode,
             custom_version=custom_version,
             spec_file=self.spec_file,
-            iss_path=self.iss_path
+            iss_path=self.iss_path,
         )
         self.worker.moveToThread(self.thread)
 
@@ -487,9 +515,7 @@ class MainWindow(QMainWindow):
             f"({int(elapsed_seconds // 60)}분 {int(elapsed_seconds % 60)}초) ==="
         )
         QMessageBox.information(
-            self,
-            "빌드 완료",
-            f"MANAGER {version} 빌드 및 배포가 완료되었습니다."
+            self, "빌드 완료", f"MANAGER {version} 빌드 및 배포가 완료되었습니다."
         )
         # 현재 버전 라벨 갱신
         self.load_current_version()
@@ -497,15 +523,9 @@ class MainWindow(QMainWindow):
     def on_build_error(self, message: str):
         self.append_log(f"[오류] {message}")
         QMessageBox.critical(
-            self,
-            "빌드 오류",
-            f"빌드 중 오류가 발생했습니다:\n\n{message}"
+            self, "빌드 오류", f"빌드 중 오류가 발생했습니다:\n\n{message}"
         )
 
-
-# ----------------------------------------
-# 진입점
-# ----------------------------------------
 
 def main():
     app = QApplication(sys.argv)

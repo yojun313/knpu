@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QMessageBox    
+from PySide6.QtWidgets import QMessageBox
 from PySide6.QtCore import QUrl
 import warnings
 import traceback
@@ -15,8 +15,8 @@ from core.auth import accessCheck
 
 warnings.filterwarnings("ignore")
 
-class Manager_Web:
 
+class Manager_Web:
     def __init__(self, main_window):
         self.main = main_window
         self.refreshPaperBoard()
@@ -35,12 +35,12 @@ class Manager_Web:
             self.browser.show()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-            
+
     def web_open_crawler(self):
         try:
-            token = get_setting('auth_token')
+            token = get_setting("auth_token")
             url = f"https://crawler.knpu.re.kr/auth/direct-login?token={token}"
-            
+
             self.main.browser.setUrl(QUrl(url))
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -61,57 +61,101 @@ class Manager_Web:
 
     def refreshPaperBoard(self):
         printStatus(self.main, "새로고침 중...")
-        self.origin_paper_data = Request(
-            'get',
-            '/papers/',
-            HOMEPAGE_EDIT_API
-        ).json()
+        self.origin_paper_data = Request("get", "/papers/", HOMEPAGE_EDIT_API).json()
 
         self.paper_data = []
         for year_group in self.origin_paper_data:
             year = year_group.get("year", "")
             for paper in year_group.get("papers", []):
-                paper["year"] = year  
+                paper["year"] = year
                 self.paper_data.append(paper)
-        
-        self.paper_data_for_table = [[item['title'], ', '.join(item.get("authors", [])), item['conference'], item.get('link', ''), item['year']] for item in self.paper_data]
-        self.paper_table_column = ['Title', 'Authors', 'Conference', 'Url', 'Year']
-        makeTable(self.main, self.main.web_papers_tableWidget, self.paper_data_for_table, self.paper_table_column)
+
+        self.paper_data_for_table = [
+            [
+                item["title"],
+                ", ".join(item.get("authors", [])),
+                item["conference"],
+                item.get("link", ""),
+                item["year"],
+            ]
+            for item in self.paper_data
+        ]
+        self.paper_table_column = ["Title", "Authors", "Conference", "Url", "Year"]
+        makeTable(
+            self.main,
+            self.main.web_papers_tableWidget,
+            self.paper_data_for_table,
+            self.paper_table_column,
+        )
         printStatus(self.main, "https://knpu.re.kr/publications")
 
     def refreshMemberBoard(self):
         printStatus(self.main, "새로고침 중...")
-        self.origin_member_data = Request(
-            'get',
-            '/members/',
-            HOMEPAGE_EDIT_API
-        ).json()
+        self.origin_member_data = Request("get", "/members/", HOMEPAGE_EDIT_API).json()
 
         self.member_data = []
         for member in self.origin_member_data:
             member_info = {
-                'uid': member.get('uid', ''),
-                'name': str(member.get('name', '')),
-                'position': str(member.get('position', '')),
-                'email': str(member.get('email', '')),
-                'section': str(member.get('section', '')),
-                "학력": "\n".join(member.get("학력", [])) if isinstance(member.get("학력"), list) else str(member.get("학력", "")),
-                "경력": "\n".join(member.get("경력", [])) if isinstance(member.get("경력"), list) else str(member.get("경력", "")),
-                "연구": "\n".join(member.get("연구", [])) if isinstance(member.get("연구"), list) else str(member.get("연구", "")),
+                "uid": member.get("uid", ""),
+                "name": str(member.get("name", "")),
+                "position": str(member.get("position", "")),
+                "email": str(member.get("email", "")),
+                "section": str(member.get("section", "")),
+                "학력": "\n".join(member.get("학력", []))
+                if isinstance(member.get("학력"), list)
+                else str(member.get("학력", "")),
+                "경력": "\n".join(member.get("경력", []))
+                if isinstance(member.get("경력"), list)
+                else str(member.get("경력", "")),
+                "연구": "\n".join(member.get("연구", []))
+                if isinstance(member.get("연구"), list)
+                else str(member.get("연구", "")),
             }
             self.member_data.append(member_info)
 
-        self.member_data_for_table = [[item['name'], item['section'], item['position'], item['email'], item['학력'], item['경력'], item['연구']] for item in self.member_data]
-        self.member_table_column = ['성명', '구분', '직책', '이메일', '학력', '경력', '연구']
-        makeTable(self.main, self.main.web_members_tableWidget, self.member_data_for_table, self.member_table_column)
+        self.member_data_for_table = [
+            [
+                item["name"],
+                item["section"],
+                item["position"],
+                item["email"],
+                item["학력"],
+                item["경력"],
+                item["연구"],
+            ]
+            for item in self.member_data
+        ]
+        self.member_table_column = [
+            "성명",
+            "구분",
+            "직책",
+            "이메일",
+            "학력",
+            "경력",
+            "연구",
+        ]
+        makeTable(
+            self.main,
+            self.main.web_members_tableWidget,
+            self.member_data_for_table,
+            self.member_table_column,
+        )
         printStatus(self.main, "https://knpu.re.kr/team")
 
     def refreshNewsBoard(self):
         printStatus(self.main, "새로고침 중...")
-        self.news_data = Request('get', '/news/', HOMEPAGE_EDIT_API).json()
-        self.news_data_for_table = [[item['title'], item['content'], item['date'], item['url']] for item in self.news_data]
-        self.news_table_column = ['제목', '내용', '날짜', 'URL']
-        makeTable(self.main, self.main.web_news_tableWidget, self.news_data_for_table, self.news_table_column)
+        self.news_data = Request("get", "/news/", HOMEPAGE_EDIT_API).json()
+        self.news_data_for_table = [
+            [item["title"], item["content"], item["date"], item["url"]]
+            for item in self.news_data
+        ]
+        self.news_table_column = ["제목", "내용", "날짜", "URL"]
+        makeTable(
+            self.main,
+            self.main.web_news_tableWidget,
+            self.news_data_for_table,
+            self.news_table_column,
+        )
         printStatus(self.main, "https://knpu.re.kr#news")
 
     def addHomePaper(self):
@@ -123,7 +167,10 @@ class Manager_Web:
                 payload = dialog.get_payload()
                 Request("post", "edit/paper", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
-                    self.main, "완료", f"{payload['paper'].get('title', '논문')}가 추가되었습니다")
+                    self.main,
+                    "완료",
+                    f"{payload['paper'].get('title', '논문')}가 추가되었습니다",
+                )
                 userLogging(f"WEB -> addHomePaper({payload['paper'].get('title')})")
                 self.refreshPaperBoard()
         except Exception:
@@ -138,7 +185,8 @@ class Manager_Web:
                 payload = dialog.get_payload()
                 Request("post", "edit/member", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
-                    self.main, "완료", f"{payload['name']} 멤버가 추가되었습니다")
+                    self.main, "완료", f"{payload['name']} 멤버가 추가되었습니다"
+                )
                 userLogging(f"WEB -> addHomeMember({payload.get('name')})")
                 self.refreshMemberBoard()
         except Exception:
@@ -153,7 +201,10 @@ class Manager_Web:
                 payload = dialog.get_payload()
                 Request("post", "edit/news", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
-                    self.main, "완료", f"{payload.get('title', '뉴스')}가 추가되었습니다")
+                    self.main,
+                    "완료",
+                    f"{payload.get('title', '뉴스')}가 추가되었습니다",
+                )
                 userLogging(f"WEB -> addHomeNews({payload.get('title')})")
                 self.refreshNewsBoard()
         except Exception:
@@ -166,13 +217,24 @@ class Manager_Web:
             selectedRow = self.main.web_papers_tableWidget.currentRow()
             if selectedRow < 0:
                 return
-            selectedUid = self.paper_data[selectedRow]['uid']
+            selectedUid = self.paper_data[selectedRow]["uid"]
             reply = QMessageBox.question(
-                self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                self.main,
+                "Confirm Delete",
+                "정말 삭제하시겠습니까?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
             if reply == QMessageBox.StandardButton.Yes:
-                Request("delete", "edit/paper", HOMEPAGE_EDIT_API,
-                        params={"uid": selectedUid})
-                userLogging(f"WEB -> deleteHomePaper({self.paper_data[selectedRow]['title']})")
+                Request(
+                    "delete",
+                    "edit/paper",
+                    HOMEPAGE_EDIT_API,
+                    params={"uid": selectedUid},
+                )
+                userLogging(
+                    f"WEB -> deleteHomePaper({self.paper_data[selectedRow]['title']})"
+                )
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -181,40 +243,54 @@ class Manager_Web:
         try:
             if not accessCheck(self.main, exclude=["public"]):
                 return
-                
+
             selectedRow = self.main.web_members_tableWidget.currentRow()
             if selectedRow < 0:
                 return
-            
-            targetName = self.member_data[selectedRow]['name']
-            selectedUid = self.member_data[selectedRow]['uid']
+
+            targetName = self.member_data[selectedRow]["name"]
+            selectedUid = self.member_data[selectedRow]["uid"]
 
             # 1. 먼저 삭제 의사를 묻습니다.
             reply = QMessageBox.question(
-                self.main, 'Confirm Delete', f"[{targetName}] 멤버를 정말 삭제하시겠습니까?", 
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
-                QMessageBox.StandardButton.Yes
+                self.main,
+                "Confirm Delete",
+                f"[{targetName}] 멤버를 정말 삭제하시겠습니까?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
             )
 
             if reply == QMessageBox.StandardButton.Yes:
                 # 2. 이름을 직접 입력받아 확인합니다.
                 confirmName, ok = QInputDialog.getText(
-                    self.main, 'Security Check', 
-                    f'삭제 확인을 위해 멤버의 이름({targetName})을 정확히 입력해주세요.'
+                    self.main,
+                    "Security Check",
+                    f"삭제 확인을 위해 멤버의 이름({targetName})을 정확히 입력해주세요.",
                 )
 
                 # 3. 입력값이 일치할 때만 삭제 진행
                 if ok and confirmName == targetName:
-                    Request("delete", "edit/member", HOMEPAGE_EDIT_API, params={"uid": selectedUid})
+                    Request(
+                        "delete",
+                        "edit/member",
+                        HOMEPAGE_EDIT_API,
+                        params={"uid": selectedUid},
+                    )
                     userLogging(f"WEB -> deleteHomeMember({targetName})")
                     self.refreshMemberBoard()
-                    QMessageBox.information(self.main, 'Success', '성공적으로 삭제되었습니다.')
+                    QMessageBox.information(
+                        self.main, "Success", "성공적으로 삭제되었습니다."
+                    )
                 elif ok:
-                    QMessageBox.warning(self.main, 'Warning', '이름이 일치하지 않습니다. 삭제를 취소합니다.')
-                    
+                    QMessageBox.warning(
+                        self.main,
+                        "Warning",
+                        "이름이 일치하지 않습니다. 삭제를 취소합니다.",
+                    )
+
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-    
+
     def deleteHomeNews(self):
         try:
             if not accessCheck(self.main, exclude=["public"]):
@@ -222,13 +298,24 @@ class Manager_Web:
             selectedRow = self.main.web_news_tableWidget.currentRow()
             if selectedRow < 0:
                 return
-            selectedUid = self.news_data[selectedRow]['uid']
+            selectedUid = self.news_data[selectedRow]["uid"]
             reply = QMessageBox.question(
-                self.main, 'Confirm Delete', "정말 삭제하시겠습니까?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                self.main,
+                "Confirm Delete",
+                "정말 삭제하시겠습니까?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
             if reply == QMessageBox.StandardButton.Yes:
-                Request("delete", "edit/news", HOMEPAGE_EDIT_API,
-                        params={"uid": selectedUid})
-                userLogging(f"WEB -> deleteHomeNews({self.news_data[selectedRow]['title']})")
+                Request(
+                    "delete",
+                    "edit/news",
+                    HOMEPAGE_EDIT_API,
+                    params={"uid": selectedUid},
+                )
+                userLogging(
+                    f"WEB -> deleteHomeNews({self.news_data[selectedRow]['title']})"
+                )
                 self.refreshNewsBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -240,7 +327,7 @@ class Manager_Web:
             selectedRow = self.main.web_papers_tableWidget.currentRow()
             if selectedRow < 0:
                 return
-            selectedUid = self.paper_data[selectedRow]['uid']
+            selectedUid = self.paper_data[selectedRow]["uid"]
             # 기존 데이터 가져오기
             origin = None
             for year_group in self.origin_paper_data:
@@ -259,7 +346,10 @@ class Manager_Web:
                 payload["paper"]["uid"] = selectedUid  # uid 유지
                 Request("post", "edit/paper", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
-                    self.main, "완료", f"{payload['paper'].get('title')}가 수정되었습니다")
+                    self.main,
+                    "완료",
+                    f"{payload['paper'].get('title')}가 수정되었습니다",
+                )
                 userLogging(f"WEB -> editHomePaper({payload['paper'].get('title')})")
                 self.refreshPaperBoard()
         except Exception:
@@ -272,7 +362,7 @@ class Manager_Web:
             selectedRow = self.main.web_members_tableWidget.currentRow()
             if selectedRow < 0:
                 return
-            selectedUid = self.member_data[selectedRow]['uid']
+            selectedUid = self.member_data[selectedRow]["uid"]
             origin = None
             for m in self.origin_member_data:
                 if m.get("uid") == selectedUid:
@@ -288,7 +378,8 @@ class Manager_Web:
                 payload["uid"] = selectedUid
                 Request("post", "edit/member", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
-                    self.main, "완료", f"{payload.get('name')} 멤버가 수정되었습니다")
+                    self.main, "완료", f"{payload.get('name')} 멤버가 수정되었습니다"
+                )
                 userLogging(f"WEB -> editHomeMember({payload.get('name')})")
                 self.refreshMemberBoard()
         except Exception:
@@ -301,7 +392,7 @@ class Manager_Web:
             selectedRow = self.main.web_news_tableWidget.currentRow()
             if selectedRow < 0:
                 return
-            selectedUid = self.news_data[selectedRow]['uid']
+            selectedUid = self.news_data[selectedRow]["uid"]
             origin = None
             for n in self.origin_news_data:
                 if n.get("uid") == selectedUid:
@@ -317,7 +408,8 @@ class Manager_Web:
                 payload["uid"] = selectedUid
                 Request("post", "edit/news", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
-                    self.main, "완료", f"{payload.get('title')} 뉴스가 수정되었습니다")
+                    self.main, "완료", f"{payload.get('title')} 뉴스가 수정되었습니다"
+                )
                 userLogging(f"WEB -> editHomeNews({payload.get('title')})")
                 self.refreshNewsBoard()
         except Exception:
@@ -328,7 +420,7 @@ class Manager_Web:
             selectedRow = self.main.web_papers_tableWidget.currentRow()
             if selectedRow < 0:
                 return
-            selectedUid = self.paper_data[selectedRow]['uid']
+            selectedUid = self.paper_data[selectedRow]["uid"]
             origin = None
             for year_group in self.origin_paper_data:
                 for p in year_group["papers"]:
@@ -349,7 +441,7 @@ class Manager_Web:
             selectedRow = self.main.web_members_tableWidget.currentRow()
             if selectedRow < 0:
                 return
-            selectedUid = self.member_data[selectedRow]['uid']
+            selectedUid = self.member_data[selectedRow]["uid"]
             origin = None
             for m in self.origin_member_data:
                 if m.get("uid") == selectedUid:
@@ -368,7 +460,7 @@ class Manager_Web:
             selectedRow = self.main.web_news_tableWidget.currentRow()
             if selectedRow < 0:
                 return
-            selectedUid = self.news_data[selectedRow]['uid']
+            selectedUid = self.news_data[selectedRow]["uid"]
             origin = None
             for n in self.origin_news_data:
                 if n.get("uid") == selectedUid:
@@ -388,7 +480,7 @@ class Manager_Web:
 
     def updateShortcut(self, index):
         resetShortcuts(self.main)
-        
+
         if index == 0:
             printStatus(self.main, "https://knpu.re.kr/publications")
             self.main.ctrld.activated.connect(self.deleteHomePaper)
@@ -424,8 +516,7 @@ class Manager_Web:
             self.main.ctrle.activated.connect(self.editHomeNews)
             self.main.ctrlv.activated.connect(self.viewNews)
             self.main.ctrlr.activated.connect(self.refreshNewsBoard)
-            
-            
+
             self.main.cmda.activated.connect(self.addHomeNews)
             self.main.cmdd.activated.connect(self.deleteHomeNews)
             self.main.cmde.activated.connect(self.editHomeNews)
