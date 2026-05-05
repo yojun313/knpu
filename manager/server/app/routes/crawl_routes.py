@@ -35,6 +35,10 @@ def get_crawl_db_log(uid: str):
 def delete_crawl_db(uid: str, userUid = Depends(verify_token)):
     return deleteCrawlDb(uid, userUid)
 
+@router.put("/{uid}/stop")
+def stop_crawl_db(uid: str, userUid = Depends(verify_token)):
+    return stopCrawlDb(uid, userUid)
+
 @router.get("/list")
 def get_crawl_db_list(sort_by: str = Query("starttime", enum=["starttime", "keyword"]), 
                       mine: int = Query("mine", enum=[0, 1]),

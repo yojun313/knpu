@@ -112,6 +112,17 @@ def deleteCrawlDb(uid: str, userUid: str):
     )
 
 
+def stopCrawlDb(uid: str, userUid: str):
+    crawlDb = crawlList_db.update_one({"uid": uid}, {'$set': {'status': 'stopped'}})
+   
+    log_user(userUid, f"Requested to stop crawl DB: {targetDB}")
+   
+    return JSONResponse(
+        status_code=200,
+        content={"message": "CrawlDB stopped"},
+    )
+    
+
 def deleteCrawlDbBg(name: str):
     folder_path = os.path.join(crawldata_path, name)
     if os.path.exists(folder_path):
