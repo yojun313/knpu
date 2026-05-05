@@ -25,6 +25,7 @@ dependencies = [
     "lxml>=6.1.0",
     "matplotlib>=3.10.9",
     "motor>=3.7.1",
+    "nltk>=3.9.4",
     "numpy>=2.4.4",
     "openai>=2.34.0",
     "packaging>=26.2",
