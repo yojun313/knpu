@@ -4,9 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# MongoDB 연결은 지연 로딩 — DB 없이도 서버 기동 가능
 _collection = None
-
 
 def _get_collection():
     global _collection
@@ -19,12 +17,10 @@ def _get_collection():
             return None
     return _collection
 
-
 class JobPersistence:
     """MongoDB crawler.job-queue 컬렉션을 통한 작업 영속화.
     MongoDB가 없으면 no-op으로 동작한다 (in-memory only).
     """
-
     def link_db_uid(self, job_id: str, db_uid: str):
         """job-queue 문서에 db-list의 식별자인 DBuid를 기록하여 연결"""
         col = _get_collection()

@@ -28,9 +28,9 @@ async def periodic_gc(interval_seconds: int = 60):
         await asyncio.sleep(interval_seconds)
         gc.collect()
 
-fastapi_app = FastAPI(title="Crawler")
+fastapi_app = FastAPI(title="CRAWLER")
 
-cors_origins = ["http://localhost:3005"] if MODE == 0 else [os.getenv("CORS_ORIGIN", "")]
+cors_origins = ["http://localhost:3001", "https://crawler.knpu.re.kr"]
 fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,

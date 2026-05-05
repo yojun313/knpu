@@ -23,16 +23,21 @@ async def read_overview(
     logs = get_recent_logs(limit=10, date_str=target_date)
     crawlers = get_recent_crawlers(5)
     
-    # PM2 프로세스 리스트 가져오기
     pm2_processes = PM2Service.get_processes()
     
-    return templates.TemplateResponse("overview.html", {
+    context = {
         "request": request, 
         "stats": stats, 
         "logs": logs, 
         "crawlers": crawlers,
-        "processes": pm2_processes, # 템플릿에 데이터 추가
+        "processes": pm2_processes,
         "active_page": "overview",
         "today": today_str,
         "search_date": target_date
-    })
+    }
+    
+    return templates.TemplateResponse(
+        request=request,
+        name="overview.html",
+        context=context
+    )

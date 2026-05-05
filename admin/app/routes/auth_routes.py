@@ -9,18 +9,33 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/login")
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={}
+    )
 
 @router.post("/login")
 async def handle_login(request: Request, name: str = Form(...)):
-    email = request_login(name)
+    email = request_login(name) 
     if not email:
-        return templates.TemplateResponse("login.html", {"request": request, "error": "관리자 권한이 없거나 등록되지 않은 이름입니다."})
-    return RedirectResponse(url=f"/verify?name={name}", status_code=302)
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={
+                "error": "관리자 권한이 없거나 등록되지 않은 이름입니다."
+            }
+        )    
+    response = RedirectResponse(url=f"/verify?name={name}", status_code=302)
+    return response
 
 @router.get("/verify")
 async def verify_page(request: Request, name: str):
-    return templates.TemplateResponse("verify.html", {"request": request, "name": name})
+    return templates.TemplateResponse(
+        request=request,
+        name="verify.html",
+        context={"name": name}
+    )
 
 @router.post("/verify")
 async def handle_verify(response: Response, name: str = Form(...), code: str = Form(...)):

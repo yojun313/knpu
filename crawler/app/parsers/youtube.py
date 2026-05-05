@@ -8,7 +8,7 @@ import urllib3
 from bs4 import BeautifulSoup
 from googleapiclient.discovery import build
 import logging
-from db import load_proxy_list, checkStatus, get_userinfo, crawler_db
+from db import load_proxy_list, checkState, get_userinfo, crawler_db
 from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
 from common.req import Request, set_proxy_list
@@ -343,7 +343,7 @@ class YouTubeCrawler:
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime('%Y%m%d')
 
-            if checkStatus(self.DBuid) == False:
+            if checkState(self.DBuid) == False:
                 self.running = False
 
             if not self.running:
