@@ -113,14 +113,35 @@ def deleteCrawlDb(uid: str, userUid: str):
 
 
 def stopCrawlDb(uid: str, userUid: str):
-    crawlDb = crawlList_db.update_one({"uid": uid}, {'$set': {'status': 'stopped'}})
-   
-    log_user(userUid, f"Requested to stop crawl DB: {targetDB}")
-   
-    return JSONResponse(
-        status_code=200,
-        content={"message": "CrawlDB stopped"},
+    target_data = crawlList_db.find_one({"uid": uid})
+    
+    if not target_data:
+        raise HTTPException(status_code=404, detail="DB를 찾을 수 없습니다.")
+    
+    if target_data.get('status') == 'stopped':
+        return JSONResponse(
+            status_code=200,
+            content={"message": "이미 중단된 작업입니다."}
+        )
+
+    result = crawlList_db.update_one(
+        {"uid": uid}, 
+        {'$set': {'status': 'stopped'}}
     )
+
+    if result.modified_count > 0:
+        target_name = target_data.get('name', 'Unknown')
+        log_user(userUid, f"Requested to stop crawl DB: {target_name}")
+        
+        return JSONResponse(
+            status_code=200,
+            content={"message": f"'{target_name}' 크롤링이 중단되었습니다."},
+        )
+    else:
+        return JSONResponse(
+            status_code=500,
+            content={"message": "상태 업데이트에 실패했습니다."},
+        )
     
 
 def deleteCrawlDbBg(name: str):
