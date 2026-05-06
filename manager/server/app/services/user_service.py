@@ -3,7 +3,7 @@ from app.libs.exceptions import ConflictException, BadRequestException
 from app.models.user_model import UserCreate
 from fastapi.responses import JSONResponse
 from pymongo import ReturnDocument
-from datetime import datetime, timezone
+from datetime import datetime
 from zoneinfo import ZoneInfo
 from app.utils.pushover import sendPushOver
 import uuid
@@ -67,14 +67,22 @@ def bug_user(userUid: str, message: str):
     kst = ZoneInfo("Asia/Seoul")
     now_kst = datetime.now(kst)
 
+    is_admin = user_db.find_one({"uid": userUid, "role": "admin"})
+    if is_admin:
+        status = "fixed"
+        notified = True
+    else:
+        status = "pending"
+        notified = False
+
     log_entry = {
         "uid": str(uuid.uuid4()),
         "userUid": userUid,
         "datetime": now_kst,
         "datetime_kst": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
         "message": message,
-        "notified": False,
-        "status": "pending",
+        "notified": notified,
+        "status": status,
     }
 
     user_bugs_db.insert_one(log_entry)
