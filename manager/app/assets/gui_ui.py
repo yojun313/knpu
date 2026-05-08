@@ -340,106 +340,111 @@ class Ui_MainWindow(object):
         self.verticalLayout_tab_14.addLayout(self.horizontalLayout_52)
 
         self.tabWidget_web.addTab(self.tab_papers, "")
-        self.tab_members = QWidget()
-        self.tab_members.setObjectName(u"tab_members")
-        self.verticalLayout_tab_15 = QVBoxLayout(self.tab_members)
-        self.verticalLayout_tab_15.setObjectName(u"verticalLayout_tab_15")
-        self.web_members_tableWidget = QTableWidget(self.tab_members)
-        self.web_members_tableWidget.setObjectName(u"web_members_tableWidget")
-
-        self.verticalLayout_tab_15.addWidget(self.web_members_tableWidget)
-
-        self.horizontalLayout_53 = QHBoxLayout()
-        self.horizontalLayout_53.setObjectName(u"horizontalLayout_53")
-        self.web_addmember_button = QPushButton(self.tab_members)
-        self.web_addmember_button.setObjectName(u"web_addmember_button")
-
-        self.horizontalLayout_53.addWidget(self.web_addmember_button)
-
-        self.web_deletemember_button = QPushButton(self.tab_members)
-        self.web_deletemember_button.setObjectName(u"web_deletemember_button")
-
-        self.horizontalLayout_53.addWidget(self.web_deletemember_button)
-
-        self.web_editmember_button = QPushButton(self.tab_members)
-        self.web_editmember_button.setObjectName(u"web_editmember_button")
-
-        self.horizontalLayout_53.addWidget(self.web_editmember_button)
-
-        self.web_viewmember_button = QPushButton(self.tab_members)
-        self.web_viewmember_button.setObjectName(u"web_viewmember_button")
-
-        self.horizontalLayout_53.addWidget(self.web_viewmember_button)
-
-
-        self.verticalLayout_tab_15.addLayout(self.horizontalLayout_53)
-
-        self.tabWidget_web.addTab(self.tab_members, "")
-        self.tab_news = QWidget()
-        self.tab_news.setObjectName(u"tab_news")
-        self.verticalLayout_tab_16 = QVBoxLayout(self.tab_news)
-        self.verticalLayout_tab_16.setObjectName(u"verticalLayout_tab_16")
-        self.web_news_tableWidget = QTableWidget(self.tab_news)
-        self.web_news_tableWidget.setObjectName(u"web_news_tableWidget")
-
-        self.verticalLayout_tab_16.addWidget(self.web_news_tableWidget)
-
-        self.horizontalLayout_54 = QHBoxLayout()
-        self.horizontalLayout_54.setObjectName(u"horizontalLayout_54")
-        self.web_addnews_button = QPushButton(self.tab_news)
-        self.web_addnews_button.setObjectName(u"web_addnews_button")
-
-        self.horizontalLayout_54.addWidget(self.web_addnews_button)
-
-        self.web_deletenews_button = QPushButton(self.tab_news)
-        self.web_deletenews_button.setObjectName(u"web_deletenews_button")
-
-        self.horizontalLayout_54.addWidget(self.web_deletenews_button)
-
-        self.web_editnews_button = QPushButton(self.tab_news)
-        self.web_editnews_button.setObjectName(u"web_editnews_button")
-
-        self.horizontalLayout_54.addWidget(self.web_editnews_button)
-
-        self.web_viewnews_button = QPushButton(self.tab_news)
-        self.web_viewnews_button.setObjectName(u"web_viewnews_button")
-
-        self.horizontalLayout_54.addWidget(self.web_viewnews_button)
-
-
-        self.verticalLayout_tab_16.addLayout(self.horizontalLayout_54)
-
-        self.tabWidget_web.addTab(self.tab_news, "")
         self.tab_groupphotos = QWidget()
         self.tab_groupphotos.setObjectName(u"tab_groupphotos")
-        self.verticalLayout_tab_17 = QVBoxLayout(self.tab_groupphotos)
-        self.verticalLayout_tab_17.setObjectName(u"verticalLayout_tab_17")
+        self.verticalLayout_tab_15 = QVBoxLayout(self.tab_groupphotos)
+        self.verticalLayout_tab_15.setObjectName(u"verticalLayout_tab_15")
         self.web_groupphotos_tableWidget = QTableWidget(self.tab_groupphotos)
         self.web_groupphotos_tableWidget.setObjectName(u"web_groupphotos_tableWidget")
 
-        self.verticalLayout_tab_17.addWidget(self.web_groupphotos_tableWidget)
+        self.verticalLayout_tab_15.addWidget(self.web_groupphotos_tableWidget)
 
-        self.horizontalLayout_55 = QHBoxLayout()
-        self.horizontalLayout_55.setObjectName(u"horizontalLayout_55")
+        self.horizontalLayout_53 = QHBoxLayout()
+        self.horizontalLayout_53.setObjectName(u"horizontalLayout_53")
         self.web_addgroupphoto_button = QPushButton(self.tab_groupphotos)
         self.web_addgroupphoto_button.setObjectName(u"web_addgroupphoto_button")
 
-        self.horizontalLayout_55.addWidget(self.web_addgroupphoto_button)
+        self.horizontalLayout_53.addWidget(self.web_addgroupphoto_button)
 
         self.web_deletegroupphoto_button = QPushButton(self.tab_groupphotos)
         self.web_deletegroupphoto_button.setObjectName(u"web_deletegroupphoto_button")
 
-        self.horizontalLayout_55.addWidget(self.web_deletegroupphoto_button)
+        self.horizontalLayout_53.addWidget(self.web_deletegroupphoto_button)
+
+        self.web_editgroupphoto_button = QPushButton(self.tab_groupphotos)
+        self.web_editgroupphoto_button.setObjectName(u"web_editgroupphoto_button")
+
+        self.horizontalLayout_53.addWidget(self.web_editgroupphoto_button)
 
         self.web_viewgroupphoto_button = QPushButton(self.tab_groupphotos)
         self.web_viewgroupphoto_button.setObjectName(u"web_viewgroupphoto_button")
 
-        self.horizontalLayout_55.addWidget(self.web_viewgroupphoto_button)
+        self.horizontalLayout_53.addWidget(self.web_viewgroupphoto_button)
+
+
+        self.verticalLayout_tab_15.addLayout(self.horizontalLayout_53)
+
+        self.tabWidget_web.addTab(self.tab_groupphotos, "")
+        self.tab_members = QWidget()
+        self.tab_members.setObjectName(u"tab_members")
+        self.verticalLayout_tab_16 = QVBoxLayout(self.tab_members)
+        self.verticalLayout_tab_16.setObjectName(u"verticalLayout_tab_16")
+        self.web_members_tableWidget = QTableWidget(self.tab_members)
+        self.web_members_tableWidget.setObjectName(u"web_members_tableWidget")
+
+        self.verticalLayout_tab_16.addWidget(self.web_members_tableWidget)
+
+        self.horizontalLayout_54 = QHBoxLayout()
+        self.horizontalLayout_54.setObjectName(u"horizontalLayout_54")
+        self.web_addmember_button = QPushButton(self.tab_members)
+        self.web_addmember_button.setObjectName(u"web_addmember_button")
+
+        self.horizontalLayout_54.addWidget(self.web_addmember_button)
+
+        self.web_deletemember_button = QPushButton(self.tab_members)
+        self.web_deletemember_button.setObjectName(u"web_deletemember_button")
+
+        self.horizontalLayout_54.addWidget(self.web_deletemember_button)
+
+        self.web_editmember_button = QPushButton(self.tab_members)
+        self.web_editmember_button.setObjectName(u"web_editmember_button")
+
+        self.horizontalLayout_54.addWidget(self.web_editmember_button)
+
+        self.web_viewmember_button = QPushButton(self.tab_members)
+        self.web_viewmember_button.setObjectName(u"web_viewmember_button")
+
+        self.horizontalLayout_54.addWidget(self.web_viewmember_button)
+
+
+        self.verticalLayout_tab_16.addLayout(self.horizontalLayout_54)
+
+        self.tabWidget_web.addTab(self.tab_members, "")
+        self.tab_news = QWidget()
+        self.tab_news.setObjectName(u"tab_news")
+        self.verticalLayout_tab_17 = QVBoxLayout(self.tab_news)
+        self.verticalLayout_tab_17.setObjectName(u"verticalLayout_tab_17")
+        self.web_news_tableWidget = QTableWidget(self.tab_news)
+        self.web_news_tableWidget.setObjectName(u"web_news_tableWidget")
+
+        self.verticalLayout_tab_17.addWidget(self.web_news_tableWidget)
+
+        self.horizontalLayout_55 = QHBoxLayout()
+        self.horizontalLayout_55.setObjectName(u"horizontalLayout_55")
+        self.web_addnews_button = QPushButton(self.tab_news)
+        self.web_addnews_button.setObjectName(u"web_addnews_button")
+
+        self.horizontalLayout_55.addWidget(self.web_addnews_button)
+
+        self.web_deletenews_button = QPushButton(self.tab_news)
+        self.web_deletenews_button.setObjectName(u"web_deletenews_button")
+
+        self.horizontalLayout_55.addWidget(self.web_deletenews_button)
+
+        self.web_editnews_button = QPushButton(self.tab_news)
+        self.web_editnews_button.setObjectName(u"web_editnews_button")
+
+        self.horizontalLayout_55.addWidget(self.web_editnews_button)
+
+        self.web_viewnews_button = QPushButton(self.tab_news)
+        self.web_viewnews_button.setObjectName(u"web_viewnews_button")
+
+        self.horizontalLayout_55.addWidget(self.web_viewnews_button)
 
 
         self.verticalLayout_tab_17.addLayout(self.horizontalLayout_55)
 
-        self.tabWidget_web.addTab(self.tab_groupphotos, "")
+        self.tabWidget_web.addTab(self.tab_news, "")
 
         self.verticalLayout_data_process2.addWidget(self.tabWidget_web)
 
@@ -598,6 +603,11 @@ class Ui_MainWindow(object):
         self.web_editpaper_button.setText(QCoreApplication.translate("MainWindow", u"\uc218\uc815", None))
         self.web_viewpaper_button.setText(QCoreApplication.translate("MainWindow", u"\uc790\uc138\ud788", None))
         self.tabWidget_web.setTabText(self.tabWidget_web.indexOf(self.tab_papers), QCoreApplication.translate("MainWindow", u"\ub17c\ubb38 \ubaa9\ub85d", None))
+        self.web_addgroupphoto_button.setText(QCoreApplication.translate("MainWindow", u"\ucd94\uac00", None))
+        self.web_deletegroupphoto_button.setText(QCoreApplication.translate("MainWindow", u"\uc0ad\uc81c", None))
+        self.web_editgroupphoto_button.setText(QCoreApplication.translate("MainWindow", u"\uc218\uc815", None))
+        self.web_viewgroupphoto_button.setText(QCoreApplication.translate("MainWindow", u"\uc790\uc138\ud788", None))
+        self.tabWidget_web.setTabText(self.tabWidget_web.indexOf(self.tab_groupphotos), QCoreApplication.translate("MainWindow", u"\uac24\ub7ec\ub9ac", None))
         self.web_addmember_button.setText(QCoreApplication.translate("MainWindow", u"\ucd94\uac00", None))
         self.web_deletemember_button.setText(QCoreApplication.translate("MainWindow", u"\uc0ad\uc81c", None))
         self.web_editmember_button.setText(QCoreApplication.translate("MainWindow", u"\uc218\uc815", None))
@@ -608,10 +618,6 @@ class Ui_MainWindow(object):
         self.web_editnews_button.setText(QCoreApplication.translate("MainWindow", u"\uc218\uc815", None))
         self.web_viewnews_button.setText(QCoreApplication.translate("MainWindow", u"\uc790\uc138\ud788", None))
         self.tabWidget_web.setTabText(self.tabWidget_web.indexOf(self.tab_news), QCoreApplication.translate("MainWindow", u"\ub274\uc2a4 \ubaa9\ub85d", None))
-        self.web_addgroupphoto_button.setText(QCoreApplication.translate("MainWindow", u"\ucd94\uac00", None))
-        self.web_deletegroupphoto_button.setText(QCoreApplication.translate("MainWindow", u"\uc0ad\uc81c", None))
-        self.web_viewgroupphoto_button.setText(QCoreApplication.translate("MainWindow", u"\uc790\uc138\ud788", None))
-        self.tabWidget_web.setTabText(self.tabWidget_web.indexOf(self.tab_groupphotos), QCoreApplication.translate("MainWindow", u"\ub2e8\uccb4\uc0ac\uc9c4", None))
         self.label_name.setText(QCoreApplication.translate("MainWindow", u"\uc774\ub984:", None))
         self.label_email.setText(QCoreApplication.translate("MainWindow", u"\uc774\uba54\uc77c:", None))
         self.label_key.setText(QCoreApplication.translate("MainWindow", u"Key:", None))
