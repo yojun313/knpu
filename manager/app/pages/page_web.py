@@ -165,7 +165,7 @@ class Manager_Web:
 
     def refreshGroupPhotoBoard(self):
         printStatus(self.main, "단체사진 불러오는 중...")
-        self.photo_data = Request("get", "/group-photos/", HOMEPAGE_EDIT_API).json()
+        self.photo_data = Request("get", "/gallery/", HOMEPAGE_EDIT_API).json()
 
         self.photo_data_for_table = [
             [
@@ -175,47 +175,54 @@ class Manager_Web:
             ]
             for item in self.photo_data
         ]
-        
+
         column_headers = ["Thumbnail", "Caption", "Date"]
-        
+
         makeTable(
             self.main,
             self.main.web_groupphotos_tableWidget,
             self.photo_data_for_table,
             column_headers,
-            popupsize=(600, 500) # 상세조회 팝업 사이즈 조절
+            popupsize=(600, 500),  # 상세조회 팝업 사이즈 조절
         )
 
         table = self.main.web_groupphotos_tableWidget
-        
+
         table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
         table.setColumnWidth(0, 120)
         table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        
+
         for i in range(table.rowCount()):
             table.setRowHeight(i, 80)
-            
+
             url = self.photo_data[i].get("url")
             if url:
                 img_label = QLabel()
                 img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                img_label.setStyleSheet("padding: 5px; border-radius: 5px;") # 디자인 요소
-                
+                img_label.setStyleSheet(
+                    "padding: 5px; border-radius: 5px;"
+                )  # 디자인 요소
+
                 try:
                     resp = httpx.get(url)
                     if resp.status_code == 200:
                         pixmap = QPixmap()
                         pixmap.loadFromData(resp.content)
-                        img_label.setPixmap(pixmap.scaled(110, 70, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                        img_label.setPixmap(
+                            pixmap.scaled(
+                                110,
+                                70,
+                                Qt.AspectRatioMode.KeepAspectRatio,
+                                Qt.TransformationMode.SmoothTransformation,
+                            )
+                        )
                     else:
                         img_label.setText("No Image")
                 except:
                     img_label.setText("Error")
-            
+
                 table.setCellWidget(i, 0, img_label)
 
-        printStatus(self.main, "단체사진 로드 완료")
-    
     def addHomePaper(self):
         try:
             if not accessCheck(self.main, exclude=["public"]):
@@ -283,7 +290,9 @@ class Manager_Web:
 
                 printStatus(self.main, "이미지 업로드 중...")
                 image_url = upload_homepage_image(
-                    src_path=dialog.image_path, folder="misc", file_name="default"
+                    src_path=dialog.image_path,
+                    folder="gallery",
+                    file_name=os.path.basename(dialog.image_path),
                 )
 
                 if not image_url:
@@ -292,7 +301,7 @@ class Manager_Web:
                 payload = dialog.get_payload()
                 payload["url"] = image_url
 
-                Request("post", "/group-photos/", HOMEPAGE_EDIT_API, json=payload)
+                Request("post", "/gallery/", HOMEPAGE_EDIT_API, json=payload)
 
                 QMessageBox.information(self.main, "완료", "단체사진이 추가되었습니다.")
                 userLogging(f"WEB -> addGroupPhoto({payload.get('caption')})")
@@ -413,24 +422,39 @@ class Manager_Web:
 
     def deleteGroupPhoto(self):
         try:
-            if not accessCheck(self.main, exclude=["public"]): return
+            if not accessCheck(self.main, exclude=["public"]):
+                return
             selectedRow = self.main.web_groupphotos_tableWidget.currentRow()
-            if selectedRow < 0: return
+            if selectedRow < 0:
+                return
 
             target_data = self.photo_data[selectedRow]
             uid = target_data["uid"]
             image_url = target_data["url"]
 
-            if QMessageBox.question(self.main, "삭제", "정말 삭제하시겠습니까?") == QMessageBox.StandardButton.Yes:
+            if (
+                QMessageBox.question(
+                    self.main,
+                    "삭제",
+                    "정말 삭제하시겠습니까?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes,
+                )
+                == QMessageBox.StandardButton.Yes
+            ):
                 delete_homepage_image(image_url)
 
-                Request("delete", "/group-photos/", HOMEPAGE_EDIT_API, params={"uid": uid})
+                Request(
+                    "delete", "gallery/", HOMEPAGE_EDIT_API, params={"uid": uid}
+                )
 
                 self.refreshGroupPhotoBoard()
-                QMessageBox.information(self.main, "성공", "이미지와 데이터가 모두 삭제되었습니다.")
+                QMessageBox.information(
+                    self.main, "성공", "이미지와 데이터가 모두 삭제되었습니다."
+                )
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-    
+
     def editHomePaper(self):
         try:
             if not accessCheck(self.main, exclude=["public"]):
@@ -534,9 +558,11 @@ class Manager_Web:
             selectedRow = self.main.web_groupphotos_tableWidget.currentRow()
             if selectedRow < 0:
                 return
-            
+
             selectedUid = self.photo_data[selectedRow]["uid"]
-            origin = next((p for p in self.photo_data if p.get("uid") == selectedUid), None)
+            origin = next(
+                (p for p in self.photo_data if p.get("uid") == selectedUid), None
+            )
 
             if not origin:
                 QMessageBox.warning(self.main, "오류", "사진 정보를 찾을 수 없습니다.")
@@ -545,34 +571,36 @@ class Manager_Web:
             dialog = EditGroupPhotoDialog(data=origin, parent=self.main)
             if dialog.exec():
                 payload = dialog.get_payload()
-                payload["uid"] = selectedUid  
-                
+                payload["uid"] = selectedUid
+
                 if dialog.image_path:
                     printStatus(self.main, "새 이미지 업로드 중...")
-                    
+
                     if origin.get("url"):
                         delete_homepage_image(origin["url"])
-                    
+
                     new_url = upload_homepage_image(
-                        src_path=dialog.image_path, folder="misc", file_name="default"
+                        src_path=dialog.image_path,
+                        folder="gallery",
+                        file_name=os.path.basename(dialog.image_path),
                     )
                     payload["url"] = new_url
                 else:
                     payload["url"] = origin.get("url")
 
-                Request("post", "/group-photos/", HOMEPAGE_EDIT_API, json=payload)
+                Request("post", "/gallery/", HOMEPAGE_EDIT_API, json=payload)
 
                 QMessageBox.information(
                     self.main,
                     "완료",
-                    f"'{payload.get('caption')}' 사진 정보가 수정되었습니다."
+                    f"'{payload.get('caption')}' 사진 정보가 수정되었습니다.",
                 )
                 userLogging(f"WEB -> editGroupPhoto({payload.get('caption')})")
                 self.refreshGroupPhotoBoard()
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
-    
+
     def viewPaper(self):
         try:
             selectedRow = self.main.web_papers_tableWidget.currentRow()
@@ -677,11 +705,11 @@ class Manager_Web:
 
         if index == 1:
             printStatus(self.main, "https://knpu.re.kr/gallery")
-            
+
             if self.photoTableLoad == False:
                 self.refreshGroupPhotoBoard()
                 self.photoTableLoad = True
-                
+
             self.main.ctrla.activated.connect(self.addGroupPhoto)
             self.main.ctrld.activated.connect(self.deleteGroupPhoto)
             self.main.ctrlv.activated.connect(self.viewGroupPhoto)
@@ -693,7 +721,7 @@ class Manager_Web:
             self.main.cmdv.activated.connect(self.viewGroupPhoto)
             self.main.cmde.activated.connect(self.editGroupPhoto)
             self.main.cmdr.activated.connect(self.refreshGroupPhotoBoard)
-            
+
         if index == 2:
             printStatus(self.main, "https://knpu.re.kr/team")
             self.main.ctrld.activated.connect(self.deleteHomeMember)

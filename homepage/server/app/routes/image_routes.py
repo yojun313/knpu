@@ -21,9 +21,7 @@ s3 = boto3.client(
     region_name="auto",
 )
 
-PUBLIC_BASE = (
-    "https://pub-60ca29aab33f424fab345807bd058d56.r2.dev"
-)
+PUBLIC_BASE = "https://pub-60ca29aab33f424fab345807bd058d56.r2.dev"
 
 router = APIRouter()
 
@@ -40,13 +38,12 @@ def _allowed(ext: str) -> bool:
 async def upload_image(
     file: UploadFile = File(...),
     object_name: str = Form("default"),
-    folder: Literal["members", "news", "papers", "misc"] = Form("misc"),
+    folder: Literal["members", "news", "papers", "gallery", "misc"] = Form("misc"),
 ) -> JSONResponse:
     """
     * `file` : multipart/form-data 로 전송되는 이미지 파일\n
     * `folder` : 버킷 내 폴더 (기본 *misc*) – 필요 시 프론트에서 지정
     """
-    # 1) 확장자 및 MIME 검사
     _, ext = os.path.splitext(file.filename)
     if not _allowed(ext):
         raise HTTPException(
@@ -61,14 +58,12 @@ async def upload_image(
 
     print("object_name:", object_name)
 
-    # 2) object key 생성 (폴더/uuid.ext)
     if object_name == "default":
         object_name = f"{folder}/{uuid.uuid4().hex}{ext.lower()}"
 
-    # 3) S3 업로드 (stream)
     try:
         s3.upload_fileobj(
-            file.file,  # file-like object
+            file.file, 
             BUCKET_NAME,
             object_name,
             ExtraArgs={"ContentType": file.content_type},
@@ -79,7 +74,6 @@ async def upload_image(
             detail=f"R2 업로드 실패: {e}",
         )
 
-    # 4) 퍼블릭 URL 반환
     url = f"{PUBLIC_BASE}/{object_name}"
     return JSONResponse({"url": url})
 
@@ -89,7 +83,9 @@ async def upload_image(
     summary="R2 이미지 삭제",
 )
 async def delete_image(
-    object_name: str = Query(..., description="삭제할 객체의 전체 경로 (예: members/uuid.jpg)")
+    object_name: str = Query(
+        ..., description="삭제할 객체의 전체 경로 (예: members/uuid.jpg)"
+    ),
 ) -> JSONResponse:
     try:
         s3.delete_object(
