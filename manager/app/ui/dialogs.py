@@ -824,10 +824,23 @@ class EditGroupPhotoDialog(BaseDialog):
 
     def initUI(self):
         self.setWindowTitle("단체사진 관리")
-        self.resize(400, 300)
+        self.resize(400, 350)
         layout = QVBoxLayout(self)
 
         self.caption_input = self.add_label(layout, "사진 설명 (Caption):", self.data.get("caption", ""), readonly=False)
+        
+        default_date = self.data.get("date")
+        if not default_date:
+            default_date = datetime.now().strftime("%Y.%m.%d")
+            
+        self.date_input = self.add_label(
+            layout, 
+            "날짜 (형식: 2025.09.15 또는 2025.09):", 
+            default_date, 
+            readonly=False
+        )
+        
+        layout.addSpacing(10)
         
         layout.addWidget(QLabel("<b>이미지 파일:</b>"))
         self.file_label = QLabel(self.data.get("url", "선택된 파일 없음"))
@@ -837,6 +850,8 @@ class EditGroupPhotoDialog(BaseDialog):
         self.select_btn = QPushButton("이미지 선택")
         self.select_btn.clicked.connect(self.selectImage)
         layout.addWidget(self.select_btn)
+
+        layout.addStretch()
 
         self.submit_button = QPushButton("저장하기")
         self.submit_button.clicked.connect(self.accept)
@@ -849,14 +864,27 @@ class EditGroupPhotoDialog(BaseDialog):
         if file_path:
             self.image_path = file_path
             self.file_label.setText(file_path.split("/")[-1])
-
+            
+            try:
+                stat = os.stat(file_path)
+                
+                if hasattr(stat, 'st_birthtime'):
+                    timestamp = stat.st_birthtime
+                else:
+                    timestamp = stat.st_ctime
+                
+                file_date = datetime.fromtimestamp(timestamp).strftime("%Y.%m.%d")
+                self.date_input.setText(file_date)
+            except Exception:
+                pass
+    
     def get_payload(self):
         return {
             "caption": self.caption_input.text(),
+            "date": self.date_input.text(),
             "url": self.data.get("url", ""), 
-            "date": self.data.get("date", datetime.now().isoformat())
         }
-
+      
 
 class MergeOptionDialog(BaseDialog):
     def __init__(self, parent=None, base_dir=""):

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>PAILAB - GALLERY</title>
+  <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+  <link rel="icon" type="image/x-icon" href="assets/imgs/pailab_logo_favicon.ico" />
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css" />
+  <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700" rel="stylesheet" type="text/css" />
+  <link href="css/styles.css" rel="stylesheet" />
+  <style>
+    /* 상단 헤더: 세로 비율 축소 (60vh -> 35vh) */
+    #masthead-recent {
+      position: relative;
+      width: 100%;
+      height: 35vh;
+      min-height: 250px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #222;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 1;
+    }
+
+    #masthead-recent::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1;
+    }
+
+    #masthead-recent .container {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      color: white;
+    }
+
+    /* 갤러리 카드 디자인 */
+    .photo-card {
+      border: none;
+      transition: transform 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+      background: #fff;
+      cursor: pointer;
+      /* 클릭 가능함을 표시 */
+    }
+
+    .photo-card:hover {
+      transform: translateY(-10px);
+    }
+
+    .photo-img-container {
+      width: 100%;
+      height: 250px;
+      overflow: hidden;
+    }
+
+    .photo-img-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* 모달 이미지 스타일 */
+    .modal-content {
+      background-color: transparent;
+      border: none;
+    }
+
+    .modal-body {
+      padding: 0;
+      position: relative;
+    }
+
+    #modalImage {
+      width: 100%;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 5px;
+    }
+
+    .modal-caption {
+      color: white;
+      text-align: center;
+      padding: 15px;
+      font-family: "Montserrat", sans-serif;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    @media (max-width: 768px) {
+      #masthead-recent {
+        height: 30vh;
+      }
+
+      .photo-img-container {
+        height: 200px;
+      }
+    }
+  </style>
+</head>
+
+<body id="page-top">
+  <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
+    <div class="container">
+      <a class="navbar-brand" href="/"><img src="assets/imgs/pailab_logo.png" alt="..." /></a>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav text-uppercase ms-auto py-4 py-lg-0">
+          <li class="nav-item"><a class="nav-link" href="/">RESEARCH</a></li>
+          <li class="nav-item"><a class="nav-link" href="/publications">PUBLICATIONS</a></li>
+          <li class="nav-item"><a class="nav-link" href="/#">NEWS</a></li>
+          <li class="nav-item"><a class="nav-link" href="/team">OUR TEAM</a></li>
+          <li class="nav-item"><a class="nav-link" href="/gallery">GALLERY</a></li>
+          <li class="nav-item"><a class="nav-link" href="/systems">SYSTEM</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <header id="masthead-recent">
+    <div class="container">
+      <div class="masthead_team-subheading" style="font-size: 1.2rem;">PAILAB</div>
+      <div class="masthead_team-heading text-uppercase" style="font-size: 2.5rem;">GROUP GALLERY</div>
+    </div>
+  </header>
+
+  <section class="page-section bg-light" id="gallery">
+    <div class="container">
+      <div class="row" id="gallery-container"></div>
+    </div>
+  </section>
+
+  <!-- 이미지 크게 보기 모달 -->
+  <div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-body">
+          <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3"
+            data-bs-dismiss="modal" aria-label="Close" style="z-index: 10;"></button>
+          <img src="" id="modalImage" alt="Large View">
+          <div id="modalCaption" class="modal-caption"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer py-4">
+    <div class="container text-center">Copyright &copy; KNPU PAILAB</div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      try {
+        const response = await fetch("https://home.knpu.re.kr/api/group-photos/");
+        let photos = await response.json();
+
+        const container = document.getElementById("gallery-container");
+        const masthead = document.getElementById("masthead-recent");
+
+        if (!photos || photos.length === 0) {
+          container.innerHTML = `<div class="col-12 text-center text-muted"><p>등록된 사진이 없습니다.</p></div>`;
+          return;
+        }
+
+        // 최신순 정렬
+        photos.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // 헤더 배경 설정
+        masthead.style.backgroundImage = `url('${photos[0].url}')`;
+
+        photos.forEach((p) => {
+          const dateStr = p.date ? p.date.split('T')[0].replace(/-/g, '.') : '';
+          const photoHtml = `
+              <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card photo-card" onclick="openPhotoModal('${p.url}', '${p.caption}', '${dateStr}')">
+                  <div class="photo-img-container">
+                    <img src="${p.url}" alt="${p.caption}" class="card-img-top">
+                  </div>
+                  <div class="card-body photo-caption text-center">
+                    <h5 class="card-title fw-bold mb-1">${p.caption}</h5>
+                    <p class="photo-date mb-0" style="color: #6c757d; font-size: 0.85rem;">${dateStr}</p>
+                  </div>
+                </div>
+              </div>
+            `;
+          container.insertAdjacentHTML("beforeend", photoHtml);
+        });
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    });
+
+    // 모달 열기 함수
+    function openPhotoModal(url, caption, date) {
+      const modalImage = document.getElementById('modalImage');
+      const modalCaption = document.getElementById('modalCaption');
+      const photoModal = new bootstrap.Modal(document.getElementById('photoModal'));
+
+      modalImage.src = url;
+      modalCaption.innerHTML = `<h4 class="mb-1">${caption}</h4><p class="mb-0">${date}</p>`;
+      photoModal.show();
+    }
+  </script>
+</body>
+
+</html>

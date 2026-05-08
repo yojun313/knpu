@@ -34,7 +34,7 @@
                     <li class="nav-item"><a class="nav-link" href="/publications">PUBLICATIONS</a></li>
                     <li class="nav-item"><a class="nav-link" href="/">NEWS</a></li>
                     <li class="nav-item"><a class="nav-link" href="/team">OUR TEAM</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/photos">PHOTOS</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/gallery">GALLERY</a></li>
                     <li class="nav-item"><a class="nav-link" href="/systems">SYSTEM</a></li>
                 </ul>
             </div>
@@ -50,7 +50,7 @@
     <section class="publications-section" id="PUBLICATIONS">
         <div class="container">
             <div class="text-center">
-            <h2 class="section-heading text-uppercase"><br />PAPERS</h2>
+                <h2 class="section-heading text-uppercase"><br />PAPERS</h2>
             </div>
             <!-- 연도/논문 목록이 동적으로 삽입될 부분 -->
             <div id="publications-list"></div>
@@ -68,32 +68,32 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-            const res = await fetch('https://home.knpu.re.kr/api/papers/');
-            if (!res.ok) throw new Error('Failed to fetch publications');
+                const res = await fetch('https://home.knpu.re.kr/api/papers/');
+                if (!res.ok) throw new Error('Failed to fetch publications');
 
-            const data = await res.json();
+                const data = await res.json();
 
-            const listEl = document.getElementById('publications-list');
-            listEl.innerHTML = ''; // 초기화
+                const listEl = document.getElementById('publications-list');
+                listEl.innerHTML = ''; // 초기화
 
-            data.sort((a, b) => b.year - a.year); // 연도 내림차순 정렬
+                data.sort((a, b) => b.year - a.year); // 연도 내림차순 정렬
 
-            data.forEach(yearData => {
-                if (!yearData.papers || yearData.papers.length === 0) return; // 비어있으면 넘어감
+                data.forEach(yearData => {
+                    if (!yearData.papers || yearData.papers.length === 0) return; // 비어있으면 넘어감
 
-                const yearBlock = document.createElement('div');
-                yearBlock.classList.add('publication-year');
+                    const yearBlock = document.createElement('div');
+                    yearBlock.classList.add('publication-year');
 
-                yearBlock.innerHTML = `
+                    yearBlock.innerHTML = `
                 <h4 class="year-title">${yearData.year}</h4>
                 <hr class="year-separator">
                 `;
 
-                yearData.papers.forEach(paper => {
-                const paperEl = document.createElement('div');
-                paperEl.classList.add('publication-item');
+                    yearData.papers.forEach(paper => {
+                        const paperEl = document.createElement('div');
+                        paperEl.classList.add('publication-item');
 
-                paperEl.innerHTML = `
+                        paperEl.innerHTML = `
                     <div class="publication-info">
                     <h5 class="publication-title">${paper.title}</h5>
                     ${paper.authors ? `<p class="authors">${paper.authors}</p>` : ''}
@@ -102,18 +102,18 @@
                     </div>
                 `;
 
-                yearBlock.appendChild(paperEl);
+                        yearBlock.appendChild(paperEl);
+                    });
+
+                    listEl.appendChild(yearBlock);
                 });
 
-                listEl.appendChild(yearBlock);
-            });
-
-            if (listEl.innerHTML.trim() === '') {
-                listEl.innerHTML = '<p class="text-center text-muted">등록된 논문이 없습니다.</p>';
-            }
+                if (listEl.innerHTML.trim() === '') {
+                    listEl.innerHTML = '<p class="text-center text-muted">등록된 논문이 없습니다.</p>';
+                }
             } catch (e) {
-            console.error('Error loading publications:', e);
-            document.getElementById('publications-list').innerHTML = '<p class="text-center text-danger">논문을 불러오는 데 실패했습니다.</p>';
+                console.error('Error loading publications:', e);
+                document.getElementById('publications-list').innerHTML = '<p class="text-center text-danger">논문을 불러오는 데 실패했습니다.</p>';
             }
         });
     </script>
