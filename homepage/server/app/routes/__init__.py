@@ -13,5 +13,7 @@ api_router = APIRouter()
 api_router.include_router(paper_router, prefix="/papers", tags=["papers"])
 api_router.include_router(member_router, prefix="/members", tags=["members"])
 api_router.include_router(news_router, prefix="/news", tags=["news"])
-api_router.include_router(photo_router, prefix="/group-photos", tags=["group-photos"])
-api_router.include_router(image_router, prefix="/image", tags=["image"], dependencies=[Depends(verify_token)])
+api_router.include_router(photo_router, prefix="/gallery", tags=["gallery"])
+api_router.include_router(
+    image_router, prefix="/image", tags=["image"], dependencies=[Depends(verify_token)]
+)
