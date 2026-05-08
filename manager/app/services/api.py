@@ -5,6 +5,7 @@ import os
 import mimetypes
 from libs.path import safe_path
 
+PUBLIC_BASE = "https://pub-60ca29aab33f424fab345807bd058d56.r2.dev"
 
 def get_api_headers():
     """
@@ -20,7 +21,6 @@ def Request(method, url, base_api=MANAGER_SERVER_API, **kwargs):
     response = requests.request(method.upper(), full_url, **kwargs)
     response.raise_for_status()
     return response
-
 
 def upload_homepage_image(
     src_path: str, folder: str = "misc", file_name: str = "default"
@@ -42,3 +42,20 @@ def upload_homepage_image(
     print(response.status_code, response.text)
 
     return response.json()["url"]
+
+def delete_homepage_image(target: str) -> dict:
+    if target.startswith("http"):
+        object_name = target.split(f"{PUBLIC_BASE}/")[-1]
+    else:
+        object_name = target
+
+    response = Request(
+        "delete", 
+        "image/", 
+        base_api=HOMEPAGE_EDIT_API, 
+        params={"object_name": object_name}
+    )
+    
+    print(f"Delete Status: {response.status_code}, Response: {response.text}")
+    
+    return response.json()

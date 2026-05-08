@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt, QDate
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -29,7 +30,8 @@ from services.logging import *
 from PySide6.QtGui import QKeySequence, QFont, QShortcut, QFontMetrics
 from datetime import datetime
 from services.api import Request
-from typing import Callable, Optional
+from typing import Callable
+import httpx
 
 
 class BaseDialog(QDialog):
@@ -811,6 +813,49 @@ class EditPostDialog(BaseDialog):
             self, "Input Data", f"Post Title: {post_title}\nPost Text: {post_text}"
         )
         self.accept()
+
+
+class EditGroupPhotoDialog(BaseDialog):
+    def __init__(self, data=None, parent=None):
+        super().__init__(parent)
+        self.data = data or {}
+        self.image_path = None
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("단체사진 관리")
+        self.resize(400, 300)
+        layout = QVBoxLayout(self)
+
+        self.caption_input = self.add_label(layout, "사진 설명 (Caption):", self.data.get("caption", ""), readonly=False)
+        
+        layout.addWidget(QLabel("<b>이미지 파일:</b>"))
+        self.file_label = QLabel(self.data.get("url", "선택된 파일 없음"))
+        self.file_label.setWordWrap(True)
+        layout.addWidget(self.file_label)
+        
+        self.select_btn = QPushButton("이미지 선택")
+        self.select_btn.clicked.connect(self.selectImage)
+        layout.addWidget(self.select_btn)
+
+        self.submit_button = QPushButton("저장하기")
+        self.submit_button.clicked.connect(self.accept)
+        layout.addWidget(self.submit_button)
+
+    def selectImage(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "이미지 선택", "", "Image Files (*.png *.jpg *.jpeg *.webp *.gif)"
+        )
+        if file_path:
+            self.image_path = file_path
+            self.file_label.setText(file_path.split("/")[-1])
+
+    def get_payload(self):
+        return {
+            "caption": self.caption_input.text(),
+            "url": self.data.get("url", ""), 
+            "date": self.data.get("date", datetime.now().isoformat())
+        }
 
 
 class MergeOptionDialog(BaseDialog):
@@ -2649,7 +2694,7 @@ class EditHomeMemberDialog(BaseDialog):
 
     def load_options(self):
         try:
-            response = Request("get", "edit/member/options", HOMEPAGE_EDIT_API)
+            response = Request("get", "members/options", HOMEPAGE_EDIT_API)
             if response.status_code == 200:
                 options = response.json()
                 self.in_pos.addItems(options.get("positions", []))
@@ -2891,3 +2936,42 @@ class ViewHomeNewsDialog(BaseDialog):
         self.add_label(layout, "날짜", data.get("date", ""))
         self.add_label(layout, "URL", data.get("url", ""))
         self.add_label(layout, "내용", data.get("content", ""), multiline=True)
+
+
+class ViewHomePhotoDialog(BaseDialog):
+    def __init__(self, data, parent=None):
+        super().__init__(parent)
+        self.data = data
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("단체사진 상세 보기")
+        self.resize(500, 600)
+        layout = QVBoxLayout(self)
+
+        self.image_label = QLabel("이미지 로딩 중...")
+        self.image_label.setAlignment(Qt.AlignCenter)
+        self.image_label.setMinimumSize(400, 300)
+        layout.addWidget(self.image_label)
+
+        self.load_image(self.data.get("url"))
+
+        self.add_label(layout, "설명 (Caption):", self.data.get("caption", ""), readonly=True)
+        self.add_label(layout, "날짜:", self.data.get("date", ""), readonly=True)
+        self.add_label(layout, "URL:", self.data.get("url", ""), readonly=True)
+
+        close_btn = QPushButton("닫기")
+        close_btn.clicked.connect(self.close)
+        layout.addWidget(close_btn)
+
+    def load_image(self, url):
+        try:
+            resp = httpx.get(url)
+            if resp.status_code == 200:
+                pixmap = QPixmap()
+                pixmap.loadFromData(resp.content)
+                self.image_label.setPixmap(pixmap.scaled(480, 360, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            else:
+                self.image_label.setText("이미지를 불러올 수 없습니다.")
+        except Exception:
+            self.image_label.setText("이미지 로드 오류")
