@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 )
 from services.api import *
 from services.logging import *
-from PySide6.QtGui import QKeySequence, QFont, QShortcut, QFontMetrics
+from PySide6.QtGui import QKeySequence, QFont, QShortcut, QFontMetrics, QPixmap
 from datetime import datetime
 from services.api import Request
 from typing import Callable
@@ -824,38 +824,67 @@ class EditGroupPhotoDialog(BaseDialog):
 
     def initUI(self):
         self.setWindowTitle("단체사진 관리")
-        self.resize(400, 350)
+        self.resize(450, 550) # 미리보기가 들어가므로 세로 크기를 키웠습니다.
         layout = QVBoxLayout(self)
 
+        # 1. 사진 설명 및 날짜 입력
         self.caption_input = self.add_label(layout, "사진 설명 (Caption):", self.data.get("caption", ""), readonly=False)
         
-        default_date = self.data.get("date")
-        if not default_date:
-            default_date = datetime.now().strftime("%Y.%m.%d")
-            
-        self.date_input = self.add_label(
-            layout, 
-            "날짜 (형식: 2025.09.15 또는 2025.09):", 
-            default_date, 
-            readonly=False
-        )
+        default_date = self.data.get("date") or datetime.now().strftime("%Y.%m.%d")
+        self.date_input = self.add_label(layout, "날짜 (YYYY.MM.DD) (이미지 선택 시 자동 입력):", default_date, readonly=False)
         
         layout.addSpacing(10)
-        
-        layout.addWidget(QLabel("<b>이미지 파일:</b>"))
-        self.file_label = QLabel(self.data.get("url", "선택된 파일 없음"))
+
+        # 2. 이미지 미리보기 영역
+        layout.addWidget(QLabel("<b>이미지 미리보기:</b>"))
+        self.image_preview = QLabel("이미지를 선택해주세요")
+        self.image_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.image_preview.setFixedSize(400, 250)
+        self.image_preview.setStyleSheet("border: 1px solid #dcdcdc; background-color: #f9f9f9; border-radius: 5px;")
+        layout.addWidget(self.image_preview)
+
+        # 기존 데이터(수정 모드)인 경우 이미지 로드
+        if self.data.get("url"):
+            self.load_preview_from_url(self.data.get("url"))
+
+        # 3. 파일 정보 및 선택 버튼
+        self.file_label = QLabel(self.data.get("url", "선택된 로컬 파일 없음"))
         self.file_label.setWordWrap(True)
+        self.file_label.setStyleSheet("color: gray; font-size: 11px;")
         layout.addWidget(self.file_label)
         
-        self.select_btn = QPushButton("이미지 선택")
+        self.select_btn = QPushButton("이미지 변경/선택")
         self.select_btn.clicked.connect(self.selectImage)
         layout.addWidget(self.select_btn)
 
         layout.addStretch()
 
+        # 4. 저장 버튼
         self.submit_button = QPushButton("저장하기")
+        self.submit_button.setStyleSheet("background-color: #0d6efd; color: white; font-weight: bold; padding: 8px;")
         self.submit_button.clicked.connect(self.accept)
         layout.addWidget(self.submit_button)
+
+    def load_preview_from_url(self, url):
+        """URL로부터 이미지를 가져와 미리보기에 표시"""
+        try:
+            resp = httpx.get(url)
+            if resp.status_code == 200:
+                pixmap = QPixmap()
+                pixmap.loadFromData(resp.content)
+                self.set_preview_pixmap(pixmap)
+        except Exception:
+            self.image_preview.setText("이미지 로드 실패")
+
+    def set_preview_pixmap(self, pixmap):
+        """이미지 비율을 유지하며 미리보기 레이블에 세팅"""
+        scaled_pixmap = pixmap.scaled(
+            self.image_preview.width() - 10, 
+            self.image_preview.height() - 10, 
+            Qt.AspectRatioMode.KeepAspectRatio, 
+            Qt.TransformationMode.SmoothTransformation
+        )
+        self.image_preview.setPixmap(scaled_pixmap)
 
     def selectImage(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -863,28 +892,29 @@ class EditGroupPhotoDialog(BaseDialog):
         )
         if file_path:
             self.image_path = file_path
-            self.file_label.setText(file_path.split("/")[-1])
+            self.file_label.setText(f"선택됨: {os.path.basename(file_path)}")
             
+            # 로컬 이미지 미리보기 업데이트
+            pixmap = QPixmap(file_path)
+            if not pixmap.isNull():
+                self.set_preview_pixmap(pixmap)
+
+            # 생성일로 날짜 자동 채우기
             try:
                 stat = os.stat(file_path)
-                
-                if hasattr(stat, 'st_birthtime'):
-                    timestamp = stat.st_birthtime
-                else:
-                    timestamp = stat.st_ctime
-                
+                timestamp = getattr(stat, 'st_birthtime', stat.st_ctime)
                 file_date = datetime.fromtimestamp(timestamp).strftime("%Y.%m.%d")
                 self.date_input.setText(file_date)
             except Exception:
                 pass
-    
+
     def get_payload(self):
         return {
             "caption": self.caption_input.text(),
             "date": self.date_input.text(),
             "url": self.data.get("url", ""), 
         }
-      
+ 
 
 class MergeOptionDialog(BaseDialog):
     def __init__(self, parent=None, base_dir=""):
