@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from app.db import news_db
 from datetime import datetime
 from app.models import News
@@ -22,3 +22,29 @@ def list_news():
 
     docs.sort(key=parse_date, reverse=True)  # 최신순 정렬
     return docs
+
+
+@router.post("/")
+def upsert_news(news: News):
+    news_data = news.dict(by_alias=True)
+    if "uid" not in news_data or not news_data["uid"]:
+        news_data["uid"] = str(uuid.uuid4())
+
+    result = news_db.update_one(
+        {"uid": news_data["uid"]}, {"$set": news_data}, upsert=True
+    )
+
+    new_news = news_db.find_one({"uid": news_data["uid"]})
+    if not new_news:
+        raise HTTPException(status_code=500, detail="News upsert failed")
+
+    new_news["_id"] = str(new_news["_id"])
+    return new_news
+
+
+@router.delete("/")
+def delete_news(uid: str = Query(..., description="삭제할 뉴스의 UID")):
+    result = news_db.delete_one({"uid": uid})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="News not found")
+    return {"message": f"News '{uid}' deleted successfully"}

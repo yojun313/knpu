@@ -1,8 +1,7 @@
 # app/routers/upload.py
 import os, uuid, boto3, mimetypes
 from typing import Literal
-
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, Query
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 
@@ -14,7 +13,6 @@ ACCOUNT_ID = os.getenv("ACCOUNT_ID")
 BUCKET_NAME = os.getenv("HOMEPAGE_BUCKET_NAME")
 R2_ENDPOINT = f"https://{ACCOUNT_ID}.r2.cloudflarestorage.com"
 
-# -------- boto3 클라이언트 ---------
 s3 = boto3.client(
     "s3",
     endpoint_url=R2_ENDPOINT,
@@ -24,7 +22,7 @@ s3 = boto3.client(
 )
 
 PUBLIC_BASE = (
-    "https://pub-60ca29aab33f424fab345807bd058d56.r2.dev"  # ★ 자신의 퍼블릭 도메인
+    "https://pub-60ca29aab33f424fab345807bd058d56.r2.dev"
 )
 
 router = APIRouter()
@@ -84,3 +82,24 @@ async def upload_image(
     # 4) 퍼블릭 URL 반환
     url = f"{PUBLIC_BASE}/{object_name}"
     return JSONResponse({"url": url})
+
+
+@router.delete(
+    "/",
+    summary="R2 이미지 삭제",
+)
+async def delete_image(
+    object_name: str = Query(..., description="삭제할 객체의 전체 경로 (예: members/uuid.jpg)")
+) -> JSONResponse:
+    try:
+        s3.delete_object(
+            Bucket=BUCKET_NAME,
+            Key=object_name,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"R2 삭제 실패: {e}",
+        )
+
+    return JSONResponse({"message": f"Object '{object_name}' deleted successfully"})
