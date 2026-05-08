@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
     <!-- 기본 메타 -->
-    <meta name="description" content="Police Crime Data Analytics & Artificial Intelligence Laboratory (PAILAB)는 경찰대학의 범죄 데이터 분석 및 인공지능 기반 연구실입니다. 텍스트 마이닝, 빅데이터 분석 기술을 활용해 치안 정책 수립에 기여합니다." />
+    <meta name="description"
+        content="Police Crime Data Analytics & Artificial Intelligence Laboratory (PAILAB)는 경찰대학의 범죄 데이터 분석 및 인공지능 기반 연구실입니다. 텍스트 마이닝, 빅데이터 분석 기술을 활용해 치안 정책 수립에 기여합니다." />
     <meta name="author" content="PAILAB" />
     <meta name="google-site-verification" content="xBvB-4ijGR95tAnOOH1-4ZF9NOOW3qZnDCgi2XR3wTg" />
     <title>Police Crime Data Analytics & AI Lab | PAILAB</title>
@@ -47,14 +48,14 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarResponsive">
                 <ul class="navbar-nav text-uppercase ms-auto py-4 py-lg-0">
-                  <li class="nav-item"><a class="nav-link" href="/">RESEARCH</a></li>
-                  <li class="nav-item"><a class="nav-link" href="/publications">PUBLICATIONS</a></li>
-                  <li class="nav-item"><a class="nav-link" href="/#news">NEWS</a></li>
-                  <li class="nav-item"><a class="nav-link" href="/team">OUR TEAM</a></li>
-                  <li class="nav-item"><a class="nav-link" href="/photos">PHOTOS</a></li>
-                  <li class="nav-item"><a class="nav-link" href="/systems">SYSTEM</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/">RESEARCH</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/publications">PUBLICATIONS</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/#news">NEWS</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/team">OUR TEAM</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/gallery">GALLERY</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/systems">SYSTEM</a></li>
                 </ul>
-              </div>
+            </div>
         </div>
     </nav>
     <!-- Masthead-->
@@ -638,8 +639,8 @@
 
                 // 정렬 후 렌더링
                 members
-                .forEach(member => {
-                    teamList.insertAdjacentHTML('beforeend', `
+                    .forEach(member => {
+                        teamList.insertAdjacentHTML('beforeend', `
                     <div class="col-lg-4 col-md-6 mb-4">
                         <div class="team-member">
                         <img class="mx-auto rounded-circle" src="${member.image || 'assets/imgs/team/default.png'}" alt="${member.name}" />

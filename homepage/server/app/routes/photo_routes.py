@@ -20,9 +20,6 @@ def add_group_photo(photo: GroupPhoto):
     photo_data = photo.dict()
     if not photo_data.get("uid"):
         photo_data["uid"] = str(uuid.uuid4())
-    
-    if not photo_data.get("date"):
-        photo_data["date"] = datetime.now().isoformat()
 
     group_photos_db.update_one(
         {"uid": photo_data["uid"]},
