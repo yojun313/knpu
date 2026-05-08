@@ -162,7 +162,7 @@
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
       try {
-        const response = await fetch("https://home.knpu.re.kr/api/group-photos/");
+        const response = await fetch("https://home.knpu.re.kr/api/gallery/");
         let photos = await response.json();
 
         const container = document.getElementById("gallery-container");

@@ -824,15 +824,22 @@ class EditGroupPhotoDialog(BaseDialog):
 
     def initUI(self):
         self.setWindowTitle("단체사진 관리")
-        self.resize(450, 550) # 미리보기가 들어가므로 세로 크기를 키웠습니다.
+        self.resize(450, 550)  # 미리보기가 들어가므로 세로 크기를 키웠습니다.
         layout = QVBoxLayout(self)
 
         # 1. 사진 설명 및 날짜 입력
-        self.caption_input = self.add_label(layout, "사진 설명 (Caption):", self.data.get("caption", ""), readonly=False)
-        
+        self.caption_input = self.add_label(
+            layout, "사진 설명 (Caption):", self.data.get("caption", ""), readonly=False
+        )
+
         default_date = self.data.get("date") or datetime.now().strftime("%Y.%m.%d")
-        self.date_input = self.add_label(layout, "날짜 (YYYY.MM.DD) (이미지 선택 시 자동 입력):", default_date, readonly=False)
-        
+        self.date_input = self.add_label(
+            layout,
+            "날짜 (YYYY.MM.DD) (이미지 선택 시 자동 입력):",
+            default_date,
+            readonly=False,
+        )
+
         layout.addSpacing(10)
 
         # 2. 이미지 미리보기 영역
@@ -840,7 +847,9 @@ class EditGroupPhotoDialog(BaseDialog):
         self.image_preview = QLabel("이미지를 선택해주세요")
         self.image_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_preview.setFixedSize(400, 250)
-        self.image_preview.setStyleSheet("border: 1px solid #dcdcdc; background-color: #f9f9f9; border-radius: 5px;")
+        self.image_preview.setStyleSheet(
+            "border: 1px solid #dcdcdc; background-color: #f9f9f9; border-radius: 5px;"
+        )
         layout.addWidget(self.image_preview)
 
         # 기존 데이터(수정 모드)인 경우 이미지 로드
@@ -852,7 +861,7 @@ class EditGroupPhotoDialog(BaseDialog):
         self.file_label.setWordWrap(True)
         self.file_label.setStyleSheet("color: gray; font-size: 11px;")
         layout.addWidget(self.file_label)
-        
+
         self.select_btn = QPushButton("이미지 변경/선택")
         self.select_btn.clicked.connect(self.selectImage)
         layout.addWidget(self.select_btn)
@@ -861,7 +870,9 @@ class EditGroupPhotoDialog(BaseDialog):
 
         # 4. 저장 버튼
         self.submit_button = QPushButton("저장하기")
-        self.submit_button.setStyleSheet("background-color: #0d6efd; color: white; font-weight: bold; padding: 8px;")
+        self.submit_button.setStyleSheet(
+            "background-color: #0d6efd; color: white; font-weight: bold; padding: 8px;"
+        )
         self.submit_button.clicked.connect(self.accept)
         layout.addWidget(self.submit_button)
 
@@ -879,10 +890,10 @@ class EditGroupPhotoDialog(BaseDialog):
     def set_preview_pixmap(self, pixmap):
         """이미지 비율을 유지하며 미리보기 레이블에 세팅"""
         scaled_pixmap = pixmap.scaled(
-            self.image_preview.width() - 10, 
-            self.image_preview.height() - 10, 
-            Qt.AspectRatioMode.KeepAspectRatio, 
-            Qt.TransformationMode.SmoothTransformation
+            self.image_preview.width() - 10,
+            self.image_preview.height() - 10,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
         )
         self.image_preview.setPixmap(scaled_pixmap)
 
@@ -893,7 +904,7 @@ class EditGroupPhotoDialog(BaseDialog):
         if file_path:
             self.image_path = file_path
             self.file_label.setText(f"선택됨: {os.path.basename(file_path)}")
-            
+
             # 로컬 이미지 미리보기 업데이트
             pixmap = QPixmap(file_path)
             if not pixmap.isNull():
@@ -902,7 +913,7 @@ class EditGroupPhotoDialog(BaseDialog):
             # 생성일로 날짜 자동 채우기
             try:
                 stat = os.stat(file_path)
-                timestamp = getattr(stat, 'st_birthtime', stat.st_ctime)
+                timestamp = getattr(stat, "st_birthtime", stat.st_ctime)
                 file_date = datetime.fromtimestamp(timestamp).strftime("%Y.%m.%d")
                 self.date_input.setText(file_date)
             except Exception:
@@ -912,9 +923,9 @@ class EditGroupPhotoDialog(BaseDialog):
         return {
             "caption": self.caption_input.text(),
             "date": self.date_input.text(),
-            "url": self.data.get("url", ""), 
+            "url": self.data.get("url", ""),
         }
- 
+
 
 class MergeOptionDialog(BaseDialog):
     def __init__(self, parent=None, base_dir=""):
@@ -3014,7 +3025,9 @@ class ViewHomePhotoDialog(BaseDialog):
 
         self.load_image(self.data.get("url"))
 
-        self.add_label(layout, "설명 (Caption):", self.data.get("caption", ""), readonly=True)
+        self.add_label(
+            layout, "설명 (Caption):", self.data.get("caption", ""), readonly=True
+        )
         self.add_label(layout, "날짜:", self.data.get("date", ""), readonly=True)
         self.add_label(layout, "URL:", self.data.get("url", ""), readonly=True)
 
@@ -3028,7 +3041,9 @@ class ViewHomePhotoDialog(BaseDialog):
             if resp.status_code == 200:
                 pixmap = QPixmap()
                 pixmap.loadFromData(resp.content)
-                self.image_label.setPixmap(pixmap.scaled(480, 360, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                self.image_label.setPixmap(
+                    pixmap.scaled(480, 360, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                )
             else:
                 self.image_label.setText("이미지를 불러올 수 없습니다.")
         except Exception:

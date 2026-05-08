@@ -15,7 +15,7 @@ def list_papers():
 
         d["papers"] = sorted(
             d.get("papers", []),
-            key=lambda p: p.get("datetime", ""), 
+            key=lambda p: p.get("datetime", ""),
             reverse=True,
         )
 
@@ -70,4 +70,3 @@ def delete_paper(uid: str = Query(..., description="삭제할 논문의 UID")):
             return {"message": f"Paper '{uid}' deleted successfully"}
 
     raise HTTPException(status_code=404, detail="Paper not found")
-
