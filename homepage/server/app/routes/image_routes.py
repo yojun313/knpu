@@ -25,7 +25,6 @@ PUBLIC_BASE = "https://pub-60ca29aab33f424fab345807bd058d56.r2.dev"
 
 router = APIRouter()
 
-
 def _allowed(ext: str) -> bool:
     return ext.lower() in {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
