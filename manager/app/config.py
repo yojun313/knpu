@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-VERSION = "3.2.0"
+VERSION = "3.2.1"
 
 """
     0: local

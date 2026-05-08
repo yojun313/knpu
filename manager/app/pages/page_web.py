@@ -164,7 +164,7 @@ class Manager_Web:
         printStatus(self.main, "https://knpu.re.kr#news")
 
     def refreshGroupPhotoBoard(self):
-        printStatus(self.main, "단체사진 불러오는 중...")
+        printStatus(self.main, "갤러리 불러오는 중...")
         self.photo_data = Request("get", "/gallery/", HOMEPAGE_EDIT_API).json()
 
         self.photo_data_for_table = [
@@ -303,7 +303,7 @@ class Manager_Web:
 
                 Request("post", "/gallery/", HOMEPAGE_EDIT_API, json=payload)
 
-                QMessageBox.information(self.main, "완료", "단체사진이 추가되었습니다.")
+                QMessageBox.information(self.main, "완료", "갤러리에 추가되었습니다.")
                 userLogging(f"WEB -> addGroupPhoto({payload.get('caption')})")
                 self.refreshGroupPhotoBoard()
 
