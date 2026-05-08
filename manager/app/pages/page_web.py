@@ -22,8 +22,8 @@ class Manager_Web:
         self.refreshPaperBoard()
         self.refreshMemberBoard()
         self.refreshNewsBoard()
-        self.refreshGroupPhotoBoard()
         self.web_buttonMatch()
+        self.photoTableLoad = False
 
     def web_open_webbrowser(self, url, widget):
         try:
@@ -58,6 +58,7 @@ class Manager_Web:
         self.main.web_editpaper_button.clicked.connect(self.editHomePaper)
         self.main.web_editmember_button.clicked.connect(self.editHomeMember)
         self.main.web_editnews_button.clicked.connect(self.editHomeNews)
+        self.main.web_editgroupphoto_button.clicked.connect(self.editGroupPhoto)
         self.main.web_viewpaper_button.clicked.connect(self.viewPaper)
         self.main.web_viewmember_button.clicked.connect(self.viewMember)
         self.main.web_viewnews_button.clicked.connect(self.viewNews)
@@ -164,23 +165,19 @@ class Manager_Web:
 
     def refreshGroupPhotoBoard(self):
         printStatus(self.main, "단체사진 불러오는 중...")
-        # 1. 백엔드에서 데이터 가져오기
         self.photo_data = Request("get", "/group-photos/", HOMEPAGE_EDIT_API).json()
 
-        # 2. makeTable에 들어갈 텍스트 데이터 구성
-        # (이미지 위젯이 들어갈 0번 자리는 비워두거나 간단한 텍스트를 넣습니다)
         self.photo_data_for_table = [
             [
-                "",  # 0번: 썸네일 (나중에 위젯으로 교체)
+                "",
                 item.get("caption", ""),
-                item.get("date", "").split("T")[0], # 날짜만 보기 좋게 컷
+                item.get("date", "").split("T")[0],
             ]
             for item in self.photo_data
         ]
         
         column_headers = ["Thumbnail", "Caption", "Date"]
         
-        # 3. 기존 makeTable 호출 (기본 UI 설정 및 더블클릭 이벤트 연결)
         makeTable(
             self.main,
             self.main.web_groupphotos_tableWidget,
@@ -189,19 +186,15 @@ class Manager_Web:
             popupsize=(600, 500) # 상세조회 팝업 사이즈 조절
         )
 
-        # --- 디자인 커스텀 시작 ---
         table = self.main.web_groupphotos_tableWidget
         
-        # 헤더 너비 조정: 썸네일은 고정 너비, Caption은 늘어나게
         table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
         table.setColumnWidth(0, 120)
         table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         
-        # 이미지 표시를 위해 모든 행 높이를 80px로 통일
         for i in range(table.rowCount()):
             table.setRowHeight(i, 80)
             
-            # 4. 실시간 이미지 로드 및 위젯 배치
             url = self.photo_data[i].get("url")
             if url:
                 img_label = QLabel()
@@ -209,19 +202,16 @@ class Manager_Web:
                 img_label.setStyleSheet("padding: 5px; border-radius: 5px;") # 디자인 요소
                 
                 try:
-                    # 팁: 실제 운영 환경에서는 이미지를 비동기로 로드하거나 캐싱하는 게 좋습니다.
                     resp = httpx.get(url)
                     if resp.status_code == 200:
                         pixmap = QPixmap()
                         pixmap.loadFromData(resp.content)
-                        # 셀 크기에 맞게 스케일링
                         img_label.setPixmap(pixmap.scaled(110, 70, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
                     else:
                         img_label.setText("No Image")
                 except:
                     img_label.setText("Error")
-                
-                # makeTable이 만든 0번 컬럼 아이템을 QLabel 위젯으로 덮어씌움
+            
                 table.setCellWidget(i, 0, img_label)
 
         printStatus(self.main, "단체사진 로드 완료")
@@ -536,6 +526,53 @@ class Manager_Web:
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 
+    def editGroupPhoto(self):
+        try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
+
+            selectedRow = self.main.web_groupphotos_tableWidget.currentRow()
+            if selectedRow < 0:
+                return
+            
+            selectedUid = self.photo_data[selectedRow]["uid"]
+            origin = next((p for p in self.photo_data if p.get("uid") == selectedUid), None)
+
+            if not origin:
+                QMessageBox.warning(self.main, "오류", "사진 정보를 찾을 수 없습니다.")
+                return
+
+            dialog = EditGroupPhotoDialog(data=origin, parent=self.main)
+            if dialog.exec():
+                payload = dialog.get_payload()
+                payload["uid"] = selectedUid  
+                
+                if dialog.image_path:
+                    printStatus(self.main, "새 이미지 업로드 중...")
+                    
+                    if origin.get("url"):
+                        delete_homepage_image(origin["url"])
+                    
+                    new_url = upload_homepage_image(
+                        src_path=dialog.image_path, folder="misc", file_name="default"
+                    )
+                    payload["url"] = new_url
+                else:
+                    payload["url"] = origin.get("url")
+
+                Request("post", "/group-photos/", HOMEPAGE_EDIT_API, json=payload)
+
+                QMessageBox.information(
+                    self.main,
+                    "완료",
+                    f"'{payload.get('caption')}' 사진 정보가 수정되었습니다."
+                )
+                userLogging(f"WEB -> editGroupPhoto({payload.get('caption')})")
+                self.refreshGroupPhotoBoard()
+
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+    
     def viewPaper(self):
         try:
             selectedRow = self.main.web_papers_tableWidget.currentRow()
@@ -639,6 +676,25 @@ class Manager_Web:
             self.main.cmdr.activated.connect(self.refreshPaperBoard)
 
         if index == 1:
+            printStatus(self.main, "https://knpu.re.kr/gallery")
+            
+            if self.photoTableLoad == False:
+                self.refreshGroupPhotoBoard()
+                self.photoTableLoad = True
+                
+            self.main.ctrla.activated.connect(self.addGroupPhoto)
+            self.main.ctrld.activated.connect(self.deleteGroupPhoto)
+            self.main.ctrlv.activated.connect(self.viewGroupPhoto)
+            self.main.ctrle.activated.connect(self.editGroupPhoto)
+            self.main.ctrlr.activated.connect(self.refreshGroupPhotoBoard)
+
+            self.main.cmda.activated.connect(self.addGroupPhoto)
+            self.main.cmdd.activated.connect(self.deleteGroupPhoto)
+            self.main.cmdv.activated.connect(self.viewGroupPhoto)
+            self.main.cmde.activated.connect(self.editGroupPhoto)
+            self.main.cmdr.activated.connect(self.refreshGroupPhotoBoard)
+            
+        if index == 2:
             printStatus(self.main, "https://knpu.re.kr/team")
             self.main.ctrld.activated.connect(self.deleteHomeMember)
             self.main.ctrle.activated.connect(self.editHomeMember)
@@ -652,8 +708,8 @@ class Manager_Web:
             self.main.cmdv.activated.connect(self.viewMember)
             self.main.cmdr.activated.connect(self.refreshMemberBoard)
 
-        if index == 2:
-            printStatus(self.main, "https://knpu.re.kr#news")
+        if index == 3:
+            printStatus(self.main, "https://knpu.re.kr/#news")
             self.main.ctrla.activated.connect(self.addHomeNews)
             self.main.ctrld.activated.connect(self.deleteHomeNews)
             self.main.ctrle.activated.connect(self.editHomeNews)
@@ -665,17 +721,5 @@ class Manager_Web:
             self.main.cmde.activated.connect(self.editHomeNews)
             self.main.cmdv.activated.connect(self.viewNews)
             self.main.cmdr.activated.connect(self.refreshNewsBoard)
-
-        if index == 3:
-            printStatus(self.main, "단체사진 관리 모드")
-            self.main.ctrla.activated.connect(self.addGroupPhoto)
-            self.main.ctrld.activated.connect(self.deleteGroupPhoto)
-            self.main.ctrlv.activated.connect(self.viewGroupPhoto)
-            self.main.ctrlr.activated.connect(self.refreshGroupPhotoBoard)
-
-            self.main.cmda.activated.connect(self.addGroupPhoto)
-            self.main.cmdd.activated.connect(self.deleteGroupPhoto)
-            self.main.cmdv.activated.connect(self.viewGroupPhoto)
-            self.main.cmdr.activated.connect(self.refreshGroupPhotoBoard)
 
         changeStatusbarAction(self.main, "WEB")

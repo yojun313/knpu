@@ -434,6 +434,48 @@
             </item>
            </layout>
           </widget>
+          <widget class="QWidget" name="tab_groupphotos">
+           <attribute name="title">
+            <string>갤러리</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
+            <item>
+             <widget class="QTableWidget" name="web_groupphotos_tableWidget"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <item>
+               <widget class="QPushButton" name="web_addgroupphoto_button">
+                <property name="text">
+                 <string>추가</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_deletegroupphoto_button">
+                <property name="text">
+                 <string>삭제</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_editgroupphoto_button">
+                <property name="text">
+                 <string>수정</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_viewgroupphoto_button">
+                <property name="text">
+                 <string>자세히</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
           <widget class="QWidget" name="tab_members">
            <attribute name="title">
             <string>멤버 목록</string>
@@ -509,41 +551,6 @@
               </item>
               <item>
                <widget class="QPushButton" name="web_viewnews_button">
-                <property name="text">
-                 <string>자세히</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tab_groupphotos">
-           <attribute name="title">
-            <string>단체사진</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
-            <item>
-             <widget class="QTableWidget" name="web_groupphotos_tableWidget"/>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_5">
-              <item>
-               <widget class="QPushButton" name="web_addgroupphoto_button">
-                <property name="text">
-                 <string>추가</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="web_deletegroupphoto_button">
-                <property name="text">
-                 <string>삭제</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="web_viewgroupphoto_button">
                 <property name="text">
                  <string>자세히</string>
                 </property>
