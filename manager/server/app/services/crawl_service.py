@@ -220,9 +220,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
 
     crawlDbList = filteredList
 
-    activeCrawl = crawlList_db.count_documents(
-        {"$or": [{"endTime": "토큰화 중"}, {"endTime": {"$regex": "%"}}]}
-    )
+    activeCrawl = crawlList_db.count_documents({"status": "running"})
 
     # 응답
     return JSONResponse(

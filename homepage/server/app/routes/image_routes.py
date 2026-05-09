@@ -25,6 +25,7 @@ PUBLIC_BASE = "https://pub-60ca29aab33f424fab345807bd058d56.r2.dev"
 
 router = APIRouter()
 
+
 def _allowed(ext: str) -> bool:
     return ext.lower() in {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
@@ -62,7 +63,7 @@ async def upload_image(
 
     try:
         s3.upload_fileobj(
-            file.file, 
+            file.file,
             BUCKET_NAME,
             object_name,
             ExtraArgs={"ContentType": file.content_type},
