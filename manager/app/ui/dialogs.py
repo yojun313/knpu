@@ -521,10 +521,22 @@ class AddBugDialog(BaseDialog):
         layout.addWidget(self.submit_button)
 
     def submit(self):
-        userName = self.user_input.text()
+        userName = self.user_input.text().strip()
         version_num = self.version
-        bug_title = self.bug_title_input.text()
-        bug_detail = self.bug_detail_input.toPlainText()
+        bug_title = self.bug_title_input.text().strip()
+        bug_detail = self.bug_detail_input.toPlainText().strip()
+
+        if not bug_title:
+            QMessageBox.warning(self, "입력 오류", "버그 제목을 입력해주세요.")
+            self.bug_title_input.setFocus()
+            return
+
+        if not bug_detail:
+            QMessageBox.warning(
+                self, "입력 오류", "버그 상세 내용을 자세히 입력해주세요."
+            )
+            self.bug_detail_input.setFocus()
+            return
 
         self.data = {
             "userName": userName,
@@ -534,13 +546,9 @@ class AddBugDialog(BaseDialog):
         }
 
         QMessageBox.information(
-            self,
-            "Input Data",
-            f"User Name: {userName}\n"
-            f"Version Num: {version_num}\n"
-            f"Bug Title: {bug_title}\n"
-            f"Bug Detail: {bug_detail}",
+            self, "제출 완료", "버그 리포트가 성공적으로 작성되었습니다."
         )
+
         self.accept()
 
 

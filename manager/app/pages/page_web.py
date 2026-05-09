@@ -444,9 +444,7 @@ class Manager_Web:
             ):
                 delete_homepage_image(image_url)
 
-                Request(
-                    "delete", "gallery/", HOMEPAGE_EDIT_API, params={"uid": uid}
-                )
+                Request("delete", "gallery/", HOMEPAGE_EDIT_API, params={"uid": uid})
 
                 self.refreshGroupPhotoBoard()
                 QMessageBox.information(

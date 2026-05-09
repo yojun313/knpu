@@ -226,7 +226,10 @@ class Manager_Board:
             if selectedRow >= 0:
                 bug = self.bug_data[selectedRow]
 
-                if bug["writerUid"] == self.main.userUid or self.main.user == "admin":
+                if (
+                    bug["writerUid"] == self.main.userUid
+                    or self.main.user_role == "admin"
+                ):
                     reply = QMessageBox.question(
                         self.main,
                         "Confirm Delete",
@@ -372,7 +375,10 @@ class Manager_Board:
             if selectedRow >= 0:
                 post = self.post_data[selectedRow]
 
-                if post["writerUid"] == self.main.userUid or self.main.user == "admin":
+                if (
+                    post["writerUid"] == self.main.userUid
+                    or self.main.user_role == "admin"
+                ):
                     reply = QMessageBox.question(
                         self.main,
                         "Confirm Delete",
@@ -400,7 +406,10 @@ class Manager_Board:
             if selectedRow >= 0:
                 post = self.post_data[selectedRow]
                 postUid = post["uid"]
-                if post["writerUid"] == self.main.userUid or self.main.user == "admin":
+                if (
+                    post["writerUid"] == self.main.userUid
+                    or self.main.user_role == "admin"
+                ):
                     prev_post_data = self.post_data[selectedRow]
 
                     from ui.dialogs import EditPostDialog
