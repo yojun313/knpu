@@ -56,8 +56,6 @@ async def upload_image(
             detail="image/* 만 허용",
         )
 
-    print("object_name:", object_name)
-
     if object_name == "default":
         object_name = f"{folder}/{uuid.uuid4().hex}{ext.lower()}"
 
