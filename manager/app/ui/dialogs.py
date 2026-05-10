@@ -2742,6 +2742,8 @@ class EditHomeMemberDialog(BaseDialog):
         self.in_career.setPlainText("\n".join(self.data.get("경력", [])))
         self.in_research = QTextEdit()
         self.in_research.setPlainText("\n".join(self.data.get("연구", [])))
+        self.in_awards = QTextEdit()
+        self.in_awards.setPlainText("\n".join(self.data.get("수상", [])))
 
         for lbl, wid in [
             ("이름", self.in_name),
@@ -2752,6 +2754,7 @@ class EditHomeMemberDialog(BaseDialog):
             ("학력(줄바꿈 구분)", self.in_school),
             ("경력(줄바꿈 구분)", self.in_career),
             ("연구(줄바꿈 구분)", self.in_research),
+            ("수상(줄바꿈 구분)", self.in_awards),
         ]:
             add_row(lbl, wid)
 
@@ -2810,6 +2813,7 @@ class EditHomeMemberDialog(BaseDialog):
             "학력": self.in_school.toPlainText().strip().splitlines(),
             "경력": self.in_career.toPlainText().strip().splitlines(),
             "연구": self.in_research.toPlainText().strip().splitlines(),
+            "수상": self.in_awards.toPlainText().strip().splitlines(),
         }
 
         if self.new_image_url:
@@ -2999,6 +3003,14 @@ class ViewHomeMemberDialog(BaseDialog):
             "\n".join(data.get("연구", []))
             if isinstance(data.get("연구", []), list)
             else str(data.get("연구", "")),
+            multiline=True,
+        )
+        self.add_label(
+            layout,
+            "수상",
+            "\n".join(data.get("수상", []))
+            if isinstance(data.get("수상", []), list)
+            else str(data.get("수상", "")),
             multiline=True,
         )
 

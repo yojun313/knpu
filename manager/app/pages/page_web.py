@@ -120,6 +120,9 @@ class Manager_Web:
                 "연구": "\n".join(member.get("연구", []))
                 if isinstance(member.get("연구"), list)
                 else str(member.get("연구", "")),
+                "수상": "\n".join(member.get("수상", []))
+                if isinstance(member.get("수상"), list)
+                else str(member.get("수상", "")),
             }
             self.member_data.append(member_info)
 
@@ -132,6 +135,7 @@ class Manager_Web:
                 item["학력"],
                 item["경력"],
                 item["연구"],
+                item["수상"],
             ]
             for item in self.member_data
         ]
@@ -143,6 +147,7 @@ class Manager_Web:
             "학력",
             "경력",
             "연구",
+            "수상",
         ]
         makeTable(
             self.main,

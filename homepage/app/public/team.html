@@ -154,11 +154,15 @@
                 : "";
             const researchHtml =
               m.연구 && m.연구.length
-                ? `<h5>연구</h5><p>${m.연구.join("<br>")}</p>`
+                ? `<h5>연구</h5><p>${m.연구.join("<br>")}</p><p>&nbsp;</p>`
+                : "";
+            const awardsHtml =
+              m.수상 && m.수상.length
+                ? `<h5>수상 및 기타</h5><p>${m.수상.join("<br>")}</p>`
                 : "";
             const additionalInfo =
-              eduHtml || careerHtml || researchHtml
-                ? `<div class="collapse additional-info" id="moreInfo-${safeId}">${eduHtml}${careerHtml}${researchHtml}</div>`
+              eduHtml || careerHtml || researchHtml || awardsHtml
+                ? `<div class="collapse additional-info" id="moreInfo-${safeId}">${eduHtml}${careerHtml}${researchHtml}${awardsHtml}</div>`
                 : "";
             const toggleButton = additionalInfo
               ? `<button class="btn btn-dark btn-social mx-2" type="button" data-bs-toggle="collapse" data-bs-target="#moreInfo-${safeId}"><i class="fas fa-angle-down"></i></button>`
