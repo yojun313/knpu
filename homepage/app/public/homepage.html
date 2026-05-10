@@ -130,103 +130,25 @@
             </div>
         </div>
     </section>
-    <!-- Portfolio Grid-->
+    <!-- Publications Preview -->
     <section class="page-section bg-light" id="portfolio">
         <div class="container">
             <div class="text-center">
                 <h2 class="section-heading text-uppercase">PUBLICATIONS</h2>
                 <h3 class="section-subheading text-muted">Papers published in PAILAB</h3>
             </div>
-            <div class="row">
-                <div class="col-lg-4 col-sm-6 mb-4">
-                    <!-- Portfolio item 1-->
-                    <div class="portfolio-item">
-                        <a class="portfolio-link" data-bs-toggle="modal" href="#portfolioModal1">
-                            <div class="portfolio-hover">
-                                <div class="portfolio-hover-content"><i class="fas fa-plus fa-3x"></i></div>
-                            </div>
-                            <img class="img-fluid" src="assets/imgs/portfolio/cropped_paper1.png" alt="..." />
-                        </a>
-                        <div class="portfolio-caption">
-                            <div class="portfolio-caption-subheading text-muted">로봇 경찰 도입을 위한 기술적</br>타당성 및 법적 쟁점에 관한 연구
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6 mb-4">
-                    <!-- Portfolio item 2-->
-                    <div class="portfolio-item">
-                        <a class="portfolio-link" data-bs-toggle="modal" href="#portfolioModal2">
-                            <div class="portfolio-hover">
-                                <div class="portfolio-hover-content"><i class="fas fa-plus fa-3x"></i></div>
-                            </div>
-                            <img class="img-fluid" src="assets/imgs/portfolio/cropped_paper2.png" alt="..." />
-                        </a>
-                        <div class="portfolio-caption">
-                            <div class="portfolio-caption-subheading text-muted">고소장 자동 작성 및 분석 시스템</br>구축에 관한 법적 쟁점과 개선
-                                방안</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6 mb-4">
-                    <!-- Portfolio item 3-->
-                    <div class="portfolio-item">
-                        <a class="portfolio-link" data-bs-toggle="modal" href="#portfolioModal3">
-                            <div class="portfolio-hover">
-                                <div class="portfolio-hover-content"><i class="fas fa-plus fa-3x"></i></div>
-                            </div>
-                            <img class="img-fluid" src="assets/imgs/portfolio/cropped_paper4.png" alt="..." />
-                        </a>
-                        <div class="portfolio-caption">
-                            <div class="portfolio-caption-subheading text-muted">생성형 인공지능 모델을 활용한</br>고소 프로세스 개선에 관한 연구
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6 mb-4 mb-lg-0">
-                    <!-- Portfolio item 4-->
-                    <div class="portfolio-item">
-                        <a class="portfolio-link" data-bs-toggle="modal" href="#portfolioModal4">
-                            <div class="portfolio-hover">
-                                <div class="portfolio-hover-content"><i class="fas fa-plus fa-3x"></i></div>
-                            </div>
-                            <img class="img-fluid" src="assets/imgs/portfolio/cropped_paper3.png" alt="..." />
-                        </a>
-                        <div class="portfolio-caption">
-                            <div class="portfolio-caption-subheading text-muted">인구절벽과 지방소멸 시대의</br>경찰력 재배치에 관한 탐색적 연구
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6 mb-4 mb-sm-0">
-                    <!-- Portfolio item 5-->
-                    <div class="portfolio-item">
-                        <a class="portfolio-link" data-bs-toggle="modal" href="#portfolioModal5">
-                            <div class="portfolio-hover">
-                                <div class="portfolio-hover-content"><i class="fas fa-plus fa-3x"></i></div>
-                            </div>
-                            <img class="img-fluid" src="assets/imgs/portfolio/cropped_paper5.png" alt="..." />
-                        </a>
-                        <div class="portfolio-caption">
-                            <div class="portfolio-caption-subheading text-muted">NLP를 활용한 법원의 판결과</br>온라인상 대중 인식간 괴리 연구
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6">
-                    <!-- Portfolio item 6-->
-                    <div class="portfolio-item">
-                        <a class="portfolio-link" data-bs-toggle="modal" href="#portfolioModal6">
-                            <div class="portfolio-hover">
-                                <div class="portfolio-hover-content"><i class="fas fa-plus fa-3x"></i></div>
-                            </div>
-                            <img class="img-fluid" src="assets/imgs/portfolio/cropped_paper6.png" alt="..." />
-                        </a>
-                        <div class="portfolio-caption">
-                            <div class="portfolio-caption-subheading text-muted">피의자 신상공개 여부의 결정</br>요인에 관한 연구</div>
-                        </div>
-                    </div>
-                </div>
+
+            <!-- 최근 3년 SCI/SCOPUS/KCI 통계 배지 -->
+            <div class="row justify-content-center mb-5" id="pub-stats-row"></div>
+
+            <!-- 최근 6개 논문 카드 3열×2행 -->
+            <div class="row g-4" id="pub-grid"></div>
+
+            <!-- 전체 보기 버튼 -->
+            <div class="text-center mt-5">
+                <a class="btn btn-primary btn-xl text-uppercase" href="/publications">
+                    <i class="fas fa-book-open me-2"></i>View All Publications
+                </a>
             </div>
         </div>
     </section>
@@ -282,332 +204,6 @@
             </div>
         </div>
     </footer>
-    <!-- Portfolio Modals-->
-    <!-- Portfolio item 1 modal popup-->
-    <div class="portfolio-modal modal fade" id="portfolioModal1" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="close-modal" data-bs-dismiss="modal"><img src="assets/imgs/close-icon.svg"
-                        alt="Close modal" /></div>
-                <div class="container">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-8">
-                            <div class="modal-body">
-                                <!-- Project details-->
-                                <h2 class="text-uppercase">2024.03</h2>
-                                <p class="item-intro text-muted">로봇 경찰 도입을 위한 기술적
-                                    타당성 및 법적 쟁점에 관한 연구</p>
-                                <img class="img-fluid d-block mx-auto" src="assets/imgs/portfolio/cropped_paper1.png"
-                                    alt="..." />
-                                <p>The case of the female police officer has sparked controversy online and raised
-                                    concerns about the quality of police officers. As a result, physical fitness
-                                    standards for women in police selection tests have been increased. The case has also
-                                    prompted a social debate about addressing the strength disparity between police
-                                    officers and suspects rather than just the difference in physical ability between
-                                    genders. Given the limitations of police officers' existing equipment, such as the
-                                    controversy surrounding excessive force, it is necessary to develop police equipment
-                                    that can complement the strength of police officers rather than simply subdue
-                                    suspects. Therefore, the purpose of this study is to discuss the feasibility and
-                                    legal issues of introducing robotic police officers and to present a rationale for
-                                    their application. Three types of robot police officers can be utilized: humanoids,
-                                    robot dogs, and wearable robots. The use of robots as a supplement to police
-                                    officers has been reviewed, and the application of the law has been discussed.
-                                    Robots in law enforcement are expected to be less likely to violate the principle of
-                                    excessive force, which is an important consideration given current technological and
-                                    management capabilities. However, detailed legislation is needed to establish exact
-                                    standards and scope of use by the principle of reserve of laws.</p>
-                                <ul class="list-inline">
-                                    <li>
-                                        <strong>Author:</strong>
-                                        Seungkook Roh, Woochul Choi
-                                    </li>
-                                    <li>
-                                        <strong>Conference:</strong>
-                                        아시아태평양융합연구교류논문지, 10(3), 411-426.
-                                    </li>
-                                </ul>
-                                <button class="btn btn-primary btn-xl text-uppercase" data-bs-dismiss="modal"
-                                    type="button">
-                                    <i class="fas fa-xmark me-1"></i>
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Portfolio item 2 modal popup-->
-    <div class="portfolio-modal modal fade" id="portfolioModal2" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="close-modal" data-bs-dismiss="modal"><img src="assets/imgs/close-icon.svg"
-                        alt="Close modal" /></div>
-                <div class="container">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-8">
-                            <div class="modal-body">
-                                <!-- Project details-->
-                                <h2 class="text-uppercase">2024.02</h2>
-                                <p class="item-intro text-muted">고소장 자동 작성 및 분석 시스템
-                                    구축에 관한 법적 쟁점과 개선 방안</p>
-                                <img class="img-fluid d-block mx-auto" src="assets/imgs/portfolio/cropped_paper2.png"
-                                    alt="..." />
-                                <p>Following the release of OpenAI's ChatGPT, interest in generative AI has increased,
-                                    spurring discussions on its application in the public sector. In particular, the use
-                                    of AI in the legal field, such as in drafting legal documents like complaint forms,
-                                    is having a significant impact. The development of an Automated Complaint Drafting
-                                    and Analysis System using generative AI technology is expected to have a
-                                    considerable effect not only on the citizens and the police department, but also on
-                                    the legal market. Therefore, this study analyzes the current state of legal
-                                    technology both domestically and internationally, and examines the main issues
-                                    related to the development of the Automated Complaint Drafting and Analysis System
-                                    promoted by the police department. The issues include the utilization of the Korea
-                                    Information System of Criminal Justice Services data, compliance with the
-                                    Attorney-at-Law Act and the Certified Judicial Scriveners Act, and the dilemma of
-                                    personal information protection and de-identification. This study proposes solutions
-                                    to these issues. First, to clarify the legal foundation and maintain a balance
-                                    between public interest and personal information protection, the Act on Promotion of
-                                    the Digitalization of the Criminal Justice Process needs to be amended for the
-                                    utilization of the Korea Information System of Criminal Justice Services data.
-                                    Second, while the Automated Complaint Drafting System provided by the police
-                                    department does not directly violate the current Attorney-at-Law Act and Certified
-                                    Judicial Scriveners Act, the anticipated negative reaction from legal organizations
-                                    should be considered. Therefore, it is necessary to explore both legislative
-                                    solutions through amendments to the law and non-legislative solutions through a
-                                    Memorandum of Understanding (MOU) between the police department and legal
-                                    organizations. Third, to address the dilemma of de-identification, it is necessary
-                                    to advance de-identification technology and regularly conduct Privacy Impact
-                                    Assessments (PIA). The construction and operation of the Automated Complaint
-                                    Drafting and Analysis System is a complex process involving legal, technical, and
-                                    social responsibilities. Therefore, a successful implementation and operation of
-                                    this system require a multifaceted institutional approach and cooperation between
-                                    the public and private sectors.</p>
-                                <ul class="list-inline">
-                                    <li>
-                                        <strong>Author:</strong>
-                                        Lee Jeong-woo, Bae Si-woong, Choi Woo-chul, Moon Yo-jun, Seo Hyung-goog, Roh
-                                        Seung-kook
-                                    </li>
-                                    <li>
-                                        <strong>Conference:</strong>
-                                        한남대학교 과학기술법연구원
-                                    </li>
-                                </ul>
-                                <button class="btn btn-primary btn-xl text-uppercase" data-bs-dismiss="modal"
-                                    type="button">
-                                    <i class="fas fa-xmark me-1"></i>
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Portfolio item 3 modal popup-->
-    <div class="portfolio-modal modal fade" id="portfolioModal3" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="close-modal" data-bs-dismiss="modal"><img src="assets/imgs/close-icon.svg"
-                        alt="Close modal" /></div>
-                <div class="container">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-8">
-                            <div class="modal-body">
-                                <!-- Project details-->
-                                <h2 class="text-uppercase">2023.09</h2>
-                                <p class="item-intro text-muted">생성형 인공지능 모델(GPT)을 활용한
-                                    고소 프로세스 개선에 관한 연구</p>
-                                <img class="img-fluid d-block mx-auto" src="assets/imgs/portfolio/cropped_paper4.png"
-                                    alt="..." />
-                                <p>This study puts forth a novel mechanism to boost the effectiveness and accessibility
-                                    of registering a complaint, aiming to curtail the expenses and enhance the
-                                    convenience of the criminal complaint process for the public, while also alleviating
-                                    the workload of the police. Presently, complainants are required to shell out hefty
-                                    sums to legal experts and undergo a convoluted and redundant procedure to formulate
-                                    their complaints. These procedures also result in redundant processes for police
-                                    complaint reception while also increasing the police workforce’s burden.
-                                    To address these issues, a GPT-based automated complaint generation system was
-                                    implemented in this study. Prior to implementation, a thorough review of laws and
-                                    legal precedents validated that the system complies with the Certified Judicial
-                                    Scriveners Act. Furthermore, this study offers practical recommendations on how the
-                                    new system can be integrated into the current police complaints system.
-                                    The findings are anticipated to enhance investigative efficiency by lessening costs,
-                                    augmenting complainant convenience, and reducing the police workload. This study is
-                                    noteworthy as it represents the initial endeavour to implement GPT, an artificial
-                                    intelligence technology, into police operations.</p>
-                                <ul class="list-inline">
-                                    <li>
-                                        <strong>Author:</strong>
-                                        Jeong-Woo Lee, Seungkook Roh
-                                    </li>
-                                    <li>
-                                        <strong>Conference:</strong>
-                                        형사정책연구 제34권 제3호(통권 제135호, 2023 ･ 가을)
-                                    </li>
-                                </ul>
-                                <button class="btn btn-primary btn-xl text-uppercase" data-bs-dismiss="modal"
-                                    type="button">
-                                    <i class="fas fa-xmark me-1"></i>
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Portfolio item 4 modal popup-->
-    <div class="portfolio-modal modal fade" id="portfolioModal4" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="close-modal" data-bs-dismiss="modal"><img src="assets/imgs/close-icon.svg"
-                        alt="Close modal" /></div>
-                <div class="container">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-8">
-                            <div class="modal-body">
-                                <!-- Project details-->
-                                <h2 class="text-uppercase">2023.06</h2>
-                                <p class="item-intro text-muted">인구절벽과 지방소멸 시대의
-                                    경찰력 재배치에 관한 탐색적 연구</p>
-                                <img class="img-fluid d-block mx-auto" src="assets/imgs/portfolio/cropped_paper3.png"
-                                    alt="..." />
-                                <p>인구절벽과 지방소멸은 곧 다가올 미래이나, 앞으로 경찰력을 어떻게 재배치하고 운영해야 하는지에 대한 연구가 수행된 적은 없다. 따라서 본 연구는
-                                    인구감소와 지방소멸이 경찰력 재배치에 미치는 영향을 분석하고, 예상되는 문제점과 해결방안을 탐구하였다.
-                                    분석 방법으로 시스템 다이내믹스 방법론을 활용하였으며, 지방소멸 및 경찰력 배치와 관련한 기존 연구와 통계자료를 바탕으로 전문가 모델링 과정을 거쳐
-                                    변수를 선정했다. 선정된 변수들을 활용하여 시스템 다이내믹스 인과 지도를 구축하였으며, 인과 지도의 각 피드백 루프는 ① 거점도시 경찰서 설립, ②
-                                    지방 경찰관서 폐지로 인한 지방 치안력 약화, ③ 그에 대응한 지방 치안 정책 수립 과정을 심도 있게 표현하였다. 인과 지도 분석 결과, 지방소멸과
-                                    인구 밀집에 따른 경찰력의 불균형, 지방 치안력 약화와 그에 따른 외부적 요구, 그리고 지역 특색에 부합하는 치안 정책 수립 필요성이 도출되었다. 분석
-                                    결과를 바탕으로 지방소멸 시대에 경찰력을 효율적으로 운영하는 방안으로서 경찰 · 소방 · 지방행정기능을 통합한 ‘행정 안전 복합센터’의 설립,
-                                    ‘노인범죄과’의 신설, 거점도시 경찰서 신설등을 제안하였다. 본 연구는 인구절벽과 지방소멸을 직면한 경찰이 문제 상황을 선제적으로 예측하고, 그에 따른
-                                    경찰력 재배치 및 관련 정책 개발에 이바지한다는 측면에서 의미가 있다. 본 연구 결과가 경찰이 인구감소와 지방소멸 시대에 경찰력 재배치에 관한 선제적
-                                    대응력을 갖춤과 동시에 미래 치안 전략을 준비할 수 있는 계기가 되길 기대한다.</p>
-                                <ul class="list-inline">
-                                    <li>
-                                        <strong>Author:</strong>
-                                        이정우, 노승국
-                                    </li>
-                                    <li>
-                                        <strong>Conference:</strong>
-                                        ｢한국공공관리학보｣ 제37권 제2호(2023. 6): 0〜0
-                                    </li>
-                                </ul>
-                                <button class="btn btn-primary btn-xl text-uppercase" data-bs-dismiss="modal"
-                                    type="button">
-                                    <i class="fas fa-xmark me-1"></i>
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Portfolio item 5 modal popup-->
-    <div class="portfolio-modal modal fade" id="portfolioModal5" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="close-modal" data-bs-dismiss="modal"><img src="assets/imgs/close-icon.svg"
-                        alt="Close modal" /></div>
-                <div class="container">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-8">
-                            <div class="modal-body">
-                                <!-- Project details-->
-                                <h2 class="text-uppercase">2023.06</h2>
-                                <p class="item-intro text-muted">NLP를 활용한 법원의 판결과
-                                    온라인상 대중 인식간 괴리 연구</p>
-                                <img class="img-fluid d-block mx-auto" src="assets/imgs/portfolio/cropped_paper5.png"
-                                    alt="..." />
-                                <p>본 연구는 대중들이 ‘심신장애를 사유로 하는 형량 감경 비율’에 대해 어떻게 생각하고 있는지 분석하고, 여론의 방향과 실제 법원의 판단이 합치되는지
-                                    확인하기 위해 수행되었다. 이를 위해, 대법원 코트넷 판결문 검색시스템과 기관별 정신감정 의뢰 건수, 네이버 뉴스에서 ‘심신장애’를 키워드로 하는
-                                    기사의 개수와 댓글 개수, 댓글 내용을 크롤링한 결과를 활용하였다. 데이터 분석 결과, 여론은 심신장애에 따른 형량 감경에 대해 부정적이었으며 그
-                                    기준의 모호성에 대해 불만을 나타냈다. 그러나 실제 판결문 분석과 기관별 정신감정 의뢰 건수 분석 결과 법원은 「형법」제10조(심신장애)에 규정된
-                                    정신장애인의 책임 조각 및 책임 감경에 대해 엄격하게 판단하고 있음을 확인할 수 있었다. 즉, 가해자의 정신장애에 대한 인정 사례는 줄어들고 있지만
-                                    여론은 이를 인지하지 못하고 있다. 공권력이 국민 수호의 의무를 충분히 수행하고 있지 못하다는 여론의 형성은 국가기관에 대한 국민의 신뢰를 떨어뜨리는
-                                    부정적 효과를 갖고 있다. 따라서 국민의 안전을 보장하는 경찰과 검찰은 국민의 신뢰를 얻기 위해 명확한 기준에 따라 법집행을 할 필요가 있으며 사법부도
-                                    심신장애에 대한 감형 기준에 대해 엄중한 판단은 물론 그 적용 결과를 국민들에게 인식시켜줄 필요가 있다.</p>
-                                <ul class="list-inline">
-                                    <li>
-                                        <strong>Author:</strong>
-                                        Seungkook Roh
-                                    </li>
-                                    <li>
-                                        <strong>Conference:</strong>
-                                        한국빅데이터학회지 제8권 제1호, 2023, pp. 11-22
-                                    </li>
-                                </ul>
-                                <button class="btn btn-primary btn-xl text-uppercase" data-bs-dismiss="modal"
-                                    type="button">
-                                    <i class="fas fa-xmark me-1"></i>
-                                    Close Project
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Portfolio item 6 modal popup-->
-    <div class="portfolio-modal modal fade" id="portfolioModal6" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="close-modal" data-bs-dismiss="modal"><img src="assets/imgs/close-icon.svg"
-                        alt="Close modal" /></div>
-                <div class="container">
-                    <div class="row justify-content-center">
-                        <div class="col-lg-8">
-                            <div class="modal-body">
-                                <!-- Project details-->
-                                <h2 class="text-uppercase">2022.06</h2>
-                                <p class="item-intro text-muted">피의자 신상공개 여부의 결정
-                                    요인에 관한 연구:</br>온라인 여론 데이터 분석을 중심으로</p>
-                                <img class="img-fluid d-block mx-auto" src="assets/imgs/portfolio/cropped_paper6.png"
-                                    alt="..." />
-                                <p>This study aims to examine the implementation status and problems of the disclosure
-                                    of suspect’s personal information. For this, the case of the decision to disclose
-                                    the personal information was summarized from the time of introduction of the system
-                                    to the present and the previous studies dealing with the problems of the system were
-                                    also examined. And researchers pointed out legal issues related to the Constitution
-                                    and Criminal Law and implementation issues such as inconsistent disclosure
-                                    decisions, and especially said the risk of arbitrary decision of investigative
-                                    agencies affected by public opinion and abuse of the system. Accordingly, this study
-                                    collected and analyzed the articles and comments on the internet portal(Naver) by
-                                    web crawling in order to empirically reveal the relationship between public opinion
-                                    and the decision on disclosure. As a result of comparing and analyzing the average
-                                    number of articles and comments on the cases that were decided to be released on the
-                                    personal information and the cases that were not, there was a significant difference
-                                    in the number of comments statistically. In turn, we added suggestions to compensate
-                                    for the problems of the system.</p>
-                                <ul class="list-inline">
-                                    <li>
-                                        <strong>Author:</strong>
-                                        박서하, 김은정, 노승국
-                                    </li>
-                                    <li>
-                                        <strong>Conference:</strong>
-                                        2022 치안정책연구 제36권 제2호
-                                    </li>
-                                </ul>
-                                <button class="btn btn-primary btn-xl text-uppercase" data-bs-dismiss="modal"
-                                    type="button">
-                                    <i class="fas fa-xmark me-1"></i>
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
     <!-- Bootstrap core JS-->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Core theme JS-->
@@ -680,6 +276,96 @@
             render(0);
             overlay.style.display = 'flex';
         }
+
+        // ── Publications Section ────────────────────────────────────────────
+        const PUB_DATA_URL = '/assets/TODO/bib_result_edit.json'; // swap to API URL later
+
+        function formatPubDate(p) {
+            if (!p.published_date) return String(p.year);
+            const parts = p.published_date.split('-');
+            return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : String(p.year);
+        }
+
+        async function loadHomepagePublications() {
+            let papers;
+            try {
+                const res = await fetch(PUB_DATA_URL);
+                if (!res.ok) throw new Error('fetch failed');
+                papers = await res.json();
+            } catch (e) {
+                console.error('Failed to load publications:', e);
+                return;
+            }
+
+            const currentYear = new Date().getFullYear();
+            const recentCutoff = currentYear - 2;
+
+            const recent = papers.filter(p => p.year >= recentCutoff);
+            const counts = { SCI: 0, SCOPUS: 0, KCI: 0 };
+            recent.forEach(p => { if (counts[p.journal_type] !== undefined) counts[p.journal_type]++; });
+
+            document.getElementById('pub-stats-row').innerHTML = `
+                <div class="col-12 text-center mb-3">
+                    <p class="text-muted mb-0">최근 3년 (${recentCutoff}–${currentYear}) 논문 현황</p>
+                </div>
+                <div class="col-12 col-sm-10 col-md-8 col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-body py-4">
+                            <div class="row text-center g-0">
+                                <div class="col-4 border-end">
+                                    <span class="badge bg-info pub-type-badge mb-2 d-inline-block">SCI</span>
+                                    <div class="pub-stat-number text-dark">${counts.SCI}</div>
+                                    <div class="small text-muted">편</div>
+                                </div>
+                                <div class="col-4 border-end">
+                                    <span class="badge pub-badge-scopus pub-type-badge mb-2 d-inline-block">SCOPUS</span>
+                                    <div class="pub-stat-number text-dark">${counts.SCOPUS}</div>
+                                    <div class="small text-muted">편</div>
+                                </div>
+                                <div class="col-4">
+                                    <span class="badge bg-success pub-type-badge mb-2 d-inline-block">KCI</span>
+                                    <div class="pub-stat-number text-dark">${counts.KCI}</div>
+                                    <div class="small text-muted">편</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const sorted = [...papers].sort((a, b) => {
+                const yd = b.year - a.year;
+                return yd !== 0 ? yd : (b.published_date || '').localeCompare(a.published_date || '');
+            });
+            const recent6 = sorted.slice(0, 6);
+
+            const badgeClass = { SCI: 'bg-info', SCOPUS: 'pub-badge-scopus', KCI: 'bg-success' };
+
+            document.getElementById('pub-grid').innerHTML = recent6.map(p => {
+                const link = p.url || (p.doi ? `https://doi.org/${p.doi}` : null);
+                const authors = (p.authors || []).join(', ');
+                const titleEl = link
+                    ? `<a href="${link}" target="_blank" rel="noopener" class="pub-card-title">${p.title}</a>`
+                    : `<span class="pub-card-title">${p.title}</span>`;
+                return `
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card h-100 pub-card shadow-sm">
+                            <div class="card-body d-flex flex-column">
+                                <div class="mb-2">
+                                    <span class="badge ${badgeClass[p.journal_type] || 'bg-secondary'} pub-type-badge">${p.journal_type}</span>
+                                    <span class="text-muted ms-2 small">${formatPubDate(p)}</span>
+                                </div>
+                                <div class="pub-card-title-wrap mb-2">${titleEl}</div>
+                                <p class="small text-muted mb-1 pub-card-authors">${authors}</p>
+                                <p class="small text-muted mt-auto mb-0 fst-italic">${p.venue || ''}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        loadHomepagePublications();
 
         initPopups();
 
