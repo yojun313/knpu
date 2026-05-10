@@ -548,7 +548,7 @@ class Manager_Database(Manager_Worker):
             url = "http://llm.knpu.re.kr"
             webbrowser.open(url)
 
-            userLogging(f"LLM Chat ON")
+            userLogging(f"DATABASE -> LLM Chat ON")
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
