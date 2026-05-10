@@ -11,6 +11,7 @@ class Member(BaseModel):
     email: str
     학력: List[str] = []
     경력: List[str] = []
+    수상 : List[str] = []
     연구: List[str] = []
     image: Optional[str] = ""
 
