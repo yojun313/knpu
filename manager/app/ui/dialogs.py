@@ -32,6 +32,7 @@ from datetime import datetime
 from services.api import Request
 from typing import Callable
 import httpx
+import uuid
 
 
 class BaseDialog(QDialog):
@@ -2741,6 +2742,8 @@ class EditHomeMemberDialog(BaseDialog):
         self.in_career.setPlainText("\n".join(self.data.get("경력", [])))
         self.in_research = QTextEdit()
         self.in_research.setPlainText("\n".join(self.data.get("연구", [])))
+        self.in_awards = QTextEdit()
+        self.in_awards.setPlainText("\n".join(self.data.get("수상", [])))
 
         for lbl, wid in [
             ("이름", self.in_name),
@@ -2751,6 +2754,7 @@ class EditHomeMemberDialog(BaseDialog):
             ("학력(줄바꿈 구분)", self.in_school),
             ("경력(줄바꿈 구분)", self.in_career),
             ("연구(줄바꿈 구분)", self.in_research),
+            ("수상(줄바꿈 구분)", self.in_awards),
         ]:
             add_row(lbl, wid)
 
@@ -2809,6 +2813,7 @@ class EditHomeMemberDialog(BaseDialog):
             "학력": self.in_school.toPlainText().strip().splitlines(),
             "경력": self.in_career.toPlainText().strip().splitlines(),
             "연구": self.in_research.toPlainText().strip().splitlines(),
+            "수상": self.in_awards.toPlainText().strip().splitlines(),
         }
 
         if self.new_image_url:
@@ -3000,6 +3005,14 @@ class ViewHomeMemberDialog(BaseDialog):
             else str(data.get("연구", "")),
             multiline=True,
         )
+        self.add_label(
+            layout,
+            "수상",
+            "\n".join(data.get("수상", []))
+            if isinstance(data.get("수상", []), list)
+            else str(data.get("수상", "")),
+            multiline=True,
+        )
 
 
 class ViewHomeNewsDialog(BaseDialog):
@@ -3073,6 +3086,7 @@ class EditHomePopupDialog(BaseDialog):
             vbox.addWidget(widget)
 
         from datetime import timedelta
+
         today = datetime.now().strftime("%Y-%m-%d")
         end_default = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
 
@@ -3100,7 +3114,9 @@ class EditHomePopupDialog(BaseDialog):
         vbox.addWidget(self.img_btn)
 
         self.img_status = QLabel(
-            f"현재 이미지: {self.data.get('image', '없음')[:60]}" if self.data.get("image") else "이미지 없음"
+            f"현재 이미지: {self.data.get('image', '없음')[:60]}"
+            if self.data.get("image")
+            else "이미지 없음"
         )
         self.img_status.setStyleSheet("color: gray; font-size: 11px;")
         self.img_status.setWordWrap(True)
@@ -3119,7 +3135,9 @@ class EditHomePopupDialog(BaseDialog):
         )
         if path:
             try:
-                self.new_image_url = upload_homepage_image(path, "popup")
+                self.new_image_url = upload_homepage_image(
+                    path, "popup", uuid.uuid4().hex
+                )
                 self.img_status.setText(f"업로드 완료: {self.new_image_url[:60]}")
                 QMessageBox.information(self, "완료", "이미지 업로드 성공")
             except Exception as e:
@@ -3151,7 +3169,9 @@ class ViewHomePopupDialog(BaseDialog):
         self.add_label(layout, "시작일:", data.get("start_date", ""), readonly=True)
         self.add_label(layout, "종료일:", data.get("end_date", ""), readonly=True)
         self.add_label(layout, "링크 URL:", data.get("link_url", ""), readonly=True)
-        self.add_label(layout, "활성:", "예" if data.get("is_active") else "아니오", readonly=True)
+        self.add_label(
+            layout, "활성:", "예" if data.get("is_active") else "아니오", readonly=True
+        )
 
         if data.get("image"):
             layout.addWidget(QLabel("<b>이미지 미리보기:</b>"))
@@ -3175,7 +3195,12 @@ class ViewHomePopupDialog(BaseDialog):
                 pixmap = QPixmap()
                 pixmap.loadFromData(resp.content)
                 self.image_label.setPixmap(
-                    pixmap.scaled(390, 230, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    pixmap.scaled(
+                        390,
+                        230,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    )
                 )
             else:
                 self.image_label.setText("이미지를 불러올 수 없습니다.")
