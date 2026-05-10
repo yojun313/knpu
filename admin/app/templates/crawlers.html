@@ -37,9 +37,17 @@
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div class="space-y-3">
                 <div class="flex items-center gap-3">
-                    {% if db.is_running %}
+                    {% if db.status == 'running' %}
                         <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20 uppercase">
                             <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span> Running
+                        </span>
+                    {% elif db.status == 'error' %}
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/20 uppercase">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Error
+                        </span>
+                    {% elif db.status == 'stopped' %}
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Stopped
                         </span>
                     {% else %}
                         <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20 uppercase">

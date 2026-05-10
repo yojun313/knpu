@@ -112,12 +112,8 @@ def get_recent_crawlers(limit=10):
         else:
             c["size_formatted"] = f"{size_bytes / (1024**2):.1f} MB"
 
-        end_time_str = str(c.get("endTime", ""))
-        if "%" in end_time_str or not end_time_str or end_time_str == "0":
-            c["is_running"] = True
-        else:
-            c["is_running"] = False
-
+        c["is_running"] = (c.get("status") == "running")
+        
     return crawlers
 
 

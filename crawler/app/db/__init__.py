@@ -4,7 +4,7 @@ import os
 import socket
 import logging
 from datetime import datetime
-
+from zoneinfo import ZoneInfo
 from config import MODE
 
 load_dotenv()
@@ -60,13 +60,12 @@ crawler_db = client[crawler_db_name]
 manager_db = client[manager_db_name]
 
 user_db = manager_db["users"]
-
+user_logs_db = manager_db["user-logs"]
 
 def load_proxy_list():
     return client[crawler_db_name]["ip-list"].find_one({"_id": "proxy_list"})["list"]
 
-
-def checkState(dbUid):
+def checkState(dbUid: str):
     crawlDbList = client[crawler_db_name]["db-list"]
     targetDB = crawlDbList.find_one({"uid": dbUid})
     if targetDB:
@@ -77,7 +76,6 @@ def checkState(dbUid):
             {"$set": {"state": "stopped", "finished_at": datetime.now()}},
         )
         return None
-
 
 def get_userinfo(requester: str):
     try:
@@ -93,8 +91,24 @@ def get_userinfo(requester: str):
     except Exception as e:
         logger.info(f"DB 유저 정보 가져오기 : {requester}, 에러: {e}")
         return False
+    
+def add_userlog(userUid: str, dbname: str):
+    try:
+        kst = ZoneInfo("Asia/Seoul")
+        now_kst = datetime.now(kst)
+
+        log_entry = {
+            "uid": str(uuid.uuid4()),
+            "userUid": userUid,
+            "datetime": now_kst,
+            "datetime_kst": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
+            "message": f"CRAWLER -> Started crawling: {dbname}",
+        }
+        user_logs_db.insert_one(log_entry)
+    except Exception as e:
+        logger.info(f"DB 유저 로그 추가 실패 : {userUid}, 에러: {e}")
 
 
-def recordDB(dbUid, status):
+def recordDB(dbUid: str, status: str):
     crawlDbList = client[crawler_db_name]["db-list"]
     crawlDbList.update_one({"uid": dbUid}, {"$set": {"status": status}})

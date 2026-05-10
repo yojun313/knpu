@@ -6,7 +6,7 @@ import logging
 from collections import OrderedDict
 
 from config import CRAWL_DATA_PATH, CRAWL_LOG_PATH, CRAWLCOM
-from db import crawler_db
+from db import crawler_db, add_userlog
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +74,8 @@ def makeDB(
         )
         log.write(msg + "\n\n")
 
+    add_userlog(requesterUid, DBname)
+    
     return DBpath, DBuid
 
 
