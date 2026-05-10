@@ -42,3 +42,15 @@ class GroupPhoto(BaseModel):
     url: str
     caption: str
     date: Optional[str] = None
+
+
+class Popup(BaseModel):
+    uid: Optional[str] = None
+    title: str
+    content: str
+    image: Optional[str] = ""
+    link_url: Optional[str] = ""
+    start_date: str
+    end_date: str
+    is_active: bool = True
+    created_at: Optional[str] = None
