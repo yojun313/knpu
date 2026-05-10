@@ -4,35 +4,32 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="description" content="" />
-    <meta name="author" content="" />
-    <title>PAILAB</title>
-    <!-- Favicon-->
-    <!-- Font Awesome icons (free version)-->
-    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
-    <!-- Google fonts-->
+    <meta name="description" content="PAILAB 연구실 논문 목록 - SCI, SCOPUS, KCI 등재 논문" />
+    <meta name="author" content="PAILAB" />
+    <title>Publications | PAILAB</title>
     <link rel="icon" type="image/x-icon" href="assets/imgs/pailab_logo_favicon.ico" />
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css" />
     <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700" rel="stylesheet" type="text/css" />
-    <!-- Core theme CSS (includes Bootstrap)-->
     <link href="css/styles.css" rel="stylesheet" />
 </head>
 
 <body id="page-top">
-    <!-- Navigation-->
+    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
         <div class="container">
-            <a class="navbar-brand" href="/"><img src="assets/imgs/pailab_logo.png" alt="..." /></a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
-                aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+            <a class="navbar-brand" href="/"><img src="assets/imgs/pailab_logo.png" alt="PAILAB" /></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarResponsive" aria-controls="navbarResponsive"
+                aria-expanded="false" aria-label="Toggle navigation">
                 Menu
                 <i class="fas fa-bars ms-1"></i>
             </button>
             <div class="collapse navbar-collapse" id="navbarResponsive">
                 <ul class="navbar-nav text-uppercase ms-auto py-4 py-lg-0">
                     <li class="nav-item"><a class="nav-link" href="/">RESEARCH</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/publications">PUBLICATIONS</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/">NEWS</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/publications">PUBLICATIONS</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/#news">NEWS</a></li>
                     <li class="nav-item"><a class="nav-link" href="/team">OUR TEAM</a></li>
                     <li class="nav-item"><a class="nav-link" href="/gallery">GALLERY</a></li>
                     <li class="nav-item"><a class="nav-link" href="/systems">SYSTEM</a></li>
@@ -40,93 +37,357 @@
             </div>
         </div>
     </nav>
-    <!-- Masthead-->
+
+    <!-- Masthead -->
     <header class="masthead_paper">
         <div class="container">
             <div class="masthead_paper-subheading">PAILAB</div>
             <div class="masthead_paper-heading text-uppercase">PUBLICATIONS</div>
         </div>
     </header>
-    <section class="publications-section" id="PUBLICATIONS">
+
+    <!-- Stats Dashboard -->
+    <section class="page-section bg-light py-5" id="pub-dashboard">
         <div class="container">
-            <div class="text-center">
-                <h2 class="section-heading text-uppercase"><br />PAPERS</h2>
+            <div class="text-center mb-4">
+                <h2 class="section-heading text-uppercase">PAPERS</h2>
             </div>
-            <!-- 연도/논문 목록이 동적으로 삽입될 부분 -->
-            <div id="publications-list"></div>
+
+            <!-- 전체 통계 배지 -->
+            <div class="row justify-content-center g-3 mb-5" id="pub-total-stats">
+                <!-- JS fills -->
+            </div>
+
+            <!-- 연도별 테이블 -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm text-center pub-year-table" id="pub-year-table">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Year</th>
+                            <th>Total</th>
+                            <th><span class="badge bg-info">SCI</span></th>
+                            <th><span class="badge pub-badge-scopus">SCOPUS</span></th>
+                            <th><span class="badge bg-success">KCI</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="pub-year-tbody">
+                        <!-- JS fills -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </section>
-    <!-- Bootstrap core JS-->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Core theme JS-->
-    <script src="js/scripts.js"></script>
-    <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *-->
-    <!-- * *                               SB Forms JS                               * *-->
-    <!-- * * Activate your form at https://startbootstrap.com/solution/contact-forms * *-->
-    <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *-->
-    <script src="https://cdn.startbootstrap.com/sb-forms-latest.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const res = await fetch('https://home.knpu.re.kr/api/papers/');
-                if (!res.ok) throw new Error('Failed to fetch publications');
 
-                const data = await res.json();
+    <!-- 필터 + 논문 목록 -->
+    <section class="publications-section" id="PUBLICATIONS">
+        <div class="container">
 
-                const listEl = document.getElementById('publications-list');
-                listEl.innerHTML = ''; // 초기화
-
-                data.sort((a, b) => b.year - a.year); // 연도 내림차순 정렬
-
-                data.forEach(yearData => {
-                    if (!yearData.papers || yearData.papers.length === 0) return; // 비어있으면 넘어감
-
-                    const yearBlock = document.createElement('div');
-                    yearBlock.classList.add('publication-year');
-
-                    yearBlock.innerHTML = `
-                <h4 class="year-title">${yearData.year}</h4>
-                <hr class="year-separator">
-                `;
-
-                    yearData.papers.forEach(paper => {
-                        const paperEl = document.createElement('div');
-                        paperEl.classList.add('publication-item');
-
-                        paperEl.innerHTML = `
-                    <div class="publication-info">
-                    <h5 class="publication-title">${paper.title}</h5>
-                    ${paper.authors ? `<p class="authors">${paper.authors}</p>` : ''}
-                    ${paper.conference ? `<p class="conference">${paper.conference}</p>` : ''}
-                    ${paper.link ? `<a href="${paper.link}" class="publication-link" target="_blank">[Paper]</a>` : ''}
+            <!-- 필터 컨트롤 -->
+            <div class="row g-3 mb-3 align-items-end" id="pub-filters">
+                <div class="col-lg-4 col-md-6">
+                    <label class="form-label fw-bold small text-uppercase" for="pub-search">Search</label>
+                    <div class="input-group">
+                        <select id="pub-search-scope" class="form-select form-select-sm pub-scope-select">
+                            <option value="all">전체</option>
+                            <option value="title">제목</option>
+                            <option value="author">저자</option>
+                            <option value="journal">학술지</option>
+                        </select>
+                        <input type="text" id="pub-search" class="form-control"
+                            placeholder="검색어를 입력하세요…" />
                     </div>
-                `;
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <label class="form-label fw-bold small text-uppercase">Journal Type</label>
+                    <div class="d-flex flex-wrap gap-1" id="pub-type-filter" role="group">
+                        <button type="button" class="btn btn-primary btn-sm pub-filter-btn active" data-type="ALL">All</button>
+                        <button type="button" class="btn btn-outline-info btn-sm pub-filter-btn" data-type="SCI">SCI</button>
+                        <button type="button" class="btn pub-btn-outline-scopus btn-sm pub-filter-btn" data-type="SCOPUS">SCOPUS</button>
+                        <button type="button" class="btn btn-outline-success btn-sm pub-filter-btn" data-type="KCI">KCI</button>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label fw-bold small text-uppercase" for="pub-year-select">Year</label>
+                    <select id="pub-year-select" class="form-select form-select-sm">
+                        <option value="ALL">All Years</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label fw-bold small text-uppercase" for="pub-sort-select">Sort</label>
+                    <select id="pub-sort-select" class="form-select form-select-sm">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="title">Title A-Z</option>
+                    </select>
+                </div>
+            </div>
 
-                        yearBlock.appendChild(paperEl);
-                    });
+            <p class="text-muted small mb-3" id="pub-result-count"></p>
 
-                    listEl.appendChild(yearBlock);
+            <!-- 논문 목록 -->
+            <div id="publications-list"></div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer py-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-12 text-center">
+                    Copyright &copy; KNPU PAILAB</br>TEL: 041-968-3948
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Core theme JS -->
+    <script src="js/scripts.js"></script>
+
+    <script>
+        const DATA_URL = '/assets/TODO/bib_result_edit.json'; // swap to API URL later
+
+        let allPapers = [];
+
+        function paperLink(p) {
+            if (p.url) return p.url;
+            if (p.doi) return 'https://doi.org/' + p.doi;
+            return null;
+        }
+
+        function formatPubDate(p) {
+            if (!p.published_date) return String(p.year);
+            const parts = p.published_date.split('-');
+            return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : String(p.year);
+        }
+
+        function formatVenueDetail(p) {
+            let s = p.venue || '';
+            if (p.volume) {
+                s += ', ' + p.volume;
+                if (p.issue) s += '(' + p.issue + ')';
+            }
+            if (p.pages) s += ', ' + p.pages;
+            return s;
+        }
+
+        const BADGE = {
+            SCI:    '<span class="badge bg-info pub-type-badge">SCI</span>',
+            SCOPUS: '<span class="badge pub-badge-scopus pub-type-badge">SCOPUS</span>',
+            KCI:    '<span class="badge bg-success pub-type-badge">KCI</span>',
+        };
+
+        function renderStats(papers) {
+            const total = papers.length;
+            const sci   = papers.filter(p => p.journal_type === 'SCI').length;
+            const scopus = papers.filter(p => p.journal_type === 'SCOPUS').length;
+            const kci   = papers.filter(p => p.journal_type === 'KCI').length;
+
+            document.getElementById('pub-total-stats').innerHTML = `
+                <div class="col-auto">
+                    <div class="pub-stat-badge bg-dark text-white">
+                        <div class="pub-stat-number">${total}</div>
+                        <div class="pub-stat-label">Total</div>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="pub-stat-badge bg-info text-white">
+                        <div class="pub-stat-number">${sci}</div>
+                        <div class="pub-stat-label">SCI</div>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="pub-stat-badge pub-stat-scopus">
+                        <div class="pub-stat-number">${scopus}</div>
+                        <div class="pub-stat-label">SCOPUS</div>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="pub-stat-badge bg-success text-white">
+                        <div class="pub-stat-number">${kci}</div>
+                        <div class="pub-stat-label">KCI</div>
+                    </div>
+                </div>
+            `;
+
+            const years = [...new Set(papers.map(p => p.year))].sort((a, b) => b - a);
+            document.getElementById('pub-year-tbody').innerHTML = years.map(y => {
+                const yp = papers.filter(p => p.year === y);
+                const s  = yp.filter(p => p.journal_type === 'SCI').length;
+                const sc = yp.filter(p => p.journal_type === 'SCOPUS').length;
+                const k  = yp.filter(p => p.journal_type === 'KCI').length;
+                return `<tr>
+                    <td class="fw-bold">${y}</td>
+                    <td>${yp.length}</td>
+                    <td>${s || ''}</td>
+                    <td>${sc || ''}</td>
+                    <td>${k || ''}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function getFilters() {
+            return {
+                search: document.getElementById('pub-search').value.trim().toLowerCase(),
+                scope:  document.getElementById('pub-search-scope').value,
+                type:   (document.querySelector('.pub-filter-btn.active') || {}).dataset.type || 'ALL',
+                year:   document.getElementById('pub-year-select').value,
+                sort:   document.getElementById('pub-sort-select').value,
+            };
+        }
+
+        function applyFilters() {
+            const { search, scope, type, year, sort } = getFilters();
+
+            let filtered = allPapers.filter(p => {
+                if (type !== 'ALL' && p.journal_type !== type) return false;
+                if (year !== 'ALL' && String(p.year) !== year) return false;
+                if (search) {
+                    let haystack;
+                    const authorsAll = [...(p.authors || []), ...(p.authors_kr || []).filter(Boolean)];
+                    if (scope === 'title')   haystack = (p.title || '').toLowerCase();
+                    else if (scope === 'author')  haystack = authorsAll.join(' ').toLowerCase();
+                    else if (scope === 'journal') haystack = (p.venue || '').toLowerCase();
+                    else haystack = [p.title, ...authorsAll, p.venue || ''].join(' ').toLowerCase();
+                    if (!haystack.includes(search)) return false;
+                }
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                if (sort === 'newest') {
+                    const yd = b.year - a.year;
+                    return yd !== 0 ? yd : (b.published_date || '').localeCompare(a.published_date || '');
+                }
+                if (sort === 'oldest') {
+                    const yd = a.year - b.year;
+                    return yd !== 0 ? yd : (a.published_date || '').localeCompare(b.published_date || '');
+                }
+                if (sort === 'title') return (a.title || '').localeCompare(b.title || '');
+                return 0;
+            });
+
+            renderPaperList(filtered, sort);
+            document.getElementById('pub-result-count').textContent =
+                `${filtered.length}편의 논문이 검색되었습니다.`;
+        }
+
+        function renderPaperList(papers, sort) {
+            const listEl = document.getElementById('publications-list');
+            if (!papers.length) {
+                listEl.innerHTML = '<p class="text-center text-muted py-5">검색 결과가 없습니다.</p>';
+                return;
+            }
+
+            if (sort === 'title') {
+                listEl.innerHTML = papers.map(paperItemHTML).join('');
+            } else {
+                const years = [...new Set(papers.map(p => p.year))]
+                    .sort((a, b) => sort === 'oldest' ? a - b : b - a);
+                listEl.innerHTML = years.map(y => {
+                    const yp = papers.filter(p => p.year === y);
+                    return `
+                        <div class="publication-year mb-4">
+                            <h4 class="year-title">${y}</h4>
+                            <hr class="year-separator">
+                            ${yp.map(paperItemHTML).join('')}
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function paperItemHTML(p) {
+            const link = paperLink(p);
+            const authors = (p.authors || []).join(', ');
+            const venueDetail = formatVenueDetail(p);
+            const badge = BADGE[p.journal_type] || `<span class="badge bg-secondary pub-type-badge">${p.journal_type}</span>`;
+            const pubDate = formatPubDate(p);
+
+            return `
+                <div class="publication-item">
+                    <div class="publication-info">
+                        <div class="mb-1">
+                            ${badge}
+                            <span class="text-muted small ms-2">${pubDate}</span>
+                        </div>
+                        <h5 class="publication-title">
+                            ${link
+                                ? `<a href="${link}" target="_blank" rel="noopener" class="publication-link">${p.title}</a>`
+                                : p.title
+                            }
+                        </h5>
+                        ${authors ? `<p class="authors mb-1">${authors}</p>` : ''}
+                        ${venueDetail ? `<p class="conference mb-0">${venueDetail}</p>` : ''}
+                        ${p.apa_citation ? `<details class="mt-2">
+                            <summary class="small text-muted pub-apa-toggle">APA Citation</summary>
+                            <p class="small text-muted mt-1 mb-0 fst-italic">${p.apa_citation}</p>
+                        </details>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function populateYearSelect(papers) {
+            const years = [...new Set(papers.map(p => p.year))].sort((a, b) => b - a);
+            const sel = document.getElementById('pub-year-select');
+            years.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = String(y);
+                opt.textContent = String(y);
+                sel.appendChild(opt);
+            });
+        }
+
+        function wireEvents() {
+            document.getElementById('pub-search').addEventListener('input', applyFilters);
+            document.getElementById('pub-search-scope').addEventListener('change', applyFilters);
+            document.getElementById('pub-year-select').addEventListener('change', applyFilters);
+            document.getElementById('pub-sort-select').addEventListener('change', applyFilters);
+
+            document.getElementById('pub-type-filter').addEventListener('click', e => {
+                const btn = e.target.closest('.pub-filter-btn');
+                if (!btn) return;
+
+                document.querySelectorAll('.pub-filter-btn').forEach(b => {
+                    b.classList.remove('active', 'btn-primary', 'btn-info', 'btn-success', 'pub-btn-scopus');
+                    if (b.dataset.type === 'SCI')    b.classList.add('btn-outline-info');
+                    else if (b.dataset.type === 'SCOPUS') b.classList.add('pub-btn-outline-scopus');
+                    else if (b.dataset.type === 'KCI')    b.classList.add('btn-outline-success');
+                    else b.classList.add('btn-outline-secondary');
                 });
 
-                if (listEl.innerHTML.trim() === '') {
-                    listEl.innerHTML = '<p class="text-center text-muted">등록된 논문이 없습니다.</p>';
-                }
+                btn.classList.remove('btn-outline-info', 'btn-outline-success', 'pub-btn-outline-scopus', 'btn-outline-secondary');
+                btn.classList.add('active');
+                if (btn.dataset.type === 'SCI')         btn.classList.add('btn-info');
+                else if (btn.dataset.type === 'SCOPUS') btn.classList.add('pub-btn-scopus');
+                else if (btn.dataset.type === 'KCI')    btn.classList.add('btn-success');
+                else btn.classList.add('btn-primary');
+
+                applyFilters();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch(DATA_URL);
+                if (!res.ok) throw new Error('fetch failed');
+                allPapers = await res.json();
             } catch (e) {
                 console.error('Error loading publications:', e);
-                document.getElementById('publications-list').innerHTML = '<p class="text-center text-danger">논문을 불러오는 데 실패했습니다.</p>';
+                document.getElementById('publications-list').innerHTML =
+                    '<p class="text-center text-danger">논문을 불러오는 데 실패했습니다.</p>';
+                return;
             }
+
+            renderStats(allPapers);
+            populateYearSelect(allPapers);
+            wireEvents();
+            applyFilters();
         });
     </script>
 </body>
 
 </html>
-<!-- Footer-->
-<footer class="footer py-4">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-12 text-center"> <!-- col-lg-4를 col-12로 변경하고 text-center 클래스 추가 -->
-                Copyright &copy; KNPU PAILAB
-            </div>
-        </div>
-    </div>
-</footer>
