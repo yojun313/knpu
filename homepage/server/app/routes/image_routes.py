@@ -21,7 +21,7 @@ s3 = boto3.client(
     region_name="auto",
 )
 
-PUBLIC_BASE = "https://pub-60ca29aab33f424fab345807bd058d56.r2.dev"
+PUBLIC_BASE = os.getenv("HOMEPAGE_R2_PUBLIC_URL")
 
 router = APIRouter()
 
