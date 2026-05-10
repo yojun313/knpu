@@ -19,7 +19,7 @@ const SECRET_KEY = process.env.JWT_SECRET || '1234';
 const ACCESS_KEY_ID = process.env.ACCESS_KEY_ID;
 const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY;
 const ACCOUNT_ID = process.env.ACCOUNT_ID;
-const BUCKET_NAME = process.env.BUCKET_NAME;
+const MANAGER_BUCKET_NAME = process.env.MANAGER_BUCKET_NAME;
 const R2_ENDPOINT = `https://${ACCOUNT_ID}.r2.cloudflarestorage.com`;
 
 // R2 S3 클라이언트 (AWS SDK v3)
@@ -58,7 +58,7 @@ app.get('/manager/download', (req, res) => res.sendFile(path.join(__dirname, 'pu
 // 파일 목록 API (R2)
 app.get('/files', async (req, res) => {
     try {
-        const command = new ListObjectsV2Command({ Bucket: BUCKET_NAME });
+        const command = new ListObjectsV2Command({ Bucket: MANAGER_BUCKET_NAME });
         const response = await s3.send(command);
 
         const files = (response.Contents || []).map(obj => ({
@@ -80,9 +80,9 @@ app.get('/files', async (req, res) => {
 
 // 파일 다운로드 리디렉션
 app.get('/download/:filename', (req, res) => {
-    const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
+    const R2_MANAGER_PUBLIC_URL = process.env.R2_MANAGER_PUBLIC_URL;
     const filename = req.params.filename;
-    const fileUrl = `${R2_PUBLIC_URL}/${encodeURIComponent(filename)}`;
+    const fileUrl = `${R2_MANAGER_PUBLIC_URL}/${encodeURIComponent(filename)}`;
     res.redirect(fileUrl);
 });
 
