@@ -22,6 +22,7 @@ class Manager_Web:
         self.refreshPaperBoard()
         self.refreshMemberBoard()
         self.refreshNewsBoard()
+        self.refreshPopupBoard()
         self.web_buttonMatch()
         self.photoTableLoad = False
 
@@ -63,6 +64,10 @@ class Manager_Web:
         self.main.web_viewmember_button.clicked.connect(self.viewMember)
         self.main.web_viewnews_button.clicked.connect(self.viewNews)
         self.main.web_viewgroupphoto_button.clicked.connect(self.viewGroupPhoto)
+        self.main.web_addpopup_button.clicked.connect(self.addHomePopup)
+        self.main.web_deletepopup_button.clicked.connect(self.deleteHomePopup)
+        self.main.web_editpopup_button.clicked.connect(self.editHomePopup)
+        self.main.web_viewpopup_button.clicked.connect(self.viewPopupDetail)
 
     def refreshPaperBoard(self):
         printStatus(self.main, "새로고침 중...")
@@ -680,6 +685,106 @@ class Manager_Web:
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 
+    def refreshPopupBoard(self):
+        printStatus(self.main, "팝업 목록 불러오는 중...")
+        self.popup_data = Request("get", "/popups/", HOMEPAGE_EDIT_API).json()
+        self.popup_data_for_table = [
+            [
+                item.get("title", ""),
+                item.get("content", "")[:50],
+                item.get("start_date", ""),
+                item.get("end_date", ""),
+                "✔" if item.get("is_active") else "✘",
+            ]
+            for item in self.popup_data
+        ]
+        self.popup_table_column = ["제목", "내용", "시작일", "종료일", "활성"]
+        makeTable(
+            self.main,
+            self.main.web_popup_tableWidget,
+            self.popup_data_for_table,
+            self.popup_table_column,
+        )
+        printStatus(self.main, "https://knpu.re.kr (팝업)")
+
+    def addHomePopup(self):
+        try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
+            dialog = EditHomePopupDialog(parent=self.main)
+            if dialog.exec():
+                payload = dialog.get_payload()
+                Request("post", "/popups/", HOMEPAGE_EDIT_API, json=payload)
+                QMessageBox.information(
+                    self.main, "완료", f"{payload.get('title', '팝업')}이 추가되었습니다"
+                )
+                userLogging(f"WEB -> addHomePopup({payload.get('title')})")
+                self.refreshPopupBoard()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
+    def deleteHomePopup(self):
+        try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
+            selectedRow = self.main.web_popup_tableWidget.currentRow()
+            if selectedRow < 0:
+                return
+            selectedUid = self.popup_data[selectedRow]["uid"]
+            reply = QMessageBox.question(
+                self.main,
+                "Confirm Delete",
+                "정말 삭제하시겠습니까?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                Request("delete", "/popups/", HOMEPAGE_EDIT_API, params={"uid": selectedUid})
+                userLogging(f"WEB -> deleteHomePopup({self.popup_data[selectedRow]['title']})")
+                self.refreshPopupBoard()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
+    def editHomePopup(self):
+        try:
+            if not accessCheck(self.main, exclude=["public"]):
+                return
+            selectedRow = self.main.web_popup_tableWidget.currentRow()
+            if selectedRow < 0:
+                return
+            selectedUid = self.popup_data[selectedRow]["uid"]
+            origin = next((p for p in self.popup_data if p.get("uid") == selectedUid), None)
+            if not origin:
+                QMessageBox.warning(self.main, "오류", "팝업 정보를 찾을 수 없습니다.")
+                return
+            dialog = EditHomePopupDialog(data=origin, parent=self.main)
+            if dialog.exec():
+                payload = dialog.get_payload()
+                payload["uid"] = selectedUid
+                Request("post", "/popups/", HOMEPAGE_EDIT_API, json=payload)
+                QMessageBox.information(
+                    self.main, "완료", f"{payload.get('title')} 팝업이 수정되었습니다"
+                )
+                userLogging(f"WEB -> editHomePopup({payload.get('title')})")
+                self.refreshPopupBoard()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
+    def viewPopupDetail(self):
+        try:
+            selectedRow = self.main.web_popup_tableWidget.currentRow()
+            if selectedRow < 0:
+                return
+            selectedUid = self.popup_data[selectedRow]["uid"]
+            origin = next((p for p in self.popup_data if p.get("uid") == selectedUid), None)
+            if not origin:
+                QMessageBox.warning(self.main, "오류", "팝업 정보를 찾을 수 없습니다.")
+                return
+            dialog = ViewHomePopupDialog(data=origin, parent=self.main)
+            dialog.exec()
+        except Exception:
+            programBugLog(self.main, traceback.format_exc())
+
     def setWebShortcut(self):
         self.updateShortcut(0)
         self.main.tabWidget_web.currentChanged.connect(self.updateShortcut)
@@ -747,5 +852,19 @@ class Manager_Web:
             self.main.cmde.activated.connect(self.editHomeNews)
             self.main.cmdv.activated.connect(self.viewNews)
             self.main.cmdr.activated.connect(self.refreshNewsBoard)
+
+        if index == 4:
+            printStatus(self.main, "https://knpu.re.kr (팝업)")
+            self.main.ctrla.activated.connect(self.addHomePopup)
+            self.main.ctrld.activated.connect(self.deleteHomePopup)
+            self.main.ctrle.activated.connect(self.editHomePopup)
+            self.main.ctrlv.activated.connect(self.viewPopupDetail)
+            self.main.ctrlr.activated.connect(self.refreshPopupBoard)
+
+            self.main.cmda.activated.connect(self.addHomePopup)
+            self.main.cmdd.activated.connect(self.deleteHomePopup)
+            self.main.cmde.activated.connect(self.editHomePopup)
+            self.main.cmdv.activated.connect(self.viewPopupDetail)
+            self.main.cmdr.activated.connect(self.refreshPopupBoard)
 
         changeStatusbarAction(self.main, "WEB")

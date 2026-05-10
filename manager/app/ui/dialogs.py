@@ -3056,3 +3056,128 @@ class ViewHomePhotoDialog(BaseDialog):
                 self.image_label.setText("이미지를 불러올 수 없습니다.")
         except Exception:
             self.image_label.setText("이미지 로드 오류")
+
+
+class EditHomePopupDialog(BaseDialog):
+    def __init__(self, data: dict | None = None, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("팝업 편집" if data else "팝업 추가")
+        self.resize(460, 520)
+        self.data = data or {}
+        self.new_image_url = None
+
+        vbox = QVBoxLayout(self)
+
+        def add_row(label: str, widget):
+            vbox.addWidget(QLabel(label))
+            vbox.addWidget(widget)
+
+        from datetime import timedelta
+        today = datetime.now().strftime("%Y-%m-%d")
+        end_default = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+
+        self.in_title = QLineEdit(self.data.get("title", ""))
+        self.in_content = QTextEdit(self.data.get("content", ""))
+        self.in_start = QLineEdit(self.data.get("start_date", today))
+        self.in_end = QLineEdit(self.data.get("end_date", end_default))
+        self.in_link = QLineEdit(self.data.get("link_url", ""))
+        self.chk_active = QCheckBox("활성화")
+        self.chk_active.setChecked(self.data.get("is_active", True))
+
+        for lbl, wid in [
+            ("제목", self.in_title),
+            ("내용", self.in_content),
+            ("시작일 (YYYY-MM-DD)", self.in_start),
+            ("종료일 (YYYY-MM-DD)", self.in_end),
+            ("링크 URL (옵션)", self.in_link),
+        ]:
+            add_row(lbl, wid)
+
+        vbox.addWidget(self.chk_active)
+
+        self.img_btn = QPushButton("이미지 선택/변경")
+        self.img_btn.clicked.connect(self.pick_image)
+        vbox.addWidget(self.img_btn)
+
+        self.img_status = QLabel(
+            f"현재 이미지: {self.data.get('image', '없음')[:60]}" if self.data.get("image") else "이미지 없음"
+        )
+        self.img_status.setStyleSheet("color: gray; font-size: 11px;")
+        self.img_status.setWordWrap(True)
+        vbox.addWidget(self.img_status)
+
+        ok = QPushButton("저장")
+        cancel = QPushButton("취소")
+        ok.clicked.connect(self.accept)
+        cancel.clicked.connect(self.reject)
+        vbox.addWidget(ok)
+        vbox.addWidget(cancel)
+
+    def pick_image(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.webp *.gif)"
+        )
+        if path:
+            try:
+                self.new_image_url = upload_homepage_image(path, "popup")
+                self.img_status.setText(f"업로드 완료: {self.new_image_url[:60]}")
+                QMessageBox.information(self, "완료", "이미지 업로드 성공")
+            except Exception as e:
+                QMessageBox.warning(self, "실패", str(e))
+
+    def get_payload(self):
+        return {
+            "title": self.in_title.text().strip(),
+            "content": self.in_content.toPlainText().strip(),
+            "start_date": self.in_start.text().strip(),
+            "end_date": self.in_end.text().strip(),
+            "link_url": self.in_link.text().strip(),
+            "is_active": self.chk_active.isChecked(),
+            "image": self.new_image_url or self.data.get("image", ""),
+        }
+
+
+class ViewHomePopupDialog(BaseDialog):
+    def __init__(self, data: dict, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("팝업 상세")
+        self.resize(460, 480)
+        self.data = data
+
+        layout = QVBoxLayout(self)
+
+        self.add_label(layout, "제목:", data.get("title", ""), readonly=True)
+        self.add_label(layout, "내용:", data.get("content", ""), readonly=True)
+        self.add_label(layout, "시작일:", data.get("start_date", ""), readonly=True)
+        self.add_label(layout, "종료일:", data.get("end_date", ""), readonly=True)
+        self.add_label(layout, "링크 URL:", data.get("link_url", ""), readonly=True)
+        self.add_label(layout, "활성:", "예" if data.get("is_active") else "아니오", readonly=True)
+
+        if data.get("image"):
+            layout.addWidget(QLabel("<b>이미지 미리보기:</b>"))
+            self.image_label = QLabel("로딩 중...")
+            self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.image_label.setFixedSize(400, 240)
+            self.image_label.setStyleSheet(
+                "border: 1px solid #dcdcdc; background-color: #f9f9f9; border-radius: 5px;"
+            )
+            layout.addWidget(self.image_label)
+            self.load_popup_image(data["image"])
+
+        close_btn = QPushButton("닫기")
+        close_btn.clicked.connect(self.close)
+        layout.addWidget(close_btn)
+
+    def load_popup_image(self, url):
+        try:
+            resp = httpx.get(url)
+            if resp.status_code == 200:
+                pixmap = QPixmap()
+                pixmap.loadFromData(resp.content)
+                self.image_label.setPixmap(
+                    pixmap.scaled(390, 230, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                )
+            else:
+                self.image_label.setText("이미지를 불러올 수 없습니다.")
+        except Exception:
+            self.image_label.setText("이미지 로드 오류")
