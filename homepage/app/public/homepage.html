@@ -616,14 +616,11 @@
     <!-- * *                               SB Forms JS                               * *-->
     <!-- * * Activate your form at https://startbootstrap.com/solution/contact-forms * *-->
     <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *-->
-    <script src="https://cdn.startbootstrap.com/sb-forms-latest.js"></script>
     <script>
-        const API_BASE = location.hostname === 'localhost'
-            ? 'http://localhost:8002/api'
-            : 'https://home.knpu.re.kr/api';
+        const API_BASE = 'https://home.knpu.re.kr/api';
 
         async function initPopups() {
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date().toLocaleDateString('sv-SE');
             let all;
             try {
                 const res = await fetch(`${API_BASE}/popups/`);
