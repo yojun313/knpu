@@ -480,6 +480,40 @@ class Ui_MainWindow(object):
         self.verticalLayout_tab_17.addLayout(self.horizontalLayout_55)
 
         self.tabWidget_web.addTab(self.tab_news, "")
+        self.tab_popup = QWidget()
+        self.tab_popup.setObjectName("tab_popup")
+        self.verticalLayout_tab_18 = QVBoxLayout(self.tab_popup)
+        self.verticalLayout_tab_18.setObjectName("verticalLayout_tab_18")
+        self.web_popup_tableWidget = QTableWidget(self.tab_popup)
+        self.web_popup_tableWidget.setObjectName("web_popup_tableWidget")
+
+        self.verticalLayout_tab_18.addWidget(self.web_popup_tableWidget)
+
+        self.horizontalLayout_56 = QHBoxLayout()
+        self.horizontalLayout_56.setObjectName("horizontalLayout_56")
+        self.web_addpopup_button = QPushButton(self.tab_popup)
+        self.web_addpopup_button.setObjectName("web_addpopup_button")
+
+        self.horizontalLayout_56.addWidget(self.web_addpopup_button)
+
+        self.web_deletepopup_button = QPushButton(self.tab_popup)
+        self.web_deletepopup_button.setObjectName("web_deletepopup_button")
+
+        self.horizontalLayout_56.addWidget(self.web_deletepopup_button)
+
+        self.web_editpopup_button = QPushButton(self.tab_popup)
+        self.web_editpopup_button.setObjectName("web_editpopup_button")
+
+        self.horizontalLayout_56.addWidget(self.web_editpopup_button)
+
+        self.web_viewpopup_button = QPushButton(self.tab_popup)
+        self.web_viewpopup_button.setObjectName("web_viewpopup_button")
+
+        self.horizontalLayout_56.addWidget(self.web_viewpopup_button)
+
+        self.verticalLayout_tab_18.addLayout(self.horizontalLayout_56)
+
+        self.tabWidget_web.addTab(self.tab_popup, "")
 
         self.verticalLayout_data_process2.addWidget(self.tabWidget_web)
 
@@ -790,6 +824,22 @@ class Ui_MainWindow(object):
         self.tabWidget_web.setTabText(
             self.tabWidget_web.indexOf(self.tab_news),
             QCoreApplication.translate("MainWindow", "\ub274\uc2a4 \ubaa9\ub85d", None),
+        )
+        self.web_addpopup_button.setText(
+            QCoreApplication.translate("MainWindow", "\ucd94\uac00", None)
+        )
+        self.web_deletepopup_button.setText(
+            QCoreApplication.translate("MainWindow", "\uc0ad\uc81c", None)
+        )
+        self.web_editpopup_button.setText(
+            QCoreApplication.translate("MainWindow", "\uc218\uc815", None)
+        )
+        self.web_viewpopup_button.setText(
+            QCoreApplication.translate("MainWindow", "\uc790\uc138\ud788", None)
+        )
+        self.tabWidget_web.setTabText(
+            self.tabWidget_web.indexOf(self.tab_popup),
+            QCoreApplication.translate("MainWindow", "\ud31d\uc5c5 \uad00\ub9ac", None),
         )
         self.label_name.setText(
             QCoreApplication.translate("MainWindow", "\uc774\ub984:", None)
