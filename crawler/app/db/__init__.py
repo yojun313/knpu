@@ -6,6 +6,7 @@ import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from config import MODE
+import uuid
 
 load_dotenv()
 
