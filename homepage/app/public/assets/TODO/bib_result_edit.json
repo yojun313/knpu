@@ -524,38 +524,6 @@
     "notes": ""
   },
   {
-    "uid": "fd537c3c-4775-4ca5-b6c8-88623cb8de5c",
-    "title": "경찰 대응 능력 강화를 위한 마약 범죄 검거 수와 언론보도량의 시계열 분석",
-    "authors": [
-      "이정우",
-      "노승국"
-    ],
-    "authors_kr": [
-      null,
-      null
-    ],
-    "year": 2023,
-    "published_date": "2023-06",
-    "publication_type": "journal",
-    "journal_type": "KCI",
-    "venue": "산업융합연구",
-    "volume": "21",
-    "issue": "6",
-    "pages": "13-21",
-    "publisher": null,
-    "doi": "10.22678/JIC.2023.21.6.013",
-    "url": "https://doi.org/10.22678/JIC.2023.21.6.013",
-    "abstract": null,
-    "language": "ko",
-    "apa_citation": "이정우, & 노승국 (2023). 경찰 대응 능력 강화를 위한 마약 범죄 검거 수와 언론보도량의 시계열 분석. 산업융합연구, 21(6), 13-21. https://doi.org/10.22678/JIC.2023.21.6.013",
-    "keywords": null,
-    "source_api": "bibtex",
-    "api_confidence": 1.0,
-    "fetched_at": "2026-05-10T17:01:17.347587+00:00",
-    "verified": false,
-    "notes": ""
-  },
-  {
     "uid": "c6c6b095-28fc-4be2-aa7c-156d3ed0c40b",
     "title": "생성형 인공지능 모델(GPT)을 활용한 고소 프로세스 개선에 관한 연구: 차용사기 사건을 중심으로",
     "authors": [
@@ -1822,36 +1790,6 @@
     "source_api": "crossref",
     "api_confidence": 1.0,
     "fetched_at": "2026-05-10T17:03:04.244549+00:00",
-    "verified": false,
-    "notes": ""
-  },
-  {
-    "uid": "9c982f15-a037-413e-a832-3de62af2acf9",
-    "title": "Big Data Analysis of Public Acceptance of Nuclear Power in Korea",
-    "authors": [
-      "Roh, Seungkook"
-    ],
-    "authors_kr": [
-      "노승국"
-    ],
-    "year": 2017,
-    "published_date": "2017-06",
-    "publication_type": "journal",
-    "journal_type": "SCI",
-    "venue": "Nuclear Engineering and Technology",
-    "volume": "49",
-    "issue": "4",
-    "pages": "850-854",
-    "publisher": "Elsevier BV",
-    "doi": "10.1016/j.net.2016.12.015",
-    "url": "https://doi.org/10.1016/j.net.2016.12.015",
-    "abstract": null,
-    "language": "en",
-    "apa_citation": "Roh, Seungkook (2017). Big Data Analysis of Public Acceptance of Nuclear Power in Korea. Nuclear Engineering and Technology, 49(4), 850-854. https://doi.org/10.1016/j.net.2016.12.015",
-    "keywords": null,
-    "source_api": "crossref",
-    "api_confidence": 1.0,
-    "fetched_at": "2026-05-10T17:03:06.320053+00:00",
     "verified": false,
     "notes": ""
   },
