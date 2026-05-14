@@ -76,7 +76,7 @@ class MyBot(commands.Bot):
 
     async def on_ready(self):
         try:
-            from cogs.errorlog import ErrorManageView
+            from cog_error import ErrorManageView
 
             self.add_view(ErrorManageView(self))
         except ImportError:

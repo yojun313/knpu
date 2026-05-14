@@ -3,6 +3,7 @@ from discord.ext import commands, tasks
 from discord import app_commands
 import datetime
 from libs.llm import generateLLM
+import io
 
 
 class ErrorManageView(discord.ui.View):
@@ -124,9 +125,18 @@ class ErrorWatcher(commands.Cog):
             [에러 로그]
             {message}
 
-            반드시 아래의 형식을 지켜서 답변해:
-            1. **오류 분석**: (발생 원인에 대한 간결한 설명)
-            2. **해결 방법**: (수정해야 할 코드나 단계별 해결책)
+            [작성 가이드라인 - 필독]
+            1. 결과물은 디스코드(Discord) 임베드 필드에 들어갈 내용이야.
+            2. **코드 블록(```)은 반드시 하나만 사용해.** 여러 개를 쓰면 렌더링이 깨질 수 있어.
+            3. 설명은 불필요한 서술 없이 핵심만 짧고 간결하게 작성해. (전체 800자 이내 권장)
+            4. 마크다운 스타일(굵게, 리스트)은 최소한으로 사용해.
+
+            반드시 아래의 형식을 엄격히 지켜서 답변해:
+            **1. 오류 분석**: (발생 원인에 대한 1~2줄 설명)
+            **2. 해결 방법**: 
+            ```python
+            # 수정된 코드 또는 해결 단계
+            ```
             """
             
             llm_result = generateLLM(prompt)
@@ -152,8 +162,8 @@ class ErrorWatcher(commands.Cog):
                     timestamp = int(bug["datetime"].timestamp())
 
                     embed = discord.Embed(
-                        title="⚠️ Error Report & AI Analysis",
-                        description="새로운 에러가 감지되어 AI 분석을 완료했습니다.",
+                        title="⚠️ Error Report",
+                        description="New error detected.",
                         color=discord.Color.yellow(),
                         timestamp=datetime.datetime.utcnow(),
                     )
@@ -185,18 +195,30 @@ class ErrorWatcher(commands.Cog):
                         inline=False,
                     )
 
-                    if len(ai_analysis) > 1024:
-                        ai_analysis = ai_analysis[:1021] + "..."
-                    
-                    embed.add_field(
-                        name="🤖 AI 분석 및 해결책",
-                        value=ai_analysis,
-                        inline=False
-                    )
-
                     embed.set_footer(text=f"Server: {guild.name}")
 
-                    await channel.send(embed=embed, view=ErrorManageView(self.bot))
+                    file_to_send = discord.utils.MISSING
+
+                    if len(ai_analysis) > 4000:
+                        embed.add_field(
+                            name="AI 분석",
+                            value="내용이 4000자를 초과하여 텍스트 파일로 첨부되었습니다.",
+                            inline=False
+                        )
+                        file_to_send = discord.File(
+                            io.BytesIO(ai_analysis.encode("utf-8")), 
+                            filename=f"ai_analysis_{bug['uid']}.txt"
+                        )
+                    else:
+                        chunks = [ai_analysis[i:i+1024] for i in range(0, len(ai_analysis), 1024)]
+                        for idx, chunk in enumerate(chunks):
+                            field_name = "AI 분석" if idx == 0 else f"AI 분석 (계속 {idx+1})"
+                            embed.add_field(name=field_name, value=chunk, inline=False)
+
+                    if file_to_send is not discord.utils.MISSING:
+                        await channel.send(embed=embed, view=ErrorManageView(self.bot), file=file_to_send)
+                    else:
+                        await channel.send(embed=embed, view=ErrorManageView(self.bot))
                 except Exception as e:
                     print(f"전송 실패 ({guild.name}): {e}")
 
