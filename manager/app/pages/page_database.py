@@ -290,7 +290,6 @@ class Manager_Database(Manager_Worker):
                 self.load_table(self.DBuid)
 
         try:
-            raise NotImplementedError("DB 미리보기 기능은 현재 사용할 수 없습니다")
             reply = QMessageBox.question(
                 self.main,
                 "Confirm View",
