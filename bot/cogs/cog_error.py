@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 import datetime
+from libs.llm import generateLLM
 
 
 class ErrorManageView(discord.ui.View):
@@ -115,6 +116,26 @@ class ErrorWatcher(commands.Cog):
             return
 
         for bug in bugs:
+            message = bug.get("message", "No Message")
+            
+            prompt = f"""
+            다음 에러 로그를 분석하여 개발자가 이해하기 쉽게 설명하고 해결책을 제시해줘.
+            
+            [에러 로그]
+            {message}
+
+            반드시 아래의 형식을 지켜서 답변해:
+            1. **오류 분석**: (발생 원인에 대한 간결한 설명)
+            2. **해결 방법**: (수정해야 할 코드나 단계별 해결책)
+            """
+            
+            llm_result = generateLLM(prompt)
+            
+            if isinstance(llm_result, tuple):
+                ai_analysis = "AI 분석 중 오류가 발생했습니다."
+            else:
+                ai_analysis = llm_result
+
             for guild in self.bot.guilds:
                 config = await self.bot.manager_db.auth_config.find_one(
                     {"guild_id": guild.id}
@@ -131,8 +152,8 @@ class ErrorWatcher(commands.Cog):
                     timestamp = int(bug["datetime"].timestamp())
 
                     embed = discord.Embed(
-                        title="⚠️ Error Report",
-                        description="새로운 에러가 감지되었습니다.",
+                        title="⚠️ Error Report & AI Analysis",
+                        description="새로운 에러가 감지되어 AI 분석을 완료했습니다.",
                         color=discord.Color.yellow(),
                         timestamp=datetime.datetime.utcnow(),
                     )
@@ -158,12 +179,21 @@ class ErrorWatcher(commands.Cog):
                         name="발생 시간", value=f"<t:{timestamp}:F>", inline=False
                     )
 
-                    message = bug.get("message", "No Message")
                     embed.add_field(
                         name="에러 로그",
-                        value=f"```py\n{message[:1000]}\n```",
+                        value=f"```py\n{message[:500]}...\n```",
                         inline=False,
                     )
+
+                    if len(ai_analysis) > 1024:
+                        ai_analysis = ai_analysis[:1021] + "..."
+                    
+                    embed.add_field(
+                        name="🤖 AI 분석 및 해결책",
+                        value=ai_analysis,
+                        inline=False
+                    )
+
                     embed.set_footer(text=f"Server: {guild.name}")
 
                     await channel.send(embed=embed, view=ErrorManageView(self.bot))
