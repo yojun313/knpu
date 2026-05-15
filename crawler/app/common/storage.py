@@ -75,7 +75,7 @@ def makeDB(
         log.write(msg + "\n\n")
 
     add_userlog(requesterUid, DBname)
-    
+
     return DBpath, DBuid
 
 

@@ -38,7 +38,9 @@ def _allowed(ext: str) -> bool:
 async def upload_image(
     file: UploadFile = File(...),
     object_name: str = Form("default"),
-    folder: Literal["members", "news", "papers", "gallery", "popup", "misc"] = Form("misc"),
+    folder: Literal["members", "news", "papers", "gallery", "popup", "misc"] = Form(
+        "misc"
+    ),
 ) -> JSONResponse:
     """
     * `file` : multipart/form-data 로 전송되는 이미지 파일\n

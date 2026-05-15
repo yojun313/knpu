@@ -721,7 +721,9 @@ class Manager_Web:
                 payload = dialog.get_payload()
                 Request("post", "/popups/", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
-                    self.main, "완료", f"{payload.get('title', '팝업')}이 추가되었습니다"
+                    self.main,
+                    "완료",
+                    f"{payload.get('title', '팝업')}이 추가되었습니다",
                 )
                 userLogging(f"WEB -> addHomePopup({payload.get('title')})")
                 self.refreshPopupBoard()
@@ -744,8 +746,12 @@ class Manager_Web:
                 QMessageBox.StandardButton.Yes,
             )
             if reply == QMessageBox.StandardButton.Yes:
-                Request("delete", "/popups/", HOMEPAGE_EDIT_API, params={"uid": selectedUid})
-                userLogging(f"WEB -> deleteHomePopup({self.popup_data[selectedRow]['title']})")
+                Request(
+                    "delete", "/popups/", HOMEPAGE_EDIT_API, params={"uid": selectedUid}
+                )
+                userLogging(
+                    f"WEB -> deleteHomePopup({self.popup_data[selectedRow]['title']})"
+                )
                 self.refreshPopupBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -758,7 +764,9 @@ class Manager_Web:
             if selectedRow < 0:
                 return
             selectedUid = self.popup_data[selectedRow]["uid"]
-            origin = next((p for p in self.popup_data if p.get("uid") == selectedUid), None)
+            origin = next(
+                (p for p in self.popup_data if p.get("uid") == selectedUid), None
+            )
             if not origin:
                 QMessageBox.warning(self.main, "오류", "팝업 정보를 찾을 수 없습니다.")
                 return
@@ -781,7 +789,9 @@ class Manager_Web:
             if selectedRow < 0:
                 return
             selectedUid = self.popup_data[selectedRow]["uid"]
-            origin = next((p for p in self.popup_data if p.get("uid") == selectedUid), None)
+            origin = next(
+                (p for p in self.popup_data if p.get("uid") == selectedUid), None
+            )
             if not origin:
                 QMessageBox.warning(self.main, "오류", "팝업 정보를 찾을 수 없습니다.")
                 return
