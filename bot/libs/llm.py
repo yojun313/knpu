@@ -2,9 +2,11 @@ import traceback
 from config import *
 import requests
 
+
 def get_api_headers():
     token = LLM_KEY
     return {"Authorization": f"Bearer {token}"}
+
 
 def generateLLM(query):
     try:
@@ -50,7 +52,7 @@ def generateLLM(query):
                     {"role": "user", "content": query},
                 ],
             }
-            
+
             proxy_response = requests.post(
                 f"{LLM_API_URL}/llm/v1/openai/chat/completions",
                 headers=get_api_headers(),

@@ -117,7 +117,7 @@ class ErrorWatcher(commands.Cog):
 
         for bug in bugs:
             message = bug.get("message", "No Message")
-            
+
             prompt = f"""
             다음 에러 로그를 분석하여 개발자가 이해하기 쉽게 설명하고 해결책을 제시해줘.
             
@@ -128,9 +128,9 @@ class ErrorWatcher(commands.Cog):
             1. **오류 분석**: (발생 원인에 대한 간결한 설명)
             2. **해결 방법**: (수정해야 할 코드나 단계별 해결책)
             """
-            
+
             llm_result = generateLLM(prompt)
-            
+
             if isinstance(llm_result, tuple):
                 ai_analysis = "AI 분석 중 오류가 발생했습니다."
             else:
@@ -187,11 +187,9 @@ class ErrorWatcher(commands.Cog):
 
                     if len(ai_analysis) > 1024:
                         ai_analysis = ai_analysis[:1021] + "..."
-                    
+
                     embed.add_field(
-                        name="🤖 AI 분석 및 해결책",
-                        value=ai_analysis,
-                        inline=False
+                        name="🤖 AI 분석 및 해결책", value=ai_analysis, inline=False
                     )
 
                     embed.set_footer(text=f"Server: {guild.name}")

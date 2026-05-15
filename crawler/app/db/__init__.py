@@ -63,8 +63,10 @@ manager_db = client[manager_db_name]
 user_db = manager_db["users"]
 user_logs_db = manager_db["user-logs"]
 
+
 def load_proxy_list():
     return client[crawler_db_name]["ip-list"].find_one({"_id": "proxy_list"})["list"]
+
 
 def checkState(dbUid: str):
     crawlDbList = client[crawler_db_name]["db-list"]
@@ -77,6 +79,7 @@ def checkState(dbUid: str):
             {"$set": {"state": "stopped", "finished_at": datetime.now()}},
         )
         return None
+
 
 def get_userinfo(requester: str):
     try:
@@ -92,7 +95,8 @@ def get_userinfo(requester: str):
     except Exception as e:
         logger.info(f"DB 유저 정보 가져오기 : {requester}, 에러: {e}")
         return False
-    
+
+
 def add_userlog(userUid: str, dbname: str):
     try:
         kst = ZoneInfo("Asia/Seoul")

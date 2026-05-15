@@ -112,8 +112,8 @@ def get_recent_crawlers(limit=10):
         else:
             c["size_formatted"] = f"{size_bytes / (1024**2):.1f} MB"
 
-        c["is_running"] = (c.get("status") == "running")
-        
+        c["is_running"] = c.get("status") == "running"
+
     return crawlers
 
 
