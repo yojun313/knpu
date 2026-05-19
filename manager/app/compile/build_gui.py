@@ -94,16 +94,15 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
 
     log(f"Building exe for spec: {spec_file}")
 
-    exe_name = f"MANAGER_{version}"
-    new_spec_file = os.path.join(output_directory, f"{exe_name}.spec")
-    create_spec_file(spec_file, new_spec_file, exe_name)
-
     try:
         cmd = [
-            VENV_PYTHON, "-m", "PyInstaller",
+            VENV_PYTHON,
+            "-m",
+            "PyInstaller",
             "--distpath", output_directory,
             "--workpath", os.path.join(output_directory, "build"),
-            new_spec_file,
+            "--name", f"MANAGER_{version}",
+            spec_file,
         ]
         log(f"Running PyInstaller: {' '.join(cmd)}")
 
@@ -121,9 +120,16 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
         if result.returncode != 0:
             raise subprocess.CalledProcessError(result.returncode, cmd)
 
-        log(f"Finished building {exe_name}.exe")
+        log(f"Finished building MANAGER_{version}.exe")
+
     finally:
-        ...
+        try:
+            build_path = os.path.join(output_directory, "build")
+            if os.path.exists(build_path):
+                shutil.rmtree(build_path)
+            log(f"Cleaned temporary files in {output_directory}")
+        except Exception as e:
+            log(f"Error: {e}")
 
 
 def read_latest_built_version() -> str | None:
