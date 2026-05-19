@@ -36,7 +36,7 @@ EXE_DIRECTORY = "D:/knpu/MANAGER/exe"
 OUTPUT_DIRECTORY = "D:/knpu/MANAGER/output"
 
 # 사용자 환경에 맞게 수정
-VENV_PYTHON = r"C:/Users/skroh/Documents/GitHub/knpu/.venv/Scripts/python.exe"
+VENV_PYTHON = r"C:/GitHub/knpu/venv/Scripts/python.exe"
 INNO_SETUP_EXE = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 
 from upload import upload_file  # 기존 모듈 그대로 사용
@@ -92,47 +92,34 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
+    log(f"Building exe for spec: {spec_file}")
+
+    exe_name = f"MANAGER_{version}"
+    new_spec_file = os.path.join(output_directory, f"{exe_name}.spec")
+    create_spec_file(spec_file, new_spec_file, exe_name)
+
     try:
         cmd = [
             VENV_PYTHON,
-            "-m", "PyInstaller",
-            "--distpath", output_directory,
-            "--workpath", os.path.join(output_directory, "build"),
-            spec_file,  # ✅ 원본 spec 그대로
+            "-m",
+            "PyInstaller",
+            "--distpath",
+            output_directory,
+            "--workpath",
+            os.path.join(output_directory, "build"),
+            new_spec_file,
         ]
         log(f"Running PyInstaller: {' '.join(cmd)}")
-
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-
-        for line in process.stdout:
-            log(line.rstrip())
-
-        process.wait()
-
-        if process.returncode != 0:
-            raise subprocess.CalledProcessError(process.returncode, cmd)
-
-        built_path = os.path.join(output_directory, "MANAGER")
-        versioned_path = os.path.join(output_directory, f"MANAGER_{version}")
-        if os.path.exists(versioned_path):
-            shutil.rmtree(versioned_path)
-        os.rename(built_path, versioned_path)
-
-        log(f"Finished building MANAGER_{version}.exe")
-
+        subprocess.run(cmd, check=True)
+        log(f"Finished building {exe_name}.exe")
     finally:
         try:
-            build_path = os.path.join(output_directory, "build")
+            if os.path.exists(new_spec_file):
+                os.remove(new_spec_file)
+            build_path = os.path.join(os.path.dirname(new_spec_file), "build")
             if os.path.exists(build_path):
                 shutil.rmtree(build_path)
-            log(f"Cleaned temporary files in {output_directory}")
+            log(f"Cleaned temporary files in {os.path.dirname(new_spec_file)}")
         except Exception as e:
             log(f"Error: {e}")
 
