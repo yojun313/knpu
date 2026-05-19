@@ -25,6 +25,12 @@ required-markers = [
     "platform_machine == 'x86_64' and sys_platform == 'darwin'",
 ]
 
+[manifest]
+members = [
+    "app",
+    "knpu",
+]
+
 [[package]]
 name = "accelerate"
 version = "1.13.0"
@@ -198,6 +204,57 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/19/14/2c5dd9f512b66549ae92767a9c7b330ae88e1932ca57876909410251fe13/anyio-4.13.0.tar.gz", hash = "sha256:334b70e641fd2221c1505b3890c69882fe4a2df910cba14d97019b90b24439dc", size = 231622, upload-time = "2026-03-24T12:59:09.671Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/da/42/e921fccf5015463e32a3cf6ee7f980a6ed0f395ceeaa45060b61d86486c2/anyio-4.13.0-py3-none-any.whl", hash = "sha256:08b310f9e24a9594186fd75b4f73f4a4152069e3853f1ed8bfbf58369f4ad708", size = 114353, upload-time = "2026-03-24T12:59:08.246Z" },
+]
+
+[[package]]
+name = "app"
+version = "0.1.0"
+source = { virtual = "manager/app" }
+dependencies = [
+    { name = "bcrypt" },
+    { name = "boto3" },
+    { name = "chardet" },
+    { name = "googletrans" },
+    { name = "httpx" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "openai" },
+    { name = "packaging" },
+    { name = "pandas" },
+    { name = "pillow" },
+    { name = "pyside6" },
+    { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "requests-toolbelt" },
+    { name = "rich" },
+    { name = "seaborn" },
+    { name = "typing-extensions" },
+    { name = "urllib3" },
+    { name = "wordcloud" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bcrypt", specifier = ">=5.0.0" },
+    { name = "boto3", specifier = ">=1.43.3" },
+    { name = "chardet", specifier = ">=7.4.3" },
+    { name = "googletrans", specifier = ">=4.0.2" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "matplotlib", specifier = ">=3.10.9" },
+    { name = "numpy", specifier = ">=2.4.4" },
+    { name = "openai", specifier = ">=2.34.0" },
+    { name = "packaging", specifier = ">=26.2" },
+    { name = "pandas", specifier = ">=3.0.2" },
+    { name = "pillow", specifier = ">=12.2.0" },
+    { name = "pyside6", specifier = ">=6.11.0" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "requests", specifier = ">=2.33.1" },
+    { name = "requests-toolbelt", specifier = ">=1.0.0" },
+    { name = "rich", specifier = ">=15.0.0" },
+    { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "typing-extensions", specifier = ">=4.15.0" },
+    { name = "urllib3", specifier = ">=2.6.3" },
+    { name = "wordcloud", specifier = ">=1.9.6" },
 ]
 
 [[package]]
