@@ -36,6 +36,7 @@ dependencies = [
     "psutil>=7.2.2",
     "pyarrow>=24.0.0",
     "pydantic>=2.13.3",
+    "pyinstaller>=6.20.0",
     "pyjwt>=2.12.1",
     "pymongo>=4.17.0",
     "pymysql>=1.1.3",
