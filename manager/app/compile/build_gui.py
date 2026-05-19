@@ -100,17 +100,28 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
 
     try:
         cmd = [
-            VENV_PYTHON,
-            "-m",
-            "PyInstaller",
-            "--distpath",
-            output_directory,
-            "--workpath",
-            os.path.join(output_directory, "build"),
+            VENV_PYTHON, "-m", "PyInstaller",
+            "--distpath", output_directory,
+            "--workpath", os.path.join(output_directory, "build"),
             new_spec_file,
         ]
         log(f"Running PyInstaller: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True)
+
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        for line in process.stdout:
+            log(line.rstrip())
+        process.wait()
+
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, cmd)
+
         log(f"Finished building {exe_name}.exe")
     finally:
         try:
@@ -122,7 +133,7 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
             log(f"Cleaned temporary files in {os.path.dirname(new_spec_file)}")
         except Exception as e:
             log(f"Error: {e}")
-
+            
 
 def read_latest_built_version() -> str | None:
     """
@@ -258,7 +269,20 @@ class BuildWorker(QObject):
             temp_iss_path = update_inno_version(self.iss_path, target_version)
 
             self._log("Inno Setup 실행 중...")
-            subprocess.run([INNO_SETUP_EXE, temp_iss_path], check=True)
+            process = subprocess.Popen(
+                [INNO_SETUP_EXE, temp_iss_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            for line in process.stdout:
+                self._log(line.rstrip())
+            process.wait()
+
+            if process.returncode != 0:
+                raise subprocess.CalledProcessError(process.returncode, [INNO_SETUP_EXE])
             self._log("Inno Setup 완료")
 
             try:
