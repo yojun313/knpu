@@ -92,17 +92,13 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
-    log(f"Building exe for spec: {spec_file}")
-
     try:
         cmd = [
             VENV_PYTHON,
-            "-m",
-            "PyInstaller",
+            "-m", "PyInstaller",
             "--distpath", output_directory,
             "--workpath", os.path.join(output_directory, "build"),
-            "--name", f"MANAGER_{version}",
-            spec_file,
+            spec_file,  # ✅ 원본 spec 그대로
         ]
         log(f"Running PyInstaller: {' '.join(cmd)}")
 
@@ -119,6 +115,12 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
 
         if result.returncode != 0:
             raise subprocess.CalledProcessError(result.returncode, cmd)
+
+        built_path = os.path.join(output_directory, "MANAGER")
+        versioned_path = os.path.join(output_directory, f"MANAGER_{version}")
+        if os.path.exists(versioned_path):
+            shutil.rmtree(versioned_path)
+        os.rename(built_path, versioned_path)
 
         log(f"Finished building MANAGER_{version}.exe")
 
