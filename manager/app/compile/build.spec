@@ -4,7 +4,7 @@ import glob
 import re
 from PyInstaller.utils.hooks import collect_submodules
 
-COMPILE_PATH = os.path.dirname(os.path.abspath(__file__))
+COMPILE_PATH = r"C:\Users\skroh\Documents\GitHub\knpu\manager\app\compile"
 ROOT_PATH = os.path.abspath(os.path.join(COMPILE_PATH, ".."))
 APP_PATH = ROOT_PATH
 ASSETS_PATH = os.path.join(APP_PATH, "assets")
