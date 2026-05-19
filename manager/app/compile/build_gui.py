@@ -114,6 +114,7 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
             text=True,
             encoding="utf-8",
             errors="replace",
+            creationflags=subprocess.CREATE_NO_WINDOW,
         )
         for line in process.stdout:
             log(line.rstrip())
@@ -276,6 +277,7 @@ class BuildWorker(QObject):
                 text=True,
                 encoding="utf-8",
                 errors="replace",
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
             for line in process.stdout:
                 self._log(line.rstrip())
