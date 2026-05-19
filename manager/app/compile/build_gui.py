@@ -103,7 +103,6 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
             VENV_PYTHON, "-m", "PyInstaller",
             "--distpath", output_directory,
             "--workpath", os.path.join(output_directory, "build"),
-            "--specpath", os.path.dirname(spec_file),  # ✅ 추가
             new_spec_file,
         ]
         log(f"Running PyInstaller: {' '.join(cmd)}")
