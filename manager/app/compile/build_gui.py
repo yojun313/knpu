@@ -100,28 +100,31 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
 
     try:
         cmd = [
-            VENV_PYTHON,
-            "-m",
-            "PyInstaller",
-            "--distpath",
-            output_directory,
-            "--workpath",
-            os.path.join(output_directory, "build"),
+            VENV_PYTHON, "-m", "PyInstaller",
+            "--distpath", output_directory,
+            "--workpath", os.path.join(output_directory, "build"),
+            "--specpath", os.path.dirname(spec_file),  # ✅ 추가
             new_spec_file,
         ]
         log(f"Running PyInstaller: {' '.join(cmd)}")
-        subprocess.run(cmd, check=True)
+
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        for line in result.stdout.splitlines():
+            log(line)
+
+        if result.returncode != 0:
+            raise subprocess.CalledProcessError(result.returncode, cmd)
+
         log(f"Finished building {exe_name}.exe")
     finally:
-        try:
-            if os.path.exists(new_spec_file):
-                os.remove(new_spec_file)
-            build_path = os.path.join(os.path.dirname(new_spec_file), "build")
-            if os.path.exists(build_path):
-                shutil.rmtree(build_path)
-            log(f"Cleaned temporary files in {os.path.dirname(new_spec_file)}")
-        except Exception as e:
-            log(f"Error: {e}")
+        ...
 
 
 def read_latest_built_version() -> str | None:
