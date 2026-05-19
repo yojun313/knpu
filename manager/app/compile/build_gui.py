@@ -36,7 +36,7 @@ EXE_DIRECTORY = "D:/knpu/MANAGER/exe"
 OUTPUT_DIRECTORY = "D:/knpu/MANAGER/output"
 
 # 사용자 환경에 맞게 수정
-VENV_PYTHON = r"C:/GitHub/knpu/venv/Scripts/python.exe"
+VENV_PYTHON = r"C:/Users/skroh/Documents/GitHub/knpu/.venv/Scripts/python.exe"
 INNO_SETUP_EXE = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 
 from upload import upload_file  # 기존 모듈 그대로 사용
