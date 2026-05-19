@@ -102,7 +102,7 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
         ]
         log(f"Running PyInstaller: {' '.join(cmd)}")
 
-        result = subprocess.run(
+        process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -110,11 +110,14 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
             encoding="utf-8",
             errors="replace",
         )
-        for line in result.stdout.splitlines():
-            log(line)
 
-        if result.returncode != 0:
-            raise subprocess.CalledProcessError(result.returncode, cmd)
+        for line in process.stdout:
+            log(line.rstrip())
+
+        process.wait()
+
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, cmd)
 
         built_path = os.path.join(output_directory, "MANAGER")
         versioned_path = os.path.join(output_directory, f"MANAGER_{version}")
