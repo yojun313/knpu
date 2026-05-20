@@ -94,7 +94,6 @@ def getVersionInfo(version):
 
 def checkNewVersion():
     newestVersion = Request("get", "/board/version/newest").json()["data"]
-    print(newestVersion)
     currentVersion = version.parse(VERSION)
     newVersion = version.parse(newestVersion[0])
     return newestVersion if currentVersion < newVersion else None
