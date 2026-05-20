@@ -330,10 +330,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.Yes,
         )
+
         if reply == QMessageBox.StandardButton.Yes:
             try:
                 userLogging("Shutdown")
                 self.cleanUpTemp()
+
+                import main
+
+                if main.shared_memory and main.shared_memory.isAttached():
+                    main.shared_memory.detach()
+
             except Exception as e:
                 print(traceback.format_exc())
 
