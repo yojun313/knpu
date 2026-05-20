@@ -25,21 +25,12 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 from dotenv import load_dotenv
+from config import VENV_PYTHON, INNO_SETUP_EXE, EXE_DIRECTORY, OUTPUT_DIRECTORY
 
 load_dotenv()
 
-# ----------------------------------------
-# 기존 상수/함수들
-# ----------------------------------------
 
-EXE_DIRECTORY = "D:/knpu/MANAGER/exe"
-OUTPUT_DIRECTORY = "D:/knpu/MANAGER/output"
-
-# 사용자 환경에 맞게 수정
-VENV_PYTHON = r"C:/GitHub/knpu/venv/Scripts/python.exe"
-INNO_SETUP_EXE = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-
-from upload import upload_file  # 기존 모듈 그대로 사용
+from upload import upload_file  
 
 
 def sendPushOver(msg):
@@ -100,9 +91,13 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
 
     try:
         cmd = [
-            VENV_PYTHON, "-m", "PyInstaller",
-            "--distpath", output_directory,
-            "--workpath", os.path.join(output_directory, "build"),
+            VENV_PYTHON,
+            "-m",
+            "PyInstaller",
+            "--distpath",
+            output_directory,
+            "--workpath",
+            os.path.join(output_directory, "build"),
             new_spec_file,
         ]
         log(f"Running PyInstaller: {' '.join(cmd)}")
@@ -134,7 +129,7 @@ def build_exe_from_spec(spec_file, output_directory, version, log_func=None):
             log(f"Cleaned temporary files in {os.path.dirname(new_spec_file)}")
         except Exception as e:
             log(f"Error: {e}")
-            
+
 
 def read_latest_built_version() -> str | None:
     """
@@ -284,7 +279,9 @@ class BuildWorker(QObject):
             process.wait()
 
             if process.returncode != 0:
-                raise subprocess.CalledProcessError(process.returncode, [INNO_SETUP_EXE])
+                raise subprocess.CalledProcessError(
+                    process.returncode, [INNO_SETUP_EXE]
+                )
             self._log("Inno Setup 완료")
 
             try:

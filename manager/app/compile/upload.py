@@ -2,25 +2,20 @@ import boto3
 import os
 import re
 from dotenv import load_dotenv
+from config import (
+    R2_ENDPOINT,
+    ACCESS_KEY_ID,
+    SECRET_ACCESS_KEY,
+    ACCOUNT_ID,
+    BUCKET_NAME,
+    OUTPUT_DIRECTORY,
+)
 
 load_dotenv()
-
-# === 사용자 설정 ===
-ACCESS_KEY_ID = os.getenv("ACCESS_KEY_ID")
-SECRET_ACCESS_KEY = os.getenv("SECRET_ACCESS_KEY")
-ACCOUNT_ID = os.getenv("ACCOUNT_ID")
-BUCKET_NAME = os.getenv("BUCKET_NAME")
-LOCAL_FOLDER = "D:/knpu/MANAGER/output"  # 파일이 있는 경로
-R2_ENDPOINT = f"https://{ACCOUNT_ID}.r2.cloudflarestorage.com"
-
-# 버전 문자열을 비교 가능한 튜플로 변환 (예: '2.7.1' → (2, 7, 1))
 
 
 def parse_version(version_str):
     return tuple(map(int, version_str.split(".")))
-
-
-# 폴더 내 가장 최신 버전 파일 찾기
 
 
 def find_latest_version_file():
@@ -28,7 +23,7 @@ def find_latest_version_file():
     latest_file = None
     latest_version = (0, 0, 0)
 
-    for filename in os.listdir(LOCAL_FOLDER):
+    for filename in os.listdir(OUTPUT_DIRECTORY):
         match = version_pattern.match(filename)
         if match:
             version = match.group(1)
