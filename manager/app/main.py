@@ -12,6 +12,7 @@ from PySide6.QtGui import QIcon, QGuiApplication
 from config import ASSETS_PATH
 from packaging import version
 
+os.environ["QT_LOGGING_RULES"] = "*.warning=false"
 
 def build_app():
     if version.parse(VERSION) < version.parse(get_setting("LastVersion")):

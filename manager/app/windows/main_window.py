@@ -336,10 +336,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 userLogging("Shutdown")
                 self.cleanUpTemp()
 
-                import main
-
-                if main.shared_memory and main.shared_memory.isAttached():
-                    main.shared_memory.detach()
+                app = QApplication.instance()
+                if hasattr(app, 'shared_memory'):
+                    if app.shared_memory.isAttached():
+                        app.shared_memory.detach()
 
             except Exception as e:
                 print(traceback.format_exc())
@@ -348,7 +348,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             event.accept()
         else:
             event.ignore()
-
+    
     def cleanUpTemp(self):
         if platform.system() != "Windows":
             return
