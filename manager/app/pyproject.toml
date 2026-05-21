@@ -1,7 +1,7 @@
 [project]
 name = "manager-app"
 version = "0.1.0"
-description = "Add your description here"
+description = "KNPU MANAGER App"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
