@@ -1,7 +1,8 @@
-from app.models.analysis_model import *
+from app.models.analysis_model import KemKimOption
 from app.libs.kemkim import KemKim
-from app.libs.progress import *
+from app.libs.progress import send_message
 import os
+import traceback
 
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"

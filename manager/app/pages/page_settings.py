@@ -1,3 +1,8 @@
+from datetime import datetime
+import platform
+import os
+import requests
+
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -13,17 +18,12 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QKeySequence, QFont, QShortcut
-from core.setting import *
-from config import VERSION
-from datetime import datetime
-import platform
-import os
-import requests
-from config import *
-from ui.finder import *
-from ui.dialogs import *
-from libs.path import *
+from core.setting import set_setting, get_setting
+from ui.finder import openFileResult
+from ui.dialogs import BaseDialog
+from libs.path import safe_path
 from services.logging import userLogging
+from config import VERSION, MANAGER_SERVER_API
 
 
 class Manager_Setting(BaseDialog):

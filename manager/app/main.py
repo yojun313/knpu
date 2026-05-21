@@ -14,6 +14,7 @@ from packaging import version
 
 os.environ["QT_LOGGING_RULES"] = "*.warning=false"
 
+
 def build_app():
     if version.parse(VERSION) < version.parse(get_setting("LastVersion")):
         set_setting("LastVersion", VERSION)

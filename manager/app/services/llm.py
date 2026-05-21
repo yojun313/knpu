@@ -1,7 +1,6 @@
 import traceback
 from openai import OpenAI
-from services.api import *
-from config import *
+from services.api import Request
 from core.setting import get_setting
 
 

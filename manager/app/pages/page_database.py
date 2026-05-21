@@ -16,7 +16,7 @@ import zipfile
 import bcrypt
 import webbrowser
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import QThread, Signal, QSettings
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QWidget,
@@ -32,22 +32,20 @@ from PySide6.QtWidgets import (
     QSpacerItem,
     QHBoxLayout,
 )
+from PySide6.QtWidgets import QApplication, QLineEdit
 from urllib.parse import unquote
-from libs.viewer import *
-from libs.path import *
-from ui.table import *
-from ui.status import *
-from ui.finder import *
-from ui.dialogs import *
-from services.crawldb import *
-from services.api import *
-from services.logging import *
-from services.update import *
-from core.setting import *
-from core.shortcut import *
-from core.thread import *
-from core.auth import *
-from config import *
+from libs.viewer import register_process
+from ui.table import makeTable
+from ui.status import register_thread
+from ui.dialogs import SaveDbDialog
+from services.crawldb import updateDB
+from services.logging import userLogging, programBugLog, printStatus
+from services.api import Request
+from services.update import updateProgram
+from core.shortcut import resetShortcuts
+from core.thread import BaseWorker, DownloadDialog
+from core.auth import get_setting, set_setting, checkPassword
+from config import ADMIN_PASSWORD
 from .page_worker import Manager_Worker
 
 warnings.filterwarnings("ignore")

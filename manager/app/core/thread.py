@@ -11,8 +11,6 @@ from ui.dialogs import BaseDialog
 from PySide6.QtCore import Qt, Signal, QUrl, QTimer, QThread
 from PySide6.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QProgressBar
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from services.api import *
-from services.logging import *
 from config import MANAGER_PROGRESS_API
 
 VIEW_SERVER = MANAGER_PROGRESS_API
