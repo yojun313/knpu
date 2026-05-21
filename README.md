@@ -46,6 +46,6 @@ uv sync -p homepage -p admin
 uv sync -p crawler
 ```
     
-### Footer
+---
 © 2026 **PAILAB**. All rights reserved.
 Developed by [**Yojun Moon**](https://github.com/yojun313)
