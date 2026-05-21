@@ -1,0 +1,16 @@
+[project]
+name = "homepage"
+version = "0.1.0"
+description = "KNPU homepage system"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.43.3",
+    "fastapi>=0.136.1",
+    "pydantic>=2.13.3",
+    "pyjwt>=2.12.1",
+    "pymongo>=4.17.0",
+    "python-dotenv>=1.2.2",
+    "sshtunnel>=0.4.0",
+    "uvicorn>=0.46.0",
+]
