@@ -25,14 +25,15 @@ from PySide6.QtWidgets import (
     QApplication,
     QDoubleSpinBox,
 )
-from services.api import *
-from services.logging import *
+from config import HOMEPAGE_EDIT_API
+from services.api import upload_homepage_image
 from PySide6.QtGui import QKeySequence, QFont, QShortcut, QFontMetrics, QPixmap
 from datetime import datetime
 from services.api import Request
 from typing import Callable
 import httpx
 import uuid
+import os
 
 
 class BaseDialog(QDialog):

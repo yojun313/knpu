@@ -1,6 +1,6 @@
 from ui.finder import openFileResult
 from PySide6.QtWidgets import QMessageBox
-from services.logging import *
+from services.logging import programBugLog
 from ui.status import unregister_thread, printStatus
 
 

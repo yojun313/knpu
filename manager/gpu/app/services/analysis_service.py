@@ -4,8 +4,8 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
-from app.models.analysis_model import *
-from app.libs.progress import *
+from app.models.analysis_model import HateOption
+from app.libs.progress import send_message
 import pandas as pd
 import torch
 from transformers import (

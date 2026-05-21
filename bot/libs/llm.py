@@ -1,5 +1,5 @@
 import traceback
-from config import *
+from config import LLM_API_URL, LLM_KEY
 import requests
 
 

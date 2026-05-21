@@ -2,13 +2,12 @@ import traceback
 import warnings
 from PySide6.QtWidgets import QMessageBox
 import bcrypt
-from config import *
-from ui.table import *
-from ui.status import *
-from services.api import *
-from services.logging import *
-from core.shortcut import *
-from core.auth import *
+from config import ADMIN_PASSWORD, VERSION
+from ui.table import makeTable
+from services.api import Request
+from services.logging import programBugLog, printStatus
+from core.shortcut import resetShortcuts
+from core.auth import checkPassword
 
 warnings.filterwarnings("ignore")
 
