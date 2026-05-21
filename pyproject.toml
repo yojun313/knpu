@@ -75,4 +75,9 @@ dependencies = [
 [tool.uv.workspace]
 members = [
     "manager/app",
+    "homepage",
+    "crawler",
+    "complaint",
+    "bot",
+    "admin",
 ]

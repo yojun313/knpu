@@ -1,0 +1,26 @@
+[project]
+name = "crawler"
+version = "0.1.0"
+description = "KNPU crawler system"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "fastapi>=0.136.1",
+    "google-api-python-client>=2.195.0",
+    "kiwipiepy>=0.23.1",
+    "nltk>=3.9.4",
+    "pandas>=3.0.2",
+    "pydantic>=2.13.3",
+    "pyjwt>=2.12.1",
+    "pymongo>=4.17.0",
+    "pyside6>=6.11.0",
+    "python-dotenv>=1.2.2",
+    "requests>=2.33.1",
+    "rich>=15.0.0",
+    "sshtunnel>=0.4.0",
+    "starlette>=1.0.0",
+    "urllib3>=2.6.3",
+    "user-agent>=0.1.14",
+    "uvicorn>=0.46.0",
+]
