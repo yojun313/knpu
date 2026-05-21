@@ -73,7 +73,7 @@ required-environments = [
 
 [tool.uv.workspace]
 members = [
-    "manager",
+    "manager/app",
     "homepage",
     "crawler",
     "complaint",
