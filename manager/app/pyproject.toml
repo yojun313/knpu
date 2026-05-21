@@ -1,5 +1,5 @@
 [project]
-name = "manager-app"
+name = "app"
 version = "0.1.0"
 description = "KNPU MANAGER App"
 readme = "README.md"
