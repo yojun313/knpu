@@ -30,20 +30,23 @@ Research System for **PAILAB** at **Korea National Police University**.
 
 ## Development & Operations
 
-This system utilizes a `uv` workspace structure for centralized dependency management. Use the following commands to selectively synchronize dependencies or run specific services simultaneously.
+This system manages dependencies independently for each service. Each subdirectory contains its own project configuration. To develop or run a specific service, navigate to its directory and set up a dedicated virtual environment (`.venv`).
 
-### Selective Dependency Synchronization (Dependency Sync)
-Instead of syncing the entire workspace, you can combine the `-p` (`--package`) flags to reflect dependencies of only the specific services you are developing into the virtual environment (`.venv`).
+### Isolated Dependency Synchronization (Standalone Environment)
+Instead of sharing a single virtual environment across the entire repository, you should navigate to the specific service directory you are working on and synchronize its dependencies independently.
 
 ```bash
-# Example 1. Sync All
+# Example 1: Set up and sync the homepage system standalone
+cd homepage
 uv sync
 
-# Example 2: Sync specific services (homepage and admin) simultaneously
-uv sync -p homepage -p admin
+# Example 2: Set up and sync the admin system standalone
+cd admin
+uv sync
 
-# Example 3: Sync the crawler system standalone
-uv sync -p crawler
+# Example 3: Set up and sync the crawler system standalone
+cd crawler
+uv sync
 ```
     
 ---
