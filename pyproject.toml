@@ -10,7 +10,6 @@ dependencies = [
     "asyncio>=4.0.0",
     "bcrypt>=5.0.0",
     "beautifulsoup4>=4.14.3",
-    "boto3>=1.43.3",
     "chardet>=7.4.3",
     "cryptography>=48.0.0",
     "discord-py>=2.7.1",
@@ -74,7 +73,7 @@ required-environments = [
 
 [tool.uv.workspace]
 members = [
-    "manager/app",
+    "manager-app",
     "homepage",
     "crawler",
     "complaint",
