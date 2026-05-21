@@ -22,6 +22,15 @@ def build_app():
     os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
     os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
 
+    if sys.platform == "win32":
+        os.environ["QT_USE_PHYSICAL_DPI"] = "1"
+        os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
+            "--enable-gpu-rasterization "
+            "--enable-zero-copy "
+            "--disable-gpu-driver-bug-workarounds "
+            "--force-device-scale-factor=1"
+        )
+
     QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
@@ -40,7 +49,10 @@ def build_app():
         families = QFontDatabase.applicationFontFamilies(font_id)
         if families:
             app_font = QFont(families[0], 10)
-            app_font.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
+            app_font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+            app_font.setStyleStrategy(
+                QFont.StyleStrategy.PreferAntialias | QFont.StyleStrategy.PreferQuality
+            )
             app.setFont(app_font)
 
     theme = get_setting("Theme", "default")
@@ -74,7 +86,22 @@ def build_app():
     return app, theme
 
 
+def set_windows_dpi_awareness():
+    """Windows에서 Per-Monitor DPI v2 설정"""
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)
+        except Exception:
+            try:
+                ctypes.windll.user32.SetProcessDPIAware()
+            except Exception:
+                pass
+
+
 def main():
+    set_windows_dpi_awareness()
     shared_memory = QSharedMemory("PAILAB_MANAGER_UNIQUE_KEY")
     if not shared_memory.create(1):
         if shared_memory.attach():
