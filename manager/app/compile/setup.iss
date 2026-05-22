@@ -20,7 +20,6 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 DefaultDirName={localappdata}\{#MyAppName}  
 PrivilegesRequired=lowest                    
-AppId={{E9F30387-A1A2-479B-80C3-9ABABED9C40D}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
