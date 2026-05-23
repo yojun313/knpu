@@ -6,9 +6,11 @@ from config import (
     ACCOUNT_ID,
     BUCKET_NAME,
     OUTPUT_DIRECTORY,
+    R2_ENDPOINT,
+    ACCESS_KEY_ID,
 )
 import os
-import requests
+import boto3
 
 load_dotenv()
 
@@ -40,20 +42,21 @@ def upload_file(local_path):
         print(f"[❌] 파일을 찾을 수 없습니다: {local_path}")
         return
 
-    url = f"https://{ACCOUNT_ID}.r2.cloudflarestorage.com/{BUCKET_NAME}/{filename}"
-    headers = {"X-Custom-Auth-Key": SECRET_ACCESS_KEY}
+    session = boto3.session.Session()
+    client = session.client(
+        "s3",
+        region_name="auto",
+        endpoint_url=R2_ENDPOINT,
+        aws_access_key_id=ACCESS_KEY_ID,
+        aws_secret_access_key=SECRET_ACCESS_KEY,
+    )
 
     try:
         print(f"[⏫] 업로드 중: {filename} → R2 버킷 '{BUCKET_NAME}'")
-        with open(local_path, "rb") as f:
-            response = requests.put(url, headers=headers, data=f)
-
-        if response.status_code == 200:
-            print(f"[✅] 업로드 완료: {url}")
-        else:
-            print(
-                f"[❌] 업로드 실패 (상태 코드: {response.status_code}): {response.text}"
-            )
+        client.upload_file(local_path, BUCKET_NAME, filename)
+        print(
+            f"[✅] 업로드 완료: https://{ACCOUNT_ID}.r2.cloudflarestorage.com/{BUCKET_NAME}/{filename}"
+        )
     except Exception as e:
         print(f"[❌] 업로드 실패: {e}")
 
