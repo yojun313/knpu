@@ -1,5 +1,5 @@
 from app.db import crawlList_db, crawlLog_db, user_db, crawldata_path
-from app.libs.exceptions import ConflictException, NotFoundException
+from app.libs.exceptions import ConflictException, NotFoundException, HTTPException
 from app.models.crawl_model import (
     CrawlDbCreateDto,
     CrawlLogUpdateDto,
