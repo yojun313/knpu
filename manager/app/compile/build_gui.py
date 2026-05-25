@@ -25,12 +25,10 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 from dotenv import load_dotenv
-from config import VENV_PYTHON, INNO_SETUP_EXE, EXE_DIRECTORY, OUTPUT_DIRECTORY
 
 load_dotenv()
-
-
-from upload import upload_file  
+from config import VENV_PYTHON, INNO_SETUP_EXE, EXE_DIRECTORY, OUTPUT_DIRECTORY
+from upload import upload_file
 
 
 def sendPushOver(msg):
