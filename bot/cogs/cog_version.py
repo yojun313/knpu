@@ -7,8 +7,8 @@ class VersionBoardPoller(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.version_board_col = self.bot.db["version-board"]
-        self.auth_config_col = self.bot.db["auth_config"]
+        self.version_board_col = self.bot.manager_db["version-board"]
+        self.auth_config_col = self.bot.manager_db["auth_config"]
 
         self.polling_task = self.bot.loop.create_task(self.start_polling())
 
