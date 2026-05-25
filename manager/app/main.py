@@ -75,8 +75,12 @@ def build_app():
 def main():
     shared_memory = QSharedMemory("PAILAB_MANAGER_UNIQUE_KEY")
     if not shared_memory.create(1):
-        print("프로그램이 이미 실행 중입니다.")
-        sys.exit(0)
+        if shared_memory.attach():
+            shared_memory.detach()
+        
+        if not shared_memory.create(1):
+            print("프로그램이 이미 실행 중입니다.")
+            sys.exit(0)
 
     app, theme = build_app()
 
