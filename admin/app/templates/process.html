@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <div class="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
     <div>
-        <h2 class="text-2xl font-bold text-white tracking-tight">Process Manager</h2>
-        <p class="text-zinc-400 text-sm">실시간 프로세스 모니터링 및 자원 제어</p>
+        <h2 class="text-2xl font-bold text-white tracking-tight">Process & Server Manager</h2>
+        <p class="text-zinc-400 text-sm">실시간 시스템 리소스 및 PM2 프로세스 제어</p>
     </div>
 
     <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-        <!-- Startup 상태 배지 -->
         <div id="startupBadge" class="px-3 py-2 rounded-lg text-[11px] font-bold border border-zinc-800 bg-zinc-900/50 text-zinc-500 transition-all">
             STARTUP: CHECKING...
         </div>
@@ -19,7 +20,6 @@
             <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" x1="21" x2="16.65" y2="16.65"></line></svg>
         </div>
 
-        <!-- Save 버튼 (pm2 save) -->
         <button onclick="savePM2()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
             저장 (Save)
@@ -29,6 +29,83 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
             새로고침
         </button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-sm flex flex-col justify-between">
+        <div>
+            <div class="flex justify-between items-center">
+                <p class="text-xs text-zinc-500 font-bold uppercase tracking-wider">CPU Total</p>
+                <span id="srvCpuCount" class="text-[10px] bg-zinc-800 text-zinc-400 font-mono px-2 py-0.5 rounded"></span>
+            </div>
+            <h3 id="srvCpuText" class="text-3xl font-mono font-bold text-emerald-400 mt-2">0.0 %</h3>
+        </div>
+        <div class="mt-4 max-h-48 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-800" id="srvCpuCoresWrapper">
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1.5" id="srvCpuCoresContainer"></div>
+        </div>
+    </div>
+
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-sm flex flex-col justify-between">
+        <div>
+            <p class="text-xs text-zinc-500 font-bold uppercase tracking-wider">Memory (RAM / Swap)</p>
+            <h3 id="srvMemText" class="text-2xl font-mono font-bold text-blue-400 mt-2">0 GB / 0 GB</h3>
+        </div>
+        <div class="mt-4 space-y-3">
+            <div>
+                <div class="flex justify-between text-[11px] text-zinc-400 mb-1 font-mono">
+                    <span>RAM <span id="srvMemPercent">0%</span></span>
+                    <span id="srvMemDetail" class="text-zinc-500">0/0 GB</span>
+                </div>
+                <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                    <div id="srvMemBar" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-[11px] text-zinc-400 mb-1 font-mono">
+                    <span>SWAP <span id="srvSwapPercent">0%</span></span>
+                    <span id="srvSwapDetail" class="text-zinc-500">0/0 GB</span>
+                </div>
+                <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                    <div id="srvSwapBar" class="h-full bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-sm flex flex-col justify-between">
+        <div>
+            <p class="text-xs text-zinc-500 font-bold uppercase tracking-wider">Disk Usage (Root)</p>
+            <h3 id="srvDiskText" class="text-2xl font-mono font-bold text-orange-400 mt-2">0.0 %</h3>
+            <p id="srvDiskDetail" class="text-xs text-zinc-500 font-mono mt-1">Used: 0 GB / Free: 0 GB</p>
+        </div>
+        <div class="mt-4">
+            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div id="srvDiskBar" class="h-full bg-orange-400 transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-sm flex flex-col justify-between">
+        <div>
+            <p class="text-xs text-zinc-500 font-bold uppercase tracking-wider">Network Traffic</p>
+            <div class="mt-3 space-y-2 font-mono text-sm">
+                <div class="flex items-center gap-2 text-zinc-300">
+                    <svg class="text-emerald-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-zinc-500 font-sans font-bold uppercase">Received</span>
+                        <span id="srvNetRecv" class="text-zinc-200">0.00 MB</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-zinc-300 border-t border-zinc-800/60 pt-2">
+                    <svg class="text-blue-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-zinc-500 font-sans font-bold uppercase">Sent</span>
+                        <span id="srvNetSent" class="text-zinc-200">0.00 MB</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -50,7 +127,12 @@
                 {% for proc in processes %}
                 <tr id="proc-{{ proc.name }}" class="proc-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors" data-name="{{ proc.name }}">
                     <td class="p-4">
-                        <div class="font-bold text-zinc-100">{{ proc.name }}</div>
+                        <div class="font-bold text-zinc-100 flex items-center gap-2">
+                            {{ proc.name }}
+                            <button onclick="toggleChart('{{ proc.name }}')" class="text-zinc-500 hover:text-zinc-300 p-0.5" title="자원 그래프 보기">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                            </button>
+                        </div>
                         <div class="text-[10px] text-zinc-500 uppercase font-mono mt-0.5">PM2 ID: {{ proc.pm_id }}</div>
                     </td>
                     <td class="p-4 status-cell">
@@ -91,6 +173,13 @@
                         </div>
                     </td>
                 </tr>
+                <tr id="chart-row-{{ proc.name }}" class="hidden bg-black/20 border-b border-zinc-800/30">
+                    <td colspan="7" class="p-4">
+                        <div class="w-full h-32">
+                            <canvas id="chart-{{ proc.name }}"></canvas>
+                        </div>
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -120,8 +209,71 @@
 
 <script>
 let logSocket = null;
+const charts = {};
+const maxDataPoints = 20;
 
-// Startup 등록 여부 확인
+function initChart(name) {
+    const ctx = document.getElementById(`chart-${name}`).getContext('2d');
+    charts[name] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array(maxDataPoints).fill(''),
+            datasets: [
+                {
+                    label: 'CPU (%)',
+                    borderColor: '#10b981',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    data: Array(maxDataPoints).fill(0),
+                    tension: 0.3,
+                    yAxisID: 'y-cpu'
+                },
+                {
+                    label: 'Mem (MB)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    data: Array(maxDataPoints).fill(0),
+                    tension: 0.3,
+                    yAxisID: 'y-mem'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { display: false },
+                'y-cpu': {
+                    type: 'linear',
+                    position: 'left',
+                    min: 0,
+                    max: 100,
+                    grid: { color: '#27272a' },
+                    ticks: { color: '#71717a', font: { size: 9 } }
+                },
+                'y-mem': {
+                    type: 'linear',
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    ticks: { color: '#71717a', font: { size: 9 } }
+                }
+            }
+        }
+    });
+}
+
+function toggleChart(name) {
+    const row = document.getElementById(`chart-row-${name}`);
+    if (row.classList.contains('hidden')) {
+        row.classList.remove('hidden');
+        if (!charts[name]) initChart(name);
+    } else {
+        row.classList.add('hidden');
+    }
+}
+
 async function checkStartupStatus() {
     try {
         const response = await fetch('/process/startup-status');
@@ -139,7 +291,6 @@ async function checkStartupStatus() {
     }
 }
 
-// PM2 Save (덤프 저장)
 async function savePM2() {
     if (!confirm("현재 프로세스 리스트를 저장하시겠습니까? 재부팅 시 이 상태로 자동 복구됩니다.")) return;
     try {
@@ -151,6 +302,67 @@ async function savePM2() {
         }
     } catch (err) {
         alert("서버 통신 오류");
+    }
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+async function updateServerStats() {
+    try {
+        const response = await fetch('/process/server-stats');
+        if (!response.ok) return;
+        const data = await response.json();
+
+        document.getElementById('srvCpuText').innerText = `${data.cpu_percent.toFixed(1)} %`;
+        document.getElementById('srvCpuCount').innerText = `CORES: ${data.cpu_count_physical}P / ${data.cpu_count_logical}L`;
+
+        const coresContainer = document.getElementById('srvCpuCoresContainer');
+        coresContainer.innerHTML = '';
+        data.cpu_cores.forEach((corePer, idx) => {
+            const coreRow = document.createElement('div');
+            coreRow.className = 'flex items-center gap-2 text-[10px] font-mono text-zinc-500';
+            coreRow.innerHTML = `
+                <span class="w-5 text-zinc-600">#${String(idx).padStart(2, '0')}</span>
+                <div class="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-emerald-500/70" style="width: ${corePer}%"></div>
+                </div>
+                <span class="w-7 text-right text-zinc-400">${corePer.toFixed(0)}%</span>
+            `;
+            coresContainer.appendChild(coreRow);
+        });
+
+        const ramTotalGB = (data.memory_total / 1024 / 1024 / 1024).toFixed(1);
+        const ramUsedGB = (data.memory_used / 1024 / 1024 / 1024).toFixed(1);
+        const swapTotalGB = (data.swap_total / 1024 / 1024 / 1024).toFixed(1);
+        const swapUsedGB = (data.swap_used / 1024 / 1024 / 1024).toFixed(1);
+
+        document.getElementById('srvMemText').innerText = `${ramUsedGB}G / ${swapUsedGB}G`;
+        document.getElementById('srvMemPercent').innerText = `${data.memory_percent}%`;
+        document.getElementById('srvMemDetail').innerText = `${ramUsedGB}/${ramTotalGB} GB`;
+        document.getElementById('srvMemBar').style.width = `${data.memory_percent}%`;
+
+        document.getElementById('srvSwapPercent').innerText = `${data.swap_percent}%`;
+        document.getElementById('srvSwapDetail').innerText = `${swapUsedGB}/${swapTotalGB} GB`;
+        document.getElementById('srvSwapBar').style.width = `${data.swap_percent}%`;
+
+        document.getElementById('srvDiskText').innerText = `${data.disk_percent}%`;
+        document.getElementById('srvDiskBar').style.width = `${data.disk_percent}%`;
+        const diskTotalGB = (data.disk_total / 1024 / 1024 / 1024).toFixed(1);
+        const diskUsedGB = (data.disk_used / 1024 / 1024 / 1024).toFixed(1);
+        const diskFreeGB = (data.disk_free / 1024 / 1024 / 1024).toFixed(1);
+        document.getElementById('srvDiskDetail').innerText = `Used: ${diskUsedGB} GB / Free: ${diskFreeGB} GB (Total: ${diskTotalGB} GB)`;
+
+        document.getElementById('srvNetRecv').innerText = formatBytes(data.net_bytes_recv);
+        document.getElementById('srvNetSent').innerText = formatBytes(data.net_bytes_sent);
+
+    } catch (err) {
+        console.error("Server stats configuration error:", err);
     }
 }
 
@@ -173,9 +385,11 @@ async function updateStats() {
                 </span>
             `;
 
-            row.querySelector('.cpu-cell').innerText = `${proc.monit.cpu}%`;
-            const memMB = (proc.monit.memory / 1024 / 1024).toFixed(1);
-            row.querySelector('.mem-cell').innerText = `${memMB} MB`;
+            const currentCpu = proc.monit.cpu;
+            const currentMemMB = parseFloat((proc.monit.memory / 1024 / 1024).toFixed(1));
+
+            row.querySelector('.cpu-cell').innerText = `${currentCpu}%`;
+            row.querySelector('.mem-cell').innerText = `${currentMemMB} MB`;
             row.querySelector('.uptime-cell').innerText = formatUptime(proc.pm2_env.pm_uptime);
 
             const watchBadge = row.querySelector('.watch-status-badge');
@@ -186,6 +400,15 @@ async function updateStats() {
                 ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' 
                 : 'bg-zinc-800 text-zinc-500 border border-zinc-700'
             }`;
+
+            if (charts[proc.name]) {
+                const chart = charts[proc.name];
+                chart.data.datasets[0].data.push(currentCpu);
+                chart.data.datasets[0].data.shift();
+                chart.data.datasets[1].data.push(currentMemMB);
+                chart.data.datasets[1].data.shift();
+                chart.update('none');
+            }
         });
     } catch (err) {
         console.error("Update failed:", err);
@@ -197,7 +420,13 @@ function filterProcesses() {
     const rows = document.getElementsByClassName('proc-row');
     for (let row of rows) {
         const name = row.getAttribute('data-name').toLowerCase();
-        row.style.display = name.includes(query) ? "" : "none";
+        const chartRow = document.getElementById(`chart-row-${row.getAttribute('data-name')}`);
+        if (name.includes(query)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+            if (chartRow) chartRow.style.display = "none";
+        }
     }
 }
 
@@ -287,8 +516,10 @@ function closeLogModal() {
 }
 
 setInterval(updateStats, 1000);
+setInterval(updateServerStats, 1000);
 updateStats();
-checkStartupStatus(); // 초기 로드 시 Startup 상태 확인
+updateServerStats();
+checkStartupStatus();
 
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeLogModal();

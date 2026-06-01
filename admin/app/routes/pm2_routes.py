@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import (
     APIRouter,
     Request,
@@ -7,9 +8,9 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.templating import Jinja2Templates
+import psutil
 from app.services.pm2_service import PM2Service
 from app.routes.dependencies import get_current_user
-import asyncio
 
 router = APIRouter(prefix="/process", tags=["process"])
 templates = Jinja2Templates(directory="app/templates")
@@ -40,6 +41,34 @@ async def control_process(action: str, name: str):
 @router.get("/status")
 async def get_pm2_status_api(user=Depends(get_current_user)):
     return PM2Service.get_processes()
+
+
+@router.get("/server-stats")
+async def get_server_stats(user=Depends(get_current_user)):
+    vm = psutil.virtual_memory()
+    sw = psutil.swap_memory()
+    du = psutil.disk_usage("/")
+    net = psutil.net_io_counters()
+
+    return {
+        "cpu_percent": psutil.cpu_percent(),
+        "cpu_cores": psutil.cpu_percent(percpu=True),
+        "cpu_count_logical": psutil.cpu_count(),
+        "cpu_count_physical": psutil.cpu_count(logical=False),
+        "memory_total": vm.total,
+        "memory_available": vm.available,
+        "memory_used": vm.used,
+        "memory_percent": vm.percent,
+        "swap_total": sw.total,
+        "swap_used": sw.used,
+        "swap_percent": sw.percent,
+        "disk_total": du.total,
+        "disk_used": du.used,
+        "disk_free": du.free,
+        "disk_percent": du.percent,
+        "net_bytes_sent": net.bytes_sent,
+        "net_bytes_recv": net.bytes_recv,
+    }
 
 
 @router.websocket("/ws/logs/{name}")
