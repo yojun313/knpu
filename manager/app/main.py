@@ -77,7 +77,7 @@ def main():
     if not shared_memory.create(1):
         if shared_memory.attach():
             shared_memory.detach()
-        
+
         if not shared_memory.create(1):
             print("프로그램이 이미 실행 중입니다.")
             sys.exit(0)

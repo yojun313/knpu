@@ -203,20 +203,29 @@ class ErrorWatcher(commands.Cog):
                         embed.add_field(
                             name="AI 분석",
                             value="내용이 4000자를 초과하여 텍스트 파일로 첨부되었습니다.",
-                            inline=False
+                            inline=False,
                         )
                         file_to_send = discord.File(
-                            io.BytesIO(ai_analysis.encode("utf-8")), 
-                            filename=f"ai_analysis_{bug['uid']}.txt"
+                            io.BytesIO(ai_analysis.encode("utf-8")),
+                            filename=f"ai_analysis_{bug['uid']}.txt",
                         )
                     else:
-                        chunks = [ai_analysis[i:i+1024] for i in range(0, len(ai_analysis), 1024)]
+                        chunks = [
+                            ai_analysis[i : i + 1024]
+                            for i in range(0, len(ai_analysis), 1024)
+                        ]
                         for idx, chunk in enumerate(chunks):
-                            field_name = "AI 분석" if idx == 0 else f"AI 분석 (계속 {idx+1})"
+                            field_name = (
+                                "AI 분석" if idx == 0 else f"AI 분석 (계속 {idx + 1})"
+                            )
                             embed.add_field(name=field_name, value=chunk, inline=False)
 
                     if file_to_send is not discord.utils.MISSING:
-                        await channel.send(embed=embed, view=ErrorManageView(self.bot), file=file_to_send)
+                        await channel.send(
+                            embed=embed,
+                            view=ErrorManageView(self.bot),
+                            file=file_to_send,
+                        )
                     else:
                         await channel.send(embed=embed, view=ErrorManageView(self.bot))
                 except Exception as e:
