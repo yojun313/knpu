@@ -29,6 +29,7 @@ MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 
+
 class MyBot(commands.Bot):
     def __init__(self, mongo_uri):
         intents = discord.Intents.default()

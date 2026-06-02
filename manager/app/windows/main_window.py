@@ -337,7 +337,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.cleanUpTemp()
 
                 app = QApplication.instance()
-                if hasattr(app, 'shared_memory'):
+                if hasattr(app, "shared_memory"):
                     if app.shared_memory.isAttached():
                         app.shared_memory.detach()
 
@@ -348,7 +348,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             event.accept()
         else:
             event.ignore()
-    
+
     def cleanUpTemp(self):
         if platform.system() != "Windows":
             return

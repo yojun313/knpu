@@ -4,7 +4,6 @@ from discord.ext import commands, tasks
 
 
 class VersionBoardPoller(commands.Cog):
-
     def __init__(self, bot):
         self.bot = bot
         self.version_board_col = self.bot.manager_db["version-board"]
@@ -22,9 +21,7 @@ class VersionBoardPoller(commands.Cog):
                 version = document.get("version", "unknown")
                 guild_id = document.get("guild_id")
 
-                config = await self.auth_config_col.find_one(
-                    {"guild_id": guild_id}
-                )
+                config = await self.auth_config_col.find_one({"guild_id": guild_id})
 
                 if config:
                     update_log_channel = config.get("update_log_channel")
@@ -32,9 +29,7 @@ class VersionBoardPoller(commands.Cog):
                     if update_log_channel:
                         channel = self.bot.get_channel(update_log_channel)
                         if channel:
-                            await channel.send(
-                                f"새 버전 {version} 이 등록되었습니다!"
-                            )
+                            await channel.send(f"새 버전 {version} 이 등록되었습니다!")
                             await self.version_board_col.update_one(
                                 {"_id": document["_id"]},
                                 {"$set": {"notified": True}},
@@ -49,9 +44,7 @@ class VersionBoardPoller(commands.Cog):
                             f"[알림 실패] 길드 ID {guild_id} 의 업데이트 로그 채널이 설정되지 않음"
                         )
                 else:
-                    print(
-                        f"[알림 실패] 길드 ID {guild_id} 의 설정 문서를 찾을 수 없음"
-                    )
+                    print(f"[알림 실패] 길드 ID {guild_id} 의 설정 문서를 찾을 수 없음")
 
         except Exception as e:
             print(f"[versions-board 폴링 오류] {e}")

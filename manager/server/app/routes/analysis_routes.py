@@ -1,6 +1,10 @@
 from fastapi import APIRouter, UploadFile, File, Form
 from fastapi.responses import StreamingResponse, JSONResponse
-from app.services.analysis_service import start_kemkim, tokenization, start_youtube_download
+from app.services.analysis_service import (
+    start_kemkim,
+    tokenization,
+    start_youtube_download,
+)
 from app.models.analysis_model import KemKimOption
 import pandas as pd
 from io import StringIO
