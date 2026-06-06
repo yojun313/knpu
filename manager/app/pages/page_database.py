@@ -603,7 +603,7 @@ class Manager_Database(Manager_Worker):
             selectedRow = self.main.database_tablewidget.currentRow()
             if not selectedRow >= 0:
                 return
-            if self.DB["DBdata"][selectedRow]["status"] != "Done":
+            if "%" in self.DB["DBdata"][selectedRow]["status"]:
                 QMessageBox.warning(
                     self.main,
                     "Information",
