@@ -405,12 +405,13 @@
                 `);
                 const memberRes = await fetch(`${API_BASE}/members/`);
                 const members = await memberRes.json();
-
+                
                 const teamList = document.getElementById('team-list');
                 teamList.innerHTML = '';  // 초기화
 
                 // 정렬 후 렌더링
                 members
+                    .filter(member => member.section !== 'Alumni')
                     .forEach(member => {
                         teamList.insertAdjacentHTML('beforeend', `
                     <div class="col-lg-4 col-md-6 mb-4">
