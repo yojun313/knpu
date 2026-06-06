@@ -1,7 +1,8 @@
-from typing import List
 from fastapi import APIRouter, Query
 from app.models import Member
 from app.db import members_db
+from fastapi import HTTPException
+import uuid
 
 router = APIRouter()
 

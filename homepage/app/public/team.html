@@ -70,6 +70,21 @@
         height: 40vh;
       }
     }
+    /* 프로필 이미지 비율 유지, 원형으로 표시 */
+    .team-member img.profile-img {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    @media (max-width: 768px) {
+      .team-member img.profile-img {
+        width: 120px;
+        height: 120px;
+      }
+    }
   </style>
 </head>
 
@@ -172,7 +187,7 @@
               `
                             <div class="team-member row align-items-center my-4">
                                 <div class="col-md-4 text-center">
-                                    <img class="img-fluid rounded-circle" src="${m.image}" alt="${m.name}" style="max-width: 200px;">
+                                    <img class="profile-img" src="${m.image}" alt="${m.name}">
                                 </div>
                                 <div class="col-md-8">
                                     <h4>${m.name}</h4>
