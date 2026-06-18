@@ -3,6 +3,8 @@ from app.db import papers_db
 from app.models import PaperRequest
 from datetime import datetime, timezone
 import uuid
+from app.libs.crawl_papers import fetch_bib
+
 
 router = APIRouter()
 
@@ -13,60 +15,57 @@ def list_papers():
     for d in docs:
         d.pop("_id", None)
 
-        d["papers"] = sorted(
-            d.get("papers", []),
-            key=lambda p: p.get("datetime", ""),
-            reverse=True,
-        )
+    grouped: dict[int, list[dict]] = {}
+    for d in docs:
+        grouped.setdefault(d.get("year"), []).append(d)
 
-    docs.sort(key=lambda x: int(x.get("year", 0)), reverse=True)
+    result = []
+    for year, papers in grouped.items():
+        papers.sort(key=lambda p: p.get("fetched_at", ""), reverse=True)
+        result.append({"year": year, "papers": papers})
 
-    return docs
+    result.sort(key=lambda x: int(x.get("year") or 0), reverse=True)
+    return result
 
 
 @router.post("/")
-def upsert_paper(request: PaperRequest):
-    year_str = str(request.year)
-    paper_data = request.paper.dict(by_alias=True)
-    if "uid" not in paper_data or not paper_data["uid"]:
+def upsert_paper(paper: PaperRequest):
+    paper_data = paper.dict(by_alias=True)
+
+    if not paper_data.get("uid"):
         paper_data["uid"] = str(uuid.uuid4())
-    else:
-        pass
 
-    paper_data["datetime"] = datetime.now(timezone.utc).isoformat()
-    existing_doc = papers_db.find_one({"year": year_str})
-
-    if not existing_doc:
-        papers_db.insert_one({"year": year_str, "papers": [paper_data]})
-        return paper_data
-
-    papers_for_year = existing_doc.get("papers", [])
-    updated = False
-    for i, p in enumerate(papers_for_year):
-        if p.get("uid") == paper_data["uid"]:
-            papers_for_year[i] = paper_data
-            updated = True
-            break
-
-    if not updated:
-        papers_for_year.append(paper_data)
-
-    papers_db.update_one(
-        {"year": year_str},
-        {"$set": {"papers": papers_for_year}},
+    paper_data["fetched_at"] = (
+        paper_data.get("fetched_at") or datetime.now(timezone.utc).isoformat()
     )
 
+    papers_db.update_one(
+        {"uid": paper_data["uid"]},
+        {"$set": paper_data},
+        upsert=True,
+    )
     return paper_data
 
 
 @router.delete("/")
 def delete_paper(uid: str = Query(..., description="삭제할 논문의 UID")):
-    all_docs = papers_db.find({})
-    for doc in all_docs:
-        papers = doc.get("papers", [])
-        new_papers = [p for p in papers if p.get("uid") != uid]
-        if len(new_papers) != len(papers):
-            papers_db.update_one({"_id": doc["_id"]}, {"$set": {"papers": new_papers}})
-            return {"message": f"Paper '{uid}' deleted successfully"}
+    result = papers_db.delete_one({"uid": uid})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    return {"message": f"Paper '{uid}' deleted successfully"}
 
-    raise HTTPException(status_code=404, detail="Paper not found")
+
+@router.get("/crawl")
+def crawl_paper(
+    title: str = Query(..., description="논문 제목"),
+    journal_type: str = Query(..., alias="type", description="SCI / SCOPUS / KCI"),
+):
+    try:
+        record = fetch_bib(title, journal_type)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if record is None:
+        raise HTTPException(status_code=404, detail="메타데이터를 찾을 수 없습니다")
+
+    return record

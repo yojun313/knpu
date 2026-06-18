@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -99,10 +98,14 @@ class JobPersistence:
             ).sort("finished_at", -1)
         )
 
-    def mark_running_as_error(self, message: str) -> int:
+    def mark_running_as_error(self, message: str) -> tuple[int, list[str]]:
         col = _get_collection()
         if col is None:
-            return 0
+            return []
+
+        running_docs = col.find({"state": "running"}, {"db_uid": 1})
+        db_uids = [doc["db_uid"] for doc in running_docs if "db_uid" in doc]
+
         result = col.update_many(
             {"state": "running"},
             {
@@ -113,7 +116,8 @@ class JobPersistence:
                 }
             },
         )
-        return result.modified_count
+
+        return result.modified_count, db_uids
 
     def delete(self, job_id: str):
         col = _get_collection()

@@ -414,6 +414,15 @@ wheels = [
 ]
 
 [[package]]
+name = "bibtexparser"
+version = "1.4.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyparsing" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/44/1c/577d3ce406e88f370e80a6ebf76ae52a2866521e0b585e8ec612759894f1/bibtexparser-1.4.4.tar.gz", hash = "sha256:093b6c824f7a71d3a748867c4057b71f77c55b8dbc07efc993b781771520d8fb", size = 55594, upload-time = "2026-01-29T18:58:01.366Z" }
+
+[[package]]
 name = "bot"
 version = "0.1.0"
 source = { virtual = "bot" }
@@ -1976,6 +1985,7 @@ dependencies = [
     { name = "asyncio" },
     { name = "bcrypt" },
     { name = "beautifulsoup4" },
+    { name = "bibtexparser" },
     { name = "boto3" },
     { name = "chardet" },
     { name = "cryptography" },
@@ -2038,6 +2048,7 @@ requires-dist = [
     { name = "asyncio", specifier = ">=4.0.0" },
     { name = "bcrypt", specifier = ">=5.0.0" },
     { name = "beautifulsoup4", specifier = ">=4.14.3" },
+    { name = "bibtexparser", specifier = ">=1.4.4" },
     { name = "boto3", specifier = ">=1.43.3" },
     { name = "chardet", specifier = ">=7.4.3" },
     { name = "cryptography", specifier = ">=48.0.0" },

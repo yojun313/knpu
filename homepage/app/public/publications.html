@@ -147,7 +147,7 @@
     <script src="js/scripts.js"></script>
 
     <script>
-        const DATA_URL = '/assets/TODO/bib_result_edit.json'; // swap to API URL later
+        const DATA_URL = 'https://home.knpu.re.kr/api/papers/'; // swap to API URL later
 
         let allPapers = [];
 
@@ -374,14 +374,15 @@
             try {
                 const res = await fetch(DATA_URL);
                 if (!res.ok) throw new Error('fetch failed');
-                allPapers = await res.json();
+                const grouped = await res.json(); 
+                allPapers = grouped.flatMap(g => g.papers);
             } catch (e) {
                 console.error('Error loading publications:', e);
                 document.getElementById('publications-list').innerHTML =
                     '<p class="text-center text-danger">논문을 불러오는 데 실패했습니다.</p>';
                 return;
             }
-
+        
             renderStats(allPapers);
             populateYearSelect(allPapers);
             wireEvents();

@@ -278,7 +278,7 @@
         }
 
         // ── Publications Section ────────────────────────────────────────────
-        const PUB_DATA_URL = '/assets/TODO/bib_result_edit.json'; // swap to API URL later
+        const PUB_DATA_URL = `${API_BASE}/papers/`; // 정적 JSON 대신 실제 API
 
         function formatPubDate(p) {
             if (!p.published_date) return String(p.year);
@@ -291,7 +291,8 @@
             try {
                 const res = await fetch(PUB_DATA_URL);
                 if (!res.ok) throw new Error('fetch failed');
-                papers = await res.json();
+                const grouped = await res.json();          // [{ year, papers: [...] }, ...]
+                papers = grouped.flatMap(g => g.papers);     // flat 배열로 변환
             } catch (e) {
                 console.error('Failed to load publications:', e);
                 return;
