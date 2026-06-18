@@ -34,8 +34,30 @@ class Paper(BaseModel):
 
 
 class PaperRequest(BaseModel):
+    uid: Optional[str] = None
+    title: str
+    authors: List[str] = []
+    authors_kr: Optional[List[Optional[str]]] = None
     year: int
-    paper: Paper
+    published_date: Optional[str] = None
+    publication_type: Optional[str] = None
+    journal_type: Optional[str] = None
+    venue: Optional[str] = ""
+    volume: Optional[str] = None
+    issue: Optional[str] = None
+    pages: Optional[str] = None
+    publisher: Optional[str] = None
+    doi: Optional[str] = None
+    url: Optional[str] = ""
+    abstract: Optional[str] = None
+    language: Optional[str] = None
+    apa_citation: Optional[str] = None
+    keywords: Optional[List[str]] = None
+    source_api: Optional[str] = None
+    api_confidence: Optional[float] = None
+    fetched_at: Optional[str] = None
+    verified: Optional[bool] = False
+    notes: Optional[str] = ""
 
 
 class GroupPhoto(BaseModel):
