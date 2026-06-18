@@ -32,6 +32,7 @@ from datetime import datetime
 from services.api import Request
 from typing import Callable
 import httpx
+import requests
 import uuid
 import os
 
@@ -2897,8 +2898,9 @@ class EditHomePaperDialog(BaseDialog):
     def __init__(self, data: dict | None = None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("논문 편집" if data else "논문 추가")
-        self.resize(400, 450)
+        self.resize(400, 480)
         self.data = data or {}
+        self.crawled_record: dict = dict(self.data)  # 전체 메타데이터 베이스
 
         vbox = QVBoxLayout(self)
 
@@ -2909,7 +2911,6 @@ class EditHomePaperDialog(BaseDialog):
         self.in_year = QLineEdit(str(self.data.get("year", "")))
         self.in_title = QLineEdit(self.data.get("title", ""))
 
-        # authors: 콤마로 구분된 문자열로 보여주기
         raw_authors = self.data.get("authors", [])
         if isinstance(raw_authors, list):
             authors_text = ", ".join(raw_authors)
@@ -2917,12 +2918,24 @@ class EditHomePaperDialog(BaseDialog):
             authors_text = str(raw_authors)
         self.in_authors = QLineEdit(authors_text)
 
-        self.in_conf = QLineEdit(self.data.get("conference", ""))
-        self.in_link = QLineEdit(self.data.get("link", ""))
+        self.in_conf = QLineEdit(self.data.get("venue", ""))
+        self.in_link = QLineEdit(self.data.get("url", ""))
+
+        vbox.addWidget(QLabel("제목"))
+        vbox.addWidget(self.in_title)
+
+        # 크롤링: 등재 종류 선택 + 메타데이터 가져오기 버튼
+        crawl_row = QHBoxLayout()
+        self.in_journal_type = QComboBox()
+        self.in_journal_type.addItems(["KCI", "SCI", "SCOPUS"])
+        crawl_btn = QPushButton("메타데이터 가져오기")
+        crawl_btn.clicked.connect(self.crawl_metadata)
+        crawl_row.addWidget(self.in_journal_type)
+        crawl_row.addWidget(crawl_btn)
+        vbox.addLayout(crawl_row)
 
         for lbl, wid in [
             ("연도 (예: 2025)", self.in_year),
-            ("제목", self.in_title),
             ("저자들 (쉼표로 구분)", self.in_authors),
             ("컨퍼런스/저널", self.in_conf),
             ("논문 링크(URL)", self.in_link),
@@ -2936,6 +2949,59 @@ class EditHomePaperDialog(BaseDialog):
         vbox.addWidget(ok)
         vbox.addWidget(cancel)
 
+    def crawl_metadata(self):
+        title = self.in_title.text().strip()
+        if not title:
+            QMessageBox.warning(self, "입력 오류", "제목을 먼저 입력해주세요.")
+            return
+
+        try:
+            resp = Request(
+                "get",
+                "/papers/crawl",
+                HOMEPAGE_EDIT_API,
+                params={"title": title, "type": self.in_journal_type.currentText()},
+            )
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response is not None else None
+            if status == 404:
+                QMessageBox.information(
+                    self,
+                    "검색 결과 없음",
+                    "해당 제목으로 메타데이터를 찾지 못했습니다.",
+                )
+            else:
+                QMessageBox.warning(
+                    self, "크롤링 실패", "메타데이터를 가져오는 중 오류가 발생했습니다."
+                )
+            return
+        except Exception:
+            QMessageBox.warning(
+                self, "크롤링 실패", "메타데이터를 가져오는 중 오류가 발생했습니다."
+            )
+            return
+
+        record = resp.json() if hasattr(resp, "json") else resp
+        if not record:
+            QMessageBox.information(
+                self, "검색 결과 없음", "해당 제목으로 메타데이터를 찾지 못했습니다."
+            )
+            return
+
+        self.crawled_record = record  # <- 전체 결과 보관
+
+        self.in_year.setText(str(record.get("year") or ""))
+        self.in_title.setText(record.get("title") or title)
+        self.in_authors.setText(", ".join(record.get("authors") or []))
+        self.in_conf.setText(record.get("venue") or "")
+        self.in_link.setText(record.get("url") or "")
+
+        QMessageBox.information(
+            self,
+            "크롤링 완료",
+            f"'{record.get('title')}' 메타데이터를 불러왔습니다.\n확인 후 저장하세요.",
+        )
+
     def get_payload(self) -> dict:
         try:
             year = int(self.in_year.text().strip())
@@ -2943,17 +3009,21 @@ class EditHomePaperDialog(BaseDialog):
             QMessageBox.warning(self, "입력 오류", "연도는 숫자로 입력해주세요.")
             return {}
 
-        # authors: 쉼표 기준으로 분리하고 공백 제거
         authors_raw = self.in_authors.text().strip()
         authors_list = [a.strip() for a in authors_raw.split(",") if a.strip()]
 
-        payload = {
-            "title": self.in_title.text().strip(),
-            "authors": authors_list,
-            "conference": self.in_conf.text().strip(),
-            "link": self.in_link.text().strip(),
-        }
-        return {"year": year, "paper": payload}
+        payload = dict(self.crawled_record)  # doi, published_date 등 나머지 필드 유지
+        payload.update(
+            {
+                "uid": self.data.get("uid") or payload.get("uid") or str(uuid.uuid4()),
+                "title": self.in_title.text().strip(),
+                "authors": authors_list,
+                "year": year,
+                "venue": self.in_conf.text().strip(),
+                "url": self.in_link.text().strip(),
+            }
+        )
+        return payload
 
 
 class ViewHomePaperDialog(BaseDialog):
@@ -2965,8 +3035,8 @@ class ViewHomePaperDialog(BaseDialog):
 
         self.add_label(layout, "제목", data.get("title", ""))
         self.add_label(layout, "저자", ", ".join(data.get("authors", [])))
-        self.add_label(layout, "컨퍼런스/저널", data.get("conference", ""))
-        self.add_label(layout, "링크", data.get("link", ""))
+        self.add_label(layout, "컨퍼런스/저널", data.get("venue", ""))
+        self.add_label(layout, "링크", data.get("url", ""))
         self.add_label(layout, "연도", str(data.get("year", "")))
 
 

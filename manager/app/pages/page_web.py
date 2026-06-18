@@ -90,18 +90,16 @@ class Manager_Web:
 
         self.paper_data = []
         for year_group in self.origin_paper_data:
-            year = year_group.get("year", "")
             for paper in year_group.get("papers", []):
-                paper["year"] = year
                 self.paper_data.append(paper)
 
         self.paper_data_for_table = [
             [
-                item["title"],
+                item.get("title", ""),
                 ", ".join(item.get("authors", [])),
-                item["conference"],
-                item.get("link", ""),
-                item["year"],
+                item.get("venue", ""),
+                item.get("url", ""),
+                item.get("year", ""),
             ]
             for item in self.paper_data
         ]
@@ -255,13 +253,15 @@ class Manager_Web:
             dialog = EditHomePaperDialog(parent=self.main)
             if dialog.exec():
                 payload = dialog.get_payload()
+                if not payload:
+                    return
                 Request("post", "/papers/", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
                     self.main,
                     "완료",
-                    f"{payload['paper'].get('title', '논문')}가 추가되었습니다",
+                    f"{payload.get('title', '논문')}가 추가되었습니다",
                 )
-                userLogging(f"WEB -> addHomePaper({payload['paper'].get('title')})")
+                userLogging(f"WEB -> addHomePaper({payload.get('title')})")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
