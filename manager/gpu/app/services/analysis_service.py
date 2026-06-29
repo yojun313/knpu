@@ -507,17 +507,38 @@ async def yolo_detect_images(
     return zip_buffer
 
 
+import yaml
+import tempfile
+from pathlib import Path
+import ultralytics
+
+DEFAULT_TRACKER_DIR = Path(ultralytics.__file__).parent / "cfg" / "trackers"
+
+
+def make_loose_tracker_config(conf_thres: float, base: str = "bytetrack.yaml") -> str:
+    """conf_thres 이상 탐지가 트래커 단계에서 누락되지 않도록 임계값을 낮춘 설정 생성."""
+    cfg = yaml.safe_load(open(DEFAULT_TRACKER_DIR / base))
+
+    cfg["track_high_thresh"] = max(conf_thres, 0.05)
+    cfg["track_low_thresh"] = max(conf_thres - 0.1, 0.01)
+    cfg["new_track_thresh"] = max(conf_thres, 0.05)
+
+    tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False)
+    yaml.safe_dump(cfg, tmp)
+    tmp.close()
+    return tmp.name
+
+
 async def yolo_detect_videos(
     files: List[UploadFile],
     conf_thres: float = 0.25,
     pid=None,
-    model_name: str = "yolo11n",  # [추가] 파라미터 추가
+    model_name: str = "yolo11n",
+    imgsz: int | None = 640,
+    min_hits: int = 3,
 ) -> io.BytesIO:
 
-    # [수정] 모델 로드 시 이름 전달
     model, names = load_yolo_model(model_name)
-
-    # ... (나머지 로직 동일)
 
     valid_exts = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
     valid_files = []
@@ -540,153 +561,189 @@ async def yolo_detect_videos(
         )
 
     zip_buffer = io.BytesIO()
+    use_half = torch.cuda.is_available()
+    tracker_cfg_path = make_loose_tracker_config(conf_thres)  # 배치 전체에서 재사용
 
-    with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
-        for i, up in enumerate(valid_files, start=1):
-            filename = up.filename or f"video_{i}"
-            stem, ext = os.path.splitext(os.path.basename(filename))
+    try:
+        with zipfile.ZipFile(
+            zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED
+        ) as zf:
+            for i, up in enumerate(valid_files, start=1):
+                model.predictor = None  # 영상마다 트래커 상태 초기화
+                filename = up.filename or f"video_{i}"
+                stem, ext = os.path.splitext(os.path.basename(filename))
 
-            if pid is not None:
-                send_message(pid, f"[YOLO] ({i}/{total}) '{filename}' 로드 중...")
-
-            data = await up.read()
-            if not data:
                 if pid is not None:
-                    send_message(
-                        pid, f"[YOLO] ({i}/{total}) '{filename}' 빈 파일 - 스킵"
-                    )
-                continue
+                    send_message(pid, f"[YOLO] ({i}/{total}) '{filename}' 로드 중...")
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-                tmp.write(data)
-                tmp_path = tmp.name
-
-            out_video_path = None
-
-            try:
-                cap = cv2.VideoCapture(tmp_path)
-                if not cap.isOpened():
-                    raise RuntimeError("VideoCapture open 실패")
-
-                fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-                out_video_path = tempfile.NamedTemporaryFile(
-                    delete=False, suffix=".mp4"
-                ).name
-                writer = cv2.VideoWriter(out_video_path, fourcc, fps, (width, height))
-
-                detections_by_frame = []
-
-                frame_idx = 0
-                while True:
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
-
-                    results = model(frame, conf=conf_thres, verbose=False)
-
-                    frame_dets = []
-                    for r in results:
-                        for box in r.boxes:
-                            x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                            conf = float(box.conf[0].item())
-                            cls = int(box.cls[0].item())
-
-                            # draw bbox
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                            label = f"{names.get(cls, str(cls))} {conf:.2f}"
-                            cv2.putText(
-                                frame,
-                                label,
-                                (x1, max(0, y1 - 5)),
-                                cv2.FONT_HERSHEY_SIMPLEX,
-                                0.5,
-                                (0, 255, 0),
-                                1,
-                            )
-
-                            frame_dets.append(
-                                {
-                                    "class_id": cls,
-                                    "class_name": names.get(cls, str(cls)),
-                                    "confidence": round(conf, 4),
-                                    "bbox_xyxy": [x1, y1, x2, y2],
-                                }
-                            )
-
-                    detections_by_frame.append(
-                        {
-                            "frame_index": frame_idx,
-                            "detections": frame_dets,
-                        }
-                    )
-
-                    writer.write(frame)
-                    frame_idx += 1
-
-                    if pid is not None and frame_idx % 30 == 0:
-                        pct = (
-                            round(frame_idx / frame_count * 100, 2)
-                            if frame_count
-                            else 0
+                data = await up.read()
+                if not data:
+                    if pid is not None:
+                        send_message(
+                            pid, f"[YOLO] ({i}/{total}) '{filename}' 빈 파일 - 스킵"
                         )
+                    continue
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                    tmp.write(data)
+                    tmp_path = tmp.name
+
+                out_video_path = None
+
+                try:
+                    cap = cv2.VideoCapture(tmp_path)
+                    if not cap.isOpened():
+                        raise RuntimeError("VideoCapture open 실패")
+
+                    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+                    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    frame_imgsz = imgsz if imgsz is not None else (height, width)
+
+                    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                    out_video_path = tempfile.NamedTemporaryFile(
+                        delete=False, suffix=".mp4"
+                    ).name
+                    writer = cv2.VideoWriter(
+                        out_video_path, fourcc, fps, (width, height)
+                    )
+
+                    detections_by_frame = []
+                    frame_idx = 0
+
+                    while True:
+                        ret, frame = cap.read()
+                        if not ret:
+                            break
+
+                        results = model.track(
+                            frame,
+                            conf=conf_thres,
+                            imgsz=frame_imgsz,
+                            persist=True,
+                            tracker=tracker_cfg_path,
+                            half=use_half,
+                            verbose=False,
+                        )
+
+                        frame_dets = []
+                        for r in results:
+                            for box in r.boxes:
+                                x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                                conf = float(box.conf[0].item())
+                                cls = int(box.cls[0].item())
+                                track_id = (
+                                    int(box.id[0].item())
+                                    if box.id is not None
+                                    else None
+                                )
+
+                                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                                label_text = (
+                                    f"{'ID' + str(track_id) + ' ' if track_id is not None else ''}"
+                                    f"{names.get(cls, str(cls))} {conf:.2f}"
+                                )
+                                cv2.putText(
+                                    frame,
+                                    label_text,
+                                    (x1, max(0, y1 - 5)),
+                                    cv2.FONT_HERSHEY_SIMPLEX,
+                                    0.5,
+                                    (0, 255, 0),
+                                    1,
+                                )
+
+                                frame_dets.append(
+                                    {
+                                        "track_id": track_id,
+                                        "class_id": cls,
+                                        "class_name": names.get(cls, str(cls)),
+                                        "confidence": round(conf, 4),
+                                        "bbox_xyxy": [x1, y1, x2, y2],
+                                    }
+                                )
+
+                        detections_by_frame.append(
+                            {"frame_index": frame_idx, "detections": frame_dets}
+                        )
+                        writer.write(frame)
+                        frame_idx += 1
+
+                        if pid is not None and frame_idx % 30 == 0:
+                            pct = (
+                                round(frame_idx / frame_count * 100, 2)
+                                if frame_count
+                                else 0
+                            )
+                            send_message(
+                                pid,
+                                f"[YOLO] ({i}/{total}) '{filename}' frame {frame_idx}/{frame_count} ({pct}%)",
+                            )
+
+                    cap.release()
+                    writer.release()
+
+                    with open(out_video_path, "rb") as vf:
+                        zf.writestr(f"videos/{stem}.mp4", vf.read())
+
+                    # 노이즈성(짧게 반짝이는) 트랙 제외하고 유니크 카운트
+                    hit_counts: dict[int, int] = {}
+                    for fd in detections_by_frame:
+                        for d in fd["detections"]:
+                            if d["track_id"] is not None:
+                                hit_counts[d["track_id"]] = (
+                                    hit_counts.get(d["track_id"], 0) + 1
+                                )
+                    unique_ids = {tid for tid, c in hit_counts.items() if c >= min_hits}
+
+                    json_obj = {
+                        "video": filename,
+                        "fps": fps,
+                        "width": width,
+                        "height": height,
+                        "frame_count": frame_idx,
+                        "unique_object_count": len(unique_ids),
+                        "detections": detections_by_frame,
+                    }
+
+                    zf.writestr(
+                        f"json/{stem}.json",
+                        json.dumps(json_obj, ensure_ascii=False, indent=2).encode(
+                            "utf-8"
+                        ),
+                    )
+
+                    if pid is not None:
                         send_message(
                             pid,
-                            f"[YOLO] ({i}/{total}) '{filename}' "
-                            f"frame {frame_idx}/{frame_count} ({pct}%)",
+                            f"[YOLO] ({i}/{total}) '{filename}' 완료 (총 {frame_idx} 프레임)",
                         )
 
-                cap.release()
-                writer.release()
+                except Exception as e:
+                    if pid is not None:
+                        send_message(
+                            pid,
+                            f"[YOLO] ({i}/{total}) '{filename}' 오류: {type(e).__name__}: {e}",
+                        )
+                    continue
 
-                # zip write
-                with open(out_video_path, "rb") as vf:
-                    zf.writestr(f"videos/{stem}.mp4", vf.read())
-
-                json_obj = {
-                    "video": filename,
-                    "fps": fps,
-                    "width": width,
-                    "height": height,
-                    "frame_count": frame_idx,
-                    "detections": detections_by_frame,
-                }
-
-                zf.writestr(
-                    f"json/{stem}.json",
-                    json.dumps(json_obj, ensure_ascii=False, indent=2).encode("utf-8"),
-                )
-
-                if pid is not None:
-                    send_message(
-                        pid,
-                        f"[YOLO] ({i}/{total}) '{filename}' 완료 "
-                        f"(총 {frame_idx} 프레임)",
-                    )
-
-            except Exception as e:
-                if pid is not None:
-                    send_message(
-                        pid,
-                        f"[YOLO] ({i}/{total}) '{filename}' 오류: "
-                        f"{type(e).__name__}: {e}",
-                    )
-                continue
-
-            finally:
-                try:
-                    os.remove(tmp_path)
-                except Exception:
-                    pass
-                if out_video_path:
+                finally:
                     try:
-                        os.remove(out_video_path)
+                        os.remove(tmp_path)
                     except Exception:
                         pass
+                    if out_video_path:
+                        try:
+                            os.remove(out_video_path)
+                        except Exception:
+                            pass
+
+    finally:
+        try:
+            os.remove(tracker_cfg_path)
+        except Exception:
+            pass
 
     zip_buffer.seek(0)
 
