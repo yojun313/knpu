@@ -486,7 +486,7 @@ class Manager_Web:
             if selectedRow < 0:
                 return
             selectedUid = self.paper_data[selectedRow]["uid"]
-            # 기존 데이터 가져오기
+
             origin = None
             for year_group in self.origin_paper_data:
                 for p in year_group["papers"]:
@@ -501,14 +501,17 @@ class Manager_Web:
             dialog = EditHomePaperDialog(data=origin, parent=self.main)
             if dialog.exec():
                 payload = dialog.get_payload()
-                payload["paper"]["uid"] = selectedUid  # uid 유지
+                if not payload:
+                    return  # 연도 검증 실패 등으로 get_payload가 {}를 반환한 경우
+
+                payload["uid"] = selectedUid  # uid 유지
                 Request("post", "papers/", HOMEPAGE_EDIT_API, json=payload)
                 QMessageBox.information(
                     self.main,
                     "완료",
-                    f"{payload['paper'].get('title')}가 수정되었습니다",
+                    f"{payload.get('title')}가 수정되었습니다",
                 )
-                userLogging(f"WEB -> editHomePaper({payload['paper'].get('title')})")
+                userLogging(f"WEB -> editHomePaper({payload.get('title')})")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -552,7 +555,7 @@ class Manager_Web:
                 return
             selectedUid = self.news_data[selectedRow]["uid"]
             origin = None
-            for n in self.origin_news_data:
+            for n in self.news_data:
                 if n.get("uid") == selectedUid:
                     origin = n
                     break
@@ -671,7 +674,7 @@ class Manager_Web:
                 return
             selectedUid = self.news_data[selectedRow]["uid"]
             origin = None
-            for n in self.origin_news_data:
+            for n in self.news_data:
                 if n.get("uid") == selectedUid:
                     origin = n
                     break
