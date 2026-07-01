@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from app.db import news_db
 from datetime import datetime
 from app.models import News
+import uuid
+
 
 router = APIRouter()
 
