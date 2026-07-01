@@ -18,7 +18,7 @@ class Member(BaseModel):
 
 class News(BaseModel):
     uid: Optional[str] = None
-    image: str
+    image: Optional[str] = None
     title: str
     content: str
     date: str
