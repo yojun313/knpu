@@ -50,7 +50,7 @@ async def request_code(request: Request):
     try:
         sendMail(
             receiver=email,
-            title="[PAILAB CRAWLER] 로그인 인증코드",
+            title="[FPEI CRAWLER] 로그인 인증코드",
             text=f"인증코드: {code}\n\n5분 내에 입력해주세요.",
         )
     except Exception as e:

@@ -27,7 +27,7 @@ def build_app():
     app = QApplication(sys.argv)
     app.setApplicationName("MANAGER")
     app.setApplicationVersion(VERSION)
-    app.setOrganizationName("PAILAB")
+    app.setOrganizationName("FPEI")
     app.setWindowIcon(QIcon(os.path.join(ASSETS_PATH, "exe_icon.png")))
     app.setStyle("Fusion")
 

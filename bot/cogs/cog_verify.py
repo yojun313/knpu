@@ -258,7 +258,7 @@ class VerificationCog(commands.Cog):
         embed.set_author(
             name="경찰대학 관리 시스템", icon_url="attachment://thumbnail.png"
         )
-        embed.set_footer(text="KNPU PAILAB")
+        embed.set_footer(text="KNPU FPEI")
 
         try:
             await channel.send(

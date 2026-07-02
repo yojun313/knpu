@@ -13,7 +13,7 @@ from app.routes import (
     nginx_routes,
 )
 
-app = FastAPI(title="PAILAB Dashboard")
+app = FastAPI(title="FPEI Dashboard")
 
 # 라우터 등록
 app.include_router(auth_routes.router)

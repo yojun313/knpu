@@ -70,7 +70,7 @@ def generate_complaints(payload: dict = Body(...)):
         user_email = form_data.get("사용자 이메일", "")
         if user_email:
             try:
-                mail_title = "[PAILAB AI 고소장] 고소장이 생성되었습니다"
+                mail_title = "[FPEI AI 고소장] 고소장이 생성되었습니다"
                 mail_text = """
 안녕하세요.
 요청하신 AI 고소장 파일 생성이 완료되어 송부드립니다.
@@ -88,7 +88,7 @@ def generate_complaints(payload: dict = Body(...)):
         submit_email = form_data.get("제출용 이메일", "")
         if submit_email:
             try:
-                mail_title_target = f"[PAILAB AI 고소장 제출] {form_data.get('고소인', '')}님의 고소장입니다."
+                mail_title_target = f"[FPEI AI 고소장 제출] {form_data.get('고소인', '')}님의 고소장입니다."
                 mail_text_target = f"""
 {form_data.get("고소인", "")}님의 AI 고소장을 송부합니다.
 첨부파일을 확인해 주시기 바랍니다.

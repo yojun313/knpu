@@ -1,6 +1,6 @@
-# KNPU PAILAB Research System
+# KNPU FPEI Research System
 
-Research System for **PAILAB** at **Korea National Police University**.
+Research System for **FPEI** at **Korea National Police University**.
 
 ---
 
@@ -50,5 +50,5 @@ uv sync
 ```
     
 ---
-© 2026 **PAILAB**. All rights reserved.
+© 2026 **FPEI**. All rights reserved.
 Developed by [**Yojun Moon**](https://github.com/yojun313)
