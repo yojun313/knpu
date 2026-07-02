@@ -106,7 +106,7 @@ class SplashDialog(QDialog):
         main_layout.addWidget(self.bar, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # 저작권 정보 라벨
-        copyrightLabel = QLabel("Copyright © 2024 KNPU PAILAB\nAll rights reserved.")
+        copyrightLabel = QLabel("Copyright © 2024 KNPU FPEI\nAll rights reserved.")
         copyrightLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         copyrightLabel.setStyleSheet(
             f"font-size: 15px; font-family: 'Tahoma'; color: {gray_color}; margin-top: 10px;"
@@ -235,7 +235,7 @@ class AboutDialog(BaseDialog):
         main_layout.addLayout(grid)
 
         # ----- 하단 공통: 저작권 + 닫기 버튼 -----
-        copyright_label = QLabel("Copyright © 2024 KNPU PAILAB\nAll rights reserved.")
+        copyright_label = QLabel("Copyright © 2024 KNPU FPEI\nAll rights reserved.")
         copyright_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         copyright_label.setStyleSheet(
             f"font-size: 14px; font-family: 'Tahoma'; color: {self.gray_color}; margin-top: 10px;"

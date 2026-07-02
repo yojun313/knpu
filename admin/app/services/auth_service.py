@@ -31,7 +31,7 @@ def request_login(name: str):
 
     sendEmail(
         user["email"],
-        "[PAILAB] Dashboard Verification Code",
+        "[FPEI] Dashboard Verification Code",
         f"Your verification code is: {code}",
     )
     return user["email"]

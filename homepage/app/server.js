@@ -33,7 +33,7 @@ const s3 = new S3Client({
 });
 
 // 파비콘 설정
-app.use(favicon(path.join(__dirname, 'public', 'assets', 'imgs', 'pailab_logo_favicon.ico')));
+app.use(favicon(path.join(__dirname, 'public', 'assets', 'imgs', 'fpei_logo_favicon.ico')));
 app.use(express.static('public'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));

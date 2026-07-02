@@ -1,7 +1,7 @@
 [project]
 name = "knpu"
 version = "0.1.0"
-description = "Research System for PAILAB @ Korea National Police University"
+description = "Research System for FPEI @ Korea National Police University"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
