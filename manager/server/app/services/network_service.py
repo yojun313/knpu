@@ -461,7 +461,6 @@ def draw_network(res, option, out_png, title=""):
 def export_files(res, option, out_dir, tag=""):
     os.makedirs(out_dir, exist_ok=True)
     g, cent, community = res["graph"], res["cent"], res["community"]
-
     # nodes.csv
     node_rows = {"word": g.vs["name"], "frequency": g.vs["freq"]}
     for k, v in cent.items():
