@@ -5,6 +5,7 @@ description = "Research System for FPEI @ Korea National Police University"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "adjusttext>=1.4.0",
     "aiohttp>=3.13.5",
     "aiosmtplib>=5.1.0",
     "asyncio>=4.0.0",
@@ -22,6 +23,7 @@ dependencies = [
     "google-api-python-client>=2.195.0",
     "google-auth-oauthlib>=1.3.1",
     "googletrans>=4.0.2",
+    "igraph>=1.0.0",
     "jinja2>=3.1.6",
     "kiwipiepy>=0.23.1",
     "lxml>=6.1.0",
