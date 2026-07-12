@@ -2,7 +2,7 @@
 import os
 
 os.environ.setdefault("OMP_NUM_THREADS", "0")  # period 병렬 시 워커 내부에서 재설정
-import io
+import re
 import json
 import shutil
 import traceback
@@ -26,7 +26,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
 
 from app.libs.progress import send_message
-from app.utils.zip import fast_zip
+from scipy.spatial import ConvexHull  # 파일 상단 import에 추가
+from adjustText import adjust_text  # 라벨 겹침 방지 (pip install adjustText)
 
 # 한글 폰트 (GPU 서버 환경에 맞게 경로/이름만 맞춰줘)
 try:
@@ -244,6 +245,39 @@ def analyze_graph(words, freq, edges, option, pid=None, tag=""):
         community = part.membership
         modularity = g.modularity(part, weights="weight")
 
+    # ── 전역 지표 + 고급 노드 지표 ──
+    if pid:
+        send_message(pid, f"{tag}전역/고급 지표 계산 중...")
+    global_metrics = {
+        "nodes": g.vcount(),
+        "edges": g.ecount(),
+        "density": g.density(),
+        "avg_degree": float(np.mean(g.degree())),
+        "components": len(g.connected_components()),
+        "avg_clustering": g.transitivity_avglocal_undirected(mode="zero"),
+        "global_clustering": g.transitivity_undirected(mode="zero"),
+    }
+    # 지름·평균경로: 비연결 그래프면 최대 컴포넌트에서
+    try:
+        comp = g.connected_components()
+        giant = comp.giant()
+        global_metrics["diameter"] = giant.diameter(weights=None)
+        global_metrics["avg_path_length"] = giant.average_path_length()
+    except Exception:
+        global_metrics["diameter"] = None
+        global_metrics["avg_path_length"] = None
+
+    # k-core 분해
+    if option.get("compute_kcore", True):
+        cent["coreness"] = g.coreness()
+
+    # 구조적 공백 (Burt's constraint)
+    if option.get("compute_structural_holes", True):
+        try:
+            cent["constraint"] = g.constraint(weights="weight")
+        except Exception:
+            cent["constraint"] = [None] * g.vcount()
+
     # 레이아웃
     if pid:
         send_message(pid, f"{tag}레이아웃 계산 중...")
@@ -265,7 +299,36 @@ def analyze_graph(words, freq, edges, option, pid=None, tag=""):
         "community": community,
         "modularity": modularity,
         "coords": coords,
+        "global_metrics": global_metrics,
     }
+
+
+def export_ego_networks(res, option, out_dir, tag=""):
+    """상위 노드들의 ego 네트워크(1-hop)를 개별 저장."""
+    g = res["graph"]
+    ego_top = int(option.get("ego_top", 0))
+    if ego_top <= 0:
+        return
+    ego_dir = os.path.join(out_dir, f"ego{tag}")
+    os.makedirs(ego_dir, exist_ok=True)
+
+    deg = np.array(g.degree())
+    targets = np.argsort(deg)[::-1][:ego_top]
+    for idx in targets:
+        neighbors = g.neighbors(idx)
+        sub_nodes = [int(idx)] + list(neighbors)
+        sub = g.subgraph(sub_nodes)
+        name = g.vs[int(idx)]["name"]
+        safe = re.sub(r'[<>:"/\\|?*]', "_", str(name))
+        sub.write_graphml(os.path.join(ego_dir, f"ego_{safe}.graphml"))
+        pd.DataFrame(
+            {
+                "word": sub.vs["name"],
+                "freq": sub.vs["freq"],
+            }
+        ).to_csv(
+            os.path.join(ego_dir, f"ego_{safe}.csv"), index=False, encoding="utf-8-sig"
+        )
 
 
 # ────────────────────── 출력 ──────────────────────
@@ -273,6 +336,7 @@ def draw_network(res, option, out_png, title=""):
     g, coords = res["graph"], res["coords"]
     cent, community = res["cent"], res["community"]
 
+    # ── 노드 크기 기준 ──
     size_by = option.get("node_size_by", "freq")
     if size_by == "freq":
         base = np.array(g.vs["freq"], dtype=float)
@@ -283,50 +347,96 @@ def draw_network(res, option, out_png, title=""):
     else:
         sizes = np.full(g.vcount(), 200.0)
 
-    if community is not None:
+    # ── 노드 색 기준 (커뮤니티 or 중심성) ──
+    color_by = option.get("node_color_by", "community")
+    fig, ax = plt.subplots(figsize=(18, 14))
+
+    if color_by == "community" and community is not None:
         cmap = plt.cm.tab20
         colors = [cmap(c % 20) for c in community]
+        show_colorbar = False
+    elif color_by in cent:
+        cvals = np.array(cent[color_by], dtype=float)
+        norm = (cvals - cvals.min()) / (cvals.ptp() or 1)
+        cmap = plt.cm.viridis
+        colors = [cmap(v) for v in norm]
+        show_colorbar = True
     else:
         colors = ["#1428A0"] * g.vcount()
+        show_colorbar = False
 
-    fig, ax = plt.subplots(figsize=(16, 12))
-    # edge (LineCollection = 빠름)
-    segs, ews = [], []
+    # ── 커뮤니티별 배경 음영 (convex hull) ──
+    if option.get("draw_hull") and community is not None:
+        cmap_h = plt.cm.tab20
+        for c in set(community):
+            pts = coords[[i for i in range(len(community)) if community[i] == c]]
+            if len(pts) < 3:
+                continue
+            try:
+                hull = ConvexHull(pts)
+                poly = pts[hull.vertices]
+                ax.fill(
+                    poly[:, 0], poly[:, 1], color=cmap_h(c % 20), alpha=0.08, zorder=0
+                )
+            except Exception:
+                pass
+
+    # ── 엣지 (가중치별 투명도 + 두께) ──
+    segs, ews, ealphas = [], [], []
     ew = np.array(g.es["weight"])
     ew_norm = ew / ew.max() if len(ew) and ew.max() > 0 else ew
     for e, wn in zip(g.es, ew_norm):
         segs.append([coords[e.source], coords[e.target]])
         ews.append(0.2 + 2.5 * wn)
-    ax.add_collection(
-        LineCollection(segs, colors="#cccccc", linewidths=ews, alpha=0.4, zorder=1)
-    )
-    ax.scatter(
+        ealphas.append(0.05 + 0.35 * wn)  # 약한 엣지는 더 투명
+    lc = LineCollection(segs, colors="#888888", linewidths=ews, zorder=1)
+    lc.set_alpha(None)
+    lc.set_color([(0.53, 0.53, 0.53, a) for a in ealphas])
+    ax.add_collection(lc)
+
+    # ── 노드 ──
+    sc = ax.scatter(
         coords[:, 0],
         coords[:, 1],
         s=sizes,
         c=colors,
         edgecolors="white",
-        linewidths=0.5,
+        linewidths=0.6,
         zorder=2,
     )
 
-    # 상위 라벨만
-    label_top = int(option.get("label_top", 40))
-    rank_by = option.get("node_size_by", "freq")
-    rank = base
-    top_idx = np.argsort(rank)[::-1][:label_top]
-    for i in top_idx:
-        ax.text(
-            coords[i, 0],
-            coords[i, 1],
-            g.vs[i]["name"],
-            fontsize=9,
-            ha="center",
-            va="center",
-            zorder=3,
+    if show_colorbar:
+        sm = plt.cm.ScalarMappable(
+            cmap=cmap, norm=plt.Normalize(vmin=cvals.min(), vmax=cvals.max())
         )
+        sm.set_array([])
+        fig.colorbar(sm, ax=ax, shrink=0.6, label=color_by)
 
-    ax.set_title(title, fontsize=16)
+    # ── 라벨 겹침 방지 ──
+    label_top = int(option.get("label_top", 40))
+    top_idx = np.argsort(base)[::-1][:label_top]
+    texts = []
+    for i in top_idx:
+        texts.append(
+            ax.text(
+                coords[i, 0],
+                coords[i, 1],
+                g.vs[i]["name"],
+                fontsize=10,
+                ha="center",
+                va="center",
+                zorder=3,
+            )
+        )
+    if option.get("adjust_labels", True) and texts:
+        try:
+            adjust_text(
+                texts, ax=ax, arrowprops=dict(arrowstyle="-", color="gray", lw=0.5)
+            )
+        except Exception:
+            pass
+
+    ax.set_title(title, fontsize=18)
     ax.axis("off")
     fig.tight_layout()
     fig.savefig(out_png, dpi=150, bbox_inches="tight")
@@ -380,39 +490,72 @@ def export_files(res, option, out_dir, tag=""):
             f.write(f"modularity: {res['modularity']:.4f}\n")
             f.write(f"communities: {len(set(community))}\n")
 
+    export_ego_networks(res, option, out_dir, tag=tag)
+
 
 def _export_interactive_html(res, out_path):
-    g, coords, cent, community = (
-        res["graph"],
-        res["coords"],
-        res["cent"],
-        res["community"],
-    )
-    deg = g.degree()
+    g = res["graph"]
+    cent, community = res["cent"], res["community"]
     nodes = []
+    cmap = plt.cm.tab20
     for i, v in enumerate(g.vs):
+        grp = int(community[i]) if community is not None else 0
+        rgba = cmap(grp % 20)
+        hexc = "#%02x%02x%02x" % (
+            int(rgba[0] * 255),
+            int(rgba[1] * 255),
+            int(rgba[2] * 255),
+        )
         nodes.append(
             {
                 "id": i,
                 "label": v["name"],
                 "value": v["freq"],
-                "group": int(community[i]) if community is not None else 0,
+                "group": grp,
+                "color": hexc,
             }
         )
     edges = [{"from": e.source, "to": e.target, "value": e["weight"]} for e in g.es]
 
     nodes_json = json.dumps(nodes, ensure_ascii=False)
     edges_json = json.dumps(edges, ensure_ascii=False)
+    max_w = max((e["value"] for e in edges), default=1)
 
     html = (
         '<!DOCTYPE html><html><head><meta charset="utf-8">'
         '<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>'
-        "<style>#net{width:100%;height:100vh;border:1px solid #ddd}</style></head>"
-        '<body><div id="net"></div><script>'
-        "var nodes=new vis.DataSet(" + nodes_json + ");"
-        "var edges=new vis.DataSet(" + edges_json + ");"
-        'new vis.Network(document.getElementById("net"),{nodes:nodes,edges:edges},'
-        '{physics:{stabilization:true},nodes:{shape:"dot",scaling:{min:5,max:40}}});'
+        "<style>"
+        "body{margin:0;font-family:sans-serif}"
+        "#bar{padding:8px;background:#f4f4f4;border-bottom:1px solid #ccc;"
+        "display:flex;gap:12px;align-items:center;flex-wrap:wrap}"
+        "#net{width:100%;height:calc(100vh - 52px);}"
+        "input[type=text]{padding:4px 8px}"
+        "</style></head><body>"
+        '<div id="bar">'
+        '<input id="search" type="text" placeholder="단어 검색...">'
+        '<label>엣지 최소 가중치: <span id="wv">0</span></label>'
+        '<input id="wslider" type="range" min="0" max="' + str(max_w) + '" '
+        'value="0" step="' + str(max(max_w / 100, 0.01)) + '">'
+        '<button id="physics">물리엔진 On/Off</button>'
+        '</div><div id="net"></div><script>'
+        "var allNodes=" + nodes_json + ";"
+        "var allEdges=" + edges_json + ";"
+        "var nodes=new vis.DataSet(allNodes);"
+        "var edges=new vis.DataSet(allEdges);"
+        'var net=new vis.Network(document.getElementById("net"),'
+        "{nodes:nodes,edges:edges},"
+        "{physics:{stabilization:true,barnesHut:{gravitationalConstant:-8000}},"
+        'nodes:{shape:"dot",scaling:{min:5,max:50}},'
+        "edges:{color:{opacity:0.3}}});"
+        'document.getElementById("search").addEventListener("input",function(e){'
+        "var q=e.target.value.trim();if(!q){net.unselectAll();return;}"
+        "var hit=allNodes.filter(n=>n.label.includes(q)).map(n=>n.id);"
+        "net.selectNodes(hit);if(hit.length)net.focus(hit[0],{scale:1.2,animation:true});});"
+        'document.getElementById("wslider").addEventListener("input",function(e){'
+        'var t=parseFloat(e.target.value);document.getElementById("wv").innerText=t.toFixed(2);'
+        "edges.clear();edges.add(allEdges.filter(ed=>ed.value>=t));});"
+        'var phys=true;document.getElementById("physics").addEventListener("click",function(){'
+        "phys=!phys;net.setOptions({physics:{enabled:phys}});});"
         "</script></body></html>"
     )
     with open(out_path, "w", encoding="utf-8") as f:
@@ -438,6 +581,47 @@ def _run_one_period(args):
     )
     res = analyze_graph(words, freq, edges, option, pid=None, tag=period_tag + " ")
     return period_tag, res
+
+
+def _export_period_comparison(period_summ, out_dir):
+    df = pd.DataFrame(period_summ).sort_values("period")
+    df.to_csv(
+        os.path.join(out_dir, "period_comparison.csv"),
+        index=False,
+        encoding="utf-8-sig",
+    )
+
+    # 주요 지표 추이 그래프
+    metrics = [
+        m
+        for m in [
+            "nodes",
+            "edges",
+            "density",
+            "avg_degree",
+            "avg_clustering",
+            "modularity",
+        ]
+        if m in df.columns
+    ]
+    if not metrics:
+        return
+    n = len(metrics)
+    fig, axes = plt.subplots((n + 1) // 2, 2, figsize=(14, 3 * ((n + 1) // 2)))
+    axes = np.array(axes).ravel()
+    for ax, m in zip(axes, metrics):
+        ax.plot(df["period"], df[m], marker="o", color="#1428A0")
+        ax.set_title(m)
+        ax.tick_params(axis="x", rotation=45)
+        ax.grid(alpha=0.3)
+    for ax in axes[len(metrics) :]:
+        ax.axis("off")
+    fig.suptitle("Period Comparison", fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(out_dir, "period_comparison.png"), dpi=130, bbox_inches="tight"
+    )
+    plt.close(fig)
 
 
 # ────────────────────── 엔트리포인트 ──────────────────────
@@ -484,11 +668,24 @@ def run_network_analysis(pid: str, data: pd.DataFrame, option: dict):
             send_message(pid, f"기간 {len(groups)}개 병렬 분석 시작...")
             n_workers = min(len(groups), os.cpu_count() or 4)
             args = [(f"_{k}", txts, option) for k, txts in groups]
+            send_message(pid, f"기간 {len(groups)}개 병렬 분석 시작...")
+            n_workers = min(len(groups), os.cpu_count() or 4)
+            args = [(f"_{k}", txts, option) for k, txts in groups]
+
+            period_summ = []
             with ProcessPoolExecutor(max_workers=n_workers) as ex:
                 for period_tag, res in ex.map(_run_one_period, args):
                     if res is not None:
                         export_files(res, option, out_dir, tag=period_tag)
+                        row = {"period": period_tag.lstrip("_")}
+                        row.update(res.get("global_metrics", {}))
+                        row["modularity"] = res.get("modularity")
+                        period_summ.append(row)
                     send_message(pid, f"{period_tag} 완료")
+
+            # ── 기간 비교표 + 추이 그래프 ──
+            if period_summ:
+                _export_period_comparison(period_summ, out_dir)
         else:
             texts = data[text_col].tolist()
             send_message(pid, "단어 사전 구축 중...")
