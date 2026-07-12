@@ -26,7 +26,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
 
 from app.libs.progress import send_message
-from scipy.spatial import ConvexHull  
+from scipy.spatial import ConvexHull
 from adjustText import adjust_text
 
 # 한글 폰트 (GPU 서버 환경에 맞게 경로/이름만 맞춰줘)
@@ -581,6 +581,7 @@ def _export_interactive_html(res, out_path, max_edges=1500):
     max_w = max((e["value"] for e in edges), default=1)
     truncated = len(g.es) > max_edges
     n_comm = (max(community) + 1) if community is not None else 1
+    max_freq = max((n["value"] for n in nodes), default=1)
 
     warn = (
         f"⚠ 전체 엣지 {len(g.es):,}개 중 상위 {max_edges:,}개 표시"
@@ -597,6 +598,7 @@ def _export_interactive_html(res, out_path, max_edges=1500):
         .replace("__MAXW__", str(max_w))
         .replace("__STEP__", str(max(max_w / 100, 0.01)))
         .replace("__NC__", str(n_comm))
+        .replace("__MAXFREQ__", str(max_freq))
         .replace("__NODES__", nodes_json)
         .replace("__EDGES__", edges_json)
         .replace("__PALETTE__", json.dumps(palette))
