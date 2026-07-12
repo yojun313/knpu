@@ -37,6 +37,10 @@ except Exception:
 plt.rcParams["axes.unicode_minus"] = False
 
 
+# 템플릿 파일 경로 (이 파이썬 파일과 같은 폴더에 network_template.html 이 있다고 가정)
+TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "network_template.html")
+
+
 # ────────────────────────── 유틸 ──────────────────────────
 def _split_tokens(cell):
     if not isinstance(cell, str):
@@ -584,154 +588,9 @@ def _export_interactive_html(res, out_path, max_edges=1500):
         else f"엣지 {len(g.es):,}개 · 노드 {len(nodes):,}개"
     )
 
-    html = r"""<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Word Network</title>
-<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-<style>
-:root{--bg:#0f1117;--panel:#1a1d27;--panel2:#232735;--text:#e6e8ee;--muted:#8b90a0;--accent:#4C78A8;--border:#2c3140;}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,'Segoe UI',Roboto,'Malgun Gothic',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
-#app{display:flex;height:100vh;width:100vw}
-#net{flex:1;height:100%;background:radial-gradient(circle at 50% 40%,#161a24 0%,#0f1117 100%)}
-#side{width:300px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
-#top{position:absolute;top:0;left:0;right:300px;padding:12px 18px;display:flex;gap:14px;align-items:center;
-  background:linear-gradient(180deg,rgba(15,17,23,.95),rgba(15,17,23,0));z-index:5;flex-wrap:wrap}
-.badge{font-size:12px;color:var(--muted);background:var(--panel2);padding:6px 12px;border-radius:20px;border:1px solid var(--border)}
-.search{flex:1;max-width:280px;position:relative}
-.search input{width:100%;padding:9px 14px 9px 34px;border-radius:22px;border:1px solid var(--border);
-  background:var(--panel2);color:var(--text);font-size:14px;outline:none}
-.search input:focus{border-color:var(--accent)}
-.search svg{position:absolute;left:11px;top:9px;opacity:.5}
-.sec{padding:16px 18px;border-bottom:1px solid var(--border)}
-.sec h3{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;font-weight:600}
-.row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px}
-.row label{color:var(--muted)}
-input[type=range]{-webkit-appearance:none;width:130px;height:4px;border-radius:2px;background:var(--panel2);outline:none}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff}
-.btn{background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:8px;
-  cursor:pointer;font-size:13px;transition:.15s;width:100%;margin-bottom:8px}
-.btn:hover{background:#2c3245;border-color:var(--accent)}
-.btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.node-title{font-size:22px;font-weight:700;margin-bottom:4px}
-.node-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
-.metric{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
-.metric span:first-child{color:var(--muted)}
-.metric span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
-.empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px;line-height:1.6}
-.legend-item{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px;cursor:pointer;opacity:.9}
-.legend-item:hover{opacity:1}
-.dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
-.title-block{padding:18px;border-bottom:1px solid var(--border)}
-.title-block h1{font-size:16px;font-weight:700}
-.title-block p{font-size:11px;color:var(--muted);margin-top:3px}
-</style></head><body>
-<div id="app">
-  <div id="net"></div>
-  <div id="top">
-    <div class="search">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-      <input id="search" type="text" placeholder="단어 검색...">
-    </div>
-    <div class="badge">__WARN__</div>
-  </div>
-  <div id="side">
-    <div class="title-block"><h1>Word Network</h1><p>공출현 기반 단어 네트워크</p></div>
-    <div class="sec">
-      <h3>노드 정보</h3>
-      <div id="detail"><div class="empty">노드를 클릭하면<br>상세 지표가 표시됩니다</div></div>
-    </div>
-    <div class="sec">
-      <h3>필터</h3>
-      <div class="row"><label>엣지 가중치 ≥</label><span id="wv">0</span></div>
-      <input id="wslider" type="range" min="0" max="__MAXW__" value="0" step="__STEP__" style="width:100%">
-    </div>
-    <div class="sec">
-      <h3>보기</h3>
-      <button class="btn active" id="btnLabel">라벨 표시</button>
-      <button class="btn" id="btnPhysics">물리엔진</button>
-      <button class="btn" id="btnFit">전체 보기</button>
-    </div>
-    <div class="sec">
-      <h3>커뮤니티 (__NC__개)</h3>
-      <div id="legend"></div>
-    </div>
-  </div>
-</div>
-<script>
-var allNodes=__NODES__, allEdges=__EDGES__;
-var palette=__PALETTE__;
-var showLabel=true, physics=false;
-var baseNodes=allNodes.map(function(n){return Object.assign({},n,{
-  font:{color:'#d8dbe4',size:14,face:'Malgun Gothic',strokeWidth:3,strokeColor:'#0f1117'}});});
-var nodes=new vis.DataSet(baseNodes);
-var edges=new vis.DataSet(allEdges.map(function(e){return {from:e.from,to:e.to,value:e.value};}));
-var container=document.getElementById('net');
-var data={nodes:nodes,edges:edges};
-var options={
-  physics:{enabled:false},
-  layout:{improvedLayout:false},
-  interaction:{hover:true,tooltipDelay:120,navigationButtons:false,keyboard:false},
-  nodes:{shape:'dot',scaling:{min:6,max:55},borderWidth:1.5,color:{border:'#0f1117'}},
-  edges:{color:{color:'#3a4152',highlight:'#6b7a99',opacity:.35},smooth:false,width:.5,selectionWidth:2}
-};
-var net=new vis.Network(container,data,options);
-
-function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
-var nodeMap={}; allNodes.forEach(function(n){nodeMap[n.id]=n;});
-
-net.on('click',function(p){
-  if(p.nodes.length){showDetail(nodeMap[p.nodes[0]]);}
-  else{document.getElementById('detail').innerHTML='<div class="empty">노드를 클릭하면<br>상세 지표가 표시됩니다</div>';}
-});
-var mnames={degree:'연결 정도',strength:'강도',betweenness:'매개 중심성',
-  closeness:'근접 중심성',eigenvector:'고유벡터',pagerank:'PageRank',
-  coreness:'k-core',constraint:'구조적 공백'};
-function showDetail(n){
-  var h='<div class="node-title">'+esc(n.label)+'</div>'+
-    '<div class="node-sub">커뮤니티 '+n.group+' · 빈도 '+n.value+'</div>';
-  var info=n.info||{};
-  Object.keys(info).forEach(function(k){
-    if(info[k]==null)return;
-    h+='<div class="metric"><span>'+(mnames[k]||k)+'</span><span>'+info[k]+'</span></div>';
-  });
-  document.getElementById('detail').innerHTML=h;
-  net.selectNodes([n.id]);
-  net.focus(n.id,{scale:1.1,animation:{duration:400}});
-}
-document.getElementById('search').addEventListener('input',function(e){
-  var q=e.target.value.trim();
-  if(!q){net.unselectAll();return;}
-  var hit=allNodes.filter(function(n){return n.label.indexOf(q)>=0;});
-  if(hit.length){showDetail(hit[0]);}
-});
-document.getElementById('wslider').addEventListener('input',function(e){
-  var t=parseFloat(e.target.value);document.getElementById('wv').innerText=t.toFixed(1);
-  edges.clear();edges.add(allEdges.filter(function(ed){return ed.value>=t;})
-    .map(function(e){return {from:e.from,to:e.to,value:e.value};}));
-});
-document.getElementById('btnLabel').addEventListener('click',function(){
-  showLabel=!showLabel;this.classList.toggle('active',showLabel);
-  nodes.update(baseNodes.map(function(n){return {id:n.id,label:showLabel?n.label:undefined};}));
-});
-document.getElementById('btnPhysics').addEventListener('click',function(){
-  physics=!physics;this.classList.toggle('active',physics);
-  net.setOptions({physics:{enabled:physics,barnesHut:{gravitationalConstant:-12000,springLength:120}}});
-});
-document.getElementById('btnFit').addEventListener('click',function(){net.fit({animation:true});});
-// 범례 + 커뮤니티 하이라이트
-var legend=document.getElementById('legend');
-for(var c=0;c<__NC__;c++){(function(c){
-  var d=document.createElement('div');d.className='legend-item';
-  d.innerHTML='<span class="dot" style="background:'+palette[c%palette.length]+'"></span>커뮤니티 '+c;
-  d.addEventListener('click',function(){
-    var ids=allNodes.filter(function(n){return n.group===c;}).map(function(n){return n.id;});
-    net.selectNodes(ids);net.fit({nodes:ids,animation:true});
-  });
-  legend.appendChild(d);
-})(c);}
-setTimeout(function(){net.fit();},100);
-</script></body></html>"""
+    # 외부 HTML 템플릿 로드
+    with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
+        html = f.read()
 
     html = (
         html.replace("__WARN__", warn)
