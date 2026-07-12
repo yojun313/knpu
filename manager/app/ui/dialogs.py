@@ -2796,7 +2796,7 @@ class NetworkAnalysisDialog(BaseDialog):
             "save_dir": self.save_dir,
             "node_color_by": "community",
             "draw_hull": True,
-            "adjust_labels": True,
+            "adjust_labels": False,
             "compute_kcore": True,
             "compute_structural_holes": True,
             "ego_top": 5,

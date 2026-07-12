@@ -412,26 +412,37 @@ def draw_network(res, option, out_png, title=""):
         sm.set_array([])
         fig.colorbar(sm, ax=ax, shrink=0.6, label=color_by)
 
-    # ── 라벨 겹침 방지 ──
+    # ── 라벨 (노드에 정확히 붙임) ──
     label_top = int(option.get("label_top", 40))
     top_idx = np.argsort(base)[::-1][:label_top]
     texts = []
     for i in top_idx:
-        texts.append(
-            ax.text(
-                coords[i, 0],
-                coords[i, 1],
-                g.vs[i]["name"],
-                fontsize=10,
-                ha="center",
-                va="center",
-                zorder=3,
-            )
+        t = ax.text(
+            coords[i, 0],
+            coords[i, 1],
+            g.vs[i]["name"],
+            fontsize=9,
+            ha="center",
+            va="center",
+            zorder=4,
+            fontweight="bold",
+            bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.7),
         )
-    if option.get("adjust_labels", True) and texts:
+        texts.append(t)
+
+    # adjust_labels가 명시적으로 True일 때만 겹침 방지 시도 (기본 꺼짐)
+    if option.get("adjust_labels", False) and texts:
         try:
+            from adjustText import adjust_text
+
             adjust_text(
-                texts, ax=ax, arrowprops=dict(arrowstyle="-", color="gray", lw=0.5)
+                texts,
+                ax=ax,
+                x=coords[top_idx, 0],
+                y=coords[top_idx, 1],
+                only_move={"text": "xy", "points": ""},
+                force_text=(0.1, 0.15),
+                arrowprops=dict(arrowstyle="-", color="#999999", lw=0.6),
             )
         except Exception:
             pass
@@ -493,12 +504,27 @@ def export_files(res, option, out_dir, tag=""):
     export_ego_networks(res, option, out_dir, tag=tag)
 
 
-def _export_interactive_html(res, out_path):
+def _export_interactive_html(res, out_path, max_edges=1500):
     g = res["graph"]
     cent, community = res["cent"], res["community"]
+
+    # 엣지가 너무 많으면 가중치 상위 max_edges개만 사용 (브라우저 렌더링 보호)
+    all_edges = list(g.es)
+    if len(all_edges) > max_edges:
+        all_edges = sorted(all_edges, key=lambda e: e["weight"], reverse=True)[
+            :max_edges
+        ]
+
+    used_node_ids = set()
+    for e in all_edges:
+        used_node_ids.add(e.source)
+        used_node_ids.add(e.target)
+
     nodes = []
     cmap = plt.cm.tab20
     for i, v in enumerate(g.vs):
+        if i not in used_node_ids:
+            continue  # 엣지가 다 잘려서 고립된 노드는 html에서 제외
         grp = int(community[i]) if community is not None else 0
         rgba = cmap(grp % 20)
         hexc = "#%02x%02x%02x" % (
@@ -515,51 +541,14 @@ def _export_interactive_html(res, out_path):
                 "color": hexc,
             }
         )
-    edges = [{"from": e.source, "to": e.target, "value": e["weight"]} for e in g.es]
+    edges = [
+        {"from": e.source, "to": e.target, "value": e["weight"]} for e in all_edges
+    ]
 
     nodes_json = json.dumps(nodes, ensure_ascii=False)
     edges_json = json.dumps(edges, ensure_ascii=False)
     max_w = max((e["value"] for e in edges), default=1)
-
-    html = (
-        '<!DOCTYPE html><html><head><meta charset="utf-8">'
-        '<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>'
-        "<style>"
-        "body{margin:0;font-family:sans-serif}"
-        "#bar{padding:8px;background:#f4f4f4;border-bottom:1px solid #ccc;"
-        "display:flex;gap:12px;align-items:center;flex-wrap:wrap}"
-        "#net{width:100%;height:calc(100vh - 52px);}"
-        "input[type=text]{padding:4px 8px}"
-        "</style></head><body>"
-        '<div id="bar">'
-        '<input id="search" type="text" placeholder="단어 검색...">'
-        '<label>엣지 최소 가중치: <span id="wv">0</span></label>'
-        '<input id="wslider" type="range" min="0" max="' + str(max_w) + '" '
-        'value="0" step="' + str(max(max_w / 100, 0.01)) + '">'
-        '<button id="physics">물리엔진 On/Off</button>'
-        '</div><div id="net"></div><script>'
-        "var allNodes=" + nodes_json + ";"
-        "var allEdges=" + edges_json + ";"
-        "var nodes=new vis.DataSet(allNodes);"
-        "var edges=new vis.DataSet(allEdges);"
-        'var net=new vis.Network(document.getElementById("net"),'
-        "{nodes:nodes,edges:edges},"
-        "{physics:{stabilization:true,barnesHut:{gravitationalConstant:-8000}},"
-        'nodes:{shape:"dot",scaling:{min:5,max:50}},'
-        "edges:{color:{opacity:0.3}}});"
-        'document.getElementById("search").addEventListener("input",function(e){'
-        "var q=e.target.value.trim();if(!q){net.unselectAll();return;}"
-        "var hit=allNodes.filter(n=>n.label.includes(q)).map(n=>n.id);"
-        "net.selectNodes(hit);if(hit.length)net.focus(hit[0],{scale:1.2,animation:true});});"
-        'document.getElementById("wslider").addEventListener("input",function(e){'
-        'var t=parseFloat(e.target.value);document.getElementById("wv").innerText=t.toFixed(2);'
-        "edges.clear();edges.add(allEdges.filter(ed=>ed.value>=t));});"
-        'var phys=true;document.getElementById("physics").addEventListener("click",function(){'
-        "phys=!phys;net.setOptions({physics:{enabled:phys}});});"
-        "</script></body></html>"
-    )
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(html)
+    truncated = len(g.es) > max_edges
 
 
 # ────────────────────── 기간 병렬 워커 ──────────────────────

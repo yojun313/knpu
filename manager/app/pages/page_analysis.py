@@ -2595,10 +2595,6 @@ class Manager_Analysis(Manager_Worker):
 
             def run(self):
                 try:
-                    target_dir = os.path.join(self.save_path, self.folder_name)
-                    if not os.path.exists(target_dir):
-                        os.makedirs(target_dir, exist_ok=True)
-
                     upload_url = MANAGER_SERVER_API + "/analysis/graph-network"
 
                     response = self.upload_file(
@@ -2611,14 +2607,16 @@ class Manager_Analysis(Manager_Worker):
                     zip_name = f"network_{os.path.splitext(os.path.basename(self.filepath))[0]}_{datetime.now().strftime('%m%d%H%M')}.zip"
                     extract_path = self.download_file(
                         response,
-                        target_dir,
+                        self.save_path,
                         label="결과 파일 다운로드 및 정리 중",
                         filename=zip_name,
                         extract=True,
                     )
 
                     self.finished.emit(
-                        True, f"네트워크 분석이 완료되었습니다.", target_dir
+                        True,
+                        "네트워크 분석이 완료되었습니다.",
+                        extract_path,
                     )
 
                 except requests.exceptions.HTTPError as e:
