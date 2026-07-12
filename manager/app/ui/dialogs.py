@@ -2728,6 +2728,17 @@ class NetworkAnalysisDialog(BaseDialog):
         bg.addWidget(self.backbone_alpha)
         layout.addWidget(backbone_group)
 
+        # 노드 색 기준
+        self.colorby_combo = QComboBox()
+        self.colorby_combo.addItems(["커뮤니티", "degree", "betweenness", "pagerank"])
+        form.addRow("노드 색 기준", self.colorby_combo)
+
+        # ego 개수
+        self.ego_spin = QSpinBox()
+        self.ego_spin.setRange(0, 50)
+        self.ego_spin.setValue(5)
+        form.addRow("ego 네트워크 수", self.ego_spin)
+
         # 저장 경로
         path_header = QHBoxLayout()
         path_header.addWidget(QLabel("<b>저장 위치:</b>"))
@@ -2764,6 +2775,7 @@ class NetworkAnalysisDialog(BaseDialog):
         period_map = {0: "total", 1: "1y", 2: "6m", 3: "3m", 4: "1m", 5: "1w"}
         community_map = {0: "louvain", 1: "leiden", 2: "none"}
         layout_map = {0: "fr", 1: "kk", 2: "circle", 3: "grid"}
+        colorby_map = {0: "community", 1: "degree", 2: "betweenness", 3: "pagerank"}
 
         self.data = {
             "text_col": self.column_combo.currentText(),
@@ -2782,6 +2794,14 @@ class NetworkAnalysisDialog(BaseDialog):
             "backbone": self.backbone_check.isChecked(),
             "backbone_alpha": self.backbone_alpha.value(),
             "save_dir": self.save_dir,
+            "node_color_by": "community",
+            "draw_hull": True,
+            "adjust_labels": True,
+            "compute_kcore": True,
+            "compute_structural_holes": True,
+            "ego_top": 5,
+            "node_color_by": colorby_map[self.colorby_combo.currentIndex()],
+            "ego_top": self.ego_spin.value(),
         }
         self.accept()
 
