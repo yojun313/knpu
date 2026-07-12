@@ -26,8 +26,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
 
 from app.libs.progress import send_message
-from scipy.spatial import ConvexHull  # 파일 상단 import에 추가
-from adjustText import adjust_text  # 라벨 겹침 방지 (pip install adjustText)
+from scipy.spatial import ConvexHull  
+from adjustText import adjust_text
 
 # 한글 폰트 (GPU 서버 환경에 맞게 경로/이름만 맞춰줘)
 try:
