@@ -2653,7 +2653,11 @@ class Manager_Analysis(Manager_Worker):
 
             thread_name = f"네트워크 분석: {filename}"
             register_thread(thread_name)
-            userLogging(f"ANALYSIS -> NetworkGraph({filename}) mode={res['mode']}")
+            userLogging(
+                f"ANALYSIS -> NetworkGraph({filename}) "
+                f"measure={res.get('measure')}, period={res.get('period')}, "
+                f"scope={res.get('scope')}, community={res.get('community')}"
+            )
 
             downloadDialog = DownloadDialog(thread_name, pid, self.main)
             downloadDialog.show()
