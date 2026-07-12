@@ -492,7 +492,7 @@ def export_files(res, option, out_dir, tag=""):
     )
 
     # 인터랙티브 html (vis-network, CDN)
-    _export_interactive_html(res, os.path.join(out_dir, f"network{tag}.html"))
+    _export_interactive_html(res, os.path.join(out_dir, f"viewer{tag}.html"))
 
     # summary
     with open(os.path.join(out_dir, f"summary{tag}.txt"), "w", encoding="utf-8") as f:
