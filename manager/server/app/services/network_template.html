@@ -343,6 +343,13 @@
       if(!isFinite(mn)){mn=0;mx=1;}
       return {min:mn,max:mx};
     }
+
+    function edgeValueRange(){
+      var mn=Infinity, mx=-Infinity;
+      rawEdges.forEach(function(e){ if(e.value<mn)mn=e.value; if(e.value>mx)mx=e.value; });
+      if(!isFinite(mn)){ mn=0; mx=1; }
+      return {min:mn, max:mx};
+    }
   
     var maxFreq=metricRangeOf('value').max;
     document.getElementById('fslider').max=Math.ceil(maxFreq);
@@ -505,13 +512,30 @@
       return {
         layout: { improvedLayout: false },
         nodes: {
-          scaling: { min: cfg.sizeMin, max: cfg.sizeMax }
+          scaling: {
+            min: cfg.sizeMin, max: cfg.sizeMax,
+            // 현재 화면에 보이는 노드 집합이 아니라, 원본 전체 데이터 기준으로 스케일 고정
+            customScaling: function(dsMin, dsMax, total, value){
+              var r = metricRangeOf(cfg.sizeBy);
+              var span = (r.max - r.min) || 1;
+              var t = Math.max(0, Math.min(1, (value - r.min) / span));
+              return cfg.sizeMin + t * (cfg.sizeMax - cfg.sizeMin);
+            }
+          }
         },
         edges: {
           color: { color: cfg.edgeColor, highlight: cfg.theme==='dark' ? '#8fb3dd' : '#2c3e50', opacity: cfg.edgeOpacity },
           smooth: cfg.edgeSmooth ? { type: 'continuous' } : false,
           arrows: { to: { enabled: cfg.arrows } },
-          scaling: { min: cfg.edgeWidthMin, max: cfg.edgeWidthMax },
+          scaling: {
+            min: cfg.edgeWidthMin, max: cfg.edgeWidthMax,
+            customScaling: function(dsMin, dsMax, total, value){
+              var r = edgeValueRange();
+              var span = (r.max - r.min) || 1;
+              var t = Math.max(0, Math.min(1, (value - r.min) / span));
+              return cfg.edgeWidthMin + t * (cfg.edgeWidthMax - cfg.edgeWidthMin);
+            }
+          },
           selectionWidth: 2
         },
         physics: {
@@ -524,7 +548,7 @@
         interaction: { zoomView: cfg.zoomWheel, dragNodes: cfg.dragNodes, hover: true, tooltipDelay: 120, navigationButtons: false, keyboard: false }
       };
     }
-  
+
     syncControlsFromCfg();
     applyBackground();
     renderGraph();
