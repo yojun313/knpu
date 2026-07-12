@@ -197,8 +197,8 @@
         <div class="sec-body">
           <div class="row"><label>모양</label></div>
           <select id="selShape" style="margin-bottom:12px">
-            <option value="dot">dot (원, 값기반 크기)</option>
             <option value="circle">circle (원, 라벨에 맞춰 자동)</option>
+            <option value="dot">dot (원, 값기반 크기)</option>
             <option value="ellipse">ellipse (타원)</option>
             <option value="box">box (사각형)</option>
             <option value="diamond">diamond (다이아몬드)</option>
@@ -361,7 +361,7 @@
     function lerpColor(a,b,t){var A=hexToRgb(a),B=hexToRgb(b);return rgbToHex(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t);}
   
     var defaultCfg={
-      shape:'dot', sizeBy:'value', sizeMin:6, sizeMax:55,
+      shape:'circle', sizeBy:'value', sizeMin:6, sizeMax:55,
       colorBy:'community', colorUniform:'#4C78A8',
       colorGradMetric:'value', colorGradLow:'#dbe9f6', colorGradHigh:'#1428A0',
       borderWidth:1.5, borderColor:'#ffffff',
