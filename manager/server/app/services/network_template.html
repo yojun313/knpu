@@ -300,7 +300,7 @@
       </details>
 
       <details>
-        <summary>커뮤니티 (__NC__개)</summary>
+        <summary>커뮤니티 (<span id="commCount">__NC__</span>개)</summary>
         <div class="sec-body"><div id="legend"></div></div>
       </details>
 
@@ -314,373 +314,493 @@
     </div>
   </div>
   <script>
-  var rawNodes=__NODES__, rawEdges=__EDGES__;
-  var palette=__PALETTE__;
-
-  // 지표 키 수집 (value=빈도 + info 안의 중심성 지표들)
-  var mnames={value:'빈도(freq)',degree:'연결 정도',strength:'강도',betweenness:'매개 중심성',
-    closeness:'근접 중심성',eigenvector:'고유벡터',pagerank:'PageRank',
-    coreness:'k-core',constraint:'구조적 공백'};
-  var metricKeys=['value'];
-  (function(){
-    var seen={value:true};
-    rawNodes.forEach(function(n){
-      if(!n.info)return;
-      Object.keys(n.info).forEach(function(k){
-        if(!seen[k]){seen[k]=true;metricKeys.push(k);}
+    var rawNodes=__NODES__, rawEdges=__EDGES__;
+    var palette=__PALETTE__;
+  
+    var mnames={value:'빈도(freq)',degree:'연결 정도',strength:'강도',betweenness:'매개 중심성',
+      closeness:'근접 중심성',eigenvector:'고유벡터',pagerank:'PageRank',
+      coreness:'k-core',constraint:'구조적 공백'};
+    var metricKeys=['value'];
+    (function(){
+      var seen={value:true};
+      rawNodes.forEach(function(n){
+        if(!n.info)return;
+        Object.keys(n.info).forEach(function(k){
+          if(!seen[k]){seen[k]=true;metricKeys.push(k);}
+        });
+      });
+    })();
+  
+    function getMetricValue(n,key){
+      if(key==='value')return n.value;
+      var v=n.info?n.info[key]:null;
+      return (typeof v==='number')?v:0;
+    }
+  
+    function metricRangeOf(key){
+      var mn=Infinity,mx=-Infinity;
+      rawNodes.forEach(function(n){var v=getMetricValue(n,key);if(v<mn)mn=v;if(v>mx)mx=v;});
+      if(!isFinite(mn)){mn=0;mx=1;}
+      return {min:mn,max:mx};
+    }
+  
+    var maxFreq=metricRangeOf('value').max;
+    document.getElementById('fslider').max=Math.ceil(maxFreq);
+  
+    ['selSizeBy','selGradMetric'].forEach(function(id){
+      var sel=document.getElementById(id);
+      metricKeys.forEach(function(k){
+        var o=document.createElement('option');o.value=k;o.text=mnames[k]||k;sel.appendChild(o);
       });
     });
-  })();
-  function getMetricValue(n,key){
-    if(key==='value')return n.value;
-    var v=n.info?n.info[key]:null;
-    return (typeof v==='number')?v:0;
-  }
-  function metricRangeOf(key){
-    var mn=Infinity,mx=-Infinity;
-    rawNodes.forEach(function(n){var v=getMetricValue(n,key);if(v<mn)mn=v;if(v>mx)mx=v;});
-    if(!isFinite(mn)){mn=0;mx=1;}
-    return {min:mn,max:mx};
-  }
-  var maxFreq=metricRangeOf('value').max;
-  document.getElementById('fslider').max=Math.ceil(maxFreq);
-
-  ['selSizeBy','selGradMetric'].forEach(function(id){
-    var sel=document.getElementById(id);
-    metricKeys.forEach(function(k){
-      var o=document.createElement('option');o.value=k;o.text=mnames[k]||k;sel.appendChild(o);
-    });
-  });
-
-  function hexToRgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c;}).join('');
-    var num=parseInt(h,16);return [num>>16&255,num>>8&255,num&255];}
-  function clamp255(x){return Math.max(0,Math.min(255,Math.round(x)));}
-  function rgbToHex(r,g,b){return '#'+[r,g,b].map(function(x){var s=clamp255(x).toString(16);return s.length<2?'0'+s:s;}).join('');}
-  function lerpColor(a,b,t){var A=hexToRgb(a),B=hexToRgb(b);return rgbToHex(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t);}
-
-  // 기본값: 모든 노드/엣지가 처음부터 보이도록 필터 임계값을 0으로, 고립 노드도 숨기지 않음
-  var defaultCfg={
-    shape:'dot', sizeBy:'value', sizeMin:6, sizeMax:55,
-    colorBy:'community', colorUniform:'#4C78A8',
-    colorGradMetric:'value', colorGradLow:'#dbe9f6', colorGradHigh:'#1428A0',
-    borderWidth:1.5, borderColor:'#ffffff',
-    labelShow:true, fontSize:14, fontColor:'#2c3e50',
-    edgeColor:'#9fb0c4', edgeOpacity:0.55, edgeWidthMin:0.5, edgeWidthMax:6,
-    edgeSmooth:false, arrows:false,
-    physics:false, solver:'barnesHut', gravity:-12000, springLength:120, springConstant:0.04, damping:0.09,
-    zoomWheel:true, dragNodes:true,
-    bgCenter:'#ffffff', bgEdge:'#eef1f4', theme:'light',
-    minWeight:0, minFreq:0, hideIsolated:false
-  };
-  var cfg=Object.assign({}, defaultCfg);
-
-  var nodes=new vis.DataSet([]);
-  var edges=new vis.DataSet([]);
-  var container=document.getElementById('net');
-  var net=new vis.Network(container, {nodes:nodes,edges:edges}, {
-    layout:{improvedLayout:false},
-    interaction:{hover:true,tooltipDelay:120,navigationButtons:false,keyboard:false},
-    physics:{enabled:false}
-  });
-
-  var nodeMap={}; rawNodes.forEach(function(n){nodeMap[n.id]=n;});
-  var currentVisibleIds={};
-  var communityCounts={};
-  rawNodes.forEach(function(n){communityCounts[n.group]=(communityCounts[n.group]||0)+1;});
-
-  function applyBackground(){
-    container.style.background='radial-gradient(ellipse at 50% 38%,'+cfg.bgCenter+' 0%,'+cfg.bgEdge+' 100%)';
-  }
-
-  function computeNodeColor(n){
-    if(cfg.colorBy==='community')return n.color;
-    if(cfg.colorBy==='uniform')return cfg.colorUniform;
-    var r=metricRangeOf(cfg.colorGradMetric);
-    var val=getMetricValue(n,cfg.colorGradMetric);
-    var t=(val-r.min)/((r.max-r.min)||1);
-    return lerpColor(cfg.colorGradLow,cfg.colorGradHigh,Math.max(0,Math.min(1,t)));
-  }
-
-  function renderGraph(){
-    var filteredNodes=rawNodes.filter(function(n){return n.value>=cfg.minFreq;});
-    var idSet={}; filteredNodes.forEach(function(n){idSet[n.id]=true;});
-    var filteredEdges=rawEdges.filter(function(e){return e.value>=cfg.minWeight && idSet[e.from] && idSet[e.to];});
-
-    if(cfg.hideIsolated){
-      var connected={};
-      filteredEdges.forEach(function(e){connected[e.from]=true;connected[e.to]=true;});
-      filteredNodes=filteredNodes.filter(function(n){return connected[n.id];});
-      idSet={}; filteredNodes.forEach(function(n){idSet[n.id]=true;});
-      filteredEdges=filteredEdges.filter(function(e){return idSet[e.from] && idSet[e.to];});
+  
+    function hexToRgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c;}).join('');
+      var num=parseInt(h,16);return [num>>16&255,num>>8&255,num&255];}
+    function clamp255(x){return Math.max(0,Math.min(255,Math.round(x)));}
+    function rgbToHex(r,g,b){return '#'+[r,g,b].map(function(x){var s=clamp255(x).toString(16);return s.length<2?'0'+s:s;}).join('');}
+    function lerpColor(a,b,t){var A=hexToRgb(a),B=hexToRgb(b);return rgbToHex(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t);}
+  
+    var defaultCfg={
+      shape:'dot', sizeBy:'value', sizeMin:6, sizeMax:55,
+      colorBy:'community', colorUniform:'#4C78A8',
+      colorGradMetric:'value', colorGradLow:'#dbe9f6', colorGradHigh:'#1428A0',
+      borderWidth:1.5, borderColor:'#ffffff',
+      labelShow:true, fontSize:14, fontColor:'#2c3e50',
+      edgeColor:'#9fb0c4', edgeOpacity:0.55, edgeWidthMin:0.5, edgeWidthMax:6,
+      edgeSmooth:false, arrows:false,
+      physics:false, solver:'barnesHut', gravity:-12000, springLength:120, springConstant:0.04, damping:0.09,
+      zoomWheel:true, dragNodes:true,
+      bgCenter:'#ffffff', bgEdge:'#eef1f4', theme:'light',
+      minWeight:0, minFreq:0, hideIsolated:false
+    };
+    var cfg=Object.assign({}, defaultCfg);
+  
+    var nodes=new vis.DataSet([]);
+    var edges=new vis.DataSet([]);
+    var container=document.getElementById('net');
+  
+    var nodeMap={}; rawNodes.forEach(function(n){nodeMap[n.id]=n;});
+    var currentVisibleIds={};
+    var communityCounts={};
+    rawNodes.forEach(function(n){communityCounts[n.group]=(communityCounts[n.group]||0)+1;});
+  
+    function syncControlsFromCfg(){
+      document.getElementById('selShape').value=cfg.shape;
+      document.getElementById('selSizeBy').value=cfg.sizeBy;
+      document.getElementById('numSizeMin').value=cfg.sizeMin;
+      document.getElementById('numSizeMax').value=cfg.sizeMax;
+      document.getElementById('rangeBorderWidth').value=cfg.borderWidth;
+      document.getElementById('borderWidthVal').innerText=cfg.borderWidth;
+      document.getElementById('colorBorder').value=cfg.borderColor;
+      document.getElementById('selColorBy').value=cfg.colorBy;
+      document.getElementById('colorUniform').value=cfg.colorUniform;
+      document.getElementById('selGradMetric').value=cfg.colorGradMetric;
+      document.getElementById('colorGradLow').value=cfg.colorGradLow;
+      document.getElementById('colorGradHigh').value=cfg.colorGradHigh;
+      document.getElementById('gridUniform').classList.toggle('show', cfg.colorBy==='uniform');
+      document.getElementById('gridGradient').classList.toggle('show', cfg.colorBy==='gradient');
+      document.getElementById('chkLabelShow').checked=cfg.labelShow;
+      document.getElementById('rangeFontSize').value=cfg.fontSize;
+      document.getElementById('fontSizeVal').innerText=cfg.fontSize;
+      document.getElementById('colorFont').value=cfg.fontColor;
+      document.getElementById('colorEdge').value=cfg.edgeColor;
+      document.getElementById('rangeEdgeOpacity').value=cfg.edgeOpacity;
+      document.getElementById('edgeOpVal').innerText=cfg.edgeOpacity.toFixed(2);
+      document.getElementById('numEdgeMin').value=cfg.edgeWidthMin;
+      document.getElementById('numEdgeMax').value=cfg.edgeWidthMax;
+      document.getElementById('chkEdgeSmooth').checked=cfg.edgeSmooth;
+      document.getElementById('chkArrows').checked=cfg.arrows;
+      document.getElementById('chkPhysics').checked=cfg.physics;
+      document.getElementById('selSolver').value=cfg.solver;
+      document.getElementById('rangeGravity').value=cfg.gravity;
+      document.getElementById('gravityVal').innerText=cfg.gravity;
+      document.getElementById('rangeSpringLen').value=cfg.springLength;
+      document.getElementById('springLenVal').innerText=cfg.springLength;
+      document.getElementById('rangeSpringConst').value=cfg.springConstant;
+      document.getElementById('springConstVal').innerText=cfg.springConstant.toFixed(2);
+      document.getElementById('rangeDamping').value=cfg.damping;
+      document.getElementById('dampingVal').innerText=cfg.damping.toFixed(2);
+      document.getElementById('chkZoomWheel').checked=cfg.zoomWheel;
+      document.getElementById('chkDragNodes').checked=cfg.dragNodes;
+      document.getElementById('colorBgCenter').value=cfg.bgCenter;
+      document.getElementById('colorBgEdge').value=cfg.bgEdge;
+      document.getElementById('wslider').value=cfg.minWeight;
+      document.getElementById('wv').innerText=cfg.minWeight.toFixed(1);
+      document.getElementById('fslider').value=cfg.minFreq;
+      document.getElementById('fv').innerText=cfg.minFreq;
+      document.getElementById('chkHideIsolated').checked=cfg.hideIsolated;
     }
-
-    currentVisibleIds={}; filteredNodes.forEach(function(n){currentVisibleIds[n.id]=true;});
-
-    var strokeColor=cfg.theme==='dark' ? '#0c1017' : '#ffffff';
-    var displayNodes=filteredNodes.map(function(n){
+  
+    function applyBackground(){
+      container.style.background='radial-gradient(ellipse at 50% 38%,'+cfg.bgCenter+' 0%,'+cfg.bgEdge+' 100%)';
+    }
+  
+    function computeNodeColor(n){
+      if(cfg.colorBy==='community')return n.color;
+      if(cfg.colorBy==='uniform')return cfg.colorUniform;
+      var r=metricRangeOf(cfg.colorGradMetric);
+      var val=getMetricValue(n,cfg.colorGradMetric);
+      var t=(val-r.min)/((r.max-r.min)||1);
+      return lerpColor(cfg.colorGradLow,cfg.colorGradHigh,Math.max(0,Math.min(1,t)));
+    }
+  
+    // ⭐️ 핵심 변경 3: 데이터를 지우지(clear) 않고 갱신(update)만 하도록 처리하여 시야 초기화 버그 차단
+    function renderGraph(){
+      var filteredNodes=rawNodes.filter(function(n){return n.value>=cfg.minFreq;});
+      var idSet={}; filteredNodes.forEach(function(n){idSet[n.id]=true;});
+      var filteredEdges=rawEdges.filter(function(e){return e.value>=cfg.minWeight && idSet[e.from] && idSet[e.to];});
+  
+      if(cfg.hideIsolated){
+        var connected={};
+        filteredEdges.forEach(function(e){connected[e.from]=true;connected[e.to]=true;});
+        filteredNodes=filteredNodes.filter(function(n){return connected[n.id];});
+        idSet={}; filteredNodes.forEach(function(n){idSet[n.id]=true;});
+        filteredEdges=filteredEdges.filter(function(e){return idSet[e.from] && idSet[e.to];});
+      }
+  
+      currentVisibleIds={}; filteredNodes.forEach(function(n){currentVisibleIds[n.id]=true;});
+  
+      var strokeColor=cfg.theme==='dark' ? '#0c1017' : '#ffffff';
+  
+      var displayNodes=filteredNodes.map(function(n){
+        return {
+          id:n.id,
+          label:cfg.labelShow ? n.label : undefined,
+          value:getMetricValue(n,cfg.sizeBy),
+          shape:cfg.shape,
+          color:{background:computeNodeColor(n), border:cfg.borderColor,
+            highlight:{background:computeNodeColor(n), border:'#4C78A8'}},
+          borderWidth:cfg.borderWidth,
+          font:{color:cfg.fontColor, size:cfg.fontSize, face:'Malgun Gothic', strokeWidth:3, strokeColor:strokeColor},
+          x:n.x, y:n.y
+        };
+      });
+  
+      var edgeIdSeen={};
+      var displayEdges=filteredEdges.map(function(e){
+        var base=e.from + "_" + e.to;
+        var n=(edgeIdSeen[base]=(edgeIdSeen[base]||0)+1);
+        var id=n>1 ? base+"_"+n : base;
+        return {id:id, from:e.from, to:e.to, value:e.value};
+      });
+  
+      // 노드 스마트 업데이트 (필요 없는 것만 삭제하고 나머지는 속성만 갱신)
+      var newNodeIds = displayNodes.map(function(n){return n.id;});
+      var oldNodeIds = nodes.getIds();
+      var nodesToRemove = oldNodeIds.filter(function(id){return newNodeIds.indexOf(id)===-1;});
+      nodes.update(displayNodes);
+      if(nodesToRemove.length > 0) nodes.remove(nodesToRemove);
+  
+      // 엣지 스마트 업데이트
+      var newEdgeIds = displayEdges.map(function(e){return e.id;});
+      var oldEdgeIds = edges.getIds();
+      var edgesToRemove = oldEdgeIds.filter(function(id){return newEdgeIds.indexOf(id)===-1;});
+      edges.update(displayEdges);
+      if(edgesToRemove.length > 0) edges.remove(edgesToRemove);
+  
+      document.getElementById('liveBadge').innerHTML='<span class="pulse"></span>표시 중 '+filteredNodes.length.toLocaleString()+'개 노드 · '+filteredEdges.length.toLocaleString()+'개 엣지';
+    }
+  
+    function getNetworkOptions() {
       return {
-        id:n.id,
-        label:cfg.labelShow ? n.label : undefined,
-        value:getMetricValue(n,cfg.sizeBy),
-        shape:cfg.shape,
-        color:{background:computeNodeColor(n), border:cfg.borderColor,
-          highlight:{background:computeNodeColor(n), border:'#4C78A8'}},
-        borderWidth:cfg.borderWidth,
-        font:{color:cfg.fontColor, size:cfg.fontSize, face:'Malgun Gothic', strokeWidth:3, strokeColor:strokeColor},
-        x:n.x, y:n.y
+        layout: { improvedLayout: false },
+        nodes: {
+          scaling: { min: cfg.sizeMin, max: cfg.sizeMax }
+        },
+        edges: {
+          color: { color: cfg.edgeColor, highlight: cfg.theme==='dark' ? '#8fb3dd' : '#2c3e50', opacity: cfg.edgeOpacity },
+          smooth: cfg.edgeSmooth ? { type: 'continuous' } : false,
+          arrows: { to: { enabled: cfg.arrows } },
+          scaling: { min: cfg.edgeWidthMin, max: cfg.edgeWidthMax },
+          selectionWidth: 2
+        },
+        physics: {
+          enabled: cfg.physics,
+          solver: cfg.solver,
+          barnesHut: { gravitationalConstant: cfg.gravity, springLength: cfg.springLength, springConstant: cfg.springConstant, damping: cfg.damping },
+          forceAtlas2Based: { gravitationalConstant: cfg.gravity, springLength: cfg.springLength, springConstant: cfg.springConstant, damping: cfg.damping },
+          repulsion: { springLength: cfg.springLength, springConstant: cfg.springConstant, damping: cfg.damping }
+        },
+        interaction: { zoomView: cfg.zoomWheel, dragNodes: cfg.dragNodes, hover: true, tooltipDelay: 120, navigationButtons: false, keyboard: false }
       };
-    });
-
-    nodes.clear(); nodes.add(displayNodes);
-    edges.clear(); edges.add(filteredEdges.map(function(e){return {from:e.from,to:e.to,value:e.value};}));
-
-    document.getElementById('liveBadge').innerHTML='<span class="pulse"></span>표시 중 '+filteredNodes.length.toLocaleString()+'개 노드 · '+filteredEdges.length.toLocaleString()+'개 엣지';
-  }
-
-  function applyOptions(){
-    net.setOptions({
-      nodes:{scaling:{min:cfg.sizeMin, max:cfg.sizeMax}},
-      edges:{
-        color:{color:cfg.edgeColor, highlight:cfg.theme==='dark' ? '#8fb3dd' : '#2c3e50', opacity:cfg.edgeOpacity},
-        smooth:cfg.edgeSmooth ? {type:'continuous'} : false,
-        arrows:{to:{enabled:cfg.arrows}},
-        scaling:{min:cfg.edgeWidthMin, max:cfg.edgeWidthMax},
-        selectionWidth:2
-      },
-      physics:{
-        enabled:cfg.physics,
-        solver:cfg.solver,
-        barnesHut:{gravitationalConstant:cfg.gravity, springLength:cfg.springLength, springConstant:cfg.springConstant, damping:cfg.damping},
-        forceAtlas2Based:{gravitationalConstant:cfg.gravity, springLength:cfg.springLength, springConstant:cfg.springConstant, damping:cfg.damping},
-        repulsion:{springLength:cfg.springLength, springConstant:cfg.springConstant, damping:cfg.damping}
-      },
-      interaction:{zoomView:cfg.zoomWheel, dragNodes:cfg.dragNodes, hover:true, tooltipDelay:120}
-    });
-  }
-
-  function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
-
-  function showDetail(n){
-    if(!currentVisibleIds[n.id]){
-      document.getElementById('detail').innerHTML='<div class="empty">현재 필터에 의해<br>숨겨진 노드입니다</div>';
-      return;
     }
-    var h='<div class="node-title">'+esc(n.label)+'</div>'+
-      '<div class="node-sub"><span class="chip">커뮤니티 '+n.group+'</span><span>빈도 '+n.value+'</span></div>';
-    var info=n.info||{};
-    Object.keys(info).forEach(function(k){
-      if(info[k]==null)return;
-      h+='<div class="metric"><span>'+(mnames[k]||k)+'</span><span>'+info[k]+'</span></div>';
-    });
-    document.getElementById('detail').innerHTML=h;
-    net.selectNodes([n.id]);
-    net.focus(n.id,{scale:1.1,animation:{duration:400}});
-  }
-
-  net.on('click',function(p){
-    if(p.nodes.length){showDetail(nodeMap[p.nodes[0]]);}
-    else{document.getElementById('detail').innerHTML='<div class="empty"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8b98a8" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.4" fill="#8b98a8"/></svg><br>노드를 클릭하면<br>상세 지표가 표시됩니다</div>';}
-  });
-
-  document.getElementById('search').addEventListener('input',function(e){
-    var q=e.target.value.trim();
-    if(!q){net.unselectAll();return;}
-    var hit=rawNodes.filter(function(n){return n.label.indexOf(q)>=0;});
-    if(hit.length){showDetail(hit[0]);}
-  });
-
-  document.getElementById('wslider').addEventListener('input',function(e){
-    cfg.minWeight=parseFloat(e.target.value);
-    document.getElementById('wv').innerText=cfg.minWeight.toFixed(1);
+  
+    syncControlsFromCfg();
+    applyBackground();
     renderGraph();
-  });
-  document.getElementById('fslider').addEventListener('input',function(e){
-    cfg.minFreq=parseFloat(e.target.value);
-    document.getElementById('fv').innerText=cfg.minFreq;
-    renderGraph();
-  });
-  document.getElementById('chkHideIsolated').addEventListener('change',function(e){
-    cfg.hideIsolated=e.target.checked; renderGraph();
-  });
-
-  document.getElementById('selShape').addEventListener('change',function(e){cfg.shape=e.target.value; renderGraph();});
-  document.getElementById('selSizeBy').addEventListener('change',function(e){cfg.sizeBy=e.target.value; renderGraph();});
-  document.getElementById('numSizeMin').addEventListener('change',function(e){cfg.sizeMin=parseFloat(e.target.value)||1; applyOptions();});
-  document.getElementById('numSizeMax').addEventListener('change',function(e){cfg.sizeMax=parseFloat(e.target.value)||50; applyOptions();});
-  document.getElementById('rangeBorderWidth').addEventListener('input',function(e){
-    cfg.borderWidth=parseFloat(e.target.value);
-    document.getElementById('borderWidthVal').innerText=cfg.borderWidth;
-    renderGraph();
-  });
-  document.getElementById('colorBorder').addEventListener('input',function(e){cfg.borderColor=e.target.value; renderGraph();});
-
-  document.getElementById('selColorBy').addEventListener('change',function(e){
-    cfg.colorBy=e.target.value;
-    document.getElementById('gridUniform').classList.toggle('show', cfg.colorBy==='uniform');
-    document.getElementById('gridGradient').classList.toggle('show', cfg.colorBy==='gradient');
-    renderGraph();
-  });
-  document.getElementById('colorUniform').addEventListener('input',function(e){cfg.colorUniform=e.target.value; renderGraph();});
-  document.getElementById('selGradMetric').addEventListener('change',function(e){cfg.colorGradMetric=e.target.value; renderGraph();});
-  document.getElementById('colorGradLow').addEventListener('input',function(e){cfg.colorGradLow=e.target.value; renderGraph();});
-  document.getElementById('colorGradHigh').addEventListener('input',function(e){cfg.colorGradHigh=e.target.value; renderGraph();});
-
-  document.getElementById('chkLabelShow').addEventListener('change',function(e){cfg.labelShow=e.target.checked; renderGraph();});
-  document.getElementById('rangeFontSize').addEventListener('input',function(e){
-    cfg.fontSize=parseFloat(e.target.value);
-    document.getElementById('fontSizeVal').innerText=cfg.fontSize;
-    renderGraph();
-  });
-  document.getElementById('colorFont').addEventListener('input',function(e){cfg.fontColor=e.target.value; renderGraph();});
-
-  document.getElementById('colorEdge').addEventListener('input',function(e){cfg.edgeColor=e.target.value; applyOptions();});
-  document.getElementById('rangeEdgeOpacity').addEventListener('input',function(e){
-    cfg.edgeOpacity=parseFloat(e.target.value);
-    document.getElementById('edgeOpVal').innerText=cfg.edgeOpacity.toFixed(2);
-    applyOptions();
-  });
-  document.getElementById('numEdgeMin').addEventListener('change',function(e){cfg.edgeWidthMin=parseFloat(e.target.value)||0.1; applyOptions();});
-  document.getElementById('numEdgeMax').addEventListener('change',function(e){cfg.edgeWidthMax=parseFloat(e.target.value)||1; applyOptions();});
-  document.getElementById('chkEdgeSmooth').addEventListener('change',function(e){cfg.edgeSmooth=e.target.checked; applyOptions();});
-  document.getElementById('chkArrows').addEventListener('change',function(e){cfg.arrows=e.target.checked; applyOptions();});
-
-  document.getElementById('chkPhysics').addEventListener('change',function(e){cfg.physics=e.target.checked; applyOptions();});
-  document.getElementById('selSolver').addEventListener('change',function(e){cfg.solver=e.target.value; applyOptions();});
-  document.getElementById('rangeGravity').addEventListener('input',function(e){
-    cfg.gravity=parseFloat(e.target.value);
-    document.getElementById('gravityVal').innerText=cfg.gravity;
-    applyOptions();
-  });
-  document.getElementById('rangeSpringLen').addEventListener('input',function(e){
-    cfg.springLength=parseFloat(e.target.value);
-    document.getElementById('springLenVal').innerText=cfg.springLength;
-    applyOptions();
-  });
-  document.getElementById('rangeSpringConst').addEventListener('input',function(e){
-    cfg.springConstant=parseFloat(e.target.value);
-    document.getElementById('springConstVal').innerText=cfg.springConstant.toFixed(2);
-    applyOptions();
-  });
-  document.getElementById('rangeDamping').addEventListener('input',function(e){
-    cfg.damping=parseFloat(e.target.value);
-    document.getElementById('dampingVal').innerText=cfg.damping.toFixed(2);
-    applyOptions();
-  });
-  document.getElementById('btnRestabilize').addEventListener('click',function(){
-    var wasPhysics=cfg.physics;
-    cfg.physics=true; applyOptions();
-    net.stabilize(150);
-    setTimeout(function(){
-      if(!wasPhysics){cfg.physics=false; applyOptions(); document.getElementById('chkPhysics').checked=false;}
-    },1600);
-  });
-
-  document.getElementById('chkZoomWheel').addEventListener('change',function(e){cfg.zoomWheel=e.target.checked; applyOptions();});
-  document.getElementById('chkDragNodes').addEventListener('change',function(e){cfg.dragNodes=e.target.checked; applyOptions();});
-  document.getElementById('btnFit').addEventListener('click',function(){net.fit({animation:true});});
-  document.getElementById('colorBgCenter').addEventListener('input',function(e){cfg.bgCenter=e.target.value; applyBackground();});
-  document.getElementById('colorBgEdge').addEventListener('input',function(e){cfg.bgEdge=e.target.value; applyBackground();});
-
-  function updateZoomDisplay(){document.getElementById('zoomval').innerText=Math.round(net.getScale()*100)+'%';}
-  document.getElementById('btnZoomIn').addEventListener('click',function(){net.moveTo({scale:net.getScale()*1.2}); });
-  document.getElementById('btnZoomOut').addEventListener('click',function(){net.moveTo({scale:net.getScale()/1.2}); });
-  document.getElementById('btnZoomReset').addEventListener('click',function(){net.fit({animation:true});});
-  net.on('zoom', updateZoomDisplay);
-
-  document.getElementById('btnTheme').addEventListener('click',function(){
-    cfg.theme=cfg.theme==='light' ? 'dark' : 'light';
-    document.body.classList.toggle('dark-theme', cfg.theme==='dark');
-    if(cfg.theme==='dark'){
-      cfg.bgCenter='#141a24'; cfg.bgEdge='#0c1017';
-      cfg.fontColor='#e6e8ee'; cfg.borderColor='#0c1017'; cfg.edgeColor='#3a4a5f';
-    }else{
-      cfg.bgCenter='#ffffff'; cfg.bgEdge='#eef1f4';
-      cfg.fontColor='#2c3e50'; cfg.borderColor='#ffffff'; cfg.edgeColor='#9fb0c4';
+  
+    var net = new vis.Network(container, {nodes:nodes, edges:edges}, getNetworkOptions());
+  
+    function applyOptions(){
+      if(net) {
+        net.setOptions(getNetworkOptions());
+        net.redraw(); // 강제 렌더링을 호출하여 엣지 색상 변경 즉각 반영
+      }
     }
-    syncControlsFromCfg();
-    applyBackground(); applyOptions(); renderGraph();
-  });
-
-  var legend=document.getElementById('legend');
-  for(var c=0;c<__NC__;c++){(function(c){
-    var d=document.createElement('div');d.className='legend-item';
-    d.innerHTML='<span class="dot" style="background:'+palette[c%palette.length]+'"></span>커뮤니티 '+c+
-      '<span class="cnt">'+(communityCounts[c]||0)+'</span>';
-    d.addEventListener('click',function(){
-      var ids=rawNodes.filter(function(n){return n.group===c && currentVisibleIds[n.id];}).map(function(n){return n.id;});
-      if(!ids.length)return;
-      net.selectNodes(ids);net.fit({nodes:ids,animation:true});
+  
+    function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+  
+    function showDetail(n){
+      if(!currentVisibleIds[n.id]){
+        document.getElementById('detail').innerHTML='<div class="empty">현재 필터에 의해<br>숨겨진 노드입니다</div>';
+        return;
+      }
+      var h='<div class="node-title">'+esc(n.label)+'</div>'+
+        '<div class="node-sub"><span class="chip">커뮤니티 '+n.group+'</span><span>빈도 '+n.value+'</span></div>';
+      var info=n.info||{};
+      Object.keys(info).forEach(function(k){
+        if(info[k]==null)return;
+        h+='<div class="metric"><span>'+(mnames[k]||k)+'</span><span>'+info[k]+'</span></div>';
+      });
+      document.getElementById('detail').innerHTML=h;
+      net.selectNodes([n.id]);
+      net.focus(n.id,{scale:1.1,animation:{duration:400}});
+    }
+  
+    net.on('click',function(p){
+      if(p.nodes.length){showDetail(nodeMap[p.nodes[0]]);}
+      else{document.getElementById('detail').innerHTML='<div class="empty"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8b98a8" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.4" fill="#8b98a8"/></svg><br>노드를 클릭하면<br>상세 지표가 표시됩니다</div>';}
     });
-    legend.appendChild(d);
-  })(c);}
-
-  document.getElementById('btnExportPng').addEventListener('click',function(){
-    var canvas=container.querySelector('canvas');
-    if(!canvas)return;
-    var link=document.createElement('a');
-    link.download='word_network.png';
-    link.href=canvas.toDataURL('image/png');
-    link.click();
-  });
-
-  function syncControlsFromCfg(){
-    document.getElementById('selShape').value=cfg.shape;
-    document.getElementById('selSizeBy').value=cfg.sizeBy;
-    document.getElementById('numSizeMin').value=cfg.sizeMin;
-    document.getElementById('numSizeMax').value=cfg.sizeMax;
-    document.getElementById('rangeBorderWidth').value=cfg.borderWidth;
-    document.getElementById('borderWidthVal').innerText=cfg.borderWidth;
-    document.getElementById('colorBorder').value=cfg.borderColor;
-    document.getElementById('selColorBy').value=cfg.colorBy;
-    document.getElementById('colorUniform').value=cfg.colorUniform;
-    document.getElementById('selGradMetric').value=cfg.colorGradMetric;
-    document.getElementById('colorGradLow').value=cfg.colorGradLow;
-    document.getElementById('colorGradHigh').value=cfg.colorGradHigh;
-    document.getElementById('gridUniform').classList.toggle('show', cfg.colorBy==='uniform');
-    document.getElementById('gridGradient').classList.toggle('show', cfg.colorBy==='gradient');
-    document.getElementById('chkLabelShow').checked=cfg.labelShow;
-    document.getElementById('rangeFontSize').value=cfg.fontSize;
-    document.getElementById('fontSizeVal').innerText=cfg.fontSize;
-    document.getElementById('colorFont').value=cfg.fontColor;
-    document.getElementById('colorEdge').value=cfg.edgeColor;
-    document.getElementById('rangeEdgeOpacity').value=cfg.edgeOpacity;
-    document.getElementById('edgeOpVal').innerText=cfg.edgeOpacity.toFixed(2);
-    document.getElementById('numEdgeMin').value=cfg.edgeWidthMin;
-    document.getElementById('numEdgeMax').value=cfg.edgeWidthMax;
-    document.getElementById('chkEdgeSmooth').checked=cfg.edgeSmooth;
-    document.getElementById('chkArrows').checked=cfg.arrows;
-    document.getElementById('chkPhysics').checked=cfg.physics;
-    document.getElementById('selSolver').value=cfg.solver;
-    document.getElementById('rangeGravity').value=cfg.gravity;
-    document.getElementById('gravityVal').innerText=cfg.gravity;
-    document.getElementById('rangeSpringLen').value=cfg.springLength;
-    document.getElementById('springLenVal').innerText=cfg.springLength;
-    document.getElementById('rangeSpringConst').value=cfg.springConstant;
-    document.getElementById('springConstVal').innerText=cfg.springConstant.toFixed(2);
-    document.getElementById('rangeDamping').value=cfg.damping;
-    document.getElementById('dampingVal').innerText=cfg.damping.toFixed(2);
-    document.getElementById('chkZoomWheel').checked=cfg.zoomWheel;
-    document.getElementById('chkDragNodes').checked=cfg.dragNodes;
-    document.getElementById('colorBgCenter').value=cfg.bgCenter;
-    document.getElementById('colorBgEdge').value=cfg.bgEdge;
-    document.getElementById('wslider').value=cfg.minWeight;
-    document.getElementById('wv').innerText=cfg.minWeight.toFixed(1);
-    document.getElementById('fslider').value=cfg.minFreq;
-    document.getElementById('fv').innerText=cfg.minFreq;
-    document.getElementById('chkHideIsolated').checked=cfg.hideIsolated;
-  }
-
-  document.getElementById('btnResetSettings').addEventListener('click',function(){
-    cfg=Object.assign({}, defaultCfg);
-    document.body.classList.remove('dark-theme');
-    syncControlsFromCfg();
-    applyBackground(); applyOptions(); renderGraph();
-    net.fit({animation:true});
-  });
-
-  syncControlsFromCfg();
-  applyBackground();
-  applyOptions();
-  renderGraph();
-  setTimeout(function(){net.fit(); updateZoomDisplay();},100);
-  </script></body></html>
+  
+    document.getElementById('search').addEventListener('input',function(e){
+      var q=e.target.value.trim();
+      if(!q){net.unselectAll();return;}
+      var hit=rawNodes.filter(function(n){return n.label.indexOf(q)>=0;});
+      if(hit.length){
+        showDetail(hit[0]);
+      }else{
+        net.unselectAll();
+        document.getElementById('detail').innerHTML='<div class="empty">"'+esc(q)+'"과(와)<br>일치하는 단어가 없습니다</div>';
+      }
+    });
+  
+    document.getElementById('wslider').addEventListener('input',function(e){
+      cfg.minWeight=parseFloat(e.target.value);
+      document.getElementById('wv').innerText=cfg.minWeight.toFixed(1);
+      renderGraph();
+    });
+    document.getElementById('fslider').addEventListener('input',function(e){
+      cfg.minFreq=parseFloat(e.target.value);
+      document.getElementById('fv').innerText=cfg.minFreq;
+      renderGraph();
+    });
+    document.getElementById('chkHideIsolated').addEventListener('change',function(e){
+      cfg.hideIsolated=e.target.checked; renderGraph();
+    });
+  
+    document.getElementById('selShape').addEventListener('change',function(e){cfg.shape=e.target.value; renderGraph();});
+    document.getElementById('selSizeBy').addEventListener('change',function(e){cfg.sizeBy=e.target.value; renderGraph();});
+    document.getElementById('numSizeMin').addEventListener('change',function(e){
+      var v=parseFloat(e.target.value)||1;
+      cfg.sizeMin=Math.min(v, cfg.sizeMax);
+      e.target.value=cfg.sizeMin;
+      applyOptions();
+    });
+    document.getElementById('numSizeMax').addEventListener('change',function(e){
+      var v=parseFloat(e.target.value)||50;
+      cfg.sizeMax=Math.max(v, cfg.sizeMin);
+      e.target.value=cfg.sizeMax;
+      applyOptions();
+    });
+    document.getElementById('rangeBorderWidth').addEventListener('input',function(e){
+      cfg.borderWidth=parseFloat(e.target.value);
+      document.getElementById('borderWidthVal').innerText=cfg.borderWidth;
+      renderGraph();
+    });
+    document.getElementById('colorBorder').addEventListener('input',function(e){cfg.borderColor=e.target.value; renderGraph();});
+  
+    document.getElementById('selColorBy').addEventListener('change',function(e){
+      cfg.colorBy=e.target.value;
+      document.getElementById('gridUniform').classList.toggle('show', cfg.colorBy==='uniform');
+      document.getElementById('gridGradient').classList.toggle('show', cfg.colorBy==='gradient');
+      renderGraph();
+    });
+    document.getElementById('colorUniform').addEventListener('input',function(e){cfg.colorUniform=e.target.value; renderGraph();});
+    document.getElementById('selGradMetric').addEventListener('change',function(e){cfg.colorGradMetric=e.target.value; renderGraph();});
+    document.getElementById('colorGradLow').addEventListener('input',function(e){cfg.colorGradLow=e.target.value; renderGraph();});
+    document.getElementById('colorGradHigh').addEventListener('input',function(e){cfg.colorGradHigh=e.target.value; renderGraph();});
+  
+    document.getElementById('chkLabelShow').addEventListener('change',function(e){cfg.labelShow=e.target.checked; renderGraph();});
+    document.getElementById('rangeFontSize').addEventListener('input',function(e){
+      cfg.fontSize=parseFloat(e.target.value);
+      document.getElementById('fontSizeVal').innerText=cfg.fontSize;
+      renderGraph();
+    });
+    document.getElementById('colorFont').addEventListener('input',function(e){cfg.fontColor=e.target.value; renderGraph();});
+  
+    document.getElementById('colorEdge').addEventListener('input',function(e){cfg.edgeColor=e.target.value; applyOptions();});
+    document.getElementById('rangeEdgeOpacity').addEventListener('input',function(e){
+      cfg.edgeOpacity=parseFloat(e.target.value);
+      document.getElementById('edgeOpVal').innerText=cfg.edgeOpacity.toFixed(2);
+      applyOptions();
+    });
+    document.getElementById('numEdgeMin').addEventListener('change',function(e){
+      var v=parseFloat(e.target.value)||0.1;
+      cfg.edgeWidthMin=Math.min(v, cfg.edgeWidthMax);
+      e.target.value=cfg.edgeWidthMin;
+      applyOptions();
+    });
+    document.getElementById('numEdgeMax').addEventListener('change',function(e){
+      var v=parseFloat(e.target.value)||1;
+      cfg.edgeWidthMax=Math.max(v, cfg.edgeWidthMin);
+      e.target.value=cfg.edgeWidthMax;
+      applyOptions();
+    });
+    document.getElementById('chkEdgeSmooth').addEventListener('change',function(e){cfg.edgeSmooth=e.target.checked; applyOptions();});
+    document.getElementById('chkArrows').addEventListener('change',function(e){cfg.arrows=e.target.checked; applyOptions();});
+  
+    var restabilizeTimer=null;
+    document.getElementById('chkPhysics').addEventListener('change',function(e){
+      if(restabilizeTimer){clearTimeout(restabilizeTimer); restabilizeTimer=null;}
+      cfg.physics=e.target.checked; applyOptions();
+    });
+    document.getElementById('selSolver').addEventListener('change',function(e){cfg.solver=e.target.value; applyOptions();});
+    document.getElementById('rangeGravity').addEventListener('input',function(e){
+      cfg.gravity=parseFloat(e.target.value);
+      document.getElementById('gravityVal').innerText=cfg.gravity;
+      applyOptions();
+    });
+    document.getElementById('rangeSpringLen').addEventListener('input',function(e){
+      cfg.springLength=parseFloat(e.target.value);
+      document.getElementById('springLenVal').innerText=cfg.springLength;
+      applyOptions();
+    });
+    document.getElementById('rangeSpringConst').addEventListener('input',function(e){
+      cfg.springConstant=parseFloat(e.target.value);
+      document.getElementById('springConstVal').innerText=cfg.springConstant.toFixed(2);
+      applyOptions();
+    });
+    document.getElementById('rangeDamping').addEventListener('input',function(e){
+      cfg.damping=parseFloat(e.target.value);
+      document.getElementById('dampingVal').innerText=cfg.damping.toFixed(2);
+      applyOptions();
+    });
+    document.getElementById('btnRestabilize').addEventListener('click',function(){
+      if(restabilizeTimer){clearTimeout(restabilizeTimer); restabilizeTimer=null;}
+      var wasPhysics=cfg.physics;
+      cfg.physics=true; applyOptions();
+      net.stabilize(150);
+      restabilizeTimer=setTimeout(function(){
+        restabilizeTimer=null;
+        if(!wasPhysics){cfg.physics=false; applyOptions(); document.getElementById('chkPhysics').checked=false;}
+      },1600);
+    });
+  
+    document.getElementById('chkZoomWheel').addEventListener('change',function(e){cfg.zoomWheel=e.target.checked; applyOptions();});
+    document.getElementById('chkDragNodes').addEventListener('change',function(e){cfg.dragNodes=e.target.checked; applyOptions();});
+    document.getElementById('btnFit').addEventListener('click',function(){net.fit({animation:true});});
+    document.getElementById('colorBgCenter').addEventListener('input',function(e){cfg.bgCenter=e.target.value; applyBackground();});
+    document.getElementById('colorBgEdge').addEventListener('input',function(e){cfg.bgEdge=e.target.value; applyBackground();});
+  
+    function updateZoomDisplay(){
+        if(net) document.getElementById('zoomval').innerText=Math.round(net.getScale()*100)+'%';
+    }
+    function clampScale(s){ return Math.max(0.02, Math.min(20, s)); }
+    document.getElementById('btnZoomIn').addEventListener('click',function(){net.moveTo({scale:clampScale(net.getScale()*1.2)}); });
+    document.getElementById('btnZoomOut').addEventListener('click',function(){net.moveTo({scale:clampScale(net.getScale()/1.2)}); });
+    document.getElementById('btnZoomReset').addEventListener('click',function(){net.fit({animation:true});});
+    net.on('zoom', updateZoomDisplay);
+  
+    document.getElementById('btnTheme').addEventListener('click',function(){
+      try{
+        cfg.theme=cfg.theme==='light' ? 'dark' : 'light';
+        document.body.classList.toggle('dark-theme', cfg.theme==='dark');
+        if(cfg.theme==='dark'){
+          cfg.bgCenter='#141a24'; cfg.bgEdge='#0c1017';
+          cfg.fontColor='#e6e8ee'; cfg.borderColor='#0c1017'; cfg.edgeColor='#3a4a5f';
+        }else{
+          cfg.bgCenter='#ffffff'; cfg.bgEdge='#eef1f4';
+          cfg.fontColor='#2c3e50'; cfg.borderColor='#ffffff'; cfg.edgeColor='#9fb0c4';
+        }
+        syncControlsFromCfg();
+        applyBackground();
+        applyOptions();
+        renderGraph();
+        // Force an immediate repaint instead of waiting on vis-network's own
+        // debounce, so the color/background change is visible right away.
+        if(net) requestAnimationFrame(function(){ net.redraw(); });
+      }catch(err){
+        console.error('테마 전환 실패:', err);
+      }
+    });
+  
+    var legend=document.getElementById('legend');
+    // Build the legend from whatever community ids actually appear in the
+    // node data, rather than trusting a separately-computed __NC__ count.
+    // That count can drift (e.g. a community loses all its members once
+    // edges are truncated to max_edges) and previously left this list empty
+    // even though the summary header still said "N개".
+    var communityIds=Object.keys(communityCounts).map(Number).sort(function(a,b){return a-b;});
+    document.getElementById('commCount').innerText=communityIds.length;
+    if(!communityIds.length){
+      legend.innerHTML='<div class="empty">표시할 커뮤니티가 없습니다</div>';
+    }
+    communityIds.forEach(function(c){
+      var d=document.createElement('div');d.className='legend-item';
+      d.innerHTML='<span class="dot" style="background:'+palette[((c%palette.length)+palette.length)%palette.length]+'"></span>커뮤니티 '+c+
+        '<span class="cnt">'+(communityCounts[c]||0)+'</span>';
+      d.addEventListener('click',function(){
+        var ids=rawNodes.filter(function(n){return n.group===c && currentVisibleIds[n.id];}).map(function(n){return n.id;});
+        if(!ids.length)return;
+        net.selectNodes(ids);net.fit({nodes:ids,animation:true});
+      });
+      legend.appendChild(d);
+    });
+  
+    document.getElementById('btnExportPng').addEventListener('click',function(){
+      var canvas=container.querySelector('canvas');
+      if(!canvas){
+        alert('내보낼 그래프 캔버스를 찾지 못했습니다. 그래프가 표시된 상태에서 다시 시도해주세요.');
+        return;
+      }
+      try{
+        canvas.toBlob(function(blob){
+          if(!blob){
+            alert('PNG 생성에 실패했습니다.');
+            return;
+          }
+          var url=URL.createObjectURL(blob);
+          var link=document.createElement('a');
+          link.download='word_network.png';
+          link.href=url;
+          // Anchor must be attached to the DOM for click() to reliably trigger a
+          // download in some browsers/sandboxed preview frames.
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          // Sandboxed iframes (no "allow-downloads") silently swallow the click
+          // above, so also open the image in a new tab as a fallback the user
+          // can right-click → "이미지를 다른 이름으로 저장" on.
+          window.open(url, '_blank');
+          setTimeout(function(){ URL.revokeObjectURL(url); }, 30000);
+        }, 'image/png');
+      }catch(err){
+        console.error('PNG export failed:', err);
+        alert('PNG 저장에 실패했습니다: '+err.message);
+      }
+    });
+  
+    document.getElementById('btnResetSettings').addEventListener('click',function(){
+      try{
+        cfg=Object.assign({}, defaultCfg);
+        document.body.classList.remove('dark-theme');
+        document.getElementById('search').value='';
+        if(net) net.unselectAll();
+        document.getElementById('detail').innerHTML='<div class="empty"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8b98a8" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.4" fill="#8b98a8"/></svg><br>노드를 클릭하면<br>상세 지표가 표시됩니다</div>';
+        syncControlsFromCfg();
+        applyBackground();
+        applyOptions();
+        renderGraph();
+        if(net){
+          net.fit({animation:true});
+          requestAnimationFrame(function(){ net.redraw(); });
+        }
+      }catch(err){
+        console.error('설정 초기화 실패:', err);
+      }
+    });
+  
+    net.fit({animation:false});
+    updateZoomDisplay();
+    </script>
+</body></html>
