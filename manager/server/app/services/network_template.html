@@ -1,148 +1,602 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Word Network</title>
-    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-    <style>
-    :root{--bg:#ffffff;--panel:#f7f8f9;--panel2:#ecf0f1;--text:#000000;--muted:#7f8c8d;--accent:#2c3e50;--border:#bdc3c7;}
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,'Segoe UI',Roboto,'Malgun Gothic',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
-    #app{display:flex;height:100vh;width:100vw}
-    #net{flex:1;height:100%;background:radial-gradient(circle at 50% 40%,#ffffff 0%,#f1f1f1 100%)}
-    #side{width:300px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
-    #top{position:absolute;top:0;left:0;right:300px;padding:12px 18px;display:flex;gap:14px;align-items:center;
-      background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,0));z-index:5;flex-wrap:wrap}
-    .badge{font-size:12px;color:var(--muted);background:var(--panel2);padding:6px 12px;border-radius:20px;border:1px solid var(--border)}
-    .search{flex:1;max-width:280px;position:relative}
-    .search input{width:100%;padding:9px 14px 9px 34px;border-radius:22px;border:1px solid var(--border);
-      background:var(--panel2);color:var(--text);font-size:14px;outline:none}
-    .search input:focus{border-color:var(--accent)}
-    .search svg{position:absolute;left:11px;top:9px;opacity:.5}
-    .sec{padding:16px 18px;border-bottom:1px solid var(--border)}
-    .sec h3{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;font-weight:600}
-    .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px}
-    .row label{color:var(--muted)}
-    input[type=range]{-webkit-appearance:none;width:130px;height:4px;border-radius:2px;background:var(--panel2);outline:none}
-    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff}
-    .btn{background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:8px;
-      cursor:pointer;font-size:13px;transition:.15s;width:100%;margin-bottom:8px}
-    .btn:hover{background:#dfe4e8;border-color:var(--accent)}
-    .btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
-    .node-title{font-size:22px;font-weight:700;margin-bottom:4px}
-    .node-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
-    .metric{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
-    .metric span:first-child{color:var(--muted)}
-    .metric span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
-    .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px;line-height:1.6}
-    .legend-item{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px;cursor:pointer;opacity:.9}
-    .legend-item:hover{opacity:1}
-    .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
-    .title-block{padding:18px;border-bottom:1px solid var(--border)}
-    .title-block h1{font-size:16px;font-weight:700}
-    .title-block p{font-size:11px;color:var(--muted);margin-top:3px}
-    </style></head><body>
-    <div id="app">
-      <div id="net"></div>
-      <div id="top">
-        <div class="search">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-          <input id="search" type="text" placeholder="단어 검색...">
-        </div>
-        <div class="badge">__WARN__</div>
-      </div>
-      <div id="side">
-        <div class="title-block"><h1>Word Network</h1><p>공출현 기반 단어 네트워크</p></div>
-        <div class="sec">
-          <h3>노드 정보</h3>
-          <div id="detail"><div class="empty">노드를 클릭하면<br>상세 지표가 표시됩니다</div></div>
-        </div>
-        <div class="sec">
-          <h3>필터</h3>
-          <div class="row"><label>엣지 가중치 ≥</label><span id="wv">0</span></div>
-          <input id="wslider" type="range" min="0" max="__MAXW__" value="0" step="__STEP__" style="width:100%">
-        </div>
-        <div class="sec">
-          <h3>보기</h3>
-          <button class="btn active" id="btnLabel">라벨 표시</button>
-          <button class="btn" id="btnPhysics">물리엔진</button>
-          <button class="btn" id="btnFit">전체 보기</button>
-        </div>
-        <div class="sec">
-          <h3>커뮤니티 (__NC__개)</h3>
-          <div id="legend"></div>
-        </div>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Word Network</title>
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+  :root{--bg:#ffffff;--panel:#f7f8f9;--panel2:#ecf0f1;--text:#000000;--muted:#7f8c8d;--accent:#2c3e50;--border:#bdc3c7;}
+  body.dark-theme{--bg:#0f1117;--panel:#1a1d27;--panel2:#232735;--text:#e6e8ee;--muted:#8b90a0;--accent:#4C78A8;--border:#2c3140;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,'Segoe UI',Roboto,'Malgun Gothic',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+  #app{display:flex;height:100vh;width:100vw}
+  #net{flex:1;height:100%;background:radial-gradient(circle at 50% 40%,#ffffff 0%,#f1f1f1 100%);position:relative}
+  #side{width:320px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+  #top{position:absolute;top:0;left:0;right:320px;padding:12px 18px;display:flex;gap:14px;align-items:center;
+    background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,0));z-index:5;flex-wrap:wrap;pointer-events:none}
+  body.dark-theme #top{background:linear-gradient(180deg,rgba(15,17,23,.95),rgba(15,17,23,0));}
+  #top > *{pointer-events:auto}
+  .badge{font-size:12px;color:var(--muted);background:var(--panel2);padding:6px 12px;border-radius:20px;border:1px solid var(--border)}
+  .search{flex:1;max-width:260px;position:relative}
+  .search input{width:100%;padding:9px 14px 9px 34px;border-radius:22px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-size:14px;outline:none}
+  .search input:focus{border-color:var(--accent)}
+  .search svg{position:absolute;left:11px;top:9px;opacity:.5}
+  #zoombox{position:absolute;bottom:18px;left:18px;z-index:5;display:flex;flex-direction:column;gap:6px;background:var(--panel2);
+    border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+  #zoombox button{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--text);
+    font-size:16px;cursor:pointer;line-height:1}
+  #zoombox button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+  #zoomval{font-size:10px;text-align:center;color:var(--muted)}
+  details{border-bottom:1px solid var(--border)}
+  details > summary{padding:14px 18px;cursor:pointer;font-size:11px;text-transform:uppercase;letter-spacing:1px;
+    color:var(--muted);font-weight:700;list-style:none;user-select:none;display:flex;justify-content:space-between;align-items:center}
+  details > summary::-webkit-details-marker{display:none}
+  details > summary:after{content:'▾';font-size:10px;transition:.15s}
+  details[open] > summary:after{transform:rotate(180deg)}
+  details > summary:hover{color:var(--text)}
+  .sec-body{padding:0 18px 16px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px}
+  .row label{color:var(--muted);flex-shrink:0}
+  .row .val{color:var(--text);font-variant-numeric:tabular-nums;font-size:11px;min-width:34px;text-align:right}
+  input[type=range]{-webkit-appearance:none;flex:1;height:4px;border-radius:2px;background:var(--panel2);outline:none;min-width:60px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff}
+  select, input[type=number]{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:6px;
+    padding:6px 8px;font-size:12.5px;outline:none}
+  select{width:100%}
+  input[type=number]{width:64px}
+  input[type=color]{width:32px;height:26px;border:1px solid var(--border);border-radius:5px;padding:0;background:none;cursor:pointer}
+  .pairnum{display:flex;gap:8px;align-items:center}
+  .pairnum span{font-size:11px;color:var(--muted)}
+  .chk-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12.5px}
+  .chk-row label{color:var(--text);cursor:pointer}
+  .chk-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
+  .btn{background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:8px;
+    cursor:pointer;font-size:12.5px;transition:.15s;width:100%;margin-bottom:8px}
+  .btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .node-title{font-size:22px;font-weight:700;margin-bottom:4px}
+  .node-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .metric{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+  .metric span:first-child{color:var(--muted)}
+  .metric span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px;line-height:1.6}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px;cursor:pointer;opacity:.9}
+  .legend-item:hover{opacity:1}
+  .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+  .title-block{padding:18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
+  .title-block h1{font-size:16px;font-weight:700}
+  .title-block p{font-size:11px;color:var(--muted);margin-top:3px}
+  .icon-btn{background:var(--panel2);border:1px solid var(--border);border-radius:8px;width:30px;height:30px;cursor:pointer;
+    font-size:14px;color:var(--text);flex-shrink:0}
+  .icon-btn:hover{background:var(--accent);color:#fff}
+  .subgrid{display:none;margin-top:-2px}
+  .subgrid.show{display:block}
+  </style></head><body>
+  <div id="app">
+    <div id="net">
+      <div id="zoombox">
+        <button id="btnZoomIn" title="확대">+</button>
+        <div id="zoomval">100%</div>
+        <button id="btnZoomOut" title="축소">−</button>
+        <button id="btnZoomReset" title="전체보기">⤢</button>
       </div>
     </div>
-    <script>
-    var allNodes=__NODES__, allEdges=__EDGES__;
-    var palette=__PALETTE__;
-    var showLabel=true, physics=false;
-    var baseNodes=allNodes.map(function(n){return Object.assign({},n,{
-      font:{color:'#2c3e50',size:14,face:'Malgun Gothic',strokeWidth:3,strokeColor:'#ffffff'}});});
-    var nodes=new vis.DataSet(baseNodes);
-    var edges=new vis.DataSet(allEdges.map(function(e){return {from:e.from,to:e.to,value:e.value};}));
-    var container=document.getElementById('net');
-    var data={nodes:nodes,edges:edges};
-    var options={
-      physics:{enabled:false},
-      layout:{improvedLayout:false},
-      interaction:{hover:true,tooltipDelay:120,navigationButtons:false,keyboard:false},
-      nodes:{shape:'dot',scaling:{min:6,max:55},borderWidth:1.5,color:{border:'#ffffff'}},
-      edges:{color:{color:'#bdc3c7',highlight:'#2c3e50',opacity:.4},smooth:false,width:.5,selectionWidth:2}
-    };
-    var net=new vis.Network(container,data,options);
-    
-    function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
-    var nodeMap={}; allNodes.forEach(function(n){nodeMap[n.id]=n;});
-    
-    net.on('click',function(p){
-      if(p.nodes.length){showDetail(nodeMap[p.nodes[0]]);}
-      else{document.getElementById('detail').innerHTML='<div class="empty">노드를 클릭하면<br>상세 지표가 표시됩니다</div>';}
-    });
-    var mnames={degree:'연결 정도',strength:'강도',betweenness:'매개 중심성',
-      closeness:'근접 중심성',eigenvector:'고유벡터',pagerank:'PageRank',
-      coreness:'k-core',constraint:'구조적 공백'};
-    function showDetail(n){
-      var h='<div class="node-title">'+esc(n.label)+'</div>'+
-        '<div class="node-sub">커뮤니티 '+n.group+' · 빈도 '+n.value+'</div>';
-      var info=n.info||{};
-      Object.keys(info).forEach(function(k){
-        if(info[k]==null)return;
-        h+='<div class="metric"><span>'+(mnames[k]||k)+'</span><span>'+info[k]+'</span></div>';
+    <div id="top">
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input id="search" type="text" placeholder="단어 검색...">
+      </div>
+      <div class="badge" id="totalBadge">__WARN__</div>
+      <div class="badge" id="liveBadge">표시 중 -</div>
+    </div>
+    <div id="side">
+      <div class="title-block">
+        <div><h1>Word Network</h1><p>공출현 기반 단어 네트워크</p></div>
+        <button class="icon-btn" id="btnTheme" title="테마 전환">◐</button>
+      </div>
+  
+      <details open>
+        <summary>노드 정보</summary>
+        <div class="sec-body"><div id="detail"><div class="empty">노드를 클릭하면<br>상세 지표가 표시됩니다</div></div></div>
+      </details>
+  
+      <details open>
+        <summary>필터</summary>
+        <div class="sec-body">
+          <div class="row"><label>엣지 가중치 ≥</label><span class="val" id="wv">0</span></div>
+          <input id="wslider" type="range" min="0" max="__MAXW__" value="0" step="__STEP__" style="width:100%;margin-bottom:12px">
+          <div class="row"><label>노드 최소 빈도 ≥</label><span class="val" id="fv">0</span></div>
+          <input id="fslider" type="range" min="0" max="__MAXFREQ__" value="0" step="1" style="width:100%">
+          <div class="chk-row" style="margin-top:12px">
+            <input type="checkbox" id="chkHideIsolated">
+            <label for="chkHideIsolated">연결 없는(고립) 노드 숨기기</label>
+          </div>
+        </div>
+      </details>
+  
+      <details>
+        <summary>노드 모양 · 크기</summary>
+        <div class="sec-body">
+          <div class="row"><label>모양</label></div>
+          <select id="selShape" style="margin-bottom:12px">
+            <option value="dot">dot (원, 값기반 크기)</option>
+            <option value="circle">circle (원, 라벨에 맞춰 자동)</option>
+            <option value="ellipse">ellipse (타원)</option>
+            <option value="box">box (사각형)</option>
+            <option value="diamond">diamond (다이아몬드)</option>
+            <option value="star">star (별)</option>
+            <option value="triangle">triangle (삼각형)</option>
+            <option value="square">square (정사각형)</option>
+          </select>
+          <div class="row"><label>크기 기준</label></div>
+          <select id="selSizeBy" style="margin-bottom:12px"></select>
+          <div class="row"><label>크기 범위 (dot/star 등)</label></div>
+          <div class="pairnum" style="margin-bottom:12px">
+            <span>min</span><input type="number" id="numSizeMin" value="6" min="1" max="200">
+            <span>max</span><input type="number" id="numSizeMax" value="55" min="1" max="300">
+          </div>
+          <div class="row"><label>테두리 두께</label><span class="val" id="borderWidthVal">1.5</span></div>
+          <input type="range" id="rangeBorderWidth" min="0" max="6" step="0.5" value="1.5" style="width:100%;margin-bottom:12px">
+          <div class="row"><label>테두리 색</label><input type="color" id="colorBorder" value="#ffffff"></div>
+        </div>
+      </details>
+  
+      <details>
+        <summary>노드 색상</summary>
+        <div class="sec-body">
+          <div class="row"><label>색상 기준</label></div>
+          <select id="selColorBy" style="margin-bottom:12px">
+            <option value="community">커뮤니티별 팔레트</option>
+            <option value="uniform">단일 색상</option>
+            <option value="gradient">지표 기반 그라디언트</option>
+          </select>
+          <div class="subgrid" id="gridUniform">
+            <div class="row"><label>색상</label><input type="color" id="colorUniform" value="#4C78A8"></div>
+          </div>
+          <div class="subgrid" id="gridGradient">
+            <div class="row"><label>기준 지표</label></div>
+            <select id="selGradMetric" style="margin-bottom:10px"></select>
+            <div class="row"><label>낮은 값</label><input type="color" id="colorGradLow" value="#dbe9f6"></div>
+            <div class="row"><label>높은 값</label><input type="color" id="colorGradHigh" value="#1428A0"></div>
+          </div>
+        </div>
+      </details>
+  
+      <details>
+        <summary>라벨</summary>
+        <div class="sec-body">
+          <div class="chk-row"><input type="checkbox" id="chkLabelShow" checked><label for="chkLabelShow">라벨 표시</label></div>
+          <div class="row"><label>글자 크기</label><span class="val" id="fontSizeVal">14</span></div>
+          <input type="range" id="rangeFontSize" min="8" max="36" step="1" value="14" style="width:100%;margin-bottom:12px">
+          <div class="row"><label>글자 색</label><input type="color" id="colorFont" value="#2c3e50"></div>
+        </div>
+      </details>
+  
+      <details>
+        <summary>엣지</summary>
+        <div class="sec-body">
+          <div class="row"><label>색상</label><input type="color" id="colorEdge" value="#bdc3c7"></div>
+          <div class="row"><label>불투명도</label><span class="val" id="edgeOpVal">0.4</span></div>
+          <input type="range" id="rangeEdgeOpacity" min="0.05" max="1" step="0.05" value="0.4" style="width:100%;margin-bottom:12px">
+          <div class="row"><label>두께 범위</label></div>
+          <div class="pairnum" style="margin-bottom:12px">
+            <span>min</span><input type="number" id="numEdgeMin" value="0.5" min="0.1" max="20" step="0.1">
+            <span>max</span><input type="number" id="numEdgeMax" value="6" min="0.5" max="40" step="0.5">
+          </div>
+          <div class="chk-row"><input type="checkbox" id="chkEdgeSmooth"><label for="chkEdgeSmooth">곡선(curve) 엣지</label></div>
+          <div class="chk-row"><input type="checkbox" id="chkArrows"><label for="chkArrows">화살표 표시</label></div>
+        </div>
+      </details>
+  
+      <details>
+        <summary>물리 엔진</summary>
+        <div class="sec-body">
+          <div class="chk-row"><input type="checkbox" id="chkPhysics"><label for="chkPhysics">물리 엔진 사용</label></div>
+          <div class="row"><label>솔버</label></div>
+          <select id="selSolver" style="margin-bottom:12px">
+            <option value="barnesHut">barnesHut (기본)</option>
+            <option value="forceAtlas2Based">forceAtlas2Based</option>
+            <option value="repulsion">repulsion</option>
+          </select>
+          <div class="row"><label>중력(밀어내기)</label><span class="val" id="gravityVal">-12000</span></div>
+          <input type="range" id="rangeGravity" min="-50000" max="-500" step="500" value="-12000" style="width:100%;margin-bottom:10px">
+          <div class="row"><label>스프링 길이</label><span class="val" id="springLenVal">120</span></div>
+          <input type="range" id="rangeSpringLen" min="30" max="400" step="5" value="120" style="width:100%;margin-bottom:10px">
+          <div class="row"><label>스프링 강도</label><span class="val" id="springConstVal">0.04</span></div>
+          <input type="range" id="rangeSpringConst" min="0.01" max="0.5" step="0.01" value="0.04" style="width:100%;margin-bottom:10px">
+          <div class="row"><label>감쇠(damping)</label><span class="val" id="dampingVal">0.09</span></div>
+          <input type="range" id="rangeDamping" min="0" max="1" step="0.01" value="0.09" style="width:100%;margin-bottom:12px">
+          <button class="btn" id="btnRestabilize">레이아웃 다시 배치</button>
+        </div>
+      </details>
+  
+      <details>
+        <summary>보기 · 조작</summary>
+        <div class="sec-body">
+          <div class="chk-row"><input type="checkbox" id="chkZoomWheel" checked><label for="chkZoomWheel">휠로 확대/축소</label></div>
+          <div class="chk-row"><input type="checkbox" id="chkDragNodes" checked><label for="chkDragNodes">노드 드래그 허용</label></div>
+          <button class="btn" id="btnFit">전체 보기</button>
+          <div class="row" style="margin-top:4px"><label>배경(중심)</label><input type="color" id="colorBgCenter" value="#ffffff"></div>
+          <div class="row"><label>배경(외곽)</label><input type="color" id="colorBgEdge" value="#f1f1f1"></div>
+        </div>
+      </details>
+  
+      <details>
+        <summary>커뮤니티 (__NC__개)</summary>
+        <div class="sec-body"><div id="legend"></div></div>
+      </details>
+  
+      <details>
+        <summary>내보내기 · 초기화</summary>
+        <div class="sec-body">
+          <button class="btn" id="btnExportPng">PNG로 저장</button>
+          <button class="btn" id="btnResetSettings">모든 설정 초기화</button>
+        </div>
+      </details>
+    </div>
+  </div>
+  <script>
+  var rawNodes=__NODES__, rawEdges=__EDGES__;
+  var palette=__PALETTE__;
+  
+  // 지표 키 수집 (value=빈도 + info 안의 중심성 지표들)
+  var mnames={value:'빈도(freq)',degree:'연결 정도',strength:'강도',betweenness:'매개 중심성',
+    closeness:'근접 중심성',eigenvector:'고유벡터',pagerank:'PageRank',
+    coreness:'k-core',constraint:'구조적 공백'};
+  var metricKeys=['value'];
+  (function(){
+    var seen={value:true};
+    rawNodes.forEach(function(n){
+      if(!n.info)return;
+      Object.keys(n.info).forEach(function(k){
+        if(!seen[k]){seen[k]=true;metricKeys.push(k);}
       });
-      document.getElementById('detail').innerHTML=h;
-      net.selectNodes([n.id]);
-      net.focus(n.id,{scale:1.1,animation:{duration:400}});
+    });
+  })();
+  function getMetricValue(n,key){
+    if(key==='value')return n.value;
+    var v=n.info?n.info[key]:null;
+    return (typeof v==='number')?v:0;
+  }
+  function metricRangeOf(key){
+    var mn=Infinity,mx=-Infinity;
+    rawNodes.forEach(function(n){var v=getMetricValue(n,key);if(v<mn)mn=v;if(v>mx)mx=v;});
+    if(!isFinite(mn)){mn=0;mx=1;}
+    return {min:mn,max:mx};
+  }
+  var maxFreq=metricRangeOf('value').max;
+  document.getElementById('fslider').max=Math.ceil(maxFreq);
+  
+  ['selSizeBy','selGradMetric'].forEach(function(id){
+    var sel=document.getElementById(id);
+    metricKeys.forEach(function(k){
+      var o=document.createElement('option');o.value=k;o.text=mnames[k]||k;sel.appendChild(o);
+    });
+  });
+  
+  function hexToRgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c;}).join('');
+    var num=parseInt(h,16);return [num>>16&255,num>>8&255,num&255];}
+  function clamp255(x){return Math.max(0,Math.min(255,Math.round(x)));}
+  function rgbToHex(r,g,b){return '#'+[r,g,b].map(function(x){var s=clamp255(x).toString(16);return s.length<2?'0'+s:s;}).join('');}
+  function lerpColor(a,b,t){var A=hexToRgb(a),B=hexToRgb(b);return rgbToHex(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t);}
+  
+  var defaultCfg={
+    shape:'dot', sizeBy:'value', sizeMin:6, sizeMax:55,
+    colorBy:'community', colorUniform:'#4C78A8',
+    colorGradMetric:'value', colorGradLow:'#dbe9f6', colorGradHigh:'#1428A0',
+    borderWidth:1.5, borderColor:'#ffffff',
+    labelShow:true, fontSize:14, fontColor:'#2c3e50',
+    edgeColor:'#bdc3c7', edgeOpacity:0.4, edgeWidthMin:0.5, edgeWidthMax:6,
+    edgeSmooth:false, arrows:false,
+    physics:false, solver:'barnesHut', gravity:-12000, springLength:120, springConstant:0.04, damping:0.09,
+    zoomWheel:true, dragNodes:true,
+    bgCenter:'#ffffff', bgEdge:'#f1f1f1', theme:'light',
+    minWeight:0, minFreq:0, hideIsolated:false
+  };
+  var cfg=Object.assign({}, defaultCfg);
+  
+  var nodes=new vis.DataSet([]);
+  var edges=new vis.DataSet([]);
+  var container=document.getElementById('net');
+  var net=new vis.Network(container, {nodes:nodes,edges:edges}, {
+    layout:{improvedLayout:false},
+    interaction:{hover:true,tooltipDelay:120,navigationButtons:false,keyboard:false},
+    physics:{enabled:false}
+  });
+  
+  var nodeMap={}; rawNodes.forEach(function(n){nodeMap[n.id]=n;});
+  var currentVisibleIds={};
+  
+  function applyBackground(){
+    container.style.background='radial-gradient(circle at 50% 40%,'+cfg.bgCenter+' 0%,'+cfg.bgEdge+' 100%)';
+  }
+  
+  function computeNodeColor(n){
+    if(cfg.colorBy==='community')return n.color;
+    if(cfg.colorBy==='uniform')return cfg.colorUniform;
+    var r=metricRangeOf(cfg.colorGradMetric);
+    var val=getMetricValue(n,cfg.colorGradMetric);
+    var t=(val-r.min)/((r.max-r.min)||1);
+    return lerpColor(cfg.colorGradLow,cfg.colorGradHigh,Math.max(0,Math.min(1,t)));
+  }
+  
+  function renderGraph(){
+    var filteredNodes=rawNodes.filter(function(n){return n.value>=cfg.minFreq;});
+    var idSet={}; filteredNodes.forEach(function(n){idSet[n.id]=true;});
+    var filteredEdges=rawEdges.filter(function(e){return e.value>=cfg.minWeight && idSet[e.from] && idSet[e.to];});
+  
+    if(cfg.hideIsolated){
+      var connected={};
+      filteredEdges.forEach(function(e){connected[e.from]=true;connected[e.to]=true;});
+      filteredNodes=filteredNodes.filter(function(n){return connected[n.id];});
+      idSet={}; filteredNodes.forEach(function(n){idSet[n.id]=true;});
+      filteredEdges=filteredEdges.filter(function(e){return idSet[e.from] && idSet[e.to];});
     }
-    document.getElementById('search').addEventListener('input',function(e){
-      var q=e.target.value.trim();
-      if(!q){net.unselectAll();return;}
-      var hit=allNodes.filter(function(n){return n.label.indexOf(q)>=0;});
-      if(hit.length){showDetail(hit[0]);}
+  
+    currentVisibleIds={}; filteredNodes.forEach(function(n){currentVisibleIds[n.id]=true;});
+  
+    var strokeColor=cfg.theme==='dark' ? '#0f1117' : '#ffffff';
+    var displayNodes=filteredNodes.map(function(n){
+      return {
+        id:n.id,
+        label:cfg.labelShow ? n.label : undefined,
+        value:getMetricValue(n,cfg.sizeBy),
+        shape:cfg.shape,
+        color:{background:computeNodeColor(n), border:cfg.borderColor},
+        borderWidth:cfg.borderWidth,
+        font:{color:cfg.fontColor, size:cfg.fontSize, face:'Malgun Gothic', strokeWidth:3, strokeColor:strokeColor},
+        x:n.x, y:n.y
+      };
     });
-    document.getElementById('wslider').addEventListener('input',function(e){
-      var t=parseFloat(e.target.value);document.getElementById('wv').innerText=t.toFixed(1);
-      edges.clear();edges.add(allEdges.filter(function(ed){return ed.value>=t;})
-        .map(function(e){return {from:e.from,to:e.to,value:e.value};}));
+  
+    nodes.clear(); nodes.add(displayNodes);
+    edges.clear(); edges.add(filteredEdges.map(function(e){return {from:e.from,to:e.to,value:e.value};}));
+  
+    document.getElementById('liveBadge').innerText='표시 중 '+filteredNodes.length.toLocaleString()+'개 노드 · '+filteredEdges.length.toLocaleString()+'개 엣지';
+  }
+  
+  function applyOptions(){
+    net.setOptions({
+      nodes:{scaling:{min:cfg.sizeMin, max:cfg.sizeMax}},
+      edges:{
+        color:{color:cfg.edgeColor, highlight:cfg.theme==='dark' ? '#6b7a99' : '#2c3e50', opacity:cfg.edgeOpacity},
+        smooth:cfg.edgeSmooth ? {type:'continuous'} : false,
+        arrows:{to:{enabled:cfg.arrows}},
+        scaling:{min:cfg.edgeWidthMin, max:cfg.edgeWidthMax},
+        selectionWidth:2
+      },
+      physics:{
+        enabled:cfg.physics,
+        solver:cfg.solver,
+        barnesHut:{gravitationalConstant:cfg.gravity, springLength:cfg.springLength, springConstant:cfg.springConstant, damping:cfg.damping},
+        forceAtlas2Based:{gravitationalConstant:cfg.gravity, springLength:cfg.springLength, springConstant:cfg.springConstant, damping:cfg.damping},
+        repulsion:{springLength:cfg.springLength, springConstant:cfg.springConstant, damping:cfg.damping}
+      },
+      interaction:{zoomView:cfg.zoomWheel, dragNodes:cfg.dragNodes, hover:true, tooltipDelay:120}
     });
-    document.getElementById('btnLabel').addEventListener('click',function(){
-      showLabel=!showLabel;this.classList.toggle('active',showLabel);
-      nodes.update(baseNodes.map(function(n){return {id:n.id,label:showLabel?n.label:undefined};}));
+  }
+  
+  function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+  
+  function showDetail(n){
+    if(!currentVisibleIds[n.id]){
+      document.getElementById('detail').innerHTML='<div class="empty">현재 필터에 의해<br>숨겨진 노드입니다</div>';
+      return;
+    }
+    var h='<div class="node-title">'+esc(n.label)+'</div>'+
+      '<div class="node-sub">커뮤니티 '+n.group+' · 빈도 '+n.value+'</div>';
+    var info=n.info||{};
+    Object.keys(info).forEach(function(k){
+      if(info[k]==null)return;
+      h+='<div class="metric"><span>'+(mnames[k]||k)+'</span><span>'+info[k]+'</span></div>';
     });
-    document.getElementById('btnPhysics').addEventListener('click',function(){
-      physics=!physics;this.classList.toggle('active',physics);
-      net.setOptions({physics:{enabled:physics,barnesHut:{gravitationalConstant:-12000,springLength:120}}});
+    document.getElementById('detail').innerHTML=h;
+    net.selectNodes([n.id]);
+    net.focus(n.id,{scale:1.1,animation:{duration:400}});
+  }
+  
+  net.on('click',function(p){
+    if(p.nodes.length){showDetail(nodeMap[p.nodes[0]]);}
+    else{document.getElementById('detail').innerHTML='<div class="empty">노드를 클릭하면<br>상세 지표가 표시됩니다</div>';}
+  });
+  
+  document.getElementById('search').addEventListener('input',function(e){
+    var q=e.target.value.trim();
+    if(!q){net.unselectAll();return;}
+    var hit=rawNodes.filter(function(n){return n.label.indexOf(q)>=0;});
+    if(hit.length){showDetail(hit[0]);}
+  });
+  
+  document.getElementById('wslider').addEventListener('input',function(e){
+    cfg.minWeight=parseFloat(e.target.value);
+    document.getElementById('wv').innerText=cfg.minWeight.toFixed(1);
+    renderGraph();
+  });
+  document.getElementById('fslider').addEventListener('input',function(e){
+    cfg.minFreq=parseFloat(e.target.value);
+    document.getElementById('fv').innerText=cfg.minFreq;
+    renderGraph();
+  });
+  document.getElementById('chkHideIsolated').addEventListener('change',function(e){
+    cfg.hideIsolated=e.target.checked; renderGraph();
+  });
+  
+  document.getElementById('selShape').addEventListener('change',function(e){cfg.shape=e.target.value; renderGraph();});
+  document.getElementById('selSizeBy').addEventListener('change',function(e){cfg.sizeBy=e.target.value; renderGraph();});
+  document.getElementById('numSizeMin').addEventListener('change',function(e){cfg.sizeMin=parseFloat(e.target.value)||1; applyOptions();});
+  document.getElementById('numSizeMax').addEventListener('change',function(e){cfg.sizeMax=parseFloat(e.target.value)||50; applyOptions();});
+  document.getElementById('rangeBorderWidth').addEventListener('input',function(e){
+    cfg.borderWidth=parseFloat(e.target.value);
+    document.getElementById('borderWidthVal').innerText=cfg.borderWidth;
+    renderGraph();
+  });
+  document.getElementById('colorBorder').addEventListener('input',function(e){cfg.borderColor=e.target.value; renderGraph();});
+  
+  document.getElementById('selColorBy').addEventListener('change',function(e){
+    cfg.colorBy=e.target.value;
+    document.getElementById('gridUniform').classList.toggle('show', cfg.colorBy==='uniform');
+    document.getElementById('gridGradient').classList.toggle('show', cfg.colorBy==='gradient');
+    renderGraph();
+  });
+  document.getElementById('colorUniform').addEventListener('input',function(e){cfg.colorUniform=e.target.value; renderGraph();});
+  document.getElementById('selGradMetric').addEventListener('change',function(e){cfg.colorGradMetric=e.target.value; renderGraph();});
+  document.getElementById('colorGradLow').addEventListener('input',function(e){cfg.colorGradLow=e.target.value; renderGraph();});
+  document.getElementById('colorGradHigh').addEventListener('input',function(e){cfg.colorGradHigh=e.target.value; renderGraph();});
+  
+  document.getElementById('chkLabelShow').addEventListener('change',function(e){cfg.labelShow=e.target.checked; renderGraph();});
+  document.getElementById('rangeFontSize').addEventListener('input',function(e){
+    cfg.fontSize=parseFloat(e.target.value);
+    document.getElementById('fontSizeVal').innerText=cfg.fontSize;
+    renderGraph();
+  });
+  document.getElementById('colorFont').addEventListener('input',function(e){cfg.fontColor=e.target.value; renderGraph();});
+  
+  document.getElementById('colorEdge').addEventListener('input',function(e){cfg.edgeColor=e.target.value; applyOptions();});
+  document.getElementById('rangeEdgeOpacity').addEventListener('input',function(e){
+    cfg.edgeOpacity=parseFloat(e.target.value);
+    document.getElementById('edgeOpVal').innerText=cfg.edgeOpacity.toFixed(2);
+    applyOptions();
+  });
+  document.getElementById('numEdgeMin').addEventListener('change',function(e){cfg.edgeWidthMin=parseFloat(e.target.value)||0.1; applyOptions();});
+  document.getElementById('numEdgeMax').addEventListener('change',function(e){cfg.edgeWidthMax=parseFloat(e.target.value)||1; applyOptions();});
+  document.getElementById('chkEdgeSmooth').addEventListener('change',function(e){cfg.edgeSmooth=e.target.checked; applyOptions();});
+  document.getElementById('chkArrows').addEventListener('change',function(e){cfg.arrows=e.target.checked; applyOptions();});
+  
+  document.getElementById('chkPhysics').addEventListener('change',function(e){cfg.physics=e.target.checked; applyOptions();});
+  document.getElementById('selSolver').addEventListener('change',function(e){cfg.solver=e.target.value; applyOptions();});
+  document.getElementById('rangeGravity').addEventListener('input',function(e){
+    cfg.gravity=parseFloat(e.target.value);
+    document.getElementById('gravityVal').innerText=cfg.gravity;
+    applyOptions();
+  });
+  document.getElementById('rangeSpringLen').addEventListener('input',function(e){
+    cfg.springLength=parseFloat(e.target.value);
+    document.getElementById('springLenVal').innerText=cfg.springLength;
+    applyOptions();
+  });
+  document.getElementById('rangeSpringConst').addEventListener('input',function(e){
+    cfg.springConstant=parseFloat(e.target.value);
+    document.getElementById('springConstVal').innerText=cfg.springConstant.toFixed(2);
+    applyOptions();
+  });
+  document.getElementById('rangeDamping').addEventListener('input',function(e){
+    cfg.damping=parseFloat(e.target.value);
+    document.getElementById('dampingVal').innerText=cfg.damping.toFixed(2);
+    applyOptions();
+  });
+  document.getElementById('btnRestabilize').addEventListener('click',function(){
+    var wasPhysics=cfg.physics;
+    cfg.physics=true; applyOptions();
+    net.stabilize(150);
+    setTimeout(function(){
+      if(!wasPhysics){cfg.physics=false; applyOptions(); document.getElementById('chkPhysics').checked=false;}
+    },1600);
+  });
+  
+  document.getElementById('chkZoomWheel').addEventListener('change',function(e){cfg.zoomWheel=e.target.checked; applyOptions();});
+  document.getElementById('chkDragNodes').addEventListener('change',function(e){cfg.dragNodes=e.target.checked; applyOptions();});
+  document.getElementById('btnFit').addEventListener('click',function(){net.fit({animation:true});});
+  document.getElementById('colorBgCenter').addEventListener('input',function(e){cfg.bgCenter=e.target.value; applyBackground();});
+  document.getElementById('colorBgEdge').addEventListener('input',function(e){cfg.bgEdge=e.target.value; applyBackground();});
+  
+  function updateZoomDisplay(){document.getElementById('zoomval').innerText=Math.round(net.getScale()*100)+'%';}
+  document.getElementById('btnZoomIn').addEventListener('click',function(){net.moveTo({scale:net.getScale()*1.2}); });
+  document.getElementById('btnZoomOut').addEventListener('click',function(){net.moveTo({scale:net.getScale()/1.2}); });
+  document.getElementById('btnZoomReset').addEventListener('click',function(){net.fit({animation:true});});
+  net.on('zoom', updateZoomDisplay);
+  
+  document.getElementById('btnTheme').addEventListener('click',function(){
+    cfg.theme=cfg.theme==='light' ? 'dark' : 'light';
+    document.body.classList.toggle('dark-theme', cfg.theme==='dark');
+    if(cfg.theme==='dark'){
+      cfg.bgCenter='#161a24'; cfg.bgEdge='#0f1117';
+      cfg.fontColor='#d8dbe4'; cfg.borderColor='#0f1117'; cfg.edgeColor='#3a4152';
+    }else{
+      cfg.bgCenter='#ffffff'; cfg.bgEdge='#f1f1f1';
+      cfg.fontColor='#2c3e50'; cfg.borderColor='#ffffff'; cfg.edgeColor='#bdc3c7';
+    }
+    syncControlsFromCfg();
+    applyBackground(); applyOptions(); renderGraph();
+  });
+  
+  var legend=document.getElementById('legend');
+  for(var c=0;c<__NC__;c++){(function(c){
+    var d=document.createElement('div');d.className='legend-item';
+    d.innerHTML='<span class="dot" style="background:'+palette[c%palette.length]+'"></span>커뮤니티 '+c;
+    d.addEventListener('click',function(){
+      var ids=rawNodes.filter(function(n){return n.group===c && currentVisibleIds[n.id];}).map(function(n){return n.id;});
+      if(!ids.length)return;
+      net.selectNodes(ids);net.fit({nodes:ids,animation:true});
     });
-    document.getElementById('btnFit').addEventListener('click',function(){net.fit({animation:true});});
-    // 범례 + 커뮤니티 하이라이트
-    var legend=document.getElementById('legend');
-    for(var c=0;c<__NC__;c++){(function(c){
-      var d=document.createElement('div');d.className='legend-item';
-      d.innerHTML='<span class="dot" style="background:'+palette[c%palette.length]+'"></span>커뮤니티 '+c;
-      d.addEventListener('click',function(){
-        var ids=allNodes.filter(function(n){return n.group===c;}).map(function(n){return n.id;});
-        net.selectNodes(ids);net.fit({nodes:ids,animation:true});
-      });
-      legend.appendChild(d);
-    })(c);}
-    setTimeout(function(){net.fit();},100);
-    </script></body></html>
+    legend.appendChild(d);
+  })(c);}
+  
+  document.getElementById('btnExportPng').addEventListener('click',function(){
+    var canvas=container.querySelector('canvas');
+    if(!canvas)return;
+    var link=document.createElement('a');
+    link.download='word_network.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  });
+  
+  function syncControlsFromCfg(){
+    document.getElementById('selShape').value=cfg.shape;
+    document.getElementById('selSizeBy').value=cfg.sizeBy;
+    document.getElementById('numSizeMin').value=cfg.sizeMin;
+    document.getElementById('numSizeMax').value=cfg.sizeMax;
+    document.getElementById('rangeBorderWidth').value=cfg.borderWidth;
+    document.getElementById('borderWidthVal').innerText=cfg.borderWidth;
+    document.getElementById('colorBorder').value=cfg.borderColor;
+    document.getElementById('selColorBy').value=cfg.colorBy;
+    document.getElementById('colorUniform').value=cfg.colorUniform;
+    document.getElementById('selGradMetric').value=cfg.colorGradMetric;
+    document.getElementById('colorGradLow').value=cfg.colorGradLow;
+    document.getElementById('colorGradHigh').value=cfg.colorGradHigh;
+    document.getElementById('gridUniform').classList.toggle('show', cfg.colorBy==='uniform');
+    document.getElementById('gridGradient').classList.toggle('show', cfg.colorBy==='gradient');
+    document.getElementById('chkLabelShow').checked=cfg.labelShow;
+    document.getElementById('rangeFontSize').value=cfg.fontSize;
+    document.getElementById('fontSizeVal').innerText=cfg.fontSize;
+    document.getElementById('colorFont').value=cfg.fontColor;
+    document.getElementById('colorEdge').value=cfg.edgeColor;
+    document.getElementById('rangeEdgeOpacity').value=cfg.edgeOpacity;
+    document.getElementById('edgeOpVal').innerText=cfg.edgeOpacity.toFixed(2);
+    document.getElementById('numEdgeMin').value=cfg.edgeWidthMin;
+    document.getElementById('numEdgeMax').value=cfg.edgeWidthMax;
+    document.getElementById('chkEdgeSmooth').checked=cfg.edgeSmooth;
+    document.getElementById('chkArrows').checked=cfg.arrows;
+    document.getElementById('chkPhysics').checked=cfg.physics;
+    document.getElementById('selSolver').value=cfg.solver;
+    document.getElementById('rangeGravity').value=cfg.gravity;
+    document.getElementById('gravityVal').innerText=cfg.gravity;
+    document.getElementById('rangeSpringLen').value=cfg.springLength;
+    document.getElementById('springLenVal').innerText=cfg.springLength;
+    document.getElementById('rangeSpringConst').value=cfg.springConstant;
+    document.getElementById('springConstVal').innerText=cfg.springConstant.toFixed(2);
+    document.getElementById('rangeDamping').value=cfg.damping;
+    document.getElementById('dampingVal').innerText=cfg.damping.toFixed(2);
+    document.getElementById('chkZoomWheel').checked=cfg.zoomWheel;
+    document.getElementById('chkDragNodes').checked=cfg.dragNodes;
+    document.getElementById('colorBgCenter').value=cfg.bgCenter;
+    document.getElementById('colorBgEdge').value=cfg.bgEdge;
+    document.getElementById('wslider').value=cfg.minWeight;
+    document.getElementById('wv').innerText=cfg.minWeight.toFixed(1);
+    document.getElementById('fslider').value=cfg.minFreq;
+    document.getElementById('fv').innerText=cfg.minFreq;
+    document.getElementById('chkHideIsolated').checked=cfg.hideIsolated;
+  }
+  
+  document.getElementById('btnResetSettings').addEventListener('click',function(){
+    cfg=Object.assign({}, defaultCfg);
+    document.body.classList.remove('dark-theme');
+    syncControlsFromCfg();
+    applyBackground(); applyOptions(); renderGraph();
+    net.fit({animation:true});
+  });
+  
+  syncControlsFromCfg();
+  applyBackground();
+  applyOptions();
+  renderGraph();
+  setTimeout(function(){net.fit(); updateZoomDisplay();},100);
+  </script></body></html>
