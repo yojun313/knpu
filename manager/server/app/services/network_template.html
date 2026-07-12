@@ -100,10 +100,10 @@
   input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;
     border:3px solid var(--accent);cursor:pointer}
 
-  select, input[type=number]{background:var(--sidebar-panel2);color:var(--sidebar-text);
+  select, input[type=number], input[type=text]{background:var(--sidebar-panel2);color:var(--sidebar-text);
     border:1px solid var(--sidebar-border);border-radius:8px;padding:8px 10px;font-size:12.5px;outline:none;
     transition:.12s}
-  select:focus, input[type=number]:focus{border-color:var(--accent-soft)}
+  select:focus, input[type=number]:focus, input[type=text]:focus{border-color:var(--accent-soft)}
   select{width:100%;appearance:none;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%238b98a8'/></svg>");
     background-repeat:no-repeat;background-position:right 12px center;padding-right:28px}
@@ -123,9 +123,12 @@
   .btn:active{transform:translateY(0)}
   .btn.primary{background:var(--accent);border-color:var(--accent)}
   .btn.primary:hover{background:var(--accent-soft)}
+  .btn.btn-sm{padding:6px 9px;font-size:11.5px;margin-bottom:0;width:auto}
+  .btn-row{display:flex;gap:6px;margin-bottom:10px}
+  .btn-row .btn{margin-bottom:0;flex:1}
 
   .node-title{font-size:21px;font-weight:800;margin-bottom:4px;color:#fff;word-break:break-all}
-  .node-sub{font-size:12px;color:var(--sidebar-muted);margin-bottom:16px;display:flex;align-items:center;gap:6px}
+  .node-sub{font-size:12px;color:var(--sidebar-muted);margin-bottom:16px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .node-sub .chip{background:var(--sidebar-panel2);padding:2px 8px;border-radius:20px;font-weight:600;color:#dfe6ee}
   .metric{display:flex;justify-content:space-between;align-items:center;padding:8px 0;
     border-bottom:1px solid var(--sidebar-border);font-size:12.5px}
@@ -134,11 +137,32 @@
   .empty{color:var(--sidebar-muted);font-size:12.5px;text-align:center;padding:34px 10px;line-height:1.7}
   .empty svg{opacity:.35;margin-bottom:10px}
 
-  .legend-item{display:flex;align-items:center;gap:9px;font-size:12.5px;margin-bottom:3px;cursor:pointer;
-    padding:7px 8px;border-radius:8px;transition:.12s}
-  .legend-item:hover{background:var(--sidebar-panel2)}
-  .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 3px rgba(255,255,255,.05)}
-  .legend-item .cnt{margin-left:auto;color:var(--sidebar-muted);font-size:11px;font-variant-numeric:tabular-nums}
+  /* word list */
+  .wl-search{width:100%;margin-bottom:8px}
+  .wl-box{max-height:280px;overflow-y:auto;border:1px solid var(--sidebar-border);border-radius:9px;
+    padding:5px;background:var(--sidebar-panel)}
+  .wl-box::-webkit-scrollbar{width:7px}
+  .wl-box::-webkit-scrollbar-thumb{background:#3a4a5f;border-radius:10px}
+  .wl-item{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:7px;font-size:12.5px;cursor:pointer;margin:0}
+  .wl-item:hover{background:var(--sidebar-panel2)}
+  .wl-item input{accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer}
+  .wl-name{flex:1;color:#dfe6ee;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wl-freq{color:var(--sidebar-muted);font-size:11px;font-variant-numeric:tabular-nums}
+
+  /* community editor */
+  .comm-row{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+  .comm-row input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer}
+  .comm-row input[type=color]{width:26px;height:26px;padding:1px;flex-shrink:0}
+  .comm-row input[type=text]{flex:1;min-width:0;padding:5px 7px;font-size:12px}
+  .comm-cnt{font-size:11px;color:var(--sidebar-muted);min-width:24px;text-align:right;font-variant-numeric:tabular-nums}
+  .comm-focus{background:var(--sidebar-panel2);border:1px solid var(--sidebar-border);border-radius:6px;
+    color:#dfe6ee;cursor:pointer;width:26px;height:26px;flex-shrink:0;font-size:12px}
+  .comm-focus:hover{background:var(--accent);color:#fff}
+
+  /* stats */
+  .stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--sidebar-border);font-size:12.5px}
+  .stat span:first-child{color:var(--sidebar-muted)}
+  .stat span:last-child{color:#fff;font-weight:700;font-variant-numeric:tabular-nums}
 
   .subgrid{display:none;margin-top:-2px}
   .subgrid.show{display:block}
@@ -189,6 +213,28 @@
             <input type="checkbox" id="chkHideIsolated">
             <label for="chkHideIsolated">연결 없는(고립) 노드 숨기기</label>
           </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>단어 선택 · 표시</summary>
+        <div class="sec-body">
+          <div class="chk-row"><input type="checkbox" id="chkWordMode"><label for="chkWordMode">체크한 단어만 표시</label></div>
+          <div class="row"><label>선택됨</label><span class="val" id="selCount">-</span></div>
+          <input class="wl-search" id="wlSearch" type="text" placeholder="목록 내 검색...">
+          <div class="btn-row">
+            <button class="btn btn-sm" id="wlAll">전체선택</button>
+            <button class="btn btn-sm" id="wlNone">전체해제</button>
+            <button class="btn btn-sm" id="wlInvert">반전</button>
+          </div>
+          <div class="wl-box" id="wlBox"></div>
+          <div class="row" style="margin-top:12px"><label>상위 N개 기준</label></div>
+          <select id="topMetric" style="margin-bottom:8px"></select>
+          <div class="pairnum" style="margin-bottom:8px">
+            <span>N</span><input type="number" id="topN" value="20" min="1" max="99999">
+            <button class="btn btn-sm" id="btnTopN" style="flex:1">상위 N개만 표시</button>
+          </div>
+          <button class="btn btn-sm" id="btnCopyWords" style="width:100%">선택 단어 복사</button>
         </div>
       </details>
 
@@ -244,6 +290,9 @@
         <summary>라벨</summary>
         <div class="sec-body">
           <div class="chk-row"><input type="checkbox" id="chkLabelShow" checked><label for="chkLabelShow">라벨 표시</label></div>
+          <div class="chk-row"><input type="checkbox" id="chkLabelTop"><label for="chkLabelTop">상위 노드만 라벨 표시</label></div>
+          <div class="row"><label>라벨 표시 개수</label><span class="val" id="labelTopNVal">30</span></div>
+          <input type="range" id="rangeLabelTopN" min="1" max="500" step="1" value="30" style="width:100%;margin-bottom:12px">
           <div class="row"><label>글자 크기</label><span class="val" id="fontSizeVal">14</span></div>
           <input type="range" id="rangeFontSize" min="8" max="36" step="1" value="14" style="width:100%;margin-bottom:12px">
           <div class="row"><label>글자 색</label><input type="color" id="colorFont" value="#2c3e50"></div>
@@ -299,24 +348,28 @@
         </div>
       </details>
 
-      <details>
+      <details open>
         <summary>커뮤니티 (<span id="commCount">__NC__</span>개)</summary>
-        <div class="sec-body"><div id="legend"></div></div>
+        <div class="sec-body">
+          <div class="btn-row">
+            <button class="btn btn-sm" id="commAll">전체표시</button>
+            <button class="btn btn-sm" id="commNone">전체숨김</button>
+          </div>
+          <div id="legend"></div>
+        </div>
       </details>
 
       <details>
-        <summary>내보내기 · 초기화</summary>
-        <div class="sec-body">
-          <button class="btn primary" id="btnExportPng">PNG로 저장</button>
-          <button class="btn" id="btnResetSettings">모든 설정 초기화</button>
-        </div>
+        <summary>네트워크 통계</summary>
+        <div class="sec-body"><div id="stats"></div></div>
       </details>
+
     </div>
   </div>
   <script>
     var rawNodes=__NODES__, rawEdges=__EDGES__;
     var palette=__PALETTE__;
-  
+
     var mnames={value:'빈도(freq)',degree:'연결 정도',strength:'강도',betweenness:'매개 중심성',
       closeness:'근접 중심성',eigenvector:'고유벡터',pagerank:'PageRank',
       coreness:'k-core',constraint:'구조적 공백'};
@@ -330,13 +383,13 @@
         });
       });
     })();
-  
+
     function getMetricValue(n,key){
       if(key==='value')return n.value;
       var v=n.info?n.info[key]:null;
       return (typeof v==='number')?v:0;
     }
-  
+
     function metricRangeOf(key){
       var mn=Infinity,mx=-Infinity;
       rawNodes.forEach(function(n){var v=getMetricValue(n,key);if(v<mn)mn=v;if(v>mx)mx=v;});
@@ -350,29 +403,30 @@
       if(!isFinite(mn)){ mn=0; mx=1; }
       return {min:mn, max:mx};
     }
-  
+
     var maxFreq=metricRangeOf('value').max;
     document.getElementById('fslider').max=Math.ceil(maxFreq);
-  
-    ['selSizeBy','selGradMetric'].forEach(function(id){
+    document.getElementById('rangeLabelTopN').max=Math.max(1, rawNodes.length);
+
+    ['selSizeBy','selGradMetric','topMetric'].forEach(function(id){
       var sel=document.getElementById(id);
       metricKeys.forEach(function(k){
         var o=document.createElement('option');o.value=k;o.text=mnames[k]||k;sel.appendChild(o);
       });
     });
-  
+
     function hexToRgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c;}).join('');
       var num=parseInt(h,16);return [num>>16&255,num>>8&255,num&255];}
     function clamp255(x){return Math.max(0,Math.min(255,Math.round(x)));}
     function rgbToHex(r,g,b){return '#'+[r,g,b].map(function(x){var s=clamp255(x).toString(16);return s.length<2?'0'+s:s;}).join('');}
     function lerpColor(a,b,t){var A=hexToRgb(a),B=hexToRgb(b);return rgbToHex(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t);}
-  
+
     var defaultCfg={
       shape:'circle', sizeBy:'value', sizeMin:6, sizeMax:55,
       colorBy:'community', colorUniform:'#4C78A8',
       colorGradMetric:'value', colorGradLow:'#dbe9f6', colorGradHigh:'#1428A0',
       borderWidth:1.5, borderColor:'#ffffff',
-      labelShow:true, fontSize:14, fontColor:'#2c3e50',
+      labelShow:true, labelTopOnly:false, labelTopN:30, fontSize:14, fontColor:'#2c3e50',
       edgeColor:'#9fb0c4', edgeOpacity:0.55, edgeWidthMin:0.5, edgeWidthMax:6,
       edgeSmooth:false, arrows:false,
       physics:false, solver:'barnesHut', gravity:-12000, springLength:120, springConstant:0.04, damping:0.09,
@@ -381,16 +435,65 @@
       minWeight:0, minFreq:0, hideIsolated:false
     };
     var cfg=Object.assign({}, defaultCfg);
-  
+
     var nodes=new vis.DataSet([]);
     var edges=new vis.DataSet([]);
     var container=document.getElementById('net');
-  
+
     var nodeMap={}; rawNodes.forEach(function(n){nodeMap[n.id]=n;});
     var currentVisibleIds={};
     var communityCounts={};
     rawNodes.forEach(function(n){communityCounts[n.group]=(communityCounts[n.group]||0)+1;});
-  
+    var communityIds=Object.keys(communityCounts).map(Number).sort(function(a,b){return a-b;});
+
+    // ---- 커뮤니티 / 단어 선택 상태 (설정 초기화 시 재생성) ----
+    var commNames, commColors, commVisible, selectedWords, wordSelectMode;
+    function initCommState(){
+      commNames={}; commColors={}; commVisible={};
+      communityIds.forEach(function(c){ commNames[c]='커뮤니티 '+c; commVisible[c]=true; });
+    }
+    function initWordSel(){
+      selectedWords={};
+      rawNodes.forEach(function(n){ selectedWords[n.id]=true; });
+      wordSelectMode=false;
+    }
+    initCommState();
+    initWordSel();
+
+    // ---- 인접 리스트 (이웃/ego 네트워크용) ----
+    var adj={};
+    rawNodes.forEach(function(n){ adj[n.id]=[]; });
+    rawEdges.forEach(function(e){
+      if(adj[e.from]) adj[e.from].push(e.to);
+      if(adj[e.to]) adj[e.to].push(e.from);
+    });
+    function egoSet(start,hops){
+      var seen={}; seen[start]=true; var frontier=[start];
+      for(var h=0;h<hops;h++){
+        var next=[];
+        frontier.forEach(function(x){
+          (adj[x]||[]).forEach(function(y){ if(!seen[y]){seen[y]=true;next.push(y);} });
+        });
+        frontier=next;
+      }
+      return Object.keys(seen).map(Number);
+    }
+
+    // 빈도 내림차순 정렬 목록 (단어 리스트, 상위N 라벨 등에 사용)
+    var wlOrder=rawNodes.slice().sort(function(a,b){return b.value-a.value;});
+    // 라벨을 상위 N개만 표시할 때 대상 id 집합 계산
+    function topLabelIds(){
+      var set={};
+      var arr=rawNodes.slice().sort(function(a,b){return getMetricValue(b,cfg.sizeBy)-getMetricValue(a,cfg.sizeBy);});
+      arr.slice(0,cfg.labelTopN).forEach(function(n){set[n.id]=true;});
+      return set;
+    }
+
+    var emptyDetailHtml='<div class="empty"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8b98a8" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.4" fill="#8b98a8"/></svg><br>노드를 클릭하면<br>상세 지표가 표시됩니다</div>';
+
+    function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+    function escAttr(s){return esc(s).replace(/"/g,'&quot;');}
+
     function syncControlsFromCfg(){
       document.getElementById('selShape').value=cfg.shape;
       document.getElementById('selSizeBy').value=cfg.sizeBy;
@@ -407,6 +510,9 @@
       document.getElementById('gridUniform').classList.toggle('show', cfg.colorBy==='uniform');
       document.getElementById('gridGradient').classList.toggle('show', cfg.colorBy==='gradient');
       document.getElementById('chkLabelShow').checked=cfg.labelShow;
+      document.getElementById('chkLabelTop').checked=cfg.labelTopOnly;
+      document.getElementById('rangeLabelTopN').value=cfg.labelTopN;
+      document.getElementById('labelTopNVal').innerText=cfg.labelTopN;
       document.getElementById('rangeFontSize').value=cfg.fontSize;
       document.getElementById('fontSizeVal').innerText=cfg.fontSize;
       document.getElementById('colorFont').value=cfg.fontColor;
@@ -437,26 +543,30 @@
       document.getElementById('fv').innerText=cfg.minFreq;
       document.getElementById('chkHideIsolated').checked=cfg.hideIsolated;
     }
-  
+
     function applyBackground(){
       container.style.background='radial-gradient(ellipse at 50% 38%,'+cfg.bgCenter+' 0%,'+cfg.bgEdge+' 100%)';
     }
-  
+
     function computeNodeColor(n){
-      if(cfg.colorBy==='community')return n.color;
+      if(cfg.colorBy==='community')return commColors[n.group] || n.color;
       if(cfg.colorBy==='uniform')return cfg.colorUniform;
       var r=metricRangeOf(cfg.colorGradMetric);
       var val=getMetricValue(n,cfg.colorGradMetric);
       var t=(val-r.min)/((r.max-r.min)||1);
       return lerpColor(cfg.colorGradLow,cfg.colorGradHigh,Math.max(0,Math.min(1,t)));
     }
-  
-    // ⭐️ 핵심 변경 3: 데이터를 지우지(clear) 않고 갱신(update)만 하도록 처리하여 시야 초기화 버그 차단
+
     function renderGraph(){
-      var filteredNodes=rawNodes.filter(function(n){return n.value>=cfg.minFreq;});
+      var filteredNodes=rawNodes.filter(function(n){
+        if(n.value < cfg.minFreq) return false;
+        if(commVisible[n.group]===false) return false;
+        if(wordSelectMode && !selectedWords[n.id]) return false;
+        return true;
+      });
       var idSet={}; filteredNodes.forEach(function(n){idSet[n.id]=true;});
       var filteredEdges=rawEdges.filter(function(e){return e.value>=cfg.minWeight && idSet[e.from] && idSet[e.to];});
-  
+
       if(cfg.hideIsolated){
         var connected={};
         filteredEdges.forEach(function(e){connected[e.from]=true;connected[e.to]=true;});
@@ -464,15 +574,17 @@
         idSet={}; filteredNodes.forEach(function(n){idSet[n.id]=true;});
         filteredEdges=filteredEdges.filter(function(e){return idSet[e.from] && idSet[e.to];});
       }
-  
+
       currentVisibleIds={}; filteredNodes.forEach(function(n){currentVisibleIds[n.id]=true;});
-  
+
       var strokeColor=cfg.theme==='dark' ? '#0c1017' : '#ffffff';
-  
+      var labelSet = (cfg.labelShow && cfg.labelTopOnly) ? topLabelIds() : null;
+
       var displayNodes=filteredNodes.map(function(n){
+        var showLabel = cfg.labelShow && (!labelSet || labelSet[n.id]);
         return {
           id:n.id,
-          label:cfg.labelShow ? n.label : undefined,
+          label:showLabel ? n.label : undefined,
           value:getMetricValue(n,cfg.sizeBy),
           shape:cfg.shape,
           color:{background:computeNodeColor(n), border:cfg.borderColor,
@@ -482,7 +594,7 @@
           x:n.x, y:n.y
         };
       });
-  
+
       var edgeIdSeen={};
       var displayEdges=filteredEdges.map(function(e){
         var base=e.from + "_" + e.to;
@@ -490,37 +602,59 @@
         var id=n>1 ? base+"_"+n : base;
         return {id:id, from:e.from, to:e.to, value:e.value};
       });
-  
-      // 노드 스마트 업데이트 (필요 없는 것만 삭제하고 나머지는 속성만 갱신)
+
       var newNodeIds = displayNodes.map(function(n){return n.id;});
       var oldNodeIds = nodes.getIds();
       var nodesToRemove = oldNodeIds.filter(function(id){return newNodeIds.indexOf(id)===-1;});
       nodes.update(displayNodes);
       if(nodesToRemove.length > 0) nodes.remove(nodesToRemove);
-  
-      // 엣지 스마트 업데이트
+
       var newEdgeIds = displayEdges.map(function(e){return e.id;});
       var oldEdgeIds = edges.getIds();
       var edgesToRemove = oldEdgeIds.filter(function(id){return newEdgeIds.indexOf(id)===-1;});
       edges.update(displayEdges);
       if(edgesToRemove.length > 0) edges.remove(edgesToRemove);
-  
+
       document.getElementById('liveBadge').innerHTML='<span class="pulse"></span>표시 중 '+filteredNodes.length.toLocaleString()+'개 노드 · '+filteredEdges.length.toLocaleString()+'개 엣지';
+      updateStats(filteredNodes, filteredEdges);
     }
-  
+
+    function updateStats(fnodes, fedges){
+      var N=fnodes.length, E=fedges.length;
+      var deg={}; fnodes.forEach(function(n){deg[n.id]=0;});
+      var wsum=0;
+      fedges.forEach(function(e){ if(deg[e.from]!=null)deg[e.from]++; if(deg[e.to]!=null)deg[e.to]++; wsum+=e.value; });
+      var isolated=0; fnodes.forEach(function(n){ if(deg[n.id]===0) isolated++; });
+      var density = N>1 ? (2*E)/(N*(N-1)) : 0;
+      var avgDeg = N>0 ? (2*E)/N : 0;
+      var parent={}; fnodes.forEach(function(n){parent[n.id]=n.id;});
+      function find(x){ while(parent[x]!==x){ parent[x]=parent[parent[x]]; x=parent[x]; } return x; }
+      fedges.forEach(function(e){
+        if(parent[e.from]!=null && parent[e.to]!=null){ var a=find(e.from),b=find(e.to); if(a!==b)parent[a]=b; }
+      });
+      var roots={}; fnodes.forEach(function(n){ roots[find(n.id)]=true; });
+      var comps=Object.keys(roots).length;
+      var avgW = E>0 ? wsum/E : 0;
+      var visComm={}; fnodes.forEach(function(n){visComm[n.group]=true;});
+      function row(a,b){ return '<div class="stat"><span>'+a+'</span><span>'+b+'</span></div>'; }
+      var html='';
+      html+=row('노드 수', N.toLocaleString());
+      html+=row('엣지 수', E.toLocaleString());
+      html+=row('밀도(density)', density.toFixed(4));
+      html+=row('평균 연결정도', avgDeg.toFixed(2));
+      html+=row('연결요소 수', comps.toLocaleString());
+      html+=row('고립 노드', isolated.toLocaleString());
+      html+=row('표시 커뮤니티', Object.keys(visComm).length.toLocaleString());
+      html+=row('평균 엣지 가중치', avgW.toFixed(2));
+      document.getElementById('stats').innerHTML=html;
+    }
+
     function getNetworkOptions() {
       return {
         layout: { improvedLayout: false },
         nodes: {
           scaling: {
-            min: cfg.sizeMin, max: cfg.sizeMax,
-            // 현재 화면에 보이는 노드 집합이 아니라, 원본 전체 데이터 기준으로 스케일 고정
-            customScaling: function(dsMin, dsMax, total, value){
-              var r = metricRangeOf(cfg.sizeBy);
-              var span = (r.max - r.min) || 1;
-              var t = Math.max(0, Math.min(1, (value - r.min) / span));
-              return cfg.sizeMin + t * (cfg.sizeMax - cfg.sizeMin);
-            }
+            min: cfg.sizeMin, max: cfg.sizeMax
           }
         },
         edges: {
@@ -528,13 +662,7 @@
           smooth: cfg.edgeSmooth ? { type: 'continuous' } : false,
           arrows: { to: { enabled: cfg.arrows } },
           scaling: {
-            min: cfg.edgeWidthMin, max: cfg.edgeWidthMax,
-            customScaling: function(dsMin, dsMax, total, value){
-              var r = edgeValueRange();
-              var span = (r.max - r.min) || 1;
-              var t = Math.max(0, Math.min(1, (value - r.min) / span));
-              return cfg.edgeWidthMin + t * (cfg.edgeWidthMax - cfg.edgeWidthMin);
-            }
+            min: cfg.edgeWidthMin, max: cfg.edgeWidthMax
           },
           selectionWidth: 2
         },
@@ -549,43 +677,129 @@
       };
     }
 
+    // ---- 토스트 ----
+    function toast(msg){
+      var t=document.getElementById('__toast');
+      if(!t){
+        t=document.createElement('div'); t.id='__toast';
+        t.style.cssText='position:fixed;bottom:24px;left:calc(50% - 168px);transform:translateX(-50%);background:rgba(27,38,52,.96);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.35);transition:opacity .3s;pointer-events:none;opacity:0';
+        document.body.appendChild(t);
+      }
+      t.innerText=msg; t.style.opacity='1';
+      clearTimeout(t.__tm); t.__tm=setTimeout(function(){ t.style.opacity='0'; },1500);
+    }
+
+    // ---- 단어 리스트 ----
+    function updateSelCount(){
+      var c=0; rawNodes.forEach(function(n){ if(selectedWords[n.id])c++; });
+      document.getElementById('selCount').innerText=c+' / '+rawNodes.length;
+    }
+    function buildWordList(){
+      var box=document.getElementById('wlBox');
+      var q=(document.getElementById('wlSearch').value||'').trim();
+      var html='';
+      wlOrder.forEach(function(n){
+        if(q && n.label.indexOf(q)<0) return;
+        html+='<label class="wl-item"><input type="checkbox" data-id="'+n.id+'"'+(selectedWords[n.id]?' checked':'')+'>'
+          +'<span class="wl-name">'+esc(n.label)+'</span><span class="wl-freq">'+n.value+'</span></label>';
+      });
+      box.innerHTML=html || '<div class="empty" style="padding:18px">일치하는 단어가 없습니다</div>';
+      updateSelCount();
+    }
+    function syncWordChecks(){
+      var boxes=document.querySelectorAll('#wlBox input[data-id]');
+      boxes.forEach(function(b){ b.checked=!!selectedWords[b.getAttribute('data-id')]; });
+      updateSelCount();
+    }
+    function visibleWlIds(){
+      var q=(document.getElementById('wlSearch').value||'').trim();
+      return wlOrder.filter(function(n){return !q || n.label.indexOf(q)>=0;}).map(function(n){return n.id;});
+    }
+
+    // ---- 커뮤니티(범례) 편집기 ----
+    function buildLegend(){
+      var legend=document.getElementById('legend');
+      document.getElementById('commCount').innerText=communityIds.length;
+      if(!communityIds.length){ legend.innerHTML='<div class="empty">표시할 커뮤니티가 없습니다</div>'; return; }
+      var html='';
+      communityIds.forEach(function(c){
+        var col=commColors[c]||palette[((c%palette.length)+palette.length)%palette.length];
+        html+='<div class="comm-row">'
+          +'<input type="checkbox" class="comm-vis" data-g="'+c+'"'+(commVisible[c]!==false?' checked':'')+'>'
+          +'<input type="color" class="comm-color" data-g="'+c+'" value="'+col+'">'
+          +'<input type="text" class="comm-name" data-g="'+c+'" value="'+escAttr(commNames[c]||('커뮤니티 '+c))+'">'
+          +'<span class="comm-cnt">'+(communityCounts[c]||0)+'</span>'
+          +'<button class="comm-focus" data-g="'+c+'" title="이 커뮤니티로 이동">⤢</button>'
+          +'</div>';
+      });
+      legend.innerHTML=html;
+    }
+
     syncControlsFromCfg();
     applyBackground();
+    buildWordList();
+    buildLegend();
     renderGraph();
-  
+
     var net = new vis.Network(container, {nodes:nodes, edges:edges}, getNetworkOptions());
-  
+
     function applyOptions(){
       if(net) {
         net.setOptions(getNetworkOptions());
-        net.redraw(); // 강제 렌더링을 호출하여 엣지 색상 변경 즉각 반영
+        net.redraw();
       }
     }
-  
-    function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
-  
+
     function showDetail(n){
       if(!currentVisibleIds[n.id]){
         document.getElementById('detail').innerHTML='<div class="empty">현재 필터에 의해<br>숨겨진 노드입니다</div>';
         return;
       }
+      var cname=commNames[n.group]||('커뮤니티 '+n.group);
       var h='<div class="node-title">'+esc(n.label)+'</div>'+
-        '<div class="node-sub"><span class="chip">커뮤니티 '+n.group+'</span><span>빈도 '+n.value+'</span></div>';
+        '<div class="node-sub"><span class="chip">'+esc(cname)+'</span><span>빈도 '+n.value+'</span></div>';
       var info=n.info||{};
       Object.keys(info).forEach(function(k){
         if(info[k]==null)return;
         h+='<div class="metric"><span>'+(mnames[k]||k)+'</span><span>'+info[k]+'</span></div>';
       });
+      h+='<div class="btn-row" style="margin-top:14px">'
+        +'<button class="btn btn-sm" data-ego="1" data-node="'+n.id+'" style="flex:1">이웃만 보기</button>'
+        +'<button class="btn btn-sm" data-ego="2" data-node="'+n.id+'" style="flex:1">2단계 이웃</button>'
+        +'</div>'
+        +'<button class="btn btn-sm" data-focusnode="'+n.id+'" style="width:100%">이 노드로 이동</button>';
       document.getElementById('detail').innerHTML=h;
       net.selectNodes([n.id]);
       net.focus(n.id,{scale:1.1,animation:{duration:400}});
     }
-  
+
     net.on('click',function(p){
       if(p.nodes.length){showDetail(nodeMap[p.nodes[0]]);}
-      else{document.getElementById('detail').innerHTML='<div class="empty"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8b98a8" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.4" fill="#8b98a8"/></svg><br>노드를 클릭하면<br>상세 지표가 표시됩니다</div>';}
+      else{document.getElementById('detail').innerHTML=emptyDetailHtml;}
     });
-  
+
+    // 상세 패널 내 ego / focus 버튼
+    document.getElementById('detail').addEventListener('click',function(e){
+      var t=e.target;
+      var ego=t.getAttribute&&t.getAttribute('data-ego');
+      var fn=t.getAttribute&&t.getAttribute('data-focusnode');
+      if(ego!=null){
+        var start=parseInt(t.getAttribute('data-node'),10);
+        var set=egoSet(start, parseInt(ego,10));
+        selectedWords={}; set.forEach(function(id){selectedWords[id]=true;});
+        wordSelectMode=true;
+        document.getElementById('chkWordMode').checked=true;
+        buildWordList();
+        renderGraph();
+        if(set.length) net.fit({nodes:set,animation:true});
+        toast('이웃 '+set.length+'개 단어만 표시');
+      } else if(fn!=null){
+        var id=parseInt(fn,10);
+        net.selectNodes([id]);
+        net.focus(id,{scale:1.3,animation:true});
+      }
+    });
+
     document.getElementById('search').addEventListener('input',function(e){
       var q=e.target.value.trim();
       if(!q){net.unselectAll();return;}
@@ -597,7 +811,7 @@
         document.getElementById('detail').innerHTML='<div class="empty">"'+esc(q)+'"과(와)<br>일치하는 단어가 없습니다</div>';
       }
     });
-  
+
     document.getElementById('wslider').addEventListener('input',function(e){
       cfg.minWeight=parseFloat(e.target.value);
       document.getElementById('wv').innerText=cfg.minWeight.toFixed(1);
@@ -611,7 +825,62 @@
     document.getElementById('chkHideIsolated').addEventListener('change',function(e){
       cfg.hideIsolated=e.target.checked; renderGraph();
     });
-  
+
+    // ---- 단어 선택 컨트롤 ----
+    document.getElementById('chkWordMode').addEventListener('change',function(e){
+      wordSelectMode=e.target.checked; renderGraph();
+    });
+    document.getElementById('wlSearch').addEventListener('input',buildWordList);
+    document.getElementById('wlBox').addEventListener('change',function(e){
+      var t=e.target;
+      if(t && t.matches && t.matches('input[data-id]')){
+        var id=t.getAttribute('data-id');
+        if(t.checked) selectedWords[id]=true; else delete selectedWords[id];
+        updateSelCount();
+        if(wordSelectMode) renderGraph();
+      }
+    });
+    document.getElementById('wlAll').addEventListener('click',function(){
+      visibleWlIds().forEach(function(id){selectedWords[id]=true;});
+      syncWordChecks(); if(wordSelectMode) renderGraph();
+    });
+    document.getElementById('wlNone').addEventListener('click',function(){
+      visibleWlIds().forEach(function(id){delete selectedWords[id];});
+      syncWordChecks(); if(wordSelectMode) renderGraph();
+    });
+    document.getElementById('wlInvert').addEventListener('click',function(){
+      visibleWlIds().forEach(function(id){ if(selectedWords[id]) delete selectedWords[id]; else selectedWords[id]=true; });
+      syncWordChecks(); if(wordSelectMode) renderGraph();
+    });
+    document.getElementById('btnTopN').addEventListener('click',function(){
+      var metric=document.getElementById('topMetric').value;
+      var N=parseInt(document.getElementById('topN').value,10)||20;
+      var sorted=rawNodes.slice().sort(function(a,b){return getMetricValue(b,metric)-getMetricValue(a,metric);});
+      selectedWords={};
+      sorted.slice(0,N).forEach(function(n){selectedWords[n.id]=true;});
+      wordSelectMode=true;
+      document.getElementById('chkWordMode').checked=true;
+      buildWordList();
+      renderGraph();
+      var ids=sorted.slice(0,N).map(function(n){return n.id;});
+      if(ids.length) net.fit({nodes:ids,animation:true});
+      toast('상위 '+Math.min(N,sorted.length)+'개 단어 표시 ('+(mnames[metric]||metric)+')');
+    });
+    document.getElementById('btnCopyWords').addEventListener('click',function(){
+      var labels=[]; wlOrder.forEach(function(n){ if(selectedWords[n.id]) labels.push(n.label); });
+      var text=labels.join('\n');
+      function done(){ toast('복사됨: '+labels.length+'개 단어'); }
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done, function(){ fallbackCopy(text, done); });
+      } else fallbackCopy(text, done);
+    });
+    function fallbackCopy(text, cb){
+      var ta=document.createElement('textarea'); ta.value=text;
+      ta.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); if(cb)cb(); }catch(err){ alert('복사에 실패했습니다.'); }
+      document.body.removeChild(ta);
+    }
+
     document.getElementById('selShape').addEventListener('change',function(e){cfg.shape=e.target.value; renderGraph();});
     document.getElementById('selSizeBy').addEventListener('change',function(e){cfg.sizeBy=e.target.value; renderGraph();});
     document.getElementById('numSizeMin').addEventListener('change',function(e){
@@ -632,7 +901,7 @@
       renderGraph();
     });
     document.getElementById('colorBorder').addEventListener('input',function(e){cfg.borderColor=e.target.value; renderGraph();});
-  
+
     document.getElementById('selColorBy').addEventListener('change',function(e){
       cfg.colorBy=e.target.value;
       document.getElementById('gridUniform').classList.toggle('show', cfg.colorBy==='uniform');
@@ -643,15 +912,21 @@
     document.getElementById('selGradMetric').addEventListener('change',function(e){cfg.colorGradMetric=e.target.value; renderGraph();});
     document.getElementById('colorGradLow').addEventListener('input',function(e){cfg.colorGradLow=e.target.value; renderGraph();});
     document.getElementById('colorGradHigh').addEventListener('input',function(e){cfg.colorGradHigh=e.target.value; renderGraph();});
-  
+
     document.getElementById('chkLabelShow').addEventListener('change',function(e){cfg.labelShow=e.target.checked; renderGraph();});
+    document.getElementById('chkLabelTop').addEventListener('change',function(e){cfg.labelTopOnly=e.target.checked; renderGraph();});
+    document.getElementById('rangeLabelTopN').addEventListener('input',function(e){
+      cfg.labelTopN=parseInt(e.target.value,10);
+      document.getElementById('labelTopNVal').innerText=cfg.labelTopN;
+      if(cfg.labelShow && cfg.labelTopOnly) renderGraph();
+    });
     document.getElementById('rangeFontSize').addEventListener('input',function(e){
       cfg.fontSize=parseFloat(e.target.value);
       document.getElementById('fontSizeVal').innerText=cfg.fontSize;
       renderGraph();
     });
     document.getElementById('colorFont').addEventListener('input',function(e){cfg.fontColor=e.target.value; renderGraph();});
-  
+
     document.getElementById('colorEdge').addEventListener('input',function(e){cfg.edgeColor=e.target.value; applyOptions();});
     document.getElementById('rangeEdgeOpacity').addEventListener('input',function(e){
       cfg.edgeOpacity=parseFloat(e.target.value);
@@ -672,7 +947,7 @@
     });
     document.getElementById('chkEdgeSmooth').addEventListener('change',function(e){cfg.edgeSmooth=e.target.checked; applyOptions();});
     document.getElementById('chkArrows').addEventListener('change',function(e){cfg.arrows=e.target.checked; applyOptions();});
-  
+
     var restabilizeTimer=null;
     document.getElementById('chkPhysics').addEventListener('change',function(e){
       if(restabilizeTimer){clearTimeout(restabilizeTimer); restabilizeTimer=null;}
@@ -709,13 +984,13 @@
         if(!wasPhysics){cfg.physics=false; applyOptions(); document.getElementById('chkPhysics').checked=false;}
       },1600);
     });
-  
+
     document.getElementById('chkZoomWheel').addEventListener('change',function(e){cfg.zoomWheel=e.target.checked; applyOptions();});
     document.getElementById('chkDragNodes').addEventListener('change',function(e){cfg.dragNodes=e.target.checked; applyOptions();});
     document.getElementById('btnFit').addEventListener('click',function(){net.fit({animation:true});});
     document.getElementById('colorBgCenter').addEventListener('input',function(e){cfg.bgCenter=e.target.value; applyBackground();});
     document.getElementById('colorBgEdge').addEventListener('input',function(e){cfg.bgEdge=e.target.value; applyBackground();});
-  
+
     function updateZoomDisplay(){
         if(net) document.getElementById('zoomval').innerText=Math.round(net.getScale()*100)+'%';
     }
@@ -724,7 +999,7 @@
     document.getElementById('btnZoomOut').addEventListener('click',function(){net.moveTo({scale:clampScale(net.getScale()/1.2)}); });
     document.getElementById('btnZoomReset').addEventListener('click',function(){net.fit({animation:true});});
     net.on('zoom', updateZoomDisplay);
-  
+
     document.getElementById('btnTheme').addEventListener('click',function(){
       try{
         cfg.theme=cfg.theme==='light' ? 'dark' : 'light';
@@ -740,91 +1015,60 @@
         applyBackground();
         applyOptions();
         renderGraph();
-        // Force an immediate repaint instead of waiting on vis-network's own
-        // debounce, so the color/background change is visible right away.
         if(net) requestAnimationFrame(function(){ net.redraw(); });
       }catch(err){
         console.error('테마 전환 실패:', err);
       }
     });
-  
-    var legend=document.getElementById('legend');
-    // Build the legend from whatever community ids actually appear in the
-    // node data, rather than trusting a separately-computed __NC__ count.
-    // That count can drift (e.g. a community loses all its members once
-    // edges are truncated to max_edges) and previously left this list empty
-    // even though the summary header still said "N개".
-    var communityIds=Object.keys(communityCounts).map(Number).sort(function(a,b){return a-b;});
-    document.getElementById('commCount').innerText=communityIds.length;
-    if(!communityIds.length){
-      legend.innerHTML='<div class="empty">표시할 커뮤니티가 없습니다</div>';
+
+    // ---- 커뮤니티(범례) 이벤트 (위임) ----
+    var legendEl=document.getElementById('legend');
+    legendEl.addEventListener('change',function(e){
+      var t=e.target, g=t.getAttribute&&t.getAttribute('data-g'); if(g==null)return; g=parseInt(g,10);
+      if(t.classList.contains('comm-vis')){ commVisible[g]=t.checked; renderGraph(); }
+      else if(t.classList.contains('comm-name')){ commNames[g]=t.value; }
+    });
+    legendEl.addEventListener('input',function(e){
+      var t=e.target, g=t.getAttribute&&t.getAttribute('data-g'); if(g==null)return; g=parseInt(g,10);
+      if(t.classList.contains('comm-color')){ commColors[g]=t.value; if(cfg.colorBy==='community') renderGraph(); }
+    });
+    legendEl.addEventListener('click',function(e){
+      var b=e.target.closest ? e.target.closest('.comm-focus') : null;
+      if(b){
+        var g=parseInt(b.getAttribute('data-g'),10);
+        var ids=rawNodes.filter(function(n){return n.group===g && currentVisibleIds[n.id];}).map(function(n){return n.id;});
+        if(ids.length){ net.selectNodes(ids); net.fit({nodes:ids,animation:true}); }
+        else toast('현재 표시된 노드가 없습니다');
+      }
+    });
+    document.getElementById('commAll').addEventListener('click',function(){
+      communityIds.forEach(function(c){commVisible[c]=true;});
+      buildLegend(); renderGraph();
+    });
+    document.getElementById('commNone').addEventListener('click',function(){
+      communityIds.forEach(function(c){commVisible[c]=false;});
+      buildLegend(); renderGraph();
+    });
+
+    // ---- 다운로드 헬퍼 ----
+    function downloadBlob(blob, filename){
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=url; a.download=filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){URL.revokeObjectURL(url);},4000);
     }
-    communityIds.forEach(function(c){
-      var d=document.createElement('div');d.className='legend-item';
-      d.innerHTML='<span class="dot" style="background:'+palette[((c%palette.length)+palette.length)%palette.length]+'"></span>커뮤니티 '+c+
-        '<span class="cnt">'+(communityCounts[c]||0)+'</span>';
-      d.addEventListener('click',function(){
-        var ids=rawNodes.filter(function(n){return n.group===c && currentVisibleIds[n.id];}).map(function(n){return n.id;});
-        if(!ids.length)return;
-        net.selectNodes(ids);net.fit({nodes:ids,animation:true});
-      });
-      legend.appendChild(d);
-    });
-  
-    document.getElementById('btnExportPng').addEventListener('click',function(){
-      var canvas=container.querySelector('canvas');
-      if(!canvas){
-        alert('내보낼 그래프 캔버스를 찾지 못했습니다. 그래프가 표시된 상태에서 다시 시도해주세요.');
-        return;
-      }
-      try{
-        canvas.toBlob(function(blob){
-          if(!blob){
-            alert('PNG 생성에 실패했습니다.');
-            return;
-          }
-          var url=URL.createObjectURL(blob);
-          var link=document.createElement('a');
-          link.download='word_network.png';
-          link.href=url;
-          // Anchor must be attached to the DOM for click() to reliably trigger a
-          // download in some browsers/sandboxed preview frames.
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          // Sandboxed iframes (no "allow-downloads") silently swallow the click
-          // above, so also open the image in a new tab as a fallback the user
-          // can right-click → "이미지를 다른 이름으로 저장" on.
-          window.open(url, '_blank');
-          setTimeout(function(){ URL.revokeObjectURL(url); }, 30000);
-        }, 'image/png');
-      }catch(err){
-        console.error('PNG export failed:', err);
-        alert('PNG 저장에 실패했습니다: '+err.message);
-      }
-    });
-  
-    document.getElementById('btnResetSettings').addEventListener('click',function(){
-      try{
-        cfg=Object.assign({}, defaultCfg);
-        document.body.classList.remove('dark-theme');
-        document.getElementById('search').value='';
-        if(net) net.unselectAll();
-        document.getElementById('detail').innerHTML='<div class="empty"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8b98a8" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.4" fill="#8b98a8"/></svg><br>노드를 클릭하면<br>상세 지표가 표시됩니다</div>';
-        syncControlsFromCfg();
-        applyBackground();
-        applyOptions();
-        renderGraph();
-        if(net){
-          net.fit({animation:true});
-          requestAnimationFrame(function(){ net.redraw(); });
-        }
-      }catch(err){
-        console.error('설정 초기화 실패:', err);
-      }
-    });
-  
+    function downloadText(filename, text, mime, bom){
+      var parts = bom ? ['\uFEFF', text] : [text];
+      downloadBlob(new Blob(parts,{type:(mime||'text/plain')+';charset=utf-8'}), filename);
+    }
+    function csvCell(v){
+      v=(v==null)?'':String(v);
+      if(/[",\n]/.test(v)) v='"'+v.replace(/"/g,'""')+'"';
+      return v;
+    }
+
     net.fit({animation:false});
     updateZoomDisplay();
-    </script>
+  </script>
 </body></html>
