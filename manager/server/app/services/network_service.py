@@ -508,104 +508,104 @@ def export_files(res, option, out_dir, tag=""):
     export_ego_networks(res, option, out_dir, tag=tag)
 
 
-def _export_interactive_html(res, out_path, max_edges=1500):
-    g = res["graph"]
-    coords = res["coords"]
-    cent, community = res["cent"], res["community"]
+    def _export_interactive_html(res, out_path, max_edges=1500):
+        g = res["graph"]
+        coords = res["coords"]
+        cent, community = res["cent"], res["community"]
 
-    all_edges = list(g.es)
-    if len(all_edges) > max_edges:
-        all_edges = sorted(all_edges, key=lambda e: e["weight"], reverse=True)[
-            :max_edges
+        all_edges = list(g.es)
+        if len(all_edges) > max_edges:
+            all_edges = sorted(all_edges, key=lambda e: e["weight"], reverse=True)[
+                :max_edges
+            ]
+        used = set()
+        for e in all_edges:
+            used.add(e.source)
+            used.add(e.target)
+
+        # 좌표 정규화 (화면 스케일)
+        xs = coords[:, 0]
+        ys = coords[:, 1]
+        xr = (xs.max() - xs.min()) or 1
+        yr = (ys.max() - ys.min()) or 1
+
+        palette = [
+            "#4C78A8",
+            "#F58518",
+            "#54A24B",
+            "#E45756",
+            "#72B7B2",
+            "#FF9DA6",
+            "#9D755D",
+            "#BAB0AC",
+            "#B279A2",
+            "#EECA3B",
+            "#59A14F",
+            "#9C755F",
+            "#79706E",
+            "#D37295",
+            "#8CD17D",
         ]
-    used = set()
-    for e in all_edges:
-        used.add(e.source)
-        used.add(e.target)
 
-    # 좌표 정규화 (화면 스케일)
-    xs = coords[:, 0]
-    ys = coords[:, 1]
-    xr = (xs.max() - xs.min()) or 1
-    yr = (ys.max() - ys.min()) or 1
+        nodes = []
+        for i, v in enumerate(g.vs):
+            if i not in used:
+                continue
+            grp = int(community[i]) if community is not None else 0
+            info = {}
+            for k, arr in cent.items():
+                try:
+                    val = arr[i]
+                    info[k] = round(float(val), 4) if val is not None else None
+                except Exception:
+                    pass
+            nodes.append(
+                {
+                    "id": i,
+                    "label": v["name"],
+                    "value": int(v["freq"]),
+                    "group": grp,
+                    "color": palette[grp % len(palette)],
+                    "x": float((xs[i] - xs.min()) / xr * 2400 - 1200),
+                    "y": float((ys[i] - ys.min()) / yr * 1600 - 800),
+                    "info": info,
+                }
+            )
+        edges = [
+            {"from": e.source, "to": e.target, "value": float(e["weight"])}
+            for e in all_edges
+        ]
 
-    palette = [
-        "#4C78A8",
-        "#F58518",
-        "#54A24B",
-        "#E45756",
-        "#72B7B2",
-        "#FF9DA6",
-        "#9D755D",
-        "#BAB0AC",
-        "#B279A2",
-        "#EECA3B",
-        "#59A14F",
-        "#9C755F",
-        "#79706E",
-        "#D37295",
-        "#8CD17D",
-    ]
+        nodes_json = json.dumps(nodes, ensure_ascii=False)
+        edges_json = json.dumps(edges, ensure_ascii=False)
+        max_w = max((e["value"] for e in edges), default=1)
+        truncated = len(g.es) > max_edges
+        n_comm = (max(community) + 1) if community is not None else 1
+        max_freq = max((n["value"] for n in nodes), default=1)
 
-    nodes = []
-    for i, v in enumerate(g.vs):
-        if i not in used:
-            continue
-        grp = int(community[i]) if community is not None else 0
-        info = {}
-        for k, arr in cent.items():
-            try:
-                val = arr[i]
-                info[k] = round(float(val), 4) if val is not None else None
-            except Exception:
-                pass
-        nodes.append(
-            {
-                "id": i,
-                "label": v["name"],
-                "value": int(v["freq"]),
-                "group": grp,
-                "color": palette[grp % len(palette)],
-                "x": float((xs[i] - xs.min()) / xr * 2400 - 1200),
-                "y": float((ys[i] - ys.min()) / yr * 1600 - 800),
-                "info": info,
-            }
+        warn = (
+            f"⚠ 전체 엣지 {len(g.es):,}개 중 상위 {max_edges:,}개 표시"
+            if truncated
+            else f"엣지 {len(g.es):,}개 · 노드 {len(nodes):,}개"
         )
-    edges = [
-        {"from": e.source, "to": e.target, "value": float(e["weight"])}
-        for e in all_edges
-    ]
 
-    nodes_json = json.dumps(nodes, ensure_ascii=False)
-    edges_json = json.dumps(edges, ensure_ascii=False)
-    max_w = max((e["value"] for e in edges), default=1)
-    truncated = len(g.es) > max_edges
-    n_comm = (max(community) + 1) if community is not None else 1
-    max_freq = max((n["value"] for n in nodes), default=1)
+        # 외부 HTML 템플릿 로드
+        with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
+            html = f.read()
 
-    warn = (
-        f"⚠ 전체 엣지 {len(g.es):,}개 중 상위 {max_edges:,}개 표시"
-        if truncated
-        else f"엣지 {len(g.es):,}개 · 노드 {len(nodes):,}개"
-    )
+        html = (
+            html.replace("__WARN__", warn)
+            .replace("__MAXW__", str(max_w))
+            .replace("__STEP__", str(max(max_w / 100, 0.01)))
+            .replace("__NC__", str(n_comm))
+            .replace("__MAXFREQ__", str(max_freq))
+            .replace("__NODES__", nodes_json)
+            .replace("__EDGES__", edges_json)
+            .replace("__PALETTE__", json.dumps(palette))
+        )
 
-    # 외부 HTML 템플릿 로드
-    with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
-        html = f.read()
-
-    html = (
-        html.replace("__WARN__", warn)
-        .replace("__MAXW__", str(max_w))
-        .replace("__STEP__", str(max(max_w / 100, 0.01)))
-        .replace("__NC__", str(n_comm))
-        .replace("__MAXFREQ__", str(max_freq))
-        .replace("__NODES__", nodes_json)
-        .replace("__EDGES__", edges_json)
-        .replace("__PALETTE__", json.dumps(palette))
-    )
-
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(html)
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(html)
 
 
 # ────────────────────── 기간 병렬 워커 ──────────────────────

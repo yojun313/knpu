@@ -158,6 +158,49 @@
             font-size: 17px;
         }
 
+        .kbd {
+            display:inline-block;
+            background:#34495e;
+            color:#fff;
+            padding:2px 8px;
+            border-radius:5px;
+            font-size:14px;
+            font-family:monospace;
+        }
+
+        .opt-card {
+            border:1px solid #dcdcdc;
+            border-radius:10px;
+            padding:18px 22px;
+            margin:18px 0;
+            box-shadow:0 3px 10px rgba(0,0,0,0.06);
+        }
+
+        .opt-card h4 {
+            margin-top:0;
+            margin-bottom:8px;
+            color:#2c3e50;
+            display:flex;
+            align-items:center;
+            gap:8px;
+        }
+
+        .opt-card .default {
+            display:inline-block;
+            font-size:13px;
+            background:#eafaf1;
+            color:#1e7e4a;
+            border-radius:20px;
+            padding:3px 12px;
+            margin-left:6px;
+            font-weight:bold;
+        }
+
+        .opt-card p {
+            font-size:16px;
+            margin-bottom:10px;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -200,7 +243,7 @@
                 <li><a href="#measures">연관성 척도 설명</a></li>
                 <li><a href="#centralities">중심성 지표 설명</a></li>
                 <li><a href="#results">결과 파일 설명</a></li>
-                <li><a href="#interactive">인터랙티브 HTML 사용법</a></li>
+                <li><a href="#interactive">인터랙티브 뷰어(HTML) 사용법 상세</a></li>
                 <li><a href="#tips">활용 팁 &amp; 주의사항</a></li>
             </ol>
         </div>
@@ -595,21 +638,209 @@
         </div>
 
         <!-- ─────────────────────────────── -->
-        <h2 id="interactive">9. 인터랙티브 HTML 사용법</h2>
-        <p><code>network.html</code>을 웹 브라우저(크롬 권장)로 열면 다음 기능을 사용할 수 있습니다.</p>
-        <ul>
-            <li><strong>드래그 / 휠:</strong> 화면 이동 및 확대·축소</li>
-            <li><strong>단어 검색:</strong> 상단 검색창에 단어를 입력하면 해당 노드로 이동·강조</li>
-            <li><strong>엣지 최소 가중치 슬라이더:</strong> 약한 연결을 숨겨 핵심 관계만 표시</li>
-            <li><strong>물리엔진 On/Off:</strong> 노드를 자동으로 정렬(엔진 On)하거나 고정(Off)</li>
-            <li><strong>전체 보기:</strong> 화면에 그래프 전체가 들어오도록 맞춤</li>
-        </ul>
+        <h2 id="interactive">9. 인터랙티브 뷰어(HTML) 사용법 상세</h2>
+        <p>
+            <code>network.html</code>을 웹 브라우저(크롬 권장)로 열면, 마우스만으로 그래프를 탐색·필터링·꾸밀 수 있는
+            인터랙티브 뷰어가 실행됩니다. 화면은 크게 <strong>① 중앙 그래프 캔버스</strong>,
+            <strong>② 상단 검색·상태 바</strong>, <strong>③ 좌하단 확대·축소 박스</strong>,
+            <strong>④ 우측 설정 패널</strong>로 구성되어 있습니다.
+        </p>
+
         <div class="important">
             <p style="margin:0">
                 노드·엣지가 매우 많을 경우, 브라우저 성능 보호를 위해
                 HTML에는 <strong>가중치 상위 일부 연결선만</strong> 표시됩니다.
                 전체 데이터가 필요하면 <code>edges.csv</code> 또는 <code>network.graphml</code>을 이용하세요.
+                뷰어 자체의 기본 필터값은 모두 0으로 설정되어 있어, 열었을 때 <strong>전달받은 노드와 엣지가
+                모두 표시된 상태</strong>로 시작합니다.
             </p>
+        </div>
+
+        <h3>9.1 기본 조작</h3>
+        <table>
+            <tr><th>동작</th><th>방법</th></tr>
+            <tr><td>화면 이동(팬)</td><td>빈 공간을 클릭한 채 드래그</td></tr>
+            <tr><td>확대 / 축소</td><td>마우스 휠, 또는 좌하단 <span class="kbd">+</span> / <span class="kbd">−</span> 버튼</td></tr>
+            <tr><td>노드 이동</td><td>노드를 클릭한 채 드래그 (보기·조작 &gt; 노드 드래그 허용 켜짐 시)</td></tr>
+            <tr><td>노드 상세 보기</td><td>노드를 클릭하면 좌측 "노드 정보" 패널에 지표가 표시되고 화면이 해당 노드로 이동합니다</td></tr>
+            <tr><td>선택 해제</td><td>빈 공간 클릭</td></tr>
+            <tr><td>전체 보기</td><td>좌하단 <span class="kbd">⤢</span> 버튼, 또는 "보기·조작" 패널의 전체 보기 버튼</td></tr>
+        </table>
+
+        <h3>9.2 상단 바</h3>
+        <div class="opt-card">
+            <h4>단어 검색</h4>
+            <p>입력창에 단어(또는 일부 글자)를 입력하면 라벨에 해당 문자열이 포함된 첫 번째 노드를 찾아
+               강조 표시하고 화면을 그 노드로 이동시킵니다. 정확한 전체 일치가 아니어도 부분 일치로 검색됩니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>상태 배지</h4>
+            <p>검색창 오른쪽의 배지는 두 가지 정보를 보여줍니다: 데이터 관련 안내 메시지(성능을 위해 일부만
+               표시된 경우 등)와, 현재 필터 조건에서 <strong>실제로 화면에 표시 중인 노드·엣지 개수</strong>입니다.
+               필터를 조정할 때마다 실시간으로 갱신됩니다.</p>
+        </div>
+
+        <h3>9.3 좌측 노드 정보 패널</h3>
+        <div class="opt-card">
+            <h4>노드 정보</h4>
+            <p>노드를 클릭하면 단어 이름, 소속 커뮤니티 번호, 빈도, 그리고 분석 시 계산해 둔 모든 중심성 지표
+               (연결 정도, 강도, 매개 중심성, 근접 중심성, 고유벡터, PageRank, k-core, 구조적 공백 등)가
+               나열됩니다. 필터에 의해 현재 숨겨진 노드는 검색해도 "숨겨진 노드입니다" 안내가 표시됩니다.</p>
+        </div>
+
+        <h3>9.4 필터 패널</h3>
+        <div class="opt-card">
+            <h4>엣지 가중치 ≥ <span class="default">기본값 0</span></h4>
+            <p>이 값보다 작은 가중치를 가진 연결선을 화면에서 숨깁니다. 슬라이더를 오른쪽으로 옮길수록
+               약한 관계가 사라지고 강한 관계(굵은 선)만 남아 핵심 구조가 뚜렷해집니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>노드 최소 빈도 ≥ <span class="default">기본값 0</span></h4>
+            <p>이 값보다 적게 등장한 단어(노드)를 화면에서 숨깁니다. 값을 높이면 자주 등장한 핵심 단어
+               위주로 그래프가 단순해집니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>연결 없는(고립) 노드 숨기기 <span class="default">기본값 꺼짐</span></h4>
+            <p>현재 필터 조건에서 연결선이 하나도 없는 노드를 화면에서 제외합니다. 전체 그래프를 깔끔하게
+               보고 싶을 때 켜면 좋습니다.</p>
+        </div>
+
+        <h3>9.5 노드 모양 · 크기 패널</h3>
+        <div class="opt-card">
+            <h4>모양 <span class="default">기본값 dot</span></h4>
+            <p>노드를 그릴 도형을 선택합니다. dot(원, 값에 비례해 크기 변화), circle(라벨 길이에 맞춰
+               자동 크기 조정되는 원), ellipse, box, diamond, star, triangle, square 중 선택할 수 있습니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>크기 기준 <span class="default">기본값 빈도(freq)</span></h4>
+            <p>노드 크기를 어떤 지표에 비례시킬지 선택합니다. 빈도 외에도 분석 시 계산된 모든 중심성
+               지표(연결 정도, 매개 중심성, PageRank 등)를 기준으로 삼을 수 있습니다. 예를 들어 "매개
+               중심성"을 기준으로 하면, 담론을 연결하는 허브 단어가 크게 표시됩니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>크기 범위(min/max) <span class="default">기본값 6 / 55</span></h4>
+            <p>노드가 그려질 수 있는 최소·최대 픽셀 크기입니다. 노드가 너무 작아 안 보이거나, 큰 노드가
+               화면을 가릴 때 조정하세요.</p>
+        </div>
+        <div class="opt-card">
+            <h4>테두리 두께 / 테두리 색 <span class="default">기본값 1.5px / 흰색</span></h4>
+            <p>노드 원(도형) 바깥 테두리의 두께와 색상입니다. 배경과 대비되는 색을 주면 노드 경계가
+               또렷해집니다.</p>
+        </div>
+
+        <h3>9.6 노드 색상 패널</h3>
+        <div class="opt-card">
+            <h4>색상 기준 <span class="default">기본값 커뮤니티별 팔레트</span></h4>
+            <p>
+                <strong>커뮤니티별 팔레트:</strong> Louvain/Leiden으로 탐지된 그룹마다 고유 색을 자동 배정합니다.<br>
+                <strong>단일 색상:</strong> 모든 노드를 같은 색으로 표시합니다(구조보다 형태에 집중하고 싶을 때).<br>
+                <strong>지표 기반 그라디언트:</strong> 선택한 중심성 지표 값이 낮을수록 "낮은 값" 색, 높을수록
+                "높은 값" 색으로 서서히 변하는 히트맵 형태로 표시합니다. 어떤 단어가 특정 지표에서
+                두드러지는지 한눈에 볼 수 있습니다.
+            </p>
+        </div>
+
+        <h3>9.7 라벨 패널</h3>
+        <div class="opt-card">
+            <h4>라벨 표시 <span class="default">기본값 켜짐</span></h4>
+            <p>노드 위에 단어 텍스트를 표시할지 여부입니다. 노드 수가 매우 많아 텍스트가 겹쳐 보일 때는
+               꺼서 구조만 먼저 파악한 뒤, 관심 있는 부분만 확대해서 다시 켜는 방식을 추천합니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>글자 크기 / 글자 색 <span class="default">기본값 14px / #2c3e50</span></h4>
+            <p>라벨 텍스트의 크기와 색상입니다. 배경 테마(밝게/어둡게)에 따라 자동으로 대비가 맞춰지지만,
+               직접 원하는 색으로 바꿀 수도 있습니다.</p>
+        </div>
+
+        <h3>9.8 엣지(연결선) 패널</h3>
+        <div class="opt-card">
+            <h4>색상 / 불투명도 <span class="default">기본값 회색조 / 0.55</span></h4>
+            <p>연결선의 색상과 투명도입니다. 노드가 많아 선이 복잡할 때 불투명도를 낮추면 배경처럼
+               은은해지고, 높이면 관계가 더 선명하게 강조됩니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>두께 범위(min/max) <span class="default">기본값 0.5 / 6</span></h4>
+            <p>가중치가 가장 낮은 엣지와 가장 높은 엣지가 각각 몇 픽셀 두께로 그려질지의 범위입니다.
+               두 값의 차이를 크게 벌릴수록 강한 관계와 약한 관계의 대비가 뚜렷해집니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>곡선(curve) 엣지 <span class="default">기본값 꺼짐</span></h4>
+            <p>직선 대신 완만한 곡선으로 연결선을 그립니다. 노드 사이에 여러 겹의 선이 겹칠 때 구분이
+               쉬워지지만, 노드 수가 매우 많으면 렌더링이 다소 느려질 수 있습니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>화살표 표시 <span class="default">기본값 꺼짐</span></h4>
+            <p>연결선 끝에 화살표를 그려 방향성을 표시합니다. 단어 네트워크는 기본적으로 방향이 없는
+               관계이므로 꺼두는 것이 일반적입니다.</p>
+        </div>
+
+        <h3>9.9 물리 엔진 패널</h3>
+        <div class="opt-card">
+            <h4>물리 엔진 사용 <span class="default">기본값 꺼짐</span></h4>
+            <p>꺼져 있으면 분석 시 미리 계산해 둔 레이아웃 좌표를 그대로 사용해 노드가 고정된 채로
+               표시됩니다(초기 로딩이 빠르고 안정적). 켜면 노드끼리 서로 밀고 당기는 힘 시뮬레이션이
+               계속 작동해 배치가 자동으로 재조정됩니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>솔버 <span class="default">기본값 barnesHut</span></h4>
+            <p>물리 시뮬레이션 알고리즘 종류입니다. barnesHut(기본, 대규모 그래프에 효율적),
+               forceAtlas2Based(커뮤니티 구조가 잘 드러남), repulsion(단순 반발력 기반) 중 선택합니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>중력(밀어내기) / 스프링 길이 / 스프링 강도 / 감쇠</h4>
+            <p>물리 엔진이 켜졌을 때 노드 간 힘의 세기를 조정하는 값들입니다. 중력(밀어내기)의 절댓값이
+               클수록 노드끼리 더 멀리 떨어지고, 스프링 길이가 길수록 연결된 노드 사이 간격이 넓어집니다.
+               스프링 강도는 연결의 "당기는 힘", 감쇠는 진동이 잦아드는 속도를 결정합니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>레이아웃 다시 배치 버튼</h4>
+            <p>현재 설정된 물리 값으로 약 1.5초간 강제로 시뮬레이션을 돌려 노드 배치를 재정렬한 뒤,
+               물리 엔진이 원래 꺼져 있었다면 자동으로 다시 끕니다. 레이아웃이 뒤엉켰을 때 눌러보세요.</p>
+        </div>
+
+        <h3>9.10 보기·조작 패널</h3>
+        <div class="opt-card">
+            <h4>휠로 확대/축소 <span class="default">기본값 켜짐</span></h4>
+            <p>마우스 휠로 화면을 확대·축소할 수 있는지 여부입니다. 발표 화면 등에서 실수로 확대되는
+               것을 막고 싶을 때 꺼두세요.</p>
+        </div>
+        <div class="opt-card">
+            <h4>노드 드래그 허용 <span class="default">기본값 켜짐</span></h4>
+            <p>마우스로 노드를 직접 옮길 수 있는지 여부입니다. 레이아웃을 고정해서 보여줄 때는 꺼두면
+               실수로 위치가 흐트러지지 않습니다.</p>
+        </div>
+        <div class="opt-card">
+            <h4>전체 보기 버튼 / 배경(중심)·배경(외곽)</h4>
+            <p>전체 보기 버튼은 모든 노드가 화면 안에 들어오도록 자동으로 맞춥니다. 배경 색상 두 개는
+               캔버스 중심에서 바깥쪽으로 퍼지는 그라디언트 배경의 색을 지정합니다.</p>
+        </div>
+
+        <h3>9.11 커뮤니티 패널</h3>
+        <div class="opt-card">
+            <h4>커뮤니티 범례</h4>
+            <p>탐지된 각 커뮤니티의 색상과 소속 노드 수를 보여줍니다. 항목을 클릭하면 해당 커뮤니티에
+               속한 노드만 선택되어 화면이 그 그룹으로 확대·이동합니다. 특정 주제 군집만 따로 살펴볼 때
+               유용합니다.</p>
+        </div>
+
+        <h3>9.12 내보내기 · 초기화 패널</h3>
+        <div class="opt-card">
+            <h4>PNG로 저장</h4>
+            <p>현재 화면에 보이는 그래프를 그대로 PNG 이미지 파일로 다운로드합니다. 보고서나 발표 자료에
+               캡처본을 바로 삽입할 때 편리합니다(단, 현재 확대/이동 상태 그대로 저장됩니다).</p>
+        </div>
+        <div class="opt-card">
+            <h4>모든 설정 초기화</h4>
+            <p>모양·크기·색상·라벨·엣지·물리 엔진·필터 등 지금까지 바꾼 모든 옵션을 처음 뷰어를 열었을
+               때의 기본값으로 되돌리고, 화면을 전체 보기로 맞춥니다.</p>
+        </div>
+
+        <h3>9.13 우측 상단 테마 전환 버튼</h3>
+        <div class="opt-card">
+            <h4>◐ 캔버스 테마 전환</h4>
+            <p>그래프 캔버스를 밝은 배경/어두운 배경으로 전환합니다. 라벨 색, 테두리 색, 엣지 색 등도
+               함께 테마에 맞게 자동으로 조정됩니다. 발표 환경(밝은 회의실 vs 어두운 스크린)에 맞춰
+               전환해 사용하세요.</p>
         </div>
 
         <!-- ─────────────────────────────── -->
@@ -621,6 +852,10 @@
             <li>커뮤니티가 잘 나뉘지 않으면 <strong>백본 추출</strong>을 켜서 핵심 연결만 남긴 뒤 다시 분석해 보세요.</li>
             <li>시간에 따른 담론 변화를 보려면 <strong>기간 분할</strong>을 사용해 <code>period_comparison</code> 결과를 확인하세요.</li>
             <li>Top-N을 크게(수천 이상) 잡으면 betweenness 계산이 느려질 수 있습니다. 필요 없으면 중심성 선택에서 제외하세요.</li>
+            <li>뷰어를 처음 열었을 때 그래프가 비어 보인다면, 우측 "필터" 패널의 슬라이더 값이 모두 0인지
+                확인하세요. 0이면 전달된 노드·엣지가 모두 표시되는 상태입니다.</li>
+            <li>뷰어에서 바꾼 색상·크기·필터 설정은 저장되지 않습니다. 마음에 드는 스타일을 찾았다면
+                <strong>PNG로 저장</strong>해 두거나, 캡처해 별도로 보관하세요.</li>
         </ul>
 
     </div>
