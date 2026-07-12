@@ -532,7 +532,7 @@ def run_network_analysis(pid: str, data: pd.DataFrame, option: dict):
 
         send_message(pid, "결과 압축 중...")
         zip_path = out_dir + ".zip"
-        fast_zip(out_dir, zip_path)
+        shutil.make_archive(out_dir, "zip", out_dir)
         return FileResponse(
             path=zip_path,
             media_type="application/zip",
