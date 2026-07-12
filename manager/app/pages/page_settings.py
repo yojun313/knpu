@@ -655,23 +655,27 @@ class Manager_Setting(BaseDialog):
         link2_label.setOpenExternalLinks(True)
         link2_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
-        link3_label = QLabel(
-            '<a href="https://knpu.re.kr/manual/hate_analysis">혐오도 분석</a>'
-        )
+        link3_label = QLabel('<a href="https://knpu.re.kr/manual/network">네트워크 분석</a>')
         link3_label.setOpenExternalLinks(True)
         link3_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         link4_label = QLabel(
-            '<a href="https://knpu.re.kr/manual/whisper">음성 인식</a>'
+            '<a href="https://knpu.re.kr/manual/hate_analysis">혐오도 분석</a>'
         )
         link4_label.setOpenExternalLinks(True)
         link4_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         link5_label = QLabel(
-            '<a href="https://knpu.re.kr/manual/yolo">영상/이미지 객체 검출</a>'
+            '<a href="https://knpu.re.kr/manual/whisper">음성 인식</a>'
         )
         link5_label.setOpenExternalLinks(True)
         link5_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        link6_label = QLabel(
+            '<a href="https://knpu.re.kr/manual/yolo">영상/이미지 객체 검출</a>'
+        )
+        link6_label.setOpenExternalLinks(True)
+        link6_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         # === CSV 양식 다운로드 영역 ===
         format_title_label = QLabel("\nFormats\n")

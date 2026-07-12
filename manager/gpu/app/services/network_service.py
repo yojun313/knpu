@@ -524,7 +524,7 @@ def _export_interactive_html(res, out_path, max_edges=1500):
     cmap = plt.cm.tab20
     for i, v in enumerate(g.vs):
         if i not in used_node_ids:
-            continue  # 엣지가 다 잘려서 고립된 노드는 html에서 제외
+            continue
         grp = int(community[i]) if community is not None else 0
         rgba = cmap(grp % 20)
         hexc = "#%02x%02x%02x" % (
@@ -532,6 +532,7 @@ def _export_interactive_html(res, out_path, max_edges=1500):
             int(rgba[1] * 255),
             int(rgba[2] * 255),
         )
+        coords = res["coords"]
         nodes.append(
             {
                 "id": i,
@@ -539,16 +540,73 @@ def _export_interactive_html(res, out_path, max_edges=1500):
                 "value": v["freq"],
                 "group": grp,
                 "color": hexc,
+                "x": float(coords[i][0]) * 100,
+                "y": float(coords[i][1]) * 100,
             }
         )
     edges = [
-        {"from": e.source, "to": e.target, "value": e["weight"]} for e in all_edges
+        {"from": e.source, "to": e.target, "value": float(e["weight"])}
+        for e in all_edges
     ]
 
     nodes_json = json.dumps(nodes, ensure_ascii=False)
     edges_json = json.dumps(edges, ensure_ascii=False)
     max_w = max((e["value"] for e in edges), default=1)
     truncated = len(g.es) > max_edges
+
+    warn_html = (
+        (
+            f'<span style="color:#c0392b;font-weight:bold">⚠ 엣지 {len(g.es)}개 중 상위 '
+            f"{max_edges}개만 표시 (전체 데이터는 edges.csv/graphml 참고)</span>"
+        )
+        if truncated
+        else ""
+    )
+
+    html = (
+        '<!DOCTYPE html><html><head><meta charset="utf-8">'
+        '<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>'
+        "<style>"
+        "body{margin:0;font-family:sans-serif}"
+        "#bar{padding:8px;background:#f4f4f4;border-bottom:1px solid #ccc;"
+        "display:flex;gap:12px;align-items:center;flex-wrap:wrap}"
+        "#net{width:100%;height:calc(100vh - 60px);}"
+        "input[type=text]{padding:4px 8px}"
+        "button{padding:4px 10px;cursor:pointer}"
+        "</style></head><body>"
+        '<div id="bar">'
+        + warn_html
+        + '<input id="search" type="text" placeholder="단어 검색...">'
+        '<label>엣지 최소 가중치: <span id="wv">0</span></label>'
+        '<input id="wslider" type="range" min="0" max="' + str(max_w) + '" '
+        'value="0" step="' + str(max(max_w / 100, 0.01)) + '">'
+        '<button id="physics">물리엔진 On/Off</button>'
+        '<button id="fit">전체 보기</button>'
+        '</div><div id="net"></div><script>'
+        "var allNodes=" + nodes_json + ";"
+        "var allEdges=" + edges_json + ";"
+        "var nodes=new vis.DataSet(allNodes);"
+        "var edges=new vis.DataSet(allEdges);"
+        'var net=new vis.Network(document.getElementById("net"),'
+        "{nodes:nodes,edges:edges},"
+        "{physics:{enabled:false,stabilization:false},"
+        "layout:{improvedLayout:false},"
+        'nodes:{shape:"dot",scaling:{min:5,max:50}},'
+        "edges:{color:{opacity:0.3},smooth:false}});"
+        'document.getElementById("search").addEventListener("input",function(e){'
+        "var q=e.target.value.trim();if(!q){net.unselectAll();return;}"
+        "var hit=allNodes.filter(function(n){return n.label.indexOf(q)>=0;}).map(function(n){return n.id;});"
+        "net.selectNodes(hit);if(hit.length)net.focus(hit[0],{scale:1.2,animation:true});});"
+        'document.getElementById("wslider").addEventListener("input",function(e){'
+        'var t=parseFloat(e.target.value);document.getElementById("wv").innerText=t.toFixed(2);'
+        "edges.clear();edges.add(allEdges.filter(function(ed){return ed.value>=t;}));});"
+        'var phys=false;document.getElementById("physics").addEventListener("click",function(){'
+        "phys=!phys;net.setOptions({physics:{enabled:phys}});});"
+        'document.getElementById("fit").addEventListener("click",function(){net.fit();});'
+        "</script></body></html>"
+    )
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(html)
 
 
 # ────────────────────── 기간 병렬 워커 ──────────────────────
