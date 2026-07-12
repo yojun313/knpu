@@ -318,6 +318,39 @@ light_style_sheet = """
         width: 10px;
         height: 10px;
     }
+    
+    QSpinBox {
+        background-color: #ffffff;
+        color: #000000;
+        border: 2px solid #bdc3c7;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 14px;
+    }
+
+    QSpinBox:hover {
+        border: 2px solid #aeb6bf;
+    }
+
+    QSpinBox:focus {
+        border: 2px solid #2c3e50;
+    }
+
+    QSpinBox::up-button {
+        subcontrol-position: top right;
+        border-top-right-radius: 6px;
+    }
+
+    QSpinBox::down-button {
+        subcontrol-position: bottom right;
+        border-bottom-right-radius: 6px;
+    }
+
+    QSpinBox::up-arrow, QSpinBox::down-arrow {
+        width: 10px;
+        height: 10px;
+    }
+    
     """
 
 dark_style_sheet = """
@@ -678,7 +711,7 @@ dark_style_sheet = """
         background-color: #E74C3C;
     }
     
-        QDoubleSpinBox {
+    QDoubleSpinBox {
         background-color: #2e2e2e;
         color: #ecf0f1;
         border: 2px solid #34495e;
@@ -706,6 +739,38 @@ dark_style_sheet = """
     }
 
     QDoubleSpinBox::up-arrow, QDoubleSpinBox::down-arrow {
+        width: 10px;
+        height: 10px;
+    }
+    
+    QSpinBox {
+        background-color: #2e2e2e;
+        color: #ecf0f1;
+        border: 2px solid #34495e;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 14px;
+    }
+
+    QSpinBox:hover {
+        border: 2px solid #3a539b;
+    }
+
+    QSpinBox:focus {
+        border: 2px solid #3a539b;
+    }
+
+    QSpinBox::up-button {
+        subcontrol-position: top right;
+        border-top-right-radius: 6px;
+    }
+
+    QSpinBox::down-button {
+        subcontrol-position: bottom right;
+        border-bottom-right-radius: 6px;
+    }
+
+    QSpinBox::up-arrow, QSpinBox::down-arrow {
         width: 10px;
         height: 10px;
     }
