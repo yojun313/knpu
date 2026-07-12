@@ -1,5 +1,6 @@
 # app/services/network_service.py
 import os
+
 os.environ.setdefault("OMP_NUM_THREADS", "0")  # period 병렬 시 워커 내부에서 재설정
 import io
 import json
@@ -16,6 +17,7 @@ from scipy.sparse import csr_matrix, vstack
 import igraph as ig
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
@@ -52,7 +54,7 @@ def _make_units(cell, scope, window):
         w = max(2, int(window))
         if len(toks) <= w:
             return [toks]
-        return [toks[i:i + w] for i in range(len(toks) - w + 1)]
+        return [toks[i : i + w] for i in range(len(toks) - w + 1)]
     # sentence 단위는 이미 토큰화 단계에서 문장 경계가 사라졌다고 보고 document로 폴백
     return [toks]
 
@@ -61,8 +63,11 @@ def _period_key(dt_series, period):
     if period == "1y":
         return dt_series.dt.to_period("Y").astype(str)
     if period == "6m":
-        return (dt_series.dt.year.astype(str) + "-H"
-                + ((dt_series.dt.month.sub(1) // 6) + 1).astype(str))
+        return (
+            dt_series.dt.year.astype(str)
+            + "-H"
+            + ((dt_series.dt.month.sub(1) // 6) + 1).astype(str)
+        )
     if period == "3m":
         return dt_series.dt.to_period("Q").astype(str)
     if period == "1m":
@@ -111,7 +116,7 @@ def build_cooccurrence(texts, vocab, scope, window, n_workers=4):
     texts = list(texts)
     if n_workers > 1 and len(texts) > 5000:
         n = max(1, len(texts) // n_workers)
-        chunks = [texts[i:i + n] for i in range(0, len(texts), n)]
+        chunks = [texts[i : i + n] for i in range(0, len(texts), n)]
         args = [(c, vocab, scope, window) for c in chunks]
         with ProcessPoolExecutor(max_workers=n_workers) as ex:
             parts = list(ex.map(_transform_chunk, args))
@@ -119,7 +124,7 @@ def build_cooccurrence(texts, vocab, scope, window, n_workers=4):
     else:
         DT = _transform_chunk((texts, vocab, scope, window)).tocsr()
 
-    cooc = (DT.T @ DT).tocoo()   # 단어×단어, BLAS 병렬
+    cooc = (DT.T @ DT).tocoo()  # 단어×단어, BLAS 병렬
     freq = np.asarray(DT.sum(axis=0)).ravel()  # 단어별 등장 단위 수
     n_units = DT.shape[0]
     return cooc, freq, n_units
@@ -194,7 +199,8 @@ def analyze_graph(words, freq, edges, option, pid=None, tag=""):
 
     # 백본
     if option.get("backbone"):
-        if pid: send_message(pid, f"{tag}백본(disparity) 추출 중...")
+        if pid:
+            send_message(pid, f"{tag}백본(disparity) 추출 중...")
         keep = disparity_filter(g, float(option.get("backbone_alpha", 0.05)))
         if keep:
             g = g.subgraph_edges(list(keep), delete_vertices=False)
@@ -205,7 +211,8 @@ def analyze_graph(words, freq, edges, option, pid=None, tag=""):
         return None
 
     # 중심성
-    if pid: send_message(pid, f"{tag}중심성 계산 중...")
+    if pid:
+        send_message(pid, f"{tag}중심성 계산 중...")
     sel = set(option.get("centralities", ["degree", "betweenness"]))
     cent = {}
     if "degree" in sel:
@@ -228,7 +235,8 @@ def analyze_graph(words, freq, edges, option, pid=None, tag=""):
     modularity = None
     algo = option.get("community", "louvain")
     if algo and algo != "none":
-        if pid: send_message(pid, f"{tag}커뮤니티 탐지({algo}) 중...")
+        if pid:
+            send_message(pid, f"{tag}커뮤니티 탐지({algo}) 중...")
         if algo == "leiden":
             part = g.community_leiden(objective_function="modularity", weights="weight")
         else:  # louvain
@@ -237,7 +245,8 @@ def analyze_graph(words, freq, edges, option, pid=None, tag=""):
         modularity = g.modularity(part, weights="weight")
 
     # 레이아웃
-    if pid: send_message(pid, f"{tag}레이아웃 계산 중...")
+    if pid:
+        send_message(pid, f"{tag}레이아웃 계산 중...")
     lay = option.get("layout", "fr")
     if lay == "kk":
         coords = np.array(g.layout_kamada_kawai().coords)
@@ -250,8 +259,13 @@ def analyze_graph(words, freq, edges, option, pid=None, tag=""):
             g.layout_fruchterman_reingold(weights=g.es["weight"], niter=500).coords
         )
 
-    return {"graph": g, "cent": cent, "community": community,
-            "modularity": modularity, "coords": coords}
+    return {
+        "graph": g,
+        "cent": cent,
+        "community": community,
+        "modularity": modularity,
+        "coords": coords,
+    }
 
 
 # ────────────────────── 출력 ──────────────────────
@@ -283,9 +297,18 @@ def draw_network(res, option, out_png, title=""):
     for e, wn in zip(g.es, ew_norm):
         segs.append([coords[e.source], coords[e.target]])
         ews.append(0.2 + 2.5 * wn)
-    ax.add_collection(LineCollection(segs, colors="#cccccc", linewidths=ews, alpha=0.4, zorder=1))
-    ax.scatter(coords[:, 0], coords[:, 1], s=sizes, c=colors,
-               edgecolors="white", linewidths=0.5, zorder=2)
+    ax.add_collection(
+        LineCollection(segs, colors="#cccccc", linewidths=ews, alpha=0.4, zorder=1)
+    )
+    ax.scatter(
+        coords[:, 0],
+        coords[:, 1],
+        s=sizes,
+        c=colors,
+        edgecolors="white",
+        linewidths=0.5,
+        zorder=2,
+    )
 
     # 상위 라벨만
     label_top = int(option.get("label_top", 40))
@@ -293,8 +316,15 @@ def draw_network(res, option, out_png, title=""):
     rank = base
     top_idx = np.argsort(rank)[::-1][:label_top]
     for i in top_idx:
-        ax.text(coords[i, 0], coords[i, 1], g.vs[i]["name"],
-                fontsize=9, ha="center", va="center", zorder=3)
+        ax.text(
+            coords[i, 0],
+            coords[i, 1],
+            g.vs[i]["name"],
+            fontsize=9,
+            ha="center",
+            va="center",
+            zorder=3,
+        )
 
     ax.set_title(title, fontsize=16)
     ax.axis("off")
@@ -314,21 +344,28 @@ def export_files(res, option, out_dir, tag=""):
     if community is not None:
         node_rows["community"] = community
     pd.DataFrame(node_rows).to_csv(
-        os.path.join(out_dir, f"nodes{tag}.csv"), index=False, encoding="utf-8-sig")
+        os.path.join(out_dir, f"nodes{tag}.csv"), index=False, encoding="utf-8-sig"
+    )
 
     # edges.csv
-    pd.DataFrame({
-        "source": [g.vs[e.source]["name"] for e in g.es],
-        "target": [g.vs[e.target]["name"] for e in g.es],
-        "weight": g.es["weight"],
-        "cooccur": g.es["cooccur"],
-    }).to_csv(os.path.join(out_dir, f"edges{tag}.csv"), index=False, encoding="utf-8-sig")
+    pd.DataFrame(
+        {
+            "source": [g.vs[e.source]["name"] for e in g.es],
+            "target": [g.vs[e.target]["name"] for e in g.es],
+            "weight": g.es["weight"],
+            "cooccur": g.es["cooccur"],
+        }
+    ).to_csv(
+        os.path.join(out_dir, f"edges{tag}.csv"), index=False, encoding="utf-8-sig"
+    )
 
     # graphml (Gephi/NetMiner import용)
     g.write_graphml(os.path.join(out_dir, f"network{tag}.graphml"))
 
     # 시각화
-    draw_network(res, option, os.path.join(out_dir, f"network{tag}.png"), title=tag or "Network")
+    draw_network(
+        res, option, os.path.join(out_dir, f"network{tag}.png"), title=tag or "Network"
+    )
 
     # 인터랙티브 html (vis-network, CDN)
     _export_interactive_html(res, os.path.join(out_dir, f"network{tag}.html"))
@@ -345,24 +382,39 @@ def export_files(res, option, out_dir, tag=""):
 
 
 def _export_interactive_html(res, out_path):
-    g, coords, cent, community = res["graph"], res["coords"], res["cent"], res["community"]
+    g, coords, cent, community = (
+        res["graph"],
+        res["coords"],
+        res["cent"],
+        res["community"],
+    )
     deg = g.degree()
     nodes = []
     for i, v in enumerate(g.vs):
-        nodes.append({
-            "id": i, "label": v["name"],
-            "value": v["freq"],
-            "group": int(community[i]) if community is not None else 0,
-        })
+        nodes.append(
+            {
+                "id": i,
+                "label": v["name"],
+                "value": v["freq"],
+                "group": int(community[i]) if community is not None else 0,
+            }
+        )
     edges = [{"from": e.source, "to": e.target, "value": e["weight"]} for e in g.es]
-    html = """<!DOCTYPE html><html><head><meta charset="utf-8">
-<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-<style>#net{width:100%;height:100vh;border:1px solid #ddd}</style></head>
-<body><div id="net"></div><script>
-var nodes=new vis.DataSet(%s);var edges=new vis.DataSet(%s);
-new vis.Network(document.getElementById('net'),{nodes:nodes,edges:edges},
-{physics:{stabilization:true},nodes:{shape:'dot',scaling:{min:5,max:40}}});
-</script></body></html>""" % (json.dumps(nodes, ensure_ascii=False), json.dumps(edges))
+
+    nodes_json = json.dumps(nodes, ensure_ascii=False)
+    edges_json = json.dumps(edges, ensure_ascii=False)
+
+    html = (
+        '<!DOCTYPE html><html><head><meta charset="utf-8">'
+        '<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>'
+        "<style>#net{width:100%;height:100vh;border:1px solid #ddd}</style></head>"
+        '<body><div id="net"></div><script>'
+        "var nodes=new vis.DataSet(" + nodes_json + ");"
+        "var edges=new vis.DataSet(" + edges_json + ");"
+        'new vis.Network(document.getElementById("net"),{nodes:nodes,edges:edges},'
+        '{physics:{stabilization:true},nodes:{shape:"dot",scaling:{min:5,max:40}}});'
+        "</script></body></html>"
+    )
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -374,13 +426,16 @@ def _run_one_period(args):
     os.environ["OPENBLAS_NUM_THREADS"] = "2"
     period_tag, texts, option = args
     vocab, words = _build_vocab(
-        texts, option["scope"], option["window"],
-        option["min_freq"], option["top_n"])
+        texts, option["scope"], option["window"], option["min_freq"], option["top_n"]
+    )
     if len(vocab) < 2:
         return period_tag, None
     cooc, freq, n_units = build_cooccurrence(
-        texts, vocab, option["scope"], option["window"], n_workers=1)
-    edges = build_edges(cooc, freq, n_units, option["measure"], option["min_edge_weight"])
+        texts, vocab, option["scope"], option["window"], n_workers=1
+    )
+    edges = build_edges(
+        cooc, freq, n_units, option["measure"], option["min_edge_weight"]
+    )
     res = analyze_graph(words, freq, edges, option, pid=None, tag=period_tag + " ")
     return period_tag, res
 
@@ -402,8 +457,10 @@ def run_network_analysis(pid: str, data: pd.DataFrame, option: dict):
 
         text_col = option["text_col"]
         if text_col not in data.columns:
-            return JSONResponse(status_code=400,
-                content={"error": "열 없음", "message": f"{text_col} 열이 없습니다."})
+            return JSONResponse(
+                status_code=400,
+                content={"error": "열 없음", "message": f"{text_col} 열이 없습니다."},
+            )
 
         period = option.get("period", "total")
 
@@ -411,13 +468,19 @@ def run_network_analysis(pid: str, data: pd.DataFrame, option: dict):
         if period != "total":
             date_col = next((c for c in data.columns if "Date" in c), None)
             if date_col is None:
-                return JSONResponse(status_code=400,
-                    content={"error": "Date 열 없음", "message": "기간 분석엔 Date 열 필요"})
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "error": "Date 열 없음",
+                        "message": "기간 분석엔 Date 열 필요",
+                    },
+                )
             data[date_col] = pd.to_datetime(data[date_col], errors="coerce")
             data = data.dropna(subset=[date_col])
             data["_pk"] = _period_key(data[date_col], period)
-            groups = [(str(k), sub[text_col].tolist())
-                      for k, sub in data.groupby("_pk")]
+            groups = [
+                (str(k), sub[text_col].tolist()) for k, sub in data.groupby("_pk")
+            ]
             send_message(pid, f"기간 {len(groups)}개 병렬 분석 시작...")
             n_workers = min(len(groups), os.cpu_count() or 4)
             args = [(f"_{k}", txts, option) for k, txts in groups]
@@ -430,33 +493,59 @@ def run_network_analysis(pid: str, data: pd.DataFrame, option: dict):
             texts = data[text_col].tolist()
             send_message(pid, "단어 사전 구축 중...")
             vocab, words = _build_vocab(
-                texts, option["scope"], option["window"],
-                option["min_freq"], option["top_n"])
+                texts,
+                option["scope"],
+                option["window"],
+                option["min_freq"],
+                option["top_n"],
+            )
             if len(vocab) < 2:
-                return JSONResponse(status_code=400,
-                    content={"error": "단어 부족", "message": "조건을 만족하는 단어가 부족합니다."})
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "error": "단어 부족",
+                        "message": "조건을 만족하는 단어가 부족합니다.",
+                    },
+                )
             send_message(pid, f"공출현 행렬 계산 중... (단어 {len(vocab)}개)")
             cooc, freq, n_units = build_cooccurrence(
-                texts, vocab, option["scope"], option["window"],
-                n_workers=min(4, os.cpu_count() or 4))
-            edges = build_edges(cooc, freq, n_units,
-                                option["measure"], option["min_edge_weight"])
+                texts,
+                vocab,
+                option["scope"],
+                option["window"],
+                n_workers=min(4, os.cpu_count() or 4),
+            )
+            edges = build_edges(
+                cooc, freq, n_units, option["measure"], option["min_edge_weight"]
+            )
             send_message(pid, f"그래프 분석 중... (연결 {len(edges)}개)")
             res = analyze_graph(words, freq, edges, option, pid=pid)
             if res is None:
-                return JSONResponse(status_code=400,
-                    content={"error": "네트워크 없음", "message": "임계값을 만족하는 연결이 없습니다."})
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "error": "네트워크 없음",
+                        "message": "임계값을 만족하는 연결이 없습니다.",
+                    },
+                )
             export_files(res, option, out_dir)
 
         send_message(pid, "결과 압축 중...")
         zip_path = out_dir + ".zip"
         fast_zip(out_dir, zip_path)
         return FileResponse(
-            path=zip_path, media_type="application/zip",
+            path=zip_path,
+            media_type="application/zip",
             filename=os.path.basename(zip_path),
-            background=BackgroundTask(_cleanup, out_dir, zip_path))
+            background=BackgroundTask(_cleanup, out_dir, zip_path),
+        )
 
     except Exception as e:
-        return JSONResponse(status_code=500,
-            content={"error": "네트워크 분석 오류", "message": str(e),
-                     "traceback": traceback.format_exc()})
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "네트워크 분석 오류",
+                "message": str(e),
+                "traceback": traceback.format_exc(),
+            },
+        )
