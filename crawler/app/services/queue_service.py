@@ -145,11 +145,13 @@ class QueueManager:
 
     def restore_from_db(self) -> dict:
         """서버 재시작 시 MongoDB에서 큐 복원. 복원 결과를 dict로 반환."""
-        marked_error, db_uids = self.persistence.mark_running_as_error("서버 재시작으로 중단됨")
+        marked_error, db_uids = self.persistence.mark_running_as_error(
+            "서버 재시작으로 중단됨"
+        )
 
         for db_uid in db_uids:
             recordDB(db_uid, "error")
-        
+
         queued_docs = self.persistence.get_by_state("queued")
         for doc in queued_docs:
             req_dict = doc["request"]
