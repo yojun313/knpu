@@ -53,6 +53,7 @@ app.get('/manual/kemkim', (req, res) => res.sendFile(path.join(__dirname, 'publi
 app.get('/manual/hate_analysis', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_hateanalysis.html')));
 app.get('/manual/whisper', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_whisper.html')));
 app.get('/manual/yolo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_detection.html')));
+app.get('/manual/network', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_network.html')));
 app.get('/manager/download', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manager_download.html')));
 
 // 파일 목록 API (R2)
