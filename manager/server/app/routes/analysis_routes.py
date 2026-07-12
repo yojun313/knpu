@@ -15,6 +15,8 @@ import httpx
 from dotenv import load_dotenv
 from typing import List
 from app.libs.exceptions import BadRequestException
+from app.services.network_service import run_network_analysis
+from io import StringIO
 
 router = APIRouter()
 
@@ -230,27 +232,8 @@ async def grounding_dino_proxy_route(
 
 
 @router.post("/graph-network")
-async def graph_network_proxy(option: str = Form("{}"), file: UploadFile = File(...)):
-    async with httpx.AsyncClient(timeout=None) as client:
-        # 파일 데이터를 바이트로 읽어 준비
-        file_content = await file.read()
-        files = {"file": (file.filename, file_content, file.content_type)}
-
-        # 클라이언트로부터 받은 option Form 데이터를 그대로 전달
-        data = {"option": option}
-
-        # GPU 서버의 /analysis/graph-network 호출 (기본 URL 뒤의 경로 확인 필요)
-        # GPU 서버 코드에서 router가 /analysis로 시작한다면 경로에 포함시켜야 합니다.
-        response = await client.post(
-            f"{GPU_SERVER_URL}/analysis/graph-network", data=data, files=files
-        )
-
-    # GPU 서버에서 생성한 ZIP 파일을 StreamingResponse로 사용자에게 그대로 전달
-    return StreamingResponse(
-        response.aiter_bytes(),
-        status_code=response.status_code,
-        media_type=response.headers.get("content-type", "application/zip"),
-        headers={
-            "Content-Disposition": response.headers.get("content-disposition", "")
-        },
-    )
+async def graph_network(option: str = Form(...), file: UploadFile = File(...)):
+    option = json.loads(option)
+    content = await file.read()
+    df = pd.read_csv(StringIO(content.decode("utf-8")))
+    return run_network_analysis(option.get("pid", "network"), df, option)

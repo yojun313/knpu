@@ -655,7 +655,9 @@ class Manager_Setting(BaseDialog):
         link2_label.setOpenExternalLinks(True)
         link2_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
-        link3_label = QLabel('<a href="https://knpu.re.kr/manual/network">네트워크 분석</a>')
+        link3_label = QLabel(
+            '<a href="https://knpu.re.kr/manual/network">네트워크 분석</a>'
+        )
         link3_label.setOpenExternalLinks(True)
         link3_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
