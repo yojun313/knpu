@@ -30,6 +30,8 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 from multiprocessing import Pool, cpu_count
 from typing import List
+from app.services.network_service import run_network_analysis
+from io import StringIO
 
 
 if platform.system() == "Linux":
@@ -450,3 +452,11 @@ async def graph_network_route(file: UploadFile = File(...), option: str = Form("
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
+
+
+@router.post("/graph-network")
+async def graph_network(option: str = Form(...), file: UploadFile = File(...)):
+    option = json.loads(option)
+    content = await file.read()
+    df = pd.read_csv(StringIO(content.decode("utf-8")))
+    return run_network_analysis(option["pid"], df, option)

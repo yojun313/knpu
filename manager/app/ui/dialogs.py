@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QApplication,
     QDoubleSpinBox,
+    QSpinBox,
 )
 from config import HOMEPAGE_EDIT_API
 from services.api import upload_homepage_image
@@ -2601,111 +2602,185 @@ class DetectOptionDialog(BaseDialog):
 class NetworkAnalysisDialog(BaseDialog):
     def __init__(self, csv_path, column_names, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("네트워크 그래프 분석 (Network 스타일)")
-        self.resize(500, 400)  # 줄바꿈을 고려해 세로 높이를 조금 늘림
+        self.setWindowTitle("단어 네트워크 분석 (NetMiner 스타일)")
+        self.resize(560, 780)
         self.data = None
         self.csv_path = csv_path
+        self.save_dir = os.path.dirname(csv_path) if csv_path else ""
 
-        # 중요: 초기 저장 경로 설정 (사용자가 버튼 안 눌러도 기본값 유지)
-        self.save_dir = os.path.dirname(self.csv_path) if self.csv_path else ""
-
-        layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        content = QWidget()
+        layout = QVBoxLayout(content)
         form = QFormLayout()
 
-        # 1. 분석 모드 선택
-        self.mode_combo = QComboBox()
-        self.mode_combo.addItems(
-            [
-                "키워드 공출현 분석 (토큰화 데이터용)",
-                "의미론적 유사도 분석 (원문 데이터용)",
-            ]
-        )
-
-        if "token" in os.path.basename(csv_path).lower():
-            self.mode_combo.setCurrentIndex(0)
-        else:
-            self.mode_combo.setCurrentIndex(1)
-
-        form.addRow("분석 모드", self.mode_combo)
-
-        # 2. 텍스트 열 선택
+        # 대상 열
         self.column_combo = QComboBox()
         self.column_combo.addItems(column_names)
         for i in range(self.column_combo.count()):
             if "text" in self.column_combo.itemText(i).lower():
                 self.column_combo.setCurrentIndex(i)
                 break
-        form.addRow("대상 데이터 열", self.column_combo)
+        form.addRow("대상 열", self.column_combo)
 
-        # 3. 임계값 설정
-        self.threshold_spin = QDoubleSpinBox()
-        self.threshold_spin.setRange(0.0, 100.0)
-        self.threshold_spin.setValue(0.8)
-        self.threshold_spin.setSingleStep(0.1)
-        self.threshold_label = QLabel("유사도 임계값 (0.0~1.0)")
-        form.addRow(self.threshold_label, self.threshold_spin)
+        # 공출현 단위
+        self.scope_combo = QComboBox()
+        self.scope_combo.addItems(["문서 단위 (document)", "슬라이딩 윈도우 (window)"])
+        form.addRow("공출현 단위", self.scope_combo)
 
-        self.mode_combo.currentIndexChanged.connect(self.update_ui_by_mode)
-        self.update_ui_by_mode(self.mode_combo.currentIndex())
+        self.window_spin = QSpinBox()
+        self.window_spin.setRange(2, 20)
+        self.window_spin.setValue(4)
+        self.window_spin.setEnabled(False)
+        form.addRow("윈도우 크기", self.window_spin)
+        self.scope_combo.currentIndexChanged.connect(
+            lambda i: self.window_spin.setEnabled(i == 1)
+        )
+
+        # 연관성 척도
+        self.measure_combo = QComboBox()
+        self.measure_combo.addItems(
+            ["동시출현 빈도 (raw)", "Jaccard", "Cosine", "Dice", "PMI", "NPMI"]
+        )
+        form.addRow("연관성 척도", self.measure_combo)
+
+        # 기간
+        self.period_combo = QComboBox()
+        self.period_combo.addItems(
+            ["전체 통합", "1년", "6개월", "3개월", "1개월", "1주"]
+        )
+        form.addRow("기간 분할", self.period_combo)
+
+        # 필터
+        self.minfreq_spin = QSpinBox()
+        self.minfreq_spin.setRange(1, 10000)
+        self.minfreq_spin.setValue(5)
+        form.addRow("최소 단어 빈도", self.minfreq_spin)
+
+        self.minedge_spin = QSpinBox()
+        self.minedge_spin.setRange(1, 10000)
+        self.minedge_spin.setValue(2)
+        form.addRow("최소 동시출현 횟수", self.minedge_spin)
+
+        self.topn_spin = QSpinBox()
+        self.topn_spin.setRange(0, 100000)
+        self.topn_spin.setValue(300)
+        self.topn_spin.setToolTip("0 = 제한 없음")
+        form.addRow("최대 노드 수 (Top-N)", self.topn_spin)
+
+        # 노드 크기 기준
+        self.sizeby_combo = QComboBox()
+        self.sizeby_combo.addItems(
+            ["freq", "degree", "betweenness", "pagerank", "eigenvector"]
+        )
+        form.addRow("노드 크기 기준", self.sizeby_combo)
+
+        self.label_spin = QSpinBox()
+        self.label_spin.setRange(0, 500)
+        self.label_spin.setValue(40)
+        form.addRow("라벨 표시 개수", self.label_spin)
+
+        # 커뮤니티
+        self.community_combo = QComboBox()
+        self.community_combo.addItems(["Louvain", "Leiden", "없음"])
+        form.addRow("커뮤니티 탐지", self.community_combo)
+
+        # 레이아웃
+        self.layout_combo = QComboBox()
+        self.layout_combo.addItems(
+            ["Fruchterman-Reingold", "Kamada-Kawai", "Circle", "Grid"]
+        )
+        form.addRow("레이아웃", self.layout_combo)
 
         layout.addLayout(form)
 
-        # 재사용 가능한 저장 경로 선택 UI
-        path_section = QVBoxLayout()
-        path_header = QHBoxLayout()
-        path_header.addWidget(QLabel("<b>저장 위치 설정:</b>"))
-        path_header.addStretch()
+        # 중심성 체크박스
+        cent_group = QGroupBox("계산할 중심성")
+        cg = QGridLayout(cent_group)
+        self.cent_checks = {}
+        cents = [
+            "degree",
+            "strength",
+            "betweenness",
+            "closeness",
+            "eigenvector",
+            "pagerank",
+        ]
+        for i, name in enumerate(cents):
+            cb = QCheckBox(name)
+            if name in ("degree", "betweenness", "pagerank"):
+                cb.setChecked(True)
+            cg.addWidget(cb, i // 3, i % 3)
+            self.cent_checks[name] = cb
+        layout.addWidget(cent_group)
 
+        # 백본
+        backbone_group = QGroupBox("백본 추출 (disparity filter)")
+        bg = QHBoxLayout(backbone_group)
+        self.backbone_check = QCheckBox("사용")
+        self.backbone_alpha = QDoubleSpinBox()
+        self.backbone_alpha.setRange(0.001, 0.5)
+        self.backbone_alpha.setDecimals(3)
+        self.backbone_alpha.setValue(0.05)
+        bg.addWidget(self.backbone_check)
+        bg.addWidget(QLabel("alpha"))
+        bg.addWidget(self.backbone_alpha)
+        layout.addWidget(backbone_group)
+
+        # 저장 경로
+        path_header = QHBoxLayout()
+        path_header.addWidget(QLabel("<b>저장 위치:</b>"))
+        path_header.addStretch()
         btn, lbl = self.make_path_widgets(
             self.save_dir, lambda p: setattr(self, "save_dir", p)
         )
         path_header.addWidget(btn)
+        layout.addLayout(path_header)
+        layout.addWidget(lbl)
 
-        path_section.addLayout(path_header)
-        path_section.addWidget(lbl)
-        layout.addLayout(path_section)
+        scroll.setWidget(content)
+        outer.addWidget(scroll)
 
-        # 설명 추가
-        info_label = QLabel(
-            "\n* 키워드 분석: 같은 기사 내 단어 동시 출현 빈도 기준\n* 의미 분석: AI 임베딩 벡터의 코사인 유사도 기준"
-        )
-        info_label.setStyleSheet("color: gray; font-size: 10px;")
-        layout.addWidget(info_label)
-
-        # OK / Cancel
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.validate_and_accept)
         buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
-
-    def update_ui_by_mode(self, index):
-        if index == 0:  # Keyword
-            self.threshold_label.setText("최소 동시 출현 빈도 (회)")
-            self.threshold_spin.setDecimals(0)
-            self.threshold_spin.setValue(2)
-            self.threshold_spin.setRange(1, 1000)
-        else:  # Semantic
-            self.threshold_label.setText("유사도 임계값 (0.0~1.0)")
-            self.threshold_spin.setDecimals(2)
-            self.threshold_spin.setValue(0.8)
-            self.threshold_spin.setRange(0.0, 1.0)
-
-    def select_path(self):
-        path = QFileDialog.getExistingDirectory(self, "저장 경로 선택", self.save_dir)
-        if path:
-            self.save_dir = path
-            self.path_label.setText(path)
+        outer.addWidget(buttons)
 
     def validate_and_accept(self):
         if not self.save_dir:
             QMessageBox.warning(self, "입력 오류", "저장 경로를 선택하세요.")
             return
 
-        mode = "keyword" if self.mode_combo.currentIndex() == 0 else "semantic"
+        scope = "document" if self.scope_combo.currentIndex() == 0 else "window"
+        measure_map = {
+            0: "raw",
+            1: "jaccard",
+            2: "cosine",
+            3: "dice",
+            4: "pmi",
+            5: "npmi",
+        }
+        period_map = {0: "total", 1: "1y", 2: "6m", 3: "3m", 4: "1m", 5: "1w"}
+        community_map = {0: "louvain", 1: "leiden", 2: "none"}
+        layout_map = {0: "fr", 1: "kk", 2: "circle", 3: "grid"}
+
         self.data = {
-            "mode": mode,
             "text_col": self.column_combo.currentText(),
-            "threshold": self.threshold_spin.value(),
+            "scope": scope,
+            "window": self.window_spin.value(),
+            "measure": measure_map[self.measure_combo.currentIndex()],
+            "period": period_map[self.period_combo.currentIndex()],
+            "min_freq": self.minfreq_spin.value(),
+            "min_edge_weight": self.minedge_spin.value(),
+            "top_n": self.topn_spin.value(),
+            "node_size_by": self.sizeby_combo.currentText(),
+            "label_top": self.label_spin.value(),
+            "centralities": [k for k, cb in self.cent_checks.items() if cb.isChecked()],
+            "community": community_map[self.community_combo.currentIndex()],
+            "layout": layout_map[self.layout_combo.currentIndex()],
+            "backbone": self.backbone_check.isChecked(),
+            "backbone_alpha": self.backbone_alpha.value(),
             "save_dir": self.save_dir,
         }
         self.accept()
