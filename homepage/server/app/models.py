@@ -60,11 +60,13 @@ class PaperRequest(BaseModel):
     notes: Optional[str] = ""
 
 
-class GroupPhoto(BaseModel):
+class GalleryPost(BaseModel):
     uid: Optional[str] = None
-    url: str
-    caption: str
+    title: str
+    content: str = ""
     date: Optional[str] = None
+    photos: List[str] = []
+    schema_version: int = 2
 
 
 class Popup(BaseModel):

@@ -1,4 +1,5 @@
 import os
+import uuid
 import warnings
 import traceback
 import httpx
@@ -13,12 +14,12 @@ from ui.dialogs import (
     EditHomePaperDialog,
     EditHomeMemberDialog,
     EditHomeNewsDialog,
-    EditGroupPhotoDialog,
+    EditGalleryPostDialog,
     EditHomePopupDialog,
     ViewHomePaperDialog,
     ViewHomeMemberDialog,
     ViewHomeNewsDialog,
-    ViewHomePhotoDialog,
+    ViewGalleryPostDialog,
     ViewHomePopupDialog,
 )
 from ui.table import makeTable
@@ -193,13 +194,14 @@ class Manager_Web:
         self.photo_data_for_table = [
             [
                 "",
-                item.get("caption", ""),
-                item.get("date", "").split("T")[0],
+                item.get("title", ""),
+                item.get("date", ""),
+                str(len(item.get("photos", []))),
             ]
             for item in self.photo_data
         ]
 
-        column_headers = ["Thumbnail", "Caption", "Date"]
+        column_headers = ["Thumbnail", "제목", "날짜", "사진 수"]
 
         makeTable(
             self.main,
@@ -218,7 +220,8 @@ class Manager_Web:
         for i in range(table.rowCount()):
             table.setRowHeight(i, 80)
 
-            url = self.photo_data[i].get("url")
+            photos = self.photo_data[i].get("photos", [])
+            url = photos[0] if photos else None
             if url:
                 img_label = QLabel()
                 img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -305,31 +308,25 @@ class Manager_Web:
             if not accessCheck(self.main, exclude=["public"]):
                 return
 
-            dialog = EditGroupPhotoDialog(parent=self.main)
+            dialog = EditGalleryPostDialog(parent=self.main)
             if dialog.exec():
-                if not dialog.image_path:
-                    QMessageBox.warning(
-                        self.main, "알림", "이미지 파일을 선택해야 합니다."
-                    )
-                    return
-
                 printStatus(self.main, "이미지 업로드 중...")
-                image_url = upload_homepage_image(
-                    src_path=dialog.image_path,
-                    folder="gallery",
-                    file_name=os.path.basename(dialog.image_path),
-                )
-
-                if not image_url:
-                    raise Exception("이미지 URL을 가져오지 못했습니다.")
+                uploaded_urls = [
+                    upload_homepage_image(
+                        src_path=path,
+                        folder="gallery",
+                        file_name=uuid.uuid4().hex,
+                    )
+                    for path in dialog.photo_paths
+                ]
 
                 payload = dialog.get_payload()
-                payload["url"] = image_url
+                payload["photos"] = uploaded_urls
 
                 Request("post", "/gallery/", HOMEPAGE_EDIT_API, json=payload)
 
                 QMessageBox.information(self.main, "완료", "갤러리에 추가되었습니다.")
-                userLogging(f"WEB -> addGroupPhoto({payload.get('caption')})")
+                userLogging(f"WEB -> addGroupPhoto({payload.get('title')})")
                 self.refreshGroupPhotoBoard()
 
         except Exception:
@@ -455,25 +452,23 @@ class Manager_Web:
 
             target_data = self.photo_data[selectedRow]
             uid = target_data["uid"]
-            image_url = target_data["url"]
 
             if (
                 QMessageBox.question(
                     self.main,
                     "삭제",
-                    "정말 삭제하시겠습니까?",
+                    "정말 삭제하시겠습니까? (사진도 모두 함께 삭제됩니다)",
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                     QMessageBox.StandardButton.Yes,
                 )
                 == QMessageBox.StandardButton.Yes
             ):
-                delete_homepage_image(image_url)
-
+                # R2 사진 삭제는 서버(DELETE /gallery/)가 일괄 처리함
                 Request("delete", "gallery/", HOMEPAGE_EDIT_API, params={"uid": uid})
 
                 self.refreshGroupPhotoBoard()
                 QMessageBox.information(
-                    self.main, "성공", "이미지와 데이터가 모두 삭제되었습니다."
+                    self.main, "성공", "게시글과 사진이 모두 삭제되었습니다."
                 )
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -594,34 +589,33 @@ class Manager_Web:
                 QMessageBox.warning(self.main, "오류", "사진 정보를 찾을 수 없습니다.")
                 return
 
-            dialog = EditGroupPhotoDialog(data=origin, parent=self.main)
+            dialog = EditGalleryPostDialog(data=origin, parent=self.main)
             if dialog.exec():
+                for url in dialog.removed_photos:
+                    delete_homepage_image(url)
+
+                printStatus(self.main, "새 이미지 업로드 중...")
+                new_urls = [
+                    upload_homepage_image(
+                        src_path=path,
+                        folder="gallery",
+                        file_name=uuid.uuid4().hex,
+                    )
+                    for path in dialog.photo_paths
+                ]
+
                 payload = dialog.get_payload()
                 payload["uid"] = selectedUid
-
-                if dialog.image_path:
-                    printStatus(self.main, "새 이미지 업로드 중...")
-
-                    if origin.get("url"):
-                        delete_homepage_image(origin["url"])
-
-                    new_url = upload_homepage_image(
-                        src_path=dialog.image_path,
-                        folder="gallery",
-                        file_name=os.path.basename(dialog.image_path),
-                    )
-                    payload["url"] = new_url
-                else:
-                    payload["url"] = origin.get("url")
+                payload["photos"] = dialog.existing_photos + new_urls
 
                 Request("post", "/gallery/", HOMEPAGE_EDIT_API, json=payload)
 
                 QMessageBox.information(
                     self.main,
                     "완료",
-                    f"'{payload.get('caption')}' 사진 정보가 수정되었습니다.",
+                    f"'{payload.get('title')}' 게시글이 수정되었습니다.",
                 )
-                userLogging(f"WEB -> editGroupPhoto({payload.get('caption')})")
+                userLogging(f"WEB -> editGroupPhoto({payload.get('title')})")
                 self.refreshGroupPhotoBoard()
 
         except Exception:
@@ -703,7 +697,7 @@ class Manager_Web:
                 QMessageBox.warning(self.main, "오류", "사진 정보를 찾을 수 없습니다.")
                 return
 
-            dialog = ViewHomePhotoDialog(data=origin, parent=self.main)
+            dialog = ViewGalleryPostDialog(data=origin, parent=self.main)
             dialog.exec()
         except Exception:
             programBugLog(self.main, traceback.format_exc())

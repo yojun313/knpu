@@ -2,11 +2,10 @@
 (function () {
     const NAV_ITEMS = [
         { page: 'about', label: 'ABOUT', href: '/about' },
-        { page: 'research', label: 'RESEARCH', href: '/' },
         { page: 'admission', label: 'ADMISSION', href: '/admission' },
         { page: 'publications', label: 'PUBLICATIONS', href: '/publications' },
-        { page: 'news', label: 'NEWS', href: '/#news' },
-        { page: 'team', label: 'OUR TEAM', href: '/team' },
+        { page: 'news', label: 'NEWS', href: '/news' },
+        { page: 'team', label: 'PEOPLE', href: '/people' },
         { page: 'gallery', label: 'GALLERY', href: '/gallery' },
         { page: 'systems', label: 'SYSTEMS', href: '/systems' },
     ];
