@@ -7,7 +7,6 @@ import json
 import shutil
 import traceback
 from datetime import datetime
-from itertools import combinations
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
 
@@ -27,7 +26,8 @@ from starlette.background import BackgroundTask
 
 from app.libs.progress import send_message
 from scipy.spatial import ConvexHull
-from adjustText import adjust_text
+from xml.sax.saxutils import escape
+
 
 # 한글 폰트 (GPU 서버 환경에 맞게 경로/이름만 맞춰줘)
 try:
@@ -457,45 +457,137 @@ def draw_network(res, option, out_png, title=""):
     fig.savefig(out_png, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
-def _inject_gephi_viz_position(graphml_path, coords):
-    """
-    igraph의 write_graphml은 x/y를 일반 data 속성으로만 저장해서
-    Gephi가 배치에 사용하지 못한다. Gephi 전용 GraphML 확장인
-    <viz:position>을 노드마다 주입해 Import 시 좌표가 그대로 반영되게 한다.
-    """
-    import xml.etree.ElementTree as ET
 
-    GRAPHML_NS = "http://graphml.graphdrawing.org/xmlns"
-    VIZ_NS = "http://www.gexf.net/1.2draft/viz"
+_GEXF_PALETTE = [
+    "#4C78A8",
+    "#F58518",
+    "#54A24B",
+    "#E45756",
+    "#72B7B2",
+    "#FF9DA6",
+    "#9D755D",
+    "#BAB0AC",
+    "#B279A2",
+    "#EECA3B",
+    "#59A14F",
+    "#9C755F",
+    "#79706E",
+    "#D37295",
+    "#8CD17D",
+]
 
-    ET.register_namespace("", GRAPHML_NS)
-    ET.register_namespace("viz", VIZ_NS)
 
-    tree = ET.parse(graphml_path)
-    root = tree.getroot()
-    graph_el = root.find(f"{{{GRAPHML_NS}}}graph")
-    if graph_el is None:
-        return  # 예상 밖 구조면 조용히 스킵 (그래도 파일 자체는 유효)
+def _hex_to_rgb(h):
+    h = h.lstrip("#")
+    return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
 
-    nodes = graph_el.findall(f"{{{GRAPHML_NS}}}node")
-    for node_el, (x, y) in zip(nodes, coords):
-        pos = ET.SubElement(node_el, f"{{{VIZ_NS}}}position")
-        pos.set("x", f"{float(x):.4f}")
-        pos.set("y", f"{float(y):.4f}")
-        pos.set("z", "0.0")
 
-    tree.write(graphml_path, encoding="utf-8", xml_declaration=True)
+def _scale_coords(coords, span=1000.0):
+    """igraph FR 좌표는 범위가 작아서 Gephi에서 다 겹친다. 넓게 펴준다."""
+    c = np.asarray(coords, dtype=float)
+    mins, maxs = c.min(axis=0), c.max(axis=0)
+    rng = np.where(maxs - mins == 0, 1.0, maxs - mins)
+    return (c - mins) / rng * span
+
+
+def _xa(s):  # XML 속성값 안전하게 escape (따옴표까지)
+    return escape(str(s), {'"': "&quot;"})
+
+
+def _write_gexf(res, out_path):
+    """Gephi가 좌표/크기/색을 그대로 반영하도록 viz 확장 포함 GEXF 저장."""
+    g = res["graph"]
+    cent = res["cent"]
+    community = res["community"]
+    coords = _scale_coords(res["coords"], span=1000.0)
+
+    # 노드 크기: freq 기반 (Gephi 좌표계 기준 지름 10~50)
+    freq = np.array(g.vs["freq"], dtype=float)
+    fmax = freq.max() if freq.size and freq.max() > 0 else 1.0
+    sizes = 10.0 + 40.0 * (freq / fmax)
+
+    # 노드 속성 컬럼 정의: frequency + 중심성들 (+ community)
+    attr_cols = [("frequency", "integer")]
+    attr_cols += [(k, "double") for k in cent.keys()]
+    if community is not None:
+        attr_cols.append(("community", "integer"))
+    attr_ids = {title: str(i) for i, (title, _) in enumerate(attr_cols)}
+
+    def node_color(i):
+        if community is not None:
+            return _hex_to_rgb(_GEXF_PALETTE[int(community[i]) % len(_GEXF_PALETTE)])
+        return (20, 40, 160)  # 기본 블루
+
+    L = []
+    L.append('<?xml version="1.0" encoding="UTF-8"?>')
+    L.append(
+        '<gexf xmlns="http://www.gexf.net/1.2draft" version="1.2" '
+        'xmlns:viz="http://www.gexf.net/1.2draft/viz" '
+        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+        'xsi:schemaLocation="http://www.gexf.net/1.2draft '
+        'http://www.gexf.net/1.2draft/gexf.xsd">'
+    )
+    L.append(
+        f'  <meta lastmodifieddate="{datetime.now():%Y-%m-%d}">'
+        f"<creator>network_service</creator></meta>"
+    )
+    L.append('  <graph mode="static" defaultedgetype="undirected">')
+
+    # 속성 정의
+    L.append('    <attributes class="node">')
+    for title, typ in attr_cols:
+        L.append(
+            f'      <attribute id="{attr_ids[title]}" title="{_xa(title)}" type="{typ}"/>'
+        )
+    L.append("    </attributes>")
+
+    # 노드
+    L.append("    <nodes>")
+    for i, v in enumerate(g.vs):
+        L.append(f'      <node id="{i}" label="{_xa(v["name"])}">')
+        L.append("        <attvalues>")
+        L.append(
+            f'          <attvalue for="{attr_ids["frequency"]}" value="{int(v["freq"])}"/>'
+        )
+        for k, arr in cent.items():
+            val = arr[i]
+            if val is not None:
+                L.append(
+                    f'          <attvalue for="{attr_ids[k]}" value="{float(val):.6f}"/>'
+                )
+        if community is not None:
+            L.append(
+                f'          <attvalue for="{attr_ids["community"]}" value="{int(community[i])}"/>'
+            )
+        L.append("        </attvalues>")
+        r, gc, b = node_color(i)
+        L.append(f'        <viz:size value="{sizes[i]:.2f}"/>')
+        L.append(
+            f'        <viz:position x="{coords[i, 0]:.4f}" y="{coords[i, 1]:.4f}" z="0.0"/>'
+        )
+        L.append(f'        <viz:color r="{r}" g="{gc}" b="{b}"/>')
+        L.append("      </node>")
+    L.append("    </nodes>")
+
+    # 엣지 (weight는 GEXF 네이티브 속성이라 Gephi가 바로 인식)
+    L.append("    <edges>")
+    for eid, e in enumerate(g.es):
+        L.append(
+            f'      <edge id="{eid}" source="{e.source}" target="{e.target}" weight="{float(e["weight"]):.6f}"/>'
+        )
+    L.append("    </edges>")
+
+    L.append("  </graph>")
+    L.append("</gexf>")
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(L))
+
 
 def export_files(res, option, out_dir, tag=""):
     os.makedirs(out_dir, exist_ok=True)
     g, cent, community = res["graph"], res["cent"], res["community"]
-    
-    coords = res["coords"]
 
-    # GraphML에 좌표 속성 추가 (Gephi가 x, y 속성을 인식해서 배치에 사용)
-    g.vs["x"] = coords[:, 0].tolist()
-    g.vs["y"] = coords[:, 1].tolist()
-    
     # nodes.csv
     node_rows = {"word": g.vs["name"], "frequency": g.vs["freq"]}
     for k, v in cent.items():
@@ -518,10 +610,7 @@ def export_files(res, option, out_dir, tag=""):
         os.path.join(out_dir, f"edges{tag}.csv"), index=False, encoding="utf-8-sig"
     )
 
-    # graphml (Gephi/NetMiner import용)
-    graphml_path = os.path.join(out_dir, f"network{tag}.graphml")
-    g.write_graphml(graphml_path)
-    _inject_gephi_viz_position(graphml_path, coords)
+    _write_gexf(res, os.path.join(out_dir, f"network{tag}.gexf"))
 
     # 시각화
     draw_network(
