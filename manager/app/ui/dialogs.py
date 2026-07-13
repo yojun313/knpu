@@ -827,60 +827,122 @@ class EditPostDialog(BaseDialog):
         self.accept()
 
 
-class EditGroupPhotoDialog(BaseDialog):
+def _load_thumbnail_pixmap(source: str, is_url: bool) -> QPixmap:
+    """기존 사진(URL)은 네트워크로, 새로 고른 사진(로컬 경로)은 디스크에서 로드"""
+    pixmap = QPixmap()
+    if is_url:
+        try:
+            resp = httpx.get(source, timeout=10)
+            if resp.status_code == 200:
+                pixmap.loadFromData(resp.content)
+        except Exception:
+            pass
+    else:
+        pixmap = QPixmap(source)
+    return pixmap
+
+
+def _build_photo_grid(grid_layout: QGridLayout, entries, on_remove: Callable | None = None):
+    """entries: [(source, is_url), ...]. on_remove(index)가 주어지면 각 칸에 제거 버튼을 붙임(None이면 읽기 전용)."""
+    while grid_layout.count():
+        item = grid_layout.takeAt(0)
+        widget = item.widget()
+        if widget:
+            widget.deleteLater()
+
+    cols = 3
+    for i, (source, is_url) in enumerate(entries):
+        cell = QWidget()
+        cell_layout = QVBoxLayout(cell)
+        cell_layout.setContentsMargins(2, 2, 2, 2)
+
+        img_label = QLabel()
+        img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        img_label.setFixedSize(120, 90)
+        img_label.setStyleSheet(
+            "border: 1px solid #dcdcdc; background-color: #f9f9f9;"
+        )
+        pixmap = _load_thumbnail_pixmap(source, is_url)
+        if not pixmap.isNull():
+            img_label.setPixmap(
+                pixmap.scaled(
+                    116,
+                    86,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+            )
+        else:
+            img_label.setText("로드 실패")
+        cell_layout.addWidget(img_label)
+
+        if i == 0:
+            badge = QLabel("대표 이미지")
+            badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            badge.setStyleSheet("color: #0d6efd; font-size: 10px; font-weight: bold;")
+            cell_layout.addWidget(badge)
+
+        if on_remove is not None:
+            remove_btn = QPushButton("제거")
+            remove_btn.setStyleSheet("font-size: 10px; padding: 2px;")
+            remove_btn.clicked.connect(lambda _checked, idx=i: on_remove(idx))
+            cell_layout.addWidget(remove_btn)
+
+        grid_layout.addWidget(cell, i // cols, i % cols)
+
+
+class EditGalleryPostDialog(BaseDialog):
     def __init__(self, data=None, parent=None):
         super().__init__(parent)
         self.data = data or {}
-        self.image_path = None
+        self.existing_photos = list(self.data.get("photos", []))
+        self.removed_photos = []
+        self.photo_paths = []
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("단체사진 관리")
-        self.resize(450, 550)  # 미리보기가 들어가므로 세로 크기를 키웠습니다.
+        self.setWindowTitle("갤러리 게시글 관리")
+        self.resize(520, 680)
         layout = QVBoxLayout(self)
 
-        # 1. 사진 설명 및 날짜 입력
-        self.caption_input = self.add_label(
-            layout, "사진 설명 (Caption):", self.data.get("caption", ""), readonly=False
-        )
+        def add_row(label: str, widget):
+            layout.addWidget(QLabel(label))
+            layout.addWidget(widget)
+
+        self.title_input = QLineEdit(self.data.get("title", ""))
+        self.content_input = QTextEdit(self.data.get("content", ""))
 
         default_date = self.data.get("date") or datetime.now().strftime("%Y.%m.%d")
-        self.date_input = self.add_label(
-            layout,
-            "날짜 (YYYY.MM.DD) (이미지 선택 시 자동 입력):",
-            default_date,
-            readonly=False,
-        )
+        self.date_input = QLineEdit(default_date)
+
+        for lbl, wid in [
+            ("제목", self.title_input),
+            ("본문", self.content_input),
+            ("날짜 (YYYY.MM.DD)", self.date_input),
+        ]:
+            add_row(lbl, wid)
 
         layout.addSpacing(10)
-
-        # 2. 이미지 미리보기 영역
-        layout.addWidget(QLabel("<b>이미지 미리보기:</b>"))
-        self.image_preview = QLabel("이미지를 선택해주세요")
-        self.image_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_preview.setFixedSize(400, 250)
-        self.image_preview.setStyleSheet(
-            "border: 1px solid #dcdcdc; background-color: #f9f9f9; border-radius: 5px;"
+        layout.addWidget(
+            QLabel("<b>사진 (첫 번째 사진이 대표 이미지로 사용됩니다):</b>")
         )
-        layout.addWidget(self.image_preview)
 
-        # 기존 데이터(수정 모드)인 경우 이미지 로드
-        if self.data.get("url"):
-            self.load_preview_from_url(self.data.get("url"))
+        self.photo_scroll = QScrollArea()
+        self.photo_scroll.setWidgetResizable(True)
+        self.photo_scroll.setFixedHeight(220)
+        photo_container = QWidget()
+        self.photo_grid = QGridLayout(photo_container)
+        self.photo_scroll.setWidget(photo_container)
+        layout.addWidget(self.photo_scroll)
 
-        # 3. 파일 정보 및 선택 버튼
-        self.file_label = QLabel(self.data.get("url", "선택된 로컬 파일 없음"))
-        self.file_label.setWordWrap(True)
-        self.file_label.setStyleSheet("color: gray; font-size: 11px;")
-        layout.addWidget(self.file_label)
-
-        self.select_btn = QPushButton("이미지 변경/선택")
-        self.select_btn.clicked.connect(self.selectImage)
+        self.select_btn = QPushButton("이미지 추가 (여러 장 선택 가능)")
+        self.select_btn.clicked.connect(self.selectImages)
         layout.addWidget(self.select_btn)
+
+        self.refresh_photo_grid()
 
         layout.addStretch()
 
-        # 4. 저장 버튼
         self.submit_button = QPushButton("저장하기")
         self.submit_button.setStyleSheet(
             "background-color: #0d6efd; color: white; font-weight: bold; padding: 8px;"
@@ -888,54 +950,41 @@ class EditGroupPhotoDialog(BaseDialog):
         self.submit_button.clicked.connect(self.accept)
         layout.addWidget(self.submit_button)
 
-    def load_preview_from_url(self, url):
-        """URL로부터 이미지를 가져와 미리보기에 표시"""
-        try:
-            resp = httpx.get(url)
-            if resp.status_code == 200:
-                pixmap = QPixmap()
-                pixmap.loadFromData(resp.content)
-                self.set_preview_pixmap(pixmap)
-        except Exception:
-            self.image_preview.setText("이미지 로드 실패")
+    def refresh_photo_grid(self):
+        entries = [(url, True) for url in self.existing_photos] + [
+            (p, False) for p in self.photo_paths
+        ]
+        _build_photo_grid(self.photo_grid, entries, on_remove=self.remove_photo_at)
 
-    def set_preview_pixmap(self, pixmap):
-        """이미지 비율을 유지하며 미리보기 레이블에 세팅"""
-        scaled_pixmap = pixmap.scaled(
-            self.image_preview.width() - 10,
-            self.image_preview.height() - 10,
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
+    def remove_photo_at(self, index: int):
+        if index < len(self.existing_photos):
+            self.removed_photos.append(self.existing_photos.pop(index))
+        else:
+            self.photo_paths.pop(index - len(self.existing_photos))
+        self.refresh_photo_grid()
+
+    def selectImages(self):
+        file_paths, _ = QFileDialog.getOpenFileNames(
+            self,
+            "이미지 선택 (여러 장 가능)",
+            "",
+            "Image Files (*.png *.jpg *.jpeg *.webp *.gif)",
         )
-        self.image_preview.setPixmap(scaled_pixmap)
+        if file_paths:
+            self.photo_paths.extend(file_paths)
+            self.refresh_photo_grid()
 
-    def selectImage(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "이미지 선택", "", "Image Files (*.png *.jpg *.jpeg *.webp *.gif)"
-        )
-        if file_path:
-            self.image_path = file_path
-            self.file_label.setText(f"선택됨: {os.path.basename(file_path)}")
-
-            # 로컬 이미지 미리보기 업데이트
-            pixmap = QPixmap(file_path)
-            if not pixmap.isNull():
-                self.set_preview_pixmap(pixmap)
-
-            # 생성일로 날짜 자동 채우기
-            try:
-                stat = os.stat(file_path)
-                timestamp = getattr(stat, "st_birthtime", stat.st_ctime)
-                file_date = datetime.fromtimestamp(timestamp).strftime("%Y.%m.%d")
-                self.date_input.setText(file_date)
-            except Exception:
-                pass
+    def accept(self):
+        if len(self.existing_photos) + len(self.photo_paths) < 1:
+            QMessageBox.warning(self, "알림", "사진을 최소 1장 이상 등록해야 합니다.")
+            return
+        super().accept()
 
     def get_payload(self):
         return {
-            "caption": self.caption_input.text(),
-            "date": self.date_input.text(),
-            "url": self.data.get("url", ""),
+            "title": self.title_input.text().strip(),
+            "content": self.content_input.toPlainText().strip(),
+            "date": self.date_input.text().strip(),
         }
 
 
@@ -3194,47 +3243,43 @@ class ViewHomeNewsDialog(BaseDialog):
         self.add_label(layout, "내용", data.get("content", ""), multiline=True)
 
 
-class ViewHomePhotoDialog(BaseDialog):
+class ViewGalleryPostDialog(BaseDialog):
     def __init__(self, data, parent=None):
         super().__init__(parent)
         self.data = data
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("단체사진 상세 보기")
-        self.resize(500, 600)
+        self.setWindowTitle("갤러리 게시글 상세 보기")
+        self.resize(520, 650)
         layout = QVBoxLayout(self)
 
-        self.image_label = QLabel("이미지 로딩 중...")
-        self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setMinimumSize(400, 300)
-        layout.addWidget(self.image_label)
+        photos = self.data.get("photos", [])
+        layout.addWidget(QLabel(f"<b>사진 ({len(photos)}장):</b>"))
 
-        self.load_image(self.data.get("url"))
+        photo_scroll = QScrollArea()
+        photo_scroll.setWidgetResizable(True)
+        photo_scroll.setFixedHeight(220)
+        photo_container = QWidget()
+        photo_grid = QGridLayout(photo_container)
+        photo_scroll.setWidget(photo_container)
+        layout.addWidget(photo_scroll)
 
-        self.add_label(
-            layout, "설명 (Caption):", self.data.get("caption", ""), readonly=True
-        )
+        _build_photo_grid(photo_grid, [(url, True) for url in photos], on_remove=None)
+
+        self.add_label(layout, "제목:", self.data.get("title", ""), readonly=True)
         self.add_label(layout, "날짜:", self.data.get("date", ""), readonly=True)
-        self.add_label(layout, "URL:", self.data.get("url", ""), readonly=True)
+        self.add_label(
+            layout,
+            "본문:",
+            self.data.get("content", ""),
+            multiline=True,
+            readonly=True,
+        )
 
         close_btn = QPushButton("닫기")
         close_btn.clicked.connect(self.close)
         layout.addWidget(close_btn)
-
-    def load_image(self, url):
-        try:
-            resp = httpx.get(url)
-            if resp.status_code == 200:
-                pixmap = QPixmap()
-                pixmap.loadFromData(resp.content)
-                self.image_label.setPixmap(
-                    pixmap.scaled(480, 360, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                )
-            else:
-                self.image_label.setText("이미지를 불러올 수 없습니다.")
-        except Exception:
-            self.image_label.setText("이미지 로드 오류")
 
 
 class EditHomePopupDialog(BaseDialog):

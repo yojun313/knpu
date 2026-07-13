@@ -365,6 +365,13 @@
             renderStats(allPapers);
             populateYearSelect(allPapers);
             wireEvents();
+
+            const params = new URLSearchParams(window.location.search);
+            const searchParam = params.get('search');
+            const scopeParam = params.get('scope');
+            if (searchParam) document.getElementById('pub-search').value = searchParam;
+            if (scopeParam) document.getElementById('pub-search-scope').value = scopeParam;
+
             applyFilters();
         });
     </script>
