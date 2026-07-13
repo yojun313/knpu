@@ -193,12 +193,12 @@
     }
 
     /* 게시글 상세 모달 */
-    .modal-content {
+    #postModal .modal-content {
       background-color: transparent;
       border: none;
     }
 
-    .modal-body {
+    #postModal .modal-body {
       padding: 0;
       position: relative;
     }
@@ -227,11 +227,11 @@
     }
 
     /* 캘린더 팝업 */
-    .gallery-cal-nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
+    .gallery-cal-section-label {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #555;
+      margin-bottom: 0.5rem;
     }
 
     .gallery-cal-grid {
@@ -272,6 +272,12 @@
 
     .gallery-cal-cell.enabled:hover {
       background: #01417a;
+    }
+
+    .gallery-cal-cell.selected {
+      background: #ffc800 !important;
+      color: #1a1d20 !important;
+      font-weight: 700;
     }
 
     .gallery-cal-count {
@@ -370,6 +376,10 @@
         <div class="modal-body">
           <div id="gallery-calendar-body"></div>
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="gallery-calendar-reset">초기화</button>
+          <button type="button" class="btn btn-dark" id="gallery-calendar-select" disabled>선택</button>
+        </div>
       </div>
     </div>
   </div>
@@ -388,9 +398,9 @@
     let allPosts = [];
     let state = {
       viewMode: localStorage.getItem(VIEW_STORAGE_KEY) || "compact",
-      activeDate: null, // "YYYY-MM-DD"
+      activeDate: null, // "YYYY" | "YYYY-MM" | "YYYY-MM-DD"
     };
-    let calendarState = { view: "month", year: null, month: null };
+    let calendarSelection = { year: null, month: null, day: null };
     let dateIndex = { years: new Set(), monthsByYear: new Map(), daysByYearMonth: new Map(), countByYearMonth: new Map() };
 
     function normalizePost(p) {
@@ -411,6 +421,13 @@
         month: m[2].padStart(2, "0"),
         day: m[3] ? m[3].padStart(2, "0") : null,
       };
+    }
+
+    // 정렬 전용 "YYYYMMDD" 키. new Date(string)로 직접 비교하면 trailing dot이
+    // 붙은 날짜("2022.07.24.")가 Invalid Date가 되어 정렬 순서가 깨지는 문제가 있었음.
+    function postDateSortKey(dateStr) {
+      const d = parsePostDate(dateStr);
+      return d ? `${d.year}${d.month}${d.day || "01"}` : "00000000";
     }
 
     function buildDateIndex(posts) {
@@ -437,16 +454,22 @@
       };
     }
 
+    function matchesActiveDateFilter(p) {
+      if (!state.activeDate) return true;
+      const d = parsePostDate(p.date);
+      if (!d || !d.day) return false;
+      const [fYear, fMonth, fDay] = state.activeDate.split("-");
+      if (d.year !== fYear) return false;
+      if (fMonth && d.month !== fMonth) return false;
+      if (fDay && d.day !== fDay) return false;
+      return true;
+    }
+
     function applyFilters() {
       const { search, scope } = getFilters();
 
       let filtered = allPosts.filter((p) => {
-        if (state.activeDate) {
-          const d = parsePostDate(p.date);
-          if (!d || !d.day) return false;
-          const postDate = `${d.year}-${d.month}-${d.day}`;
-          if (postDate !== state.activeDate) return false;
-        }
+        if (!matchesActiveDateFilter(p)) return false;
         if (search) {
           let haystack;
           if (scope === "title") haystack = p.title.toLowerCase();
@@ -457,7 +480,7 @@
         return true;
       });
 
-      filtered.sort((a, b) => new Date(String(b.date).replace(/\./g, "-")) - new Date(String(a.date).replace(/\./g, "-")));
+      filtered.sort((a, b) => postDateSortKey(b.date).localeCompare(postDateSortKey(a.date)));
 
       renderList(filtered);
       document.getElementById("gallery-result-count").textContent = `${filtered.length}개의 게시글이 검색되었습니다.`;
@@ -567,108 +590,102 @@
       new bootstrap.Modal(document.getElementById("postModal")).show();
     }
 
-    // ── 날짜 브라우징 캘린더 ──────────────────────────────────────────
+    // ── 날짜 브라우징 캘린더 (연 → 월 → 일 순으로 한 팝업 안에 이어서 표시) ──
     function openCalendarModal() {
-      const years = [...dateIndex.years].sort();
       if (state.activeDate) {
-        const [y, m] = state.activeDate.split("-");
-        calendarState = { view: "day", year: y, month: m };
+        const [y, m, d] = state.activeDate.split("-");
+        calendarSelection = { year: y || null, month: m || null, day: d || null };
       } else {
-        calendarState = { view: "month", year: years.length ? years[years.length - 1] : String(new Date().getFullYear()), month: null };
+        calendarSelection = { year: null, month: null, day: null };
       }
-      renderCalendar();
+      renderCalendarBody();
       new bootstrap.Modal(document.getElementById("calendarModal")).show();
     }
 
-    function renderCalendar() {
-      if (calendarState.view === "month") renderCalendarMonthGrid();
-      else renderCalendarDayGrid();
-    }
-
-    function renderCalendarMonthGrid() {
+    function renderCalendarBody() {
       const years = [...dateIndex.years].sort();
-      const year = calendarState.year;
-      const hasPrevYear = years.some((y) => y < year);
-      const hasNextYear = years.some((y) => y > year);
-      const monthsWithPosts = dateIndex.monthsByYear.get(year) || new Set();
 
-      let html = `
-        <div class="gallery-cal-nav">
-          <button type="button" class="btn btn-sm btn-outline-dark" ${hasPrevYear ? "" : "disabled"} onclick="changeCalendarYear(-1)">‹</button>
-          <strong>${year}년</strong>
-          <button type="button" class="btn btn-sm btn-outline-dark" ${hasNextYear ? "" : "disabled"} onclick="changeCalendarYear(1)">›</button>
-        </div>
-        <div class="gallery-cal-grid">
-      `;
-      for (let m = 1; m <= 12; m++) {
-        const mm = String(m).padStart(2, "0");
-        const enabled = monthsWithPosts.has(mm);
-        const count = dateIndex.countByYearMonth.get(`${year}-${mm}`) || 0;
-        html += `
-          <div class="gallery-cal-cell ${enabled ? "enabled" : ""}" ${enabled ? `onclick="openCalendarMonth('${mm}')"` : ""}>
-            ${m}월
-            ${enabled ? `<span class="gallery-cal-count">${count}건</span>` : ""}
-          </div>
-        `;
-      }
+      let html = `<p class="gallery-cal-section-label">연도 선택</p><div class="gallery-cal-grid">`;
+      html += years.map((y) => `
+        <div class="gallery-cal-cell enabled ${calendarSelection.year === y ? "selected" : ""}" onclick="selectCalendarYear('${y}')">${y}</div>
+      `).join("");
       html += `</div>`;
-      document.getElementById("gallery-calendar-body").innerHTML = html;
-    }
 
-    function renderCalendarDayGrid() {
-      const { year, month } = calendarState;
-      const ymKey = `${year}-${month}`;
-      const daysWithPosts = dateIndex.daysByYearMonth.get(ymKey) || new Set();
-
-      const firstWeekday = new Date(Number(year), Number(month) - 1, 1).getDay();
-      const totalDays = new Date(Number(year), Number(month), 0).getDate();
-
-      let html = `
-        <div class="gallery-cal-nav">
-          <button type="button" class="btn btn-sm btn-outline-dark" onclick="backToCalendarMonths()">‹ 월 목록으로</button>
-          <strong>${year}년 ${Number(month)}월</strong>
-          <span></span>
-        </div>
-        <div class="gallery-cal-grid day-grid">
-          ${WEEKDAY_LABELS.map((w) => `<div class="gallery-cal-cell weekday-label">${w}</div>`).join("")}
-      `;
-      for (let i = 0; i < firstWeekday; i++) {
-        html += `<div class="gallery-cal-cell empty"></div>`;
+      if (calendarSelection.year) {
+        const monthsWithPosts = dateIndex.monthsByYear.get(calendarSelection.year) || new Set();
+        html += `<p class="gallery-cal-section-label mt-3">월 선택</p><div class="gallery-cal-grid">`;
+        for (let m = 1; m <= 12; m++) {
+          const mm = String(m).padStart(2, "0");
+          const enabled = monthsWithPosts.has(mm);
+          const selected = calendarSelection.month === mm;
+          const count = dateIndex.countByYearMonth.get(`${calendarSelection.year}-${mm}`) || 0;
+          html += `
+            <div class="gallery-cal-cell ${enabled ? "enabled" : ""} ${selected ? "selected" : ""}" ${enabled ? `onclick="selectCalendarMonth('${mm}')"` : ""}>
+              ${m}월
+              ${enabled ? `<span class="gallery-cal-count">${count}건</span>` : ""}
+            </div>
+          `;
+        }
+        html += `</div>`;
       }
-      for (let d = 1; d <= totalDays; d++) {
-        const dd = String(d).padStart(2, "0");
-        const enabled = daysWithPosts.has(dd);
-        html += `
-          <div class="gallery-cal-cell ${enabled ? "enabled" : ""}" ${enabled ? `onclick="selectCalendarDate('${dd}')"` : ""}>
-            ${d}
-          </div>
-        `;
+
+      if (calendarSelection.year && calendarSelection.month) {
+        const ymKey = `${calendarSelection.year}-${calendarSelection.month}`;
+        const daysWithPosts = dateIndex.daysByYearMonth.get(ymKey) || new Set();
+        const firstWeekday = new Date(Number(calendarSelection.year), Number(calendarSelection.month) - 1, 1).getDay();
+        const totalDays = new Date(Number(calendarSelection.year), Number(calendarSelection.month), 0).getDate();
+
+        html += `<p class="gallery-cal-section-label mt-3">일 선택 (선택하지 않으면 해당 월 전체)</p><div class="gallery-cal-grid day-grid">`;
+        html += WEEKDAY_LABELS.map((w) => `<div class="gallery-cal-cell weekday-label">${w}</div>`).join("");
+        for (let i = 0; i < firstWeekday; i++) {
+          html += `<div class="gallery-cal-cell empty"></div>`;
+        }
+        for (let d = 1; d <= totalDays; d++) {
+          const dd = String(d).padStart(2, "0");
+          const enabled = daysWithPosts.has(dd);
+          const selected = calendarSelection.day === dd;
+          html += `
+            <div class="gallery-cal-cell ${enabled ? "enabled" : ""} ${selected ? "selected" : ""}" ${enabled ? `onclick="selectCalendarDay('${dd}')"` : ""}>
+              ${d}
+            </div>
+          `;
+        }
+        html += `</div>`;
       }
-      html += `</div>`;
+
       document.getElementById("gallery-calendar-body").innerHTML = html;
+      document.getElementById("gallery-calendar-select").disabled = !calendarSelection.year;
     }
 
-    function changeCalendarYear(delta) {
-      const years = [...dateIndex.years].sort();
-      const candidates = delta < 0 ? years.filter((y) => y < calendarState.year) : years.filter((y) => y > calendarState.year);
-      if (!candidates.length) return;
-      calendarState.year = delta < 0 ? candidates[candidates.length - 1] : candidates[0];
-      renderCalendar();
+    function selectCalendarYear(year) {
+      calendarSelection = { year, month: null, day: null };
+      renderCalendarBody();
     }
 
-    function openCalendarMonth(month) {
-      calendarState.view = "day";
-      calendarState.month = month;
-      renderCalendar();
+    function selectCalendarMonth(month) {
+      calendarSelection.month = calendarSelection.month === month ? null : month;
+      calendarSelection.day = null;
+      renderCalendarBody();
     }
 
-    function backToCalendarMonths() {
-      calendarState.view = "month";
-      renderCalendar();
+    function selectCalendarDay(day) {
+      calendarSelection.day = calendarSelection.day === day ? null : day;
+      renderCalendarBody();
     }
 
-    function selectCalendarDate(day) {
-      state.activeDate = `${calendarState.year}-${calendarState.month}-${day}`;
+    function resetCalendarSelection() {
+      calendarSelection = { year: null, month: null, day: null };
+      renderCalendarBody();
+    }
+
+    function confirmCalendarSelection() {
+      if (!calendarSelection.year) return;
+      let filter = calendarSelection.year;
+      if (calendarSelection.month) {
+        filter += `-${calendarSelection.month}`;
+        if (calendarSelection.day) filter += `-${calendarSelection.day}`;
+      }
+      state.activeDate = filter;
       updateDateChip();
       bootstrap.Modal.getInstance(document.getElementById("calendarModal"))?.hide();
       applyFilters();
@@ -680,12 +697,19 @@
       applyFilters();
     }
 
+    function formatFilterLabel(filterStr) {
+      const parts = filterStr.split("-");
+      if (parts.length === 1) return `${parts[0]}년`;
+      if (parts.length === 2) return `${parts[0]}.${parts[1]}`;
+      return `${parts[0]}.${parts[1]}.${parts[2]}`;
+    }
+
     function updateDateChip() {
       const chip = document.getElementById("gallery-date-chip");
       const label = document.getElementById("gallery-date-chip-label");
       if (state.activeDate) {
         chip.classList.add("active");
-        label.textContent = state.activeDate.replace(/-/g, ".");
+        label.textContent = formatFilterLabel(state.activeDate);
       } else {
         chip.classList.remove("active");
       }
@@ -708,6 +732,8 @@
       document.getElementById("gallery-search-scope").addEventListener("change", applyFilters);
       document.getElementById("gallery-calendar-btn").addEventListener("click", openCalendarModal);
       document.getElementById("gallery-date-chip-clear").addEventListener("click", clearDateFilter);
+      document.getElementById("gallery-calendar-reset").addEventListener("click", resetCalendarSelection);
+      document.getElementById("gallery-calendar-select").addEventListener("click", confirmCalendarSelection);
       document.getElementById("gallery-view-toggle").addEventListener("click", (e) => {
         const btn = e.target.closest(".gallery-view-btn");
         if (btn) setViewMode(btn.dataset.view);
@@ -726,7 +752,7 @@
         }
 
         allPosts = rawPosts.map(normalizePost);
-        allPosts.sort((a, b) => new Date(String(b.date).replace(/\./g, "-")) - new Date(String(a.date).replace(/\./g, "-")));
+        allPosts.sort((a, b) => postDateSortKey(b.date).localeCompare(postDateSortKey(a.date)));
         dateIndex = buildDateIndex(allPosts);
 
         const masthead = document.getElementById("masthead-recent");

@@ -910,7 +910,8 @@ class EditGalleryPostDialog(BaseDialog):
             layout.addWidget(widget)
 
         self.title_input = QLineEdit(self.data.get("title", ""))
-        self.content_input = QTextEdit(self.data.get("content", ""))
+        self.content_input = QTextEdit()
+        self.content_input.setPlainText(self.data.get("content", ""))
 
         default_date = self.data.get("date") or datetime.now().strftime("%Y.%m.%d")
         self.date_input = QLineEdit(default_date)
@@ -2987,7 +2988,8 @@ class EditHomeNewsDialog(BaseDialog):
             vbox.addWidget(widget)
 
         self.in_title = QLineEdit(self.data.get("title", ""))
-        self.in_content = QTextEdit(self.data.get("content", ""))
+        self.in_content = QTextEdit()
+        self.in_content.setPlainText(self.data.get("content", ""))
         self.in_date = QLineEdit(self.data.get("date", ""))
         self.in_url = QLineEdit(self.data.get("url", ""))
 
@@ -3017,9 +3019,10 @@ class EditHomeNewsDialog(BaseDialog):
             self, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.webp)"
         )
         if path:
-            fname = f"news"
             try:
-                self.new_image_url = upload_homepage_image(path, fname)
+                self.new_image_url = upload_homepage_image(
+                    path, "news", uuid.uuid4().hex
+                )
                 QMessageBox.information(self, "완료", "업로드 성공")
             except Exception as e:
                 QMessageBox.warning(self, "실패", str(e))
@@ -3302,7 +3305,8 @@ class EditHomePopupDialog(BaseDialog):
         end_default = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
 
         self.in_title = QLineEdit(self.data.get("title", ""))
-        self.in_content = QTextEdit(self.data.get("content", ""))
+        self.in_content = QTextEdit()
+        self.in_content.setPlainText(self.data.get("content", ""))
         self.in_start = QLineEdit(self.data.get("start_date", today))
         self.in_end = QLineEdit(self.data.get("end_date", end_default))
         self.in_link = QLineEdit(self.data.get("link_url", ""))
