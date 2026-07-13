@@ -42,25 +42,6 @@ GRAPHML_VIEWERS = [
         },
         "download_url": "https://gephi.org/users/download/",
     },
-    {
-        "name": "yEd",
-        "which": ["yEd", "yed"],
-        "paths": {
-            "Windows": [
-                r"C:\Program Files\yWorks\yEd\yEd.exe",
-                r"C:\Program Files (x86)\yWorks\yEd\yEd.exe",
-                r"C:\Program Files\yEd\yEd.exe",
-            ],
-            "Darwin": [
-                "/Applications/yEd.app",
-            ],
-            "Linux": [
-                "/opt/yEd/yEd.sh",
-                "/usr/share/yEd/yEd.sh",
-            ],
-        },
-        "download_url": "https://www.yworks.com/products/yed/download",
-    },
 ]
 
 
