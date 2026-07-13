@@ -5,18 +5,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
   <title>Gallery | FPEI</title>
-  <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+  <script defer src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
   <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />
-  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css" />
-  <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700" rel="stylesheet" type="text/css" />
   <link href="css/styles.css" rel="stylesheet" />
   <style>
     /* 상단 헤더: 세로 비율 축소 (60vh -> 35vh) */
     #masthead-recent {
       position: relative;
       width: 100%;
-      height: 35vh;
-      min-height: 250px;
+      height: 60vh;
+      min-height: 400px;
+      padding-top: 90px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -25,6 +24,7 @@
       background-position: center;
       background-repeat: no-repeat;
       z-index: 1;
+      box-sizing: border-box;
     }
 
     #masthead-recent::before {
@@ -100,7 +100,7 @@
 
     @media (max-width: 768px) {
       #masthead-recent {
-        height: 30vh;
+        height: 40vh;
       }
 
       .photo-img-container {
@@ -110,22 +110,9 @@
   </style>
 </head>
 
-<body id="page-top">
-  <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
-    <div class="container">
-      <a class="navbar-brand" href="/"><img src="assets/imgs/lab_logo.png" alt="..." /></a>
-      <div class="collapse navbar-collapse" id="navbarResponsive">
-        <ul class="navbar-nav text-uppercase ms-auto py-4 py-lg-0">
-          <li class="nav-item"><a class="nav-link" href="/">RESEARCH</a></li>
-          <li class="nav-item"><a class="nav-link" href="/publications">PUBLICATIONS</a></li>
-          <li class="nav-item"><a class="nav-link" href="/#">NEWS</a></li>
-          <li class="nav-item"><a class="nav-link" href="/team">OUR TEAM</a></li>
-          <li class="nav-item"><a class="nav-link" href="/gallery">GALLERY</a></li>
-          <li class="nav-item"><a class="nav-link" href="/systems">SYSTEM</a></li>
-        </ul>
-      </div>
-    </div>
-  </nav>
+<body id="page-top" data-page="gallery">
+  <div id="nav-placeholder"></div>
+  <script src="js/nav.js"></script>
 
   <header id="masthead-recent">
     <div class="container">
@@ -159,6 +146,7 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/scripts.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
       try {
