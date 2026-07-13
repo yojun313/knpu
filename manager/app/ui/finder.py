@@ -46,9 +46,9 @@ GRAPHML_VIEWERS = [
 
 
 def _launch_app(system, exe_path, file_path):
-    """탐지된 실행 파일/앱 번들로 GraphML 파일을 연다."""
     if system == "Darwin" and exe_path.endswith(".app"):
-        subprocess.run(["open", "-a", exe_path, file_path], check=True)
+        subprocess.run(["open", "-a", exe_path])
+        subprocess.run(["pbcopy"], input=file_path.encode())
     else:
         subprocess.Popen([exe_path, file_path])
 
@@ -172,7 +172,9 @@ def makeFileFinder(main_window, localDirectory=None):
                 printStatus(self.main, f"{os.path.basename(file_path)} 여는 중...")
 
                 ext = os.path.splitext(file_path)[1].lower()
-                if ext == ".graphml":
+                GRAPH_EXTS = {".graphml", ".gexf", ".gml", ".net", ".gdf"}
+
+                if ext in GRAPH_EXTS:
                     open_graphml_with_viewer(self.main, file_path)
                 else:
                     if os.name == "nt":  # Windows
