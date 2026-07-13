@@ -1,7 +1,7 @@
 # app/services/network_service.py
 import os
 
-os.environ.setdefault("OMP_NUM_THREADS", "0")  # period 병렬 시 워커 내부에서 재설정
+os.environ.setdefault("OMP_NUM_THREADS", "1")  # period 병렬 시 워커 내부에서 재설정
 import re
 import json
 import shutil
