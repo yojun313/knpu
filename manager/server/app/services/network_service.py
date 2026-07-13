@@ -457,10 +457,45 @@ def draw_network(res, option, out_png, title=""):
     fig.savefig(out_png, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
+def _inject_gephi_viz_position(graphml_path, coords):
+    """
+    igraph의 write_graphml은 x/y를 일반 data 속성으로만 저장해서
+    Gephi가 배치에 사용하지 못한다. Gephi 전용 GraphML 확장인
+    <viz:position>을 노드마다 주입해 Import 시 좌표가 그대로 반영되게 한다.
+    """
+    import xml.etree.ElementTree as ET
+
+    GRAPHML_NS = "http://graphml.graphdrawing.org/xmlns"
+    VIZ_NS = "http://www.gexf.net/1.2draft/viz"
+
+    ET.register_namespace("", GRAPHML_NS)
+    ET.register_namespace("viz", VIZ_NS)
+
+    tree = ET.parse(graphml_path)
+    root = tree.getroot()
+    graph_el = root.find(f"{{{GRAPHML_NS}}}graph")
+    if graph_el is None:
+        return  # 예상 밖 구조면 조용히 스킵 (그래도 파일 자체는 유효)
+
+    nodes = graph_el.findall(f"{{{GRAPHML_NS}}}node")
+    for node_el, (x, y) in zip(nodes, coords):
+        pos = ET.SubElement(node_el, f"{{{VIZ_NS}}}position")
+        pos.set("x", f"{float(x):.4f}")
+        pos.set("y", f"{float(y):.4f}")
+        pos.set("z", "0.0")
+
+    tree.write(graphml_path, encoding="utf-8", xml_declaration=True)
 
 def export_files(res, option, out_dir, tag=""):
     os.makedirs(out_dir, exist_ok=True)
     g, cent, community = res["graph"], res["cent"], res["community"]
+    
+    coords = res["coords"]
+
+    # GraphML에 좌표 속성 추가 (Gephi가 x, y 속성을 인식해서 배치에 사용)
+    g.vs["x"] = coords[:, 0].tolist()
+    g.vs["y"] = coords[:, 1].tolist()
+    
     # nodes.csv
     node_rows = {"word": g.vs["name"], "frequency": g.vs["freq"]}
     for k, v in cent.items():
@@ -484,7 +519,9 @@ def export_files(res, option, out_dir, tag=""):
     )
 
     # graphml (Gephi/NetMiner import용)
-    g.write_graphml(os.path.join(out_dir, f"network{tag}.graphml"))
+    graphml_path = os.path.join(out_dir, f"network{tag}.graphml")
+    g.write_graphml(graphml_path)
+    _inject_gephi_viz_position(graphml_path, coords)
 
     # 시각화
     draw_network(
@@ -710,9 +747,6 @@ def run_network_analysis(pid: str, data: pd.DataFrame, option: dict):
             groups = [
                 (str(k), sub[text_col].tolist()) for k, sub in data.groupby("_pk")
             ]
-            send_message(pid, f"기간 {len(groups)}개 병렬 분석 시작...")
-            n_workers = min(len(groups), os.cpu_count() or 4)
-            args = [(f"_{k}", txts, option) for k, txts in groups]
             send_message(pid, f"기간 {len(groups)}개 병렬 분석 시작...")
             n_workers = min(len(groups), os.cpu_count() or 4)
             args = [(f"_{k}", txts, option) for k, txts in groups]

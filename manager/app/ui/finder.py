@@ -13,6 +13,124 @@ import os
 from ui.status import printStatus
 from libs.path import safe_path
 import platform
+import shutil
+import webbrowser
+
+# ────────────────────── GraphML 뷰어 연동 ──────────────────────
+# 필요하면 나중에 Gephi, Cytoscape 등을 리스트에 더 추가할 수 있음
+# ────────────────────── GraphML 뷰어 연동 ──────────────────────
+# 리스트 순서 = 우선순위. 위에서부터 설치 여부를 확인해서 먼저 찾은 걸로 연다.
+GRAPHML_VIEWERS = [
+    {
+        "name": "Gephi",
+        "which": ["gephi"],  # PATH 등록된 경우 (Linux 등)
+        "paths": {
+            "Windows": [
+                r"C:\Program Files\Gephi-0.10.1\bin\gephi64.exe",
+                r"C:\Program Files\Gephi-0.10.1\bin\gephi.exe",
+                r"C:\Program Files\Gephi-0.9.7\bin\gephi64.exe",
+                r"C:\Program Files (x86)\Gephi\bin\gephi.exe",
+            ],
+            "Darwin": [
+                "/Applications/Gephi.app",
+            ],
+            "Linux": [
+                "/opt/gephi/bin/gephi",
+                "/usr/share/gephi/bin/gephi",
+                "/usr/local/gephi/bin/gephi",
+            ],
+        },
+        "download_url": "https://gephi.org/users/download/",
+    },
+    {
+        "name": "yEd",
+        "which": ["yEd", "yed"],
+        "paths": {
+            "Windows": [
+                r"C:\Program Files\yWorks\yEd\yEd.exe",
+                r"C:\Program Files (x86)\yWorks\yEd\yEd.exe",
+                r"C:\Program Files\yEd\yEd.exe",
+            ],
+            "Darwin": [
+                "/Applications/yEd.app",
+            ],
+            "Linux": [
+                "/opt/yEd/yEd.sh",
+                "/usr/share/yEd/yEd.sh",
+            ],
+        },
+        "download_url": "https://www.yworks.com/products/yed/download",
+    },
+]
+
+
+def _launch_app(system, exe_path, file_path):
+    """탐지된 실행 파일/앱 번들로 GraphML 파일을 연다."""
+    if system == "Darwin" and exe_path.endswith(".app"):
+        subprocess.run(["open", "-a", exe_path, file_path], check=True)
+    else:
+        subprocess.Popen([exe_path, file_path])
+
+
+def open_graphml_with_viewer(main_window, file_path):
+    """
+    GraphML 파일을 열 수 있는 뷰어(yEd 등)를 찾아 실행한다.
+    설치되어 있지 않으면 다운로드 페이지로 이동할지 물어본다.
+    """
+    system = platform.system()
+
+    for viewer in GRAPHML_VIEWERS:
+        # 1) PATH에 등록되어 있는지 확인
+        for name in viewer["which"]:
+            exe = shutil.which(name)
+            if exe:
+                try:
+                    _launch_app(system, exe, file_path)
+                    return True
+                except Exception:
+                    pass
+
+        # 2) OS별 기본 설치 경로 확인
+        for candidate in viewer["paths"].get(system, []):
+            if os.path.exists(candidate):
+                try:
+                    _launch_app(system, candidate, file_path)
+                    return True
+                except Exception:
+                    continue
+
+    # 3) 혹시 사용자가 다른 GraphML 뷰어(Gephi 등)를 설치해
+    #    OS 기본 연결 프로그램으로 등록해둔 경우를 대비한 폴백
+    try:
+        if system == "Windows":
+            os.startfile(file_path)
+            return True
+        elif system == "Darwin":
+            result = subprocess.run(["open", file_path])
+            if result.returncode == 0:
+                return True
+        else:
+            result = subprocess.run(["xdg-open", file_path])
+            if result.returncode == 0:
+                return True
+    except Exception:
+        pass
+
+    # 4) 여기까지 실패 → 설치된 뷰어가 없다고 판단, 다운로드 페이지 안내
+    from PySide6.QtWidgets import QMessageBox  # 지역 import (순환참조 방지)
+
+    default_viewer = GRAPHML_VIEWERS[0]
+    reply = QMessageBox.question(
+        main_window,
+        "GraphML 뷰어 없음",
+        f"GraphML 파일을 열 수 있는 프로그램({default_viewer['name']})이 "
+        f"설치되어 있지 않습니다.\n\n다운로드 페이지로 이동하시겠습니까?",
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        QMessageBox.StandardButton.Yes,
+    )
+    if reply == QMessageBox.StandardButton.Yes:
+        webbrowser.open(default_viewer["download_url"])
+    return False
 
 
 def makeFileFinder(main_window, localDirectory=None):
@@ -71,17 +189,24 @@ def makeFileFinder(main_window, localDirectory=None):
             try:
                 file_path = safe_path(file_path)
                 printStatus(self.main, f"{os.path.basename(file_path)} 여는 중...")
-                if os.name == "nt":  # Windows
-                    os.startfile(file_path)
-                elif os.name == "posix":  # macOS, Linux
-                    subprocess.run(
-                        [
-                            "open" if os.uname().sysname == "Darwin" else "xdg-open",
-                            file_path,
-                        ]
-                    )
+
+                ext = os.path.splitext(file_path)[1].lower()
+                if ext == ".graphml":
+                    open_graphml_with_viewer(self.main, file_path)
+                else:
+                    if os.name == "nt":  # Windows
+                        os.startfile(file_path)
+                    elif os.name == "posix":  # macOS, Linux
+                        subprocess.run(
+                            [
+                                "open"
+                                if os.uname().sysname == "Darwin"
+                                else "xdg-open",
+                                file_path,
+                            ]
+                        )
                 printStatus(self.main)
-            except Exception as e:
+            except Exception:
                 printStatus(self.main, f"파일 열기 실패")
 
         def on_directory_change(self, path):
