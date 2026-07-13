@@ -521,11 +521,11 @@ def _write_gexf(res, out_path):
     L = []
     L.append('<?xml version="1.0" encoding="UTF-8"?>')
     L.append(
-        '<gexf xmlns="http://www.gexf.net/1.2draft" version="1.2" '
-        'xmlns:viz="http://www.gexf.net/1.2draft/viz" '
+        '<gexf xmlns="http://gexf.net/1.3" version="1.3" '
+        'xmlns:viz="http://gexf.net/1.3/viz" '
         'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
-        'xsi:schemaLocation="http://www.gexf.net/1.2draft '
-        'http://www.gexf.net/1.2draft/gexf.xsd">'
+        'xsi:schemaLocation="http://gexf.net/1.3 '
+        'http://gexf.net/1.3/gexf.xsd">'
     )
     L.append(
         f'  <meta lastmodifieddate="{datetime.now():%Y-%m-%d}">'
