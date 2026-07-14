@@ -1,5 +1,5 @@
-from PySide6.QtCore import Qt, QDate
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt, QDate, QBuffer, QByteArray
+from PySide6.QtGui import QPixmap, QImageReader
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -827,19 +827,33 @@ class EditPostDialog(BaseDialog):
         self.accept()
 
 
+def load_pixmap_exif_safe(source) -> QPixmap:
+    """파일 경로(str) 또는 바이트(bytes)로부터 QPixmap을 생성하되, 스마트폰 촬영
+    사진에 흔한 EXIF Orientation 태그를 반영해 90/180/270도로 뒤집혀 보이는 문제를
+    방지한다. QPixmap(path)/loadFromData()는 기본적으로 EXIF 방향을 무시한다."""
+    reader = QImageReader()
+    if isinstance(source, (bytes, bytearray)):
+        buf = QBuffer()
+        buf.setData(QByteArray(source))
+        buf.open(QBuffer.OpenModeFlag.ReadOnly)
+        reader.setDevice(buf)
+    else:
+        reader.setFileName(source)
+    reader.setAutoTransform(True)
+    return QPixmap.fromImage(reader.read())
+
+
 def _load_thumbnail_pixmap(source: str, is_url: bool) -> QPixmap:
     """기존 사진(URL)은 네트워크로, 새로 고른 사진(로컬 경로)은 디스크에서 로드"""
-    pixmap = QPixmap()
     if is_url:
         try:
             resp = httpx.get(source, timeout=10)
             if resp.status_code == 200:
-                pixmap.loadFromData(resp.content)
+                return load_pixmap_exif_safe(resp.content)
         except Exception:
             pass
-    else:
-        pixmap = QPixmap(source)
-    return pixmap
+        return QPixmap()
+    return load_pixmap_exif_safe(source)
 
 
 def _build_photo_grid(grid_layout: QGridLayout, entries, on_remove: Callable | None = None):
@@ -3407,8 +3421,7 @@ class ViewHomePopupDialog(BaseDialog):
         try:
             resp = httpx.get(url)
             if resp.status_code == 200:
-                pixmap = QPixmap()
-                pixmap.loadFromData(resp.content)
+                pixmap = load_pixmap_exif_safe(resp.content)
                 self.image_label.setPixmap(
                     pixmap.scaled(
                         390,

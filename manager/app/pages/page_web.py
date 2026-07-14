@@ -4,7 +4,6 @@ import warnings
 import traceback
 import httpx
 from PySide6.QtWidgets import QMessageBox, QHeaderView, QLabel, QInputDialog
-from PySide6.QtGui import QPixmap
 from PySide6.QtCore import QUrl, Qt
 from core.shortcut import resetShortcuts
 from services.logging import programBugLog
@@ -21,6 +20,7 @@ from ui.dialogs import (
     ViewHomeNewsDialog,
     ViewGalleryPostDialog,
     ViewHomePopupDialog,
+    load_pixmap_exif_safe,
 )
 from ui.table import makeTable
 from ui.status import changeStatusbarAction
@@ -232,8 +232,7 @@ class Manager_Web:
                 try:
                     resp = httpx.get(url)
                     if resp.status_code == 200:
-                        pixmap = QPixmap()
-                        pixmap.loadFromData(resp.content)
+                        pixmap = load_pixmap_exif_safe(resp.content)
                         img_label.setPixmap(
                             pixmap.scaled(
                                 110,
