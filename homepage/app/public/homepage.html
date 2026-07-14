@@ -30,13 +30,73 @@
 
     <!-- Favicon -->
     <link rel="shortcut icon" type="image/x-icon" href="/assets/imgs/lab_logo_favicon.ico" />
-    <link rel="icon" type="image/x-icon" href="/assets/imgs/lab_logo_favicon.ico" />
+    <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />
 
     <!-- Fonts & CSS -->
-    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
-    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css" />
-    <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700" rel="stylesheet" type="text/css" />
+    <script defer src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
     <link href="css/styles.css" rel="stylesheet" />
+    <style>
+        /* 신문 스크랩 형태 뉴스 미리보기 — 데스크톱 2열, 모바일 1열(세로 4개) 카드 그리드 */
+        .home-news-item {
+            background: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border-radius: 0.375rem;
+            border-left: 4px solid #002d56;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .home-news-img {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+        }
+
+        .home-news-body {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .home-news-date {
+            font-family: "Montserrat", sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .home-news-title {
+            font-family: Georgia, "Times New Roman", serif;
+            font-weight: 700;
+            font-size: 1.05rem;
+            line-height: 1.3;
+        }
+
+        .home-news-excerpt {
+            font-family: Georgia, "Times New Roman", serif;
+            line-height: 1.55;
+            font-size: 0.9rem;
+            color: #555;
+            flex: 1;
+        }
+
+        .home-news-link {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #002d56;
+            text-decoration: none;
+        }
+
+        .home-news-link:hover {
+            color: #01417a;
+            text-decoration: underline;
+        }
+    </style>
     <script type="application/ld+json">
     {
     "@context": "https://schema.org",
@@ -48,7 +108,7 @@
     </script>
 </head>
 
-<body id="page-top">
+<body id="page-top" data-page="home">
 
     <!-- 팝업 오버레이 -->
     <div id="site-popup-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; align-items:center; justify-content:center;">
@@ -72,36 +132,18 @@
     </div>
 
     <!-- Navigation-->
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
-        <div class="container">
-            <a class="navbar-brand" href="/"><img src="assets/imgs/lab_logo.png" alt="..." /></a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
-                aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
-                Menu
-                <i class="fas fa-bars ms-1"></i>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarResponsive">
-                <ul class="navbar-nav text-uppercase ms-auto py-4 py-lg-0">
-                    <li class="nav-item"><a class="nav-link" href="/">RESEARCH</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/publications">PUBLICATIONS</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/#news">NEWS</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/team">OUR TEAM</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/gallery">GALLERY</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/systems">SYSTEMS</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <div id="nav-placeholder"></div>
+    <script src="js/nav.js"></script>
     <!-- Masthead-->
     <header class="masthead">
-        <video autoplay muted loop id="bg-video">
+        <video autoplay muted loop playsinline preload="metadata" poster="assets/imgs/header-bg.jpg" id="bg-video">
             <source src="https://pub-60ca29aab33f424fab345807bd058d56.r2.dev/video/%E1%84%8B%E1%85%A7%E1%86%AB%E1%84%80%E1%85%AE%E1%84%89%E1%85%B5%E1%86%AF_%E1%84%89%E1%85%A9%E1%84%80%E1%85%A2%E1%84%8B%E1%85%A7%E1%86%BC%E1%84%89%E1%85%A1%E1%86%BC.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
         <div class="container">
             <div class="masthead-subheading">Welcome To Our INSTITUTE!</div>
             <div class="masthead-heading text-uppercase">FPEI</div>
-            <a class="btn btn-primary btn-xl text-uppercase" href="#portfolio">ABOUT OUR INSTITUTE</a>
+            <a class="btn btn-primary btn-xl text-uppercase" href="/about">ABOUT</a>
         </div>
     </header>
     <!-- Services-->
@@ -109,36 +151,54 @@
         <div class="container">
             <div class="text-center">
                 <h2 class="section-heading text-uppercase">research</h2>
-                <h3 class="section-subheading text-muted">TEXT MINING | MACHING LEARNING | DEEP LEARNING</h3>
+                <h3 class="section-subheading text-muted">미래치안의 공학적 접근</h3>
             </div>
-            <div class="row text-center">
-                <div class="col-md-4">
+            <div class="row justify-content-center mb-4">
+                <div class="col-lg-8 text-center">
+                    <p class="text-muted">
+                        미래치안공학연구원(FPEI)은 통계와 비정형 데이터 분석, AI 등 공학적 방법을 결합해<br>
+                        미래 치안 주제를 데이터로 진단하고 정책으로 설계합니다. 4개 연구실 체계로 운영됩니다.
+                    </p>
+                </div>
+            </div>
+            <div class="row text-center g-4">
+                <div class="col-lg-3 col-md-6">
                     <span class="fa-stack fa-4x">
                         <i class="fas fa-circle fa-stack-2x text-primary"></i>
-                        <i class="fas fa-chart-bar fa-stack-1x fa-inverse"></i>
+                        <i class="fas fa-satellite-dish fa-stack-1x fa-inverse"></i>
                     </span>
-                    <h4 class="my-3">Statistics</h4>
-                    <p class="text-muted">Our lab uses statistical research techniques using big data to create various
-                        research results with differentiated analysis techniques</p>
+                    <h4 class="my-3">미래치안AI기반연구실</h4>
+                    <p class="text-muted small">미래신호예측·범죄 데이터 분석</p>
                 </div>
-                <div class="col-md-4">
+                <div class="col-lg-3 col-md-6">
                     <span class="fa-stack fa-4x">
                         <i class="fas fa-circle fa-stack-2x text-primary"></i>
-                        <i class="fas fa-laptop fa-stack-1x fa-inverse"></i>
+                        <i class="fas fa-scale-balanced fa-stack-1x fa-inverse"></i>
                     </span>
-                    <h4 class="my-3">Social Science Engineering</h4>
-                    <p class="text-muted">Our lab combines social science and engineering to conduct research in new
-                        areas from various perspectives</p>
+                    <h4 class="my-3">미래치안AI정책연구실</h4>
+                    <p class="text-muted small">정책·법제 의사결정 모델링</p>
                 </div>
-                <div class="col-md-4">
+                <div class="col-lg-3 col-md-6">
                     <span class="fa-stack fa-4x">
                         <i class="fas fa-circle fa-stack-2x text-primary"></i>
-                        <i class="fas fa-lock fa-stack-1x fa-inverse"></i>
+                        <i class="fas fa-robot fa-stack-1x fa-inverse"></i>
                     </span>
-                    <h4 class="my-3">Crime Analysis</h4>
-                    <p class="text-muted">Our lab analyzes the causes and consequences of crime and conducts practical
-                        research applicable to policing policy</p>
+                    <h4 class="my-3">미래치안AI서비스연구실</h4>
+                    <p class="text-muted small">AI 치안 응용</p>
                 </div>
+                <div class="col-lg-3 col-md-6">
+                    <span class="fa-stack fa-4x">
+                        <i class="fas fa-circle fa-stack-2x text-primary"></i>
+                        <i class="fas fa-code fa-stack-1x fa-inverse"></i>
+                    </span>
+                    <h4 class="my-3">미래치안AI개발실</h4>
+                    <p class="text-muted small">연구 성과의 시스템 구현</p>
+                </div>
+            </div>
+            <div class="text-center mt-5">
+                <a class="btn btn-primary btn-xl text-uppercase" href="/about">
+                    <i class="fas fa-circle-info me-2"></i>Learn More About Us
+                </a>
             </div>
         </div>
     </section>
@@ -169,18 +229,25 @@
         <div class="container">
             <div class="text-center">
                 <h2 class="section-heading text-uppercase">NEWS</h2>
-                <h3 class="section-subheading text-muted">News in FPEI</h3>
+                <h3 class="section-subheading text-muted">FPEI News</h3>
             </div>
-            <ul class="timeline" id="news-list">
+            <div class="row g-4" id="news-list">
                 <!-- JS가 동적으로 채워줄 부분 -->
-            </ul>
+            </div>
+
+            <!-- 전체 보기 버튼 -->
+            <div class="text-center mt-5">
+                <a class="btn btn-primary btn-xl text-uppercase" href="/news">
+                    <i class="fas fa-newspaper me-2"></i>View All News
+                </a>
+            </div>
         </div>
     </section>
     <!-- Team-->
     <section class="page-section bg-light" id="team">
         <div class="container">
             <div class="text-center">
-                <h2 class="section-heading text-uppercase">Our Team</h2>
+                <h2 class="section-heading text-uppercase">People</h2>
                 <h3 class="section-subheading text-muted">FPEI MEMBERS</h3>
             </div>
             <div class="row" id="team-list">
@@ -382,40 +449,55 @@
 
         initPopups();
 
+        // 날짜 문자열("YYYY.MM.DD.", "YYYY.MM" 등 trailing dot·일자 누락 허용)에서
+        // 정렬 가능한 "YYYYMMDD" 키를 뽑아낸다. new Date(string)로 직접 비교하면
+        // trailing dot이 붙은 날짜가 Invalid Date가 되어 정렬이 깨지는 문제가 있었음.
+        function newsDateSortKey(dateStr) {
+            const m = String(dateStr || '').match(/(\d{4})[.\-](\d{1,2})(?:[.\-](\d{1,2}))?/);
+            if (!m) return '00000000';
+            const year = m[1];
+            const month = m[2].padStart(2, '0');
+            const day = (m[3] || '01').padStart(2, '0');
+            return `${year}${month}${day}`;
+        }
+
+        function truncateText(text, maxLen) {
+            if (!text) return '';
+            return text.length > maxLen ? text.slice(0, maxLen).trim() + '…' : text;
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             // 뉴스 불러오기
             try {
                 const newsRes = await fetch(`${API_BASE}/news/`);
-                const newsData = await newsRes.json();
+                const allNewsData = await newsRes.json();
+
+                // 최신순 정렬 후 최근 4건만 미리보기로 표시 (전체는 /news 페이지에서)
+                const newsData = [...allNewsData]
+                    .sort((a, b) => newsDateSortKey(b.date).localeCompare(newsDateSortKey(a.date)))
+                    .slice(0, 4);
 
                 const newsList = document.getElementById('news-list');
                 newsList.innerHTML = '';  // 기존 내용 지우기
 
-                newsData.forEach((news, idx) => {
-                    const invertedClass = idx % 2 === 0 ? '' : 'timeline-inverted';
+                newsData.forEach((news) => {
                     newsList.insertAdjacentHTML('beforeend', `
-                    <li class="${invertedClass}">
-                    <div class="timeline-image"><img class="rounded-circle img-fluid" src="${news.image || 'assets/imgs/about/default.png'}" alt="..." /></div>
-                    <div class="timeline-panel">
-                        <div class="timeline-heading">
-                        <h4>${news.date}</h4>
-                        <h4 class="subheading">${news.title}</h4>
+                    <div class="col-md-6">
+                        <div class="home-news-item">
+                            <img class="home-news-img" src="${news.image || 'assets/imgs/about/default.png'}" alt="${news.title || ''}" />
+                            <div class="home-news-body">
+                                <p class="home-news-date mb-1">${news.date || ''}</p>
+                                <h4 class="home-news-title mb-2">${news.title || ''}</h4>
+                                <p class="home-news-excerpt mb-2">${truncateText(news.content, 90)}</p>
+                                <a href="${news.url}" class="home-news-link" target="_blank" rel="noopener">
+                                    기사 보기 <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
                         </div>
-                        <div class="timeline-body"><p class="text-muted">${news.content || ''}</p></div>
-                        <a href="${news.url}" class="publication-link" target="_blank">[기사]</a>
                     </div>
-                    </li>
                 `);
                 });
 
-                // 마지막 'Be Part Of Our Story!' 부분 추가
-                newsList.insertAdjacentHTML('beforeend', `
-                <li class="timeline-inverted">
-                    <div class="timeline-image">
-                    <h4>Be Part<br />Of Our<br />Story!</h4>
-                    </div>
-                </li>
-                `);
                 const memberRes = await fetch(`${API_BASE}/members/`);
                 const members = await memberRes.json();
                 

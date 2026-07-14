@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>News | FPEI</title>
+  <script defer src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+  <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />
+  <link href="css/styles.css" rel="stylesheet" />
+  <style>
+    /* 상단 헤더 */
+    #masthead-recent {
+      position: relative;
+      width: 100%;
+      height: 60vh;
+      min-height: 400px;
+      padding-top: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #222;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 1;
+      box-sizing: border-box;
+    }
+
+    #masthead-recent::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1;
+    }
+
+    /* 기사 사진이 순서대로 등장하는 배경 슬라이드쇼 */
+    .masthead-bg-layer {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0;
+      transition: opacity 1.2s ease-in-out;
+      z-index: 0;
+    }
+
+    .masthead-bg-layer.active {
+      opacity: 1;
+    }
+
+    #masthead-recent .container {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      color: white;
+    }
+
+    @media (max-width: 768px) {
+      #masthead-recent {
+        height: 40vh;
+      }
+    }
+
+    /* 필터 바 */
+    .news-filters {
+      margin-bottom: 1.5rem;
+    }
+
+    .news-view-btn.active {
+      pointer-events: none;
+    }
+
+    .news-date-chip {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      background-color: #002d56;
+      color: #fff;
+      border-radius: 999px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.85rem;
+    }
+
+    .news-date-chip.active {
+      display: inline-flex;
+    }
+
+    .news-date-chip button {
+      background: none;
+      border: none;
+      color: #fff;
+      opacity: 0.8;
+      padding: 0;
+      line-height: 1;
+      font-size: 0.9rem;
+    }
+
+    .news-date-chip button:hover {
+      opacity: 1;
+    }
+
+    /* 자세히보기 — 신문 지면 느낌: 사진은 고정 크기로 좌측에 고정하고,
+       글이 신문처럼 사진 주위를 흘러 감싸도록 float 사용 (사진 비율은 내용 길이와 무관) */
+    .news-detail-item {
+      background: #fff;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      border-radius: 0.375rem;
+      border-left: 4px solid #002d56;
+      overflow: hidden;
+      /* 내부 float을 포함하도록 새 블록 서식 맥락을 만듦 */
+      margin-bottom: 1.75rem;
+    }
+
+    .news-detail-img {
+      float: left;
+      width: 220px;
+      height: 220px;
+      object-fit: cover;
+      border-radius: 0.375rem;
+      margin: 0 1.25rem 0.5rem 0;
+    }
+
+    @media (max-width: 576px) {
+      .news-detail-img {
+        float: none;
+        width: 100%;
+        height: 200px;
+        margin: 0 0 0.75rem 0;
+      }
+    }
+
+    .news-detail-date {
+      font-family: "Montserrat", sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* 제목 + 버튼(자세히/기사로 이동) — 버튼이 본문 뒤에 있으면 "자세히" 클릭 시
+       내용이 길어지며 버튼이 멀리 밀려나는 문제가 있었고, 제목과 한 줄에 두면
+       제목 줄바꿈 여부에 따라 버튼 좌우 위치가 들쭉날쭉했음. 제목을 항상 전체
+       너비로 먼저 두고, 버튼은 그 아래 우측에 고정 배치해 위치를 일정하게 함 */
+    .news-detail-header {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .news-detail-title {
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 700;
+    }
+
+    .news-detail-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.4rem;
+      margin-top: 0.85rem;
+    }
+
+    .news-detail-toggle .fa-chevron-down {
+      transition: transform 0.2s ease;
+    }
+
+    .news-detail-toggle[aria-expanded="true"] .fa-chevron-down {
+      transform: rotate(180deg);
+    }
+
+    .news-detail-content {
+      white-space: pre-line;
+      color: #555;
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .news-detail-content.expanded {
+      display: block;
+      -webkit-line-clamp: unset;
+      line-clamp: unset;
+      overflow: visible;
+    }
+
+    /* 작게보기 */
+    .news-card {
+      border: none;
+      transition: transform 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .news-card:hover {
+      transform: translateY(-10px);
+    }
+
+    .news-img-container {
+      width: 100%;
+      height: 250px;
+      overflow: hidden;
+    }
+
+    .news-img-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    @media (max-width: 768px) {
+      .news-img-container {
+        height: 200px;
+      }
+    }
+
+    /* 전체보기 */
+    .news-full-item {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.6rem 0.25rem;
+      border-bottom: 1px solid #e5e5e5;
+      cursor: pointer;
+    }
+
+    .news-full-thumb {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 0.3rem;
+      flex-shrink: 0;
+    }
+
+    .news-full-title {
+      font-weight: 700;
+      margin-bottom: 0;
+    }
+
+    .news-full-date {
+      color: #888;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    /* 뉴스 상세 모달 (작게보기/전체보기 클릭 시) */
+    .news-modal-img {
+      width: 100%;
+      max-height: 320px;
+      object-fit: cover;
+      border-radius: 0.375rem;
+    }
+
+    .news-modal-content {
+      white-space: pre-line;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* 캘린더 팝업 */
+    .news-cal-section-label {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #555;
+      margin-bottom: 0.5rem;
+    }
+
+    .news-cal-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+
+    .news-cal-grid.day-grid {
+      grid-template-columns: repeat(7, 1fr);
+    }
+
+    .news-cal-cell {
+      text-align: center;
+      padding: 0.6rem 0.2rem;
+      border-radius: 0.35rem;
+      font-size: 0.85rem;
+      background: #f2f2f2;
+      color: #bbb;
+    }
+
+    .news-cal-cell.weekday-label {
+      background: none;
+      color: #888;
+      font-weight: 700;
+      padding: 0.2rem;
+    }
+
+    .news-cal-cell.empty {
+      background: none;
+    }
+
+    .news-cal-cell.enabled {
+      background: #002d56;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .news-cal-cell.enabled:hover {
+      background: #01417a;
+    }
+
+    .news-cal-cell.selected {
+      background: #ffc800 !important;
+      color: #1a1d20 !important;
+      font-weight: 700;
+    }
+
+    .news-cal-count {
+      display: block;
+      font-size: 0.65rem;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+
+<body id="page-top" data-page="news">
+  <div id="nav-placeholder"></div>
+  <script src="js/nav.js"></script>
+
+  <header id="masthead-recent">
+    <div class="masthead-bg-layer" id="mastheadBgA"></div>
+    <div class="masthead-bg-layer" id="mastheadBgB"></div>
+    <div class="container">
+      <div class="masthead_team-subheading" style="font-size: 1.2rem;">FPEI</div>
+      <div class="masthead_team-heading text-uppercase" style="font-size: 2.5rem;">NEWS</div>
+    </div>
+  </header>
+
+  <section class="page-section bg-light" id="news">
+    <div class="container">
+      <div class="row news-filters align-items-end g-3">
+        <div class="col-lg-4 col-md-6">
+          <label class="form-label fw-bold small text-uppercase" for="news-search">Search</label>
+          <div class="input-group">
+            <select id="news-search-scope" class="form-select form-select-sm">
+              <option value="all">제목+본문</option>
+              <option value="title">제목</option>
+              <option value="content">본문</option>
+            </select>
+            <input type="text" id="news-search" class="form-control" placeholder="검색어를 입력하세요…" />
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+          <label class="form-label fw-bold small text-uppercase">보기 방식</label>
+          <div class="d-flex flex-wrap gap-1" id="news-view-toggle">
+            <button type="button" class="btn btn-primary btn-sm news-view-btn active" data-view="detail">자세히보기</button>
+            <button type="button" class="btn btn-outline-primary btn-sm news-view-btn" data-view="compact">작게보기</button>
+            <button type="button" class="btn btn-outline-primary btn-sm news-view-btn" data-view="full">전체보기</button>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-12 d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-dark btn-sm" id="news-calendar-btn">
+            <i class="fas fa-calendar-days me-1"></i>날짜로 찾기
+          </button>
+          <span class="news-date-chip" id="news-date-chip">
+            <span id="news-date-chip-label"></span>
+            <button type="button" id="news-date-chip-clear" aria-label="날짜 필터 해제">✕</button>
+          </span>
+        </div>
+      </div>
+
+      <p class="text-muted small mb-3" id="news-result-count"></p>
+
+      <div id="news-container"></div>
+    </div>
+  </section>
+
+  <!-- 뉴스 상세 모달 (작게보기/전체보기에서 클릭 시) -->
+  <div class="modal fade" id="newsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="newsModalTitle"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <img id="newsModalImage" class="news-modal-img mb-3" alt="">
+          <p class="text-muted mb-2" id="newsModalDate"></p>
+          <p class="news-modal-content" id="newsModalContent"></p>
+        </div>
+        <div class="modal-footer">
+          <a href="#" id="newsModalGoto" target="_blank" rel="noopener" class="btn btn-dark">
+            <i class="fas fa-arrow-up-right-from-square me-1"></i>기사로 이동
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 날짜 브라우징 캘린더 팝업 -->
+  <div class="modal fade" id="calendarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">날짜로 찾기</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="news-calendar-body"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="news-calendar-reset">초기화</button>
+          <button type="button" class="btn btn-dark" id="news-calendar-select" disabled>선택</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer py-4">
+    <div class="container text-center">Copyright &copy; KNPU FPEI</div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/scripts.js"></script>
+  <script>
+    const DATA_URL = "https://home.knpu.re.kr/api/news/";
+    const VIEW_STORAGE_KEY = "newsViewMode";
+    const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+
+    let allNews = [];
+    let state = {
+      viewMode: localStorage.getItem(VIEW_STORAGE_KEY) || "detail",
+      activeDate: null, // "YYYY" | "YYYY-MM" | "YYYY-MM-DD"
+    };
+    let calendarSelection = { year: null, month: null, day: null };
+    let dateIndex = { years: new Set(), monthsByYear: new Map(), daysByYearMonth: new Map(), countByYearMonth: new Map() };
+
+    function normalizeNews(n) {
+      return {
+        ...n,
+        title: n.title || "(제목 없음)",
+        content: n.content || "",
+        image: n.image || "",
+        url: n.url || "",
+      };
+    }
+
+    function parseNewsDate(dateStr) {
+      if (!dateStr) return null;
+      const m = String(dateStr).match(/(\d{4})[.\-](\d{1,2})(?:[.\-](\d{1,2}))?/);
+      if (!m) return null;
+      return {
+        year: m[1],
+        month: m[2].padStart(2, "0"),
+        day: m[3] ? m[3].padStart(2, "0") : null,
+      };
+    }
+
+    // 정렬 전용 "YYYYMMDD" 키. new Date(string)로 직접 비교하면 trailing dot이
+    // 붙은 날짜("2022.07.24.")가 Invalid Date가 되어 정렬 순서가 깨지는 문제가 있었음.
+    function newsDateSortKey(dateStr) {
+      const d = parseNewsDate(dateStr);
+      return d ? `${d.year}${d.month}${d.day || "01"}` : "00000000";
+    }
+
+    function buildDateIndex(items) {
+      const idx = { years: new Set(), monthsByYear: new Map(), daysByYearMonth: new Map(), countByYearMonth: new Map() };
+      items.forEach((n) => {
+        const d = parseNewsDate(n.date);
+        if (!d || !d.day) return;
+        idx.years.add(d.year);
+        if (!idx.monthsByYear.has(d.year)) idx.monthsByYear.set(d.year, new Set());
+        idx.monthsByYear.get(d.year).add(d.month);
+
+        const ymKey = `${d.year}-${d.month}`;
+        if (!idx.daysByYearMonth.has(ymKey)) idx.daysByYearMonth.set(ymKey, new Set());
+        idx.daysByYearMonth.get(ymKey).add(d.day);
+        idx.countByYearMonth.set(ymKey, (idx.countByYearMonth.get(ymKey) || 0) + 1);
+      });
+      return idx;
+    }
+
+    function getFilters() {
+      return {
+        search: document.getElementById("news-search").value.trim().toLowerCase(),
+        scope: document.getElementById("news-search-scope").value,
+      };
+    }
+
+    function matchesActiveDateFilter(n) {
+      if (!state.activeDate) return true;
+      const d = parseNewsDate(n.date);
+      if (!d || !d.day) return false;
+      const [fYear, fMonth, fDay] = state.activeDate.split("-");
+      if (d.year !== fYear) return false;
+      if (fMonth && d.month !== fMonth) return false;
+      if (fDay && d.day !== fDay) return false;
+      return true;
+    }
+
+    function applyFilters() {
+      const { search, scope } = getFilters();
+
+      let filtered = allNews.filter((n) => {
+        if (!matchesActiveDateFilter(n)) return false;
+        if (search) {
+          let haystack;
+          if (scope === "title") haystack = n.title.toLowerCase();
+          else if (scope === "content") haystack = n.content.toLowerCase();
+          else haystack = `${n.title} ${n.content}`.toLowerCase();
+          if (!haystack.includes(search)) return false;
+        }
+        return true;
+      });
+
+      filtered.sort((a, b) => newsDateSortKey(b.date).localeCompare(newsDateSortKey(a.date)));
+
+      renderList(filtered);
+      document.getElementById("news-result-count").textContent = `${filtered.length}건의 뉴스가 검색되었습니다.`;
+      syncUrl();
+    }
+
+    function syncUrl() {
+      const { search, scope } = getFilters();
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (scope && scope !== "all") params.set("scope", scope);
+      if (state.activeDate) params.set("date", state.activeDate);
+      const qs = params.toString();
+      const newUrl = window.location.pathname + (qs ? `?${qs}` : "");
+      window.history.replaceState(null, "", newUrl);
+    }
+
+    function formatDateLabel(dateStr) {
+      if (!dateStr) return "";
+      const d = parseNewsDate(dateStr);
+      if (!d) return dateStr;
+      return d.day ? `${d.year}.${d.month}.${d.day}` : `${d.year}.${d.month}`;
+    }
+
+    function gotoButtonHtml(n, extraClass) {
+      return n.url
+        ? `<a href="${n.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="btn btn-sm btn-outline-dark ${extraClass || ""}">
+             <i class="fas fa-arrow-up-right-from-square me-1"></i>기사로 이동
+           </a>`
+        : "";
+    }
+
+    let currentListItems = [];
+
+    function renderList(items) {
+      currentListItems = items;
+      const container = document.getElementById("news-container");
+      if (!items.length) {
+        container.innerHTML = `<div class="text-center text-muted py-5"><p>등록된 뉴스가 없습니다.</p></div>`;
+        return;
+      }
+      if (state.viewMode === "compact") container.innerHTML = renderCompactGrid(items);
+      else if (state.viewMode === "full") container.innerHTML = renderFullList(items);
+      else {
+        container.innerHTML = renderDetailList(items);
+        initDetailToggles();
+      }
+    }
+
+    function renderDetailList(items) {
+      return items.map((n, i) => `
+        <div class="news-detail-item p-3">
+          <img src="${n.image || ""}" class="news-detail-img" alt="${n.title}">
+          <p class="news-detail-date mb-1">${formatDateLabel(n.date)}</p>
+          <div class="news-detail-header mb-2">
+            <h4 class="news-detail-title mb-0">${n.title}</h4>
+            <div class="news-detail-actions">
+              <button class="btn btn-sm btn-outline-dark news-detail-toggle" type="button"
+                onclick="toggleNewsDetail(${i})" aria-expanded="false" aria-controls="newsDetailContent-${i}">
+                <i class="fas fa-chevron-down me-1"></i><span class="news-detail-toggle-label">자세히</span>
+              </button>
+              ${gotoButtonHtml(n)}
+            </div>
+          </div>
+          <p class="news-detail-content" id="newsDetailContent-${i}">${n.content}</p>
+        </div>
+      `).join("");
+    }
+
+    // 내용이 3줄(line-clamp) 안에 다 들어가는 기사는 "자세히" 버튼이 불필요하므로 숨김
+    function initDetailToggles() {
+      document.querySelectorAll(".news-detail-content").forEach((el) => {
+        const btn = el.parentElement.querySelector(".news-detail-toggle");
+        if (btn && el.scrollHeight <= el.clientHeight + 2) {
+          btn.style.display = "none";
+        }
+      });
+    }
+
+    function toggleNewsDetail(index) {
+      const contentEl = document.getElementById(`newsDetailContent-${index}`);
+      const btn = contentEl.parentElement.querySelector(".news-detail-toggle");
+      const expanded = contentEl.classList.toggle("expanded");
+      btn.setAttribute("aria-expanded", String(expanded));
+      btn.querySelector(".news-detail-toggle-label").textContent = expanded ? "줄이기" : "자세히";
+    }
+
+    function renderCompactGrid(items) {
+      const cards = items.map((n, i) => `
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="card news-card" onclick="openNewsModal(${i})">
+            <div class="news-img-container">
+              <img src="${n.image || ""}" alt="${n.title}" class="card-img-top">
+            </div>
+            <div class="card-body text-center">
+              <h5 class="card-title fw-bold mb-1">${n.title}</h5>
+              <p class="mb-2" style="color: #6c757d; font-size: 0.85rem;">${formatDateLabel(n.date)}</p>
+              ${gotoButtonHtml(n)}
+            </div>
+          </div>
+        </div>
+      `).join("");
+      return `<div class="row">${cards}</div>`;
+    }
+
+    function renderFullList(items) {
+      return items.map((n, i) => `
+        <div class="news-full-item" onclick="openNewsModal(${i})">
+          <img src="${n.image || ""}" class="news-full-thumb" alt="${n.title}">
+          <div class="flex-grow-1">
+            <p class="news-full-title mb-0">${n.title}</p>
+          </div>
+          <span class="news-full-date">${formatDateLabel(n.date)}</span>
+          ${gotoButtonHtml(n)}
+        </div>
+      `).join("");
+    }
+
+    function openNewsModal(index) {
+      const n = currentListItems[index];
+      if (!n) return;
+
+      document.getElementById("newsModalTitle").textContent = n.title;
+      document.getElementById("newsModalDate").textContent = formatDateLabel(n.date);
+      document.getElementById("newsModalContent").textContent = n.content;
+
+      const img = document.getElementById("newsModalImage");
+      if (n.image) {
+        img.src = n.image;
+        img.style.display = "";
+      } else {
+        img.style.display = "none";
+      }
+
+      const gotoBtn = document.getElementById("newsModalGoto");
+      if (n.url) {
+        gotoBtn.href = n.url;
+        gotoBtn.style.display = "";
+      } else {
+        gotoBtn.style.display = "none";
+      }
+
+      new bootstrap.Modal(document.getElementById("newsModal")).show();
+    }
+
+    // ── 날짜 브라우징 캘린더 (연 → 월 → 일 순으로 한 팝업 안에 이어서 표시) ──
+    function openCalendarModal() {
+      if (state.activeDate) {
+        const [y, m, d] = state.activeDate.split("-");
+        calendarSelection = { year: y || null, month: m || null, day: d || null };
+      } else {
+        calendarSelection = { year: null, month: null, day: null };
+      }
+      renderCalendarBody();
+      new bootstrap.Modal(document.getElementById("calendarModal")).show();
+    }
+
+    function renderCalendarBody() {
+      const years = [...dateIndex.years].sort();
+
+      let html = `<p class="news-cal-section-label">연도 선택</p><div class="news-cal-grid">`;
+      html += years.map((y) => `
+        <div class="news-cal-cell enabled ${calendarSelection.year === y ? "selected" : ""}" onclick="selectCalendarYear('${y}')">${y}</div>
+      `).join("");
+      html += `</div>`;
+
+      if (calendarSelection.year) {
+        const monthsWithPosts = dateIndex.monthsByYear.get(calendarSelection.year) || new Set();
+        html += `<p class="news-cal-section-label mt-3">월 선택</p><div class="news-cal-grid">`;
+        for (let m = 1; m <= 12; m++) {
+          const mm = String(m).padStart(2, "0");
+          const enabled = monthsWithPosts.has(mm);
+          const selected = calendarSelection.month === mm;
+          const count = dateIndex.countByYearMonth.get(`${calendarSelection.year}-${mm}`) || 0;
+          html += `
+            <div class="news-cal-cell ${enabled ? "enabled" : ""} ${selected ? "selected" : ""}" ${enabled ? `onclick="selectCalendarMonth('${mm}')"` : ""}>
+              ${m}월
+              ${enabled ? `<span class="news-cal-count">${count}건</span>` : ""}
+            </div>
+          `;
+        }
+        html += `</div>`;
+      }
+
+      if (calendarSelection.year && calendarSelection.month) {
+        const ymKey = `${calendarSelection.year}-${calendarSelection.month}`;
+        const daysWithPosts = dateIndex.daysByYearMonth.get(ymKey) || new Set();
+        const firstWeekday = new Date(Number(calendarSelection.year), Number(calendarSelection.month) - 1, 1).getDay();
+        const totalDays = new Date(Number(calendarSelection.year), Number(calendarSelection.month), 0).getDate();
+
+        html += `<p class="news-cal-section-label mt-3">일 선택 (선택하지 않으면 해당 월 전체)</p><div class="news-cal-grid day-grid">`;
+        html += WEEKDAY_LABELS.map((w) => `<div class="news-cal-cell weekday-label">${w}</div>`).join("");
+        for (let i = 0; i < firstWeekday; i++) {
+          html += `<div class="news-cal-cell empty"></div>`;
+        }
+        for (let d = 1; d <= totalDays; d++) {
+          const dd = String(d).padStart(2, "0");
+          const enabled = daysWithPosts.has(dd);
+          const selected = calendarSelection.day === dd;
+          html += `
+            <div class="news-cal-cell ${enabled ? "enabled" : ""} ${selected ? "selected" : ""}" ${enabled ? `onclick="selectCalendarDay('${dd}')"` : ""}>
+              ${d}
+            </div>
+          `;
+        }
+        html += `</div>`;
+      }
+
+      document.getElementById("news-calendar-body").innerHTML = html;
+      document.getElementById("news-calendar-select").disabled = !calendarSelection.year;
+    }
+
+    function selectCalendarYear(year) {
+      calendarSelection = { year, month: null, day: null };
+      renderCalendarBody();
+    }
+
+    function selectCalendarMonth(month) {
+      calendarSelection.month = calendarSelection.month === month ? null : month;
+      calendarSelection.day = null;
+      renderCalendarBody();
+    }
+
+    function selectCalendarDay(day) {
+      calendarSelection.day = calendarSelection.day === day ? null : day;
+      renderCalendarBody();
+    }
+
+    function resetCalendarSelection() {
+      calendarSelection = { year: null, month: null, day: null };
+      renderCalendarBody();
+    }
+
+    function confirmCalendarSelection() {
+      if (!calendarSelection.year) return;
+      let filter = calendarSelection.year;
+      if (calendarSelection.month) {
+        filter += `-${calendarSelection.month}`;
+        if (calendarSelection.day) filter += `-${calendarSelection.day}`;
+      }
+      state.activeDate = filter;
+      updateDateChip();
+      bootstrap.Modal.getInstance(document.getElementById("calendarModal"))?.hide();
+      applyFilters();
+    }
+
+    function clearDateFilter() {
+      state.activeDate = null;
+      updateDateChip();
+      applyFilters();
+    }
+
+    function formatFilterLabel(filterStr) {
+      const parts = filterStr.split("-");
+      if (parts.length === 1) return `${parts[0]}년`;
+      if (parts.length === 2) return `${parts[0]}.${parts[1]}`;
+      return `${parts[0]}.${parts[1]}.${parts[2]}`;
+    }
+
+    function updateDateChip() {
+      const chip = document.getElementById("news-date-chip");
+      const label = document.getElementById("news-date-chip-label");
+      if (state.activeDate) {
+        chip.classList.add("active");
+        label.textContent = formatFilterLabel(state.activeDate);
+      } else {
+        chip.classList.remove("active");
+      }
+    }
+
+    function setViewMode(mode) {
+      state.viewMode = mode;
+      localStorage.setItem(VIEW_STORAGE_KEY, mode);
+      document.querySelectorAll(".news-view-btn").forEach((b) => {
+        const active = b.dataset.view === mode;
+        b.classList.toggle("active", active);
+        b.classList.toggle("btn-primary", active);
+        b.classList.toggle("btn-outline-primary", !active);
+      });
+      applyFilters();
+    }
+
+    function wireEvents() {
+      document.getElementById("news-search").addEventListener("input", applyFilters);
+      document.getElementById("news-search-scope").addEventListener("change", applyFilters);
+      document.getElementById("news-calendar-btn").addEventListener("click", openCalendarModal);
+      document.getElementById("news-date-chip-clear").addEventListener("click", clearDateFilter);
+      document.getElementById("news-calendar-reset").addEventListener("click", resetCalendarSelection);
+      document.getElementById("news-calendar-select").addEventListener("click", confirmCalendarSelection);
+      document.getElementById("news-view-toggle").addEventListener("click", (e) => {
+        const btn = e.target.closest(".news-view-btn");
+        if (btn) setViewMode(btn.dataset.view);
+      });
+    }
+
+    // ── 마스트헤드 배경: 기사 사진이 순서대로 등장하는 크로스페이드 슬라이드쇼 ──
+    let mastheadImages = [];
+    let mastheadIndex = 0;
+    let mastheadLayers = [];
+
+    function startMastheadSlideshow(images) {
+      mastheadImages = images;
+      if (!mastheadImages.length) return;
+
+      mastheadLayers = [
+        document.getElementById("mastheadBgA"),
+        document.getElementById("mastheadBgB"),
+      ];
+      mastheadIndex = 0;
+      mastheadLayers[0].style.backgroundImage = `url('${mastheadImages[0]}')`;
+      mastheadLayers[0].classList.add("active");
+
+      if (mastheadImages.length > 1) {
+        setInterval(advanceMastheadSlide, 4000);
+      }
+    }
+
+    function advanceMastheadSlide() {
+      const nextIndex = (mastheadIndex + 1) % mastheadImages.length;
+      const currentLayer = mastheadLayers[mastheadIndex % 2];
+      const nextLayer = mastheadLayers[(mastheadIndex + 1) % 2];
+
+      nextLayer.style.backgroundImage = `url('${mastheadImages[nextIndex]}')`;
+      nextLayer.classList.add("active");
+      currentLayer.classList.remove("active");
+      mastheadIndex = nextIndex;
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      try {
+        const response = await fetch(DATA_URL);
+        const rawNews = await response.json();
+
+        if (!rawNews || rawNews.length === 0) {
+          document.getElementById("news-container").innerHTML =
+            `<div class="text-center text-muted py-5"><p>등록된 뉴스가 없습니다.</p></div>`;
+          return;
+        }
+
+        allNews = rawNews.map(normalizeNews);
+        allNews.sort((a, b) => newsDateSortKey(b.date).localeCompare(newsDateSortKey(a.date)));
+        dateIndex = buildDateIndex(allNews);
+
+        startMastheadSlideshow(allNews.map((n) => n.image).filter(Boolean));
+
+        document.querySelectorAll(".news-view-btn").forEach((b) => {
+          const active = b.dataset.view === state.viewMode;
+          b.classList.toggle("active", active);
+          b.classList.toggle("btn-primary", active);
+          b.classList.toggle("btn-outline-primary", !active);
+        });
+
+        wireEvents();
+
+        const params = new URLSearchParams(window.location.search);
+        const searchParam = params.get("search");
+        const scopeParam = params.get("scope");
+        const dateParam = params.get("date");
+        if (searchParam) document.getElementById("news-search").value = searchParam;
+        if (scopeParam) document.getElementById("news-search-scope").value = scopeParam;
+        if (dateParam) {
+          state.activeDate = dateParam;
+          updateDateChip();
+        }
+
+        applyFilters();
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    });
+  </script>
+</body>
+
+</html>

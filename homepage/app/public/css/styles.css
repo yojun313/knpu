@@ -1,4 +1,33 @@
 @charset "UTF-8";
+/* 자체 호스팅 폰트 (Google Fonts CDN 대신 로컬에서 서빙) */
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url("../assets/fonts/montserrat-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url("../assets/fonts/montserrat-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Roboto Slab";
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url("../assets/fonts/robotoslab-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Roboto Slab";
+  font-style: normal;
+  font-weight: 700;
+  font-display: optional;
+  src: url("../assets/fonts/robotoslab-700.woff2") format("woff2");
+}
 /*!
 * Start Bootstrap - Agency v7.0.12 (https://startbootstrap.com/theme/agency)
 * Copyright 2013-2023 Start Bootstrap
@@ -10946,6 +10975,7 @@ header.masthead {
   text-align: center;
   color: #fff;
   overflow: hidden; /* 자식 요소가 부모 요소를 넘지 않도록 설정 */
+  overflow-anchor: none; /* 영상 메타데이터 도착 시 브라우저의 스크롤 앵커링 보정으로 인한 튐 방지 */
 }
 
 #bg-video {
@@ -10954,6 +10984,7 @@ header.masthead {
   left: 50%;
   min-width: 100%;
   min-height: 100%;
+  overflow-anchor: none;
   width: auto;
   height: auto;
   z-index: -1; /* 동영상을 배경으로 설정하기 위해 뒤로 보냄 */
@@ -10983,19 +11014,6 @@ header.masthead_team {
   text-align: center;
   color: #fff;
   overflow: hidden; /* 자식 요소가 부모 요소를 넘지 않도록 설정 */
-}
-
-#bg-video {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  min-width: 100%;
-  min-height: 100%;
-  width: auto;
-  height: auto;
-  z-index: -1; /* 동영상을 배경으로 설정하기 위해 뒤로 보냄 */
-  transform: translate(-50%, -50%);
-  background-size: cover;
 }
 
 header.masthead_team .masthead_team-subheading {
@@ -11037,6 +11055,14 @@ header.masthead_paper .masthead_paper-heading {
   line-height: 3.25rem;
   margin-bottom: 2rem;
   font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 480px) {
+  header.masthead_paper .masthead_paper-heading {
+    font-size: 2rem;
+    line-height: 2.25rem;
+  }
 }
 
 @media (min-width: 768px) {
@@ -11458,11 +11484,13 @@ section#contact form#contactForm :-ms-input-placeholder {
   font-size: 18px;
   font-weight: bold;
   color: #000;
+  overflow-wrap: break-word;
 }
 
 .authors, .conference {
   font-size: 14px;
   color: #666;
+  overflow-wrap: break-word;
 }
 
 .publication-link {
@@ -11581,6 +11609,7 @@ section#contact form#contactForm :-ms-input-placeholder {
 }
 .pub-card-title-wrap {
   flex: 1;
+  min-width: 0;
 }
 .pub-card-title {
   font-size: 0.9rem;
@@ -11590,6 +11619,7 @@ section#contact form#contactForm :-ms-input-placeholder {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: break-word;
   text-decoration: none;
   line-height: 1.4;
 }
@@ -11601,6 +11631,7 @@ section#contact form#contactForm :-ms-input-placeholder {
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: break-word;
 }
 
 /* ── Publications Page Filter Buttons ───────────────────────────────── */

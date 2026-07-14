@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>People | FPEI</title>
+  <script defer src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+  <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />
+  <link href="css/styles.css" rel="stylesheet" />
+  <style>
+    /* 헤더 섹션 개선 */
+    .masthead_team {
+      position: relative;
+      width: 100%;
+      height: 60vh;
+      /* 화면 높이의 60% 정도 차지 */
+      min-height: 400px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #000;
+      /* 영상 로딩 전까지 검은색 */
+    }
+
+    #bg-video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      /* 꽉 채우되 비율 유지 */
+      z-index: 1;
+    }
+
+    /* 영상 위에 올라올 텍스트 컨테이너 */
+    .masthead_team .container {
+      position: relative;
+      z-index: 2;
+      /* 영상(1)보다 높은 숫자로 설정 */
+      text-align: center;
+      color: white;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    }
+
+    .team-member {
+      margin-bottom: 50px;
+      position: relative;
+    }
+
+    .team-member .additional-info {
+      width: 100%;
+      padding: 20px;
+      background-color: white;
+    }
+
+    .team-member .btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .masthead_team {
+        height: 40vh;
+      }
+    }
+    /* 프로필 이미지 비율 유지, 원형으로 표시 */
+    .team-member img.profile-img {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    @media (max-width: 768px) {
+      .team-member img.profile-img {
+        width: 120px;
+        height: 120px;
+      }
+    }
+
+    /* 연구 섹션 내 논문 실적 — publications.html의 블럭을 프로필 카드 크기에 맞게 축소 */
+    .people-pub-stats .pub-stat-badge {
+      min-width: 68px;
+      padding: 0.5rem 0.85rem;
+      border-radius: 0.4rem;
+    }
+
+    .people-pub-stats .pub-stat-number {
+      font-size: 1.3rem;
+    }
+
+    .people-pub-stats .pub-stat-label {
+      font-size: 0.6rem;
+      margin-top: 0.2rem;
+    }
+
+    .team-member .additional-info .people-pub-ribbon {
+      position: static;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .people-pub-viewall {
+      background-color: #002d56;
+      color: #fff;
+      text-decoration: none;
+      transition: background-color 0.2s ease;
+    }
+
+    .people-pub-viewall:hover {
+      background-color: #01417a;
+      color: #fff;
+    }
+
+    .people-pub-ribbon .fa-chevron-down {
+      transition: transform 0.2s ease;
+    }
+
+    .people-pub-ribbon[aria-expanded="true"] .fa-chevron-down {
+      transform: rotate(180deg);
+    }
+
+    .people-pub-detail {
+      margin-top: 0.75rem;
+      color: #555;
+    }
+
+    .people-pub-list-title {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #333;
+    }
+
+    .people-pub-list {
+      margin-top: 0.75rem;
+    }
+
+    .people-pub-item.publication-item {
+      margin-bottom: 0.6rem;
+      padding: 0.6rem 0.85rem;
+    }
+
+    .people-pub-item .publication-title {
+      font-size: 0.95rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .people-pub-item .authors,
+    .people-pub-item .conference {
+      font-size: 0.8rem;
+      margin-bottom: 0.15rem;
+    }
+
+    /* 목차: 세로로 쌓인 동일 크기 스택 */
+    .team-toc {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .team-toc-link {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      font-family: "Montserrat", sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      background: #fff;
+      border: 2px solid #002d56;
+      color: #002d56;
+      border-radius: 0.375rem;
+      text-decoration: none;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .team-toc-link:hover {
+      background: #002d56;
+      color: #fff;
+    }
+
+    .team-toc-link .badge {
+      margin-left: 0.4rem;
+    }
+
+    /* 섹션 아코디언 */
+    .team-section-block {
+      margin-bottom: 1.5rem;
+    }
+
+    .team-section-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8f9fa;
+      border: none;
+      border-left: 4px solid #002d56;
+      border-radius: 0.375rem;
+      padding: 0.9rem 1.25rem;
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #1a1d20;
+      cursor: pointer;
+    }
+
+    .team-section-toggle:hover {
+      background: #eef1f4;
+    }
+
+    .team-section-toggle .fa-chevron-down {
+      transition: transform 0.2s ease;
+    }
+
+    .team-section-toggle[aria-expanded="true"] .fa-chevron-down {
+      transform: rotate(180deg);
+    }
+
+    .team-section-toggle-title .badge {
+      font-size: 0.75rem;
+      vertical-align: middle;
+    }
+
+    /* 기수별 최우수 졸업생 */
+    .best-grad-photo {
+      width: 180px;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 50%;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+    }
+
+    .best-grad-cohort {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      color: #002d56;
+    }
+  </style>
+</head>
+
+<body id="page-top" data-page="team">
+  <div id="nav-placeholder"></div>
+  <script src="js/nav.js"></script>
+
+  <!-- Masthead: 재생 보장 속성 추가 -->
+  <header class="masthead_team">
+    <video autoplay muted loop playsinline preload="auto" id="bg-video">
+      <source src="https://pub-60ca29aab33f424fab345807bd058d56.r2.dev/video/%E1%84%8B%E1%85%A7%E1%86%AB%E1%84%80%E1%85%AE%E1%84%90%E1%85%B5%E1%86%B7_%E1%84%89%E1%85%A9%E1%84%80%E1%85%A2%E1%84%8B%E1%85%A7%E1%86%BC%E1%84%89%E1%85%A1%E1%86%BC.mp4" type="video/mp4" />
+      <!-- 브라우저가 영상을 못 찾으면 아래 문구가 나옵니다 -->
+      Your browser does not support the video tag.
+    </video>
+    <div class="container">
+      <div class="masthead_team-subheading">FPEI</div>
+      <div class="masthead_team-heading text-uppercase">PEOPLE</div>
+    </div>
+  </header>
+
+  <section class="team-section" id="OUR TEAM">
+    <div class="container">
+      <div class="text-center">
+        <h2 class="section-heading text-uppercase">OUR TEAM</h2>
+        <h3 class="section-subheading text-muted">FPEI MEMBERS</h3>
+      </div>
+      <div class="text-center mb-4" id="team-toc"></div>
+      <div id="team-list-container"></div>
+    </div>
+  </section>
+
+  <!-- 기수별 최우수 졸업생 -->
+  <section class="page-section bg-light" id="best-graduates">
+    <div class="container">
+      <div class="text-center mb-5">
+        <h2 class="section-heading text-uppercase">HONOR GRADUATES</h2>
+        <h3 class="section-subheading text-muted">기수 최우수 졸업생</h3>
+      </div>
+      <div class="row justify-content-center g-5">
+        <div class="col-md-5 text-center">
+          <img src="assets/imgs/team/이정우.jpg" alt="이정우" class="best-grad-photo mb-3">
+          <p class="best-grad-cohort mb-1">석사과정 1기</p>
+          <h4 class="fw-bold mb-2">이정우</h4>
+          <p class="text-muted mb-0">
+            2023년(1년차) KCI 5편 게재<br>
+            2024년(2년차) KCI 5편 게재<br>
+            <strong>총 KCI 10편 게재</strong>
+          </p>
+        </div>
+        <div class="col-md-5 text-center">
+          <img src="assets/imgs/team/default.jpg" alt="석사과정 2기" class="best-grad-photo mb-3">
+          <p class="best-grad-cohort mb-1">석사과정 2기</p>
+          <h4 class="fw-bold mb-0 text-muted">Coming Soon</h4>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/scripts.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      // 영상 재생 강제 시도 (일부 브라우저 대응)
+      const video = document.getElementById("bg-video");
+      if (video) {
+        video.play().catch((error) => {
+          console.log(
+            "자동 재생이 차단되었습니다. 사용자 상호작용이 필요할 수 있습니다.",
+          );
+        });
+      }
+
+      function paperMatchesMember(p, name) {
+        const target = name.trim().toLowerCase();
+        const krList = (p.authors_kr || []).filter(Boolean).map((a) => a.trim().toLowerCase());
+        const enList = (p.authors || []).filter(Boolean).map((a) => a.trim().toLowerCase());
+        return krList.includes(target) || enList.includes(target);
+      }
+
+      function pubBadgeHtml(type) {
+        if (type === "SCI") return '<span class="badge bg-info pub-type-badge">SCI</span>';
+        if (type === "SCOPUS") return '<span class="badge pub-badge-scopus pub-type-badge">SCOPUS</span>';
+        if (type === "KCI") return '<span class="badge bg-success pub-type-badge">KCI</span>';
+        return type ? `<span class="badge bg-secondary pub-type-badge">${type}</span>` : "";
+      }
+
+      function pubDateLabel(p) {
+        if (p.published_date) {
+          const parts = p.published_date.split("-");
+          if (parts.length >= 2) return `${parts[0]}.${parts[1]}`;
+        }
+        return p.year ? String(p.year) : "";
+      }
+
+      function pubVenueDetail(p) {
+        let s = p.venue || "";
+        if (p.volume) {
+          s += ", " + p.volume;
+          if (p.issue) s += "(" + p.issue + ")";
+        }
+        if (p.pages) s += ", " + p.pages;
+        return s;
+      }
+
+      function memberPubItemHtml(p) {
+        const link = p.url || (p.doi ? `https://doi.org/${p.doi}` : null);
+        const authors = (p.authors || []).join(", ");
+        const venueDetail = pubVenueDetail(p);
+        return `
+          <div class="publication-item people-pub-item">
+            <div class="mb-1">
+              ${pubBadgeHtml(p.journal_type)}
+              <span class="text-muted small ms-2">${pubDateLabel(p)}</span>
+            </div>
+            <h5 class="publication-title">
+              ${link ? `<a href="${link}" target="_blank" rel="noopener" class="publication-link">${p.title}</a>` : p.title}
+            </h5>
+            ${authors ? `<p class="authors mb-1">${authors}</p>` : ""}
+            ${venueDetail ? `<p class="conference mb-0">${venueDetail}</p>` : ""}
+          </div>
+        `;
+      }
+
+      function memberPubStatsHtml(papers, viewAllUrl) {
+        const total = papers.length;
+        const sci = papers.filter((p) => p.journal_type === "SCI").length;
+        const scopus = papers.filter((p) => p.journal_type === "SCOPUS").length;
+        const kci = papers.filter((p) => p.journal_type === "KCI").length;
+        return `
+          <div class="row g-2 justify-content-center align-items-center people-pub-stats">
+            <div class="col-auto">
+              <div class="pub-stat-badge bg-dark text-white">
+                <div class="pub-stat-number">${total}</div>
+                <div class="pub-stat-label">Total</div>
+              </div>
+            </div>
+            <div class="col-auto">
+              <div class="pub-stat-badge bg-info text-white">
+                <div class="pub-stat-number">${sci}</div>
+                <div class="pub-stat-label">SCI</div>
+              </div>
+            </div>
+            <div class="col-auto">
+              <div class="pub-stat-badge pub-stat-scopus">
+                <div class="pub-stat-number">${scopus}</div>
+                <div class="pub-stat-label">SCOPUS</div>
+              </div>
+            </div>
+            <div class="col-auto">
+              <div class="pub-stat-badge bg-success text-white">
+                <div class="pub-stat-number">${kci}</div>
+                <div class="pub-stat-label">KCI</div>
+              </div>
+            </div>
+            ${viewAllUrl ? `
+            <div class="col-auto">
+              <a href="${viewAllUrl}" class="pub-stat-badge people-pub-viewall">
+                <div class="pub-stat-number"><i class="fas fa-arrow-up-right-from-square"></i></div>
+                <div class="pub-stat-label">전체보기</div>
+              </a>
+            </div>` : ""}
+          </div>
+        `;
+      }
+
+      function memberResearchHtml(m, allPapers, safeId) {
+        const legacyList = m.연구 && m.연구.length ? m.연구 : null;
+        const matched = allPapers.filter((p) => paperMatchesMember(p, m.name));
+
+        if (!matched.length) {
+          return legacyList
+            ? `<h5>연구</h5><p>${legacyList.join("<br>")}</p><p>&nbsp;</p>`
+            : "";
+        }
+
+        matched.sort((a, b) => {
+          const yd = (b.year || 0) - (a.year || 0);
+          return yd !== 0 ? yd : (b.published_date || "").localeCompare(a.published_date || "");
+        });
+        const recent = matched.slice(0, 7);
+
+        const legacyDetailId = `legacyResearch-${safeId}`;
+        const legacyHtml = legacyList
+          ? `
+            <button class="btn btn-outline-dark btn-sm people-pub-ribbon" type="button"
+              data-bs-toggle="collapse" data-bs-target="#${legacyDetailId}" aria-expanded="false" aria-controls="${legacyDetailId}">
+              <i class="fas fa-chevron-down"></i>상세보기
+            </button>
+            <div class="collapse" id="${legacyDetailId}">
+              <p class="people-pub-detail mb-0">${legacyList.join("<br>")}</p>
+            </div>
+          `
+          : "";
+
+        const viewAllUrl = `/publications?search=${encodeURIComponent(m.name)}&scope=author`;
+
+        return `
+          <h5>연구</h5>
+          ${memberPubStatsHtml(matched, viewAllUrl)}
+          <p class="people-pub-list-title mb-2 mt-3">최근 논문</p>
+          <div class="people-pub-list">
+            ${recent.map(memberPubItemHtml).join("")}
+          </div>
+          ${legacyHtml}
+          <p>&nbsp;</p>
+        `;
+      }
+
+      try {
+        const response = await fetch("https://home.knpu.re.kr/api/members/");
+        const members = await response.json();
+
+        let allPapers = [];
+        try {
+          const papersRes = await fetch("https://home.knpu.re.kr/api/papers/");
+          const paperGroups = await papersRes.json();
+          allPapers = Array.isArray(paperGroups)
+            ? paperGroups.flatMap((g) => g.papers || [])
+            : [];
+        } catch (pubError) {
+          console.error("논문 데이터를 불러오지 못했습니다:", pubError);
+        }
+
+        const grouped = {};
+        for (const m of members) {
+          grouped[m.section] = grouped[m.section] || [];
+          grouped[m.section].push(m);
+        }
+
+        const tocContainer = document.getElementById("team-toc");
+        const sectionNames = Object.keys(grouped).filter((s) => grouped[s] && grouped[s].length);
+        if (sectionNames.length > 1) {
+          tocContainer.innerHTML = `
+            <div class="team-toc">
+              ${sectionNames.map((section) => {
+                const slug = section.replace(/\s+/g, "-");
+                return `
+                  <a href="#team-section-${slug}" class="team-toc-link" data-section-slug="${slug}">
+                    ${section}<span class="badge bg-dark">${grouped[section].length}</span>
+                  </a>
+                `;
+              }).join("")}
+            </div>
+          `;
+        }
+
+        const container = document.getElementById("team-list-container");
+        sectionNames.forEach((section, sectionIdx) => {
+          const slug = section.replace(/\s+/g, "-");
+          const sectionId = `team-section-${slug}`;
+          const bodyId = `team-section-body-${slug}`;
+          const isFirst = sectionIdx === 0;
+
+          container.insertAdjacentHTML(
+            "beforeend",
+            `
+              <div class="team-section-block" id="${sectionId}">
+                <button class="team-section-toggle" type="button" data-bs-toggle="collapse"
+                  data-bs-target="#${bodyId}" aria-expanded="${isFirst ? "true" : "false"}" aria-controls="${bodyId}">
+                  <span class="team-section-toggle-title">${section}<span class="badge bg-dark ms-2">${grouped[section].length}</span></span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="collapse ${isFirst ? "show" : ""}" id="${bodyId}"></div>
+              </div>
+            `,
+          );
+
+          const sectionBody = document.getElementById(bodyId);
+          grouped[section].forEach((m, idx) => {
+            const safeId = `${slug}-${idx}`;
+            const emailHtml = m.email ? `<p>Email: ${m.email}</p>` : "";
+            const eduHtml =
+              m.학력 && m.학력.length
+                ? `<h5>학력</h5><p>${m.학력.join("<br>")}</p><p>&nbsp;</p>`
+                : "";
+            const careerHtml =
+              m.경력 && m.경력.length
+                ? `<h5>경력</h5><p>${m.경력.join("<br>")}</p><p>&nbsp;</p>`
+                : "";
+            const researchHtml = memberResearchHtml(m, allPapers, safeId);
+            const awardsHtml =
+              m.수상 && m.수상.length
+                ? `<h5>수상 및 기타</h5><p>${m.수상.join("<br>")}</p>`
+                : "";
+            const additionalInfo =
+              eduHtml || careerHtml || researchHtml || awardsHtml
+                ? `<div class="collapse additional-info" id="moreInfo-${safeId}">${eduHtml}${careerHtml}${researchHtml}${awardsHtml}</div>`
+                : "";
+            const toggleButton = additionalInfo
+              ? `<button class="btn btn-dark btn-social mx-2" type="button" data-bs-toggle="collapse" data-bs-target="#moreInfo-${safeId}"><i class="fas fa-angle-down"></i></button>`
+              : "";
+            sectionBody.insertAdjacentHTML(
+              "beforeend",
+              `
+                            <div class="team-member row align-items-center my-4">
+                                <div class="col-md-4 text-center">
+                                    <img class="profile-img" src="${m.image}" alt="${m.name}">
+                                </div>
+                                <div class="col-md-8">
+                                    <h4>${m.name}</h4>
+                                    <p class="text-muted">${m.position}</p>
+                                    ${emailHtml}
+                                    ${toggleButton}
+                                </div>
+                                ${additionalInfo}
+                            </div>
+                        `,
+            );
+          });
+        });
+
+        // 목차 클릭 시 스크롤과 함께 해당 섹션을 펼침
+        tocContainer.querySelectorAll(".team-toc-link").forEach((link) => {
+          link.addEventListener("click", () => {
+            const slug = link.dataset.sectionSlug;
+            const bodyEl = document.getElementById(`team-section-body-${slug}`);
+            if (bodyEl) {
+              bootstrap.Collapse.getOrCreateInstance(bodyEl, { toggle: false }).show();
+            }
+          });
+        });
+      } catch (error) {
+        console.error("error:", error);
+      }
+    });
+  </script>
+
+  <footer class="footer py-4">
+    <div class="container text-center">Copyright &copy; KNPU FPEI</div>
+  </footer>
+</body>
+
+</html>
