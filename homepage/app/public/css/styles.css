@@ -11678,3 +11678,12 @@ section#contact form#contactForm :-ms-input-placeholder {
   border-radius: 0.375rem 0 0 0.375rem !important;
 }
 
+/* ── 전역 가로 스크롤 방지 ────────────────────────────────────────────────
+   지도 SDK(네이버 지도 타일 등)나 큰 gutter(g-4/g-5) row가 모바일 너비에서
+   컨테이너 패딩보다 큰 음수 마진으로 뷰포트를 살짝 넘어서는 경우가 있어,
+   실제 콘텐츠 손실 없이 우측 여백/가로 스크롤만 감추기 위한 안전장치 */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
