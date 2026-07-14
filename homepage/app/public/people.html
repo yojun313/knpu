@@ -160,6 +160,93 @@
       font-size: 0.8rem;
       margin-bottom: 0.15rem;
     }
+
+    /* 목차: 세로로 쌓인 동일 크기 스택 */
+    .team-toc {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .team-toc-link {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      font-family: "Montserrat", sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      background: #fff;
+      border: 2px solid #002d56;
+      color: #002d56;
+      border-radius: 0.375rem;
+      text-decoration: none;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .team-toc-link:hover {
+      background: #002d56;
+      color: #fff;
+    }
+
+    .team-toc-link .badge {
+      margin-left: 0.4rem;
+    }
+
+    /* 섹션 아코디언 */
+    .team-section-block {
+      margin-bottom: 1.5rem;
+    }
+
+    .team-section-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8f9fa;
+      border: none;
+      border-left: 4px solid #002d56;
+      border-radius: 0.375rem;
+      padding: 0.9rem 1.25rem;
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #1a1d20;
+      cursor: pointer;
+    }
+
+    .team-section-toggle:hover {
+      background: #eef1f4;
+    }
+
+    .team-section-toggle .fa-chevron-down {
+      transition: transform 0.2s ease;
+    }
+
+    .team-section-toggle[aria-expanded="true"] .fa-chevron-down {
+      transform: rotate(180deg);
+    }
+
+    .team-section-toggle-title .badge {
+      font-size: 0.75rem;
+      vertical-align: middle;
+    }
+
+    /* 기수별 최우수 졸업생 */
+    .best-grad-photo {
+      width: 180px;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 50%;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+    }
+
+    .best-grad-cohort {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      color: #002d56;
+    }
   </style>
 </head>
 
@@ -176,7 +263,7 @@
     </video>
     <div class="container">
       <div class="masthead_team-subheading">FPEI</div>
-      <div class="masthead_team-heading text-uppercase">MEMBERS</div>
+      <div class="masthead_team-heading text-uppercase">PEOPLE</div>
     </div>
   </header>
 
@@ -186,7 +273,35 @@
         <h2 class="section-heading text-uppercase">OUR TEAM</h2>
         <h3 class="section-subheading text-muted">FPEI MEMBERS</h3>
       </div>
+      <div class="text-center mb-4" id="team-toc"></div>
       <div id="team-list-container"></div>
+    </div>
+  </section>
+
+  <!-- 기수별 최우수 졸업생 -->
+  <section class="page-section bg-light" id="best-graduates">
+    <div class="container">
+      <div class="text-center mb-5">
+        <h2 class="section-heading text-uppercase">HONOR GRADUATES</h2>
+        <h3 class="section-subheading text-muted">기수 최우수 졸업생</h3>
+      </div>
+      <div class="row justify-content-center g-5">
+        <div class="col-md-5 text-center">
+          <img src="assets/imgs/team/이정우.jpg" alt="이정우" class="best-grad-photo mb-3">
+          <p class="best-grad-cohort mb-1">석사과정 1기</p>
+          <h4 class="fw-bold mb-2">이정우</h4>
+          <p class="text-muted mb-0">
+            2023년(1년차) KCI 5편 게재<br>
+            2024년(2년차) KCI 5편 게재<br>
+            <strong>총 KCI 10편 게재</strong>
+          </p>
+        </div>
+        <div class="col-md-5 text-center">
+          <img src="assets/imgs/team/default.jpg" alt="석사과정 2기" class="best-grad-photo mb-3">
+          <p class="best-grad-cohort mb-1">석사과정 2기</p>
+          <h4 class="fw-bold mb-0 text-muted">Coming Soon</h4>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -360,15 +475,48 @@
           grouped[m.section] = grouped[m.section] || [];
           grouped[m.section].push(m);
         }
+
+        const tocContainer = document.getElementById("team-toc");
+        const sectionNames = Object.keys(grouped).filter((s) => grouped[s] && grouped[s].length);
+        if (sectionNames.length > 1) {
+          tocContainer.innerHTML = `
+            <div class="team-toc">
+              ${sectionNames.map((section) => {
+                const slug = section.replace(/\s+/g, "-");
+                return `
+                  <a href="#team-section-${slug}" class="team-toc-link" data-section-slug="${slug}">
+                    ${section}<span class="badge bg-dark">${grouped[section].length}</span>
+                  </a>
+                `;
+              }).join("")}
+            </div>
+          `;
+        }
+
         const container = document.getElementById("team-list-container");
-        for (const section in grouped) {
-          if (!grouped[section] || grouped[section].length === 0) continue;
+        sectionNames.forEach((section, sectionIdx) => {
+          const slug = section.replace(/\s+/g, "-");
+          const sectionId = `team-section-${slug}`;
+          const bodyId = `team-section-body-${slug}`;
+          const isFirst = sectionIdx === 0;
+
           container.insertAdjacentHTML(
             "beforeend",
-            `<div class="text-center"><h3 class="section-heading mt-5">${section}</h3></div>`,
+            `
+              <div class="team-section-block" id="${sectionId}">
+                <button class="team-section-toggle" type="button" data-bs-toggle="collapse"
+                  data-bs-target="#${bodyId}" aria-expanded="${isFirst ? "true" : "false"}" aria-controls="${bodyId}">
+                  <span class="team-section-toggle-title">${section}<span class="badge bg-dark ms-2">${grouped[section].length}</span></span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="collapse ${isFirst ? "show" : ""}" id="${bodyId}"></div>
+              </div>
+            `,
           );
+
+          const sectionBody = document.getElementById(bodyId);
           grouped[section].forEach((m, idx) => {
-            const safeId = `${section.replace(/\s+/g, "-")}-${idx}`;
+            const safeId = `${slug}-${idx}`;
             const emailHtml = m.email ? `<p>Email: ${m.email}</p>` : "";
             const eduHtml =
               m.학력 && m.학력.length
@@ -390,7 +538,7 @@
             const toggleButton = additionalInfo
               ? `<button class="btn btn-dark btn-social mx-2" type="button" data-bs-toggle="collapse" data-bs-target="#moreInfo-${safeId}"><i class="fas fa-angle-down"></i></button>`
               : "";
-            container.insertAdjacentHTML(
+            sectionBody.insertAdjacentHTML(
               "beforeend",
               `
                             <div class="team-member row align-items-center my-4">
@@ -408,7 +556,18 @@
                         `,
             );
           });
-        }
+        });
+
+        // 목차 클릭 시 스크롤과 함께 해당 섹션을 펼침
+        tocContainer.querySelectorAll(".team-toc-link").forEach((link) => {
+          link.addEventListener("click", () => {
+            const slug = link.dataset.sectionSlug;
+            const bodyEl = document.getElementById(`team-section-body-${slug}`);
+            if (bodyEl) {
+              bootstrap.Collapse.getOrCreateInstance(bodyEl, { toggle: false }).show();
+            }
+          });
+        });
       } catch (error) {
         console.error("error:", error);
       }
