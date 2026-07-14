@@ -41,12 +41,15 @@ app.use(cookieParser());
 
 // 정적 페이지 라우팅
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'homepage.html')));
-app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'public', 'team.html')));
+app.get('/people', (req, res) => res.sendFile(path.join(__dirname, 'public', 'people.html')));
 app.get('/publications', (req, res) => res.sendFile(path.join(__dirname, 'public', 'publications.html')));
+app.get('/news', (req, res) => res.sendFile(path.join(__dirname, 'public', 'news.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'homepage_login.html')));
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
 app.get('/gallery', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gallery.html')));
 app.get('/systems', (req, res) => res.sendFile(path.join(__dirname, 'public', 'systems.html')));
+app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public', 'about.html')));
+app.get('/admission', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admission.html')));
 
 app.get('/manager', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manager.html')));
 app.get('/manual/kemkim', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_kemkim.html')));

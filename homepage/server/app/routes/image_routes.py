@@ -1,33 +1,11 @@
 # app/routers/upload.py
-import os, uuid, boto3, mimetypes
+import os, uuid, mimetypes
 from typing import Literal
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, Query
 from fastapi.responses import JSONResponse
-from dotenv import load_dotenv
-
-load_dotenv()
-
-ACCESS_KEY_ID = os.getenv("ACCESS_KEY_ID")
-SECRET_ACCESS_KEY = os.getenv("SECRET_ACCESS_KEY")
-ACCOUNT_ID = os.getenv("ACCOUNT_ID")
-BUCKET_NAME = os.getenv("HOMEPAGE_BUCKET_NAME")
-R2_ENDPOINT = f"https://{ACCOUNT_ID}.r2.cloudflarestorage.com"
-
-s3 = boto3.client(
-    "s3",
-    endpoint_url=R2_ENDPOINT,
-    aws_access_key_id=ACCESS_KEY_ID,
-    aws_secret_access_key=SECRET_ACCESS_KEY,
-    region_name="auto",
-)
-
-PUBLIC_BASE = os.getenv("HOMEPAGE_R2_PUBLIC_URL")
+from app.libs.r2 import s3, BUCKET_NAME, PUBLIC_BASE, _allowed
 
 router = APIRouter()
-
-
-def _allowed(ext: str) -> bool:
-    return ext.lower() in {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
 @router.post(

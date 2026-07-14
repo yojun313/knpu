@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>Admission | FPEI</title>
+  <script defer src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+  <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />
+  <link href="css/styles.css" rel="stylesheet" />
+  <style>
+    .masthead_admission {
+      position: relative;
+      padding-top: 12.5rem;
+      padding-bottom: 6rem;
+      text-align: center;
+      color: #fff;
+      background: linear-gradient(135deg, #1a1d20 0%, #2c3e50 100%);
+    }
+
+    .masthead_admission-subheading {
+      font-size: 1.5rem;
+      font-style: italic;
+      margin-bottom: 25px;
+    }
+
+    .masthead_admission-heading {
+      font-size: 3.25rem;
+      font-weight: 700;
+      margin-bottom: 0;
+    }
+
+    .admission-criteria-card {
+      border: none;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      height: 100%;
+    }
+
+    .admission-criteria-card .card-body {
+      padding: 1.75rem;
+    }
+
+    .admission-criteria-icon {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      background-color: var(--bs-primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .admission-criteria-title {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .admission-table th {
+      width: 30%;
+      background-color: #f8f9fa;
+      font-family: "Montserrat", sans-serif;
+      white-space: nowrap;
+    }
+
+    .admission-table td small {
+      display: block;
+      color: #6c757d;
+      margin-top: 0.35rem;
+    }
+
+    .admission-note {
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+
+    .admission-contact-icon {
+      width: 2.25rem;
+      text-align: center;
+      color: #002d56;
+    }
+
+    .admission-contact-link {
+      color: #333;
+      text-decoration: none;
+    }
+
+    .admission-contact-link:hover {
+      color: #002d56;
+      text-decoration: underline;
+    }
+
+    .admission-faq .accordion-item {
+      border: none;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      border-radius: 0.375rem;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .admission-faq .accordion-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .admission-faq .accordion-button {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .admission-faq .accordion-button:not(.collapsed) {
+      color: #002d56;
+      background-color: #fff;
+      box-shadow: none;
+    }
+
+    .admission-faq .accordion-button:focus {
+      box-shadow: none;
+      border-color: rgba(0, 0, 0, 0.125);
+    }
+
+    .admission-faq .accordion-body {
+      color: #495057;
+    }
+  </style>
+</head>
+
+<body id="page-top" data-page="admission">
+  <div id="nav-placeholder"></div>
+  <script src="js/nav.js"></script>
+
+  <header class="masthead_admission">
+    <div class="container">
+      <div class="masthead_admission-subheading">FPEI</div>
+      <div class="masthead_admission-heading text-uppercase">ADMISSION</div>
+    </div>
+  </header>
+
+  <!-- 선발 기준 -->
+  <section class="page-section" id="admission-criteria">
+    <div class="container">
+      <div class="text-center">
+        <h2 class="section-heading text-uppercase">선발 기준</h2>
+        <h3 class="section-subheading text-muted">미래치안공학원은 학부 전공을 보지 않습니다</h3>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <p>
+            본 연구원은 통계, AI와 같은 데이터사이언스, 공학 방법론으로 범죄학, 사회학 등의 문제를 다룹니다. 따라서 전공의 강점을 살릴 수는 있어도
+            이를 포괄하는 단일한 선행 전공은 존재하지 않는다고 판단합니다. 전공 지식의 공백은 열의와 성실성으로 채울 수 있다고 보며,
+            실제로 입학 후 상당한 학습량을 통해 이를 보완하게 됩니다.
+          </p>
+        </div>
+      </div>
+      <div class="row g-4 justify-content-center mt-2">
+        <div class="col-lg-4 col-md-6">
+          <div class="card admission-criteria-card">
+            <div class="card-body">
+              <div class="admission-criteria-icon"><i class="fas fa-fire"></i></div>
+              <h4 class="admission-criteria-title">열의</h4>
+              <p class="mb-0 small text-muted">미래치안 분야에 열정적으로 도전하여, 사회 문제를 데이터로 풀어보고자 하는 동기</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+          <div class="card admission-criteria-card">
+            <div class="card-body">
+              <div class="admission-criteria-icon"><i class="fas fa-book-open-reader"></i></div>
+              <h4 class="admission-criteria-title">성실성</h4>
+              <p class="mb-0 small text-muted">입학 후 마주하게 될 새로운 지식을 향한 꾸준함과 연구를 완주하는 태도</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+          <div class="card admission-criteria-card">
+            <div class="card-body">
+              <div class="admission-criteria-icon"><i class="fas fa-person-running"></i></div>
+              <h4 class="admission-criteria-title">체력</h4>
+              <p class="mb-0 small text-muted">본 연구실은 일반적인 사회과학 연구실보다 공학 계열 연구실의 강도로 운영되어, 이를 감당할 수 있는 신체적·정신적 여력</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 지원 자격 -->
+  <section class="page-section bg-light" id="admission-eligibility">
+    <div class="container">
+      <div class="text-center">
+        <h2 class="section-heading text-uppercase">지원 자격</h2>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="table-responsive">
+            <table class="table table-bordered bg-white admission-table">
+              <tbody>
+                <tr>
+                  <th scope="row">학위과정</th>
+                  <td>석사과정, 박사과정 (통합과정 없음, 별도 모집)</td>
+                </tr>
+                <tr>
+                  <th scope="row">소속 요건</th>
+                  <td>
+                    제한 없음
+                    <small>※ 경찰관 지원자의 경우 주간 석사과정 교육파견 가능</small>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">선수과목·필수요건</th>
+                  <td>없음</td>
+                </tr>
+                <tr>
+                  <th scope="row">우대사항</th>
+                  <td>사회조사분석사, ADsP, 빅데이터분석기사 등 관련 자격 보유자는 서류 심사 시 우대</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 모집 및 지원 절차 -->
+  <section class="page-section" id="admission-recruitment">
+    <div class="container">
+      <div class="text-center">
+        <h2 class="section-heading text-uppercase">모집 시기 및 지원 절차</h2>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="table-responsive">
+            <table class="table table-bordered admission-table">
+              <tbody>
+                <tr>
+                  <th scope="row">모집 기간</th>
+                  <td>2026. 8. 18. ~ 9. 10. (예정)</td>
+                </tr>
+                <tr>
+                  <th scope="row">모집 정원</th>
+                  <td>석사과정, 박사과정 각 5명 이내</td>
+                </tr>
+                <tr>
+                  <th scope="row">지원 절차</th>
+                  <td>지원 절차, 제출 서류, 전형 방법 등 상세 내용은 치안대학원 공식 모집요강을 따릅니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="admission-note text-center mb-4">
+            정확한 일정 및 세부 사항은 반드시<br>아래 최신 모집요강을 확인해 주시기 바랍니다.
+          </p>
+          <div class="text-center">
+            <a href="https://grad.police.ac.kr/admissions/recruitment.do" target="_blank" rel="noopener"
+              class="btn btn-dark me-2 mb-2">
+              <i class="fas fa-file-lines me-2"></i>치안대학원 모집요강 바로가기
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 생활 및 연구활동 -->
+  <section class="page-section bg-light" id="admission-life">
+    <div class="container">
+      <div class="text-center">
+        <h2 class="section-heading text-uppercase">생활 및 연구활동</h2>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <p>
+            본 연구실은 <strong>전일제 학위과정을 권고</strong>합니다. 통계·프로그래밍 등 새로 익혀야 할 교과·학습 내용이 많고,
+            입학 이후 곧바로 실제 연구를 병행하며 논문화까지 이어지는 구조이기 때문입니다. 일반적인 사회과학 연구실보다 요구되는
+            학습량과 연구 강도가 높은 편이며, 이는 앞서 밝힌 '체력'을 선발 기준에 포함한 이유이기도 합니다.
+          </p>
+          <p class="mb-0">입학을 고민 중이시라면, 이 점을 미리 고려하여 지원해 주시기 바랍니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 장학 혜택 -->
+  <section class="page-section" id="admission-scholarship">
+    <div class="container">
+      <div class="text-center">
+        <h2 class="section-heading text-uppercase">장학 혜택</h2>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <div class="table-responsive">
+            <table class="table table-bordered admission-table">
+              <thead>
+                <tr class="text-center">
+                  <th>장학 종류</th>
+                  <th class="text-start">내용</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">입학우수 장학금</th>
+                  <td>입학하는 해 1학기 등록금의 절반 감면</td>
+                </tr>
+                <tr>
+                  <th scope="row">성적우수 장학금</th>
+                  <td>前 학기 성적 기준, 다음 학기 등록금의 절반 또는 일부 감면</td>
+                </tr>
+                <tr>
+                  <th scope="row">연구·강의지원 장학금</th>
+                  <td>지도교수 추천으로 연구·강의 보조, 등록금의 80%</td>
+                </tr>
+                <tr>
+                  <th scope="row">학사·학술지원 장학금</th>
+                  <td>학과 또는 학사행정·학술행사 지원, 등록금의 80%</td>
+                </tr>
+                <tr>
+                  <th scope="row">면학 장학금</th>
+                  <td>등록금의 절반 감면</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="admission-note mb-0">
+            ※ 각 장학금은 매 학기 소수 인원에게 지급됩니다.<br>
+            ※ 등록금액 및 장학금의 종류, 수여기준, 대상자 선정 등은 「대학원위원회」의 심의·의결 결과에 따라 변경될 수 있습니다.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="page-section bg-light" id="admission-faq">
+    <div class="container">
+      <div class="text-center">
+        <h2 class="section-heading text-uppercase">FAQ</h2>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="accordion admission-faq" id="admissionFaqAccordion">
+            <div class="accordion-item">
+              <h3 class="accordion-header" id="admissionFaqHeading1">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                  data-bs-target="#admissionFaqCollapse1" aria-expanded="true" aria-controls="admissionFaqCollapse1">
+                  Q. 정말 전공에 무관하게 선발하나요?
+                </button>
+              </h3>
+              <div id="admissionFaqCollapse1" class="accordion-collapse collapse show"
+                aria-labelledby="admissionFaqHeading1" data-bs-parent="#admissionFaqAccordion">
+                <div class="accordion-body">
+                  현재 소속 연구원의 학부 전공은 행정학, 법학, 경영학, 경제학, 컴퓨터공학 등으로 이루어져 있으며, 특정 전공을 우대하여 선발하고 있지 않습니다.
+                  <a href="/people" class="admission-contact-link">PEOPLE 페이지</a>에서 확인 가능합니다.
+                </div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h3 class="accordion-header" id="admissionFaqHeading2">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                  data-bs-target="#admissionFaqCollapse2" aria-expanded="false" aria-controls="admissionFaqCollapse2">
+                  Q. 관련 연구 경험이 없는데 지원이 가능한가요?
+                </button>
+              </h3>
+              <div id="admissionFaqCollapse2" class="accordion-collapse collapse"
+                aria-labelledby="admissionFaqHeading2" data-bs-parent="#admissionFaqAccordion">
+                <div class="accordion-body">
+                  연구원은 연구중심 대학 모델을 지향합니다. 체계적 연구방법론 학습을 통해, 연구 경험이 없어도 충분히 연구가 가능하며,
+                  연구원은 현재 연 10편 이상의 논문을 게재 중에 있습니다.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 문의 -->
+  <section class="page-section" id="admission-contact">
+    <div class="container">
+      <div class="text-center">
+        <h2 class="section-heading text-uppercase">문의</h2>
+      </div>
+      <div class="row justify-content-center text-center">
+        <div class="col-lg-6">
+          <p class="mb-2"><i class="fas fa-phone admission-contact-icon"></i>041-968-3948</p>
+          <p class="mb-2"><i class="fas fa-envelope admission-contact-icon"></i>skroh@police.ac.kr</p>
+          <p class="mb-0"><i class="fas fa-diamond-turn-right admission-contact-icon"></i><a href="/about" class="admission-contact-link">ABOUT 페이지 참고</a></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer py-4">
+    <div class="container text-center">Copyright &copy; KNPU FPEI</div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/scripts.js"></script>
+</body>
+
+</html>
