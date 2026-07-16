@@ -11512,6 +11512,7 @@ section#contact form#contactForm :-ms-input-placeholder {
   margin-top: 0;
   margin-bottom: 15px;
   font-size: 2.5em;
+  word-break: keep-all;
 }
 
 .section-subheading {
