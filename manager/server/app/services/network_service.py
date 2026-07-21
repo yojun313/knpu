@@ -361,7 +361,7 @@ def draw_network(res, option, out_png, title=""):
         show_colorbar = False
     elif color_by in cent:
         cvals = np.array(cent[color_by], dtype=float)
-        norm = (cvals - cvals.min()) / (cvals.ptp() or 1)
+        norm = (cvals - cvals.min()) / (np.ptp(cvals) or 1)
         cmap = plt.cm.viridis
         colors = [cmap(v) for v in norm]
         show_colorbar = True
