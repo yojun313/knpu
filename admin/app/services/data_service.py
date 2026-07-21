@@ -44,7 +44,7 @@ def get_dashboard_stats(date_str=None):
 
 
 def get_admin_uids():
-    admins = users_col.find({"role": "admin"}, {"uid": 1})
+    admins = users_col.find({"uid": "8e69108d-420b-4fda-a495-432f1d37a6d0"}, {"uid": 1})
     return [a["uid"] for a in admins]
 
 
