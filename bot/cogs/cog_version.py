@@ -1,4 +1,3 @@
-import asyncio
 import discord
 from discord.ext import commands, tasks
 
@@ -13,38 +12,74 @@ class VersionBoardPoller(commands.Cog):
     def cog_unload(self):
         self.polling_task.cancel()
 
+    def build_version_embed(self, document):
+        version_name = document.get("versionName", "Unknown")
+
+        embed = discord.Embed(
+            title=f"새 버전 배포: {version_name}",
+            color=discord.Color.blue(),
+        )
+
+        if document.get("changeLog"):
+            embed.add_field(
+                name="변경 사항", value=document["changeLog"][:1024], inline=False
+            )
+        if document.get("features"):
+            embed.add_field(
+                name="주요 기능", value=document["features"][:1024], inline=False
+            )
+        if document.get("details"):
+            embed.add_field(
+                name="상세 내용", value=document["details"][:1024], inline=False
+            )
+
+        embed.add_field(
+            name="전체 업데이트 여부",
+            value="예" if document.get("fullUpdate") else "아니오",
+            inline=True,
+        )
+        embed.add_field(
+            name="배포일", value=document.get("releaseDate", "Unknown"), inline=True
+        )
+
+        return embed
+
     async def check_notified_status(self):
         try:
             cursor = self.version_board_col.find({"notified": False})
 
             async for document in cursor:
-                version = document.get("version", "unknown")
-                guild_id = document.get("guild_id")
+                version_name = document.get("versionName", "unknown")
+                embed = self.build_version_embed(document)
 
-                config = await self.auth_config_col.find_one({"guild_id": guild_id})
+                for guild in self.bot.guilds:
+                    config = await self.auth_config_col.find_one(
+                        {"guild_id": guild.id}
+                    )
+                    if not config:
+                        continue
 
-                if config:
                     update_log_channel = config.get("update_log_channel")
+                    if not update_log_channel:
+                        continue
 
-                    if update_log_channel:
-                        channel = self.bot.get_channel(update_log_channel)
-                        if channel:
-                            await channel.send(f"새 버전 {version} 이 등록되었습니다!")
-                            await self.version_board_col.update_one(
-                                {"_id": document["_id"]},
-                                {"$set": {"notified": True}},
-                            )
-                            print(f"[알림 전송] 버전 {version} 알림 전송 완료")
-                        else:
-                            print(
-                                f"[알림 실패] 채널 ID {update_log_channel} 을 찾을 수 없음"
-                            )
-                    else:
+                    channel = guild.get_channel(update_log_channel)
+                    if not channel:
                         print(
-                            f"[알림 실패] 길드 ID {guild_id} 의 업데이트 로그 채널이 설정되지 않음"
+                            f"[알림 실패] 채널 ID {update_log_channel} 을 찾을 수 없음 (길드: {guild.name})"
                         )
-                else:
-                    print(f"[알림 실패] 길드 ID {guild_id} 의 설정 문서를 찾을 수 없음")
+                        continue
+
+                    try:
+                        await channel.send(embed=embed)
+                        print(f"[알림 전송] 버전 {version_name} 알림 전송 완료 ({guild.name})")
+                    except Exception as e:
+                        print(f"[알림 실패] 채널 전송 오류 ({guild.name}): {e}")
+
+                await self.version_board_col.update_one(
+                    {"_id": document["_id"]},
+                    {"$set": {"notified": True}},
+                )
 
         except Exception as e:
             print(f"[versions-board 폴링 오류] {e}")
