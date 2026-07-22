@@ -2616,12 +2616,6 @@ class Manager_Analysis(Manager_Worker):
                         extract=False,
                     )
 
-                    self.finished.emit(
-                        True,
-                        "네트워크 분석이 완료되었습니다.\n\n파일 탐색기에서 확인하시겠습니까?",
-                        extract_path,
-                    )
-
                 except requests.exceptions.HTTPError as e:
                     self.error.emit(
                         f"서버 에러 발생: {e.response.status_code}\n{e.response.text}"
