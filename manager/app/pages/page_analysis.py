@@ -47,7 +47,7 @@ from services.api import Request, get_api_headers
 from services.logging import printStatus, userLogging, programBugLog
 from services.llm import generateLLM
 from services.csv import readCSV, getCSVHeaders, safe_path
-from config import MANAGER_SERVER_API
+from config import MANAGER_SERVER_API, NETWORK_VIEWER_URL
 from PySide6.QtCore import QThread, Signal
 from .page_worker import Manager_Worker
 
@@ -2610,12 +2610,15 @@ class Manager_Analysis(Manager_Worker):
                         self.save_path,
                         label="결과 파일 다운로드 및 정리 중",
                         filename=zip_name,
-                        extract=True,
+                        extract=False,
                     )
 
                     self.finished.emit(
                         True,
-                        "네트워크 분석이 완료되었습니다.",
+                        "네트워크 분석이 완료되었습니다.\n\n"
+                        "마우스로 탐색 가능한 인터랙티브 뷰어로 보려면, 결과 zip을 통째로\n"
+                        f"{NETWORK_VIEWER_URL} 에 업로드하세요.\n\n"
+                        "파일 탐색기에서 확인하시겠습니까?",
                         extract_path,
                     )
 
