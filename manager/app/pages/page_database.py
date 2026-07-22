@@ -540,10 +540,10 @@ class Manager_Database(Manager_Worker):
 
     def initLLMChat(self):
         try:
-            printStatus(self.main, "LLM Chat 실행 중")
+            printStatus(self.main, "Network Analyzer 실행 중")
 
             # 기본 브라우저로 URL 열기
-            url = "http://llm.knpu.re.kr"
+            url = "http://network.knpu.re.kr"
             webbrowser.open(url)
 
             userLogging(f"DATABASE -> LLM Chat ON")

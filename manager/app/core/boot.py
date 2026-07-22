@@ -38,7 +38,7 @@ def initListWidget(parent):
         parent.database_chatgpt_button.setIcon(
             QIcon(
                 os.path.join(
-                    os.path.dirname(__file__), "..", "assets", "chatgpt_logo.png"
+                    os.path.dirname(__file__), "..", "assets", "network_logo.png"
                 )
             )
         )
