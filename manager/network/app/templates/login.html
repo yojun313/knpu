@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>로그인 · Word Network Viewer</title>
+<link rel="stylesheet" href="/css/upload.css">
+<style>
+  .login-card{max-width:380px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .field input{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-size:14px;outline:none}
+  .field input:focus{border-color:var(--accent-soft)}
+  .btn-primary{width:100%;padding:12px;border-radius:10px;border:none;background:var(--accent);
+    color:#fff;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
+  .btn-primary:hover{background:var(--accent-soft)}
+  .btn-primary:disabled{opacity:.5;cursor:default}
+  .step{display:none}
+  .step.active{display:block}
+  .err{color:var(--danger);font-size:12.5px;min-height:18px;margin-top:8px}
+  .back{display:inline-block;margin-top:12px;font-size:12.5px;color:var(--muted);cursor:pointer}
+  .back:hover{color:var(--text)}
+</style>
+</head>
+<body>
+  <div class="wrap login-card">
+    <div class="brand"><span class="dot"></span><span>KNPU Word Network Viewer</span></div>
+
+    <div id="step1" class="step active">
+      <h1>로그인</h1>
+      <p class="sub">MANAGER에 등록된 이름을 입력하면 이메일로 인증코드를 보내드립니다.</p>
+      <div class="field"><label>이름</label><input id="nameInput" type="text" placeholder="홍길동" autofocus></div>
+      <button class="btn-primary" id="btnRequestCode">인증코드 받기</button>
+      <div class="err" id="err1"></div>
+    </div>
+
+    <div id="step2" class="step">
+      <h1>인증코드 입력</h1>
+      <p class="sub" id="codeSentTo"></p>
+      <div class="field"><label>인증코드</label><input id="codeInput" type="text" inputmode="numeric" placeholder="123456"></div>
+      <button class="btn-primary" id="btnVerify">로그인</button>
+      <div class="err" id="err2"></div>
+      <span class="back" id="btnBack">← 다시 입력</span>
+    </div>
+  </div>
+<script>
+  var nextUrl = {{ next_url|tojson }};
+  var lastName = '';
+
+  function show(step){
+    document.getElementById('step1').classList.toggle('active', step===1);
+    document.getElementById('step2').classList.toggle('active', step===2);
+  }
+
+  document.getElementById('btnRequestCode').addEventListener('click', function(){
+    var name = document.getElementById('nameInput').value.trim();
+    var errEl = document.getElementById('err1');
+    errEl.textContent = '';
+    if(!name){ errEl.textContent = '이름을 입력해주세요'; return; }
+    this.disabled = true;
+    fetch('/auth/request-code', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name:name})
+    }).then(function(res){ return res.json().then(function(b){ return {ok:res.ok, body:b}; }); })
+    .then(function(r){
+      document.getElementById('btnRequestCode').disabled = false;
+      if(!r.ok){ errEl.textContent = r.body.detail || '요청에 실패했습니다'; return; }
+      lastName = name;
+      document.getElementById('codeSentTo').textContent = '인증코드가 이메일로 전송되었습니다. 5분 내에 입력해주세요.';
+      show(2);
+      document.getElementById('codeInput').focus();
+    }).catch(function(){ document.getElementById('btnRequestCode').disabled = false; errEl.textContent = '요청 중 오류가 발생했습니다'; });
+  });
+
+  document.getElementById('btnVerify').addEventListener('click', function(){
+    var code = document.getElementById('codeInput').value.trim();
+    var errEl = document.getElementById('err2');
+    errEl.textContent = '';
+    if(!code){ errEl.textContent = '인증코드를 입력해주세요'; return; }
+    this.disabled = true;
+    fetch('/auth/verify-code', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name:lastName, code:code})
+    }).then(function(res){ return res.json().then(function(b){ return {ok:res.ok, body:b}; }); })
+    .then(function(r){
+      document.getElementById('btnVerify').disabled = false;
+      if(!r.ok){ errEl.textContent = r.body.detail || '인증에 실패했습니다'; return; }
+      location.href = nextUrl || '/';
+    }).catch(function(){ document.getElementById('btnVerify').disabled = false; errEl.textContent = '인증 중 오류가 발생했습니다'; });
+  });
+
+  document.getElementById('btnBack').addEventListener('click', function(){ show(1); });
+  document.getElementById('codeInput').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('btnVerify').click(); });
+  document.getElementById('nameInput').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('btnRequestCode').click(); });
+</script>
+</body>
+</html>

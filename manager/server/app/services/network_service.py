@@ -11,6 +11,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 import pandas as pd
+import requests
 from scipy.sparse import csr_matrix, vstack
 import igraph as ig
 
@@ -712,7 +713,38 @@ def _export_period_comparison(period_summ, out_dir):
 
 
 # ────────────────────── 엔트리포인트 ──────────────────────
-def run_network_analysis(pid: str, data: pd.DataFrame, option: dict):
+def _push_to_network_viewer(zip_path: str, uid: str, project_name: str, pid: str) -> str | None:
+    """분석 결과 zip을 온라인 뷰어(manager/network)의 사용자 프로젝트로 곧바로 밀어 넣는다.
+    실패해도 분석 자체를 실패시키지 않는다 — zip 다운로드는 항상 그대로 내려간다."""
+    internal_key = os.getenv("INTERNAL_API_KEY", "")
+    try:
+        with open(zip_path, "rb") as f:
+            resp = requests.post(
+                f"{NETWORK_VIEWER_URL}/api/internal/projects/ingest",
+                headers={"X-Internal-Key": internal_key},
+                data={"uid": uid, "name": project_name or "네트워크 분석"},
+                files={"file": (os.path.basename(zip_path), f, "application/zip")},
+                timeout=60,
+            )
+        if resp.status_code == 200:
+            project_id = resp.json().get("project_id")
+            send_message(
+                pid, f"온라인 뷰어에 프로젝트로 저장했습니다: {NETWORK_VIEWER_URL}/viewer/{project_id}"
+            )
+            return project_id
+        send_message(pid, "온라인 뷰어 자동 업로드에 실패했습니다. (결과 zip은 정상적으로 받으실 수 있습니다)")
+    except Exception:
+        send_message(pid, "온라인 뷰어 서버에 연결할 수 없습니다. (결과 zip은 정상적으로 받으실 수 있습니다)")
+    return None
+
+
+def run_network_analysis(
+    pid: str,
+    data: pd.DataFrame,
+    option: dict,
+    uid: str | None = None,
+    project_name: str | None = None,
+):
     def _cleanup(folder, zippath):
         shutil.rmtree(folder, ignore_errors=True)
         try:
@@ -819,11 +851,19 @@ def run_network_analysis(pid: str, data: pd.DataFrame, option: dict):
         send_message(pid, "결과 압축 중...")
         zip_path = out_dir + ".zip"
         shutil.make_archive(out_dir, "zip", out_dir)
+
+        response_headers = {}
+        if uid:
+            project_id = _push_to_network_viewer(zip_path, uid, project_name, pid)
+            if project_id:
+                response_headers["X-Network-Project-Id"] = project_id
+
         return FileResponse(
             path=zip_path,
             media_type="application/zip",
             filename=os.path.basename(zip_path),
             background=BackgroundTask(_cleanup, out_dir, zip_path),
+            headers=response_headers,
         )
 
     except Exception as e:

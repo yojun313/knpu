@@ -6,6 +6,7 @@ import csv
 import platform
 import warnings
 import traceback
+import webbrowser
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -2592,6 +2593,7 @@ class Manager_Analysis(Manager_Worker):
                 self.option = option
                 self.save_path = save_path
                 self.folder_name = folder_name
+                self.project_id = None
 
             def run(self):
                 try:
@@ -2603,6 +2605,7 @@ class Manager_Analysis(Manager_Worker):
                         extra_fields={"option": json.dumps(self.option)},
                         label="데이터 업로드 및 네트워크 분석 중...",
                     )
+                    self.project_id = response.headers.get("X-Network-Project-Id")
 
                     zip_name = f"network_{os.path.splitext(os.path.basename(self.filepath))[0]}_{datetime.now().strftime('%m%d%H%M')}.zip"
                     extract_path = self.download_file(
@@ -2615,10 +2618,7 @@ class Manager_Analysis(Manager_Worker):
 
                     self.finished.emit(
                         True,
-                        "네트워크 분석이 완료되었습니다.\n\n"
-                        "마우스로 탐색 가능한 인터랙티브 뷰어로 보려면, 결과 zip을 통째로\n"
-                        f"{NETWORK_VIEWER_URL} 에 업로드하세요.\n\n"
-                        "파일 탐색기에서 확인하시겠습니까?",
+                        "네트워크 분석이 완료되었습니다.\n\n파일 탐색기에서 확인하시겠습니까?",
                         extract_path,
                     )
 
@@ -2667,6 +2667,9 @@ class Manager_Analysis(Manager_Worker):
                 pid, filepath, res, base_save_path, folder_name, self.main
             )
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
+            worker.finished.connect(
+                lambda ok, msg, path: self.offer_open_network_viewer(worker)
+            )
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -2675,6 +2678,25 @@ class Manager_Analysis(Manager_Worker):
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
+
+    def offer_open_network_viewer(self, worker):
+        project_id = getattr(worker, "project_id", None)
+        if not project_id:
+            return
+        reply = QMessageBox.question(
+            self.main,
+            "Notification",
+            "인터랙티브 뷰어로 결과를 확인하시겠습니까?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        token = get_setting("auth_token")
+        webbrowser.open(
+            f"{NETWORK_VIEWER_URL}/auth/direct-login?token={token}"
+            f"&next=/viewer/{project_id}"
+        )
 
     def select_csv_file(self, tokenCheck=False):
         try:

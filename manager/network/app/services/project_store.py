@@ -1,17 +1,16 @@
-# app/services/graph_store.py
+# app/services/project_store.py
 """
-분석 서버(network_service.py)가 만든 결과 zip(nodes*.csv, edges*.csv 포함)을 업로드받아
-서버에서 파싱·정규화하고, 뷰어가 바로 그릴 수 있는 JSON으로 세션 디렉토리에 저장한다.
+분석 서버(network_service.py)가 만든 결과 zip(nodes*.csv, edges*.csv 포함)을 로그인한
+사용자의 "프로젝트"로 저장한다. 그래프 JSON은 /mnt/ssd/network/{uid}/{project_id}/ 아래
+디스크에 두고, 프로젝트 메타데이터(이름 등)는 MongoDB(network-projects 컬렉션)에 둔다.
 
-network_template.html처럼 데이터를 HTML 문자열 안에 통째로 박아 넣지 않고,
-세션 단위로 디스크에 저장해두었다가 API(fetch)로 필요한 만큼만 내려준다.
+세션 방식과 달리 TTL 자동 삭제가 없다 — 사용자가 명시적으로 삭제하기 전까지 보존된다.
 """
 import io
 import json
 import os
 import re
 import shutil
-import time
 import uuid
 import zipfile
 from datetime import datetime, timezone
@@ -19,17 +18,25 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-STORAGE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "storage")
-os.makedirs(STORAGE_DIR, exist_ok=True)
+from app.db import network_projects_db
 
-SESSION_TTL_SECONDS = 24 * 60 * 60  # 24시간 뒤 자동 정리
+PROJECT_ROOT = os.getenv("NETWORK_PROJECT_ROOT", "/mnt/ssd/network")
+os.makedirs(PROJECT_ROOT, exist_ok=True)
 
 _NODES_RE = re.compile(r"^nodes(.*)\.csv$")
 _RESERVED_NODE_COLS = {"word", "frequency", "x", "y", "community"}
 
 
-def _session_dir(session_id: str) -> str:
-    return os.path.join(STORAGE_DIR, session_id)
+class NotFound(Exception):
+    pass
+
+
+class Forbidden(Exception):
+    pass
+
+
+def _project_dir(uid: str, project_id: str) -> str:
+    return os.path.join(PROJECT_ROOT, uid, project_id)
 
 
 def _label_for_tag(tag: str) -> str:
@@ -107,9 +114,8 @@ def _build_graph_json(root: str, tag: str, nodes_csv: str, edges_csv: str) -> di
     }
 
 
-def create_session(upload_bytes: bytes, original_filename: str) -> dict:
-    session_id = uuid.uuid4().hex
-    root = _session_dir(session_id)
+def _extract_zip_and_build(root: str, upload_bytes: bytes) -> list:
+    """zip을 root(프로젝트 디렉토리)에 풀고 graph{tag}.json들을 만들어 networks 메타 목록을 반환."""
     extract_dir = os.path.join(root, "extract")
     os.makedirs(extract_dir, exist_ok=True)
 
@@ -117,10 +123,8 @@ def create_session(upload_bytes: bytes, original_filename: str) -> dict:
         with zipfile.ZipFile(io.BytesIO(upload_bytes)) as zf:
             zf.extractall(extract_dir)
     except zipfile.BadZipFile:
-        shutil.rmtree(root, ignore_errors=True)
         raise ValueError("zip 파일이 아니거나 손상되었습니다.")
 
-    # zip 안에 폴더가 한 겹 더 있는 경우(폴더를 그대로 압축한 경우) 보정
     search_root = extract_dir
     entries = [e for e in os.listdir(extract_dir) if not e.startswith("__MACOSX")]
     if len(entries) == 1 and os.path.isdir(os.path.join(extract_dir, entries[0])):
@@ -130,7 +134,6 @@ def create_session(upload_bytes: bytes, original_filename: str) -> dict:
 
     pairs = _find_network_pairs(search_root)
     if not pairs:
-        shutil.rmtree(root, ignore_errors=True)
         raise ValueError(
             "nodes.csv / edges.csv 짝을 찾지 못했습니다. "
             "네트워크 분석 결과 zip을 그대로 업로드해주세요."
@@ -151,48 +154,89 @@ def create_session(upload_bytes: bytes, original_filename: str) -> dict:
         )
 
     shutil.rmtree(extract_dir, ignore_errors=True)
+    return networks
 
-    meta = {
-        "session_id": session_id,
-        "original_filename": original_filename,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "networks": networks,
+
+def _iso(dt) -> str:
+    return dt.isoformat() if hasattr(dt, "isoformat") else dt
+
+
+def _doc_out(doc: dict) -> dict:
+    return {
+        "project_id": doc["_id"],
+        "name": doc["name"],
+        "networks": doc["networks"],
+        "created_at": _iso(doc["created_at"]),
+        "updated_at": _iso(doc["updated_at"]),
+        "source": doc.get("source", "upload"),
     }
-    with open(os.path.join(root, "meta.json"), "w", encoding="utf-8") as f:
-        json.dump(meta, f, ensure_ascii=False)
-
-    return meta
 
 
-def load_meta(session_id: str) -> dict:
-    path = os.path.join(_session_dir(session_id), "meta.json")
+def create_project(uid: str, upload_bytes: bytes, name: str, source: str = "upload") -> dict:
+    project_id = uuid.uuid4().hex
+    root = _project_dir(uid, project_id)
+    os.makedirs(root, exist_ok=True)
+
+    try:
+        networks = _extract_zip_and_build(root, upload_bytes)
+    except ValueError:
+        shutil.rmtree(root, ignore_errors=True)
+        raise
+
+    now = datetime.now(timezone.utc)
+    doc = {
+        "_id": project_id,
+        "uid": uid,
+        "name": name,
+        "networks": networks,
+        "created_at": now,
+        "updated_at": now,
+        "source": source,
+    }
+    network_projects_db.insert_one(doc)
+    return _doc_out(doc)
+
+
+def list_projects(uid: str) -> list:
+    docs = network_projects_db.find({"uid": uid}).sort("created_at", -1)
+    return [_doc_out(d) for d in docs]
+
+
+def _get_owned_doc(uid: str, project_id: str) -> dict:
+    doc = network_projects_db.find_one({"_id": project_id})
+    if not doc:
+        raise NotFound("프로젝트를 찾을 수 없습니다.")
+    if doc["uid"] != uid:
+        raise Forbidden("이 프로젝트에 접근할 권한이 없습니다.")
+    return doc
+
+
+def get_project(uid: str, project_id: str) -> dict:
+    return _doc_out(_get_owned_doc(uid, project_id))
+
+
+def rename_project(uid: str, project_id: str, new_name: str) -> dict:
+    _get_owned_doc(uid, project_id)
+    new_name = (new_name or "").strip()
+    if not new_name:
+        raise ValueError("이름을 입력해주세요.")
+    network_projects_db.update_one(
+        {"_id": project_id},
+        {"$set": {"name": new_name, "updated_at": datetime.now(timezone.utc)}},
+    )
+    return _doc_out(_get_owned_doc(uid, project_id))
+
+
+def delete_project(uid: str, project_id: str):
+    _get_owned_doc(uid, project_id)
+    network_projects_db.delete_one({"_id": project_id})
+    shutil.rmtree(_project_dir(uid, project_id), ignore_errors=True)
+
+
+def load_graph(uid: str, project_id: str, tag: str = "") -> dict:
+    _get_owned_doc(uid, project_id)
+    path = os.path.join(_project_dir(uid, project_id), f"graph{tag or '_main'}.json")
     if not os.path.exists(path):
-        raise FileNotFoundError("세션을 찾을 수 없습니다. (만료되었거나 잘못된 링크)")
+        raise NotFound("네트워크를 찾을 수 없습니다.")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
-
-
-def load_graph(session_id: str, tag: str = "") -> dict:
-    path = os.path.join(_session_dir(session_id), f"graph{tag or '_main'}.json")
-    if not os.path.exists(path):
-        raise FileNotFoundError("네트워크를 찾을 수 없습니다.")
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def cleanup_expired_sessions(ttl_seconds: int = SESSION_TTL_SECONDS) -> int:
-    """오래된 업로드 세션을 정리한다. 삭제된 세션 수를 반환."""
-    now = time.time()
-    removed = 0
-    if not os.path.isdir(STORAGE_DIR):
-        return 0
-    for name in os.listdir(STORAGE_DIR):
-        path = os.path.join(STORAGE_DIR, name)
-        try:
-            mtime = os.path.getmtime(os.path.join(path, "meta.json"))
-        except OSError:
-            mtime = os.path.getmtime(path) if os.path.exists(path) else 0
-        if now - mtime > ttl_seconds:
-            shutil.rmtree(path, ignore_errors=True)
-            removed += 1
-    return removed
