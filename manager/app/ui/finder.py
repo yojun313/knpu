@@ -272,6 +272,8 @@ def openFileExplorer(path):
 
 
 def openFileResult(parent, msg, filepath):
+    if not msg:
+        return
     printStatus(parent)
     reply = QMessageBox.question(
         parent,
