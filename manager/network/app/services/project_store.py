@@ -119,8 +119,22 @@ def _build_graph_json(root: str, tag: str, nodes_csv: str, edges_csv: str) -> di
     }
 
 
-def _extract_zip_and_build(root: str, upload_bytes: bytes) -> list:
-    """zip을 root(프로젝트 디렉토리)에 풀고 graph{tag}.json들을 만들어 networks 메타 목록을 반환."""
+def _read_analysis_options(search_root: str) -> dict | None:
+    """MANAGER에서 분석할 때 쓴 옵션·분석 시각(analysis_options.json)이 있으면 읽어온다.
+    수동으로 zip을 업로드한 경우 등 파일이 없으면 None."""
+    path = os.path.join(search_root, "analysis_options.json")
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _extract_zip_and_build(root: str, upload_bytes: bytes) -> tuple:
+    """zip을 root(프로젝트 디렉토리)에 풀고 graph{tag}.json들을 만들어
+    (networks 메타 목록, 분석 옵션 or None)을 반환."""
     extract_dir = os.path.join(root, "extract")
     os.makedirs(extract_dir, exist_ok=True)
 
@@ -144,6 +158,8 @@ def _extract_zip_and_build(root: str, upload_bytes: bytes) -> list:
             "네트워크 분석 결과 zip을 그대로 업로드해주세요."
         )
 
+    analysis_options = _read_analysis_options(search_root)
+
     networks = []
     for tag, nodes_csv, edges_csv in pairs:
         graph = _build_graph_json(search_root, tag, nodes_csv, edges_csv)
@@ -161,7 +177,7 @@ def _extract_zip_and_build(root: str, upload_bytes: bytes) -> list:
         )
 
     shutil.rmtree(extract_dir, ignore_errors=True)
-    return networks
+    return networks, analysis_options
 
 
 def _iso(dt) -> str:
@@ -176,6 +192,7 @@ def _doc_out(doc: dict) -> dict:
         "created_at": _iso(doc["created_at"]),
         "updated_at": _iso(doc["updated_at"]),
         "source": doc.get("source", "upload"),
+        "analysis_options": doc.get("analysis_options"),
     }
 
 
@@ -187,7 +204,7 @@ def create_project(
     os.makedirs(root, exist_ok=True)
 
     try:
-        networks = _extract_zip_and_build(root, upload_bytes)
+        networks, analysis_options = _extract_zip_and_build(root, upload_bytes)
     except ValueError:
         shutil.rmtree(root, ignore_errors=True)
         raise
@@ -201,6 +218,7 @@ def create_project(
         "created_at": now,
         "updated_at": now,
         "source": source,
+        "analysis_options": analysis_options,
     }
     network_projects_db.insert_one(doc)
     return _doc_out(doc)

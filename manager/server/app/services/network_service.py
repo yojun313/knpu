@@ -3,6 +3,7 @@ import os
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")  # period 병렬 시 워커 내부에서 재설정
 import re
+import json
 import shutil
 import traceback
 from datetime import datetime
@@ -650,6 +651,66 @@ def _write_viewer_readme(out_dir):
         )
 
 
+_MEASURE_LABELS = {
+    "raw": "동시출현 빈도 (raw)",
+    "jaccard": "Jaccard",
+    "cosine": "Cosine",
+    "dice": "Dice",
+    "pmi": "PMI",
+    "npmi": "NPMI",
+}
+_PERIOD_LABELS = {
+    "total": "전체 통합",
+    "1y": "1년",
+    "6m": "6개월",
+    "3m": "3개월",
+    "1m": "1개월",
+    "1w": "1주",
+}
+_COMMUNITY_LABELS = {"louvain": "Louvain", "leiden": "Leiden", "none": "사용 안 함"}
+_LAYOUT_LABELS = {
+    "fr": "Fruchterman-Reingold",
+    "kk": "Kamada-Kawai",
+    "circle": "Circle",
+    "grid": "Grid",
+}
+_SCOPE_LABELS = {"document": "문서 단위", "window": "슬라이딩 윈도우"}
+
+
+def _write_analysis_options(out_dir, option, project_name):
+    """분석 시 사용한 옵션·시각을 결과 zip에 함께 저장한다 (analysis_options.json).
+    온라인 뷰어가 이 파일을 읽어 '이 결과가 어떤 설정으로 만들어졌는지' 보여준다."""
+    opts = {k: v for k, v in option.items() if k != "pid"}
+    meta = {
+        "analyzed_at": datetime.now().isoformat(),
+        "source_filename": project_name,
+        "options": opts,
+        "options_label": {
+            "대상 열": opts.get("text_col"),
+            "공출현 단위": _SCOPE_LABELS.get(opts.get("scope"), opts.get("scope")),
+            "윈도우 크기": opts.get("window") if opts.get("scope") == "window" else None,
+            "연관성 척도": _MEASURE_LABELS.get(opts.get("measure"), opts.get("measure")),
+            "기간 분할": _PERIOD_LABELS.get(opts.get("period"), opts.get("period")),
+            "최소 단어 빈도": opts.get("min_freq"),
+            "최소 동시출현 횟수": opts.get("min_edge_weight"),
+            "최대 노드 수(Top-N)": opts.get("top_n") or "제한 없음",
+            "커뮤니티 탐지": _COMMUNITY_LABELS.get(opts.get("community"), opts.get("community")),
+            "레이아웃": _LAYOUT_LABELS.get(opts.get("layout"), opts.get("layout")),
+            "백본 추출(disparity filter)": (
+                f"사용 (alpha={opts.get('backbone_alpha')})"
+                if opts.get("backbone")
+                else "미사용"
+            ),
+            "계산한 중심성": ", ".join(opts.get("centralities") or []) or "없음",
+            "ego 네트워크 수": opts.get("ego_top"),
+        },
+    }
+    with open(
+        os.path.join(out_dir, "analysis_options.json"), "w", encoding="utf-8"
+    ) as f:
+        json.dump(meta, f, ensure_ascii=False, indent=2)
+
+
 # ────────────────────── 기간 병렬 워커 ──────────────────────
 def _run_one_period(args):
     # 워커 내부에서는 BLAS 스레드 제한 (period 병렬과 중복 방지)
@@ -853,6 +914,7 @@ def run_network_analysis(
             export_files(res, option, out_dir)
 
         _write_viewer_readme(out_dir)
+        _write_analysis_options(out_dir, option, project_name)
 
         send_message(
             pid,

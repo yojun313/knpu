@@ -128,6 +128,43 @@ body{font-family:-apple-system,'Pretendard','Segoe UI',Roboto,'Malgun Gothic',sa
 .modal-status.err{color:var(--danger)}
 .modal-status.ok{color:var(--success)}
 
+.modal-tabs{display:flex;gap:4px;padding:12px 18px 0;border-bottom:1px solid var(--sidebar-border)}
+.modal-tab{background:transparent;border:none;padding:9px 4px 11px;font-size:12.5px;font-weight:700;
+  color:var(--sidebar-muted);cursor:pointer;border-bottom:2px solid transparent;margin-right:16px;transition:.15s}
+.modal-tab:hover{color:var(--text-strong)}
+.modal-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.modal-tab-panel{display:none}
+.modal-tab-panel.active{display:block}
+
+.modal-dropzone-sm{padding:20px}
+#analyzeFileLabel{word-break:break-all}
+
+.analyze-form{padding:4px 18px 18px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;color:var(--sidebar-muted);margin-bottom:5px}
+.field select, .field input[type=number]{width:100%}
+.field-row{display:flex;gap:10px}
+.field-row .field{flex:1;min-width:0}
+.analyze-form .btn{margin-top:4px}
+
+.progress-card{width:min(460px,90vw)}
+.progress-body{padding:22px 20px}
+.progress-spin{margin:0 auto 16px}
+.progress-log{max-height:260px;overflow-y:auto;background:var(--sidebar-panel);border:1px solid var(--sidebar-border);
+  border-radius:9px;padding:10px 12px;font-size:11.5px;line-height:1.9;color:var(--sidebar-text);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.progress-log::-webkit-scrollbar{width:6px}
+.progress-log::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb);border-radius:10px}
+.progress-log .pl-line{margin-bottom:3px}
+.progress-log .pl-line:last-child{margin-bottom:0;color:var(--text-strong);font-weight:600}
+.progress-log .pl-err{color:var(--danger);font-weight:700}
+.progress-log .pl-ok{color:var(--success);font-weight:700}
+
+.upload-progress{padding:0 18px 14px}
+.upload-progress-bar{height:7px;border-radius:4px;background:var(--sidebar-panel2);overflow:hidden}
+.upload-progress-fill{height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width .15s ease}
+.upload-progress-label{font-size:11px;color:var(--sidebar-muted);margin-top:6px;text-align:center}
+
 /* ===== canvas =====
    #netWrap은 위치·배경을 담당하고, #net은 vis-network 전용(내부를 vis가 통째로
    갈아치움) 컨테이너입니다. 로딩/줌 버튼은 #netWrap의 형제 요소로 분리되어 있어
@@ -194,8 +231,10 @@ body.dark-theme .badge.warn{color:#ffb37a}
   justify-content:space-between;align-items:flex-start;background:var(--sidebar-panel)}
 .title-block h1{font-size:16.5px;font-weight:800;letter-spacing:.2px;color:var(--text-strong)}
 .title-block p{font-size:11.5px;color:var(--sidebar-muted);margin-top:4px}
+.title-actions{display:flex;gap:7px;flex-shrink:0}
 .icon-btn{background:var(--sidebar-panel2);border:1px solid var(--sidebar-border);border-radius:9px;
-  width:32px;height:32px;cursor:pointer;font-size:14px;color:var(--sidebar-text);flex-shrink:0;transition:.15s}
+  width:32px;height:32px;cursor:pointer;font-size:14px;color:var(--sidebar-text);flex-shrink:0;transition:.15s;
+  display:flex;align-items:center;justify-content:center;text-decoration:none}
 .icon-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 
 details{border-bottom:1px solid var(--sidebar-border)}

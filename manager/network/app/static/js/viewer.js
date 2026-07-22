@@ -39,11 +39,12 @@
       rawEdges = data.edges;
       summary = summ;
       currentTag = tag;
-      document.getElementById('projectName').textContent = meta.name || 'Word Network';
-      document.title = (meta.name || 'Word Network') + ' · Word Network Viewer';
+      document.getElementById('projectName').textContent = meta.name || 'Network Analyzer';
+      document.title = (meta.name || 'Network Analyzer') + ' · Network Analyzer';
       document.getElementById('emptyProject').hidden = true;
       highlightActiveRailItem();
       initNetworkSelect(meta);
+      renderAnalysisOptions(meta.analysis_options);
       var warn = data.truncated
         ? '⚠ 전체 엣지 ' + data.total_edges.toLocaleString() + '개 중 상위 ' + data.edges.length.toLocaleString() + '개 표시'
         : '엣지 ' + data.edges.length.toLocaleString() + '개 · 노드 ' + rawNodes.length.toLocaleString() + '개';
@@ -73,6 +74,39 @@
     };
   }
 
+  function fmtAnalyzedAt(iso) {
+    try {
+      var d = new Date(iso);
+      return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0')
+        + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    } catch (e) { return iso; }
+  }
+
+  function renderAnalysisOptions(analysisOptions) {
+    var section = document.getElementById('optionsSection');
+    var body = document.getElementById('analysisOptions');
+    if (!analysisOptions || !analysisOptions.options_label) {
+      section.hidden = true;
+      body.innerHTML = '';
+      return;
+    }
+    section.hidden = false;
+    var html = '';
+    if (analysisOptions.analyzed_at) {
+      html += '<div class="stat"><span>분석 시각</span><span>' + esc(fmtAnalyzedAt(analysisOptions.analyzed_at)) + '</span></div>';
+    }
+    if (analysisOptions.source_filename) {
+      html += '<div class="stat"><span>원본 파일</span><span title="' + escAttr(analysisOptions.source_filename) + '">' + esc(analysisOptions.source_filename) + '</span></div>';
+    }
+    var labels = analysisOptions.options_label;
+    Object.keys(labels).forEach(function (k) {
+      var v = labels[k];
+      if (v === null || v === undefined || v === '') return;
+      html += '<div class="stat"><span>' + esc(k) + '</span><span>' + esc(v) + '</span></div>';
+    });
+    body.innerHTML = html || '<div class="empty">저장된 분석 설정이 없습니다</div>';
+  }
+
   // ---------------------------------------------------------------
   // 왼쪽 프로젝트 레일 (VSCode 사이드바처럼 접고 펼치기 + 프로젝트 전환/업로드/관리)
   // ---------------------------------------------------------------
@@ -85,6 +119,35 @@
         if (!res.ok) throw new Error(b.detail || res.statusText);
         return b;
       });
+    });
+  }
+
+  function postJson(path, obj) {
+    return railApi(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(obj),
+    });
+  }
+
+  // fetch()는 업로드 진행률(progress)을 알려주지 않으므로, 진행률 표시가 필요한
+  // 업로드(zip / 토큰 CSV)는 XMLHttpRequest로 보낸다.
+  function uploadWithProgress(path, formData, onProgress) {
+    return new Promise(function (resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', path);
+      xhr.upload.onprogress = function (e) {
+        if (e.lengthComputable && onProgress) onProgress(Math.round(e.loaded / e.total * 100));
+      };
+      xhr.onload = function () {
+        if (xhr.status === 401) { location.href = '/login'; return; }
+        var body = {};
+        try { body = JSON.parse(xhr.responseText); } catch (e) { /* noop */ }
+        if (xhr.status >= 200 && xhr.status < 300) resolve(body);
+        else reject(new Error(body.detail || xhr.statusText || ('HTTP ' + xhr.status)));
+      };
+      xhr.onerror = function () { reject(new Error('네트워크 오류로 업로드에 실패했습니다.')); };
+      xhr.send(formData);
     });
   }
 
@@ -178,7 +241,7 @@
         loadRailProjects();
         if (p.project_id === projectId) {
           document.getElementById('projectName').textContent = newName;
-          document.title = newName + ' · Word Network Viewer';
+          document.title = newName + ' · Network Analyzer';
         }
       }).catch(function () { toast('이름 변경에 실패했습니다.'); renderRail(); });
     }
@@ -198,11 +261,12 @@
         if (wasCurrent) {
           projectId = null;
           history.pushState(null, '', '/viewer');
-          document.getElementById('projectName').textContent = 'Word Network';
-          document.title = 'Word Network Viewer';
+          document.getElementById('projectName').textContent = 'Network Analyzer';
+          document.title = 'Network Analyzer';
           document.getElementById('emptyProject').hidden = false;
           document.getElementById('totalBadge').innerHTML = '<span class="pulse"></span>-';
           document.getElementById('liveBadge').innerHTML = '<span class="pulse"></span>표시 중 -';
+          renderAnalysisOptions(null);
         }
       });
     }).catch(function () { toast('삭제에 실패했습니다.'); });
@@ -217,27 +281,229 @@
     loadNetwork('');
   }
 
+  function switchModalTab(tab) {
+    document.getElementById('tabBtnZip').classList.toggle('active', tab === 'zip');
+    document.getElementById('tabBtnAnalyze').classList.toggle('active', tab === 'analyze');
+    document.getElementById('tabZip').classList.toggle('active', tab === 'zip');
+    document.getElementById('tabAnalyze').classList.toggle('active', tab === 'analyze');
+  }
+
+  var zipStage = null;
+  var analyzeStage = null;
+
+  function resetUploadModalState() {
+    zipStage = null;
+    analyzeStage = null;
+    setModalStatus('');
+    document.getElementById('zipProgress').hidden = true;
+    document.getElementById('zipConfirm').hidden = true;
+    document.getElementById('analyzeStatus').textContent = '';
+    document.getElementById('analyzeProgress').hidden = true;
+    document.getElementById('analyzeForm').hidden = true;
+    document.getElementById('analyzeFileLabel').textContent = '토큰화된 CSV 파일을 선택하세요';
+  }
+
   function openUploadModal() {
     document.getElementById('uploadModal').hidden = false;
-    setModalStatus('');
+    resetUploadModalState();
+    switchModalTab('zip');
   }
   function closeUploadModal() {
     document.getElementById('uploadModal').hidden = true;
   }
 
+  // ---------------------------------------------------------------
+  // 결과 zip 업로드: 진행률 표시(1단계) → 이름 확정(2단계)
+  // ---------------------------------------------------------------
   function uploadToRail(file) {
     if (!file) return;
     if (!/\.zip$/i.test(file.name)) { setModalStatus('zip 파일만 업로드할 수 있습니다.', 'err'); return; }
-    setModalStatus('업로드 및 분석 중...');
+    setModalStatus('');
+    document.getElementById('zipConfirm').hidden = true;
+    var progEl = document.getElementById('zipProgress');
+    var fillEl = document.getElementById('zipProgressFill');
+    var labelEl = document.getElementById('zipProgressLabel');
+    progEl.hidden = false;
+    fillEl.style.width = '0%';
+    labelEl.textContent = '업로드 중... 0%';
+
     var fd = new FormData();
     fd.append('file', file);
-    fd.append('name', file.name.replace(/\.zip$/i, ''));
-    railApi('/api/projects', { method: 'POST', body: fd }).then(function (project) {
+    uploadWithProgress('/api/projects/upload-zip', fd, function (pct) {
+      fillEl.style.width = pct + '%';
+      labelEl.textContent = '업로드 중... ' + pct + '%';
+    }).then(function (res) {
+      progEl.hidden = true;
+      zipStage = res.stage_id;
+      document.getElementById('zipProjectName').value = res.suggested_name || '';
+      document.getElementById('zipConfirm').hidden = false;
+    }).catch(function (err) {
+      progEl.hidden = true;
+      setModalStatus(err.message || String(err), 'err');
+    });
+  }
+
+  function confirmZipProject() {
+    if (!zipStage) return;
+    var name = document.getElementById('zipProjectName').value.trim();
+    setModalStatus('프로젝트 생성 중...');
+    postJson('/api/projects/finalize-zip', { stage_id: zipStage, name: name }).then(function (project) {
       setModalStatus('완료!', 'ok');
+      zipStage = null;
       loadRailProjects();
       switchProject(project.project_id);
       setTimeout(closeUploadModal, 400);
     }).catch(function (err) { setModalStatus(err.message || String(err), 'err'); });
+  }
+
+  // ---------------------------------------------------------------
+  // 토큰 CSV 업로드: 진행률 표시(1단계, 업로드 완료 전까지 설정 폼은 숨김) →
+  // 이름·옵션 확정(2단계) → MANAGER 서버(기존 분석 파이프라인) 그대로 호출
+  // ---------------------------------------------------------------
+  function parseCsvHeader(file, cb) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var firstLine = String(e.target.result).split(/\r?\n/)[0] || '';
+      var cols = firstLine.split(',')
+        .map(function (c) { return c.trim().replace(/^"|"$/g, ''); })
+        .filter(Boolean);
+      cb(cols);
+    };
+    reader.readAsText(file.slice(0, 16384));
+  }
+
+  function onAnalyzeFileSelected(file) {
+    var statusEl = document.getElementById('analyzeStatus');
+    statusEl.textContent = '';
+    if (!file) return;
+    if (!/\.csv$/i.test(file.name)) { statusEl.textContent = 'CSV 파일만 업로드할 수 있습니다.'; return; }
+    document.getElementById('analyzeForm').hidden = true;
+    document.getElementById('analyzeFileLabel').textContent = file.name;
+
+    var progEl = document.getElementById('analyzeProgress');
+    var fillEl = document.getElementById('analyzeProgressFill');
+    var labelEl = document.getElementById('analyzeProgressLabel');
+    progEl.hidden = false;
+    fillEl.style.width = '0%';
+    labelEl.textContent = '업로드 중... 0%';
+
+    var fd = new FormData();
+    fd.append('file', file);
+    uploadWithProgress('/api/projects/analyze/upload', fd, function (pct) {
+      fillEl.style.width = pct + '%';
+      labelEl.textContent = '업로드 중... ' + pct + '%';
+    }).then(function (res) {
+      progEl.hidden = true;
+      analyzeStage = res.stage_id;
+      document.getElementById('analyzeProjectName').value = res.suggested_name || '';
+      parseCsvHeader(file, function (cols) {
+        if (!cols.length) { statusEl.textContent = '열 이름을 읽지 못했습니다. CSV 형식을 확인해주세요.'; return; }
+        var sel = document.getElementById('optTextCol');
+        sel.innerHTML = '';
+        cols.forEach(function (c) {
+          var o = document.createElement('option'); o.value = c; o.text = c; sel.appendChild(o);
+        });
+        var textLike = cols.filter(function (c) { return /text/i.test(c); })[0];
+        if (textLike) sel.value = textLike;
+        document.getElementById('analyzeForm').hidden = false;
+      });
+    }).catch(function (err) {
+      progEl.hidden = true;
+      statusEl.textContent = err.message || String(err);
+    });
+  }
+
+  function startAnalyze() {
+    if (!analyzeStage) return;
+    var overrides = {
+      text_col: document.getElementById('optTextCol').value,
+      measure: document.getElementById('optMeasure').value,
+      period: document.getElementById('optPeriod').value,
+      min_freq: parseInt(document.getElementById('optMinFreq').value, 10) || 5,
+      min_edge_weight: parseInt(document.getElementById('optMinEdge').value, 10) || 2,
+      top_n: parseInt(document.getElementById('optTopN').value, 10) || 0,
+      community: document.getElementById('optCommunity').value,
+      layout: document.getElementById('optLayout').value,
+    };
+    var name = document.getElementById('analyzeProjectName').value.trim();
+    var statusEl = document.getElementById('analyzeStatus');
+    var btn = document.getElementById('btnStartAnalyze');
+    statusEl.textContent = '';
+    btn.disabled = true;
+    postJson('/api/projects/analyze/start', { stage_id: analyzeStage, name: name, option: overrides }).then(function (res) {
+      btn.disabled = false;
+      analyzeStage = null;
+      closeUploadModal();
+      openProgressModal(res.pid);
+    }).catch(function (err) {
+      btn.disabled = false;
+      statusEl.textContent = err.message || String(err);
+    });
+  }
+
+  var progressWs = null;
+  var progressPollTimer = null;
+
+  function appendProgressLine(text, cls) {
+    var log = document.getElementById('progressLog');
+    var div = document.createElement('div');
+    div.className = 'pl-line' + (cls ? ' ' + cls : '');
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function closeProgressWs() {
+    if (progressWs) { try { progressWs.close(); } catch (e) { /* noop */ } progressWs = null; }
+  }
+
+  function closeProgressModal() {
+    document.getElementById('progressModal').hidden = true;
+    closeProgressWs();
+    if (progressPollTimer) { clearInterval(progressPollTimer); progressPollTimer = null; }
+  }
+
+  function openProgressModal(pid) {
+    document.getElementById('progressLog').innerHTML = '';
+    document.getElementById('progressModalClose').hidden = true;
+    document.getElementById('progressSpin').style.display = '';
+    document.getElementById('progressModal').hidden = false;
+    appendProgressLine('분석을 시작합니다...');
+
+    railApi('/api/progress-config').then(function (cfg) {
+      try {
+        progressWs = new WebSocket(cfg.ws_url + '/ws/' + pid);
+        progressWs.onmessage = function (ev) {
+          try {
+            var msg = JSON.parse(ev.data);
+            if (msg.type === 'message' && msg.text) appendProgressLine(msg.text);
+          } catch (e) { /* noop */ }
+        };
+      } catch (e) { /* WebSocket 연결 실패해도 상태 폴링으로 계속 진행 */ }
+    }).catch(function () { /* noop */ });
+
+    progressPollTimer = setInterval(function () {
+      railApi('/api/projects/analyze/' + pid + '/status').then(function (job) {
+        if (job.status === 'done') {
+          clearInterval(progressPollTimer); progressPollTimer = null;
+          appendProgressLine('완료! 프로젝트로 저장했습니다.', 'pl-ok');
+          closeProgressWs();
+          document.getElementById('progressSpin').style.display = 'none';
+          document.getElementById('progressModalClose').hidden = false;
+          loadRailProjects();
+          setTimeout(function () {
+            closeProgressModal();
+            if (job.project_id) switchProject(job.project_id);
+          }, 900);
+        } else if (job.status === 'error') {
+          clearInterval(progressPollTimer); progressPollTimer = null;
+          appendProgressLine('오류: ' + (job.error || '알 수 없는 오류'), 'pl-err');
+          closeProgressWs();
+          document.getElementById('progressSpin').style.display = 'none';
+          document.getElementById('progressModalClose').hidden = false;
+        }
+      }).catch(function () { /* 다음 폴링에서 재시도 */ });
+    }, 2000);
   }
 
   var RAIL_MIN_WIDTH = 180;
@@ -307,6 +573,23 @@
     ['dragenter', 'dragover'].forEach(function (evt) { dropzone.addEventListener(evt, function (e) { e.preventDefault(); dropzone.classList.add('drag'); }); });
     ['dragleave', 'drop'].forEach(function (evt) { dropzone.addEventListener(evt, function (e) { e.preventDefault(); dropzone.classList.remove('drag'); }); });
     dropzone.addEventListener('drop', function (e) { uploadToRail(e.dataTransfer.files && e.dataTransfer.files[0]); });
+    document.getElementById('btnConfirmZip').addEventListener('click', confirmZipProject);
+
+    // ---- 탭 전환 ----
+    document.getElementById('tabBtnZip').addEventListener('click', function () { switchModalTab('zip'); });
+    document.getElementById('tabBtnAnalyze').addEventListener('click', function () { switchModalTab('analyze'); });
+
+    // ---- 토큰 CSV로 분석 ----
+    var analyzeInput = document.getElementById('analyzeFileInput');
+    var analyzeDropzone = document.getElementById('analyzeDropzone');
+    analyzeInput.addEventListener('change', function () { onAnalyzeFileSelected(analyzeInput.files[0]); analyzeInput.value = ''; });
+    ['dragenter', 'dragover'].forEach(function (evt) { analyzeDropzone.addEventListener(evt, function (e) { e.preventDefault(); analyzeDropzone.classList.add('drag'); }); });
+    ['dragleave', 'drop'].forEach(function (evt) { analyzeDropzone.addEventListener(evt, function (e) { e.preventDefault(); analyzeDropzone.classList.remove('drag'); }); });
+    analyzeDropzone.addEventListener('drop', function (e) { onAnalyzeFileSelected(e.dataTransfer.files && e.dataTransfer.files[0]); });
+    document.getElementById('btnStartAnalyze').addEventListener('click', startAnalyze);
+
+    // ---- 진행 상황 모달 ----
+    document.getElementById('progressModalClose').addEventListener('click', closeProgressModal);
 
     document.getElementById('railLogout').addEventListener('click', function () {
       fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/login'; });
@@ -323,7 +606,8 @@
         loadNetwork('');
       } else {
         document.getElementById('emptyProject').hidden = false;
-        document.getElementById('projectName').textContent = 'Word Network';
+        document.getElementById('projectName').textContent = 'Network Analyzer';
+        renderAnalysisOptions(null);
       }
     });
   }
