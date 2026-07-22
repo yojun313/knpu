@@ -4,6 +4,7 @@
 중심성, 커뮤니티)를 그대로 활용해, 뷰어가 매번 다시 계산하지 않아도 되는
 전역 통계 / 임계값 가이드 / 커뮤니티별 대표 단어를 서버에서 미리 만들어 둔다.
 """
+
 import numpy as np
 
 
@@ -50,7 +51,10 @@ def compute_summary(graph: dict) -> dict:
         "has_community": graph.get("has_community", False),
         "metric_keys": graph.get("metric_keys", []),
         "max_freq": max(freqs) if freqs else 0,
-        "weight_range": {"min": min(weights) if weights else 0, "max": max(weights) if weights else 0},
+        "weight_range": {
+            "min": min(weights) if weights else 0,
+            "max": max(weights) if weights else 0,
+        },
         "weight_percentiles": _percentiles(weights),
         "freq_percentiles": _percentiles(freqs),
     }
@@ -82,14 +86,23 @@ def compute_community_keywords(graph: dict, top_k: int = 6) -> list:
     result = []
     for g, members in sorted(by_group.items(), key=lambda x: x[0]):
         top_freq = sorted(members, key=lambda x: -x["freq"])[:top_k]
-        top_deg = sorted(members, key=lambda x: -internal_degree.get(x["id"], 0))[:top_k]
+        top_deg = sorted(members, key=lambda x: -internal_degree.get(x["id"], 0))[
+            :top_k
+        ]
         result.append(
             {
                 "group": g,
                 "size": len(members),
-                "top_freq": [{"id": m["id"], "label": m["label"], "freq": m["freq"]} for m in top_freq],
+                "top_freq": [
+                    {"id": m["id"], "label": m["label"], "freq": m["freq"]}
+                    for m in top_freq
+                ],
                 "top_internal_degree": [
-                    {"id": m["id"], "label": m["label"], "internal_degree": internal_degree.get(m["id"], 0)}
+                    {
+                        "id": m["id"],
+                        "label": m["label"],
+                        "internal_degree": internal_degree.get(m["id"], 0),
+                    }
                     for m in top_deg
                 ],
             }

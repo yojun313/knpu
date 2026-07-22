@@ -75,8 +75,6 @@ class AuthMiddleware:
             next_url = request.url.path
             if request.url.query:
                 next_url += f"?{request.url.query}"
-            response = RedirectResponse(
-                url=f"/login?next={next_url}", status_code=302
-            )
+            response = RedirectResponse(url=f"/login?next={next_url}", status_code=302)
 
         await response(scope, receive, send)

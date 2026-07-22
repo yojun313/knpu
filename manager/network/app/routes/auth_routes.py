@@ -121,14 +121,20 @@ async def direct_token_login(token: str, next: str = "/"):
             token, os.getenv("JWT_SECRET"), algorithms=[os.getenv("JWT_ALGORITHM")]
         )
     except jwt.InvalidTokenError:
-        return JSONResponse(status_code=401, content={"detail": "유효하지 않은 토큰입니다"})
+        return JSONResponse(
+            status_code=401, content={"detail": "유효하지 않은 토큰입니다"}
+        )
 
     user = user_db.find_one({"uid": payload["sub"]}, {"_id": 0})
     if not user:
-        return JSONResponse(status_code=404, content={"detail": "사용자를 찾을 수 없습니다"})
+        return JSONResponse(
+            status_code=404, content={"detail": "사용자를 찾을 수 없습니다"}
+        )
 
     if payload.get("device") and payload["device"] not in user.get("device_list", []):
-        return JSONResponse(status_code=404, content={"detail": "등록되지 않은 기기입니다"})
+        return JSONResponse(
+            status_code=404, content={"detail": "등록되지 않은 기기입니다"}
+        )
 
     response = RedirectResponse(url=_safe_next(next))
     response.set_cookie(

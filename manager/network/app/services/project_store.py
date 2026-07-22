@@ -6,6 +6,7 @@
 
 세션 방식과 달리 TTL 자동 삭제가 없다 — 사용자가 명시적으로 삭제하기 전까지 보존된다.
 """
+
 import io
 import json
 import os
@@ -83,7 +84,9 @@ def _build_graph_json(root: str, tag: str, nodes_csv: str, edges_csv: str) -> di
                 "freq": int(row["frequency"]) if not pd.isna(row["frequency"]) else 0,
                 "x": float(row["x"]) if has_xy and not pd.isna(row["x"]) else None,
                 "y": float(row["y"]) if has_xy and not pd.isna(row["y"]) else None,
-                "group": int(row["community"]) if has_community and not pd.isna(row["community"]) else 0,
+                "group": int(row["community"])
+                if has_community and not pd.isna(row["community"])
+                else 0,
                 "info": info,
             }
         )
@@ -99,7 +102,9 @@ def _build_graph_json(root: str, tag: str, nodes_csv: str, edges_csv: str) -> di
                 "source": s,
                 "target": t,
                 "weight": float(row["weight"]),
-                "cooccur": int(row["cooccur"]) if "cooccur" in edges_df.columns and not pd.isna(row["cooccur"]) else None,
+                "cooccur": int(row["cooccur"])
+                if "cooccur" in edges_df.columns and not pd.isna(row["cooccur"])
+                else None,
             }
         )
 
@@ -142,7 +147,9 @@ def _extract_zip_and_build(root: str, upload_bytes: bytes) -> list:
     networks = []
     for tag, nodes_csv, edges_csv in pairs:
         graph = _build_graph_json(search_root, tag, nodes_csv, edges_csv)
-        with open(os.path.join(root, f"graph{tag or '_main'}.json"), "w", encoding="utf-8") as f:
+        with open(
+            os.path.join(root, f"graph{tag or '_main'}.json"), "w", encoding="utf-8"
+        ) as f:
             json.dump(graph, f, ensure_ascii=False)
         networks.append(
             {
@@ -172,7 +179,9 @@ def _doc_out(doc: dict) -> dict:
     }
 
 
-def create_project(uid: str, upload_bytes: bytes, name: str, source: str = "upload") -> dict:
+def create_project(
+    uid: str, upload_bytes: bytes, name: str, source: str = "upload"
+) -> dict:
     project_id = uuid.uuid4().hex
     root = _project_dir(uid, project_id)
     os.makedirs(root, exist_ok=True)

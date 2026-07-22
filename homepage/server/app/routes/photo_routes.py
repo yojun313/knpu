@@ -20,7 +20,9 @@ def list_gallery_posts():
 @router.post("/")
 def upsert_gallery_post(post: GalleryPost):
     if not post.photos:
-        raise HTTPException(status_code=400, detail="사진을 최소 1장 이상 등록해야 합니다.")
+        raise HTTPException(
+            status_code=400, detail="사진을 최소 1장 이상 등록해야 합니다."
+        )
 
     post_data = post.dict()
     if not post_data.get("uid"):

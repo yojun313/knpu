@@ -713,7 +713,9 @@ def _export_period_comparison(period_summ, out_dir):
 
 
 # ────────────────────── 엔트리포인트 ──────────────────────
-def _push_to_network_viewer(zip_path: str, uid: str, project_name: str, pid: str) -> str | None:
+def _push_to_network_viewer(
+    zip_path: str, uid: str, project_name: str, pid: str
+) -> str | None:
     """분석 결과 zip을 온라인 뷰어(manager/network)의 사용자 프로젝트로 곧바로 밀어 넣는다.
     실패해도 분석 자체를 실패시키지 않는다 — zip 다운로드는 항상 그대로 내려간다."""
     internal_key = os.getenv("INTERNAL_API_KEY", "")
@@ -729,12 +731,19 @@ def _push_to_network_viewer(zip_path: str, uid: str, project_name: str, pid: str
         if resp.status_code == 200:
             project_id = resp.json().get("project_id")
             send_message(
-                pid, f"온라인 뷰어에 프로젝트로 저장했습니다: {NETWORK_VIEWER_URL}/viewer/{project_id}"
+                pid,
+                f"온라인 뷰어에 프로젝트로 저장했습니다: {NETWORK_VIEWER_URL}/viewer/{project_id}",
             )
             return project_id
-        send_message(pid, "온라인 뷰어 자동 업로드에 실패했습니다. (결과 zip은 정상적으로 받으실 수 있습니다)")
+        send_message(
+            pid,
+            "온라인 뷰어 자동 업로드에 실패했습니다. (결과 zip은 정상적으로 받으실 수 있습니다)",
+        )
     except Exception:
-        send_message(pid, "온라인 뷰어 서버에 연결할 수 없습니다. (결과 zip은 정상적으로 받으실 수 있습니다)")
+        send_message(
+            pid,
+            "온라인 뷰어 서버에 연결할 수 없습니다. (결과 zip은 정상적으로 받으실 수 있습니다)",
+        )
     return None
 
 
@@ -846,7 +855,8 @@ def run_network_analysis(
         _write_viewer_readme(out_dir)
 
         send_message(
-            pid, f"완료! 인터랙티브 뷰어: {NETWORK_VIEWER_URL} 에 결과 zip을 업로드하세요."
+            pid,
+            f"완료! 인터랙티브 뷰어: {NETWORK_VIEWER_URL} 에 결과 zip을 업로드하세요.",
         )
         send_message(pid, "결과 압축 중...")
         zip_path = out_dir + ".zip"
