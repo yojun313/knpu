@@ -2616,6 +2616,8 @@ class Manager_Analysis(Manager_Worker):
                         extract=False,
                     )
 
+                    self.finished.emit(True, "", extract_path)
+
                 except requests.exceptions.HTTPError as e:
                     self.error.emit(
                         f"서버 에러 발생: {e.response.status_code}\n{e.response.text}"
