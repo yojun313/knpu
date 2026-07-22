@@ -1,0 +1,223 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Word Network Viewer</title>
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <link rel="stylesheet" href="/css/viewer.css">
+</head><body>
+  <div id="app">
+    <div id="net">
+      <div id="loading"><div class="spin"></div><div>그래프를 불러오는 중...</div></div>
+      <div id="zoombox">
+        <button id="btnZoomIn" title="확대">+</button>
+        <div id="zoomval">100%</div>
+        <button id="btnZoomOut" title="축소">−</button>
+        <button id="btnZoomReset" title="전체보기">⤢</button>
+      </div>
+    </div>
+    <div id="top">
+      <div class="brandmark"><span class="dot3"></span><span>Word Network</span></div>
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9fb0c4" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input id="search" type="text" placeholder="단어 검색...">
+      </div>
+      <select id="networkSelect" class="netsel" hidden></select>
+      <div class="badge warn" id="totalBadge"><span class="pulse"></span>-</div>
+      <div class="badge" id="liveBadge"><span class="pulse"></span>표시 중 -</div>
+    </div>
+    <div id="side">
+      <div class="title-block">
+        <div><h1>Word Network</h1><p>공출현 기반 단어 네트워크 · 업로드 뷰어</p></div>
+        <button class="icon-btn" id="btnTheme" title="캔버스 테마 전환">◐</button>
+      </div>
+
+      <details open>
+        <summary>노드 정보</summary>
+        <div class="sec-body"><div id="detail">
+          <div class="empty">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8b98a8" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.4" fill="#8b98a8"/></svg><br>
+            노드를 클릭하면<br>상세 지표가 표시됩니다
+          </div>
+        </div></div>
+      </details>
+
+      <details open>
+        <summary>필터</summary>
+        <div class="sec-body">
+          <div class="row"><label>엣지 가중치 ≥</label>
+            <input type="number" id="wnum" step="any" min="0" value="0">
+          </div>
+          <input id="wslider" type="range" min="0" max="1" value="0" step="0.01" style="width:100%">
+          <div class="hint" id="wHint"></div>
+          <div class="row" style="margin-top:14px"><label>노드 최소 빈도 ≥</label>
+            <input type="number" id="fnum" step="1" min="0" value="0">
+          </div>
+          <input id="fslider" type="range" min="0" max="100" value="0" step="1" style="width:100%">
+          <div class="hint" id="fHint"></div>
+          <div class="chk-row" style="margin-top:14px">
+            <input type="checkbox" id="chkHideIsolated">
+            <label for="chkHideIsolated">연결 없는(고립) 노드 숨기기</label>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>단어 선택 · 표시</summary>
+        <div class="sec-body">
+          <div class="chk-row"><input type="checkbox" id="chkWordMode"><label for="chkWordMode">체크한 단어만 표시</label></div>
+          <div class="row"><label>선택됨</label><span class="val" id="selCount">-</span></div>
+          <input class="wl-search" id="wlSearch" type="text" placeholder="목록 내 검색...">
+          <div class="btn-row">
+            <button class="btn btn-sm" id="wlAll">전체선택</button>
+            <button class="btn btn-sm" id="wlNone">전체해제</button>
+            <button class="btn btn-sm" id="wlInvert">반전</button>
+          </div>
+          <div class="wl-box" id="wlBox"></div>
+          <div class="row" style="margin-top:12px"><label>상위 N개 기준</label></div>
+          <select id="topMetric" style="margin-bottom:8px"></select>
+          <div class="pairnum" style="margin-bottom:8px">
+            <span>N</span><input type="number" id="topN" value="20" min="1" max="99999">
+            <button class="btn btn-sm" id="btnTopN" style="flex:1">상위 N개만 표시</button>
+          </div>
+          <button class="btn btn-sm" id="btnCopyWords" style="width:100%">선택 단어 복사</button>
+        </div>
+      </details>
+
+      <details>
+        <summary>노드 모양 · 크기</summary>
+        <div class="sec-body">
+          <div class="row"><label>모양</label></div>
+          <select id="selShape" style="margin-bottom:12px">
+            <option value="circle">circle (원, 라벨에 맞춰 자동)</option>
+            <option value="dot">dot (원, 값기반 크기)</option>
+            <option value="ellipse">ellipse (타원)</option>
+            <option value="box">box (사각형)</option>
+            <option value="diamond">diamond (다이아몬드)</option>
+            <option value="star">star (별)</option>
+            <option value="triangle">triangle (삼각형)</option>
+            <option value="square">square (정사각형)</option>
+          </select>
+          <div class="row"><label>크기 기준</label></div>
+          <select id="selSizeBy" style="margin-bottom:12px"></select>
+          <div class="row"><label>크기 범위 (dot/star 등)</label></div>
+          <div class="pairnum" style="margin-bottom:12px">
+            <span>min</span><input type="number" id="numSizeMin" value="6" min="1" max="200">
+            <span>max</span><input type="number" id="numSizeMax" value="55" min="1" max="300">
+          </div>
+          <div class="row"><label>테두리 두께</label><span class="val" id="borderWidthVal">1.5</span></div>
+          <input type="range" id="rangeBorderWidth" min="0" max="6" step="0.5" value="1.5" style="width:100%;margin-bottom:12px">
+          <div class="row"><label>테두리 색</label><input type="color" id="colorBorder" value="#ffffff"></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>노드 색상</summary>
+        <div class="sec-body">
+          <div class="row"><label>색상 기준</label></div>
+          <select id="selColorBy" style="margin-bottom:12px">
+            <option value="community">커뮤니티별 팔레트</option>
+            <option value="uniform">단일 색상</option>
+            <option value="gradient">지표 기반 그라디언트</option>
+          </select>
+          <div class="subgrid" id="gridUniform">
+            <div class="row"><label>색상</label><input type="color" id="colorUniform" value="#4C78A8"></div>
+          </div>
+          <div class="subgrid" id="gridGradient">
+            <div class="row"><label>기준 지표</label></div>
+            <select id="selGradMetric" style="margin-bottom:10px"></select>
+            <div class="row"><label>낮은 값</label><input type="color" id="colorGradLow" value="#dbe9f6"></div>
+            <div class="row"><label>높은 값</label><input type="color" id="colorGradHigh" value="#1428A0"></div>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>라벨</summary>
+        <div class="sec-body">
+          <div class="chk-row"><input type="checkbox" id="chkLabelShow" checked><label for="chkLabelShow">라벨 표시</label></div>
+          <div class="chk-row"><input type="checkbox" id="chkLabelTop"><label for="chkLabelTop">상위 노드만 라벨 표시</label></div>
+          <div class="row"><label>라벨 표시 개수</label><span class="val" id="labelTopNVal">30</span></div>
+          <input type="range" id="rangeLabelTopN" min="1" max="500" step="1" value="30" style="width:100%;margin-bottom:12px">
+          <div class="row"><label>글자 크기</label><span class="val" id="fontSizeVal">14</span></div>
+          <input type="range" id="rangeFontSize" min="8" max="36" step="1" value="14" style="width:100%;margin-bottom:12px">
+          <div class="row"><label>글자 색</label><input type="color" id="colorFont" value="#2c3e50"></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>엣지</summary>
+        <div class="sec-body">
+          <div class="row"><label>색상</label><input type="color" id="colorEdge" value="#9fb0c4"></div>
+          <div class="row"><label>불투명도</label><span class="val" id="edgeOpVal">0.55</span></div>
+          <input type="range" id="rangeEdgeOpacity" min="0.05" max="1" step="0.05" value="0.55" style="width:100%;margin-bottom:12px">
+          <div class="row"><label>두께 범위</label></div>
+          <div class="pairnum" style="margin-bottom:12px">
+            <span>min</span><input type="number" id="numEdgeMin" value="0.5" min="0.1" max="20" step="0.1">
+            <span>max</span><input type="number" id="numEdgeMax" value="6" min="0.5" max="40" step="0.5">
+          </div>
+          <div class="chk-row"><input type="checkbox" id="chkEdgeSmooth"><label for="chkEdgeSmooth">곡선(curve) 엣지</label></div>
+          <div class="chk-row"><input type="checkbox" id="chkArrows"><label for="chkArrows">화살표 표시</label></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>물리 엔진</summary>
+        <div class="sec-body">
+          <div class="chk-row"><input type="checkbox" id="chkPhysics"><label for="chkPhysics">물리 엔진 사용</label></div>
+          <div class="hint">켜면 안정될 때까지만 자동으로 계산한 뒤, 스스로 멈추고 꺼집니다. 계속 흔들리지 않습니다.</div>
+          <div class="row" style="margin-top:10px"><label>솔버</label></div>
+          <select id="selSolver" style="margin-bottom:12px">
+            <option value="barnesHut">barnesHut (기본)</option>
+            <option value="forceAtlas2Based">forceAtlas2Based</option>
+            <option value="repulsion">repulsion</option>
+          </select>
+          <div class="row"><label>중력(밀어내기)</label><span class="val" id="gravityVal">-12000</span></div>
+          <input type="range" id="rangeGravity" min="-50000" max="-500" step="500" value="-12000" style="width:100%;margin-bottom:10px">
+          <div class="row"><label>스프링 길이</label><span class="val" id="springLenVal">120</span></div>
+          <input type="range" id="rangeSpringLen" min="30" max="400" step="5" value="120" style="width:100%;margin-bottom:10px">
+          <div class="row"><label>스프링 강도</label><span class="val" id="springConstVal">0.04</span></div>
+          <input type="range" id="rangeSpringConst" min="0.01" max="0.5" step="0.01" value="0.04" style="width:100%;margin-bottom:10px">
+          <div class="row"><label>감쇠(damping)</label><span class="val" id="dampingVal">0.09</span></div>
+          <input type="range" id="rangeDamping" min="0" max="1" step="0.01" value="0.09" style="width:100%;margin-bottom:12px">
+          <button class="btn" id="btnRestabilize">레이아웃 다시 배치</button>
+        </div>
+      </details>
+
+      <details>
+        <summary>보기 · 조작</summary>
+        <div class="sec-body">
+          <div class="chk-row"><input type="checkbox" id="chkZoomWheel" checked><label for="chkZoomWheel">휠로 확대/축소</label></div>
+          <div class="chk-row"><input type="checkbox" id="chkDragNodes" checked><label for="chkDragNodes">노드 드래그 허용</label></div>
+          <button class="btn" id="btnFit">전체 보기</button>
+          <div class="row" style="margin-top:4px"><label>배경(중심)</label><input type="color" id="colorBgCenter" value="#ffffff"></div>
+          <div class="row"><label>배경(외곽)</label><input type="color" id="colorBgEdge" value="#eef1f4"></div>
+        </div>
+      </details>
+
+      <details open>
+        <summary>커뮤니티 (<span id="commCount">0</span>개)</summary>
+        <div class="sec-body">
+          <div class="btn-row">
+            <button class="btn btn-sm" id="commAll">전체표시</button>
+            <button class="btn btn-sm" id="commNone">전체숨김</button>
+          </div>
+          <div id="legend"></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>네트워크 통계</summary>
+        <div class="sec-body"><div id="stats"></div></div>
+      </details>
+
+      <details open>
+        <summary>내보내기 · 초기화</summary>
+        <div class="sec-body">
+          <button class="btn" id="btnExportPng">현재 화면 PNG로 저장</button>
+          <button class="btn" id="btnReset">모든 설정 초기화</button>
+        </div>
+      </details>
+
+    </div>
+  </div>
+  <script src="/js/viewer.js"></script>
+</body></html>

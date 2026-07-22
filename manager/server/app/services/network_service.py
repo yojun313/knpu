@@ -3,7 +3,6 @@ import os
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")  # period 병렬 시 워커 내부에서 재설정
 import re
-import json
 import shutil
 import traceback
 from datetime import datetime
@@ -25,6 +24,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
 
 from app.libs.progress import send_message
+from app.config import NETWORK_VIEWER_URL
 from scipy.spatial import ConvexHull
 from xml.sax.saxutils import escape
 
@@ -35,10 +35,6 @@ try:
 except Exception:
     pass
 plt.rcParams["axes.unicode_minus"] = False
-
-
-# 템플릿 파일 경로 (이 파이썬 파일과 같은 폴더에 network_template.html 이 있다고 가정)
-TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "network_template.html")
 
 
 # ────────────────────────── 유틸 ──────────────────────────
@@ -587,9 +583,16 @@ def _write_gexf(res, out_path):
 def export_files(res, option, out_dir, tag=""):
     os.makedirs(out_dir, exist_ok=True)
     g, cent, community = res["graph"], res["cent"], res["community"]
+    coords = _scale_coords(res["coords"], span=1000.0)
 
-    # nodes.csv
-    node_rows = {"word": g.vs["name"], "frequency": g.vs["freq"]}
+    # nodes.csv (x/y: 온라인 뷰어(network.knpu.re.kr)가 분석 시 계산된 레이아웃을
+    # 그대로 재사용할 수 있도록 함께 저장)
+    node_rows = {
+        "word": g.vs["name"],
+        "frequency": g.vs["freq"],
+        "x": coords[:, 0],
+        "y": coords[:, 1],
+    }
     for k, v in cent.items():
         node_rows[k] = v
     if community is not None:
@@ -617,9 +620,6 @@ def export_files(res, option, out_dir, tag=""):
         res, option, os.path.join(out_dir, f"network{tag}.png"), title=tag or "Network"
     )
 
-    # 인터랙티브 html (vis-network, CDN)
-    _export_interactive_html(res, os.path.join(out_dir, f"viewer{tag}.html"))
-
     # summary
     with open(os.path.join(out_dir, f"summary{tag}.txt"), "w", encoding="utf-8") as f:
         f.write(f"nodes: {g.vcount()}\nedges: {g.ecount()}\n")
@@ -633,104 +633,20 @@ def export_files(res, option, out_dir, tag=""):
     export_ego_networks(res, option, out_dir, tag=tag)
 
 
-def _export_interactive_html(res, out_path, max_edges=1500):
-    g = res["graph"]
-    coords = res["coords"]
-    cent, community = res["cent"], res["community"]
-
-    all_edges = list(g.es)
-    if len(all_edges) > max_edges:
-        all_edges = sorted(all_edges, key=lambda e: e["weight"], reverse=True)[
-            :max_edges
-        ]
-    used = set()
-    for e in all_edges:
-        used.add(e.source)
-        used.add(e.target)
-
-    # 좌표 정규화 (화면 스케일)
-    xs = coords[:, 0]
-    ys = coords[:, 1]
-    xr = (xs.max() - xs.min()) or 1
-    yr = (ys.max() - ys.min()) or 1
-
-    palette = [
-        "#4C78A8",
-        "#F58518",
-        "#54A24B",
-        "#E45756",
-        "#72B7B2",
-        "#FF9DA6",
-        "#9D755D",
-        "#BAB0AC",
-        "#B279A2",
-        "#EECA3B",
-        "#59A14F",
-        "#9C755F",
-        "#79706E",
-        "#D37295",
-        "#8CD17D",
-    ]
-
-    nodes = []
-    for i, v in enumerate(g.vs):
-        if i not in used:
-            continue
-        grp = int(community[i]) if community is not None else 0
-        info = {}
-        for k, arr in cent.items():
-            try:
-                val = arr[i]
-                info[k] = round(float(val), 4) if val is not None else None
-            except Exception:
-                pass
-        nodes.append(
-            {
-                "id": i,
-                "label": v["name"],
-                "value": int(v["freq"]),
-                "group": grp,
-                "color": palette[grp % len(palette)],
-                "x": float((xs[i] - xs.min()) / xr * 2400 - 1200),
-                "y": float((ys[i] - ys.min()) / yr * 1600 - 800),
-                "info": info,
-            }
+def _write_viewer_readme(out_dir):
+    """온라인 인터랙티브 뷰어 안내. 뷰어 자체는 더 이상 결과에 동봉하지 않고,
+    nodes.csv/edges.csv 를 뷰어 사이트에 업로드해 서버에서 렌더링한다."""
+    path = os.path.join(out_dir, "인터랙티브_뷰어_안내.txt")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(
+            "인터랙티브 네트워크 뷰어\n"
+            "========================\n\n"
+            f"이 폴더(zip)를 통째로 {NETWORK_VIEWER_URL} 에 업로드하면\n"
+            "마우스로 확대·검색·필터가 되는 인터랙티브 네트워크를 바로 확인할 수 있습니다.\n"
+            "(nodes.csv, edges.csv 를 읽어 서버에서 그래프를 구성합니다.)\n\n"
+            "자세한 사용법은 매뉴얼의 '인터랙티브 뷰어' 장을 참고하세요:\n"
+            "https://knpu.re.kr/manual/network\n"
         )
-    edges = [
-        {"from": e.source, "to": e.target, "value": float(e["weight"])}
-        for e in all_edges
-    ]
-
-    nodes_json = json.dumps(nodes, ensure_ascii=False)
-    edges_json = json.dumps(edges, ensure_ascii=False)
-    max_w = max((e["value"] for e in edges), default=1)
-    truncated = len(g.es) > max_edges
-    n_comm = (max(community) + 1) if community is not None else 1
-    max_freq = max((n["value"] for n in nodes), default=1)
-
-    warn = (
-        f"⚠ 전체 엣지 {len(g.es):,}개 중 상위 {max_edges:,}개 표시"
-        if truncated
-        else f"엣지 {len(g.es):,}개 · 노드 {len(nodes):,}개"
-    )
-
-    # 외부 HTML 템플릿 로드
-    with open(TEMPLATE_PATH, "r", encoding="utf-8") as f:
-        html = f.read()
-
-    html = (
-        html.replace("__WARN__", warn)
-        .replace("__MAXW__", str(max_w))
-        .replace("__STEP__", str(max(max_w / 100, 0.01)))
-        .replace("__NC__", str(n_comm))
-        .replace("__MAXFREQ__", str(max_freq))
-        .replace("__NODES__", nodes_json)
-        .replace("__EDGES__", edges_json)
-        .replace("__PALETTE__", json.dumps(palette))
-    )
-
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(html)
 
 
 # ────────────────────── 기간 병렬 워커 ──────────────────────
@@ -895,6 +811,11 @@ def run_network_analysis(pid: str, data: pd.DataFrame, option: dict):
                 )
             export_files(res, option, out_dir)
 
+        _write_viewer_readme(out_dir)
+
+        send_message(
+            pid, f"완료! 인터랙티브 뷰어: {NETWORK_VIEWER_URL} 에 결과 zip을 업로드하세요."
+        )
         send_message(pid, "결과 압축 중...")
         zip_path = out_dir + ".zip"
         shutil.make_archive(out_dir, "zip", out_dir)
