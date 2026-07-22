@@ -5,24 +5,50 @@
   <link rel="stylesheet" href="/css/viewer.css">
 </head><body>
   <div id="app">
-    <div id="net">
+    <div id="rail" class="rail">
+      <div class="rail-head">
+        <button id="railToggle" class="rail-toggle" title="사이드바 접기/펼치기">☰</button>
+        <span class="rail-brand">내 프로젝트</span>
+      </div>
+      <button id="railUploadBtn" class="rail-upload" title="새 프로젝트 업로드">
+        <span class="ru-icon">＋</span><span class="ru-text">새 프로젝트 업로드</span>
+      </button>
+      <div id="railList" class="rail-list"></div>
+      <div id="railEmpty" class="rail-empty" hidden>아직 프로젝트가 없습니다</div>
+      <div id="railResizer" class="rail-resizer" title="드래그해서 너비 조절"></div>
+      <div class="rail-foot">
+        <span id="railUserName" class="rail-user"></span>
+        <button id="railLogout" class="rail-logout" title="로그아웃">⎋</button>
+      </div>
+    </div>
+    <!-- #net은 vis-network가 완전히 소유하는 컨테이너입니다. vis-network는 생성 시
+         컨테이너의 자식 요소를 모두 지우고 자기 캔버스로 교체하므로, 로딩 스피너와
+         확대/축소 버튼은 형제 요소(#netWrap의 자식)로 분리해 지워지지 않게 합니다. -->
+    <div id="netWrap">
+      <div id="net"></div>
       <div id="loading"><div class="spin"></div><div>그래프를 불러오는 중...</div></div>
+      <div id="emptyProject" class="empty-project" hidden>
+        <div class="ep-icon">🗂</div>
+        <div class="ep-title">프로젝트를 선택하세요</div>
+        <div class="ep-sub">왼쪽 목록에서 프로젝트를 클릭하거나, 새 프로젝트를 업로드하세요.</div>
+        <button id="emptyUploadBtn" class="btn primary ep-btn">새 프로젝트 업로드</button>
+      </div>
       <div id="zoombox">
         <button id="btnZoomIn" title="확대">+</button>
         <div id="zoomval">100%</div>
         <button id="btnZoomOut" title="축소">−</button>
         <button id="btnZoomReset" title="전체보기">⤢</button>
       </div>
-    </div>
-    <div id="top">
-      <div class="brandmark"><span class="dot3"></span><span>Word Network</span></div>
-      <div class="search">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9fb0c4" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-        <input id="search" type="text" placeholder="단어 검색...">
+      <div id="top">
+        <div class="brandmark" id="backLink"><span class="dot3"></span><span id="projectName">Word Network</span></div>
+        <div class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9fb0c4" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <input id="search" type="text" placeholder="단어 검색...">
+        </div>
+        <select id="networkSelect" class="netsel" hidden></select>
+        <div class="badge warn" id="totalBadge"><span class="pulse"></span>-</div>
+        <div class="badge" id="liveBadge"><span class="pulse"></span>표시 중 -</div>
       </div>
-      <select id="networkSelect" class="netsel" hidden></select>
-      <div class="badge warn" id="totalBadge"><span class="pulse"></span>-</div>
-      <div class="badge" id="liveBadge"><span class="pulse"></span>표시 중 -</div>
     </div>
     <div id="side">
       <div class="title-block">
@@ -160,29 +186,6 @@
       </details>
 
       <details>
-        <summary>물리 엔진</summary>
-        <div class="sec-body">
-          <div class="chk-row"><input type="checkbox" id="chkPhysics"><label for="chkPhysics">물리 엔진 사용</label></div>
-          <div class="hint">켜면 안정될 때까지만 자동으로 계산한 뒤, 스스로 멈추고 꺼집니다. 계속 흔들리지 않습니다.</div>
-          <div class="row" style="margin-top:10px"><label>솔버</label></div>
-          <select id="selSolver" style="margin-bottom:12px">
-            <option value="barnesHut">barnesHut (기본)</option>
-            <option value="forceAtlas2Based">forceAtlas2Based</option>
-            <option value="repulsion">repulsion</option>
-          </select>
-          <div class="row"><label>중력(밀어내기)</label><span class="val" id="gravityVal">-12000</span></div>
-          <input type="range" id="rangeGravity" min="-50000" max="-500" step="500" value="-12000" style="width:100%;margin-bottom:10px">
-          <div class="row"><label>스프링 길이</label><span class="val" id="springLenVal">120</span></div>
-          <input type="range" id="rangeSpringLen" min="30" max="400" step="5" value="120" style="width:100%;margin-bottom:10px">
-          <div class="row"><label>스프링 강도</label><span class="val" id="springConstVal">0.04</span></div>
-          <input type="range" id="rangeSpringConst" min="0.01" max="0.5" step="0.01" value="0.04" style="width:100%;margin-bottom:10px">
-          <div class="row"><label>감쇠(damping)</label><span class="val" id="dampingVal">0.09</span></div>
-          <input type="range" id="rangeDamping" min="0" max="1" step="0.01" value="0.09" style="width:100%;margin-bottom:12px">
-          <button class="btn" id="btnRestabilize">레이아웃 다시 배치</button>
-        </div>
-      </details>
-
-      <details>
         <summary>보기 · 조작</summary>
         <div class="sec-body">
           <div class="chk-row"><input type="checkbox" id="chkZoomWheel" checked><label for="chkZoomWheel">휠로 확대/축소</label></div>
@@ -219,5 +222,22 @@
 
     </div>
   </div>
+
+  <div id="uploadModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span>새 프로젝트 업로드</span>
+        <button id="uploadModalClose" class="modal-close" title="닫기">×</button>
+      </div>
+      <label id="modalDropzone" class="modal-dropzone" for="modalFileInput">
+        <input type="file" id="modalFileInput" accept=".zip" hidden>
+        <div class="dz-icon">＋</div>
+        <div class="dz-text">zip 파일을 여기로 끌어놓거나 클릭해서 선택하세요</div>
+        <div class="dz-sub">nodes.csv / edges.csv 가 들어있는 결과 zip (network_*.zip)</div>
+      </label>
+      <div id="modalStatus" class="modal-status"></div>
+    </div>
+  </div>
+
   <script src="/js/viewer.js"></script>
 </body></html>

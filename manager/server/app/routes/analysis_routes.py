@@ -1,10 +1,11 @@
-from fastapi import APIRouter, UploadFile, File, Form
+from fastapi import APIRouter, UploadFile, File, Form, Header
 from fastapi.responses import StreamingResponse, JSONResponse
 from app.services.analysis_service import (
     start_kemkim,
     tokenization,
     start_youtube_download,
 )
+from app.services.auth_service import get_uid_from_bearer
 from app.models.analysis_model import KemKimOption
 import pandas as pd
 from io import StringIO
@@ -232,8 +233,16 @@ async def grounding_dino_proxy_route(
 
 
 @router.post("/graph-network")
-async def graph_network(option: str = Form(...), file: UploadFile = File(...)):
+async def graph_network(
+    option: str = Form(...),
+    file: UploadFile = File(...),
+    authorization: str | None = Header(None),
+):
     option = json.loads(option)
     content = await file.read()
     df = pd.read_csv(StringIO(content.decode("utf-8")))
-    return run_network_analysis(option.get("pid", "network"), df, option)
+    uid = get_uid_from_bearer(authorization)
+    project_name = os.path.splitext(file.filename)[0]
+    return run_network_analysis(
+        option.get("pid", "network"), df, option, uid=uid, project_name=project_name
+    )

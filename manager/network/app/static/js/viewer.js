@@ -1,7 +1,11 @@
 (function () {
   'use strict';
 
-  var sessionId = location.pathname.replace(/\/$/, '').split('/').pop();
+  function parseProjectId() {
+    var m = location.pathname.match(/^\/viewer\/([^\/]+)\/?$/);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  var projectId = parseProjectId();
   var qs = new URLSearchParams(location.search);
   var currentTag = qs.get('tag') || '';
 
@@ -11,6 +15,7 @@
   var nodes = new vis.DataSet([]);
   var edges = new vis.DataSet([]);
   var container = document.getElementById('net');
+  var bgContainer = document.getElementById('netWrap');
 
   // ---------------------------------------------------------------
   // 데이터 로드
@@ -25,15 +30,19 @@
   function loadNetwork(tag) {
     document.getElementById('loading').classList.remove('hide');
     return Promise.all([
-      api('/api/graph/' + sessionId + '/data?tag=' + encodeURIComponent(tag)),
-      api('/api/graph/' + sessionId + '/summary?tag=' + encodeURIComponent(tag)),
-      api('/api/graph/' + sessionId + '/meta'),
+      api('/api/projects/' + projectId + '/data?tag=' + encodeURIComponent(tag)),
+      api('/api/projects/' + projectId + '/summary?tag=' + encodeURIComponent(tag)),
+      api('/api/projects/' + projectId + '/meta'),
     ]).then(function (res) {
       var data = res[0], summ = res[1], meta = res[2];
       rawNodes = data.nodes;
       rawEdges = data.edges;
       summary = summ;
       currentTag = tag;
+      document.getElementById('projectName').textContent = meta.name || 'Word Network';
+      document.title = (meta.name || 'Word Network') + ' · Word Network Viewer';
+      document.getElementById('emptyProject').hidden = true;
+      highlightActiveRailItem();
       initNetworkSelect(meta);
       var warn = data.truncated
         ? '⚠ 전체 엣지 ' + data.total_edges.toLocaleString() + '개 중 상위 ' + data.edges.length.toLocaleString() + '개 표시'
@@ -65,6 +74,261 @@
   }
 
   // ---------------------------------------------------------------
+  // 왼쪽 프로젝트 레일 (VSCode 사이드바처럼 접고 펼치기 + 프로젝트 전환/업로드/관리)
+  // ---------------------------------------------------------------
+  var railProjects = [];
+
+  function railApi(path, opts) {
+    return fetch(path, opts).then(function (res) {
+      if (res.status === 401) { location.href = '/login'; return Promise.reject(new Error('unauthorized')); }
+      return res.json().then(function (b) {
+        if (!res.ok) throw new Error(b.detail || res.statusText);
+        return b;
+      });
+    });
+  }
+
+  function setModalStatus(msg, cls) {
+    var el = document.getElementById('modalStatus');
+    el.textContent = msg || '';
+    el.className = 'modal-status' + (cls ? ' ' + cls : '');
+  }
+
+  function railDotColor(i) {
+    var pal = document.body.classList.contains('dark-theme') ? PALETTE_DARK : PALETTE_LIGHT;
+    return pal[((i % pal.length) + pal.length) % pal.length];
+  }
+
+  function loadMe() {
+    railApi('/api/me').then(function (me) {
+      document.getElementById('railUserName').textContent = me.name || '';
+      document.getElementById('railUserName').title = me.name || '';
+    }).catch(function () {});
+  }
+
+  function loadRailProjects() {
+    return railApi('/api/projects').then(function (body) {
+      railProjects = body.projects || [];
+      renderRail();
+    }).catch(function (err) {
+      if (err.message !== 'unauthorized') toast('프로젝트 목록을 불러오지 못했습니다.');
+    });
+  }
+
+  function railInitial(name) {
+    return (name || '?').trim().charAt(0).toUpperCase();
+  }
+
+  function renderRail() {
+    var listEl = document.getElementById('railList');
+    var emptyEl = document.getElementById('railEmpty');
+    listEl.innerHTML = '';
+    emptyEl.hidden = railProjects.length > 0;
+
+    railProjects.forEach(function (p, idx) {
+      var item = document.createElement('div');
+      item.className = 'rail-item' + (p.project_id === projectId ? ' active' : '');
+      item.setAttribute('data-id', p.project_id);
+      item.title = p.name;
+      var meta = p.networks && p.networks.length === 1
+        ? '노드 ' + p.networks[0].nodes.toLocaleString() + ' · 엣지 ' + p.networks[0].edges.toLocaleString()
+        : (p.networks ? p.networks.length + '개 네트워크' : '');
+      item.innerHTML =
+        '<span class="ri-dot" style="background:' + railDotColor(idx) + '">' + esc(railInitial(p.name)) + '</span>'
+        + '<span class="ri-main"><span class="ri-name">' + esc(p.name) + '</span>'
+        + '<span class="ri-meta">' + esc(meta) + '</span></span>'
+        + '<span class="ri-actions">'
+        + '<button class="ri-btn" data-act="rename" title="이름 변경">✎</button>'
+        + '<button class="ri-btn danger" data-act="delete" title="삭제">🗑</button>'
+        + '</span>';
+      item.addEventListener('click', function (e) {
+        if (e.target.closest('[data-act]')) return;
+        switchProject(p.project_id);
+      });
+      item.querySelector('[data-act="rename"]').addEventListener('click', function (e) {
+        e.stopPropagation(); startRailRename(item, p);
+      });
+      item.querySelector('[data-act="delete"]').addEventListener('click', function (e) {
+        e.stopPropagation(); deleteRailProject(p);
+      });
+      listEl.appendChild(item);
+    });
+  }
+
+  function highlightActiveRailItem() {
+    document.querySelectorAll('.rail-item').forEach(function (el) {
+      el.classList.toggle('active', el.getAttribute('data-id') === projectId);
+    });
+  }
+
+  function startRailRename(item, p) {
+    var nameEl = item.querySelector('.ri-name');
+    var input = document.createElement('input');
+    input.className = 'ri-name-input';
+    input.value = p.name;
+    nameEl.replaceWith(input);
+    input.focus(); input.select();
+
+    function commit() {
+      var newName = input.value.trim();
+      if (!newName || newName === p.name) { renderRail(); return; }
+      railApi('/api/projects/' + p.project_id, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName })
+      }).then(function () {
+        loadRailProjects();
+        if (p.project_id === projectId) {
+          document.getElementById('projectName').textContent = newName;
+          document.title = newName + ' · Word Network Viewer';
+        }
+      }).catch(function () { toast('이름 변경에 실패했습니다.'); renderRail(); });
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') input.blur();
+      if (e.key === 'Escape') { input.value = p.name; input.blur(); }
+    });
+    input.addEventListener('click', function (e) { e.stopPropagation(); });
+  }
+
+  function deleteRailProject(p) {
+    if (!confirm('"' + p.name + '" 프로젝트를 삭제할까요? 되돌릴 수 없습니다.')) return;
+    railApi('/api/projects/' + p.project_id, { method: 'DELETE' }).then(function () {
+      var wasCurrent = p.project_id === projectId;
+      loadRailProjects().then(function () {
+        if (wasCurrent) {
+          projectId = null;
+          history.pushState(null, '', '/viewer');
+          document.getElementById('projectName').textContent = 'Word Network';
+          document.title = 'Word Network Viewer';
+          document.getElementById('emptyProject').hidden = false;
+          document.getElementById('totalBadge').innerHTML = '<span class="pulse"></span>-';
+          document.getElementById('liveBadge').innerHTML = '<span class="pulse"></span>표시 중 -';
+        }
+      });
+    }).catch(function () { toast('삭제에 실패했습니다.'); });
+  }
+
+  function switchProject(id) {
+    if (!id || id === projectId) return;
+    projectId = id;
+    currentTag = '';
+    history.pushState(null, '', '/viewer/' + encodeURIComponent(id));
+    highlightActiveRailItem();
+    loadNetwork('');
+  }
+
+  function openUploadModal() {
+    document.getElementById('uploadModal').hidden = false;
+    setModalStatus('');
+  }
+  function closeUploadModal() {
+    document.getElementById('uploadModal').hidden = true;
+  }
+
+  function uploadToRail(file) {
+    if (!file) return;
+    if (!/\.zip$/i.test(file.name)) { setModalStatus('zip 파일만 업로드할 수 있습니다.', 'err'); return; }
+    setModalStatus('업로드 및 분석 중...');
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('name', file.name.replace(/\.zip$/i, ''));
+    railApi('/api/projects', { method: 'POST', body: fd }).then(function (project) {
+      setModalStatus('완료!', 'ok');
+      loadRailProjects();
+      switchProject(project.project_id);
+      setTimeout(closeUploadModal, 400);
+    }).catch(function (err) { setModalStatus(err.message || String(err), 'err'); });
+  }
+
+  var RAIL_MIN_WIDTH = 180;
+  var RAIL_MAX_WIDTH = 440;
+  var RAIL_DEFAULT_WIDTH = 236;
+
+  function bindRailEvents() {
+    var rail = document.getElementById('rail');
+    var toggle = document.getElementById('railToggle');
+
+    // ---- 접기/펼치기 ----
+    var collapsed = localStorage.getItem('nv_rail_collapsed') === '1';
+    var savedWidth = parseInt(localStorage.getItem('nv_rail_width'), 10);
+    if (!savedWidth || isNaN(savedWidth)) savedWidth = RAIL_DEFAULT_WIDTH;
+    savedWidth = Math.max(RAIL_MIN_WIDTH, Math.min(RAIL_MAX_WIDTH, savedWidth));
+    if (!collapsed) rail.style.width = savedWidth + 'px';
+    rail.classList.toggle('collapsed', collapsed);
+
+    toggle.addEventListener('click', function () {
+      var isCollapsed = rail.classList.toggle('collapsed');
+      localStorage.setItem('nv_rail_collapsed', isCollapsed ? '1' : '0');
+      if (!isCollapsed) rail.style.width = savedWidth + 'px';
+      if (net) setTimeout(function () { net.redraw(); }, 200);
+    });
+
+    // ---- 마우스로 너비 조절 ----
+    var resizer = document.getElementById('railResizer');
+    var dragging = false;
+    resizer.addEventListener('mousedown', function (e) {
+      if (rail.classList.contains('collapsed')) return;
+      dragging = true;
+      rail.classList.add('resizing');
+      resizer.classList.add('active');
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', function (e) {
+      if (!dragging) return;
+      var w = Math.max(RAIL_MIN_WIDTH, Math.min(RAIL_MAX_WIDTH, e.clientX));
+      rail.style.width = w + 'px';
+      savedWidth = w;
+    });
+    window.addEventListener('mouseup', function () {
+      if (!dragging) return;
+      dragging = false;
+      rail.classList.remove('resizing');
+      resizer.classList.remove('active');
+      document.body.style.userSelect = '';
+      localStorage.setItem('nv_rail_width', String(savedWidth));
+      if (net) net.redraw();
+    });
+
+    // ---- 업로드 모달 ----
+    document.getElementById('railUploadBtn').addEventListener('click', openUploadModal);
+    document.getElementById('emptyUploadBtn').addEventListener('click', openUploadModal);
+    document.getElementById('uploadModalClose').addEventListener('click', closeUploadModal);
+    document.getElementById('uploadModal').addEventListener('click', function (e) {
+      if (e.target.id === 'uploadModal') closeUploadModal();
+    });
+    window.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !document.getElementById('uploadModal').hidden) closeUploadModal();
+    });
+
+    var fileInput = document.getElementById('modalFileInput');
+    var dropzone = document.getElementById('modalDropzone');
+    fileInput.addEventListener('change', function () { uploadToRail(fileInput.files[0]); fileInput.value = ''; });
+    ['dragenter', 'dragover'].forEach(function (evt) { dropzone.addEventListener(evt, function (e) { e.preventDefault(); dropzone.classList.add('drag'); }); });
+    ['dragleave', 'drop'].forEach(function (evt) { dropzone.addEventListener(evt, function (e) { e.preventDefault(); dropzone.classList.remove('drag'); }); });
+    dropzone.addEventListener('drop', function (e) { uploadToRail(e.dataTransfer.files && e.dataTransfer.files[0]); });
+
+    document.getElementById('railLogout').addEventListener('click', function () {
+      fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/login'; });
+    });
+
+    window.addEventListener('popstate', function () {
+      var id = parseProjectId();
+      if (id === projectId) return;
+      projectId = id;
+      currentTag = '';
+      highlightActiveRailItem();
+      if (id) {
+        document.getElementById('emptyProject').hidden = true;
+        loadNetwork('');
+      } else {
+        document.getElementById('emptyProject').hidden = false;
+        document.getElementById('projectName').textContent = 'Word Network';
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------
   // 아래부터는 매 네트워크 로드마다 다시 구성
   // ---------------------------------------------------------------
   var mnames = {
@@ -85,8 +349,17 @@
     return { min: mn, max: mx };
   }
 
-  var palette = ['#4C78A8', '#F58518', '#54A24B', '#E45756', '#72B7B2', '#FF9DA6', '#9D755D',
-    '#BAB0AC', '#B279A2', '#EECA3B', '#59A14F', '#9C755F', '#79706E', '#D37295', '#8CD17D'];
+  // 검증된 8색 범주형 팔레트(고정 순서: blue, orange, aqua, yellow, magenta, green, violet, red) +
+  // 커뮤니티가 8개를 넘는 경우를 위한 확장 톤. 라이트/다크 캔버스 각각에 맞춰 스텝을 달리한다.
+  var PALETTE_LIGHT = [
+    '#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948',
+    '#8fb8ea', '#f0a578', '#7fd1b3', '#f0c775', '#f0aec8', '#5fa85f', '#9d8ed0', '#e88f8e'
+  ];
+  var PALETTE_DARK = [
+    '#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767',
+    '#6fa3e0', '#d98b5e', '#5fbf9a', '#d9ae5e', '#d98fac', '#4f9f4f', '#b3a8e8', '#d98080'
+  ];
+  function currentPalette() { return cfg.theme === 'dark' ? PALETTE_DARK : PALETTE_LIGHT; }
 
   function hexToRgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join(''); var num = parseInt(h, 16); return [num >> 16 & 255, num >> 8 & 255, num & 255]; }
   function clamp255(x) { return Math.max(0, Math.min(255, Math.round(x))); }
@@ -97,15 +370,14 @@
 
   var defaultCfg = {
     shape: 'circle', sizeBy: 'freq', sizeMin: 6, sizeMax: 55,
-    colorBy: 'community', colorUniform: '#4C78A8',
-    colorGradMetric: 'freq', colorGradLow: '#dbe9f6', colorGradHigh: '#1428A0',
+    colorBy: 'community', colorUniform: '#2c3e50',
+    colorGradMetric: 'freq', colorGradLow: '#dbe9f6', colorGradHigh: '#2c3e50',
     borderWidth: 1.5, borderColor: '#ffffff',
     labelShow: true, labelTopOnly: false, labelTopN: 30, fontSize: 14, fontColor: '#2c3e50',
-    edgeColor: '#9fb0c4', edgeOpacity: 0.55, edgeWidthMin: 0.5, edgeWidthMax: 6,
+    edgeColor: '#bdc3c7', edgeOpacity: 0.55, edgeWidthMin: 0.5, edgeWidthMax: 6,
     edgeSmooth: false, arrows: false,
-    physics: false, solver: 'barnesHut', gravity: -12000, springLength: 120, springConstant: 0.04, damping: 0.09,
     zoomWheel: true, dragNodes: true,
-    bgCenter: '#ffffff', bgEdge: '#eef1f4', theme: 'light',
+    bgCenter: '#ffffff', bgEdge: '#ecf0f1', theme: 'light',
     minWeight: 0, minFreq: 0, hideIsolated: false
   };
   var cfg;
@@ -174,16 +446,6 @@
     document.getElementById('numEdgeMax').value = cfg.edgeWidthMax;
     document.getElementById('chkEdgeSmooth').checked = cfg.edgeSmooth;
     document.getElementById('chkArrows').checked = cfg.arrows;
-    document.getElementById('chkPhysics').checked = cfg.physics;
-    document.getElementById('selSolver').value = cfg.solver;
-    document.getElementById('rangeGravity').value = cfg.gravity;
-    document.getElementById('gravityVal').innerText = cfg.gravity;
-    document.getElementById('rangeSpringLen').value = cfg.springLength;
-    document.getElementById('springLenVal').innerText = cfg.springLength;
-    document.getElementById('rangeSpringConst').value = cfg.springConstant;
-    document.getElementById('springConstVal').innerText = cfg.springConstant.toFixed(2);
-    document.getElementById('rangeDamping').value = cfg.damping;
-    document.getElementById('dampingVal').innerText = cfg.damping.toFixed(2);
     document.getElementById('chkZoomWheel').checked = cfg.zoomWheel;
     document.getElementById('chkDragNodes').checked = cfg.dragNodes;
     document.getElementById('colorBgCenter').value = cfg.bgCenter;
@@ -198,11 +460,11 @@
   function round4(v) { return Math.round(v * 10000) / 10000; }
 
   function applyBackground() {
-    container.style.background = 'radial-gradient(ellipse at 50% 38%,' + cfg.bgCenter + ' 0%,' + cfg.bgEdge + ' 100%)';
+    bgContainer.style.background = 'radial-gradient(ellipse at 50% 38%,' + cfg.bgCenter + ' 0%,' + cfg.bgEdge + ' 100%)';
   }
 
   function computeNodeColor(n) {
-    if (cfg.colorBy === 'community') return commColors[n.group] || palette[((n.group % palette.length) + palette.length) % palette.length];
+    if (cfg.colorBy === 'community') { var pal = currentPalette(); return commColors[n.group] || pal[((n.group % pal.length) + pal.length) % pal.length]; }
     if (cfg.colorBy === 'uniform') return cfg.colorUniform;
     var r = metricRangeOf(cfg.colorGradMetric);
     var val = getMetricValue(n, cfg.colorGradMetric);
@@ -230,7 +492,7 @@
 
     currentVisibleIds = {}; filteredNodes.forEach(function (n) { currentVisibleIds[n.id] = true; });
 
-    var strokeColor = cfg.theme === 'dark' ? '#0c1017' : '#ffffff';
+    var strokeColor = cfg.theme === 'dark' ? '#212121' : '#ffffff';
     var labelSet = (cfg.labelShow && cfg.labelTopOnly) ? topLabelIds() : null;
 
     var displayNodes = filteredNodes.map(function (n) {
@@ -306,7 +568,6 @@
     document.getElementById('stats').innerHTML = html;
   }
 
-  var stabilizeTimeout = null;
   function getNetworkOptions() {
     return {
       layout: { improvedLayout: false },
@@ -325,15 +586,9 @@
         scaling: { min: cfg.edgeWidthMin, max: cfg.edgeWidthMax },
         selectionWidth: 2
       },
-      physics: {
-        enabled: cfg.physics,
-        solver: cfg.solver,
-        barnesHut: { gravitationalConstant: cfg.gravity, springLength: cfg.springLength, springConstant: cfg.springConstant, damping: cfg.damping },
-        forceAtlas2Based: { gravitationalConstant: cfg.gravity, springLength: cfg.springLength, springConstant: cfg.springConstant, damping: cfg.damping },
-        repulsion: { springLength: cfg.springLength, springConstant: cfg.springConstant, damping: cfg.damping },
-        // 켜지면 스스로 안정화될 때까지만 계산하고 자동으로 멈춘다 (계속 흔들리는 문제 방지)
-        stabilization: { enabled: cfg.physics, iterations: 300, updateInterval: 25, fit: false }
-      },
+      // 물리 엔진은 배치가 흔들리고 결과가 일관되지 않는다는 피드백에 따라 사용하지 않음.
+      // 분석 시 서버에서 계산해 둔 좌표(x, y)를 고정 배치로 그대로 사용한다.
+      physics: { enabled: false },
       interaction: { zoomView: cfg.zoomWheel, dragNodes: cfg.dragNodes, hover: true, tooltipDelay: 120, navigationButtons: false, keyboard: false }
     };
   }
@@ -342,13 +597,6 @@
     if (!net) return;
     net.setOptions(getNetworkOptions());
     net.redraw();
-    if (cfg.physics) {
-      net.once('stabilizationIterationsDone', function () {
-        cfg.physics = false;
-        net.setOptions({ physics: { enabled: false } });
-        document.getElementById('chkPhysics').checked = false;
-      });
-    }
   }
 
   // ---- 토스트 ----
@@ -406,8 +654,9 @@
     document.getElementById('commCount').innerText = communityIds.length;
     if (!communityIds.length) { legend.innerHTML = '<div class="empty">표시할 커뮤니티가 없습니다</div>'; return; }
     var html = '';
+    var pal = currentPalette();
     communityIds.forEach(function (c) {
-      var col = commColors[c] || palette[((c % palette.length) + palette.length) % palette.length];
+      var col = commColors[c] || pal[((c % pal.length) + pal.length) % pal.length];
       html += '<div class="comm-row">'
         + '<input type="checkbox" class="comm-vis" data-g="' + c + '"' + (commVisible[c] !== false ? ' checked' : '') + '>'
         + '<input type="color" class="comm-color" data-g="' + c + '" value="' + col + '">'
@@ -602,28 +851,6 @@
     document.getElementById('chkEdgeSmooth').addEventListener('change', function (e) { cfg.edgeSmooth = e.target.checked; applyOptions(); });
     document.getElementById('chkArrows').addEventListener('change', function (e) { cfg.arrows = e.target.checked; applyOptions(); });
 
-    document.getElementById('chkPhysics').addEventListener('change', function (e) {
-      if (stabilizeTimeout) { clearTimeout(stabilizeTimeout); stabilizeTimeout = null; }
-      cfg.physics = e.target.checked; applyOptions();
-    });
-    document.getElementById('selSolver').addEventListener('change', function (e) { cfg.solver = e.target.value; applyOptions(); });
-    document.getElementById('rangeGravity').addEventListener('input', function (e) { cfg.gravity = parseFloat(e.target.value); document.getElementById('gravityVal').innerText = cfg.gravity; applyOptions(); });
-    document.getElementById('rangeSpringLen').addEventListener('input', function (e) { cfg.springLength = parseFloat(e.target.value); document.getElementById('springLenVal').innerText = cfg.springLength; applyOptions(); });
-    document.getElementById('rangeSpringConst').addEventListener('input', function (e) { cfg.springConstant = parseFloat(e.target.value); document.getElementById('springConstVal').innerText = cfg.springConstant.toFixed(2); applyOptions(); });
-    document.getElementById('rangeDamping').addEventListener('input', function (e) { cfg.damping = parseFloat(e.target.value); document.getElementById('dampingVal').innerText = cfg.damping.toFixed(2); applyOptions(); });
-    document.getElementById('btnRestabilize').addEventListener('click', function () {
-      if (stabilizeTimeout) { clearTimeout(stabilizeTimeout); stabilizeTimeout = null; }
-      var wasPhysics = cfg.physics;
-      cfg.physics = true; applyOptions();
-      net.stabilize(300);
-      if (!wasPhysics) {
-        net.once('stabilizationIterationsDone', function () {
-          cfg.physics = false; net.setOptions({ physics: { enabled: false } });
-          document.getElementById('chkPhysics').checked = false;
-        });
-      }
-    });
-
     document.getElementById('chkZoomWheel').addEventListener('change', function (e) { cfg.zoomWheel = e.target.checked; applyOptions(); });
     document.getElementById('chkDragNodes').addEventListener('change', function (e) { cfg.dragNodes = e.target.checked; applyOptions(); });
     document.getElementById('btnFit').addEventListener('click', function () { net.fit({ animation: true }); });
@@ -639,15 +866,19 @@
         cfg.theme = cfg.theme === 'light' ? 'dark' : 'light';
         document.body.classList.toggle('dark-theme', cfg.theme === 'dark');
         if (cfg.theme === 'dark') {
-          cfg.bgCenter = '#141a24'; cfg.bgEdge = '#0c1017';
-          cfg.fontColor = '#e6e8ee'; cfg.borderColor = '#0c1017'; cfg.edgeColor = '#3a4a5f';
+          cfg.bgCenter = '#2b2b2b'; cfg.bgEdge = '#212121';
+          cfg.fontColor = '#eaeaea'; cfg.borderColor = '#2b2b2b'; cfg.edgeColor = '#5a5a5a';
+          if (cfg.colorUniform === '#2c3e50') cfg.colorUniform = '#34495e';
         } else {
-          cfg.bgCenter = '#ffffff'; cfg.bgEdge = '#eef1f4';
-          cfg.fontColor = '#2c3e50'; cfg.borderColor = '#ffffff'; cfg.edgeColor = '#9fb0c4';
+          cfg.bgCenter = '#ffffff'; cfg.bgEdge = '#ecf0f1';
+          cfg.fontColor = '#2c3e50'; cfg.borderColor = '#ffffff'; cfg.edgeColor = '#bdc3c7';
+          if (cfg.colorUniform === '#34495e') cfg.colorUniform = '#2c3e50';
         }
         syncControlsFromCfg();
         applyBackground();
         applyOptions();
+        buildLegend();
+        renderRail();
         renderGraph();
         if (net) requestAnimationFrame(function () { net.redraw(); });
       } catch (err) { console.error('테마 전환 실패:', err); }
@@ -771,5 +1002,13 @@
     updateZoomDisplay();
   }
 
-  loadNetwork(currentTag);
+  bindRailEvents();
+  loadMe();
+  loadRailProjects();
+  if (projectId) {
+    loadNetwork(currentTag);
+  } else {
+    document.getElementById('loading').classList.add('hide');
+    document.getElementById('emptyProject').hidden = false;
+  }
 })();
