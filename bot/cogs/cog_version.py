@@ -53,9 +53,7 @@ class VersionBoardPoller(commands.Cog):
                 embed = self.build_version_embed(document)
 
                 for guild in self.bot.guilds:
-                    config = await self.auth_config_col.find_one(
-                        {"guild_id": guild.id}
-                    )
+                    config = await self.auth_config_col.find_one({"guild_id": guild.id})
                     if not config:
                         continue
 
@@ -72,7 +70,9 @@ class VersionBoardPoller(commands.Cog):
 
                     try:
                         await channel.send(embed=embed)
-                        print(f"[알림 전송] 버전 {version_name} 알림 전송 완료 ({guild.name})")
+                        print(
+                            f"[알림 전송] 버전 {version_name} 알림 전송 완료 ({guild.name})"
+                        )
                     except Exception as e:
                         print(f"[알림 실패] 채널 전송 오류 ({guild.name}): {e}")
 

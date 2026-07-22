@@ -183,7 +183,9 @@ class ErrorWatcher(commands.Cog):
                         ] or [""]
                         for idx, chunk in enumerate(chunks):
                             field_name = (
-                                "에러 로그" if idx == 0 else f"에러 로그 (계속 {idx + 1})"
+                                "에러 로그"
+                                if idx == 0
+                                else f"에러 로그 (계속 {idx + 1})"
                             )
                             embed.add_field(
                                 name=field_name,

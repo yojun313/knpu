@@ -856,7 +856,9 @@ def _load_thumbnail_pixmap(source: str, is_url: bool) -> QPixmap:
     return load_pixmap_exif_safe(source)
 
 
-def _build_photo_grid(grid_layout: QGridLayout, entries, on_remove: Callable | None = None):
+def _build_photo_grid(
+    grid_layout: QGridLayout, entries, on_remove: Callable | None = None
+):
     """entries: [(source, is_url), ...]. on_remove(index)가 주어지면 각 칸에 제거 버튼을 붙임(None이면 읽기 전용)."""
     while grid_layout.count():
         item = grid_layout.takeAt(0)
@@ -873,9 +875,7 @@ def _build_photo_grid(grid_layout: QGridLayout, entries, on_remove: Callable | N
         img_label = QLabel()
         img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         img_label.setFixedSize(120, 90)
-        img_label.setStyleSheet(
-            "border: 1px solid #dcdcdc; background-color: #f9f9f9;"
-        )
+        img_label.setStyleSheet("border: 1px solid #dcdcdc; background-color: #f9f9f9;")
         pixmap = _load_thumbnail_pixmap(source, is_url)
         if not pixmap.isNull():
             img_label.setPixmap(

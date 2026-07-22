@@ -1,6 +1,7 @@
 # app/db.py
 """crawler/manager/server와 같은 MongoDB(manager DB, users 컬렉션)에 연결한다.
 사용자 계정을 새로 만들지 않고 기존 계정 체계를 그대로 재사용하기 위함."""
+
 import os
 import socket
 

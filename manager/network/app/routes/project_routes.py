@@ -53,7 +53,9 @@ async def api_me(request: Request):
 
 @router.get("/api/projects")
 async def api_list_projects(request: Request):
-    return JSONResponse({"projects": _handle_store_error(project_store.list_projects, _uid(request))})
+    return JSONResponse(
+        {"projects": _handle_store_error(project_store.list_projects, _uid(request))}
+    )
 
 
 @router.post("/api/projects")
@@ -93,12 +95,16 @@ async def viewer_page(project_id: str, request: Request):
 
 @router.get("/api/projects/{project_id}/meta")
 async def project_meta(project_id: str, request: Request):
-    return JSONResponse(_handle_store_error(project_store.get_project, _uid(request), project_id))
+    return JSONResponse(
+        _handle_store_error(project_store.get_project, _uid(request), project_id)
+    )
 
 
 @router.get("/api/projects/{project_id}/summary")
 async def project_summary(project_id: str, request: Request, tag: str = Query("")):
-    graph = _handle_store_error(project_store.load_graph, _uid(request), project_id, tag)
+    graph = _handle_store_error(
+        project_store.load_graph, _uid(request), project_id, tag
+    )
     summary = graph_analysis.compute_summary(graph)
     summary["community_keywords"] = graph_analysis.compute_community_keywords(graph)
     summary["tag"] = graph["tag"]
@@ -114,7 +120,9 @@ async def project_data(
     full: bool = Query(False),
     max_edges: int = Query(MAX_EDGES_DEFAULT),
 ):
-    graph = _handle_store_error(project_store.load_graph, _uid(request), project_id, tag)
+    graph = _handle_store_error(
+        project_store.load_graph, _uid(request), project_id, tag
+    )
 
     edges = graph["edges"]
     truncated = False
@@ -144,5 +152,7 @@ async def internal_ingest(
     """매니저 서버가 분석 완료 직후 결과 zip을 사용자 프로젝트로 곧바로 밀어 넣을 때 쓰는
     내부 전용 엔드포인트. 미들웨어의 X-Internal-Key 통과 경로로만 접근 가능하다."""
     content = await file.read()
-    project = _handle_store_error(project_store.create_project, uid, content, name, "manager")
+    project = _handle_store_error(
+        project_store.create_project, uid, content, name, "manager"
+    )
     return JSONResponse(project)
