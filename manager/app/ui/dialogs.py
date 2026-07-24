@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, QDate, QBuffer, QByteArray
+from PySide6.QtCore import Qt, QDate, QBuffer, QByteArray, QThread, Signal
 from PySide6.QtGui import QPixmap, QImageReader
 from PySide6.QtWidgets import (
     QDialog,
@@ -843,23 +843,49 @@ def load_pixmap_exif_safe(source) -> QPixmap:
     return QPixmap.fromImage(reader.read())
 
 
-def _load_thumbnail_pixmap(source: str, is_url: bool) -> QPixmap:
-    """기존 사진(URL)은 네트워크로, 새로 고른 사진(로컬 경로)은 디스크에서 로드"""
-    if is_url:
-        try:
-            resp = httpx.get(source, timeout=10)
-            if resp.status_code == 200:
-                return load_pixmap_exif_safe(resp.content)
-        except Exception:
-            pass
-        return QPixmap()
-    return load_pixmap_exif_safe(source)
+class _PhotoThumbnailLoader(QThread):
+    """URL 사진들을 백그라운드 스레드에서 내려받는다. QPixmap 생성은 스레드 안전성 때문에
+    여기서 하지 않고, raw bytes만 넘겨서 메인 스레드의 슬롯에서 만들도록 한다."""
+
+    loaded = Signal(int, bytes)
+    failed = Signal(int)
+
+    def __init__(self, items: list[tuple[int, str]], parent=None):
+        super().__init__(parent)
+        self.items = items  # [(index, url), ...]
+
+    def run(self):
+        for index, url in self.items:
+            if self.isInterruptionRequested():
+                return
+            try:
+                resp = httpx.get(url, timeout=10)
+                if resp.status_code == 200:
+                    self.loaded.emit(index, resp.content)
+                    continue
+            except Exception:
+                pass
+            self.failed.emit(index)
+
+
+def _scaled_pixmap(pixmap: QPixmap) -> QPixmap:
+    return pixmap.scaled(
+        116,
+        86,
+        Qt.AspectRatioMode.KeepAspectRatio,
+        Qt.TransformationMode.SmoothTransformation,
+    )
 
 
 def _build_photo_grid(
     grid_layout: QGridLayout, entries, on_remove: Callable | None = None
-):
-    """entries: [(source, is_url), ...]. on_remove(index)가 주어지면 각 칸에 제거 버튼을 붙임(None이면 읽기 전용)."""
+) -> QThread | None:
+    """entries: [(source, is_url), ...]. on_remove(index)가 주어지면 각 칸에 제거 버튼을 붙임(None이면 읽기 전용).
+
+    URL 사진(기존에 업로드된 사진)은 UI를 막지 않도록 백그라운드 스레드에서 내려받아 도착하는
+    대로 채워 넣는다. 로컬 경로(방금 고른 새 사진)는 디스크 I/O라 빨라서 그대로 즉시 로드한다.
+    반환된 스레드는 호출부가 참조를 들고 있어야 중간에 GC로 끊기지 않는다.
+    """
     while grid_layout.count():
         item = grid_layout.takeAt(0)
         widget = item.widget()
@@ -867,6 +893,9 @@ def _build_photo_grid(
             widget.deleteLater()
 
     cols = 3
+    img_labels: dict[int, QLabel] = {}
+    url_items: list[tuple[int, str]] = []
+
     for i, (source, is_url) in enumerate(entries):
         cell = QWidget()
         cell_layout = QVBoxLayout(cell)
@@ -876,18 +905,17 @@ def _build_photo_grid(
         img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         img_label.setFixedSize(120, 90)
         img_label.setStyleSheet("border: 1px solid #dcdcdc; background-color: #f9f9f9;")
-        pixmap = _load_thumbnail_pixmap(source, is_url)
-        if not pixmap.isNull():
-            img_label.setPixmap(
-                pixmap.scaled(
-                    116,
-                    86,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation,
-                )
-            )
+
+        if is_url:
+            img_label.setText("불러오는 중...")
+            img_labels[i] = img_label
+            url_items.append((i, source))
         else:
-            img_label.setText("로드 실패")
+            pixmap = load_pixmap_exif_safe(source)
+            img_label.setPixmap(_scaled_pixmap(pixmap)) if not pixmap.isNull() else img_label.setText(
+                "로드 실패"
+            )
+
         cell_layout.addWidget(img_label)
 
         if i == 0:
@@ -903,6 +931,34 @@ def _build_photo_grid(
             cell_layout.addWidget(remove_btn)
 
         grid_layout.addWidget(cell, i // cols, i % cols)
+
+    if not url_items:
+        return None
+
+    def _apply(index: int, content: bytes):
+        label = img_labels.get(index)
+        if label is None:
+            return
+        try:
+            pixmap = load_pixmap_exif_safe(content)
+            label.setPixmap(_scaled_pixmap(pixmap)) if not pixmap.isNull() else label.setText("로드 실패")
+        except RuntimeError:
+            pass  # 다이얼로그가 이미 닫혀 위젯이 삭제된 경우
+
+    def _fail(index: int):
+        label = img_labels.get(index)
+        if label is None:
+            return
+        try:
+            label.setText("로드 실패")
+        except RuntimeError:
+            pass
+
+    loader = _PhotoThumbnailLoader(url_items)
+    loader.loaded.connect(_apply)
+    loader.failed.connect(_fail)
+    loader.start()
+    return loader
 
 
 class EditGalleryPostDialog(BaseDialog):
@@ -969,7 +1025,10 @@ class EditGalleryPostDialog(BaseDialog):
         entries = [(url, True) for url in self.existing_photos] + [
             (p, False) for p in self.photo_paths
         ]
-        _build_photo_grid(self.photo_grid, entries, on_remove=self.remove_photo_at)
+        # 반환된 스레드 참조를 들고 있어야 다운로드 도중 GC로 끊기지 않는다
+        self._photo_loader = _build_photo_grid(
+            self.photo_grid, entries, on_remove=self.remove_photo_at
+        )
 
     def remove_photo_at(self, index: int):
         if index < len(self.existing_photos):
@@ -3282,7 +3341,10 @@ class ViewGalleryPostDialog(BaseDialog):
         photo_scroll.setWidget(photo_container)
         layout.addWidget(photo_scroll)
 
-        _build_photo_grid(photo_grid, [(url, True) for url in photos], on_remove=None)
+        # 반환된 스레드 참조를 들고 있어야 다운로드 도중 GC로 끊기지 않는다
+        self._photo_loader = _build_photo_grid(
+            photo_grid, [(url, True) for url in photos], on_remove=None
+        )
 
         self.add_label(layout, "제목:", self.data.get("title", ""), readonly=True)
         self.add_label(layout, "날짜:", self.data.get("date", ""), readonly=True)
