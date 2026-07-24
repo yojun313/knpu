@@ -555,6 +555,48 @@
             </item>
            </layout>
           </widget>
+          <widget class="QWidget" name="tab_popup">
+           <attribute name="title">
+            <string>팝업 관리</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_tab_1">
+            <item>
+             <widget class="QTableWidget" name="web_popup_tableWidget"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <item>
+               <widget class="QPushButton" name="web_addpopup_button">
+                <property name="text">
+                 <string>추가</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_deletepopup_button">
+                <property name="text">
+                 <string>삭제</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_editpopup_button">
+                <property name="text">
+                 <string>수정</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="web_viewpopup_button">
+                <property name="text">
+                 <string>자세히</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </item>
        </layout>
