@@ -2,9 +2,8 @@ import os
 import uuid
 import warnings
 import traceback
-import httpx
-from PySide6.QtWidgets import QMessageBox, QHeaderView, QLabel, QInputDialog
-from PySide6.QtCore import QUrl, Qt
+from PySide6.QtWidgets import QMessageBox, QHeaderView, QInputDialog
+from PySide6.QtCore import QUrl
 from core.shortcut import resetShortcuts
 from services.logging import programBugLog
 from services.api import Request
@@ -20,7 +19,6 @@ from ui.dialogs import (
     ViewHomeNewsDialog,
     ViewGalleryPostDialog,
     ViewHomePopupDialog,
-    load_pixmap_exif_safe,
 )
 from ui.table import makeTable
 from ui.status import changeStatusbarAction
@@ -189,9 +187,10 @@ class Manager_Web:
         printStatus(self.main, "갤러리 불러오는 중...")
         self.photo_data = Request("get", "/gallery/", HOMEPAGE_EDIT_API).json()
 
+        # 목록에서는 썸네일을 미리 내려받지 않는다 — 사진은 "자세히 보기"를 눌렀을 때만
+        # ViewGalleryPostDialog가 불러온다 (탭 진입 시 전체 이미지를 로드하던 것을 제거).
         self.photo_data_for_table = [
             [
-                "",
                 item.get("title", ""),
                 item.get("date", ""),
                 str(len(item.get("photos", []))),
@@ -199,7 +198,7 @@ class Manager_Web:
             for item in self.photo_data
         ]
 
-        column_headers = ["Thumbnail", "제목", "날짜", "사진 수"]
+        column_headers = ["제목", "날짜", "사진 수"]
 
         makeTable(
             self.main,
@@ -210,41 +209,7 @@ class Manager_Web:
         )
 
         table = self.main.web_groupphotos_tableWidget
-
-        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        table.setColumnWidth(0, 120)
-        table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-
-        for i in range(table.rowCount()):
-            table.setRowHeight(i, 80)
-
-            photos = self.photo_data[i].get("photos", [])
-            url = photos[0] if photos else None
-            if url:
-                img_label = QLabel()
-                img_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                img_label.setStyleSheet(
-                    "padding: 5px; border-radius: 5px;"
-                )  # 디자인 요소
-
-                try:
-                    resp = httpx.get(url)
-                    if resp.status_code == 200:
-                        pixmap = load_pixmap_exif_safe(resp.content)
-                        img_label.setPixmap(
-                            pixmap.scaled(
-                                110,
-                                70,
-                                Qt.AspectRatioMode.KeepAspectRatio,
-                                Qt.TransformationMode.SmoothTransformation,
-                            )
-                        )
-                    else:
-                        img_label.setText("No Image")
-                except:
-                    img_label.setText("Error")
-
-                table.setCellWidget(i, 0, img_label)
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def addHomePaper(self):
         try:
