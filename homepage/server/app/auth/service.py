@@ -30,16 +30,25 @@ def _public_user(user: dict) -> dict:
 
 
 def signup(data) -> dict:
-    if users_db.find_one({"username": data.username}):
+    # 이메일 인증을 끝내지 못하고 이탈한(pending_email) 기존 기록은 "선점"으로 치지 않고
+    # 새 가입 신청으로 덮어써서, 같은 아이디로 재시도할 수 있게 한다.
+    existing_username = users_db.find_one({"username": data.username})
+    if existing_username and existing_username["status"] != "pending_email":
         raise HTTPException(status_code=409, detail="이미 사용 중인 아이디입니다")
-    if users_db.find_one({"email": data.email}):
-        raise HTTPException(status_code=409, detail="이미 사용 중인 이메일입니다")
+
+    existing_email = users_db.find_one({"email": data.email})
+    if existing_email and existing_email["username"] != data.username:
+        if existing_email["status"] != "pending_email":
+            raise HTTPException(status_code=409, detail="이미 사용 중인 이메일입니다")
+        # 다른 아이디로 인증을 끝내지 못하고 이탈한 기록이 이 이메일을 물고 있던 것 — 정리
+        users_db.delete_one({"_id": existing_email["_id"]})
+
     if len(data.password) < 8:
         raise HTTPException(status_code=400, detail="비밀번호는 8자 이상이어야 합니다")
 
     now = datetime.now()
     user = {
-        "uid": str(uuid.uuid4()),
+        "uid": existing_username["uid"] if existing_username else str(uuid.uuid4()),
         "username": data.username,
         "name": data.name,
         "email": data.email,
@@ -48,12 +57,12 @@ def signup(data) -> dict:
         "status": "pending_email",
         "email_verified": False,
         "pushover_key": data.pushover_key,
-        "created_at": now,
+        "created_at": existing_username["created_at"] if existing_username else now,
         "approved_at": None,
         "approved_by": None,
         "updated_at": now,
     }
-    users_db.insert_one(user)
+    users_db.update_one({"username": data.username}, {"$set": user}, upsert=True)
     _send_signup_code(data.username, data.email)
 
     return {
