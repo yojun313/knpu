@@ -30,9 +30,6 @@ def update_proxy_list(payload: ProxyUpdatePayload, x_internal_key: str = Header(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if token_payload.get("device") not in user.get("device_list", []):
-        raise HTTPException(status_code=403, detail="Device not registered")
-
     try:
         collection = crawler_db["ip-list"]
         collection.update_one(

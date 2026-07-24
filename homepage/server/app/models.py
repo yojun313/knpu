@@ -79,3 +79,42 @@ class Popup(BaseModel):
     end_date: str
     is_active: bool = True
     created_at: Optional[str] = None
+
+
+class SignupRequest(BaseModel):
+    username: str
+    name: str
+    email: str
+    password: str
+    pushover_key: Optional[str] = None
+
+
+class VerifyEmailRequest(BaseModel):
+    username: str
+    code: str
+
+
+class ResendCodeRequest(BaseModel):
+    username: str
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class UpdateProfileRequest(BaseModel):
+    name: Optional[str] = None
+    pushover_key: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
+
+
+class ForgotPasswordRequest(BaseModel):
+    username: str
+
+
+class ResetPasswordRequest(BaseModel):
+    username: str
+    code: str
+    new_password: str

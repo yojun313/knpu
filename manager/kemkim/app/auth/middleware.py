@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote
 from dotenv import load_dotenv
 from starlette.types import ASGIApp, Receive, Scope, Send
 from starlette.requests import Request
@@ -11,8 +12,6 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 PUBLIC_PATHS = [
-    "/login",
-    "/auth/",
     "/api/health",
     "/openapi.json",
     "/docs",
@@ -66,15 +65,17 @@ class AuthMiddleware:
                 await self.app(scope, receive, send)
                 return
 
+        # 인증 실패 → knpu.re.kr 중앙 로그인으로 이동
         if path.startswith("/api/"):
             response = JSONResponse(
                 status_code=401,
                 content={"detail": "인증이 필요합니다"},
             )
         else:
-            next_url = request.url.path
-            if request.url.query:
-                next_url += f"?{request.url.query}"
-            response = RedirectResponse(url=f"/login?next={next_url}", status_code=302)
+            redirect_url = str(request.url)
+            response = RedirectResponse(
+                url=f"https://knpu.re.kr/login?redirect={quote(redirect_url)}",
+                status_code=302,
+            )
 
         await response(scope, receive, send)

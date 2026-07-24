@@ -8,6 +8,7 @@
         { page: 'team', label: 'PEOPLE', href: '/people' },
         { page: 'gallery', label: 'GALLERY', href: '/gallery' },
         { page: 'systems', label: 'SYSTEMS', href: '/systems' },
+        { page: 'account', label: 'LOGIN', href: '/login' },
     ];
 
     const currentPage = document.body.dataset.page || '';
@@ -57,4 +58,17 @@
         window.addEventListener('resize', syncNavWidth);
         window.addEventListener('orientationchange', syncNavWidth);
     }
+
+    // 로그인 상태에 따라 LOGIN 항목을 MY PAGE로 전환
+    fetch('/api/auth/me', { credentials: 'include' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((user) => {
+            if (!user) return;
+            const loginLink = document.querySelector('#mainNav a.nav-link[href="/login"]');
+            if (loginLink) {
+                loginLink.textContent = 'MY PAGE';
+                loginLink.setAttribute('href', '/account');
+            }
+        })
+        .catch(() => {});
 })();

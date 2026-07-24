@@ -8,9 +8,27 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 from app.services.nginx_service import NginxService
 from app.routes.dependencies import get_current_user
 import os
+
+
+class PathAddRequest(BaseModel):
+    domain: str
+    path: str
+    port: str
+
+
+class PathEditRequest(BaseModel):
+    domain: str
+    path: str
+    port: str
+
+
+class PathDeleteRequest(BaseModel):
+    domain: str
+    path: str
 
 router = APIRouter(prefix="/nginx", tags=["nginx"])
 templates = Jinja2Templates(directory="app/templates")
@@ -24,6 +42,34 @@ async def nginx_manager_page(request: Request, user=Depends(get_current_user)):
         name="nginx.html",
         context={"domains": domains, "active_page": "nginx"},
     )
+
+
+@router.post("/paths/add")
+async def add_path(payload: PathAddRequest, user=Depends(get_current_user)):
+    ok, message = NginxService.add_path(payload.domain, payload.path, payload.port)
+    if not ok:
+        raise HTTPException(status_code=400, detail=message)
+    return {"success": True, "message": message}
+
+
+@router.put("/paths/edit")
+async def edit_path(payload: PathEditRequest, user=Depends(get_current_user)):
+    ok, message = NginxService.edit_path_port(payload.domain, payload.path, payload.port)
+    if not ok:
+        raise HTTPException(status_code=400, detail=message)
+    return {"success": True, "message": message}
+
+
+@router.post("/paths/delete")
+async def delete_path(payload: PathDeleteRequest, user=Depends(get_current_user)):
+    ok, message, requires_full_delete = NginxService.delete_path(
+        payload.domain, payload.path
+    )
+    if requires_full_delete:
+        return {"success": False, "requires_full_delete": True, "message": message}
+    if not ok:
+        raise HTTPException(status_code=400, detail=message)
+    return {"success": True, "message": message}
 
 
 @router.websocket("/ws/console")
@@ -46,6 +92,7 @@ async def nginx_console_ws(websocket: WebSocket):
                 data["domain"],
                 data["email"],
                 data["port"],
+                data.get("path") or "/",
             ]
         elif action == "delete":
             cmd = [

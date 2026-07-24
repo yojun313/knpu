@@ -13,7 +13,6 @@ from io import BytesIO
 import pandas as pd
 import requests
 import zipfile
-import bcrypt
 import webbrowser
 
 from PySide6.QtCore import QThread, Signal, QSettings
@@ -44,8 +43,7 @@ from services.api import Request
 from services.update import updateProgram
 from core.shortcut import resetShortcuts
 from core.thread import BaseWorker, DownloadDialog
-from core.auth import get_setting, set_setting, checkPassword
-from config import ADMIN_PASSWORD
+from core.auth import get_setting, set_setting, verifyAdmin
 from .page_worker import Manager_Worker
 
 warnings.filterwarnings("ignore")
@@ -417,14 +415,7 @@ class Manager_Database(Manager_Worker):
 
             if search_text == "/admin" and self.main.user_role != "admin":
                 self.main.database_searchDB_lineinput.clear()
-                ok, password = checkPassword(self.main, True)
-                if (
-                    not ok
-                    or bcrypt.checkpw(
-                        password.encode("utf-8"), ADMIN_PASSWORD.encode("utf-8")
-                    )
-                    == False
-                ):
+                if not verifyAdmin(self.main):
                     QMessageBox.warning(
                         self.main, "Wrong Password", "비밀번호가 올바르지 않습니다"
                     )

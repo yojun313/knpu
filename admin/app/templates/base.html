@@ -45,7 +45,7 @@
         </nav>
 
         <div class="p-4 border-t border-zinc-800">
-            <a href="#" class="nav-item flex items-center px-4 py-2 rounded-md text-sm">Logout</a>
+            <a href="#" onclick="logout(event)" class="nav-item flex items-center px-4 py-2 rounded-md text-sm">Logout</a>
         </div>
     </aside>
 
@@ -66,6 +66,18 @@
     </div>
 
     <script>
+        async function logout(e) {
+            e.preventDefault();
+            try {
+                await fetch('https://knpu.re.kr/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include',
+                });
+            } finally {
+                window.location.href = 'https://knpu.re.kr/login';
+            }
+        }
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');

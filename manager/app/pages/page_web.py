@@ -26,7 +26,6 @@ from ui.table import makeTable
 from ui.status import changeStatusbarAction
 from services.logging import printStatus, userLogging
 from services.api import upload_homepage_image, delete_homepage_image
-from core.setting import get_setting
 from core.auth import accessCheck
 
 warnings.filterwarnings("ignore")
@@ -56,10 +55,9 @@ class Manager_Web:
 
     def web_open_crawler(self):
         try:
-            token = get_setting("auth_token")
-            url = f"https://crawler.knpu.re.kr/auth/direct-login?token={token}"
-
-            self.main.browser.setUrl(QUrl(url))
+            # 임베디드 브라우저는 로그인 시점부터 knpu.re.kr 세션 쿠키를 공유하는
+            # 동일 프로필을 쓰므로, 별도 토큰 핸드오프 없이 바로 접속 가능하다.
+            self.main.browser.setUrl(QUrl("https://crawler.knpu.re.kr"))
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 

@@ -1,15 +1,27 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from app.db import user_logs_col, bug_board_col, db_list_col, users_col, user_bugs_col
+from app.db import (
+    user_logs_col,
+    bug_board_col,
+    db_list_col,
+    user_bugs_col,
+    homepage_users_col,
+)
 
 
 def get_all_users():
-    return list(users_col.find().sort("name", 1))
+    return list(homepage_users_col.find().sort("name", 1))
+
+
+def get_pending_users():
+    return list(
+        homepage_users_col.find({"status": "pending_approval"}).sort("created_at", 1)
+    )
 
 
 def get_user_mapping():
     """uid를 이름으로 매핑하는 딕셔너리 생성"""
-    users = users_col.find({}, {"uid": 1, "name": 1})
+    users = homepage_users_col.find({}, {"uid": 1, "name": 1})
     return {u["uid"]: u.get("name", "알 수 없음") for u in users}
 
 

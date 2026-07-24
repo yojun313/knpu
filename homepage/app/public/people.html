@@ -456,12 +456,12 @@
       }
 
       try {
-        const response = await fetch("https://home.knpu.re.kr/api/members/");
+        const response = await fetch("/api/members/");
         const members = await response.json();
 
         let allPapers = [];
         try {
-          const papersRes = await fetch("https://home.knpu.re.kr/api/papers/");
+          const papersRes = await fetch("/api/papers/");
           const paperGroups = await papersRes.json();
           allPapers = Array.isArray(paperGroups)
             ? paperGroups.flatMap((g) => g.papers || [])

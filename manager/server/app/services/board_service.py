@@ -54,8 +54,8 @@ def add_version(data: AddVersionDto, userUid: str):
 
 def add_version_bg(doc):
     if doc.get("sendPushOver"):
-        keys = list(user_db.find({}, {"pushoverKey": 1, "_id": 0}))
-        pushover_keys = [k["pushoverKey"] for k in keys if k["pushoverKey"] != "n"]
+        keys = list(user_db.find({}, {"pushover_key": 1, "_id": 0}))
+        pushover_keys = [k["pushover_key"] for k in keys if k.get("pushover_key")]
         msg = (
             "[ New Version Released! ]\n\n"
             f"Version Num: {doc.get('versionName')}\n"
@@ -256,8 +256,8 @@ def add_post(data: AddPostDto, userUid: str):
     doc["datetime"] = doc.get("datetime_kst", "")
 
     if doc.get("sendPushOver"):
-        keys = list(user_db.find({}, {"pushoverKey": 1, "_id": 0}))
-        pushover_keys = [k["pushoverKey"] for k in keys if k["pushoverKey"] != "n"]
+        keys = list(user_db.find({}, {"pushover_key": 1, "_id": 0}))
+        pushover_keys = [k["pushover_key"] for k in keys if k.get("pushover_key")]
         msg = (
             "[ New Post Added! ]\n"
             f"User: {doc['writerName']}\n"

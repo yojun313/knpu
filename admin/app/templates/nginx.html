@@ -25,32 +25,63 @@
             <thead>
                 <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Domain Name</th>
-                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Internal Port</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Paths</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Config File</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Actions</th>
                 </tr>
             </thead>
             <tbody id="domainListBody">
                 {% for d in domains %}
-                <tr class="domain-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors" data-domain="{{ d.domain }}">
+                <tr class="domain-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors cursor-pointer" data-domain="{{ d.domain }}" onclick="toggleDomainPaths('{{ d.domain }}')">
                     <td class="p-4">
                         <div class="flex items-center gap-2">
+                            <svg id="chevron-{{ d.domain }}" class="text-zinc-500 transition-transform shrink-0" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                             <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                            <a href="https://{{ d.domain }}" target="_blank" class="font-bold text-zinc-100 hover:text-blue-400 hover:underline transition-colors">
+                            <a href="https://{{ d.domain }}" target="_blank" onclick="event.stopPropagation()" class="font-bold text-zinc-100 hover:text-blue-400 hover:underline transition-colors">
                                 {{ d.domain }}
                             </a>
                         </div>
                     </td>
                     <td class="p-4">
                         <span class="font-mono text-zinc-400 bg-black/40 px-2 py-1 rounded border border-zinc-800/50 text-xs">
-                            :{{ d.port }}
+                            {{ d.paths|length }}개
                         </span>
                     </td>
                     <td class="p-4 text-zinc-500 text-xs font-mono">{{ d.filename }}</td>
                     <td class="p-4 text-right">
-                        <button onclick="deleteDomain('{{ d.domain }}')" class="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-900/10 rounded-lg transition" title="삭제">
+                        <button onclick="event.stopPropagation(); openAddPathModal('{{ d.domain }}')" class="p-2 text-zinc-500 hover:text-blue-400 hover:bg-blue-900/10 rounded-lg transition" title="경로 추가">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                        <button onclick="event.stopPropagation(); deleteDomain('{{ d.domain }}')" class="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-900/10 rounded-lg transition" title="도메인 전체 삭제">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                         </button>
+                    </td>
+                </tr>
+                <tr id="paths-row-{{ d.domain }}" class="hidden bg-black/20 border-b border-zinc-800/50">
+                    <td colspan="4" class="p-0">
+                        <div class="px-6 py-4">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="text-zinc-600">
+                                        <th class="py-1 font-bold uppercase tracking-wider text-[9px]">경로</th>
+                                        <th class="py-1 font-bold uppercase tracking-wider text-[9px]">내부 포트</th>
+                                        <th class="py-1 font-bold uppercase tracking-wider text-[9px] text-right">동작</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in d.paths %}
+                                    <tr class="border-t border-zinc-800/30">
+                                        <td class="py-2 font-mono text-zinc-300">{{ d.domain }}{{ '' if p.path == '/' else p.path }}</td>
+                                        <td class="py-2 font-mono text-zinc-400">:{{ p.port }}</td>
+                                        <td class="py-2 text-right space-x-1">
+                                            <button onclick="openEditPathModal('{{ d.domain }}', '{{ p.path }}', '{{ p.port }}')" class="px-2 py-1 text-zinc-500 hover:text-blue-400 hover:bg-blue-900/10 rounded transition" title="포트 수정">수정</button>
+                                            <button onclick="deletePath('{{ d.domain }}', '{{ p.path }}')" class="px-2 py-1 text-zinc-500 hover:text-red-400 hover:bg-red-900/10 rounded transition" title="경로 삭제">삭제</button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
@@ -77,6 +108,11 @@
                 <input type="text" name="domain" placeholder="example.com" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition text-white" required>
             </div>
             <div>
+                <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">경로 (선택, 기본 /)</label>
+                <input type="text" name="path" placeholder="/ 또는 /api" value="/" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition text-white">
+                <p class="text-[11px] text-zinc-600 mt-1.5">이미 등록된 도메인에 경로만 추가하려면 목록에서 "+" 버튼을 사용하세요 (인증서 재발급 없이 즉시 반영됩니다).</p>
+            </div>
+            <div>
                 <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">SSL 인증용 이메일</label>
                 <input type="email" name="email" placeholder="admin@example.com" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition text-white" required>
             </div>
@@ -87,6 +123,44 @@
             <div class="flex gap-2 pt-4">
                 <button type="button" onclick="closeAddModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl text-sm font-bold transition text-zinc-300">취소</button>
                 <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 p-3 rounded-xl text-sm font-bold transition text-white shadow-lg shadow-blue-900/20">생성 시작</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="addPathModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-6 shadow-2xl scale-up-animation">
+        <h3 class="text-xl font-bold mb-1 text-white">경로 추가</h3>
+        <p class="text-zinc-500 text-xs mb-4 font-mono" id="addPathDomainLabel"></p>
+        <form id="addPathForm" class="space-y-4">
+            <div>
+                <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">경로</label>
+                <input type="text" name="path" placeholder="/api" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition text-white" required>
+            </div>
+            <div>
+                <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">내부 연결 포트</label>
+                <input type="number" name="port" placeholder="3001" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition text-white" required>
+            </div>
+            <div class="flex gap-2 pt-4">
+                <button type="button" onclick="closeAddPathModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl text-sm font-bold transition text-zinc-300">취소</button>
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 p-3 rounded-xl text-sm font-bold transition text-white shadow-lg shadow-blue-900/20">추가</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editPathModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-6 shadow-2xl scale-up-animation">
+        <h3 class="text-xl font-bold mb-1 text-white">포트 수정</h3>
+        <p class="text-zinc-500 text-xs mb-4 font-mono" id="editPathLabel"></p>
+        <form id="editPathForm" class="space-y-4">
+            <div>
+                <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-widest">내부 연결 포트</label>
+                <input type="number" name="port" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition text-white" required>
+            </div>
+            <div class="flex gap-2 pt-4">
+                <button type="button" onclick="closeEditPathModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 p-3 rounded-xl text-sm font-bold transition text-zinc-300">취소</button>
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 p-3 rounded-xl text-sm font-bold transition text-white shadow-lg shadow-blue-900/20">저장</button>
             </div>
         </form>
     </div>
@@ -137,16 +211,102 @@
 <script>
 let consoleSocket = null;
 let domainToDelete = "";
+let currentPathDomain = "";
+let currentPathValue = "";
 
 function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
 function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
+
+function toggleDomainPaths(domain) {
+    const row = document.getElementById(`paths-row-${domain}`);
+    const chevron = document.getElementById(`chevron-${domain}`);
+    if (!row) return;
+    row.classList.toggle('hidden');
+    chevron.style.transform = row.classList.contains('hidden') ? '' : 'rotate(90deg)';
+}
+
+function openAddPathModal(domain) {
+    currentPathDomain = domain;
+    document.getElementById('addPathDomainLabel').innerText = domain;
+    document.getElementById('addPathForm').reset();
+    document.getElementById('addPathModal').classList.remove('hidden');
+}
+function closeAddPathModal() { document.getElementById('addPathModal').classList.add('hidden'); }
+
+function openEditPathModal(domain, path, port) {
+    currentPathDomain = domain;
+    currentPathValue = path;
+    document.getElementById('editPathLabel').innerText = `${domain}${path === '/' ? '' : path}`;
+    document.getElementById('editPathForm').port.value = port;
+    document.getElementById('editPathModal').classList.remove('hidden');
+}
+function closeEditPathModal() { document.getElementById('editPathModal').classList.add('hidden'); }
+
+async function deletePath(domain, path) {
+    if (!confirm(`${domain}${path === '/' ? '' : path} 경로를 삭제하시겠습니까?`)) return;
+    try {
+        const res = await fetch('/nginx/paths/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain, path })
+        });
+        const data = await res.json();
+        if (data.requires_full_delete) {
+            deleteDomain(domain);
+            return;
+        }
+        if (!res.ok) { alert(data.detail || '삭제 실패'); return; }
+        location.reload();
+    } catch (e) {
+        alert('삭제 중 오류가 발생했습니다.');
+    }
+}
+
+document.getElementById('addPathForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = { domain: currentPathDomain, ...Object.fromEntries(formData.entries()) };
+    try {
+        const res = await fetch('/nginx/paths/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) { alert(result.detail || '추가 실패'); return; }
+        location.reload();
+    } catch (e) {
+        alert('추가 중 오류가 발생했습니다.');
+    }
+};
+
+document.getElementById('editPathForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = { domain: currentPathDomain, path: currentPathValue, ...Object.fromEntries(formData.entries()) };
+    try {
+        const res = await fetch('/nginx/paths/edit', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) { alert(result.detail || '수정 실패'); return; }
+        location.reload();
+    } catch (e) {
+        alert('수정 중 오류가 발생했습니다.');
+    }
+};
 
 function filterDomains() {
     const query = document.getElementById('domainSearch').value.toLowerCase();
     const rows = document.getElementsByClassName('domain-row');
     for (let row of rows) {
-        const domain = row.getAttribute('data-domain').toLowerCase();
-        row.style.display = domain.includes(query) ? "" : "none";
+        const domain = row.getAttribute('data-domain');
+        const match = domain.toLowerCase().includes(query);
+        row.style.display = match ? "" : "none";
+        const pathsRow = document.getElementById(`paths-row-${domain}`);
+        if (pathsRow && !match) pathsRow.classList.add('hidden');
     }
 }
 
@@ -230,6 +390,8 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeAddModal();
         closeDeleteModal();
+        closeAddPathModal();
+        closeEditPathModal();
         if(!document.getElementById('closeConsoleBtn').classList.contains('hidden')) {
             closeConsole();
         }

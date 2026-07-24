@@ -58,16 +58,17 @@ else:
 
 manager_db = client[manager_db_name]
 crawler_db = client[crawler_db_name]
+homepage_db = client["homepage"]
 
 crawlList_db = crawler_db["db-list"]
 crawlLog_db = crawler_db["log-list"]
 
-user_db = manager_db["users"]
+# 계정 데이터는 knpu.re.kr(homepage)의 중앙 로그인이 단일 진실 소스다
+user_db = homepage_db["users"]
 user_logs_db = manager_db["user-logs"]
 user_bugs_db = manager_db["user-bugs"]
 version_board_db = manager_db["version-board"]
 bug_board_db = manager_db["bug-board"]
 free_board_db = manager_db["free-board"]
-auth_db = manager_db["auth"]
 
 crawldata_path = os.getenv("CRAWLDATA_PATH")

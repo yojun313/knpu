@@ -1,8 +1,5 @@
 from fastapi import APIRouter, Depends, Body
-from app.models.user_model import UserCreate
 from app.services.user_service import (
-    create_user,
-    delete_user,
     get_all_users,
     log_user,
     bug_user,
@@ -16,11 +13,6 @@ from app.utils.pushover import sendPushOver
 
 
 router = APIRouter()
-
-
-@router.post("/add")
-def addUser(user: UserCreate):
-    return create_user(user)
 
 
 @router.post("/log")
@@ -50,11 +42,6 @@ def loadUsers():
     return get_all_users()
 
 
-@router.delete("/{userUid}")
-def deleteUser(userUid: str):
-    return delete_user(userUid)
-
-
 @router.get("/admin/list")
 def loadAdminUsers():
     admin_list = get_all_admins()
@@ -66,7 +53,9 @@ def loadAdminUsers():
 
 @router.post("/admin/pushover")
 def sendAdminPushOver(message: str = Body(..., embed=True)):
-    sendPushOver(message, [admin["pushoverKey"] for admin in get_all_admins()])
+    sendPushOver(
+        message, [a["pushover_key"] for a in get_all_admins() if a.get("pushover_key")]
+    )
     return JSONResponse(
         status_code=200,
         content={"message": "PushOver sent to admin"},

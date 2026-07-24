@@ -24,7 +24,6 @@ from PySide6.QtCore import QTimer
 from config import VERSION, ASSETS_PATH
 from libs.console import openConsole, closeConsole
 from pages.page_analysis import Manager_Analysis
-from pages.page_user import Manager_User
 from pages.page_board import Manager_Board
 from pages.page_web import Manager_Web
 from pages.page_database import Manager_Database
@@ -101,7 +100,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.DB = updateDB(self)
                 self.managerWebObj = Manager_Web(self)
                 self.managerBoardObj = Manager_Board(self)
-                self.managerUserObj = Manager_User(self)
                 self.managerDatabaseObj = Manager_Database(self)
                 self.managerAnalysisObj = Manager_Analysis(self)
                 printStatus(self, f"{self.fullStorage} GB / 2 TB")
@@ -256,7 +254,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             print(traceback.format_exc())
 
     def display(self, index):
-        if index != 6:
+        if index != 5:
             self.stackedWidget.setCurrentIndex(index)
 
         # DATABASE
@@ -287,13 +285,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             printStatus(self, "https://knpu.re.kr/publications")
             changeStatusbarAction(self, "WEB")
             self.managerWebObj.setWebShortcut()
-        # USER
-        elif index == 5:
-            printStatus(self)
-            self.managerUserObj.user_shortcut_setting()
 
         # SETTING
-        elif index == 6:
+        elif index == 5:
             userLogging(f"User Setting")
             dialog = Manager_Setting(self)
             if dialog.exec() == QDialog.DialogCode.Accepted:

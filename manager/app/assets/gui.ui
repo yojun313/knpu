@@ -56,11 +56,6 @@
       </item>
       <item>
        <property name="text">
-        <string>USER</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
         <string>SETTING</string>
        </property>
       </item>
@@ -553,82 +548,6 @@
                <widget class="QPushButton" name="web_viewnews_button">
                 <property name="text">
                  <string>자세히</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="page_user">
-       <layout class="QVBoxLayout" name="verticalLayout_user">
-        <item>
-         <widget class="QTabWidget" name="tabWidget_user">
-          <property name="tabPosition">
-           <enum>QTabWidget::North</enum>
-          </property>
-          <property name="currentIndex">
-           <number>0</number>
-          </property>
-          <widget class="QWidget" name="tab_userlist">
-           <attribute name="title">
-            <string>사용자 목록</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout">
-            <item>
-             <widget class="QTableWidget" name="user_tablewidget"/>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_input">
-              <item>
-               <widget class="QLabel" name="label_name">
-                <property name="text">
-                 <string>이름:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="userName_lineinput"/>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_email">
-                <property name="text">
-                 <string>이메일:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="user_email_lineinput"/>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_key">
-                <property name="text">
-                 <string>Key:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="user_key_lineinput"/>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout">
-              <item>
-               <widget class="QPushButton" name="user_deleteuser_button">
-                <property name="text">
-                 <string>사용자 삭제</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="user_adduser_button">
-                <property name="text">
-                 <string>사용자 추가</string>
                 </property>
                </widget>
               </item>
