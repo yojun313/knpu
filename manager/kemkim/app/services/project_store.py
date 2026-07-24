@@ -173,7 +173,9 @@ def _parse_trace_coordinates_csv(path: str) -> dict:
                 continue
             try:
                 x, y = ast.literal_eval(str(val))
-                period_label = col[len("period_") :] if col.startswith("period_") else col
+                period_label = (
+                    col[len("period_") :] if col.startswith("period_") else col
+                )
                 points.append({"period": period_label, "x": float(x), "y": float(y)})
             except (ValueError, SyntaxError):
                 continue
@@ -242,8 +244,12 @@ def _build_base_json(root: str) -> dict:
         "filtered_words": filtered_words,
         "periods": _build_periods(root),
         "trace": {
-            "dov": _parse_trace_coordinates_csv(os.path.join(trace_dir, "DoV_coordinates_trace.csv")),
-            "dod": _parse_trace_coordinates_csv(os.path.join(trace_dir, "DoD_coordinates_trace.csv")),
+            "dov": _parse_trace_coordinates_csv(
+                os.path.join(trace_dir, "DoV_coordinates_trace.csv")
+            ),
+            "dod": _parse_trace_coordinates_csv(
+                os.path.join(trace_dir, "DoD_coordinates_trace.csv")
+            ),
         },
     }
 
@@ -462,6 +468,8 @@ def zip_raw(uid: str, project_id: str) -> str:
     raw_dir = _raw_dir(uid, project_id)
     if not os.path.isdir(raw_dir):
         raise NotFound("원본 분석 결과를 찾을 수 없습니다.")
-    tmp_base = os.path.join(_project_dir(uid, project_id), f"download_{uuid.uuid4().hex}")
+    tmp_base = os.path.join(
+        _project_dir(uid, project_id), f"download_{uuid.uuid4().hex}"
+    )
     archive_path = shutil.make_archive(tmp_base, "zip", raw_dir)
     return archive_path

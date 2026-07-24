@@ -187,7 +187,9 @@ async def project_upload_source(
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(400, "원본(토큰화 전) CSV 파일을 업로드해주세요.")
     content = await file.read()
-    _handle_store_error(project_store.save_source_csv, _uid(request), project_id, content)
+    _handle_store_error(
+        project_store.save_source_csv, _uid(request), project_id, content
+    )
     return JSONResponse({"message": "원본 CSV가 저장되었습니다."})
 
 
@@ -218,7 +220,9 @@ async def project_interpret(project_id: str, request: Request):
     ai_error = None
     if use_ai:
         if not result["titles"]:
-            ai_error = "제목(Title) 열이 없거나 검색 결과가 없어 AI 해석을 건너뛰었습니다."
+            ai_error = (
+                "제목(Title) 열이 없거나 검색 결과가 없어 AI 해석을 건너뛰었습니다."
+            )
         else:
             session_token = request.cookies.get("session")
             if not session_token:
@@ -285,13 +289,15 @@ async def project_interpretation_export(
     for entry in interpretation.get("results", []):
         keyword = entry["keyword"]
         for m in entry.get("matches", []):
-            writer.writerow([
-                keyword,
-                m.get("title") or "",
-                m.get("date") or "",
-                m.get("context") or "",
-                m.get("full_text") or "",
-            ])
+            writer.writerow(
+                [
+                    keyword,
+                    m.get("title") or "",
+                    m.get("date") or "",
+                    m.get("context") or "",
+                    m.get("full_text") or "",
+                ]
+            )
 
     csv_bytes = ("﻿" + buf.getvalue()).encode("utf-8")
     return Response(

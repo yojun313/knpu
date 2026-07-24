@@ -56,7 +56,7 @@ class NginxService:
                 elif content[i] == "}":
                     depth -= 1
                 i += 1
-            block = content[m.end():i - 1]
+            block = content[m.end() : i - 1]
             port_match = re.search(r"proxy_pass\s+http://localhost:(\d+)", block)
             path = "/" if raw_path == "/" else raw_path.rstrip("/")
             results.append(
@@ -161,7 +161,10 @@ class NginxService:
 
         config_path = os.path.join(cls.SITES_AVAILABLE, domain)
         if not os.path.exists(config_path):
-            return False, "해당 도메인이 존재하지 않습니다. '새 도메인 추가'로 먼저 생성하세요."
+            return (
+                False,
+                "해당 도메인이 존재하지 않습니다. '새 도메인 추가'로 먼저 생성하세요.",
+            )
 
         with open(config_path, "r") as f:
             content = f.read()
@@ -179,9 +182,7 @@ class NginxService:
             if not name_match:
                 return False, "설정 파일 형식을 인식할 수 없습니다."
             insert_at = name_match.end()
-            new_content = (
-                content[:insert_at] + "\n\n" + block + content[insert_at:]
-            )
+            new_content = content[:insert_at] + "\n\n" + block + content[insert_at:]
 
         return cls._write_config(domain, new_content)
 
@@ -209,14 +210,14 @@ class NginxService:
         if target is None:
             return False, "해당 경로를 찾을 수 없습니다."
 
-        block = content[target["start"]:target["end"]]
+        block = content[target["start"] : target["end"]]
         new_block, n = re.subn(
             r"(proxy_pass\s+http://localhost:)\d+", rf"\g<1>{port}", block, count=1
         )
         if n == 0:
             return False, "포트 설정을 찾을 수 없습니다."
 
-        new_content = content[:target["start"]] + new_block + content[target["end"]:]
+        new_content = content[: target["start"]] + new_block + content[target["end"] :]
         return cls._write_config(domain, new_content)
 
     @classmethod

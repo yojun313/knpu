@@ -59,7 +59,9 @@ def main():
             "updated_at": now,
         }
     )
-    print(f"\n관리자 계정 '{username}'이(가) 생성되었습니다. https://knpu.re.kr/login 에서 로그인하세요.")
+    print(
+        f"\n관리자 계정 '{username}'이(가) 생성되었습니다. https://knpu.re.kr/login 에서 로그인하세요."
+    )
 
 
 if __name__ == "__main__":

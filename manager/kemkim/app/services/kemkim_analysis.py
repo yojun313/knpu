@@ -28,13 +28,17 @@ def _detect_column(columns, hint: str) -> str | None:
     return next((c for c in columns if hint in c), None)
 
 
-def _extract_surrounding_text(text: str, keyword: str, window: int = _CONTEXT_WINDOW) -> str | None:
+def _extract_surrounding_text(
+    text: str, keyword: str, window: int = _CONTEXT_WINDOW
+) -> str | None:
     match = re.search(re.escape(keyword), text)
     if not match:
         return None
     start = max(0, match.start() - window)
     end = min(len(text), match.end() + window)
-    return text[start : match.start()] + f"_____{keyword}_____" + text[match.end() : end]
+    return (
+        text[start : match.start()] + f"_____{keyword}_____" + text[match.end() : end]
+    )
 
 
 def run_interpretation(
@@ -85,12 +89,16 @@ def run_interpretation(
             matches.append(
                 {
                     "title": row.get(title_col) if title_col else None,
-                    "date": date_val.strftime("%Y-%m-%d") if pd.notna(date_val) else None,
+                    "date": date_val.strftime("%Y-%m-%d")
+                    if pd.notna(date_val)
+                    else None,
                     "context": snippet,
                     "full_text": text,
                 }
             )
-        per_keyword.append({"keyword": keyword, "count": len(matches), "matches": matches})
+        per_keyword.append(
+            {"keyword": keyword, "count": len(matches), "matches": matches}
+        )
 
     titles = []
     if title_col:

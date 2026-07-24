@@ -18,7 +18,11 @@ async def read_users(request: Request, user=Depends(get_current_user)):
     return templates.TemplateResponse(
         request=request,
         name="users.html",
-        context={"users": users, "pending_users": pending_users, "active_page": "users"},
+        context={
+            "users": users,
+            "pending_users": pending_users,
+            "active_page": "users",
+        },
     )
 
 
