@@ -38,7 +38,7 @@ function initFormStorage(formKey) {
 function initPoliceSelector({
   sidoSelectId = "police_sido",
   stationSelectId = "제출 경찰서",
-  apiUrl = "https://complaint-api.knpu.re.kr/api/police/stations",
+  apiUrl = "/api/police/stations",
 } = {}) {
   let policeData = {};
 

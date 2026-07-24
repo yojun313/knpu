@@ -99,10 +99,8 @@ _static_path = _os.path.join(_os.path.dirname(__file__), "static")
 fastapi_app.mount("/static", StaticFiles(directory=_static_path), name="static")
 
 from app.routes import api_router
-from app.routes.auth_routes import router as auth_router
 from app.routes.dashboard_routes import router as dashboard_router
 
-fastapi_app.include_router(auth_router, tags=["Auth"])
 fastapi_app.include_router(dashboard_router, tags=["Dashboard"])
 fastapi_app.include_router(api_router, prefix="/api", tags=["API"])
 

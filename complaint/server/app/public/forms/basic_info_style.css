@@ -1,0 +1,278 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+:root {
+  --bg: #f9fafb;
+  --card-bg: #ffffff;
+  --border: #e5e7eb;
+  --text-main: #111827;
+  --text-sub: #6b7280;
+  --primary: #2563eb;
+  --primary-hover: #1e40af;
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Noto Sans KR', sans-serif;
+  background-color: var(--bg);
+  color: var(--text-main);
+}
+
+/* ===== Typography ===== */
+
+h1 {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  text-align: center;
+  color: var(--text-sub);
+  margin-bottom: 2rem;
+}
+
+/* ===== Layout ===== */
+
+form {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+/* 태블릿 이상 */
+@media (min-width: 768px) {
+  .container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .addinfo_container {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ===== Card (fieldset) ===== */
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+}
+
+legend {
+  padding: 0 0.5rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* ===== Inputs ===== */
+
+input[type="text"],
+select,
+textarea {
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+input[type="text"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* ===== Submit Button ===== */
+
+input[type="submit"] {
+  margin: 2rem auto 0;
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  background-color: var(--primary);
+  color: #fff;
+  padding: 0.9rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 9999px; /* pill 버튼 */
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.1s;
+}
+
+input[type="submit"]:hover {
+  background-color: var(--primary-hover);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+}
+
+input[type="submit"]:active {
+  transform: scale(0.97);
+}
+
+/* ===== Password Inputs (주민등록번호 등) ===== */
+
+input[type="password"] {
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+  transition: border 0.2s, box-shadow 0.2s;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* 포커스 효과 */
+input[type="password"]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* placeholder 스타일 */
+input[type="password"]::placeholder {
+  color: var(--text-sub);
+  font-size: 0.9rem;
+}
+
+/* 모바일에서 숫자 키패드 유도 */
+input[type="password"] {
+  inputmode: numeric;
+}
+
+input[type="date"],
+input[type="datetime-local"] {
+  width: 100%;
+  max-width: 360px;
+
+  height: 48px;
+  padding: 0 14px;
+
+  font-size: 15px;
+  font-family: inherit;
+
+  color: #111;
+  background-color: #fff;
+
+  border: 1.5px solid #d0d5dd;
+  border-radius: 10px;
+
+  box-sizing: border-box;
+
+  transition: 
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* 포커스 시 */
+input[type="date"]:focus,
+input[type="datetime-local"]:focus {
+  outline: none;
+  border-color: #4f46e5; /* 포인트 컬러 */
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+}
+
+/* 캘린더 아이콘 영역 */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  padding-right: 6px;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* ===== 주소 검색 버튼 ===== */
+
+.addr-btn {
+  margin-top: 0.5rem;
+  margin-left: 0.25rem;
+
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+
+  color: #2563eb;
+  background-color: #eff6ff;
+
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+
+  cursor: pointer;
+  transition: 
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.1s ease;
+}
+
+/* hover */
+.addr-btn:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+/* active */
+.addr-btn:active {
+  transform: scale(0.97);
+}
+
+input[type="email"] {
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+  transition: border 0.2s, box-shadow 0.2s;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* 포커스 효과 (텍스트 필드와 동일) */
+input[type="email"]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* 플레이스홀더 스타일 */
+input[type="email"]::placeholder {
+  color: var(--text-sub);
+  opacity: 0.8;
+}
+
+/* 모바일에서 버튼 줄바꿈 자연스럽게 */
+@media (max-width: 480px) {
+  .addr-btn {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+}
+

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FPEI AI 고소장 생성 서비스</title>
+  <link rel="stylesheet" href="result_style.css" type="text/css">
+</head>
+
+<script>
+    const WORD_DOWNLOAD_URL = "word_download_url";
+    const PDF_DOWNLOAD_URL = "pdf_download_url";
+
+    function download_word() {
+        window.location.href = WORD_DOWNLOAD_URL;
+    }
+
+    function download_pdf() {
+        window.location.href = PDF_DOWNLOAD_URL;
+    }
+
+    function reset() {
+        window.location.href = "/";
+    }
+</script>
+
+<body>
+    <h1>FPEI AI 고소장 생성 서비스</h1>
+    <p class="model-name">
+        AI 모델:
+        <a href="MODEL_URL" target="_blank" rel="noopener noreferrer">
+        <strong>MODEL_NAME</strong>
+        </a>
+    </p>
+
+    <div class="container">
+        <div class="button-container">
+            <button onclick="download_word()">고소장 docx 다운로드</button>
+            <p>고소장을 docx로 저장</p> </br>
+            <button onclick="download_pdf()">고소장 pdf 다운로드</button>
+            <p>고소장을 pdf로 저장</p> </br>
+            <button onclick="reset()">처음으로 돌아가기</button>
+            <p>첫 페이지로 복귀</p> </br>
+
+        </div>
+
+        <div class="pdf-viewer">
+            <iframe src='pdf_url'> </iframe>
+        </div>
+    </div>
+</body>
+</html>

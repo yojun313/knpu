@@ -1,6 +1,5 @@
 from app.db import user_db, user_logs_db, user_bugs_db
-from app.libs.exceptions import ConflictException, BadRequestException
-from app.models.user_model import UserCreate
+from app.libs.exceptions import BadRequestException
 from fastapi.responses import JSONResponse
 from pymongo import ReturnDocument
 from datetime import datetime
@@ -9,23 +8,20 @@ from app.utils.pushover import sendPushOver
 import uuid
 
 
-def create_user(user: UserCreate):
-    user_dict = user.model_dump()
-
-    existing_user = user_db.find_one({"email": user_dict["email"]}, {"_id": 0})
-    if existing_user:
-        raise ConflictException("User with this email already exists")
-
-    user_dict["uid"] = str(uuid.uuid4())
-    user_dict["device_list"] = []
-    user_dict["role"] = "user"
-    user_db.insert_one(user_dict)
-
-    return JSONResponse(status_code=201)
+# password_hash·타임스탬프 등 클라이언트가 필요로 하지 않는(혹은 절대 노출되면 안 되는) 필드는
+# 조회 시점에 프로젝션으로 걸러낸다.
+_SAFE_PROJECTION = {
+    "_id": 0,
+    "password_hash": 0,
+    "created_at": 0,
+    "approved_at": 0,
+    "approved_by": 0,
+    "updated_at": 0,
+}
 
 
 def get_all_users():
-    users = list(user_db.find({}, {"_id": 0}))
+    users = list(user_db.find({}, _SAFE_PROJECTION))
     return JSONResponse(
         status_code=200,
         content={"message": "Users retrieved", "data": users},
@@ -33,19 +29,8 @@ def get_all_users():
 
 
 def get_all_admins():
-    admins = list(user_db.find({"role": "admin"}, {"_id": 0}))
+    admins = list(user_db.find({"role": "admin"}, _SAFE_PROJECTION))
     return admins
-
-
-def delete_user(userUid: str):
-    result = user_db.delete_one({"uid": userUid})
-    if not result.deleted_count > 0:
-        raise BadRequestException("User not found")
-    else:
-        return JSONResponse(
-            status_code=200,
-            content={"message": "User deleted"},
-        )
 
 
 def log_user(userUid: str, message: str):
@@ -100,7 +85,9 @@ def update_user_version(userUid: str, oldVersionName: str | None, newVersionName
     if oldVersionName:
         userName = updated_user.get("name", "Unknown")
         msg = f"{userName} updated {oldVersionName} -> {newVersionName}"
-        sendPushOver(msg, [admin["pushoverKey"] for admin in get_all_admins()])
+        sendPushOver(
+            msg, [a["pushover_key"] for a in get_all_admins() if a.get("pushover_key")]
+        )
         log_user(userUid, f"Updated version: {oldVersionName} -> {newVersionName}")
 
     return JSONResponse(

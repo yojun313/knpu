@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FPEI AI 고소장 생성 서비스</title>
+  <link rel="stylesheet" href="/forms/basic_info_style.css" type = "text/css">
+  <style>
+    /* body 정렬 */
+    body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0;
+        padding: 20px 0;
+    }
+
+    /* [수정됨] 박스 스타일 제거 & 텍스트만 표시 */
+    .warning-box {
+      /* 배경 및 테두리 제거 */
+      background: none;
+      border: none;
+      
+      /* 텍스트 스타일 */
+      color: #555;           /* 기본 글자색 (진한 회색) */
+      text-align: center;    /* 가운데 정렬 */
+      font-size: 0.95rem;    /* 글자 크기 */
+      line-height: 1.6;      /* 줄 간격 */
+      margin-bottom: 20px;   /* 아래쪽 여백 */
+      padding: 0 10px;       /* 모바일에서 좌우 여백 살짝 */
+      word-break: keep-all;  /* 단어 단위 줄바꿈 */
+    }
+
+    /* 강조 문구 (빨간색) */
+    .warning-box strong {
+      color: #e53935;        /* 경고색 (붉은색) */
+      font-weight: bold;
+    }
+    
+    .warning-icon {
+      margin-right: 4px;
+    }
+    
+    h1 {
+        text-align: center;
+        margin-bottom: 10px; /* 제목과 경고문구 사이 간격 좁힘 */
+    }
+  </style>
+</head>
+
+<body>
+  <datalist id="email-domain-list"></datalist>
+  <h1>FPEI AI 고소장 생성 서비스</h1> 
+
+  <div class="warning-box">
+    <span class="warning-icon">⚠️</span>
+    입력 내용이 <strong>브라우저에 남을 수 있습니다</strong>.<br>
+    개인정보 보호를 위해 <strong>공용 PC(PC방, 도서관 등)가 아닌 개인 PC 사용을 권장</strong>합니다.
+  </div>
+
+  <form action = "/submit" accept-charset = "utf-8" name = "sue_info" method = "post">
+
+    <div class="container">
+
+      <div class="addinfo_container">
+        <fieldset>
+          <legend>고소 죄명</legend>
+  
+          고소 죄명: <select id="option" name="고소 죄명" required></br></br>
+            <option value="" disabled selected hidden>선택</option>
+            <option value="계약금사기">계약금사기</option>
+            <option value="보험사기">보험사기</option>
+            <option value="분양사기">분양사기</option>
+            <option value="소송사기">소송사기</option>
+            <option value="아이템사기">아이템사기</option>
+            <option value="인터넷물품사기">인터넷물품사기</option>
+            <option value="차용사기">차용사기</option>
+            <option value="취업사기">취업사기</option>
+            <option value="기타사기">기타</option>
+          </select></br>
+  
+        </fieldset>
+      </div>
+
+      <div class="requester_container">
+        <fieldset>
+          <legend>고소인 정보 입력</legend>
+    
+            고소인 성명: <input type="text" id="고소인" name="고소인" required> </br></br>
+    
+            고소인 주민등록번호:
+            </br>
+            <input type="text"
+                  id="고소인 주민번호_앞"
+                  maxlength="6"
+                  placeholder="앞 6자리"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  style="width:48%; display:inline-block;"
+                  required
+                  >
+
+            -
+            <input type="password"
+                  id="고소인 주민번호_뒤"
+                  maxlength="7"
+                  placeholder="뒤 7자리"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  style="width:48%; display:inline-block;"
+                  required
+                  >
+
+            <input type="hidden"
+                  name="고소인 주민등록번호"
+                  id="고소인 주민등록번호">
+
+            </br></br>
+    
+            고소인 주소:
+            <input type="text"
+                  id="고소인 주소_기본"
+                  name="고소인 주소_기본"
+                  placeholder="주소 검색 버튼을 눌러주세요"
+                  required>
+            
+            <button
+              type="button"
+              class="addr-btn"
+              onclick="execDaumPostcodeTarget('고소인 주소_기본')">
+              주소 검색
+            </button>
+            <br>
+            
+            <input type="text"
+                   id="고소인 주소_상세"
+                   name="고소인 주소_상세"
+                   placeholder="상세주소를 입력하세요"
+                   style="margin-top: 5px;">
+
+            <input type="hidden"
+                   id="고소인 주소"
+                   name="고소인 주소">
+            <br><br>
+
+            고소인 직업: <input type="text" id="고소인 직업" name="고소인 직업" required> </br></br>
+    
+            고소인 전화:
+            <input type="text"
+                  id="고소인 전화"
+                  name="고소인 전화"
+                  placeholder="숫자만 입력하세요 (예: 01012345678)"
+                  oninput="formatPhoneNumber(this)"
+                  inputmode="numeric"
+                  required>
+
+            <small style="color:#666;">
+              ※ 하이픈(-)은 자동으로 입력됩니다.
+            </small>
+            <br><br>
+    
+            고소인 이메일:
+            <input type="text"
+                  id="고소인 이메일"
+                  name="고소인 이메일"
+                  autocomplete="off"
+                  oninput="emailAutoComplete(this)"
+                  list="email-domain-list"
+                  required>
+
+        </fieldset>
+      </div>
+    
+
+      <div class="receiver_container">
+        <fieldset>
+          <legend>피고소인 정보 입력</legend>
+            피고소인 성명: <input type="text" id="피고소인" name="피고소인"> </br></br>
+    
+            피고소인 주민등록번호:
+            </br>
+            <input type="text"
+                  id="피고소인 주민번호_앞"
+                  maxlength="6"
+                  placeholder="앞 6자리"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  style="width:48%; display:inline-block;"
+                  >
+
+            -
+            <input type="password"
+                  id="피고소인 주민번호_뒤"
+                  maxlength="7"
+                  placeholder="뒤 7자리"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  style="width:48%; display:inline-block;"
+                  >
+
+            <input type="hidden"
+                  name="피고소인 주민등록번호"
+                  id="피고소인 주민등록번호">
+
+            </br></br>
+    
+            피고소인 주소:
+              <input type="text"
+                    id="피고소인 주소_기본"
+                    name="피고소인 주소_기본"
+                    placeholder="주소 검색 버튼을 눌러주세요"
+                    >
+
+              <button
+                type="button"
+                class="addr-btn"
+                onclick="execDaumPostcodeTarget('피고소인 주소_기본')">
+                주소 검색
+              </button>    
+              <br>
+
+              <input type="text"
+                   id="피고소인 주소_상세"
+                   name="피고소인 주소_상세"
+                   placeholder="상세주소를 입력하세요"
+                   style="margin-top: 5px;">
+
+              <input type="hidden"
+                   id="피고소인 주소"
+                   name="피고소인 주소">
+            <br><br>
+    
+            피고소인 직업: <input type="text" id="피고소인 직업" name="피고소인 직업"> </br></br>
+    
+            피고소인 전화:
+            <input type="text"
+                  id="피고소인 전화"
+                  name="피고소인 전화"
+                  placeholder="숫자만 입력하세요 (예: 01012345678)"
+                  oninput="formatPhoneNumber(this)"
+                  inputmode="numeric"
+                  >
+
+            <small style="color:#666;">
+              ※ 하이픈(-)은 자동으로 입력됩니다.
+            </small>
+            <br><br>
+    
+            피고소인 이메일:
+            <input type="text"
+                  id="피고소인 이메일"
+                  name="피고소인 이메일"
+                  autocomplete="off"
+                  oninput="emailAutoComplete(this)"
+                  list="email-domain-list"
+                  >
+        </fieldset> 
+      </div>
+    
+
+    <div class="addinfo_container">
+      <fieldset>
+        <legend>추가 정보</legend>
+        피고소인과의 관계: <input type="text" id="피고소인과의 관계" name="피고소인과의 관계"> </br></br>
+      
+        기타 피고소인을 특정할 수 있는 내용: <input type="text" id="기타 피고소인을 특정할 수 있는 내용" name="기타 피고소인을 특정할 수 있는 내용" required> </br>
+
+      </fieldset>
+    </div>
+  </div>
+
+    <input type='submit' value='다음' onClick='return check_form();'>
+  </form>
+  
+
+</body>
+
+<script>
+  // [수정 안함] 기존 전화번호 포맷팅
+  function formatPhoneNumber(input) {
+    let numbers = input.value.replace(/\D/g, "");
+    if (numbers.length > 11) {
+      numbers = numbers.slice(0, 11);
+    }
+    let formatted = "";
+    if (numbers.length < 4) {
+      formatted = numbers;
+    } else if (numbers.length < 8) {
+      formatted = numbers.slice(0, 3) + "-" + numbers.slice(3);
+    } else {
+      formatted = numbers.slice(0, 3) + "-" + numbers.slice(3, 7) + "-" + numbers.slice(7);
+    }
+    input.value = formatted;
+  }
+</script>
+
+<script>
+  // [수정 안함] 이메일 자동완성
+  const EMAIL_DOMAINS = [
+    "gmail.com", "naver.com", "daum.net", "hanmail.net",
+    "nate.com", "icloud.com", "outlook.com", "kakao.com"
+  ];
+  
+  function emailAutoComplete(input) {
+    const value = input.value;
+    const list = document.getElementById("email-domain-list");
+    list.innerHTML = "";
+    if (!value.includes("@")) return;
+    const [id, domainPart] = value.split("@");
+    EMAIL_DOMAINS
+      .filter(domain => domain.startsWith(domainPart))
+      .forEach(domain => {
+        const option = document.createElement("option");
+        option.value = `${id}@${domain}`;
+        list.appendChild(option);
+      });
+  }
+</script>
+  
+<script>
+  // [수정 안함] 주소 검색
+  function execDaumPostcodeTarget(targetId) {
+    new daum.Postcode({
+      oncomplete: function(data) {
+        let addr = "";
+        if (data.userSelectedType === "R") {
+          addr = data.roadAddress;
+        } else {
+          addr = data.jibunAddress;
+        }
+        document.getElementById(targetId).value = addr;
+      }
+    }).open();
+  }
+</script>
+
+<script>
+  // [수정 안함] 로컬 스토리지 저장/로드
+  const FORM_KEY = "basic_info";
+
+  function saveForm() {
+    const data = {};
+    document.querySelectorAll("input, textarea, select").forEach(el => {
+      if (el.name) {
+        data[el.name] = el.value;
+      }
+    });
+    localStorage.setItem(FORM_KEY, JSON.stringify(data));
+  }
+
+  function loadForm() {
+    const saved = localStorage.getItem(FORM_KEY);
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    document.querySelectorAll("input, textarea, select").forEach(el => {
+      if (el.name && data[el.name] !== undefined) {
+        el.value = data[el.name];
+      }
+    });
+  }
+
+  window.addEventListener("load", loadForm);
+  document.addEventListener("input", saveForm);
+
+  // [수정 안함] 주민번호 합치기
+  function combineRRN(frontId, backId, hiddenId) {
+    const front = document.getElementById(frontId).value;
+    const back = document.getElementById(backId).value;
+    if (front || back) {
+      document.getElementById(hiddenId).value = front + "-" + back;
+    }
+  }
+
+  // [신규 추가] 주소 합치기 함수
+  function combineAddress(basicId, detailId, hiddenId) {
+    const basic = document.getElementById(basicId).value;
+    const detail = document.getElementById(detailId).value;
+    // 둘 중 하나라도 값이 있으면 합침 (공백 제거)
+    if (basic || detail) {
+      document.getElementById(hiddenId).value = (basic + " " + detail).trim();
+    }
+  }
+
+  // [변수 선언 추가] is_submit 오류 방지용 (기존 코드에 선언부가 없어서 추가함)
+  let is_submit = false;
+  let _NEXT_FOCUS = "";
+
+  document.sue_info.onsubmit = function() {
+    // 1. 주민번호 합치기
+    combineRRN("고소인 주민번호_앞", "고소인 주민번호_뒤", "고소인 주민등록번호");
+    combineRRN("피고소인 주민번호_앞", "피고소인 주민번호_뒤", "피고소인 주민등록번호");
+
+    // 2. [신규] 주소 합치기 실행
+    combineAddress("고소인 주소_기본", "고소인 주소_상세", "고소인 주소");
+    combineAddress("피고소인 주소_기본", "피고소인 주소_상세", "피고소인 주소");
+
+    // 3. 기존 제출 로직
+    if (is_submit === false) {
+      // _NEXT_FOCUS가 존재할 경우 포커스 이동 (기존 로직 유지)
+      if (_NEXT_FOCUS) {
+        const nextEl = document.getElementById(_NEXT_FOCUS) || document.getElementsByName(_NEXT_FOCUS)[0];
+        if (nextEl) nextEl.focus();
+      }
+      // 상황에 따라 바로 제출하지 않고 멈출지, 그냥 제출할지 결정 필요
+      // 기존 코드 로직상 false일 때 focus만 이동하고 return false 하는 것으로 보임
+      // (엔터키 등으로 인한 의도치 않은 제출 방지 로직으로 추정)
+      is_submit = true; 
+      // return false; // 기존 코드의 주석처리된 의도에 따라 필요하면 사용
+    }
+    
+    return true;
+  };
+
+  // [수정 안함] 엔터키 처리
+  function next_input(next_focus) {
+    if (event.keyCode == 13) {
+      is_submit = false;
+      _NEXT_FOCUS = next_focus;
+    }
+  }
+  
+  // check_form 함수가 HTML의 onClick에 있는데 정의되어 있지 않아 빈 함수 추가 (오류 방지)
+  function check_form() {
+      return true;
+  }
+</script>
+</html>

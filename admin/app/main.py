@@ -1,9 +1,9 @@
+from urllib.parse import quote
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.exception_handlers import http_exception_handler
 from app.routes import (
-    auth_routes,
     main_routes,
     log_routes,
     bug_routes,
@@ -16,7 +16,6 @@ from app.routes import (
 app = FastAPI(title="FPEI Dashboard")
 
 # 라우터 등록
-app.include_router(auth_routes.router)
 app.include_router(main_routes.router)
 app.include_router(log_routes.router)
 app.include_router(bug_routes.router)
@@ -29,7 +28,9 @@ app.include_router(nginx_routes.router)
 @app.exception_handler(StarletteHTTPException)
 async def auth_exception_handler(request: Request, exc: StarletteHTTPException):
     if exc.status_code == 307:
-        return RedirectResponse(url="/login")
+        return RedirectResponse(
+            url=f"https://knpu.re.kr/login?redirect={quote(str(request.url))}"
+        )
 
     # 그 외의 에러는 기본 에러 메시지 출력
     return await http_exception_handler(request, exc)

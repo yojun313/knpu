@@ -44,14 +44,17 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'homepage
 app.get('/people', (req, res) => res.sendFile(path.join(__dirname, 'public', 'people.html')));
 app.get('/publications', (req, res) => res.sendFile(path.join(__dirname, 'public', 'publications.html')));
 app.get('/news', (req, res) => res.sendFile(path.join(__dirname, 'public', 'news.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'homepage_login.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+app.get('/signup', (req, res) => res.sendFile(path.join(__dirname, 'public', 'signup.html')));
+app.get('/verify-email', (req, res) => res.sendFile(path.join(__dirname, 'public', 'verify-email.html')));
+app.get('/account', ensureAuthenticated, (req, res) => res.sendFile(path.join(__dirname, 'public', 'account.html')));
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
 app.get('/gallery', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gallery.html')));
 app.get('/systems', (req, res) => res.sendFile(path.join(__dirname, 'public', 'systems.html')));
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public', 'about.html')));
 app.get('/admission', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admission.html')));
 
-app.get('/manager', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manager.html')));
+app.get('/manager', (req, res) => res.redirect(301, 'https://manager.knpu.re.kr'));
 app.get('/manual/kemkim', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_kemkim.html')));
 app.get('/manual/hate_analysis', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_hateanalysis.html')));
 app.get('/manual/whisper', (req, res) => res.sendFile(path.join(__dirname, 'public', 'manuals', 'manual_whisper.html')));
@@ -90,12 +93,16 @@ app.get('/download/:filename', (req, res) => {
     res.redirect(fileUrl);
 });
 
-// 인증 미들웨어
+// 인증 미들웨어 — knpu.re.kr 중앙 로그인이 발급한 session 쿠키(JWT)를 검증한다
 function ensureAuthenticated(req, res, next) {
-    const token = req.cookies.authToken;
-    if (!token) return res.status(401).send('Access Denied: No token provided.');
+    const token = req.cookies.session;
+    if (!token) {
+        return res.redirect('/login?redirect=' + encodeURIComponent(req.originalUrl));
+    }
     jwt.verify(token, SECRET_KEY, (err, decoded) => {
-        if (err) return res.status(403).send('Access Denied: Invalid token.');
+        if (err) {
+            return res.redirect('/login?redirect=' + encodeURIComponent(req.originalUrl));
+        }
         req.user = decoded;
         next();
     });

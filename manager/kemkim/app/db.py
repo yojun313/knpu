@@ -1,6 +1,6 @@
 # app/db.py
-"""crawler/manager/server와 같은 MongoDB(manager DB, users 컬렉션)에 연결한다.
-사용자 계정을 새로 만들지 않고 기존 계정 체계를 그대로 재사용하기 위함."""
+"""crawler/manager/server와 같은 MongoDB(manager DB)에 연결한다.
+계정 인증은 knpu.re.kr 중앙 로그인이 전담하므로, 여기서는 프로젝트 데이터만 다룬다."""
 
 import os
 import socket
@@ -47,5 +47,4 @@ else:
 manager_db_name = "manager_dev" if MODE == 0 else "manager"
 manager_db = client[manager_db_name]
 
-user_db = manager_db["users"]
 kemkim_projects_db = manager_db["kemkim-projects"]

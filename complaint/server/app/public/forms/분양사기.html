@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <script src="/forms/js/form-common.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>분양사기</title>
+  <link rel="stylesheet" href="/forms/basic_info_style.css" type = "text/css">
+</head>
+
+
+
+<body>
+
+  <h1>FPEI AI 고소장 생성 서비스</h1>
+
+  <form action="/loading"
+      method="post"
+      name="분양사기"
+      >
+
+    <fieldset style = "width:10">
+        <legend>피해 일시 및 장소</legend>
+  
+          피해 일시: <input type="datetime-local" id="피해 일시" name="피해 일시" required> </br></br>  
+
+          피해 장소: <input type="text" id="피해 장소" name="피해 장소" required> </br>
+  
+      </fieldset> </br>
+
+
+    <fieldset style = "width:10">
+      <legend>분양사기 고소내용 입력</legend>
+
+      분양 계약서 작성 여부: <select id="option" name="분양 계약서 작성 여부" required></br></br>
+        <option value="" disabled selected hidden>선택</option>
+        <option value="작성함">작성함</option>
+        <option value="작성하지 않음">작성하지 않음</option>
+        </select></br></br>
+    
+      <label for="myTextarea">분양 계약 내용(분양시기, 대금, 조건 등에 관한 사실관계): </label> </br>
+      <textarea id="분양 계약 내용(분양시기, 대금, 조건 등에 관한 사실관계)" name="분양 계약 내용(분양시기, 대금, 조건 등에 관한 사실관계)" rows="2" cols="200"></textarea> </br>
+
+      <label for="myTextarea">피의자의 기망행위(피의자에게 속게 된 결정적인 이유 및 근거): </label> </br>
+      <textarea id="피의자의 기망행위(피의자에게 속게 된 결정적인 이유 및 근거)" name="피의자의 기망행위(피의자에게 속게 된 결정적인 이유 및 근거)" rows="2" cols="200"></textarea> </br>
+
+        피고소인이 실제로 신축공사를 했나요: <input type="text" id="피고소인이 실제로 신축공사를 했나요" name="피고소인이 실제로 신축공사를 했나요" required> </br></br>
+
+        고소인은 피고소인 회사의 자본구조(상황)를 알고 있었나요: <input type="text" id="고소인은 피고소인 회사의 자본구조(상황)를 알고 있었나요" name="고소인은 피고소인 회사의 자본구조(상황)를 알고 있었나요" required> </br></br>
+
+        고소인 외 다른 계약자가 있나요: <input type="text" id="고소인 외 다른 계약자가 있나요" name="고소인 외 다른 계약자가 있나요" required> </br></br>
+
+        피해 금액 또는 재산상 이익: <input type="text" id="피해 금액 또는 재산상 이익" name="피해 금액 또는 재산상 이익" required> </br></br>
+
+        피해 금액의 변제 여부(금액): <input type="text" id="피해 금액의 변제 여부(금액)" name="피해 금액의 변제 여부(금액)" required> </br>
+    </fieldset> </br>
+
+    
+    <fieldset style = "width:10">
+        <legend>추가 정보 입력</legend>
+  
+          동일 건 고소 및 취소 사실 여부: <select id="option" name="동일 건 고소 및 취소 사실 여부" required></br></br>
+            <option value="" disabled selected hidden>선택</option>
+            <option value="있음">있음</option>
+            <option value="없음">없음</option>
+            <option value="모름">모름</option>
+          </select></br></br>
+
+          관련 형사사건 수사 유무: <select id="option" name="관련 형사사건 수사 유무" required></br></br>
+            <option value="" disabled selected hidden>선택</option>
+            <option value="있음">있음</option>
+            <option value="없음">없음</option>
+            <option value="모름">모름</option>
+          </select></br></br>
+  
+          피고소인과 합의 여부: <select id="option" name="피고소인과 합의 여부" required> </br></br>
+            <option value="" disabled selected hidden>선택</option>
+            <option value="합의하였음">합의하였음</option>
+            <option value="합의하지 않음">합의하지 않음</option>
+          </select></br></br>
+          
+          피고소인 처벌 의사: <select id="option" name="피고소인 처벌 의사" required> </br></br>
+            <option value="" disabled selected hidden>선택</option>
+            <option value="처벌 원함">처벌 원함</option>
+            <option value="처벌 원하지 않음">처벌 원하지 않음</option>
+          </select></br></br>
+
+          <label for="myTextarea">고소 내용을 증명할 수 있는 증거: </label> </br>
+          <textarea id="고소 내용을 증명할 수 있는 증거" name="고소 내용을 증명할 수 있는 증거" rows="2" cols="200"></textarea> </br></br>
+  
+          <label for="myTextarea">기타 수사에 필요한 사항: </label> </br>
+          <textarea id="기타 수사에 필요한 사항" name="기타 수사에 필요한 사항" rows="2" cols="200"></textarea> </br></br>
+
+          제출 경찰서 (경찰청):
+          <select id="police_sido" required>
+            <option value="" disabled selected>경찰청 선택</option>
+          </select>
+
+          <br><br>
+
+          제출 경찰서:
+          <select id="제출 경찰서" name="제출 경찰서" required>
+            <option value="" disabled selected>경찰서 선택</option>
+          </select>
+
+          <br><br>
+          고소 일자: <input type="date" max = "9999-12-31" id="고소일자" name="고소일자" required> </br></br>
+        
+    </fieldset></br>
+
+    <fieldset style = "width:10">
+      <legend>고소장 생성 결과 발송 정보</legend>
+        1. 고소인 이메일 (본인 수신용):<br>
+        <input type="email" id="고소인 이메일" name="사용자 이메일" placeholder="user@example.com (선택사항)">
+        <br><br>
+
+        2. 제출용 이메일 (경찰서/기관 등 추가 발송용):<br>
+        <input type="email" id="제출용 이메일" name="제출용 이메일" placeholder="police@example.com (선택사항)">
+        <br><br>
+
+    </fieldset> </br>
+    
+    <p>제출 버튼을 누르면 AI가 고소장을 만들고 처리하는데 시간이 소요되오니 잠시만 기다려주시기 바랍니다.</p>
+    
+    <input type='submit' value='제출하기'>
+  </form>
+
+</body>
+
+<script>
+  initFormStorage("분양사기");
+  initPoliceSelector();
+</script>
+  
+</html> 

@@ -48,7 +48,8 @@ from services.api import Request, get_api_headers
 from services.logging import printStatus, userLogging, programBugLog
 from services.llm import generateLLM
 from services.csv import readCSV, getCSVHeaders, safe_path
-from config import MANAGER_SERVER_API, NETWORK_VIEWER_URL, KEMKIM_VIEWER_URL
+from config import MANAGER_SERVER_API, NETWORK_VIEWER_URL, KEMKIM_VIEWER_URL, HOMEPAGE_URL
+from urllib.parse import quote
 from PySide6.QtCore import QThread, Signal
 from .page_worker import Manager_Worker
 
@@ -934,10 +935,8 @@ class Manager_Analysis(Manager_Worker):
         if reply != QMessageBox.StandardButton.Yes:
             return
         token = get_setting("auth_token")
-        webbrowser.open(
-            f"{KEMKIM_VIEWER_URL}/auth/direct-login?token={token}"
-            f"&next=/viewer/{project_id}"
-        )
+        redirect = quote(f"{KEMKIM_VIEWER_URL}/viewer/{project_id}")
+        webbrowser.open(f"{HOMEPAGE_URL}/api/auth/token-login?token={token}&redirect={redirect}")
 
     def modify_kemkim(self):
         def copy_csv(input_file_path, output_file_path):
@@ -2712,10 +2711,8 @@ class Manager_Analysis(Manager_Worker):
         if reply != QMessageBox.StandardButton.Yes:
             return
         token = get_setting("auth_token")
-        webbrowser.open(
-            f"{NETWORK_VIEWER_URL}/auth/direct-login?token={token}"
-            f"&next=/viewer/{project_id}"
-        )
+        redirect = quote(f"{NETWORK_VIEWER_URL}/viewer/{project_id}")
+        webbrowser.open(f"{HOMEPAGE_URL}/api/auth/token-login?token={token}&redirect={redirect}")
 
     def select_csv_file(self, tokenCheck=False):
         try:

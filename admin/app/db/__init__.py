@@ -48,12 +48,14 @@ else:
 
 manager_db_name = "manager"
 crawler_db_name = "crawler"
+homepage_db_name = "homepage"
 
 manager_db = client[manager_db_name]
 crawler_db = client[crawler_db_name]
+homepage_db = client[homepage_db_name]
 
 user_logs_col = manager_db["user-logs"]
 bug_board_col = manager_db["bug-board"]
 db_list_col = crawler_db["db-list"]
-users_col = manager_db["users"]
 user_bugs_col = manager_db["user-bugs"]
+homepage_users_col = homepage_db["users"]

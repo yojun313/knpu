@@ -1,13 +1,12 @@
 import traceback
 import warnings
 from PySide6.QtWidgets import QMessageBox
-import bcrypt
-from config import ADMIN_PASSWORD, VERSION
+from config import VERSION
 from ui.table import makeTable
 from services.api import Request
 from services.logging import programBugLog, printStatus
 from core.shortcut import resetShortcuts
-from core.auth import checkPassword
+from core.auth import verifyAdmin
 
 warnings.filterwarnings("ignore")
 
@@ -55,14 +54,7 @@ class Manager_Board:
     def addVersion(self):
         try:
             if self.main.user_role != "admin":
-                ok, password = checkPassword(self.main, True)
-                if (
-                    not ok
-                    or bcrypt.checkpw(
-                        password.encode("utf-8"), ADMIN_PASSWORD.encode("utf-8")
-                    )
-                    == False
-                ):
+                if not verifyAdmin(self.main):
                     return
 
             from ui.dialogs import AddVersionDialog
@@ -93,14 +85,7 @@ class Manager_Board:
     def editVersion(self):
         try:
             if self.main.user_role != "admin":
-                ok, password = checkPassword(self.main, True)
-                if (
-                    not ok
-                    or bcrypt.checkpw(
-                        password.encode("utf-8"), ADMIN_PASSWORD.encode("utf-8")
-                    )
-                    == False
-                ):
+                if not verifyAdmin(self.main):
                     return
 
             selectedRow = self.main.board_version_tableWidget.currentRow()
@@ -135,14 +120,7 @@ class Manager_Board:
     def deleteVersion(self):
         try:
             if self.main.user_role != "admin":
-                ok, password = checkPassword(self.main, True)
-                if (
-                    not ok
-                    or bcrypt.checkpw(
-                        password.encode("utf-8"), ADMIN_PASSWORD.encode("utf-8")
-                    )
-                    == False
-                ):
+                if not verifyAdmin(self.main):
                     return
 
             selectedRow = self.main.board_version_tableWidget.currentRow()

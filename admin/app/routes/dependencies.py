@@ -1,13 +1,16 @@
-from fastapi import Request, HTTPException, Depends
-from fastapi.responses import RedirectResponse
-from app.services.auth_service import check_session
+from fastapi import Request, HTTPException
+from app.libs.jwt import decode_token
 
 
 async def get_current_user(request: Request):
-    session_id = request.cookies.get("session_id")
-    user_name = check_session(session_id)
-
-    if not user_name:
+    """knpu.re.kr(homepage) 중앙 로그인이 발급한 session 쿠키를 검증하고,
+    role이 admin인 계정만 대시보드 접근을 허용한다."""
+    token = request.cookies.get("session")
+    if not token:
         raise HTTPException(status_code=307, detail="Not logged in")
 
-    return user_name
+    payload = decode_token(token)
+    if not payload or payload.get("role") != "admin":
+        raise HTTPException(status_code=307, detail="Not logged in")
+
+    return payload

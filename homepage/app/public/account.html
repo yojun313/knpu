@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>내 계정 | FPEI</title>
+  <script defer src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+  <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />
+  <link href="css/styles.css" rel="stylesheet" />
+  <style>
+    .masthead_auth {
+      position: relative;
+      padding-top: 12.5rem;
+      padding-bottom: 6rem;
+      text-align: center;
+      color: #fff;
+      background: linear-gradient(135deg, #1a1d20 0%, #2c3e50 100%);
+    }
+
+    .masthead_auth-heading {
+      font-family: "Montserrat", sans-serif;
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0;
+    }
+
+    .masthead_auth-subheading {
+      font-size: 1.15rem;
+      font-style: italic;
+      margin-bottom: 20px;
+    }
+
+    .account-wrap {
+      max-width: 640px;
+      margin: -4.5rem auto 5rem;
+    }
+
+    .account-card {
+      border: none;
+      border-top: 4px solid var(--bs-primary);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1.5rem;
+    }
+
+    .account-card .card-body {
+      padding: 2rem;
+    }
+
+    .account-card h2 {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .account-badge {
+      font-size: 0.75rem;
+      letter-spacing: 0.03em;
+    }
+
+    .auth-alert {
+      display: none;
+    }
+
+    #account-loading {
+      text-align: center;
+      color: #fff;
+      padding: 4rem 0;
+    }
+  </style>
+</head>
+
+<body id="page-top" data-page="account">
+  <div id="nav-placeholder"></div>
+
+  <header class="masthead_auth">
+    <div class="container">
+      <div class="masthead_auth-subheading">KNPU FPEI</div>
+      <div class="masthead_auth-heading" id="account-heading">내 계정</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="account-wrap" id="account-content" style="display:none;">
+      <div class="card account-card">
+        <div class="card-body">
+          <h2>프로필</h2>
+          <div class="alert alert-success auth-alert" id="profile-success"></div>
+          <div class="alert alert-danger auth-alert" id="profile-error"></div>
+
+          <p>
+            아이디: <strong id="p-username"></strong>
+            <span class="badge bg-dark account-badge" id="p-role"></span>
+          </p>
+          <p>이메일: <span id="p-email"></span></p>
+
+          <form id="profile-form">
+            <div class="mb-3">
+              <label class="form-label" for="p-name">이름</label>
+              <input type="text" class="form-control" id="p-name" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="p-pushover">Pushover Key</label>
+              <input type="text" class="form-control" id="p-pushover" />
+            </div>
+            <button type="submit" class="btn btn-primary">프로필 저장</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card account-card">
+        <div class="card-body">
+          <h2>비밀번호 변경</h2>
+          <div class="alert alert-success auth-alert" id="pw-success"></div>
+          <div class="alert alert-danger auth-alert" id="pw-error"></div>
+
+          <form id="password-form">
+            <div class="mb-3">
+              <label class="form-label" for="pw-current">현재 비밀번호</label>
+              <input type="password" class="form-control" id="pw-current" required autocomplete="current-password" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="pw-new">새 비밀번호</label>
+              <input type="password" class="form-control" id="pw-new" required minlength="8"
+                autocomplete="new-password" />
+            </div>
+            <button type="submit" class="btn btn-outline-dark">비밀번호 변경</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card account-card" id="admin-card" style="display:none;">
+        <div class="card-body">
+          <h2>관리자</h2>
+          <p class="mb-3">가입 승인 대기 중인 요청을 관리 콘솔에서 확인할 수 있습니다.</p>
+          <a href="https://dashboard.knpu.re.kr/users" class="btn btn-dark">가입 요청 관리로 이동</a>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <a href="#" id="logout-link" class="text-danger">로그아웃</a>
+      </div>
+    </div>
+
+    <div id="account-loading">불러오는 중...</div>
+  </div>
+
+  <footer class="footer py-4">
+    <div class="container text-center">Copyright &copy; KNPU FPEI</div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/scripts.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    function showAlert(el, message) {
+      el.textContent = message;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    async function loadProfile() {
+      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      if (!res.ok) {
+        window.location.href = '/login?redirect=' + encodeURIComponent('/account');
+        return;
+      }
+      const user = await res.json();
+
+      document.getElementById('account-loading').style.display = 'none';
+      document.getElementById('account-content').style.display = 'block';
+      document.getElementById('account-heading').textContent = user.name + '님';
+
+      document.getElementById('p-username').textContent = user.username;
+      document.getElementById('p-role').textContent = user.role === 'admin' ? 'ADMIN' : 'MEMBER';
+      document.getElementById('p-email').textContent = user.email;
+      document.getElementById('p-name').value = user.name;
+      document.getElementById('p-pushover').value = user.pushover_key || '';
+
+      if (user.role === 'admin') {
+        document.getElementById('admin-card').style.display = 'block';
+      }
+    }
+
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const successEl = document.getElementById('profile-success');
+      const errorEl = document.getElementById('profile-error');
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            name: document.getElementById('p-name').value.trim(),
+            pushover_key: document.getElementById('p-pushover').value.trim(),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showAlert(errorEl, data.detail || '저장에 실패했습니다');
+          return;
+        }
+        showAlert(successEl, '프로필이 저장되었습니다');
+      } catch (err) {
+        showAlert(errorEl, '서버와 통신할 수 없습니다');
+      }
+    });
+
+    document.getElementById('password-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const successEl = document.getElementById('pw-success');
+      const errorEl = document.getElementById('pw-error');
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            current_password: document.getElementById('pw-current').value,
+            new_password: document.getElementById('pw-new').value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showAlert(errorEl, data.detail || '변경에 실패했습니다');
+          return;
+        }
+        document.getElementById('password-form').reset();
+        showAlert(successEl, '비밀번호가 변경되었습니다');
+      } catch (err) {
+        showAlert(errorEl, '서버와 통신할 수 없습니다');
+      }
+    });
+
+    document.getElementById('logout-link').addEventListener('click', async (e) => {
+      e.preventDefault();
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      window.location.href = '/login';
+    });
+
+    loadProfile();
+  </script>
+</body>
+
+</html>

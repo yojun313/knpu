@@ -56,11 +56,13 @@ else:
 
 manager_db_name = "manager"
 crawler_db_name = "crawler"
+homepage_db_name = "homepage"
 
 crawler_db = client[crawler_db_name]
 manager_db = client[manager_db_name]
+homepage_db = client[homepage_db_name]
 
-user_db = manager_db["users"]
+user_db = homepage_db["users"]
 user_logs_db = manager_db["user-logs"]
 
 
@@ -83,13 +85,12 @@ def checkState(dbUid: str):
 
 def get_userinfo(requester: str):
     try:
-        userDBList = client["manager"]["users"]
-        user = userDBList.find_one({"name": requester})
+        user = user_db.find_one({"name": requester})
         if user is None:
             return False
         return {
             "Email": user["email"],
-            "PushOver": user["pushoverKey"],
+            "PushOver": user.get("pushover_key"),
             "userUid": user["uid"],
         }
     except Exception as e:

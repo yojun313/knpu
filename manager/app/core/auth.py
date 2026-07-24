@@ -1,165 +1,93 @@
-from PySide6.QtWidgets import QInputDialog, QMessageBox
-from PySide6.QtWidgets import QLineEdit
-import re
+from PySide6.QtWidgets import QInputDialog, QMessageBox, QDialog, QVBoxLayout, QLineEdit
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtCore import QUrl
 import socket
 import traceback
 import requests
-from config import MANAGER_SERVER_API
+from config import HOMEPAGE_URL
 from ui.status import printStatus
 from services.api import get_api_headers
 from core.setting import get_setting, set_setting
 
 
-def checkPassword(parent, admin=False, title="", msg="Enter password:"):
-    while True:
-        input_dialog = QInputDialog(parent)
-        if admin == False:
-            if title == "":
-                input_dialog.setWindowTitle("Password")
-            else:
-                input_dialog.setWindowTitle(title)
-        else:
-            input_dialog.setWindowTitle("Admin Mode")
+class WebLoginDialog(QDialog):
+    """knpu.re.kr 로그인 페이지를 임베디드 브라우저로 띄우고, 로그인 성공 시
+    발급되는 session 쿠키(JWT)를 가로채 MANAGER 앱의 인증 토큰으로 재사용한다.
+    (기존 page_web.py의 web_open_crawler가 쓰던 embedded QWebEngineView와 같은 패턴)"""
 
-        input_dialog.setLabelText(msg)
-        input_dialog.setTextEchoMode(QLineEdit.EchoMode.Password)
-        input_dialog.resize(300, 200)
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("KNPU 로그인")
+        self.resize(480, 720)
+        self.token = None
 
-        ok = input_dialog.exec()
-        password = input_dialog.textValue()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        if re.match("^[a-zA-Z0-9!@#$%^&*()_+=-]*$", password):
-            return ok, password
-        else:
-            QMessageBox.warning(parent, "Invalid Input", "영어로만 입력 가능합니다")
+        self.view = QWebEngineView(self)
+        layout.addWidget(self.view)
+
+        cookie_store = self.view.page().profile().cookieStore()
+        cookie_store.cookieAdded.connect(self._on_cookie_added)
+
+        self.view.setUrl(QUrl(f"{HOMEPAGE_URL}/login?client=manager"))
+
+    def _on_cookie_added(self, cookie):
+        name = bytes(cookie.name()).decode("utf-8", "ignore")
+        if name != "session":
+            return
+        domain = cookie.domain()
+        if not domain.endswith("knpu.re.kr"):
+            return
+
+        self.token = bytes(cookie.value()).decode("utf-8", "ignore")
+        self.accept()
+
+
+def _fetch_profile(parent) -> bool:
+    """저장된(또는 방금 발급된) 토큰으로 knpu.re.kr 프로필을 조회해 parent에 채운다."""
+    res = requests.get(f"{HOMEPAGE_URL}/api/auth/me", headers=get_api_headers())
+    if res.status_code != 200:
+        return False
+
+    userData = res.json()
+    parent.user = userData["name"]
+    parent.userUid = userData["uid"]
+    parent.usermail = userData["email"]
+    parent.user_role = userData["role"]
+    return True
 
 
 def loginProgram(parent):
     try:
         parent.userDevice = socket.gethostname()
 
-        # 이전에 발급된 토큰이 있는지 확인
-        saved_token = get_setting("auth_token")
-
-        if saved_token:
-            res = requests.get(
-                f"{MANAGER_SERVER_API}/auth/login", headers=get_api_headers()
-            )
-            if res.status_code == 200:
-                userData = res.json()["user"]
-                parent.user = userData["name"]
-                parent.userUid = userData["uid"]
-                parent.usermail = userData["email"]
-                parent.user_role = userData["role"]
-                return True
+        # 이전에 발급된 토큰이 있으면 유효성만 확인
+        if get_setting("auth_token") and _fetch_profile(parent):
+            return True
 
         parent.closeBootscreen()
         parent.show()
         printStatus(parent, "로그인 중...")
 
-        while True:
-            inputDialogId = QInputDialog(parent)
-            inputDialogId.setWindowTitle("Login")
-            inputDialogId.setLabelText("User Name:")
-            inputDialogId.resize(300, 200)
-            ok = inputDialogId.exec()
-            userName = inputDialogId.textValue()
+        dialog = WebLoginDialog(parent)
+        result = dialog.exec()
 
-            if not ok:
-                QMessageBox.warning(parent, "Program Shutdown", "프로그램을 종료합니다")
-                return False
+        if result != QDialog.DialogCode.Accepted or not dialog.token:
+            printStatus(parent)
+            QMessageBox.warning(parent, "Program Shutdown", "로그인이 취소되어 프로그램을 종료합니다")
+            return False
 
-            parent.user = userName
-            printStatus(parent, "인증번호 전송 중...")
-            res = requests.get(
-                f"{MANAGER_SERVER_API}/auth/request", params={"name": parent.user}
-            )
-            if res.status_code == 404:
-                printStatus(parent, "인증 실패")
-                reply = QMessageBox.question(
-                    parent,
-                    "Error",
-                    f"사용자 {parent.user}을(를) 찾을 수 없습니다\n\n다시 시도하시겠습니까?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.Yes,
-                )
-                if reply == QMessageBox.StandardButton.Yes:
-                    continue
-                else:
-                    return False
-            else:
-                printStatus(parent, "")
-                break
+        set_setting("auth_token", dialog.token)
 
-        email = res.json().get("email", "")
-        QMessageBox.information(
-            parent,
-            "Information",
-            f"{parent.user}님의 {email}로 인증번호가 전송되었습니다\n\n"
-            "인증번호를 확인 후 입력하십시오",
-        )
+        if not _fetch_profile(parent):
+            printStatus(parent)
+            QMessageBox.critical(parent, "Error", "로그인 정보를 확인할 수 없습니다")
+            return False
 
-        while True:
-            printStatus(parent, f"{email}의 인증번호를 확인하십시오")
-            ok, password = checkPassword(
-                parent, title="메일 인증번호", msg="Enter verification code:"
-            )
-            if not ok:
-                printStatus(parent)
-                QMessageBox.warning(parent, "Error", "프로그램을 종료합니다")
-                return False
-            res = requests.post(
-                f"{MANAGER_SERVER_API}/auth/verify",
-                params={
-                    "name": parent.user,
-                    "code": password,
-                    "device": parent.userDevice,
-                },
-            )
-            if res.status_code != 200:
-                printStatus(parent, "인증 실패")
-                reply = QMessageBox.question(
-                    parent,
-                    "Error",
-                    "인증번호가 올바르지 않습니다\n\n다시 인증번호를 받으시겠습니까?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.Yes,
-                )
-                if reply == QMessageBox.StandardButton.Yes:
-                    printStatus(parent, "인증번호 전송 중...")
-                    res = requests.get(
-                        f"{MANAGER_SERVER_API}/auth/request",
-                        params={"name": parent.user},
-                    )
-                    printStatus(parent, "인증번호 전송 완료")
-                    QMessageBox.information(
-                        parent,
-                        "Information",
-                        f"{parent.user}님의 메일로 다시 인증번호가 전송되었습니다\n\n"
-                        "인증번호를 확인 후 입력하십시오",
-                    )
-                    continue
-                else:
-                    printStatus(parent)
-                    return False
-            else:
-                printStatus(parent, "인증 완료")
-                res = res.json()
-                break
-
-        userData = res["user"]
-        access_token = res["access_token"]
-
-        parent.user = userData["name"]
-        parent.user_role = userData["role"]
-        parent.usermail = userData["email"]
-        parent.userUid = userData["uid"]
-
-        QMessageBox.information(
-            parent, "기기 등록 완료", f"{parent.user}님 환영합니다!"
-        )
+        QMessageBox.information(parent, "로그인 완료", f"{parent.user}님 환영합니다!")
         printStatus(parent, "Loading...")
-        set_setting("auth_token", access_token)
+        return True
 
     except Exception:
         parent.closeBootscreen()
@@ -169,6 +97,44 @@ def loginProgram(parent):
             f"오류가 발생했습니다.\n\nError Log: {traceback.format_exc()}",
         )
         return False
+
+
+def verifyAdmin(parent) -> bool:
+    """관리자 전용 동작을 수행하기 전, 관리자 본인의 knpu.re.kr 아이디/비밀번호로
+    권한을 확인한다 (예전의 공용 하드코딩 비밀번호 방식을 대체)."""
+    id_dialog = QInputDialog(parent)
+    id_dialog.setWindowTitle("Admin Mode")
+    id_dialog.setLabelText("관리자 아이디:")
+    id_dialog.resize(300, 200)
+    if not id_dialog.exec():
+        return False
+    username = id_dialog.textValue().strip()
+    if not username:
+        return False
+
+    pw_dialog = QInputDialog(parent)
+    pw_dialog.setWindowTitle("Admin Mode")
+    pw_dialog.setLabelText("관리자 비밀번호:")
+    pw_dialog.setTextEchoMode(QLineEdit.EchoMode.Password)
+    pw_dialog.resize(300, 200)
+    if not pw_dialog.exec():
+        return False
+    password = pw_dialog.textValue()
+
+    try:
+        res = requests.post(
+            f"{HOMEPAGE_URL}/api/auth/login",
+            json={"username": username, "password": password},
+        )
+    except Exception:
+        QMessageBox.warning(parent, "Error", "서버와 통신할 수 없습니다")
+        return False
+
+    if res.status_code != 200 or res.json().get("user", {}).get("role") != "admin":
+        QMessageBox.warning(parent, "Access Denied", "관리자 인증에 실패했습니다")
+        return False
+
+    return True
 
 
 def accessCheck(parent, exclude=[]):
