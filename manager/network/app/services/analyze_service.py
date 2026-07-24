@@ -5,6 +5,7 @@ manager/server의 /analysis/graph-network 엔드포인트(데스크톱 MANAGER�
 파이프라인)를 그대로 호출하고, 결과는 manager/server가 알아서(uid 기반) 이 사용자의
 프로젝트로 자동 저장해준다. 진행 상황은 manager-progress 서버(WebSocket)로 그대로 흘러간다.
 """
+
 import json
 import os
 import threading
@@ -22,7 +23,9 @@ MANAGER_SERVER_INTERNAL_API = os.getenv(
     "MANAGER_SERVER_INTERNAL_API", "http://localhost:8000/api"
 )
 # 진행 상황 등록/전송(progress 서버) 내부 호출 주소
-PROGRESS_SERVER_URL = os.getenv("PROGRESS_SERVER_URL", "http://localhost:8080").rstrip("/")
+PROGRESS_SERVER_URL = os.getenv("PROGRESS_SERVER_URL", "http://localhost:8080").rstrip(
+    "/"
+)
 # 브라우저가 진행 상황 WebSocket에 붙을 때 쓰는 공개 주소
 PROGRESS_PUBLIC_WS_URL = (
     "ws://localhost:8080" if MODE == 0 else "wss://manager-progress.knpu.re.kr"
@@ -81,7 +84,11 @@ def start_job(
             timeout=10,
         ).raise_for_status()
     except Exception as e:
-        _jobs[pid] = {"status": "error", "project_id": None, "error": f"진행 상황 서버 등록 실패: {e}"}
+        _jobs[pid] = {
+            "status": "error",
+            "project_id": None,
+            "error": f"진행 상황 서버 등록 실패: {e}",
+        }
         return pid
 
     option = dict(option)

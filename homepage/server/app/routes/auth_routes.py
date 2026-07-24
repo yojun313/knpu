@@ -14,7 +14,11 @@ from app.models import (
 )
 from app.auth import service
 from app.auth.jwt import decode_token
-from app.auth.dependencies import get_current_user, get_current_user_optional, require_admin
+from app.auth.dependencies import (
+    get_current_user,
+    get_current_user_optional,
+    require_admin,
+)
 
 router = APIRouter()
 
@@ -60,7 +64,9 @@ def login(data: LoginRequest, response: Response):
 
 def _safe_redirect(url: str) -> str:
     parsed = urlparse(url)
-    if parsed.hostname == "knpu.re.kr" or (parsed.hostname or "").endswith(".knpu.re.kr"):
+    if parsed.hostname == "knpu.re.kr" or (parsed.hostname or "").endswith(
+        ".knpu.re.kr"
+    ):
         return url
     return "https://knpu.re.kr/account"
 

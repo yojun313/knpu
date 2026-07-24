@@ -36,8 +36,12 @@ class NoCacheStaticFiles(StaticFiles):
 
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
-app.mount("/js", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "js")), name="js")
-app.mount("/css", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "css")), name="css")
+app.mount(
+    "/js", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "js")), name="js"
+)
+app.mount(
+    "/css", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "css")), name="css"
+)
 
 app.include_router(api_router)
 

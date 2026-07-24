@@ -29,7 +29,9 @@ async def submit(request: Request):
 
     if redirect_page_name:
         session["first_formData"] = form_data
-        response = RedirectResponse(url=f"/forms/{redirect_page_name}.html", status_code=303)
+        response = RedirectResponse(
+            url=f"/forms/{redirect_page_name}.html", status_code=303
+        )
     else:
         response = RedirectResponse(url="/error", status_code=303)
 

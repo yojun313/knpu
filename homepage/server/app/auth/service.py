@@ -56,7 +56,9 @@ def signup(data) -> dict:
     users_db.insert_one(user)
     _send_signup_code(data.username, data.email)
 
-    return {"message": "가입 요청이 접수되었습니다. 이메일로 전송된 인증번호를 입력해주세요"}
+    return {
+        "message": "가입 요청이 접수되었습니다. 이메일로 전송된 인증번호를 입력해주세요"
+    }
 
 
 def _send_signup_code(username: str, email: str):
@@ -85,7 +87,9 @@ def resend_signup_code(username: str) -> dict:
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
     if user["status"] != "pending_email":
-        raise HTTPException(status_code=400, detail="이미 이메일 인증이 완료된 계정입니다")
+        raise HTTPException(
+            status_code=400, detail="이미 이메일 인증이 완료된 계정입니다"
+        )
 
     _send_signup_code(username, user["email"])
     return {"message": "인증번호를 다시 전송했습니다"}
@@ -122,7 +126,9 @@ def verify_email(data) -> dict:
 def login(data) -> dict:
     user = users_db.find_one({"username": data.username})
     if not user or not verify_password(data.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다")
+        raise HTTPException(
+            status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다"
+        )
 
     if user["status"] == "pending_email":
         raise HTTPException(status_code=403, detail="이메일 인증을 먼저 완료해주세요")
@@ -157,9 +163,13 @@ def update_profile(uid: str, data) -> dict:
         if not data.current_password or not verify_password(
             data.current_password, user["password_hash"]
         ):
-            raise HTTPException(status_code=401, detail="현재 비밀번호가 올바르지 않습니다")
+            raise HTTPException(
+                status_code=401, detail="현재 비밀번호가 올바르지 않습니다"
+            )
         if len(data.new_password) < 8:
-            raise HTTPException(status_code=400, detail="비밀번호는 8자 이상이어야 합니다")
+            raise HTTPException(
+                status_code=400, detail="비밀번호는 8자 이상이어야 합니다"
+            )
         updates["password_hash"] = hash_password(data.new_password)
 
     if updates:

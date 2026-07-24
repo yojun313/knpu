@@ -75,7 +75,9 @@ def loginProgram(parent):
 
         if result != QDialog.DialogCode.Accepted or not dialog.token:
             printStatus(parent)
-            QMessageBox.warning(parent, "Program Shutdown", "로그인이 취소되어 프로그램을 종료합니다")
+            QMessageBox.warning(
+                parent, "Program Shutdown", "로그인이 취소되어 프로그램을 종료합니다"
+            )
             return False
 
         set_setting("auth_token", dialog.token)

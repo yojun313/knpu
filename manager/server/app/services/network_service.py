@@ -688,13 +688,19 @@ def _write_analysis_options(out_dir, option, project_name):
         "options_label": {
             "대상 열": opts.get("text_col"),
             "공출현 단위": _SCOPE_LABELS.get(opts.get("scope"), opts.get("scope")),
-            "윈도우 크기": opts.get("window") if opts.get("scope") == "window" else None,
-            "연관성 척도": _MEASURE_LABELS.get(opts.get("measure"), opts.get("measure")),
+            "윈도우 크기": opts.get("window")
+            if opts.get("scope") == "window"
+            else None,
+            "연관성 척도": _MEASURE_LABELS.get(
+                opts.get("measure"), opts.get("measure")
+            ),
             "기간 분할": _PERIOD_LABELS.get(opts.get("period"), opts.get("period")),
             "최소 단어 빈도": opts.get("min_freq"),
             "최소 동시출현 횟수": opts.get("min_edge_weight"),
             "최대 노드 수(Top-N)": opts.get("top_n") or "제한 없음",
-            "커뮤니티 탐지": _COMMUNITY_LABELS.get(opts.get("community"), opts.get("community")),
+            "커뮤니티 탐지": _COMMUNITY_LABELS.get(
+                opts.get("community"), opts.get("community")
+            ),
             "레이아웃": _LAYOUT_LABELS.get(opts.get("layout"), opts.get("layout")),
             "백본 추출(disparity filter)": (
                 f"사용 (alpha={opts.get('backbone_alpha')})"

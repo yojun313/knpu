@@ -30,6 +30,7 @@ class PathDeleteRequest(BaseModel):
     domain: str
     path: str
 
+
 router = APIRouter(prefix="/nginx", tags=["nginx"])
 templates = Jinja2Templates(directory="app/templates")
 
@@ -54,7 +55,9 @@ async def add_path(payload: PathAddRequest, user=Depends(get_current_user)):
 
 @router.put("/paths/edit")
 async def edit_path(payload: PathEditRequest, user=Depends(get_current_user)):
-    ok, message = NginxService.edit_path_port(payload.domain, payload.path, payload.port)
+    ok, message = NginxService.edit_path_port(
+        payload.domain, payload.path, payload.port
+    )
     if not ok:
         raise HTTPException(status_code=400, detail=message)
     return {"success": True, "message": message}
