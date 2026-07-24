@@ -12,7 +12,9 @@ def get_files():
     try:
         return list_files()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve file list: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve file list: {e}"
+        )
 
 
 @router.get("/download/{filename}")
