@@ -714,7 +714,9 @@
     document.getElementById('progressModalClose').addEventListener('click', closeProgressModal);
 
     document.getElementById('railLogout').addEventListener('click', function () {
-      fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/login'; });
+      // 로그인은 knpu.re.kr 중앙 로그인이 전담하므로, 로그아웃도 그쪽 세션(쿠키)을 지운다
+      fetch('https://knpu.re.kr/api/auth/logout', { method: 'POST', credentials: 'include' })
+        .then(function () { location.href = 'https://knpu.re.kr/login'; });
     });
 
     window.addEventListener('popstate', function () {
