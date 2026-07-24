@@ -82,15 +82,8 @@
     } catch (e) { return iso; }
   }
 
-  function renderAnalysisOptions(analysisOptions) {
-    var section = document.getElementById('optionsSection');
-    var body = document.getElementById('analysisOptions');
-    if (!analysisOptions || !analysisOptions.options_label) {
-      section.hidden = true;
-      body.innerHTML = '';
-      return;
-    }
-    section.hidden = false;
+  function analysisOptionsStatsHtml(analysisOptions) {
+    if (!analysisOptions || !analysisOptions.options_label) return '';
     var html = '';
     if (analysisOptions.analyzed_at) {
       html += '<div class="stat"><span>분석 시각</span><span>' + esc(fmtAnalyzedAt(analysisOptions.analyzed_at)) + '</span></div>';
@@ -104,7 +97,39 @@
       if (v === null || v === undefined || v === '') return;
       html += '<div class="stat"><span>' + esc(k) + '</span><span>' + esc(v) + '</span></div>';
     });
-    body.innerHTML = html || '<div class="empty">저장된 분석 설정이 없습니다</div>';
+    return html;
+  }
+
+  function renderAnalysisOptions(analysisOptions) {
+    var section = document.getElementById('optionsSection');
+    var body = document.getElementById('analysisOptions');
+    if (!analysisOptions || !analysisOptions.options_label) {
+      section.hidden = true;
+      body.innerHTML = '';
+      return;
+    }
+    section.hidden = false;
+    body.innerHTML = analysisOptionsStatsHtml(analysisOptions) || '<div class="empty">저장된 분석 설정이 없습니다</div>';
+  }
+
+  function showProjectProperties(p) {
+    document.getElementById('propsTitle').textContent = p.name + ' · 속성';
+    var html = '';
+    html += '<div class="stat"><span>이름</span><span>' + esc(p.name) + '</span></div>';
+    html += '<div class="stat"><span>생성일</span><span>' + esc(fmtAnalyzedAt(p.created_at)) + '</span></div>';
+    if (p.updated_at && p.updated_at !== p.created_at) {
+      html += '<div class="stat"><span>수정일</span><span>' + esc(fmtAnalyzedAt(p.updated_at)) + '</span></div>';
+    }
+    var networks = p.networks || [];
+    html += '<div class="stat"><span>네트워크(기간) 개수</span><span>' + networks.length + '</span></div>';
+    networks.forEach(function (nw) {
+      html += '<div class="stat"><span>' + esc(nw.label || nw.tag || '-') + '</span><span>노드 '
+        + (nw.nodes || 0).toLocaleString() + ' · 엣지 ' + (nw.edges || 0).toLocaleString() + '</span></div>';
+    });
+    html += analysisOptionsStatsHtml(p.analysis_options) || '<div class="empty">저장된 분석 설정이 없습니다</div>';
+    document.getElementById('propsBody').innerHTML = html;
+    closeMobileDrawers();
+    document.getElementById('propsModal').hidden = false;
   }
 
   // ---------------------------------------------------------------
@@ -201,12 +226,21 @@
         + '<span class="ri-main"><span class="ri-name">' + esc(p.name) + '</span>'
         + '<span class="ri-meta">' + esc(meta) + '</span></span>'
         + '<span class="ri-actions">'
+        + '<button class="ri-btn" data-act="props" title="속성">ℹ</button>'
         + '<button class="ri-btn" data-act="rename" title="이름 변경">✎</button>'
         + '<button class="ri-btn danger" data-act="delete" title="삭제">🗑</button>'
         + '</span>';
       item.addEventListener('click', function (e) {
         if (e.target.closest('[data-act]')) return;
         switchProject(p.project_id);
+        closeMobileDrawers();
+      });
+      item.addEventListener('contextmenu', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        openRailCtxMenu(e.clientX, e.clientY, p, item);
+      });
+      item.querySelector('[data-act="props"]').addEventListener('click', function (e) {
+        e.stopPropagation(); showProjectProperties(p);
       });
       item.querySelector('[data-act="rename"]').addEventListener('click', function (e) {
         e.stopPropagation(); startRailRename(item, p);
@@ -257,6 +291,7 @@
     if (!confirm('"' + p.name + '" 프로젝트를 삭제할까요? 되돌릴 수 없습니다.')) return;
     railApi('/api/projects/' + p.project_id, { method: 'DELETE' }).then(function () {
       var wasCurrent = p.project_id === projectId;
+      clearSavedSettings(p.project_id);
       loadRailProjects().then(function () {
         if (wasCurrent) {
           projectId = null;
@@ -304,6 +339,7 @@
   }
 
   function openUploadModal() {
+    closeMobileDrawers();
     document.getElementById('uploadModal').hidden = false;
     resetUploadModalState();
     switchModalTab('zip');
@@ -509,31 +545,84 @@
   var RAIL_MIN_WIDTH = 180;
   var RAIL_MAX_WIDTH = 440;
   var RAIL_DEFAULT_WIDTH = 236;
+  var mobileQuery = window.matchMedia('(max-width:1100px)');
+
+  // ---- 모바일: 좌/우 패널을 오프캔버스 드로어로 열고 닫기 ----
+  function closeMobileDrawers() {
+    document.getElementById('rail').classList.remove('mobile-open');
+    document.getElementById('side').classList.remove('mobile-open');
+    document.getElementById('mobileBackdrop').classList.remove('show');
+  }
+  function openMobileDrawer(id) {
+    closeMobileDrawers();
+    document.getElementById(id).classList.add('mobile-open');
+    document.getElementById('mobileBackdrop').classList.add('show');
+  }
+
+  // ---- 프로젝트 우클릭 컨텍스트 메뉴 (항상 화면 안쪽에 표시되도록 위치 보정) ----
+  var ctxMenuProject = null;
+  var ctxMenuItem = null;
+  function closeRailCtxMenu() {
+    document.getElementById('railCtxMenu').hidden = true;
+    ctxMenuProject = null;
+    ctxMenuItem = null;
+  }
+  function openRailCtxMenu(x, y, p, item) {
+    var menu = document.getElementById('railCtxMenu');
+    ctxMenuProject = p;
+    ctxMenuItem = item;
+    menu.hidden = false;
+    menu.style.left = '-9999px';
+    menu.style.top = '-9999px';
+    var pad = 8;
+    var mw = menu.offsetWidth, mh = menu.offsetHeight;
+    var left = Math.max(pad, Math.min(x, window.innerWidth - mw - pad));
+    var top = Math.max(pad, Math.min(y, window.innerHeight - mh - pad));
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+  }
 
   function bindRailEvents() {
     var rail = document.getElementById('rail');
     var toggle = document.getElementById('railToggle');
 
-    // ---- 접기/펼치기 ----
+    // ---- 접기/펼치기 (데스크톱 전용, 모바일은 드로어로 대체) ----
     var collapsed = localStorage.getItem('nv_rail_collapsed') === '1';
     var savedWidth = parseInt(localStorage.getItem('nv_rail_width'), 10);
     if (!savedWidth || isNaN(savedWidth)) savedWidth = RAIL_DEFAULT_WIDTH;
     savedWidth = Math.max(RAIL_MIN_WIDTH, Math.min(RAIL_MAX_WIDTH, savedWidth));
-    if (!collapsed) rail.style.width = savedWidth + 'px';
-    rail.classList.toggle('collapsed', collapsed);
+    if (!mobileQuery.matches) {
+      if (!collapsed) rail.style.width = savedWidth + 'px';
+      rail.classList.toggle('collapsed', collapsed);
+    }
 
     toggle.addEventListener('click', function () {
+      if (mobileQuery.matches) { closeMobileDrawers(); return; }
       var isCollapsed = rail.classList.toggle('collapsed');
       localStorage.setItem('nv_rail_collapsed', isCollapsed ? '1' : '0');
       if (!isCollapsed) rail.style.width = savedWidth + 'px';
       if (net) setTimeout(function () { net.redraw(); }, 200);
     });
 
+    document.getElementById('mobileRailBtn').addEventListener('click', function () { openMobileDrawer('rail'); });
+    document.getElementById('mobileSideBtn').addEventListener('click', function () { openMobileDrawer('side'); });
+    document.getElementById('sideCloseBtn').addEventListener('click', closeMobileDrawers);
+    document.getElementById('mobileBackdrop').addEventListener('click', closeMobileDrawers);
+
+    var mqChangeHandler = function () {
+      rail.classList.remove('collapsed');
+      rail.style.width = mobileQuery.matches ? '' : savedWidth + 'px';
+      closeMobileDrawers();
+      if (net) setTimeout(function () { net.redraw(); }, 250);
+    };
+    if (mobileQuery.addEventListener) mobileQuery.addEventListener('change', mqChangeHandler);
+    else mobileQuery.addListener(mqChangeHandler);
+
     // ---- 마우스로 너비 조절 ----
     var resizer = document.getElementById('railResizer');
     var dragging = false;
     resizer.addEventListener('mousedown', function (e) {
-      if (rail.classList.contains('collapsed')) return;
+      if (rail.classList.contains('collapsed') || mobileQuery.matches) return;
       dragging = true;
       rail.classList.add('resizing');
       resizer.classList.add('active');
@@ -556,6 +645,35 @@
       if (net) net.redraw();
     });
 
+    // ---- 프로젝트 우클릭 컨텍스트 메뉴 ----
+    var ctxMenu = document.getElementById('railCtxMenu');
+    ctxMenu.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-act]');
+      if (!btn || !ctxMenuProject) return;
+      var p = ctxMenuProject, item = ctxMenuItem, act = btn.getAttribute('data-act');
+      closeRailCtxMenu();
+      if (act === 'props') showProjectProperties(p);
+      else if (act === 'rename') startRailRename(item, p);
+      else if (act === 'delete') deleteRailProject(p);
+    });
+    document.addEventListener('click', function (e) {
+      if (!ctxMenu.hidden && !ctxMenu.contains(e.target)) closeRailCtxMenu();
+    });
+    document.addEventListener('contextmenu', function (e) {
+      if (!ctxMenu.hidden && !ctxMenu.contains(e.target) && !e.target.closest('.rail-item')) closeRailCtxMenu();
+    });
+    window.addEventListener('resize', closeRailCtxMenu);
+    window.addEventListener('scroll', closeRailCtxMenu, true);
+    window.addEventListener('blur', closeRailCtxMenu);
+
+    // ---- 속성 모달 ----
+    document.getElementById('propsModalClose').addEventListener('click', function () {
+      document.getElementById('propsModal').hidden = true;
+    });
+    document.getElementById('propsModal').addEventListener('click', function (e) {
+      if (e.target.id === 'propsModal') document.getElementById('propsModal').hidden = true;
+    });
+
     // ---- 업로드 모달 ----
     document.getElementById('railUploadBtn').addEventListener('click', openUploadModal);
     document.getElementById('emptyUploadBtn').addEventListener('click', openUploadModal);
@@ -564,7 +682,11 @@
       if (e.target.id === 'uploadModal') closeUploadModal();
     });
     window.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && !document.getElementById('uploadModal').hidden) closeUploadModal();
+      if (e.key !== 'Escape') return;
+      if (!ctxMenu.hidden) closeRailCtxMenu();
+      else if (!document.getElementById('propsModal').hidden) document.getElementById('propsModal').hidden = true;
+      else if (!document.getElementById('uploadModal').hidden) closeUploadModal();
+      else closeMobileDrawers();
     });
 
     var fileInput = document.getElementById('modalFileInput');
@@ -653,7 +775,7 @@
   function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 
   var defaultCfg = {
-    shape: 'circle', sizeBy: 'freq', sizeMin: 6, sizeMax: 55,
+    shape: 'dot', sizeBy: 'freq', sizeMin: 6, sizeMax: 55,
     colorBy: 'community', colorUniform: '#2c3e50',
     colorGradMetric: 'freq', colorGradLow: '#dbe9f6', colorGradHigh: '#2c3e50',
     borderWidth: 1.5, borderColor: '#ffffff',
@@ -678,6 +800,58 @@
     selectedWords = {};
     rawNodes.forEach(function (n) { selectedWords[n.id] = true; });
     wordSelectMode = false;
+  }
+
+  // ---------------------------------------------------------------
+  // 프로젝트별 화면 설정 저장 (localStorage) — 설정 초기화를 누르기 전까지 유지
+  // ---------------------------------------------------------------
+  var SETTINGS_KEY_PREFIX = 'nv_settings_';
+  var saveSettingsTimer = null;
+
+  function loadSavedSettings(pid) {
+    if (!pid) return null;
+    try {
+      var raw = localStorage.getItem(SETTINGS_KEY_PREFIX + pid);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function saveSettingsNow() {
+    if (!projectId) return;
+    try {
+      localStorage.setItem(SETTINGS_KEY_PREFIX + projectId, JSON.stringify({
+        cfg: cfg, commNames: commNames, commColors: commColors, commVisible: commVisible,
+        wordSelectMode: wordSelectMode, selectedWords: selectedWords
+      }));
+    } catch (e) { /* 저장 공간 부족 등은 조용히 무시 */ }
+  }
+
+  function scheduleSaveSettings(e) {
+    if (e && e.target && e.target.closest && e.target.closest('#btnReset')) return;
+    clearTimeout(saveSettingsTimer);
+    saveSettingsTimer = setTimeout(saveSettingsNow, 250);
+  }
+
+  function clearSavedSettings(pid) {
+    if (!pid) return;
+    try { localStorage.removeItem(SETTINGS_KEY_PREFIX + pid); } catch (e) { /* noop */ }
+  }
+
+  function applySavedSettings() {
+    var saved = loadSavedSettings(projectId);
+    if (!saved) return;
+    if (saved.cfg) cfg = Object.assign({}, defaultCfg, saved.cfg);
+    if (metricKeys.indexOf(cfg.sizeBy) === -1) cfg.sizeBy = 'freq';
+    if (metricKeys.indexOf(cfg.colorGradMetric) === -1) cfg.colorGradMetric = 'freq';
+    if (saved.commNames) Object.keys(saved.commNames).forEach(function (g) { if (g in commNames) commNames[g] = saved.commNames[g]; });
+    if (saved.commColors) Object.keys(saved.commColors).forEach(function (g) { if (g in commVisible) commColors[g] = saved.commColors[g]; });
+    if (saved.commVisible) Object.keys(saved.commVisible).forEach(function (g) { if (g in commVisible) commVisible[g] = saved.commVisible[g]; });
+    if (saved.selectedWords) {
+      var restored = {};
+      Object.keys(saved.selectedWords).forEach(function (id) { if (nodeMap[id] && saved.selectedWords[id]) restored[id] = true; });
+      if (Object.keys(restored).length) selectedWords = restored;
+    }
+    if (typeof saved.wordSelectMode === 'boolean') wordSelectMode = saved.wordSelectMode;
   }
 
   function egoSet(start, hops) {
@@ -739,6 +913,7 @@
     document.getElementById('fslider').value = cfg.minFreq;
     document.getElementById('fnum').value = cfg.minFreq;
     document.getElementById('chkHideIsolated').checked = cfg.hideIsolated;
+    document.getElementById('chkWordMode').checked = wordSelectMode;
   }
 
   function round4(v) { return Math.round(v * 10000) / 10000; }
@@ -754,6 +929,17 @@
     var val = getMetricValue(n, cfg.colorGradMetric);
     var t = (val - r.min) / ((r.max - r.min) || 1);
     return lerpColor(cfg.colorGradLow, cfg.colorGradHigh, Math.max(0, Math.min(1, t)));
+  }
+
+  // vis-network의 value 기반 크기 스케일링은 "현재 데이터셋에 실제로 들어있는 노드들"의
+  // 최소·최대값을 기준으로 다시 정규화한다. 그래서 필터/이웃보기 등으로 보이는 노드
+  // 집합이 바뀔 때마다 같은 노드인데도 반지름이 달라지는 문제가 있었다. 색상 그라디언트와
+  // 마찬가지로 전체 노드(rawNodes) 기준 고정 범위로 우리가 직접 px 크기를 계산해 넣는다.
+  function computeNodeSize(n) {
+    var r = metricRangeOf(cfg.sizeBy);
+    var val = getMetricValue(n, cfg.sizeBy);
+    var t = (val - r.min) / ((r.max - r.min) || 1);
+    return cfg.sizeMin + Math.max(0, Math.min(1, t)) * (cfg.sizeMax - cfg.sizeMin);
   }
 
   function renderGraph() {
@@ -777,6 +963,10 @@
     currentVisibleIds = {}; filteredNodes.forEach(function (n) { currentVisibleIds[n.id] = true; });
 
     var strokeColor = cfg.theme === 'dark' ? '#212121' : '#ffffff';
+    // dot/star/diamond 등은 라벨이 노드 아래쪽에 고정 오프셋으로 그려져서, 노드 크기가
+    // 제각각이고 촘촘히 겹친 구간에서는 어느 라벨이 어느 원의 것인지 헷갈리기 쉽다.
+    // 라벨 뒤에 반투명 배경 칩을 깔아 텍스트를 독립된 태그처럼 보이게 해서 완화한다.
+    var labelBg = cfg.theme === 'dark' ? 'rgba(33,33,33,0.72)' : 'rgba(255,255,255,0.72)';
     var labelSet = (cfg.labelShow && cfg.labelTopOnly) ? topLabelIds() : null;
 
     var displayNodes = filteredNodes.map(function (n) {
@@ -785,14 +975,14 @@
       var d = {
         id: n.id,
         label: showLabel ? n.label : undefined,
-        value: getMetricValue(n, cfg.sizeBy),
+        size: computeNodeSize(n),
         shape: cfg.shape,
         color: {
           background: computeNodeColor(n), border: cfg.borderColor,
           highlight: { background: computeNodeColor(n), border: '#4C78A8' }
         },
         borderWidth: cfg.borderWidth,
-        font: { color: cfg.fontColor, size: cfg.fontSize, face: 'Malgun Gothic', strokeWidth: 3, strokeColor: strokeColor }
+        font: { color: cfg.fontColor, size: cfg.fontSize, face: 'Malgun Gothic', strokeWidth: 3, strokeColor: strokeColor, background: labelBg }
       };
       if (hasXY) { d.x = n.x; d.y = n.y; }
       return d;
@@ -856,8 +1046,8 @@
     return {
       layout: { improvedLayout: false },
       nodes: {
-        scaling: { min: cfg.sizeMin, max: cfg.sizeMax },
-        // 노드를 클릭/선택해도 크기가 커지지 않도록 고정 (선택 시 크기가 바뀌어 되돌리기 어렵다는 피드백 반영)
+        // 노드를 클릭/선택해도 크기가 커지지 않도록 고정 (선택 시 크기가 바뀌어 되돌리기 어렵다는 피드백 반영).
+        // 크기 자체는 renderGraph()에서 size로 직접 계산해 넣으므로 value 기반 scaling은 쓰지 않는다.
         chosen: {
           node: function (values) { /* no-op: keep original size, don't enlarge on select/hover */ },
           label: false
@@ -973,7 +1163,10 @@
       + '<button class="btn btn-sm" data-focusnode="' + n.id + '" style="width:100%">이 노드로 이동</button>';
     document.getElementById('detail').innerHTML = h;
     net.selectNodes([n.id]);
-    net.focus(n.id, { scale: 1.1, animation: { duration: 400 } });
+    // scale을 강제로 지정하면 클릭할 때마다 현재 확대/축소 배율이 바뀌어 노드가
+    // 커졌다 작아졌다 하는 것처럼 보인다. scale을 생략하면 현재 배율을 유지한 채
+    // 화면만 이동한다.
+    net.focus(n.id, { animation: { duration: 400 } });
   }
 
   function fallbackCopy(text, cb) {
@@ -1005,6 +1198,12 @@
   function bindEventsOnce() {
     if (eventsBound) return;
     eventsBound = true;
+
+    // ---- 오른쪽 패널에서 바뀌는 설정은 모두 프로젝트별로 자동 저장 ----
+    var sideEl = document.getElementById('side');
+    sideEl.addEventListener('input', scheduleSaveSettings);
+    sideEl.addEventListener('change', scheduleSaveSettings);
+    sideEl.addEventListener('click', scheduleSaveSettings);
 
     document.getElementById('search').addEventListener('input', function (e) {
       var q = e.target.value.trim();
@@ -1100,7 +1299,7 @@
       } else if (fn != null) {
         var id = parseInt(fn, 10);
         net.selectNodes([id]);
-        net.focus(id, { scale: 1.3, animation: true });
+        net.focus(id, { animation: true });
       }
     });
 
@@ -1204,25 +1403,33 @@
       } catch (err) { toast('PNG 저장 실패'); }
     });
     document.getElementById('btnReset').addEventListener('click', function () {
+      clearTimeout(saveSettingsTimer);
+      clearSavedSettings(projectId);
       cfg = Object.assign({}, defaultCfg);
       initCommState();
       wordSelectMode = false;
       selectedWords = {}; rawNodes.forEach(function (n) { selectedWords[n.id] = true; });
       document.getElementById('chkWordMode').checked = false;
       document.getElementById('wlSearch').value = '';
+      document.body.classList.remove('dark-theme');
       syncControlsFromCfg();
       buildWordList();
       buildLegend();
       applyBackground();
       applyOptions();
       renderGraph();
+      renderRail();
       net.fit({ animation: true });
       toast('설정을 초기화했습니다');
     });
 
     net.on('click', function (p) {
-      if (p.nodes.length) { showDetail(nodeMap[p.nodes[0]]); }
-      else { document.getElementById('detail').innerHTML = emptyDetailHtml; }
+      if (p.nodes.length) {
+        showDetail(nodeMap[p.nodes[0]]);
+        if (mobileQuery.matches) openMobileDrawer('side');
+      } else {
+        document.getElementById('detail').innerHTML = emptyDetailHtml;
+      }
     });
     net.on('zoom', updateZoomDisplay);
   }
@@ -1258,6 +1465,9 @@
         var o = document.createElement('option'); o.value = k; o.text = mnames[k] || k; sel.appendChild(o);
       });
     });
+
+    applySavedSettings();
+    document.body.classList.toggle('dark-theme', cfg.theme === 'dark');
 
     var maxFreq = metricRangeOf('freq').max;
     document.getElementById('fslider').max = Math.max(1, Math.ceil(maxFreq));

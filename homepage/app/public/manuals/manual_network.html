@@ -7,6 +7,10 @@
     <link rel="icon" type="image/x-icon" href="/assets/imgs/fpei_logo_favicon.ico" />
     <title>FPEI ANALYSIS: Word Network Analysis</title>
     <style>
+        html {
+            overflow-x: hidden;
+        }
+
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
@@ -15,6 +19,7 @@
             background-color: #ecf0f1;
             color: #2c3e50;
             box-sizing: border-box;
+            overflow-x: hidden;
         }
 
         .container {
@@ -86,6 +91,7 @@
             border-radius: 5px;
             font-size: 90%;
             color: #d35400;
+            word-break: break-word;
         }
 
         .important {
@@ -206,22 +212,88 @@
                 padding: 10px;
             }
             .container {
+                margin: 16px auto;
                 padding: 20px;
+                border-radius: 10px;
             }
             h1 {
-                font-size: 30px;
+                font-size: 28px;
             }
             h2 {
-                font-size: 26px;
+                font-size: 24px;
+                margin-top: 36px;
             }
             h3 {
-                font-size: 20px;
+                font-size: 19px;
+                margin-top: 30px;
+            }
+            h4 {
+                font-size: 18px;
             }
             p, ul, ol {
                 font-size: 16px;
             }
+            .toc {
+                padding: 16px 18px;
+            }
+            .toc li {
+                font-size: 15px;
+            }
+            .important, .tip, .note {
+                padding: 15px;
+                margin: 24px 0;
+            }
+            .opt-card {
+                padding: 14px 16px;
+            }
+            .opt-card h4 {
+                flex-wrap: wrap;
+            }
+            /* 표는 내용이 넓으면 표만 가로 스크롤되게 하여, 페이지 전체가
+               옆으로 밀리지 않도록 합니다. */
             table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
                 font-size: 14px;
+            }
+            th, td {
+                padding: 10px 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 6px;
+            }
+            .container {
+                margin: 10px auto;
+                padding: 14px;
+            }
+            h1 {
+                font-size: 23px;
+            }
+            h2 {
+                font-size: 21px;
+            }
+            h3 {
+                font-size: 17px;
+            }
+            p, ul, ol {
+                font-size: 15px;
+            }
+            table {
+                font-size: 13px;
+            }
+            th, td {
+                padding: 8px 10px;
+            }
+            .opt-card {
+                padding: 12px 14px;
+            }
+            .opt-card .default {
+                font-size: 12px;
+                padding: 2px 9px;
             }
         }
     </style>
@@ -805,8 +877,10 @@
         <h3>9.6 노드 모양 · 크기 패널</h3>
         <div class="opt-card">
             <h4>모양 <span class="default">기본값 dot</span></h4>
-            <p>노드를 그릴 도형을 선택합니다. dot(원, 값에 비례해 크기 변화), circle(라벨 길이에 맞춰
-               자동 크기 조정되는 원), ellipse, box, diamond, star, triangle, square 중 선택할 수 있습니다.</p>
+            <p>노드를 그릴 도형을 선택합니다. dot(원, 아래 "크기 기준·범위" 값에 비례해 크기가 실제로
+               달라짐), circle(원, 지표 값과 무관하게 라벨 글자 길이에 맞춰서만 자동으로 크기가 정해짐),
+               ellipse, box, diamond, star, triangle, square 중 선택할 수 있습니다. 노드 크기로 지표
+               차이를 비교하는 것이 중요하므로 기본값은 <strong>dot</strong>입니다.</p>
         </div>
         <div class="opt-card">
             <h4>크기 기준 <span class="default">기본값 빈도(freq)</span></h4>
@@ -819,6 +893,28 @@
             <p>노드가 그려질 수 있는 최소·최대 픽셀 크기입니다. 노드가 지나치게 작아 식별이 어렵거나,
                큰 노드가 화면을 가리는 경우 조정합니다.</p>
         </div>
+
+        <div class="important">
+            <p style="margin:0">
+                <strong>노드 크기 관련 주의사항</strong>
+            </p>
+            <ul style="margin:10px 0 0">
+                <li>크기는 항상 <strong>프로젝트 전체 노드</strong>를 기준으로 계산된 값입니다. 따라서
+                    필터를 조정하거나 "이웃만 보기"로 일부 단어만 표시해도, 같은 단어의 크기는 항상
+                    동일하게 유지됩니다(크기를 보고 상대적인 규모를 비교할 때, 현재 화면에 무엇이 같이
+                    표시되고 있는지에 흔들리지 않습니다).</li>
+                <li>모양을 <strong>circle</strong>로 바꾸면 "크기 기준"·"크기 범위" 설정이 화면에 반영되지
+                    <strong>않습니다.</strong> circle은 지표 값과 무관하게 라벨 글자가 들어갈 만큼만
+                    자동으로 동그라미 크기를 맞추기 때문입니다. 지표에 따라 크기가 실제로 달라지는 모습이
+                    필요하면 기본값인 dot을 그대로 사용합니다.</li>
+                <li>dot처럼 크기가 제각각인 도형은 라벨이 노드 아래쪽에 고정된 위치로 그려지기 때문에,
+                    노드가 촘촘하게 겹친 구간에서는 어느 라벨이 어느 원의 것인지 헷갈릴 수 있습니다.
+                    이를 보완하기 위해 라벨 뒤에는 옅은 반투명 배경이 항상 함께 그려집니다(<a href="#label-tips">9.8절</a>
+                    참고). 그래도 구분이 어려우면 "라벨 표시 개수"를 줄이거나 노드를 직접
+                    클릭·검색해서 확인하는 것을 권장합니다.</li>
+            </ul>
+        </div>
+
         <div class="opt-card">
             <h4>테두리 두께 / 테두리 색 <span class="default">기본값 1.5px / 흰색</span></h4>
             <p>노드 원(도형) 바깥 테두리의 두께와 색상입니다. 배경과 대비되는 색을 주면 노드 경계가
@@ -837,7 +933,7 @@
             </p>
         </div>
 
-        <h3>9.8 라벨 패널</h3>
+        <h3 id="label-tips">9.8 라벨 패널</h3>
         <div class="opt-card">
             <h4>라벨 표시 <span class="default">기본값 켜짐</span></h4>
             <p>노드 위에 단어 텍스트를 표시할지 여부입니다. 노드 수가 매우 많아 텍스트가 겹쳐 보일 때는
@@ -847,6 +943,17 @@
             <h4>글자 크기 / 글자 색 <span class="default">기본값 14px / #2c3e50</span></h4>
             <p>라벨 텍스트의 크기와 색상입니다. 배경 테마(밝게/어둡게)에 따라 자동으로 대비가 맞춰지지만,
                직접 원하는 색으로 바꿀 수도 있습니다.</p>
+        </div>
+
+        <div class="note">
+            <p style="margin:0">
+                <strong>라벨 뒤 반투명 배경 칩.</strong> dot처럼 크기가 노드마다 다른 도형은 라벨이 노드
+                바로 아래에 고정된 위치로 그려지기 때문에, 노드가 촘촘히 겹친 구간에서는 라벨이 자기
+                노드가 아니라 옆에 있는 다른(대개 더 큰) 원 위에 얹힌 것처럼 보일 수 있습니다. 이를
+                완화하기 위해 모든 라벨 뒤에는 옅은 반투명 배경(라이트 테마는 흰색, 다크 테마는 짙은
+                회색 계열)이 항상 함께 그려져, 라벨이 어느 원 위에 걸쳐 있든 독립된 태그처럼 눈에
+                띄도록 되어 있습니다. 이 배경은 별도 설정 항목 없이 항상 적용됩니다.
+            </p>
         </div>
 
         <h3>9.9 엣지(연결선) 패널</h3>

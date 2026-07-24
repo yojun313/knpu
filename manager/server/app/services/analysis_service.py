@@ -1,6 +1,8 @@
 from app.models.analysis_model import KemKimOption
 from app.libs.kemkim import KemKim
 from app.libs.progress import send_message
+from app.config import KEMKIM_VIEWER_URL
+import requests
 import os
 import traceback
 
@@ -45,7 +47,46 @@ def get_kiwi():
     return kiwi_instance
 
 
-def start_kemkim(option: KemKimOption, token_data):
+def _push_to_kemkim_viewer(
+    zip_path: str, uid: str, project_name: str, pid: str
+) -> str | None:
+    """분석 결과 zip을 온라인 뷰어(manager/kemkim)의 사용자 프로젝트로 곧바로 밀어 넣는다.
+    실패해도 분석 자체를 실패시키지 않는다 — zip 다운로드는 항상 그대로 내려간다."""
+    internal_key = os.getenv("INTERNAL_API_KEY", "")
+    try:
+        with open(zip_path, "rb") as f:
+            resp = requests.post(
+                f"{KEMKIM_VIEWER_URL}/api/internal/projects/ingest",
+                headers={"X-Internal-Key": internal_key},
+                data={"uid": uid, "name": project_name or "KEMKIM 분석"},
+                files={"file": (os.path.basename(zip_path), f, "application/zip")},
+                timeout=60,
+            )
+        if resp.status_code == 200:
+            project_id = resp.json().get("project_id")
+            send_message(
+                pid,
+                f"온라인 뷰어에 프로젝트로 저장했습니다: {KEMKIM_VIEWER_URL}/viewer/{project_id}",
+            )
+            return project_id
+        send_message(
+            pid,
+            "온라인 뷰어 자동 업로드에 실패했습니다. (결과 zip은 정상적으로 받으실 수 있습니다)",
+        )
+    except Exception:
+        send_message(
+            pid,
+            "온라인 뷰어 서버에 연결할 수 없습니다. (결과 zip은 정상적으로 받으실 수 있습니다)",
+        )
+    return None
+
+
+def start_kemkim(
+    option: KemKimOption,
+    token_data,
+    uid: str | None = None,
+    project_name: str | None = None,
+):
 
     def cleanup_folder_and_zip(folder_path: str, zip_path: str):
         shutil.rmtree(folder_path, ignore_errors=True)
@@ -89,12 +130,21 @@ def start_kemkim(option: KemKimOption, token_data):
                 cleanup_folder_and_zip, result_path, zip_path
             )
 
+            response_headers = {}
+            if uid:
+                project_id = _push_to_kemkim_viewer(
+                    zip_path, uid, project_name, option["pid"]
+                )
+                if project_id:
+                    response_headers["X-Kemkim-Project-Id"] = project_id
+
             # 4) FileResponse에 filename= 으로 넘기기
             return FileResponse(
                 path=zip_path,
                 media_type="application/zip",
                 filename=filename,
                 background=background_task,
+                headers=response_headers,
             )
         elif result_path == 2:
             # 예외 상황 메시지 응답
@@ -112,6 +162,15 @@ def start_kemkim(option: KemKimOption, token_data):
                 content={
                     "error": "KEMKIM 분석 중 오류 발생",
                     "message": "키워드가 없어 분석이 종료되었습니다",
+                },
+            )
+        elif result_path == 4:
+            # 예외 상황 메시지 응답
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "KEMKIM 분석 중 오류 발생",
+                    "message": "선택한 기간에 최소 2개 이상의 분석 구간이 필요합니다",
                 },
             )
 

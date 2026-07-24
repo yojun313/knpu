@@ -31,6 +31,13 @@ body{font-family:-apple-system,'Pretendard','Segoe UI',Roboto,'Malgun Gothic',sa
   background:var(--sidebar-bg);color:var(--sidebar-text);overflow:hidden;
   -webkit-font-smoothing:antialiased;transition:background .2s ease,color .2s ease}
 #app{display:flex;height:100vh;width:100vw}
+@supports (height:100dvh){#app{height:100dvh}}
+
+/* ===== 모바일 전용 컨트롤 (기본 숨김, 좁은 화면에서만 노출) ===== */
+.mobile-icon-btn{display:none}
+.mobile-only{display:none}
+#mobileBackdrop{display:none;position:fixed;inset:0;background:rgba(8,12,18,.5);z-index:55;opacity:0;transition:opacity .2s ease}
+#mobileBackdrop.show{display:block;opacity:1}
 
 /* ===== 왼쪽 프로젝트 레일 (VSCode 사이드바 스타일) ===== */
 .rail{width:236px;min-width:52px;flex-shrink:0;background:var(--sidebar-bg);
@@ -106,9 +113,25 @@ body{font-family:-apple-system,'Pretendard','Segoe UI',Roboto,'Malgun Gothic',sa
 .empty-project .ep-sub{font-size:12.5px;color:var(--sidebar-muted);max-width:300px;line-height:1.6}
 .empty-project .ep-btn{width:auto;margin-top:6px;padding:10px 20px}
 
+/* ===== 프로젝트 우클릭 컨텍스트 메뉴 ===== */
+.ctx-menu{position:fixed;left:0;top:0;z-index:70;min-width:172px;max-width:calc(100vw - 16px);
+  background:var(--sidebar-bg);border:1px solid var(--sidebar-border);border-radius:11px;
+  box-shadow:0 16px 40px rgba(15,23,42,.32);padding:6px;display:flex;flex-direction:column;gap:1px}
+.ctx-menu[hidden]{display:none}
+.ctx-item{display:flex;align-items:center;gap:9px;background:transparent;border:none;border-radius:7px;
+  padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--sidebar-text);cursor:pointer;
+  text-align:left;width:100%;font-family:inherit;transition:.12s}
+.ctx-item .ctx-ico{width:15px;text-align:center;flex-shrink:0;font-size:12px}
+.ctx-item:hover{background:var(--sidebar-panel2)}
+.ctx-item.danger{color:var(--danger)}
+.ctx-item.danger:hover{background:var(--danger);color:#fff}
+.ctx-sep{height:1px;background:var(--sidebar-border);margin:4px 3px}
+#propsBody{max-height:60vh;overflow-y:auto}
+#propsBody .stat:last-child{border-bottom:none}
+
 /* ===== 업로드 모달 ===== */
 .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);
-  display:flex;align-items:center;justify-content:center;z-index:50}
+  display:flex;align-items:center;justify-content:center;z-index:80}
 .modal-overlay[hidden]{display:none}
 .modal-card{width:min(440px,90vw);background:var(--sidebar-bg);border:1px solid var(--sidebar-border);
   border-radius:16px;box-shadow:0 24px 60px rgba(15,23,42,.35);overflow:hidden;animation:modalIn .16s ease}
@@ -336,3 +359,42 @@ input[type=color]{width:34px;height:28px;border:1px solid var(--sidebar-border);
 .subgrid{display:none;margin-top:-2px}
 .subgrid.show{display:block}
 ::selection{background:rgba(44,62,80,.25)}
+
+/* ===================================================================
+   반응형 — 태블릿(아이패드)·휴대폰: 좌우 패널을 오프캔버스 드로어로 전환
+   =================================================================== */
+@media (max-width:1100px){
+  .mobile-icon-btn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;
+    border-radius:11px;background:var(--pill-bg);backdrop-filter:blur(8px);border:1px solid var(--pill-border);
+    color:var(--pill-text);font-size:16px;cursor:pointer;box-shadow:var(--pill-shadow);flex-shrink:0;pointer-events:auto}
+  .mobile-icon-btn:hover,.mobile-icon-btn:active{background:var(--accent);color:#fff}
+  .mobile-only{display:inline-flex}
+
+  .rail{position:fixed;top:0;left:0;bottom:0;width:min(300px,84vw)!important;z-index:60;
+    box-shadow:6px 0 28px rgba(0,0,0,.28);transform:translateX(-100%);
+    transition:transform .25s ease!important}
+  .rail.mobile-open{transform:translateX(0)}
+  .rail-resizer{display:none}
+  .ri-actions{display:flex}
+
+  #side{position:fixed;top:0;right:0;bottom:0;width:min(380px,88vw);z-index:60;
+    box-shadow:-6px 0 28px rgba(0,0,0,.28);transform:translateX(100%);transition:transform .25s ease}
+  #side.mobile-open{transform:translateX(0)}
+
+  #zoombox{bottom:16px;left:16px}
+  .search input{width:170px}
+  .search input:focus{width:190px}
+}
+
+@media (max-width:640px){
+  #top{padding:10px;gap:8px}
+  .brandmark{padding:7px 12px 7px 10px}
+  .brandmark span{font-size:12.5px}
+  .search input{width:130px;padding:9px 12px 9px 32px;font-size:12.5px}
+  .search input:focus{width:150px}
+  .badge{padding:7px 10px;font-size:11px}
+  .netsel{padding:7px 10px;font-size:11.5px}
+  #side{width:100vw}
+  .field-row{flex-direction:column;gap:0}
+  .modal-card{max-height:88vh;overflow-y:auto}
+}
