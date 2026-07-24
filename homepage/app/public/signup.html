@@ -9,6 +9,11 @@
   <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />
   <link href="css/styles.css" rel="stylesheet" />
   <style>
+    body {
+      background-color: #eef1f5;
+      min-height: 100vh;
+    }
+
     .masthead_auth {
       position: relative;
       padding-top: 12.5rem;
@@ -36,7 +41,8 @@
       margin: -4.5rem auto 5rem;
       border: none;
       border-top: 4px solid var(--bs-primary);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.14);
+      background-color: #fff;
     }
 
     .auth-card .card-body {
@@ -109,10 +115,6 @@
             <input type="password" class="form-control" id="su-password2" required minlength="8"
               autocomplete="new-password" />
           </div>
-          <div class="mb-3">
-            <label class="form-label" for="su-pushover">Pushover Key <span class="text-muted">(선택)</span></label>
-            <input type="text" class="form-control" id="su-pushover" />
-          </div>
           <button type="submit" class="btn btn-primary w-100">가입 신청</button>
         </form>
 
@@ -139,7 +141,6 @@
       const email = document.getElementById('su-email').value.trim();
       const password = document.getElementById('su-password').value;
       const password2 = document.getElementById('su-password2').value;
-      const pushover_key = document.getElementById('su-pushover').value.trim() || null;
 
       if (password !== password2) {
         errorEl.textContent = '비밀번호가 일치하지 않습니다';
@@ -151,7 +152,7 @@
         const res = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, name, email, password, pushover_key }),
+          body: JSON.stringify({ username, name, email, password }),
         });
         const data = await res.json();
         if (!res.ok) {
