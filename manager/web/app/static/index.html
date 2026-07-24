@@ -123,9 +123,9 @@
 
     async function fetchProcessInfo(pid) {
       try {
-        const res = await fetch(`/process/${pid}`);
+        const res = await fetch(`/progress/process/${pid}`);
         if (!res.ok) {
-          console.error(`GET /process/${pid} failed:`, res.status, await res.text());
+          console.error(`GET /progress/process/${pid} failed:`, res.status, await res.text());
           throw new Error(`Status ${res.status}`);
         }
         const data = await res.json();
@@ -139,7 +139,7 @@
 
     function startWS(id) {
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl    = `${protocol}//${location.host}/ws/${id}`;
+      const wsUrl    = `${protocol}//${location.host}/progress/ws/${id}`;
       const ws       = new WebSocket(wsUrl);
 
       ws.addEventListener('message', (ev) => {

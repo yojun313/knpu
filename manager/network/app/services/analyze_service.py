@@ -3,7 +3,7 @@
 토큰화된 CSV를 웹에서 바로 업로드해 네트워크 분석을 돌리는 기능.
 manager/server의 /analysis/graph-network 엔드포인트(데스크톱 MANAGER가 쓰는 것과 동일한
 파이프라인)를 그대로 호출하고, 결과는 manager/server가 알아서(uid 기반) 이 사용자의
-프로젝트로 자동 저장해준다. 진행 상황은 manager-progress 서버(WebSocket)로 그대로 흘러간다.
+프로젝트로 자동 저장해준다. 진행 상황은 manager.knpu.re.kr/progress(WebSocket)로 그대로 흘러간다.
 """
 
 import json
@@ -28,7 +28,7 @@ PROGRESS_SERVER_URL = os.getenv("PROGRESS_SERVER_URL", "http://localhost:8080").
 )
 # 브라우저가 진행 상황 WebSocket에 붙을 때 쓰는 공개 주소
 PROGRESS_PUBLIC_WS_URL = (
-    "ws://localhost:8080" if MODE == 0 else "wss://manager-progress.knpu.re.kr"
+    "ws://localhost:8080" if MODE == 0 else "wss://manager.knpu.re.kr/progress"
 )
 
 _DEFAULT_OPTION = {

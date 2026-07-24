@@ -31,7 +31,7 @@ if mode == 0:
     KEMKIM_VIEWER_URL = "http://localhost:8008"
 else:
     MANAGER_SERVER_API = "https://manager.knpu.re.kr/api"
-    MANAGER_PROGRESS_API = "https://manager-progress.knpu.re.kr"
+    MANAGER_PROGRESS_API = "https://manager.knpu.re.kr/progress"
     HOMEPAGE_EDIT_API = "https://knpu.re.kr/api"
     NETWORK_VIEWER_URL = "https://network.knpu.re.kr"
     KEMKIM_VIEWER_URL = "https://kemkim.knpu.re.kr"
