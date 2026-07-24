@@ -27,11 +27,19 @@ GPU_SERVER_URL = os.getenv("GPU_SERVER_URL")
 
 
 @router.post("/kemkim")
-async def analysis_kemkim(option: str = Form(...), file: UploadFile = File(...)):
+async def analysis_kemkim(
+    option: str = Form(...),
+    file: UploadFile = File(...),
+    authorization: str | None = Header(None),
+):
     option = json.loads(option)
     content = await file.read()
     token_data = pd.read_csv(StringIO(content.decode("utf-8")))
-    return start_kemkim(KemKimOption(**option), token_data)
+    uid = get_uid_from_bearer(authorization)
+    project_name = os.path.splitext(file.filename)[0]
+    return start_kemkim(
+        KemKimOption(**option), token_data, uid=uid, project_name=project_name
+    )
 
 
 @router.post("/tokenize")

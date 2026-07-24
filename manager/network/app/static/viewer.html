@@ -40,6 +40,7 @@
         <button id="btnZoomReset" title="전체보기">⤢</button>
       </div>
       <div id="top">
+        <button id="mobileRailBtn" class="mobile-icon-btn" title="프로젝트 목록">☰</button>
         <div class="brandmark" id="backLink"><span class="dot3"></span><span id="projectName">Network Analyzer</span></div>
         <div class="search">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9fb0c4" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
@@ -48,14 +49,17 @@
         <select id="networkSelect" class="netsel" hidden></select>
         <div class="badge warn" id="totalBadge"><span class="pulse"></span>-</div>
         <div class="badge" id="liveBadge"><span class="pulse"></span>표시 중 -</div>
+        <button id="mobileSideBtn" class="mobile-icon-btn" title="설정 · 노드 정보">⚙</button>
       </div>
     </div>
+    <div id="mobileBackdrop"></div>
     <div id="side">
       <div class="title-block">
         <div><h1>Network Analyzer</h1><p>공출현 기반 단어 네트워크 분석기</p></div>
         <div class="title-actions">
           <a class="icon-btn" id="btnManual" href="https://knpu.re.kr/manual/network" target="_blank" title="매뉴얼 열기">📘</a>
           <button class="icon-btn" id="btnTheme" title="화면 테마 전환">◐</button>
+          <button class="icon-btn mobile-only" id="sideCloseBtn" title="닫기">✕</button>
         </div>
       </div>
 
@@ -121,8 +125,8 @@
         <div class="sec-body">
           <div class="row"><label>모양</label></div>
           <select id="selShape" style="margin-bottom:12px">
-            <option value="circle">circle (원, 라벨에 맞춰 자동)</option>
             <option value="dot">dot (원, 값기반 크기)</option>
+            <option value="circle">circle (원, 라벨에 맞춰 자동)</option>
             <option value="ellipse">ellipse (타원)</option>
             <option value="box">box (사각형)</option>
             <option value="diamond">diamond (다이아몬드)</option>
@@ -231,6 +235,23 @@
     </div>
   </div>
 
+  <div id="railCtxMenu" class="ctx-menu" hidden>
+    <button class="ctx-item" data-act="props"><span class="ctx-ico">ℹ</span><span>속성</span></button>
+    <button class="ctx-item" data-act="rename"><span class="ctx-ico">✎</span><span>이름 변경</span></button>
+    <div class="ctx-sep"></div>
+    <button class="ctx-item danger" data-act="delete"><span class="ctx-ico">🗑</span><span>삭제</span></button>
+  </div>
+
+  <div id="propsModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span id="propsTitle">프로젝트 속성</span>
+        <button id="propsModalClose" class="modal-close" title="닫기">×</button>
+      </div>
+      <div class="sec-body" id="propsBody" style="padding:16px 18px"></div>
+    </div>
+  </div>
+
   <div id="uploadModal" class="modal-overlay" hidden>
     <div class="modal-card">
       <div class="modal-head">
@@ -265,7 +286,7 @@
           <input type="file" id="analyzeFileInput" accept=".csv" hidden>
           <div class="dz-icon">＋</div>
           <div class="dz-text" id="analyzeFileLabel">토큰화된 CSV 파일을 선택하세요</div>
-          <div class="dz-sub">MANAGER의 분석 파이프라인을 그대로 사용합니다</div>
+          <div class="dz-sub">token_*.csv</div>
         </label>
         <div id="analyzeProgress" class="upload-progress" hidden>
           <div class="upload-progress-bar"><div id="analyzeProgressFill" class="upload-progress-fill"></div></div>

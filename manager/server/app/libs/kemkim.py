@@ -81,6 +81,7 @@ class KemKim:
             self.split_custom = split_custom
             self.now = datetime.now()
             self.weighterror = False
+            self.perioderror = False
 
             # Text Column Name 지정
             for column in token_data.columns.tolist():
@@ -93,7 +94,17 @@ class KemKim:
             self.period_divided_group = self.divide_period(self.token_data, period)
             period_list = list(self.period_divided_group.groups.keys())
 
-            if (len(period_list) - 1) * self.weight >= 1:
+            if len(period_list) < 2:
+                # period_diff가 0이 되어 _calculate_average_increase에서 ZeroDivisionError로
+                # 조용히 삼켜지던 것을 막기 위한 방어 코드 (선택 기간에 구간이 1개뿐인 경우).
+                self.write_status("분석 기간 부족")
+                send_message(
+                    self.pid,
+                    "분석 기간 부족: 선택한 기간에 최소 2개 이상의 분석 구간이 필요합니다",
+                )
+                self.perioderror = True
+
+            elif (len(period_list) - 1) * self.weight >= 1:
                 self.write_status("시간 가중치 오류")
                 send_message(self.pid, "시간 가중치 오류")
                 self.weighterror = True
@@ -145,6 +156,9 @@ class KemKim:
 
     def make_kemkim(self):
         try:
+            if self.perioderror == True:
+                return 4
+
             if self.weighterror == True:
                 return 2
 

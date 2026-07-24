@@ -48,7 +48,7 @@ from services.api import Request, get_api_headers
 from services.logging import printStatus, userLogging, programBugLog
 from services.llm import generateLLM
 from services.csv import readCSV, getCSVHeaders, safe_path
-from config import MANAGER_SERVER_API, NETWORK_VIEWER_URL
+from config import MANAGER_SERVER_API, NETWORK_VIEWER_URL, KEMKIM_VIEWER_URL
 from PySide6.QtCore import QThread, Signal
 from .page_worker import Manager_Worker
 
@@ -624,6 +624,7 @@ class Manager_Analysis(Manager_Worker):
                 self.option = option
                 self.save_path = save_path
                 self.tokenfile_name = tokenfile_name
+                self.project_id = None
 
             def run(self):
                 try:
@@ -634,15 +635,15 @@ class Manager_Analysis(Manager_Worker):
                         extra_fields={"option": json.dumps(self.option)},
                         label="토큰 데이터 업로드 중",
                     )
+                    self.project_id = response.headers.get("X-Kemkim-Project-Id")
 
                     extract_path = self.download_file(
                         response, self.save_path, label="결과 다운로드 중", extract=True
                     )
-                    self.finished.emit(
-                        True,
-                        f"{self.tokenfile_name} KEMKIM 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                        extract_path,
-                    )
+                    # 네트워크 분석과 동일하게, 파일 탐색기 프롬프트 대신 웹 뷰어를 열지
+                    # 물어본다(offer_open_kemkim_viewer) — 메시지를 비워 openFileResult가
+                    # 아무것도 띄우지 않게 한다.
+                    self.finished.emit(True, "", extract_path)
 
                 except requests.exceptions.HTTPError as e:
                     self.error.emit(
@@ -907,6 +908,9 @@ class Manager_Analysis(Manager_Worker):
                 pid, filepath, option, save_path, tokenfile_name, self.main
             )
             self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
+            worker.finished.connect(
+                lambda ok, msg, path: self.offer_open_kemkim_viewer(worker)
+            )
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -915,6 +919,25 @@ class Manager_Analysis(Manager_Worker):
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
+
+    def offer_open_kemkim_viewer(self, worker):
+        project_id = getattr(worker, "project_id", None)
+        if not project_id:
+            return
+        reply = QMessageBox.question(
+            self.main,
+            "Notification",
+            "인터랙티브 뷰어로 KEMKIM 결과를 확인하시겠습니까?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        token = get_setting("auth_token")
+        webbrowser.open(
+            f"{KEMKIM_VIEWER_URL}/auth/direct-login?token={token}"
+            f"&next=/viewer/{project_id}"
+        )
 
     def modify_kemkim(self):
         def copy_csv(input_file_path, output_file_path):
