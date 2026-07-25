@@ -52,6 +52,7 @@ from config import (
     MANAGER_SERVER_API,
     NETWORK_VIEWER_URL,
     KEMKIM_VIEWER_URL,
+    STATISTICS_VIEWER_URL,
     HOMEPAGE_URL,
 )
 from urllib.parse import quote
@@ -299,97 +300,41 @@ class Manager_Analysis(Manager_Worker):
             programBugLog(self.main, traceback.format_exc())
 
     def run_analysis(self):
-        class RunAnalysisWorker(QThread):
-            finished = Signal(bool, str, str)  # (성공 여부, 메시지, 파일경로)
-            error = Signal(str)
-            message = Signal(str)  # 메시지 업데이트용 시그널
-
-            def __init__(
-                self,
-                csv_path,
-                selected_options,
-                dataprocess_obj,
-                hate_mode,
-                parent=None,
-            ):
+        class RunAnalysisWorker(BaseWorker):
+            def __init__(self, pid, filepath, option, save_path, filename, parent=None):
                 super().__init__(parent)
-                self.csv_path = csv_path
-                self.selected_options = selected_options
-                self.dataprocess_obj = dataprocess_obj
-                self.hate_mode = hate_mode
+                self.pid = pid
+                self.filepath = filepath
+                self.option = option
+                self.save_path = save_path
+                self.filename = filename
+                self.project_id = None
 
             def run(self):
                 try:
-                    csv_filename = os.path.basename(self.csv_path)
-                    self.message.emit("CSV 파일을 불러오는 중...")
-                    csv_data = readCSV(self.csv_path)
+                    upload_url = MANAGER_SERVER_API + "/analysis/statistics"
+                    response = self.upload_file(
+                        self.filepath,
+                        upload_url,
+                        extra_fields={"option": json.dumps(self.option)},
+                        label="CSV 업로드 중",
+                    )
+                    self.project_id = response.headers.get(
+                        "X-Statistics-Project-Id"
+                    )
 
-                    self.message.emit("분석 작업 실행 중...")
-                    opt = self.selected_options
-                    match opt:
-                        case ["article 분석", "Naver News"]:
-                            result = self.dataprocess_obj.NaverNewsArticleAnalysis(
-                                csv_data, self.csv_path
-                            )
-                        case ["statistics 분석", "Naver News"]:
-                            result = self.dataprocess_obj.NaverNewsStatisticsAnalysis(
-                                csv_data, self.csv_path
-                            )
-                        case ["reply 분석", "Naver News"]:
-                            result = self.dataprocess_obj.NaverNewsReplyAnalysis(
-                                csv_data, self.csv_path
-                            )
-                        case ["rereply 분석", "Naver News"]:
-                            result = self.dataprocess_obj.NaverNewsRereplyAnalysis(
-                                csv_data, self.csv_path
-                            )
-                        case ["article 분석", "Naver Cafe"]:
-                            result = self.dataprocess_obj.NaverCafeArticleAnalysis(
-                                csv_data, self.csv_path
-                            )
-                        case ["reply 분석", "Naver Cafe"]:
-                            result = self.dataprocess_obj.NaverCafeReplyAnalysis(
-                                csv_data, self.csv_path
-                            )
-                        case ["article 분석", "Google YouTube"]:
-                            result = self.dataprocess_obj.YouTubeArticleAnalysis(
-                                csv_data, self.csv_path
-                            )
-                        case ["reply 분석", "Google YouTube"]:
-                            result = self.dataprocess_obj.YouTubeReplyAnalysis(
-                                csv_data, self.csv_path
-                            )
-                        case ["rereply 분석", "Google YouTube"]:
-                            result = self.dataprocess_obj.YouTubeRereplyAnalysis(
-                                csv_data, self.csv_path
-                            )
-                        case [o, _] if o.lower().startswith("hate") or "혐오" in o:
-                            result = self.dataprocess_obj.HateAnalysis(
-                                csv_data, self.csv_path
-                            )
-                        case _:
-                            self.finished.emit(False, "지원되지 않는 옵션입니다.", "")
-                            return
+                    extract_path = self.download_file(
+                        response, self.save_path, label="결과 다운로드 중", extract=True
+                    )
+                    # kemkim/network와 동일하게, 파일 탐색기 프롬프트 대신 웹 뷰어를 열지
+                    # 물어본다(offer_open_statistics_viewer) — 메시지를 비워
+                    # openFileResult가 아무것도 띄우지 않게 한다.
+                    self.finished.emit(True, "", extract_path)
 
-                    del csv_data
-                    gc.collect()
-
-                    self.message.emit("결과 파일 저장 경로 생성 중...")
-                    if result:
-                        output_dir = os.path.join(
-                            os.path.dirname(self.csv_path),
-                            f"{os.path.splitext(csv_filename)[0]}_analysis"
-                            if not self.hate_mode
-                            else f"{os.path.splitext(csv_filename)[0]}_hate_analysis",
-                        )
-                        self.finished.emit(
-                            True,
-                            f"{csv_filename} 통계 분석이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
-                            output_dir,
-                        )
-                    else:
-                        self.finished.emit(False, "분석 실패", "")
-
+                except requests.exceptions.HTTPError as e:
+                    self.error.emit(
+                        f"Server error detected ({e.response.status_code}):\n{e.response.text}"
+                    )
                 except Exception:
                     self.error.emit(traceback.format_exc())
 
@@ -419,25 +364,31 @@ class Manager_Analysis(Manager_Worker):
                 QMessageBox.warning(self.main, "Error", "선택 옵션이 부족합니다.")
                 return
 
-            hate_mode = (
-                selected_options[0].lower().startswith("hate")
-                or "혐오" in selected_options[0]
-            )
+            category, platform = selected_options[0], selected_options[1]
 
-            userLogging(f"ANALYSIS -> analysis_file({filepath})")
+            pid = str(uuid.uuid4())
+            register_process(pid, "통계 분석")
 
-            statusDialog = TaskStatusDialog(f"통계 분석: {filename}", self.main)
-            statusDialog.show()
-            statusDialog.update_message("작업을 준비 중입니다...")
+            option = {"pid": pid, "category": category, "platform": platform}
+
+            userLogging(f"ANALYSIS -> statistics_file({filepath}) options: {option}")
+
+            save_path = os.path.dirname(filepath)
+
+            downloadDialog = DownloadDialog(f"통계 분석: {filename}", pid, self.main)
+            downloadDialog.show()
 
             thread_name = f"통계 분석: {filename}"
             register_thread(thread_name)
             printStatus(self.main)
 
             worker = RunAnalysisWorker(
-                filepath, selected_options, self.dataprocess_obj, hate_mode, self.main
+                pid, filepath, option, save_path, filename, self.main
             )
-            self.connectWorkerForStatusDialog(worker, statusDialog, thread_name)
+            self.connectWorkerForDownloadDialog(worker, downloadDialog, thread_name)
+            worker.finished.connect(
+                lambda ok, msg, path: self.offer_open_statistics_viewer(worker)
+            )
             worker.start()
 
             if not hasattr(self, "_workers"):
@@ -446,6 +397,25 @@ class Manager_Analysis(Manager_Worker):
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
+
+    def offer_open_statistics_viewer(self, worker):
+        project_id = getattr(worker, "project_id", None)
+        if not project_id:
+            return
+        reply = QMessageBox.question(
+            self.main,
+            "Notification",
+            "인터랙티브 뷰어로 통계 분석 결과를 확인하시겠습니까?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        token = get_setting("auth_token")
+        redirect = quote(f"{STATISTICS_VIEWER_URL}/viewer/{project_id}")
+        webbrowser.open(
+            f"{HOMEPAGE_URL}/api/auth/token-login?token={token}&redirect={redirect}"
+        )
 
     def run_wordcloud(self):
         class WordcloudWorker(QThread):
