@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from app.models import Member
 from app.db import members_db
+from app.auth.dependencies import require_admin
 from fastapi import HTTPException
 import uuid
 
@@ -37,7 +38,7 @@ def list_members():
     return docs
 
 
-@router.post("/")
+@router.post("/", dependencies=[Depends(require_admin)])
 def upsert_member(member: Member):
     member_data = member.dict(by_alias=True)
     if "uid" not in member_data or not member_data["uid"]:
@@ -72,7 +73,7 @@ def get_member_options():
     }
 
 
-@router.delete("/")
+@router.delete("/", dependencies=[Depends(require_admin)])
 def delete_member(uid: str = Query(..., description="삭제할 멤버의 UID")):
     result = members_db.delete_one({"uid": uid})
     if result.deleted_count == 0:

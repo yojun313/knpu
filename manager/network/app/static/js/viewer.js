@@ -6,6 +6,7 @@
     return m ? decodeURIComponent(m[1]) : null;
   }
   var projectId = parseProjectId();
+  var LAST_PROJECT_KEY = 'nv_last_project'; // 마지막으로 열었던 프로젝트 — 사이트를 새로 열 때 자동 선택
   var qs = new URLSearchParams(location.search);
   var currentTag = qs.get('tag') || '';
 
@@ -43,6 +44,7 @@
       document.title = (meta.name || 'Network Analyzer') + ' · Network Analyzer';
       document.getElementById('emptyProject').hidden = true;
       highlightActiveRailItem();
+      localStorage.setItem(LAST_PROJECT_KEY, projectId);
       initNetworkSelect(meta);
       renderAnalysisOptions(meta.analysis_options);
       var warn = data.truncated
@@ -292,6 +294,7 @@
     railApi('/api/projects/' + p.project_id, { method: 'DELETE' }).then(function () {
       var wasCurrent = p.project_id === projectId;
       clearSavedSettings(p.project_id);
+      if (wasCurrent) localStorage.removeItem(LAST_PROJECT_KEY);
       loadRailProjects().then(function () {
         if (wasCurrent) {
           projectId = null;
@@ -307,11 +310,12 @@
     }).catch(function () { toast('삭제에 실패했습니다.'); });
   }
 
-  function switchProject(id) {
+  function switchProject(id, replace) {
     if (!id || id === projectId) return;
     projectId = id;
     currentTag = '';
-    history.pushState(null, '', '/viewer/' + encodeURIComponent(id));
+    if (replace) history.replaceState(null, '', '/viewer/' + encodeURIComponent(id));
+    else history.pushState(null, '', '/viewer/' + encodeURIComponent(id));
     highlightActiveRailItem();
     loadNetwork('');
   }
@@ -1500,11 +1504,23 @@
 
   bindRailEvents();
   loadMe();
-  loadRailProjects();
   if (projectId) {
+    loadRailProjects();
     loadNetwork(currentTag);
   } else {
-    document.getElementById('loading').classList.add('hide');
-    document.getElementById('emptyProject').hidden = false;
+    // URL에 프로젝트가 지정되지 않았으면(사이트를 그냥 열었으면) 마지막으로 열어봤던
+    // 프로젝트를 자동으로 선택한다. 그 프로젝트가 삭제되었거나 접근 권한이 없으면
+    // 조용히 포기하고 빈 화면을 보여준다.
+    loadRailProjects().then(function () {
+      var lastId = localStorage.getItem(LAST_PROJECT_KEY);
+      var exists = lastId && railProjects.some(function (p) { return p.project_id === lastId; });
+      if (exists) {
+        switchProject(lastId, true);
+      } else {
+        if (lastId) localStorage.removeItem(LAST_PROJECT_KEY);
+        document.getElementById('loading').classList.add('hide');
+        document.getElementById('emptyProject').hidden = false;
+      }
+    });
   }
 })();

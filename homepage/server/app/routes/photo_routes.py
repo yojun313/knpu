@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.models import GalleryPost
 from app.db import gallery_db
+from app.auth.dependencies import require_admin
 from app.libs import r2
 import uuid
 
@@ -17,7 +18,7 @@ def list_gallery_posts():
     return docs
 
 
-@router.post("/")
+@router.post("/", dependencies=[Depends(require_admin)])
 def upsert_gallery_post(post: GalleryPost):
     if not post.photos:
         raise HTTPException(
@@ -32,7 +33,7 @@ def upsert_gallery_post(post: GalleryPost):
     return post_data
 
 
-@router.delete("/")
+@router.delete("/", dependencies=[Depends(require_admin)])
 def delete_gallery_post(uid: str = Query(..., description="삭제할 게시글의 UID")):
     doc = gallery_db.find_one({"uid": uid})
     if not doc:

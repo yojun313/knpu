@@ -6,6 +6,7 @@
     return m ? decodeURIComponent(m[1]) : null;
   }
   var projectId = parseProjectId();
+  var LAST_PROJECT_KEY = 'sv_last_project'; // 마지막으로 열었던 프로젝트 — 사이트를 새로 열 때 자동 선택
 
   var currentMeta = null;
   var base = null;              // /api/projects/{id}/base 응답: metadata,description,tables,graphs
@@ -472,6 +473,7 @@
       document.getElementById('emptyProject').hidden = true;
       document.getElementById('dashboard').hidden = false;
       highlightActiveRailItem();
+      localStorage.setItem(LAST_PROJECT_KEY, id);
       resetViewState();
       renderDashboard();
       document.getElementById('loading').classList.add('hide');
@@ -603,6 +605,7 @@
     if (!confirm('"' + p.name + '" 프로젝트를 삭제할까요? 되돌릴 수 없습니다.')) return;
     railApi('/api/projects/' + p.project_id, { method: 'DELETE' }).then(function () {
       var wasCurrent = p.project_id === projectId;
+      if (wasCurrent) localStorage.removeItem(LAST_PROJECT_KEY);
       loadRailProjects().then(function () {
         if (wasCurrent) {
           projectId = null;
@@ -618,10 +621,11 @@
     }).catch(function () { toast('삭제에 실패했습니다.'); });
   }
 
-  function switchProject(id) {
+  function switchProject(id, replace) {
     if (!id || id === projectId) return;
     projectId = id;
-    history.pushState(null, '', '/viewer/' + encodeURIComponent(id));
+    if (replace) history.replaceState(null, '', '/viewer/' + encodeURIComponent(id));
+    else history.pushState(null, '', '/viewer/' + encodeURIComponent(id));
     highlightActiveRailItem();
     loadProject(id);
   }
@@ -1035,11 +1039,23 @@
 
   bindEvents();
   loadMe();
-  loadRailProjects();
   if (projectId) {
+    loadRailProjects();
     loadProject(projectId);
   } else {
-    document.getElementById('loading').classList.add('hide');
-    document.getElementById('emptyProject').hidden = false;
+    // URL에 프로젝트가 지정되지 않았으면(사이트를 그냥 열었으면) 마지막으로 열어봤던
+    // 프로젝트를 자동으로 선택한다. 그 프로젝트가 삭제되었거나 접근 권한이 없으면
+    // 조용히 포기하고 빈 화면을 보여준다.
+    loadRailProjects().then(function () {
+      var lastId = localStorage.getItem(LAST_PROJECT_KEY);
+      var exists = lastId && railProjects.some(function (p) { return p.project_id === lastId; });
+      if (exists) {
+        switchProject(lastId, true);
+      } else {
+        if (lastId) localStorage.removeItem(LAST_PROJECT_KEY);
+        document.getElementById('loading').classList.add('hide');
+        document.getElementById('emptyProject').hidden = false;
+      }
+    });
   }
 })();

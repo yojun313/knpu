@@ -1,6 +1,7 @@
 import uuid
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.db import popup_db
+from app.auth.dependencies import require_admin
 from datetime import datetime
 from app.models import Popup
 
@@ -16,7 +17,7 @@ def list_popups():
     return docs
 
 
-@router.post("/")
+@router.post("/", dependencies=[Depends(require_admin)])
 def upsert_popup(popup: Popup):
     data = popup.dict()
     if not data.get("uid"):
@@ -33,7 +34,7 @@ def upsert_popup(popup: Popup):
     return result
 
 
-@router.delete("/")
+@router.delete("/", dependencies=[Depends(require_admin)])
 def delete_popup(uid: str = Query(..., description="삭제할 팝업의 UID")):
     result = popup_db.delete_one({"uid": uid})
     if result.deleted_count == 0:

@@ -80,6 +80,15 @@ def account_page(user=Depends(get_current_user_optional)):
     return _page("account.html")
 
 
+@router.get("/admin")
+def admin_page(user=Depends(get_current_user_optional)):
+    if not user:
+        return RedirectResponse(url="/login?redirect=%2Fadmin")
+    if user.get("role") != "admin":
+        return RedirectResponse(url="/account")
+    return _page("admin.html")
+
+
 @router.get("/manager")
 def manager_redirect():
     return RedirectResponse(url="https://manager.knpu.re.kr", status_code=301)

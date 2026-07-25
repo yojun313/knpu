@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException
 from app.db import news_db
+from app.auth.dependencies import require_admin
 from datetime import datetime
 from app.models import News
 import uuid
@@ -26,7 +27,7 @@ def list_news():
     return docs
 
 
-@router.post("/")
+@router.post("/", dependencies=[Depends(require_admin)])
 def upsert_news(news: News):
     news_data = news.dict(by_alias=True)
     if "uid" not in news_data or not news_data["uid"]:
@@ -44,7 +45,7 @@ def upsert_news(news: News):
     return new_news
 
 
-@router.delete("/")
+@router.delete("/", dependencies=[Depends(require_admin)])
 def delete_news(uid: str = Query(..., description="삭제할 뉴스의 UID")):
     result = news_db.delete_one({"uid": uid})
     if result.deleted_count == 0:
