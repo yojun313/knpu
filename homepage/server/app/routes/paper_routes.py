@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.db import papers_db
 from app.models import PaperRequest
+from app.auth.dependencies import require_admin
 from datetime import datetime, timezone
 import uuid
 from app.libs.crawl_papers import fetch_bib
@@ -28,7 +29,7 @@ def list_papers():
     return result
 
 
-@router.post("/")
+@router.post("/", dependencies=[Depends(require_admin)])
 def upsert_paper(paper: PaperRequest):
     paper_data = paper.dict(by_alias=True)
 
@@ -47,7 +48,7 @@ def upsert_paper(paper: PaperRequest):
     return paper_data
 
 
-@router.delete("/")
+@router.delete("/", dependencies=[Depends(require_admin)])
 def delete_paper(uid: str = Query(..., description="삭제할 논문의 UID")):
     result = papers_db.delete_one({"uid": uid})
     if result.deleted_count == 0:
@@ -55,7 +56,7 @@ def delete_paper(uid: str = Query(..., description="삭제할 논문의 UID")):
     return {"message": f"Paper '{uid}' deleted successfully"}
 
 
-@router.get("/crawl")
+@router.get("/crawl", dependencies=[Depends(require_admin)])
 def crawl_paper(
     title: str = Query(..., description="논문 제목"),
     journal_type: str = Query(..., alias="type", description="SCI / SCOPUS / KCI"),

@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>콘텐츠 관리 | FPEI</title>
+  <script defer src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+  <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />
+  <link href="css/styles.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #eef1f5;
+      min-height: 100vh;
+    }
+
+    .masthead_auth {
+      position: relative;
+      padding-top: 12.5rem;
+      padding-bottom: 4rem;
+      text-align: center;
+      color: #fff;
+      background: linear-gradient(135deg, #1a1d20 0%, #2c3e50 100%);
+    }
+
+    .masthead_auth-heading {
+      font-family: "Montserrat", sans-serif;
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0;
+    }
+
+    .masthead_auth-subheading {
+      font-size: 1.15rem;
+      font-style: italic;
+      margin-bottom: 20px;
+    }
+
+    .admin-wrap {
+      max-width: 1140px;
+      margin: 1.5rem auto 5rem;
+    }
+
+    .admin-card {
+      border: none;
+      border-top: 4px solid var(--bs-primary);
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.14);
+      background-color: #fff;
+      margin-bottom: 1.5rem;
+    }
+
+    .admin-card .card-body {
+      padding: 1.75rem;
+    }
+
+    .admin-tabs .nav-link {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #495057;
+    }
+
+    .admin-tabs .nav-link.active {
+      color: var(--bs-primary);
+    }
+
+    .admin-table td {
+      vertical-align: middle;
+    }
+
+    .admin-table .col-actions {
+      white-space: nowrap;
+      width: 1%;
+    }
+
+    .cell-truncate {
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .photo-thumb-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .photo-thumb {
+      position: relative;
+      width: 92px;
+      height: 92px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #dee2e6;
+      background: #f8f9fa;
+    }
+
+    .photo-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .photo-thumb .remove-btn {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 11px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .admin-loading {
+      text-align: center;
+      color: #fff;
+      padding: 4rem 0;
+    }
+
+    #admin-content {
+      display: none;
+    }
+
+    .auth-alert {
+      display: none;
+    }
+  </style>
+</head>
+
+<body id="page-top" data-page="admin">
+  <div id="nav-placeholder"></div>
+
+  <header class="masthead_auth">
+    <div class="container">
+      <div class="masthead_auth-subheading">KNPU FPEI</div>
+      <div class="masthead_auth-heading">콘텐츠 관리</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="admin-wrap" id="admin-content">
+
+      <ul class="nav nav-tabs admin-tabs mb-3" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-papers" type="button">논문</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-members" type="button">멤버</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-news" type="button">뉴스</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gallery" type="button">갤러리</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-popups" type="button">팝업</button>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+
+        <!-- 논문 -->
+        <div class="tab-pane fade show active" id="tab-papers">
+          <div class="card admin-card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">논문 목록</h2>
+                <button class="btn btn-primary btn-sm" onclick="openPaperModal()">+ 논문 추가</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-striped admin-table">
+                  <thead>
+                    <tr><th>연도</th><th>제목</th><th>저자</th><th>학회/저널</th><th class="col-actions">작업</th></tr>
+                  </thead>
+                  <tbody id="papers-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 멤버 -->
+        <div class="tab-pane fade" id="tab-members">
+          <div class="card admin-card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">멤버 목록</h2>
+                <button class="btn btn-primary btn-sm" onclick="openMemberModal()">+ 멤버 추가</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-striped admin-table">
+                  <thead>
+                    <tr><th>이름</th><th>구분</th><th>직책</th><th>이메일</th><th class="col-actions">작업</th></tr>
+                  </thead>
+                  <tbody id="members-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 뉴스 -->
+        <div class="tab-pane fade" id="tab-news">
+          <div class="card admin-card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">뉴스 목록</h2>
+                <button class="btn btn-primary btn-sm" onclick="openNewsModal()">+ 뉴스 추가</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-striped admin-table">
+                  <thead>
+                    <tr><th>제목</th><th>날짜</th><th>URL</th><th class="col-actions">작업</th></tr>
+                  </thead>
+                  <tbody id="news-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 갤러리 -->
+        <div class="tab-pane fade" id="tab-gallery">
+          <div class="card admin-card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">갤러리 게시글</h2>
+                <button class="btn btn-primary btn-sm" onclick="openGalleryModal()">+ 게시글 추가</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-striped admin-table">
+                  <thead>
+                    <tr><th>제목</th><th>날짜</th><th>사진 수</th><th class="col-actions">작업</th></tr>
+                  </thead>
+                  <tbody id="gallery-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 팝업 -->
+        <div class="tab-pane fade" id="tab-popups">
+          <div class="card admin-card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">팝업 목록</h2>
+                <button class="btn btn-primary btn-sm" onclick="openPopupModal()">+ 팝업 추가</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-striped admin-table">
+                  <thead>
+                    <tr><th>제목</th><th>시작일</th><th>종료일</th><th>활성</th><th class="col-actions">작업</th></tr>
+                  </thead>
+                  <tbody id="popups-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="admin-loading" class="admin-loading">불러오는 중...</div>
+  </div>
+
+  <!-- ===================== 논문 모달 ===================== -->
+  <div class="modal fade" id="paperModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="paperModalTitle">논문 추가</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-danger auth-alert" id="paper-error"></div>
+          <div class="mb-3">
+            <label class="form-label">제목</label>
+            <input type="text" class="form-control" id="paper-title">
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">등재 종류</label>
+              <select class="form-select" id="paper-journal-type">
+                <option value="KCI">KCI</option>
+                <option value="SCI">SCI</option>
+                <option value="SCOPUS">SCOPUS</option>
+              </select>
+            </div>
+            <div class="col-6 d-flex align-items-end">
+              <button type="button" class="btn btn-outline-secondary w-100" onclick="crawlPaperMetadata()">메타데이터 가져오기</button>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">연도</label>
+            <input type="number" class="form-control" id="paper-year">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">저자 (쉼표로 구분)</label>
+            <input type="text" class="form-control" id="paper-authors">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">학회/저널</label>
+            <input type="text" class="form-control" id="paper-venue">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">논문 링크 (URL)</label>
+            <input type="text" class="form-control" id="paper-url">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-primary" onclick="savePaper()">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 멤버 모달 ===================== -->
+  <div class="modal fade" id="memberModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="memberModalTitle">멤버 추가</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-danger auth-alert" id="member-error"></div>
+          <div class="mb-3">
+            <label class="form-label">이름</label>
+            <input type="text" class="form-control" id="member-name">
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">포지션</label>
+              <select class="form-select" id="member-position"></select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">구분</label>
+              <select class="form-select" id="member-section"></select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">소속</label>
+            <input type="text" class="form-control" id="member-affiliation">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">이메일</label>
+            <input type="text" class="form-control" id="member-email">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">학력 (줄바꿈으로 구분)</label>
+            <textarea class="form-control" id="member-school" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">경력 (줄바꿈으로 구분)</label>
+            <textarea class="form-control" id="member-career" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">연구 (줄바꿈으로 구분)</label>
+            <textarea class="form-control" id="member-research" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">수상 (줄바꿈으로 구분)</label>
+            <textarea class="form-control" id="member-awards" rows="3"></textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label d-block">프로필 이미지</label>
+            <input type="file" class="form-control" id="member-image-input" accept="image/*" onchange="uploadMemberImage(this.files[0])">
+            <div class="form-text" id="member-image-status">이미지 없음</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-primary" onclick="saveMember()">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 뉴스 모달 ===================== -->
+  <div class="modal fade" id="newsModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="newsModalTitle">뉴스 추가</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-danger auth-alert" id="news-error"></div>
+          <div class="mb-3">
+            <label class="form-label">제목</label>
+            <input type="text" class="form-control" id="news-title">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">내용</label>
+            <textarea class="form-control" id="news-content" rows="4"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">날짜 (YYYY.MM 또는 YYYY.MM.DD)</label>
+            <input type="text" class="form-control" id="news-date">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">원본 기사 URL</label>
+            <input type="text" class="form-control" id="news-url">
+          </div>
+          <div class="mb-2">
+            <label class="form-label d-block">썸네일 이미지</label>
+            <input type="file" class="form-control" id="news-image-input" accept="image/*" onchange="uploadNewsImage(this.files[0])">
+            <div class="form-text" id="news-image-status">이미지 없음</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-primary" onclick="saveNews()">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 갤러리 모달 ===================== -->
+  <div class="modal fade" id="galleryModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="galleryModalTitle">갤러리 게시글 추가</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-danger auth-alert" id="gallery-error"></div>
+          <div class="mb-3">
+            <label class="form-label">제목</label>
+            <input type="text" class="form-control" id="gallery-title">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">본문</label>
+            <textarea class="form-control" id="gallery-content" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">날짜 (YYYY.MM.DD)</label>
+            <input type="text" class="form-control" id="gallery-date">
+          </div>
+          <div class="mb-2">
+            <label class="form-label d-block"><strong>사진</strong> (첫 번째 사진이 대표 이미지로 사용됩니다)</label>
+            <div class="photo-thumb-grid" id="gallery-photo-grid"></div>
+            <input type="file" class="form-control" id="gallery-image-input" accept="image/*" multiple onchange="addGalleryPhotos(this.files)">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-primary" onclick="saveGallery()">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 팝업 모달 ===================== -->
+  <div class="modal fade" id="popupModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="popupModalTitle">팝업 추가</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-danger auth-alert" id="popup-error"></div>
+          <div class="mb-3">
+            <label class="form-label">제목</label>
+            <input type="text" class="form-control" id="popup-title">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">내용</label>
+            <textarea class="form-control" id="popup-content" rows="3"></textarea>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">시작일 (YYYY-MM-DD)</label>
+              <input type="text" class="form-control" id="popup-start">
+            </div>
+            <div class="col-6">
+              <label class="form-label">종료일 (YYYY-MM-DD)</label>
+              <input type="text" class="form-control" id="popup-end">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">링크 URL (옵션)</label>
+            <input type="text" class="form-control" id="popup-link">
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="popup-active" checked>
+            <label class="form-check-label" for="popup-active">활성화</label>
+          </div>
+          <div class="mb-2">
+            <label class="form-label d-block">이미지</label>
+            <input type="file" class="form-control" id="popup-image-input" accept="image/*" onchange="uploadPopupImage(this.files[0])">
+            <div class="form-text" id="popup-image-status">이미지 없음</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-primary" onclick="savePopup()">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer py-4">
+    <div class="container text-center">Copyright &copy; KNPU FPEI</div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/scripts.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+
+</html>
