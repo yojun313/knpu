@@ -6,7 +6,7 @@ from app.services.analysis_service import (
     start_youtube_download,
 )
 from app.services.auth_service import get_uid_from_bearer
-from app.models.analysis_model import KemKimOption
+from app.models.analysis_model import KemKimOption, StatisticsOption
 import pandas as pd
 from io import StringIO
 import json
@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from typing import List
 from app.libs.exceptions import BadRequestException
 from app.services.network_service import run_network_analysis
+from app.services.statistics_service import run_statistics_analysis
 from io import StringIO
 
 router = APIRouter()
@@ -254,3 +255,22 @@ async def graph_network(
     return run_network_analysis(
         option.get("pid", "network"), df, option, uid=uid, project_name=project_name
     )
+
+
+@router.post("/statistics")
+async def analysis_statistics(
+    option: str = Form(...),
+    file: UploadFile = File(...),
+    authorization: str | None = Header(None),
+):
+    option = json.loads(option)
+    content = await file.read()
+    df = pd.read_csv(StringIO(content.decode("utf-8")))
+    uid = get_uid_from_bearer(authorization)
+    project_name = os.path.splitext(file.filename)[0]
+    try:
+        return run_statistics_analysis(
+            StatisticsOption(**option), df, uid=uid, project_name=project_name
+        )
+    except ValueError as e:
+        raise BadRequestException(detail=str(e))

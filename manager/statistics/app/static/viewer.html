@@ -1,0 +1,159 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Statistics Analyzer</title>
+  <link rel="stylesheet" href="/css/viewer.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head><body>
+  <div id="app">
+    <div id="rail" class="rail">
+      <div class="rail-head">
+        <button id="railToggle" class="rail-toggle" title="사이드바 접기/펼치기">☰</button>
+        <span class="rail-brand">내 프로젝트</span>
+      </div>
+      <button id="railUploadBtn" class="rail-upload" title="새 프로젝트 업로드">
+        <span class="ru-icon">＋</span><span class="ru-text">새 프로젝트 업로드</span>
+      </button>
+      <div id="railList" class="rail-list"></div>
+      <div id="railEmpty" class="rail-empty" hidden>아직 프로젝트가 없습니다</div>
+      <div id="railResizer" class="rail-resizer" title="드래그해서 너비 조절"></div>
+      <div class="rail-foot">
+        <span id="railUserName" class="rail-user"></span>
+        <button id="railLogout" class="rail-logout" title="로그아웃">⎋</button>
+      </div>
+    </div>
+
+    <div id="main">
+      <div id="top">
+        <button id="mobileRailBtn" class="mobile-icon-btn" title="프로젝트 목록">☰</button>
+        <div class="brandmark"><span class="dot3"></span><span id="projectName">Statistics Analyzer</span></div>
+        <div class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9fb0c4" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <input id="search" type="text" placeholder="표 검색...">
+        </div>
+        <button class="icon-btn" id="btnTheme" title="화면 테마 전환">◐</button>
+      </div>
+
+      <div id="content">
+        <div id="loading"><div class="spin"></div><div>분석 결과를 불러오는 중...</div></div>
+        <div id="emptyProject" class="empty-project">
+          <div class="ep-icon">📊</div>
+          <div class="ep-title">프로젝트를 선택하세요</div>
+          <div class="ep-sub">왼쪽 목록에서 프로젝트를 클릭하거나, 새 프로젝트를 업로드하세요.</div>
+          <button id="emptyUploadBtn" class="btn primary ep-btn">새 프로젝트 업로드</button>
+        </div>
+
+        <div id="dashboard" hidden>
+          <div class="dash-head">
+            <div class="dash-head-main">
+              <h1 id="dashSource">-</h1>
+              <div class="dash-badges">
+                <span class="badge-pill" id="dashPlatform">-</span>
+                <span class="badge-pill" id="dashCategory">-</span>
+                <span class="badge-meta" id="dashGenerated">-</span>
+                <span class="badge-meta" id="dashRows">-</span>
+              </div>
+            </div>
+            <div class="dash-head-actions">
+              <button class="btn" id="btnDownloadRaw">원본 zip 다운로드</button>
+            </div>
+          </div>
+
+          <details id="descSection" class="desc-section">
+            <summary>분석 설명</summary>
+            <pre class="sec-body" id="dashDescription"></pre>
+          </details>
+
+          <div id="tableGrid" class="table-grid"></div>
+        </div>
+      </div>
+    </div>
+    <div id="mobileBackdrop"></div>
+  </div>
+
+  <div id="railCtxMenu" class="ctx-menu" hidden>
+    <button class="ctx-item" data-act="props"><span class="ctx-ico">ℹ</span><span>속성</span></button>
+    <button class="ctx-item" data-act="rename"><span class="ctx-ico">✎</span><span>이름 변경</span></button>
+    <div class="ctx-sep"></div>
+    <button class="ctx-item danger" data-act="delete"><span class="ctx-ico">🗑</span><span>삭제</span></button>
+  </div>
+
+  <div id="propsModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span id="propsTitle">프로젝트 속성</span>
+        <button id="propsModalClose" class="modal-close" title="닫기">×</button>
+      </div>
+      <div class="sec-body" id="propsBody" style="padding:16px 18px"></div>
+    </div>
+  </div>
+
+  <div id="uploadModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span>새 프로젝트</span>
+        <button id="uploadModalClose" class="modal-close" title="닫기">×</button>
+      </div>
+      <div class="modal-tabs">
+        <button class="modal-tab active" id="tabBtnZip" data-tab="zip">결과 zip 업로드</button>
+        <button class="modal-tab" id="tabBtnAnalyze" data-tab="analyze">원본 CSV로 새로 분석</button>
+      </div>
+
+      <div id="tabZip" class="modal-tab-panel active">
+        <label id="modalDropzone" class="modal-dropzone" for="modalFileInput">
+          <input type="file" id="modalFileInput" accept=".zip" hidden>
+          <div class="dz-icon">＋</div>
+          <div class="dz-text">zip 파일을 여기로 끌어놓거나 클릭해서 선택하세요</div>
+          <div class="dz-sub">metadata.json / csv_files / graphs 가 들어있는 결과 zip</div>
+        </label>
+        <div id="zipProgress" class="upload-progress" hidden>
+          <div class="upload-progress-bar"><div id="zipProgressFill" class="upload-progress-fill"></div></div>
+          <div id="zipProgressLabel" class="upload-progress-label">업로드 중... 0%</div>
+        </div>
+        <div id="zipConfirm" class="analyze-form" hidden>
+          <div class="field"><label>프로젝트 이름</label><input type="text" id="zipProjectName"></div>
+          <button class="btn primary" id="btnConfirmZip">프로젝트 만들기</button>
+        </div>
+        <div id="modalStatus" class="modal-status"></div>
+      </div>
+
+      <div id="tabAnalyze" class="modal-tab-panel">
+        <label id="analyzeDropzone" class="modal-dropzone modal-dropzone-sm" for="analyzeFileInput">
+          <input type="file" id="analyzeFileInput" accept=".csv" hidden>
+          <div class="dz-icon">＋</div>
+          <div class="dz-text" id="analyzeFileLabel">원본 CSV 파일을 선택하세요</div>
+          <div class="dz-sub">Naver News / Naver Cafe / Google YouTube 크롤링 결과 CSV</div>
+        </label>
+        <div id="analyzeProgress" class="upload-progress" hidden>
+          <div class="upload-progress-bar"><div id="analyzeProgressFill" class="upload-progress-fill"></div></div>
+          <div id="analyzeProgressLabel" class="upload-progress-label">업로드 중... 0%</div>
+        </div>
+        <div id="analyzeForm" class="analyze-form" hidden>
+          <div class="field"><label>프로젝트 이름</label><input type="text" id="analyzeProjectName"></div>
+          <div class="field"><label>플랫폼</label>
+            <select id="optPlatform"></select>
+          </div>
+          <div class="field"><label>분석 종류</label>
+            <select id="optCategory"></select>
+          </div>
+          <button class="btn primary" id="btnStartAnalyze">분석 시작</button>
+        </div>
+        <div id="analyzeStatus" class="modal-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="progressModal" class="modal-overlay" hidden>
+    <div class="modal-card progress-card">
+      <div class="modal-head">
+        <span>통계 분석 진행 중</span>
+        <button id="progressModalClose" class="modal-close" title="닫기" hidden>×</button>
+      </div>
+      <div class="progress-body">
+        <div class="spin progress-spin" id="progressSpin"></div>
+        <div id="progressLog" class="progress-log"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/viewer.js"></script>
+</body></html>

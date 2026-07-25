@@ -28,3 +28,9 @@ class TokenizeOption(BaseModel):
 class HateOption(BaseModel):
     pid: str
     option_num: int
+
+
+class StatisticsOption(BaseModel):
+    pid: str
+    category: str
+    platform: str
