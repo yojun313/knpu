@@ -34,15 +34,31 @@ def initListWidget(parent):
         )
         parent.database_searchDB_button.setIconSize(QSize(18, 18))
 
-        parent.database_chatgpt_button.setText("")
-        parent.database_chatgpt_button.setIcon(
+        parent.database_network_button.setText("")
+        parent.database_network_button.setIcon(
             QIcon(
                 os.path.join(
                     os.path.dirname(__file__), "..", "assets", "network_logo.png"
                 )
             )
         )
-        parent.database_chatgpt_button.setIconSize(QSize(19, 19))
+        parent.database_network_button.setIconSize(QSize(19, 19))
+
+        parent.database_kemkim_button.setText("")
+        parent.database_kemkim_button.setIcon(
+            QIcon(os.path.join(os.path.dirname(__file__), "..", "assets", "kemkim.png"))
+        )
+        parent.database_kemkim_button.setIconSize(QSize(19, 19))
+
+        parent.database_statistics_button.setText("")
+        parent.database_statistics_button.setIcon(
+            QIcon(
+                os.path.join(
+                    os.path.dirname(__file__), "..", "assets", "statistics.png"
+                )
+            )
+        )
+        parent.database_statistics_button.setIconSize(QSize(19, 19))
 
         # 리스트 위젯의 모든 항목 가져오기
         for index in range(parent.listWidget.count()):

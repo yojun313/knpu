@@ -85,9 +85,23 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="database_chatgpt_button">
+           <widget class="QPushButton" name="database_network_button">
             <property name="text">
              <string>ChatGPT</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="database_kemkim_button">
+            <property name="text">
+             <string>KEMKIM</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="database_statistics_button">
+            <property name="text">
+             <string>STATISTICS</string>
             </property>
            </widget>
           </item>

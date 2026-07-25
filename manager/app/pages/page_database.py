@@ -44,6 +44,7 @@ from services.update import updateProgram
 from core.shortcut import resetShortcuts
 from core.thread import BaseWorker, DownloadDialog
 from core.auth import get_setting, set_setting, verifyAdmin
+from config import NETWORK_VIEWER_URL, KEMKIM_VIEWER_URL, STATISTICS_VIEWER_URL
 from .page_worker import Manager_Worker
 
 warnings.filterwarnings("ignore")
@@ -534,10 +535,33 @@ class Manager_Database(Manager_Worker):
             printStatus(self.main, "Network Analyzer 실행 중")
 
             # 기본 브라우저로 URL 열기
-            url = "http://network.knpu.re.kr"
-            webbrowser.open(url)
+            webbrowser.open(NETWORK_VIEWER_URL)
 
             userLogging(f"DATABASE -> Network Analyzer")
+            printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
+        except Exception as e:
+            programBugLog(self.main, traceback.format_exc())
+
+    def initKemkimViewer(self):
+        try:
+            printStatus(self.main, "KEMKIM Analyzer 실행 중")
+
+            # 기본 브라우저로 URL 열기
+            webbrowser.open(KEMKIM_VIEWER_URL)
+
+            userLogging(f"DATABASE -> KEMKIM Analyzer")
+            printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
+        except Exception as e:
+            programBugLog(self.main, traceback.format_exc())
+
+    def initStatisticsViewer(self):
+        try:
+            printStatus(self.main, "Statistics Analyzer 실행 중")
+
+            # 기본 브라우저로 URL 열기
+            webbrowser.open(STATISTICS_VIEWER_URL)
+
+            userLogging(f"DATABASE -> Statistics Analyzer")
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
@@ -674,7 +698,11 @@ class Manager_Database(Manager_Worker):
 
     def matchButton(self):
         self.main.database_searchDB_button.clicked.connect(self.searchDB)
-        self.main.database_chatgpt_button.clicked.connect(self.initLLMChat)
+        self.main.database_network_button.clicked.connect(self.initLLMChat)
+        self.main.database_kemkim_button.clicked.connect(self.initKemkimViewer)
+        self.main.database_statistics_button.clicked.connect(
+            self.initStatisticsViewer
+        )
         self.main.database_searchDB_lineinput.returnPressed.connect(self.searchDB)
         self.main.database_searchDB_lineinput.setPlaceholderText(
             "검색어를 입력하고 Enter키나 검색 버튼을 누르세요..."
@@ -684,7 +712,9 @@ class Manager_Database(Manager_Worker):
         self.main.database_deleteDB_button.clicked.connect(self.deleteDB)
         self.main.database_viewDB_button.clicked.connect(self.viewDB)
 
-        self.main.database_chatgpt_button.setToolTip("LLM ChatBot")
+        self.main.database_network_button.setToolTip("Network Analyzer")
+        self.main.database_kemkim_button.setToolTip("KEMKIM Analyzer")
+        self.main.database_statistics_button.setToolTip("Statistics Analyzer")
         self.main.database_saveDB_button.setToolTip("Ctrl+S")
         self.main.database_viewDB_button.setToolTip("Ctrl+V")
         self.main.database_deleteDB_button.setToolTip("Ctrl+D")

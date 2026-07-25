@@ -107,10 +107,20 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_search.addWidget(self.database_searchDB_button)
 
-        self.database_chatgpt_button = QPushButton(self.page_database)
-        self.database_chatgpt_button.setObjectName("database_chatgpt_button")
+        self.database_network_button = QPushButton(self.page_database)
+        self.database_network_button.setObjectName("database_network_button")
 
-        self.horizontalLayout_search.addWidget(self.database_chatgpt_button)
+        self.horizontalLayout_search.addWidget(self.database_network_button)
+
+        self.database_kemkim_button = QPushButton(self.page_database)
+        self.database_kemkim_button.setObjectName("database_kemkim_button")
+
+        self.horizontalLayout_search.addWidget(self.database_kemkim_button)
+
+        self.database_statistics_button = QPushButton(self.page_database)
+        self.database_statistics_button.setObjectName("database_statistics_button")
+
+        self.horizontalLayout_search.addWidget(self.database_statistics_button)
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_search)
 
@@ -577,8 +587,14 @@ class Ui_MainWindow(object):
         self.database_searchDB_button.setText(
             QCoreApplication.translate("MainWindow", "\uac80\uc0c9", None)
         )
-        self.database_chatgpt_button.setText(
+        self.database_network_button.setText(
             QCoreApplication.translate("MainWindow", "ChatGPT", None)
+        )
+        self.database_kemkim_button.setText(
+            QCoreApplication.translate("MainWindow", "KEMKIM", None)
+        )
+        self.database_statistics_button.setText(
+            QCoreApplication.translate("MainWindow", "STATISTICS", None)
         )
         self.database_deleteDB_button.setText(
             QCoreApplication.translate("MainWindow", "DB \uc0ad\uc81c", None)

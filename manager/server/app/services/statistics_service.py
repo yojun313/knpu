@@ -4,6 +4,7 @@ import shutil
 import uuid
 from datetime import datetime
 
+import pandas as pd
 import requests
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
@@ -49,6 +50,101 @@ def _push_to_statistics_viewer(
             "온라인 뷰어 서버에 연결할 수 없습니다. (결과 zip은 정상적으로 받으실 수 있습니다)",
         )
     return None
+
+
+_DAY_NAMES_KR = ["월", "화", "수", "목", "금", "토", "일"]
+
+
+def _find_date_column(columns) -> str | None:
+    return next((c for c in columns if "date" in str(c).lower()), None)
+
+
+def _add_derived_time_series_tables(csv_dir: str) -> None:
+    """분석 함수가 만든 표들 중 날짜 축을 가진 것들에 '7기간 이동평균'과 '누적' 표를
+    추가로 만들어준다 — 원본 표를 건드리지 않고 새 표(=뷰어의 새 카드)로 분리해서,
+    추세와 누적 성장 같은 지표를 따로 확인할 수 있게 한다."""
+    if not os.path.isdir(csv_dir):
+        return
+    for fname in list(os.listdir(csv_dir)):
+        if not fname.endswith(".csv"):
+            continue
+        stem = fname[:-4]
+        # basic_stats류(describe() 출력)는 "Article Date" 등이 열 이름으로만 등장할 뿐
+        # 실제 날짜값이 아니므로 제외한다.
+        if stem.endswith(("_trend", "_cumulative")) or stem in (
+            "hour_dow_heatmap",
+            "basic_stats",
+        ):
+            continue
+        path = os.path.join(csv_dir, fname)
+        try:
+            df = pd.read_csv(path)
+        except Exception:
+            continue
+
+        date_col = _find_date_column(df.columns)
+        if not date_col:
+            continue
+        # 열 이름에 "date"가 들어 있어도 실제로 날짜값이 아닐 수 있으므로
+        # (예: describe() 출력의 열 라벨) 파싱 성공률로 한 번 더 검증한다.
+        parsed_dates = pd.to_datetime(df[date_col], errors="coerce")
+        if parsed_dates.notna().mean() < 0.9:
+            continue
+        numeric_cols = [
+            c
+            for c in df.columns
+            if c != date_col and pd.api.types.is_numeric_dtype(df[c])
+        ]
+        if not numeric_cols or not (8 <= len(df) <= 400):
+            continue
+        metric = numeric_cols[0]
+
+        trend_df = df[[date_col, metric]].copy()
+        trend_df[f"{metric} (7기간 이동평균)"] = (
+            trend_df[metric].rolling(7, min_periods=1).mean().round(2)
+        )
+        trend_df.to_csv(
+            os.path.join(csv_dir, f"{stem}_trend.csv"),
+            index=False,
+            encoding="utf-8-sig",
+        )
+
+        cumulative_df = df[[date_col]].copy()
+        cumulative_df[f"{metric} (누적)"] = df[metric].cumsum()
+        cumulative_df.to_csv(
+            os.path.join(csv_dir, f"{stem}_cumulative.csv"),
+            index=False,
+            encoding="utf-8-sig",
+        )
+
+
+def _add_hour_dow_heatmap(data, csv_dir: str) -> None:
+    """원본 데이터의 날짜 열로부터 요일×시간대 히트맵(투고 빈도) 표를 만든다.
+    특정 분석 함수에 종속되지 않는 범용 지표라 원본 데이터에서 바로 계산한다."""
+    date_col = _find_date_column(data.columns)
+    if not date_col:
+        return
+    dt = pd.to_datetime(data[date_col], errors="coerce").dropna()
+    if len(dt) < 20:
+        return
+
+    counts = pd.DataFrame({"dow": dt.dt.dayofweek, "hour": dt.dt.hour})
+    pivot = (
+        counts.groupby(["dow", "hour"])
+        .size()
+        .unstack(fill_value=0)
+        .reindex(index=range(7), columns=range(24), fill_value=0)
+    )
+    pivot.index = _DAY_NAMES_KR
+    pivot.columns = [f"{h}시" for h in range(24)]
+    pivot = pivot.reset_index().rename(columns={"index": "요일"})
+
+    os.makedirs(csv_dir, exist_ok=True)
+    pivot.to_csv(
+        os.path.join(csv_dir, "hour_dow_heatmap.csv"),
+        index=False,
+        encoding="utf-8-sig",
+    )
 
 
 # StatisticsOption.category / .platform 조합 -> StatisticsAnalysis 메서드
@@ -100,6 +196,10 @@ def run_statistics_analysis(
 
     row_count = len(data)
     _dispatch(option.category, option.platform, data, output_dir)
+
+    csv_dir = os.path.join(output_dir, "csv_files")
+    _add_hour_dow_heatmap(data, csv_dir)
+    _add_derived_time_series_tables(csv_dir)
 
     metadata = {
         "category": option.category,

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
+    <div>
+        <h2 class="text-2xl font-bold text-white tracking-tight">Ports in Use</h2>
+        <p class="text-zinc-400 text-sm">현재 서버에서 LISTEN 중인 TCP 포트, 담당 프로세스(PM2), 연결된 도메인을 한눈에 확인합니다</p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+        <div class="relative w-full sm:w-64">
+            <input type="text" id="portSearch" onkeyup="filterPorts()" placeholder="포트 / 프로세스 / 도메인 검색..."
+                   class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none transition shadow-inner text-white">
+            <svg class="absolute right-3 top-2.5 text-zinc-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+        <button onclick="loadPorts()" class="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 border border-zinc-700">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+            새로고침
+        </button>
+    </div>
+</div>
+
+<div id="danglingCard" class="mb-6 {% if not dangling %}hidden{% endif %} rounded-2xl border border-orange-500/20 bg-orange-500/5 p-5">
+    <div class="flex items-center gap-2 mb-3">
+        <svg class="text-orange-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <h3 class="text-sm font-bold text-orange-300">Nginx는 연결되어 있지만 지금 응답하지 않는 포트</h3>
+    </div>
+    <div id="danglingList" class="space-y-1.5 text-xs font-mono text-orange-200/80">
+        {% for d in dangling %}
+        <div>:{{ d.port }} &rarr; {% for dm in d.domains %}{{ dm.domain }}{{ dm.path if dm.path != '/' else '' }}{% if not loop.last %}, {% endif %}{% endfor %} <span class="text-orange-400/60">(서비스가 안 떠 있을 수 있습니다 — PM2 프로세스를 확인하세요)</span></div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/30">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+            <thead>
+                <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Port</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Process</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">PM2 Service</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">User</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Domain(s)</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Address</th>
+                </tr>
+            </thead>
+            <tbody id="portsListBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+let allPorts = [];
+
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+
+function renderPorts(ports) {
+    const body = document.getElementById('portsListBody');
+    if (!ports.length) {
+        body.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-zinc-600 text-sm">감지된 LISTEN 포트가 없습니다.</td></tr>`;
+        return;
+    }
+    body.innerHTML = ports.map(p => {
+        const pm2Badge = p.pm2_name
+            ? `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">${esc(p.pm2_name)}</span>`
+            : `<span class="text-zinc-700 text-xs">-</span>`;
+        const procLabel = p.process_name
+            ? `<span class="font-mono text-zinc-300">${esc(p.process_name)}</span><span class="text-zinc-600 text-[10px] ml-1.5">PID ${p.pid}</span>`
+            : `<span class="text-zinc-700 text-xs">알 수 없음</span>`;
+        const domains = (p.domains || []);
+        const domainLabel = domains.length
+            ? domains.map(d => `<a href="https://${esc(d.domain)}" target="_blank" class="text-emerald-400 hover:underline">${esc(d.domain)}${d.path !== '/' ? esc(d.path) : ''}</a>`).join('<br>')
+            : `<span class="text-zinc-700 text-xs">-</span>`;
+        const addrLabel = (p.addresses || []).map(a => a === '0.0.0.0' || a === '::' ? '공개(0.0.0.0)' : a).join(', ');
+
+        return `
+        <tr class="port-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors" data-search="${esc(String(p.port))} ${esc(p.process_name)} ${esc(p.pm2_name)} ${esc(domains.map(d => d.domain).join(' '))}">
+            <td class="p-4">
+                <span class="font-mono text-zinc-100 bg-black/40 px-2 py-1 rounded border border-zinc-800/50 text-sm font-bold">:${p.port}</span>
+            </td>
+            <td class="p-4">${procLabel}</td>
+            <td class="p-4">${pm2Badge}</td>
+            <td class="p-4 text-zinc-500 text-xs">${esc(p.process_user) || '-'}</td>
+            <td class="p-4 text-xs">${domainLabel}</td>
+            <td class="p-4 text-zinc-600 text-[11px] font-mono">${esc(addrLabel)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderDangling(dangling) {
+    const card = document.getElementById('danglingCard');
+    const list = document.getElementById('danglingList');
+    if (!dangling.length) { card.classList.add('hidden'); return; }
+    card.classList.remove('hidden');
+    list.innerHTML = dangling.map(d => {
+        const names = (d.domains || []).map(dm => esc(dm.domain) + (dm.path !== '/' ? esc(dm.path) : '')).join(', ');
+        return `<div>:${esc(d.port)} &rarr; ${names} <span class="text-orange-400/60">(서비스가 안 떠 있을 수 있습니다 — PM2 프로세스를 확인하세요)</span></div>`;
+    }).join('');
+}
+
+async function loadPorts() {
+    try {
+        const res = await fetch('/ports/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        allPorts = data.ports || [];
+        renderPorts(allPorts);
+        renderDangling(data.dangling || []);
+        filterPorts();
+    } catch (err) {
+        console.error('포트 목록을 불러오지 못했습니다.', err);
+    }
+}
+
+function filterPorts() {
+    const query = document.getElementById('portSearch').value.toLowerCase();
+    const rows = document.getElementsByClassName('port-row');
+    for (const row of rows) {
+        const hay = row.getAttribute('data-search').toLowerCase();
+        row.style.display = hay.includes(query) ? '' : 'none';
+    }
+}
+
+loadPorts();
+setInterval(loadPorts, 10000);
+</script>
+{% endblock %}
