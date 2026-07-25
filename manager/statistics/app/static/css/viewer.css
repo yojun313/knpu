@@ -170,6 +170,15 @@ body{font-family:-apple-system,'Pretendard','Segoe UI',Roboto,'Malgun Gothic',sa
 .field-row .field{flex:1;min-width:0}
 .analyze-form .btn{margin-top:4px}
 
+.option-row{display:flex;gap:6px;flex-wrap:wrap}
+.option-btn{background:var(--sidebar-panel2);color:var(--sidebar-text);border:1px solid var(--sidebar-border);
+  padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:.15s}
+.option-btn:hover{border-color:var(--accent)}
+.option-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.chk-row-export{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12.5px}
+.chk-row-export label{color:var(--sidebar-text);cursor:pointer}
+.chk-row-export input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
+
 .progress-card{width:min(460px,90vw)}
 .progress-body{padding:22px 20px}
 .progress-spin{margin:0 auto 16px}
@@ -259,18 +268,6 @@ select{width:100%;appearance:none;
 .badge-meta{font-size:11.5px;color:var(--sidebar-muted);font-weight:600}
 .dash-head-actions .btn{width:auto;margin-bottom:0}
 
-.desc-section{background:var(--sidebar-bg);border:1px solid var(--sidebar-border);border-radius:12px;
-  margin-bottom:20px;overflow:hidden}
-.desc-section summary{padding:12px 16px;cursor:pointer;font-size:12px;font-weight:700;color:var(--sidebar-muted);
-  text-transform:uppercase;letter-spacing:.6px;list-style:none;user-select:none;display:flex;align-items:center;
-  justify-content:space-between}
-.desc-section summary::-webkit-details-marker{display:none}
-.desc-section summary::after{content:'';width:7px;height:7px;border-right:1.6px solid var(--sidebar-muted);
-  border-bottom:1.6px solid var(--sidebar-muted);transform:rotate(45deg);transition:.18s}
-.desc-section[open] summary::after{transform:rotate(225deg)}
-.desc-section pre{padding:4px 16px 16px;font-family:inherit;white-space:pre-wrap;font-size:12.5px;
-  line-height:1.8;color:var(--sidebar-text)}
-
 .table-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px}
 .table-card{background:var(--sidebar-bg);border:1px solid var(--sidebar-border);border-radius:14px;
   overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(15,23,42,.04)}
@@ -278,8 +275,15 @@ select{width:100%;appearance:none;
 .table-card.hidden-by-search{display:none}
 .tc-head{padding:13px 16px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;
   justify-content:space-between;gap:8px}
+.tc-head-main{min-width:0}
 .tc-title{font-size:13px;font-weight:700;color:var(--text-strong)}
 .tc-meta{font-size:10.5px;color:var(--sidebar-muted);font-variant-numeric:tabular-nums}
+.tc-head-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.tc-png-btn{background:var(--sidebar-panel2);border:1px solid var(--sidebar-border);border-radius:7px;
+  width:26px;height:26px;cursor:pointer;color:var(--sidebar-muted);font-size:12px;flex-shrink:0;transition:.15s;
+  display:flex;align-items:center;justify-content:center}
+.tc-png-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tc-desc{padding:0 16px 12px;font-size:11.5px;color:var(--sidebar-muted);line-height:1.6}
 .tc-chart{padding:14px 16px 4px;height:220px;position:relative}
 .tc-chart canvas{max-height:100%}
 .tc-table-wrap{overflow:auto;max-height:320px;border-top:1px solid var(--sidebar-border)}

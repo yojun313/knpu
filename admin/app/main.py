@@ -11,6 +11,7 @@ from app.routes import (
     user_routes,
     pm2_routes,
     nginx_routes,
+    ports_routes,
 )
 
 app = FastAPI(title="FPEI Dashboard")
@@ -23,6 +24,7 @@ app.include_router(crawler_routes.router)
 app.include_router(user_routes.router)
 app.include_router(pm2_routes.router)
 app.include_router(nginx_routes.router)
+app.include_router(ports_routes.router)
 
 
 @app.exception_handler(StarletteHTTPException)

@@ -10,7 +10,9 @@
   var currentMeta = null;
   var base = null;              // /api/projects/{id}/base 응답: metadata,description,tables,graphs
   var searchQuery = '';
-  var charts = [];              // 현재 그려진 Chart.js 인스턴스(프로젝트 전환 시 정리)
+  var chartsById = {};          // table.id -> Chart.js 인스턴스(프로젝트 전환 시 정리, PNG 내보내기에 재사용)
+  var heatmapTables = {};       // table.id -> table (히트맵은 Chart.js가 아니라 캔버스에 직접 그려서 별도 보관)
+  var exportTargetId = null;    // PNG 내보내기 모달이 현재 대상으로 하는 table.id
 
   // ---------------------------------------------------------------
   // 공통 유틸
@@ -91,11 +93,90 @@
   // 대시보드(표 + 차트) 렌더링
   // ---------------------------------------------------------------
   function destroyCharts() {
-    charts.forEach(function (c) { try { c.destroy(); } catch (e) { } });
-    charts = [];
+    Object.keys(chartsById).forEach(function (id) {
+      try { chartsById[id].destroy(); } catch (e) { }
+    });
+    chartsById = {};
+    heatmapTables = {};
   }
 
   function cssVar(name) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
+
+  function hexToRgb(hex) {
+    var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '');
+    return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 44, g: 127, b: 184 };
+  }
+
+  // 요일×시간대(또는 상관행렬) 히트맵을 캔버스에 직접 그린다. 온스크린 렌더와 PNG
+  // 내보내기(임의 배율)에서 같은 함수를 재사용한다.
+  function drawHeatmap(canvas, table, opts) {
+    opts = opts || {};
+    var scale = opts.scale || (window.devicePixelRatio || 1);
+    var background = opts.background || 'theme';
+    var cssWidth = opts.width || canvas.clientWidth || 600;
+    var cssHeight = opts.height || canvas.clientHeight || 220;
+
+    var rowLabels = table.rows.map(function (r) { return fmtCell(r[0]); });
+    var colLabels = table.columns.slice(1);
+    var values = table.rows.map(function (r) {
+      return r.slice(1).map(function (v) { return typeof v === 'number' ? v : 0; });
+    });
+    var maxVal = 1;
+    values.forEach(function (row) { row.forEach(function (v) { if (v > maxVal) maxVal = v; }); });
+
+    var labelW = Math.min(70, cssWidth * 0.14);
+    var headerH = 20;
+    var cellW = (cssWidth - labelW) / Math.max(1, colLabels.length);
+    var cellH = (cssHeight - headerH) / Math.max(1, rowLabels.length);
+
+    canvas.width = Math.round(cssWidth * scale);
+    canvas.height = Math.round(cssHeight * scale);
+    canvas.style.width = cssWidth + 'px';
+    canvas.style.height = cssHeight + 'px';
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+    if (background !== 'transparent') {
+      ctx.fillStyle = background === 'white' ? '#ffffff' : cssVar('--sidebar-bg');
+      ctx.fillRect(0, 0, cssWidth, cssHeight);
+    }
+
+    var accent = hexToRgb(cssVar('--series-1'));
+    var textColor = background === 'white' ? '#33414f' : cssVar('--sidebar-text');
+    var mutedColor = background === 'white' ? '#7c8896' : cssVar('--sidebar-muted');
+
+    // 열 머리글(시간대 등) — 너무 많으면 겹치지 않도록 일부만 표시
+    ctx.fillStyle = mutedColor;
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    var labelStep = cellW < 22 ? Math.ceil(22 / cellW) : 1;
+    colLabels.forEach(function (label, ci) {
+      if (ci % labelStep !== 0) return;
+      ctx.fillText(label, labelW + ci * cellW + cellW / 2, headerH / 2);
+    });
+
+    rowLabels.forEach(function (rowLabel, ri) {
+      ctx.fillStyle = textColor;
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(rowLabel, labelW - 6, headerH + ri * cellH + cellH / 2);
+
+      values[ri].forEach(function (v, ci) {
+        var t = maxVal > 0 ? v / maxVal : 0;
+        var x = labelW + ci * cellW, y = headerH + ri * cellH;
+        ctx.fillStyle = 'rgba(' + accent.r + ',' + accent.g + ',' + accent.b + ',' + (0.08 + t * 0.85) + ')';
+        ctx.fillRect(x + 1, y + 1, Math.max(0, cellW - 2), Math.max(0, cellH - 2));
+        if (cellW > 26 && cellH > 16) {
+          ctx.fillStyle = t > 0.55 ? '#ffffff' : textColor;
+          ctx.font = Math.max(8, Math.round(cellH * 0.32)) + 'px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(String(v), x + cellW / 2, y + cellH / 2);
+        }
+      });
+    });
+  }
 
   // 표 컬럼 구성을 보고 라인/막대 차트로 그릴만한 표인지 판단한다.
   // - Date가 포함된 열이 있으면 라인 차트(시계열)
@@ -117,7 +198,19 @@
       mode = 'line'; labelIdx = dateIdx;
     } else {
       labelIdx = cols.findIndex(function (c, i) { return !isNumericCol(i); });
-      if (labelIdx === -1) return null;
+      if (labelIdx === -1) {
+        // 모든 열이 숫자인 경우(예: "시간대(0~23시)별 집계"처럼 카테고리 자체가
+        // 숫자인 표) — 첫 열이 행 수만큼 서로 다른 값을 가지는 소규모 카테고리처럼
+        // 보이면 그 열을 x축으로 사용한다.
+        var firstColUnique = {};
+        rows.forEach(function (r) { firstColUnique[r[0]] = true; });
+        var firstUniqueCount = Object.keys(firstColUnique).length;
+        if (firstUniqueCount === rows.length && firstUniqueCount <= 40) {
+          labelIdx = 0;
+        } else {
+          return null;
+        }
+      }
       mode = 'bar';
       if (rows.length > 50) return null; // 카테고리가 너무 많으면 막대 대신 표만
     }
@@ -174,18 +267,49 @@
 
     var head = document.createElement('div');
     head.className = 'tc-head';
-    head.innerHTML = '<span class="tc-title">' + esc(table.title) + '</span>'
-      + '<span class="tc-meta">' + table.row_count + '행 · ' + table.columns.length + '열</span>';
+    head.innerHTML = '<span class="tc-head-main"><span class="tc-title">' + esc(table.title) + '</span>'
+      + '<span class="tc-meta">' + table.row_count + '행 · ' + table.columns.length + '열</span></span>';
     card.appendChild(head);
 
-    var plan = planChart(table);
-    if (plan) {
-      var chartWrap = document.createElement('div');
-      chartWrap.className = 'tc-chart';
-      var canvas = document.createElement('canvas');
-      chartWrap.appendChild(canvas);
-      card.appendChild(chartWrap);
-      charts.push(buildChart(canvas, table, plan));
+    function addExportButton() {
+      var actions = document.createElement('span');
+      actions.className = 'tc-head-actions';
+      var pngBtn = document.createElement('button');
+      pngBtn.className = 'tc-png-btn';
+      pngBtn.title = 'PNG로 저장';
+      pngBtn.innerHTML = '&#8681;';
+      pngBtn.addEventListener('click', function () { openExportModal(table.id, table.title); });
+      actions.appendChild(pngBtn);
+      head.appendChild(actions);
+    }
+
+    if (table.is_heatmap) {
+      var heatmapWrap = document.createElement('div');
+      heatmapWrap.className = 'tc-chart';
+      var heatmapCanvas = document.createElement('canvas');
+      heatmapWrap.appendChild(heatmapCanvas);
+      card.appendChild(heatmapWrap);
+      heatmapTables[table.id] = table;
+      drawHeatmap(heatmapCanvas, table);
+      addExportButton();
+    } else {
+      var plan = planChart(table);
+      if (plan) {
+        var chartWrap = document.createElement('div');
+        chartWrap.className = 'tc-chart';
+        var canvas = document.createElement('canvas');
+        chartWrap.appendChild(canvas);
+        card.appendChild(chartWrap);
+        chartsById[table.id] = buildChart(canvas, table, plan);
+        addExportButton();
+      }
+    }
+
+    if (table.description) {
+      var desc = document.createElement('div');
+      desc.className = 'tc-desc';
+      desc.textContent = table.description;
+      card.appendChild(desc);
     }
 
     var tableWrap = document.createElement('div');
@@ -218,6 +342,99 @@
     });
   }
 
+  // ---------------------------------------------------------------
+  // 차트 PNG 내보내기 (배율/배경/범례·제목 표시 옵션)
+  // ---------------------------------------------------------------
+  function openExportModal(tableId, title) {
+    exportTargetId = tableId;
+    document.getElementById('exportTargetTitle').textContent = title;
+    document.getElementById('exportModal').hidden = false;
+  }
+  function closeExportModal() {
+    document.getElementById('exportModal').hidden = true;
+    exportTargetId = null;
+  }
+
+  function selectedOptionValue(rowId) {
+    var active = document.querySelector('#' + rowId + ' .option-btn.active');
+    return active ? active.getAttribute('data-value') : null;
+  }
+
+  // src 캔버스(이미 background/scale까지 반영해 그려진 상태) 위에 제목 캡션을 붙이고
+  // 다운로드 URL을 만든다. 차트/히트맵 내보내기가 공통으로 사용한다.
+  function compositeWithTitle(src, scale, background, showTitleCaption, titleText) {
+    var titleH = showTitleCaption ? Math.round(28 * scale) : 0;
+    var out = document.createElement('canvas');
+    out.width = src.width;
+    out.height = src.height + titleH;
+    var ctx = out.getContext('2d');
+
+    if (titleH && background !== 'transparent') {
+      ctx.fillStyle = background === 'white' ? '#ffffff' : cssVar('--sidebar-bg');
+      ctx.fillRect(0, 0, out.width, titleH);
+    }
+    if (showTitleCaption) {
+      ctx.fillStyle = background === 'white' ? '#111111' : cssVar('--text-strong');
+      ctx.font = 'bold ' + Math.round(14 * scale) + 'px sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(titleText, Math.round(12 * scale), titleH / 2);
+    }
+    ctx.drawImage(src, 0, titleH);
+    return out.toDataURL('image/png');
+  }
+
+  function triggerDownload(url, filename) {
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function downloadChartPng() {
+    var scale = parseInt(selectedOptionValue('exportScaleRow'), 10) || 2;
+    var background = selectedOptionValue('exportBgRow') || 'theme';
+    var showLegend = document.getElementById('exportShowLegend').checked;
+    var showTitleCaption = document.getElementById('exportShowTitle').checked;
+    var titleText = document.getElementById('exportTargetTitle').textContent;
+
+    var heatmapTable = heatmapTables[exportTargetId];
+    if (heatmapTable) {
+      // 히트맵은 Chart.js 인스턴스가 없으므로, 요청한 배율/배경으로 다시 한번 그려서
+      // 그 결과를 그대로 내보낸다("범례 표시" 옵션은 히트맵에는 해당하지 않는다).
+      var hCanvas = document.createElement('canvas');
+      drawHeatmap(hCanvas, heatmapTable, { scale: scale, background: background, width: 640, height: 260 });
+      var hUrl = compositeWithTitle(hCanvas, scale, background, showTitleCaption, titleText);
+      triggerDownload(hUrl, exportTargetId + '.png');
+      closeExportModal();
+      return;
+    }
+
+    var chart = chartsById[exportTargetId];
+    if (!chart) { closeExportModal(); return; }
+
+    // Chart.js는 devicePixelRatio를 기준으로 캔버스 실제 픽셀 수를 정하므로, 배율을 이
+    // 값에 반영해 resize하면 별도 캔버스 없이 고해상도로 다시 그려진다.
+    var originalRatio = chart.options.devicePixelRatio;
+    var originalLegendDisplay = chart.options.plugins.legend.display;
+    chart.options.devicePixelRatio = scale;
+    chart.options.plugins.legend.display = showLegend && chart.data.datasets.length > 1;
+    chart.resize();
+    chart.update('none');
+
+    var url = compositeWithTitle(chart.canvas, scale, background, showTitleCaption, titleText);
+
+    // 원상복구
+    chart.options.devicePixelRatio = originalRatio;
+    chart.options.plugins.legend.display = originalLegendDisplay;
+    chart.resize();
+    chart.update('none');
+
+    triggerDownload(url, exportTargetId + '.png');
+    closeExportModal();
+  }
+
   function renderDashboard() {
     var meta = base.metadata || {};
     document.getElementById('dashSource').textContent = meta.source_filename || currentMeta.name || '-';
@@ -225,7 +442,6 @@
     document.getElementById('dashCategory').textContent = meta.category || currentMeta.category || '-';
     document.getElementById('dashGenerated').textContent = meta.generated_at ? fmtDate(meta.generated_at) : '';
     document.getElementById('dashRows').textContent = meta.row_count != null ? ('원본 ' + meta.row_count + '행') : '';
-    document.getElementById('dashDescription').textContent = (base.description || '').trim() || '설명이 없습니다.';
 
     destroyCharts();
     var grid = document.getElementById('tableGrid');
@@ -727,9 +943,23 @@
     document.getElementById('emptyUploadBtn').addEventListener('click', openUploadModal);
     document.getElementById('uploadModalClose').addEventListener('click', closeUploadModal);
     document.getElementById('uploadModal').addEventListener('click', function (e) { if (e.target.id === 'uploadModal') closeUploadModal(); });
+
+    document.getElementById('exportModalClose').addEventListener('click', closeExportModal);
+    document.getElementById('exportModal').addEventListener('click', function (e) { if (e.target.id === 'exportModal') closeExportModal(); });
+    document.getElementById('btnDownloadPng').addEventListener('click', downloadChartPng);
+    ['exportScaleRow', 'exportBgRow'].forEach(function (rowId) {
+      document.getElementById(rowId).addEventListener('click', function (e) {
+        var btn = e.target.closest('.option-btn');
+        if (!btn) return;
+        this.querySelectorAll('.option-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+      });
+    });
+
     window.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if (!ctxMenu.hidden) closeRailCtxMenu();
+      else if (!document.getElementById('exportModal').hidden) closeExportModal();
       else if (!document.getElementById('propsModal').hidden) document.getElementById('propsModal').hidden = true;
       else if (!document.getElementById('uploadModal').hidden) closeUploadModal();
       else closeMobileDrawers();

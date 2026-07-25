@@ -58,11 +58,6 @@
             </div>
           </div>
 
-          <details id="descSection" class="desc-section">
-            <summary>분석 설명</summary>
-            <pre class="sec-body" id="dashDescription"></pre>
-          </details>
-
           <div id="tableGrid" class="table-grid"></div>
         </div>
       </div>
@@ -151,6 +146,44 @@
       <div class="progress-body">
         <div class="spin progress-spin" id="progressSpin"></div>
         <div id="progressLog" class="progress-log"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="exportModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <span>PNG로 저장 — <span id="exportTargetTitle"></span></span>
+        <button id="exportModalClose" class="modal-close" title="닫기">×</button>
+      </div>
+      <div class="analyze-form">
+        <div class="field">
+          <label>배율 (해상도)</label>
+          <div class="option-row" id="exportScaleRow">
+            <button type="button" class="option-btn" data-value="1">1x</button>
+            <button type="button" class="option-btn active" data-value="2">2x</button>
+            <button type="button" class="option-btn" data-value="3">3x</button>
+            <button type="button" class="option-btn" data-value="4">4x</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>배경</label>
+          <div class="option-row" id="exportBgRow">
+            <button type="button" class="option-btn" data-value="transparent">투명</button>
+            <button type="button" class="option-btn active" data-value="theme">현재 테마</button>
+            <button type="button" class="option-btn" data-value="white">흰색</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>세부 표시</label>
+          <div class="chk-row-export">
+            <input type="checkbox" id="exportShowLegend" checked><label for="exportShowLegend">범례 표시</label>
+          </div>
+          <div class="chk-row-export">
+            <input type="checkbox" id="exportShowTitle" checked><label for="exportShowTitle">제목 표시</label>
+          </div>
+        </div>
+        <button class="btn primary" id="btnDownloadPng">PNG 다운로드</button>
       </div>
     </div>
   </div>
