@@ -3,7 +3,6 @@ from app.models.job_model import JobSubmitRequest, QueueConfigUpdate
 
 router = APIRouter()
 
-# queue_manager는 main.py에서 주입됨
 queue_manager = None
 
 

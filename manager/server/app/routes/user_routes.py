@@ -51,8 +51,8 @@ def loadAdminUsers():
     )
 
 
-@router.post("/admin/pushover")
-def sendAdminPushOver(
+@router.post("/admin/notify")
+def sendAdminNotify(
     message: str = Body(..., embed=True), kind: str = Body("ops", embed=True)
 ):
     channel_key = "manager_error" if kind == "error" else "admin_ops"

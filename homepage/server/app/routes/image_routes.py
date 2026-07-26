@@ -1,5 +1,5 @@
 # app/routers/upload.py
-import os, uuid, mimetypes
+import os, uuid
 from typing import Literal
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, Query
 from fastapi.responses import JSONResponse

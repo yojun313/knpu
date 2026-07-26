@@ -55,7 +55,6 @@ def stopOperator(
     DBtype,
     DBname,
     startTime,
-    pushoverKey,
     userEmail,
     status,
     DBuid=None,
@@ -111,8 +110,7 @@ def stopOperator(
         text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
 
-        if pushoverKey == "n" or pushoverKey == None:
-            sendMail(userEmail, title, text)
+        sendMail(userEmail, title, text)
         sendDiscordDM(
             _discord_recipients(requester), title + "\n" + text, requester=requester
         )
@@ -132,7 +130,6 @@ def finishOperator(
     DBtype,
     DBname,
     startTime,
-    pushoverKey,
     userEmail,
     status,
     DBuid=None,
@@ -195,8 +192,7 @@ def finishOperator(
         text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
 
-        if pushoverKey == "n" or pushoverKey == None:
-            sendMail(userEmail, title, text)
+        sendMail(userEmail, title, text)
         sendDiscordDM(
             _discord_recipients(requester), title + "\n" + text, requester=requester
         )

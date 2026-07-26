@@ -1,6 +1,3 @@
-"""변경(POST/PUT/PATCH/DELETE) 요청을 사용자별로 구조화해 공용 audit.logs 컬렉션에 기록한다.
-GET 등 조회 요청은 노이즈가 커서 기록하지 않는다. crawler/manager/admin과 동일한 스키마를 쓴다."""
-
 import time
 from datetime import datetime, timezone, timedelta
 

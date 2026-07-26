@@ -23,9 +23,9 @@ MANAGER_SERVER_API = os.getenv(
     "MANAGER_SERVER_INTERNAL_API", "http://localhost:8000/api"
 )
 # 진행 상황 등록/전송(progress 서버) 내부 호출 주소
-PROGRESS_SERVER_URL = os.getenv(
-    "PROGRESS_SERVER_URL", "http://localhost:8080"
-).rstrip("/")
+PROGRESS_SERVER_URL = os.getenv("PROGRESS_SERVER_URL", "http://localhost:8080").rstrip(
+    "/"
+)
 # 브라우저가 진행 상황 WebSocket에 붙을 때 쓰는 공개 주소
 PROGRESS_PUBLIC_WS_URL = (
     "ws://localhost:8080" if MODE == 0 else "wss://manager.knpu.re.kr/progress"

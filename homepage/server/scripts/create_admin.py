@@ -52,7 +52,6 @@ def main():
             "role": "admin",
             "status": "approved",
             "email_verified": True,
-            "pushover_key": None,
             "created_at": now,
             "approved_at": now,
             "approved_by": "bootstrap",

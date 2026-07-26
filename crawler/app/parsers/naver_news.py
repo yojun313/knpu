@@ -66,7 +66,6 @@ class NaverNewsCrawler:
         if not notification:
             raise ValueError(f"사용자 정보를 찾을 수 없습니다: {self.requester}")
         self.Email = notification["Email"]
-        self.PushoverKey = notification["PushOver"]
         self.requesterUid = notification["userUid"]
 
         self.running = True
@@ -716,8 +715,6 @@ class NaverNewsCrawler:
                                 f"Error occurred while processing reply data for {newsUrl}: {e}"
                             )
 
-                await asyncio.sleep(SLEEP_TIME)
-
             except Exception as e:
                 logger.info(f"Error occurred while processing {newsUrl}: {e}")
                 appendCrawlLog(self.DBuid, "error", f"기사 처리 실패 ({newsUrl}): {e}")
@@ -758,7 +755,6 @@ class NaverNewsCrawler:
                     DBtype="navernews",
                     DBname=self.DBname,
                     startTime=self.startTime,
-                    pushoverKey=self.PushoverKey,
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
@@ -772,7 +768,6 @@ class NaverNewsCrawler:
                     DBtype="navernews",
                     DBname=self.DBname,
                     startTime=self.startTime,
-                    pushoverKey=self.PushoverKey,
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
@@ -790,9 +785,7 @@ class NaverNewsCrawler:
             )
 
             concurrency = speed_to_concurrency(self.speed)
-            asyncio.run(
-                run_with_concurrency(urlList, self._processOneUrl, concurrency)
-            )
+            asyncio.run(run_with_concurrency(urlList, self._processOneUrl, concurrency))
 
             # 날짜 단위 진행률을 DB에 직접 업데이트
             updateCrawlStatus(

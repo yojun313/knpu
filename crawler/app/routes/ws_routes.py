@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# queue_manager는 main.py에서 주입됨
 queue_manager = None
 
 

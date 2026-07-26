@@ -319,9 +319,7 @@ class Manager_Analysis(Manager_Worker):
                         extra_fields={"option": json.dumps(self.option)},
                         label="CSV 업로드 중",
                     )
-                    self.project_id = response.headers.get(
-                        "X-Statistics-Project-Id"
-                    )
+                    self.project_id = response.headers.get("X-Statistics-Project-Id")
 
                     extract_path = self.download_file(
                         response, self.save_path, label="결과 다운로드 중", extract=True

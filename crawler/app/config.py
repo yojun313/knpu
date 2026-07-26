@@ -12,6 +12,6 @@ CRAWLCOM = socket.gethostname()
 MANAGER_SERVER_URL = os.getenv("MANAGER_SERVER_URL", "http://localhost:8000/api")
 
 TRYNUM = 3
-SLEEP_TIME = 1
-TIMEOUT = 300
+SLEEP_TIME = 0
+TIMEOUT = 5
 MAX_CONCURRENT_JOBS = 1

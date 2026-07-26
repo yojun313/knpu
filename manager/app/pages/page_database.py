@@ -700,9 +700,7 @@ class Manager_Database(Manager_Worker):
         self.main.database_searchDB_button.clicked.connect(self.searchDB)
         self.main.database_network_button.clicked.connect(self.initLLMChat)
         self.main.database_kemkim_button.clicked.connect(self.initKemkimViewer)
-        self.main.database_statistics_button.clicked.connect(
-            self.initStatisticsViewer
-        )
+        self.main.database_statistics_button.clicked.connect(self.initStatisticsViewer)
         self.main.database_searchDB_lineinput.returnPressed.connect(self.searchDB)
         self.main.database_searchDB_lineinput.setPlaceholderText(
             "검색어를 입력하고 Enter키나 검색 버튼을 누르세요..."

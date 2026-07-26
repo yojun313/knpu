@@ -32,7 +32,9 @@ def object_name_from_url(url: str) -> str:
     return url
 
 
-def upload_fileobj(file: UploadFile, folder: str, object_name: str | None = None) -> str:
+def upload_fileobj(
+    file: UploadFile, folder: str, object_name: str | None = None
+) -> str:
     _, ext = os.path.splitext(file.filename)
     if not _allowed(ext):
         raise HTTPException(status_code=415, detail="지원하지 않는 확장자")
@@ -42,7 +44,10 @@ def upload_fileobj(file: UploadFile, folder: str, object_name: str | None = None
         object_name = f"{folder}/{uuid.uuid4().hex}{ext.lower()}"
     try:
         s3.upload_fileobj(
-            file.file, BUCKET_NAME, object_name, ExtraArgs={"ContentType": file.content_type}
+            file.file,
+            BUCKET_NAME,
+            object_name,
+            ExtraArgs={"ContentType": file.content_type},
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"R2 업로드 실패: {e}")

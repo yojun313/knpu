@@ -2,8 +2,10 @@ import os
 import uuid
 import warnings
 import traceback
+from urllib.parse import urlencode
 from PySide6.QtWidgets import QMessageBox, QHeaderView, QInputDialog
 from PySide6.QtCore import QUrl
+from core.setting import get_setting
 from core.shortcut import resetShortcuts
 from services.logging import programBugLog
 from services.api import Request
@@ -53,9 +55,13 @@ class Manager_Web:
 
     def web_open_crawler(self):
         try:
-            # 임베디드 브라우저는 로그인 시점부터 knpu.re.kr 세션 쿠키를 공유하는
-            # 동일 프로필을 쓰므로, 별도 토큰 핸드오프 없이 바로 접속 가능하다.
-            self.main.browser.setUrl(QUrl("https://crawler.knpu.re.kr"))
+            # 임베디드 브라우저가 knpu.re.kr 세션 쿠키를 공유하지 못하는 경우에도 접속할 수
+            # 있도록, 매니저 앱이 이미 갖고 있는 로그인 토큰을 넘겨서 자동 로그인시킨다.
+            token = get_setting("auth_token")
+            query = urlencode({"token": token})
+            self.main.browser.setUrl(
+                QUrl(f"https://crawler.knpu.re.kr/auth/token-login?{query}")
+            )
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 

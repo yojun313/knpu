@@ -17,6 +17,7 @@ PUBLIC_PATHS = [
     "/docs",
     "/redoc",
     "/api/proxy/update",
+    "/auth/token-login",
 ]
 
 # 매니저 서버 경유 요청 확인용 내부 키

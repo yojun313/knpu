@@ -23,12 +23,11 @@ MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
 MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
 
 hostname = socket.gethostname()
-is_server = "knpu" in hostname or "server" in hostname  # 서버 이름 기준으로 판단
+is_server = "knpu" in hostname or "server" in hostname
 
 logger = logging.getLogger(__name__)
 
 if is_server:
-    # 서버 내부에서 실행 → 로컬 MongoDB 바로 사용
     client = MongoClient(
         f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
         f"@localhost:{MONGO_PORT}/?authSource={MONGO_AUTH_DB}"
@@ -93,7 +92,6 @@ def get_userinfo(requester: str):
             return False
         return {
             "Email": user["email"],
-            "PushOver": user.get("pushover_key"),
             "userUid": user["uid"],
             "discord_id": user.get("discord_id"),
         }

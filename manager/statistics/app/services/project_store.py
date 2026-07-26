@@ -152,7 +152,7 @@ def _spss_title(stem: str) -> str | None:
     if stem == "spss_normality":
         return "정규성 검정"
     if stem.startswith("spss_frequencies_"):
-        return f"빈도분석 · {stem[len('spss_frequencies_'):].replace('_', ' ')}"
+        return f"빈도분석 · {stem[len('spss_frequencies_') :].replace('_', ' ')}"
     if stem == "spss_correlation_pearson":
         return "상관분석 (Pearson)"
     if stem == "spss_correlation_pearson_pvalues":
@@ -162,15 +162,15 @@ def _spss_title(stem: str) -> str | None:
     if stem == "spss_correlation_spearman_pvalues":
         return "상관분석 (Spearman) · 유의확률"
     if stem.startswith("spss_crosstab_"):
-        a, _, b = stem[len("spss_crosstab_"):].partition("__")
+        a, _, b = stem[len("spss_crosstab_") :].partition("__")
         return f"교차표 · {a.replace('_', ' ')} × {b.replace('_', ' ')}"
     if stem == "spss_chisquare_summary":
         return "카이제곱 검정 요약"
     if stem.startswith("spss_groupmeans_"):
-        a, _, b = stem[len("spss_groupmeans_"):].partition("__")
+        a, _, b = stem[len("spss_groupmeans_") :].partition("__")
         return f"집단별 평균 · {a.replace('_', ' ')} by {b.replace('_', ' ')}"
     if stem.startswith("spss_posthoc_tukey_"):
-        a, _, b = stem[len("spss_posthoc_tukey_"):].partition("__")
+        a, _, b = stem[len("spss_posthoc_tukey_") :].partition("__")
         return f"사후검정(Tukey HSD) · {a.replace('_', ' ')} by {b.replace('_', ' ')}"
     if stem == "spss_mean_comparison_summary":
         return "평균 비교 요약 (t-검정/분산분석)"
@@ -286,7 +286,11 @@ def _section_for_stem(stem: str) -> str:
 
 
 def _describe_table(stem: str, columns: list[str]) -> str:
-    return TABLE_DESCRIPTIONS.get(stem) or _spss_description(stem) or _fallback_description(stem, columns)
+    return (
+        TABLE_DESCRIPTIONS.get(stem)
+        or _spss_description(stem)
+        or _fallback_description(stem, columns)
+    )
 
 
 def _is_heatmap_table(stem: str, df: pd.DataFrame) -> bool:
@@ -314,9 +318,7 @@ def _table_from_csv(path: str) -> dict:
     # NaN -> None (엄격한 JSON 직렬화를 위해)
     df = df.astype(object).where(pd.notnull(df), None)
     # pandas가 이름 없는 인덱스 열에 붙이는 "Unnamed: 0" 같은 헤더를 사람이 읽기 좋게 치환
-    columns = [
-        "항목" if str(c).startswith("Unnamed:") else str(c) for c in df.columns
-    ]
+    columns = ["항목" if str(c).startswith("Unnamed:") else str(c) for c in df.columns]
     return {
         "id": stem,
         "title": _spss_title(stem) or _humanize(stem),

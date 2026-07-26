@@ -58,7 +58,6 @@ class NaverBlogCrawler:
         if not notification:
             raise ValueError(f"사용자 정보를 찾을 수 없습니다: {self.requester}")
         self.Email = notification["Email"]
-        self.PushoverKey = notification["PushOver"]
         self.requesterUid = notification["userUid"]
 
         self.running = True
@@ -458,11 +457,11 @@ class NaverBlogCrawler:
                             f"Error occurred while processing comment data for {blogUrl}: {e}"
                         )
 
-                await asyncio.sleep(SLEEP_TIME)
-
             except Exception as e:
                 logger.info(f"Error occurred while processing {blogUrl}: {e}")
-                appendCrawlLog(self.DBuid, "error", f"블로그 처리 실패 ({blogUrl}): {e}")
+                appendCrawlLog(
+                    self.DBuid, "error", f"블로그 처리 실패 ({blogUrl}): {e}"
+                )
 
     def main(self):
         initCrawlLog(
@@ -494,7 +493,6 @@ class NaverBlogCrawler:
                     DBtype="naverblog",
                     DBname=self.DBname,
                     startTime=self.startTime,
-                    pushoverKey=self.PushoverKey,
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
@@ -508,7 +506,6 @@ class NaverBlogCrawler:
                     DBtype="naverblog",
                     DBname=self.DBname,
                     startTime=self.startTime,
-                    pushoverKey=self.PushoverKey,
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
@@ -526,9 +523,7 @@ class NaverBlogCrawler:
             )
 
             concurrency = speed_to_concurrency(self.speed)
-            asyncio.run(
-                run_with_concurrency(urlList, self._processOneUrl, concurrency)
-            )
+            asyncio.run(run_with_concurrency(urlList, self._processOneUrl, concurrency))
 
             # 날짜 단위 진행률을 DB에 직접 업데이트
             updateCrawlStatus(

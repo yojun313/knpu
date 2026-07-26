@@ -130,9 +130,7 @@ class JobPersistence:
         try:
             from db import client
 
-            log_doc = client["crawler"]["log-list"].find_one(
-                {"uid": job_doc["db_uid"]}
-            )
+            log_doc = client["crawler"]["log-list"].find_one({"uid": job_doc["db_uid"]})
             return log_doc.get("logs", []) if log_doc else []
         except Exception as e:
             logger.warning(f"로그 조회 실패 (job_id: {job_id}): {e}")
