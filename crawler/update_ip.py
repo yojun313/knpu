@@ -85,14 +85,28 @@ class UploadWorker(QObject):
                 headers={"X-Internal-Key": self.api_key},
                 json={"proxies": proxy_list},
                 timeout=15,
+                allow_redirects=False,
             )
+            if res.status_code in (301, 302, 303, 307, 308):
+                raise RuntimeError(
+                    f"{res.status_code} 리다이렉트: {res.request.url} → {res.headers.get('Location')}\n"
+                    "인증 미들웨어가 이 요청을 API 요청으로 인식하지 못해 로그인 페이지로 돌려보냈습니다.\n"
+                    "이 스크립트 파일이 최신 버전인지 확인해주세요 (저장소에서 crawler/update_ip.py를 다시 받아보세요)."
+                )
             if res.status_code == 404:
                 raise RuntimeError(
                     f"404 Not Found: {res.request.url}\n"
                     "서버 URL이 올바른지 확인해주세요 (예: http://localhost:3001, 끝에 /api를 붙이지 마세요)."
                 )
             res.raise_for_status()
-            data = res.json()
+            try:
+                data = res.json()
+            except ValueError:
+                preview = res.text[:200].replace("\n", " ")
+                raise RuntimeError(
+                    f"서버가 JSON이 아닌 응답을 반환했습니다 (status {res.status_code}, "
+                    f"content-type: {res.headers.get('Content-Type')})\n미리보기: {preview}"
+                )
             count = data.get("count", len(proxy_list))
             self._log(f"서버 업데이트 완료 ({count}개)")
 
