@@ -1,3 +1,4 @@
+import asyncio
 import time
 import json
 import re
@@ -11,7 +12,8 @@ import logging
 from db import load_proxy_list, checkState, get_userinfo
 from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
-from common.req import Request, set_proxy_list
+from common.req import Request, RequestAsync, set_proxy_list
+from common.async_run import speed_to_concurrency, run_with_concurrency
 from common.naver_lib import parse_naver_query
 from common.storage import makeDB, updateCrawlStatus, initCrawlLog, appendCrawlLog
 from common.csv import makeCSV, addToCSV
@@ -111,10 +113,10 @@ class NaverCafeCrawler:
             json_str = json_str[: match.start(2)] + escaped + json_str[match.end(2) :]
         return json_str
 
-    def extractCafeID(self, cafeURL):
+    async def extractCafeID(self, session, cafeURL):
         """cafeURL 페이지에서 g_sClubId 추출"""
         try:
-            res = Request(cafeURL)
+            res = await RequestAsync(session, cafeURL)
             res.raise_for_status()
             text = res.text
             if text.startswith("\ufeff"):
@@ -239,11 +241,11 @@ class NaverCafeCrawler:
             appendCrawlLog(self.DBuid, "error", f"URL 수집 실패 ({keyword}): {e}")
             return []
 
-    def collectArticle(self, cafeURL):
+    async def collectArticle(self, session, cafeURL):
         """카페 기사 수집. 성공 시 (articleData, cafeID) 튜플, 실패 시 빈 리스트 반환"""
         try:
             articleID = self.extractArticleID(cafeURL)
-            cafeID = self.extractCafeID(cafeURL)
+            cafeID = await self.extractCafeID(session, cafeURL)
             if not cafeID:
                 return []
             artID = self.extractArt(cafeURL)
@@ -251,7 +253,7 @@ class NaverCafeCrawler:
             api_url = "https://apis.naver.com/cafe-web/cafe-articleapi/v2.1/cafes/{}/articles/{}?query=&art={}&useCafeId=true&requestFrom=A".format(
                 cafeID, articleID, artID
             )
-            res = Request(api_url)
+            res = await RequestAsync(session, api_url)
             res.raise_for_status()
             bs = BeautifulSoup(res.text, "html.parser")
             json_string = self.escape_content_html(bs.text)
@@ -303,7 +305,7 @@ class NaverCafeCrawler:
             appendCrawlLog(self.DBuid, "error", f"카페 본문 수집 실패 ({cafeURL}): {e}")
             return []
 
-    def collectCmt(self, cafeURL, cafeID):
+    async def collectCmt(self, session, cafeURL, cafeID):
         returnData = {"replyList": [], "replyCnt": 0}
         try:
             articleID = self.extractArticleID(cafeURL)
@@ -332,7 +334,7 @@ class NaverCafeCrawler:
                 api_url = "https://article.cafe.naver.com/gw/v4/cafes/{}/articles/{}/comments/pages/{}?requestFrom=A&orderBy=asc&art={}".format(
                     cafeID, articleID, page, artID
                 )
-                res = Request(api_url, headers=headers)
+                res = await RequestAsync(session, api_url, headers=headers)
                 res.raise_for_status()
                 bs = BeautifulSoup(res.text, "html.parser")
                 json_string = self.escape_content_html(bs.text)
@@ -382,6 +384,63 @@ class NaverCafeCrawler:
     def reportStatus(self):
         return self.status
 
+    async def _processOneUrl(self, session, semaphore, cafeUrl):
+        async with semaphore:
+            try:
+                if self.running == False:
+                    return
+
+                result = await self.collectArticle(session, cafeUrl)
+                if not result:
+                    return
+
+                articleData, cafeID = result
+                self.status["articleCnt"] += 1
+                article_day = articleData[5]
+
+                if self.option == 2:
+                    addToCSV(
+                        self.DBPath,
+                        self.articleDB,
+                        [articleData],
+                        navercafe_article_column,
+                    )
+
+                elif self.option == 1:
+                    try:
+                        cmtData = await self.collectCmt(session, cafeUrl, cafeID)
+
+                        reply_cnt = cmtData.get("replyCnt", 0)
+                        self.status["commentCnt"] += reply_cnt
+
+                        addToCSV(
+                            self.DBPath,
+                            self.articleDB,
+                            [articleData],
+                            navercafe_article_column,
+                        )
+
+                        replies = cmtData.get("replyList", [])
+                        if replies:
+                            processed_replies = [r + [article_day] for r in replies]
+                            addToCSV(
+                                self.DBPath,
+                                self.replyDB,
+                                processed_replies,
+                                navercafe_reply_column,
+                            )
+
+                    except Exception as e:
+                        logger.info(
+                            f"Error occurred while processing cafe comment data for {cafeUrl}: {e}"
+                        )
+
+                await asyncio.sleep(SLEEP_TIME)
+
+            except Exception as e:
+                logger.info(f"Error occurred while processing {cafeUrl}: {e}")
+                appendCrawlLog(self.DBuid, "error", f"카페 처리 실패 ({cafeUrl}): {e}")
+
     def main(self):
         initCrawlLog(
             self.DBuid,
@@ -415,6 +474,7 @@ class NaverCafeCrawler:
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
+                    requester=self.requester,
                 )
                 return
 
@@ -428,6 +488,7 @@ class NaverCafeCrawler:
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
+                    requester=self.requester,
                 )
                 break
 
@@ -440,64 +501,10 @@ class NaverCafeCrawler:
                 keyword=self.keyword, startDate=currentDate_str, endDate=currentDate_str
             )
 
-            for cafeUrl in urlList:
-                try:
-                    if self.running == False:
-                        break
-
-                    result = self.collectArticle(cafeUrl)
-                    if not result:
-                        continue
-
-                    articleData, cafeID = result
-                    self.status["articleCnt"] += 1
-                    article_day = articleData[5]
-
-                    if self.option == 2:
-                        addToCSV(
-                            self.DBPath,
-                            self.articleDB,
-                            [articleData],
-                            navercafe_article_column,
-                        )
-
-                    elif self.option == 1:
-                        try:
-                            cmtData = self.collectCmt(cafeUrl, cafeID)
-
-                            reply_cnt = cmtData.get("replyCnt", 0)
-                            self.status["commentCnt"] += reply_cnt
-
-                            addToCSV(
-                                self.DBPath,
-                                self.articleDB,
-                                [articleData],
-                                navercafe_article_column,
-                            )
-
-                            replies = cmtData.get("replyList", [])
-                            if replies:
-                                processed_replies = [r + [article_day] for r in replies]
-                                addToCSV(
-                                    self.DBPath,
-                                    self.replyDB,
-                                    processed_replies,
-                                    navercafe_reply_column,
-                                )
-
-                        except Exception as e:
-                            logger.info(
-                                f"Error occurred while processing cafe comment data for {cafeUrl}: {e}"
-                            )
-
-                    time.sleep(SLEEP_TIME)
-
-                except Exception as e:
-                    logger.info(f"Error occurred while processing {cafeUrl}: {e}")
-                    appendCrawlLog(
-                        self.DBuid, "error", f"카페 처리 실패 ({cafeUrl}): {e}"
-                    )
-                    continue
+            concurrency = speed_to_concurrency(self.speed)
+            asyncio.run(
+                run_with_concurrency(urlList, self._processOneUrl, concurrency)
+            )
 
             updateCrawlStatus(
                 self.DBuid,

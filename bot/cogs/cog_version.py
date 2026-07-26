@@ -1,12 +1,13 @@
 import discord
 from discord.ext import commands, tasks
 
+from config import CHANNEL_IDS
+
 
 class VersionBoardPoller(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.version_board_col = self.bot.manager_db["version-board"]
-        self.auth_config_col = self.bot.manager_db["auth_config"]
         self.polling_task.start()
 
     def cog_unload(self):
@@ -46,35 +47,32 @@ class VersionBoardPoller(commands.Cog):
 
     async def check_notified_status(self):
         try:
-            cursor = self.version_board_col.find({"notified": False})
+            # sendPushOver 체크(구 이름 그대로 유지 — "이 버전을 전체 공지할지" 플래그)가
+            # 켜진 버전만 방송한다. 꺼져 있는 버전은 notified가 갱신되지 않지만 다른 곳에서
+            # 그 값을 읽지 않으므로 문제 없다.
+            cursor = self.version_board_col.find(
+                {"notified": False, "sendPushOver": True}
+            )
 
             async for document in cursor:
                 version_name = document.get("versionName", "unknown")
                 embed = self.build_version_embed(document)
 
+                update_log_channel = CHANNEL_IDS["manager_update"]
+                channel = None
                 for guild in self.bot.guilds:
-                    config = await self.auth_config_col.find_one({"guild_id": guild.id})
-                    if not config:
-                        continue
-
-                    update_log_channel = config.get("update_log_channel")
-                    if not update_log_channel:
-                        continue
-
                     channel = guild.get_channel(update_log_channel)
-                    if not channel:
-                        print(
-                            f"[알림 실패] 채널 ID {update_log_channel} 을 찾을 수 없음 (길드: {guild.name})"
-                        )
-                        continue
+                    if channel:
+                        break
 
+                if not channel:
+                    print(f"[알림 실패] 채널 ID {update_log_channel} 을 찾을 수 없음")
+                else:
                     try:
                         await channel.send(embed=embed)
-                        print(
-                            f"[알림 전송] 버전 {version_name} 알림 전송 완료 ({guild.name})"
-                        )
+                        print(f"[알림 전송] 버전 {version_name} 알림 전송 완료")
                     except Exception as e:
-                        print(f"[알림 실패] 채널 전송 오류 ({guild.name}): {e}")
+                        print(f"[알림 실패] 채널 전송 오류: {e}")
 
                 await self.version_board_col.update_one(
                     {"_id": document["_id"]},
@@ -91,25 +89,6 @@ class VersionBoardPoller(commands.Cog):
     @polling_task.before_loop
     async def before_polling_task(self):
         await self.bot.wait_until_ready()
-
-    @discord.app_commands.command(
-        name="업데이트로그채널", description="업데이트 로그 채널 설정"
-    )
-    @discord.app_commands.describe(channel="업데이트 로그를 보낼 채널")
-    @discord.app_commands.checks.has_permissions(administrator=True)
-    async def set_log_channel(
-        self, interaction: discord.Interaction, channel: discord.TextChannel
-    ):
-        await self.bot.manager_db.auth_config.update_one(
-            {"guild_id": interaction.guild.id},
-            {"$set": {"update_log_channel": channel.id}},
-            upsert=True,
-        )
-
-        await interaction.response.send_message(
-            f"업데이트 로그 채널이 {channel.mention} 으로 설정되었습니다.",
-            ephemeral=True,
-        )
 
 
 async def setup(bot):

@@ -9,7 +9,7 @@ from app.services.user_service import (
 from app.libs.jwt import verify_token
 from starlette.background import BackgroundTask
 from fastapi.responses import JSONResponse
-from app.utils.pushover import sendPushOver
+from app.libs.discord_notify import notify_discord
 
 
 router = APIRouter()
@@ -52,11 +52,12 @@ def loadAdminUsers():
 
 
 @router.post("/admin/pushover")
-def sendAdminPushOver(message: str = Body(..., embed=True)):
-    sendPushOver(
-        message, [a["pushover_key"] for a in get_all_admins() if a.get("pushover_key")]
-    )
+def sendAdminPushOver(
+    message: str = Body(..., embed=True), kind: str = Body("ops", embed=True)
+):
+    channel_key = "manager_error" if kind == "error" else "admin_ops"
+    notify_discord(channel_key, message)
     return JSONResponse(
         status_code=200,
-        content={"message": "PushOver sent to admin"},
+        content={"message": "Notification sent to admin"},
     )

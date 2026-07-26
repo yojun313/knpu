@@ -1,11 +1,30 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File
 from app.models import Member
 from app.db import members_db
-from app.auth.dependencies import require_admin
+from app.auth.dependencies import require_admin, get_current_user
+from app.auth import service as auth_service
+from app.libs import r2
 from fastapi import HTTPException
 import uuid
 
 router = APIRouter()
+
+
+@router.get("/me")
+def my_linked_member(user=Depends(get_current_user)):
+    """로그인한 사용자와 이름이 일치하는 홈페이지 멤버 프로필(있으면)을 반환한다.
+    마이페이지가 프로필 사진 편집 UI를 보여줄지 판단하는 데 쓴다."""
+    return auth_service.get_linked_member(user["sub"])
+
+
+@router.post("/me/photo")
+async def upload_my_member_photo(
+    file: UploadFile = File(...), user=Depends(get_current_user)
+):
+    """일반 사용자가(관리자 아니어도) 자신과 연결된 멤버 프로필의 사진만 바꿀 수 있게 하는
+    셀프서비스 엔드포인트. 다른 필드는 손댈 수 없다."""
+    url = r2.upload_fileobj(file, "members")
+    return auth_service.update_my_member_photo(user["sub"], url)
 
 
 @router.get("/")

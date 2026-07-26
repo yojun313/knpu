@@ -4,6 +4,8 @@ from discord import app_commands
 import datetime
 import io
 
+from config import CHANNEL_IDS
+
 
 class ErrorManageView(discord.ui.View):
     def __init__(self, bot):
@@ -91,20 +93,6 @@ class ErrorWatcher(commands.Cog):
     def cog_unload(self):
         self.watch_errors.cancel()
 
-    @app_commands.command(name="버그로그채널", description="버그 로그 채널 설정")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def set_bug_channel(
-        self, interaction: discord.Interaction, channel: discord.TextChannel
-    ):
-        await self.bot.manager_db.auth_config.update_one(
-            {"guild_id": interaction.guild.id},
-            {"$set": {"bug_log_channel": channel.id}},
-            upsert=True,
-        )
-        await interaction.response.send_message(
-            f"버그 로그 채널이 {channel.mention} 으로 설정되었습니다.", ephemeral=True
-        )
-
     @tasks.loop(seconds=10)
     async def watch_errors(self):
         await self.bot.wait_until_ready()
@@ -119,13 +107,7 @@ class ErrorWatcher(commands.Cog):
             message = bug.get("message", "No Message")
 
             for guild in self.bot.guilds:
-                config = await self.bot.manager_db.auth_config.find_one(
-                    {"guild_id": guild.id}
-                )
-                if not config or not config.get("bug_log_channel"):
-                    continue
-
-                channel = guild.get_channel(config["bug_log_channel"])
+                channel = guild.get_channel(CHANNEL_IDS["manager_error"])
                 if not channel:
                     continue
 

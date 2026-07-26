@@ -141,7 +141,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 msg = f"[ CRITICAL ]\n\nThere is Error in MANAGER Booting\n\nPC: {socket.gethostname()}\n\nError Log: {traceback.format_exc()}"
 
                 if self.user_role and self.user_role != "admin":
-                    sendAdminPushOver(msg)
+                    sendAdminPushOver(msg, kind="error")
                 QMessageBox.critical(
                     self,
                     "Error",

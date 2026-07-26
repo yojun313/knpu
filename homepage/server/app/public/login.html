@@ -10,60 +10,124 @@
   <link href="css/styles.css" rel="stylesheet" />
   <style>
     body {
-      background-color: #eef1f5;
+      background: linear-gradient(180deg, #f4f5f7 0%, #eef1f5 100%);
       min-height: 100vh;
     }
 
-    .masthead_auth {
-      position: relative;
-      padding-top: 12.5rem;
-      padding-bottom: 6rem;
+    .auth-hero {
+      padding-top: 8.5rem;
+      padding-bottom: 3rem;
       text-align: center;
       color: #fff;
       background: linear-gradient(135deg, #1a1d20 0%, #2c3e50 100%);
     }
 
-    .masthead_auth-heading {
-      font-family: "Montserrat", sans-serif;
-      font-size: 2.5rem;
+    .auth-hero .eyebrow {
+      font-size: 0.8rem;
       font-weight: 700;
-      margin-bottom: 0;
+      letter-spacing: 0.1em;
+      color: var(--bs-primary);
     }
 
-    .masthead_auth-subheading {
-      font-size: 1.15rem;
-      font-style: italic;
-      margin-bottom: 20px;
+    .auth-hero h1 {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 1.9rem;
+      margin: 0.25rem 0 0;
+    }
+
+    .auth-shell {
+      max-width: 420px;
+      margin: -2rem auto 5rem;
     }
 
     .auth-card {
-      max-width: 440px;
-      margin: -4.5rem auto 5rem;
       border: none;
-      border-top: 4px solid var(--bs-primary);
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.14);
-      background-color: #fff;
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+      background: #fff;
+      overflow: hidden;
     }
 
-    .auth-card .card-body {
-      padding: 2.25rem 2rem;
+    .auth-card-accent {
+      height: 4px;
+      background: linear-gradient(90deg, var(--bs-primary), #ffdd66);
+    }
+
+    .auth-card-body {
+      padding: 2rem 1.9rem;
     }
 
     .auth-card h2 {
       font-family: "Montserrat", sans-serif;
       font-weight: 700;
-      font-size: 1.35rem;
-      margin-bottom: 1.5rem;
+      font-size: 1.2rem;
+      margin-bottom: 1.3rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .auth-card h2 i {
+      color: var(--bs-primary);
+      font-size: 1rem;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .input-icon-group {
+      position: relative;
+    }
+
+    .input-icon-group i {
+      position: absolute;
+      left: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #adb5bd;
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+
+    .input-icon-group input {
+      padding-left: 2.2rem;
+    }
+
+    .btn-auth-primary {
+      background: #212529;
+      border-color: #212529;
+      font-family: "Montserrat", sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 9px;
+      padding: 0.6rem;
+    }
+
+    .btn-auth-primary:hover {
+      background: #000;
+      border-color: #000;
+      color: #fff;
     }
 
     .auth-switch {
       text-align: center;
-      margin-top: 1.25rem;
-      font-size: 0.9rem;
+      margin-top: 1.4rem;
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+
+    .auth-switch a {
+      font-weight: 600;
     }
 
     .auth-alert {
       display: none;
+      font-size: 0.85rem;
+      border-radius: 10px;
     }
   </style>
 </head>
@@ -71,66 +135,81 @@
 <body id="page-top" data-page="account">
   <div id="nav-placeholder"></div>
 
-  <header class="masthead_auth">
+  <header class="auth-hero">
     <div class="container">
-      <div class="masthead_auth-subheading">KNPU FPEI</div>
-      <div class="masthead_auth-heading">로그인</div>
+      <div class="eyebrow">KNPU FPEI</div>
+      <h1>로그인</h1>
     </div>
   </header>
 
   <div class="container">
-    <div class="card auth-card" id="login-panel">
-      <div class="card-body">
-        <h2>계정 로그인</h2>
-        <div class="alert alert-danger auth-alert" id="login-error"></div>
-        <form id="login-form">
-          <div class="mb-3">
-            <label class="form-label" for="login-username">아이디</label>
-            <input type="text" class="form-control" id="login-username" required autocomplete="username" />
+    <div class="auth-shell" id="login-panel">
+      <div class="card auth-card">
+        <div class="auth-card-accent"></div>
+        <div class="auth-card-body">
+          <h2><i class="fa-solid fa-right-to-bracket"></i>계정 로그인</h2>
+          <div class="alert alert-danger auth-alert" id="login-error"></div>
+          <form id="login-form">
+            <div class="mb-3">
+              <label class="form-label" for="login-username">아이디</label>
+              <div class="input-icon-group">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" class="form-control" id="login-username" required autocomplete="username" />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="login-password">비밀번호</label>
+              <div class="input-icon-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" class="form-control" id="login-password" required
+                  autocomplete="current-password" />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-auth-primary w-100 text-white">로그인</button>
+          </form>
+          <div class="auth-switch">
+            <a href="#" id="show-forgot">비밀번호를 잊으셨나요?</a>
+            <br />
+            아직 계정이 없으신가요? <a href="/signup">회원가입</a>
           </div>
-          <div class="mb-3">
-            <label class="form-label" for="login-password">비밀번호</label>
-            <input type="password" class="form-control" id="login-password" required
-              autocomplete="current-password" />
-          </div>
-          <button type="submit" class="btn btn-primary w-100">로그인</button>
-        </form>
-        <div class="auth-switch">
-          <a href="#" id="show-forgot">비밀번호를 잊으셨나요?</a>
-          <br />
-          아직 계정이 없으신가요? <a href="/signup">회원가입</a>
         </div>
       </div>
     </div>
 
-    <div class="card auth-card" id="forgot-panel" style="display:none;">
-      <div class="card-body">
-        <h2>비밀번호 재설정</h2>
-        <div class="alert alert-danger auth-alert" id="forgot-error"></div>
-        <div class="alert alert-success auth-alert" id="forgot-success"></div>
+    <div class="auth-shell" id="forgot-panel" style="display:none;">
+      <div class="card auth-card">
+        <div class="auth-card-accent"></div>
+        <div class="auth-card-body">
+          <h2><i class="fa-solid fa-key"></i>비밀번호 재설정</h2>
+          <div class="alert alert-danger auth-alert" id="forgot-error"></div>
+          <div class="alert alert-success auth-alert" id="forgot-success"></div>
 
-        <form id="forgot-request-form">
-          <div class="mb-3">
-            <label class="form-label" for="forgot-username">아이디</label>
-            <input type="text" class="form-control" id="forgot-username" required />
-          </div>
-          <button type="submit" class="btn btn-outline-dark w-100">인증번호 받기</button>
-        </form>
+          <form id="forgot-request-form">
+            <div class="mb-3">
+              <label class="form-label" for="forgot-username">아이디</label>
+              <div class="input-icon-group">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" class="form-control" id="forgot-username" required />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-outline-dark w-100">인증번호 받기</button>
+          </form>
 
-        <form id="forgot-reset-form" class="mt-3" style="display:none;">
-          <div class="mb-3">
-            <label class="form-label" for="reset-code">인증번호</label>
-            <input type="text" class="form-control" id="reset-code" required />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="reset-password">새 비밀번호</label>
-            <input type="password" class="form-control" id="reset-password" required minlength="8" />
-          </div>
-          <button type="submit" class="btn btn-primary w-100">비밀번호 재설정</button>
-        </form>
+          <form id="forgot-reset-form" class="mt-3" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label" for="reset-code">인증번호</label>
+              <input type="text" class="form-control" id="reset-code" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="reset-password">새 비밀번호</label>
+              <input type="password" class="form-control" id="reset-password" required minlength="8" />
+            </div>
+            <button type="submit" class="btn btn-auth-primary w-100 text-white">비밀번호 재설정</button>
+          </form>
 
-        <div class="auth-switch">
-          <a href="#" id="show-login">로그인으로 돌아가기</a>
+          <div class="auth-switch">
+            <a href="#" id="show-login">로그인으로 돌아가기</a>
+          </div>
         </div>
       </div>
     </div>

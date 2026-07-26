@@ -341,6 +341,14 @@
       var match = !q || card.getAttribute('data-search').indexOf(q) !== -1;
       card.classList.toggle('hidden-by-search', !match);
     });
+    document.querySelectorAll('.section-title').forEach(function (h) {
+      var el = h.nextElementSibling, anyVisible = false;
+      while (el && !el.classList.contains('section-title')) {
+        if (!el.classList.contains('hidden-by-search')) anyVisible = true;
+        el = el.nextElementSibling;
+      }
+      h.classList.toggle('hidden-by-search', !anyVisible);
+    });
   }
 
   // ---------------------------------------------------------------
@@ -436,6 +444,11 @@
     closeExportModal();
   }
 
+  var SECTION_ORDER = [
+    '핵심 지표', '기술통계', '빈도분석', '교차분석 (카이제곱)', '평균 비교 (t-검정/분산분석)',
+    '상관분석', '회귀분석', '요인분석 (PCA)', '신뢰도분석', '군집분석', '고급 통계',
+  ];
+
   function renderDashboard() {
     var meta = base.metadata || {};
     document.getElementById('dashSource').textContent = meta.source_filename || currentMeta.name || '-';
@@ -447,7 +460,27 @@
     destroyCharts();
     var grid = document.getElementById('tableGrid');
     grid.innerHTML = '';
-    (base.tables || []).forEach(function (table) { grid.appendChild(buildTableCard(table)); });
+
+    var tables = base.tables || [];
+    var bySection = {};
+    tables.forEach(function (table) {
+      var sec = table.section || '핵심 지표';
+      (bySection[sec] = bySection[sec] || []).push(table);
+    });
+    var sections = Object.keys(bySection).sort(function (a, b) {
+      var ia = SECTION_ORDER.indexOf(a); if (ia === -1) ia = SECTION_ORDER.length;
+      var ib = SECTION_ORDER.indexOf(b); if (ib === -1) ib = SECTION_ORDER.length;
+      return ia - ib;
+    });
+    sections.forEach(function (sec) {
+      if (sections.length > 1) {
+        var h = document.createElement('div');
+        h.className = 'section-title';
+        h.textContent = sec;
+        grid.appendChild(h);
+      }
+      bySection[sec].forEach(function (table) { grid.appendChild(buildTableCard(table)); });
+    });
     applyTableSearch();
   }
 

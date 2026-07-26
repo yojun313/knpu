@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from pymongo import ReturnDocument
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from app.utils.pushover import sendPushOver
+from app.libs.discord_notify import notify_discord
 import uuid
 
 
@@ -85,9 +85,7 @@ def update_user_version(userUid: str, oldVersionName: str | None, newVersionName
     if oldVersionName:
         userName = updated_user.get("name", "Unknown")
         msg = f"{userName} updated {oldVersionName} -> {newVersionName}"
-        sendPushOver(
-            msg, [a["pushover_key"] for a in get_all_admins() if a.get("pushover_key")]
-        )
+        notify_discord("admin_ops", msg)
         log_user(userUid, f"Updated version: {oldVersionName} -> {newVersionName}")
 
     return JSONResponse(

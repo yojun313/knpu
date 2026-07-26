@@ -10,69 +10,210 @@
   <link href="css/styles.css" rel="stylesheet" />
   <style>
     body {
-      background-color: #eef1f5;
+      background-color: #f4f5f7;
       min-height: 100vh;
     }
 
-    .masthead_auth {
-      position: relative;
-      padding-top: 12.5rem;
-      padding-bottom: 6rem;
+    .account-hero {
+      padding-top: 7rem;
+      padding-bottom: 4.5rem;
       text-align: center;
       color: #fff;
       background: linear-gradient(135deg, #1a1d20 0%, #2c3e50 100%);
     }
 
-    .masthead_auth-heading {
-      font-family: "Montserrat", sans-serif;
-      font-size: 2.5rem;
+    .account-hero .eyebrow {
+      font-size: 0.8rem;
       font-weight: 700;
-      margin-bottom: 0;
+      letter-spacing: 0.1em;
+      color: var(--bs-primary);
     }
 
-    .masthead_auth-subheading {
-      font-size: 1.15rem;
-      font-style: italic;
-      margin-bottom: 20px;
+    .account-avatar {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      margin: 0.9rem auto 0.75rem;
+      object-fit: cover;
+      background: rgba(255, 255, 255, 0.12);
+      border: 3px solid rgba(255, 255, 255, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 2rem;
+      color: #fff;
+    }
+
+    .account-hero h1 {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 1.6rem;
+      margin: 0;
+    }
+
+    .account-role-badge {
+      display: inline-block;
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 0.2rem 0.65rem;
+      border-radius: 20px;
+      background: rgba(255, 200, 0, 0.16);
+      color: var(--bs-primary);
+      border: 1px solid rgba(255, 200, 0, 0.35);
     }
 
     .account-wrap {
       max-width: 640px;
-      margin: -4.5rem auto 5rem;
+      margin: -2.75rem auto 5rem;
     }
 
     .account-card {
       border: none;
-      border-top: 4px solid var(--bs-primary);
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.14);
+      border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
       background-color: #fff;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
+      overflow: hidden;
     }
 
     .account-card .card-body {
-      padding: 2rem;
+      padding: 1.75rem;
     }
 
     .account-card h2 {
       font-family: "Montserrat", sans-serif;
       font-weight: 700;
-      font-size: 1.2rem;
-      margin-bottom: 1.5rem;
+      font-size: 1.02rem;
+      margin-bottom: 1.3rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    .account-badge {
-      font-size: 0.75rem;
-      letter-spacing: 0.03em;
+    .account-card h2 i {
+      color: var(--bs-primary);
+      font-size: 0.95rem;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .meta-line {
+      font-size: 0.85rem;
+      color: #6c757d;
+      margin-bottom: 0.3rem;
+    }
+
+    .meta-line strong {
+      color: #212529;
+    }
+
+    .btn-account-primary {
+      background: #212529;
+      border-color: #212529;
+      font-family: "Montserrat", sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border-radius: 9px;
+      padding: 0.55rem 1.1rem;
+    }
+
+    .btn-account-primary:hover {
+      background: #000;
+      border-color: #000;
+      color: #fff;
+    }
+
+    /* 디스코드 카드 */
+    .discord-card {
+      border-top: 4px solid #5865f2;
+    }
+
+    .btn-discord {
+      background: #5865f2;
+      border-color: #5865f2;
+      color: #fff;
+      font-family: "Montserrat", sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border-radius: 9px;
+      padding: 0.55rem 1.1rem;
+    }
+
+    .btn-discord:hover {
+      background: #4752c4;
+      border-color: #4752c4;
+      color: #fff;
+    }
+
+    /* 프로필 사진 카드 */
+    .photo-row {
+      display: flex;
+      align-items: center;
+      gap: 1.1rem;
+    }
+
+    .photo-preview {
+      width: 84px;
+      height: 84px;
+      border-radius: 14px;
+      object-fit: cover;
+      background: #f1f3f5;
+      border: 1px solid #eceef1;
+      flex-shrink: 0;
+    }
+
+    .photo-preview-placeholder {
+      width: 84px;
+      height: 84px;
+      border-radius: 14px;
+      background: #f1f3f5;
+      border: 1px solid #eceef1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c3c9d0;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .photo-meta {
+      font-size: 0.8rem;
+      color: #8b95a1;
+    }
+
+    #member-photo-card {
+      display: none;
+    }
+
+    #admin-card {
+      display: none;
     }
 
     .auth-alert {
       display: none;
+      font-size: 0.85rem;
+      border-radius: 10px;
     }
 
     #account-loading {
       text-align: center;
-      color: #fff;
-      padding: 4rem 0;
+      color: #6c757d;
+      padding: 6rem 0;
+    }
+
+    #account-loading i {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+      display: block;
+      color: var(--bs-primary);
     }
   </style>
 </head>
@@ -80,44 +221,70 @@
 <body id="page-top" data-page="account">
   <div id="nav-placeholder"></div>
 
-  <header class="masthead_auth">
+  <header class="account-hero">
     <div class="container">
-      <div class="masthead_auth-subheading">KNPU FPEI</div>
-      <div class="masthead_auth-heading" id="account-heading">내 계정</div>
+      <div class="eyebrow">KNPU FPEI</div>
+      <div class="account-avatar" id="account-avatar">?</div>
+      <h1 id="account-heading">마이페이지</h1>
+      <span class="account-role-badge" id="account-role-badge" style="display:none;"></span>
     </div>
   </header>
 
   <div class="container">
     <div class="account-wrap" id="account-content" style="display:none;">
+
+      <div class="card account-card" id="member-photo-card">
+        <div class="card-body">
+          <h2><i class="fa-solid fa-image"></i>프로필 사진</h2>
+          <div class="alert alert-success auth-alert" id="photo-success"></div>
+          <div class="alert alert-danger auth-alert" id="photo-error"></div>
+          <div class="photo-row">
+            <img class="photo-preview" id="photo-preview-img" style="display:none;" />
+            <div class="photo-preview-placeholder" id="photo-preview-placeholder"><i class="fa-solid fa-user"></i></div>
+            <div>
+              <div class="meta-line" id="member-link-note">홈페이지 멤버 <strong id="member-link-name"></strong> 프로필과 연결되어 있습니다.</div>
+              <label class="btn btn-outline-dark btn-sm mt-1" for="photo-input" style="cursor:pointer;">
+                <i class="fa-solid fa-upload me-1"></i>사진 변경
+              </label>
+              <input type="file" id="photo-input" accept="image/*" style="display:none;" />
+              <div class="photo-meta mt-1" id="photo-status"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card account-card discord-card">
+        <div class="card-body">
+          <h2><i class="fa-brands fa-discord"></i>디스코드</h2>
+          <p class="meta-line mb-3">KNPU FPEI 디스코드 서버에서 공지와 소식을 실시간으로 받아보세요.</p>
+          <a href="https://discord.gg/BHUsBbFnA" target="_blank" rel="noopener" class="btn btn-discord">
+            <i class="fa-brands fa-discord me-2"></i>디스코드 서버 참여하기
+          </a>
+        </div>
+      </div>
+
       <div class="card account-card">
         <div class="card-body">
-          <h2>프로필</h2>
+          <h2><i class="fa-solid fa-id-card"></i>프로필</h2>
           <div class="alert alert-success auth-alert" id="profile-success"></div>
           <div class="alert alert-danger auth-alert" id="profile-error"></div>
 
-          <p>
-            아이디: <strong id="p-username"></strong>
-            <span class="badge bg-dark account-badge" id="p-role"></span>
-          </p>
-          <p>이메일: <span id="p-email"></span></p>
+          <div class="meta-line">아이디: <strong id="p-username"></strong></div>
+          <div class="meta-line">이메일: <span id="p-email"></span></div>
 
-          <form id="profile-form">
+          <form id="profile-form" class="mt-3">
             <div class="mb-3">
               <label class="form-label" for="p-name">이름</label>
               <input type="text" class="form-control" id="p-name" required />
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="p-pushover">Pushover Key</label>
-              <input type="text" class="form-control" id="p-pushover" />
-            </div>
-            <button type="submit" class="btn btn-primary">프로필 저장</button>
+            <button type="submit" class="btn btn-account-primary text-white">프로필 저장</button>
           </form>
         </div>
       </div>
 
       <div class="card account-card">
         <div class="card-body">
-          <h2>비밀번호 변경</h2>
+          <h2><i class="fa-solid fa-lock"></i>비밀번호 변경</h2>
           <div class="alert alert-success auth-alert" id="pw-success"></div>
           <div class="alert alert-danger auth-alert" id="pw-error"></div>
 
@@ -131,17 +298,17 @@
               <input type="password" class="form-control" id="pw-new" required minlength="8"
                 autocomplete="new-password" />
             </div>
-            <button type="submit" class="btn btn-outline-dark">비밀번호 변경</button>
+            <button type="submit" class="btn btn-outline-dark btn-sm">비밀번호 변경</button>
           </form>
         </div>
       </div>
 
-      <div class="card account-card" id="admin-card" style="display:none;">
+      <div class="card account-card" id="admin-card">
         <div class="card-body">
-          <h2>관리자</h2>
-          <p class="mb-3">가입 승인 대기 중인 요청을 관리 콘솔에서 확인할 수 있습니다.</p>
-          <a href="https://dashboard.knpu.re.kr/users" class="btn btn-dark me-2">가입 요청 관리로 이동</a>
-          <a href="/admin" class="btn btn-outline-dark">콘텐츠 관리로 이동</a>
+          <h2><i class="fa-solid fa-user-shield"></i>관리자</h2>
+          <p class="meta-line mb-3">가입 승인 대기 중인 요청과 홈페이지 콘텐츠를 관리할 수 있습니다.</p>
+          <a href="https://dashboard.knpu.re.kr/users" class="btn btn-account-primary text-white me-2 mb-2">가입 요청 관리로 이동</a>
+          <a href="/admin" class="btn btn-outline-dark mb-2">콘텐츠 관리로 이동</a>
         </div>
       </div>
 
@@ -150,7 +317,7 @@
       </div>
     </div>
 
-    <div id="account-loading">불러오는 중...</div>
+    <div id="account-loading"><i class="fa-solid fa-spinner fa-spin"></i>불러오는 중...</div>
   </div>
 
   <footer class="footer py-4">
@@ -167,6 +334,10 @@
       setTimeout(() => { el.style.display = 'none'; }, 4000);
     }
 
+    function setAvatarInitial(name) {
+      document.getElementById('account-avatar').textContent = (name || '?').trim().charAt(0).toUpperCase();
+    }
+
     async function loadProfile() {
       const res = await fetch('/api/auth/me', { credentials: 'include' });
       if (!res.ok) {
@@ -178,17 +349,77 @@
       document.getElementById('account-loading').style.display = 'none';
       document.getElementById('account-content').style.display = 'block';
       document.getElementById('account-heading').textContent = user.name + '님';
-
-      document.getElementById('p-username').textContent = user.username;
-      document.getElementById('p-role').textContent = user.role === 'admin' ? 'ADMIN' : 'MEMBER';
-      document.getElementById('p-email').textContent = user.email;
-      document.getElementById('p-name').value = user.name;
-      document.getElementById('p-pushover').value = user.pushover_key || '';
+      setAvatarInitial(user.name);
 
       if (user.role === 'admin') {
+        const badge = document.getElementById('account-role-badge');
+        badge.textContent = 'ADMIN';
+        badge.style.display = 'inline-block';
         document.getElementById('admin-card').style.display = 'block';
       }
+
+      document.getElementById('p-username').textContent = user.username;
+      document.getElementById('p-email').textContent = user.email;
+      document.getElementById('p-name').value = user.name;
+
+      loadLinkedMember();
     }
+
+    function renderMemberPhoto(member) {
+      const img = document.getElementById('photo-preview-img');
+      const placeholder = document.getElementById('photo-preview-placeholder');
+      if (member.image) {
+        img.src = member.image;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+      } else {
+        img.style.display = 'none';
+        placeholder.style.display = 'flex';
+      }
+    }
+
+    function loadLinkedMember() {
+      fetch('/api/members/me', { credentials: 'include' }).then(function (res) {
+        return res.ok ? res.json() : null;
+      }).then(function (member) {
+        if (!member) return;
+        document.getElementById('member-photo-card').style.display = 'block';
+        document.getElementById('member-link-name').textContent = member.name;
+        renderMemberPhoto(member);
+        if (!document.getElementById('account-avatar').querySelector('img') && member.image) {
+          document.getElementById('account-avatar').innerHTML =
+            '<img src="' + member.image + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+        }
+      }).catch(function () { });
+    }
+
+    document.getElementById('photo-input').addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+      const statusEl = document.getElementById('photo-status');
+      const errorEl = document.getElementById('photo-error');
+      const successEl = document.getElementById('photo-success');
+      statusEl.textContent = '업로드 중...';
+
+      const fd = new FormData();
+      fd.append('file', file);
+
+      fetch('/api/members/me/photo', { method: 'POST', credentials: 'include', body: fd })
+        .then(function (res) {
+          if (!res.ok) return res.json().then(function (b) { throw new Error(b.detail || '업로드 실패'); });
+          return res.json();
+        })
+        .then(function (member) {
+          statusEl.textContent = '';
+          renderMemberPhoto(member);
+          showAlert(successEl, '프로필 사진이 변경되었습니다');
+          loadLinkedMember();
+        })
+        .catch(function (err) {
+          statusEl.textContent = '';
+          showAlert(errorEl, err.message || '업로드에 실패했습니다');
+        });
+    });
 
     document.getElementById('profile-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -202,7 +433,6 @@
           credentials: 'include',
           body: JSON.stringify({
             name: document.getElementById('p-name').value.trim(),
-            pushover_key: document.getElementById('p-pushover').value.trim(),
           }),
         });
         const data = await res.json();
@@ -210,6 +440,7 @@
           showAlert(errorEl, data.detail || '저장에 실패했습니다');
           return;
         }
+        setAvatarInitial(data.name);
         showAlert(successEl, '프로필이 저장되었습니다');
       } catch (err) {
         showAlert(errorEl, '서버와 통신할 수 없습니다');
