@@ -52,8 +52,15 @@ class UploadWorker(QObject):
     ):
         super().__init__(parent)
         self.proxy_file_path = proxy_file_path.strip()
-        self.server_url = server_url.strip().rstrip("/")
+        self.server_url = self._normalize_server_url(server_url)
         self.api_key = api_key.strip()
+
+    @staticmethod
+    def _normalize_server_url(raw: str) -> str:
+        url = raw.strip().rstrip("/")
+        if url.lower().endswith("/api"):
+            url = url[: -len("/api")]
+        return url
 
     def _log(self, msg: str):
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -79,6 +86,11 @@ class UploadWorker(QObject):
                 json={"proxies": proxy_list},
                 timeout=15,
             )
+            if res.status_code == 404:
+                raise RuntimeError(
+                    f"404 Not Found: {res.request.url}\n"
+                    "서버 URL이 올바른지 확인해주세요 (예: http://localhost:3001, 끝에 /api를 붙이지 마세요)."
+                )
             res.raise_for_status()
             data = res.json()
             count = data.get("count", len(proxy_list))

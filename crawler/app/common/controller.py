@@ -3,9 +3,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 import time
 import logging
-from db import crawler_db
+from db import crawler_db, get_userinfo, get_admin_discord_ids
 from common.tokenization import tokenization
-from common.notification import sendMail, sendDiscord
+from common.notification import sendMail, sendDiscordDM
 from common.storage import endCrawl, errorCrawl, appendCrawlLog
 from config import CRAWL_LOG_PATH
 
@@ -38,6 +38,16 @@ def convertToParquet(folder_path):
                 print(f"변환 실패: {csv_file} → 오류: {e}")
     except Exception as e:
         logger.exception(f"convertToParquet 실패: {folder_path}")
+
+
+def _discord_recipients(requester):
+    """크롤링 알림 수신자: 요청자 본인 + 관리자만 (공개 채널 브로드캐스트 금지)"""
+    ids = set(get_admin_discord_ids())
+    if requester:
+        info = get_userinfo(requester)
+        if info and info.get("discord_id"):
+            ids.add(info["discord_id"])
+    return list(ids)
 
 
 def stopOperator(
@@ -103,7 +113,9 @@ def stopOperator(
 
         if pushoverKey == "n" or pushoverKey == None:
             sendMail(userEmail, title, text)
-        sendDiscord(title + "\n" + text, "crawler_error", requester=requester)
+        sendDiscordDM(
+            _discord_recipients(requester), title + "\n" + text, requester=requester
+        )
 
         with open(os.path.join(CRAWL_LOG_PATH, DBname + "_log.txt"), "a") as log:
             log.write("\n\n" + text)
@@ -185,7 +197,9 @@ def finishOperator(
 
         if pushoverKey == "n" or pushoverKey == None:
             sendMail(userEmail, title, text)
-        sendDiscord(title + "\n" + text, "crawler_status", requester=requester)
+        sendDiscordDM(
+            _discord_recipients(requester), title + "\n" + text, requester=requester
+        )
 
         with open(os.path.join(CRAWL_LOG_PATH, DBname + "_log.txt"), "a") as log:
             log.write("\n\n" + text)

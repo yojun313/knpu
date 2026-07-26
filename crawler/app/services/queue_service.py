@@ -9,7 +9,6 @@ from app.models.job_model import JobSubmitRequest
 from app.services.registry import CrawlerRegistry
 from app.services.persistence import JobPersistence
 from app.db import recordDB
-from config import SLEEP_TIME
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +214,7 @@ class QueueManager:
                 startDate=req.start_day,
                 endDate=req.end_day,
                 option=req.option_select,
-                speed=SLEEP_TIME,
+                speed=req.speed,
             )
         elif req.crawl_object == 2:
             from parsers.naver_blog import NaverBlogCrawler
@@ -226,7 +225,7 @@ class QueueManager:
                 startDate=req.start_day,
                 endDate=req.end_day,
                 option=req.option_select,
-                speed=SLEEP_TIME,
+                speed=req.speed,
             )
         elif req.crawl_object == 3:
             from parsers.naver_cafe import NaverCafeCrawler
@@ -237,7 +236,7 @@ class QueueManager:
                 startDate=req.start_day,
                 endDate=req.end_day,
                 option=req.option_select,
-                speed=SLEEP_TIME,
+                speed=req.speed,
             )
         elif req.crawl_object == 4:
             from parsers.youtube import YouTubeCrawler
@@ -248,7 +247,7 @@ class QueueManager:
                 startDate=req.start_day,
                 endDate=req.end_day,
                 option=req.option_select,
-                speed=SLEEP_TIME,
+                speed=req.speed,
             )
         elif req.crawl_object == 5:
             from parsers.china_daily import ChinaDailyCrawler
@@ -259,7 +258,7 @@ class QueueManager:
                 startDate=req.start_day,
                 endDate=req.end_day,
                 option=req.option_select,
-                speed=SLEEP_TIME,
+                speed=req.speed,
             )
         elif req.crawl_object == 6:
             from parsers.china_sina import ChinaSinaCrawler
@@ -270,7 +269,7 @@ class QueueManager:
                 startDate=req.start_day,
                 endDate=req.end_day,
                 option=req.option_select,
-                speed=SLEEP_TIME,
+                speed=req.speed,
             )
         raise ValueError(f"지원하지 않는 크롤러 타입: {req.crawl_object}")
 

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from app.routes import api_router
+from app.libs.audit_log import AuditLogMiddleware
 import gc
 import asyncio
 from datetime import datetime
@@ -78,6 +79,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 app.add_middleware(RichLoggerMiddleware)
+app.add_middleware(AuditLogMiddleware)
 
 
 @app.on_event("startup")

@@ -13,8 +13,10 @@ from app.routes import (
     nginx_routes,
     ports_routes,
 )
+from app.libs.audit_log import AuditLogMiddleware
 
 app = FastAPI(title="FPEI Dashboard")
+app.add_middleware(AuditLogMiddleware)
 
 # 라우터 등록
 app.include_router(main_routes.router)

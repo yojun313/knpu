@@ -13,6 +13,7 @@ class JobSubmitRequest(BaseModel):
     option_select: int  # 1,2,3,4
     keyword: str
     priority: int = 0  # 높을수록 먼저 실행
+    speed: int = Field(default=5, ge=1, le=10)  # 비동기 수집 동시 요청 수 (1~10)
 
 
 class JobStatus(BaseModel):
@@ -25,6 +26,7 @@ class JobStatus(BaseModel):
     option_select: int
     keyword: str
     priority: int = 0
+    speed: int = 5
     created_at: datetime
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None

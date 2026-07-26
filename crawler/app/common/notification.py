@@ -50,3 +50,27 @@ def sendDiscord(msg, channel_key, requester=None):
         )
     except Exception:
         pass
+
+
+def sendDiscordDM(user_ids, msg, requester=None):
+    """공개 채널이 아니라 지정된 유저(요청자/관리자)에게만 DM으로 전송한다."""
+    try:
+        ids = sorted({uid for uid in (user_ids or []) if uid})
+        if not ids:
+            return
+        content = f"👤 **{requester}**\n{msg}" if requester else msg
+        discord_notifications_db.insert_one(
+            {
+                "channel_key": None,
+                "dm_user_ids": ids,
+                "content": content,
+                "embed": None,
+                "actions": None,
+                "status": "pending",
+                "created_at": datetime.now(timezone.utc),
+                "sent_at": None,
+                "error": None,
+            }
+        )
+    except Exception:
+        pass

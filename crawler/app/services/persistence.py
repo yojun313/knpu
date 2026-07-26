@@ -119,6 +119,25 @@ class JobPersistence:
 
         return result.modified_count, db_uids
 
+    def get_logs(self, job_id: str) -> list:
+        """job_id에 연결된 db_uid의 크롤링 로그(crawler.log-list) 조회"""
+        col = _get_collection()
+        if col is None:
+            return []
+        job_doc = col.find_one({"job_id": job_id}, {"db_uid": 1})
+        if not job_doc or "db_uid" not in job_doc:
+            return []
+        try:
+            from db import client
+
+            log_doc = client["crawler"]["log-list"].find_one(
+                {"uid": job_doc["db_uid"]}
+            )
+            return log_doc.get("logs", []) if log_doc else []
+        except Exception as e:
+            logger.warning(f"로그 조회 실패 (job_id: {job_id}): {e}")
+            return []
+
     def delete(self, job_id: str):
         col = _get_collection()
         if col is None:

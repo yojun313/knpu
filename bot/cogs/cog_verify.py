@@ -107,8 +107,8 @@ class CodeInputModal(discord.ui.Modal, title="인증 코드 입력"):
                 "설정된 역할을 찾을 수 없습니다.", ephemeral=True
             )
 
-        # 등록된 이름 검사
-        user_exist = await self.bot.manager_db.users.find_one(
+        # 등록된 이름 검사 (knpu.re.kr 중앙 로그인 계정이 단일 진실 소스)
+        user_exist = await self.bot.homepage_db.users.find_one(
             {"name": data.get("name")}
         )
 
@@ -116,6 +116,12 @@ class CodeInputModal(discord.ui.Modal, title="인증 코드 입력"):
             return await interaction.response.send_message(
                 "등록된 사용자가 아닙니다.", ephemeral=True
             )
+
+        # 계정에 디스코드 ID 연동 (크롤러 알림 등을 이 계정으로 DM 발송하기 위함)
+        await self.bot.homepage_db.users.update_one(
+            {"uid": user_exist["uid"]},
+            {"$set": {"discord_id": interaction.user.id}},
+        )
 
         # 역할 지급
         await interaction.user.add_roles(role)

@@ -6,10 +6,12 @@ from fastapi.staticfiles import StaticFiles
 from app.routes import api_router
 from app.routes.frontend_routes import router as frontend_router
 from app.routes.files_routes import router as files_router
+from app.libs.audit_log import AuditLogMiddleware
 
 PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "public")
 
 app = FastAPI()
+app.add_middleware(AuditLogMiddleware)
 app.add_middleware(
     CORSMiddleware,
     # allow_credentials=True와 allow_origins=["*"]는 브라우저가 동시 사용을 거부하므로

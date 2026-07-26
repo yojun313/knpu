@@ -6,6 +6,7 @@ from app.db import (
     db_list_col,
     user_bugs_col,
     homepage_users_col,
+    audit_logs_col,
 )
 
 
@@ -127,6 +128,41 @@ def get_recent_crawlers(limit=10):
         c["is_running"] = c.get("status") == "running"
 
     return crawlers
+
+
+def get_audit_services():
+    """audit.logs에 실제로 존재하는 service 값 목록 (필터 드롭다운용)"""
+    return sorted(audit_logs_col.distinct("service"))
+
+
+def get_audit_logs(page=1, per_page=30, service=None, name=None, method=None, date_str=None):
+    """서버가 자동으로 기록한 구조화 감사 로그 조회 (변경 요청만 기록됨).
+    반환: (logs, total_count)"""
+    query = {}
+
+    if service:
+        query["service"] = service
+    if method:
+        query["method"] = method
+    if name:
+        query["user_name"] = {"$regex": name, "$options": "i"}
+    if date_str:
+        try:
+            kst = ZoneInfo("Asia/Seoul")
+            start_dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=kst)
+            end_dt = start_dt + timedelta(days=1)
+            query["ts"] = {"$gte": start_dt, "$lt": end_dt}
+        except ValueError:
+            pass
+
+    total = audit_logs_col.count_documents(query)
+    skip = max(0, (page - 1) * per_page)
+    logs = list(
+        audit_logs_col.find(query).sort("ts", -1).skip(skip).limit(per_page)
+    )
+    for log in logs:
+        log["_id"] = str(log["_id"])
+    return logs, total
 
 
 def get_recent_bugs(limit=10):

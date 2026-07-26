@@ -31,6 +31,12 @@ def get_job_status(job_id: str):
     return status
 
 
+@router.get("/jobs/{job_id}/logs")
+def get_job_logs(job_id: str):
+    logs = queue_manager.persistence.get_logs(job_id)
+    return {"job_id": job_id, "logs": logs}
+
+
 @router.post("/jobs/{job_id}/stop")
 def stop_job(job_id: str):
     success = queue_manager.stop_job(job_id)
