@@ -190,9 +190,7 @@ def run_statistics_analysis(
 
     temp_root = os.path.join(os.path.dirname(__file__), "..", "temp")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = os.path.join(
-        temp_root, f"statistics_{option.pid}_{timestamp}"
-    )
+    output_dir = os.path.join(temp_root, f"statistics_{option.pid}_{timestamp}")
     os.makedirs(output_dir, exist_ok=True)
 
     row_count = len(data)
@@ -210,9 +208,7 @@ def run_statistics_analysis(
         "row_count": row_count,
         "generated_at": datetime.now().isoformat(),
     }
-    with open(
-        os.path.join(output_dir, "metadata.json"), "w", encoding="utf-8"
-    ) as f:
+    with open(os.path.join(output_dir, "metadata.json"), "w", encoding="utf-8") as f:
         json.dump(metadata, f, ensure_ascii=False, indent=2)
 
     zip_path = f"{output_dir}.zip"
@@ -223,9 +219,7 @@ def run_statistics_analysis(
 
     response_headers = {}
     if uid:
-        project_id = _push_to_statistics_viewer(
-            zip_path, uid, project_name, option.pid
-        )
+        project_id = _push_to_statistics_viewer(zip_path, uid, project_name, option.pid)
         if project_id:
             response_headers["X-Statistics-Project-Id"] = project_id
 

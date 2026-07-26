@@ -178,7 +178,12 @@ class NotificationPoller(commands.Cog):
         if not channel:
             await self.col.update_one(
                 {"_id": doc["_id"]},
-                {"$set": {"status": "failed", "error": f"채널 {channel_id}을 찾을 수 없음"}},
+                {
+                    "$set": {
+                        "status": "failed",
+                        "error": f"채널 {channel_id}을 찾을 수 없음",
+                    }
+                },
             )
             return
 

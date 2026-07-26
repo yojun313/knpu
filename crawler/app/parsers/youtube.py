@@ -59,7 +59,6 @@ class YouTubeCrawler:
         if not notification:
             raise ValueError(f"사용자 정보를 찾을 수 없습니다: {self.requester}")
         self.Email = notification["Email"]
-        self.PushoverKey = notification["PushOver"]
         self.requesterUid = notification["userUid"]
 
         # YouTube API 키 목록 로드
@@ -408,7 +407,6 @@ class YouTubeCrawler:
                     DBtype="youtube",
                     DBname=self.DBname,
                     startTime=self.startTime,
-                    pushoverKey=self.PushoverKey,
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
@@ -422,7 +420,6 @@ class YouTubeCrawler:
                     DBtype="youtube",
                     DBname=self.DBname,
                     startTime=self.startTime,
-                    pushoverKey=self.PushoverKey,
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,

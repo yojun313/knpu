@@ -19,11 +19,11 @@ def parse_naver_query(query):
     if "|" in query:
         nx_search_query = query
     else:
-        # 1️⃣ 큰따옴표만 있을 경우
+        # 큰따옴표만 있을 경우
         if re.fullmatch(r'"[^"]+"', query.strip()):
             nx_search_query = query.replace('"', "")
         else:
-            # 2️⃣ 일반 단어만 추출
+            # 일반 단어만 추출
             normal_terms = [
                 t
                 for t in terms
@@ -34,7 +34,7 @@ def parse_naver_query(query):
                 if normal_terms
                 else ""
             )
-            # 3️⃣ 만약 큰따옴표만 있었는데 split에서 잘렸을 경우 보정
+            # 만약 큰따옴표만 있었는데 split에서 잘렸을 경우 보정
             if not nx_search_query and quoted_terms:
                 nx_search_query = quoted_terms[0].replace('"', "")
 

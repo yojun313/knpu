@@ -31,9 +31,9 @@ from config import VENV_PYTHON, INNO_SETUP_EXE, EXE_DIRECTORY, OUTPUT_DIRECTORY
 from upload import upload_file
 
 
-def sendPushOver(msg):
+def sendAdminNotify(msg):
     requests.post(
-        "https://manager.knpu.re.kr/api/users/admin/pushover",
+        "https://manager.knpu.re.kr/api/users/admin/notify",
         json={"message": msg, "kind": "build"},
         headers={"Authorization": f"Bearer {os.getenv('ADMIN_TOKEN')}"},
     )
@@ -292,17 +292,17 @@ class BuildWorker(QObject):
             self._log(f"신규 설치용 파일 업로드 시작: {setup_filename}")
             upload_file(os.path.join(OUTPUT_DIRECTORY, setup_filename))
 
-            # 8) Pushover 알림
+            # 8) 디스코드 알림
             end_time = datetime.now()
             elapsed = end_time - start_time
             elapsed_min = int(elapsed.total_seconds() // 60)
             elapsed_sec = int(elapsed.total_seconds() % 60)
 
-            sendPushOver(
+            sendAdminNotify(
                 f"MANAGER {target_version} 빌드 완료\n\n"
                 f"소요시간: {elapsed_min}분 {elapsed_sec}초"
             )
-            self._log("Pushover 알림 전송 완료")
+            self._log("디스코드 알림 전송 완료")
 
             self.finished.emit(target_version, elapsed.total_seconds())
 

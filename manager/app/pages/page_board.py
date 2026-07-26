@@ -64,18 +64,7 @@ class Manager_Board:
 
             if dialog.data:
                 json_data = dialog.data
-                json_data["sendPushOver"] = False
-
-                reply = QMessageBox.question(
-                    self.main,
-                    "Confirm Notification",
-                    "업데이트 알림을 전송하시겠습니까?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.Yes,
-                )
-                if reply == QMessageBox.StandardButton.Yes:
-                    json_data["sendPushOver"] = True
-
+                # 새 버전은 항상 디스코드로 공지되므로 별도 확인창 없음
                 Request("post", "/board/version/add", json=json_data)
             self.refreshVersionBoard()
 
@@ -102,7 +91,6 @@ class Manager_Board:
 
             if dialog.data:
                 version_data = dialog.data
-                version_data["sendPushOver"] = False
 
                 Request(
                     "put", f"/board/version/{origin['versionName']}", json=version_data
@@ -306,7 +294,7 @@ class Manager_Board:
             if dialog.data:
                 json_data = dialog.data
                 json_data["writerUid"] = self.main.userUid
-                json_data["sendPushOver"] = False
+                json_data["broadcastNotify"] = False
 
                 reply = QMessageBox.question(
                     self.main,
@@ -316,7 +304,7 @@ class Manager_Board:
                     QMessageBox.StandardButton.Yes,
                 )
                 if reply == QMessageBox.StandardButton.Yes:
-                    json_data["sendPushOver"] = True
+                    json_data["broadcastNotify"] = True
 
                 Request("post", "/board/post/add", json=json_data)
                 self.refreshPostBoard()
@@ -397,7 +385,7 @@ class Manager_Board:
                     if dialog.data:
                         json_data = dialog.data
                         json_data["writerUid"] = self.main.userUid
-                        json_data["sendPushOver"] = False
+                        json_data["broadcastNotify"] = False
 
                         Request("put", f"/board/post/{postUid}", json=json_data)
                         self.refreshPostBoard()

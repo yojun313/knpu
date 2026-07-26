@@ -33,7 +33,9 @@ warnings.filterwarnings("ignore")
 MIN_ROWS = 10
 MAX_NUMERIC_COLUMNS = 10
 MAX_CATEGORICAL_COLUMNS = 6
-MAX_DETAIL_TABLES = 8  # 유의한 조합에 대해서만 만드는 상세표(집단평균/사후검정/교차표)의 최대 개수
+MAX_DETAIL_TABLES = (
+    8  # 유의한 조합에 대해서만 만드는 상세표(집단평균/사후검정/교차표)의 최대 개수
+)
 
 
 # ---------------------------------------------------------------------------
@@ -60,9 +62,14 @@ def _looks_like_id_or_text(col, series: pd.Series, row_count: int) -> bool:
     tokens = re.split(r"[^a-z0-9가-힣]+", name)
     if any(t in ("id", "uid", "url", "link", "번호") for t in tokens if t):
         return True
-    if any(k in name for k in ("url", "link", "text", "content", "html", "title", "본문", "제목")):
+    if any(
+        k in name
+        for k in ("url", "link", "text", "content", "html", "title", "본문", "제목")
+    ):
         return True
-    if pd.api.types.is_string_dtype(series) and not isinstance(series.dtype, pd.CategoricalDtype):
+    if pd.api.types.is_string_dtype(series) and not isinstance(
+        series.dtype, pd.CategoricalDtype
+    ):
         nunique = series.nunique(dropna=True)
         if nunique > 0 and nunique >= row_count * 0.9:
             return True
@@ -84,11 +91,15 @@ def _select_columns(data: pd.DataFrame):
             if series.nunique(dropna=True) <= 1:
                 continue
             numeric_cols.append(col)
-        elif pd.api.types.is_string_dtype(series) or isinstance(series.dtype, pd.CategoricalDtype):
+        elif pd.api.types.is_string_dtype(series) or isinstance(
+            series.dtype, pd.CategoricalDtype
+        ):
             nunique = series.nunique(dropna=True)
             if 2 <= nunique <= 20:
                 categorical_cols.append(col)
-    return numeric_cols[:MAX_NUMERIC_COLUMNS], categorical_cols[:MAX_CATEGORICAL_COLUMNS]
+    return numeric_cols[:MAX_NUMERIC_COLUMNS], categorical_cols[
+        :MAX_CATEGORICAL_COLUMNS
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -106,7 +117,9 @@ def _descriptives(data: pd.DataFrame, numeric_cols: list) -> pd.DataFrame:
         mean, std = s.mean(), s.std(ddof=1)
         se = std / np.sqrt(n) if n > 0 else np.nan
         ci_low, ci_high = (
-            stats.t.interval(0.95, n - 1, loc=mean, scale=se) if se and se > 0 else (mean, mean)
+            stats.t.interval(0.95, n - 1, loc=mean, scale=se)
+            if se and se > 0
+            else (mean, mean)
         )
         rows.append(
             {
@@ -141,7 +154,9 @@ def _normality(data: pd.DataFrame, numeric_cols: list) -> pd.DataFrame:
             method = "Shapiro-Wilk"
         else:
             sample = s.sample(5000, random_state=42)
-            stat, p = stats.kstest(sample, "norm", args=(sample.mean(), sample.std(ddof=1)))
+            stat, p = stats.kstest(
+                sample, "norm", args=(sample.mean(), sample.std(ddof=1))
+            )
             method = "Kolmogorov-Smirnov"
         rows.append(
             {
@@ -150,7 +165,9 @@ def _normality(data: pd.DataFrame, numeric_cols: list) -> pd.DataFrame:
                 "N": n,
                 "통계량": round(stat, 4),
                 "p-value": round(p, 4),
-                "정규분포 여부(α=.05)": "정규분포를 따름" if p >= 0.05 else "정규분포를 따르지 않음",
+                "정규분포 여부(α=.05)": "정규분포를 따름"
+                if p >= 0.05
+                else "정규분포를 따르지 않음",
             }
         )
     return pd.DataFrame(rows)
@@ -231,7 +248,11 @@ def _crosstabs(data: pd.DataFrame, categorical_cols: list, csv_dir: str) -> None
             }
         )
         if detail_count < MAX_DETAIL_TABLES:
-            _save(ct.reset_index(), csv_dir, f"spss_crosstab_{_sanitize(a)}__{_sanitize(b)}")
+            _save(
+                ct.reset_index(),
+                csv_dir,
+                f"spss_crosstab_{_sanitize(a)}__{_sanitize(b)}",
+            )
             detail_count += 1
     _save(pd.DataFrame(summary_rows), csv_dir, "spss_chisquare_summary")
 
@@ -281,18 +302,23 @@ def _mean_comparisons(
                 ((len(a) - 1) * np.var(a, ddof=1) + (len(b) - 1) * np.var(b, ddof=1))
                 / (len(a) + len(b) - 2)
             )
-            cohens_d = (np.mean(a) - np.mean(b)) / pooled_std if pooled_std > 0 else np.nan
+            cohens_d = (
+                (np.mean(a) - np.mean(b)) / pooled_std if pooled_std > 0 else np.nan
+            )
             u_stat, u_p = stats.mannwhitneyu(a, b, alternative="two-sided")
             summary_rows.append(
                 {
                     "수치변수": num_col,
                     "범주변수": cat_col,
                     "그룹수": k,
-                    "검정방법": "독립표본 t-검정" + (" (등분산)" if equal_var else " (Welch)"),
+                    "검정방법": "독립표본 t-검정"
+                    + (" (등분산)" if equal_var else " (Welch)"),
                     "통계량": round(t_stat, 3),
                     "자유도/표본수": f"{len(a) + len(b) - 2}",
                     "p-value": round(t_p, 4),
-                    "효과크기(Cohen's d)": round(cohens_d, 3) if pd.notna(cohens_d) else None,
+                    "효과크기(Cohen's d)": round(cohens_d, 3)
+                    if pd.notna(cohens_d)
+                    else None,
                     "비모수검정": "Mann-Whitney U",
                     "비모수 p-value": round(u_p, 4),
                     "유의성(α=.05)": "유의함" if t_p < 0.05 else "유의하지 않음",
@@ -309,7 +335,9 @@ def _mean_comparisons(
             f_stat, f_p = stats.f_oneway(*group_values)
             all_values = np.concatenate(group_values)
             grand_mean = all_values.mean()
-            ss_between = sum(len(v) * (np.mean(v) - grand_mean) ** 2 for v in group_values)
+            ss_between = sum(
+                len(v) * (np.mean(v) - grand_mean) ** 2 for v in group_values
+            )
             ss_total = float(((all_values - grand_mean) ** 2).sum())
             eta_sq = ss_between / ss_total if ss_total > 0 else np.nan
             h_stat, h_p = stats.kruskal(*group_values)
@@ -336,8 +364,12 @@ def _mean_comparisons(
                 )
                 detail_count += 1
                 try:
-                    tukey = pairwise_tukeyhsd(sub[num_col].values, sub[cat_col].astype(str).values)
-                    tukey_df = pd.DataFrame(tukey.summary().data[1:], columns=tukey.summary().data[0])
+                    tukey = pairwise_tukeyhsd(
+                        sub[num_col].values, sub[cat_col].astype(str).values
+                    )
+                    tukey_df = pd.DataFrame(
+                        tukey.summary().data[1:], columns=tukey.summary().data[0]
+                    )
                     tukey_df = tukey_df.rename(
                         columns={
                             "group1": "그룹1",
@@ -381,7 +413,12 @@ def _regression(data: pd.DataFrame, numeric_cols: list, csv_dir: str) -> None:
     candidates = [c for c in numeric_cols if c != target]
     sub_all = data[[target] + candidates].apply(pd.to_numeric, errors="coerce")
     if len(candidates) > 6:
-        corrs = sub_all[candidates].corrwith(sub_all[target]).abs().sort_values(ascending=False)
+        corrs = (
+            sub_all[candidates]
+            .corrwith(sub_all[target])
+            .abs()
+            .sort_values(ascending=False)
+        )
         candidates = [c for c in corrs.head(6).index]
 
     sub = sub_all[[target] + candidates].dropna()
@@ -401,16 +438,24 @@ def _regression(data: pd.DataFrame, numeric_cols: list, csv_dir: str) -> None:
 
     coef_rows = []
     for name in X.columns:
-        beta = z_model.params.get(name) if (z_model is not None and name != "const") else None
+        beta = (
+            z_model.params.get(name)
+            if (z_model is not None and name != "const")
+            else None
+        )
         coef_rows.append(
             {
                 "변수": "(상수)" if name == "const" else name,
                 "B(비표준화계수)": round(model.params[name], 4),
                 "표준오차": round(model.bse[name], 4),
-                "베타(표준화계수)": round(beta, 4) if beta is not None and pd.notna(beta) else None,
+                "베타(표준화계수)": round(beta, 4)
+                if beta is not None and pd.notna(beta)
+                else None,
                 "t": round(model.tvalues[name], 3),
                 "p-value": round(model.pvalues[name], 4),
-                "유의성(α=.05)": "유의함" if model.pvalues[name] < 0.05 else "유의하지 않음",
+                "유의성(α=.05)": "유의함"
+                if model.pvalues[name] < 0.05
+                else "유의하지 않음",
             }
         )
     _save(pd.DataFrame(coef_rows), csv_dir, "spss_regression_coefficients")
@@ -423,7 +468,12 @@ def _regression(data: pd.DataFrame, numeric_cols: list, csv_dir: str) -> None:
                 vif = variance_inflation_factor(X_vals, i + 1)
             except Exception:
                 vif = np.nan
-            vif_rows.append({"변수": name, "VIF(분산팽창지수)": round(vif, 3) if pd.notna(vif) else None})
+            vif_rows.append(
+                {
+                    "변수": name,
+                    "VIF(분산팽창지수)": round(vif, 3) if pd.notna(vif) else None,
+                }
+            )
         _save(pd.DataFrame(vif_rows), csv_dir, "spss_regression_vif")
 
     _save(
@@ -482,7 +532,11 @@ def _pca(data: pd.DataFrame, numeric_cols: list, csv_dir: str) -> None:
         index=numeric_cols,
         columns=[f"성분 {i}" for i in range(1, n_components + 1)],
     ).round(3)
-    _save(loadings.reset_index().rename(columns={"index": "변수"}), csv_dir, "spss_pca_loadings")
+    _save(
+        loadings.reset_index().rename(columns={"index": "변수"}),
+        csv_dir,
+        "spss_pca_loadings",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -519,12 +573,22 @@ def _reliability(data: pd.DataFrame, numeric_cols: list, csv_dir: str) -> None:
             {
                 "항목": col,
                 "항목-전체 상관": round(corr, 3) if pd.notna(corr) else None,
-                "해당 항목 제거 시 alpha": round(alpha_wo, 3) if alpha_wo is not None else None,
+                "해당 항목 제거 시 alpha": round(alpha_wo, 3)
+                if alpha_wo is not None
+                else None,
             }
         )
     _save(pd.DataFrame(rows), csv_dir, "spss_reliability_items")
     _save(
-        pd.DataFrame([{"항목 수": len(numeric_cols), "N": len(sub), "Cronbach's Alpha": round(alpha, 3)}]),
+        pd.DataFrame(
+            [
+                {
+                    "항목 수": len(numeric_cols),
+                    "N": len(sub),
+                    "Cronbach's Alpha": round(alpha, 3),
+                }
+            ]
+        ),
         csv_dir,
         "spss_reliability_summary",
     )
@@ -561,10 +625,20 @@ def _cluster_analysis(data: pd.DataFrame, numeric_cols: list, csv_dir: str) -> N
     sub = sub.copy()
     sub["군집"] = [f"군집 {i + 1}" for i in best_labels]
     sizes = sub.groupby("군집").size().rename("N")
-    profile = sub.groupby("군집")[numeric_cols].mean().round(3).join(sizes).reset_index()
+    profile = (
+        sub.groupby("군집")[numeric_cols].mean().round(3).join(sizes).reset_index()
+    )
     _save(profile, csv_dir, "spss_cluster_profile")
     _save(
-        pd.DataFrame([{"최적 군집 수(k)": best_k, "실루엣 계수": round(best_score, 3), "N": len(sub)}]),
+        pd.DataFrame(
+            [
+                {
+                    "최적 군집 수(k)": best_k,
+                    "실루엣 계수": round(best_score, 3),
+                    "N": len(sub),
+                }
+            ]
+        ),
         csv_dir,
         "spss_cluster_summary",
     )
@@ -589,13 +663,22 @@ def run(data: pd.DataFrame, csv_dir: str) -> None:
             pass
 
     if numeric_cols:
-        safe(lambda: _save(_descriptives(data, numeric_cols), csv_dir, "spss_descriptives"))
+        safe(
+            lambda: _save(
+                _descriptives(data, numeric_cols), csv_dir, "spss_descriptives"
+            )
+        )
         safe(lambda: _save(_normality(data, numeric_cols), csv_dir, "spss_normality"))
 
     for col in categorical_cols:
-        safe(lambda c=col: _save(_frequency_table(data, c), csv_dir, f"spss_frequencies_{_sanitize(c)}"))
+        safe(
+            lambda c=col: _save(
+                _frequency_table(data, c), csv_dir, f"spss_frequencies_{_sanitize(c)}"
+            )
+        )
 
     if len(numeric_cols) >= 2:
+
         def _corr(method, stem):
             corr_out, pval_out = _correlation_matrix(data, numeric_cols, method)
             _save(corr_out, csv_dir, stem)

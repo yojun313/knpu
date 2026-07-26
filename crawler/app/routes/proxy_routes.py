@@ -2,10 +2,8 @@ from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from typing import List
 import logging
-from db import client, crawler_db_name, load_proxy_list, user_db, crawler_db
+from db import crawler_db
 from common.req import set_proxy_list
-import jwt
-import os
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -16,20 +14,7 @@ class ProxyUpdatePayload(BaseModel):
 
 
 @router.post("/proxy/update")
-def update_proxy_list(payload: ProxyUpdatePayload, x_internal_key: str = Header(None)):
-    token = x_internal_key
-    try:
-        token_payload = jwt.decode(
-            token, os.getenv("JWT_SECRET"), algorithms=[os.getenv("JWT_ALGORITHM")]
-        )
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
-
-    user = user_db.find_one({"uid": token_payload["sub"]}, {"_id": 0})
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
+def update_proxy_list(payload: ProxyUpdatePayload):
     try:
         collection = crawler_db["ip-list"]
         collection.update_one(

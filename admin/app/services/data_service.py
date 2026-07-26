@@ -135,7 +135,9 @@ def get_audit_services():
     return sorted(audit_logs_col.distinct("service"))
 
 
-def get_audit_logs(page=1, per_page=30, service=None, name=None, method=None, date_str=None):
+def get_audit_logs(
+    page=1, per_page=30, service=None, name=None, method=None, date_str=None
+):
     """서버가 자동으로 기록한 구조화 감사 로그 조회 (변경 요청만 기록됨).
     반환: (logs, total_count)"""
     query = {}
@@ -157,9 +159,7 @@ def get_audit_logs(page=1, per_page=30, service=None, name=None, method=None, da
 
     total = audit_logs_col.count_documents(query)
     skip = max(0, (page - 1) * per_page)
-    logs = list(
-        audit_logs_col.find(query).sort("ts", -1).skip(skip).limit(per_page)
-    )
+    logs = list(audit_logs_col.find(query).sort("ts", -1).skip(skip).limit(per_page))
     for log in logs:
         log["_id"] = str(log["_id"])
     return logs, total

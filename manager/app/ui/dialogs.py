@@ -912,9 +912,9 @@ def _build_photo_grid(
             url_items.append((i, source))
         else:
             pixmap = load_pixmap_exif_safe(source)
-            img_label.setPixmap(_scaled_pixmap(pixmap)) if not pixmap.isNull() else img_label.setText(
-                "로드 실패"
-            )
+            img_label.setPixmap(
+                _scaled_pixmap(pixmap)
+            ) if not pixmap.isNull() else img_label.setText("로드 실패")
 
         cell_layout.addWidget(img_label)
 
@@ -941,7 +941,9 @@ def _build_photo_grid(
             return
         try:
             pixmap = load_pixmap_exif_safe(content)
-            label.setPixmap(_scaled_pixmap(pixmap)) if not pixmap.isNull() else label.setText("로드 실패")
+            label.setPixmap(
+                _scaled_pixmap(pixmap)
+            ) if not pixmap.isNull() else label.setText("로드 실패")
         except RuntimeError:
             pass  # 다이얼로그가 이미 닫혀 위젯이 삭제된 경우
 

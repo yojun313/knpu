@@ -32,12 +32,38 @@ def add_version(data: AddVersionDto, userUid: str):
     doc["datetime"] = now_kst
     doc["datetime_kst"] = now_kst.strftime("%Y-%m-%d %H:%M:%S")
     doc["publisher"] = userUid
-    doc["notified"] = False
 
     version_board_db.insert_one(doc)
 
-    # sendPushOver(이름은 그대로 두되 의미는 "전체 공지할지" 플래그)가 켜져 있으면
-    # 디스코드 봇(cog_version.py)이 notified=False인 문서를 폴링해서 직접 방송한다.
+    # 새 버전은 예외 없이 항상 디스코드로 공지한다 (예전 pushover 방식의 "보낼지 말지" 확인은 없앰).
+    embed = {
+        "title": f"새 버전 배포: {data.versionName}",
+        "color": 0x3B82F6,
+        "fields": [
+            {
+                "name": "변경 사항",
+                "value": (data.changeLog or "-")[:1024],
+                "inline": False,
+            },
+            {
+                "name": "주요 기능",
+                "value": (data.features or "-")[:1024],
+                "inline": False,
+            },
+            {
+                "name": "상세 내용",
+                "value": (data.details or "-")[:1024],
+                "inline": False,
+            },
+            {
+                "name": "전체 업데이트 여부",
+                "value": "예" if data.fullUpdate else "아니오",
+                "inline": True,
+            },
+            {"name": "배포일", "value": doc["releaseDate"], "inline": True},
+        ],
+    }
+    notify_discord("manager_update", f"새 버전 배포: {data.versionName}", embed=embed)
 
     # JSON 직렬화를 위해 _id 제거 및 datetime 문자열 변환
     if "_id" in doc:
@@ -238,7 +264,7 @@ def add_post(data: AddPostDto, userUid: str):
         del doc["_id"]
     doc["datetime"] = doc.get("datetime_kst", "")
 
-    if doc.get("sendPushOver"):
+    if doc.get("broadcastNotify"):
         msg = (
             "[ New Post Added! ]\n"
             f"User: {doc['writerName']}\n"

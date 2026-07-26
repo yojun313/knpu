@@ -7,7 +7,6 @@ class AddVersionDto(BaseModel):
     changeLog: str
     features: str
     details: str
-    sendPushOver: bool
     fullUpdate: bool
 
 
@@ -44,7 +43,7 @@ class AddPostDto(BaseModel):
     writerUid: str
     title: str
     text: str
-    sendPushOver: bool
+    broadcastNotify: bool
 
 
 class FreeBoardSchema(BaseModel):

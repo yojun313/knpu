@@ -227,14 +227,23 @@ def get_linked_member(uid: str) -> dict | None:
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
 
-    member = members_db.find_one({"uid": user["member_uid"]}) if user.get("member_uid") else None
+    member = (
+        members_db.find_one({"uid": user["member_uid"]})
+        if user.get("member_uid")
+        else None
+    )
 
     if not member:
         candidate = _match_member(user["name"])
         if candidate and not _member_already_linked(candidate["uid"]):
             users_db.update_one(
                 {"uid": uid},
-                {"$set": {"member_uid": candidate["uid"], "updated_at": datetime.now()}},
+                {
+                    "$set": {
+                        "member_uid": candidate["uid"],
+                        "updated_at": datetime.now(),
+                    }
+                },
             )
             member = candidate
 
