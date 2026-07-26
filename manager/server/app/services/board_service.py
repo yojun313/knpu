@@ -3,11 +3,9 @@ from datetime import datetime, timezone, timedelta
 from fastapi.responses import JSONResponse
 from app.db import version_board_db, bug_board_db, free_board_db, user_db, user_bugs_db
 from app.models.board_model import AddVersionDto, AddBugDto, AddPostDto
-from app.utils.pushover import sendPushOver
+from app.libs.discord_notify import notify_discord
 from app.libs.exceptions import NotFoundException
 from dotenv import load_dotenv
-import os
-from starlette.background import BackgroundTask
 from zoneinfo import ZoneInfo
 from app.services.user_service import log_user
 import re
@@ -38,7 +36,8 @@ def add_version(data: AddVersionDto, userUid: str):
 
     version_board_db.insert_one(doc)
 
-    task = BackgroundTask(add_version_bg, doc)
+    # sendPushOver(이름은 그대로 두되 의미는 "전체 공지할지" 플래그)가 켜져 있으면
+    # 디스코드 봇(cog_version.py)이 notified=False인 문서를 폴링해서 직접 방송한다.
 
     # JSON 직렬화를 위해 _id 제거 및 datetime 문자열 변환
     if "_id" in doc:
@@ -48,23 +47,7 @@ def add_version(data: AddVersionDto, userUid: str):
     return JSONResponse(
         status_code=201,
         content={"message": "Version post created", "data": doc},
-        background=task,
     )
-
-
-def add_version_bg(doc):
-    if doc.get("sendPushOver"):
-        keys = list(user_db.find({}, {"pushover_key": 1, "_id": 0}))
-        pushover_keys = [k["pushover_key"] for k in keys if k.get("pushover_key")]
-        msg = (
-            "[ New Version Released! ]\n\n"
-            f"Version Num: {doc.get('versionName')}\n"
-            f"Release Date: {doc.get('releaseDate')}\n"
-            f"ChangeLog: {doc.get('changeLog')}\n"
-            f"Version Features: {doc.get('features')}\n"
-            f"Version Detail: \n{doc.get('details')}\n"
-        )
-        sendPushOver(msg, pushover_keys)
 
 
 def get_version(versionName: str):
@@ -198,7 +181,7 @@ def add_bug(data: AddBugDto, userUid: str):
         f"Detail: \n{doc['bugText']}\n"
         f"log: \n\n{doc['programLog']}\n"
     )
-    sendPushOver(msg, [os.getenv("ADMIN_PUSHOVER")])
+    notify_discord("manager_error", msg)
 
     return JSONResponse(
         status_code=201, content={"message": "Bug post created", "data": doc}
@@ -256,8 +239,6 @@ def add_post(data: AddPostDto, userUid: str):
     doc["datetime"] = doc.get("datetime_kst", "")
 
     if doc.get("sendPushOver"):
-        keys = list(user_db.find({}, {"pushover_key": 1, "_id": 0}))
-        pushover_keys = [k["pushover_key"] for k in keys if k.get("pushover_key")]
         msg = (
             "[ New Post Added! ]\n"
             f"User: {doc['writerName']}\n"
@@ -265,7 +246,7 @@ def add_post(data: AddPostDto, userUid: str):
             f"Post Date: {doc['datetime_kst']}\n"
             f"Post Text: {doc['text']}\n"
         )
-        sendPushOver(msg, pushover_keys)
+        notify_discord("announcements", msg)
 
     log_user(userUid, f"Added new post: {data.title}")
 

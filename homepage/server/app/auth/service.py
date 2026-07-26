@@ -4,10 +4,12 @@ from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 
-from app.db import users_db, auth_codes_db
+from app.db import users_db, auth_codes_db, members_db
 from app.auth.hashing import hash_password, verify_password
 from app.auth.jwt import create_token
 from app.auth.email import sendEmail
+from app.libs import r2
+from app.libs.discord_notify import notify_discord
 
 CODE_TTL_MINUTES = 10
 
@@ -25,8 +27,22 @@ def _public_user(user: dict) -> dict:
         "role": user["role"],
         "status": user["status"],
         "email_verified": user["email_verified"],
-        "pushover_key": user.get("pushover_key"),
+        "member_uid": user.get("member_uid"),
     }
+
+
+def _match_member(name: str) -> dict | None:
+    """홈페이지 멤버 목록에서 이름이 정확히 일치하는 멤버를 찾는다. 동명이인이 있으면
+    잘못 연결하지 않도록 정확히 1명 일치할 때만 반환한다."""
+    matches = list(members_db.find({"name": name}))
+    return matches[0] if len(matches) == 1 else None
+
+
+def _member_already_linked(member_uid: str) -> bool:
+    return (
+        users_db.find_one({"member_uid": member_uid, "status": {"$ne": "rejected"}})
+        is not None
+    )
 
 
 def signup(data) -> dict:
@@ -46,6 +62,14 @@ def signup(data) -> dict:
     if len(data.password) < 8:
         raise HTTPException(status_code=400, detail="비밀번호는 8자 이상이어야 합니다")
 
+    # 홈페이지 멤버 목록에 이미 등록된 이름이면 해당 멤버 프로필과 연결한다 — 연결되면
+    # 이메일 인증만으로 바로 승인되고(관리자 승인 불필요), 마이페이지에서 그 멤버의
+    # 프로필 사진을 편집할 수 있게 된다.
+    matched_member = _match_member(data.name)
+    member_uid = None
+    if matched_member and not _member_already_linked(matched_member["uid"]):
+        member_uid = matched_member["uid"]
+
     now = datetime.now()
     user = {
         "uid": existing_username["uid"] if existing_username else str(uuid.uuid4()),
@@ -56,7 +80,7 @@ def signup(data) -> dict:
         "role": "member",
         "status": "pending_email",
         "email_verified": False,
-        "pushover_key": data.pushover_key,
+        "member_uid": member_uid,
         "created_at": existing_username["created_at"] if existing_username else now,
         "approved_at": None,
         "approved_by": None,
@@ -115,20 +139,58 @@ def verify_email(data) -> dict:
     if code_doc["expires_at"] < datetime.now():
         raise HTTPException(status_code=401, detail="인증번호가 만료되었습니다")
 
-    users_db.update_one(
-        {"username": data.username},
-        {
-            "$set": {
-                "email_verified": True,
-                "status": "pending_approval",
-                "updated_at": datetime.now(),
+    # 가입 시 홈페이지 멤버와 연결된 경우 관리자 승인 없이 바로 승인 처리한다.
+    auto_approved = bool(user.get("member_uid"))
+    updates = {"email_verified": True, "updated_at": datetime.now()}
+    if auto_approved:
+        updates.update(
+            {
+                "status": "approved",
+                "approved_at": datetime.now(),
+                "approved_by": "auto:member_match",
             }
-        },
-    )
+        )
+    else:
+        updates["status"] = "pending_approval"
+
+    users_db.update_one({"username": data.username}, {"$set": updates})
     auth_codes_db.delete_one({"_id": code_doc["_id"]})
 
+    if auto_approved:
+        sendEmail(
+            user["email"],
+            "[KNPU] 가입이 완료되었습니다",
+            f"{user['name']}님, 기존에 등록된 멤버 프로필과 자동으로 연결되어 "
+            f"별도 승인 없이 바로 knpu.re.kr에서 로그인할 수 있습니다.",
+        )
+        return {
+            "message": "이메일 인증이 완료되었습니다. 기존 멤버 프로필과 연결되어 바로 로그인할 수 있습니다.",
+            "auto_approved": True,
+        }
+
+    notify_discord(
+        "signup_approval",
+        content="",
+        embed={
+            "title": "📝 새 가입 승인 요청",
+            "description": (
+                f"**{user['name']}**님이 가입 신청했습니다. 홈페이지 멤버 목록과 자동으로 "
+                "연결되지 않아 검토가 필요합니다."
+            ),
+            "color": 0xFFC800,
+            "fields": [
+                {"name": "이름", "value": user["name"], "inline": True},
+                {"name": "아이디", "value": user["username"], "inline": True},
+                {"name": "이메일", "value": user["email"], "inline": False},
+                {"name": "UID", "value": f"`{user['uid']}`", "inline": False},
+            ],
+        },
+        actions={"type": "signup_approval", "uid": user["uid"]},
+    )
+
     return {
-        "message": "이메일 인증이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다"
+        "message": "이메일 인증이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다",
+        "auto_approved": False,
     }
 
 
@@ -157,6 +219,50 @@ def get_profile(uid: str) -> dict:
     return _public_user(user)
 
 
+def get_linked_member(uid: str) -> dict | None:
+    """이 계정과 연결된 홈페이지 멤버 프로필을 반환한다. 가입 시점에는 연결되지 않았더라도
+    (동명이인이었거나, 멤버가 나중에 등록됐거나) 지금 이름이 정확히 1명과 일치하면
+    그 자리에서 연결해준다."""
+    user = users_db.find_one({"uid": uid})
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+
+    member = members_db.find_one({"uid": user["member_uid"]}) if user.get("member_uid") else None
+
+    if not member:
+        candidate = _match_member(user["name"])
+        if candidate and not _member_already_linked(candidate["uid"]):
+            users_db.update_one(
+                {"uid": uid},
+                {"$set": {"member_uid": candidate["uid"], "updated_at": datetime.now()}},
+            )
+            member = candidate
+
+    if not member:
+        return None
+    member["_id"] = str(member["_id"])
+    return member
+
+
+def update_my_member_photo(uid: str, image_url: str) -> dict:
+    member = get_linked_member(uid)
+    if not member:
+        raise HTTPException(
+            status_code=400, detail="연결된 멤버 프로필을 찾을 수 없습니다"
+        )
+
+    old_image = member.get("image")
+    members_db.update_one({"uid": member["uid"]}, {"$set": {"image": image_url}})
+    if old_image:
+        try:
+            r2.delete_object(old_image)
+        except Exception:
+            pass
+
+    member["image"] = image_url
+    return member
+
+
 def update_profile(uid: str, data) -> dict:
     user = users_db.find_one({"uid": uid})
     if not user:
@@ -165,8 +271,6 @@ def update_profile(uid: str, data) -> dict:
     updates = {}
     if data.name:
         updates["name"] = data.name
-    if data.pushover_key is not None:
-        updates["pushover_key"] = data.pushover_key
 
     if data.new_password:
         if not data.current_password or not verify_password(

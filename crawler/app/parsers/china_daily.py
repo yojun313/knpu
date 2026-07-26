@@ -250,6 +250,7 @@ class ChinaDailyCrawler:
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
+                    requester=self.requester,
                 )
                 return
 
@@ -263,6 +264,7 @@ class ChinaDailyCrawler:
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
+                    requester=self.requester,
                 )
                 break
 

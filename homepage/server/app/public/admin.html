@@ -10,67 +10,232 @@
   <link href="css/styles.css" rel="stylesheet" />
   <style>
     body {
-      background-color: #eef1f5;
+      background-color: #f4f5f7;
       min-height: 100vh;
     }
 
-    .masthead_auth {
-      position: relative;
-      padding-top: 12.5rem;
-      padding-bottom: 4rem;
-      text-align: center;
+    /* ---------------- 상단 바 ---------------- */
+    .admin-topbar {
+      padding-top: 6.5rem;
+      padding-bottom: 1.5rem;
       color: #fff;
       background: linear-gradient(135deg, #1a1d20 0%, #2c3e50 100%);
     }
 
-    .masthead_auth-heading {
-      font-family: "Montserrat", sans-serif;
-      font-size: 2.5rem;
+    .admin-topbar-inner {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .admin-eyebrow {
+      display: block;
+      font-size: 0.8rem;
       font-weight: 700;
-      margin-bottom: 0;
+      letter-spacing: 0.1em;
+      color: var(--bs-primary);
+      margin-bottom: 0.25rem;
     }
 
-    .masthead_auth-subheading {
-      font-size: 1.15rem;
-      font-style: italic;
-      margin-bottom: 20px;
+    .admin-topbar h1 {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 1.75rem;
+      margin: 0;
     }
 
-    .admin-wrap {
-      max-width: 1140px;
-      margin: 1.5rem auto 5rem;
+    .admin-back-link {
+      color: rgba(255, 255, 255, 0.75);
+      font-size: 0.85rem;
+      text-decoration: none;
+      white-space: nowrap;
     }
 
-    .admin-card {
+    .admin-back-link:hover {
+      color: #fff;
+    }
+
+    /* ---------------- 탭 바 ---------------- */
+    .admin-tabbar {
+      background: #fff;
+      border-bottom: 1px solid #e3e6ea;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .admin-tabs {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 0.25rem;
       border: none;
-      border-top: 4px solid var(--bs-primary);
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.14);
-      background-color: #fff;
-      margin-bottom: 1.5rem;
+      padding: 0.35rem 0;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
 
-    .admin-card .card-body {
-      padding: 1.75rem;
+    .admin-tabs::-webkit-scrollbar {
+      display: none;
     }
 
     .admin-tabs .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       font-family: "Montserrat", sans-serif;
       font-weight: 600;
       font-size: 0.85rem;
-      color: #495057;
+      color: #5b6570;
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 0.9rem;
+      white-space: nowrap;
+    }
+
+    .admin-tabs .nav-link i {
+      font-size: 0.85rem;
+      color: #9aa4af;
+      width: 1rem;
+      text-align: center;
+    }
+
+    .admin-tabs .nav-link:hover {
+      background: #f4f5f7;
+      color: #212529;
     }
 
     .admin-tabs .nav-link.active {
+      background: #212529;
+      color: #fff;
+    }
+
+    .admin-tabs .nav-link.active i {
       color: var(--bs-primary);
+    }
+
+    .tab-count {
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.08);
+      color: inherit;
+      border-radius: 20px;
+      padding: 0.05rem 0.45rem;
+      min-width: 1.4em;
+      text-align: center;
+    }
+
+    .admin-tabs .nav-link.active .tab-count {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    /* ---------------- 본문 ---------------- */
+    .admin-wrap {
+      max-width: 1180px;
+      margin: 1.75rem auto 5rem;
+    }
+
+    .admin-panel {
+      border: none;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+      background-color: #fff;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .admin-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #eef0f2;
+    }
+
+    .admin-panel-head h2 {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .admin-panel-head h2 i {
+      color: var(--bs-primary);
+      font-size: 0.95rem;
+    }
+
+    .admin-panel-body {
+      padding: 0.25rem 1.5rem 1.25rem;
+    }
+
+    .btn-admin-add {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 600;
+      font-size: 0.8rem;
+      border-radius: 8px;
+      padding: 0.45rem 0.9rem;
+    }
+
+    .admin-table {
+      margin-bottom: 0;
+    }
+
+    .admin-table thead th {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #8b95a1;
+      border-bottom-width: 1px;
+      padding-top: 0.85rem;
+      padding-bottom: 0.85rem;
+      white-space: nowrap;
     }
 
     .admin-table td {
       vertical-align: middle;
+      font-size: 0.9rem;
+    }
+
+    .admin-table tbody tr:hover {
+      background-color: #fbfbfc;
     }
 
     .admin-table .col-actions {
       white-space: nowrap;
       width: 1%;
+      text-align: right;
+    }
+
+    .row-thumb {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #f1f3f5;
+      border: 1px solid #eceef1;
+      flex-shrink: 0;
+    }
+
+    .row-thumb-placeholder {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: #f1f3f5;
+      border: 1px solid #eceef1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c3c9d0;
+      font-size: 0.85rem;
+      flex-shrink: 0;
     }
 
     .cell-truncate {
@@ -78,6 +243,96 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      border: 1px solid #e3e6ea;
+      background: #fff;
+      color: #6c757d;
+      font-size: 0.8rem;
+      margin-left: 4px;
+      transition: all .12s ease;
+    }
+
+    .icon-btn:hover {
+      background: #f4f5f7;
+      color: #212529;
+    }
+
+    .icon-btn.danger:hover {
+      background: #fdecea;
+      border-color: #f5c6c0;
+      color: #dc3545;
+    }
+
+    .status-pill {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.15rem 0.55rem;
+      border-radius: 20px;
+    }
+
+    .status-pill.on {
+      background: #e6f6ed;
+      color: #1a8a4a;
+    }
+
+    .status-pill.off {
+      background: #f1f3f5;
+      color: #8b95a1;
+    }
+
+    .admin-empty {
+      text-align: center;
+      color: #9aa4af;
+      padding: 2.5rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    .admin-empty i {
+      display: block;
+      font-size: 1.6rem;
+      margin-bottom: 0.5rem;
+      color: #d7dbe0;
+    }
+
+    /* ---------------- 모달 ---------------- */
+    .modal-content {
+      border: none;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      border-bottom: 1px solid #eef0f2;
+      padding: 1.1rem 1.4rem;
+    }
+
+    .modal-title {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .modal-body {
+      padding: 1.4rem;
+    }
+
+    .modal-footer {
+      border-top: 1px solid #eef0f2;
+      padding: 1rem 1.4rem;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #495057;
     }
 
     .photo-thumb-grid {
@@ -120,8 +375,15 @@
 
     .admin-loading {
       text-align: center;
-      color: #fff;
-      padding: 4rem 0;
+      color: #6c757d;
+      padding: 6rem 0;
+    }
+
+    .admin-loading i {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+      display: block;
+      color: var(--bs-primary);
     }
 
     #admin-content {
@@ -131,146 +393,240 @@
     .auth-alert {
       display: none;
     }
+
+    /* ---------------- 모바일 ---------------- */
+    @media (max-width: 576px) {
+      .admin-topbar {
+        /* 모바일에서는 고정 네비게이션 바(로고+MENU 버튼)가 세로로 쌓여 데스크톱보다 높아지므로
+           padding-top을 줄이지 말고 오히려 더 여유 있게 잡아야 제목이 가려지지 않는다. */
+        padding-top: 8.5rem;
+        padding-bottom: 1.1rem;
+      }
+
+      .admin-topbar h1 {
+        font-size: 1.4rem;
+      }
+
+      .admin-tabs .nav-link span:not(.tab-count) {
+        display: none;
+      }
+
+      .admin-tabs .nav-link {
+        padding: 0.6rem 0.7rem;
+      }
+
+      .admin-tabs .nav-link i {
+        font-size: 1rem;
+      }
+
+      .admin-wrap {
+        margin-top: 1rem;
+      }
+
+      .admin-panel-head {
+        padding: 1rem 1.1rem;
+      }
+
+      .admin-panel-body {
+        padding: 0.25rem 0.6rem 1rem;
+      }
+
+      .admin-panel-head h2 {
+        font-size: 0.95rem;
+      }
+
+      .btn-admin-add span {
+        display: none;
+      }
+
+      .btn-admin-add {
+        padding: 0.5rem 0.65rem;
+      }
+
+      .btn-admin-add i {
+        margin: 0 !important;
+      }
+
+      .icon-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 0.85rem;
+      }
+
+      .modal-body {
+        padding: 1.1rem;
+      }
+
+      .modal-body .row.g-2 > [class^="col-"] {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 0.6rem;
+      }
+
+      .modal-dialog {
+        margin: 0.6rem;
+      }
+    }
   </style>
 </head>
 
 <body id="page-top" data-page="admin">
   <div id="nav-placeholder"></div>
 
-  <header class="masthead_auth">
-    <div class="container">
-      <div class="masthead_auth-subheading">KNPU FPEI</div>
-      <div class="masthead_auth-heading">콘텐츠 관리</div>
-    </div>
-  </header>
-
-  <div class="container">
-    <div class="admin-wrap" id="admin-content">
-
-      <ul class="nav nav-tabs admin-tabs mb-3" id="adminTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-papers" type="button">논문</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-members" type="button">멤버</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-news" type="button">뉴스</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gallery" type="button">갤러리</button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-popups" type="button">팝업</button>
-        </li>
-      </ul>
-
-      <div class="tab-content">
-
-        <!-- 논문 -->
-        <div class="tab-pane fade show active" id="tab-papers">
-          <div class="card admin-card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h5 mb-0">논문 목록</h2>
-                <button class="btn btn-primary btn-sm" onclick="openPaperModal()">+ 논문 추가</button>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-striped admin-table">
-                  <thead>
-                    <tr><th>연도</th><th>제목</th><th>저자</th><th>학회/저널</th><th class="col-actions">작업</th></tr>
-                  </thead>
-                  <tbody id="papers-tbody"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+  <div id="admin-content">
+    <header class="admin-topbar">
+      <div class="container admin-topbar-inner">
+        <div>
+          <span class="admin-eyebrow">KNPU FPEI</span>
+          <h1>콘텐츠 관리</h1>
         </div>
+        <a href="/account" class="admin-back-link"><i class="fa-solid fa-arrow-left"></i> 마이페이지로</a>
+      </div>
+    </header>
 
-        <!-- 멤버 -->
-        <div class="tab-pane fade" id="tab-members">
-          <div class="card admin-card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h5 mb-0">멤버 목록</h2>
-                <button class="btn btn-primary btn-sm" onclick="openMemberModal()">+ 멤버 추가</button>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-striped admin-table">
-                  <thead>
-                    <tr><th>이름</th><th>구분</th><th>직책</th><th>이메일</th><th class="col-actions">작업</th></tr>
-                  </thead>
-                  <tbody id="members-tbody"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 뉴스 -->
-        <div class="tab-pane fade" id="tab-news">
-          <div class="card admin-card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h5 mb-0">뉴스 목록</h2>
-                <button class="btn btn-primary btn-sm" onclick="openNewsModal()">+ 뉴스 추가</button>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-striped admin-table">
-                  <thead>
-                    <tr><th>제목</th><th>날짜</th><th>URL</th><th class="col-actions">작업</th></tr>
-                  </thead>
-                  <tbody id="news-tbody"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 갤러리 -->
-        <div class="tab-pane fade" id="tab-gallery">
-          <div class="card admin-card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h5 mb-0">갤러리 게시글</h2>
-                <button class="btn btn-primary btn-sm" onclick="openGalleryModal()">+ 게시글 추가</button>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-striped admin-table">
-                  <thead>
-                    <tr><th>제목</th><th>날짜</th><th>사진 수</th><th class="col-actions">작업</th></tr>
-                  </thead>
-                  <tbody id="gallery-tbody"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 팝업 -->
-        <div class="tab-pane fade" id="tab-popups">
-          <div class="card admin-card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h5 mb-0">팝업 목록</h2>
-                <button class="btn btn-primary btn-sm" onclick="openPopupModal()">+ 팝업 추가</button>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-striped admin-table">
-                  <thead>
-                    <tr><th>제목</th><th>시작일</th><th>종료일</th><th>활성</th><th class="col-actions">작업</th></tr>
-                  </thead>
-                  <tbody id="popups-tbody"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
+    <div class="admin-tabbar">
+      <div class="container">
+        <ul class="nav admin-tabs" id="adminTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-papers" type="button">
+              <i class="fa-solid fa-file-lines"></i><span>논문</span><span class="tab-count" id="count-papers">0</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-members" type="button">
+              <i class="fa-solid fa-users"></i><span>멤버</span><span class="tab-count" id="count-members">0</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-news" type="button">
+              <i class="fa-solid fa-newspaper"></i><span>뉴스</span><span class="tab-count" id="count-news">0</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gallery" type="button">
+              <i class="fa-solid fa-images"></i><span>갤러리</span><span class="tab-count" id="count-gallery">0</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-popups" type="button">
+              <i class="fa-solid fa-bullhorn"></i><span>팝업</span><span class="tab-count" id="count-popups">0</span>
+            </button>
+          </li>
+        </ul>
       </div>
     </div>
 
-    <div id="admin-loading" class="admin-loading">불러오는 중...</div>
+    <div class="container">
+      <div class="admin-wrap">
+        <div class="tab-content">
+
+          <!-- 논문 -->
+          <div class="tab-pane fade show active" id="tab-papers">
+            <div class="admin-panel">
+              <div class="admin-panel-head">
+                <h2><i class="fa-solid fa-file-lines"></i>논문 목록</h2>
+                <button class="btn btn-dark btn-admin-add" onclick="openPaperModal()"><i class="fa-solid fa-plus me-1"></i><span>논문 추가</span></button>
+              </div>
+              <div class="admin-panel-body">
+                <div class="table-responsive">
+                  <table class="table admin-table">
+                    <thead>
+                      <tr><th>연도</th><th>제목</th><th>저자</th><th>학회/저널</th><th class="col-actions">작업</th></tr>
+                    </thead>
+                    <tbody id="papers-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 멤버 -->
+          <div class="tab-pane fade" id="tab-members">
+            <div class="admin-panel">
+              <div class="admin-panel-head">
+                <h2><i class="fa-solid fa-users"></i>멤버 목록</h2>
+                <button class="btn btn-dark btn-admin-add" onclick="openMemberModal()"><i class="fa-solid fa-plus me-1"></i><span>멤버 추가</span></button>
+              </div>
+              <div class="admin-panel-body">
+                <div class="table-responsive">
+                  <table class="table admin-table">
+                    <thead>
+                      <tr><th></th><th>이름</th><th>구분</th><th>직책</th><th>이메일</th><th class="col-actions">작업</th></tr>
+                    </thead>
+                    <tbody id="members-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 뉴스 -->
+          <div class="tab-pane fade" id="tab-news">
+            <div class="admin-panel">
+              <div class="admin-panel-head">
+                <h2><i class="fa-solid fa-newspaper"></i>뉴스 목록</h2>
+                <button class="btn btn-dark btn-admin-add" onclick="openNewsModal()"><i class="fa-solid fa-plus me-1"></i><span>뉴스 추가</span></button>
+              </div>
+              <div class="admin-panel-body">
+                <div class="table-responsive">
+                  <table class="table admin-table">
+                    <thead>
+                      <tr><th></th><th>제목</th><th>날짜</th><th>URL</th><th class="col-actions">작업</th></tr>
+                    </thead>
+                    <tbody id="news-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 갤러리 -->
+          <div class="tab-pane fade" id="tab-gallery">
+            <div class="admin-panel">
+              <div class="admin-panel-head">
+                <h2><i class="fa-solid fa-images"></i>갤러리 게시글</h2>
+                <button class="btn btn-dark btn-admin-add" onclick="openGalleryModal()"><i class="fa-solid fa-plus me-1"></i><span>게시글 추가</span></button>
+              </div>
+              <div class="admin-panel-body">
+                <div class="table-responsive">
+                  <table class="table admin-table">
+                    <thead>
+                      <tr><th></th><th>제목</th><th>날짜</th><th>사진 수</th><th class="col-actions">작업</th></tr>
+                    </thead>
+                    <tbody id="gallery-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 팝업 -->
+          <div class="tab-pane fade" id="tab-popups">
+            <div class="admin-panel">
+              <div class="admin-panel-head">
+                <h2><i class="fa-solid fa-bullhorn"></i>팝업 목록</h2>
+                <button class="btn btn-dark btn-admin-add" onclick="openPopupModal()"><i class="fa-solid fa-plus me-1"></i><span>팝업 추가</span></button>
+              </div>
+              <div class="admin-panel-body">
+                <div class="table-responsive">
+                  <table class="table admin-table">
+                    <thead>
+                      <tr><th></th><th>제목</th><th>시작일</th><th>종료일</th><th>활성</th><th class="col-actions">작업</th></tr>
+                    </thead>
+                    <tbody id="popups-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="admin-loading" class="admin-loading"><i class="fa-solid fa-spinner fa-spin"></i>불러오는 중...</div>
   </div>
 
   <!-- ===================== 논문 모달 ===================== -->
@@ -297,7 +653,7 @@
               </select>
             </div>
             <div class="col-6 d-flex align-items-end">
-              <button type="button" class="btn btn-outline-secondary w-100" onclick="crawlPaperMetadata()">메타데이터 가져오기</button>
+              <button type="button" class="btn btn-outline-secondary w-100" onclick="crawlPaperMetadata()"><i class="fa-solid fa-magnifying-glass me-1"></i>메타데이터 가져오기</button>
             </div>
           </div>
           <div class="mb-3">
@@ -318,8 +674,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-primary" onclick="savePaper()">저장</button>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-dark" onclick="savePaper()">저장</button>
         </div>
       </div>
     </div>
@@ -380,8 +736,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-primary" onclick="saveMember()">저장</button>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-dark" onclick="saveMember()">저장</button>
         </div>
       </div>
     </div>
@@ -420,8 +776,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-primary" onclick="saveNews()">저장</button>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-dark" onclick="saveNews()">저장</button>
         </div>
       </div>
     </div>
@@ -456,8 +812,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-primary" onclick="saveGallery()">저장</button>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-dark" onclick="saveGallery()">저장</button>
         </div>
       </div>
     </div>
@@ -506,8 +862,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-          <button type="button" class="btn btn-primary" onclick="savePopup()">저장</button>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-dark" onclick="savePopup()">저장</button>
         </div>
       </div>
     </div>

@@ -143,13 +143,159 @@ def _fallback_description(stem: str, columns: list[str]) -> str:
     return "분석 결과 표입니다."
 
 
+# manager/server의 app/libs/spss_analysis.py(SPSS 스타일 범용 통계 스위트)가 만드는
+# 표들 — 열 이름에 원본 변수명이 그대로 들어가 stem이 매번 달라지므로 TABLE_DESCRIPTIONS처럼
+# 정적 dict로 못 만들고, 접두사 패턴으로 제목/설명을 만든다.
+def _spss_title(stem: str) -> str | None:
+    if stem == "spss_descriptives":
+        return "기술통계량"
+    if stem == "spss_normality":
+        return "정규성 검정"
+    if stem.startswith("spss_frequencies_"):
+        return f"빈도분석 · {stem[len('spss_frequencies_'):].replace('_', ' ')}"
+    if stem == "spss_correlation_pearson":
+        return "상관분석 (Pearson)"
+    if stem == "spss_correlation_pearson_pvalues":
+        return "상관분석 (Pearson) · 유의확률"
+    if stem == "spss_correlation_spearman":
+        return "상관분석 (Spearman)"
+    if stem == "spss_correlation_spearman_pvalues":
+        return "상관분석 (Spearman) · 유의확률"
+    if stem.startswith("spss_crosstab_"):
+        a, _, b = stem[len("spss_crosstab_"):].partition("__")
+        return f"교차표 · {a.replace('_', ' ')} × {b.replace('_', ' ')}"
+    if stem == "spss_chisquare_summary":
+        return "카이제곱 검정 요약"
+    if stem.startswith("spss_groupmeans_"):
+        a, _, b = stem[len("spss_groupmeans_"):].partition("__")
+        return f"집단별 평균 · {a.replace('_', ' ')} by {b.replace('_', ' ')}"
+    if stem.startswith("spss_posthoc_tukey_"):
+        a, _, b = stem[len("spss_posthoc_tukey_"):].partition("__")
+        return f"사후검정(Tukey HSD) · {a.replace('_', ' ')} by {b.replace('_', ' ')}"
+    if stem == "spss_mean_comparison_summary":
+        return "평균 비교 요약 (t-검정/분산분석)"
+    if stem == "spss_regression_coefficients":
+        return "회귀계수"
+    if stem == "spss_regression_summary":
+        return "회귀모형 요약"
+    if stem == "spss_regression_vif":
+        return "다중공선성 (VIF)"
+    if stem == "spss_pca_variance":
+        return "요인분석(PCA) · 설명 분산"
+    if stem == "spss_pca_loadings":
+        return "요인분석(PCA) · 성분 적재값"
+    if stem == "spss_reliability_summary":
+        return "신뢰도분석 (Cronbach's α)"
+    if stem == "spss_reliability_items":
+        return "신뢰도분석 · 항목별 분석"
+    if stem == "spss_cluster_summary":
+        return "군집분석 요약"
+    if stem == "spss_cluster_profile":
+        return "군집분석 · 군집별 프로파일"
+    return None
+
+
+def _spss_description(stem: str) -> str | None:
+    if stem == "spss_descriptives":
+        return "각 수치형 변수의 평균·표준편차·사분위수·왜도·첨도 등 기술통계량입니다."
+    if stem == "spss_normality":
+        return (
+            "각 수치형 변수가 정규분포를 따르는지 검정한 결과입니다(Shapiro-Wilk 또는 표본이 "
+            "많으면 Kolmogorov-Smirnov). p<.05이면 정규분포를 따르지 않는다고 봅니다."
+        )
+    if stem.startswith("spss_frequencies_"):
+        return "해당 범주형 변수의 값별 빈도, 퍼센트, 누적 퍼센트입니다."
+    if stem in ("spss_correlation_pearson", "spss_correlation_spearman"):
+        method = "Pearson" if "pearson" in stem else "Spearman"
+        return (
+            f"수치형 변수들 사이의 {method} 상관계수 행렬입니다. 1에 가까울수록 강한 양의 상관, "
+            "-1에 가까울수록 강한 음의 상관입니다."
+        )
+    if stem.endswith("_pvalues"):
+        return "왼쪽 상관계수 행렬의 유의확률(p-value)입니다. 0.05보다 작으면 통계적으로 유의한 상관관계로 봅니다."
+    if stem.startswith("spss_crosstab_"):
+        return "두 범주형 변수의 교차표(빈도)입니다. 카이제곱 검정 결과는 '카이제곱 검정 요약' 표에서 확인할 수 있습니다."
+    if stem == "spss_chisquare_summary":
+        return (
+            "범주형 변수 쌍마다 독립성을 검정한 카이제곱 검정 결과입니다. p<.05이면 두 변수가 "
+            "서로 관련이 있다고(독립이 아니라고) 봅니다. Cramer's V는 연관성의 크기(0~1)입니다."
+        )
+    if stem.startswith("spss_groupmeans_"):
+        return "범주별 평균·표준편차입니다. 평균 비교 요약표에서 유의한 차이가 발견된 조합에 대해서만 자동으로 생성됩니다."
+    if stem.startswith("spss_posthoc_tukey_"):
+        return "분산분석(ANOVA)에서 유의한 차이가 발견됐을 때, 어느 집단 쌍 사이에 실제로 차이가 있는지 확인하는 Tukey HSD 사후검정 결과입니다."
+    if stem == "spss_mean_comparison_summary":
+        return (
+            "수치형 변수와 범주형 변수의 모든 조합에 대해 집단 간 평균 차이를 검정한 요약입니다 "
+            "(그룹 2개는 t-검정, 3개 이상은 분산분석). 정규성이 의심되는 경우를 대비해 "
+            "비모수검정(Mann-Whitney U/Kruskal-Wallis) 결과도 함께 제공합니다."
+        )
+    if stem == "spss_regression_coefficients":
+        return (
+            "다중회귀분석의 회귀계수입니다. p<.05인 변수가 종속변수에 통계적으로 유의한 영향을 미치는 "
+            "예측변수입니다. 베타는 변수 간 영향력 크기를 표준화해 비교할 수 있게 해줍니다."
+        )
+    if stem == "spss_regression_summary":
+        return "회귀모형 전체의 설명력(R²)과 통계적 유의성(F검정)을 보여줍니다."
+    if stem == "spss_regression_vif":
+        return "예측변수들 사이의 다중공선성 지표(VIF)입니다. 일반적으로 10을 넘으면 다중공선성 문제를 의심합니다."
+    if stem == "spss_pca_variance":
+        return "주성분분석(PCA)으로 수치형 변수들을 몇 개의 성분으로 압축했을 때 각 성분이 설명하는 분산 비율입니다. 고유값이 1보다 큰 성분을 주로 해석합니다."
+    if stem == "spss_pca_loadings":
+        return "각 성분에 원래 변수들이 얼마나 기여하는지 보여주는 적재값(loading)입니다. 절댓값이 클수록 해당 성분을 대표하는 변수입니다."
+    if stem == "spss_reliability_summary":
+        return (
+            "선택된 수치형 변수들을 하나의 척도로 봤을 때의 내적 일관성 신뢰도(Cronbach's Alpha)입니다. "
+            "통상 0.7 이상이면 신뢰할 만하다고 봅니다. 설문 척도 데이터가 아닌 경우 참고용으로만 활용하세요."
+        )
+    if stem == "spss_reliability_items":
+        return "각 변수를 제외했을 때 신뢰도(alpha)가 어떻게 바뀌는지, 그리고 나머지 변수 합계와의 상관을 보여줍니다."
+    if stem == "spss_cluster_summary":
+        return "K-means 군집분석에서 자동으로 선택된 최적 군집 수와 군집 분리 품질(실루엣 계수, -1~1, 클수록 좋음)입니다."
+    if stem == "spss_cluster_profile":
+        return "각 군집에 속한 데이터의 개수와 군집별 수치형 변수 평균값입니다. 군집 간 값 차이로 각 군집의 성격을 해석할 수 있습니다."
+    return None
+
+
+def _section_for_stem(stem: str) -> str:
+    if not stem.startswith("spss_"):
+        return "핵심 지표"
+    if stem in ("spss_descriptives", "spss_normality"):
+        return "기술통계"
+    if stem.startswith("spss_frequencies_"):
+        return "빈도분석"
+    if stem.startswith("spss_crosstab_") or stem.startswith("spss_chisquare"):
+        return "교차분석 (카이제곱)"
+    if (
+        stem.startswith("spss_groupmeans_")
+        or stem.startswith("spss_posthoc_")
+        or stem == "spss_mean_comparison_summary"
+    ):
+        return "평균 비교 (t-검정/분산분석)"
+    if stem.startswith("spss_correlation_"):
+        return "상관분석"
+    if stem.startswith("spss_regression_"):
+        return "회귀분석"
+    if stem.startswith("spss_pca_"):
+        return "요인분석 (PCA)"
+    if stem.startswith("spss_reliability_"):
+        return "신뢰도분석"
+    if stem.startswith("spss_cluster_"):
+        return "군집분석"
+    return "고급 통계"
+
+
 def _describe_table(stem: str, columns: list[str]) -> str:
-    return TABLE_DESCRIPTIONS.get(stem) or _fallback_description(stem, columns)
+    return TABLE_DESCRIPTIONS.get(stem) or _spss_description(stem) or _fallback_description(stem, columns)
 
 
 def _is_heatmap_table(stem: str, df: pd.DataFrame) -> bool:
     if stem == "hour_dow_heatmap":
         return True
+    if stem.startswith("spss_crosstab_") or stem == "spss_pca_loadings":
+        return True
+    if "pvalue" in stem:
+        return False
     if "correlation" in stem or "corr" in stem:
         # 상관행렬은 (라벨 열 + 숫자 열들)이고, 숫자 열 이름들이 각 행의 라벨과
         # 대체로 일치하는 정사각형 행렬이다.
@@ -173,8 +319,9 @@ def _table_from_csv(path: str) -> dict:
     ]
     return {
         "id": stem,
-        "title": _humanize(stem),
+        "title": _spss_title(stem) or _humanize(stem),
         "description": _describe_table(stem, columns),
+        "section": _section_for_stem(stem),
         "columns": columns,
         "rows": df.values.tolist(),
         "row_count": len(df),

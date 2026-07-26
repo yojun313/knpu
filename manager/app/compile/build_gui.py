@@ -34,7 +34,7 @@ from upload import upload_file
 def sendPushOver(msg):
     requests.post(
         "https://manager.knpu.re.kr/api/users/admin/pushover",
-        json={"message": msg},
+        json={"message": msg, "kind": "build"},
         headers={"Authorization": f"Bearer {os.getenv('ADMIN_TOKEN')}"},
     )
 

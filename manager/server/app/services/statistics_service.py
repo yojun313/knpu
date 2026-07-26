@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from starlette.background import BackgroundTask
 
 from app.config import STATISTICS_VIEWER_URL
+from app.libs import spss_analysis
 from app.libs.progress import send_message
 from app.libs.statistics_analysis import StatisticsAnalysis
 from app.models.analysis_model import StatisticsOption
@@ -200,6 +201,7 @@ def run_statistics_analysis(
     csv_dir = os.path.join(output_dir, "csv_files")
     _add_hour_dow_heatmap(data, csv_dir)
     _add_derived_time_series_tables(csv_dir)
+    spss_analysis.run(data, csv_dir)
 
     metadata = {
         "category": option.category,

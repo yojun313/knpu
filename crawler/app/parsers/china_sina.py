@@ -423,6 +423,7 @@ class ChinaSinaCrawler:
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
+                    requester=self.requester,
                 )
                 return
 
@@ -519,4 +520,5 @@ class ChinaSinaCrawler:
             userEmail=self.Email,
             status=self.status,
             DBuid=self.DBuid,
+            requester=self.requester,
         )

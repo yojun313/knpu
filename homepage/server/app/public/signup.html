@@ -10,66 +10,150 @@
   <link href="css/styles.css" rel="stylesheet" />
   <style>
     body {
-      background-color: #eef1f5;
+      background: linear-gradient(180deg, #f4f5f7 0%, #eef1f5 100%);
       min-height: 100vh;
     }
 
-    .masthead_auth {
-      position: relative;
-      padding-top: 12.5rem;
-      padding-bottom: 6rem;
+    .auth-hero {
+      padding-top: 8.5rem;
+      padding-bottom: 3rem;
       text-align: center;
       color: #fff;
       background: linear-gradient(135deg, #1a1d20 0%, #2c3e50 100%);
     }
 
-    .masthead_auth-heading {
-      font-family: "Montserrat", sans-serif;
-      font-size: 2.5rem;
+    .auth-hero .eyebrow {
+      font-size: 0.8rem;
       font-weight: 700;
-      margin-bottom: 0;
+      letter-spacing: 0.1em;
+      color: var(--bs-primary);
     }
 
-    .masthead_auth-subheading {
-      font-size: 1.15rem;
-      font-style: italic;
-      margin-bottom: 20px;
+    .auth-hero h1 {
+      font-family: "Montserrat", sans-serif;
+      font-weight: 700;
+      font-size: 1.9rem;
+      margin: 0.25rem 0 0;
+    }
+
+    .auth-shell {
+      max-width: 460px;
+      margin: -2rem auto 5rem;
     }
 
     .auth-card {
-      max-width: 480px;
-      margin: -4.5rem auto 5rem;
       border: none;
-      border-top: 4px solid var(--bs-primary);
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.14);
-      background-color: #fff;
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+      background: #fff;
+      overflow: hidden;
     }
 
-    .auth-card .card-body {
-      padding: 2.25rem 2rem;
+    .auth-card-accent {
+      height: 4px;
+      background: linear-gradient(90deg, var(--bs-primary), #ffdd66);
+    }
+
+    .auth-card-body {
+      padding: 2rem 1.9rem;
     }
 
     .auth-card h2 {
       font-family: "Montserrat", sans-serif;
       font-weight: 700;
-      font-size: 1.35rem;
-      margin-bottom: 0.5rem;
+      font-size: 1.2rem;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    .auth-card .form-hint {
+    .auth-card h2 i {
+      color: var(--bs-primary);
+      font-size: 1rem;
+    }
+
+    .auth-hint {
+      font-size: 0.83rem;
+      color: #8b95a1;
+      margin-bottom: 1.4rem;
+      line-height: 1.5;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .input-icon-group {
+      position: relative;
+    }
+
+    .input-icon-group i {
+      position: absolute;
+      left: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #adb5bd;
       font-size: 0.85rem;
-      color: #6c757d;
-      margin-bottom: 1.5rem;
+      pointer-events: none;
+    }
+
+    .input-icon-group input {
+      padding-left: 2.2rem;
+    }
+
+    .btn-auth-primary {
+      background: #212529;
+      border-color: #212529;
+      font-family: "Montserrat", sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 9px;
+      padding: 0.6rem;
+    }
+
+    .btn-auth-primary:hover {
+      background: #000;
+      border-color: #000;
+      color: #fff;
     }
 
     .auth-switch {
       text-align: center;
-      margin-top: 1.25rem;
-      font-size: 0.9rem;
+      margin-top: 1.4rem;
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+
+    .auth-switch a {
+      font-weight: 600;
     }
 
     .auth-alert {
       display: none;
+      font-size: 0.85rem;
+      border-radius: 10px;
+    }
+
+    .member-match-hint {
+      display: none;
+      align-items: flex-start;
+      gap: 0.55rem;
+      background: #eaf7ef;
+      color: #1a8a4a;
+      border: 1px solid #c9ecd6;
+      border-radius: 10px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.8rem;
+      line-height: 1.45;
+      margin-bottom: 1rem;
+    }
+
+    .member-match-hint i {
+      font-size: 0.95rem;
+      margin-top: 0.1rem;
     }
   </style>
 </head>
@@ -77,51 +161,73 @@
 <body id="page-top" data-page="account">
   <div id="nav-placeholder"></div>
 
-  <header class="masthead_auth">
+  <header class="auth-hero">
     <div class="container">
-      <div class="masthead_auth-subheading">KNPU FPEI</div>
-      <div class="masthead_auth-heading">회원가입</div>
+      <div class="eyebrow">KNPU FPEI</div>
+      <h1>회원가입</h1>
     </div>
   </header>
 
   <div class="container">
-    <div class="card auth-card">
-      <div class="card-body">
-        <h2>랩 구성원 가입 신청</h2>
-        <div class="form-hint">
-          가입 신청 후 이메일 인증과 관리자 승인을 거쳐야 로그인할 수 있습니다.<br />
-          인증 메일이 안 보이면 스팸함을 확인해주세요.
+    <div class="auth-shell">
+      <div class="card auth-card">
+        <div class="auth-card-accent"></div>
+        <div class="auth-card-body">
+          <h2><i class="fa-solid fa-user-plus"></i>랩 구성원 가입 신청</h2>
+          <div class="auth-hint">
+            가입 신청 후 이메일 인증을 거치면 로그인할 수 있습니다.<br />
+            인증 메일이 안 보이면 스팸함을 확인해주세요.
+          </div>
+          <div class="alert alert-danger auth-alert" id="signup-error"></div>
+
+          <form id="signup-form">
+            <div class="mb-3">
+              <label class="form-label" for="su-name">이름</label>
+              <div class="input-icon-group">
+                <i class="fa-solid fa-id-badge"></i>
+                <input type="text" class="form-control" id="su-name" required autocomplete="name" />
+              </div>
+            </div>
+            <div class="member-match-hint" id="member-match-hint">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>홈페이지 멤버 목록에 등록된 이름과 일치합니다 — 가입 시 자동으로 연결되어 관리자 승인 없이 바로 로그인할 수 있어요.</span>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="su-username">아이디</label>
+              <div class="input-icon-group">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" class="form-control" id="su-username" required pattern="[a-zA-Z0-9_\-]{3,20}"
+                  title="영문/숫자/_/- 3~20자" />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="su-email">이메일</label>
+              <div class="input-icon-group">
+                <i class="fa-solid fa-envelope"></i>
+                <input type="email" class="form-control" id="su-email" required />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="su-password">비밀번호</label>
+              <div class="input-icon-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" class="form-control" id="su-password" required minlength="8"
+                  autocomplete="new-password" />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="su-password2">비밀번호 확인</label>
+              <div class="input-icon-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" class="form-control" id="su-password2" required minlength="8"
+                  autocomplete="new-password" />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-auth-primary w-100 text-white">가입 신청</button>
+          </form>
+
+          <div class="auth-switch">이미 계정이 있으신가요? <a href="/login">로그인</a></div>
         </div>
-        <div class="alert alert-danger auth-alert" id="signup-error"></div>
-
-        <form id="signup-form">
-          <div class="mb-3">
-            <label class="form-label" for="su-username">아이디</label>
-            <input type="text" class="form-control" id="su-username" required pattern="[a-zA-Z0-9_\-]{3,20}"
-              title="영문/숫자/_/- 3~20자" />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="su-name">이름</label>
-            <input type="text" class="form-control" id="su-name" required />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="su-email">이메일</label>
-            <input type="email" class="form-control" id="su-email" required />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="su-password">비밀번호</label>
-            <input type="password" class="form-control" id="su-password" required minlength="8"
-              autocomplete="new-password" />
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="su-password2">비밀번호 확인</label>
-            <input type="password" class="form-control" id="su-password2" required minlength="8"
-              autocomplete="new-password" />
-          </div>
-          <button type="submit" class="btn btn-primary w-100">가입 신청</button>
-        </form>
-
-        <div class="auth-switch">이미 계정이 있으신가요? <a href="/login">로그인</a></div>
       </div>
     </div>
   </div>
@@ -134,6 +240,33 @@
   <script src="js/scripts.js"></script>
   <script src="js/nav.js"></script>
   <script>
+    // 이름이 기존 홈페이지 멤버와 일치하면(동명이인 없이 정확히 1명) 자동 연동 안내를 보여준다.
+    // /api/members/ 는 people 페이지에서도 쓰는 공개 목록이라 별도 인증 없이 조회 가능하다.
+    var membersCache = null;
+    function loadMembersOnce() {
+      if (membersCache) return Promise.resolve(membersCache);
+      return fetch('/api/members/').then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (list) { membersCache = list || []; return membersCache; })
+        .catch(function () { return []; });
+    }
+    function debounce(fn, wait) {
+      var t;
+      return function () {
+        clearTimeout(t);
+        var args = arguments, ctx = this;
+        t = setTimeout(function () { fn.apply(ctx, args); }, wait);
+      };
+    }
+    document.getElementById('su-name').addEventListener('input', debounce(function () {
+      var name = this.value.trim();
+      var hint = document.getElementById('member-match-hint');
+      if (!name) { hint.style.display = 'none'; return; }
+      loadMembersOnce().then(function (list) {
+        var matches = list.filter(function (m) { return m.name === name; });
+        hint.style.display = matches.length === 1 ? 'flex' : 'none';
+      });
+    }, 300));
+
     document.getElementById('signup-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const errorEl = document.getElementById('signup-error');

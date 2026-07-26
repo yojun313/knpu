@@ -1,3 +1,4 @@
+import asyncio
 import time
 import json
 import re
@@ -12,7 +13,8 @@ import logging
 from db import load_proxy_list, checkState, get_userinfo
 from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
-from common.req import Request, set_proxy_list
+from common.req import Request, RequestAsync, set_proxy_list
+from common.async_run import speed_to_concurrency, run_with_concurrency
 from common.naver_lib import parse_naver_query
 from common.storage import makeDB, updateCrawlStatus, initCrawlLog, appendCrawlLog
 from common.csv import makeCSV, addToCSV
@@ -186,7 +188,7 @@ class NaverBlogCrawler:
             appendCrawlLog(self.DBuid, "error", f"URL 수집 실패 ({keyword}): {e}")
             return []
 
-    def collectArticle(self, blogURL):
+    async def collectArticle(self, session, blogURL):
         try:
             split_url = blogURL.split("/")
             blogID = split_url[3]
@@ -200,7 +202,7 @@ class NaverBlogCrawler:
                 "referer": blogURL,
             }
 
-            res = Request(url, headers=headers)
+            res = await RequestAsync(session, url, headers=headers)
             res.raise_for_status()
             res = res.text
             bs = BeautifulSoup(res, "html.parser")
@@ -236,7 +238,7 @@ class NaverBlogCrawler:
             appendCrawlLog(self.DBuid, "error", f"본문 수집 실패 ({blogURL}): {e}")
             return []
 
-    def collectCmt(self, blogURL, username=False):
+    async def collectCmt(self, session, blogURL, username=False):
         try:
             split_url = blogURL.split("/")
             blogID = split_url[3]
@@ -254,7 +256,7 @@ class NaverBlogCrawler:
                     break
 
                 try:
-                    res = Request(url)
+                    res = await RequestAsync(session, url)
                     res.raise_for_status()
                     res = res.text
                     bs = BeautifulSoup(res, "html.parser")
@@ -307,7 +309,8 @@ class NaverBlogCrawler:
                     "morePage.next": "051sz9hwab3fe1t0w1916s34yt",
                 }
 
-                res = Request(
+                res = await RequestAsync(
+                    session,
                     "https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json",
                     headers=headers,
                     params=params,
@@ -393,6 +396,74 @@ class NaverBlogCrawler:
     def reportStatus(self):
         return self.status
 
+    async def _processOneUrl(self, session, semaphore, blogUrl):
+        async with semaphore:
+            try:
+                if self.running == False:
+                    return
+                # 기사 본문 수집
+                articleData = await self.collectArticle(session, blogUrl)
+                if not articleData:
+                    return
+                else:
+                    self.status["articleCnt"] += 1
+
+                # 기사 날짜 저장 (댓글 행의 마지막 컬럼인 'Article Day'용)
+                article_day = articleData[3]
+
+                # 옵션 2: 기사만 수집 (댓글수 0으로 기록)
+                if self.option == 2:
+                    addToCSV(
+                        self.DBPath,
+                        self.articleDB,
+                        [articleData + [0]],
+                        naverblog_article_column,
+                    )
+
+                # 옵션 1: 댓글 포함
+
+                elif self.option in [1, 4]:
+                    try:
+                        # 댓글 수집 (옵션 4일 때만 유저 정보 포함)
+                        is_username = True if self.option == 4 else False
+                        cmtData = await self.collectCmt(
+                            session, blogUrl, username=is_username
+                        )
+
+                        reply_cnt = cmtData.get("replyCnt", 0)
+                        self.status["commentCnt"] += reply_cnt
+
+                        # 기사 저장 (실제 댓글수 포함)
+                        addToCSV(
+                            self.DBPath,
+                            self.articleDB,
+                            [articleData + [reply_cnt]],
+                            naverblog_article_column,
+                        )
+
+                        # 댓글 리스트 저장
+                        replies = cmtData.get("replyList", [])
+                        if replies:
+                            processed_replies = [r + [article_day] for r in replies]
+                            current_reply_col = naverblog_reply_column
+                            addToCSV(
+                                self.DBPath,
+                                self.replyDB,
+                                processed_replies,
+                                current_reply_col,
+                            )
+
+                    except Exception as e:
+                        logger.info(
+                            f"Error occurred while processing comment data for {blogUrl}: {e}"
+                        )
+
+                await asyncio.sleep(SLEEP_TIME)
+
+            except Exception as e:
+                logger.info(f"Error occurred while processing {blogUrl}: {e}")
+                appendCrawlLog(self.DBuid, "error", f"블로그 처리 실패 ({blogUrl}): {e}")
+
     def main(self):
         initCrawlLog(
             self.DBuid,
@@ -427,6 +498,7 @@ class NaverBlogCrawler:
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
+                    requester=self.requester,
                 )
                 return
 
@@ -440,6 +512,7 @@ class NaverBlogCrawler:
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
+                    requester=self.requester,
                 )
                 break
 
@@ -452,73 +525,10 @@ class NaverBlogCrawler:
                 keyword=self.keyword, startDate=currentDate_str, endDate=currentDate_str
             )
 
-            for blogUrl in urlList:
-                try:
-                    if self.running == False:
-                        break
-                    # 기사 본문 수집
-                    articleData = self.collectArticle(blogUrl)
-                    if not articleData:
-                        continue
-                    else:
-                        self.status["articleCnt"] += 1
-
-                    # 기사 날짜 저장 (댓글 행의 마지막 컬럼인 'Article Day'용)
-                    article_day = articleData[3]
-
-                    # 옵션 2: 기사만 수집 (댓글수 0으로 기록)
-                    if self.option == 2:
-                        addToCSV(
-                            self.DBPath,
-                            self.articleDB,
-                            [articleData + [0]],
-                            naverblog_article_column,
-                        )
-
-                    # 옵션 1: 댓글 포함
-
-                    elif self.option in [1, 4]:
-                        try:
-                            # 댓글 수집 (옵션 4일 때만 유저 정보 포함)
-                            is_username = True if self.option == 4 else False
-                            cmtData = self.collectCmt(blogUrl, username=is_username)
-
-                            reply_cnt = cmtData.get("replyCnt", 0)
-                            self.status["commentCnt"] += reply_cnt
-
-                            # 기사 저장 (실제 댓글수 포함)
-                            addToCSV(
-                                self.DBPath,
-                                self.articleDB,
-                                [articleData + [reply_cnt]],
-                                naverblog_article_column,
-                            )
-
-                            # 댓글 리스트 저장
-                            replies = cmtData.get("replyList", [])
-                            if replies:
-                                processed_replies = [r + [article_day] for r in replies]
-                                current_reply_col = naverblog_reply_column
-                                addToCSV(
-                                    self.DBPath,
-                                    self.replyDB,
-                                    processed_replies,
-                                    current_reply_col,
-                                )
-
-                        except Exception as e:
-                            logger.info(
-                                f"Error occurred while processing comment data for {blogUrl}: {e}"
-                            )
-
-                    time.sleep(SLEEP_TIME)
-
-                except Exception as e:
-                    logger.info(f"Error occurred while processing {blogUrl}: {e}")
-                    appendCrawlLog(
-                        self.DBuid, "error", f"블로그 처리 실패 ({blogUrl}): {e}"
-                    )
-                    continue
+            concurrency = speed_to_concurrency(self.speed)
+            asyncio.run(
+                run_with_concurrency(urlList, self._processOneUrl, concurrency)
+            )
 
             # 날짜 단위 진행률을 DB에 직접 업데이트
             updateCrawlStatus(

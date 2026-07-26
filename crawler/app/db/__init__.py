@@ -65,6 +65,9 @@ homepage_db = client[homepage_db_name]
 user_db = homepage_db["users"]
 user_logs_db = manager_db["user-logs"]
 
+# 디스코드 봇(bot/)이 폴링해서 실제 전송을 처리하는 알림 큐
+discord_notifications_db = client["discord"]["notifications"]
+
 
 def load_proxy_list():
     return client[crawler_db_name]["ip-list"].find_one({"_id": "proxy_list"})["list"]

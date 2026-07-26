@@ -5,7 +5,7 @@ import time
 import logging
 from db import crawler_db
 from common.tokenization import tokenization
-from common.notification import sendMail, sendPushOver
+from common.notification import sendMail, sendDiscord
 from common.storage import endCrawl, errorCrawl, appendCrawlLog
 from config import CRAWL_LOG_PATH
 
@@ -41,7 +41,15 @@ def convertToParquet(folder_path):
 
 
 def stopOperator(
-    DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status, DBuid=None
+    DBpath,
+    DBtype,
+    DBname,
+    startTime,
+    pushoverKey,
+    userEmail,
+    status,
+    DBuid=None,
+    requester=None,
 ):
     try:
         job_col = crawler_db["job-queue"]
@@ -95,8 +103,7 @@ def stopOperator(
 
         if pushoverKey == "n" or pushoverKey == None:
             sendMail(userEmail, title, text)
-        else:
-            sendPushOver(msg=title + "\n" + text, user_key=pushoverKey)
+        sendDiscord(title + "\n" + text, "crawler_error", requester=requester)
 
         with open(os.path.join(CRAWL_LOG_PATH, DBname + "_log.txt"), "a") as log:
             log.write("\n\n" + text)
@@ -109,7 +116,15 @@ def stopOperator(
 
 
 def finishOperator(
-    DBpath, DBtype, DBname, startTime, pushoverKey, userEmail, status, DBuid=None
+    DBpath,
+    DBtype,
+    DBname,
+    startTime,
+    pushoverKey,
+    userEmail,
+    status,
+    DBuid=None,
+    requester=None,
 ):
     try:
         convertToParquet(DBpath)
@@ -170,8 +185,7 @@ def finishOperator(
 
         if pushoverKey == "n" or pushoverKey == None:
             sendMail(userEmail, title, text)
-        else:
-            sendPushOver(msg=title + "\n" + text, user_key=pushoverKey)
+        sendDiscord(title + "\n" + text, "crawler_status", requester=requester)
 
         with open(os.path.join(CRAWL_LOG_PATH, DBname + "_log.txt"), "a") as log:
             log.write("\n\n" + text)

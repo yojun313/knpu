@@ -86,7 +86,6 @@ class SignupRequest(BaseModel):
     name: str
     email: str
     password: str
-    pushover_key: Optional[str] = None
 
 
 class VerifyEmailRequest(BaseModel):
@@ -105,7 +104,6 @@ class LoginRequest(BaseModel):
 
 class UpdateProfileRequest(BaseModel):
     name: Optional[str] = None
-    pushover_key: Optional[str] = None
     current_password: Optional[str] = None
     new_password: Optional[str] = None
 

@@ -1,3 +1,4 @@
+import asyncio
 import time
 import json
 import re
@@ -12,7 +13,8 @@ import logging
 from db import load_proxy_list, checkState, get_userinfo
 from db.util import makeDBname
 from config import SLEEP_TIME, PROXY
-from common.req import Request, set_proxy_list
+from common.req import Request, RequestAsync, set_proxy_list
+from common.async_run import speed_to_concurrency, run_with_concurrency
 from common.naver_lib import parse_naver_query
 from common.storage import makeDB, updateCrawlStatus, initCrawlLog, appendCrawlLog
 from common.csv import makeCSV, addToCSV
@@ -200,9 +202,9 @@ class NaverNewsCrawler:
             appendCrawlLog(self.DBuid, "error", f"URL 수집 실패 ({keyword}): {e}")
             return []
 
-    def collectArticle(self, newsURL):
+    async def collectArticle(self, session, newsURL):
         try:
-            res = Request(newsURL)
+            res = await RequestAsync(session, newsURL)
             res.raise_for_status()
             res = res.text
             bs = BeautifulSoup(res, "lxml")
@@ -248,7 +250,7 @@ class NaverNewsCrawler:
             appendCrawlLog(self.DBuid, "error", f"기사 수집 실패 ({newsURL}): {e}")
             return []
 
-    def collectCmt(self, newsURL, username=False):
+    async def collectCmt(self, session, newsURL, username=False):
         try:
             oid = newsURL[39:42]
             aid = newsURL[43:53]
@@ -301,7 +303,8 @@ class NaverNewsCrawler:
                     "sort": "reply",
                     "initialize": "true",
                 }
-                res = Request(
+                res = await RequestAsync(
+                    session,
                     "https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json",
                     headers=headers,
                     params=params,
@@ -413,8 +416,8 @@ class NaverNewsCrawler:
                     ]
 
                     if username:
-                        add_data = self.collectUsername(
-                            oid, aid, parentCommentNo_list[i], newsURL
+                        add_data = await self.collectUsername(
+                            session, oid, aid, parentCommentNo_list[i], newsURL
                         )
                         if add_data:
                             targetlist[1] = (
@@ -437,7 +440,7 @@ class NaverNewsCrawler:
             appendCrawlLog(self.DBuid, "error", f"댓글 수집 실패 ({newsURL}): {e}")
             return returnData
 
-    def collectUsername(self, oid, aid, commentNo, newsURL):
+    async def collectUsername(self, session, oid, aid, commentNo, newsURL):
         try:
             url = (
                 "https://apis.naver.com/commentBox/cbox/web_naver_user_info_jsonp.json"
@@ -465,7 +468,7 @@ class NaverNewsCrawler:
                 "referer": newsURL,
             }
 
-            response = Request(url, params=params, headers=headers)
+            response = await RequestAsync(session, url, params=params, headers=headers)
             response.raise_for_status()
 
             res_text = response.text
@@ -483,7 +486,7 @@ class NaverNewsCrawler:
             logger.info(f"collectUsername 실패 (commentNo: {commentNo}): {e}")
             return None
 
-    def collectReply(self, newsURL, parentCommentNum_list):
+    async def collectReply(self, session, newsURL, parentCommentNum_list):
         try:
             oid = newsURL[39:42]
             aid = newsURL[43:53]
@@ -520,7 +523,7 @@ class NaverNewsCrawler:
                         + parentCommentNum_list[i]
                     )
 
-                    response = Request(target_url, headers=headers)
+                    response = await RequestAsync(session, target_url, headers=headers)
                     response.raise_for_status()
 
                     res_text = response.text
@@ -604,6 +607,121 @@ class NaverNewsCrawler:
     def reportStatus(self):
         return self.status
 
+    async def _processOneUrl(self, session, semaphore, newsUrl):
+        async with semaphore:
+            try:
+                if self.running == False:
+                    return
+                # 기사 본문 수집
+                articleData = await self.collectArticle(session, newsUrl)
+                if not articleData:
+                    return
+                else:
+                    self.status["articleCnt"] += 1
+
+                # 기사 날짜 저장 (댓글 행의 마지막 컬럼인 'Article Day'용)
+                article_day = articleData[5]
+
+                # 옵션 3: 기사만 수집 (댓글수 0으로 기록)
+                if self.option == 3:
+                    addToCSV(
+                        self.DBPath,
+                        self.articleDB,
+                        [articleData + [0]],
+                        navernews_article_column,
+                    )
+
+                # 옵션 1, 2, 4: 댓글 및 통계 포함
+
+                elif self.option in [1, 2, 4]:
+                    stats = []
+                    cmtData = {}
+                    try:
+                        # 댓글 수집 (옵션 4일 때만 유저 정보 포함)
+                        is_username = True if self.option == 4 else False
+                        cmtData = await self.collectCmt(
+                            session, newsUrl, username=is_username
+                        )
+
+                        reply_cnt = cmtData.get("replyCnt", 0)
+                        self.status["commentCnt"] += reply_cnt
+
+                        # 기사 저장 (실제 댓글수 포함)
+                        addToCSV(
+                            self.DBPath,
+                            self.articleDB,
+                            [articleData + [reply_cnt]],
+                            navernews_article_column,
+                        )
+
+                        # 통계 데이터 저장
+                        stats = cmtData.get("statisticsData", [])
+
+                    except Exception as e:
+                        logger.info(
+                            f"Error occurred while processing comment data for {newsUrl}: {e}"
+                        )
+
+                    if stats:
+                        # 통계 컬럼 구성에 맞춰 기사 정보 + 통계 데이터 결합
+                        addToCSV(
+                            self.DBPath,
+                            self.statisticsDB,
+                            [articleData + stats],
+                            navernews_statistics_column,
+                        )
+
+                    # 댓글 리스트 저장
+                    replies = cmtData.get("replyList", [])
+                    if replies:
+                        # 각 댓글 끝에 article_day 추가
+                        processed_replies = [r + [article_day] for r in replies]
+                        current_reply_col = (
+                            navernews_4_reply_column
+                            if self.option == 4
+                            else navernews_reply_column
+                        )
+                        addToCSV(
+                            self.DBPath,
+                            self.replyDB,
+                            processed_replies,
+                            current_reply_col,
+                        )
+
+                    # 옵션 2: 대댓글 수집 및 저장
+                    if self.option == 2:
+                        try:
+                            parent_nos = cmtData.get("parentCommentNo_list", [])
+                            if parent_nos:
+                                rereplyData = await self.collectReply(
+                                    session, newsUrl, parent_nos
+                                )
+                                rereplies = rereplyData.get("rereplyList", [])
+                                if rereplies:
+                                    processed_rereplies = [
+                                        rr + [article_day] for rr in rereplies
+                                    ]
+                                    self.status["replyCnt"] += rereplyData.get(
+                                        "rereplyCnt", 0
+                                    )
+                                    addToCSV(
+                                        self.DBPath,
+                                        self.rereplyDB,
+                                        processed_rereplies,
+                                        navernews_rereply_column,
+                                    )
+
+                        except Exception as e:
+                            logger.info(
+                                f"Error occurred while processing reply data for {newsUrl}: {e}"
+                            )
+
+                await asyncio.sleep(SLEEP_TIME)
+
+            except Exception as e:
+                logger.info(f"Error occurred while processing {newsUrl}: {e}")
+                appendCrawlLog(self.DBuid, "error", f"기사 처리 실패 ({newsUrl}): {e}")
+
     def main(self):
         initCrawlLog(
             self.DBuid,
@@ -644,6 +762,7 @@ class NaverNewsCrawler:
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
+                    requester=self.requester,
                 )
                 return
 
@@ -657,6 +776,7 @@ class NaverNewsCrawler:
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
+                    requester=self.requester,
                 )
                 break
 
@@ -669,116 +789,10 @@ class NaverNewsCrawler:
                 keyword=self.keyword, startDate=currentDate_str, endDate=currentDate_str
             )
 
-            for newsUrl in urlList:
-                try:
-                    if self.running == False:
-                        break
-                    # 기사 본문 수집
-                    articleData = self.collectArticle(newsUrl)
-                    if not articleData:
-                        continue
-                    else:
-                        self.status["articleCnt"] += 1
-
-                    # 기사 날짜 저장 (댓글 행의 마지막 컬럼인 'Article Day'용)
-                    article_day = articleData[5]
-
-                    # 옵션 3: 기사만 수집 (댓글수 0으로 기록)
-                    if self.option == 3:
-                        addToCSV(
-                            self.DBPath,
-                            self.articleDB,
-                            [articleData + [0]],
-                            navernews_article_column,
-                        )
-
-                    # 옵션 1, 2, 4: 댓글 및 통계 포함
-
-                    elif self.option in [1, 2, 4]:
-                        try:
-                            # 댓글 수집 (옵션 4일 때만 유저 정보 포함)
-                            is_username = True if self.option == 4 else False
-                            cmtData = self.collectCmt(newsUrl, username=is_username)
-
-                            reply_cnt = cmtData.get("replyCnt", 0)
-                            self.status["commentCnt"] += reply_cnt
-
-                            # 기사 저장 (실제 댓글수 포함)
-                            addToCSV(
-                                self.DBPath,
-                                self.articleDB,
-                                [articleData + [reply_cnt]],
-                                navernews_article_column,
-                            )
-
-                            # 통계 데이터 저장
-                            stats = cmtData.get("statisticsData", [])
-
-                        except Exception as e:
-                            logger.info(
-                                f"Error occurred while processing comment data for {newsUrl}: {e}"
-                            )
-
-                        if stats:
-                            # 통계 컬럼 구성에 맞춰 기사 정보 + 통계 데이터 결합
-                            addToCSV(
-                                self.DBPath,
-                                self.statisticsDB,
-                                [articleData + stats],
-                                navernews_statistics_column,
-                            )
-
-                        # 댓글 리스트 저장
-                        replies = cmtData.get("replyList", [])
-                        if replies:
-                            # 각 댓글 끝에 article_day 추가
-                            processed_replies = [r + [article_day] for r in replies]
-                            current_reply_col = (
-                                navernews_4_reply_column
-                                if self.option == 4
-                                else navernews_reply_column
-                            )
-                            addToCSV(
-                                self.DBPath,
-                                self.replyDB,
-                                processed_replies,
-                                current_reply_col,
-                            )
-
-                        # 옵션 2: 대댓글 수집 및 저장
-                        if self.option == 2:
-                            try:
-                                parent_nos = cmtData.get("parentCommentNo_list", [])
-                                if parent_nos:
-                                    rereplyData = self.collectReply(newsUrl, parent_nos)
-                                    rereplies = rereplyData.get("rereplyList", [])
-                                    if rereplies:
-                                        processed_rereplies = [
-                                            rr + [article_day] for rr in rereplies
-                                        ]
-                                        self.status["replyCnt"] += rereplyData.get(
-                                            "rereplyCnt", 0
-                                        )
-                                        addToCSV(
-                                            self.DBPath,
-                                            self.rereplyDB,
-                                            processed_rereplies,
-                                            navernews_rereply_column,
-                                        )
-
-                            except Exception as e:
-                                logger.info(
-                                    f"Error occurred while processing reply data for {newsUrl}: {e}"
-                                )
-
-                    time.sleep(SLEEP_TIME)
-
-                except Exception as e:
-                    logger.info(f"Error occurred while processing {newsUrl}: {e}")
-                    appendCrawlLog(
-                        self.DBuid, "error", f"기사 처리 실패 ({newsUrl}): {e}"
-                    )
-                    continue
+            concurrency = speed_to_concurrency(self.speed)
+            asyncio.run(
+                run_with_concurrency(urlList, self._processOneUrl, concurrency)
+            )
 
             # 날짜 단위 진행률을 DB에 직접 업데이트
             updateCrawlStatus(

@@ -412,6 +412,7 @@ class YouTubeCrawler:
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
+                    requester=self.requester,
                 )
                 break
 
@@ -425,6 +426,7 @@ class YouTubeCrawler:
                     userEmail=self.Email,
                     status=self.status,
                     DBuid=self.DBuid,
+                    requester=self.requester,
                 )
                 break
 

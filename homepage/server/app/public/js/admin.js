@@ -57,6 +57,22 @@
     }).catch(function () { /* 이미지 삭제 실패는 콘텐츠 저장을 막지 않는다 */ });
   }
 
+  function setTabCount(id, n) {
+    var el = document.getElementById('count-' + id);
+    if (el) el.textContent = n;
+  }
+
+  function thumbCell(url) {
+    return url
+      ? '<img class="row-thumb" src="' + escAttr(url) + '">'
+      : '<div class="row-thumb-placeholder"><i class="fa-solid fa-image"></i></div>';
+  }
+
+  function actionButtons(editFn, deleteFn) {
+    return '<button class="icon-btn" title="수정" onclick="' + editFn + '"><i class="fa-solid fa-pen"></i></button>'
+      + '<button class="icon-btn danger" title="삭제" onclick="' + deleteFn + '"><i class="fa-solid fa-trash"></i></button>';
+  }
+
   function showModalError(id, msg) {
     var el = document.getElementById(id);
     el.textContent = msg;
@@ -119,8 +135,9 @@
 
   function renderPapers() {
     var tbody = document.getElementById('papers-tbody');
+    setTabCount('papers', papersData.length);
     if (!papersData.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">등록된 논문이 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5"><div class="admin-empty"><i class="fa-solid fa-file-lines"></i>등록된 논문이 없습니다.</div></td></tr>';
       return;
     }
     tbody.innerHTML = papersData.map(function (p) {
@@ -130,10 +147,7 @@
         + '<td class="cell-truncate" title="' + escAttr(p.title) + '">' + esc(p.title) + '</td>'
         + '<td class="cell-truncate" title="' + escAttr(authors) + '">' + esc(authors) + '</td>'
         + '<td class="cell-truncate">' + esc(p.venue || '') + '</td>'
-        + '<td class="col-actions">'
-        + '<button class="btn btn-sm btn-outline-secondary" onclick="openPaperModal(\'' + p.uid + '\')">수정</button> '
-        + '<button class="btn btn-sm btn-outline-danger" onclick="deletePaper(\'' + p.uid + '\')">삭제</button>'
-        + '</td></tr>';
+        + '<td class="col-actions">' + actionButtons("openPaperModal('" + p.uid + "')", "deletePaper('" + p.uid + "')") + '</td></tr>';
     }).join('');
   }
 
@@ -221,20 +235,22 @@
 
   function renderMembers() {
     var tbody = document.getElementById('members-tbody');
+    setTabCount('members', membersData.length);
     if (!membersData.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">등록된 멤버가 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6"><div class="admin-empty"><i class="fa-solid fa-users"></i>등록된 멤버가 없습니다.</div></td></tr>';
       return;
     }
     tbody.innerHTML = membersData.map(function (m) {
       return '<tr>'
+        + '<td>' + thumbCell(m.image) + '</td>'
         + '<td>' + esc(m.name) + '</td>'
         + '<td>' + esc(m.section || '') + '</td>'
         + '<td>' + esc(m.position || '') + '</td>'
         + '<td class="cell-truncate">' + esc(m.email || '') + '</td>'
-        + '<td class="col-actions">'
-        + '<button class="btn btn-sm btn-outline-secondary" onclick="openMemberModal(\'' + m.uid + '\')">수정</button> '
-        + '<button class="btn btn-sm btn-outline-danger" onclick="deleteMember(\'' + m.uid + '\', ' + JSON.stringify(m.name) + ')">삭제</button>'
-        + '</td></tr>';
+        + '<td class="col-actions">' + actionButtons(
+          "openMemberModal('" + m.uid + "')",
+          "deleteMember('" + m.uid + "', " + JSON.stringify(m.name) + ")"
+        ) + '</td></tr>';
     }).join('');
   }
 
@@ -325,19 +341,18 @@
 
   function renderNews() {
     var tbody = document.getElementById('news-tbody');
+    setTabCount('news', newsData.length);
     if (!newsData.length) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">등록된 뉴스가 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5"><div class="admin-empty"><i class="fa-solid fa-newspaper"></i>등록된 뉴스가 없습니다.</div></td></tr>';
       return;
     }
     tbody.innerHTML = newsData.map(function (n) {
       return '<tr>'
+        + '<td>' + thumbCell(n.image) + '</td>'
         + '<td class="cell-truncate" title="' + escAttr(n.title) + '">' + esc(n.title) + '</td>'
         + '<td>' + esc(n.date || '') + '</td>'
         + '<td class="cell-truncate">' + esc(n.url || '') + '</td>'
-        + '<td class="col-actions">'
-        + '<button class="btn btn-sm btn-outline-secondary" onclick="openNewsModal(\'' + n.uid + '\')">수정</button> '
-        + '<button class="btn btn-sm btn-outline-danger" onclick="deleteNews(\'' + n.uid + '\')">삭제</button>'
-        + '</td></tr>';
+        + '<td class="col-actions">' + actionButtons("openNewsModal('" + n.uid + "')", "deleteNews('" + n.uid + "')") + '</td></tr>';
     }).join('');
   }
 
@@ -409,19 +424,18 @@
 
   function renderGallery() {
     var tbody = document.getElementById('gallery-tbody');
+    setTabCount('gallery', galleryData.length);
     if (!galleryData.length) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">등록된 게시글이 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5"><div class="admin-empty"><i class="fa-solid fa-images"></i>등록된 게시글이 없습니다.</div></td></tr>';
       return;
     }
     tbody.innerHTML = galleryData.map(function (g) {
       return '<tr>'
+        + '<td>' + thumbCell((g.photos || [])[0]) + '</td>'
         + '<td class="cell-truncate" title="' + escAttr(g.title) + '">' + esc(g.title) + '</td>'
         + '<td>' + esc(g.date || '') + '</td>'
         + '<td>' + ((g.photos || []).length) + '</td>'
-        + '<td class="col-actions">'
-        + '<button class="btn btn-sm btn-outline-secondary" onclick="openGalleryModal(\'' + g.uid + '\')">수정</button> '
-        + '<button class="btn btn-sm btn-outline-danger" onclick="deleteGallery(\'' + g.uid + '\')">삭제</button>'
-        + '</td></tr>';
+        + '<td class="col-actions">' + actionButtons("openGalleryModal('" + g.uid + "')", "deleteGallery('" + g.uid + "')") + '</td></tr>';
     }).join('');
   }
 
@@ -527,20 +541,19 @@
 
   function renderPopups() {
     var tbody = document.getElementById('popups-tbody');
+    setTabCount('popups', popupsData.length);
     if (!popupsData.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">등록된 팝업이 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6"><div class="admin-empty"><i class="fa-solid fa-bullhorn"></i>등록된 팝업이 없습니다.</div></td></tr>';
       return;
     }
     tbody.innerHTML = popupsData.map(function (p) {
       return '<tr>'
+        + '<td>' + thumbCell(p.image) + '</td>'
         + '<td class="cell-truncate" title="' + escAttr(p.title) + '">' + esc(p.title) + '</td>'
         + '<td>' + esc(p.start_date || '') + '</td>'
         + '<td>' + esc(p.end_date || '') + '</td>'
-        + '<td>' + (p.is_active ? '✔' : '✘') + '</td>'
-        + '<td class="col-actions">'
-        + '<button class="btn btn-sm btn-outline-secondary" onclick="openPopupModal(\'' + p.uid + '\')">수정</button> '
-        + '<button class="btn btn-sm btn-outline-danger" onclick="deletePopup(\'' + p.uid + '\')">삭제</button>'
-        + '</td></tr>';
+        + '<td>' + (p.is_active ? '<span class="status-pill on">활성</span>' : '<span class="status-pill off">비활성</span>') + '</td>'
+        + '<td class="col-actions">' + actionButtons("openPopupModal('" + p.uid + "')", "deletePopup('" + p.uid + "')") + '</td></tr>';
     }).join('');
   }
 

@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
@@ -6,9 +7,10 @@ import os
 from dotenv import load_dotenv
 import requests
 
+from db import discord_notifications_db
+
 load_dotenv()
 
-crawler_pushover_key = os.getenv("CRAWLER_PUSHOVER")
 sender = os.getenv("MAIL_SENDER")
 MailPassword = os.getenv("MAIL_PASSWORD")
 
@@ -30,7 +32,21 @@ def sendMail(receiver, title, text):
         server.sendmail(sender, receiver, msg.as_string())
 
 
-def sendPushOver(msg, user_key):
-    url = "https://api.pushover.net/1/messages.json"
-    message = {"token": crawler_pushover_key, "user": user_key, "message": msg}
-    response = requests.post(url, data=message)
+def sendDiscord(msg, channel_key, requester=None):
+    """discord.notifications 큐에 넣기만 한다 — 실제 전송은 bot/이 폴링해서 처리한다."""
+    try:
+        content = f"👤 **{requester}**\n{msg}" if requester else msg
+        discord_notifications_db.insert_one(
+            {
+                "channel_key": channel_key,
+                "content": content,
+                "embed": None,
+                "actions": None,
+                "status": "pending",
+                "created_at": datetime.now(timezone.utc),
+                "sent_at": None,
+                "error": None,
+            }
+        )
+    except Exception:
+        pass

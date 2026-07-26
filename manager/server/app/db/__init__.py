@@ -72,3 +72,7 @@ bug_board_db = manager_db["bug-board"]
 free_board_db = manager_db["free-board"]
 
 crawldata_path = os.getenv("CRAWLDATA_PATH")
+
+# 디스코드 봇(bot/)이 폴링해서 실제 전송을 처리하는 알림 큐 — 여러 서비스가 공유하는
+# 단일 컬렉션이라 dev/prod 구분 없이 하나만 둔다.
+discord_notifications_db = client["discord"]["notifications"]
