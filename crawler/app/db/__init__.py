@@ -95,10 +95,24 @@ def get_userinfo(requester: str):
             "Email": user["email"],
             "PushOver": user.get("pushover_key"),
             "userUid": user["uid"],
+            "discord_id": user.get("discord_id"),
         }
     except Exception as e:
         logger.info(f"DB 유저 정보 가져오기 : {requester}, 에러: {e}")
         return False
+
+
+def get_admin_discord_ids() -> list:
+    """관리자(role: admin) 중 디스코드 계정이 연동된 유저의 discord_id 목록"""
+    try:
+        cursor = user_db.find(
+            {"role": "admin", "discord_id": {"$exists": True, "$ne": None}},
+            {"discord_id": 1},
+        )
+        return [doc["discord_id"] for doc in cursor if doc.get("discord_id")]
+    except Exception as e:
+        logger.info(f"관리자 디스코드 ID 조회 실패: {e}")
+        return []
 
 
 def add_userlog(userUid: str, dbname: str):

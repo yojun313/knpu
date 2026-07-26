@@ -54,12 +54,10 @@
                             {{ bug.datetime }}
                         </span>
                     </div>
-                    <div class="text-sm text-zinc-200 leading-relaxed font-medium break-all mr-10">
-                        {{ bug.message }}
-                    </div>
+                    <pre class="bug-message text-xs text-zinc-200 leading-relaxed font-mono whitespace-pre-wrap break-words mr-10">{{ bug.message }}</pre>
                 </div>
 
-                <button onclick="copyToClipboard('{{ bug.message | replace("'", "\\'") }}', this)" 
+                <button onclick="copyToClipboard(this)"
                         class="md:opacity-0 group-hover:opacity-100 absolute top-4 right-4 p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-all shadow-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                 </button>
@@ -78,23 +76,21 @@
 
 <script>
     // 로그 내용 복사 함수
-    function copyToClipboard(text, btn) {
-        const tempTextArea = document.createElement("textarea");
-        tempTextArea.value = text;
-        document.body.appendChild(tempTextArea);
-        tempTextArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(tempTextArea);
+    function copyToClipboard(btn) {
+        const msgEl = btn.closest('.card').querySelector('.bug-message');
+        const text = msgEl.innerText;
 
-        // 시각적 피드백
-        const originalIcon = btn.innerHTML;
-        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-        btn.classList.add('bg-green-900/20');
-        
-        setTimeout(() => {
-            btn.innerHTML = originalIcon;
-            btn.classList.remove('bg-green-900/20');
-        }, 2000);
+        navigator.clipboard.writeText(text).then(() => {
+            // 시각적 피드백
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            btn.classList.add('bg-green-900/20');
+
+            setTimeout(() => {
+                btn.innerHTML = originalIcon;
+                btn.classList.remove('bg-green-900/20');
+            }, 2000);
+        });
     }
 </script>
 {% endblock %}

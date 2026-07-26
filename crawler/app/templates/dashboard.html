@@ -183,6 +183,7 @@
         .f-crawler  { width: 148px; flex-shrink: 0; }
         .f-option   { width: 172px; flex-shrink: 0; }
         .f-priority { width: 82px;  flex-shrink: 0; }
+        .f-speed    { width: 82px;  flex-shrink: 0; }
 
         .date-pair {
             display: flex;
@@ -422,7 +423,8 @@
             padding-top: 0;
         }
         .card-detail.open {
-            max-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
             border-top-color: var(--line);
             margin-top: 12px;
             padding-top: 12px;
@@ -468,6 +470,64 @@
             border: 1px solid #fda29b;
             word-break: break-word;
         }
+
+        .btn-logs {
+            margin-top: 10px;
+            padding: 6px 12px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: #fff;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-logs:hover { background: var(--bg); }
+
+        .job-logs {
+            display: none;
+            margin-top: 8px;
+            max-height: 260px;
+            overflow-y: auto;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: #fbfcfe;
+        }
+        .job-logs.open { display: block; }
+
+        .job-logs-loading {
+            padding: 10px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .job-log-row {
+            display: flex;
+            gap: 8px;
+            align-items: baseline;
+            padding: 5px 9px;
+            font-size: 11px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            border-bottom: 1px solid #eef1f6;
+        }
+        .job-log-row:last-child { border-bottom: none; }
+        .job-log-time { color: var(--muted); flex-shrink: 0; white-space: nowrap; }
+        .job-log-type {
+            flex-shrink: 0;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: #edf1f7;
+            color: var(--muted);
+        }
+        .job-log-error .job-log-type { background: var(--danger-soft); color: var(--danger); }
+        .job-log-start .job-log-type,
+        .job-log-end   .job-log-type { background: var(--ok-soft); color: var(--ok); }
+        .job-log-error .job-log-msg { color: var(--danger); }
+        .job-log-msg { word-break: break-word; }
 
         /* ── Buttons ──────────────────────────────────── */
         .btn {
@@ -532,6 +592,7 @@
             .date-pair .field { flex: 1; }
             .date-pair .field input { width: 100%; }
             .f-priority { flex: 1; width: auto; }
+            .f-speed    { flex: 1; width: auto; }
             .form-actions { margin-left: 0; }
             .card-main { flex-wrap: wrap; }
             .card-right { width: 100%; justify-content: flex-end; }
@@ -627,6 +688,10 @@
                     <div class="field f-priority">
                         <label>우선순위</label>
                         <input type="number" id="f-priority" value="0" min="0" max="99" required>
+                    </div>
+                    <div class="field f-speed">
+                        <label title="수집 URL에 동시에 요청을 보낼 속도 (높을수록 빠름)">속도(1~10)</label>
+                        <input type="number" id="f-speed" value="5" min="1" max="10" required>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-ghost" onclick="fillToday()">오늘</button>
@@ -793,6 +858,7 @@
             start_day:     document.getElementById('f-start').value.trim(),
             end_day:       document.getElementById('f-end').value.trim(),
             priority:      Number(document.getElementById('f-priority').value || 0),
+            speed:         Number(document.getElementById('f-speed').value || 5),
         };
         if (!body.name || !body.start_day || !body.end_day) {
             setStatus('필수 필드를 모두 입력해 주세요.', true); return;
@@ -808,6 +874,7 @@
         setStatus(`작업이 추가되었습니다: ${data.job_id}`);
         document.getElementById('f-keyword').value  = '';
         document.getElementById('f-priority').value = '0';
+        document.getElementById('f-speed').value    = '5';
         document.getElementById('search-ops').innerHTML = '';
         fillToday();
     }
@@ -940,6 +1007,7 @@
             {label:'Job ID',   val:job.job_id, mono:true},
             {label:'옵션',      val:getOptionLabel(job.crawl_object, job.option_select)},
             {label:'우선순위',  val:String(job.priority??0)},
+            {label:'속도',      val:String(job.speed??5)},
         ];
         if (job.started_at)  items.push({label:'시작',    val:new Date(job.started_at).toLocaleString('ko-KR')});
         if (job.finished_at) items.push({label:'완료',    val:new Date(job.finished_at).toLocaleString('ko-KR')});
@@ -956,7 +1024,37 @@
             </div>`).join('')
             + '</div>';
         if (job.error_message) html += `<div class="detail-error-msg">${esc(job.error_message)}</div>`;
+        html += `
+            <button class="btn-logs" onclick="event.stopPropagation();loadLogs('${job.job_id}', this)">로그 보기</button>
+            <div class="job-logs" id="joblogs-${job.job_id}"></div>`;
         return html;
+    }
+
+    const LOG_TYPE_LABEL = {start:'시작', info:'정보', error:'에러', end:'종료'};
+
+    async function loadLogs(jobId, btn) {
+        const box = document.getElementById('joblogs-'+jobId);
+        if (!box) return;
+        box.classList.add('open');
+        box.innerHTML = '<div class="job-logs-loading">불러오는 중...</div>';
+        try {
+            const res  = await fetch(`/api/jobs/${jobId}/logs`);
+            const data = await res.json();
+            const logs = data.logs || [];
+            if (!logs.length) {
+                box.innerHTML = '<div class="job-logs-loading">기록된 로그가 없습니다.</div>';
+                return;
+            }
+            box.innerHTML = logs.map(l => `
+                <div class="job-log-row job-log-${esc(l.type)}">
+                    <span class="job-log-time">${esc(l.time)}</span>
+                    <span class="job-log-type">${esc(LOG_TYPE_LABEL[l.type]||l.type)}</span>
+                    <span class="job-log-msg">${esc(l.message)}</span>
+                </div>`).join('');
+            box.scrollTop = box.scrollHeight;
+        } catch (e) {
+            box.innerHTML = '<div class="job-logs-loading">로그를 불러오지 못했습니다.</div>';
+        }
     }
 
     function toggleDetail(e, jobId) {

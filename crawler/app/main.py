@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.auth.middleware import AuthMiddleware
+from app.common.audit_log import AuditLogMiddleware
 from app.config import MODE
 import gc
 import asyncio
@@ -104,4 +105,4 @@ from app.routes.dashboard_routes import router as dashboard_router
 fastapi_app.include_router(dashboard_router, tags=["Dashboard"])
 fastapi_app.include_router(api_router, prefix="/api", tags=["API"])
 
-app = AuthMiddleware(fastapi_app)
+app = AuthMiddleware(AuditLogMiddleware(fastapi_app))

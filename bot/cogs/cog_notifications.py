@@ -129,7 +129,38 @@ class NotificationPoller(commands.Cog):
                 return channel
         return None
 
+    async def _send_dm(self, doc: dict, user_ids: list):
+        """공개 채널이 아니라 지정된 유저(크롤링 요청자/관리자)에게만 개인 DM으로 전송한다."""
+        content = str(doc.get("content") or "")[:1900]
+        errors = []
+        sent = 0
+        for uid in user_ids:
+            try:
+                user = self.bot.get_user(uid) or await self.bot.fetch_user(uid)
+                await user.send(content)
+                sent += 1
+            except Exception as e:
+                errors.append(f"{uid}: {e}")
+
+        await self.col.update_one(
+            {"_id": doc["_id"]},
+            {
+                "$set": {
+                    "status": "sent" if sent else "failed",
+                    "sent_at": datetime.datetime.now(datetime.timezone.utc)
+                    if sent
+                    else None,
+                    "error": "; ".join(errors) if errors else None,
+                }
+            },
+        )
+
     async def _send_one(self, doc: dict):
+        dm_user_ids = doc.get("dm_user_ids")
+        if dm_user_ids:
+            await self._send_dm(doc, dm_user_ids)
+            return
+
         channel_id = CHANNEL_IDS.get(doc.get("channel_key"))
         if not channel_id:
             await self.col.update_one(
