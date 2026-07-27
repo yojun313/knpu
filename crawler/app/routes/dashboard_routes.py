@@ -32,9 +32,6 @@ async def dashboard_page(request: Request):
 
 @router.get("/auth/token-login")
 async def token_login(token: str):
-    """매니저 앱(데스크톱)이 이미 가진 로그인 토큰으로 크롤러 대시보드에 자동 로그인한다.
-    매니저 앱 내 임베디드 브라우저가 별도 프로필이라 knpu.re.kr 세션 쿠키를 공유하지 못하는
-    경우에도, 토큰을 쿼리로 넘겨받아 이 서버가 직접 session 쿠키를 심어준다."""
     payload = verify_token(token)
     if not payload:
         return RedirectResponse(url="https://knpu.re.kr/login")

@@ -68,8 +68,6 @@ class VerificationCog(commands.Cog):
         self.poll_links.cancel()
 
     async def cog_load(self):
-        # custom_id 기반 persistent view 등록 — 봇이 재시작돼도 이미 올라가 있는
-        # Verify 버튼 메시지가 계속 동작하게 하기 위함 (메시지를 새로 보낼 필요 없음).
         self.bot.add_view(VerifyButtonView(self.bot))
 
     @commands.Cog.listener()
@@ -77,7 +75,6 @@ class VerificationCog(commands.Cog):
         await self._ensure_verify_message()
 
     async def _ensure_verify_message(self):
-        """VERIFY_CHANNEL_ID에 Verify 임베드가 없으면 새로 게시한다 (자가 복구)."""
         try:
             channel = self.bot.get_channel(
                 VERIFY_CHANNEL_ID

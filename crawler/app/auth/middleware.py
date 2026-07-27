@@ -25,8 +25,6 @@ INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 
 
 class AuthMiddleware:
-    """순수 ASGI 미들웨어. BaseHTTPMiddleware의 StreamingResponse hang 문제를 회피."""
-
     def __init__(self, app: ASGIApp):
         self.app = app
 

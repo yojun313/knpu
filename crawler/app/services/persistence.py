@@ -20,12 +20,7 @@ def _get_collection():
 
 
 class JobPersistence:
-    """MongoDB crawler.job-queue 컬렉션을 통한 작업 영속화.
-    MongoDB가 없으면 no-op으로 동작한다 (in-memory only).
-    """
-
     def link_db_uid(self, job_id: str, db_uid: str):
-        """job-queue 문서에 db-list의 식별자인 DBuid를 기록하여 연결"""
         col = _get_collection()
         if col is not None:
             col.update_one({"job_id": job_id}, {"$set": {"db_uid": db_uid}})
@@ -84,7 +79,6 @@ class JobPersistence:
         return list(col.find().sort("created_at", -1).limit(limit))
 
     def get_recent_days(self, days: int = 7) -> list:
-        """최근 N일 내 완료/에러/중단된 작업 조회"""
         col = _get_collection()
         if col is None:
             return []
@@ -120,7 +114,6 @@ class JobPersistence:
         return result.modified_count, db_uids
 
     def get_logs(self, job_id: str) -> list:
-        """job_id에 연결된 db_uid의 크롤링 로그(crawler.log-list) 조회"""
         col = _get_collection()
         if col is None:
             return []
@@ -143,7 +136,6 @@ class JobPersistence:
         col.delete_one({"job_id": job_id})
 
     def _update_db_list_status(self, db_uid: str, state: str):
-        """db-list 컬렉션(실제 크롤링 리스트)의 status 필드 동기화"""
         try:
             from db import client
 

@@ -1347,8 +1347,11 @@
         loadDbList();
     }
 
+    let dbRowsByUid = new Map();
+
     function renderDbTable(items) {
         const tbody = document.getElementById('db-tbody');
+        dbRowsByUid = new Map(items.map(row => [row.uid, row]));
         if (!items.length) {
             tbody.innerHTML = '<tr><td colspan="8"><div class="empty">조건에 맞는 DB가 없습니다.</div></td></tr>';
             return;
@@ -1368,9 +1371,9 @@
                 <td data-label="시작" class="muted-cell">${esc(row.startTime)}</td>
                 <td data-label="액션">
                     <div class="actions-cell" onclick="event.stopPropagation()">
-                        <button class="btn btn-download" onclick="openSaveOptions('${row.uid}','${esc(row.keyword)}','${esc(row.name)}')">다운로드</button>
-                        ${canResume ? `<button class="btn btn-resume" onclick="resumeDb('${row.uid}','${row.endDate||''}','${row.status}',this)">이어받기</button>` : ''}
-                        ${canDelete ? `<button class="btn btn-db-delete" onclick="deleteDb('${row.uid}','${esc(row.keyword)}',this)">삭제</button>` : ''}
+                        <button class="btn btn-download" onclick="openSaveOptions('${row.uid}')">다운로드</button>
+                        ${canResume ? `<button class="btn btn-resume" onclick="resumeDb('${row.uid}',this)">이어받기</button>` : ''}
+                        ${canDelete ? `<button class="btn btn-db-delete" onclick="deleteDb('${row.uid}',this)">삭제</button>` : ''}
                     </div>
                 </td>
             </tr>`;
@@ -1446,10 +1449,11 @@
     let saveTargetUid = null;
     let saveTargetName = null;
 
-    function openSaveOptions(uid, keyword, name) {
+    function openSaveOptions(uid) {
+        const row = dbRowsByUid.get(uid) || {};
         saveTargetUid = uid;
-        saveTargetName = name;
-        document.getElementById('save-modal-keyword').textContent = keyword;
+        saveTargetName = row.name;
+        document.getElementById('save-modal-keyword').textContent = row.keyword;
         document.querySelector('input[name="save-date-option"][value="all"]').checked = true;
         document.getElementById('save-start-date').value = '';
         document.getElementById('save-end-date').value = '';
@@ -1588,7 +1592,10 @@
         document.getElementById('progress-iframe').src = '';
     }
 
-    async function resumeDb(dbUid, currentEndDay, state, btn) {
+    async function resumeDb(dbUid, btn) {
+        const row = dbRowsByUid.get(dbUid) || {};
+        const currentEndDay = row.endDate || '';
+        const state = row.status;
         let endDate = null;
 
         if (state === 'completed') {
@@ -1618,8 +1625,9 @@
         setStatus(`이어받기 시작됨: ${data.job_id}`);
     }
 
-    async function deleteDb(uid, keyword, btn) {
-        if (!confirm(`"${keyword}" DB를 완전히 삭제하시겠습니까?\n(파일과 기록이 전부 삭제되며 되돌릴 수 없습니다)`)) return;
+    async function deleteDb(uid, btn) {
+        const row = dbRowsByUid.get(uid) || {};
+        if (!confirm(`"${row.keyword}" DB를 완전히 삭제하시겠습니까?\n(파일과 기록이 전부 삭제되며 되돌릴 수 없습니다)`)) return;
         if (btn) btn.disabled = true;
         const res = await fetch(`/api/db-list/${uid}`, { method: 'DELETE' });
         const data = await res.json().catch(() => ({}));

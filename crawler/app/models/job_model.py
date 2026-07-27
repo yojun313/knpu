@@ -43,8 +43,6 @@ class ResumeRequest(BaseModel):
 
 
 class CrawlSaveOption(BaseModel):
-    """manager/server의 SaveCrawlDbOption과 동일한 스키마 — 그대로 프록시해서 전달한다."""
-
     pid: str
     dateOption: str  # "all" | "part"
     start_date: str = ""

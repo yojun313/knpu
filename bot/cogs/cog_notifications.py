@@ -1,16 +1,4 @@
-"""manager/server, homepage/server, crawler가 discord.notifications 컬렉션에 넣어두는
-알림 큐를 폴링해서 실제로 채널에 전송하는 범용 알림 코그.
-
-기존 코드(예: cog_version.py, cog_error.py)는 각자 도메인 컬렉션을 직접 폴링하는 방식이라
-그 패턴을 그대로 따르되, 이 코그는 여러 서비스가 공유하는 범용 큐 하나만 본다 — pushover로
-보내던 알림들처럼 발신처가 여러 서비스(각기 다른 DB)로 흩어져 있는 경우, 각 서비스가
-discord.py나 채널 ID를 몰라도 되게 하기 위함이다.
-
-채널 지정은 config.CHANNEL_IDS에 고정되어 있다 — 슬래시 명령어로 바꾸는 기능은 두지 않는다.
-"""
-
 import datetime
-
 import discord
 from discord.ext import commands, tasks
 
@@ -19,11 +7,6 @@ from libs.internal_auth import mint_admin_token
 
 
 class SignupApprovalView(discord.ui.View):
-    """가입 승인 요청 임베드에 붙는 승인/거절 버튼. 상태는 임베드의 'UID' 필드에서 읽는다
-    (cog_error.py의 ErrorManageView와 동일한 방식) — 재시작 후에도 이미 전송된 메시지의
-    버튼이 눌리면 이 클래스가 다시 붙어 처리할 수 있다(단, 재시작 사이에는 discord.py의
-    persistent view 제약상 응답하지 못할 수 있음)."""
-
     def __init__(self, bot):
         super().__init__(timeout=None)
         self.bot = bot
@@ -130,7 +113,6 @@ class NotificationPoller(commands.Cog):
         return None
 
     async def _send_dm(self, doc: dict, user_ids: list):
-        """공개 채널이 아니라 지정된 유저(크롤링 요청자/관리자)에게만 개인 DM으로 전송한다."""
         content = str(doc.get("content") or "")[:1900]
         errors = []
         sent = 0

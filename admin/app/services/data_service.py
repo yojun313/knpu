@@ -24,12 +24,6 @@ def get_pending_users():
 
 
 def _sync_identity_history():
-    """알고 있는 모든 uid→이름을 identity_history_col에 영구 보관한다.
-
-    매니저 데스크톱 앱이 예전에 쓰던 레거시 계정(manager.users)과 현재 중앙 로그인
-    계정(homepage.users) 양쪽에서 본 적 있는 uid는 전부 여기 쌓이고, 한 번 기록되면
-    계정이 삭제되거나 재가입으로 uid가 바뀌어도 지워지지 않는다 — 그래야 과거
-    user-logs/user-bugs/audit-logs의 userUid가 계속 이름으로 표시된다."""
     now = datetime.now(ZoneInfo("Asia/Seoul"))
     seen = list(homepage_users_col.find({}, {"uid": 1, "name": 1, "role": 1})) + list(
         manager_users_col.find({}, {"uid": 1, "name": 1, "role": 1})
@@ -48,11 +42,6 @@ def _sync_identity_history():
 
 
 def get_user_mapping():
-    """uid를 이름으로 매핑하는 딕셔너리 생성.
-
-    현재 계정(homepage.users)이 최우선이고, 거기 없는 uid는 지금까지 한 번이라도
-    본 적 있는 모든 계정(identity_history_col — 레거시 manager.users 포함)에서
-    찾아 이름을 이어서 보여준다."""
     _sync_identity_history()
 
     mapping = {
@@ -138,7 +127,6 @@ def get_recent_logs(limit=10, name=None, date_str=None):
 
 
 def get_users_with_log_counts():
-    """User Logs 탭의 유저별 서브탭 목록 (로그 있는 유저만, 건수 많은 순)"""
     user_map = get_user_mapping()
     pipeline = [{"$group": {"_id": "$userUid", "count": {"$sum": 1}}}]
     counts = {c["_id"]: c["count"] for c in user_logs_col.aggregate(pipeline)}
@@ -151,7 +139,6 @@ def get_users_with_log_counts():
 
 
 def get_logs_for_user(user_uid: str, page=1, per_page=30):
-    """특정 유저의 전체 기간 로그를 페이지네이션해서 조회한다."""
     user_map = get_user_mapping()
     query = {"userUid": user_uid}
     total = user_logs_col.count_documents(query)
@@ -203,15 +190,12 @@ def get_recent_crawlers(limit=10):
 
 
 def get_audit_services():
-    """audit.logs에 실제로 존재하는 service 값 목록 (필터 드롭다운용)"""
     return sorted(audit_logs_col.distinct("service"))
 
 
 def get_audit_logs(
     page=1, per_page=30, service=None, name=None, method=None, date_str=None
 ):
-    """서버가 자동으로 기록한 구조화 감사 로그 조회 (변경 요청만 기록됨).
-    반환: (logs, total_count)"""
     query = {}
 
     if service:
@@ -238,13 +222,11 @@ def get_audit_logs(
 
 
 def get_crawler_logs(uid: str):
-    """crawler.log-list에서 특정 크롤링 작업(db-list.uid)의 로그를 조회한다."""
     doc = crawler_log_col.find_one({"uid": uid})
     return doc.get("logs", []) if doc else []
 
 
 def get_recent_bugs(limit=10):
-    """Bug Reports 페이지용 데이터 포맷팅"""
     bugs = list(bug_board_col.find().sort("datetime", -1).limit(limit))
     for bug in bugs:
         dt = bug.get("datetime")

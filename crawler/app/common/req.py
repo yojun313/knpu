@@ -53,9 +53,6 @@ def Request(url: str, headers=None, sleep: float = 0, **kwargs):
 
 
 class AsyncResponse:
-    """requests.Response와 같은 인터페이스(.text/.status_code/.raise_for_status())를 흉내내서,
-    URL 목록 수집 단계의 기존 파싱 코드를 거의 그대로 재사용할 수 있게 한다."""
-
     __slots__ = ("status_code", "text")
 
     def __init__(self, status_code: int, text: str):
@@ -81,8 +78,6 @@ async def RequestAsync(
     sleep: float = 0,
     **kwargs,
 ) -> AsyncResponse:
-    """비동기 본문/댓글 수집 단계 전용. URL 목록 수집(collectUrl)은 기존처럼 동기 Request()를
-    그대로 쓴다 — 요청 사항대로 URL 수집은 동기, 그 URL들에 요청 보내는 부분만 비동기다."""
     if headers is None:
         headers = random_heador()
 

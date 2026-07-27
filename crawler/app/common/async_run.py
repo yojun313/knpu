@@ -3,7 +3,6 @@ import aiohttp
 
 
 def speed_to_concurrency(speed) -> int:
-    """크롤링 옵션의 '속도(1~10)' 값을 동시 요청 수로 변환한다."""
     try:
         n = int(float(speed))
     except (TypeError, ValueError):
@@ -12,7 +11,6 @@ def speed_to_concurrency(speed) -> int:
 
 
 async def run_with_concurrency(items, worker, concurrency: int):
-    """worker(session, semaphore, item) 코루틴을 concurrency만큼 동시에 실행한다."""
     if not items:
         return
     semaphore = asyncio.Semaphore(concurrency)

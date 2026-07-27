@@ -20,9 +20,6 @@ _KNPU_ROOT = "/home/lab/knpu"
 
 
 def _detect_service_dir(message: str) -> str | None:
-    """버그 메시지(스택트레이스)에 남아있는 'knpu/<service>/...' 경로 조각으로
-    실제 서비스 디렉토리를 찾는다. 보고자의 PC 경로(예: /Users/.../knpu/manager/...)라도
-    'knpu/' 뒤의 최상위 폴더명은 이 서버의 서비스 디렉토리명과 동일하다."""
     idx = message.find("knpu/")
     if idx == -1:
         return None

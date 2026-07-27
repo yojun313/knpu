@@ -176,9 +176,6 @@ def errorCrawl(DBuid):
 
 
 def getResumeContext(DBuid):
-    """이어받기에 필요한 정보를 db-list에서 읽어온다. 조건에 안 맞으면 예외를 던진다.
-    완료(completed)된 작업도 새 종료일을 지정하면 이어받기 대상이 된다 — 이미 끝난
-    크롤링을 더 늦은 날짜까지 확장해서 추가로 수집하는 용도."""
     doc = crawlList_db.find_one({"uid": DBuid})
     if not doc:
         raise ValueError(f"크롤링 작업을 찾을 수 없습니다: {DBuid}")
@@ -196,8 +193,6 @@ def getResumeDBPath(DBname):
 
 
 def computeResumeStartDate(doc):
-    """마지막으로 완료한 날짜의 다음날부터 이어서 시작한다. 하루도 완료 못 했으면 원래
-    시작일 그대로 (부분적으로만 처리된 날은 다시 처리됨 — 일 단위 재개이므로 정상 동작)."""
     lastDate = doc.get("lastCrawledDate")
     if lastDate:
         d = datetime.strptime(lastDate, "%Y%m%d").date() + timedelta(days=1)
@@ -206,8 +201,6 @@ def computeResumeStartDate(doc):
 
 
 def validateResumeRange(startDate, endDate):
-    """이어받기 시작일이 종료일보다 늦으면(=이미 그 날짜까지 다 끝난 상태) 명확한
-    에러를 던진다. 완료된 작업을 이어받을 때 새 종료일을 안 늘려주면 여기서 걸린다."""
     s = datetime.strptime(startDate, "%Y%m%d").date()
     e = datetime.strptime(endDate, "%Y%m%d").date()
     if e < s:
@@ -218,9 +211,6 @@ def validateResumeRange(startDate, endDate):
 
 
 def restoreCsvFromParquet(DBpath, tableNames):
-    """중단(stopOperator)되면서 parquet으로 변환·삭제된 원본 테이블을 다시 csv로 되돌려
-    addToCSV가 그 뒤에 이어서 append할 수 있게 한다. 이미 csv로 남아있으면(에러로 죽은 경우)
-    그대로 둔다 — addToCSV는 존재하는 파일에 자동으로 이어붙인다."""
     for name in tableNames:
         parquet_path = os.path.join(DBpath, f"{name}.parquet")
         csv_path = os.path.join(DBpath, f"{name}.csv")
@@ -232,9 +222,6 @@ def restoreCsvFromParquet(DBpath, tableNames):
 
 
 def countExistingRows(DBpath, tableNames):
-    """이어받기 시작 시점 기준 각 테이블 csv의 기존 행 수를 기록해둔다. finishOperator가
-    이 기준점 이후의 행만 '새로 추가된 부분'으로 보고 그 부분만 토큰화해서 기존 토큰
-    파일 뒤에 이어붙일 수 있도록 하기 위함 — 매번 전체를 다시 토큰화하지 않기 위해서다."""
     counts = {}
     for name in tableNames:
         csv_path = os.path.join(DBpath, f"{name}.csv")
@@ -251,11 +238,6 @@ def countExistingRows(DBpath, tableNames):
 
 
 def renameForResume(DBuid, DBtype, keyword, originalStartDate, newEndDate, oldDBname):
-    """이어받기 시점 기준으로 DBname을 새로 만들고(끝 날짜·타임스탬프 갱신), 실제
-    폴더/파일/텍스트 로그까지 전부 새 이름으로 리네임한다. 이어받기할 때마다 매번
-    호출된다 — 종료일이 안 바뀌어도 '마지막으로 언제 이어받았는지' 타임스탬프는
-    새로 찍혀야 하기 때문이다. db-list의 name 필드도 함께 갱신한다.
-    실패하면 아무것도 바꾸지 않고 기존 이름을 그대로 반환한다."""
     newDBname = makeDBname(DBtype, keyword, originalStartDate, newEndDate)
     if newDBname == oldDBname:
         return oldDBname
@@ -289,8 +271,6 @@ def renameForResume(DBuid, DBtype, keyword, originalStartDate, newEndDate, oldDB
 
 
 def beginResume(DBuid, newEndDate=None):
-    """이어받기 시작 — 상태를 다시 running으로 되돌린다. 새 종료일이 주어지면
-    (완료된 작업 확장) db-list의 endDate도 함께 갱신한다."""
     update = {"status": "running", "endTime": "진행 중"}
     if newEndDate:
         update["endDate"] = newEndDate
@@ -325,7 +305,6 @@ def initCrawlLog(DBuid, message):
 
 
 def appendCrawlLog(DBuid, log_type, message):
-    """log-list에 로그 항목 즉시 추가. log_type: 'error' | 'info' | 'end'"""
     try:
         crawlLog_db.update_one(
             {"uid": DBuid},

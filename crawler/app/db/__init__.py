@@ -101,7 +101,6 @@ def get_userinfo(requester: str):
 
 
 def get_admin_discord_ids() -> list:
-    """관리자(role: admin) 중 디스코드 계정이 연동된 유저의 discord_id 목록"""
     try:
         cursor = user_db.find(
             {"role": "admin", "discord_id": {"$exists": True, "$ne": None}},

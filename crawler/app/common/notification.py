@@ -33,7 +33,6 @@ def sendMail(receiver, title, text):
 
 
 def sendDiscord(msg, channel_key, requester=None):
-    """discord.notifications 큐에 넣기만 한다 — 실제 전송은 bot/이 폴링해서 처리한다."""
     try:
         content = f"👤 **{requester}**\n{msg}" if requester else msg
         discord_notifications_db.insert_one(
@@ -53,7 +52,6 @@ def sendDiscord(msg, channel_key, requester=None):
 
 
 def sendDiscordDM(user_ids, msg, requester=None):
-    """공개 채널이 아니라 지정된 유저(요청자/관리자)에게만 DM으로 전송한다."""
     try:
         ids = sorted({uid for uid in (user_ids or []) if uid})
         if not ids:

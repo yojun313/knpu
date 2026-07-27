@@ -1,11 +1,3 @@
-"""admin 대시보드에서 Claude Code 백그라운드 세션(claude --bg / claude agents)을
-만들고 조회하는 래퍼. 데스크톱에서 쓰는 "Claude Code Remote"와 같은 CLI 메커니즘을
-그대로 쓴다 — claude 프로세스를 직접 서브프로세스로 실행한다.
-
-세션은 lab 계정 권한으로, --permission-mode bypassPermissions로 실행된다(승인 확인
-없이 자동으로 도구를 사용함) — 서버 전체에 접근 가능하므로 admin 전용 기능이다.
-"""
-
 import glob
 import json
 import logging
@@ -46,7 +38,6 @@ def _transcript_path(cwd: str, session_id: str) -> str:
 
 
 def list_live_sessions(cwd: str | None = None) -> list[dict]:
-    """claude agents --json으로 현재 살아있는(백그라운드+인터랙티브) 세션 조회."""
     cmd = [CLAUDE_BIN, "agents", "--json", "--all"]
     if cwd:
         cmd += ["--cwd", cwd]
@@ -59,9 +50,6 @@ def list_live_sessions(cwd: str | None = None) -> list[dict]:
 
 
 def list_transcript_sessions(cwd: str) -> list[dict]:
-    """해당 디렉토리에서 이제까지 생성된 모든 세션(종료된 것 포함)을 트랜스크립트
-    파일 기준으로 나열한다 — claude agents --json --all이 놓칠 수 있는 오래된
-    세션까지 보이게 하기 위함."""
     proj_dir = os.path.expanduser(f"~/.claude/projects/{_encode_cwd(cwd)}")
     if not os.path.isdir(proj_dir):
         return []
@@ -107,7 +95,6 @@ def list_transcript_sessions(cwd: str) -> list[dict]:
 
 
 def read_transcript(cwd: str, session_id: str, limit: int = 300) -> list[dict]:
-    """세션 jsonl 트랜스크립트를 파싱해 채팅 메시지 목록으로 변환한다."""
     path = _transcript_path(cwd, session_id)
     if not os.path.exists(path):
         return []
@@ -160,8 +147,6 @@ def read_transcript(cwd: str, session_id: str, limit: int = 300) -> list[dict]:
 
 
 def create_session(cwd: str, prompt: str, name: str | None = None) -> dict:
-    """새 백그라운드 세션을 만든다. claude --bg는 곧바로 반환하고 실제 작업은
-    백그라운드에서 계속된다."""
     session_id = str(uuid.uuid4())
     cmd = [
         CLAUDE_BIN,
@@ -185,7 +170,6 @@ def create_session(cwd: str, prompt: str, name: str | None = None) -> dict:
 
 
 def send_message(cwd: str, session_id: str, prompt: str) -> dict:
-    """기존 세션에 이어서 메시지를 보낸다 (다시 백그라운드로 실행)."""
     cmd = [
         CLAUDE_BIN,
         "--bg",

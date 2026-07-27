@@ -7,7 +7,6 @@ from app.services.nginx_service import NginxService
 class PortsService:
     @staticmethod
     def _pm2_pid_map():
-        """pid -> pm2 프로세스 이름"""
         pid_map = {}
         for proc in PM2Service.get_processes():
             pid = proc.get("pid") or proc.get("monit", {}).get("pid")
@@ -17,7 +16,6 @@ class PortsService:
 
     @staticmethod
     def _nginx_port_map():
-        """port(str) -> [{domain, path}, ...] — nginx가 이 포트로 proxy_pass 하는 도메인/경로 목록"""
         port_map = {}
         for domain_info in NginxService.get_domains():
             for p in domain_info.get("paths", []):
@@ -31,7 +29,6 @@ class PortsService:
 
     @staticmethod
     def _process_label(pid):
-        """psutil로 프로세스 이름/커맨드를 가져온다. 권한이 없거나 이미 종료된 경우 None."""
         if not pid:
             return None
         try:
@@ -47,9 +44,6 @@ class PortsService:
 
     @staticmethod
     def _find_pm2_name(pid, pm2_pid_map, max_depth=4):
-        """실제 소켓을 들고 있는 pid가 pm2로 띄운 프로세스의 자식(예: uvicorn의
-        multiprocessing 워커)인 경우가 많아, 부모 방향으로 몇 단계 거슬러 올라가며
-        pm2 프로세스 목록과 매칭한다."""
         if not pid:
             return None
         if pid in pm2_pid_map:
@@ -68,8 +62,6 @@ class PortsService:
 
     @classmethod
     def get_listening_ports(cls):
-        """현재 시스템에서 LISTEN 상태인 모든 TCP/UDP 포트를 pid/PM2 이름/nginx 도메인과
-        함께 정리해서 반환한다. 포트 오름차순 정렬."""
         pm2_pid_map = cls._pm2_pid_map()
         nginx_port_map = cls._nginx_port_map()
 
