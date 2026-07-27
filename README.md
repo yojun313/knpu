@@ -5,26 +5,58 @@ Research System for **FPEI** at **Korea National Police University**.
 ---
 
 ## MANAGER
-> An integrated platform supporting research resource management and big data analysis.
 
-![Manager Service](homepage/app/public/assets/imgs/systems/manager.png)
-[**Open**](https://knpu.re.kr/manager)
+<img src="homepage/server/app/public/assets/imgs/systems/manager.png" alt="Manager Service" width="700">
+[**Open**](https://manager.knpu.re.kr)
 
 ---
 
 ## CRAWLER
-> Builds datasets through large-scale data collection.
 
-![Crawler Service](homepage/app/public/assets/imgs/systems/crawler.png)
+<img src="homepage/server/app/public/assets/imgs/systems/crawler.png" alt="Crawler Service" width="700">
 [**Open**](https://crawler.knpu.re.kr)
 
 ---
 
-## AI Legal Complaint Generation Service
-> A service that assists in generating draft legal complaints meeting legal requirements using LLMs.
+## NETWORK
 
-![Legal Service](homepage/app/public/assets/imgs/systems/complaint.png)
+<img src="homepage/server/app/public/assets/imgs/systems/network.png" alt="Network Service" width="700">
+[**Open**](https://network.knpu.re.kr)
+
+---
+
+## STATISTICS
+
+<img src="homepage/server/app/public/assets/imgs/systems/statistics.png" alt="Statistics Service" width="700">
+[**Open**](https://statistics.knpu.re.kr)
+
+---
+
+## KEMKIM
+
+<img src="homepage/server/app/public/assets/imgs/systems/kemkim.png" alt="Kemkim Service" width="700">
+[**Open**](https://kemkim.knpu.re.kr)
+
+---
+
+## Lab LLM
+
+<img src="homepage/server/app/public/assets/imgs/systems/labllm.png" alt="Lab LLM Service" width="700">
+[**Open**](https://llm.knpu.re.kr)
+
+---
+
+## AI Legal Complaint Generation Service
+
+<img src="homepage/server/app/public/assets/imgs/systems/complaint.png" alt="Legal Service" width="700">
 [**Open**](https://complaint.knpu.re.kr)
+
+---
+
+## LecAI
+
+<img src="homepage/server/app/public/assets/imgs/systems/lecai.png" alt="LecAI Service" width="700">
+[**Open**](https://lec.knpu.re.kr)
 
 ---
 

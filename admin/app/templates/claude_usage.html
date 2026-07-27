@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div>
+        <h2 class="text-2xl font-bold text-white tracking-tight">Claude</h2>
+        <p class="text-zinc-400 text-sm">이 서버의 <code class="text-zinc-300">~/.claude/projects/</code> 세션 기록을 기반으로 집계한 토큰 사용 현황입니다.</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <span id="lastUpdated" class="text-[11px] font-mono text-zinc-500">-</span>
+        <button onclick="loadUsage(true)" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 border border-zinc-700">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+            새로고침
+        </button>
+    </div>
+</div>
+
+<div id="accountUsageSection" class="mb-6">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-xs font-bold text-zinc-500 uppercase tracking-widest">내 요금제 사용량</h3>
+        <span id="accountSubBadge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700"></span>
+    </div>
+    <div id="accountUsageError" class="hidden p-4 rounded-2xl border border-red-900/40 bg-red-950/20 text-sm text-red-400 mb-3"></div>
+    <div id="accountUsageCards" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/40">
+        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Total Tokens</p>
+        <h3 id="statTotalTokens" class="text-2xl font-mono font-bold text-white mt-2">-</h3>
+        <p class="text-[11px] text-zinc-500 mt-1">전체 누적 (input+output+cache)</p>
+    </div>
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/40">
+        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Today</p>
+        <h3 id="statTodayTokens" class="text-2xl font-mono font-bold text-blue-400 mt-2">-</h3>
+        <p id="statTodayMessages" class="text-[11px] text-zinc-500 mt-1">- messages</p>
+    </div>
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/40">
+        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Sessions</p>
+        <h3 id="statActiveSessions" class="text-2xl font-mono font-bold text-emerald-400 mt-2">-</h3>
+        <p class="text-[11px] text-zinc-500 mt-1">최근 5분 내 활동</p>
+    </div>
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/40">
+        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Cache Hit Rate</p>
+        <h3 id="statCacheHit" class="text-2xl font-mono font-bold text-orange-400 mt-2">-</h3>
+        <p class="text-[11px] text-zinc-500 mt-1">cache_read / (input+cache)</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+    <div class="lg:col-span-2 p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-zinc-200 text-sm">일별 토큰 사용량 (최근 30일)</h3>
+            <span id="statDaysActive" class="text-[10px] text-zinc-500 font-mono">-</span>
+        </div>
+        <div class="h-56">
+            <canvas id="dailyChart"></canvas>
+        </div>
+    </div>
+
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20">
+        <h3 class="font-bold text-zinc-200 text-sm mb-3">토큰 구성 비율</h3>
+        <div id="compositionBars" class="space-y-3"></div>
+        <div class="mt-4 pt-3 border-t border-zinc-800 text-[11px] text-zinc-500 flex justify-between">
+            <span>Total Sessions</span>
+            <span id="statTotalSessions" class="font-mono text-zinc-300">-</span>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+    <div class="card rounded-2xl border border-zinc-800 bg-zinc-900/20 overflow-hidden">
+        <div class="p-4 border-b border-zinc-800 bg-zinc-900/40">
+            <h3 class="font-bold text-zinc-200 text-sm">모델별 사용량</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="text-zinc-500 border-b border-zinc-800">
+                        <th class="p-3 font-bold uppercase tracking-wider text-[10px]">Model</th>
+                        <th class="p-3 font-bold uppercase tracking-wider text-[10px] text-right">Messages</th>
+                        <th class="p-3 font-bold uppercase tracking-wider text-[10px] text-right">Total Tokens</th>
+                    </tr>
+                </thead>
+                <tbody id="modelTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card rounded-2xl border border-zinc-800 bg-zinc-900/20 overflow-hidden">
+        <div class="p-4 border-b border-zinc-800 bg-zinc-900/40">
+            <h3 class="font-bold text-zinc-200 text-sm">프로젝트별 사용량</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="text-zinc-500 border-b border-zinc-800">
+                        <th class="p-3 font-bold uppercase tracking-wider text-[10px]">Project</th>
+                        <th class="p-3 font-bold uppercase tracking-wider text-[10px] text-right">Messages</th>
+                        <th class="p-3 font-bold uppercase tracking-wider text-[10px] text-right">Total Tokens</th>
+                    </tr>
+                </thead>
+                <tbody id="projectTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card rounded-2xl border border-zinc-800 bg-zinc-900/20 overflow-hidden">
+    <div class="p-4 border-b border-zinc-800 bg-zinc-900/40 flex justify-between items-center">
+        <h3 class="font-bold text-zinc-200 text-sm">최근 세션</h3>
+        <span class="text-[10px] text-zinc-500">최신순 20개</span>
+    </div>
+    <div class="overflow-x-auto">
+        <table id="sessionsTable" class="w-full text-left text-sm whitespace-nowrap">
+            <thead>
+                <tr class="text-zinc-500 border-b border-zinc-800">
+                    <th class="p-3 font-bold uppercase tracking-wider text-[10px]">Session</th>
+                    <th class="p-3 font-bold uppercase tracking-wider text-[10px]">Project</th>
+                    <th class="p-3 font-bold uppercase tracking-wider text-[10px]">Model</th>
+                    <th class="p-3 font-bold uppercase tracking-wider text-[10px] text-right">Messages</th>
+                    <th class="p-3 font-bold uppercase tracking-wider text-[10px] text-right">Tokens</th>
+                    <th class="p-3 font-bold uppercase tracking-wider text-[10px]">Last Active</th>
+                    <th class="p-3 font-bold uppercase tracking-wider text-[10px]">Preview</th>
+                </tr>
+            </thead>
+            <tbody id="sessionsTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    /* 1024px 미만에서는 최근 세션 테이블도 다른 대시보드 페이지들과 동일하게
+       세로 카드형으로 재배치해서 가로 스크롤 없이 볼 수 있게 한다. */
+    @media (max-width: 1023px) {
+        #sessionsTable thead { display: none; }
+        #sessionsTable, #sessionsTable tbody, #sessionsTable tr { display: block; width: 100%; }
+        #sessionsTable { white-space: normal; }
+        #sessionsTable tr.session-row {
+            display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px 10px;
+            padding: 14px 12px; border-bottom: 1px solid var(--line, #27272a);
+        }
+        #sessionsTable tr.session-row > td { display: block; padding: 0; border: none !important; }
+        #sessionsTable tr.session-row > td[data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--muted, #71717a); margin-bottom: 2px;
+        }
+        #sessionsTable tr.session-row > td.usage-cell-session { width: 100%; order: -2; }
+        #sessionsTable tr.session-row > td.usage-cell-preview { width: 100%; order: 99; }
+    }
+</style>
+
+<script>
+    const compositionColors = {
+        input: '#3b82f6', output: '#22c55e', cache_write: '#f59e0b', cache_read: '#a855f7'
+    };
+    const compositionLabels = {
+        input: 'Input', output: 'Output', cache_write: 'Cache Write', cache_read: 'Cache Read'
+    };
+    let dailyChart = null;
+
+    function fmtNum(n) {
+        n = n || 0;
+        if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+        return String(n);
+    }
+
+    function fmtTime(iso) {
+        if (!iso) return '-';
+        const d = new Date(iso);
+        if (isNaN(d)) return iso;
+        return d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function escHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    function renderComposition(totals) {
+        const container = document.getElementById('compositionBars');
+        const total = totals.total || 1;
+        const keys = ['input', 'output', 'cache_write', 'cache_read'];
+        container.innerHTML = keys.map(k => {
+            const val = totals[k] || 0;
+            const pct = (val / total * 100);
+            return `
+                <div>
+                    <div class="flex justify-between text-[11px] mb-1">
+                        <span class="text-zinc-400">${compositionLabels[k]}</span>
+                        <span class="font-mono text-zinc-300">${fmtNum(val)} (${pct.toFixed(1)}%)</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                        <div class="h-full" style="width:${pct}%; background:${compositionColors[k]}"></div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    function renderDailyChart(daily) {
+        const labels = daily.map(d => d.date.slice(5));
+        const totals = daily.map(d => d.total);
+        const messages = daily.map(d => d.messages);
+
+        if (dailyChart) { dailyChart.destroy(); }
+        const ctx = document.getElementById('dailyChart').getContext('2d');
+        dailyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Tokens',
+                        data: totals,
+                        backgroundColor: '#3b82f6aa',
+                        yAxisID: 'y-tokens',
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'Messages',
+                        type: 'line',
+                        data: messages,
+                        borderColor: '#22c55e',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        tension: 0.3,
+                        yAxisID: 'y-msgs',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#a1a1aa', font: { size: 10 } } }
+                },
+                scales: {
+                    x: { ticks: { color: '#71717a', font: { size: 9 } }, grid: { display: false } },
+                    'y-tokens': {
+                        position: 'left',
+                        ticks: { color: '#71717a', font: { size: 9 }, callback: v => fmtNum(v) },
+                        grid: { color: '#27272a' }
+                    },
+                    'y-msgs': {
+                        position: 'right',
+                        ticks: { color: '#71717a', font: { size: 9 } },
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderModelTable(rows) {
+        document.getElementById('modelTableBody').innerHTML = rows.map(r => `
+            <tr class="border-b border-zinc-800/50">
+                <td class="p-3 font-bold text-zinc-200">${escHtml(r.model)}</td>
+                <td class="p-3 text-right font-mono text-zinc-400">${r.messages.toLocaleString()}</td>
+                <td class="p-3 text-right font-mono text-zinc-300">${fmtNum(r.total)}</td>
+            </tr>`).join('') || '<tr><td class="p-3 text-zinc-500" colspan="3">데이터 없음</td></tr>';
+    }
+
+    function renderProjectTable(rows) {
+        const max = Math.max(1, ...rows.map(r => r.total));
+        document.getElementById('projectTableBody').innerHTML = rows.map(r => `
+            <tr class="border-b border-zinc-800/50">
+                <td class="p-3">
+                    <div class="font-bold text-zinc-200 text-xs">${escHtml(r.project)}</div>
+                    <div class="w-full h-1 bg-zinc-800 rounded-full overflow-hidden mt-1.5 max-w-[160px]">
+                        <div class="h-full bg-blue-500" style="width:${(r.total / max * 100)}%"></div>
+                    </div>
+                </td>
+                <td class="p-3 text-right font-mono text-zinc-400">${r.messages.toLocaleString()}</td>
+                <td class="p-3 text-right font-mono text-zinc-300">${fmtNum(r.total)}</td>
+            </tr>`).join('') || '<tr><td class="p-3 text-zinc-500" colspan="3">데이터 없음</td></tr>';
+    }
+
+    function renderSessionsTable(rows) {
+        document.getElementById('sessionsTableBody').innerHTML = rows.map(r => `
+            <tr class="session-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
+                <td class="p-3 usage-cell-session" data-label="Session">
+                    <div class="font-mono text-xs text-zinc-300">${escHtml(r.session_id.slice(0, 8))}
+                        ${r.active ? '<span class="ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">LIVE</span>' : ''}
+                    </div>
+                </td>
+                <td class="p-3" data-label="Project"><span class="text-xs text-zinc-400">${escHtml(r.project)}</span></td>
+                <td class="p-3" data-label="Model"><span class="text-xs text-zinc-500">${escHtml(r.model)}</span></td>
+                <td class="p-3 text-right" data-label="Messages"><span class="font-mono text-xs text-zinc-400">${r.messages}</span></td>
+                <td class="p-3 text-right" data-label="Tokens"><span class="font-mono text-xs text-zinc-300">${fmtNum(r.total_tokens)}</span></td>
+                <td class="p-3" data-label="Last Active"><span class="font-mono text-[10px] text-zinc-500">${fmtTime(r.last_ts)}</span></td>
+                <td class="p-3 usage-cell-preview" data-label="Preview"><span class="text-xs text-zinc-500 line-clamp-1">${escHtml(r.preview) || '-'}</span></td>
+            </tr>`).join('') || '<tr><td class="p-3 text-zinc-500" colspan="7">세션 기록이 없습니다</td></tr>';
+    }
+
+    const severityColor = {
+        normal: { bar: '#22c55e', text: 'text-emerald-400', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+        warning: { bar: '#f59e0b', text: 'text-orange-400', badge: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+        elevated: { bar: '#f59e0b', text: 'text-orange-400', badge: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+        critical: { bar: '#ef4444', text: 'text-red-400', badge: 'bg-red-500/10 text-red-400 border-red-500/20' },
+        high: { bar: '#ef4444', text: 'text-red-400', badge: 'bg-red-500/10 text-red-400 border-red-500/20' },
+    };
+
+    function fmtRelative(iso) {
+        if (!iso) return '';
+        const diffMs = new Date(iso) - new Date();
+        if (diffMs <= 0) return '곧 리셋';
+        const mins = Math.round(diffMs / 60000);
+        if (mins < 60) return `${mins}분 후`;
+        const hours = Math.floor(mins / 60);
+        if (hours < 48) return `${hours}시간 ${mins % 60}분 후`;
+        const days = Math.floor(hours / 24);
+        return `${days}일 후`;
+    }
+
+    function fmtResetAbs(iso) {
+        if (!iso) return '-';
+        const d = new Date(iso);
+        if (isNaN(d)) return iso;
+        return d.toLocaleString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function accountUsageCard(label, info) {
+        const pct = Math.max(0, Math.min(100, info.percent_used ?? 0));
+        const sev = severityColor[info.severity] || severityColor.normal;
+        return `
+            <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/40">
+                <div class="flex justify-between items-center mb-3">
+                    <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">${label}</p>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${sev.badge}">${(info.severity || 'normal').toUpperCase()}</span>
+                </div>
+                <div class="flex items-baseline gap-2 mb-2">
+                    <h3 class="text-3xl font-mono font-bold ${sev.text}">${pct}%</h3>
+                    <span class="text-xs text-zinc-500">사용됨 · 남음 ${(100 - pct).toFixed(0)}%</span>
+                </div>
+                <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden mb-3">
+                    <div class="h-full transition-all duration-500" style="width:${pct}%; background:${sev.bar}"></div>
+                </div>
+                <div class="text-xs text-zinc-400">
+                    <span class="font-bold text-zinc-300">리셋:</span> ${fmtResetAbs(info.resets_at)}
+                    <span class="text-zinc-500">(${fmtRelative(info.resets_at)})</span>
+                </div>
+            </div>`;
+    }
+
+    function renderAccountUsage(account) {
+        const errorBox = document.getElementById('accountUsageError');
+        const cardsBox = document.getElementById('accountUsageCards');
+        const badge = document.getElementById('accountSubBadge');
+
+        if (!account || account.error) {
+            errorBox.classList.remove('hidden');
+            errorBox.textContent = (account && account.error) || '요금제 사용량을 불러올 수 없습니다.';
+            cardsBox.innerHTML = '';
+            badge.textContent = '';
+            return;
+        }
+
+        errorBox.classList.add('hidden');
+        badge.textContent = account.subscription_type ? account.subscription_type.toUpperCase() + ' PLAN' : '';
+        cardsBox.innerHTML =
+            accountUsageCard('세션 사용량 (5시간)', account.session) +
+            accountUsageCard('주간 사용량 (7일)', account.weekly);
+    }
+
+    async function loadUsage(force) {
+        try {
+            const res = await fetch('/api/claude-usage' + (force ? '?_=' + Date.now() : ''));
+            const d = await res.json();
+
+            renderAccountUsage(d.account);
+
+            document.getElementById('statTotalTokens').textContent = fmtNum(d.totals.total);
+            document.getElementById('statTodayTokens').textContent = fmtNum(d.today.total);
+            document.getElementById('statTodayMessages').textContent = `${d.today.messages.toLocaleString()} messages`;
+            document.getElementById('statActiveSessions').textContent = d.active_sessions;
+            document.getElementById('statTotalSessions').textContent = d.totals.sessions.toLocaleString();
+            document.getElementById('statDaysActive').textContent = `${d.totals.days_active} days tracked`;
+
+            const cacheBase = d.totals.input + d.totals.cache_write + d.totals.cache_read;
+            const hitRate = cacheBase > 0 ? (d.totals.cache_read / cacheBase * 100) : 0;
+            document.getElementById('statCacheHit').textContent = hitRate.toFixed(1) + '%';
+
+            renderComposition(d.totals);
+            renderDailyChart(d.daily);
+            renderModelTable(d.by_model);
+            renderProjectTable(d.by_project);
+            renderSessionsTable(d.recent_sessions);
+
+            document.getElementById('lastUpdated').textContent = '갱신: ' + new Date(d.generated_at).toLocaleTimeString('ko-KR');
+        } catch (err) {
+            console.error('사용량 로드 실패:', err);
+        }
+    }
+
+    loadUsage();
+    setInterval(() => loadUsage(false), 30000);
+</script>
+{% endblock %}

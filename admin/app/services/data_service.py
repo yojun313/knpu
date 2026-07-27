@@ -217,6 +217,57 @@ def get_audit_logs(
     return logs, total
 
 
+ANONYMOUS_AUDIT_KEY = "__anonymous__"
+
+
+def get_users_with_audit_counts():
+    pipeline = [
+        {"$sort": {"ts": -1}},
+        {
+            "$group": {
+                "_id": "$user_uid",
+                "count": {"$sum": 1},
+                "name": {"$first": "$user_name"},
+            }
+        },
+    ]
+    users = []
+    anon_count = 0
+    for r in audit_logs_col.aggregate(pipeline):
+        uid = r["_id"]
+        if not uid:
+            anon_count += r["count"]
+            continue
+        users.append(
+            {"uid": uid, "name": r.get("name") or uid[:8], "count": r["count"]}
+        )
+
+    users.sort(key=lambda u: u["count"], reverse=True)
+    if anon_count:
+        users.append(
+            {
+                "uid": ANONYMOUS_AUDIT_KEY,
+                "name": "익명 (로그인 전 요청)",
+                "count": anon_count,
+            }
+        )
+    return users
+
+
+def get_audit_logs_for_user(user_uid: str, page=1, per_page=30):
+    query = (
+        {"user_uid": None}
+        if user_uid == ANONYMOUS_AUDIT_KEY
+        else {"user_uid": user_uid}
+    )
+    total = audit_logs_col.count_documents(query)
+    skip = max(0, (page - 1) * per_page)
+    logs = list(audit_logs_col.find(query).sort("ts", -1).skip(skip).limit(per_page))
+    for log in logs:
+        log["_id"] = str(log["_id"])
+    return logs, total
+
+
 def get_crawler_logs(uid: str):
     doc = crawler_log_col.find_one({"uid": uid})
     return doc.get("logs", []) if doc else []

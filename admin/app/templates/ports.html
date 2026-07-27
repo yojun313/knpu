@@ -32,9 +32,32 @@
     </div>
 </div>
 
+<style>
+    /* 1024px 미만(모바일/태블릿 세로)에서는 포트 테이블을 세로 카드형으로 재배치해서
+       Domain(s) 등 긴 항목을 보려고 가로 스크롤할 필요가 없게 한다. */
+    @media (max-width: 1023px) {
+        #portsTable thead { display: none; }
+        #portsTable, #portsTable tbody, #portsTable tr { display: block; width: 100%; }
+        #portsTable { white-space: normal; }
+        #portsTable tr.port-row {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+            padding: 14px 16px;
+        }
+        #portsTable tr.port-row > td { display: block; padding: 0; border: none !important; white-space: normal; }
+        #portsTable tr.port-row > td[data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--muted, #71717a); margin-bottom: 2px;
+        }
+        #portsTable tr.port-row > td.ports-cell-port { order: -1; }
+        #portsTable tr.port-row > td.ports-cell-domain { width: 100%; order: 99; }
+    }
+</style>
+
 <div class="card rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/30">
     <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm whitespace-nowrap">
+        <table id="portsTable" class="w-full text-left text-sm whitespace-nowrap">
             <thead>
                 <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Port</th>
@@ -79,14 +102,14 @@ function renderPorts(ports) {
 
         return `
         <tr class="port-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors" data-search="${esc(String(p.port))} ${esc(p.process_name)} ${esc(p.pm2_name)} ${esc(domains.map(d => d.domain).join(' '))}">
-            <td class="p-4">
+            <td class="p-4 ports-cell-port" data-label="Port">
                 <span class="font-mono text-zinc-100 bg-black/40 px-2 py-1 rounded border border-zinc-800/50 text-sm font-bold">:${p.port}</span>
             </td>
-            <td class="p-4">${procLabel}</td>
-            <td class="p-4">${pm2Badge}</td>
-            <td class="p-4 text-zinc-500 text-xs">${esc(p.process_user) || '-'}</td>
-            <td class="p-4 text-xs">${domainLabel}</td>
-            <td class="p-4 text-zinc-600 text-[11px] font-mono">${esc(addrLabel)}</td>
+            <td class="p-4" data-label="Process">${procLabel}</td>
+            <td class="p-4" data-label="PM2 Service">${pm2Badge}</td>
+            <td class="p-4 text-zinc-500 text-xs" data-label="User">${esc(p.process_user) || '-'}</td>
+            <td class="p-4 text-xs ports-cell-domain" data-label="Domain(s)">${domainLabel}</td>
+            <td class="p-4 text-zinc-600 text-[11px] font-mono" data-label="Address">${esc(addrLabel)}</td>
         </tr>`;
     }).join('');
 }

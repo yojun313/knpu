@@ -1,10 +1,17 @@
 import random
 import uuid
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 
-from app.db import users_db, auth_codes_db, members_db, manager_users_db
+from app.db import (
+    users_db,
+    auth_codes_db,
+    members_db,
+    manager_users_db,
+    user_logs_db,
+)
 from app.auth.hashing import hash_password, verify_password
 from app.auth.jwt import create_token
 from app.auth.email import sendEmail
@@ -12,6 +19,21 @@ from app.libs import r2
 from app.libs.discord_notify import notify_discord
 
 CODE_TTL_MINUTES = 10
+
+
+def _log_user_activity(user_uid: str, message: str) -> None:
+    """admin 대시보드 User Logs 탭이 읽는 manager.user-logs에 기록한다
+    (manager/server의 log_user()와 동일한 스키마)."""
+    now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
+    user_logs_db.insert_one(
+        {
+            "uid": str(uuid.uuid4()),
+            "userUid": user_uid,
+            "datetime": now_kst,
+            "datetime_kst": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
+            "message": message,
+        }
+    )
 
 
 def _generate_code() -> str:
@@ -199,6 +221,12 @@ def verify_email(data) -> dict:
     users_db.update_one({"username": data.username}, {"$set": updates})
     auth_codes_db.delete_one({"_id": code_doc["_id"]})
 
+    notify_discord(
+        "admin_ops",
+        f"🆕 새 회원가입: {user['name']} (@{user['username']}, {user['email']})"
+        + (" — 자동 승인됨" if auto_approved else " — 관리자 승인 대기 중"),
+    )
+
     if auto_approved:
         sendEmail(
             user["email"],
@@ -252,6 +280,12 @@ def login(data) -> dict:
         raise HTTPException(status_code=403, detail="가입이 거절된 계정입니다")
 
     token = create_token(user)
+
+    try:
+        _log_user_activity(user["uid"], "Homepage login")
+    except Exception:
+        pass
+
     return {"token": token, "user": _public_user(user)}
 
 

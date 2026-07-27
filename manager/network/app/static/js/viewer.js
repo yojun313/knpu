@@ -538,11 +538,11 @@
       var rows = items.map(function (it) {
         uidMap[it.uid] = it;
         return '<tr data-uid="' + esc(it.uid) + '">'
-          + '<td class="ct-main">' + esc(it.keyword || it.name) + '</td>'
-          + '<td class="ct-muted">' + esc(CRAWL_OBJECTS[it.crawlObject] || '-') + '</td>'
-          + '<td class="ct-muted">' + esc(it.requester || '-') + '</td>'
-          + '<td class="ct-muted">' + formatCrawlDate(it.startDate) + ' ~ ' + formatCrawlDate(it.endDate) + '</td>'
-          + '<td class="ct-muted">' + formatCrawlSize(it.dbSize) + '</td>'
+          + '<td class="ct-main" data-label="키워드">' + esc(it.keyword || it.name) + '</td>'
+          + '<td class="ct-muted" data-label="크롤러">' + esc(CRAWL_OBJECTS[it.crawlObject] || '-') + '</td>'
+          + '<td class="ct-muted" data-label="요청자">' + esc(it.requester || '-') + '</td>'
+          + '<td class="ct-muted" data-label="기간">' + formatCrawlDate(it.startDate) + ' ~ ' + formatCrawlDate(it.endDate) + '</td>'
+          + '<td class="ct-muted" data-label="크기">' + formatCrawlSize(it.dbSize) + '</td>'
           + '</tr>';
       }).join('');
       wrapEl.innerHTML = '<table class="crawl-table"><thead><tr>'
@@ -569,9 +569,9 @@
       if (!files.length) { wrapEl.innerHTML = '<div class="crawl-db-empty">토큰화된 파일이 없습니다.</div>'; return; }
       var rows = files.map(function (f, i) {
         return '<tr data-idx="' + i + '">'
-          + '<td class="ct-main">' + esc(f.csv_name) + '</td>'
-          + '<td><span class="ct-filetype ' + esc(f.type) + '">' + (f.type === 'token' ? '토큰화' : '원본') + '</span></td>'
-          + '<td class="ct-muted">' + formatCrawlSize(f.size) + '</td>'
+          + '<td class="ct-main" data-label="파일명">' + esc(f.csv_name) + '</td>'
+          + '<td data-label="종류"><span class="ct-filetype ' + esc(f.type) + '">' + (f.type === 'token' ? '토큰화' : '원본') + '</span></td>'
+          + '<td class="ct-muted" data-label="크기">' + formatCrawlSize(f.size) + '</td>'
           + '</tr>';
       }).join('');
       wrapEl.innerHTML = '<table class="crawl-table"><thead><tr>'

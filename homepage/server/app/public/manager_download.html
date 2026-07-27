@@ -187,6 +187,16 @@
       .header-section h1 { font-size: 2rem; }
       .info-group { flex-direction: column; gap: 5px; }
       .latest-version { padding: 30px 20px; }
+      /* 모바일에서 표가 넓을 경우 컨테이너가 아니라 표 자체만 가로 스크롤되게 함 */
+      .history-container {
+        overflow-x: auto;
+      }
+      table {
+        min-width: 480px;
+      }
+      th, td {
+        padding: 12px 10px;
+      }
     }
   </style>
   <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />

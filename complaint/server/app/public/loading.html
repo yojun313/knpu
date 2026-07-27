@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>처리 중</title>
     <link rel="stylesheet" href="/loading.css">
+
+    <style>
+      /* 모바일 대응: loading.css의 .main은 box-sizing 미지정 + min-width:320px +
+         좌우 padding 60px 조합으로 375px대 화면에서 가로 스크롤을 유발함 */
+      @media (max-width: 480px) {
+        .main {
+          box-sizing: border-box;
+          min-width: 0;
+          width: 100%;
+          max-width: 100%;
+          padding: 32px 20px;
+        }
+      }
+    </style>
 </head>
 <body>
 

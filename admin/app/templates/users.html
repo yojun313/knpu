@@ -17,12 +17,34 @@
 </div>
 
 {% if pending_users %}
+<style>
+    /* 1024px 미만(모바일/태블릿 세로)에서는 승인 대기 테이블을 세로 카드형으로 재배치해서
+       승인/거절 버튼을 보려고 가로 스크롤할 필요가 없게 한다. */
+    @media (max-width: 1023px) {
+        #pendingUsersTable thead { display: none; }
+        #pendingUsersTable, #pendingUsersTable tbody, #pendingUsersTable tr { display: block; width: 100%; }
+        #pendingUsersTable { white-space: normal; }
+        #pendingUsersTable tr.pending-row {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+            padding: 14px 16px;
+        }
+        #pendingUsersTable tr.pending-row > td { display: block; padding: 0; border: none !important; }
+        #pendingUsersTable tr.pending-row > td[data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--muted, #71717a); margin-bottom: 2px;
+        }
+        #pendingUsersTable tr.pending-row > td.pending-cell-name { width: 100%; order: -1; }
+        #pendingUsersTable tr.pending-row > td.pending-cell-actions { width: 100%; order: 99; margin-top: 6px; text-align: left; }
+    }
+</style>
 <div class="card rounded-2xl overflow-hidden border border-amber-500/30 bg-amber-500/5 mb-8">
     <div class="p-6 pb-2">
         <h3 class="text-lg font-bold text-amber-400">가입 승인 대기 ({{ pending_users|length }})</h3>
     </div>
     <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm whitespace-nowrap">
+        <table id="pendingUsersTable" class="w-full text-left text-sm whitespace-nowrap">
             <thead>
                 <tr class="text-zinc-500 border-b border-zinc-800">
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">아이디 / 이름</th>
@@ -33,12 +55,12 @@
             <tbody>
                 {% for u in pending_users %}
                 <tr class="pending-row border-b border-zinc-800/50" data-uid="{{ u.uid }}">
-                    <td class="p-4">
+                    <td class="p-4 pending-cell-name" data-label="아이디 / 이름">
                         <div class="font-bold text-zinc-100">{{ u.name }}</div>
                         <div class="text-[11px] text-zinc-500 font-mono">@{{ u.username }}</div>
                     </td>
-                    <td class="p-4 text-zinc-300">{{ u.email }}</td>
-                    <td class="p-4 text-right">
+                    <td class="p-4 text-zinc-300" data-label="이메일">{{ u.email }}</td>
+                    <td class="p-4 text-right pending-cell-actions" data-label="처리">
                         <button onclick="handleRequest('{{ u.uid }}', 'approve', this)"
                                 class="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-600/30 rounded-md text-xs font-bold mr-2 transition">승인</button>
                         <button onclick="handleRequest('{{ u.uid }}', 'reject', this)"
@@ -71,9 +93,32 @@
     </div>
 </div>
 
+<style>
+    /* 1024px 미만(모바일/태블릿 세로)에서는 사용자 테이블을 세로 카드형으로 재배치해서
+       역할 변경 버튼을 보려고 가로 스크롤할 필요가 없게 한다. */
+    @media (max-width: 1023px) {
+        #usersTable thead { display: none; }
+        #usersTable, #usersTable tbody, #usersTable tr { display: block; width: 100%; }
+        #usersTable { white-space: normal; }
+        #usersTable tr.user-row {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+            padding: 14px 16px;
+        }
+        #usersTable tr.user-row > td { display: block; padding: 0; border: none !important; }
+        #usersTable tr.user-row > td[data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--muted, #71717a); margin-bottom: 2px;
+        }
+        #usersTable tr.user-row > td.users-cell-name { width: 100%; order: -1; }
+        #usersTable tr.user-row > td.users-cell-actions { width: 100%; order: 99; margin-top: 6px; text-align: left; }
+    }
+</style>
+
 <div class="card rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/30">
     <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm whitespace-nowrap">
+        <table id="usersTable" class="w-full text-left text-sm whitespace-nowrap">
             <thead>
                 <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">아이디 / 이름 / 역할</th>
@@ -87,7 +132,7 @@
             <tbody id="userListBody">
                 {% for u in users %}
                 <tr class="user-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors" data-search="{{ u.username }} {{ u.name }} {{ u.email }} {{ u.role }}">
-                    <td class="p-4">
+                    <td class="p-4 users-cell-name" data-label="아이디 / 이름 / 역할">
                         <div class="font-bold text-zinc-100">{{ u.name }}</div>
                         <div class="text-[11px] text-zinc-500 font-mono">@{{ u.username }}</div>
                         <div class="mt-1.5">
@@ -98,13 +143,13 @@
                             {% endif %}
                         </div>
                     </td>
-                    <td class="p-4">
+                    <td class="p-4" data-label="UID">
                         <code class="text-[11px] text-zinc-500 font-mono cursor-pointer hover:text-zinc-300" onclick="copyToClipboard('{{ u.uid }}', this)" title="클릭하여 UID 복사">{{ u.uid[:8] }}…</code>
                     </td>
-                    <td class="p-4">
+                    <td class="p-4" data-label="이메일">
                         <div class="text-zinc-300">{{ u.email }}</div>
                     </td>
-                    <td class="p-4">
+                    <td class="p-4" data-label="상태">
                         {% if u.status == 'approved' %}
                         <span class="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded uppercase">Approved</span>
                         {% elif u.status == 'rejected' %}
@@ -113,14 +158,14 @@
                         <span class="text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded uppercase">{{ u.status }}</span>
                         {% endif %}
                     </td>
-                    <td class="p-4">
+                    <td class="p-4" data-label="Version">
                         {% if u.version %}
                         <span class="text-[11px] text-zinc-400 font-mono">{{ u.version }}</span>
                         {% else %}
                         <span class="text-zinc-700">—</span>
                         {% endif %}
                     </td>
-                    <td class="p-4 text-right">
+                    <td class="p-4 text-right users-cell-actions" data-label="역할 변경">
                         {% if u.role == 'admin' %}
                         <button onclick="handleRoleChange('{{ u.uid }}', 'member', this)"
                                 class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded-md text-xs font-bold transition">일반 사용자로 변경</button>

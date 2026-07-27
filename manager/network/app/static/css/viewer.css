@@ -436,4 +436,16 @@ input[type=color]{width:34px;height:28px;border:1px solid var(--sidebar-border);
   #side{width:100vw}
   .field-row{flex-direction:column;gap:0}
   .modal-card{max-height:88vh;overflow-y:auto}
+
+  /* 크롤링 DB 선택 표: 좁은 화면에서 가로 스크롤 대신 카드형으로 전환 */
+  .crawl-breadcrumb .cb-name{min-width:0;flex:1}
+  .crawl-pager .btn{width:auto;flex:0 0 auto}
+  table.crawl-table,.crawl-table thead,.crawl-table tbody,.crawl-table th,.crawl-table td,.crawl-table tr{display:block}
+  .crawl-table thead{display:none}
+  .crawl-table tbody tr{border-bottom:1px solid var(--sidebar-border);padding:8px 6px}
+  .crawl-table tbody tr:last-child{border-bottom:none}
+  .crawl-table td{padding:3px 6px;white-space:normal}
+  .crawl-table td.ct-muted{white-space:normal}
+  .crawl-table td:before{content:attr(data-label);display:block;font-size:9px;text-transform:uppercase;
+    letter-spacing:.3px;color:var(--sidebar-muted);margin-bottom:1px}
 }

@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MANAGER</title>
   <style>
     html, body {
@@ -96,6 +97,14 @@
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 모바일: 다운로드 URL 등 공백 없는 긴 텍스트가 카드 밖으로 가로 넘치지 않도록 줄바꿈 허용 */
+    @media (max-width: 480px) {
+      #messages li {
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
     }
   </style>
 </head>
