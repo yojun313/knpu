@@ -68,7 +68,15 @@ def stopOperator(
         )
 
         convertToParquet(DBpath)
-        parquet_files = [f for f in os.listdir(DBpath) if f.endswith(".parquet")]
+        # "token_" 접두사가 붙은 파일은 이전 완료/중단 시점에 이미 생성된 토큰화 결과물이다
+        # (이어받기로 같은 폴더에서 finishOperator/stopOperator가 두 번째로 실행되면 이 파일들도
+        # .parquet로 남아있어, 걸러내지 않으면 원본 reply/rereply 테이블로 착각해 이미 컬럼이
+        # 축소된 토큰화 파일을 다시 groupby하려다 KeyError("Article Day")로 죽는다).
+        parquet_files = [
+            f
+            for f in os.listdir(DBpath)
+            if f.endswith(".parquet") and not f.startswith("token_")
+        ]
         for file_name in parquet_files:
             table_name = file_name.rsplit(".", 1)[0]
             file_path = os.path.join(DBpath, file_name)
@@ -134,18 +142,46 @@ def finishOperator(
     status,
     DBuid=None,
     requester=None,
+    resumePriorCounts=None,
 ):
     try:
         convertToParquet(DBpath)
-        parquet_files = [f for f in os.listdir(DBpath) if f.endswith(".parquet")]
+        # "token_" 접두사가 붙은 파일은 이전 완료/중단 시점에 이미 생성된 토큰화 결과물이다
+        # (이어받기로 같은 폴더에서 finishOperator/stopOperator가 두 번째로 실행되면 이 파일들도
+        # .parquet로 남아있어, 걸러내지 않으면 원본 reply/rereply 테이블로 착각해 이미 컬럼이
+        # 축소된 토큰화 파일을 다시 groupby하려다 KeyError("Article Day")로 죽는다).
+        parquet_files = [
+            f
+            for f in os.listdir(DBpath)
+            if f.endswith(".parquet") and not f.startswith("token_")
+        ]
+
+        if DBuid and parquet_files:
+            appendCrawlLog(DBuid, "info", "토큰화 중...")
+
         for file_name in parquet_files:
             table_name = file_name.rsplit(".", 1)[0]
             file_path = os.path.join(DBpath, file_name)
 
             data_df = pd.read_parquet(file_path)
 
-            # Reply 관련 테이블이면 전처리 수행
-            if "reply" in table_name or "rereply" in table_name:
+            token_file_path = os.path.join(DBpath, f"token_{table_name}.parquet")
+
+            # 이어받기라면 resumePriorCounts에 기록된 기존 행 수 이후만 "새로 추가된
+            # 부분"으로 취급해 증분 토큰화한다 — 단, 이건 그 기존 행들이 예전에 이미
+            # 토큰화된 적이 있을 때만 맞는 얘기다(token 파일이 실제로 존재해야 함).
+            # 에러/중단으로 죽어서 finishOperator를 한 번도 못 돌고 이어받은 경우엔
+            # raw 데이터는 있어도 토큰 파일은 없으므로, 이 경우엔 prior_count를 무시하고
+            # 처음부터(=raw 데이터 전체) 토큰화해야 누락이 없다.
+            prior_count = (resumePriorCounts or {}).get(table_name, 0)
+            if prior_count and not os.path.exists(token_file_path):
+                prior_count = 0
+            new_df = data_df.iloc[prior_count:].copy() if prior_count else data_df
+
+            # Reply 관련 테이블이면 전처리 수행 (새로 추가된 행에 대해서만 그룹핑 —
+            # 기존에 이미 그룹핑되어 토큰 파일에 들어간 기사와는 URL이 겹치지 않는다,
+            # 같은 날짜를 두 번 크롤링하지 않기 때문)
+            if len(new_df) and ("reply" in table_name or "rereply" in table_name):
                 date_column = (
                     "Rereply Date" if "rereply" in table_name else "Reply Date"
                 )
@@ -153,31 +189,43 @@ def finishOperator(
                     "Rereply Text" if "rereply" in table_name else "Reply Text"
                 )
 
-                data_df[date_column] = pd.to_datetime(
-                    data_df[date_column], errors="coerce"
+                new_df[date_column] = pd.to_datetime(
+                    new_df[date_column], errors="coerce"
                 ).dt.date
-                data_df[text_column] = data_df[text_column].fillna("")
+                new_df[text_column] = new_df[text_column].fillna("")
 
-                grouped = data_df.groupby("Article URL")
-                data_df = grouped.agg(
+                grouped = new_df.groupby("Article URL")
+                new_df = grouped.agg(
                     {text_column: lambda x: " ".join(x), "Article Day": "first"}
                 ).reset_index()
 
-                data_df = data_df.rename(columns={"Article Day": date_column})
-                data_df = data_df.sort_values(by=date_column)
+                new_df = new_df.rename(columns={"Article Day": date_column})
+                new_df = new_df.sort_values(by=date_column)
 
-            # Tokenization
-            lang = "en" if DBtype in ["chinadaily"] else "ko"
-            token_df = tokenization(data_df, language=lang)
+            # Tokenization (새로 추가된 부분만)
+            if len(new_df):
+                lang = "en" if DBtype in ["chinadaily"] else "ko"
+                new_token_df = tokenization(new_df, language=lang)
 
-            for col in token_df.columns:
-                if token_df[col].apply(lambda x: isinstance(x, list)).any():
-                    token_df[col] = token_df[col].apply(
-                        lambda x: " ".join(map(str, x)) if isinstance(x, list) else x
-                    )
+                for col in new_token_df.columns:
+                    if new_token_df[col].apply(lambda x: isinstance(x, list)).any():
+                        new_token_df[col] = new_token_df[col].apply(
+                            lambda x: (
+                                " ".join(map(str, x)) if isinstance(x, list) else x
+                            )
+                        )
+            else:
+                new_token_df = new_df
 
-            token_file_path = os.path.join(DBpath, f"token_{table_name}.parquet")
-            token_df.to_parquet(token_file_path, index=False)
+            if prior_count and os.path.exists(token_file_path):
+                old_token_df = pd.read_parquet(token_file_path)
+                combined_token_df = pd.concat(
+                    [old_token_df, new_token_df], ignore_index=True
+                )
+            else:
+                combined_token_df = new_token_df
+
+            combined_token_df.to_parquet(token_file_path, index=False)
 
         title = "[크롤링 완료] " + DBname
 

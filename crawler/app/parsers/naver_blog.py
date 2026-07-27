@@ -16,7 +16,20 @@ from config import SLEEP_TIME, PROXY
 from common.req import Request, RequestAsync, set_proxy_list
 from common.async_run import speed_to_concurrency, run_with_concurrency
 from common.naver_lib import parse_naver_query
-from common.storage import makeDB, updateCrawlStatus, initCrawlLog, appendCrawlLog
+from common.storage import (
+    makeDB,
+    updateCrawlStatus,
+    initCrawlLog,
+    appendCrawlLog,
+    getResumeContext,
+    computeResumeStartDate,
+    getResumeDBPath,
+    restoreCsvFromParquet,
+    beginResume,
+    validateResumeRange,
+    countExistingRows,
+    renameForResume,
+)
 from common.csv import makeCSV, addToCSV
 from common.columns import naverblog_article_column, naverblog_reply_column
 from common.controller import stopOperator, finishOperator
@@ -28,6 +41,8 @@ logger = logging.getLogger(__name__)
 
 
 class NaverBlogCrawler:
+    CRAWL_OBJECT = 2
+
     def __init__(self, requester, keyword, startDate, endDate, option, speed):
 
         if PROXY:
@@ -61,6 +76,8 @@ class NaverBlogCrawler:
         self.requesterUid = notification["userUid"]
 
         self.running = True
+        self.resuming = False
+        self.resumePriorCounts = None
         self.DBuid = None
         self.status = {
             "percentage": "0",
@@ -80,7 +97,77 @@ class NaverBlogCrawler:
             keyword=self.keyword,
             requester=self.requester,
             requesterUid=self.requesterUid,
+            crawlObject=self.CRAWL_OBJECT,
+            speed=self.speed,
         )
+
+    @classmethod
+    def fromResume(cls, DBuid, endDate=None):
+        """중단·에러·완료된 크롤링을 이어받는다. 같은 DBuid/DBPath/csv·parquet 파일에
+        마지막으로 완료한 날짜의 다음날부터 이어서 append한다. endDate를 지정하면
+        (완료된 작업을 확장하는 경우 등) 원래 종료일 대신 그 날짜까지 진행한다."""
+        doc = getResumeContext(DBuid)
+
+        obj = cls.__new__(cls)
+
+        if PROXY:
+            proxy_list = load_proxy_list()
+            set_proxy_list(proxy_list)
+
+        obj.DBname = doc["name"]
+        obj.requester = doc["requester"]
+        obj.keyword = doc["keyword"]
+        obj.startDate = computeResumeStartDate(doc)
+        obj.endDate = endDate or doc["endDate"]
+        validateResumeRange(obj.startDate, obj.endDate)
+        obj.option = doc["crawlOption"]
+        obj.speed = doc.get("crawlSpeed", 3)
+
+        obj.DBname = renameForResume(
+            DBuid, "naverblog", obj.keyword, doc["startDate"], obj.endDate, obj.DBname
+        )
+
+        obj.articleDB = obj.DBname + "_article"
+        obj.replyDB = obj.DBname + "_reply"
+
+        obj.startTime = time.time()
+
+        obj.startDate_form = datetime.strptime(obj.startDate, "%Y%m%d").date()
+        obj.endDate_form = datetime.strptime(obj.endDate, "%Y%m%d").date()
+
+        obj.currentDate = obj.startDate_form
+        obj.date_range = (obj.endDate_form - obj.startDate_form).days + 1
+        obj.deltaD = timedelta(days=1)
+
+        notification = get_userinfo(obj.requester)
+        if not notification:
+            raise ValueError(f"사용자 정보를 찾을 수 없습니다: {obj.requester}")
+        obj.Email = notification["Email"]
+        obj.requesterUid = notification["userUid"]
+
+        obj.running = True
+        obj.resuming = True
+        obj.DBuid = DBuid
+        obj.DBPath = getResumeDBPath(obj.DBname)
+
+        stat = doc.get("stat", {})
+        obj.status = {
+            "percentage": "0",
+            "currentdate": obj.currentDate.strftime("%Y-%m-%d"),
+            "urlCnt": 0,
+            "articleCnt": stat.get("article", 0),
+            "commentCnt": stat.get("cmt", 0),
+            "replyCnt": stat.get("reply", 0),
+        }
+
+        tables = [obj.articleDB]
+        if obj.option in [1, 4]:
+            tables.append(obj.replyDB)
+        restoreCsvFromParquet(obj.DBPath, tables)
+        obj.resumePriorCounts = countExistingRows(obj.DBPath, tables)
+
+        beginResume(DBuid, newEndDate=endDate)
+        return obj
 
     def collectUrl(self, keyword, startDate, endDate):
         try:
@@ -464,21 +551,28 @@ class NaverBlogCrawler:
                 )
 
     def main(self):
-        initCrawlLog(
-            self.DBuid,
-            (
-                f"User: {self.requester}\n"
-                f"Object: naverblog\n"
-                f"Option: {self.option}\n"
-                f"Keyword: {self.keyword}\n"
-                f"Date Range: {self.startDate} ~ {self.endDate}"
-            ),
-        )
+        if not self.resuming:
+            initCrawlLog(
+                self.DBuid,
+                (
+                    f"User: {self.requester}\n"
+                    f"Object: naverblog\n"
+                    f"Option: {self.option}\n"
+                    f"Keyword: {self.keyword}\n"
+                    f"Date Range: {self.startDate} ~ {self.endDate}"
+                ),
+            )
 
-        makeCSV(self.DBPath, self.articleDB, naverblog_article_column)
+            makeCSV(self.DBPath, self.articleDB, naverblog_article_column)
 
-        if self.option in [1]:
-            makeCSV(self.DBPath, self.replyDB, naverblog_reply_column)
+            if self.option in [1]:
+                makeCSV(self.DBPath, self.replyDB, naverblog_reply_column)
+        else:
+            appendCrawlLog(
+                self.DBuid,
+                "info",
+                f"이어받기 시작: {self.currentDate.strftime('%Y-%m-%d')} ~ {self.endDate_form}",
+            )
 
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime("%Y%m%d")
@@ -510,6 +604,7 @@ class NaverBlogCrawler:
                     status=self.status,
                     DBuid=self.DBuid,
                     requester=self.requester,
+                    resumePriorCounts=self.resumePriorCounts,
                 )
                 break
 
@@ -532,6 +627,7 @@ class NaverBlogCrawler:
                 self.status["articleCnt"],
                 self.status["commentCnt"],
                 self.status["replyCnt"],
+                currentDate_str,
             )
 
             self.currentDate += self.deltaD

@@ -7,6 +7,9 @@ from app.db import (
     user_bugs_col,
     homepage_users_col,
     audit_logs_col,
+    crawler_log_col,
+    manager_users_col,
+    identity_history_col,
 )
 
 
@@ -20,10 +23,45 @@ def get_pending_users():
     )
 
 
+def _sync_identity_history():
+    """알고 있는 모든 uid→이름을 identity_history_col에 영구 보관한다.
+
+    매니저 데스크톱 앱이 예전에 쓰던 레거시 계정(manager.users)과 현재 중앙 로그인
+    계정(homepage.users) 양쪽에서 본 적 있는 uid는 전부 여기 쌓이고, 한 번 기록되면
+    계정이 삭제되거나 재가입으로 uid가 바뀌어도 지워지지 않는다 — 그래야 과거
+    user-logs/user-bugs/audit-logs의 userUid가 계속 이름으로 표시된다."""
+    now = datetime.now(ZoneInfo("Asia/Seoul"))
+    seen = list(homepage_users_col.find({}, {"uid": 1, "name": 1, "role": 1})) + list(
+        manager_users_col.find({}, {"uid": 1, "name": 1, "role": 1})
+    )
+    for u in seen:
+        if not u.get("uid") or not u.get("name"):
+            continue
+        identity_history_col.update_one(
+            {"uid": u["uid"]},
+            {
+                "$set": {"name": u["name"], "role": u.get("role"), "last_seen": now},
+                "$setOnInsert": {"first_seen": now},
+            },
+            upsert=True,
+        )
+
+
 def get_user_mapping():
-    """uid를 이름으로 매핑하는 딕셔너리 생성"""
-    users = homepage_users_col.find({}, {"uid": 1, "name": 1})
-    return {u["uid"]: u.get("name", "알 수 없음") for u in users}
+    """uid를 이름으로 매핑하는 딕셔너리 생성.
+
+    현재 계정(homepage.users)이 최우선이고, 거기 없는 uid는 지금까지 한 번이라도
+    본 적 있는 모든 계정(identity_history_col — 레거시 manager.users 포함)에서
+    찾아 이름을 이어서 보여준다."""
+    _sync_identity_history()
+
+    mapping = {
+        d["uid"]: d.get("name", "알 수 없음")
+        for d in identity_history_col.find({}, {"uid": 1, "name": 1})
+    }
+    for u in homepage_users_col.find({}, {"uid": 1, "name": 1}):
+        mapping[u["uid"]] = u.get("name", "알 수 없음")
+    return mapping
 
 
 def get_dashboard_stats(date_str=None):
@@ -99,6 +137,40 @@ def get_recent_logs(limit=10, name=None, date_str=None):
     return logs
 
 
+def get_users_with_log_counts():
+    """User Logs 탭의 유저별 서브탭 목록 (로그 있는 유저만, 건수 많은 순)"""
+    user_map = get_user_mapping()
+    pipeline = [{"$group": {"_id": "$userUid", "count": {"$sum": 1}}}]
+    counts = {c["_id"]: c["count"] for c in user_logs_col.aggregate(pipeline)}
+    users = [
+        {"uid": uid, "name": user_map.get(uid, uid[:8]), "count": count}
+        for uid, count in counts.items()
+    ]
+    users.sort(key=lambda u: u["count"], reverse=True)
+    return users
+
+
+def get_logs_for_user(user_uid: str, page=1, per_page=30):
+    """특정 유저의 전체 기간 로그를 페이지네이션해서 조회한다."""
+    user_map = get_user_mapping()
+    query = {"userUid": user_uid}
+    total = user_logs_col.count_documents(query)
+    skip = max(0, (page - 1) * per_page)
+    logs = list(
+        user_logs_col.find(query).sort("datetime", -1).skip(skip).limit(per_page)
+    )
+    for log in logs:
+        log["datetime"] = log.get("datetime_kst") or log.get("datetime").strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        log["user_name"] = user_map.get(log.get("userUid"), log.get("userUid")[:8])
+    return logs, total
+
+
+def get_user_bug_by_uid(uid: str):
+    return user_bugs_col.find_one({"uid": uid})
+
+
 def get_user_bugs(limit=50, name=None, date_str=None):
     user_map = get_user_mapping()
     query = build_search_query(name, date_str, user_map)
@@ -163,6 +235,12 @@ def get_audit_logs(
     for log in logs:
         log["_id"] = str(log["_id"])
     return logs, total
+
+
+def get_crawler_logs(uid: str):
+    """crawler.log-list에서 특정 크롤링 작업(db-list.uid)의 로그를 조회한다."""
+    doc = crawler_log_col.find_one({"uid": uid})
+    return doc.get("logs", []) if doc else []
 
 
 def get_recent_bugs(limit=10):

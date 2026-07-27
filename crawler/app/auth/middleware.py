@@ -69,6 +69,7 @@ class AuthMiddleware:
                     "user": {
                         "uid": payload["sub"],
                         "name": payload["name"],
+                        "role": payload.get("role"),
                     }
                 }
                 await self.app(scope, receive, send)

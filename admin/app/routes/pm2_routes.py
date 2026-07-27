@@ -1,4 +1,6 @@
 import asyncio
+import os
+import time
 from fastapi import (
     APIRouter,
     Request,
@@ -14,6 +16,29 @@ from app.routes.dependencies import get_current_user
 
 router = APIRouter(prefix="/process", tags=["process"])
 templates = Jinja2Templates(directory="app/templates")
+
+_prev_sample = {"ts": None, "net": None, "disk": None}
+
+
+def _get_cpu_temp():
+    """coretemp의 패키지 전체 온도(없으면 코어 평균)를 섭씨로 반환. 센서가 없으면 None."""
+    try:
+        temps = psutil.sensors_temperatures()
+    except Exception:
+        return None
+    entries = temps.get("coretemp") or temps.get("k10temp") or []
+    if not entries:
+        return None
+    for e in entries:
+        if "package" in e.label.lower():
+            return round(e.current, 1)
+    return round(sum(e.current for e in entries) / len(entries), 1)
+
+
+def _rate_per_sec(prev_value, cur_value, dt):
+    if prev_value is None or dt <= 0:
+        return 0
+    return max(0, (cur_value - prev_value) / dt)
 
 
 @router.get("/")
@@ -49,12 +74,46 @@ async def get_server_stats(user=Depends(get_current_user)):
     sw = psutil.swap_memory()
     du = psutil.disk_usage("/")
     net = psutil.net_io_counters()
+    disk_io = psutil.disk_io_counters()
+
+    now = time.monotonic()
+    prev_ts = _prev_sample["ts"]
+    dt = (now - prev_ts) if prev_ts else 0
+
+    net_upload_bps = 0
+    net_download_bps = 0
+    disk_read_bps = 0
+    disk_write_bps = 0
+    if _prev_sample["net"] is not None:
+        net_upload_bps = _rate_per_sec(
+            _prev_sample["net"].bytes_sent, net.bytes_sent, dt
+        )
+        net_download_bps = _rate_per_sec(
+            _prev_sample["net"].bytes_recv, net.bytes_recv, dt
+        )
+    if _prev_sample["disk"] is not None and disk_io is not None:
+        disk_read_bps = _rate_per_sec(
+            _prev_sample["disk"].read_bytes, disk_io.read_bytes, dt
+        )
+        disk_write_bps = _rate_per_sec(
+            _prev_sample["disk"].write_bytes, disk_io.write_bytes, dt
+        )
+
+    _prev_sample["ts"] = now
+    _prev_sample["net"] = net
+    _prev_sample["disk"] = disk_io
+
+    load1, load5, load15 = os.getloadavg()
 
     return {
         "cpu_percent": psutil.cpu_percent(),
         "cpu_cores": psutil.cpu_percent(percpu=True),
         "cpu_count_logical": psutil.cpu_count(),
         "cpu_count_physical": psutil.cpu_count(logical=False),
+        "cpu_temp": _get_cpu_temp(),
+        "load_avg": [round(load1, 2), round(load5, 2), round(load15, 2)],
+        "process_count": len(psutil.pids()),
+        "uptime_seconds": int(time.time() - psutil.boot_time()),
         "memory_total": vm.total,
         "memory_available": vm.available,
         "memory_used": vm.used,
@@ -68,6 +127,10 @@ async def get_server_stats(user=Depends(get_current_user)):
         "disk_percent": du.percent,
         "net_bytes_sent": net.bytes_sent,
         "net_bytes_recv": net.bytes_recv,
+        "net_upload_bps": round(net_upload_bps),
+        "net_download_bps": round(net_download_bps),
+        "disk_read_bps": round(disk_read_bps),
+        "disk_write_bps": round(disk_write_bps),
     }
 
 

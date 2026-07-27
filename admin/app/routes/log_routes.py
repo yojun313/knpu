@@ -8,6 +8,8 @@ from app.services.data_service import (
     get_user_mapping,
     get_audit_logs,
     get_audit_services,
+    get_users_with_log_counts,
+    get_logs_for_user,
 )
 from app.routes.dependencies import get_current_user
 
@@ -20,12 +22,24 @@ async def read_logs(
     request: Request,
     name: Optional[str] = None,
     date: Optional[str] = None,
+    selected_user: Optional[str] = None,
+    page: int = 1,
     user=Depends(get_current_user),
 ):
-    if date is None:
-        date = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
+    per_page = 30
+    page = max(1, page)
+    user_tabs = get_users_with_log_counts()
 
-    logs = get_recent_logs(50, name=name, date_str=date)
+    if selected_user:
+        logs, total = get_logs_for_user(selected_user, page=page, per_page=per_page)
+        total_pages = max(1, (total + per_page - 1) // per_page)
+    else:
+        if date is None:
+            date = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
+        logs = get_recent_logs(50, name=name, date_str=date)
+        total = len(logs)
+        total_pages = 1
+
     user_map = get_user_mapping()
     user_names = sorted(
         list(
@@ -45,6 +59,11 @@ async def read_logs(
         context={
             "logs": logs,
             "active_page": "logs",
+            "user_tabs": user_tabs,
+            "selected_user": selected_user,
+            "page": page,
+            "total_pages": total_pages,
+            "total": total,
             "search_name": name,
             "search_date": date,
             "user_names": user_names,

@@ -9,8 +9,8 @@
         <button id="railToggle" class="rail-toggle" title="사이드바 접기/펼치기">☰</button>
         <span class="rail-brand">내 프로젝트</span>
       </div>
-      <button id="railUploadBtn" class="rail-upload" title="새 프로젝트 업로드">
-        <span class="ru-icon">＋</span><span class="ru-text">새 프로젝트 업로드</span>
+      <button id="railUploadBtn" class="rail-upload" title="새 프로젝트">
+        <span class="ru-icon">＋</span><span class="ru-text">새 프로젝트</span>
       </button>
       <div id="railList" class="rail-list"></div>
       <div id="railEmpty" class="rail-empty" hidden>아직 프로젝트가 없습니다</div>
@@ -29,7 +29,7 @@
         <div class="ep-icon">🗂</div>
         <div class="ep-title">프로젝트를 선택하세요</div>
         <div class="ep-sub">왼쪽 목록에서 프로젝트를 클릭하거나, 새 프로젝트를 업로드하세요.</div>
-        <button id="emptyUploadBtn" class="btn primary ep-btn">새 프로젝트 업로드</button>
+        <button id="emptyUploadBtn" class="btn primary ep-btn">새 프로젝트</button>
       </div>
       <div id="plotTabs">
         <button id="tabKem" class="active" data-tab="dov" title="Keyword Emergence Map">KEM (DoV)</button>
@@ -189,6 +189,7 @@
       <div class="modal-tabs">
         <button class="modal-tab active" id="tabBtnZip" data-tab="zip">결과 zip 업로드</button>
         <button class="modal-tab" id="tabBtnAnalyze" data-tab="analyze">토큰 CSV로 새로 분석</button>
+        <button class="modal-tab" id="tabBtnCrawl" data-tab="crawl">크롤링 DB에서 선택</button>
       </div>
 
       <div id="tabZip" class="modal-tab-panel active">
@@ -262,6 +263,69 @@
           <button class="btn primary" id="btnStartAnalyze">분석 시작</button>
         </div>
         <div id="analyzeStatus" class="modal-status"></div>
+      </div>
+
+      <div id="tabCrawl" class="modal-tab-panel">
+        <div id="crawlDbStep">
+          <div class="crawl-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <input type="text" id="crawlDbSearch" placeholder="키워드, DB 이름, 요청자로 검색">
+          </div>
+          <div id="crawlDbList" class="crawl-table-wrap"></div>
+        </div>
+        <div id="crawlFileStep" hidden>
+          <div class="crawl-breadcrumb">
+            <button class="btn" id="btnCrawlBack" type="button">← 목록</button>
+            <span class="cb-name" id="crawlFileDbName"></span>
+          </div>
+          <div id="crawlFileList" class="crawl-table-wrap"></div>
+        </div>
+        <div id="crawlProgress" class="upload-progress" hidden>
+          <div class="upload-progress-bar"><div id="crawlProgressFill" class="upload-progress-fill"></div></div>
+          <div id="crawlProgressLabel" class="upload-progress-label">불러오는 중...</div>
+        </div>
+        <div id="crawlAnalyzeForm" class="analyze-form" hidden>
+          <div class="field"><label>프로젝트 이름</label><input type="text" id="crawlProjectName"></div>
+          <div class="field-row">
+            <div class="field"><label>분석 시작일</label><input type="date" id="crawlOptStartDate"></div>
+            <div class="field"><label>분석 종료일</label><input type="date" id="crawlOptEndDate"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>분석 기간 단위</label>
+              <select id="crawlOptPeriod">
+                <option value="1y">1년</option>
+                <option value="6m">반기</option>
+                <option value="3m">분기</option>
+                <option value="1m">1개월</option>
+                <option value="1w">1주</option>
+                <option value="1d">1일</option>
+              </select>
+            </div>
+            <div class="field"><label>시간 가중치</label><input type="number" id="crawlOptWeight" value="0.1" min="0.0001" step="0.01"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>상위 단어 개수</label><input type="number" id="crawlOptTopword" value="500" min="10"></div>
+            <div class="field"><label>표시 단어 개수</label><input type="number" id="crawlOptGraphWordcnt" value="10" min="1"></div>
+          </div>
+          <div class="field"><label>분할 기준</label>
+            <select id="crawlOptSplit">
+              <option value="평균(Mean)">평균(Mean)</option>
+              <option value="중앙값(Median)">중앙값(Median)</option>
+              <option value="직접 입력: 상위( )%">직접 입력: 상위(%)</option>
+            </select>
+          </div>
+          <div class="field" id="crawlSplitCustomField" hidden><label>상위 %</label><input type="number" id="crawlOptSplitCustom" value="10" min="1" max="99"></div>
+          <div class="field"><label>추적 데이터 계산 기준</label>
+            <select id="crawlOptTraceStandard">
+              <option value="startyear">시작 기간</option>
+              <option value="prevyear">직전 기간</option>
+            </select>
+          </div>
+          <div class="chk-row"><input type="checkbox" id="crawlOptFilter" checked><label for="crawlOptFilter">비일관 단어 필터링 (켜면 기간별 이동 경로도 함께 생성됩니다)</label></div>
+          <div class="chk-row"><input type="checkbox" id="crawlOptAni"><label for="crawlOptAni">추적 데이터 애니메이션 생성 (느려짐)</label></div>
+          <button class="btn primary" id="btnCrawlStartAnalyze">분석 시작</button>
+        </div>
+        <div id="crawlStatus" class="modal-status"></div>
       </div>
     </div>
   </div>

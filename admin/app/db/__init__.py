@@ -57,6 +57,16 @@ homepage_db = client[homepage_db_name]
 user_logs_col = manager_db["user-logs"]
 bug_board_col = manager_db["bug-board"]
 db_list_col = crawler_db["db-list"]
+crawler_log_col = crawler_db["log-list"]
 user_bugs_col = manager_db["user-bugs"]
 homepage_users_col = homepage_db["users"]
 audit_logs_col = client["audit"]["logs"]
+
+# 매니저 데스크톱 앱이 예전에 쓰던 레거시 계정 컬렉션. 지금은 homepage.users가 단일
+# 진실 소스지만, 마이그레이션 이전에 쌓인 user-logs/user-bugs의 userUid는 이 컬렉션의
+# uid를 참조하고 있어 이름 매핑에 필요하다.
+manager_users_col = client["manager"]["users"]
+
+# uid→이름 매핑을 한 번 본 것은 영구 보관한다 — 계정이 삭제되거나 재가입으로 uid가
+# 바뀌어도 과거 로그가 계속 이름으로 표시되도록 하기 위함 (get_user_mapping 참고).
+identity_history_col = client["audit"]["identities"]

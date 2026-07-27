@@ -105,9 +105,19 @@
                 <div class="text-xl font-black text-white font-mono">{{ db.size_formatted }}</div>
                 <div class="text-[10px] text-zinc-500 uppercase font-bold">Storage Usage</div>
             </div>
-            <div class="lg:mt-3">
+            <div class="lg:mt-3 flex items-center gap-1">
+                <button onclick='openLogsModal("{{ db.uid }}", "{{ db.keyword }}")'
+                    class="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-all shadow-sm" title="크롤링 로그">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                        <polyline points="14 2 14 8 18 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                </button>
                 <button onclick='openDetailModal({{ db|tojson }})'
-                    class="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-all shadow-sm">
+                    class="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-all shadow-sm" title="상세 정보">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -233,6 +243,60 @@
     </div>
 </div>
 
+<div id="logsModal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+        <div class="p-5 border-b border-zinc-800 flex justify-between items-center bg-zinc-900">
+            <h3 id="logsModalTitle" class="text-lg font-bold text-white">크롤링 로그</h3>
+            <button onclick="closeLogsModal()" class="text-zinc-500 hover:text-white transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div id="logsModalBody" class="p-5 overflow-y-auto flex-1 space-y-1.5 font-mono text-xs"></div>
+    </div>
+</div>
+
+<script>
+    const LOG_TYPE_LABEL = { start: '시작', info: '정보', error: '에러', end: '종료' };
+
+    async function openLogsModal(uid, keyword) {
+        document.getElementById('logsModalTitle').textContent = `크롤링 로그 — ${keyword}`;
+        const body = document.getElementById('logsModalBody');
+        body.innerHTML = '<div class="text-zinc-500 text-center py-8">불러오는 중...</div>';
+        document.getElementById('logsModal').classList.remove('hidden');
+        document.getElementById('logsModal').classList.add('flex');
+
+        try {
+            const res = await fetch(`/api/crawlers/${uid}/logs`);
+            const data = await res.json();
+            const logs = data.logs || [];
+            if (!logs.length) {
+                body.innerHTML = '<div class="text-zinc-500 text-center py-8">기록된 로그가 없습니다.</div>';
+                return;
+            }
+            body.innerHTML = logs.map(l => `
+                <div class="flex gap-2 items-baseline border-b border-zinc-800/50 pb-1.5">
+                    <span class="text-zinc-500 flex-shrink-0">${escHtml(l.time)}</span>
+                    <span class="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${l.type === 'error' ? 'bg-red-900/30 text-red-400' : (l.type === 'start' || l.type === 'end') ? 'bg-emerald-900/30 text-emerald-400' : 'bg-zinc-800 text-zinc-400'}">${escHtml(LOG_TYPE_LABEL[l.type] || l.type)}</span>
+                    <span class="text-zinc-300 whitespace-pre-wrap break-words">${escHtml(l.message)}</span>
+                </div>`).join('');
+        } catch (e) {
+            body.innerHTML = '<div class="text-red-400 text-center py-8">로그를 불러오지 못했습니다.</div>';
+        }
+    }
+
+    function closeLogsModal() {
+        document.getElementById('logsModal').classList.add('hidden');
+        document.getElementById('logsModal').classList.remove('flex');
+    }
+
+    function escHtml(s) {
+        if (s == null) return '';
+        const div = document.createElement('div');
+        div.textContent = String(s);
+        return div.innerHTML;
+    }
+</script>
+
 <script>
     function filterCrawlers() {
         const query = document.getElementById('crawlerSearch').value.toLowerCase();
@@ -308,6 +372,6 @@
     }
 
     // Esc 키 지원
-    window.onkeydown = function (e) { if (e.key === 'Escape') closeDetailModal(); };
+    window.onkeydown = function (e) { if (e.key === 'Escape') { closeDetailModal(); closeLogsModal(); } };
 </script>
 {% endblock %}
