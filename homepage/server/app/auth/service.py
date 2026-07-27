@@ -447,3 +447,30 @@ def reject_request(uid: str) -> dict:
         f"문의 사항은 관리자에게 연락해주세요.",
     )
     return {"message": "거절 완료"}
+
+
+def change_role(uid: str, new_role: str, admin_uid: str) -> dict:
+    if new_role not in ("admin", "member"):
+        raise HTTPException(
+            status_code=400, detail="role은 admin 또는 member여야 합니다"
+        )
+
+    user = users_db.find_one({"uid": uid})
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+
+    if uid == admin_uid and new_role != "admin":
+        raise HTTPException(
+            status_code=400, detail="자기 자신의 admin 권한은 해제할 수 없습니다"
+        )
+
+    users_db.update_one(
+        {"uid": uid},
+        {"$set": {"role": new_role, "updated_at": datetime.now()}},
+    )
+    notify_discord(
+        "admin_ops",
+        f"{user.get('name', user.get('username'))}({user.get('username')})의 역할이 "
+        f"{user.get('role')} -> {new_role}(으)로 변경되었습니다 (관리자: {admin_uid})",
+    )
+    return {"message": "역할이 변경되었습니다", "role": new_role}

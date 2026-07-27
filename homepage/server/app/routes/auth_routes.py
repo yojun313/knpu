@@ -11,6 +11,7 @@ from app.models import (
     UpdateProfileRequest,
     ForgotPasswordRequest,
     ResetPasswordRequest,
+    UpdateRoleRequest,
 )
 from app.auth import service
 from app.auth.jwt import decode_token
@@ -129,3 +130,8 @@ def approve_request(uid: str, admin=Depends(require_admin)):
 @router.post("/admin/requests/{uid}/reject")
 def reject_request(uid: str, admin=Depends(require_admin)):
     return service.reject_request(uid)
+
+
+@router.post("/admin/users/{uid}/role")
+def update_role(uid: str, data: UpdateRoleRequest, admin=Depends(require_admin)):
+    return service.change_role(uid, data.role, admin["sub"])

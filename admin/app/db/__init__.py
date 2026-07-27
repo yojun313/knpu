@@ -70,3 +70,7 @@ manager_users_col = client["manager"]["users"]
 # uid→이름 매핑을 한 번 본 것은 영구 보관한다 — 계정이 삭제되거나 재가입으로 uid가
 # 바뀌어도 과거 로그가 계속 이름으로 표시되도록 하기 위함 (get_user_mapping 참고).
 identity_history_col = client["audit"]["identities"]
+
+# 디스코드 알림 발행 큐 — 실제 전송은 디스코드 봇(bot/cogs/cog_notifications.py)이
+# 이 컬렉션을 폴링해서 처리한다 (app/libs/discord_notify.py 참고).
+discord_notifications_col = client["discord"]["notifications"]

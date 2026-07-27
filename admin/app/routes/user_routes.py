@@ -44,3 +44,15 @@ async def reject_user(uid: str, request: Request, user=Depends(get_current_user)
         headers={"Authorization": f"Bearer {token}"},
     )
     return JSONResponse(status_code=res.status_code, content=res.json())
+
+
+@router.post("/users/{uid}/role")
+async def change_user_role(uid: str, request: Request, user=Depends(get_current_user)):
+    token = request.cookies.get("session")
+    body = await request.json()
+    res = requests.post(
+        f"{HOMEPAGE_AUTH_API}/admin/users/{uid}/role",
+        json={"role": body.get("role")},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    return JSONResponse(status_code=res.status_code, content=res.json())

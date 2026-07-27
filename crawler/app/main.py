@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.auth.middleware import AuthMiddleware
 from app.common.audit_log import AuditLogMiddleware
+from app.common.notification import sendDiscord
 from app.config import MODE
 import gc
 import asyncio
@@ -61,6 +62,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 
     console.print(
         f"[bold red]Exception at {request.url.path}:[/bold red]\n{traceback.format_exc()}"
+    )
+
+    sendDiscord(
+        f"[CRAWLER] {request.method} {request.url.path}\n```py\n{custom_traceback[-1500:]}\n```",
+        "system_error",
     )
 
     return JSONResponse(

@@ -4,6 +4,7 @@ from PySide6.QtGui import QFont, QFontDatabase, QPalette, QColor
 from PySide6.QtCore import Qt, QSharedMemory
 import os
 import sys
+import traceback
 from config import VERSION
 from windows.splash_window import SplashDialog
 from core.setting import get_setting, set_setting
@@ -11,6 +12,25 @@ from ui.style import theme_option
 from PySide6.QtGui import QIcon, QGuiApplication
 from config import ASSETS_PATH
 from packaging import version
+from services.discord_notify import sendAdminNotify
+
+
+def _report_crash(exc_type, exc_value, exc_tb):
+    """Qt 이벤트 루프 안에서 잡히지 않은 예외를 knpu 시스템 전체 오류 채널로 보고한다.
+    manager/server의 /users/admin/notify가 이미 system_error 채널로 라우팅해준다."""
+    tb = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    print(tb)
+    try:
+        sendAdminNotify(
+            f"[MANAGER-APP v{VERSION}] Uncaught exception\n```py\n{tb[-1500:]}\n```",
+            kind="error",
+        )
+    except Exception:
+        pass
+    sys.__excepthook__(exc_type, exc_value, exc_tb)
+
+
+sys.excepthook = _report_crash
 
 
 def build_app():

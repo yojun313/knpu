@@ -116,3 +116,7 @@ class ResetPasswordRequest(BaseModel):
     username: str
     code: str
     new_password: str
+
+
+class UpdateRoleRequest(BaseModel):
+    role: str

@@ -77,9 +77,11 @@
             <thead>
                 <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">아이디 / 이름 / 역할</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">UID</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">이메일</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">상태</th>
-                    <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Pushover Key</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Version</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">역할 변경</th>
                 </tr>
             </thead>
             <tbody id="userListBody">
@@ -97,6 +99,9 @@
                         </div>
                     </td>
                     <td class="p-4">
+                        <code class="text-[11px] text-zinc-500 font-mono cursor-pointer hover:text-zinc-300" onclick="copyToClipboard('{{ u.uid }}', this)" title="클릭하여 UID 복사">{{ u.uid[:8] }}…</code>
+                    </td>
+                    <td class="p-4">
                         <div class="text-zinc-300">{{ u.email }}</div>
                     </td>
                     <td class="p-4">
@@ -108,26 +113,26 @@
                         <span class="text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded uppercase">{{ u.status }}</span>
                         {% endif %}
                     </td>
-                    <td class="p-4 text-right">
-                        {% if u.pushover_key %}
-                        <div class="flex items-center justify-end gap-2 group">
-                            <code class="text-[11px] text-zinc-600 font-mono bg-black/20 px-2 py-1 rounded select-none">
-                                {{ u.pushover_key[:6] }}••••••••
-                            </code>
-                            <button onclick="copyToClipboard('{{ u.pushover_key }}', this)"
-                                    class="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-white rounded transition shadow-sm"
-                                    title="전체 키 복사">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            </button>
-                        </div>
+                    <td class="p-4">
+                        {% if u.version %}
+                        <span class="text-[11px] text-zinc-400 font-mono">{{ u.version }}</span>
                         {% else %}
                         <span class="text-zinc-700">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4 text-right">
+                        {% if u.role == 'admin' %}
+                        <button onclick="handleRoleChange('{{ u.uid }}', 'member', this)"
+                                class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded-md text-xs font-bold transition">일반 사용자로 변경</button>
+                        {% else %}
+                        <button onclick="handleRoleChange('{{ u.uid }}', 'admin', this)"
+                                class="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-600/30 rounded-md text-xs font-bold transition">관리자로 변경</button>
                         {% endif %}
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" class="p-20 text-center">
+                    <td colspan="6" class="p-20 text-center">
                         <div class="text-zinc-600 italic">등록된 사용자가 없습니다.</div>
                     </td>
                 </tr>
@@ -149,7 +154,7 @@
         }
     }
 
-    // 푸시오버 키 복사 함수
+    // 클립보드 복사 (UID 등)
     function copyToClipboard(text, btn) {
         const temp = document.createElement("textarea");
         temp.value = text;
@@ -175,6 +180,30 @@
             const res = await fetch(`/users/${uid}/${action}`, { method: 'POST' });
             if (!res.ok) {
                 alert('처리에 실패했습니다');
+                btn.disabled = false;
+                return;
+            }
+            window.location.reload();
+        } catch (err) {
+            alert('서버와 통신할 수 없습니다');
+            btn.disabled = false;
+        }
+    }
+
+    // 사용자 역할 변경 (admin <-> member)
+    async function handleRoleChange(uid, newRole, btn) {
+        const label = newRole === 'admin' ? '관리자' : '일반 사용자';
+        if (!confirm(`이 사용자를 ${label}(으)로 변경하시겠습니까?`)) return;
+        btn.disabled = true;
+        try {
+            const res = await fetch(`/users/${uid}/role`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role: newRole }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                alert(data.detail || '역할 변경에 실패했습니다');
                 btn.disabled = false;
                 return;
             }

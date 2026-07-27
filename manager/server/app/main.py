@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from app.routes import api_router
 from app.libs.audit_log import AuditLogMiddleware
+from app.libs.discord_notify import notify_discord
 import gc
 import asyncio
 from datetime import datetime
@@ -65,6 +66,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 
     console.print(
         f"[bold red]Exception at {request.url.path}:[/bold red]\n{traceback.format_exc()}"
+    )
+
+    notify_discord(
+        "system_error",
+        f"[MANAGER-SERVER] {request.method} {request.url.path}\n```py\n{custom_traceback[-1500:]}\n```",
     )
 
     return JSONResponse(

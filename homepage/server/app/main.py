@@ -1,17 +1,55 @@
 import os
-from fastapi import FastAPI
+import traceback
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.routes import api_router
 from app.routes.frontend_routes import router as frontend_router
 from app.routes.files_routes import router as files_router
 from app.libs.audit_log import AuditLogMiddleware
+from app.libs.discord_notify import notify_discord
 
 PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "public")
 
 app = FastAPI()
 app.add_middleware(AuditLogMiddleware)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    tb = exc.__traceback__
+    frames = traceback.extract_tb(tb)
+
+    filtered_frames = [
+        f
+        for f in frames
+        if "site-packages" not in f.filename and "lib/python" not in f.filename
+    ]
+    if not filtered_frames and frames:
+        filtered_frames = [frames[-1]]
+
+    custom_traceback = "".join(traceback.format_list(filtered_frames))
+    custom_traceback += f"\n{type(exc).__name__}: {str(exc)}"
+
+    print(f"[HOMEPAGE] Exception at {request.url.path}:\n{traceback.format_exc()}")
+
+    notify_discord(
+        "system_error",
+        f"[HOMEPAGE] {request.method} {request.url.path}\n```py\n{custom_traceback[-1500:]}\n```",
+    )
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "message": f"[{type(exc).__name__}] {str(exc)}",
+            "path": request.url.path,
+        },
+    )
+
+
 app.add_middleware(
     CORSMiddleware,
     # allow_credentials=True와 allow_origins=["*"]는 브라우저가 동시 사용을 거부하므로
