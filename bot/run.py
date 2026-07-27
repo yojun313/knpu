@@ -4,9 +4,12 @@ import os
 import asyncio
 import logging
 import socket
+import traceback
 import warnings
 from dotenv import load_dotenv
 import motor.motor_asyncio
+
+from config import CHANNEL_IDS
 
 load_dotenv()
 # test
@@ -77,6 +80,48 @@ class MyBot(commands.Bot):
             print(f"[Sync] {len(synced)}개 명령어 동기화 완료")
         except Exception as e:
             print(f"[Sync Error] {e}")
+
+        self.tree.on_error = self.on_app_command_error
+
+    async def _report_error(self, where: str, tb: str):
+        """knpu/ 전체 로그 채널(system_error)로 봇 자체 오류를 직접 전송한다.
+        봇이 죽었을 때는 discord.notifications 큐(다른 서비스가 쓰는 방식)를 폴링할
+        주체가 없으므로, 봇은 큐를 거치지 않고 채널에 바로 send한다."""
+        for guild in self.guilds:
+            channel = guild.get_channel(CHANNEL_IDS.get("system_error"))
+            if not channel:
+                continue
+            content = f"⚠️ **[BOT] error in {where}**\n```py\n{tb[-1800:]}\n```"
+            try:
+                await channel.send(content)
+            except Exception:
+                pass
+
+    async def on_error(self, event_method, *args, **kwargs):
+        tb = traceback.format_exc()
+        print(f"[BOT] Unhandled error in event `{event_method}`:\n{tb}")
+        await self._report_error(f"event `{event_method}`", tb)
+
+    async def on_command_error(self, ctx, error):
+        tb = "".join(
+            traceback.format_exception(type(error), error, error.__traceback__)
+        )
+        print(f"[BOT] Command error in `{ctx.command}`:\n{tb}")
+        await self._report_error(f"command `{ctx.command}`", tb)
+
+    async def on_app_command_error(self, interaction, error):
+        tb = "".join(
+            traceback.format_exception(type(error), error, error.__traceback__)
+        )
+        print(f"[BOT] App command error in `{interaction.command}`:\n{tb}")
+        await self._report_error(f"slash command `{interaction.command}`", tb)
+        if not interaction.response.is_done():
+            try:
+                await interaction.response.send_message(
+                    "오류가 발생했습니다. 관리자에게 전달되었습니다.", ephemeral=True
+                )
+            except Exception:
+                pass
 
 
 async def main():

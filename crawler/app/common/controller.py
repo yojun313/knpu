@@ -3,9 +3,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 import time
 import logging
-from db import crawler_db, get_userinfo, get_admin_discord_ids
+from db import crawler_db, get_admin_discord_ids
 from common.tokenization import tokenization
-from common.notification import sendMail, sendDiscordDM
+from common.notification import sendDiscordDM, notifyRequester
 from common.storage import endCrawl, errorCrawl, appendCrawlLog
 from config import CRAWL_LOG_PATH
 
@@ -40,13 +40,10 @@ def convertToParquet(folder_path):
         logger.exception(f"convertToParquet 실패: {folder_path}")
 
 
-def _discord_recipients(requester):
-    ids = set(get_admin_discord_ids())
-    if requester:
-        info = get_userinfo(requester)
-        if info and info.get("discord_id"):
-            ids.add(info["discord_id"])
-    return list(ids)
+def _admin_discord_recipients():
+    """운영 가시성 목적으로 모든 크롤링 완료/중단을 항상 DM 받는 관리자 목록.
+    요청자 본인에게는 별도로 notifyRequester()가 디스코드 우선/이메일 폴백을 처리한다."""
+    return get_admin_discord_ids()
 
 
 def stopOperator(
@@ -113,10 +110,10 @@ def stopOperator(
         text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
 
-        sendMail(userEmail, title, text)
         sendDiscordDM(
-            _discord_recipients(requester), title + "\n" + text, requester=requester
+            _admin_discord_recipients(), title + "\n" + text, requester=requester
         )
+        notifyRequester(requester, userEmail, title, text)
 
         with open(os.path.join(CRAWL_LOG_PATH, DBname + "_log.txt"), "a") as log:
             log.write("\n\n" + text)
@@ -235,10 +232,10 @@ def finishOperator(
         text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
 
-        sendMail(userEmail, title, text)
         sendDiscordDM(
-            _discord_recipients(requester), title + "\n" + text, requester=requester
+            _admin_discord_recipients(), title + "\n" + text, requester=requester
         )
+        notifyRequester(requester, userEmail, title, text)
 
         with open(os.path.join(CRAWL_LOG_PATH, DBname + "_log.txt"), "a") as log:
             log.write("\n\n" + text)

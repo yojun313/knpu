@@ -1,7 +1,10 @@
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from app.routes import api_router
+from app.libs.discord_notify import notify_discord
 import gc
 import asyncio
+import traceback
 from datetime import datetime
 from rich.console import Console
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -52,6 +55,20 @@ class RichLoggerMiddleware(BaseHTTPMiddleware):
 # FastAPI 앱 구성
 app = FastAPI()
 app.add_middleware(RichLoggerMiddleware)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    console.print(f"[bold red]Exception at {request.url.path}:[/bold red]\n{tb}")
+    notify_discord(
+        "system_error",
+        f"[MANAGER-GPU] {request.method} {request.url.path}\n```py\n{tb[-1500:]}\n```",
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"status": "error", "message": str(exc), "path": request.url.path},
+    )
 
 
 @app.on_event("startup")

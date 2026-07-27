@@ -886,12 +886,34 @@
   }
 
   var crawlDbSearchTimer = null;
-  function loadCrawlDbList(q) {
+  var crawlDbCurrentQ = '';
+  var crawlDbCurrentPage = 1;
+  function renderCrawlDbPager(data) {
+    var pagerEl = document.getElementById('crawlDbPager');
+    if (!pagerEl) return;
+    var total = data.total || 0;
+    var perPage = data.per_page || 30;
+    var page = data.page || 1;
+    var totalPages = Math.max(1, Math.ceil(total / perPage));
+    if (totalPages <= 1) { pagerEl.innerHTML = ''; return; }
+    pagerEl.innerHTML = '<button class="btn" id="crawlDbPrev" type="button"' + (page <= 1 ? ' disabled' : '') + '>← 이전</button>'
+      + '<span class="crawl-pager-info">' + page + ' / ' + totalPages + '</span>'
+      + '<button class="btn" id="crawlDbNext" type="button"' + (page >= totalPages ? ' disabled' : '') + '>다음 →</button>';
+    var prevBtn = document.getElementById('crawlDbPrev');
+    var nextBtn = document.getElementById('crawlDbNext');
+    if (prevBtn) prevBtn.addEventListener('click', function () { if (page > 1) loadCrawlDbList(crawlDbCurrentQ, page - 1); });
+    if (nextBtn) nextBtn.addEventListener('click', function () { if (page < totalPages) loadCrawlDbList(crawlDbCurrentQ, page + 1); });
+  }
+  function loadCrawlDbList(q, page) {
+    crawlDbCurrentQ = q || '';
+    crawlDbCurrentPage = page || 1;
     var wrapEl = document.getElementById('crawlDbList');
     wrapEl.innerHTML = '<div class="crawl-db-empty">불러오는 중...</div>';
-    railApi('/api/crawl-dbs?q=' + encodeURIComponent(q || '')).then(function (data) {
+    var pagerElInit = document.getElementById('crawlDbPager');
+    if (pagerElInit) pagerElInit.innerHTML = '';
+    railApi('/api/crawl-dbs?q=' + encodeURIComponent(crawlDbCurrentQ) + '&page=' + crawlDbCurrentPage).then(function (data) {
       var items = data.items || [];
-      if (!items.length) { wrapEl.innerHTML = '<div class="crawl-db-empty">검색된 크롤링 DB가 없습니다.</div>'; return; }
+      if (!items.length) { wrapEl.innerHTML = '<div class="crawl-db-empty">검색된 크롤링 DB가 없습니다.</div>'; renderCrawlDbPager(data); return; }
       var uidMap = {};
       var rows = items.map(function (it) {
         uidMap[it.uid] = it;
@@ -912,6 +934,7 @@
           openCrawlDbFiles(it.uid, it.name, it.keyword);
         });
       });
+      renderCrawlDbPager(data);
     }).catch(function (err) { wrapEl.innerHTML = '<div class="crawl-db-empty">' + esc(err.message || String(err)) + '</div>'; });
   }
 

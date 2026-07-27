@@ -1,14 +1,17 @@
 # app/main.py
 
 import os
+import traceback
 import uuid
 from typing import Dict, List, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
+from app.libs.discord_notify import notify_discord
 
 app = FastAPI()
 
@@ -18,6 +21,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    print(f"[MANAGER-WEB] Exception at {request.url.path}:\n{tb}")
+    notify_discord(
+        "system_error",
+        f"[MANAGER-WEB] {request.method} {request.url.path}\n```py\n{tb[-1500:]}\n```",
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"status": "error", "message": str(exc), "path": request.url.path},
+    )
+
 
 # 정적 파일 디렉토리 경로 계산
 BASE_DIR = os.path.dirname(__file__)

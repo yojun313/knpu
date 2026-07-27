@@ -1,6 +1,7 @@
+import traceback
 from urllib.parse import quote
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.exception_handlers import http_exception_handler
 from app.routes import (
@@ -15,9 +16,44 @@ from app.routes import (
     agent_routes,
 )
 from app.libs.audit_log import AuditLogMiddleware
+from app.libs.discord_notify import notify_discord
 
 app = FastAPI(title="FPEI Dashboard")
 app.add_middleware(AuditLogMiddleware)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    tb = exc.__traceback__
+    frames = traceback.extract_tb(tb)
+
+    filtered_frames = [
+        f
+        for f in frames
+        if "site-packages" not in f.filename and "lib/python" not in f.filename
+    ]
+    if not filtered_frames and frames:
+        filtered_frames = [frames[-1]]
+
+    custom_traceback = "".join(traceback.format_list(filtered_frames))
+    custom_traceback += f"\n{type(exc).__name__}: {str(exc)}"
+
+    print(f"[ADMIN] Exception at {request.url.path}:\n{traceback.format_exc()}")
+
+    notify_discord(
+        "system_error",
+        f"[ADMIN] {request.method} {request.url.path}\n```py\n{custom_traceback[-1500:]}\n```",
+    )
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "message": f"[{type(exc).__name__}] {str(exc)}",
+            "path": request.url.path,
+        },
+    )
+
 
 # 라우터 등록
 app.include_router(main_routes.router)

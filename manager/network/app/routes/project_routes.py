@@ -197,7 +197,7 @@ async def progress_config():
 
 
 @router.get("/api/crawl-dbs")
-async def api_crawl_dbs(request: Request, q: str = ""):
+async def api_crawl_dbs(request: Request, q: str = "", page: int = 1):
     """'크롤링 DB에서 선택' 기능: 완료된 크롤 DB 목록을 크롤러 서버에서 그대로 가져온다.
     같은 호스트이므로 로컬로 직접 호출하고, 사용자 세션 쿠키를 그대로 실어 보내
     크롤러의 get_current_user 인증을 그대로 통과시킨다(별도 내부 키 불필요)."""
@@ -207,7 +207,12 @@ async def api_crawl_dbs(request: Request, q: str = ""):
     try:
         resp = requests.get(
             f"{analyze_service.CRAWLER_INTERNAL_API}/db-list",
-            params={"status": "completed", "per_page": 30, "q": q},
+            params={
+                "status": "completed",
+                "per_page": 30,
+                "page": max(1, page),
+                "q": q,
+            },
             cookies={"session": session_token},
             timeout=15,
         )

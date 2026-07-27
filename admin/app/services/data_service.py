@@ -154,10 +154,6 @@ def get_logs_for_user(user_uid: str, page=1, per_page=30):
     return logs, total
 
 
-def get_user_bug_by_uid(uid: str):
-    return user_bugs_col.find_one({"uid": uid})
-
-
 def get_user_bugs(limit=50, name=None, date_str=None):
     user_map = get_user_mapping()
     query = build_search_query(name, date_str, user_map)
@@ -233,3 +229,61 @@ def get_recent_bugs(limit=10):
         if isinstance(dt, datetime):
             bug["datetime"] = dt.strftime("%Y-%m-%d %H:%M:%S")
     return bugs
+
+
+def get_users_with_bug_report_counts():
+    user_map = get_user_mapping()
+    pipeline = [{"$group": {"_id": "$writerUid", "count": {"$sum": 1}}}]
+    counts = {
+        c["_id"]: c["count"] for c in bug_board_col.aggregate(pipeline) if c["_id"]
+    }
+    users = [
+        {"uid": uid, "name": user_map.get(uid, uid[:8]), "count": count}
+        for uid, count in counts.items()
+    ]
+    users.sort(key=lambda u: u["count"], reverse=True)
+    return users
+
+
+def get_bug_reports_for_user(writer_uid: str, page=1, per_page=30):
+    query = {"writerUid": writer_uid}
+    total = bug_board_col.count_documents(query)
+    skip = max(0, (page - 1) * per_page)
+    bugs = list(
+        bug_board_col.find(query).sort("datetime", -1).skip(skip).limit(per_page)
+    )
+    for bug in bugs:
+        dt = bug.get("datetime")
+        if isinstance(dt, datetime):
+            bug["datetime"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+    return bugs, total
+
+
+def get_users_with_user_bug_counts():
+    user_map = get_user_mapping()
+    pipeline = [{"$group": {"_id": "$userUid", "count": {"$sum": 1}}}]
+    counts = {
+        c["_id"]: c["count"] for c in user_bugs_col.aggregate(pipeline) if c["_id"]
+    }
+    users = [
+        {"uid": uid, "name": user_map.get(uid, uid[:8]), "count": count}
+        for uid, count in counts.items()
+    ]
+    users.sort(key=lambda u: u["count"], reverse=True)
+    return users
+
+
+def get_user_bugs_for_user(user_uid: str, page=1, per_page=30):
+    user_map = get_user_mapping()
+    query = {"userUid": user_uid}
+    total = user_bugs_col.count_documents(query)
+    skip = max(0, (page - 1) * per_page)
+    bugs = list(
+        user_bugs_col.find(query).sort("datetime", -1).skip(skip).limit(per_page)
+    )
+    for bug in bugs:
+        bug["datetime"] = bug.get("datetime_kst") or bug.get("datetime").strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        bug["user_name"] = user_map.get(bug.get("userUid"), bug.get("userUid")[:8])
+    return bugs, total

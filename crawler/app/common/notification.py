@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 import requests
 
-from db import discord_notifications_db
+from db import discord_notifications_db, get_userinfo
 
 load_dotenv()
 
@@ -72,3 +72,40 @@ def sendDiscordDM(user_ids, msg, requester=None):
         )
     except Exception:
         pass
+
+
+def notifyRequester(requester, email, title, text):
+    """요청자 본인에게 보내는 크롤링 상태 알림.
+
+    디스코드 인증(discord_id 연동)이 되어있으면 디스코드 DM을 우선 시도하고,
+    봇이 실제로 DM 전송에 실패한 경우에만(사용자가 서버를 나갔거나 DM을 막아둔 경우 등)
+    봇이 이메일로 폴백해서 보낸다(bot/cogs/cog_notifications.py의 _send_dm 참고).
+    아예 디스코드 인증이 안 된 사용자는 여기서 바로 이메일로 보낸다."""
+    info = get_userinfo(requester) if requester else None
+    discord_id = info.get("discord_id") if info else None
+
+    if not discord_id:
+        sendMail(email, title, text)
+        return
+
+    try:
+        discord_notifications_db.insert_one(
+            {
+                "channel_key": None,
+                "dm_user_ids": [discord_id],
+                "content": f"{title}\n{text}",
+                "fallback_email": email,
+                "fallback_subject": title,
+                "fallback_text": text,
+                "embed": None,
+                "actions": None,
+                "status": "pending",
+                "created_at": datetime.now(timezone.utc),
+                "sent_at": None,
+                "error": None,
+            }
+        )
+    except Exception:
+        # 큐 등록 자체가 실패하면(예: DB 장애) 폴백 판단을 봇에 맡길 수 없으므로
+        # 여기서 바로 이메일로 보낸다.
+        sendMail(email, title, text)

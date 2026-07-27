@@ -4,6 +4,7 @@ from discord.ext import commands, tasks
 
 from config import CHANNEL_IDS, HOMEPAGE_API_URL
 from libs.internal_auth import mint_admin_token
+from libs.mail import sendEmail
 
 
 class SignupApprovalView(discord.ui.View):
@@ -124,14 +125,32 @@ class NotificationPoller(commands.Cog):
             except Exception as e:
                 errors.append(f"{uid}: {e}")
 
+        status = "sent" if sent else "failed"
+        sent_at = datetime.datetime.now(datetime.timezone.utc) if sent else None
+
+        # 디스코드 DM이 실제로 실패한 경우에만(사용자가 서버를 나갔거나 DM을 막아둔 경우 등)
+        # 이메일로 폴백한다 — 디스코드 인증이 안 된 사용자는 애초에 여기까지 오지 않고
+        # 발행 쪽(crawler 등)에서 곧바로 이메일로 보낸다.
+        fallback_email = doc.get("fallback_email")
+        if not sent and fallback_email:
+            try:
+                await sendEmail(
+                    fallback_email,
+                    doc.get("fallback_subject") or "[KNPU] 알림",
+                    doc.get("fallback_text") or content,
+                )
+                status = "sent_via_email_fallback"
+                sent_at = datetime.datetime.now(datetime.timezone.utc)
+                errors.append(f"DM 실패 → {fallback_email}로 이메일 폴백 전송")
+            except Exception as e:
+                errors.append(f"이메일 폴백도 실패: {e}")
+
         await self.col.update_one(
             {"_id": doc["_id"]},
             {
                 "$set": {
-                    "status": "sent" if sent else "failed",
-                    "sent_at": datetime.datetime.now(datetime.timezone.utc)
-                    if sent
-                    else None,
+                    "status": status,
+                    "sent_at": sent_at,
                     "error": "; ".join(errors) if errors else None,
                 }
             },

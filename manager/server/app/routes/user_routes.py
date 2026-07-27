@@ -55,7 +55,7 @@ def loadAdminUsers():
 def sendAdminNotify(
     message: str = Body(..., embed=True), kind: str = Body("ops", embed=True)
 ):
-    channel_key = "manager_error" if kind == "error" else "admin_ops"
+    channel_key = "system_error" if kind == "error" else "admin_ops"
     notify_discord(channel_key, message)
     return JSONResponse(
         status_code=200,

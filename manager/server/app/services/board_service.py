@@ -207,7 +207,7 @@ def add_bug(data: AddBugDto, userUid: str):
         f"Detail: \n{doc['bugText']}\n"
         f"log: \n\n{doc['programLog']}\n"
     )
-    notify_discord("manager_error", msg)
+    notify_discord("system_error", msg)
 
     return JSONResponse(
         status_code=201, content={"message": "Bug post created", "data": doc}

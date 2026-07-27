@@ -4,17 +4,21 @@
 <div class="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
     <div>
         <h2 class="text-2xl font-bold text-white">User Bugs <span class="text-red-500 text-sm font-medium ml-2">Auto-detected</span></h2>
-        <p class="text-zinc-400 text-sm">시스템에서 자동으로 감지된 오류 로그를 확인합니다.</p>
+        <p class="text-zinc-400 text-sm">
+            {% if selected_user %}선택한 사용자의 전체 기간 자동 감지 로그입니다 (총 {{ total }}건).
+            {% else %}시스템에서 자동으로 감지된 오류 로그를 확인합니다. 오른쪽에서 사용자를 선택하면 전체 기간 로그를 볼 수 있습니다.{% endif %}
+        </p>
     </div>
     
+    {% if not selected_user %}
     <form method="GET" action="/bugs" class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
         <div class="grid grid-cols-1 sm:flex gap-3 w-full">
             <div class="relative w-full sm:w-auto">
-                <input type="date" name="date" value="{{ search_date or '' }}" 
+                <input type="date" name="date" value="{{ search_date or '' }}"
                     class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-red-500 transition appearance-none"
                     onchange="this.form.submit()">
             </div>
-            
+
             <div class="relative w-full sm:w-64">
                 <input type="text" name="name" value="{{ search_name or '' }}" list="user-names-list" placeholder="사용자 이름 검색..." autocomplete="off"
                     class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-red-500 transition">
@@ -35,8 +39,16 @@
             </a>
         </div>
     </form>
+    {% else %}
+    <a href="/bugs" class="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        오늘의 전체 감지 로그로 돌아가기
+    </a>
+    {% endif %}
 </div>
 
+<div class="flex flex-col lg:flex-row gap-4">
+<div class="flex-1 min-w-0 order-2 lg:order-1">
 <div class="space-y-3">
     {% if bugs %}
         {% for bug in bugs %}
@@ -72,6 +84,36 @@
             <p class="text-zinc-500 text-sm">해당 조건에 맞는 버그 로그가 없습니다.</p>
         </div>
     {% endif %}
+</div>
+
+{% if selected_user and total_pages > 1 %}
+<div class="flex items-center justify-center gap-2 mt-6">
+    <a href="/bugs?selected_user={{ selected_user }}&page={{ page - 1 }}"
+       class="px-3 py-1.5 rounded-lg text-sm border border-zinc-800 {% if page <= 1 %}pointer-events-none text-zinc-700{% else %}text-zinc-300 hover:bg-zinc-800{% endif %}">이전</a>
+    <span class="text-sm text-zinc-500 px-2">{{ page }} / {{ total_pages }}</span>
+    <a href="/bugs?selected_user={{ selected_user }}&page={{ page + 1 }}"
+       class="px-3 py-1.5 rounded-lg text-sm border border-zinc-800 {% if page >= total_pages %}pointer-events-none text-zinc-700{% else %}text-zinc-300 hover:bg-zinc-800{% endif %}">다음</a>
+</div>
+{% endif %}
+</div>
+
+<!-- 사용자 탭 (오른쪽) -->
+<div class="w-full lg:w-64 flex-shrink-0 order-1 lg:order-2">
+    <div class="card rounded-xl border border-zinc-800 overflow-hidden">
+        <div class="px-4 py-3 border-b border-zinc-800 text-xs font-bold text-zinc-500 uppercase tracking-wide">사용자별 감지 로그</div>
+        <div class="max-h-[70vh] overflow-y-auto">
+            {% for u in user_tabs %}
+            <a href="/bugs?selected_user={{ u.uid }}"
+               class="list-item flex items-center justify-between px-4 py-2.5 text-sm transition {% if selected_user == u.uid %}bg-red-600/20 text-white{% else %}text-zinc-300 hover:bg-zinc-800/60{% endif %}">
+                <span class="truncate">{{ u.name }}</span>
+                <span class="text-[10px] font-mono text-zinc-500 flex-shrink-0 ml-2">{{ u.count }}</span>
+            </a>
+            {% else %}
+            <div class="p-4 text-xs text-zinc-500 text-center">감지된 로그가 있는 사용자가 없습니다.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
 </div>
 
 <script>
