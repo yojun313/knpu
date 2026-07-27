@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 from datetime import datetime
 
 
@@ -13,7 +13,7 @@ class JobSubmitRequest(BaseModel):
     option_select: int  # 1,2,3,4
     keyword: str
     priority: int = 0  # 높을수록 먼저 실행
-    speed: int = Field(default=5, ge=1, le=10)  # 비동기 수집 동시 요청 수 (1~10)
+    speed: int = Field(default=3, ge=1, le=10)  # 비동기 수집 동시 요청 수 (1~10)
 
 
 class JobStatus(BaseModel):
@@ -26,7 +26,7 @@ class JobStatus(BaseModel):
     option_select: int
     keyword: str
     priority: int = 0
-    speed: int = 5
+    speed: int = 3
     created_at: datetime
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
@@ -36,3 +36,21 @@ class JobStatus(BaseModel):
 
 class QueueConfigUpdate(BaseModel):
     max_concurrent: int = Field(ge=1, le=10)
+
+
+class ResumeRequest(BaseModel):
+    end_date: Optional[str] = None  # "20250101" 형식. 완료된 작업은 필수(확장할 종료일)
+
+
+class CrawlSaveOption(BaseModel):
+    """manager/server의 SaveCrawlDbOption과 동일한 스키마 — 그대로 프록시해서 전달한다."""
+
+    pid: str
+    dateOption: str  # "all" | "part"
+    start_date: str = ""
+    end_date: str = ""
+    filterOption: bool = False
+    incl_words: List[str] = []
+    excl_words: List[str] = []
+    include_all: bool = False
+    filename_edit: bool = False

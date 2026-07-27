@@ -675,12 +675,17 @@
   function switchModalTab(tab) {
     document.getElementById('tabBtnZip').classList.toggle('active', tab === 'zip');
     document.getElementById('tabBtnAnalyze').classList.toggle('active', tab === 'analyze');
+    document.getElementById('tabBtnCrawl').classList.toggle('active', tab === 'crawl');
     document.getElementById('tabZip').classList.toggle('active', tab === 'zip');
     document.getElementById('tabAnalyze').classList.toggle('active', tab === 'analyze');
+    document.getElementById('tabCrawl').classList.toggle('active', tab === 'crawl');
+    document.querySelector('#uploadModal .modal-card').classList.toggle('wide', tab === 'crawl');
+    if (tab === 'crawl') loadCrawlDbList('');
   }
 
   var zipStage = null;
   var analyzeStage = null;
+  var crawlAnalyzeStage = null;
   var analyzeOptions = null; // { platforms: {platform: [category,...]}, common_category }
 
   function loadAnalyzeOptions() {
@@ -712,9 +717,61 @@
     });
   }
 
+  function updateCrawlCategoryOptions() {
+    if (!analyzeOptions) return;
+    var platform = document.getElementById('crawlOptPlatform').value;
+    var categories = (analyzeOptions.platforms[platform] || []).concat([analyzeOptions.common_category]);
+    var categorySel = document.getElementById('crawlOptCategory');
+    categorySel.innerHTML = '';
+    categories.forEach(function (c) {
+      var opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      categorySel.appendChild(opt);
+    });
+  }
+
+  function populateCrawlPlatformSelect(guessedPlatform, guessedCategory) {
+    return loadAnalyzeOptions().then(function (res) {
+      var platformSel = document.getElementById('crawlOptPlatform');
+      platformSel.innerHTML = '';
+      Object.keys(res.platforms).forEach(function (p) {
+        var opt = document.createElement('option');
+        opt.value = p; opt.textContent = p;
+        platformSel.appendChild(opt);
+      });
+      if (guessedPlatform && res.platforms[guessedPlatform]) platformSel.value = guessedPlatform;
+      updateCrawlCategoryOptions();
+      if (guessedCategory) {
+        var categorySel = document.getElementById('crawlOptCategory');
+        if (Array.from(categorySel.options).some(function (o) { return o.value === guessedCategory; })) {
+          categorySel.value = guessedCategory;
+        }
+      }
+    });
+  }
+
+  // 크롤 DB 이름 접두사(navernews_.../navercafe_.../youtube_...) -> 통계분석 플랫폼 이름
+  var CRAWL_NAME_PREFIX_TO_PLATFORM = { navernews: 'Naver News', navercafe: 'Naver Cafe', youtube: 'Google YouTube' };
+  // 원본 파일명 접미사(_article/_reply/_rereply/_statistics) -> 분석 종류
+  var CRAWL_FILE_SUFFIX_TO_CATEGORY = { article: 'article 분석', rereply: 'rereply 분석', reply: 'reply 분석', statistics: 'statistics 분석' };
+
+  function guessPlatformFromDbName(dbName) {
+    var prefix = (dbName || '').split('_')[0];
+    return CRAWL_NAME_PREFIX_TO_PLATFORM[prefix] || null;
+  }
+  function guessCategoryFromFilename(filename) {
+    var base = (filename || '').replace(/\.(csv|parquet)$/i, '');
+    var suffixes = Object.keys(CRAWL_FILE_SUFFIX_TO_CATEGORY);
+    for (var i = 0; i < suffixes.length; i++) {
+      if (base.endsWith('_' + suffixes[i])) return CRAWL_FILE_SUFFIX_TO_CATEGORY[suffixes[i]];
+    }
+    return null;
+  }
+
   function resetUploadModalState() {
     zipStage = null;
     analyzeStage = null;
+    crawlAnalyzeStage = null;
     setModalStatus('');
     document.getElementById('zipProgress').hidden = true;
     document.getElementById('zipConfirm').hidden = true;
@@ -722,6 +779,12 @@
     document.getElementById('analyzeProgress').hidden = true;
     document.getElementById('analyzeForm').hidden = true;
     document.getElementById('analyzeFileLabel').textContent = '원본 CSV 파일을 선택하세요';
+    document.getElementById('crawlStatus').textContent = '';
+    document.getElementById('crawlProgress').hidden = true;
+    document.getElementById('crawlAnalyzeForm').hidden = true;
+    document.getElementById('crawlDbStep').hidden = false;
+    document.getElementById('crawlFileStep').hidden = true;
+    document.getElementById('crawlDbSearch').value = '';
   }
 
   function openUploadModal() {
@@ -805,6 +868,107 @@
     postJson('/api/projects/analyze/start', { stage_id: analyzeStage, name: name, platform: platform, category: category }).then(function (res) {
       btn.disabled = false;
       analyzeStage = null;
+      closeUploadModal();
+      openProgressModal(res.pid);
+    }).catch(function (err) { btn.disabled = false; statusEl.textContent = err.message || String(err); });
+  }
+
+  // ---------------------------------------------------------------
+  // 크롤링 DB에서 선택 (이 서버 자신의 API를 통해 크롤러와 서버 간 통신 — CORS 불필요)
+  // ---------------------------------------------------------------
+  var CRAWL_OBJECTS = { 1: 'Naver News', 2: 'Naver Blog', 3: 'Naver Cafe', 4: 'YouTube', 5: 'ChinaDaily', 6: 'ChinaSina' };
+  function formatCrawlDate(d) { if (!d || d.length !== 8) return d || '-'; return d.slice(0, 4) + '.' + d.slice(4, 6) + '.' + d.slice(6, 8); }
+  function formatCrawlSize(bytes) {
+    if (!bytes) return '-';
+    if (bytes > 1024 * 1024 * 1024) return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+    if (bytes > 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    return (bytes / 1024).toFixed(1) + ' KB';
+  }
+
+  var crawlDbSearchTimer = null;
+  function loadCrawlDbList(q) {
+    var wrapEl = document.getElementById('crawlDbList');
+    wrapEl.innerHTML = '<div class="crawl-db-empty">불러오는 중...</div>';
+    railApi('/api/crawl-dbs?q=' + encodeURIComponent(q || '')).then(function (data) {
+      var items = data.items || [];
+      if (!items.length) { wrapEl.innerHTML = '<div class="crawl-db-empty">검색된 크롤링 DB가 없습니다.</div>'; return; }
+      var uidMap = {};
+      var rows = items.map(function (it) {
+        uidMap[it.uid] = it;
+        return '<tr data-uid="' + esc(it.uid) + '">'
+          + '<td class="ct-main">' + esc(it.keyword || it.name) + '</td>'
+          + '<td class="ct-muted">' + esc(CRAWL_OBJECTS[it.crawlObject] || '-') + '</td>'
+          + '<td class="ct-muted">' + esc(it.requester || '-') + '</td>'
+          + '<td class="ct-muted">' + formatCrawlDate(it.startDate) + ' ~ ' + formatCrawlDate(it.endDate) + '</td>'
+          + '<td class="ct-muted">' + formatCrawlSize(it.dbSize) + '</td>'
+          + '</tr>';
+      }).join('');
+      wrapEl.innerHTML = '<table class="crawl-table"><thead><tr>'
+        + '<th>키워드</th><th>크롤러</th><th>요청자</th><th>기간</th><th>크기</th>'
+        + '</tr></thead><tbody>' + rows + '</tbody></table>';
+      Array.prototype.forEach.call(wrapEl.querySelectorAll('tbody tr'), function (tr) {
+        tr.addEventListener('click', function () {
+          var it = uidMap[tr.dataset.uid];
+          openCrawlDbFiles(it.uid, it.name, it.keyword);
+        });
+      });
+    }).catch(function (err) { wrapEl.innerHTML = '<div class="crawl-db-empty">' + esc(err.message || String(err)) + '</div>'; });
+  }
+
+  function openCrawlDbFiles(uid, dbName, keyword) {
+    document.getElementById('crawlDbStep').hidden = true;
+    document.getElementById('crawlFileStep').hidden = false;
+    document.getElementById('crawlFileDbName').textContent = keyword || dbName;
+    var wrapEl = document.getElementById('crawlFileList');
+    wrapEl.innerHTML = '<div class="crawl-db-empty">불러오는 중...</div>';
+    railApi('/api/crawl-dbs/' + encodeURIComponent(uid) + '/files').then(function (data) {
+      var files = data.files || [];
+      if (!files.length) { wrapEl.innerHTML = '<div class="crawl-db-empty">원본 파일이 없습니다.</div>'; return; }
+      var rows = files.map(function (f, i) {
+        return '<tr data-idx="' + i + '">'
+          + '<td class="ct-main">' + esc(f.csv_name) + '</td>'
+          + '<td><span class="ct-filetype ' + esc(f.type) + '">' + (f.type === 'token' ? '토큰화' : '원본') + '</span></td>'
+          + '<td class="ct-muted">' + formatCrawlSize(f.size) + '</td>'
+          + '</tr>';
+      }).join('');
+      wrapEl.innerHTML = '<table class="crawl-table"><thead><tr>'
+        + '<th>파일명</th><th>종류</th><th>크기</th>'
+        + '</tr></thead><tbody>' + rows + '</tbody></table>';
+      Array.prototype.forEach.call(wrapEl.querySelectorAll('tbody tr'), function (tr) {
+        tr.addEventListener('click', function () { selectCrawlFile(uid, dbName, files[+tr.dataset.idx]); });
+      });
+    }).catch(function (err) { wrapEl.innerHTML = '<div class="crawl-db-empty">' + esc(err.message || String(err)) + '</div>'; });
+  }
+
+  function selectCrawlFile(uid, dbName, file) {
+    var statusEl = document.getElementById('crawlStatus');
+    statusEl.textContent = '';
+    var progEl = document.getElementById('crawlProgress');
+    var labelEl = document.getElementById('crawlProgressLabel');
+    progEl.hidden = false; labelEl.textContent = '불러오는 중...';
+    document.getElementById('crawlAnalyzeForm').hidden = true;
+
+    postJson('/api/crawl-dbs/' + encodeURIComponent(uid) + '/select', { name: file.name }).then(function (res) {
+      crawlAnalyzeStage = res.stage_id;
+      document.getElementById('crawlProjectName').value = res.suggested_name || '';
+      return populateCrawlPlatformSelect(guessPlatformFromDbName(dbName), guessCategoryFromFilename(file.name));
+    }).then(function () {
+      progEl.hidden = true;
+      document.getElementById('crawlAnalyzeForm').hidden = false;
+    }).catch(function (err) { progEl.hidden = true; statusEl.textContent = err.message || String(err); });
+  }
+
+  function startCrawlAnalyze() {
+    if (!crawlAnalyzeStage) return;
+    var statusEl = document.getElementById('crawlStatus');
+    var name = document.getElementById('crawlProjectName').value.trim();
+    var platform = document.getElementById('crawlOptPlatform').value;
+    var category = document.getElementById('crawlOptCategory').value;
+    var btn = document.getElementById('btnCrawlStartAnalyze');
+    statusEl.textContent = ''; btn.disabled = true;
+    postJson('/api/projects/analyze/start', { stage_id: crawlAnalyzeStage, name: name, platform: platform, category: category }).then(function (res) {
+      btn.disabled = false;
+      crawlAnalyzeStage = null;
       closeUploadModal();
       openProgressModal(res.pid);
     }).catch(function (err) { btn.disabled = false; statusEl.textContent = err.message || String(err); });
@@ -1012,6 +1176,7 @@
 
     document.getElementById('tabBtnZip').addEventListener('click', function () { switchModalTab('zip'); });
     document.getElementById('tabBtnAnalyze').addEventListener('click', function () { switchModalTab('analyze'); });
+    document.getElementById('tabBtnCrawl').addEventListener('click', function () { switchModalTab('crawl'); });
 
     var analyzeInput = document.getElementById('analyzeFileInput');
     var analyzeDropzone = document.getElementById('analyzeDropzone');
@@ -1021,6 +1186,20 @@
     analyzeDropzone.addEventListener('drop', function (e) { onAnalyzeFileSelected(e.dataTransfer.files && e.dataTransfer.files[0]); });
     document.getElementById('btnStartAnalyze').addEventListener('click', startAnalyze);
     document.getElementById('optPlatform').addEventListener('change', updateCategoryOptions);
+
+    document.getElementById('crawlDbSearch').addEventListener('input', function () {
+      var q = this.value;
+      clearTimeout(crawlDbSearchTimer);
+      crawlDbSearchTimer = setTimeout(function () { loadCrawlDbList(q); }, 300);
+    });
+    document.getElementById('btnCrawlBack').addEventListener('click', function () {
+      document.getElementById('crawlFileStep').hidden = true;
+      document.getElementById('crawlDbStep').hidden = false;
+      document.getElementById('crawlAnalyzeForm').hidden = true;
+      document.getElementById('crawlStatus').textContent = '';
+    });
+    document.getElementById('btnCrawlStartAnalyze').addEventListener('click', startCrawlAnalyze);
+    document.getElementById('crawlOptPlatform').addEventListener('change', updateCrawlCategoryOptions);
 
     document.getElementById('progressModalClose').addEventListener('click', closeProgressModal);
 

@@ -5,8 +5,11 @@ import uuid
 import logging
 from collections import OrderedDict
 
+import pandas as pd
+
 from config import CRAWL_DATA_PATH, CRAWL_LOG_PATH, CRAWLCOM
 from db import crawler_db, add_userlog
+from db.util import makeDBname
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +18,16 @@ crawlLog_db = crawler_db["log-list"]
 
 
 def makeDB(
-    DBname, DBtype, startdate, enddate, option, keyword, requester, requesterUid
+    DBname,
+    DBtype,
+    startdate,
+    enddate,
+    option,
+    keyword,
+    requester,
+    requesterUid,
+    crawlObject=None,
+    speed=1,
 ):
     DBpath = os.path.join(CRAWL_DATA_PATH, DBname)
     DBuid = str(uuid.uuid4())
@@ -31,12 +43,15 @@ def makeDB(
             ("uid", DBuid),
             ("name", DBname),
             ("userUid", requesterUid),
+            ("crawlObject", crawlObject),
             ("crawlOption", option),
             ("requester", requester),
             ("keyword", keyword),
+            ("startDate", startdate),
+            ("endDate", enddate),
             ("dbSize", 0),
             ("crawlCom", CRAWLCOM),
-            ("crawlSpeed", 1),
+            ("crawlSpeed", speed),
             (
                 "stat",
                 {
@@ -79,7 +94,9 @@ def makeDB(
     return DBpath, DBuid
 
 
-def updateCrawlStatus(DBuid, percent, articleCnt, replyCnt, rereplyCnt):
+def updateCrawlStatus(
+    DBuid, percent, articleCnt, replyCnt, rereplyCnt, currentDateStr=None
+):
     try:
         folder = crawlList_db.find_one({"uid": DBuid})
         if not folder:
@@ -94,20 +111,21 @@ def updateCrawlStatus(DBuid, percent, articleCnt, replyCnt, rereplyCnt):
                 if os.path.isfile(os.path.join(folder_path, f))
             )
 
-        crawlList_db.update_one(
-            {"uid": DBuid},
-            {
-                "$set": {
-                    "stat": {
-                        "article": articleCnt,
-                        "cmt": replyCnt,
-                        "reply": rereplyCnt,
-                    },
-                    "dbSize": dbSize,
-                    "percent": percent,
-                }
+        update = {
+            "stat": {
+                "article": articleCnt,
+                "cmt": replyCnt,
+                "reply": rereplyCnt,
             },
-        )
+            "dbSize": dbSize,
+            "percent": percent,
+        }
+        # 방금 완료한 날짜(구간)를 기록해둔다 — 이어받기 기능이 "어디까지 크롤링했는지" 판단하는
+        # 유일한 근거이므로(reportStatus()의 currentdate는 프로세스가 죽으면 함께 사라진다).
+        if currentDateStr:
+            update["lastCrawledDate"] = currentDateStr
+
+        crawlList_db.update_one({"uid": DBuid}, {"$set": update})
     except Exception as e:
         logger.warning(f"진행률 업데이트 실패 (uid: {DBuid}): {e}")
 
@@ -155,6 +173,129 @@ def errorCrawl(DBuid):
         logger.info(f"크롤링 에러 처리 (uid: {DBuid})")
     except Exception as e:
         logger.warning(f"에러 상태 업데이트 실패 (uid: {DBuid}): {e}")
+
+
+def getResumeContext(DBuid):
+    """이어받기에 필요한 정보를 db-list에서 읽어온다. 조건에 안 맞으면 예외를 던진다.
+    완료(completed)된 작업도 새 종료일을 지정하면 이어받기 대상이 된다 — 이미 끝난
+    크롤링을 더 늦은 날짜까지 확장해서 추가로 수집하는 용도."""
+    doc = crawlList_db.find_one({"uid": DBuid})
+    if not doc:
+        raise ValueError(f"크롤링 작업을 찾을 수 없습니다: {DBuid}")
+    if doc.get("status") not in ("stopped", "error", "completed"):
+        raise ValueError("중단·에러·완료된 작업만 이어받기할 수 있습니다")
+    if not doc.get("startDate") or not doc.get("endDate"):
+        raise ValueError(
+            "이어받기에 필요한 정보가 없는 예전 작업입니다 (날짜 정보 없음)"
+        )
+    return doc
+
+
+def getResumeDBPath(DBname):
+    return os.path.join(CRAWL_DATA_PATH, DBname)
+
+
+def computeResumeStartDate(doc):
+    """마지막으로 완료한 날짜의 다음날부터 이어서 시작한다. 하루도 완료 못 했으면 원래
+    시작일 그대로 (부분적으로만 처리된 날은 다시 처리됨 — 일 단위 재개이므로 정상 동작)."""
+    lastDate = doc.get("lastCrawledDate")
+    if lastDate:
+        d = datetime.strptime(lastDate, "%Y%m%d").date() + timedelta(days=1)
+        return d.strftime("%Y%m%d")
+    return doc["startDate"]
+
+
+def validateResumeRange(startDate, endDate):
+    """이어받기 시작일이 종료일보다 늦으면(=이미 그 날짜까지 다 끝난 상태) 명확한
+    에러를 던진다. 완료된 작업을 이어받을 때 새 종료일을 안 늘려주면 여기서 걸린다."""
+    s = datetime.strptime(startDate, "%Y%m%d").date()
+    e = datetime.strptime(endDate, "%Y%m%d").date()
+    if e < s:
+        raise ValueError(
+            f"종료일({endDate})이 이어받기 시작일({startDate})보다 빠릅니다. "
+            f"더 늦은 날짜를 종료일로 입력해주세요."
+        )
+
+
+def restoreCsvFromParquet(DBpath, tableNames):
+    """중단(stopOperator)되면서 parquet으로 변환·삭제된 원본 테이블을 다시 csv로 되돌려
+    addToCSV가 그 뒤에 이어서 append할 수 있게 한다. 이미 csv로 남아있으면(에러로 죽은 경우)
+    그대로 둔다 — addToCSV는 존재하는 파일에 자동으로 이어붙인다."""
+    for name in tableNames:
+        parquet_path = os.path.join(DBpath, f"{name}.parquet")
+        csv_path = os.path.join(DBpath, f"{name}.csv")
+        if os.path.exists(parquet_path) and not os.path.exists(csv_path):
+            df = pd.read_parquet(parquet_path)
+            df.to_csv(csv_path, index=False, encoding="utf-8-sig")
+            os.remove(parquet_path)
+            logger.info(f"이어받기: {name}.parquet → {name}.csv 복원")
+
+
+def countExistingRows(DBpath, tableNames):
+    """이어받기 시작 시점 기준 각 테이블 csv의 기존 행 수를 기록해둔다. finishOperator가
+    이 기준점 이후의 행만 '새로 추가된 부분'으로 보고 그 부분만 토큰화해서 기존 토큰
+    파일 뒤에 이어붙일 수 있도록 하기 위함 — 매번 전체를 다시 토큰화하지 않기 위해서다."""
+    counts = {}
+    for name in tableNames:
+        csv_path = os.path.join(DBpath, f"{name}.csv")
+        if not os.path.exists(csv_path):
+            counts[name] = 0
+            continue
+        try:
+            with open(csv_path, "r", encoding="utf-8-sig") as f:
+                counts[name] = max(0, sum(1 for _ in f) - 1)  # 헤더 제외
+        except Exception as e:
+            logger.warning(f"기존 행 수 계산 실패 ({name}): {e}")
+            counts[name] = 0
+    return counts
+
+
+def renameForResume(DBuid, DBtype, keyword, originalStartDate, newEndDate, oldDBname):
+    """이어받기 시점 기준으로 DBname을 새로 만들고(끝 날짜·타임스탬프 갱신), 실제
+    폴더/파일/텍스트 로그까지 전부 새 이름으로 리네임한다. 이어받기할 때마다 매번
+    호출된다 — 종료일이 안 바뀌어도 '마지막으로 언제 이어받았는지' 타임스탬프는
+    새로 찍혀야 하기 때문이다. db-list의 name 필드도 함께 갱신한다.
+    실패하면 아무것도 바꾸지 않고 기존 이름을 그대로 반환한다."""
+    newDBname = makeDBname(DBtype, keyword, originalStartDate, newEndDate)
+    if newDBname == oldDBname:
+        return oldDBname
+
+    oldPath = os.path.join(CRAWL_DATA_PATH, oldDBname)
+    newPath = os.path.join(CRAWL_DATA_PATH, newDBname)
+
+    try:
+        if os.path.isdir(oldPath):
+            for fname in os.listdir(oldPath):
+                if oldDBname in fname:
+                    new_fname = fname.replace(oldDBname, newDBname)
+                    os.rename(
+                        os.path.join(oldPath, fname),
+                        os.path.join(oldPath, new_fname),
+                    )
+            os.rename(oldPath, newPath)
+
+        old_log = os.path.join(CRAWL_LOG_PATH, oldDBname + "_log.txt")
+        new_log = os.path.join(CRAWL_LOG_PATH, newDBname + "_log.txt")
+        if os.path.exists(old_log):
+            os.rename(old_log, new_log)
+
+        crawlList_db.update_one({"uid": DBuid}, {"$set": {"name": newDBname}})
+        logger.info(f"이어받기 리네임: {oldDBname} → {newDBname}")
+    except Exception as e:
+        logger.warning(f"이어받기 리네임 실패 ({oldDBname} → {newDBname}): {e}")
+        return oldDBname
+
+    return newDBname
+
+
+def beginResume(DBuid, newEndDate=None):
+    """이어받기 시작 — 상태를 다시 running으로 되돌린다. 새 종료일이 주어지면
+    (완료된 작업 확장) db-list의 endDate도 함께 갱신한다."""
+    update = {"status": "running", "endTime": "진행 중"}
+    if newEndDate:
+        update["endDate"] = newEndDate
+    crawlList_db.update_one({"uid": DBuid}, {"$set": update})
+    logger.info(f"크롤링 이어받기 시작 (uid: {DBuid}, newEndDate: {newEndDate})")
 
 
 def _now_kst_str():

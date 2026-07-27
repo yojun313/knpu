@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-2xl font-bold text-white">Agents</h2>
+    <p class="text-zinc-400 text-sm">Claude Code 백그라운드 세션을 만들고 대화합니다. lab 계정 권한으로, 승인 없이 자동 실행됩니다.</p>
+</div>
+
+<div class="flex flex-col lg:flex-row gap-4" style="height: calc(100vh - 220px); min-height: 480px;">
+    <!-- 사이드바 -->
+    <div class="w-full lg:w-72 flex-shrink-0 flex flex-col gap-3">
+        <div class="card rounded-xl border border-zinc-800 p-3">
+            <label class="text-xs text-zinc-500 uppercase tracking-wide font-semibold">프로젝트</label>
+            <select id="projectSelect" onchange="onProjectChange()"
+                class="w-full mt-1 bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-blue-500">
+                {% for label, path in projects.items() %}
+                <option value="{{ path }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button onclick="openNewSessionModal()"
+            class="bg-zinc-100 hover:bg-white text-black px-4 py-2 rounded-lg text-sm font-bold transition">
+            + 새 세션
+        </button>
+
+        <div class="card rounded-xl border border-zinc-800 flex-1 overflow-y-auto" id="sessionList">
+            <div class="p-4 text-center text-zinc-500 text-sm">불러오는 중...</div>
+        </div>
+    </div>
+
+    <!-- 채팅 영역 -->
+    <div class="flex-1 card rounded-xl border border-zinc-800 flex flex-col overflow-hidden">
+        <div class="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+            <div id="chatTitle" class="text-sm font-semibold text-zinc-300">세션을 선택하거나 새로 만드세요</div>
+            <span id="chatStatus" class="text-[10px] font-bold px-2 py-0.5 rounded uppercase"></span>
+        </div>
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+        <div class="border-t border-zinc-800 p-3 flex gap-2">
+            <textarea id="chatInput" rows="2" placeholder="메시지를 입력하세요..."
+                class="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-blue-500 resize-none"></textarea>
+            <button onclick="sendChatMessage()" id="sendBtn"
+                class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg text-sm font-bold transition">전송</button>
+        </div>
+    </div>
+</div>
+
+<!-- 새 세션 모달 -->
+<div id="newSessionModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50" style="display:none;">
+    <div class="card rounded-xl border border-zinc-800 bg-zinc-900 p-5 w-full max-w-md mx-4">
+        <h3 class="text-lg font-bold text-white mb-3">새 세션</h3>
+        <label class="text-xs text-zinc-500">세션 이름 (선택)</label>
+        <input id="newSessionName" type="text" placeholder="예: crawler-timeout-fix"
+            class="w-full mt-1 mb-3 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-blue-500">
+        <label class="text-xs text-zinc-500">첫 메시지</label>
+        <textarea id="newSessionPrompt" rows="4" placeholder="무엇을 시켜볼까요?"
+            class="w-full mt-1 mb-4 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-blue-500 resize-none"></textarea>
+        <div class="flex gap-2 justify-end">
+            <button onclick="closeNewSessionModal()" class="px-4 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800">취소</button>
+            <button onclick="createNewSession()" class="px-4 py-2 rounded-lg text-sm font-bold bg-blue-600 hover:bg-blue-500 text-white">시작</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentCwd = document.getElementById('projectSelect').value;
+    let currentSessionId = null;
+    let pollTimer = null;
+
+    function onProjectChange() {
+        currentCwd = document.getElementById('projectSelect').value;
+        currentSessionId = null;
+        clearChat();
+        loadSessions();
+    }
+
+    function clearChat() {
+        document.getElementById('chatMessages').innerHTML = '';
+        document.getElementById('chatTitle').textContent = '세션을 선택하거나 새로 만드세요';
+        document.getElementById('chatStatus').textContent = '';
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    async function loadSessions() {
+        const listEl = document.getElementById('sessionList');
+        listEl.innerHTML = '<div class="p-4 text-center text-zinc-500 text-sm">불러오는 중...</div>';
+        try {
+            const res = await fetch(`/api/agents/sessions?cwd=${encodeURIComponent(currentCwd)}`);
+            const data = await res.json();
+            const sessions = data.sessions || [];
+            if (!sessions.length) {
+                listEl.innerHTML = '<div class="p-4 text-center text-zinc-500 text-sm">세션이 없습니다.</div>';
+                return;
+            }
+            listEl.innerHTML = sessions.map(s => `
+                <div onclick="selectSession('${s.session_id}')"
+                     class="list-item p-3 cursor-pointer hover:bg-zinc-800/50 transition ${s.session_id === currentSessionId ? 'bg-zinc-800/70' : ''}">
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${s.status === 'running' ? 'bg-emerald-900/30 text-emerald-400' : 'bg-zinc-800 text-zinc-400'}">${esc(s.status || 'completed')}</span>
+                        <span class="text-[10px] text-zinc-500 font-mono">${s.session_id.slice(0, 8)}</span>
+                    </div>
+                    <div class="text-xs text-zinc-300 line-clamp-2">${esc(s.preview || '(빈 세션)')}</div>
+                </div>`).join('');
+        } catch (e) {
+            listEl.innerHTML = '<div class="p-4 text-center text-red-400 text-sm">불러오기 실패</div>';
+        }
+    }
+
+    async function selectSession(sessionId) {
+        currentSessionId = sessionId;
+        document.getElementById('chatTitle').textContent = sessionId.slice(0, 8) + '...';
+        await refreshTranscript();
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(refreshTranscript, 3000);
+        loadSessions();
+    }
+
+    async function refreshTranscript() {
+        if (!currentSessionId) return;
+        try {
+            const res = await fetch(`/api/agents/sessions/${currentSessionId}/transcript?cwd=${encodeURIComponent(currentCwd)}`);
+            const data = await res.json();
+            renderMessages(data.messages || []);
+        } catch (e) { /* 다음 폴링에서 재시도 */ }
+    }
+
+    function renderMessages(messages) {
+        const el = document.getElementById('chatMessages');
+        const wasAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
+        el.innerHTML = messages.map(m => `
+            <div class="flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}">
+                <div class="max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-200'}">${esc(m.text)}</div>
+            </div>`).join('');
+        if (wasAtBottom || messages.length <= 2) el.scrollTop = el.scrollHeight;
+    }
+
+    async function sendChatMessage() {
+        const input = document.getElementById('chatInput');
+        const prompt = input.value.trim();
+        if (!prompt) return;
+        if (!currentSessionId) { openNewSessionModal(prompt); return; }
+
+        input.value = '';
+        document.getElementById('sendBtn').disabled = true;
+        try {
+            await fetch(`/api/agents/sessions/${currentSessionId}/messages`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cwd: currentCwd, prompt })
+            });
+            await refreshTranscript();
+        } catch (e) {
+            alert('전송 실패: ' + e);
+        } finally {
+            document.getElementById('sendBtn').disabled = false;
+        }
+    }
+
+    function openNewSessionModal(prefill) {
+        document.getElementById('newSessionPrompt').value = prefill || '';
+        document.getElementById('newSessionName').value = '';
+        document.getElementById('newSessionModal').style.display = 'flex';
+    }
+    function closeNewSessionModal() {
+        document.getElementById('newSessionModal').style.display = 'none';
+    }
+
+    async function createNewSession() {
+        const prompt = document.getElementById('newSessionPrompt').value.trim();
+        const name = document.getElementById('newSessionName').value.trim();
+        if (!prompt) return;
+        closeNewSessionModal();
+        clearChat();
+        document.getElementById('chatTitle').textContent = '세션 생성 중...';
+        try {
+            const res = await fetch('/api/agents/sessions', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cwd: currentCwd, prompt, name: name || null })
+            });
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || '생성 실패'); }
+            const data = await res.json();
+            await selectSession(data.session_id);
+        } catch (e) {
+            alert('세션 생성 실패: ' + e.message);
+            clearChat();
+        }
+    }
+
+    function esc(s) {
+        if (s == null) return '';
+        const div = document.createElement('div');
+        div.textContent = String(s);
+        return div.innerHTML;
+    }
+
+    document.getElementById('chatInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+    });
+
+    loadSessions();
+</script>
+{% endblock %}

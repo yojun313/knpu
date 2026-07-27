@@ -4,6 +4,7 @@ import io
 import os
 import uuid
 
+import requests
 from fastapi import APIRouter, UploadFile, File, Form, Query, Request, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse, Response
 from starlette.background import BackgroundTask
@@ -16,6 +17,24 @@ from app.services import (
 )
 
 router = APIRouter()
+
+
+def _suggest_date_range(filename: str) -> tuple[str | None, str | None]:
+    """크롤러가 만드는 토큰 CSV 파일명(token_{type}_{keyword}_{시작일}_{종료일}_{MMDD}_{HHMM}_{table}.csv)
+    에서 실제로 크롤링된 날짜 범위를 추출한다. 데스크톱 MANAGER의 RunKemkimDialog와 동일한 규칙."""
+    parts = os.path.splitext(filename)[0].split("_")
+    if len(parts) < 5:
+        return None, None
+    try:
+        start_raw, end_raw = parts[3], parts[4]
+        from datetime import datetime as _dt
+
+        start = _dt.strptime(start_raw, "%Y%m%d").strftime("%Y-%m-%d")
+        end = _dt.strptime(end_raw, "%Y%m%d").strftime("%Y-%m-%d")
+        return start, end
+    except ValueError:
+        return None, None
+
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 # 개발 중 자주 바뀌는 페이지라 브라우저가 옛 버전을 캐시해두는 일이 없도록 한다.
@@ -320,6 +339,87 @@ async def progress_config():
     return JSONResponse({"ws_url": analyze_service.PROGRESS_PUBLIC_WS_URL})
 
 
+@router.get("/api/crawl-dbs")
+async def api_crawl_dbs(request: Request, q: str = ""):
+    """'크롤링 DB에서 선택' 기능: 완료된 크롤 DB 목록을 크롤러 서버에서 그대로 가져온다.
+    같은 호스트이므로 로컬로 직접 호출하고, 사용자 세션 쿠키를 그대로 실어 보내
+    크롤러의 get_current_user 인증을 그대로 통과시킨다(별도 내부 키 불필요)."""
+    session_token = request.cookies.get("session")
+    if not session_token:
+        raise HTTPException(401, "인증이 필요합니다")
+    try:
+        resp = requests.get(
+            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list",
+            params={"status": "completed", "per_page": 30, "q": q},
+            cookies={"session": session_token},
+            timeout=15,
+        )
+    except requests.RequestException as e:
+        raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
+    if resp.status_code != 200:
+        raise HTTPException(resp.status_code, resp.text)
+    return JSONResponse(resp.json())
+
+
+@router.get("/api/crawl-dbs/{uid}/files")
+async def api_crawl_db_files(uid: str, request: Request):
+    """완료된 크롤 DB의 파일 목록 중 토큰화된 파일만 골라 반환한다 — KEMKIM은 형태소
+    분석이 끝난 토큰 데이터만 분석 대상으로 허용한다(원본 텍스트는 사용 불가)."""
+    session_token = request.cookies.get("session")
+    if not session_token:
+        raise HTTPException(401, "인증이 필요합니다")
+    try:
+        resp = requests.get(
+            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/files",
+            cookies={"session": session_token},
+            timeout=15,
+        )
+    except requests.RequestException as e:
+        raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
+    if resp.status_code != 200:
+        raise HTTPException(resp.status_code, resp.text)
+    data = resp.json()
+    data["files"] = [f for f in data.get("files", []) if f.get("type") == "token"]
+    return JSONResponse(data)
+
+
+@router.post("/api/crawl-dbs/{uid}/select")
+async def api_crawl_db_select(uid: str, request: Request):
+    """선택한 크롤 DB 파일을 크롤러에서 CSV로 받아와 그대로 스테이징한다 — 이후 흐름은
+    /api/projects/analyze/start로 기존 CSV 업로드 경로와 완전히 동일하다."""
+    session_token = request.cookies.get("session")
+    if not session_token:
+        raise HTTPException(401, "인증이 필요합니다")
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(400, "파일명이 필요합니다")
+
+    try:
+        resp = requests.get(
+            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/file",
+            params={"name": name},
+            cookies={"session": session_token},
+            timeout=60,
+        )
+    except requests.RequestException as e:
+        raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
+    if resp.status_code != 200:
+        raise HTTPException(resp.status_code, resp.text)
+
+    filename = name.rsplit(".", 1)[0] + ".csv"
+    stage_id = upload_staging.stage(_uid(request), resp.content, filename)
+    suggested_start, suggested_end = _suggest_date_range(filename)
+    return JSONResponse(
+        {
+            "stage_id": stage_id,
+            "suggested_name": os.path.splitext(filename)[0],
+            "suggested_start_date": suggested_start,
+            "suggested_end_date": suggested_end,
+        }
+    )
+
+
 @router.post("/api/projects/analyze/upload")
 async def api_analyze_upload_stage(request: Request, file: UploadFile = File(...)):
     """업로드 진행률 표시를 위한 1단계: 토큰 CSV만 먼저 받아둔다. 대상 열 등 설정은
@@ -328,8 +428,14 @@ async def api_analyze_upload_stage(request: Request, file: UploadFile = File(...
         raise HTTPException(400, "토큰화된 CSV 파일을 업로드해주세요.")
     content = await file.read()
     stage_id = upload_staging.stage(_uid(request), content, file.filename)
+    suggested_start, suggested_end = _suggest_date_range(file.filename)
     return JSONResponse(
-        {"stage_id": stage_id, "suggested_name": os.path.splitext(file.filename)[0]}
+        {
+            "stage_id": stage_id,
+            "suggested_name": os.path.splitext(file.filename)[0],
+            "suggested_start_date": suggested_start,
+            "suggested_end_date": suggested_end,
+        }
     )
 
 

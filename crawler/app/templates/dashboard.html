@@ -126,6 +126,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
             background: linear-gradient(180deg, #f8fafd 0%, #f0f5fb 100%);
         }
 
@@ -143,6 +145,7 @@
             padding: 2px 9px;
             border-radius: 999px;
             font-weight: 700;
+            white-space: nowrap;
         }
 
         .panel-body { padding: 14px; }
@@ -527,7 +530,7 @@
         .job-log-start .job-log-type,
         .job-log-end   .job-log-type { background: var(--ok-soft); color: var(--ok); }
         .job-log-error .job-log-msg { color: var(--danger); }
-        .job-log-msg { word-break: break-word; }
+        .job-log-msg { word-break: break-word; min-width: 0; flex: 1; }
 
         /* ── Buttons ──────────────────────────────────── */
         .btn {
@@ -542,6 +545,7 @@
             white-space: nowrap;
         }
         .btn:hover { filter: brightness(0.93); transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
         .btn-primary {
             background: linear-gradient(125deg, var(--deep), var(--blue));
@@ -555,13 +559,17 @@
         }
         .btn-stop   { background: var(--danger-soft); color: var(--danger); }
         .btn-delete { background: #edf1f7; color: var(--muted); }
+        .btn-resume { background: var(--ok-soft); color: var(--ok); }
+        .btn-download { background: var(--queued-soft); color: var(--deep); }
+        .btn-db-delete { background: var(--danger-soft); color: var(--danger); }
 
         /* ── Badges ───────────────────────────────────── */
-        .state-badge { font-size: 11px; padding: 3px 9px; border-radius: 4px; font-weight: 700; }
+        .state-badge { font-size: 11px; padding: 3px 9px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
         .state-completed { background: var(--ok-soft);      color: var(--ok); }
         .state-error     { background: var(--danger-soft);   color: var(--danger); }
         .state-stopped   { background: var(--warning-soft);  color: var(--warning); }
         .state-queued    { background: var(--queued-soft);   color: var(--deep); }
+        .state-running   { background: var(--queued-soft);   color: var(--deep); }
 
         /* ── Empty ────────────────────────────────────── */
         .empty {
@@ -572,6 +580,76 @@
             border: 1px dashed var(--line);
             border-radius: 10px;
             background: #f8fafd;
+        }
+
+        /* ── Database 목록 ─────────────────────────────── */
+        .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .filter-bar select, .filter-bar input {
+            border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px;
+            font-family: inherit; font-weight: 700; font-size: 12px; color: var(--ink);
+            min-width: 0;
+        }
+        .filter-bar input[type="text"] { flex: 1; min-width: 160px; }
+
+        .db-table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        thead th {
+            text-align: left; padding: 9px 10px; color: var(--muted); font-size: 10px;
+            text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--line);
+            white-space: nowrap;
+        }
+        tbody td { padding: 9px 10px; border-bottom: 1px solid #eef2f8; vertical-align: middle; }
+        tbody tr:hover { background: #f8fafd; cursor: pointer; }
+        tbody tr:last-child td { border-bottom: none; }
+        .actions-cell { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        .keyword-cell { font-weight: 800; color: var(--navy); word-break: break-word; }
+        .muted-cell { color: var(--muted); font-size: 11px; }
+
+        .pager { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; flex-wrap: wrap; }
+        .pager button {
+            border: 1px solid var(--line); background: #fff; color: var(--deep);
+            padding: 5px 12px; border-radius: 6px; font-family: inherit; font-weight: 700;
+            font-size: 12px; cursor: pointer;
+        }
+        .pager button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .pager span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(11,18,38,0.55);
+            align-items: center; justify-content: center; z-index: 200; padding: 20px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: #fff; border-radius: 14px; max-width: 640px; width: 100%;
+            max-height: 84vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(11,18,38,0.35);
+        }
+        .modal-head {
+            padding: 16px 20px; border-bottom: 1px solid var(--line);
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        }
+        .modal-head h3 { font-size: 15px; color: var(--navy); word-break: break-word; }
+        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; flex-shrink: 0; }
+        .modal-body { padding: 18px 20px; }
+
+        .log-box { max-height: 240px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+        .log-row {
+            display: flex; gap: 8px; align-items: baseline; padding: 5px 9px; font-size: 11px;
+            font-family: Consolas, monospace; border-bottom: 1px solid #eef1f6;
+        }
+        .log-row:last-child { border-bottom: none; }
+        .log-time { color: var(--muted); flex-shrink: 0; white-space: nowrap; }
+        .log-type { flex-shrink: 0; font-weight: 700; text-transform: uppercase; font-size: 10px; padding: 1px 6px; border-radius: 4px; background: #edf1f7; color: var(--muted); }
+        .log-error .log-type { background: var(--danger-soft); color: var(--danger); }
+        .log-error .log-msg { color: var(--danger); }
+        .log-msg { word-break: break-word; min-width: 0; flex: 1; }
+
+        .form-field { margin-bottom: 14px; }
+        .form-field label { display: block; font-size: 12px; font-weight: 700; color: var(--deep); margin-bottom: 5px; }
+        .form-field input[type="text"] {
+            width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+            font-family: inherit; font-size: 13px; color: var(--ink);
         }
 
         /* ── Responsive ───────────────────────────────── */
@@ -593,19 +671,40 @@
             .date-pair .field input { width: 100%; }
             .f-priority { flex: 1; width: auto; }
             .f-speed    { flex: 1; width: auto; }
-            .form-actions { margin-left: 0; }
+            .form-actions { margin-left: 0; width: 100%; }
+            .form-actions .btn { flex: 1; }
             .card-main { flex-wrap: wrap; }
             .card-right { width: 100%; justify-content: flex-end; }
             .progress-wrap { flex: 1; }
             .progress-bar { flex: 1; width: auto; }
+            .job-log-row { flex-wrap: wrap; }
+            .job-log-msg { flex-basis: 100%; }
+
+            .conn-badge span:last-child { display: none; }
+
+            /* Database 목록: 테이블 → 카드 형태로 전환 (글자 겹침/가로 스크롤 방지) */
+            table, thead, tbody, th, td, tr { display: block; }
+            thead { display: none; }
+            tbody tr { border-bottom: 1px solid var(--line); padding: 10px 6px; }
+            tbody tr:hover { background: none; }
+            tbody td { border: none; padding: 4px 6px; word-break: break-word; }
+            tbody td:before { content: attr(data-label); font-size: 9px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 1px; }
+
+            .modal-box { max-height: 92vh; }
+            .modal-body { padding: 14px; }
+            .log-row { flex-wrap: wrap; }
+            .log-msg { flex-basis: 100%; }
+            .actions-cell .btn { flex: 1 1 auto; text-align: center; }
         }
 
         @media (max-width: 420px) {
             .f-crawler, .f-option { flex-basis: 100%; }
+            .header-right { gap: 8px; }
+            .panel-title { font-size: 13px; }
         }
     </style>
 </head>
-<body>
+<body data-is-admin="{{ 'true' if is_admin else 'false' }}" data-my-uid="{{ my_uid or '' }}">
 
 <div class="header">
     <img src="/static/logo_white.png" alt="FPEI" class="header-logo">
@@ -691,7 +790,7 @@
                     </div>
                     <div class="field f-speed">
                         <label title="수집 URL에 동시에 요청을 보낼 속도 (높을수록 빠름)">속도(1~10)</label>
-                        <input type="number" id="f-speed" value="5" min="1" max="10" required>
+                        <input type="number" id="f-speed" value="3" min="1" max="10" required>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-ghost" onclick="fillToday()">오늘</button>
@@ -725,17 +824,127 @@
         </div>
     </div>
 
-    <!-- ── Recent Jobs ── -->
+    <!-- ── Database (크롤 DB 전체 목록) ── -->
     <div class="panel">
         <div class="panel-head">
-            <div class="panel-title">Recent Jobs</div>
-            <div class="panel-count" id="recent-count">0</div>
+            <div class="panel-title">Database</div>
+            <div class="panel-count" id="total-count">0건</div>
         </div>
-        <div class="panel-body cards" id="recent-list">
-            <div class="empty">최근 완료된 작업 없음</div>
+        <div class="panel-body">
+            <form class="filter-bar" onsubmit="event.preventDefault(); currentDbPage=1; loadDbList();">
+                <select id="f-db-status" onchange="currentDbPage=1; loadDbList();">
+                    <option value="">모든 상태</option>
+                    <option value="running">진행중</option>
+                    <option value="completed">완료</option>
+                    <option value="stopped">중단</option>
+                    <option value="error">에러</option>
+                </select>
+                <input type="text" id="f-db-q" placeholder="키워드 / 요청자 / DB명 검색...">
+                <button type="submit" class="btn btn-primary">검색</button>
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('f-db-status').value='';document.getElementById('f-db-q').value='';currentDbPage=1;loadDbList();">초기화</button>
+            </form>
+        </div>
+        <div class="db-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>상태</th>
+                        <th>크롤러</th>
+                        <th>키워드</th>
+                        <th>요청자</th>
+                        <th>날짜 범위</th>
+                        <th>크기</th>
+                        <th>시작</th>
+                        <th>액션</th>
+                    </tr>
+                </thead>
+                <tbody id="db-tbody">
+                    <tr><td colspan="8"><div class="empty">불러오는 중...</div></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="pager">
+            <button id="pg-prev" onclick="changeDbPage(-1)">이전</button>
+            <span id="pg-info">1 / 1</span>
+            <button id="pg-next" onclick="changeDbPage(1)">다음</button>
         </div>
     </div>
 
+</div>
+
+<div class="modal-overlay" id="detail-modal" onclick="if(event.target===this) closeDbDetail()">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 id="db-detail-title">상세 정보</h3>
+            <button class="modal-close" onclick="closeDbDetail()">&times;</button>
+        </div>
+        <div class="modal-body" id="db-detail-body">불러오는 중...</div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="save-modal" onclick="if(event.target===this) closeSaveModal()">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>데이터 다운로드 — <span id="save-modal-keyword"></span></h3>
+            <button class="modal-close" onclick="closeSaveModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="detail-label" style="margin-bottom:10px;">매니저 앱의 "CSV로 저장"과 동일하게 매니저 서버가 필터링·압축을 처리합니다.</p>
+
+            <div class="form-field">
+                <label>날짜 범위</label>
+                <label style="font-weight:400;font-size:12px;margin-right:10px;"><input type="radio" name="save-date-option" value="all" checked onchange="toggleSaveDateRange()"> 전체 기간</label>
+                <label style="font-weight:400;font-size:12px;"><input type="radio" name="save-date-option" value="part" onchange="toggleSaveDateRange()"> 기간 지정</label>
+            </div>
+            <div class="form-field" id="save-date-range" style="display:none;">
+                <label>시작일 ~ 종료일 (YYYYMMDD)</label>
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="save-start-date" placeholder="20250101" maxlength="8" style="flex:1;">
+                    <input type="text" id="save-end-date" placeholder="20251231" maxlength="8" style="flex:1;">
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label><input type="checkbox" id="save-filter-enabled" onchange="toggleSaveFilterFields()"> 키워드로 필터링</label>
+            </div>
+            <div id="save-filter-fields" style="display:none;">
+                <div class="form-field">
+                    <label>포함할 단어 (쉼표로 구분)</label>
+                    <input type="text" id="save-incl-words" placeholder="예: 갤럭시, 아이패드">
+                </div>
+                <div class="form-field">
+                    <label>제외할 단어 (쉼표로 구분)</label>
+                    <input type="text" id="save-excl-words" placeholder="예: 광고">
+                </div>
+                <div class="form-field">
+                    <label><input type="checkbox" id="save-include-all"> 포함 단어를 모두 만족해야 함 (AND, 미체크 시 OR)</label>
+                </div>
+                <div class="form-field">
+                    <label><input type="checkbox" id="save-filename-edit"> 파일명에 필터 조건 반영</label>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="submitSaveOptions()">다운로드 시작</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="progress-modal">
+    <div class="modal-box" style="max-width:640px;">
+        <div class="modal-head">
+            <h3>다운로드 진행 상황</h3>
+            <button class="modal-close" id="progress-close-btn" onclick="closeProgressModal()" style="display:none;">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:0;">
+            <iframe id="progress-iframe" style="width:100%;height:360px;border:none;display:block;"></iframe>
+            <div style="padding:14px 20px;">
+                <div style="background:#edf1f7;border-radius:8px;height:8px;overflow:hidden;">
+                    <div id="dl-progress-bar" style="background:var(--blue);height:100%;width:0%;transition:width 150ms;"></div>
+                </div>
+                <div id="dl-progress-text" style="font-size:11px;color:var(--muted);margin-top:6px;">서버에 요청 중...</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -754,6 +963,12 @@
     };
 
     const NAVER_IDS = new Set([1, 2, 3]);
+    const STATE_TEXT = { running:"진행중", completed:"완료", stopped:"중단", error:"에러" };
+    const MANAGER_STATUS_TEXT = { Done:"완료", Error:"에러", Stop:"중단" };
+    const LOG_TYPE_LABEL = { start:'시작', info:'정보', error:'에러', end:'종료' };
+
+    const IS_ADMIN = document.body.dataset.isAdmin === 'true';
+    const MY_UID = document.body.dataset.myUid || null;
 
     function getOptionLabel(obj, opt) {
         const o = (CRAWLER_OPTIONS[obj]||[]).find(x => x.v === opt);
@@ -762,6 +977,7 @@
 
     const jobCache    = {};
     const expandedIds = new Set();
+    const loadedLogIds = new Set();
     let ws, reconnectTimer;
 
     function updateOptions() {
@@ -874,7 +1090,7 @@
         setStatus(`작업이 추가되었습니다: ${data.job_id}`);
         document.getElementById('f-keyword').value  = '';
         document.getElementById('f-priority').value = '0';
-        document.getElementById('f-speed').value    = '5';
+        document.getElementById('f-speed').value    = '3';
         document.getElementById('search-ops').innerHTML = '';
         fillToday();
     }
@@ -897,10 +1113,19 @@
     }
 
     function render(data) {
-        [...(data.active||[]),...(data.queued||[]),...(data.recent||[])].forEach(j => { jobCache[j.job_id]=j; });
+        [...(data.active||[]),...(data.queued||[])].forEach(j => { jobCache[j.job_id]=j; });
         renderActive(data.active  || []);
         renderQueued(data.queued  || []);
-        renderRecent(data.recent  || []);
+        // 1초마다 오는 웹소켓 갱신이 카드 HTML을 통째로 새로 그리면서 로그 박스도
+        // 매번 빈 상태로 새로 생기므로, 로그를 보고 있던 작업은 다시 불러와 채워준다
+        // (덕분에 로그가 접히지 않고 오히려 실시간으로 갱신되는 효과도 생긴다).
+        loadedLogIds.forEach(jobId => {
+            if (document.getElementById('joblogs-'+jobId)) {
+                loadLogs(jobId);
+            } else {
+                loadedLogIds.delete(jobId);
+            }
+        });
     }
 
     function renderActive(jobs) {
@@ -971,37 +1196,6 @@
         }).join('');
     }
 
-    function renderRecent(jobs) {
-        const el = document.getElementById('recent-list');
-        document.getElementById('recent-count').textContent = jobs.length;
-        if (!jobs.length) { el.innerHTML='<div class="empty">최근 완료된 작업 없음</div>'; return; }
-        el.innerHTML = jobs.map(job => {
-            const stateText = {completed:'완료',error:'에러',stopped:'중단'}[job.state] || job.state;
-            const finishedAt = job.finished_at ? new Date(job.finished_at).toLocaleString('ko-KR') : '';
-            const exp = expandedIds.has(job.job_id);
-            return `
-            <div class="card" onclick="toggleDetail(event,'${job.job_id}')">
-                <div class="card-main">
-                    <div class="card-left">
-                        <div class="job-keyword">${esc(job.keyword)}</div>
-                        <div class="job-meta">
-                            <span>${esc(CRAWL_OBJECTS[job.crawl_object]||'')}</span>
-                            <span>${esc(getOptionLabel(job.crawl_object,job.option_select))}</span>
-                            <span>${formatDate(job.start_day)} ~ ${formatDate(job.end_day)}</span>
-                            <span>${esc(job.name)}</span>
-                        </div>
-                    </div>
-                    <div class="card-right">
-                        <span style="font-size:11px;color:var(--muted);white-space:nowrap">${finishedAt}</span>
-                        <span class="state-badge state-${job.state}">${stateText}</span>
-                        <button class="btn btn-delete" onclick="event.stopPropagation();deleteJob('${job.job_id}')">삭제</button>
-                    </div>
-                </div>
-                <div class="card-detail${exp?' open':''}" id="detail-${job.job_id}">${exp?renderDetail(job):''}</div>
-            </div>`;
-        }).join('');
-    }
-
     function renderDetail(job) {
         const items = [
             {label:'Job ID',   val:job.job_id, mono:true},
@@ -1030,17 +1224,22 @@
         return html;
     }
 
-    const LOG_TYPE_LABEL = {start:'시작', info:'정보', error:'에러', end:'종료'};
-
     async function loadLogs(jobId, btn) {
         const box = document.getElementById('joblogs-'+jobId);
         if (!box) return;
-        box.classList.add('open');
-        box.innerHTML = '<div class="job-logs-loading">불러오는 중...</div>';
+        const isFirstLoad = !loadedLogIds.has(jobId);
+        loadedLogIds.add(jobId);
+        // 첫 로드일 때만 "불러오는 중" 표시 — 웹소켓 갱신으로 인한 재조회는 박스가
+        // 아직 화면에 안 보이는 상태(display:none)라 깜빡임 없이 조용히 채워진다.
+        if (isFirstLoad) {
+            box.classList.add('open');
+            box.innerHTML = '<div class="job-logs-loading">불러오는 중...</div>';
+        }
         try {
             const res  = await fetch(`/api/jobs/${jobId}/logs`);
             const data = await res.json();
             const logs = data.logs || [];
+            box.classList.add('open');
             if (!logs.length) {
                 box.innerHTML = '<div class="job-logs-loading">기록된 로그가 없습니다.</div>';
                 return;
@@ -1059,7 +1258,12 @@
 
     function toggleDetail(e, jobId) {
         if (e.target.tagName==='BUTTON') return;
-        expandedIds.has(jobId) ? expandedIds.delete(jobId) : expandedIds.add(jobId);
+        if (expandedIds.has(jobId)) {
+            expandedIds.delete(jobId);
+            loadedLogIds.delete(jobId);
+        } else {
+            expandedIds.add(jobId);
+        }
         const el = document.getElementById('detail-'+jobId);
         if (!el) return;
         if (expandedIds.has(jobId)) {
@@ -1088,7 +1292,7 @@
     }
 
     function formatDate(d) {
-        if (!d||d.length!==8) return d||'';
+        if (!d||d.length!==8) return d||'-';
         return d.slice(0,4)+'.'+d.slice(4,6)+'.'+d.slice(6,8);
     }
 
@@ -1099,10 +1303,346 @@
         return div.innerHTML;
     }
 
+    function formatSize(bytes) {
+        if (!bytes) return '0 B';
+        if (bytes > 1024 ** 3) return (bytes / 1024 ** 3).toFixed(2) + ' GB';
+        if (bytes > 1024 ** 2) return (bytes / 1024 ** 2).toFixed(1) + ' MB';
+        return (bytes / 1024).toFixed(1) + ' KB';
+    }
+
+    function canManage(row) {
+        return IS_ADMIN || (MY_UID && row.userUid === MY_UID);
+    }
+
+    /* ══════════════ Database 목록 ══════════════ */
+
+    let currentDbPage = 1;
+    let totalDbPages = 1;
+    const dbPerPage = 20;
+
+    async function loadDbList() {
+        const status = document.getElementById('f-db-status').value;
+        const q = document.getElementById('f-db-q').value.trim();
+        const params = new URLSearchParams({ page: currentDbPage, per_page: dbPerPage });
+        if (status) params.set('status', status);
+        if (q) params.set('q', q);
+
+        const res = await fetch(`/api/db-list?${params}`);
+        if (!res.ok) { setStatus('DB 목록을 불러오지 못했습니다.', true); return; }
+        const data = await res.json();
+
+        totalDbPages = Math.max(1, Math.ceil(data.total / dbPerPage));
+        document.getElementById('total-count').textContent = `${data.total}건`;
+        document.getElementById('pg-info').textContent = `${data.page} / ${totalDbPages}`;
+        document.getElementById('pg-prev').disabled = data.page <= 1;
+        document.getElementById('pg-next').disabled = data.page >= totalDbPages;
+
+        renderDbTable(data.items);
+    }
+
+    function changeDbPage(delta) {
+        const next = currentDbPage + delta;
+        if (next < 1 || next > totalDbPages) return;
+        currentDbPage = next;
+        loadDbList();
+    }
+
+    function renderDbTable(items) {
+        const tbody = document.getElementById('db-tbody');
+        if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="8"><div class="empty">조건에 맞는 DB가 없습니다.</div></td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = items.map(row => {
+            const canResume = ['stopped','error','completed'].includes(row.status) && canManage(row);
+            const canDelete = row.status !== 'running' && canManage(row);
+            return `
+            <tr onclick="openDbDetail('${row.uid}')">
+                <td data-label="상태"><span class="state-badge state-${row.status}">${STATE_TEXT[row.status] || row.status}</span></td>
+                <td data-label="크롤러">${esc(CRAWL_OBJECTS[row.crawlObject] || '-')}</td>
+                <td data-label="키워드" class="keyword-cell">${esc(row.keyword)}</td>
+                <td data-label="요청자">${esc(row.requester)}</td>
+                <td data-label="날짜 범위" class="muted-cell">${formatDate(row.startDate)} ~ ${formatDate(row.endDate)}</td>
+                <td data-label="크기" class="muted-cell">${formatSize(row.dbSize)}</td>
+                <td data-label="시작" class="muted-cell">${esc(row.startTime)}</td>
+                <td data-label="액션">
+                    <div class="actions-cell" onclick="event.stopPropagation()">
+                        <button class="btn btn-download" onclick="openSaveOptions('${row.uid}','${esc(row.keyword)}','${esc(row.name)}')">다운로드</button>
+                        ${canResume ? `<button class="btn btn-resume" onclick="resumeDb('${row.uid}','${row.endDate||''}','${row.status}',this)">이어받기</button>` : ''}
+                        ${canDelete ? `<button class="btn btn-db-delete" onclick="deleteDb('${row.uid}','${esc(row.keyword)}',this)">삭제</button>` : ''}
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    async function openDbDetail(uid) {
+        const modal = document.getElementById('detail-modal');
+        const body = document.getElementById('db-detail-body');
+        modal.classList.add('open');
+        body.innerHTML = '불러오는 중...';
+
+        const [detailRes, logsRes] = await Promise.all([
+            fetch(`/api/db-list/${uid}`),
+            fetch(`/api/db-list/${uid}/logs`),
+        ]);
+        if (!detailRes.ok) { body.innerHTML = '<div class="empty">불러오지 못했습니다.</div>'; return; }
+        const d = await detailRes.json();
+        const logsData = await logsRes.json().catch(() => ({logs: []}));
+
+        document.getElementById('db-detail-title').textContent = d.keyword;
+
+        // 이 상세 정보는 manager/server의 GET /crawls/{uid}/info를 그대로 프록시한 것이라
+        // status/dbSize/crawlOption 등이 이미 매니저 앱과 동일하게 가공된 표시용 문자열이다
+        // (목록(list_db)은 크롤러가 직접 Mongo에서 읽으므로 그쪽 원본 값과 형식이 다르다).
+        const stat = d.stat || {};
+        const items = [
+            { label: 'DB명', val: d.name, mono: true },
+            { label: '상태', val: MANAGER_STATUS_TEXT[d.status] || d.status },
+            { label: '크롤러', val: d.crawlType || CRAWL_OBJECTS[d.crawlObject] || '-' },
+            { label: '옵션', val: String(d.crawlOption) },
+            { label: '속도', val: String(d.crawlSpeed ?? '-') },
+            { label: '요청자', val: d.requester },
+            { label: '날짜 범위', val: `${formatDate(d.startDate)} ~ ${formatDate(d.endDate)}` },
+            { label: '마지막 완료일', val: formatDate(d.lastCrawledDate) },
+            { label: '기사', val: String(stat.article ?? 0) },
+            { label: '댓글', val: String(stat.cmt ?? 0) },
+            { label: '대댓글', val: String(stat.reply ?? 0) },
+            { label: '크기', val: d.dbSize },
+            { label: '시작 시간', val: d.startTime },
+            { label: '종료 시간', val: d.endTime },
+            { label: 'UID', val: d.uid, mono: true },
+        ];
+
+        let html = '<div class="detail-grid">' + items.map(it => `
+            <div>
+                <span class="detail-label">${esc(it.label)}</span>
+                <span class="detail-val${it.mono ? ' mono' : ''}">${esc(it.val ?? '-')}</span>
+            </div>`).join('') + '</div>';
+
+        const logs = logsData.logs || [];
+        html += '<div style="margin-top:16px;"><span class="detail-label" style="display:block;margin-bottom:6px;">로그</span>';
+        if (!logs.length) {
+            html += '<div class="empty">기록된 로그가 없습니다.</div>';
+        } else {
+            html += '<div class="log-box">' + logs.map(l => `
+                <div class="log-row log-${esc(l.type)}">
+                    <span class="log-time">${esc(l.time)}</span>
+                    <span class="log-type">${esc(LOG_TYPE_LABEL[l.type] || l.type)}</span>
+                    <span class="log-msg">${esc(l.message)}</span>
+                </div>`).join('') + '</div>';
+        }
+        html += '</div>';
+
+        body.innerHTML = html;
+    }
+
+    function closeDbDetail() {
+        document.getElementById('detail-modal').classList.remove('open');
+    }
+
+    const PROGRESS_BASE = 'https://manager.knpu.re.kr/progress';
+    let saveTargetUid = null;
+    let saveTargetName = null;
+
+    function openSaveOptions(uid, keyword, name) {
+        saveTargetUid = uid;
+        saveTargetName = name;
+        document.getElementById('save-modal-keyword').textContent = keyword;
+        document.querySelector('input[name="save-date-option"][value="all"]').checked = true;
+        document.getElementById('save-start-date').value = '';
+        document.getElementById('save-end-date').value = '';
+        document.getElementById('save-filter-enabled').checked = false;
+        document.getElementById('save-incl-words').value = '';
+        document.getElementById('save-excl-words').value = '';
+        document.getElementById('save-include-all').checked = false;
+        document.getElementById('save-filename-edit').checked = false;
+        toggleSaveDateRange();
+        toggleSaveFilterFields();
+        document.getElementById('save-modal').classList.add('open');
+    }
+
+    function closeSaveModal() {
+        document.getElementById('save-modal').classList.remove('open');
+    }
+
+    function toggleSaveDateRange() {
+        const isPart = document.querySelector('input[name="save-date-option"]:checked').value === 'part';
+        document.getElementById('save-date-range').style.display = isPart ? 'block' : 'none';
+    }
+
+    function toggleSaveFilterFields() {
+        const enabled = document.getElementById('save-filter-enabled').checked;
+        document.getElementById('save-filter-fields').style.display = enabled ? 'block' : 'none';
+    }
+
+    function splitWords(text) {
+        return text.split(',').map(w => w.trim()).filter(Boolean);
+    }
+
+    function submitSaveOptions() {
+        const dateOption = document.querySelector('input[name="save-date-option"]:checked').value;
+        const startDate = document.getElementById('save-start-date').value.trim();
+        const endDate = document.getElementById('save-end-date').value.trim();
+        if (dateOption === 'part' && (!/^\d{8}$/.test(startDate) || !/^\d{8}$/.test(endDate))) {
+            setStatus('기간 지정 시 시작일/종료일을 YYYYMMDD 형식으로 입력해주세요.', true);
+            return;
+        }
+
+        const filterOption = document.getElementById('save-filter-enabled').checked;
+
+        const option = {
+            pid: (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`),
+            dateOption,
+            start_date: dateOption === 'part' ? startDate : '',
+            end_date: dateOption === 'part' ? endDate : '',
+            filterOption,
+            incl_words: filterOption ? splitWords(document.getElementById('save-incl-words').value) : [],
+            excl_words: filterOption ? splitWords(document.getElementById('save-excl-words').value) : [],
+            include_all: document.getElementById('save-include-all').checked,
+            filename_edit: document.getElementById('save-filename-edit').checked,
+        };
+
+        closeSaveModal();
+        startDownload(saveTargetUid, option, saveTargetName);
+    }
+
+    async function startDownload(uid, option, fallbackName) {
+        const progressModal = document.getElementById('progress-modal');
+        const iframe = document.getElementById('progress-iframe');
+        const closeBtn = document.getElementById('progress-close-btn');
+        const bar = document.getElementById('dl-progress-bar');
+        const text = document.getElementById('dl-progress-text');
+
+        bar.style.width = '0%';
+        text.textContent = '서버에 요청 중...';
+        closeBtn.style.display = 'none';
+        progressModal.classList.add('open');
+
+        try {
+            // 매니저 데스크톱 앱과 동일하게, 먼저 progress 서버에 pid를 등록하고 그 뷰어를
+            // iframe으로 그대로 띄운다 (manager.knpu.re.kr/progress — 동일한 페이지, 동일한 웹소켓 계약).
+            await fetch(`${PROGRESS_BASE}/process`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ title: fallbackName || saveTargetUid, process_id: option.pid }),
+            });
+            iframe.src = `${PROGRESS_BASE}/?pid=${option.pid}`;
+
+            const res = await fetch(`/api/db-list/${uid}/download-via-manager`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(option),
+            });
+            if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                throw new Error(d.detail || '다운로드에 실패했습니다.');
+            }
+
+            const disposition = res.headers.get('content-disposition') || '';
+            const star = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(disposition);
+            const plain = /filename="?([^";]+)"?/i.exec(disposition);
+            const filename = star ? decodeURIComponent(star[1]) : (plain ? plain[1] : `${fallbackName}.zip`);
+
+            const total = Number(res.headers.get('content-length')) || 0;
+            const reader = res.body.getReader();
+            const chunks = [];
+            let received = 0;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                received += value.length;
+                if (total) {
+                    const pct = Math.min(100, Math.round((received / total) * 100));
+                    bar.style.width = pct + '%';
+                    text.textContent = `다운로드 중... ${pct}% (${formatSize(received)} / ${formatSize(total)})`;
+                } else {
+                    text.textContent = `다운로드 중... ${formatSize(received)}`;
+                }
+            }
+
+            const blob = new Blob(chunks);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+
+            bar.style.width = '100%';
+            text.textContent = `완료: ${filename}`;
+            closeBtn.style.display = 'block';
+        } catch (e) {
+            text.textContent = '오류: ' + e.message;
+            closeBtn.style.display = 'block';
+        }
+    }
+
+    function closeProgressModal() {
+        document.getElementById('progress-modal').classList.remove('open');
+        document.getElementById('progress-iframe').src = '';
+    }
+
+    async function resumeDb(dbUid, currentEndDay, state, btn) {
+        let endDate = null;
+
+        if (state === 'completed') {
+            const input = prompt(`이미 완료된 크롤링입니다. 이어서 수집할 새 종료일을 입력하세요 (YYYYMMDD)\n현재 종료일: ${formatDate(currentEndDay)}`, '');
+            if (!input) return;
+            endDate = input.trim();
+            if (!/^\d{8}$/.test(endDate)) { setStatus('종료일은 YYYYMMDD 형식으로 입력해주세요.', true); return; }
+        } else {
+            const input = prompt(`이어받기 종료일 (YYYYMMDD). 비워두면 원래 종료일(${formatDate(currentEndDay)}) 그대로 사용합니다.`, '');
+            if (input === null) return;
+            const trimmed = input.trim();
+            if (trimmed) {
+                if (!/^\d{8}$/.test(trimmed)) { setStatus('종료일은 YYYYMMDD 형식으로 입력해주세요.', true); return; }
+                endDate = trimmed;
+            }
+        }
+
+        if (!confirm('마지막으로 완료한 날짜 다음날부터, 같은 파일에 이어서 크롤링을 재개하시겠습니까?')) return;
+        if (btn) btn.disabled = true;
+        const res = await fetch(`/api/jobs/resume/${dbUid}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ end_date: endDate }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { setStatus(data.detail || '이어받기에 실패했습니다.', true); if (btn) btn.disabled = false; return; }
+        setStatus(`이어받기 시작됨: ${data.job_id}`);
+    }
+
+    async function deleteDb(uid, keyword, btn) {
+        if (!confirm(`"${keyword}" DB를 완전히 삭제하시겠습니까?\n(파일과 기록이 전부 삭제되며 되돌릴 수 없습니다)`)) return;
+        if (btn) btn.disabled = true;
+        const res = await fetch(`/api/db-list/${uid}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { setStatus(data.detail || '삭제에 실패했습니다.', true); if (btn) btn.disabled = false; return; }
+        setStatus('삭제되었습니다.');
+        loadDbList();
+    }
+
     document.getElementById('f-name').textContent = '{{ username }}';
     updateOptions();
     fillToday();
     connectWS();
+    loadDbList();
+
+    // Running Jobs처럼 Database 목록도 주기적으로 자동 새로고침한다. 다만 상세/다운로드
+    // 모달을 보고 있거나 검색창에 입력 중일 때는 화면이 갑자기 바뀌지 않도록 건너뛴다.
+    setInterval(() => {
+        const modalOpen = document.querySelector('.modal-overlay.open');
+        const searchFocused = document.activeElement === document.getElementById('f-db-q');
+        if (!modalOpen && !searchFocused) {
+            loadDbList();
+        }
+    }, 3000);
 </script>
 </body>
 </html>

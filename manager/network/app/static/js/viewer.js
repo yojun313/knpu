@@ -323,16 +323,22 @@
   function switchModalTab(tab) {
     document.getElementById('tabBtnZip').classList.toggle('active', tab === 'zip');
     document.getElementById('tabBtnAnalyze').classList.toggle('active', tab === 'analyze');
+    document.getElementById('tabBtnCrawl').classList.toggle('active', tab === 'crawl');
     document.getElementById('tabZip').classList.toggle('active', tab === 'zip');
     document.getElementById('tabAnalyze').classList.toggle('active', tab === 'analyze');
+    document.getElementById('tabCrawl').classList.toggle('active', tab === 'crawl');
+    document.querySelector('#uploadModal .modal-card').classList.toggle('wide', tab === 'crawl');
+    if (tab === 'crawl') loadCrawlDbList('');
   }
 
   var zipStage = null;
   var analyzeStage = null;
+  var crawlAnalyzeStage = null;
 
   function resetUploadModalState() {
     zipStage = null;
     analyzeStage = null;
+    crawlAnalyzeStage = null;
     setModalStatus('');
     document.getElementById('zipProgress').hidden = true;
     document.getElementById('zipConfirm').hidden = true;
@@ -340,6 +346,12 @@
     document.getElementById('analyzeProgress').hidden = true;
     document.getElementById('analyzeForm').hidden = true;
     document.getElementById('analyzeFileLabel').textContent = '토큰화된 CSV 파일을 선택하세요';
+    document.getElementById('crawlStatus').textContent = '';
+    document.getElementById('crawlProgress').hidden = true;
+    document.getElementById('crawlAnalyzeForm').hidden = true;
+    document.getElementById('crawlDbStep').hidden = false;
+    document.getElementById('crawlFileStep').hidden = true;
+    document.getElementById('crawlDbSearch').value = '';
   }
 
   function openUploadModal() {
@@ -473,6 +485,125 @@
     postJson('/api/projects/analyze/start', { stage_id: analyzeStage, name: name, option: overrides }).then(function (res) {
       btn.disabled = false;
       analyzeStage = null;
+      closeUploadModal();
+      openProgressModal(res.pid);
+    }).catch(function (err) {
+      btn.disabled = false;
+      statusEl.textContent = err.message || String(err);
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // 크롤링 DB에서 선택 (이 서버 자신의 API를 통해 크롤러와 서버 간 통신 — CORS 불필요)
+  // ---------------------------------------------------------------
+  var CRAWL_OBJECTS = { 1: 'Naver News', 2: 'Naver Blog', 3: 'Naver Cafe', 4: 'YouTube', 5: 'ChinaDaily', 6: 'ChinaSina' };
+  function formatCrawlDate(d) { if (!d || d.length !== 8) return d || '-'; return d.slice(0, 4) + '.' + d.slice(4, 6) + '.' + d.slice(6, 8); }
+  function formatCrawlSize(bytes) {
+    if (!bytes) return '-';
+    if (bytes > 1024 * 1024 * 1024) return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+    if (bytes > 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    return (bytes / 1024).toFixed(1) + ' KB';
+  }
+
+  var crawlDbSearchTimer = null;
+  function loadCrawlDbList(q) {
+    var wrapEl = document.getElementById('crawlDbList');
+    wrapEl.innerHTML = '<div class="crawl-db-empty">불러오는 중...</div>';
+    railApi('/api/crawl-dbs?q=' + encodeURIComponent(q || '')).then(function (data) {
+      var items = data.items || [];
+      if (!items.length) { wrapEl.innerHTML = '<div class="crawl-db-empty">검색된 크롤링 DB가 없습니다.</div>'; return; }
+      var uidMap = {};
+      var rows = items.map(function (it) {
+        uidMap[it.uid] = it;
+        return '<tr data-uid="' + esc(it.uid) + '">'
+          + '<td class="ct-main">' + esc(it.keyword || it.name) + '</td>'
+          + '<td class="ct-muted">' + esc(CRAWL_OBJECTS[it.crawlObject] || '-') + '</td>'
+          + '<td class="ct-muted">' + esc(it.requester || '-') + '</td>'
+          + '<td class="ct-muted">' + formatCrawlDate(it.startDate) + ' ~ ' + formatCrawlDate(it.endDate) + '</td>'
+          + '<td class="ct-muted">' + formatCrawlSize(it.dbSize) + '</td>'
+          + '</tr>';
+      }).join('');
+      wrapEl.innerHTML = '<table class="crawl-table"><thead><tr>'
+        + '<th>키워드</th><th>크롤러</th><th>요청자</th><th>기간</th><th>크기</th>'
+        + '</tr></thead><tbody>' + rows + '</tbody></table>';
+      Array.prototype.forEach.call(wrapEl.querySelectorAll('tbody tr'), function (tr) {
+        tr.addEventListener('click', function () {
+          var it = uidMap[tr.dataset.uid];
+          openCrawlDbFiles(it.uid, it.name, it.keyword);
+        });
+      });
+    }).catch(function (err) { wrapEl.innerHTML = '<div class="crawl-db-empty">' + esc(err.message || String(err)) + '</div>'; });
+  }
+
+  function openCrawlDbFiles(uid, dbName, keyword) {
+    document.getElementById('crawlDbStep').hidden = true;
+    document.getElementById('crawlFileStep').hidden = false;
+    document.getElementById('crawlFileDbName').textContent = keyword || dbName;
+    var wrapEl = document.getElementById('crawlFileList');
+    wrapEl.innerHTML = '<div class="crawl-db-empty">불러오는 중...</div>';
+    railApi('/api/crawl-dbs/' + encodeURIComponent(uid) + '/files').then(function (data) {
+      var files = data.files || [];
+      if (!files.length) { wrapEl.innerHTML = '<div class="crawl-db-empty">토큰화된 파일이 없습니다.</div>'; return; }
+      var rows = files.map(function (f, i) {
+        return '<tr data-idx="' + i + '">'
+          + '<td class="ct-main">' + esc(f.csv_name) + '</td>'
+          + '<td><span class="ct-filetype ' + esc(f.type) + '">' + (f.type === 'token' ? '토큰화' : '원본') + '</span></td>'
+          + '<td class="ct-muted">' + formatCrawlSize(f.size) + '</td>'
+          + '</tr>';
+      }).join('');
+      wrapEl.innerHTML = '<table class="crawl-table"><thead><tr>'
+        + '<th>파일명</th><th>종류</th><th>크기</th>'
+        + '</tr></thead><tbody>' + rows + '</tbody></table>';
+      Array.prototype.forEach.call(wrapEl.querySelectorAll('tbody tr'), function (tr) {
+        tr.addEventListener('click', function () { selectCrawlFile(uid, files[+tr.dataset.idx]); });
+      });
+    }).catch(function (err) { wrapEl.innerHTML = '<div class="crawl-db-empty">' + esc(err.message || String(err)) + '</div>'; });
+  }
+
+  function selectCrawlFile(uid, file) {
+    var statusEl = document.getElementById('crawlStatus');
+    statusEl.textContent = '';
+    var progEl = document.getElementById('crawlProgress');
+    var labelEl = document.getElementById('crawlProgressLabel');
+    progEl.hidden = false; labelEl.textContent = '불러오는 중...';
+    document.getElementById('crawlAnalyzeForm').hidden = true;
+
+    postJson('/api/crawl-dbs/' + encodeURIComponent(uid) + '/select', { name: file.name }).then(function (res) {
+      progEl.hidden = true;
+      crawlAnalyzeStage = res.stage_id;
+      document.getElementById('crawlProjectName').value = res.suggested_name || '';
+      var cols = res.columns || [];
+      var sel = document.getElementById('crawlOptTextCol');
+      sel.innerHTML = '';
+      cols.forEach(function (c) {
+        var o = document.createElement('option'); o.value = c; o.text = c; sel.appendChild(o);
+      });
+      var textLike = cols.filter(function (c) { return /text/i.test(c); })[0];
+      if (textLike) sel.value = textLike;
+      document.getElementById('crawlAnalyzeForm').hidden = false;
+    }).catch(function (err) { progEl.hidden = true; statusEl.textContent = err.message || String(err); });
+  }
+
+  function startCrawlAnalyze() {
+    if (!crawlAnalyzeStage) return;
+    var overrides = {
+      text_col: document.getElementById('crawlOptTextCol').value,
+      measure: document.getElementById('crawlOptMeasure').value,
+      period: document.getElementById('crawlOptPeriod').value,
+      min_freq: parseInt(document.getElementById('crawlOptMinFreq').value, 10) || 5,
+      min_edge_weight: parseInt(document.getElementById('crawlOptMinEdge').value, 10) || 2,
+      top_n: parseInt(document.getElementById('crawlOptTopN').value, 10) || 0,
+      community: document.getElementById('crawlOptCommunity').value,
+      layout: document.getElementById('crawlOptLayout').value,
+    };
+    var name = document.getElementById('crawlProjectName').value.trim();
+    var statusEl = document.getElementById('crawlStatus');
+    var btn = document.getElementById('btnCrawlStartAnalyze');
+    statusEl.textContent = '';
+    btn.disabled = true;
+    postJson('/api/projects/analyze/start', { stage_id: crawlAnalyzeStage, name: name, option: overrides }).then(function (res) {
+      btn.disabled = false;
+      crawlAnalyzeStage = null;
       closeUploadModal();
       openProgressModal(res.pid);
     }).catch(function (err) {
@@ -704,6 +835,7 @@
     // ---- 탭 전환 ----
     document.getElementById('tabBtnZip').addEventListener('click', function () { switchModalTab('zip'); });
     document.getElementById('tabBtnAnalyze').addEventListener('click', function () { switchModalTab('analyze'); });
+    document.getElementById('tabBtnCrawl').addEventListener('click', function () { switchModalTab('crawl'); });
 
     // ---- 토큰 CSV로 분석 ----
     var analyzeInput = document.getElementById('analyzeFileInput');
@@ -713,6 +845,20 @@
     ['dragleave', 'drop'].forEach(function (evt) { analyzeDropzone.addEventListener(evt, function (e) { e.preventDefault(); analyzeDropzone.classList.remove('drag'); }); });
     analyzeDropzone.addEventListener('drop', function (e) { onAnalyzeFileSelected(e.dataTransfer.files && e.dataTransfer.files[0]); });
     document.getElementById('btnStartAnalyze').addEventListener('click', startAnalyze);
+
+    // ---- 크롤링 DB에서 선택 ----
+    document.getElementById('crawlDbSearch').addEventListener('input', function () {
+      var q = this.value;
+      clearTimeout(crawlDbSearchTimer);
+      crawlDbSearchTimer = setTimeout(function () { loadCrawlDbList(q); }, 300);
+    });
+    document.getElementById('btnCrawlBack').addEventListener('click', function () {
+      document.getElementById('crawlFileStep').hidden = true;
+      document.getElementById('crawlDbStep').hidden = false;
+      document.getElementById('crawlAnalyzeForm').hidden = true;
+      document.getElementById('crawlStatus').textContent = '';
+    });
+    document.getElementById('btnCrawlStartAnalyze').addEventListener('click', startCrawlAnalyze);
 
     // ---- 진행 상황 모달 ----
     document.getElementById('progressModalClose').addEventListener('click', closeProgressModal);

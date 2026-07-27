@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException
-from app.models.job_model import JobSubmitRequest, QueueConfigUpdate
+from fastapi import APIRouter, HTTPException, Depends
+from app.models.job_model import JobSubmitRequest, QueueConfigUpdate, ResumeRequest
+from app.routes.dependencies import get_current_user, check_owner_or_admin
+from app.db import crawler_db
 
 router = APIRouter()
 
@@ -28,6 +30,29 @@ def get_job_status(job_id: str):
     if status is None:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
     return status
+
+
+@router.post("/jobs/resume/{db_uid}")
+def resume_job(
+    db_uid: str,
+    req: ResumeRequest = ResumeRequest(),
+    user=Depends(get_current_user),
+):
+    """중단·에러·완료된 크롤링을 같은 파일에 이어서 진행한다.
+    완료된 작업은 req.end_date(새 종료일)를 반드시 지정해야 확장해서 이어받을 수 있다.
+    관리자 또는 그 크롤링의 요청자만 이어받을 수 있다."""
+    doc = crawler_db["db-list"].find_one({"uid": db_uid})
+    if not doc:
+        raise HTTPException(
+            status_code=404, detail=f"크롤링 작업을 찾을 수 없습니다: {db_uid}"
+        )
+    check_owner_or_admin(user, doc)
+
+    try:
+        job_id = queue_manager.enqueue_resume(db_uid, req.end_date)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"status": "ok", "job_id": job_id}
 
 
 @router.get("/jobs/{job_id}/logs")

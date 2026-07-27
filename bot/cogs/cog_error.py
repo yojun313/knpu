@@ -4,7 +4,8 @@ from discord import app_commands
 import datetime
 import io
 
-from config import CHANNEL_IDS
+from config import CHANNEL_IDS, ADMIN_API_URL
+from libs.internal_auth import mint_admin_token
 
 
 class ErrorManageView(discord.ui.View):
@@ -82,6 +83,59 @@ class ErrorManageView(discord.ui.View):
     ):
         await self.update_bug_status(
             interaction, "failed", discord.Color.red(), "패치 실패"
+        )
+
+    @discord.ui.button(
+        label="🤖 클로드코드로 자동 수정",
+        style=discord.ButtonStyle.blurple,
+        custom_id="bug_autofix",
+    )
+    async def autofix_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        import aiohttp
+
+        await interaction.response.defer(ephemeral=True)
+
+        embed = interaction.message.embeds[0]
+        bug_uid = None
+        for field in embed.fields:
+            if field.name == "버그 UID":
+                bug_uid = field.value.replace("`", "")
+                break
+
+        if not bug_uid:
+            return await interaction.followup.send(
+                "버그 UID를 찾을 수 없습니다.", ephemeral=True
+            )
+
+        token = mint_admin_token()
+        url = f"{ADMIN_API_URL}/bugs/{bug_uid}/auto-fix"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url, headers={"Authorization": f"Bearer {token}"}
+                ) as resp:
+                    body = await resp.json()
+                    if resp.status != 200:
+                        return await interaction.followup.send(
+                            f"자동 수정 시작 실패: {body.get('detail', '알 수 없는 오류')}",
+                            ephemeral=True,
+                        )
+        except Exception as e:
+            return await interaction.followup.send(
+                f"admin 서버 호출 실패: {e}", ephemeral=True
+            )
+
+        session_id = body["session_id"]
+        embed.add_field(
+            name="🤖 자동 수정 세션",
+            value=f"`{session_id[:8]}` (admin 대시보드 Agents 탭에서 확인)",
+            inline=False,
+        )
+        await interaction.message.edit(embed=embed, view=self)
+        await interaction.followup.send(
+            f"클로드 코드 세션을 시작했습니다: `{session_id}`", ephemeral=True
         )
 
 

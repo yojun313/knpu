@@ -1,78 +1,111 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-    <div>
-        <h2 class="text-2xl font-bold text-white">User Logs</h2>
-        <p class="text-zinc-400 text-sm">시스템 활동 로그를 조회하고 필터링합니다.</p>
-    </div>
-    
-    <form method="GET" action="/logs" class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-        <div class="grid grid-cols-1 sm:flex gap-3 w-full">
-            <div class="relative w-full sm:w-auto">
-                <input type="date" name="date" value="{{ search_date or '' }}" 
-                    class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition appearance-none"
-                    onchange="this.form.submit()">
-            </div>
-            
-            <div class="relative w-full sm:w-64">
-                <input type="text" name="name" value="{{ search_name or '' }}" list="user-names-list" placeholder="사용자 이름 검색..." autocomplete="off"
-                    class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition">
-                <datalist id="user-names-list">
-                    {% for uname in user_names %}
-                    <option value="{{ uname }}"></option>
-                    {% endfor %}
-                </datalist>
-            </div>
-        </div>
-
-        <div class="flex gap-2 w-full sm:w-auto">
-            <button type="submit" class="flex-1 sm:flex-none bg-zinc-100 hover:bg-white text-black px-6 py-2 rounded-lg text-sm font-bold transition shadow-lg shadow-white/5">
-                Filter
-            </button>
-            <a href="/logs" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-zinc-500 hover:text-white hover:bg-zinc-800 transition flex items-center justify-center">
-                Reset
-            </a>
-        </div>
-    </form>
+<div class="mb-6">
+    <h2 class="text-2xl font-bold text-white">User Logs</h2>
+    <p class="text-zinc-400 text-sm">
+        {% if selected_user %}선택한 사용자의 전체 기간 활동 로그입니다 (총 {{ total }}건).
+        {% else %}오늘의 최근 활동입니다. 오른쪽에서 사용자를 선택하면 전체 기간 로그를 볼 수 있습니다.{% endif %}
+    </p>
 </div>
 
-<div class="space-y-2">
-    {% if logs %}
-        {% for log in logs %}
-        <div class="group card rounded-xl border border-zinc-800 bg-zinc-900/20 hover:bg-zinc-900/40 hover:border-zinc-700 transition-all p-4 relative overflow-hidden">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center flex-wrap gap-3 mb-1.5">
-                        <span class="text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700 px-2 py-0.5 rounded tracking-wide">
-                            {{ log.user_name }}
-                        </span>
-                        <span class="text-[11px] text-zinc-500 flex items-center gap-1.5 font-mono">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                            {{ log.datetime }}
-                        </span>
-                    </div>
-                    <div class="text-sm text-zinc-300 leading-relaxed break-all pr-10">
-                        {{ log.message }}
+<div class="flex flex-col lg:flex-row gap-4">
+    <!-- 본문 -->
+    <div class="flex-1 min-w-0 order-2 lg:order-1">
+        {% if not selected_user %}
+        <form method="GET" action="/logs" class="mb-4 flex flex-col sm:flex-row items-center gap-3 w-full">
+            <div class="grid grid-cols-1 sm:flex gap-3 w-full">
+                <input type="date" name="date" value="{{ search_date or '' }}"
+                    class="w-full sm:w-auto bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition appearance-none"
+                    onchange="this.form.submit()">
+                <div class="relative w-full sm:w-64">
+                    <input type="text" name="name" value="{{ search_name or '' }}" list="user-names-list" placeholder="사용자 이름 검색..." autocomplete="off"
+                        class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition">
+                    <datalist id="user-names-list">
+                        {% for uname in user_names %}
+                        <option value="{{ uname }}"></option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button type="submit" class="flex-1 sm:flex-none bg-zinc-100 hover:bg-white text-black px-6 py-2 rounded-lg text-sm font-bold transition shadow-lg shadow-white/5">Filter</button>
+                <a href="/logs" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-zinc-500 hover:text-white hover:bg-zinc-800 transition flex items-center justify-center">Reset</a>
+            </div>
+        </form>
+        {% else %}
+        <a href="/logs" class="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white mb-4 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            오늘의 전체 활동으로 돌아가기
+        </a>
+        {% endif %}
+
+        <div class="space-y-2">
+            {% if logs %}
+                {% for log in logs %}
+                <div class="group card rounded-xl border border-zinc-800 bg-zinc-900/20 hover:bg-zinc-900/40 hover:border-zinc-700 transition-all p-4 relative overflow-hidden">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center flex-wrap gap-3 mb-1.5">
+                                <span class="text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700 px-2 py-0.5 rounded tracking-wide">
+                                    {{ log.user_name }}
+                                </span>
+                                <span class="text-[11px] text-zinc-500 flex items-center gap-1.5 font-mono">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    {{ log.datetime }}
+                                </span>
+                            </div>
+                            <div class="text-sm text-zinc-300 leading-relaxed break-all pr-10">
+                                {{ log.message }}
+                            </div>
+                        </div>
+
+                        <button onclick="copyLog('{{ log.message | replace("'", "\\'") }}', this)"
+                                class="md:opacity-0 group-hover:opacity-100 absolute top-4 right-4 p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-500 hover:text-white transition-all shadow-xl"
+                                title="로그 복사">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
                     </div>
                 </div>
+                {% endfor %}
+            {% else %}
+                <div class="p-20 text-center border border-dashed border-zinc-800 rounded-2xl">
+                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-zinc-900 mb-4 text-zinc-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 18 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line><line x1="9" y1="11" x2="15" y2="11"></line><line x1="9" y1="19" x2="15" y2="19"></line></svg>
+                    </div>
+                    <p class="text-zinc-500 text-sm">조건에 맞는 활동 로그가 존재하지 않습니다.</p>
+                </div>
+            {% endif %}
+        </div>
 
-                <button onclick="copyLog('{{ log.message | replace("'", "\\'") }}', this)" 
-                        class="md:opacity-0 group-hover:opacity-100 absolute top-4 right-4 p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-500 hover:text-white transition-all shadow-xl"
-                        title="로그 복사">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                </button>
+        {% if selected_user and total_pages > 1 %}
+        <div class="flex items-center justify-center gap-2 mt-6">
+            <a href="/logs?selected_user={{ selected_user }}&page={{ page - 1 }}"
+               class="px-3 py-1.5 rounded-lg text-sm border border-zinc-800 {% if page <= 1 %}pointer-events-none text-zinc-700{% else %}text-zinc-300 hover:bg-zinc-800{% endif %}">이전</a>
+            <span class="text-sm text-zinc-500 px-2">{{ page }} / {{ total_pages }}</span>
+            <a href="/logs?selected_user={{ selected_user }}&page={{ page + 1 }}"
+               class="px-3 py-1.5 rounded-lg text-sm border border-zinc-800 {% if page >= total_pages %}pointer-events-none text-zinc-700{% else %}text-zinc-300 hover:bg-zinc-800{% endif %}">다음</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 사용자 탭 (오른쪽) -->
+    <div class="w-full lg:w-64 flex-shrink-0 order-1 lg:order-2">
+        <div class="card rounded-xl border border-zinc-800 overflow-hidden">
+            <div class="px-4 py-3 border-b border-zinc-800 text-xs font-bold text-zinc-500 uppercase tracking-wide">사용자별 로그</div>
+            <div class="max-h-[70vh] overflow-y-auto">
+                {% for u in user_tabs %}
+                <a href="/logs?selected_user={{ u.uid }}"
+                   class="list-item flex items-center justify-between px-4 py-2.5 text-sm transition {% if selected_user == u.uid %}bg-blue-600/20 text-white{% else %}text-zinc-300 hover:bg-zinc-800/60{% endif %}">
+                    <span class="truncate">{{ u.name }}</span>
+                    <span class="text-[10px] font-mono text-zinc-500 flex-shrink-0 ml-2">{{ u.count }}</span>
+                </a>
+                {% else %}
+                <div class="p-4 text-xs text-zinc-500 text-center">로그가 있는 사용자가 없습니다.</div>
+                {% endfor %}
             </div>
         </div>
-        {% endfor %}
-    {% else %}
-        <div class="p-20 text-center border border-dashed border-zinc-800 rounded-2xl">
-            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-zinc-900 mb-4 text-zinc-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 18 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line><line x1="9" y1="11" x2="15" y2="11"></line><line x1="9" y1="19" x2="15" y2="19"></line></svg>
-            </div>
-            <p class="text-zinc-500 text-sm">조건에 맞는 활동 로그가 존재하지 않습니다.</p>
-        </div>
-    {% endif %}
+    </div>
 </div>
 
 <script>
@@ -86,7 +119,7 @@
 
         const originalIcon = btn.innerHTML;
         btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-        
+
         setTimeout(() => {
             btn.innerHTML = originalIcon;
         }, 2000);

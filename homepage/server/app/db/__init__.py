@@ -50,6 +50,7 @@ gallery_db = homepage_db["gallery"]
 popup_db = homepage_db["popups"]
 users_db = homepage_db["users"]
 auth_codes_db = homepage_db["auth_codes"]
+discord_link_col = homepage_db["discord_link_requests"]
 
 # 디스코드 봇(bot/)이 폴링해서 실제 전송을 처리하는 알림 큐
 discord_notifications_db = client["discord"]["notifications"]

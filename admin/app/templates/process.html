@@ -39,7 +39,15 @@
                 <p class="text-xs text-zinc-500 font-bold uppercase tracking-wider">CPU Total</p>
                 <span id="srvCpuCount" class="text-[10px] bg-zinc-800 text-zinc-400 font-mono px-2 py-0.5 rounded"></span>
             </div>
-            <h3 id="srvCpuText" class="text-3xl font-mono font-bold text-emerald-400 mt-2">0.0 %</h3>
+            <div class="flex items-baseline gap-3 mt-2">
+                <h3 id="srvCpuText" class="text-3xl font-mono font-bold text-emerald-400">0.0 %</h3>
+                <span id="srvCpuTemp" class="text-sm font-mono font-bold text-orange-400 hidden">-- °C</span>
+            </div>
+            <div class="flex items-center gap-3 text-[10px] font-mono text-zinc-500 mt-2">
+                <span title="Load Average (1m/5m/15m)">LOAD <span id="srvLoadAvg" class="text-zinc-300">- - -</span></span>
+                <span title="Uptime">UP <span id="srvUptime" class="text-zinc-300">-</span></span>
+                <span title="Process count">PROC <span id="srvProcCount" class="text-zinc-300">-</span></span>
+            </div>
         </div>
         <div class="mt-4 max-h-48 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-800" id="srvCpuCoresWrapper">
             <div class="grid grid-cols-2 gap-x-4 gap-y-1.5" id="srvCpuCoresContainer"></div>
@@ -92,17 +100,23 @@
             <div class="mt-3 space-y-2 font-mono text-sm">
                 <div class="flex items-center gap-2 text-zinc-300">
                     <svg class="text-emerald-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col flex-1">
                         <span class="text-[10px] text-zinc-500 font-sans font-bold uppercase">Received</span>
                         <span id="srvNetRecv" class="text-zinc-200">0.00 MB</span>
                     </div>
+                    <span id="srvNetRecvRate" class="text-emerald-400 text-xs">0 KB/s</span>
                 </div>
                 <div class="flex items-center gap-2 text-zinc-300 border-t border-zinc-800/60 pt-2">
                     <svg class="text-blue-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col flex-1">
                         <span class="text-[10px] text-zinc-500 font-sans font-bold uppercase">Sent</span>
                         <span id="srvNetSent" class="text-zinc-200">0.00 MB</span>
                     </div>
+                    <span id="srvNetSentRate" class="text-blue-400 text-xs">0 KB/s</span>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-zinc-500 border-t border-zinc-800/60 pt-2">
+                    <span>DISK R <span id="srvDiskReadRate" class="text-zinc-300">0 KB/s</span></span>
+                    <span>DISK W <span id="srvDiskWriteRate" class="text-zinc-300">0 KB/s</span></span>
                 </div>
             </div>
         </div>
@@ -322,6 +336,25 @@ async function updateServerStats() {
         document.getElementById('srvCpuText').innerText = `${data.cpu_percent.toFixed(1)} %`;
         document.getElementById('srvCpuCount').innerText = `CORES: ${data.cpu_count_physical}P / ${data.cpu_count_logical}L`;
 
+        const tempEl = document.getElementById('srvCpuTemp');
+        if (data.cpu_temp != null) {
+            tempEl.classList.remove('hidden');
+            tempEl.innerText = `${data.cpu_temp.toFixed(1)} °C`;
+            tempEl.className = 'text-sm font-mono font-bold mt-0 ' + (data.cpu_temp >= 80 ? 'text-red-400' : data.cpu_temp >= 65 ? 'text-orange-400' : 'text-zinc-400');
+        }
+
+        if (data.load_avg) {
+            document.getElementById('srvLoadAvg').innerText = data.load_avg.join(' / ');
+        }
+        if (data.uptime_seconds != null) {
+            const days = Math.floor(data.uptime_seconds / 86400);
+            const hours = Math.floor((data.uptime_seconds % 86400) / 3600);
+            document.getElementById('srvUptime').innerText = `${days}d ${hours}h`;
+        }
+        if (data.process_count != null) {
+            document.getElementById('srvProcCount').innerText = data.process_count;
+        }
+
         const coresContainer = document.getElementById('srvCpuCoresContainer');
         coresContainer.innerHTML = '';
         data.cpu_cores.forEach((corePer, idx) => {
@@ -360,6 +393,10 @@ async function updateServerStats() {
 
         document.getElementById('srvNetRecv').innerText = formatBytes(data.net_bytes_recv);
         document.getElementById('srvNetSent').innerText = formatBytes(data.net_bytes_sent);
+        document.getElementById('srvNetRecvRate').innerText = `${formatBytes(data.net_download_bps || 0)}/s`;
+        document.getElementById('srvNetSentRate').innerText = `${formatBytes(data.net_upload_bps || 0)}/s`;
+        document.getElementById('srvDiskReadRate').innerText = `${formatBytes(data.disk_read_bps || 0)}/s`;
+        document.getElementById('srvDiskWriteRate').innerText = `${formatBytes(data.disk_write_bps || 0)}/s`;
 
     } catch (err) {
         console.error("Server stats configuration error:", err);

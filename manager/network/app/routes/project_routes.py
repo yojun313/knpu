@@ -1,10 +1,19 @@
 # app/routes/project_routes.py
 import os
 
+import requests
 from fastapi import APIRouter, UploadFile, File, Form, Query, Request, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 
 from app.services import project_store, graph_analysis, analyze_service, upload_staging
+
+
+def _parse_csv_header(content: bytes) -> list[str]:
+    try:
+        first_line = content.split(b"\n", 1)[0].decode("utf-8-sig", errors="ignore")
+    except Exception:
+        return []
+    return [c.strip().strip('"') for c in first_line.split(",") if c.strip()]
 
 router = APIRouter()
 
@@ -184,6 +193,87 @@ async def project_data(
 async def progress_config():
     """브라우저가 진행 상황 WebSocket에 붙을 공개 주소를 알려준다."""
     return JSONResponse({"ws_url": analyze_service.PROGRESS_PUBLIC_WS_URL})
+
+
+@router.get("/api/crawl-dbs")
+async def api_crawl_dbs(request: Request, q: str = ""):
+    """'크롤링 DB에서 선택' 기능: 완료된 크롤 DB 목록을 크롤러 서버에서 그대로 가져온다.
+    같은 호스트이므로 로컬로 직접 호출하고, 사용자 세션 쿠키를 그대로 실어 보내
+    크롤러의 get_current_user 인증을 그대로 통과시킨다(별도 내부 키 불필요)."""
+    session_token = request.cookies.get("session")
+    if not session_token:
+        raise HTTPException(401, "인증이 필요합니다")
+    try:
+        resp = requests.get(
+            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list",
+            params={"status": "completed", "per_page": 30, "q": q},
+            cookies={"session": session_token},
+            timeout=15,
+        )
+    except requests.RequestException as e:
+        raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
+    if resp.status_code != 200:
+        raise HTTPException(resp.status_code, resp.text)
+    return JSONResponse(resp.json())
+
+
+@router.get("/api/crawl-dbs/{uid}/files")
+async def api_crawl_db_files(uid: str, request: Request):
+    """완료된 크롤 DB의 파일 목록 중 토큰화된 파일만 골라 반환한다 — 네트워크 분석도
+    형태소 분석이 끝난 토큰 데이터만 대상으로 허용한다(원본 텍스트는 사용 불가)."""
+    session_token = request.cookies.get("session")
+    if not session_token:
+        raise HTTPException(401, "인증이 필요합니다")
+    try:
+        resp = requests.get(
+            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/files",
+            cookies={"session": session_token},
+            timeout=15,
+        )
+    except requests.RequestException as e:
+        raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
+    if resp.status_code != 200:
+        raise HTTPException(resp.status_code, resp.text)
+    data = resp.json()
+    data["files"] = [f for f in data.get("files", []) if f.get("type") == "token"]
+    return JSONResponse(data)
+
+
+@router.post("/api/crawl-dbs/{uid}/select")
+async def api_crawl_db_select(uid: str, request: Request):
+    """선택한 크롤 DB 파일을 크롤러에서 CSV로 받아와 그대로 스테이징한다 — 이후 흐름은
+    /api/projects/analyze/start로 기존 CSV 업로드 경로와 완전히 동일하다. 대상 열
+    선택 UI를 위해 헤더 행에서 열 이름도 함께 뽑아 돌려준다(파일을 다시 내려받아
+    클라이언트에서 파싱할 필요가 없도록)."""
+    session_token = request.cookies.get("session")
+    if not session_token:
+        raise HTTPException(401, "인증이 필요합니다")
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(400, "파일명이 필요합니다")
+
+    try:
+        resp = requests.get(
+            f"{analyze_service.CRAWLER_INTERNAL_API}/db-list/{uid}/file",
+            params={"name": name},
+            cookies={"session": session_token},
+            timeout=60,
+        )
+    except requests.RequestException as e:
+        raise HTTPException(502, f"크롤러 서버 요청 실패: {e}")
+    if resp.status_code != 200:
+        raise HTTPException(resp.status_code, resp.text)
+
+    filename = name.rsplit(".", 1)[0] + ".csv"
+    stage_id = upload_staging.stage(_uid(request), resp.content, filename)
+    return JSONResponse(
+        {
+            "stage_id": stage_id,
+            "suggested_name": os.path.splitext(filename)[0],
+            "columns": _parse_csv_header(resp.content),
+        }
+    )
 
 
 @router.post("/api/projects/analyze/upload")

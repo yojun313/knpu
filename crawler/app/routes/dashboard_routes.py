@@ -24,6 +24,8 @@ async def dashboard_page(request: Request):
         context={
             "request": request,
             "username": username,
+            "is_admin": bool(user and user.get("role") == "admin"),
+            "my_uid": user.get("uid") if user else None,
         },
     )
 

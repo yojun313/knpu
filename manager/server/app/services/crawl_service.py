@@ -160,8 +160,8 @@ def processDbInfo(crawlDb: dict):
             crawlType = typ
 
     crawlDb["crawlType"] = crawlType
-    crawlDb["startDate"] = parts[2]
-    crawlDb["endDate"] = parts[3]
+    crawlDb["startDate"] = crawlDb["startDate"]
+    crawlDb["endDate"] = crawlDb["endDate"]
     crawlDb["crawlOption"] = str(crawlDb["crawlOption"])
     crawlDb["crawlSpeed"] = str(crawlDb["crawlSpeed"])
 
