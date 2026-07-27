@@ -169,6 +169,15 @@
             ol {
                 font-size: 16px;
             }
+
+            /* 표는 내용이 넓으면 표만 가로 스크롤되게 하여, 페이지 전체가
+               옆으로 밀리지 않도록 합니다. */
+            table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                font-size: 14px;
+            }
         }
     </style>
 </head>

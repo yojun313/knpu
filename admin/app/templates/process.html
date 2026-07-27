@@ -123,9 +123,36 @@
     </div>
 </div>
 
+<style>
+    /* 1024px 미만(모바일/태블릿 세로)에서는 테이블을 세로 카드형으로 재배치해서
+       Actions(재시작 등) 버튼을 보려고 가로 스크롤할 필요가 없게 한다. */
+    @media (max-width: 1023px) {
+        #pm2Table thead { display: none; }
+        #pm2Table, #pm2Table tbody, #pm2Table tr { display: block; width: 100%; }
+        #pm2Table { white-space: normal; }
+        #pm2Table tr.proc-row {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+            padding: 14px 16px;
+        }
+        #pm2Table tr.proc-row > td { display: block; padding: 0; border: none !important; }
+        #pm2Table tr.proc-row > td[data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--muted, #71717a); margin-bottom: 2px;
+        }
+        #pm2Table tr.proc-row > td.pm2-cell-name { width: 100%; order: -1; }
+        #pm2Table tr.proc-row > td.pm2-cell-actions { width: 100%; order: 99; margin-top: 6px; }
+        #pm2Table tr.proc-row > td.pm2-cell-actions .flex { justify-content: flex-start; }
+        #pm2Table tr[id^="chart-row-"] { display: none; }
+        #pm2Table tr[id^="chart-row-"]:not(.hidden) { display: block; }
+        #pm2Table tr[id^="chart-row-"] td { display: block; }
+    }
+</style>
+
 <div class="card rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/30">
     <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm whitespace-nowrap">
+        <table id="pm2Table" class="w-full text-left text-sm whitespace-nowrap">
             <thead>
                 <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Name & ID</th>
@@ -140,7 +167,7 @@
             <tbody id="pm2-list-body">
                 {% for proc in processes %}
                 <tr id="proc-{{ proc.name }}" class="proc-row border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors" data-name="{{ proc.name }}">
-                    <td class="p-4">
+                    <td class="p-4 pm2-cell-name">
                         <div class="font-bold text-zinc-100 flex items-center gap-2">
                             {{ proc.name }}
                             <button onclick="toggleChart('{{ proc.name }}')" class="text-zinc-500 hover:text-zinc-300 p-0.5" title="자원 그래프 보기">
@@ -149,28 +176,28 @@
                         </div>
                         <div class="text-[10px] text-zinc-500 uppercase font-mono mt-0.5">PM2 ID: {{ proc.pm_id }}</div>
                     </td>
-                    <td class="p-4 status-cell">
+                    <td class="p-4 status-cell" data-label="Status">
                         <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-800 text-zinc-500">
                             LOADING
                         </span>
                     </td>
-                    <td class="p-4">
+                    <td class="p-4" data-label="CPU">
                         <span class="cpu-cell font-mono text-zinc-400 bg-black/40 px-2 py-1 rounded border border-zinc-800/50 text-xs">0%</span>
                     </td>
-                    <td class="p-4">
+                    <td class="p-4" data-label="Memory">
                         <span class="mem-cell font-mono text-zinc-400 text-xs">0 MB</span>
                     </td>
-                    <td class="p-4">
+                    <td class="p-4" data-label="Uptime">
                         <span class="uptime-cell text-zinc-500 text-xs">-</span>
                     </td>
-                    <td class="p-4">
+                    <td class="p-4" data-label="Watch">
                         <button onclick="toggleWatch('{{ proc.name }}')" class="hover:opacity-80 transition-opacity">
                             <span class="watch-status-badge inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-800 text-zinc-600 border border-zinc-700">
                                 -
                             </span>
                         </button>
                     </td>
-                    <td class="p-4 text-right">
+                    <td class="p-4 text-right pm2-cell-actions">
                         <div class="flex justify-end gap-2">
                             <button onclick="openLogModal('{{ proc.name }}')" class="p-2 bg-blue-900/10 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg transition" title="Logs">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 18 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>

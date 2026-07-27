@@ -1,112 +1,186 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-    <div>
-        <h2 class="text-2xl font-bold text-white">Audit Logs</h2>
-        <p class="text-zinc-400 text-sm">서버가 변경(POST/PUT/PATCH/DELETE) 요청마다 자동으로 기록한 감사 로그입니다. 총 {{ total }}건.</p>
-    </div>
-
-    <form method="GET" action="/audit-logs" class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-        <div class="grid grid-cols-2 sm:flex gap-3 w-full">
-            <select name="service" onchange="this.form.submit()"
-                class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition">
-                <option value="">모든 서비스</option>
-                {% for s in services %}
-                <option value="{{ s }}" {% if search_service == s %}selected{% endif %}>{{ s }}</option>
-                {% endfor %}
-            </select>
-
-            <select name="method" onchange="this.form.submit()"
-                class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition">
-                <option value="">모든 메서드</option>
-                {% for m in ["POST", "PUT", "PATCH", "DELETE"] %}
-                <option value="{{ m }}" {% if search_method == m %}selected{% endif %}>{{ m }}</option>
-                {% endfor %}
-            </select>
-
-            <input type="date" name="date" value="{{ search_date or '' }}"
-                class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition appearance-none"
-                onchange="this.form.submit()">
-
-            <input type="text" name="name" value="{{ search_name or '' }}" placeholder="사용자 이름 검색..." autocomplete="off"
-                class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition">
-        </div>
-
-        <div class="flex gap-2 w-full sm:w-auto">
-            <button type="submit" class="flex-1 sm:flex-none bg-zinc-100 hover:bg-white text-black px-6 py-2 rounded-lg text-sm font-bold transition shadow-lg shadow-white/5">
-                Filter
-            </button>
-            <a href="/audit-logs" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-zinc-500 hover:text-white hover:bg-zinc-800 transition flex items-center justify-center">
-                Reset
-            </a>
-        </div>
-    </form>
+<div class="mb-6">
+    <h2 class="text-2xl font-bold text-white">Audit Logs</h2>
+    <p class="text-zinc-400 text-sm">
+        {% if selected_user %}선택한 사용자의 전체 기간 감사 로그입니다 (총 {{ total }}건).
+        {% else %}서버가 변경(POST/PUT/PATCH/DELETE) 요청마다 자동으로 기록한 감사 로그입니다. 총 {{ total }}건.{% endif %}
+    </p>
 </div>
 
-<div class="card rounded-xl border border-zinc-800 overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="border-b border-zinc-800 text-left text-zinc-500 text-xs uppercase tracking-wide">
-                    <th class="px-4 py-3 font-semibold whitespace-nowrap">시간</th>
-                    <th class="px-4 py-3 font-semibold whitespace-nowrap">서비스</th>
-                    <th class="px-4 py-3 font-semibold whitespace-nowrap">사용자</th>
-                    <th class="px-4 py-3 font-semibold whitespace-nowrap">메서드</th>
-                    <th class="px-4 py-3 font-semibold">경로</th>
-                    <th class="px-4 py-3 font-semibold whitespace-nowrap">상태</th>
-                    <th class="px-4 py-3 font-semibold whitespace-nowrap text-right">소요</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in logs %}
-                <tr class="list-item hover:bg-zinc-900/40 transition-colors">
-                    <td class="px-4 py-2.5 text-zinc-500 font-mono text-xs whitespace-nowrap">{{ log.ts_kst }}</td>
-                    <td class="px-4 py-2.5 whitespace-nowrap">
-                        <span class="text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700 px-2 py-0.5 rounded uppercase">{{ log.service }}</span>
-                    </td>
-                    <td class="px-4 py-2.5 whitespace-nowrap">
-                        {% if log.user_name %}
-                            <span class="text-zinc-200">{{ log.user_name }}</span>
-                            {% if log.role == "admin" %}<span class="text-[10px] text-amber-400 ml-1">admin</span>{% endif %}
+<style>
+    /* 데스크톱: list-item 등 전역 클래스가 display:flex를 강제하더라도
+       테이블 레이아웃이 깨지지 않도록 명시적으로 table 디스플레이를 고정한다. */
+    #auditTable { table-layout: fixed; width: 100%; }
+    #auditTable thead { display: table-header-group; }
+    #auditTable tbody { display: table-row-group; }
+    #auditTable tr { display: table-row; }
+    #auditTable th, #auditTable td { display: table-cell; vertical-align: middle; }
+
+    /* 1024px 미만(모바일/태블릿 세로)에서는 감사 로그 테이블을 세로 카드형으로 재배치해서
+       모든 필드(특히 경로)를 보려고 가로 스크롤할 필요가 없게 한다. */
+    @media (max-width: 1023px) {
+        #auditTable thead { display: none; }
+        #auditTable, #auditTable tbody, #auditTable tr { display: block; width: 100%; }
+        #auditTable { white-space: normal; }
+        #auditTable tr.audit-row {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+            padding: 14px 16px;
+        }
+        #auditTable tr.audit-row > td { display: block; padding: 0; border: none !important; white-space: normal !important; }
+        #auditTable tr.audit-row > td[data-label]::before {
+            content: attr(data-label);
+            display: block;
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--muted, #71717a); margin-bottom: 2px;
+        }
+        #auditTable tr.audit-row > td.audit-cell-path { width: 100%; order: 99; margin-top: 4px; }
+    }
+</style>
+
+<div class="flex flex-col lg:flex-row gap-4">
+    <!-- 본문 -->
+    <div class="flex-1 min-w-0 order-2 lg:order-1">
+        {% if not selected_user %}
+        <form method="GET" action="/audit-logs" class="mb-4 flex flex-col sm:flex-row items-center gap-3 w-full">
+            <div class="grid grid-cols-2 sm:flex gap-3 w-full">
+                <select name="service" onchange="this.form.submit()"
+                    class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition">
+                    <option value="">모든 서비스</option>
+                    {% for s in services %}
+                    <option value="{{ s }}" {% if search_service == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="method" onchange="this.form.submit()"
+                    class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition">
+                    <option value="">모든 메서드</option>
+                    {% for m in ["POST", "PUT", "PATCH", "DELETE"] %}
+                    <option value="{{ m }}" {% if search_method == m %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+
+                <input type="date" name="date" value="{{ search_date or '' }}"
+                    class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition appearance-none"
+                    onchange="this.form.submit()">
+
+                <input type="text" name="name" value="{{ search_name or '' }}" placeholder="사용자 이름 검색..." autocomplete="off"
+                    class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition">
+            </div>
+
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button type="submit" class="flex-1 sm:flex-none bg-zinc-100 hover:bg-white text-black px-6 py-2 rounded-lg text-sm font-bold transition shadow-lg shadow-white/5">
+                    Filter
+                </button>
+                <a href="/audit-logs" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold text-zinc-500 hover:text-white hover:bg-zinc-800 transition flex items-center justify-center">
+                    Reset
+                </a>
+            </div>
+        </form>
+        {% else %}
+        <a href="/audit-logs" class="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white mb-4 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            전체 감사 로그로 돌아가기
+        </a>
+        {% endif %}
+
+        <div class="card rounded-xl border border-zinc-800 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table id="auditTable" class="w-full text-sm">
+                    <colgroup>
+                        <col style="width: 13%;">  <!-- 시간 -->
+                        <col style="width: 9%;">   <!-- 서비스 -->
+                        <col style="width: 10%;">  <!-- 사용자 -->
+                        <col style="width: 8%;">   <!-- 메서드 -->
+                        <col style="width: 42%;">  <!-- 경로 (제일 넓게) -->
+                        <col style="width: 8%;">   <!-- 상태 -->
+                        <col style="width: 10%;">  <!-- 소요 -->
+                    </colgroup>
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-left text-zinc-500 text-xs uppercase tracking-wide">
+                            <th class="px-4 py-3 font-semibold whitespace-nowrap">시간</th>
+                            <th class="px-4 py-3 font-semibold whitespace-nowrap">서비스</th>
+                            <th class="px-4 py-3 font-semibold whitespace-nowrap">사용자</th>
+                            <th class="px-4 py-3 font-semibold whitespace-nowrap">메서드</th>
+                            <th class="px-4 py-3 font-semibold">경로</th>
+                            <th class="px-4 py-3 font-semibold whitespace-nowrap">상태</th>
+                            <th class="px-4 py-3 font-semibold whitespace-nowrap text-right">소요</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr class="audit-row hover:bg-zinc-900/40 transition-colors">
+                            <td class="px-4 py-2.5 text-zinc-500 font-mono text-xs whitespace-nowrap" data-label="시간">{{ log.ts_kst }}</td>
+                            <td class="px-4 py-2.5 whitespace-nowrap" data-label="서비스">
+                                <span class="text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700 px-2 py-0.5 rounded uppercase">{{ log.service }}</span>
+                            </td>
+                            <td class="px-4 py-2.5 whitespace-nowrap" data-label="사용자">
+                                {% if log.user_name %}
+                                    <span class="text-zinc-200">{{ log.user_name }}</span>
+                                    {% if log.role == "admin" %}<span class="text-[10px] text-amber-400 ml-1">admin</span>{% endif %}
+                                {% else %}
+                                    <span class="text-zinc-600">익명</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-2.5 whitespace-nowrap" data-label="메서드">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded
+                                    {% if log.method == 'DELETE' %}bg-red-900/20 text-red-400 border border-red-900/30
+                                    {% elif log.method == 'POST' %}bg-emerald-900/20 text-emerald-400 border border-emerald-900/30
+                                    {% else %}bg-blue-900/20 text-blue-400 border border-blue-900/30{% endif %}">
+                                    {{ log.method }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-2.5 text-zinc-400 font-mono text-xs break-all audit-cell-path" data-label="경로">{{ log.path }}</td>
+                            <td class="px-4 py-2.5 whitespace-nowrap" data-label="상태">
+                                <span class="font-mono text-xs {% if log.success %}text-emerald-400{% else %}text-red-400{% endif %}">
+                                    {{ log.status_code or '-' }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-2.5 text-zinc-500 font-mono text-xs text-right whitespace-nowrap" data-label="소요">{{ log.duration_ms }}ms</td>
+                        </tr>
                         {% else %}
-                            <span class="text-zinc-600">익명</span>
-                        {% endif %}
-                    </td>
-                    <td class="px-4 py-2.5 whitespace-nowrap">
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded
-                            {% if log.method == 'DELETE' %}bg-red-900/20 text-red-400 border border-red-900/30
-                            {% elif log.method == 'POST' %}bg-emerald-900/20 text-emerald-400 border border-emerald-900/30
-                            {% else %}bg-blue-900/20 text-blue-400 border border-blue-900/30{% endif %}">
-                            {{ log.method }}
-                        </span>
-                    </td>
-                    <td class="px-4 py-2.5 text-zinc-400 font-mono text-xs break-all">{{ log.path }}</td>
-                    <td class="px-4 py-2.5 whitespace-nowrap">
-                        <span class="font-mono text-xs {% if log.success %}text-emerald-400{% else %}text-red-400{% endif %}">
-                            {{ log.status_code or '-' }}
-                        </span>
-                    </td>
-                    <td class="px-4 py-2.5 text-zinc-500 font-mono text-xs text-right whitespace-nowrap">{{ log.duration_ms }}ms</td>
-                </tr>
+                        <tr>
+                            <td colspan="7" class="px-4 py-16 text-center text-zinc-500 text-sm">조건에 맞는 감사 로그가 없습니다.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if total_pages > 1 %}
+        <div class="flex items-center justify-center gap-2 mt-6">
+            {% if selected_user %}
+            {% set qs = "&selected_user=" + selected_user %}
+            {% else %}
+            {% set qs = "&service=" + (search_service or "") + "&method=" + (search_method or "") + "&name=" + (search_name or "") + "&date=" + (search_date or "") %}
+            {% endif %}
+            <a href="/audit-logs?page={{ page - 1 }}{{ qs }}"
+               class="px-3 py-1.5 rounded-lg text-sm border border-zinc-800 {% if page <= 1 %}pointer-events-none text-zinc-700{% else %}text-zinc-300 hover:bg-zinc-800{% endif %}">이전</a>
+            <span class="text-sm text-zinc-500 px-2">{{ page }} / {{ total_pages }}</span>
+            <a href="/audit-logs?page={{ page + 1 }}{{ qs }}"
+               class="px-3 py-1.5 rounded-lg text-sm border border-zinc-800 {% if page >= total_pages %}pointer-events-none text-zinc-700{% else %}text-zinc-300 hover:bg-zinc-800{% endif %}">다음</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 사용자 탭 (오른쪽) -->
+    <div class="w-full lg:w-64 flex-shrink-0 order-1 lg:order-2">
+        <div class="card rounded-xl border border-zinc-800 overflow-hidden">
+            <div class="px-4 py-3 border-b border-zinc-800 text-xs font-bold text-zinc-500 uppercase tracking-wide">사용자별 감사 로그</div>
+            <div class="max-h-[70vh] overflow-y-auto">
+                {% for u in user_tabs %}
+                <a href="/audit-logs?selected_user={{ u.uid }}"
+                   class="list-item flex items-center justify-between px-4 py-2.5 text-sm transition {% if selected_user == u.uid %}bg-blue-600/20 text-white{% else %}text-zinc-300 hover:bg-zinc-800/60{% endif %}">
+                    <span class="truncate">{{ u.name }}</span>
+                    <span class="text-[10px] font-mono text-zinc-500 flex-shrink-0 ml-2">{{ u.count }}</span>
+                </a>
                 {% else %}
-                <tr>
-                    <td colspan="7" class="px-4 py-16 text-center text-zinc-500 text-sm">조건에 맞는 감사 로그가 없습니다.</td>
-                </tr>
+                <div class="p-4 text-xs text-zinc-500 text-center">감사 로그가 있는 사용자가 없습니다.</div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+        </div>
     </div>
 </div>
-
-{% if total_pages > 1 %}
-<div class="flex items-center justify-center gap-2 mt-6">
-    {% set qs = "&service=" + (search_service or "") + "&method=" + (search_method or "") + "&name=" + (search_name or "") + "&date=" + (search_date or "") %}
-    <a href="/audit-logs?page={{ page - 1 }}{{ qs }}"
-       class="px-3 py-1.5 rounded-lg text-sm border border-zinc-800 {% if page <= 1 %}pointer-events-none text-zinc-700{% else %}text-zinc-300 hover:bg-zinc-800{% endif %}">이전</a>
-    <span class="text-sm text-zinc-500 px-2">{{ page }} / {{ total_pages }}</span>
-    <a href="/audit-logs?page={{ page + 1 }}{{ qs }}"
-       class="px-3 py-1.5 rounded-lg text-sm border border-zinc-800 {% if page >= total_pages %}pointer-events-none text-zinc-700{% else %}text-zinc-300 hover:bg-zinc-800{% endif %}">다음</a>
-</div>
-{% endif %}
 {% endblock %}

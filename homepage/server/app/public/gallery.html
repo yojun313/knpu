@@ -184,6 +184,13 @@
     .gallery-full-title {
       font-weight: 700;
       margin-bottom: 0;
+      overflow-wrap: break-word;
+    }
+
+    /* flex 항목의 기본 min-width:auto로 인해 제목이 길 경우
+       가로 스크롤이 발생하는 것을 방지 */
+    .gallery-full-item .flex-grow-1 {
+      min-width: 0;
     }
 
     .gallery-full-date {

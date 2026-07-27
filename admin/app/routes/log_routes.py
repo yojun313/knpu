@@ -10,6 +10,8 @@ from app.services.data_service import (
     get_audit_services,
     get_users_with_log_counts,
     get_logs_for_user,
+    get_users_with_audit_counts,
+    get_audit_logs_for_user,
 )
 from app.routes.dependencies import get_current_user
 
@@ -78,19 +80,27 @@ async def read_audit_logs(
     method: Optional[str] = None,
     name: Optional[str] = None,
     date: Optional[str] = None,
+    selected_user: Optional[str] = None,
     page: int = 1,
     user=Depends(get_current_user),
 ):
     per_page = 30
     page = max(1, page)
-    logs, total = get_audit_logs(
-        page=page,
-        per_page=per_page,
-        service=service,
-        name=name,
-        method=method,
-        date_str=date,
-    )
+    user_tabs = get_users_with_audit_counts()
+
+    if selected_user:
+        logs, total = get_audit_logs_for_user(
+            selected_user, page=page, per_page=per_page
+        )
+    else:
+        logs, total = get_audit_logs(
+            page=page,
+            per_page=per_page,
+            service=service,
+            name=name,
+            method=method,
+            date_str=date,
+        )
     total_pages = max(1, (total + per_page - 1) // per_page)
 
     return templates.TemplateResponse(
@@ -104,6 +114,8 @@ async def read_audit_logs(
             "search_method": method,
             "search_name": name,
             "search_date": date,
+            "user_tabs": user_tabs,
+            "selected_user": selected_user,
             "page": page,
             "total_pages": total_pages,
             "total": total,

@@ -106,7 +106,7 @@
                 <div class="text-[10px] text-zinc-500 uppercase font-bold">Storage Usage</div>
             </div>
             <div class="lg:mt-3 flex items-center gap-1">
-                <button onclick='openLogsModal("{{ db.uid }}", "{{ db.keyword }}")'
+                <button onclick='openLogsModal({{ db.uid|tojson }}, {{ db.keyword|tojson }})'
                     class="p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-all shadow-sm" title="크롤링 로그">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

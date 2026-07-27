@@ -46,6 +46,21 @@
         text-align: center;
         margin-bottom: 10px; /* 제목과 경고문구 사이 간격 좁힘 */
     }
+
+    /* 모바일 대응: 주민등록번호 앞/뒤 입력란이 각각 inline-block 48%로
+       나란히 배치되어 있어 375px 이하 화면에서는 사이 "-" 문자와
+       inline-block 여백 때문에 가로 스크롤이 발생할 수 있음.
+       모바일에서는 세로로 쌓이도록 전체 너비로 전환 */
+    @media (max-width: 480px) {
+      #고소인\ 주민번호_앞,
+      #고소인\ 주민번호_뒤,
+      #피고소인\ 주민번호_앞,
+      #피고소인\ 주민번호_뒤 {
+        width: 100% !important;
+        display: block !important;
+        margin-bottom: 8px;
+      }
+    }
   </style>
 </head>
 

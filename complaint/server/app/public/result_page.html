@@ -5,6 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FPEI AI 고소장 생성 서비스</title>
   <link rel="stylesheet" href="result_style.css" type="text/css">
+
+  <style>
+    /* 모바일 대응: result_style.css의 .container는 display:flex(가로)로
+       버튼 영역(고정 260px)과 pdf-viewer를 나란히 배치하므로
+       375~414px 화면에서 가로 스크롤이 발생함. 모바일에서는 세로로 쌓음 */
+    @media (max-width: 600px) {
+      .container {
+        flex-direction: column;
+        height: auto;
+      }
+
+      .button-container {
+        flex: 0 0 auto;
+        width: 100%;
+      }
+
+      .pdf-viewer {
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: 70vh;
+      }
+    }
+  </style>
 </head>
 
 <script>

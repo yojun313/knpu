@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div>
+        <h2 class="text-2xl font-bold text-white tracking-tight">Git</h2>
+        <p class="text-zinc-400 text-sm"><code class="text-zinc-300">/home/lab/knpu</code> 저장소를 관리합니다.</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <span id="lastUpdated" class="text-[11px] font-mono text-zinc-500">-</span>
+        <button onclick="doFetch()" id="fetchBtn" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 border border-zinc-700">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+            Fetch
+        </button>
+    </div>
+</div>
+
+<div id="resultBanner" class="hidden mb-6 p-4 rounded-2xl border text-sm whitespace-pre-wrap break-words"></div>
+
+<!-- 현재 상태 -->
+<div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/40 mb-6">
+    <div class="flex flex-wrap items-center gap-3 mb-1">
+        <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Branch</span>
+        <span id="currentBranch" class="text-lg font-mono font-bold text-white">-</span>
+        <span id="aheadBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"></span>
+        <span id="behindBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20"></span>
+        <span id="cleanBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">CLEAN</span>
+    </div>
+    <p id="trackingNote" class="text-xs text-zinc-500"></p>
+</div>
+
+<div class="lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
+    <!-- 왼쪽: 변경된 파일 + 커밋, Push/Pull -->
+    <div>
+        <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-bold text-zinc-200 text-sm">변경된 파일</h3>
+                <span id="dirtyCount" class="text-[10px] font-mono text-zinc-500"></span>
+            </div>
+            <div id="dirtyFilesList" class="space-y-1 mb-4 max-h-56 overflow-y-auto pr-1"></div>
+
+            <textarea id="commitMessage" rows="2" placeholder="커밋 메시지를 입력하세요..."
+                class="w-full bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-3 text-zinc-200 focus:outline-none focus:border-blue-500 transition resize-none mb-3"></textarea>
+            <button onclick="doCommit()" id="commitBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-3 rounded-lg text-sm font-bold transition">
+                커밋 (전체 스테이징)
+            </button>
+        </div>
+
+        <!-- Push / Pull -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <button onclick="doPull()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-4 rounded-2xl text-sm font-bold transition flex flex-col items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Pull
+            </button>
+            <button onclick="doPush()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-4 rounded-2xl text-sm font-bold transition flex flex-col items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Push
+            </button>
+        </div>
+    </div>
+
+    <!-- 오른쪽: 브랜치 병합, 최근 커밋 -->
+    <div>
+        <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 mb-6">
+            <h3 class="font-bold text-zinc-200 text-sm mb-1">브랜치 병합 → main</h3>
+            <p class="text-xs text-zinc-500 mb-3">선택한 원격 브랜치의 최신 커밋을 main에 병합합니다. 병합 후 자동으로 push되지 않으니 확인 후 직접 Push 해주세요.</p>
+
+            <div class="flex flex-col sm:flex-row gap-3 mb-3">
+                <select id="mergeBranchSelect" onchange="onMergeBranchChange()"
+                    class="flex-1 bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-300 focus:outline-none focus:border-blue-500 transition">
+                    <option value="">브랜치 선택...</option>
+                </select>
+                <button onclick="doMergePreview()" id="mergePreviewBtn" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm font-bold transition border border-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                    미리보기
+                </button>
+            </div>
+
+            <div id="mergePreviewBox" class="hidden mb-3 p-3 rounded-xl border border-zinc-800 bg-black/30 max-h-40 overflow-y-auto space-y-1"></div>
+
+            <button onclick="doMerge()" id="mergeBtn" disabled
+                class="w-full bg-red-600/90 hover:bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed text-white px-4 py-3 rounded-lg text-sm font-bold transition">
+                main으로 병합하기
+            </button>
+        </div>
+
+        <!-- 최근 커밋 -->
+        <div class="card rounded-2xl border border-zinc-800 bg-zinc-900/20 overflow-hidden mb-6">
+            <div class="p-4 border-b border-zinc-800 bg-zinc-900/40">
+                <h3 class="font-bold text-zinc-200 text-sm">최근 커밋</h3>
+            </div>
+            <div id="commitLogList" class="divide-y divide-zinc-800/50 max-h-72 overflow-y-auto"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .diff-line { padding: 1px 10px; white-space: pre; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+    .diff-add { background: rgba(34,197,94,0.15); color: #86efac; }
+    .diff-del { background: rgba(239,68,68,0.15); color: #fca5a5; }
+    .diff-hunk { color: #67e8f9; background: rgba(56,189,248,0.08); font-weight: 700; }
+    .diff-meta { color: #71717a; }
+    .diff-context { color: #d4d4d8; }
+</style>
+
+<div id="diffModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-3xl h-[75vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+        <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900">
+            <h3 id="diffTitle" class="font-bold text-white text-sm font-mono">DIFF</h3>
+            <button onclick="closeDiffModal()" class="text-zinc-500 hover:text-white transition p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div id="diffContent" class="flex-1 p-2 text-[11px] overflow-auto bg-black text-zinc-300"></div>
+    </div>
+</div>
+
+<script>
+    let lastStatus = null;
+    let previewedBranch = null;
+
+    function escHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    function setButtonsDisabled(disabled) {
+        document.querySelectorAll('button').forEach(b => b.disabled = disabled);
+        document.getElementById('mergeBtn').disabled = disabled || previewedBranch !== document.getElementById('mergeBranchSelect').value;
+    }
+
+    function showBanner(message, isError) {
+        const el = document.getElementById('resultBanner');
+        el.textContent = message;
+        el.className = 'mb-6 p-4 rounded-2xl border text-sm whitespace-pre-wrap break-words ' +
+            (isError ? 'border-red-900/40 bg-red-950/20 text-red-400' : 'border-emerald-900/40 bg-emerald-950/20 text-emerald-400');
+        el.classList.remove('hidden');
+    }
+
+    function hideBanner() {
+        document.getElementById('resultBanner').classList.add('hidden');
+    }
+
+    function renderStatus(d) {
+        lastStatus = d;
+        document.getElementById('currentBranch').textContent = d.branch;
+
+        const aheadBadge = document.getElementById('aheadBadge');
+        const behindBadge = document.getElementById('behindBadge');
+        const cleanBadge = document.getElementById('cleanBadge');
+        aheadBadge.classList.toggle('hidden', !d.ahead);
+        if (d.ahead) aheadBadge.textContent = `↑ ${d.ahead} ahead`;
+        behindBadge.classList.toggle('hidden', !d.behind);
+        if (d.behind) behindBadge.textContent = `↓ ${d.behind} behind`;
+        cleanBadge.classList.toggle('hidden', d.dirty_files.length > 0);
+
+        document.getElementById('trackingNote').textContent = d.tracking
+            ? `origin/${d.branch} 추적 중`
+            : `origin/${d.branch} 없음 (push 시 새로 생성됩니다)`;
+
+        document.getElementById('dirtyCount').textContent = d.dirty_files.length ? `${d.dirty_files.length}개` : '';
+
+        const filesBox = document.getElementById('dirtyFilesList');
+        filesBox.innerHTML = d.dirty_files.length
+            ? d.dirty_files.map(f => `
+                <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 flex-shrink-0">${escHtml(f.label)}</span>
+                        <span class="text-xs font-mono text-zinc-300 truncate">${escHtml(f.path)}</span>
+                    </div>
+                    <button onclick="viewDiff('${encodeURIComponent(f.path)}')" class="text-[10px] text-zinc-500 hover:text-white flex-shrink-0 px-2 py-1">보기</button>
+                </div>`).join('')
+            : '<p class="text-xs text-zinc-500">변경된 파일이 없습니다.</p>';
+
+        document.getElementById('commitBtn').disabled = d.dirty_files.length === 0;
+
+        const select = document.getElementById('mergeBranchSelect');
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">브랜치 선택...</option>' +
+            d.remote_branches.filter(b => b !== 'main' && b !== d.branch).map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('');
+        if (d.remote_branches.includes(currentVal)) select.value = currentVal;
+        onMergeBranchChange();
+
+        document.getElementById('commitLogList').innerHTML = d.recent_commits.map(c => `
+            <div class="p-3 flex items-start gap-3">
+                <span class="text-[10px] font-mono text-zinc-600 mt-0.5 flex-shrink-0">${c.short_hash}</span>
+                <div class="min-w-0 flex-1">
+                    <div class="text-sm text-zinc-200 truncate">${escHtml(c.message)}</div>
+                    <div class="text-[10px] text-zinc-500 font-mono">${escHtml(c.author)} · ${c.date}</div>
+                </div>
+            </div>`).join('') || '<div class="p-4 text-xs text-zinc-500 text-center">커밋 기록이 없습니다.</div>';
+
+        document.getElementById('lastUpdated').textContent = '갱신: ' + new Date().toLocaleTimeString('ko-KR');
+    }
+
+    function onMergeBranchChange() {
+        previewedBranch = null;
+        document.getElementById('mergePreviewBox').classList.add('hidden');
+        document.getElementById('mergeBtn').disabled = true;
+    }
+
+    async function loadStatus() {
+        try {
+            const res = await fetch('/api/git/status');
+            const d = await res.json();
+            renderStatus(d);
+        } catch (err) {
+            console.error('git 상태 로드 실패:', err);
+        }
+    }
+
+    async function postAction(url, body) {
+        setButtonsDisabled(true);
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: body ? { 'Content-Type': 'application/json' } : undefined,
+                body: body ? JSON.stringify(body) : undefined,
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                showBanner(data.detail || '작업에 실패했습니다', true);
+                return null;
+            }
+            return data;
+        } catch (err) {
+            showBanner('서버 통신 오류: ' + err, true);
+            return null;
+        } finally {
+            setButtonsDisabled(false);
+        }
+    }
+
+    async function doFetch() {
+        hideBanner();
+        const d = await postAction('/api/git/fetch');
+        if (d) { renderStatus(d); showBanner('원격 저장소 정보를 갱신했습니다.', false); }
+    }
+
+    async function doCommit() {
+        const message = document.getElementById('commitMessage').value.trim();
+        if (!message) { showBanner('커밋 메시지를 입력해주세요.', true); return; }
+        if (!confirm(`다음 메시지로 전체 변경사항을 커밋할까요?\n\n"${message}"`)) return;
+        hideBanner();
+        const d = await postAction('/api/git/commit', { message });
+        if (d) {
+            renderStatus(d);
+            document.getElementById('commitMessage').value = '';
+            showBanner('커밋했습니다. 이제 Push 하면 원격에 반영됩니다.', false);
+        }
+    }
+
+    async function doPush() {
+        if (!confirm(`현재 브랜치(${lastStatus ? lastStatus.branch : ''})를 origin에 push할까요?`)) return;
+        hideBanner();
+        const d = await postAction('/api/git/push');
+        if (d) { renderStatus(d); showBanner('push 완료.', false); }
+    }
+
+    async function doPull() {
+        if (!confirm(`origin에서 현재 브랜치(${lastStatus ? lastStatus.branch : ''})를 pull할까요?`)) return;
+        hideBanner();
+        const d = await postAction('/api/git/pull');
+        if (d) { renderStatus(d); showBanner('pull 완료.', false); }
+    }
+
+    async function doMergePreview() {
+        const branch = document.getElementById('mergeBranchSelect').value;
+        if (!branch) return;
+        hideBanner();
+        const d = await postAction('/api/git/merge/preview', { branch });
+        if (!d) return;
+        previewedBranch = branch;
+        const box = document.getElementById('mergePreviewBox');
+        box.classList.remove('hidden');
+        box.innerHTML = d.count
+            ? d.commits.map(c => `<div class="text-xs font-mono text-zinc-400"><span class="text-zinc-600">${c.short_hash}</span> ${escHtml(c.message)} <span class="text-zinc-600">(${escHtml(c.author)})</span></div>`).join('')
+            : '<div class="text-xs text-zinc-500">main에 병합할 새 커밋이 없습니다.</div>';
+        document.getElementById('mergeBtn').disabled = d.count === 0;
+    }
+
+    async function doMerge() {
+        const branch = document.getElementById('mergeBranchSelect').value;
+        if (!branch || branch !== previewedBranch) return;
+        if (!confirm(`'${branch}' 브랜치를 main에 병합할까요?\n(자동으로 push되지 않습니다)`)) return;
+        hideBanner();
+        const d = await postAction('/api/git/merge', { branch });
+        if (d) {
+            renderStatus(d);
+            showBanner(d.merge_result ? d.merge_result.message : '병합했습니다.', false);
+        }
+    }
+
+    function renderDiffHtml(diffText) {
+        if (!diffText) return '<div class="diff-line diff-meta">(변경 내용 없음)</div>';
+        return diffText.split('\n').map(line => {
+            let cls = 'diff-context';
+            if (line.startsWith('+++') || line.startsWith('---') || line.startsWith('diff --git') || line.startsWith('index ')) {
+                cls = 'diff-meta';
+            } else if (line.startsWith('@@')) {
+                cls = 'diff-hunk';
+            } else if (line.startsWith('+')) {
+                cls = 'diff-add';
+            } else if (line.startsWith('-')) {
+                cls = 'diff-del';
+            }
+            return `<div class="diff-line ${cls}">${escHtml(line) || '&nbsp;'}</div>`;
+        }).join('');
+    }
+
+    async function viewDiff(encodedPath) {
+        const path = decodeURIComponent(encodedPath);
+        document.getElementById('diffTitle').textContent = path;
+        document.getElementById('diffContent').innerHTML = '<div class="diff-line diff-meta">불러오는 중...</div>';
+        document.getElementById('diffModal').classList.remove('hidden');
+        document.getElementById('diffModal').classList.add('flex');
+        try {
+            const res = await fetch('/api/git/diff?path=' + encodeURIComponent(path));
+            const d = await res.json();
+            document.getElementById('diffContent').innerHTML = renderDiffHtml(d.diff || d.detail);
+        } catch (err) {
+            document.getElementById('diffContent').innerHTML = '<div class="diff-line diff-meta">diff를 불러오지 못했습니다.</div>';
+        }
+    }
+
+    function closeDiffModal() {
+        document.getElementById('diffModal').classList.add('hidden');
+        document.getElementById('diffModal').classList.remove('flex');
+    }
+
+    loadStatus();
+</script>
+{% endblock %}

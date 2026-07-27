@@ -109,6 +109,14 @@
             p, ul {
                 font-size: 16px;
             }
+            /* 표는 내용이 넓으면 표만 가로 스크롤되게 하여, 페이지 전체가
+               옆으로 밀리지 않도록 합니다. */
+            table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -232,6 +240,8 @@
             특정 언어로 고정하면(예: <code>ko</code>) 인식 안정성이 높아질 수 있으며,
             음성에 여러 언어가 섞인 경우에는 자동 감지를 권장합니다.
         </p>
+
+    </div>
 
 </body>
 
