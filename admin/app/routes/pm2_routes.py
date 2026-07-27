@@ -21,7 +21,6 @@ _prev_sample = {"ts": None, "net": None, "disk": None}
 
 
 def _get_cpu_temp():
-    """coretemp의 패키지 전체 온도(없으면 코어 평균)를 섭씨로 반환. 센서가 없으면 None."""
     try:
         temps = psutil.sensors_temperatures()
     except Exception:

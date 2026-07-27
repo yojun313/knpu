@@ -15,6 +15,7 @@ def _parse_csv_header(content: bytes) -> list[str]:
         return []
     return [c.strip().strip('"') for c in first_line.split(",") if c.strip()]
 
+
 router = APIRouter()
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")

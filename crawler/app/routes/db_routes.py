@@ -35,7 +35,6 @@ def list_db(
     q: str = None,
     user=Depends(get_current_user),
 ):
-    """매니저 앱의 Database 페이지와 동일한 전체 크롤 DB 목록. 검색/상태 필터 + 페이지네이션."""
     query = {}
     if status:
         query["status"] = status
@@ -63,8 +62,6 @@ def list_db(
 
 @router.get("/db-list/{uid}")
 def get_db_detail(uid: str, request: Request, user=Depends(get_current_user)):
-    """조회는 manager/server의 GET /crawls/{uid}/info를 그대로 프록시한다 —
-    매니저 앱이 쓰는 것과 동일한 로직(가공된 상태/크기 표시, 조회 로그 기록 포함)."""
     try:
         resp = requests.get(
             f"{MANAGER_CRAWLS_URL}/{uid}/info",
@@ -80,7 +77,6 @@ def get_db_detail(uid: str, request: Request, user=Depends(get_current_user)):
 
 @router.get("/db-list/{uid}/logs")
 def get_db_logs(uid: str, request: Request, user=Depends(get_current_user)):
-    """manager/server의 GET /crawls/{uid}/log를 그대로 프록시한다."""
     try:
         resp = requests.get(
             f"{MANAGER_CRAWLS_URL}/{uid}/log",
@@ -97,8 +93,6 @@ def get_db_logs(uid: str, request: Request, user=Depends(get_current_user)):
 
 @router.get("/db-list/{uid}/files")
 def list_db_files(uid: str, user=Depends(get_current_user)):
-    """완료된 크롤 DB 폴더 안의 파일 목록을 token/raw로 분류해서 반환한다.
-    네트워크/켐킴/통계분석 서비스가 '크롤링 DB에서 선택' 기능에서 사용한다."""
     doc = crawlList_db.find_one({"uid": uid}, {"name": 1, "status": 1})
     if not doc:
         raise HTTPException(status_code=404, detail="해당 DB를 찾을 수 없습니다")
@@ -134,9 +128,6 @@ def list_db_files(uid: str, user=Depends(get_current_user)):
 
 @router.get("/db-list/{uid}/file")
 def get_db_file(uid: str, name: str, user=Depends(get_current_user)):
-    """완료된 크롤 DB 폴더 안의 특정 parquet 파일을 CSV로 변환해서 반환한다.
-    name은 반드시 해당 폴더에 실제로 존재하는 파일명과 정확히 일치해야 한다
-    (경로 조작 방지 — os.path.basename으로 한 번 더 정규화하고 폴더 안 목록과 대조)."""
     doc = crawlList_db.find_one({"uid": uid}, {"name": 1, "status": 1})
     if not doc:
         raise HTTPException(status_code=404, detail="해당 DB를 찾을 수 없습니다")
@@ -170,7 +161,7 @@ def get_db_file(uid: str, name: str, user=Depends(get_current_user)):
         media_type="text/csv",
         headers={
             "Content-Disposition": (
-                f"attachment; filename=\"download.csv\"; "
+                f'attachment; filename="download.csv"; '
                 f"filename*=UTF-8''{quote(csv_name)}"
             )
         },
@@ -179,8 +170,6 @@ def get_db_file(uid: str, name: str, user=Depends(get_current_user)):
 
 @router.delete("/db-list/{uid}")
 def delete_db(uid: str, request: Request, user=Depends(get_current_user)):
-    """권한 확인(관리자 또는 요청자)은 크롤러가 하고, 실제 삭제(Mongo 기록 + 파일)는
-    manager/server의 DELETE /crawls/{uid}에 위임한다 — 매니저 앱과 동일한 로직."""
     doc = crawlList_db.find_one({"uid": uid}, {"userUid": 1, "status": 1})
     if not doc:
         raise HTTPException(status_code=404, detail="해당 DB를 찾을 수 없습니다")
@@ -209,12 +198,7 @@ def download_via_manager(
     uid: str,
     save_option: CrawlSaveOption,
     request: Request,
-    user=Depends(get_current_user),
 ):
-    """매니저 앱의 'CSV로 저장'과 완전히 동일하게 동작한다 — manager/server의
-    POST /crawls/{uid}/save를 그대로 서버 간 호출로 프록시한다(날짜/키워드 필터링,
-    CSV 재저장, zip 압축까지 전부 manager/server가 수행). 진행상황은 클라이언트가
-    save_option.pid로 manager.knpu.re.kr/progress 웹소켓을 직접 구독해서 본다."""
     doc = crawlList_db.find_one({"uid": uid}, {"uid": 1})
     if not doc:
         raise HTTPException(status_code=404, detail="해당 DB를 찾을 수 없습니다")

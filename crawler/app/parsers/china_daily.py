@@ -94,9 +94,6 @@ class ChinaDailyCrawler:
 
     @classmethod
     def fromResume(cls, DBuid, endDate=None):
-        """중단·에러·완료된 크롤링을 이어받는다. 같은 DBuid/DBPath/csv·parquet 파일에
-        마지막으로 완료한 날짜의 다음날부터 이어서 append한다. endDate를 지정하면
-        (완료된 작업을 확장하는 경우 등) 원래 종료일 대신 그 날짜까지 진행한다."""
         doc = getResumeContext(DBuid)
 
         obj = cls.__new__(cls)
@@ -160,7 +157,6 @@ class ChinaDailyCrawler:
     # ── 유틸리티 ──────────────────────────────────────────────
 
     def _keywordParser(self, keyword):
-        """키워드에서 +는 포함, -는 제외 조건 분리"""
         includeList = []
         excludeList = []
 
@@ -204,7 +200,6 @@ class ChinaDailyCrawler:
     # ── 수집 함수 ─────────────────────────────────────────────
 
     def collectArticle(self, keyword, startDate, endDate):
-        """ChinaDaily 기사 직접 검색 및 수집 (URL 수집 단계 없음)"""
         try:
             includeList, excludeList = self._keywordParser(keyword)
             includeWord = "+".join(includeList).replace("&", "%26")

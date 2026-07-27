@@ -52,5 +52,9 @@ users_db = homepage_db["users"]
 auth_codes_db = homepage_db["auth_codes"]
 discord_link_col = homepage_db["discord_link_requests"]
 
+# manager 서비스(kemkim/network/statistics/crawler 등)에서 쓰는 계정 — 회원가입 시
+# 이름이 일치하면 uid를 이어받아 두 시스템의 계정을 동일 uid로 연동한다
+manager_users_db = client["manager"]["users"]
+
 # 디스코드 봇(bot/)이 폴링해서 실제 전송을 처리하는 알림 큐
 discord_notifications_db = client["discord"]["notifications"]

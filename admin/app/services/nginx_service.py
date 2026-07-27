@@ -25,7 +25,6 @@ class NginxService:
 
     @staticmethod
     def normalize_path(path: str) -> str:
-        """'/', 'api', '/api', '/api/' 등을 표준형으로 변환. 유효하지 않으면 None."""
         if path is None:
             return None
         path = path.strip()
@@ -43,8 +42,6 @@ class NginxService:
 
     @classmethod
     def _extract_locations(cls, content: str):
-        """content 안의 모든 location 블록을 (path, port, block_start, block_end) 리스트로 반환.
-        block_start/block_end는 'location ... {' 시작부터 대응하는 '}' 바로 다음까지의 인덱스."""
         results = []
         for m in LOCATION_START_RE.finditer(content):
             raw_path = m.group(1)
@@ -98,7 +95,6 @@ class NginxService:
 
     @classmethod
     def get_domains(cls):
-        """모든 활성 도메인과 각 도메인에 매핑된 경로/포트 목록을 반환"""
         domains = []
 
         if not os.path.exists(cls.SITES_ENABLED):
@@ -259,7 +255,6 @@ class NginxService:
 
     @classmethod
     def add_domain(cls, domain: str, email: str, port: str, path: str = "/"):
-        """add_nginx.sh 실행 (입력값을 순서대로 주입)"""
         script_path = os.path.join(cls.SCRIPT_DIR, "add_nginx.sh")
         inputs = f"{domain}\n{email}\n{port}\n{path}\n"
         process = subprocess.Popen(

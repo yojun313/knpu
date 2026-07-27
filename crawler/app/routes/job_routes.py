@@ -38,9 +38,6 @@ def resume_job(
     req: ResumeRequest = ResumeRequest(),
     user=Depends(get_current_user),
 ):
-    """중단·에러·완료된 크롤링을 같은 파일에 이어서 진행한다.
-    완료된 작업은 req.end_date(새 종료일)를 반드시 지정해야 확장해서 이어받을 수 있다.
-    관리자 또는 그 크롤링의 요청자만 이어받을 수 있다."""
     doc = crawler_db["db-list"].find_one({"uid": db_uid})
     if not doc:
         raise HTTPException(

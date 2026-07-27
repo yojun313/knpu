@@ -9,7 +9,6 @@ def get_current_user(request: Request) -> dict:
 
 
 def check_owner_or_admin(user: dict, doc: dict):
-    """관리자이거나, db-list 문서의 요청자(userUid) 본인인 경우만 통과시킨다."""
     if user.get("role") == "admin":
         return
     if user.get("uid") and doc.get("userUid") and user["uid"] == doc["userUid"]:

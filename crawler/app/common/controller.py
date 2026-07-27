@@ -41,7 +41,6 @@ def convertToParquet(folder_path):
 
 
 def _discord_recipients(requester):
-    """크롤링 알림 수신자: 요청자 본인 + 관리자만 (공개 채널 브로드캐스트 금지)"""
     ids = set(get_admin_discord_ids())
     if requester:
         info = get_userinfo(requester)
@@ -68,10 +67,6 @@ def stopOperator(
         )
 
         convertToParquet(DBpath)
-        # "token_" 접두사가 붙은 파일은 이전 완료/중단 시점에 이미 생성된 토큰화 결과물이다
-        # (이어받기로 같은 폴더에서 finishOperator/stopOperator가 두 번째로 실행되면 이 파일들도
-        # .parquet로 남아있어, 걸러내지 않으면 원본 reply/rereply 테이블로 착각해 이미 컬럼이
-        # 축소된 토큰화 파일을 다시 groupby하려다 KeyError("Article Day")로 죽는다).
         parquet_files = [
             f
             for f in os.listdir(DBpath)

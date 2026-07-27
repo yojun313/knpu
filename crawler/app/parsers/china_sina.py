@@ -98,9 +98,6 @@ class ChinaSinaCrawler:
 
     @classmethod
     def fromResume(cls, DBuid, endDate=None):
-        """중단·에러·완료된 크롤링을 이어받는다. 같은 DBuid/DBPath/csv·parquet 파일에
-        마지막으로 완료한 구간의 다음날부터 이어서 append한다. endDate를 지정하면
-        (완료된 작업을 확장하는 경우 등) 원래 종료일 대신 그 날짜까지 진행한다."""
         doc = getResumeContext(DBuid)
 
         obj = cls.__new__(cls)
@@ -163,7 +160,6 @@ class ChinaSinaCrawler:
     # ── 유틸리티 ──────────────────────────────────────────────
 
     def _dateSplitter(self, start_date, end_date):
-        """날짜 범위를 월 단위로 분할"""
         start = datetime.strptime(str(start_date), "%Y%m%d")
         end = datetime.strptime(str(end_date), "%Y%m%d")
 
@@ -232,7 +228,6 @@ class ChinaSinaCrawler:
     # ── 수집 함수 ─────────────────────────────────────────────
 
     def collectUrl(self, keyword, startDate, endDate):
-        """Baidu 검색으로 Sina 뉴스 URL 수집"""
         try:
             endCnt = 0
             urlList = []
@@ -308,7 +303,6 @@ class ChinaSinaCrawler:
             return []
 
     def collectArticle(self, newsURL):
-        """Sina 뉴스 기사 수집"""
         try:
             newsURL_type = self._newsURLChecker(newsURL)
             if not isinstance(newsURL_type, int):
@@ -357,7 +351,6 @@ class ChinaSinaCrawler:
             return []
 
     def collectReply(self, newsURL):
-        """Sina 뉴스 댓글 수집"""
         returnData = {"replyList": [], "replyCnt": 0}
         try:
             newsURL_type = self._newsURLChecker(newsURL)

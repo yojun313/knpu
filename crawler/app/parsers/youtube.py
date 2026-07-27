@@ -98,9 +98,6 @@ class YouTubeCrawler:
 
     @classmethod
     def fromResume(cls, DBuid, endDate=None):
-        """중단·에러·완료된 크롤링을 이어받는다. 같은 DBuid/DBPath/csv·parquet 파일에
-        마지막으로 완료한 날짜의 다음날부터 이어서 append한다. endDate를 지정하면
-        (완료된 작업을 확장하는 경우 등) 원래 종료일 대신 그 날짜까지 진행한다."""
         doc = getResumeContext(DBuid)
 
         obj = cls.__new__(cls)
@@ -172,7 +169,6 @@ class YouTubeCrawler:
     # ── 유틸리티 ──────────────────────────────────────────────
 
     def _load_api_keys(self):
-        """MongoDB crawler/youtube_api에서 API 키 목록 로드"""
         collection = crawler_db["youtube_api"]
         api_list = []
         cursor = collection.find({}, {"_id": 0, "API code": 1})
@@ -182,7 +178,6 @@ class YouTubeCrawler:
         return api_list
 
     def _rotate_api_key(self):
-        """API 할당량 초과 시 다음 키로 전환. 모두 소진 시 예외 발생."""
         if self.api_num >= len(self.api_list):
             raise RuntimeError(
                 "모든 YouTube API 키의 할당량이 초과되었습니다. 1일 후 재시도하세요."
@@ -253,7 +248,6 @@ class YouTubeCrawler:
             return []
 
     def collectArticle(self, url):
-        """hadzy.com API로 영상 정보 수집"""
         try:
             video_id = url.replace("https://www.youtube.com/watch?v=", "")
             info_api_url = f"https://hadzy.com/api/videos/{video_id}"
@@ -307,7 +301,6 @@ class YouTubeCrawler:
             return []
 
     def collectReply(self, url, option):
-        """YouTube API로 댓글/대댓글 수집"""
         returnData = {
             "replyList": [],
             "rereplyList": [],

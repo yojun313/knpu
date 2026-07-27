@@ -1,7 +1,3 @@
-"""변경(POST/PUT/PATCH/DELETE) 요청을 사용자별로 구조화해 공용 audit.logs 컬렉션에 기록한다.
-GET 등 조회 요청은 노이즈가 커서 기록하지 않는다. crawler/homepage/manager와 동일한 스키마를 쓴다.
-admin은 pm2 재시작, nginx 설정 변경, 가입 승인/거절처럼 파급력이 큰 동작이 많아 특히 중요하다."""
-
 import time
 from datetime import datetime, timezone, timedelta
 

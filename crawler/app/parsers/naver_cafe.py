@@ -103,9 +103,6 @@ class NaverCafeCrawler:
 
     @classmethod
     def fromResume(cls, DBuid, endDate=None):
-        """중단·에러·완료된 크롤링을 이어받는다. 같은 DBuid/DBPath/csv·parquet 파일에
-        마지막으로 완료한 날짜의 다음날부터 이어서 append한다. endDate를 지정하면
-        (완료된 작업을 확장하는 경우 등) 원래 종료일 대신 그 날짜까지 진행한다."""
         doc = getResumeContext(DBuid)
 
         obj = cls.__new__(cls)
@@ -200,7 +197,6 @@ class NaverCafeCrawler:
         return json_str
 
     async def extractCafeID(self, session, cafeURL):
-        """cafeURL 페이지에서 g_sClubId 추출"""
         try:
             res = await RequestAsync(session, cafeURL)
             res.raise_for_status()
@@ -328,7 +324,6 @@ class NaverCafeCrawler:
             return []
 
     async def collectArticle(self, session, cafeURL):
-        """카페 기사 수집. 성공 시 (articleData, cafeID) 튜플, 실패 시 빈 리스트 반환"""
         try:
             articleID = self.extractArticleID(cafeURL)
             cafeID = await self.extractCafeID(session, cafeURL)
