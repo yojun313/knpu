@@ -530,7 +530,7 @@ class Manager_Database(Manager_Worker):
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
 
-    def initLLMChat(self):
+    def initNetworkViewer(self):
         try:
             printStatus(self.main, "Network Analyzer 실행 중")
 
@@ -698,7 +698,7 @@ class Manager_Database(Manager_Worker):
 
     def matchButton(self):
         self.main.database_searchDB_button.clicked.connect(self.searchDB)
-        self.main.database_network_button.clicked.connect(self.initLLMChat)
+        self.main.database_network_button.clicked.connect(self.initNetworkViewer)
         self.main.database_kemkim_button.clicked.connect(self.initKemkimViewer)
         self.main.database_statistics_button.clicked.connect(self.initStatisticsViewer)
         self.main.database_searchDB_lineinput.returnPressed.connect(self.searchDB)
@@ -723,10 +723,10 @@ class Manager_Database(Manager_Worker):
         self.main.ctrls.activated.connect(self.saveDB)
         self.main.ctrlv.activated.connect(self.viewDB)
         self.main.ctrlr.activated.connect(self.refreshDB)
-        self.main.ctrlc.activated.connect(self.initLLMChat)
+        self.main.ctrlc.activated.connect(self.initNetworkViewer)
 
         self.main.cmdd.activated.connect(self.deleteDB)
         self.main.cmds.activated.connect(self.saveDB)
         self.main.cmdv.activated.connect(self.viewDB)
         self.main.cmdr.activated.connect(self.refreshDB)
-        self.main.cmdc.activated.connect(self.initLLMChat)
+        self.main.cmdc.activated.connect(self.initNetworkViewer)
