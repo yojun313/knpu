@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div>
+        <h2 class="text-2xl font-bold text-white tracking-tight">버전 배포</h2>
+        <p class="text-zinc-400 text-sm">MANAGER 데스크톱 앱의 새 버전을 배포하고 관리합니다.</p>
+    </div>
+    <span id="lastUpdated" class="text-[11px] font-mono text-zinc-500">-</span>
+</div>
+
+<div id="resultBanner" class="hidden mb-6 p-4 rounded-2xl border text-sm whitespace-pre-wrap break-words"></div>
+
+<div class="lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
+    <!-- 왼쪽: 배포 폼 -->
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 mb-6">
+        <div class="flex items-center justify-between mb-3">
+            <h3 id="formTitle" class="font-bold text-zinc-200 text-sm">새 버전 배포</h3>
+            <button id="cancelEditBtn" onclick="cancelEdit()" class="hidden text-[11px] text-zinc-500 hover:text-white transition">취소</button>
+        </div>
+
+        <div class="space-y-3">
+            <div>
+                <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">버전 이름</label>
+                <input id="fVersionName" type="text" placeholder="예: 1.4.2"
+                    class="w-full mt-1 bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-200 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">변경 사항 (ChangeLog)</label>
+                <textarea id="fChangeLog" rows="2" class="w-full mt-1 bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-200 focus:outline-none focus:border-blue-500 transition resize-none"></textarea>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">주요 기능 (Features)</label>
+                <textarea id="fFeatures" rows="2" class="w-full mt-1 bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-200 focus:outline-none focus:border-blue-500 transition resize-none"></textarea>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">상세 내용 (Details)</label>
+                <textarea id="fDetails" rows="3" class="w-full mt-1 bg-zinc-900 border border-zinc-800 text-sm rounded-lg px-4 py-2 text-zinc-200 focus:outline-none focus:border-blue-500 transition resize-none"></textarea>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-zinc-300">
+                <input id="fFullUpdate" type="checkbox" class="w-4 h-4">
+                전체 업데이트 (재설치 필요)
+            </label>
+            <button onclick="submitVersion()" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition">
+                배포하기
+            </button>
+        </div>
+    </div>
+
+    <!-- 오른쪽: 버전 목록 -->
+    <div class="card rounded-2xl border border-zinc-800 bg-zinc-900/20 overflow-hidden mb-6">
+        <div class="p-4 border-b border-zinc-800 bg-zinc-900/40 flex justify-between items-center">
+            <h3 class="font-bold text-zinc-200 text-sm">배포된 버전</h3>
+            <span id="versionCount" class="text-[10px] text-zinc-500 font-mono"></span>
+        </div>
+        <div id="versionList" class="divide-y divide-zinc-800/50 max-h-[70vh] overflow-y-auto"></div>
+    </div>
+</div>
+
+<script>
+    let editingVersion = null;
+    let versionsCache = [];
+
+    function escHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    function showBanner(message, isError) {
+        const el = document.getElementById('resultBanner');
+        el.textContent = message;
+        el.className = 'mb-6 p-4 rounded-2xl border text-sm whitespace-pre-wrap break-words ' +
+            (isError ? 'border-red-900/40 bg-red-950/20 text-red-400' : 'border-emerald-900/40 bg-emerald-950/20 text-emerald-400');
+        el.classList.remove('hidden');
+    }
+
+    function hideBanner() {
+        document.getElementById('resultBanner').classList.add('hidden');
+    }
+
+    function clearForm() {
+        document.getElementById('fVersionName').value = '';
+        document.getElementById('fChangeLog').value = '';
+        document.getElementById('fFeatures').value = '';
+        document.getElementById('fDetails').value = '';
+        document.getElementById('fFullUpdate').checked = false;
+    }
+
+    function cancelEdit() {
+        editingVersion = null;
+        document.getElementById('formTitle').textContent = '새 버전 배포';
+        document.getElementById('submitBtn').textContent = '배포하기';
+        document.getElementById('cancelEditBtn').classList.add('hidden');
+        document.getElementById('fVersionName').disabled = false;
+        clearForm();
+    }
+
+    function startEdit(versionName) {
+        const v = versionsCache.find(x => x.versionName === versionName);
+        if (!v) return;
+        editingVersion = versionName;
+        document.getElementById('formTitle').textContent = `'${versionName}' 수정`;
+        document.getElementById('submitBtn').textContent = '수정 저장';
+        document.getElementById('cancelEditBtn').classList.remove('hidden');
+        document.getElementById('fVersionName').value = v.versionName;
+        document.getElementById('fVersionName').disabled = true;
+        document.getElementById('fChangeLog').value = v.changeLog || '';
+        document.getElementById('fFeatures').value = v.features || '';
+        document.getElementById('fDetails').value = v.details || '';
+        document.getElementById('fFullUpdate').checked = !!v.fullUpdate;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderVersions(versions) {
+        versionsCache = versions;
+        document.getElementById('versionCount').textContent = versions.length ? `${versions.length}개` : '';
+        document.getElementById('versionList').innerHTML = versions.length
+            ? versions.map(v => `
+                <div class="p-4">
+                    <div class="flex items-start justify-between gap-3 mb-1.5">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-mono font-bold text-white text-sm">${escHtml(v.versionName)}</span>
+                            ${v.fullUpdate ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">전체 업데이트</span>' : ''}
+                        </div>
+                        <div class="flex gap-1 flex-shrink-0">
+                            <button onclick="startEdit('${escHtml(v.versionName)}')" class="text-[10px] text-zinc-500 hover:text-white px-2 py-1 transition">수정</button>
+                            <button onclick="deleteVersion('${escHtml(v.versionName)}')" class="text-[10px] text-red-500/70 hover:text-red-400 px-2 py-1 transition">삭제</button>
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-zinc-500 font-mono mb-2">${escHtml(v.releaseDate)} · ${escHtml(v.publisher)}</div>
+                    ${v.changeLog ? `<div class="text-xs text-zinc-400 mb-1"><span class="text-zinc-600 font-bold">변경:</span> ${escHtml(v.changeLog)}</div>` : ''}
+                    ${v.features ? `<div class="text-xs text-zinc-400 mb-1"><span class="text-zinc-600 font-bold">기능:</span> ${escHtml(v.features)}</div>` : ''}
+                    ${v.details ? `<div class="text-xs text-zinc-500">${escHtml(v.details)}</div>` : ''}
+                </div>`).join('')
+            : '<div class="p-8 text-center text-xs text-zinc-500">배포된 버전이 없습니다.</div>';
+
+        document.getElementById('lastUpdated').textContent = '갱신: ' + new Date().toLocaleTimeString('ko-KR');
+    }
+
+    async function loadVersions() {
+        try {
+            const res = await fetch('/api/versions');
+            const data = await res.json();
+            renderVersions(data.data || []);
+        } catch (err) {
+            showBanner('버전 목록을 불러오지 못했습니다.', true);
+        }
+    }
+
+    async function submitVersion() {
+        const versionName = document.getElementById('fVersionName').value.trim();
+        if (!versionName) { showBanner('버전 이름을 입력해주세요.', true); return; }
+
+        const payload = {
+            versionName,
+            changeLog: document.getElementById('fChangeLog').value.trim(),
+            features: document.getElementById('fFeatures').value.trim(),
+            details: document.getElementById('fDetails').value.trim(),
+            fullUpdate: document.getElementById('fFullUpdate').checked,
+        };
+
+        const isEdit = !!editingVersion;
+        if (!confirm(isEdit ? `'${versionName}' 버전을 수정할까요?` : `'${versionName}' 버전을 새로 배포할까요?\n(디스코드로 공지가 발송됩니다)`)) return;
+
+        hideBanner();
+        try {
+            const res = await fetch(isEdit ? `/api/versions/${encodeURIComponent(versionName)}` : '/api/versions', {
+                method: isEdit ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                showBanner(d.detail || '작업에 실패했습니다.', true);
+                return;
+            }
+            showBanner(isEdit ? '수정했습니다.' : '새 버전을 배포했습니다.', false);
+            cancelEdit();
+            loadVersions();
+        } catch (err) {
+            showBanner('서버 통신 오류: ' + err, true);
+        }
+    }
+
+    async function deleteVersion(versionName) {
+        if (!confirm(`'${versionName}' 버전을 삭제할까요?`)) return;
+        hideBanner();
+        try {
+            const res = await fetch(`/api/versions/${encodeURIComponent(versionName)}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                showBanner(d.detail || '삭제에 실패했습니다.', true);
+                return;
+            }
+            showBanner('삭제했습니다.', false);
+            if (editingVersion === versionName) cancelEdit();
+            loadVersions();
+        } catch (err) {
+            showBanner('서버 통신 오류: ' + err, true);
+        }
+    }
+
+    loadVersions();
+</script>
+{% endblock %}

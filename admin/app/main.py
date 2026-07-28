@@ -15,6 +15,8 @@ from app.routes import (
     ports_routes,
     claude_usage_routes,
     git_routes,
+    version_routes,
+    settings_routes,
 )
 from app.libs.audit_log import AuditLogMiddleware
 from app.libs.discord_notify import notify_discord
@@ -67,6 +69,8 @@ app.include_router(nginx_routes.router)
 app.include_router(ports_routes.router)
 app.include_router(claude_usage_routes.router)
 app.include_router(git_routes.router)
+app.include_router(version_routes.router)
+app.include_router(settings_routes.router)
 
 
 @app.exception_handler(StarletteHTTPException)

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-2xl font-bold text-white tracking-tight">설정</h2>
+    <p class="text-zinc-400 text-sm">사이드바 메뉴 순서를 원하는 대로 바꿀 수 있습니다. PC에서는 드래그, 모바일에서는 화살표 버튼을 사용하세요. 저장하면 어떤 기기로 접속해도 이 순서로 보입니다.</p>
+</div>
+
+<div id="resultBanner" class="hidden mb-6 p-4 rounded-2xl border text-sm"></div>
+
+<div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 max-w-lg">
+    <div id="navList" class="space-y-2 mb-4"></div>
+    <button onclick="saveOrder()" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition">
+        순서 저장
+    </button>
+</div>
+
+<style>
+    .nav-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 12px; border-radius: 10px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--line, #3f3f46);
+        cursor: grab;
+    }
+    .nav-row.dragging { opacity: 0.4; }
+    .nav-row .drag-handle { color: var(--muted, #71717a); flex-shrink: 0; }
+    .nav-row .nav-label { flex: 1; font-size: 14px; color: var(--ink, #e4e4e7); min-width: 0; }
+    .nav-row .arrow-btns { display: flex; gap: 4px; flex-shrink: 0; }
+    .nav-row .arrow-btns button {
+        width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+        border-radius: 6px; background: rgba(255,255,255,0.05); color: var(--muted, #a1a1aa);
+    }
+    .nav-row .arrow-btns button:disabled { opacity: 0.25; }
+    .nav-row .arrow-btns button:not(:disabled):hover { background: rgba(255,255,255,0.12); color: #fff; }
+</style>
+
+<script>
+    function escHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    let draggedRow = null;
+
+    function rowHtml(item) {
+        return `
+            <div class="nav-row" draggable="true" data-id="${item.id}"
+                 ondragstart="onDragStart(event)" ondragend="onDragEnd(event)"
+                 ondragover="onDragOver(event)" ondrop="onDrop(event)">
+                <span class="drag-handle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="8" x2="20" y2="8"></line><line x1="4" y1="16" x2="20" y2="16"></line></svg>
+                </span>
+                <span class="nav-label">${escHtml(item.label)}</span>
+                <span class="arrow-btns">
+                    <button type="button" onclick="moveRow('${item.id}', -1)" title="위로">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </button>
+                    <button type="button" onclick="moveRow('${item.id}', 1)" title="아래로">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                </span>
+            </div>`;
+    }
+
+    function refreshArrowState() {
+        const rows = Array.from(document.getElementById('navList').children);
+        rows.forEach((row, idx) => {
+            const buttons = row.querySelectorAll('.arrow-btns button');
+            buttons[0].disabled = idx === 0;
+            buttons[1].disabled = idx === rows.length - 1;
+        });
+    }
+
+    function moveRow(id, direction) {
+        const list = document.getElementById('navList');
+        const row = list.querySelector(`[data-id="${id}"]`);
+        if (!row) return;
+        if (direction < 0 && row.previousElementSibling) {
+            list.insertBefore(row, row.previousElementSibling);
+        } else if (direction > 0 && row.nextElementSibling) {
+            list.insertBefore(row.nextElementSibling, row);
+        }
+        refreshArrowState();
+    }
+
+    function onDragStart(e) {
+        draggedRow = e.currentTarget;
+        e.currentTarget.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function onDragEnd(e) {
+        e.currentTarget.classList.remove('dragging');
+        draggedRow = null;
+        refreshArrowState();
+    }
+
+    function onDragOver(e) {
+        e.preventDefault();
+    }
+
+    function onDrop(e) {
+        e.preventDefault();
+        const target = e.currentTarget;
+        if (!draggedRow || target === draggedRow) return;
+        const list = document.getElementById('navList');
+        const rows = Array.from(list.children);
+        if (rows.indexOf(draggedRow) < rows.indexOf(target)) {
+            target.after(draggedRow);
+        } else {
+            target.before(draggedRow);
+        }
+        refreshArrowState();
+    }
+
+    function showBanner(message, isError) {
+        const el = document.getElementById('resultBanner');
+        el.textContent = message;
+        el.className = 'mb-6 p-4 rounded-2xl border text-sm ' +
+            (isError ? 'border-red-900/40 bg-red-950/20 text-red-400' : 'border-emerald-900/40 bg-emerald-950/20 text-emerald-400');
+        el.classList.remove('hidden');
+    }
+
+    async function loadOrder() {
+        try {
+            const res = await fetch('/api/nav-order');
+            const data = await res.json();
+            document.getElementById('navList').innerHTML = data.items.map(rowHtml).join('');
+            refreshArrowState();
+        } catch (err) {
+            showBanner('메뉴 순서를 불러오지 못했습니다.', true);
+        }
+    }
+
+    async function saveOrder() {
+        const order = Array.from(document.getElementById('navList').children).map(row => row.dataset.id);
+        try {
+            const res = await fetch('/api/nav-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order }),
+            });
+            if (!res.ok) throw new Error();
+            showBanner('저장했습니다. 사이드바에 바로 반영됩니다.', false);
+        } catch (err) {
+            showBanner('저장에 실패했습니다.', true);
+        }
+    }
+
+    loadOrder();
+</script>
+{% endblock %}

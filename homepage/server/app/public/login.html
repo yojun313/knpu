@@ -129,6 +129,43 @@
       font-size: 0.85rem;
       border-radius: 10px;
     }
+
+    .btn-passkey {
+      background: #fff;
+      border: 1.5px solid #212529;
+      color: #212529;
+      font-family: "Montserrat", sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 9px;
+      padding: 0.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-passkey:hover {
+      background: #f8f9fa;
+      color: #212529;
+    }
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.1rem 0;
+      color: #adb5bd;
+      font-size: 0.78rem;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #e9ecef;
+    }
   </style>
 </head>
 
@@ -148,6 +185,10 @@
         <div class="auth-card-accent"></div>
         <div class="auth-card-body">
           <h2><i class="fa-solid fa-right-to-bracket"></i>계정 로그인</h2>
+          <button type="button" class="btn btn-passkey w-100" id="passkey-login-btn">
+            <i class="fa-solid fa-fingerprint"></i>패스키로 로그인
+          </button>
+          <div class="auth-divider">또는</div>
           <div class="alert alert-danger auth-alert" id="login-error"></div>
           <form id="login-form">
             <div class="mb-3">
@@ -222,6 +263,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/scripts.js"></script>
   <script src="js/nav.js"></script>
+  <script src="js/webauthn.js"></script>
   <script>
     function safeRedirectTarget() {
       const params = new URLSearchParams(window.location.search);
@@ -268,6 +310,28 @@
         showAlert(errorEl, '서버와 통신할 수 없습니다');
       }
     });
+
+    const passkeyBtn = document.getElementById('passkey-login-btn');
+    if (!isPasskeySupported()) {
+      passkeyBtn.style.display = 'none';
+      document.querySelector('.auth-divider').style.display = 'none';
+    } else {
+      passkeyBtn.addEventListener('click', async () => {
+        passkeyBtn.disabled = true;
+        const originalHtml = passkeyBtn.innerHTML;
+        passkeyBtn.innerHTML = '<i class="fa-solid fa-fingerprint"></i>기다리는 중...';
+        try {
+          await loginWithPasskey();
+          window.location.href = safeRedirectTarget();
+        } catch (err) {
+          // 실패 원인은 브라우저/기기별 WebAuthn 지원 차이인 경우가 많아 사용자
+          // 화면에는 기술적인 내용을 보여주지 않고 서버(시스템 오류 채널)에만 남긴다.
+          reportPasskeyError('login', err);
+          passkeyBtn.disabled = false;
+          passkeyBtn.innerHTML = originalHtml;
+        }
+      });
+    }
 
     document.getElementById('show-forgot').addEventListener('click', (e) => {
       e.preventDefault();

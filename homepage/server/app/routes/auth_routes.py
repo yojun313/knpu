@@ -1,6 +1,6 @@
 import os
 from urllib.parse import urlparse
-from fastapi import APIRouter, Depends, Response, HTTPException
+from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from fastapi.responses import RedirectResponse
 
 from app.models import (
@@ -12,9 +12,13 @@ from app.models import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
     UpdateRoleRequest,
+    PasskeyRegisterVerifyRequest,
+    PasskeyLoginVerifyRequest,
+    PasskeyClientErrorRequest,
 )
-from app.auth import service
+from app.auth import service, webauthn_service
 from app.auth.jwt import decode_token
+from app.libs.discord_notify import notify_discord
 from app.auth.dependencies import (
     get_current_user,
     get_current_user_optional,
@@ -135,3 +139,65 @@ def reject_request(uid: str, admin=Depends(require_admin)):
 @router.post("/admin/users/{uid}/role")
 def update_role(uid: str, data: UpdateRoleRequest, admin=Depends(require_admin)):
     return service.change_role(uid, data.role, admin["sub"])
+
+
+# ---------------- Passkey (WebAuthn) ----------------
+# 로그인 상태에서 새 패스키를 등록하는 흐름(계정 설정 페이지에서 사용).
+
+
+@router.post("/passkey/register/options")
+def passkey_register_options(user=Depends(get_current_user)):
+    options_json = webauthn_service.get_registration_options(user["sub"])
+    return Response(content=options_json, media_type="application/json")
+
+
+@router.post("/passkey/register/verify")
+def passkey_register_verify(
+    data: PasskeyRegisterVerifyRequest, user=Depends(get_current_user)
+):
+    return webauthn_service.verify_registration(
+        user["sub"], data.credential, data.device_name
+    )
+
+
+# 로그인 화면에서 아이디 입력 없이 바로 패스키로 로그인하는 흐름 — 아직 세션이 없으므로
+# 인증이 필요 없다(로그인 그 자체이기 때문).
+
+
+@router.post("/passkey/login/options")
+def passkey_login_options():
+    options_json = webauthn_service.get_authentication_options()
+    return Response(content=options_json, media_type="application/json")
+
+
+@router.post("/passkey/login/verify")
+def passkey_login_verify(data: PasskeyLoginVerifyRequest, response: Response):
+    result = webauthn_service.verify_authentication(data.credential)
+    _set_session_cookie(response, result["token"])
+    return result
+
+
+@router.get("/passkey/list")
+def passkey_list(user=Depends(get_current_user)):
+    return {"passkeys": webauthn_service.list_passkeys(user["sub"])}
+
+
+@router.delete("/passkey/{credential_id}")
+def passkey_delete(credential_id: str, user=Depends(get_current_user)):
+    return webauthn_service.delete_passkey(user["sub"], credential_id)
+
+
+@router.post("/passkey/client-error")
+def passkey_client_error(data: PasskeyClientErrorRequest, request: Request):
+    """브라우저의 navigator.credentials.create/get 실패는 사용자 화면에는 띄우지 않고
+    여기로 보내 시스템 오류 채널로만 남긴다(실패 자체는 흔하고, 브라우저/기기별
+    WebAuthn 지원 차이가 원인인 경우가 많아 최종 사용자에게 기술적인 내용을 보여줄
+    필요는 없다 — 운영자만 확인)."""
+    user_agent = request.headers.get("user-agent", "-")
+    notify_discord(
+        "system_error",
+        f"[HOMEPAGE] 패스키 {data.context} 실패 (브라우저)\n"
+        f"[{data.name or 'Error'}] {data.message or '(메시지 없음)'}\n"
+        f"UA: {user_agent}",
+    )
+    return {"message": "logged"}
