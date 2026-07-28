@@ -1,4 +1,5 @@
 import random
+import secrets
 import uuid
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -15,10 +16,12 @@ from app.db import (
 from app.auth.hashing import hash_password, verify_password
 from app.auth.jwt import create_token
 from app.auth.email import sendEmail
+from app.auth.webauthn_config import EXPECTED_ORIGIN
 from app.libs import r2
 from app.libs.discord_notify import notify_discord
 
 CODE_TTL_MINUTES = 10
+SIGNUP_LINK_TTL_MINUTES = 30
 
 
 def _log_user_activity(user_uid: str, message: str) -> None:
@@ -38,6 +41,10 @@ def _log_user_activity(user_uid: str, message: str) -> None:
 
 def _generate_code() -> str:
     return "".join(random.choices("0123456789", k=6))
+
+
+def _generate_token() -> str:
+    return secrets.token_urlsafe(32)
 
 
 def _public_user(user: dict) -> dict:
@@ -146,31 +153,33 @@ def signup(data) -> dict:
         "updated_at": now,
     }
     users_db.update_one({"username": data.username}, {"$set": user}, upsert=True)
-    _send_signup_code(data.username, data.email)
+    _send_signup_verification_link(data.username, data.email)
 
     return {
-        "message": "가입 요청이 접수되었습니다. 이메일로 전송된 인증번호를 입력해주세요"
+        "message": "가입 요청이 접수되었습니다. 이메일로 전송된 인증 링크를 눌러주세요"
     }
 
 
-def _send_signup_code(username: str, email: str):
-    code = _generate_code()
+def _send_signup_verification_link(username: str, email: str):
+    token = _generate_token()
     auth_codes_db.update_one(
         {"email": email, "type": "signup"},
         {
             "$set": {
                 "username": username,
-                "code": code,
-                "expires_at": datetime.now() + timedelta(minutes=CODE_TTL_MINUTES),
+                "token": token,
+                "expires_at": datetime.now()
+                + timedelta(minutes=SIGNUP_LINK_TTL_MINUTES),
             }
         },
         upsert=True,
     )
+    verify_url = f"{EXPECTED_ORIGIN}/verify-email?token={token}"
     sendEmail(
         email,
-        "[KNPU] 이메일 인증번호",
-        f"{username}님, KNPU 랩 시스템 가입 인증번호는 다음과 같습니다.\n\n{code}\n\n"
-        f"{CODE_TTL_MINUTES}분 이내에 입력해주세요.",
+        "[KNPU] 이메일 인증",
+        f"{username}님, 아래 링크를 클릭하면 KNPU 랩 시스템 가입 이메일 인증이 완료됩니다.\n\n"
+        f"{verify_url}\n\n{SIGNUP_LINK_TTL_MINUTES}분 이내에 클릭해주세요.",
     )
 
 
@@ -183,20 +192,20 @@ def resend_signup_code(username: str) -> dict:
             status_code=400, detail="이미 이메일 인증이 완료된 계정입니다"
         )
 
-    _send_signup_code(username, user["email"])
-    return {"message": "인증번호를 다시 전송했습니다"}
+    _send_signup_verification_link(username, user["email"])
+    return {"message": "인증 링크를 다시 전송했습니다"}
 
 
 def verify_email(data) -> dict:
-    user = users_db.find_one({"username": data.username})
+    code_doc = auth_codes_db.find_one({"token": data.token, "type": "signup"})
+    if not code_doc:
+        raise HTTPException(status_code=401, detail="유효하지 않은 인증 링크입니다")
+    if code_doc["expires_at"] < datetime.now():
+        raise HTTPException(status_code=401, detail="인증 링크가 만료되었습니다")
+
+    user = users_db.find_one({"username": code_doc["username"]})
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
-
-    code_doc = auth_codes_db.find_one({"email": user["email"], "type": "signup"})
-    if not code_doc or code_doc["code"] != data.code:
-        raise HTTPException(status_code=401, detail="인증번호가 올바르지 않습니다")
-    if code_doc["expires_at"] < datetime.now():
-        raise HTTPException(status_code=401, detail="인증번호가 만료되었습니다")
 
     # 가입 시 홈페이지 멤버와 연결됐거나, manager.users에 같은 이메일로 가입 이력이 있으면
     # 관리자 승인 없이 바로 승인 처리한다.
@@ -218,7 +227,7 @@ def verify_email(data) -> dict:
     else:
         updates["status"] = "pending_approval"
 
-    users_db.update_one({"username": data.username}, {"$set": updates})
+    users_db.update_one({"username": user["username"]}, {"$set": updates})
     auth_codes_db.delete_one({"_id": code_doc["_id"]})
 
     notify_discord(

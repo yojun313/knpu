@@ -89,8 +89,7 @@ class SignupRequest(BaseModel):
 
 
 class VerifyEmailRequest(BaseModel):
-    username: str
-    code: str
+    token: str
 
 
 class ResendCodeRequest(BaseModel):
