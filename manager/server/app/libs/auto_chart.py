@@ -46,14 +46,16 @@ MAX_BAR_CATEGORIES = 50
 MAX_LABEL_UNIQUE_FALLBACK = 40
 
 
-def _calculate_figsize(n: int, base_width: float = 10, height: float = 6, max_width: float = 32):
+def _calculate_figsize(
+    n: int, base_width: float = 10, height: float = 6, max_width: float = 32
+):
     width = min(base_width + (n / 20), max_width)
     return (max(width, 5), height)
 
 
 def _humanize(stem: str) -> str:
     if stem.startswith("spss_"):
-        stem = stem[len("spss_"):]
+        stem = stem[len("spss_") :]
     return " ".join(w.capitalize() for w in stem.replace("-", "_").split("_"))
 
 

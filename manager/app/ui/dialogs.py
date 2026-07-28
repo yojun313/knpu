@@ -338,6 +338,32 @@ class SaveDbDialog(BaseDialog):
 
         self.layout.addWidget(self.word_input_form)
 
+        # 파일 옵션 (인코딩 / 토큰 데이터 / 다운로드 정보 파일)
+        self.layout.addWidget(QLabel("File Options:"))
+
+        self.file_option_form = QWidget()
+        self.file_option_form_layout = QFormLayout()
+
+        self.encoding_combo = QComboBox()
+        self.encoding_combo.addItem("UTF-8 (엑셀/일반 프로그램 권장)", "utf-8-sig")
+        self.encoding_combo.addItem("CP949 (구버전 한글 Windows 엑셀)", "cp949")
+        self.file_option_form_layout.addRow("CSV 인코딩:", self.encoding_combo)
+
+        self.include_token_data_checkbox = QCheckBox(
+            "토큰 분석용 데이터(token_data) 포함"
+        )
+        self.include_token_data_checkbox.setChecked(True)
+        self.file_option_form_layout.addRow(self.include_token_data_checkbox)
+
+        self.include_manifest_checkbox = QCheckBox(
+            "다운로드 정보 기록 파일(download_info.txt) 포함"
+        )
+        self.include_manifest_checkbox.setChecked(True)
+        self.file_option_form_layout.addRow(self.include_manifest_checkbox)
+
+        self.file_option_form.setLayout(self.file_option_form_layout)
+        self.layout.addWidget(self.file_option_form)
+
         # 다이얼로그의 OK/Cancel 버튼
         buttons = (
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
@@ -416,6 +442,10 @@ class SaveDbDialog(BaseDialog):
             except:
                 QMessageBox.warning(self, "Wrong Input", "잘못된 필터링 입력입니다")
                 return  # 확인 동작을 취소함
+
+        self.encoding = self.encoding_combo.currentData()
+        self.include_token_data = self.include_token_data_checkbox.isChecked()
+        self.include_manifest = self.include_manifest_checkbox.isChecked()
 
         super().accept()  # 정상적인 경우에만 다이얼로그를 종료함
 

@@ -70,7 +70,13 @@ def get_uncommitted_files() -> list[dict]:
         code = line[:2].strip()
         path = line[3:]
         label_key = code[0] if code and code[0] != "?" else "?"
-        files.append({"code": code or "?", "path": path, "label": STATUS_LABELS.get(label_key, code or "?")})
+        files.append(
+            {
+                "code": code or "?",
+                "path": path,
+                "label": STATUS_LABELS.get(label_key, code or "?"),
+            }
+        )
     return files
 
 
@@ -89,7 +95,9 @@ def get_ahead_behind(branch: str, remote_branches: list[str]) -> dict:
 
 def get_recent_commits(limit: int = 15) -> list[dict]:
     fmt = "%H\x1f%h\x1f%an\x1f%ad\x1f%s"
-    r = _run(["log", f"-{limit}", f"--pretty=format:{fmt}", "--date=format:%Y-%m-%d %H:%M"])
+    r = _run(
+        ["log", f"-{limit}", f"--pretty=format:{fmt}", "--date=format:%Y-%m-%d %H:%M"]
+    )
     commits = []
     if r["ok"]:
         for line in r["stdout"].splitlines():
@@ -147,14 +155,20 @@ def commit_all(message: str) -> dict:
 
     commit_result = _run(["commit", "-m", message])
     if not commit_result["ok"]:
-        raise GitError(commit_result["stderr"] or commit_result["stdout"] or "커밋 실패")
+        raise GitError(
+            commit_result["stderr"] or commit_result["stdout"] or "커밋 실패"
+        )
     return commit_result
 
 
 def push_current() -> dict:
     branch = get_current_branch()
     upstream_check = _run(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
-    args = ["push", "origin", branch] if upstream_check["ok"] else ["push", "-u", "origin", branch]
+    args = (
+        ["push", "origin", branch]
+        if upstream_check["ok"]
+        else ["push", "-u", "origin", branch]
+    )
     result = _run(args, timeout=60)
     if not result["ok"]:
         raise GitError(result["stderr"] or result["stdout"] or "push 실패")
@@ -165,7 +179,11 @@ def pull_current() -> dict:
     branch = get_current_branch()
     result = _run(["pull", "origin", branch], timeout=60)
     if not result["ok"]:
-        raise GitError(result["stderr"] or result["stdout"] or "pull 실패 (충돌이 있을 수 있습니다)")
+        raise GitError(
+            result["stderr"]
+            or result["stdout"]
+            or "pull 실패 (충돌이 있을 수 있습니다)"
+        )
     return result
 
 
@@ -176,13 +194,22 @@ def merge_preview(source_branch: str) -> dict:
 
     fetch_all()
 
-    r = _run(["log", f"main..origin/{source_branch}", "--pretty=format:%h\x1f%an\x1f%s", "-30"])
+    r = _run(
+        [
+            "log",
+            f"main..origin/{source_branch}",
+            "--pretty=format:%h\x1f%an\x1f%s",
+            "-30",
+        ]
+    )
     commits = []
     if r["ok"] and r["stdout"]:
         for line in r["stdout"].splitlines():
             parts = line.split("\x1f")
             if len(parts) == 3:
-                commits.append({"short_hash": parts[0], "author": parts[1], "message": parts[2]})
+                commits.append(
+                    {"short_hash": parts[0], "author": parts[1], "message": parts[2]}
+                )
     return {"branch": source_branch, "commits": commits, "count": len(commits)}
 
 
@@ -194,7 +221,9 @@ def merge_into_main(source_branch: str) -> dict:
         raise GitError("main은 병합 대상이 될 수 없습니다")
 
     if get_uncommitted_files():
-        raise GitError("커밋되지 않은 변경사항이 있습니다. 먼저 커밋하거나 정리해주세요.")
+        raise GitError(
+            "커밋되지 않은 변경사항이 있습니다. 먼저 커밋하거나 정리해주세요."
+        )
 
     fetch_all()
 
@@ -207,7 +236,13 @@ def merge_into_main(source_branch: str) -> dict:
         raise GitError(pull_main["stderr"] or "main을 최신 상태로 가져오지 못했습니다")
 
     merge_result = _run(
-        ["merge", "--no-ff", f"origin/{source_branch}", "-m", f"Merge branch '{source_branch}' into main"],
+        [
+            "merge",
+            "--no-ff",
+            f"origin/{source_branch}",
+            "-m",
+            f"Merge branch '{source_branch}' into main",
+        ],
         timeout=60,
     )
     if not merge_result["ok"]:
@@ -230,4 +265,6 @@ def get_file_diff(path: str) -> str:
     if path not in dirty_paths:
         raise GitError("변경된 파일 목록에 없는 경로입니다")
     r = _run(["diff", "HEAD", "--", path])
-    return r["stdout"] or "(변경 내용을 표시할 수 없습니다 — 바이너리 파일일 수 있습니다)"
+    return (
+        r["stdout"] or "(변경 내용을 표시할 수 없습니다 — 바이너리 파일일 수 있습니다)"
+    )

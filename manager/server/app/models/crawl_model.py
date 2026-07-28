@@ -57,3 +57,6 @@ class SaveCrawlDbOption(BaseModel):
     excl_words: List[str]
     include_all: bool
     filename_edit: bool
+    encoding: str = "utf-8-sig"  # "utf-8-sig" | "cp949"
+    include_token_data: bool = True
+    include_manifest: bool = True

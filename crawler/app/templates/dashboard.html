@@ -647,7 +647,7 @@
 
         .form-field { margin-bottom: 14px; }
         .form-field label { display: block; font-size: 12px; font-weight: 700; color: var(--deep); margin-bottom: 5px; }
-        .form-field input[type="text"] {
+        .form-field input[type="text"], .form-field select {
             width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
             font-family: inherit; font-size: 13px; color: var(--ink);
         }
@@ -922,6 +922,20 @@
                 <div class="form-field">
                     <label><input type="checkbox" id="save-filename-edit"> 파일명에 필터 조건 반영</label>
                 </div>
+            </div>
+
+            <div class="form-field">
+                <label>CSV 인코딩</label>
+                <select id="save-encoding" style="width:100%;">
+                    <option value="utf-8-sig">UTF-8 (엑셀/일반 프로그램 권장)</option>
+                    <option value="cp949">CP949 (구버전 한글 Windows 엑셀)</option>
+                </select>
+            </div>
+            <div class="form-field">
+                <label><input type="checkbox" id="save-include-token-data" checked> 토큰 분석용 데이터(token_data) 포함</label>
+            </div>
+            <div class="form-field">
+                <label><input type="checkbox" id="save-include-manifest" checked> 다운로드 정보 기록 파일(download_info.txt) 포함</label>
             </div>
 
             <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="submitSaveOptions()">다운로드 시작</button>
@@ -1464,6 +1478,9 @@
         document.getElementById('save-excl-words').value = '';
         document.getElementById('save-include-all').checked = false;
         document.getElementById('save-filename-edit').checked = false;
+        document.getElementById('save-encoding').value = 'utf-8-sig';
+        document.getElementById('save-include-token-data').checked = true;
+        document.getElementById('save-include-manifest').checked = true;
         toggleSaveDateRange();
         toggleSaveFilterFields();
         document.getElementById('save-modal').classList.add('open');
@@ -1508,6 +1525,9 @@
             excl_words: filterOption ? splitWords(document.getElementById('save-excl-words').value) : [],
             include_all: document.getElementById('save-include-all').checked,
             filename_edit: document.getElementById('save-filename-edit').checked,
+            encoding: document.getElementById('save-encoding').value,
+            include_token_data: document.getElementById('save-include-token-data').checked,
+            include_manifest: document.getElementById('save-include-manifest').checked,
         };
 
         closeSaveModal();

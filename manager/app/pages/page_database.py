@@ -656,6 +656,9 @@ class Manager_Database(Manager_Worker):
                 option["excl_words"] = dialog.excl_word_list
                 option["include_all"] = dialog.include_all_option
                 option["filename_edit"] = dialog.radio_name.isChecked()
+                option["encoding"] = dialog.encoding
+                option["include_token_data"] = dialog.include_token_data
+                option["include_manifest"] = dialog.include_manifest
             else:
                 printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
                 return
