@@ -62,3 +62,10 @@ user_logs_db = client["manager"]["user-logs"]
 
 # 디스코드 봇(bot/)이 폴링해서 실제 전송을 처리하는 알림 큐
 discord_notifications_db = client["discord"]["notifications"]
+
+# 패스키(WebAuthn) 등록된 인증기 — _id는 credential_id(base64url)라 조회/유일성 보장이
+# 자연스럽다. webauthn_challenges_db는 등록/로그인 시도마다 발급한 challenge를 잠깐
+# 보관해 재사용(replay) 공격을 막는다 — _id는 challenge 자체(base64url)이고 사용 후
+# 즉시 삭제한다.
+webauthn_credentials_db = homepage_db["webauthn_credentials"]
+webauthn_challenges_db = homepage_db["webauthn_challenges"]

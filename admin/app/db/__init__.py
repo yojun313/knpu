@@ -74,3 +74,7 @@ identity_history_col = client["audit"]["identities"]
 # 디스코드 알림 발행 큐 — 실제 전송은 디스코드 봇(bot/cogs/cog_notifications.py)이
 # 이 컬렉션을 폴링해서 처리한다 (app/libs/discord_notify.py 참고).
 discord_notifications_col = client["discord"]["notifications"]
+
+# admin 대시보드 자체 설정(사이드바 메뉴 순서 등) — 로그인한 기기/브라우저와 무관하게
+# 유지되도록 localStorage가 아니라 서버 DB에 저장한다.
+admin_settings_col = client["admin"]["settings"]

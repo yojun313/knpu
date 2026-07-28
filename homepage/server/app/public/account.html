@@ -115,6 +115,39 @@
       color: #212529;
     }
 
+    .passkey-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #e9ecef;
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .passkey-item .passkey-name {
+      font-weight: 600;
+      color: #212529;
+    }
+
+    .passkey-item .passkey-meta {
+      font-size: 0.75rem;
+      color: #adb5bd;
+    }
+
+    .passkey-item .btn-passkey-delete {
+      color: #dc3545;
+      font-size: 0.78rem;
+      background: none;
+      border: none;
+    }
+
+    .passkey-item .btn-passkey-delete:hover {
+      text-decoration: underline;
+    }
+
     .btn-account-primary {
       background: #212529;
       border-color: #212529;
@@ -303,6 +336,25 @@
         </div>
       </div>
 
+      <div class="card account-card">
+        <div class="card-body">
+          <h2><i class="fa-solid fa-fingerprint"></i>패스키</h2>
+          <p class="meta-line mb-3">비밀번호 없이 지문·얼굴 인식이나 보안키로 더 빠르고 안전하게 로그인할 수 있습니다.</p>
+          <div class="alert alert-success auth-alert" id="passkey-success"></div>
+          <div class="alert alert-danger auth-alert" id="passkey-error"></div>
+
+          <div id="passkey-list" class="mb-3"></div>
+
+          <button type="button" class="btn btn-outline-dark btn-sm" id="passkey-add-btn">
+            <i class="fa-solid fa-plus me-1"></i>새 패스키 등록
+          </button>
+          <div class="passkey-item-meta mt-2" id="passkey-hint" style="display:none;font-size:0.75rem;color:#adb5bd;">
+            이 기기에서 지문·얼굴 인식을 바로 쓸 수 없는 것 같습니다. USB 보안키가 있다면 꽂고 시도하거나,
+            휴대폰에 저장된 패스키를 쓰려면 등록 시 뜨는 창에서 "다른 기기 사용"을 선택해 QR코드를 스캔해주세요.
+          </div>
+        </div>
+      </div>
+
       <div class="card account-card" id="admin-card">
         <div class="card-body">
           <h2><i class="fa-solid fa-user-shield"></i>관리자</h2>
@@ -327,6 +379,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/scripts.js"></script>
   <script src="js/nav.js"></script>
+  <script src="js/webauthn.js"></script>
   <script>
     function showAlert(el, message) {
       el.textContent = message;
@@ -363,7 +416,76 @@
       document.getElementById('p-name').value = user.name;
 
       loadLinkedMember();
+      loadPasskeys();
     }
+
+    function escHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    async function loadPasskeys() {
+      const addBtn = document.getElementById('passkey-add-btn');
+      if (!isPasskeySupported()) {
+        addBtn.disabled = true;
+        addBtn.title = '이 브라우저는 패스키를 지원하지 않습니다';
+      } else if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+        // 지문/얼굴 인식 같은 플랫폼 인증기가 이 기기에 없어 보이면 미리 안내한다 —
+        // USB 보안키나 휴대폰 연동(QR)은 이 값과 무관하게 여전히 될 수 있으므로
+        // 버튼을 막지는 않고 힌트만 보여준다.
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(available => {
+          if (!available) document.getElementById('passkey-hint').style.display = 'block';
+        }).catch(() => {});
+      }
+      try {
+        const passkeys = await listPasskeys();
+        const list = document.getElementById('passkey-list');
+        list.innerHTML = passkeys.length
+          ? passkeys.map(p => `
+              <div class="passkey-item" data-id="${escHtml(p.credential_id)}">
+                <div>
+                  <div class="passkey-name"><i class="fa-solid fa-key me-1"></i>${escHtml(p.device_name)}</div>
+                  <div class="passkey-meta">등록: ${escHtml(p.created_at)}${p.last_used_at ? ' · 마지막 사용: ' + escHtml(p.last_used_at) : ''}</div>
+                </div>
+                <button type="button" class="btn-passkey-delete" onclick="removePasskey('${escHtml(p.credential_id)}')">삭제</button>
+              </div>`).join('')
+          : '<p class="meta-line">등록된 패스키가 없습니다.</p>';
+      } catch (err) {
+        // 목록 로드 실패는 조용히 무시 — 패스키는 부가 기능이라 프로필 로딩 자체를 막으면 안 된다
+      }
+    }
+
+    async function removePasskey(credentialId) {
+      if (!confirm('이 패스키를 삭제할까요?')) return;
+      try {
+        await deletePasskey(credentialId);
+        loadPasskeys();
+      } catch (err) {
+        showAlert(document.getElementById('passkey-error'), err.message);
+      }
+    }
+
+    document.getElementById('passkey-add-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('passkey-add-btn');
+      btn.disabled = true;
+      try {
+        // 버튼 클릭에 곧바로 이어서(중간에 다이얼로그 없이) create()부터 호출해야
+        // Safari에서 "문서가 포커스되어 있지 않다"는 이유로 실패하지 않는다 —
+        // 이름은 성공한 뒤에 물어본다.
+        const serialized = await createPasskeyCredential();
+        const deviceName = prompt('이 패스키를 구분할 이름을 입력하세요 (예: 내 아이폰, 사무실 노트북)', '') || '패스키';
+        await verifyPasskeyRegistration(serialized, deviceName);
+        showAlert(document.getElementById('passkey-success'), '패스키가 등록되었습니다.');
+        loadPasskeys();
+      } catch (err) {
+        // 실패 원인은 브라우저/기기별 WebAuthn 지원 차이인 경우가 많아 사용자
+        // 화면에는 기술적인 내용을 보여주지 않고 서버(시스템 오류 채널)에만 남긴다.
+        reportPasskeyError('register', err);
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
     function renderMemberPhoto(member) {
       const img = document.getElementById('photo-preview-img');

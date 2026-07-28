@@ -11,6 +11,7 @@ from starlette.background import BackgroundTask
 
 from app.config import STATISTICS_VIEWER_URL
 from app.libs import spss_analysis
+from app.libs.auto_chart import fill_missing_graphs
 from app.libs.progress import send_message
 from app.libs.statistics_analysis import StatisticsAnalysis
 from app.models.analysis_model import StatisticsOption
@@ -200,6 +201,14 @@ def run_statistics_analysis(
     _add_hour_dow_heatmap(data, csv_dir)
     _add_derived_time_series_tables(csv_dir)
     spss_analysis.run(data, csv_dir)
+
+    # 뷰어(manager/statistics)는 csv_files의 모든 표를 브라우저에서 즉석 차트로
+    # 그려 보여주는데, 그중 spss_analysis.py가 만든 표들과 위의 파생 표(히트맵/
+    # 추세/누적)는 여기 있는 10개 분석 함수와 달리 대응하는 그래프 이미지가 없어
+    # zip 다운로드에서만 빠지는 문제가 있었다. 화면에 이미 잘 그려지는 표들과 같은
+    # 규칙으로 그래프를 자동 생성해 graphs/에 채워 넣어 zip과 화면을 일치시킨다.
+    graph_dir = os.path.join(output_dir, "graphs")
+    fill_missing_graphs(csv_dir, graph_dir)
 
     metadata = {
         "category": option.category,

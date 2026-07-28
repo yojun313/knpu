@@ -120,3 +120,18 @@ class ResetPasswordRequest(BaseModel):
 
 class UpdateRoleRequest(BaseModel):
     role: str
+
+
+class PasskeyRegisterVerifyRequest(BaseModel):
+    credential: dict
+    device_name: Optional[str] = None
+
+
+class PasskeyLoginVerifyRequest(BaseModel):
+    credential: dict
+
+
+class PasskeyClientErrorRequest(BaseModel):
+    context: str
+    name: Optional[str] = None
+    message: Optional[str] = None
