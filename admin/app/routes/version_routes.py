@@ -9,7 +9,9 @@ templates = Jinja2Templates(directory="app/templates")
 
 # manager_server가 admin과 같은 서버에서 돌아가므로 내부 호출은 로컬호스트로 바로 붙는다
 # (다른 서비스들의 discord_notify.py 프록시와 동일한 관례).
-MANAGER_SERVER_API = os.getenv("MANAGER_SERVER_INTERNAL_API", "http://localhost:8000/api")
+MANAGER_SERVER_API = os.getenv(
+    "MANAGER_SERVER_INTERNAL_API", "http://localhost:8000/api"
+)
 
 
 def _auth_header(request: Request) -> dict:
@@ -26,9 +28,13 @@ async def versions_page(request: Request, user=Depends(get_current_user)):
 
 @router.get("/api/versions")
 async def api_list_versions(request: Request, user=Depends(get_current_user)):
-    res = requests.get(f"{MANAGER_SERVER_API}/board/version", headers=_auth_header(request))
+    res = requests.get(
+        f"{MANAGER_SERVER_API}/board/version", headers=_auth_header(request)
+    )
     if not res.ok:
-        raise HTTPException(status_code=res.status_code, detail="버전 목록을 불러오지 못했습니다")
+        raise HTTPException(
+            status_code=res.status_code, detail="버전 목록을 불러오지 못했습니다"
+        )
     return res.json()
 
 
@@ -80,6 +86,10 @@ async def api_delete_version(
 
 def _extract_detail(res: requests.Response) -> str:
     try:
-        return res.json().get("detail") or res.json().get("message") or "요청이 실패했습니다"
+        return (
+            res.json().get("detail")
+            or res.json().get("message")
+            or "요청이 실패했습니다"
+        )
     except Exception:
         return "요청이 실패했습니다"

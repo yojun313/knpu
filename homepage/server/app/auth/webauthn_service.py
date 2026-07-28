@@ -19,7 +19,12 @@ from webauthn.helpers.structs import (
 
 from app.auth.jwt import create_token
 from app.auth.service import _log_user_activity, _public_user
-from app.auth.webauthn_config import CHALLENGE_TTL_MINUTES, EXPECTED_ORIGIN, RP_ID, RP_NAME
+from app.auth.webauthn_config import (
+    CHALLENGE_TTL_MINUTES,
+    EXPECTED_ORIGIN,
+    RP_ID,
+    RP_NAME,
+)
 from app.db import users_db, webauthn_challenges_db, webauthn_credentials_db
 
 
@@ -86,12 +91,15 @@ def get_registration_options(user_uid: str) -> str:
     return options_to_json(options)
 
 
-def verify_registration(user_uid: str, credential: dict, device_name: str | None) -> dict:
+def verify_registration(
+    user_uid: str, credential: dict, device_name: str | None
+) -> dict:
     challenge_b64 = _extract_challenge_b64(credential)
     stored = _pop_challenge(challenge_b64, purpose="registration")
     if not stored or stored.get("user_uid") != user_uid:
         raise HTTPException(
-            status_code=400, detail="등록 요청이 만료되었거나 올바르지 않습니다. 다시 시도해주세요"
+            status_code=400,
+            detail="등록 요청이 만료되었거나 올바르지 않습니다. 다시 시도해주세요",
         )
 
     try:
@@ -149,7 +157,9 @@ def verify_authentication(credential: dict) -> dict:
     challenge_b64 = _extract_challenge_b64(credential)
     stored_challenge = _pop_challenge(challenge_b64, purpose="authentication")
     if not stored_challenge:
-        raise HTTPException(status_code=400, detail="로그인 요청이 만료되었습니다. 다시 시도해주세요")
+        raise HTTPException(
+            status_code=400, detail="로그인 요청이 만료되었습니다. 다시 시도해주세요"
+        )
 
     try:
         verification = verify_authentication_response(

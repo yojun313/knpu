@@ -52,3 +52,6 @@ class CrawlSaveOption(BaseModel):
     excl_words: List[str] = []
     include_all: bool = False
     filename_edit: bool = False
+    encoding: str = "utf-8-sig"  # "utf-8-sig" | "cp949"
+    include_token_data: bool = True
+    include_manifest: bool = True

@@ -7,6 +7,13 @@ from app.models.crawl_model import (
 )
 from app.utils.zip import fast_zip
 from app.utils.getsize import getFolderSize, format_size
+from app.utils.csv_export import (
+    replaceDatesInFilename,
+    replaceKeywordInFilename,
+    apply_date_filter,
+    apply_word_filter,
+    process_table_task,
+)
 from fastapi.responses import JSONResponse
 from collections import OrderedDict
 from datetime import datetime, timezone, timedelta
@@ -15,14 +22,15 @@ from zoneinfo import ZoneInfo
 from fastapi.responses import StreamingResponse
 from starlette.responses import FileResponse
 from io import BytesIO
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import pandas as pd
 import itertools
+import multiprocessing
 from app.libs.progress import send_message
 from app.services.user_service import log_user
 import time
 import uuid
 import os
-import re
 import gc
 import zipfile
 import shutil
@@ -307,6 +315,85 @@ def updateCount(uid: str, stat):
     )
 
 
+_CRAWL_TYPE_LABELS = {
+    "navernews": "Naver News",
+    "naverblog": "Naver Blog",
+    "navercafe": "Naver Cafe",
+    "youtube": "YouTube",
+}
+
+
+def _buildDownloadManifest(
+    crawlDb: dict,
+    targetDB: str,
+    dbname: str,
+    userUid: str,
+    saveOption: dict,
+    table_row_counts: dict,
+) -> str:
+    requester_user = user_db.find_one({"uid": userUid}, {"_id": 0})
+    downloader_name = requester_user["name"] if requester_user else userUid
+
+    typ = targetDB.split("_")[0]
+    crawl_type_label = _CRAWL_TYPE_LABELS.get(typ, typ)
+
+    now_kst = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=9)))
+
+    lines = [
+        "=== 다운로드 정보 (Download Info) ===",
+        f"내보낸 파일명: {dbname}",
+        f"원본 DB 이름: {targetDB}",
+        f"키워드: {crawlDb.get('keyword', '')}",
+        f"크롤 타입: {crawl_type_label}",
+        f"요청자(다운로드): {downloader_name}",
+        f"다운로드 시각(KST): {now_kst.strftime('%Y-%m-%d %H:%M:%S')}",
+        f"원본 수집 기간: {crawlDb.get('startDate', '?')} ~ {crawlDb.get('endDate', '?')}",
+        "",
+        "--- 기간 옵션 ---",
+    ]
+
+    if saveOption.get("dateOption") == "part":
+        lines.append(
+            f"내보내기 기간: 부분 지정 ({saveOption.get('start_date')} ~ {saveOption.get('end_date')})"
+        )
+    else:
+        lines.append("내보내기 기간: 전체 기간")
+
+    lines.append("")
+    lines.append("--- 단어 필터 옵션 ---")
+    if saveOption.get("filterOption"):
+        incl_words = saveOption.get("incl_words") or []
+        excl_words = saveOption.get("excl_words") or []
+        lines.append("필터링: 사용")
+        lines.append(
+            f"포함 조건: {'모두 포함 (AND)' if saveOption.get('include_all') else '하나 이상 포함 (OR)'}"
+        )
+        lines.append(f"포함 단어: {', '.join(incl_words) if incl_words else '(없음)'}")
+        lines.append(f"제외 단어: {', '.join(excl_words) if excl_words else '(없음)'}")
+        lines.append(
+            f"파일명에 필터 조건 표시: {'예' if saveOption.get('filename_edit') else '아니오'}"
+        )
+    else:
+        lines.append("필터링: 사용 안 함")
+
+    lines.append("")
+    lines.append("--- 파일 옵션 ---")
+    lines.append(f"CSV 인코딩: {saveOption.get('encoding', 'utf-8-sig')}")
+    lines.append(
+        f"토큰 데이터(token_data) 포함: {'예' if saveOption.get('include_token_data', True) else '아니오'}"
+    )
+
+    lines.append("")
+    lines.append("--- 저장된 테이블별 행 수 ---")
+    if table_row_counts:
+        for name, count in table_row_counts.items():
+            lines.append(f"{name}.csv: {count:,}행")
+    else:
+        lines.append("(해당 없음)")
+
+    return "\n".join(lines) + "\n"
+
+
 def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
     def cleanup_folder_and_zip(folder_path: str, zip_path: str):
         # 폴더와 ZIP 파일을 삭제
@@ -326,6 +413,12 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
 
     pid = saveOption["pid"]
 
+    encoding = saveOption.get("encoding") or "utf-8-sig"
+    if encoding not in ("utf-8-sig", "cp949"):
+        encoding = "utf-8-sig"
+    include_token_data = saveOption.get("include_token_data", True)
+    include_manifest = saveOption.get("include_manifest", True)
+
     temp_directory = os.path.join(os.path.dirname(__file__), "..", "temp")
 
     time.sleep(1)
@@ -342,38 +435,6 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
     tableList = sorted(
         tableList, key=lambda x: ("article" not in x, "statistics" not in x, x)
     )
-
-    def replaceDatesInFilename(filename, new_start_date, new_end_date):
-        pattern = r"_(\d{8})_(\d{8})_"
-        new_filename = re.sub(pattern, f"_{new_start_date}_{new_end_date}_", filename)
-        return new_filename
-
-    def replaceKeywordInFilename(name: str, new_keyword: str) -> str:
-        parts = name.split("_")
-
-        if "token" in name:
-            parts[2] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
-        else:
-            parts[1] = f"[{new_keyword}]"  # 키워드만 대괄호 포함 교체
-        dbname = "_".join(parts)
-
-        replacements = {
-            "\\": "＼",  # U+FF3C
-            "/": "／",  # U+FF0F
-            ":": "：",  # U+FF1A
-            "*": "＊",  # U+FF0A
-            "?": "？",  # U+FF1F
-            '"': "＂",  # U+FF02
-            "<": "＜",  # U+FF1C
-            ">": "＞",  # U+FF1E
-            "|": "¦",  # U+00A6
-        }
-
-        # 3) 매핑 테이블을 이용해 한 번에 replace
-        for illegal, safe in replacements.items():
-            dbname = dbname.replace(illegal, safe)
-
-        return dbname
 
     # 현재 시각
     kst_now = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%m%d_%H%M")
@@ -414,129 +475,168 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
     for i in itertools.count():
         candidate = base_dbpath if i == 0 else f"{base_dbpath}_{i}"
         try:
-            os.makedirs(os.path.join(candidate, "token_data"), exist_ok=False)
+            os.makedirs(candidate, exist_ok=False)
+            if include_token_data:
+                os.makedirs(os.path.join(candidate, "token_data"), exist_ok=True)
             dbpath = candidate
             break
         except FileExistsError:
             continue
 
-    for idx, tableName in enumerate(tableList):
-        edited_tableName = (
+    table_row_counts = {}
+
+    if not include_token_data:
+        tableList = [t for t in tableList if not t.startswith("token_")]
+
+    is_navernews = "navernews" in targetDB
+    start_date_formed_arg = start_date_formed if dateOption == "part" else None
+    end_date_formed_arg = end_date_formed if dateOption == "part" else None
+
+    def build_edited_name(tableName: str) -> str:
+        name = (
             replaceDatesInFilename(tableName, start_date, end_date)
             if dateOption == "part"
             else tableName
         )
-        edited_tableName = replaceKeywordInFilename(
-            edited_tableName, crawlDb["keyword"]
+        return replaceKeywordInFilename(name, crawlDb["keyword"])
+
+    # ---- 1단계: article / statistics 원본 테이블을 순차 처리해 articleURL/statisticsURL을
+    # 구한다. 나머지 테이블(reply, rereply, token_* 등)은 이 두 URL 목록만 있으면 서로
+    # 완전히 독립적으로 필터링할 수 있어, 2단계에서 프로세스 풀로 병렬 처리한다.
+    raw_article_name = next(
+        (t for t in tableList if t.endswith("_article") and not t.startswith("token_")),
+        None,
+    )
+    raw_statistics_name = next(
+        (
+            t
+            for t in tableList
+            if t.endswith("_statistics") and not t.startswith("token_")
+        ),
+        None,
+    )
+    phase1_names = [n for n in (raw_article_name, raw_statistics_name) if n]
+
+    articleURL = None
+    statisticsURL = None
+
+    for i, tableName in enumerate(phase1_names):
+        edited_tableName = build_edited_name(tableName)
+        send_message(pid, f"[{i + 1}/{len(tableList)}] '{edited_tableName}' 처리 중")
+
+        tableDF = pd.read_parquet(os.path.join(localDbpath, f"{tableName}.parquet"))
+        tableDF = apply_date_filter(
+            tableDF, dateOption, start_date_formed_arg, end_date_formed_arg
         )
 
-        send_message(pid, f"[{idx + 1}/{len(tableList)}] '{edited_tableName}' 처리 중")
-
-        parquet_path = os.path.join(localDbpath, f"{tableName}.parquet")
-        tableDF = pd.read_parquet(parquet_path)
-
-        # 날짜 필터링 (dateOption이 'part'일 경우)
-        if saveOption.get("dateOption") == "part":
-            date_columns = ["Article Date", "Reply Date", "Rereply Date"]
-
-            for col in date_columns:
-                if col in tableDF.columns:
-                    tableDF[col] = pd.to_datetime(tableDF[col], errors="coerce")
-                    tableDF = tableDF[
-                        (tableDF[col] >= start_date_formed)
-                        & (tableDF[col] <= end_date_formed)
-                    ]
-                    break  # 첫 번째 매칭된 날짜 컬럼 기준으로 필터링 후 종료
-
-        # 단어 필터링 옵션이 켜져있을 때
-        if filterOption == True and "article" in tableName:
-            if "token" not in tableName:
-                recover_columns = tableDF.columns
-                if include_all == True:
-                    if incl_words != []:
-                        tableDF = tableDF[
-                            tableDF["Article Text"].apply(
-                                lambda cell: all(
-                                    word in str(cell) for word in incl_words
-                                )
-                            )
-                        ]
-                    if excl_words != []:
-                        tableDF = tableDF[
-                            tableDF["Article Text"].apply(
-                                lambda cell: all(
-                                    word not in str(cell) for word in excl_words
-                                )
-                            )
-                        ]
-                else:
-                    if incl_words != []:
-                        tableDF = tableDF[
-                            tableDF["Article Text"].apply(
-                                lambda cell: any(
-                                    word in str(cell) for word in incl_words
-                                )
-                            )
-                        ]
-                    if excl_words != []:
-                        tableDF = tableDF[
-                            tableDF["Article Text"].apply(
-                                lambda cell: any(
-                                    word not in str(cell) for word in excl_words
-                                )
-                            )
-                        ]
-
-                if tableDF.empty:
-                    tableDF = pd.DataFrame(columns=recover_columns)  # 기존 열만 유지
-                articleURL = tableDF["Article URL"].tolist()
-            else:
-                tableDF = tableDF[tableDF["Article URL"].isin(articleURL)]
-
-        # statistics 테이블 처리
-        if "statistics" in tableName:
-            if filterOption == True:
+        if tableName == raw_article_name:
+            if filterOption:
+                tableDF = apply_word_filter(
+                    tableDF, "Article Text", incl_words, excl_words, include_all
+                )
+            articleURL = tableDF["Article URL"].tolist()
+        else:  # raw_statistics_name
+            if filterOption:
                 tableDF = tableDF[tableDF["Article URL"].isin(articleURL)]
             statisticsURL = tableDF["Article URL"].tolist()
-            save_path = os.path.join(
-                dbpath,
-                "token_data" if "token" in tableName else "",
-                f"{edited_tableName}.csv",
-            )
-            tableDF.to_csv(save_path, index=False, encoding="utf-8-sig", header=True)
-            continue
 
-        if "reply" in tableName:
-            if filterOption == True:
-                tableDF = tableDF[tableDF["Article URL"].isin(articleURL)]
-
-        # reply_statistics 테이블 처리
-        if (
-            "reply" in tableName
-            and "statisticsURL" in locals()
-            and "navernews" in targetDB
-        ):
-            if filterOption == True:
-                filteredDF = tableDF[tableDF["Article URL"].isin(articleURL)]
-            filteredDF = tableDF[tableDF["Article URL"].isin(statisticsURL)]
-            save_path = os.path.join(
-                dbpath,
-                "token_data" if "token" in tableName else "",
-                f"{edited_tableName + '_statistics'}.csv",
-            )
-            filteredDF.to_csv(save_path, index=False, encoding="utf-8-sig", header=True)
-
-        # 기타 테이블 처리
-        save_dir = os.path.join(dbpath, "token_data" if "token" in tableName else "")
-
+        save_path = os.path.join(dbpath, f"{edited_tableName}.csv")
         tableDF.to_csv(
-            os.path.join(save_dir, f"{edited_tableName}.csv"),
-            index=False,
-            encoding="utf-8-sig",
-            header=True,
+            save_path, index=False, encoding=encoding, errors="replace", header=True
         )
+        table_row_counts[edited_tableName] = len(tableDF)
         tableDF = None
-        gc.collect()
+
+    # ---- 2단계: 나머지 테이블을 프로세스 풀로 병렬 처리 ----
+    remaining_names = [t for t in tableList if t not in phase1_names]
+    tasks = []
+
+    for tableName in remaining_names:
+        edited_tableName = build_edited_name(tableName)
+        is_tok = tableName.startswith("token_")
+        save_dir = os.path.join(dbpath, "token_data") if is_tok else dbpath
+        save_path = os.path.join(save_dir, f"{edited_tableName}.csv")
+
+        if (
+            is_tok
+            and raw_statistics_name is not None
+            and tableName[len("token_") :] == raw_statistics_name
+        ):
+            # token_statistics: raw statistics에서 구한 URL 집합을 그대로 재사용한다
+            # (articleURL/token_article 관계와 동일한 패턴). 여기서 별도로 다시 계산하면
+            # 토큰화가 원본보다 뒤처진 경우 이후 reply_statistics 결과가 누락될 수 있다.
+            url_filter = statisticsURL
+        elif "_article" in tableName:
+            # token_article: 필터링 옵션이 켜져 있을 때만 articleURL로 제한한다.
+            url_filter = articleURL if filterOption else None
+        elif "reply" in tableName:  # reply / rereply / token_reply / token_rereply
+            url_filter = articleURL if filterOption else None
+        else:
+            url_filter = None
+
+        stats_variant = None
+        if "reply" in tableName and is_navernews and statisticsURL is not None:
+            stats_edited_name = edited_tableName + "_statistics"
+            stats_variant = {
+                "save_path": os.path.join(save_dir, f"{stats_edited_name}.csv"),
+                "edited_name": stats_edited_name,
+                "url_filter": statisticsURL,
+            }
+
+        tasks.append(
+            dict(
+                parquet_path=os.path.join(localDbpath, f"{tableName}.parquet"),
+                save_path=save_path,
+                edited_tableName=edited_tableName,
+                encoding=encoding,
+                date_option=dateOption,
+                start_date_formed=start_date_formed_arg,
+                end_date_formed=end_date_formed_arg,
+                url_filter=url_filter,
+                stats_variant=stats_variant,
+            )
+        )
+
+    if tasks:
+        max_workers = min(len(tasks), os.cpu_count() or 4, 8)
+        send_message(
+            pid,
+            f"나머지 {len(tasks)}개 테이블 병렬 처리 중... (worker {max_workers}개)",
+        )
+
+        ctx = multiprocessing.get_context("spawn")
+        done_count = 0
+        with ProcessPoolExecutor(max_workers=max_workers, mp_context=ctx) as executor:
+            futures = {
+                executor.submit(process_table_task, **task): task["edited_tableName"]
+                for task in tasks
+            }
+            for future in as_completed(futures):
+                edited_tableName = futures[future]
+                result = future.result()
+                table_row_counts.update(result)
+                done_count += 1
+                send_message(
+                    pid,
+                    f"[{len(phase1_names) + done_count}/{len(tableList)}] '{edited_tableName}' 처리 완료",
+                )
+
+    gc.collect()
+
+    if include_manifest:
+        send_message(pid, f"다운로드 정보 파일 생성 중")
+        manifest_text = _buildDownloadManifest(
+            crawlDb=crawlDb,
+            targetDB=targetDB,
+            dbname=dbname,
+            userUid=userUid,
+            saveOption=saveOption,
+            table_row_counts=table_row_counts,
+        )
+        with open(
+            os.path.join(dbpath, "download_info.txt"), "w", encoding="utf-8-sig"
+        ) as f:
+            f.write(manifest_text)
 
     send_message(pid, f"데이터 압축 중")
 
