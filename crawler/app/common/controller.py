@@ -42,7 +42,7 @@ def convertToParquet(folder_path):
 
 def _admin_discord_recipients():
     """운영 가시성 목적으로 모든 크롤링 완료/중단을 항상 DM 받는 관리자 목록.
-    요청자 본인에게는 별도로 notifyRequester()가 디스코드 우선/이메일 폴백을 처리한다."""
+    요청자 본인에게는 별도로 notifyRequester()가 crawler_status 채널 멘션/이메일 폴백을 처리한다."""
     return get_admin_discord_ids()
 
 

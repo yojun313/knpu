@@ -209,8 +209,30 @@ class NotificationPoller(commands.Cog):
                 },
             )
         except Exception as e:
+            status = "failed"
+            error = str(e)
+            sent_at = None
+
+            # 채널 전송이 실제로 실패한 경우에만(권한 누락 등) 이메일로 폴백한다 —
+            # 디스코드 인증이 안 된 사용자는 발행 쪽(crawler 등)에서 애초에 바로
+            # 이메일로 보내고 여기까지 오지 않는다.
+            fallback_email = doc.get("fallback_email")
+            if fallback_email:
+                try:
+                    await sendEmail(
+                        fallback_email,
+                        doc.get("fallback_subject") or "[KNPU] 알림",
+                        doc.get("fallback_text") or str(doc.get("content") or ""),
+                    )
+                    status = "sent_via_email_fallback"
+                    sent_at = datetime.datetime.now(datetime.timezone.utc)
+                    error = f"{error}; {fallback_email}로 이메일 폴백 전송"
+                except Exception as mail_e:
+                    error = f"{error}; 이메일 폴백도 실패: {mail_e}"
+
             await self.col.update_one(
-                {"_id": doc["_id"]}, {"$set": {"status": "failed", "error": str(e)}}
+                {"_id": doc["_id"]},
+                {"$set": {"status": status, "sent_at": sent_at, "error": error}},
             )
 
     @tasks.loop(seconds=3.0)
