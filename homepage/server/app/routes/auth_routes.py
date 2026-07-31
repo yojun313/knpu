@@ -141,6 +141,11 @@ def update_role(uid: str, data: UpdateRoleRequest, admin=Depends(require_admin))
     return service.change_role(uid, data.role, admin["sub"])
 
 
+@router.delete("/admin/users/{uid}")
+def delete_user(uid: str, admin=Depends(require_admin)):
+    return service.delete_user(uid, admin["sub"])
+
+
 # ---------------- Passkey (WebAuthn) ----------------
 # 로그인 상태에서 새 패스키를 등록하는 흐름(계정 설정 페이지에서 사용).
 
@@ -187,12 +192,24 @@ def passkey_delete(credential_id: str, user=Depends(get_current_user)):
     return webauthn_service.delete_passkey(user["sub"], credential_id)
 
 
+
+# navigator.credentials.create/get가 이 이름의 DOMException으로 거부되는 경우는
+# 거의 항상 사용자가 인증 창을 직접 취소했거나(가장 흔함) 브라우저가 타임아웃시킨
+# 것이지 실제 버그가 아니다 — WebAuthn 스펙상 "사용자가 취소함"과 "그 외 허용 안 됨"
+# 사유를 구분하는 별도 에러명이 없어 전부 NotAllowedError로 뭉뚱그려 온다. 이런
+# 경우까지 Discord로 보내면 알림이 의미 없이 계속 울리게 되므로 조용히 무시한다.
+_PASSKEY_IGNORED_ERROR_NAMES = {"NotAllowedError", "AbortError"}
+
+
 @router.post("/passkey/client-error")
 def passkey_client_error(data: PasskeyClientErrorRequest, request: Request):
     """브라우저의 navigator.credentials.create/get 실패는 사용자 화면에는 띄우지 않고
     여기로 보내 시스템 오류 채널로만 남긴다(실패 자체는 흔하고, 브라우저/기기별
     WebAuthn 지원 차이가 원인인 경우가 많아 최종 사용자에게 기술적인 내용을 보여줄
     필요는 없다 — 운영자만 확인)."""
+    if data.name in _PASSKEY_IGNORED_ERROR_NAMES:
+        return {"message": "ignored"}
+
     user_agent = request.headers.get("user-agent", "-")
     notify_discord(
         "system_error",

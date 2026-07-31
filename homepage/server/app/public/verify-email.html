@@ -277,8 +277,13 @@
         });
     }
 
+    let resendLocked = false;
+
     document.getElementById('resend-code').addEventListener('click', async (e) => {
       e.preventDefault();
+      if (resendLocked) return;
+
+      const link = e.currentTarget;
       const errorEl = document.getElementById('verify-error');
       errorEl.style.display = 'none';
       const username = document.getElementById('ve-username').value.trim();
@@ -287,6 +292,15 @@
         errorEl.style.display = 'block';
         return;
       }
+
+      // 연속 클릭으로 이메일이 여러 통 나가는 것을 막기 위해, 요청 중이거나
+      // 방금 전송에 성공한 직후에는 잠깐 동안 다시 누를 수 없게 잠근다.
+      resendLocked = true;
+      const originalText = link.textContent;
+      link.style.pointerEvents = 'none';
+      link.style.opacity = '0.5';
+      link.textContent = '전송 중...';
+
       try {
         const res = await fetch('/api/auth/resend-code', {
           method: 'POST',
@@ -300,10 +314,24 @@
           return;
         }
         alert('인증 링크를 다시 전송했습니다');
+        link.textContent = '전송 완료 (잠시 후 다시 가능)';
+        setTimeout(() => {
+          resendLocked = false;
+          link.style.pointerEvents = '';
+          link.style.opacity = '';
+          link.textContent = originalText;
+        }, 20000);
+        return;
       } catch (err) {
         errorEl.textContent = '서버와 통신할 수 없습니다';
         errorEl.style.display = 'block';
       }
+
+      // 실패한 경우엔 기다릴 이유가 없으니 바로 다시 시도할 수 있게 풀어준다.
+      resendLocked = false;
+      link.style.pointerEvents = '';
+      link.style.opacity = '';
+      link.textContent = originalText;
     });
   </script>
 </body>

@@ -284,6 +284,11 @@
         return;
       }
 
+      // 응답이 오기 전에 버튼을 연타하면 가입 신청(및 인증 메일 발송)이 중복
+      // 요청되므로, 요청이 끝날 때까지 버튼을 막아둔다.
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+
       try {
         const res = await fetch('/api/auth/signup', {
           method: 'POST',
@@ -294,12 +299,14 @@
         if (!res.ok) {
           errorEl.textContent = data.detail || '가입 신청에 실패했습니다';
           errorEl.style.display = 'block';
+          submitBtn.disabled = false;
           return;
         }
         window.location.href = '/verify-email?username=' + encodeURIComponent(username);
       } catch (err) {
         errorEl.textContent = '서버와 통신할 수 없습니다';
         errorEl.style.display = 'block';
+        submitBtn.disabled = false;
       }
     });
   </script>

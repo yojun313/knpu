@@ -3,9 +3,11 @@ import requests
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from app.routes.dependencies import get_current_user
+from app.services import settings_service
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["get_nav_items"] = settings_service.get_nav_items_ordered
 
 # manager_server가 admin과 같은 서버에서 돌아가므로 내부 호출은 로컬호스트로 바로 붙는다
 # (다른 서비스들의 discord_notify.py 프록시와 동일한 관례).

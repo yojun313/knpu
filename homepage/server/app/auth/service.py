@@ -12,6 +12,7 @@ from app.db import (
     members_db,
     manager_users_db,
     user_logs_db,
+    webauthn_credentials_db,
 )
 from app.auth.hashing import hash_password, verify_password
 from app.auth.jwt import create_token
@@ -517,3 +518,25 @@ def change_role(uid: str, new_role: str, admin_uid: str) -> dict:
         f"{user.get('role')} -> {new_role}(으)로 변경되었습니다 (관리자: {admin_uid})",
     )
     return {"message": "역할이 변경되었습니다", "role": new_role}
+
+
+def delete_user(uid: str, admin_uid: str) -> dict:
+    user = users_db.find_one({"uid": uid})
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
+
+    if uid == admin_uid:
+        raise HTTPException(status_code=400, detail="자기 자신은 삭제할 수 없습니다")
+
+    users_db.delete_one({"uid": uid})
+    # 계정에 딸린 부가 데이터(패스키, 미완료 인증/재설정 코드)도 같이 정리해서
+    # 삭제 후 같은 아이디로 재가입할 때 고아 데이터가 남지 않게 한다.
+    webauthn_credentials_db.delete_many({"user_uid": uid})
+    auth_codes_db.delete_many({"username": user["username"]})
+
+    notify_discord(
+        "admin_ops",
+        f"{user.get('name', user.get('username'))}({user.get('username')}) 계정이 "
+        f"삭제되었습니다 (관리자: {admin_uid})",
+    )
+    return {"message": "삭제되었습니다"}

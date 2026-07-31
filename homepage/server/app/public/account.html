@@ -474,7 +474,7 @@
         // Safari에서 "문서가 포커스되어 있지 않다"는 이유로 실패하지 않는다 —
         // 이름은 성공한 뒤에 물어본다.
         const serialized = await createPasskeyCredential();
-        const deviceName = prompt('이 패스키를 구분할 이름을 입력하세요 (예: 내 아이폰, 사무실 노트북)', '') || '패스키';
+        const deviceName = prompt('이 패스키를 구분할 이름을 입력하세요 (예: 내 아이폰, 사무실 노트북)', guessDeviceName()) || guessDeviceName();
         await verifyPasskeyRegistration(serialized, deviceName);
         showAlert(document.getElementById('passkey-success'), '패스키가 등록되었습니다.');
         loadPasskeys();

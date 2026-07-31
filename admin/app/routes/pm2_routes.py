@@ -13,9 +13,11 @@ from fastapi.templating import Jinja2Templates
 import psutil
 from app.services.pm2_service import PM2Service
 from app.routes.dependencies import get_current_user
+from app.services import settings_service
 
 router = APIRouter(prefix="/process", tags=["process"])
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["get_nav_items"] = settings_service.get_nav_items_ordered
 
 _prev_sample = {"ts": None, "net": None, "disk": None}
 
@@ -46,7 +48,7 @@ async def pm2_manager_page(request: Request, user=Depends(get_current_user)):
     return templates.TemplateResponse(
         request=request,
         name="process.html",
-        context={"processes": processes, "active_page": "pm2"},
+        context={"processes": processes, "active_page": "process"},
     )
 
 
