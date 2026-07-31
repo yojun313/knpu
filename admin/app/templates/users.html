@@ -126,7 +126,7 @@
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">이메일</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">상태</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Version</th>
-                    <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">역할 변경</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">관리</th>
                 </tr>
             </thead>
             <tbody id="userListBody">
@@ -165,14 +165,19 @@
                         <span class="text-zinc-700">—</span>
                         {% endif %}
                     </td>
-                    <td class="p-4 text-right users-cell-actions" data-label="역할 변경">
-                        {% if u.role == 'admin' %}
-                        <button onclick="handleRoleChange('{{ u.uid }}', 'member', this)"
-                                class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded-md text-xs font-bold transition">일반 사용자로 변경</button>
-                        {% else %}
-                        <button onclick="handleRoleChange('{{ u.uid }}', 'admin', this)"
-                                class="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-600/30 rounded-md text-xs font-bold transition">관리자로 변경</button>
-                        {% endif %}
+                    <td class="p-4 text-right users-cell-actions" data-label="관리">
+                        <div class="flex items-center justify-end gap-2 flex-wrap">
+                            <select data-current-role="{{ u.role }}"
+                                    onchange="handleRoleChange('{{ u.uid }}', this.value, this)"
+                                    {% if u.uid == my_uid %}disabled title="자기 자신의 역할은 변경할 수 없습니다"{% endif %}
+                                    class="bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs font-bold rounded-md px-2 py-1.5 outline-none focus:border-blue-500 disabled:opacity-30">
+                                <option value="member" {% if u.role != 'admin' %}selected{% endif %}>일반 사용자</option>
+                                <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>관리자</option>
+                            </select>
+                            <button onclick="handleDeleteUser('{{ u.uid }}', this)"
+                                    {% if u.uid == my_uid %}disabled title="자기 자신은 삭제할 수 없습니다"{% endif %}
+                                    class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 disabled:opacity-30 disabled:hover:bg-red-600/20 text-red-400 border border-red-600/30 rounded-md text-xs font-bold transition">삭제</button>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
@@ -235,11 +240,17 @@
         }
     }
 
-    // 사용자 역할 변경 (admin <-> member)
-    async function handleRoleChange(uid, newRole, btn) {
+    // 사용자 역할 변경 (드롭다운에서 admin/member 선택). 브라우저가 select의 값을
+    // change 이벤트보다 먼저 새 값으로 바꿔놓으므로, 취소/실패 시 되돌릴 원래 값을
+    // data-current-role에 미리 저장해둔 값에서 읽어온다.
+    async function handleRoleChange(uid, newRole, selectEl) {
         const label = newRole === 'admin' ? '관리자' : '일반 사용자';
-        if (!confirm(`이 사용자를 ${label}(으)로 변경하시겠습니까?`)) return;
-        btn.disabled = true;
+        const previousRole = selectEl.dataset.currentRole;
+        if (!confirm(`이 사용자를 ${label}(으)로 변경하시겠습니까?`)) {
+            selectEl.value = previousRole;
+            return;
+        }
+        selectEl.disabled = true;
         try {
             const res = await fetch(`/users/${uid}/role`, {
                 method: 'POST',
@@ -249,6 +260,27 @@
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
                 alert(data.detail || '역할 변경에 실패했습니다');
+                selectEl.value = previousRole;
+                selectEl.disabled = false;
+                return;
+            }
+            window.location.reload();
+        } catch (err) {
+            alert('서버와 통신할 수 없습니다');
+            selectEl.value = previousRole;
+            selectEl.disabled = false;
+        }
+    }
+
+    // 사용자 삭제
+    async function handleDeleteUser(uid, btn) {
+        if (!confirm('이 사용자를 삭제하시겠습니까?\n삭제하면 되돌릴 수 없습니다.')) return;
+        btn.disabled = true;
+        try {
+            const res = await fetch(`/users/${uid}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                alert(data.detail || '삭제에 실패했습니다');
                 btn.disabled = false;
                 return;
             }

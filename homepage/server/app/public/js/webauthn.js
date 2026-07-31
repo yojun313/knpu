@@ -136,6 +136,34 @@ function reportPasskeyError(context, err) {
   }).catch(() => {});
 }
 
+// 패스키 이름 입력창의 기본값으로 쓸, navigator.userAgent 기반의 대략적인 기기 이름
+// 추측 ("Chrome (Windows)", "Safari (iPhone)" 등). 완벽한 감지가 목적이 아니라
+// 사용자가 굳이 직접 타이핑하지 않아도 되게 하는 편의용 기본값이라 휴리스틱이면 충분하다.
+function guessDeviceName() {
+  const ua = navigator.userAgent || '';
+
+  let os = '기기';
+  if (/iPhone/.test(ua)) os = 'iPhone';
+  else if (/iPad/.test(ua)) os = 'iPad';
+  else if (/Android/.test(ua)) os = 'Android';
+  else if (/Mac OS X/.test(ua)) os = 'Mac';
+  else if (/Windows/.test(ua)) os = 'Windows';
+  else if (/Linux/.test(ua)) os = 'Linux';
+
+  // Edge/Opera/iOS Chrome/iOS Firefox는 UA에 "Chrome"·"Safari"가 같이 들어있으므로
+  // 고유 토큰을 먼저 확인해야 한다.
+  let browser = '브라우저';
+  if (/Edg\//.test(ua)) browser = 'Edge';
+  else if (/OPR\//.test(ua) || /Opera/.test(ua)) browser = 'Opera';
+  else if (/CriOS\//.test(ua)) browser = 'Chrome';
+  else if (/FxiOS\//.test(ua)) browser = 'Firefox';
+  else if (/Chrome\//.test(ua)) browser = 'Chrome';
+  else if (/Firefox\//.test(ua)) browser = 'Firefox';
+  else if (/Safari\//.test(ua) && /Version\//.test(ua)) browser = 'Safari';
+
+  return `${browser} (${os})`;
+}
+
 async function listPasskeys() {
   const res = await fetch('/api/auth/passkey/list', { credentials: 'include' });
   if (!res.ok) throw new Error('패스키 목록을 가져오지 못했습니다');

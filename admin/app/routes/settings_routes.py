@@ -5,6 +5,7 @@ from app.services import settings_service
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["get_nav_items"] = settings_service.get_nav_items_ordered
 
 
 @router.get("/settings")

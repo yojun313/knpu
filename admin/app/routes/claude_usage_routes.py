@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.templating import Jinja2Templates
 from app.routes.dependencies import get_current_user
-from app.services import claude_usage_service, claude_account_usage_service
+from app.services import claude_usage_service, claude_account_usage_service, settings_service
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["get_nav_items"] = settings_service.get_nav_items_ordered
 
 
 @router.get("/claude-usage")

@@ -117,19 +117,9 @@
         </div>
 
         <nav id="sidebarNav" class="flex-1 px-4 space-y-2 overflow-y-auto">
-            <a data-nav-id="overview" href="/" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'overview' %}active{% endif %}">Overview</a>
-            <a data-nav-id="logs" href="/logs" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'logs' %}active{% endif %}">User Logs</a>
-            <a data-nav-id="audit_logs" href="/audit-logs" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'audit_logs' %}active{% endif %}">Audit Logs</a>
-            <a data-nav-id="user_bugs" href="/bugs" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'user_bugs' %}active{% endif %}">User Bugs</a>
-            <a data-nav-id="crawlers" href="/crawlers" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'crawlers' %}active{% endif %}">Crawler DB</a>
-            <a data-nav-id="bugs" href="/bug-reports" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'bugs' %}active{% endif %}">Bug Reports</a>
-            <a data-nav-id="users" href="/users" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'users' %}active{% endif %}">Users</a>
-            <a data-nav-id="process" href="/process" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'process' %}active{% endif %}">Servers</a>
-            <a data-nav-id="nginx" href="/nginx" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'nginx' %}active{% endif %}">Domains</a>
-            <a data-nav-id="ports" href="/ports" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'ports' %}active{% endif %}">Ports</a>
-            <a data-nav-id="claude_usage" href="/claude-usage" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'claude_usage' %}active{% endif %}">Claude</a>
-            <a data-nav-id="git" href="/git" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'git' %}active{% endif %}">Git</a>
-            <a data-nav-id="versions" href="/versions" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == 'versions' %}active{% endif %}">Versions</a>
+            {% for item in get_nav_items() %}
+            <a data-nav-id="{{ item.id }}" href="{{ item.href }}" class="nav-item flex items-center px-4 py-2 rounded-md text-sm {% if active_page == item.id %}active{% endif %}">{{ item.label }}</a>
+            {% endfor %}
         </nav>
 
         <div class="p-4 border-t border-zinc-800 flex items-center justify-between gap-2">
@@ -201,25 +191,6 @@
                 document.getElementById('sidebar').classList.add('-translate-x-full');
             }
         });
-
-        // 설정 페이지에서 저장한 사이드바 순서를 서버에서 받아와 그대로 적용한다.
-        // 기기/브라우저에 상관없이 항상 같은 순서로 보이도록 localStorage가 아니라
-        // 서버 API를 기준으로 삼는다.
-        (async function applySavedNavOrder() {
-            try {
-                const res = await fetch('/api/nav-order');
-                if (!res.ok) return;
-                const data = await res.json();
-                const nav = document.getElementById('sidebarNav');
-                if (!nav || !data.items) return;
-                data.items.forEach(item => {
-                    const el = nav.querySelector(`[data-nav-id="${item.id}"]`);
-                    if (el) nav.appendChild(el);
-                });
-            } catch (err) {
-                // 실패해도 기본 순서로 그대로 보이면 되므로 조용히 무시한다
-            }
-        })();
     </script>
 </body>
 </html>

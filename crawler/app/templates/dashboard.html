@@ -682,18 +682,25 @@
 
             .conn-badge span:last-child { display: none; }
 
-            /* Database 목록: 테이블 → 카드 형태로 전환 (글자 겹침/가로 스크롤 방지) */
+            .modal-box { max-height: 92vh; }
+            .modal-body { padding: 14px; }
+            .log-row { flex-wrap: wrap; }
+            .log-msg { flex-basis: 100%; }
+            .actions-cell .btn { flex: 1 1 auto; text-align: center; }
+        }
+
+        /* Database 목록: 테이블 → 카드 형태로 전환 (글자 겹침/가로 스크롤 방지).
+           640px보다 넓은 가로 모드 폰/폴더블/작은 태블릿(641~900px)에서는 액션 열의
+           버튼이 여러 줄로 쌓이면서 다른 열 텍스트가 줄바꿈으로 뭉개져 다운로드 버튼만
+           도드라져 보이는 문제가 있어, 일반 모바일 레이아웃(640px)보다 넓은 범위까지
+           카드 형태를 적용한다. */
+        @media (max-width: 900px) {
             table, thead, tbody, th, td, tr { display: block; }
             thead { display: none; }
             tbody tr { border-bottom: 1px solid var(--line); padding: 10px 6px; }
             tbody tr:hover { background: none; }
             tbody td { border: none; padding: 4px 6px; word-break: break-word; }
             tbody td:before { content: attr(data-label); font-size: 9px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 1px; }
-
-            .modal-box { max-height: 92vh; }
-            .modal-body { padding: 14px; }
-            .log-row { flex-wrap: wrap; }
-            .log-msg { flex-basis: 100%; }
             .actions-cell .btn { flex: 1 1 auto; text-align: center; }
         }
 
