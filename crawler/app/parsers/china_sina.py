@@ -30,7 +30,7 @@ from common.storage import (
 )
 from common.csv import makeCSV, addToCSV
 from common.columns import chinasina_article_column, chinasina_reply_column
-from common.controller import stopOperator, finishOperator
+from common.controller import stopOperator, finishOperator, refreshProxyListIfEnabled
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -519,6 +519,8 @@ class ChinaSinaCrawler:
                     "%Y-%m-%d"
                 )
                 self.status["currentdate"] = f"{start_fmt} ~ {end_fmt}"
+
+            refreshProxyListIfEnabled(self.DBuid)
 
             urlList = self.collectUrl(
                 keyword=self.keyword,

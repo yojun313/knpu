@@ -93,12 +93,12 @@ def downloadProgram(parent, newVersionName, is_update=True):
             temp_dir, f"MANAGER_{newVersionName}_update.exe"
         )
         download_url = (
-            f"https://knpu.re.kr/download/MANAGER_{newVersionName}_update.exe"
+            f"https://manager.knpu.re.kr/api/download/file/MANAGER_{newVersionName}_update.exe"
         )
         msg = "업데이트 다운로드"
     else:
         downloadFile_path = os.path.join(temp_dir, f"MANAGER_{newVersionName}.exe")
-        download_url = f"https://knpu.re.kr/download/MANAGER_{newVersionName}.exe"
+        download_url = f"https://manager.knpu.re.kr/api/download/file/MANAGER_{newVersionName}.exe"
         msg = "전체 패키지 다운로드"
 
     dialog = DownloadDialog(f"{msg}: {newVersionName}", parent=parent)

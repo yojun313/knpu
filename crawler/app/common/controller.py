@@ -3,11 +3,12 @@ import pandas as pd
 from datetime import datetime, timedelta
 import time
 import logging
-from db import crawler_db, get_userinfo, user_logs_db, get_admin_discord_ids
+from db import crawler_db, get_userinfo, user_logs_db, get_admin_discord_ids, load_proxy_list
 from common.tokenization import tokenization
 from common.notification import notifyRequester, notifyRequesterAndAdmins
 from common.storage import endCrawl, errorCrawl, appendCrawlLog
-from config import CRAWL_LOG_PATH
+from common.req import set_proxy_list
+from config import CRAWL_LOG_PATH, PROXY, REFRESH_PROXY_DAILY
 from shared.user_log import insert_log
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,23 @@ logger = logging.getLogger(__name__)
 
 class IPBlockedException(Exception):
     pass
+
+
+def refreshProxyListIfEnabled(DBuid=None):
+    """REFRESH_PROXY_DAILY가 켜져 있으면 날짜(구간)가 바뀔 때마다 DB(ip-list)에서
+    IP 리스트를 새로 받아와 그 이후 요청부터 새 리스트에서 프록시를 고르게 한다.
+    PROXY 자체가 꺼져 있으면 아무 의미가 없으므로 함께 확인한다."""
+    if not (PROXY and REFRESH_PROXY_DAILY):
+        return
+    try:
+        set_proxy_list(load_proxy_list())
+    except Exception:
+        logger.warning("IP 리스트 갱신 실패 — 기존 리스트를 계속 사용합니다.")
+        if DBuid:
+            try:
+                appendCrawlLog(DBuid, "info", "IP 리스트 갱신 실패 — 기존 리스트 유지")
+            except Exception:
+                pass
 
 
 def is_ip_blocked_error(e: Exception) -> bool:
