@@ -6,7 +6,6 @@ import warnings
 from datetime import datetime, timedelta, timezone
 import urllib3
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
-from user_agent import generate_navigator
 from urllib.parse import urlparse, parse_qs
 import logging
 from db import load_proxy_list, checkState, get_userinfo
@@ -31,7 +30,13 @@ from common.storage import (
 )
 from common.csv import makeCSV, addToCSV
 from common.columns import navercafe_article_column, navercafe_reply_column
-from common.controller import stopOperator, finishOperator
+from common.controller import (
+    stopOperator,
+    finishOperator,
+    is_ip_blocked_error,
+    notifyIpBlocked,
+    IPBlockedException,
+)
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -320,6 +325,11 @@ class NaverCafeCrawler:
             return urlList
         except Exception as e:
             logger.info(f"Error occurred while collecting cafe URLs: {e}")
+            if is_ip_blocked_error(e):
+                notifyIpBlocked(
+                    self.DBname, keyword, self.requester, self.Email, self.DBuid
+                )
+                raise IPBlockedException(f"IP 차단으로 크롤링을 중단합니다: {e}") from e
             appendCrawlLog(self.DBuid, "error", f"URL 수집 실패 ({keyword}): {e}")
             return []
 

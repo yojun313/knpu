@@ -5,8 +5,6 @@ from email.mime.text import MIMEText
 import smtplib
 import os
 from dotenv import load_dotenv
-import requests
-
 from db import discord_notifications_db, get_userinfo
 
 load_dotenv()
@@ -74,18 +72,7 @@ def sendDiscordDM(user_ids, msg, requester=None):
         pass
 
 
-def notifyRequester(requester, email, title, text):
-    """크롤링 상태 알림을 항상 크롤러 상태 알림 채널(crawler_status)에 올린다.
-
-    디스코드 인증(discord_id 연동)이 된 요청자는 멘션하고, 연동이 안 된 요청자는
-    이름만 표기한다 — 연동 여부와 무관하게 채널에는 항상 올라가야 하기 때문이다.
-    봇이 실제로 채널 전송에 실패한 경우에만 이메일로 폴백해서 보낸다
-    (bot/cogs/cog_notifications.py의 _send_one 참고)."""
-    info = get_userinfo(requester) if requester else None
-    discord_id = info.get("discord_id") if info else None
-
-    header = f"<@{discord_id}>" if discord_id else f"👤 **{requester or '알 수 없음'}**"
-
+def _post_crawler_status(header: str, email: str, title: str, text: str, linked: bool):
     try:
         discord_notifications_db.insert_one(
             {
@@ -103,6 +90,35 @@ def notifyRequester(requester, email, title, text):
             }
         )
     except Exception:
-        # 큐 등록 자체가 실패하면(예: DB 장애) 폴백 판단을 봇에 맡길 수 없으므로
-        # 여기서 바로 이메일로 보낸다.
-        sendMail(email, title, text)
+        linked = False
+
+    if not linked:
+        try:
+            sendMail(email, title, text)
+        except Exception:
+            pass
+
+
+def notifyRequester(requester, email, title, text):
+    info = get_userinfo(requester) if requester else None
+    discord_id = info.get("discord_id") if info else None
+
+    header = f"<@{discord_id}>" if discord_id else f"👤 **{requester or '알 수 없음'}**"
+    _post_crawler_status(header, email, title, text, linked=bool(discord_id))
+
+
+def notifyRequesterAndAdmins(requester, email, title, text, admin_discord_ids):
+    info = get_userinfo(requester) if requester else None
+    discord_id = info.get("discord_id") if info else None
+
+    admin_mentions = " ".join(
+        f"<@{uid}>"
+        for uid in sorted(set(admin_discord_ids or []) - {discord_id})
+        if uid
+    )
+    requester_part = (
+        f"<@{discord_id}>" if discord_id else f"👤 **{requester or '알 수 없음'}**"
+    )
+    header = f"{admin_mentions} {requester_part}".strip()
+
+    _post_crawler_status(header, email, title, text, linked=bool(discord_id))
