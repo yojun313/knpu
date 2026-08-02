@@ -36,6 +36,7 @@ from common.controller import (
     is_ip_blocked_error,
     notifyIpBlocked,
     IPBlockedException,
+    refreshProxyListIfEnabled,
 )
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -592,6 +593,8 @@ class NaverCafeCrawler:
                 percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
                 self.status["percentage"] = percent
                 self.status["currentdate"] = currentDate_str
+
+            refreshProxyListIfEnabled(self.DBuid)
 
             urlList = self.collectUrl(
                 keyword=self.keyword, startDate=currentDate_str, endDate=currentDate_str

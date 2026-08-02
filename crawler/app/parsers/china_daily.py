@@ -25,7 +25,7 @@ from common.storage import (
 )
 from common.csv import makeCSV, addToCSV
 from common.columns import chinadaily_article_column
-from common.controller import stopOperator, finishOperator
+from common.controller import stopOperator, finishOperator, refreshProxyListIfEnabled
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -357,6 +357,8 @@ class ChinaDailyCrawler:
                 percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
                 self.status["percentage"] = percent
                 self.status["currentdate"] = currentDate_str
+
+            refreshProxyListIfEnabled(self.DBuid)
 
             articleList = self.collectArticle(
                 keyword=self.keyword, startDate=currentDate_str, endDate=currentDate_str

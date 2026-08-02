@@ -30,7 +30,7 @@ from common.columns import (
     youtube_reply_column,
     youtube_rereply_column,
 )
-from common.controller import stopOperator, finishOperator
+from common.controller import stopOperator, finishOperator, refreshProxyListIfEnabled
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -523,6 +523,8 @@ class YouTubeCrawler:
                 percent = str(round(((dayCount + 1) / self.date_range) * 100, 1))
                 self.status["percentage"] = percent
                 self.status["currentdate"] = currentDate_str
+
+            refreshProxyListIfEnabled(self.DBuid)
 
             urlList = self.collectUrl(
                 keyword=self.keyword, startDate=currentDate_str, endDate=currentDate_str
