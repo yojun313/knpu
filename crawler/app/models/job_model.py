@@ -42,6 +42,11 @@ class ResumeRequest(BaseModel):
     end_date: Optional[str] = None  # "20250101" 형식. 완료된 작업은 필수(확장할 종료일)
 
 
+class RecrawlRequest(BaseModel):
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
+
 class CrawlSaveOption(BaseModel):
     pid: str
     dateOption: str  # "all" | "part"

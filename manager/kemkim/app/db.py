@@ -48,4 +48,17 @@ manager_db_name = "manager_dev" if MODE == 0 else "manager"
 manager_db = client[manager_db_name]
 
 kemkim_projects_db = manager_db["kemkim-projects"]
+kemkim_folders_db = manager_db["kemkim-folders"]
 user_logs_db = manager_db["user-logs"]
+
+# 관리자가 "모든 사용자 프로젝트 보기"로 조회할 때 프로젝트 소유자(uid)를 표시용 이름으로
+# 바꾸는 용도. 계정 정보 자체는 homepage 쪽이 진짜 출처이므로 여기서는 조회만 한다.
+homepage_db = client["homepage"]
+user_db = homepage_db["users"]
+
+
+def get_user_names(uids: list[str]) -> dict[str, str]:
+    if not uids:
+        return {}
+    docs = user_db.find({"uid": {"$in": list(set(uids))}}, {"uid": 1, "name": 1})
+    return {d["uid"]: d.get("name", d["uid"]) for d in docs}

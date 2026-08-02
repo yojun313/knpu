@@ -1,5 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
-from app.models.job_model import JobSubmitRequest, QueueConfigUpdate, ResumeRequest
+from app.models.job_model import (
+    JobSubmitRequest,
+    QueueConfigUpdate,
+    RecrawlRequest,
+    ResumeRequest,
+)
 from app.routes.dependencies import get_current_user, check_owner_or_admin
 from app.db import crawler_db, user_logs_db
 from shared.user_log import insert_log
@@ -56,6 +61,43 @@ def resume_job(
         "crawler.crawl.resume",
         "crawler",
         target={"type": "crawl_db", "id": db_uid, "name": doc.get("name")},
+    )
+    return {"status": "ok", "job_id": job_id}
+
+
+@router.post("/jobs/recrawl/{db_uid}")
+def recrawl_job(
+    db_uid: str,
+    req: RecrawlRequest = RecrawlRequest(),
+    user=Depends(get_current_user),
+):
+    doc = crawler_db["db-list"].find_one({"uid": db_uid})
+    if not doc:
+        raise HTTPException(
+            status_code=404, detail=f"크롤링 작업을 찾을 수 없습니다: {db_uid}"
+        )
+    if doc.get("status") == "running":
+        raise HTTPException(
+            status_code=409,
+            detail="진행 중인 작업은 먼저 중단한 뒤 재크롤링해주세요",
+        )
+    check_owner_or_admin(user, doc)
+
+    try:
+        job_id = queue_manager.enqueue_recrawl(db_uid, req.start_date, req.end_date)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    insert_log(
+        user_logs_db,
+        user["uid"],
+        "crawler.crawl.recrawl",
+        "crawler",
+        message=f"크롤링 재실행(기존 데이터 삭제): {doc.get('name')}",
+        target={"type": "crawl_db", "id": db_uid, "name": doc.get("name")},
+        metadata={
+            "start_date": req.start_date or doc.get("startDate"),
+            "end_date": req.end_date or doc.get("endDate"),
+        },
     )
     return {"status": "ok", "job_id": job_id}
 

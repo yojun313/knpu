@@ -1,11 +1,9 @@
 import time
 import json
 import re
-import sys
 import warnings
 from datetime import datetime, timedelta, timezone
 import urllib3
-from bs4 import BeautifulSoup
 from googleapiclient.discovery import build
 import logging
 from db import load_proxy_list, checkState, get_userinfo, crawler_db

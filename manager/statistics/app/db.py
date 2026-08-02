@@ -1,7 +1,4 @@
 # app/db.py
-"""crawler/manager/server와 같은 MongoDB(manager DB)에 연결한다.
-계정 인증은 knpu.re.kr 중앙 로그인이 전담하므로, 여기서는 프로젝트 데이터만 다룬다."""
-
 import os
 import socket
 
@@ -48,4 +45,14 @@ manager_db_name = "manager_dev" if MODE == 0 else "manager"
 manager_db = client[manager_db_name]
 
 statistics_projects_db = manager_db["statistics-projects"]
+statistics_folders_db = manager_db["statistics-folders"]
 user_logs_db = manager_db["user-logs"]
+homepage_db = client["homepage"]
+user_db = homepage_db["users"]
+
+
+def get_user_names(uids: list[str]) -> dict[str, str]:
+    if not uids:
+        return {}
+    docs = user_db.find({"uid": {"$in": list(set(uids))}}, {"uid": 1, "name": 1})
+    return {d["uid"]: d.get("name", d["uid"]) for d in docs}

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import time
 import os
+import shutil
 import uuid
 import logging
 from collections import OrderedDict
@@ -173,6 +174,46 @@ def errorCrawl(DBuid):
         logger.info(f"크롤링 에러 처리 (uid: {DBuid})")
     except Exception as e:
         logger.warning(f"에러 상태 업데이트 실패 (uid: {DBuid}): {e}")
+
+
+def validateCrawlRange(startDate, endDate):
+    try:
+        s = datetime.strptime(startDate, "%Y%m%d").date()
+        e = datetime.strptime(endDate, "%Y%m%d").date()
+    except (TypeError, ValueError):
+        raise ValueError("날짜는 YYYYMMDD 형식으로 입력해주세요")
+    if e < s:
+        raise ValueError(f"종료일({endDate})이 시작일({startDate})보다 빠릅니다")
+
+
+def purgeCrawlDb(DBuid):
+    """재크롤링을 위해 기존 DB 레코드·수집 파일·로그를 전부 삭제한다.
+
+    재크롤링은 새 크롤링을 처음부터 다시 도는 것이므로(새 uid·새 DB명), 여기서 지우지
+    않으면 옛 데이터가 그대로 남는다. 특히 같은 키워드·같은 날짜 범위를 같은 분(分)에
+    재크롤링하면 makeDBname 결과가 이전과 같아져 폴더가 겹치므로, 새 작업을 큐에
+    넣기 전에 반드시 먼저 호출해야 한다.
+    """
+    doc = crawlList_db.find_one({"uid": DBuid})
+    if not doc:
+        raise ValueError(f"크롤링 작업을 찾을 수 없습니다: {DBuid}")
+
+    DBname = doc.get("name")
+    if DBname:
+        shutil.rmtree(os.path.join(CRAWL_DATA_PATH, DBname), ignore_errors=True)
+        try:
+            os.remove(os.path.join(CRAWL_LOG_PATH, DBname + "_log.txt"))
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            logger.warning(f"크롤 로그 파일 삭제 실패 ({DBname}): {e}")
+
+    crawlList_db.delete_one({"uid": DBuid})
+    crawlLog_db.delete_one({"uid": DBuid})
+    crawler_db["job-queue"].delete_many({"db_uid": DBuid})
+
+    logger.info(f"재크롤링 준비: 기존 DB 삭제 ({DBname}, uid: {DBuid})")
+    return doc
 
 
 def getResumeContext(DBuid):

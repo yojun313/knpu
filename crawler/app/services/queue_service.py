@@ -87,6 +87,44 @@ class QueueManager:
 
         return job_id
 
+    def enqueue_recrawl(
+        self, db_uid: str, start_date: str = None, end_date: str = None
+    ) -> str:
+        from common.storage import purgeCrawlDb, validateCrawlRange
+
+        doc = crawler_db["db-list"].find_one({"uid": db_uid})
+        if not doc:
+            raise ValueError(f"크롤링 작업을 찾을 수 없습니다: {db_uid}")
+        if doc.get("status") == "running":
+            raise ValueError("진행 중인 작업은 먼저 중단한 뒤 재크롤링할 수 있습니다")
+        if not doc.get("crawlObject"):
+            raise ValueError("재크롤링을 지원하지 않는 예전 작업입니다")
+
+        # 키워드·크롤러·옵션·속도는 원본 그대로 두고 날짜 범위만 바꿔서 다시 돈다
+        start_day = start_date or doc.get("startDate")
+        end_day = end_date or doc.get("endDate")
+        validateCrawlRange(start_day, end_day)
+
+        req = JobSubmitRequest(
+            name=doc.get("requester"),
+            crawl_object=doc["crawlObject"],
+            start_day=start_day,
+            end_day=end_day,
+            option_select=doc.get("crawlOption"),
+            keyword=doc.get("keyword"),
+            speed=doc.get("crawlSpeed", 3),
+        )
+
+        # 새 작업이 옛 DB명/폴더와 충돌하지 않도록 큐에 넣기 전에 기존 것을 먼저 지운다
+        purgeCrawlDb(db_uid)
+
+        job_id = self.enqueue(req)
+        logger.info(
+            f"Recrawl job {job_id} enqueued (old db_uid={db_uid}, "
+            f"{req.keyword} {start_day}~{end_day})"
+        )
+        return job_id
+
     def stop_job(self, job_id: str) -> bool:
         self.persistence.update_state(job_id, "stopped")
         return self.registry.stop(job_id)

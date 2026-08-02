@@ -33,11 +33,14 @@ def list_db(
     per_page: int = 30,
     status: str = None,
     q: str = None,
+    mine: bool = False,
     user=Depends(get_current_user),
 ):
     query = {}
     if status:
         query["status"] = status
+    if mine:
+        query["userUid"] = user["uid"]
     if q:
         query["$or"] = [
             {"keyword": {"$regex": q, "$options": "i"}},

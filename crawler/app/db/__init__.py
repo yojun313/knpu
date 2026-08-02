@@ -118,7 +118,7 @@ def add_userlog(userUid: str, dbname: str):
         userUid,
         "crawler.crawl.start",
         "crawler",
-        message=f"CRAWLER -> Started crawling: {dbname}",
+        message=f"크롤링 시작: {dbname}",
         target={"type": "crawl_db", "id": dbname},
     )
 

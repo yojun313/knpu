@@ -30,8 +30,29 @@ html,body{height:100%}
 body{font-family:-apple-system,'Pretendard','Segoe UI',Roboto,'Malgun Gothic',sans-serif;
   background:var(--sidebar-bg);color:var(--sidebar-text);overflow:hidden;
   -webkit-font-smoothing:antialiased;transition:background .2s ease,color .2s ease}
-#app{display:flex;height:100vh;width:100vw}
-@supports (height:100dvh){#app{height:100dvh}}
+
+/* 크롤러 사이트와 동일한 상단 바 — 다크모드 토글과 무관하게 항상 같은 남색/파란색
+   그라디언트로 고정해서 세 사이트의 브랜드 헤더가 완전히 똑같아 보이게 한다. */
+.top-header{
+  background:linear-gradient(110deg,#0B1226 0%,#2D4473 60%,#416BBF 100%);
+  height:58px;flex-shrink:0;padding:0 24px;display:flex;align-items:center;gap:16px;
+  box-shadow:0 2px 12px rgba(11,18,38,.30);position:sticky;top:0;z-index:100;
+}
+.top-header-logo{height:34px;object-fit:contain;display:block;flex-shrink:0}
+
+/* 상단 서비스 네비게이션 — 크롤러/kemkim/network/statistics/manager 어디서든
+   똑같이 보여서 서비스 간 이동이 쉽게 만든다. */
+.top-nav{display:flex;align-items:center;gap:4px;overflow-x:auto;scrollbar-width:none}
+.top-nav::-webkit-scrollbar{display:none}
+.top-nav-link{
+  flex-shrink:0;color:rgba(255,255,255,.72);text-decoration:none;font-size:12.5px;font-weight:800;
+  letter-spacing:.3px;padding:7px 13px;border-radius:7px;transition:background 150ms,color 150ms;white-space:nowrap;
+}
+.top-nav-link:hover{background:rgba(255,255,255,.12);color:#fff}
+.top-nav-link.active{background:rgba(255,255,255,.18);color:#fff}
+
+#app{display:flex;height:calc(100vh - 58px);width:100vw}
+@supports (height:100dvh){#app{height:calc(100dvh - 58px)}}
 
 /* ===== 모바일 전용 컨트롤 (기본 숨김, 좁은 화면에서만 노출) ===== */
 .mobile-icon-btn{display:none}
@@ -54,13 +75,56 @@ body{font-family:-apple-system,'Pretendard','Segoe UI',Roboto,'Malgun Gothic',sa
   white-space:nowrap;overflow:hidden}
 .rail.collapsed .rail-brand{display:none}
 
-.rail-upload{display:flex;align-items:center;gap:8px;margin:12px;padding:9px 11px;border-radius:9px;width:calc(100% - 24px);
+.rail-actions-row{display:flex;gap:8px;margin:12px;flex-shrink:0}
+.rail-upload{display:flex;align-items:center;gap:8px;margin:0;padding:9px 11px;border-radius:9px;width:auto;flex:1;
   border:1.5px dashed var(--sidebar-border);cursor:pointer;background:transparent;color:var(--sidebar-muted);
   font-size:12px;font-family:inherit;transition:.15s;flex-shrink:0}
 .rail-upload:hover{border-color:var(--accent);border-style:solid;color:var(--text-strong);background:var(--overlay-hover)}
 .rail-upload .ru-icon{font-size:14px;color:var(--accent);flex-shrink:0}
-.rail.collapsed .rail-upload{margin:12px 10px;padding:9px;justify-content:center;width:auto}
+.rail.collapsed .rail-actions-row{margin:12px 10px;gap:0}
+.rail.collapsed .rail-upload{padding:9px;justify-content:center}
 .rail.collapsed .rail-upload .ru-text{display:none}
+.rail-new-folder-btn{display:flex;align-items:center;justify-content:center;width:38px;flex-shrink:0;border-radius:9px;
+  border:1.5px dashed var(--sidebar-border);cursor:pointer;background:transparent;color:var(--sidebar-muted);
+  font-size:14px;font-family:inherit;transition:.15s}
+.rail-new-folder-btn:hover{border-color:var(--accent);border-style:solid;color:var(--text-strong);background:var(--overlay-hover)}
+.rail.collapsed .rail-new-folder-btn{display:none}
+
+.folder-group{margin-bottom:2px}
+.folder-header{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:8px;cursor:pointer;
+  user-select:none;transition:background .12s,color .12s}
+.folder-header:hover{background:var(--sidebar-panel2)}
+.folder-header.drag-over{background:var(--accent);color:#fff}
+.folder-header.drag-over .fh-count,.folder-header.drag-over .fh-chevron{color:#fff}
+.fh-chevron{font-size:9px;color:var(--sidebar-muted);transition:transform .15s;flex-shrink:0;width:10px;text-align:center}
+.folder-group.collapsed > .folder-header .fh-chevron{transform:rotate(-90deg)}
+.fh-icon{font-size:12px;flex-shrink:0}
+.fh-name{flex:1;font-size:12px;font-weight:700;color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fh-count{font-size:10px;color:var(--sidebar-muted);flex-shrink:0}
+.fh-actions{display:none;gap:2px;flex-shrink:0}
+.folder-header:hover .fh-actions{display:flex}
+.folder-body{padding-left:12px;overflow:hidden}
+.folder-group.collapsed .folder-body{display:none}
+.rail-item.dragging{opacity:.35}
+
+.user-group{margin-bottom:4px;border-bottom:1px solid var(--sidebar-border);padding-bottom:4px}
+.user-group:last-child{border-bottom:none}
+.user-header{display:flex;align-items:center;gap:7px;padding:8px;border-radius:8px;cursor:pointer;user-select:none}
+.user-header:hover{background:var(--sidebar-panel2)}
+.user-header .fh-chevron{width:10px;text-align:center;font-size:9px;color:var(--sidebar-muted);transition:transform .15s;flex-shrink:0}
+.user-group.collapsed .user-header .fh-chevron{transform:rotate(-90deg)}
+.uh-avatar{width:20px;height:20px;border-radius:6px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.uh-name{flex:1;font-size:12.5px;font-weight:800;color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-body{padding-left:6px;overflow:hidden}
+.user-group.collapsed .user-body{display:none}
+.ctx-empty{padding:8px 12px;font-size:11.5px;color:var(--sidebar-muted)}
+
+.rail-admin-toggle{display:flex;align-items:center;gap:7px;margin:0 12px 10px;padding:7px 9px;border-radius:8px;
+  background:var(--sidebar-panel2);font-size:11px;color:var(--sidebar-muted);cursor:pointer;user-select:none;flex-shrink:0}
+.rail-admin-toggle input{accent-color:var(--accent);cursor:pointer}
+.rail-admin-toggle .rat-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rail.collapsed .rail-admin-toggle{display:none}
 
 .rail-list{flex:1;overflow-y:auto;padding:2px 8px 8px}
 .rail.collapsed .rail-list{overflow:visible;padding:2px 6px 8px}

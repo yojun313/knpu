@@ -36,6 +36,42 @@
             scroll-behavior: smooth;
         }
 
+        /* 크롤러/kemkim/network/statistics와 동일한 상단 바 — 다크모드 등과 무관하게
+           항상 같은 남색/파란색 그라디언트로 고정해서 다섯 사이트의 브랜드 헤더가
+           완전히 똑같아 보이게 한다. */
+        .top-header {
+            background: linear-gradient(110deg, #0B1226 0%, #2D4473 60%, #416BBF 100%);
+            height: 58px;
+            flex-shrink: 0;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 12px rgba(11,18,38,0.30);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .top-header-logo { width: auto; height: 34px; object-fit: contain; display: block; flex-shrink: 0; box-shadow: none; border-radius: 0; }
+
+        .top-nav { display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+        .top-nav::-webkit-scrollbar { display: none; }
+        .top-nav-link {
+            flex-shrink: 0;
+            color: rgba(255,255,255,0.72);
+            text-decoration: none;
+            font-family: -apple-system, 'Pretendard', 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
+            font-size: 12.5px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            padding: 7px 13px;
+            border-radius: 7px;
+            transition: background 150ms, color 150ms;
+            white-space: nowrap;
+        }
+        .top-nav-link:hover { background: rgba(255,255,255,0.12); color: #fff; }
+        .top-nav-link.active { background: rgba(255,255,255,0.18); color: #fff; }
+
         /* Hero Header */
         header {
             background-color: var(--dark);
@@ -281,10 +317,17 @@
 </head>
 
 <body>
-    <header>
-        <h1>MANAGER</h1>
-        <p>Unified Research Management Platform</p>
-    </header>
+    <div class="top-header">
+        <img src="assets/imgs/lab_logo.png" alt="FPEI" class="top-header-logo">
+        <nav class="top-nav">
+            <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
+            <a href="https://manager.knpu.re.kr" class="top-nav-link active">MANAGER</a>
+            <a href="https://crawler.knpu.re.kr" class="top-nav-link">CRAWLER</a>
+            <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
+            <a href="https://kemkim.knpu.re.kr" class="top-nav-link">KEMKIM</a>
+            <a href="https://statistics.knpu.re.kr" class="top-nav-link">STATISTICS</a>
+        </nav>
+    </div>
 
     <div class="main-wrapper">
         <nav class="sidebar">
