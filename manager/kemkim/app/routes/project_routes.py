@@ -47,12 +47,19 @@ def _page(filename: str) -> FileResponse:
     return FileResponse(os.path.join(STATIC_DIR, filename), headers=_NO_CACHE)
 
 
-def _uid(request: Request) -> str:
+def _user(request: Request) -> dict:
     user = request.scope.get("state", {}).get("user")
     if not user:
-        # 미들웨어가 이미 /api/* 는 401로 막아주므로 정상 흐름에서는 도달하지 않는다.
         raise HTTPException(401, "인증이 필요합니다")
-    return user["uid"]
+    return user
+
+
+def _uid(request: Request) -> str:
+    return _user(request)["uid"]
+
+
+def _is_admin(request: Request) -> bool:
+    return _user(request).get("role") == "admin"
 
 
 def _handle_store_error(fn, *args, **kwargs):
@@ -92,7 +99,11 @@ async def api_me(request: Request):
 
 
 @router.get("/api/projects")
-async def api_list_projects(request: Request):
+async def api_list_projects(request: Request, all: bool = False):
+    if all:
+        if not _is_admin(request):
+            raise HTTPException(403, "관리자만 전체 프로젝트를 볼 수 있습니다")
+        return JSONResponse({"projects": project_store.list_all_projects()})
     return JSONResponse(
         {"projects": _handle_store_error(project_store.list_projects, _uid(request))}
     )
@@ -196,24 +207,109 @@ async def api_delete_project(project_id: str, request: Request):
     return JSONResponse({"message": "삭제되었습니다"})
 
 
+@router.patch("/api/projects/{project_id}/folder")
+async def api_move_project_folder(project_id: str, request: Request):
+    body = await request.json()
+    uid = _uid(request)
+    project = _handle_store_error(
+        project_store.move_project_folder, uid, project_id, body.get("folder_id")
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.project.move_folder",
+        "kemkim",
+        target={"type": "project", "id": project_id, "name": project.get("name")},
+        metadata={"folder_id": project.get("folder_id")},
+    )
+    return JSONResponse(project)
+
+
+# ---------------------------------------------------------------------------
+# 폴더 CRUD
+# ---------------------------------------------------------------------------
+
+
+@router.get("/api/folders")
+async def api_list_folders(request: Request, all: bool = False):
+    if all:
+        if not _is_admin(request):
+            raise HTTPException(403, "관리자만 전체 폴더를 볼 수 있습니다")
+        return JSONResponse({"folders": project_store.list_all_folders()})
+    return JSONResponse(
+        {"folders": _handle_store_error(project_store.list_folders, _uid(request))}
+    )
+
+
+@router.post("/api/folders")
+async def api_create_folder(request: Request):
+    body = await request.json()
+    uid = _uid(request)
+    folder = _handle_store_error(project_store.create_folder, uid, body.get("name", ""))
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.folder.create",
+        "kemkim",
+        target={"type": "folder", "id": folder["folder_id"], "name": folder["name"]},
+    )
+    return JSONResponse(folder)
+
+
+@router.patch("/api/folders/{folder_id}")
+async def api_rename_folder(folder_id: str, request: Request):
+    body = await request.json()
+    uid = _uid(request)
+    folder = _handle_store_error(
+        project_store.rename_folder, uid, folder_id, body.get("name", "")
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.folder.rename",
+        "kemkim",
+        target={"type": "folder", "id": folder_id, "name": folder["name"]},
+    )
+    return JSONResponse(folder)
+
+
+@router.delete("/api/folders/{folder_id}")
+async def api_delete_folder(folder_id: str, request: Request):
+    uid = _uid(request)
+    _handle_store_error(project_store.delete_folder, uid, folder_id)
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.folder.delete",
+        "kemkim",
+        target={"type": "folder", "id": folder_id},
+    )
+    return JSONResponse({"message": "삭제되었습니다"})
+
+
 @router.get("/viewer/{project_id}", response_class=HTMLResponse)
 async def viewer_page(project_id: str, request: Request):
-    _handle_store_error(project_store.get_project, _uid(request), project_id)
+    _handle_store_error(
+        project_store.get_project, _uid(request), project_id, _is_admin(request)
+    )
     return _page("viewer.html")
 
 
 @router.get("/api/projects/{project_id}/meta")
 async def project_meta(project_id: str, request: Request):
     return JSONResponse(
-        _handle_store_error(project_store.get_project, _uid(request), project_id)
+        _handle_store_error(
+            project_store.get_project, _uid(request), project_id, _is_admin(request)
+        )
     )
 
 
 @router.get("/api/projects/{project_id}/download")
 async def project_download(project_id: str, request: Request):
     uid = _uid(request)
-    zip_path = _handle_store_error(project_store.zip_raw, uid, project_id)
-    project = project_store.get_project(uid, project_id)
+    is_admin = _is_admin(request)
+    zip_path = _handle_store_error(project_store.zip_raw, uid, project_id, is_admin)
+    project = project_store.get_project(uid, project_id, is_admin)
     insert_log(
         user_logs_db,
         uid,
@@ -239,7 +335,9 @@ async def project_graph(project_id: str, request: Request):
     """KEM/KIM 좌표·4분면 신호·기간별 지표·추적(Trace) 데이터를 한 번에 내려준다.
     웹에서는 별도의 "조정" 단계가 없다 — 프론트엔드가 이 데이터를 받아 사분면/단어
     단위로 표시만 껐다 켠다(서버 재계산 없음)."""
-    graph = _handle_store_error(project_store.load_graph, _uid(request), project_id)
+    graph = _handle_store_error(
+        project_store.load_graph, _uid(request), project_id, _is_admin(request)
+    )
     return JSONResponse(graph)
 
 
@@ -343,7 +441,10 @@ async def project_interpret(project_id: str, request: Request):
 @router.get("/api/projects/{project_id}/interpretations")
 async def project_interpretations(project_id: str, request: Request):
     interpretations = _handle_store_error(
-        project_store.list_interpretations, _uid(request), project_id
+        project_store.list_interpretations,
+        _uid(request),
+        project_id,
+        _is_admin(request),
     )
     return JSONResponse({"interpretations": interpretations})
 
@@ -353,7 +454,11 @@ async def project_interpretation_detail(
     project_id: str, interpretation_id: str, request: Request
 ):
     interpretation = _handle_store_error(
-        project_store.load_interpretation, _uid(request), project_id, interpretation_id
+        project_store.load_interpretation,
+        _uid(request),
+        project_id,
+        interpretation_id,
+        _is_admin(request),
     )
     return JSONResponse(interpretation)
 
@@ -364,7 +469,11 @@ async def project_interpretation_export(
 ):
     uid = _uid(request)
     interpretation = _handle_store_error(
-        project_store.load_interpretation, uid, project_id, interpretation_id
+        project_store.load_interpretation,
+        uid,
+        project_id,
+        interpretation_id,
+        _is_admin(request),
     )
     insert_log(
         user_logs_db,

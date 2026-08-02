@@ -10,6 +10,8 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import JSONResponse
+from starlette.background import BackgroundTask
 import psutil
 from app.services.pm2_service import PM2Service
 from app.routes.dependencies import get_current_user
@@ -51,6 +53,27 @@ async def pm2_manager_page(request: Request, user=Depends(get_current_user)):
         request=request,
         name="process.html",
         context={"processes": processes, "active_page": "process"},
+    )
+
+
+@router.post("/control/restart-all")
+async def restart_all_processes(user=Depends(get_current_user)):
+
+    def _run_and_log():
+        success = PM2Service.run_command("restart", "all")
+        insert_log(
+            user_logs_col,
+            user["sub"],
+            "admin.pm2.restart_all",
+            "admin",
+            message="pm2 restart all",
+            target={"type": "pm2_process", "id": "all"},
+            outcome="success" if success else "failure",
+        )
+
+    return JSONResponse(
+        {"status": "accepted"},
+        background=BackgroundTask(_run_and_log),
     )
 
 

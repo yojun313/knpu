@@ -74,6 +74,9 @@ app.mount(
 app.mount(
     "/css", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "css")), name="css"
 )
+app.mount(
+    "/img", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "img")), name="img"
+)
 
 app.include_router(api_router)
 

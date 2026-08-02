@@ -111,7 +111,7 @@ def deleteCrawlDb(uid: str, userUid: str):
     log_user(
         userUid,
         "manager.crawl_db.delete_request",
-        f"DATABASE -> Requested to delete crawl DB: {targetDB}",
+        f"Deleted crawl DB: {targetDB}",
         target={"type": "crawl_db", "id": targetDB},
     )
 
@@ -145,7 +145,7 @@ def stopCrawlDb(uid: str, userUid: str):
         log_user(
             userUid,
             "manager.crawl_db.stop_request",
-            f"DATABASE -> Requested to stop crawl DB: {target_name}",
+            f"Stopped crawl DB: {target_name}",
             target={"type": "crawl_db", "id": target_name},
         )
 
@@ -267,7 +267,7 @@ def getCrawlDbInfo(uid: str, userUid: str = None):
     log_user(
         userUid,
         "manager.crawl_db.info_view",
-        f"DATABASE -> Requested info for crawl DB: {targetDB}",
+        f"Viewed crawl DB info: {targetDB}",
         target={"type": "crawl_db", "id": targetDB},
     )
 
@@ -432,7 +432,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
     log_user(
         userUid,
         "manager.crawl_db.save_request",
-        f"DATABASE -> Requested to save crawl DB: {targetDB}",
+        f"Requested crawl DB download: {targetDB}",
         target={"type": "crawl_db", "id": targetDB},
     )
 
@@ -689,7 +689,7 @@ def previewCrawlDb(uid: str, userUid: str):
     log_user(
         userUid,
         "manager.crawl_db.preview_request",
-        f"DATABASE -> Requested preview for crawl DB: {targetDB}",
+        f"Requested crawl DB preview: {targetDB}",
         target={"type": "crawl_db", "id": targetDB},
     )
 

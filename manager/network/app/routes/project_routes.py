@@ -30,12 +30,20 @@ def _page(filename: str) -> FileResponse:
     return FileResponse(os.path.join(STATIC_DIR, filename), headers=_NO_CACHE)
 
 
-def _uid(request: Request) -> str:
+def _user(request: Request) -> dict:
     user = request.scope.get("state", {}).get("user")
     if not user:
         # 미들웨어가 이미 /api/* 는 401로 막아주므로 정상 흐름에서는 도달하지 않는다.
         raise HTTPException(401, "인증이 필요합니다")
-    return user["uid"]
+    return user
+
+
+def _uid(request: Request) -> str:
+    return _user(request)["uid"]
+
+
+def _is_admin(request: Request) -> bool:
+    return _user(request).get("role") == "admin"
 
 
 def _handle_store_error(fn, *args, **kwargs):
@@ -70,7 +78,11 @@ async def api_me(request: Request):
 
 
 @router.get("/api/projects")
-async def api_list_projects(request: Request):
+async def api_list_projects(request: Request, all: bool = False):
+    if all:
+        if not _is_admin(request):
+            raise HTTPException(403, "관리자만 전체 프로젝트를 볼 수 있습니다")
+        return JSONResponse({"projects": project_store.list_all_projects()})
     return JSONResponse(
         {"projects": _handle_store_error(project_store.list_projects, _uid(request))}
     )
@@ -174,23 +186,107 @@ async def api_delete_project(project_id: str, request: Request):
     return JSONResponse({"message": "삭제되었습니다"})
 
 
+@router.patch("/api/projects/{project_id}/folder")
+async def api_move_project_folder(project_id: str, request: Request):
+    body = await request.json()
+    uid = _uid(request)
+    project = _handle_store_error(
+        project_store.move_project_folder, uid, project_id, body.get("folder_id")
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.project.move_folder",
+        "network",
+        target={"type": "project", "id": project_id, "name": project.get("name")},
+        metadata={"folder_id": project.get("folder_id")},
+    )
+    return JSONResponse(project)
+
+
+# ---------------------------------------------------------------------------
+# 폴더 CRUD
+# ---------------------------------------------------------------------------
+
+
+@router.get("/api/folders")
+async def api_list_folders(request: Request, all: bool = False):
+    if all:
+        if not _is_admin(request):
+            raise HTTPException(403, "관리자만 전체 폴더를 볼 수 있습니다")
+        return JSONResponse({"folders": project_store.list_all_folders()})
+    return JSONResponse(
+        {"folders": _handle_store_error(project_store.list_folders, _uid(request))}
+    )
+
+
+@router.post("/api/folders")
+async def api_create_folder(request: Request):
+    body = await request.json()
+    uid = _uid(request)
+    folder = _handle_store_error(project_store.create_folder, uid, body.get("name", ""))
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.folder.create",
+        "network",
+        target={"type": "folder", "id": folder["folder_id"], "name": folder["name"]},
+    )
+    return JSONResponse(folder)
+
+
+@router.patch("/api/folders/{folder_id}")
+async def api_rename_folder(folder_id: str, request: Request):
+    body = await request.json()
+    uid = _uid(request)
+    folder = _handle_store_error(
+        project_store.rename_folder, uid, folder_id, body.get("name", "")
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.folder.rename",
+        "network",
+        target={"type": "folder", "id": folder_id, "name": folder["name"]},
+    )
+    return JSONResponse(folder)
+
+
+@router.delete("/api/folders/{folder_id}")
+async def api_delete_folder(folder_id: str, request: Request):
+    uid = _uid(request)
+    _handle_store_error(project_store.delete_folder, uid, folder_id)
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.folder.delete",
+        "network",
+        target={"type": "folder", "id": folder_id},
+    )
+    return JSONResponse({"message": "삭제되었습니다"})
+
+
 @router.get("/viewer/{project_id}", response_class=HTMLResponse)
 async def viewer_page(project_id: str, request: Request):
-    _handle_store_error(project_store.get_project, _uid(request), project_id)
+    _handle_store_error(
+        project_store.get_project, _uid(request), project_id, _is_admin(request)
+    )
     return _page("viewer.html")
 
 
 @router.get("/api/projects/{project_id}/meta")
 async def project_meta(project_id: str, request: Request):
     return JSONResponse(
-        _handle_store_error(project_store.get_project, _uid(request), project_id)
+        _handle_store_error(
+            project_store.get_project, _uid(request), project_id, _is_admin(request)
+        )
     )
 
 
 @router.get("/api/projects/{project_id}/summary")
 async def project_summary(project_id: str, request: Request, tag: str = Query("")):
     graph = _handle_store_error(
-        project_store.load_graph, _uid(request), project_id, tag
+        project_store.load_graph, _uid(request), project_id, tag, _is_admin(request)
     )
     summary = graph_analysis.compute_summary(graph)
     summary["community_keywords"] = graph_analysis.compute_community_keywords(graph)
@@ -208,7 +304,7 @@ async def project_data(
     max_edges: int = Query(MAX_EDGES_DEFAULT),
 ):
     graph = _handle_store_error(
-        project_store.load_graph, _uid(request), project_id, tag
+        project_store.load_graph, _uid(request), project_id, tag, _is_admin(request)
     )
 
     edges = graph["edges"]

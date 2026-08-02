@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from app.db import statistics_projects_db
+from app.db import statistics_projects_db, statistics_folders_db, get_user_names
 
 PROJECT_ROOT = os.getenv("STATISTICS_PROJECT_ROOT", "/mnt/ssd/statistics")
 os.makedirs(PROJECT_ROOT, exist_ok=True)
@@ -405,6 +405,7 @@ def _doc_out(doc: dict) -> dict:
         "category": doc.get("category"),
         "platform": doc.get("platform"),
         "summary": doc.get("summary", {}),
+        "folder_id": doc.get("folder_id"),
     }
 
 
@@ -449,17 +450,30 @@ def list_projects(uid: str) -> list:
     return [_doc_out(d) for d in docs]
 
 
-def _get_owned_doc(uid: str, project_id: str) -> dict:
+def list_all_projects() -> list:
+    """관리자용: 모든 사용자의 프로젝트를 소유자 이름과 함께 반환한다."""
+    docs = list(statistics_projects_db.find({}).sort("created_at", -1))
+    names = get_user_names([d["uid"] for d in docs])
+    out = []
+    for d in docs:
+        item = _doc_out(d)
+        item["owner_uid"] = d["uid"]
+        item["owner_name"] = names.get(d["uid"], d["uid"])
+        out.append(item)
+    return out
+
+
+def _get_owned_doc(uid: str, project_id: str, is_admin: bool = False) -> dict:
     doc = statistics_projects_db.find_one({"_id": project_id})
     if not doc:
         raise NotFound("프로젝트를 찾을 수 없습니다.")
-    if doc["uid"] != uid:
+    if doc["uid"] != uid and not is_admin:
         raise Forbidden("이 프로젝트에 접근할 권한이 없습니다.")
     return doc
 
 
-def get_project(uid: str, project_id: str) -> dict:
-    return _doc_out(_get_owned_doc(uid, project_id))
+def get_project(uid: str, project_id: str, is_admin: bool = False) -> dict:
+    return _doc_out(_get_owned_doc(uid, project_id, is_admin))
 
 
 def rename_project(uid: str, project_id: str, new_name: str) -> dict:
@@ -481,13 +495,97 @@ def delete_project(uid: str, project_id: str):
 
 
 # ---------------------------------------------------------------------------
+# 폴더 (사이드바 프로젝트 정리용 — 각자 자기 폴더만 관리한다)
+# ---------------------------------------------------------------------------
+
+
+def _folder_out(doc: dict) -> dict:
+    return {
+        "folder_id": doc["_id"],
+        "name": doc["name"],
+        "created_at": _iso(doc["created_at"]),
+        "updated_at": _iso(doc["updated_at"]),
+    }
+
+
+def list_folders(uid: str) -> list:
+    docs = statistics_folders_db.find({"uid": uid}).sort("name", 1)
+    return [_folder_out(d) for d in docs]
+
+
+def list_all_folders() -> list:
+    docs = list(statistics_folders_db.find({}).sort("name", 1))
+    names = get_user_names([d["uid"] for d in docs])
+    out = []
+    for d in docs:
+        item = _folder_out(d)
+        item["owner_uid"] = d["uid"]
+        item["owner_name"] = names.get(d["uid"], d["uid"])
+        out.append(item)
+    return out
+
+
+def create_folder(uid: str, name: str) -> dict:
+    name = (name or "").strip()
+    if not name:
+        raise ValueError("폴더 이름을 입력해주세요.")
+    folder_id = uuid.uuid4().hex
+    now = datetime.now(timezone.utc)
+    doc = {"_id": folder_id, "uid": uid, "name": name, "created_at": now, "updated_at": now}
+    statistics_folders_db.insert_one(doc)
+    return _folder_out(doc)
+
+
+def _get_owned_folder(uid: str, folder_id: str) -> dict:
+    doc = statistics_folders_db.find_one({"_id": folder_id})
+    if not doc:
+        raise NotFound("폴더를 찾을 수 없습니다.")
+    if doc["uid"] != uid:
+        raise Forbidden("이 폴더에 접근할 권한이 없습니다.")
+    return doc
+
+
+def rename_folder(uid: str, folder_id: str, new_name: str) -> dict:
+    _get_owned_folder(uid, folder_id)
+    new_name = (new_name or "").strip()
+    if not new_name:
+        raise ValueError("이름을 입력해주세요.")
+    statistics_folders_db.update_one(
+        {"_id": folder_id},
+        {"$set": {"name": new_name, "updated_at": datetime.now(timezone.utc)}},
+    )
+    return _folder_out(_get_owned_folder(uid, folder_id))
+
+
+def delete_folder(uid: str, folder_id: str):
+    _get_owned_folder(uid, folder_id)
+    statistics_folders_db.delete_one({"_id": folder_id})
+    # 폴더 안에 있던 프로젝트는 삭제하지 않고 미분류(폴더 없음) 상태로 되돌린다.
+    statistics_projects_db.update_many(
+        {"uid": uid, "folder_id": folder_id},
+        {"$set": {"folder_id": None, "updated_at": datetime.now(timezone.utc)}},
+    )
+
+
+def move_project_folder(uid: str, project_id: str, folder_id: str | None) -> dict:
+    doc = _get_owned_doc(uid, project_id)
+    if folder_id:
+        _get_owned_folder(uid, folder_id)
+    statistics_projects_db.update_one(
+        {"_id": project_id},
+        {"$set": {"folder_id": folder_id, "updated_at": datetime.now(timezone.utc)}},
+    )
+    return _doc_out(statistics_projects_db.find_one({"_id": project_id}))
+
+
+# ---------------------------------------------------------------------------
 # 분석 결과 (표 + 설명)
 # ---------------------------------------------------------------------------
 
 
-def load_base(uid: str, project_id: str) -> dict:
-    _get_owned_doc(uid, project_id)
-    path = _base_json_path(uid, project_id)
+def load_base(uid: str, project_id: str, is_admin: bool = False) -> dict:
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    path = _base_json_path(doc["uid"], project_id)
     if not os.path.exists(path):
         raise NotFound("분석 결과를 찾을 수 없습니다.")
     with open(path, "r", encoding="utf-8") as f:
@@ -499,14 +597,15 @@ def load_base(uid: str, project_id: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def zip_raw(uid: str, project_id: str) -> str:
+def zip_raw(uid: str, project_id: str, is_admin: bool = False) -> str:
     """raw/ 폴더를 즉석에서 압축해 zip 경로를 반환한다 (호출자가 응답 후 삭제 책임)."""
-    _get_owned_doc(uid, project_id)
-    raw_dir = _raw_dir(uid, project_id)
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    owner_uid = doc["uid"]
+    raw_dir = _raw_dir(owner_uid, project_id)
     if not os.path.isdir(raw_dir):
         raise NotFound("원본 분석 결과를 찾을 수 없습니다.")
     tmp_base = os.path.join(
-        _project_dir(uid, project_id), f"download_{uuid.uuid4().hex}"
+        _project_dir(owner_uid, project_id), f"download_{uuid.uuid4().hex}"
     )
     archive_path = shutil.make_archive(tmp_base, "zip", raw_dir)
     return archive_path

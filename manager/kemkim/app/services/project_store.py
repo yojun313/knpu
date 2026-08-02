@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from app.db import kemkim_projects_db
+from app.db import kemkim_projects_db, kemkim_folders_db, get_user_names
 
 PROJECT_ROOT = os.getenv("KEMKIM_PROJECT_ROOT", "/mnt/ssd/kemkim")
 os.makedirs(PROJECT_ROOT, exist_ok=True)
@@ -294,6 +294,7 @@ def _doc_out(doc: dict) -> dict:
         "summary": doc.get("summary", {}),
         "interpretations": doc.get("interpretations", []),
         "has_source": doc.get("has_source", False),
+        "folder_id": doc.get("folder_id"),
     }
 
 
@@ -338,17 +339,30 @@ def list_projects(uid: str) -> list:
     return [_doc_out(d) for d in docs]
 
 
-def _get_owned_doc(uid: str, project_id: str) -> dict:
+def list_all_projects() -> list:
+    """관리자용: 모든 사용자의 프로젝트를 소유자 이름과 함께 반환한다."""
+    docs = list(kemkim_projects_db.find({}).sort("created_at", -1))
+    names = get_user_names([d["uid"] for d in docs])
+    out = []
+    for d in docs:
+        item = _doc_out(d)
+        item["owner_uid"] = d["uid"]
+        item["owner_name"] = names.get(d["uid"], d["uid"])
+        out.append(item)
+    return out
+
+
+def _get_owned_doc(uid: str, project_id: str, is_admin: bool = False) -> dict:
     doc = kemkim_projects_db.find_one({"_id": project_id})
     if not doc:
         raise NotFound("프로젝트를 찾을 수 없습니다.")
-    if doc["uid"] != uid:
+    if doc["uid"] != uid and not is_admin:
         raise Forbidden("이 프로젝트에 접근할 권한이 없습니다.")
     return doc
 
 
-def get_project(uid: str, project_id: str) -> dict:
-    return _doc_out(_get_owned_doc(uid, project_id))
+def get_project(uid: str, project_id: str, is_admin: bool = False) -> dict:
+    return _doc_out(_get_owned_doc(uid, project_id, is_admin))
 
 
 def rename_project(uid: str, project_id: str, new_name: str) -> dict:
@@ -370,13 +384,102 @@ def delete_project(uid: str, project_id: str):
 
 
 # ---------------------------------------------------------------------------
+# 폴더 (사이드바 프로젝트 정리용 — 각자 자기 폴더만 관리한다)
+# ---------------------------------------------------------------------------
+
+
+def _folder_out(doc: dict) -> dict:
+    return {
+        "folder_id": doc["_id"],
+        "name": doc["name"],
+        "created_at": _iso(doc["created_at"]),
+        "updated_at": _iso(doc["updated_at"]),
+    }
+
+
+def list_folders(uid: str) -> list:
+    docs = kemkim_folders_db.find({"uid": uid}).sort("name", 1)
+    return [_folder_out(d) for d in docs]
+
+
+def list_all_folders() -> list:
+    """관리자용: 모든 사용자의 폴더를 소유자와 함께 반환한다(정리는 각자 자기 것만 하므로
+    프로젝트처럼 읽기 전용으로만 보여준다)."""
+    docs = list(kemkim_folders_db.find({}).sort("name", 1))
+    names = get_user_names([d["uid"] for d in docs])
+    out = []
+    for d in docs:
+        item = _folder_out(d)
+        item["owner_uid"] = d["uid"]
+        item["owner_name"] = names.get(d["uid"], d["uid"])
+        out.append(item)
+    return out
+
+
+def create_folder(uid: str, name: str) -> dict:
+    name = (name or "").strip()
+    if not name:
+        raise ValueError("폴더 이름을 입력해주세요.")
+    folder_id = uuid.uuid4().hex
+    now = datetime.now(timezone.utc)
+    doc = {"_id": folder_id, "uid": uid, "name": name, "created_at": now, "updated_at": now}
+    kemkim_folders_db.insert_one(doc)
+    return _folder_out(doc)
+
+
+def _get_owned_folder(uid: str, folder_id: str) -> dict:
+    doc = kemkim_folders_db.find_one({"_id": folder_id})
+    if not doc:
+        raise NotFound("폴더를 찾을 수 없습니다.")
+    if doc["uid"] != uid:
+        raise Forbidden("이 폴더에 접근할 권한이 없습니다.")
+    return doc
+
+
+def rename_folder(uid: str, folder_id: str, new_name: str) -> dict:
+    _get_owned_folder(uid, folder_id)
+    new_name = (new_name or "").strip()
+    if not new_name:
+        raise ValueError("이름을 입력해주세요.")
+    kemkim_folders_db.update_one(
+        {"_id": folder_id},
+        {"$set": {"name": new_name, "updated_at": datetime.now(timezone.utc)}},
+    )
+    return _folder_out(_get_owned_folder(uid, folder_id))
+
+
+def delete_folder(uid: str, folder_id: str):
+    _get_owned_folder(uid, folder_id)
+    kemkim_folders_db.delete_one({"_id": folder_id})
+    # 폴더 안에 있던 프로젝트는 삭제하지 않고 미분류(폴더 없음) 상태로 되돌린다.
+    kemkim_projects_db.update_many(
+        {"uid": uid, "folder_id": folder_id},
+        {"$set": {"folder_id": None, "updated_at": datetime.now(timezone.utc)}},
+    )
+
+
+def move_project_folder(uid: str, project_id: str, folder_id: str | None) -> dict:
+    """프로젝트를 폴더로 옮기거나(folder_id 지정) 미분류로 뺀다(folder_id=None).
+    자기 프로젝트만 정리할 수 있으므로 관리자 우회 없이 소유자 전용이다."""
+    doc = _get_owned_doc(uid, project_id)
+    if folder_id:
+        _get_owned_folder(uid, folder_id)
+    kemkim_projects_db.update_one(
+        {"_id": project_id},
+        {"$set": {"folder_id": folder_id, "updated_at": datetime.now(timezone.utc)}},
+    )
+    return _doc_out(kemkim_projects_db.find_one({"_id": project_id}))
+
+
+# ---------------------------------------------------------------------------
 # 분석 결과 (좌표/신호/기간별 표/추적)
 # ---------------------------------------------------------------------------
 
 
-def load_graph(uid: str, project_id: str) -> dict:
-    _get_owned_doc(uid, project_id)
-    path = _base_json_path(uid, project_id)
+def load_graph(uid: str, project_id: str, is_admin: bool = False) -> dict:
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    # 파일은 소유자(doc["uid"]) 아래에 있으므로 관리자가 대신 조회할 때도 그 경로를 써야 한다.
+    path = _base_json_path(doc["uid"], project_id)
     if not os.path.exists(path):
         raise NotFound("분석 결과를 찾을 수 없습니다.")
     with open(path, "r", encoding="utf-8") as f:
@@ -398,9 +501,9 @@ def save_source_csv(uid: str, project_id: str, content: bytes):
     )
 
 
-def load_source_csv(uid: str, project_id: str) -> pd.DataFrame:
-    _get_owned_doc(uid, project_id)
-    path = _source_csv_path(uid, project_id)
+def load_source_csv(uid: str, project_id: str, is_admin: bool = False) -> pd.DataFrame:
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    path = _source_csv_path(doc["uid"], project_id)
     if not os.path.exists(path):
         raise NotFound(
             "해석에 사용할 원본(토큰화 전) CSV가 아직 첨부되지 않았습니다. 먼저 업로드해주세요."
@@ -441,15 +544,17 @@ def save_interpretation(uid: str, project_id: str, interpretation: dict) -> dict
     return interpretation
 
 
-def list_interpretations(uid: str, project_id: str) -> list:
-    doc = _get_owned_doc(uid, project_id)
+def list_interpretations(uid: str, project_id: str, is_admin: bool = False) -> list:
+    doc = _get_owned_doc(uid, project_id, is_admin)
     return doc.get("interpretations", [])
 
 
-def load_interpretation(uid: str, project_id: str, interpretation_id: str) -> dict:
-    _get_owned_doc(uid, project_id)
+def load_interpretation(
+    uid: str, project_id: str, interpretation_id: str, is_admin: bool = False
+) -> dict:
+    doc = _get_owned_doc(uid, project_id, is_admin)
     path = os.path.join(
-        _interpretations_dir(uid, project_id), f"{interpretation_id}.json"
+        _interpretations_dir(doc["uid"], project_id), f"{interpretation_id}.json"
     )
     if not os.path.exists(path):
         raise NotFound("해석 결과를 찾을 수 없습니다.")
@@ -462,14 +567,15 @@ def load_interpretation(uid: str, project_id: str, interpretation_id: str) -> di
 # ---------------------------------------------------------------------------
 
 
-def zip_raw(uid: str, project_id: str) -> str:
+def zip_raw(uid: str, project_id: str, is_admin: bool = False) -> str:
     """raw/ 폴더를 즉석에서 압축해 zip 경로를 반환한다 (호출자가 응답 후 삭제 책임)."""
-    _get_owned_doc(uid, project_id)
-    raw_dir = _raw_dir(uid, project_id)
+    doc = _get_owned_doc(uid, project_id, is_admin)
+    owner_uid = doc["uid"]
+    raw_dir = _raw_dir(owner_uid, project_id)
     if not os.path.isdir(raw_dir):
         raise NotFound("원본 분석 결과를 찾을 수 없습니다.")
     tmp_base = os.path.join(
-        _project_dir(uid, project_id), f"download_{uuid.uuid4().hex}"
+        _project_dir(owner_uid, project_id), f"download_{uuid.uuid4().hex}"
     )
     archive_path = shutil.make_archive(tmp_base, "zip", raw_dir)
     return archive_path

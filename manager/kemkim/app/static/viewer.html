@@ -3,15 +3,32 @@
   <title>KEMKIM Analyzer</title>
   <link rel="stylesheet" href="/css/viewer.css">
 </head><body>
+  <div class="top-header">
+    <img src="/img/lab_logo.png" alt="FPEI" class="top-header-logo">
+    <nav class="top-nav">
+      <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
+      <a href="https://manager.knpu.re.kr" class="top-nav-link">MANAGER</a>
+      <a href="https://crawler.knpu.re.kr" class="top-nav-link">CRAWLER</a>
+      <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
+      <a href="https://kemkim.knpu.re.kr" class="top-nav-link active">KEMKIM</a>
+      <a href="https://statistics.knpu.re.kr" class="top-nav-link">STATISTICS</a>
+    </nav>
+  </div>
   <div id="app">
     <div id="rail" class="rail">
       <div class="rail-head">
         <button id="railToggle" class="rail-toggle" title="사이드바 접기/펼치기">☰</button>
         <span class="rail-brand">내 프로젝트</span>
       </div>
-      <button id="railUploadBtn" class="rail-upload" title="새 프로젝트">
-        <span class="ru-icon">＋</span><span class="ru-text">새 프로젝트</span>
-      </button>
+      <div class="rail-actions-row">
+        <button id="railUploadBtn" class="rail-upload" title="새 프로젝트">
+          <span class="ru-icon">＋</span><span class="ru-text">새 프로젝트</span>
+        </button>
+        <button id="railNewFolderBtn" class="rail-new-folder-btn" title="새 폴더">📁</button>
+      </div>
+      <label id="railAdminAllToggle" class="rail-admin-toggle" hidden>
+        <input type="checkbox" id="railAdminAllChk"><span class="rat-text">모든 사용자 프로젝트 보기</span>
+      </label>
       <div id="railList" class="rail-list"></div>
       <div id="railEmpty" class="rail-empty" hidden>아직 프로젝트가 없습니다</div>
       <div id="railResizer" class="rail-resizer" title="드래그해서 너비 조절"></div>
@@ -166,9 +183,12 @@
   <div id="railCtxMenu" class="ctx-menu" hidden>
     <button class="ctx-item" data-act="props"><span class="ctx-ico">ℹ</span><span>속성</span></button>
     <button class="ctx-item" data-act="rename"><span class="ctx-ico">✎</span><span>이름 변경</span></button>
+    <button class="ctx-item" data-act="move"><span class="ctx-ico">📁</span><span>폴더로 이동</span></button>
     <div class="ctx-sep"></div>
     <button class="ctx-item danger" data-act="delete"><span class="ctx-ico">🗑</span><span>삭제</span></button>
   </div>
+
+  <div id="moveFolderMenu" class="ctx-menu" hidden></div>
 
   <div id="propsModal" class="modal-overlay" hidden>
     <div class="modal-card">

@@ -189,16 +189,46 @@
     return pal[((i % pal.length) + pal.length) % pal.length];
   }
 
+  var ADMIN_ALL_KEY = 'nv_admin_all_projects';
+  var isAdmin = false;
+
   function loadMe() {
-    railApi('/api/me').then(function (me) {
+    return railApi('/api/me').then(function (me) {
       document.getElementById('railUserName').textContent = me.name || '';
       document.getElementById('railUserName').title = me.name || '';
+      isAdmin = me.role === 'admin';
+      var toggleEl = document.getElementById('railAdminAllToggle');
+      var chk = document.getElementById('railAdminAllChk');
+      toggleEl.hidden = !isAdmin;
+      if (isAdmin) {
+        chk.checked = localStorage.getItem(ADMIN_ALL_KEY) === '1';
+        chk.addEventListener('change', function () {
+          localStorage.setItem(ADMIN_ALL_KEY, chk.checked ? '1' : '0');
+          loadRailProjects();
+        });
+      }
     }).catch(function () {});
   }
 
+  var railFolders = [];
+  var COLLAPSED_FOLDERS_KEY = 'nv_collapsed_folders';
+  var collapsedFolders = (function () {
+    try { return new Set(JSON.parse(localStorage.getItem(COLLAPSED_FOLDERS_KEY) || '[]')); }
+    catch (e) { return new Set(); }
+  })();
+  var expandedAdminUsers = new Set(); // 관리자 "모든 사용자 보기" 그룹 펼침 상태 — 새로고침 전까지만 유지
+
+  function isAdminAllMode() { return isAdmin && localStorage.getItem(ADMIN_ALL_KEY) === '1'; }
+
   function loadRailProjects() {
-    return railApi('/api/projects').then(function (body) {
-      railProjects = body.projects || [];
+    var showAll = isAdminAllMode();
+    var qs = showAll ? '?all=true' : '';
+    return Promise.all([
+      railApi('/api/projects' + qs),
+      railApi('/api/folders' + qs).catch(function () { return { folders: [] }; }),
+    ]).then(function (results) {
+      railProjects = results[0].projects || [];
+      railFolders = results[1].folders || [];
       renderRail();
     }).catch(function (err) {
       if (err.message !== 'unauthorized') toast('프로젝트 목록을 불러오지 못했습니다.');
@@ -209,34 +239,37 @@
     return (name || '?').trim().charAt(0).toUpperCase();
   }
 
-  function renderRail() {
-    var listEl = document.getElementById('railList');
-    var emptyEl = document.getElementById('railEmpty');
-    listEl.innerHTML = '';
-    emptyEl.hidden = railProjects.length > 0;
+  var railColorCounter = 0;
 
-    railProjects.forEach(function (p, idx) {
-      var item = document.createElement('div');
-      item.className = 'rail-item' + (p.project_id === projectId ? ' active' : '');
-      item.setAttribute('data-id', p.project_id);
-      item.title = p.name;
-      var meta = p.networks && p.networks.length === 1
-        ? '노드 ' + p.networks[0].nodes.toLocaleString() + ' · 엣지 ' + p.networks[0].edges.toLocaleString()
-        : (p.networks ? p.networks.length + '개 네트워크' : '');
-      item.innerHTML =
-        '<span class="ri-dot" style="background:' + railDotColor(idx) + '">' + esc(railInitial(p.name)) + '</span>'
-        + '<span class="ri-main"><span class="ri-name">' + esc(p.name) + '</span>'
-        + '<span class="ri-meta">' + esc(meta) + '</span></span>'
-        + '<span class="ri-actions">'
-        + '<button class="ri-btn" data-act="props" title="속성">ℹ</button>'
-        + '<button class="ri-btn" data-act="rename" title="이름 변경">✎</button>'
-        + '<button class="ri-btn danger" data-act="delete" title="삭제">🗑</button>'
-        + '</span>';
-      item.addEventListener('click', function (e) {
-        if (e.target.closest('[data-act]')) return;
-        switchProject(p.project_id);
-        closeMobileDrawers();
-      });
+  function buildProjectItem(p, interactive) {
+    var idx = railColorCounter++;
+    var item = document.createElement('div');
+    item.className = 'rail-item' + (p.project_id === projectId ? ' active' : '');
+    item.setAttribute('data-id', p.project_id);
+    item.title = p.name;
+    var netMeta = p.networks && p.networks.length === 1
+      ? '노드 ' + p.networks[0].nodes.toLocaleString() + ' · 엣지 ' + p.networks[0].edges.toLocaleString()
+      : (p.networks ? p.networks.length + '개 네트워크' : '');
+    var meta = p.owner_name ? (p.owner_name + ' · ' + netMeta) : netMeta;
+    var actionsHtml = !interactive ? '' :
+      '<span class="ri-actions">'
+      + '<button class="ri-btn" data-act="props" title="속성">ℹ</button>'
+      + '<button class="ri-btn" data-act="move" title="폴더로 이동">📁</button>'
+      + '<button class="ri-btn" data-act="rename" title="이름 변경">✎</button>'
+      + '<button class="ri-btn danger" data-act="delete" title="삭제">🗑</button>'
+      + '</span>';
+    item.innerHTML =
+      '<span class="ri-dot" style="background:' + railDotColor(idx) + '">' + esc(railInitial(p.name)) + '</span>'
+      + '<span class="ri-main"><span class="ri-name">' + esc(p.name) + '</span>'
+      + '<span class="ri-meta">' + esc(meta) + '</span></span>'
+      + actionsHtml;
+    item.addEventListener('click', function (e) {
+      if (e.target.closest('[data-act]')) return;
+      switchProject(p.project_id);
+      closeMobileDrawers();
+    });
+
+    if (interactive) {
       item.addEventListener('contextmenu', function (e) {
         e.preventDefault(); e.stopPropagation();
         openRailCtxMenu(e.clientX, e.clientY, p, item);
@@ -244,14 +277,153 @@
       item.querySelector('[data-act="props"]').addEventListener('click', function (e) {
         e.stopPropagation(); showProjectProperties(p);
       });
+      item.querySelector('[data-act="move"]').addEventListener('click', function (e) {
+        e.stopPropagation(); openMoveFolderMenu(e.clientX, e.clientY, p);
+      });
       item.querySelector('[data-act="rename"]').addEventListener('click', function (e) {
         e.stopPropagation(); startRailRename(item, p);
       });
       item.querySelector('[data-act="delete"]').addEventListener('click', function (e) {
         e.stopPropagation(); deleteRailProject(p);
       });
-      listEl.appendChild(item);
+
+      item.draggable = true;
+      item.addEventListener('dragstart', function (e) {
+        e.stopPropagation();
+        e.dataTransfer.setData('text/plain', p.project_id);
+        e.dataTransfer.effectAllowed = 'move';
+        item.classList.add('dragging');
+      });
+      item.addEventListener('dragend', function () { item.classList.remove('dragging'); });
+    }
+    return item;
+  }
+
+  function buildFolderGroup(f, projects, interactive) {
+    var group = document.createElement('div');
+    group.className = 'folder-group' + (collapsedFolders.has(f.folder_id) ? ' collapsed' : '');
+    group.setAttribute('data-folder-id', f.folder_id);
+
+    var header = document.createElement('div');
+    header.className = 'folder-header';
+    header.innerHTML =
+      '<span class="fh-chevron">▸</span>'
+      + '<span class="fh-icon">📁</span>'
+      + '<span class="fh-name">' + esc(f.name) + '</span>'
+      + '<span class="fh-count">' + projects.length + '</span>'
+      + (!interactive ? '' :
+        '<span class="fh-actions">'
+        + '<button class="ri-btn" data-act="folder-rename" title="이름 변경">✎</button>'
+        + '<button class="ri-btn danger" data-act="folder-delete" title="삭제">🗑</button>'
+        + '</span>');
+    header.addEventListener('click', function (e) {
+      if (e.target.closest('[data-act]')) return;
+      group.classList.toggle('collapsed');
+      if (group.classList.contains('collapsed')) collapsedFolders.add(f.folder_id);
+      else collapsedFolders.delete(f.folder_id);
+      localStorage.setItem(COLLAPSED_FOLDERS_KEY, JSON.stringify(Array.from(collapsedFolders)));
     });
+
+    var body = document.createElement('div');
+    body.className = 'folder-body';
+    projects.forEach(function (p) { body.appendChild(buildProjectItem(p, interactive)); });
+
+    if (interactive) {
+      header.querySelector('[data-act="folder-rename"]').addEventListener('click', function (e) { e.stopPropagation(); startFolderRename(group, f); });
+      header.querySelector('[data-act="folder-delete"]').addEventListener('click', function (e) { e.stopPropagation(); deleteFolder(f); });
+
+      [header, body].forEach(function (el) {
+        el.addEventListener('dragover', function (e) {
+          e.preventDefault(); e.stopPropagation();
+          e.dataTransfer.dropEffect = 'move';
+          header.classList.add('drag-over');
+        });
+        el.addEventListener('dragleave', function (e) { e.stopPropagation(); header.classList.remove('drag-over'); });
+        el.addEventListener('drop', function (e) {
+          e.preventDefault(); e.stopPropagation();
+          header.classList.remove('drag-over');
+          var pid = e.dataTransfer.getData('text/plain');
+          if (pid) moveProjectToFolder(pid, f.folder_id);
+        });
+      });
+    }
+
+    group.appendChild(header);
+    group.appendChild(body);
+    return group;
+  }
+
+  // projects/folders를 폴더별로 묶어 container에 렌더링한다. interactive=false면
+  // 관리자 "모든 사용자 보기"에서 다른 사용자 그룹을 읽기 전용(드래그·컨텍스트메뉴 없음)으로 보여줄 때 쓴다.
+  function renderProjectTree(container, projects, folders, interactive) {
+    var byFolder = {};
+    folders.forEach(function (f) { byFolder[f.folder_id] = []; });
+    var unfiled = [];
+    projects.forEach(function (p) {
+      if (p.folder_id && byFolder[p.folder_id]) byFolder[p.folder_id].push(p);
+      else unfiled.push(p);
+    });
+    folders.forEach(function (f) {
+      container.appendChild(buildFolderGroup(f, byFolder[f.folder_id], interactive));
+    });
+    unfiled.forEach(function (p) { container.appendChild(buildProjectItem(p, interactive)); });
+  }
+
+  function renderAdminGroupedRail(container) {
+    var groups = {}; // owner_uid -> { name, projects: [] }
+    railProjects.forEach(function (p) {
+      var uid = p.owner_uid;
+      if (!groups[uid]) groups[uid] = { name: p.owner_name || uid, projects: [] };
+      groups[uid].projects.push(p);
+    });
+    var foldersByOwner = {};
+    railFolders.forEach(function (f) {
+      (foldersByOwner[f.owner_uid] = foldersByOwner[f.owner_uid] || []).push(f);
+    });
+
+    var uids = Object.keys(groups).sort(function (a, b) {
+      return groups[a].name.localeCompare(groups[b].name, 'ko');
+    });
+    uids.forEach(function (uid) {
+      var g = groups[uid];
+      var userGroup = document.createElement('div');
+      userGroup.className = 'user-group' + (expandedAdminUsers.has(uid) ? '' : ' collapsed');
+
+      var header = document.createElement('div');
+      header.className = 'user-header';
+      header.innerHTML =
+        '<span class="fh-chevron">▸</span>'
+        + '<span class="uh-avatar">' + esc(railInitial(g.name)) + '</span>'
+        + '<span class="uh-name">' + esc(g.name) + '</span>'
+        + '<span class="fh-count">' + g.projects.length + '</span>';
+      header.addEventListener('click', function () {
+        userGroup.classList.toggle('collapsed');
+        if (userGroup.classList.contains('collapsed')) expandedAdminUsers.delete(uid);
+        else expandedAdminUsers.add(uid);
+      });
+
+      var body = document.createElement('div');
+      body.className = 'user-body';
+      renderProjectTree(body, g.projects, foldersByOwner[uid] || [], false);
+
+      userGroup.appendChild(header);
+      userGroup.appendChild(body);
+      container.appendChild(userGroup);
+    });
+  }
+
+  function renderRail() {
+    var listEl = document.getElementById('railList');
+    var emptyEl = document.getElementById('railEmpty');
+    listEl.innerHTML = '';
+    emptyEl.hidden = railProjects.length > 0;
+    railColorCounter = 0;
+
+    if (isAdminAllMode()) {
+      renderAdminGroupedRail(listEl);
+    } else {
+      renderProjectTree(listEl, railProjects, railFolders, true);
+    }
   }
 
   function highlightActiveRailItem() {
@@ -308,6 +480,86 @@
         }
       });
     }).catch(function () { toast('삭제에 실패했습니다.'); });
+  }
+
+  // ---------------------------------------------------------------
+  // 폴더
+  // ---------------------------------------------------------------
+  function createFolder() {
+    var name = prompt('새 폴더 이름을 입력하세요');
+    if (name === null) return;
+    name = name.trim();
+    if (!name) return;
+    postJson('/api/folders', { name: name }).then(function () {
+      loadRailProjects();
+    }).catch(function () { toast('폴더 생성에 실패했습니다.'); });
+  }
+
+  function startFolderRename(group, f) {
+    var nameEl = group.querySelector('.fh-name');
+    var input = document.createElement('input');
+    input.className = 'ri-name-input';
+    input.value = f.name;
+    nameEl.replaceWith(input);
+    input.focus(); input.select();
+
+    function commit() {
+      var newName = input.value.trim();
+      if (!newName || newName === f.name) { renderRail(); return; }
+      railApi('/api/folders/' + f.folder_id, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName })
+      }).then(function () {
+        loadRailProjects();
+      }).catch(function () { toast('이름 변경에 실패했습니다.'); renderRail(); });
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') input.blur();
+      if (e.key === 'Escape') { input.value = f.name; input.blur(); }
+    });
+    input.addEventListener('click', function (e) { e.stopPropagation(); });
+  }
+
+  function deleteFolder(f) {
+    if (!confirm('"' + f.name + '" 폴더를 삭제할까요?\n안에 있던 프로젝트는 삭제되지 않고 미분류로 이동합니다.')) return;
+    railApi('/api/folders/' + f.folder_id, { method: 'DELETE' }).then(function () {
+      collapsedFolders.delete(f.folder_id);
+      loadRailProjects();
+    }).catch(function () { toast('폴더 삭제에 실패했습니다.'); });
+  }
+
+  function moveProjectToFolder(projectIdToMove, folderId) {
+    railApi('/api/projects/' + projectIdToMove + '/folder', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder_id: folderId || null })
+    }).then(function () {
+      loadRailProjects();
+    }).catch(function () { toast('폴더 이동에 실패했습니다.'); });
+  }
+
+  function closeMoveFolderMenu() { document.getElementById('moveFolderMenu').hidden = true; }
+
+  function openMoveFolderMenu(x, y, p) {
+    var menu = document.getElementById('moveFolderMenu');
+    var html = '<button class="ctx-item" data-folder="">📄 미분류</button>';
+    if (railFolders.length) {
+      html += '<div class="ctx-sep"></div>';
+      html += railFolders.map(function (f) {
+        return '<button class="ctx-item" data-folder="' + esc(f.folder_id) + '">📁 ' + esc(f.name) + '</button>';
+      }).join('');
+    }
+    menu.innerHTML = html;
+    menu.hidden = false; menu.style.left = '-9999px'; menu.style.top = '-9999px';
+    var pad = 8, mw = menu.offsetWidth, mh = menu.offsetHeight;
+    var left = Math.max(pad, Math.min(x, window.innerWidth - mw - pad));
+    var top = Math.max(pad, Math.min(y, window.innerHeight - mh - pad));
+    menu.style.left = left + 'px'; menu.style.top = top + 'px';
+
+    menu.querySelectorAll('[data-folder]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        closeMoveFolderMenu();
+        moveProjectToFolder(p.project_id, btn.getAttribute('data-folder') || null);
+      });
+    });
   }
 
   function switchProject(id, replace) {
@@ -809,20 +1061,25 @@
       var btn = e.target.closest('[data-act]');
       if (!btn || !ctxMenuProject) return;
       var p = ctxMenuProject, item = ctxMenuItem, act = btn.getAttribute('data-act');
+      var x = parseInt(ctxMenu.style.left, 10), y = parseInt(ctxMenu.style.top, 10);
       closeRailCtxMenu();
       if (act === 'props') showProjectProperties(p);
       else if (act === 'rename') startRailRename(item, p);
+      else if (act === 'move') openMoveFolderMenu(x, y, p);
       else if (act === 'delete') deleteRailProject(p);
     });
+    var moveFolderMenu = document.getElementById('moveFolderMenu');
     document.addEventListener('click', function (e) {
       if (!ctxMenu.hidden && !ctxMenu.contains(e.target)) closeRailCtxMenu();
+      if (!moveFolderMenu.hidden && !moveFolderMenu.contains(e.target)) closeMoveFolderMenu();
     });
     document.addEventListener('contextmenu', function (e) {
       if (!ctxMenu.hidden && !ctxMenu.contains(e.target) && !e.target.closest('.rail-item')) closeRailCtxMenu();
+      if (!moveFolderMenu.hidden && !moveFolderMenu.contains(e.target)) closeMoveFolderMenu();
     });
-    window.addEventListener('resize', closeRailCtxMenu);
-    window.addEventListener('scroll', closeRailCtxMenu, true);
-    window.addEventListener('blur', closeRailCtxMenu);
+    window.addEventListener('resize', function () { closeRailCtxMenu(); closeMoveFolderMenu(); });
+    window.addEventListener('scroll', function () { closeRailCtxMenu(); closeMoveFolderMenu(); }, true);
+    window.addEventListener('blur', function () { closeRailCtxMenu(); closeMoveFolderMenu(); });
 
     // ---- 속성 모달 ----
     document.getElementById('propsModalClose').addEventListener('click', function () {
@@ -830,6 +1087,23 @@
     });
     document.getElementById('propsModal').addEventListener('click', function (e) {
       if (e.target.id === 'propsModal') document.getElementById('propsModal').hidden = true;
+    });
+
+    document.getElementById('railNewFolderBtn').addEventListener('click', createFolder);
+
+    // 폴더 밖(목록의 빈 공간)에 드롭하면 미분류로 뺀다 — 폴더 헤더/본문의 drop 핸들러가
+    // stopPropagation()하므로, 여기까지 버블링되는 건 폴더 안이 아닌 곳에 놓은 경우뿐이다.
+    var railListEl = document.getElementById('railList');
+    railListEl.addEventListener('dragover', function (e) {
+      if (isAdminAllMode()) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    railListEl.addEventListener('drop', function (e) {
+      if (isAdminAllMode()) return;
+      e.preventDefault();
+      var pid = e.dataTransfer.getData('text/plain');
+      if (pid) moveProjectToFolder(pid, null);
     });
 
     // ---- 업로드 모달 ----
@@ -841,7 +1115,8 @@
     });
     window.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
-      if (!ctxMenu.hidden) closeRailCtxMenu();
+      if (!moveFolderMenu.hidden) closeMoveFolderMenu();
+      else if (!ctxMenu.hidden) closeRailCtxMenu();
       else if (!document.getElementById('propsModal').hidden) document.getElementById('propsModal').hidden = true;
       else if (!document.getElementById('uploadModal').hidden) closeUploadModal();
       else closeMobileDrawers();
@@ -1672,24 +1947,25 @@
   }
 
   bindRailEvents();
-  loadMe();
-  if (projectId) {
-    loadRailProjects();
-    loadNetwork(currentTag);
-  } else {
-    // URL에 프로젝트가 지정되지 않았으면(사이트를 그냥 열었으면) 마지막으로 열어봤던
-    // 프로젝트를 자동으로 선택한다. 그 프로젝트가 삭제되었거나 접근 권한이 없으면
-    // 조용히 포기하고 빈 화면을 보여준다.
-    loadRailProjects().then(function () {
-      var lastId = localStorage.getItem(LAST_PROJECT_KEY);
-      var exists = lastId && railProjects.some(function (p) { return p.project_id === lastId; });
-      if (exists) {
-        switchProject(lastId, true);
-      } else {
-        if (lastId) localStorage.removeItem(LAST_PROJECT_KEY);
-        document.getElementById('loading').classList.add('hide');
-        document.getElementById('emptyProject').hidden = false;
-      }
-    });
-  }
+  loadMe().then(function () {
+    if (projectId) {
+      loadRailProjects();
+      loadNetwork(currentTag);
+    } else {
+      // URL에 프로젝트가 지정되지 않았으면(사이트를 그냥 열었으면) 마지막으로 열어봤던
+      // 프로젝트를 자동으로 선택한다. 그 프로젝트가 삭제되었거나 접근 권한이 없으면
+      // 조용히 포기하고 빈 화면을 보여준다.
+      loadRailProjects().then(function () {
+        var lastId = localStorage.getItem(LAST_PROJECT_KEY);
+        var exists = lastId && railProjects.some(function (p) { return p.project_id === lastId; });
+        if (exists) {
+          switchProject(lastId, true);
+        } else {
+          if (lastId) localStorage.removeItem(LAST_PROJECT_KEY);
+          document.getElementById('loading').classList.add('hide');
+          document.getElementById('emptyProject').hidden = false;
+        }
+      });
+    }
+  });
 })();

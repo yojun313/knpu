@@ -47,11 +47,10 @@
         /* ── Header ──────────────────────────────────── */
         .header {
             background: linear-gradient(110deg, var(--navy) 0%, var(--deep) 60%, var(--blue) 100%);
-            padding: 0 28px;
+            padding: 0 24px;
             height: 58px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
             gap: 16px;
             box-shadow: 0 2px 12px rgba(11,18,38,0.30);
             position: sticky;
@@ -63,12 +62,41 @@
             height: 34px;
             object-fit: contain;
             display: block;
+            flex-shrink: 0;
         }
+
+        /* 상단 서비스 네비게이션 — 크롤러/kemkim/network/statistics/manager 어디서든
+           똑같이 보여서 서비스 간 이동이 쉽게 만든다. */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .top-nav::-webkit-scrollbar { display: none; }
+        .top-nav-link {
+            flex-shrink: 0;
+            color: rgba(255,255,255,0.72);
+            text-decoration: none;
+            font-family: -apple-system, 'Pretendard', 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
+            font-size: 12.5px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            padding: 7px 13px;
+            border-radius: 7px;
+            transition: background 150ms, color 150ms;
+            white-space: nowrap;
+        }
+        .top-nav-link:hover { background: rgba(255,255,255,0.12); color: #fff; }
+        .top-nav-link.active { background: rgba(255,255,255,0.18); color: #fff; }
 
         .header-right {
             display: flex;
             align-items: center;
             gap: 16px;
+            margin-left: auto;
+            flex-shrink: 0;
         }
 
         .conn-badge {
@@ -87,28 +115,50 @@
         .connected    { background: #4ade80; box-shadow: 0 0 6px #4ade8088; }
         .disconnected { background: #ef4444; }
 
-        .logout-btn {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.22);
-            color: var(--mist);
-            padding: 5px 13px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 700;
-            font-family: inherit;
-            white-space: nowrap;
-            transition: border-color 150ms, color 150ms;
-        }
-        .logout-btn:hover { border-color: #fff; color: #fff; }
-
-        /* ── Layout ───────────────────────────────────── */
         .container {
-            max-width: 1240px;
+            max-width: 1800px;
             margin: 0 auto;
-            padding: 22px 20px;
+            padding: 22px 24px;
+        }
+
+        /* 헤더(58px)와 컨테이너 위아래 패딩을 뺀 나머지를 그리드 최소 높이로 잡아서,
+           내용이 적어도 두 컬럼이 페이지 바닥까지 늘어나 보이게 한다. */
+        .layout-grid {
             display: grid;
+            grid-template-columns: minmax(380px, 460px) 1fr;
             gap: 16px;
+            align-items: stretch;
+            min-height: calc(100vh - 58px - 44px);
+        }
+        .col-left {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 0;
+        }
+        .col-right {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .col-right .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .col-right .db-table-wrap {
+            flex: 1;
+            min-height: 160px;
+            overflow-y: auto;
+        }
+
+        /* 좁은 화면에서는 두 컬럼을 유지할 공간이 없으므로 기존처럼 세로로 쌓는다.
+           col-left/col-right는 레이아웃 상자 없이 자식만 문서 순서대로 풀어놓는다. */
+        @media (max-width: 999px) {
+            .layout-grid { display: block; min-height: 0; }
+            .col-left, .col-right { display: contents; }
+            .layout-grid .panel + .panel { margin-top: 16px; }
         }
 
         /* ── Panel ────────────────────────────────────── */
@@ -414,6 +464,15 @@
         }
         .progress-text { font-size: 13px; color: var(--deep); min-width: 40px; text-align: right; font-weight: 800; }
 
+        /* 2단 레이아웃에서 왼쪽 컬럼이 좁아진 만큼(minmax(380px,460px)), 진행률 바 +
+           퍼센트 + 중단 버튼이 한 줄에 다 안 들어가 오른쪽이 잘리는 경우가 있다.
+           화면 폭과 상관없이 이 컬럼은 항상 좁으므로, 필요하면 카드 우측 영역이
+           제목 아래로 줄바꿈되게 해서 절대 잘리지 않게 한다. */
+        .col-left .card-main { flex-wrap: wrap; }
+        .col-left .card-right { width: 100%; justify-content: flex-end; }
+        .col-left .progress-wrap { flex: 1; min-width: 0; }
+        .col-left .progress-bar { flex: 1; width: auto; min-width: 60px; }
+
         .stats { font-size: 12px; color: var(--muted); margin-top: 5px; display: flex; flex-wrap: wrap; gap: 2px 10px; }
 
         /* ── Card detail ──────────────────────────────── */
@@ -561,6 +620,7 @@
         .btn-delete { background: #edf1f7; color: var(--muted); }
         .btn-resume { background: var(--ok-soft); color: var(--ok); }
         .btn-download { background: var(--queued-soft); color: var(--deep); }
+        .btn-recrawl { background: var(--warning-soft); color: var(--warning); }
         .btn-db-delete { background: var(--danger-soft); color: var(--danger); }
 
         /* ── Badges ───────────────────────────────────── */
@@ -590,6 +650,11 @@
             min-width: 0;
         }
         .filter-bar input[type="text"] { flex: 1; min-width: 160px; }
+        .mine-toggle {
+            display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 12px;
+            color: var(--deep); white-space: nowrap; cursor: pointer; user-select: none;
+        }
+        .mine-toggle input { accent-color: var(--blue); cursor: pointer; }
 
         .db-table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -601,10 +666,12 @@
         tbody td { padding: 9px 10px; border-bottom: 1px solid #eef2f8; vertical-align: middle; }
         tbody tr:hover { background: #f8fafd; cursor: pointer; }
         tbody tr:last-child td { border-bottom: none; }
-        .actions-cell { display: flex; gap: 6px; flex-wrap: wrap; }
+        .actions-cell { display: flex; gap: 6px; flex-wrap: nowrap; }
+        .actions-cell .btn { padding: 6px 10px; font-size: 11.5px; border-radius: 6px; flex-shrink: 0; }
 
         .keyword-cell { font-weight: 800; color: var(--navy); word-break: break-word; }
         .muted-cell { color: var(--muted); font-size: 11px; }
+        .requester-cell { white-space: nowrap; }
 
         .pager { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; flex-wrap: wrap; }
         .pager button {
@@ -651,6 +718,12 @@
             width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
             font-family: inherit; font-size: 13px; color: var(--ink);
         }
+        .form-field input:disabled { background: #f4f7fb; color: var(--muted); }
+
+        .recrawl-warn {
+            background: var(--warning-soft); color: var(--warning); border-radius: 8px;
+            padding: 10px 12px; font-size: 12px; line-height: 1.55; margin-bottom: 16px;
+        }
 
         /* ── Responsive ───────────────────────────────── */
         @media (max-width: 960px) {
@@ -661,8 +734,6 @@
 
         @media (max-width: 640px) {
             .container { padding: 14px 12px; }
-            .header { padding: 0 14px; height: 52px; }
-            .header-logo { height: 28px; }
             .f-crawler  { flex: 1; width: auto; }
             .f-option   { flex: 1; width: auto; }
             .keyword-section { flex-basis: 100%; }
@@ -686,7 +757,6 @@
             .modal-body { padding: 14px; }
             .log-row { flex-wrap: wrap; }
             .log-msg { flex-basis: 100%; }
-            .actions-cell .btn { flex: 1 1 auto; text-align: center; }
         }
 
         /* Database 목록: 테이블 → 카드 형태로 전환 (글자 겹침/가로 스크롤 방지).
@@ -701,7 +771,15 @@
             tbody tr:hover { background: none; }
             tbody td { border: none; padding: 4px 6px; word-break: break-word; }
             tbody td:before { content: attr(data-label); font-size: 9px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 1px; }
-            .actions-cell .btn { flex: 1 1 auto; text-align: center; }
+            .actions-cell {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+            }
+            .actions-cell .btn { text-align: center; padding: 8px 6px; }
+            /* 마지막 줄에 버튼이 하나만 남으면(1개 또는 3개 총) 어색하게 반쪽만
+               차지하지 않도록 전체 너비로 늘린다. */
+            .actions-cell .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
         }
 
         @media (max-width: 420px) {
@@ -714,17 +792,22 @@
 <body data-is-admin="{{ 'true' if is_admin else 'false' }}" data-my-uid="{{ my_uid or '' }}">
 
 <div class="header">
-    <img src="/static/logo_white.png" alt="FPEI" class="header-logo">
+    <img src="/static/lab_logo.png" alt="FPEI" class="header-logo">
+    <nav class="top-nav">
+        <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
+        <a href="https://manager.knpu.re.kr" class="top-nav-link">MANAGER</a>
+        <a href="https://crawler.knpu.re.kr" class="top-nav-link active">CRAWLER</a>
+        <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
+        <a href="https://kemkim.knpu.re.kr" class="top-nav-link">KEMKIM</a>
+        <a href="https://statistics.knpu.re.kr" class="top-nav-link">STATISTICS</a>
+    </nav>
     <div class="header-right">
-        <span class="conn-badge">
-            <span class="status-dot disconnected" id="conn-dot"></span>
-            <span id="conn-text">연결 중...</span>
-        </span>
-        <button class="logout-btn" onclick="logout()">로그아웃</button>
     </div>
 </div>
 
 <div class="container">
+  <div class="layout-grid">
+    <div class="col-left">
 
     <!-- ── Control Panel ── -->
     <div class="panel">
@@ -831,6 +914,9 @@
         </div>
     </div>
 
+    </div>
+    <div class="col-right">
+
     <!-- ── Database (크롤 DB 전체 목록) ── -->
     <div class="panel">
         <div class="panel-head">
@@ -847,6 +933,9 @@
                     <option value="error">에러</option>
                 </select>
                 <input type="text" id="f-db-q" placeholder="키워드 / 요청자 / DB명 검색...">
+                <label class="mine-toggle">
+                    <input type="checkbox" id="f-db-mine" onchange="onMineToggleChange()"> 내 DB만 보기
+                </label>
                 <button type="submit" class="btn btn-primary">검색</button>
                 <button type="button" class="btn btn-ghost" onclick="document.getElementById('f-db-status').value='';document.getElementById('f-db-q').value='';currentDbPage=1;loadDbList();">초기화</button>
             </form>
@@ -877,6 +966,8 @@
         </div>
     </div>
 
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="detail-modal" onclick="if(event.target===this) closeDbDetail()">
@@ -946,6 +1037,40 @@
             </div>
 
             <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="submitSaveOptions()">다운로드 시작</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="recrawl-modal" onclick="if(event.target===this) closeRecrawlModal()">
+    <div class="modal-box" style="max-width:460px;">
+        <div class="modal-head">
+            <h3>재크롤링 — <span id="recrawl-modal-keyword"></span></h3>
+            <button class="modal-close" onclick="closeRecrawlModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="recrawl-warn">
+                기존에 수집된 <b>데이터·로그를 모두 삭제</b>하고 처음부터 다시 수집합니다.
+                되돌릴 수 없으니 필요한 데이터는 먼저 다운로드해 주세요.
+            </p>
+
+            <div class="form-field">
+                <label>키워드 (변경 불가)</label>
+                <input type="text" id="recrawl-keyword" disabled>
+            </div>
+            <div class="form-field">
+                <label>크롤러 / 옵션 / 속도 (변경 불가)</label>
+                <input type="text" id="recrawl-meta" disabled>
+            </div>
+            <div class="form-field">
+                <label>시작일 ~ 종료일 (YYYYMMDD)</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="text" id="recrawl-start" placeholder="20250101" maxlength="8" inputmode="numeric" style="flex:1;">
+                    <span class="date-sep">~</span>
+                    <input type="text" id="recrawl-end" placeholder="20251231" maxlength="8" inputmode="numeric" style="flex:1;">
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="width:100%;margin-top:6px;" id="recrawl-submit" onclick="submitRecrawl()">기존 데이터 삭제 후 재크롤링 시작</button>
         </div>
     </div>
 </div>
@@ -1114,23 +1239,6 @@
         document.getElementById('f-speed').value    = '3';
         document.getElementById('search-ops').innerHTML = '';
         fillToday();
-    }
-
-    function connectWS() {
-        const proto = location.protocol==='https:' ? 'wss:' : 'ws:';
-        ws = new WebSocket(`${proto}//${location.host}/api/ws/dashboard`);
-        ws.onopen = () => {
-            document.getElementById('conn-dot').className  = 'status-dot connected';
-            document.getElementById('conn-text').textContent = '실시간 연결';
-            if (reconnectTimer) clearTimeout(reconnectTimer);
-        };
-        ws.onmessage = e => render(JSON.parse(e.data));
-        ws.onclose   = () => {
-            document.getElementById('conn-dot').className  = 'status-dot disconnected';
-            document.getElementById('conn-text').textContent = '연결 끊김';
-            reconnectTimer = setTimeout(connectWS, 3000);
-        };
-        ws.onerror = () => ws.close();
     }
 
     function render(data) {
@@ -1307,13 +1415,6 @@
         setStatus(`작업 ${jobId} 삭제 완료`);
     }
 
-    async function logout() {
-        // 로그인은 knpu.re.kr 중앙 로그인이 전담하므로 로그아웃도 그쪽 세션(쿠키)을 지운다.
-        // 로그인 페이지가 이 도메인에 따로 없으므로 크롤러 자체 경로로 리다이렉트하면 안 된다.
-        await fetch('https://knpu.re.kr/api/auth/logout', {method: 'POST', credentials: 'include'});
-        window.location.href = 'https://knpu.re.kr/login?redirect=' + encodeURIComponent(window.location.href);
-    }
-
     function formatDate(d) {
         if (!d||d.length!==8) return d||'-';
         return d.slice(0,4)+'.'+d.slice(4,6)+'.'+d.slice(6,8);
@@ -1341,14 +1442,25 @@
 
     let currentDbPage = 1;
     let totalDbPages = 1;
-    const dbPerPage = 20;
+    const dbPerPage = 40;
+
+    const MINE_ONLY_KEY = 'crawler_db_mine_only';
+
+    function onMineToggleChange() {
+        const checked = document.getElementById('f-db-mine').checked;
+        localStorage.setItem(MINE_ONLY_KEY, checked ? '1' : '0');
+        currentDbPage = 1;
+        loadDbList();
+    }
 
     async function loadDbList() {
         const status = document.getElementById('f-db-status').value;
         const q = document.getElementById('f-db-q').value.trim();
+        const mine = document.getElementById('f-db-mine').checked;
         const params = new URLSearchParams({ page: currentDbPage, per_page: dbPerPage });
         if (status) params.set('status', status);
         if (q) params.set('q', q);
+        if (mine) params.set('mine', 'true');
 
         const res = await fetch(`/api/db-list?${params}`);
         if (!res.ok) { setStatus('DB 목록을 불러오지 못했습니다.', true); return; }
@@ -1383,12 +1495,13 @@
         tbody.innerHTML = items.map(row => {
             const canResume = ['stopped','error','completed'].includes(row.status) && canManage(row);
             const canDelete = row.status !== 'running' && canManage(row);
+            const canRecrawl = canDelete && !!row.crawlObject;
             return `
             <tr onclick="openDbDetail('${row.uid}')">
                 <td data-label="상태"><span class="state-badge state-${row.status}">${STATE_TEXT[row.status] || row.status}</span></td>
                 <td data-label="크롤러">${esc(CRAWL_OBJECTS[row.crawlObject] || '-')}</td>
                 <td data-label="키워드" class="keyword-cell">${esc(row.keyword)}</td>
-                <td data-label="요청자">${esc(row.requester)}</td>
+                <td data-label="요청자" class="requester-cell">${esc(row.requester)}</td>
                 <td data-label="날짜 범위" class="muted-cell">${formatDate(row.startDate)} ~ ${formatDate(row.endDate)}</td>
                 <td data-label="크기" class="muted-cell">${formatSize(row.dbSize)}</td>
                 <td data-label="시작" class="muted-cell">${esc(row.startTime)}</td>
@@ -1396,6 +1509,7 @@
                     <div class="actions-cell" onclick="event.stopPropagation()">
                         <button class="btn btn-download" onclick="openSaveOptions('${row.uid}')">다운로드</button>
                         ${canResume ? `<button class="btn btn-resume" onclick="resumeDb('${row.uid}',this)">이어받기</button>` : ''}
+                        ${canRecrawl ? `<button class="btn btn-recrawl" onclick="openRecrawl('${row.uid}')">재크롤링</button>` : ''}
                         ${canDelete ? `<button class="btn btn-db-delete" onclick="deleteDb('${row.uid}',this)">삭제</button>` : ''}
                     </div>
                 </td>
@@ -1654,6 +1768,60 @@
         setStatus(`이어받기 시작됨: ${data.job_id}`);
     }
 
+    /* ══════════════ 재크롤링 (기존 데이터 삭제 후 처음부터 다시) ══════════════ */
+
+    let recrawlUid = null;
+
+    function openRecrawl(uid) {
+        const row = dbRowsByUid.get(uid);
+        if (!row) return;
+        recrawlUid = uid;
+
+        document.getElementById('recrawl-modal-keyword').textContent = row.keyword;
+        document.getElementById('recrawl-keyword').value = row.keyword;
+        document.getElementById('recrawl-meta').value =
+            `${CRAWL_OBJECTS[row.crawlObject] || '-'} / ${getOptionLabel(row.crawlObject, row.crawlOption)} / 속도 ${row.crawlSpeed ?? 3}`;
+        document.getElementById('recrawl-start').value = row.startDate || '';
+        document.getElementById('recrawl-end').value = row.endDate || '';
+        document.getElementById('recrawl-submit').disabled = false;
+        document.getElementById('recrawl-modal').classList.add('open');
+    }
+
+    function closeRecrawlModal() {
+        document.getElementById('recrawl-modal').classList.remove('open');
+        recrawlUid = null;
+    }
+
+    async function submitRecrawl() {
+        if (!recrawlUid) return;
+        const row = dbRowsByUid.get(recrawlUid) || {};
+        const startDate = document.getElementById('recrawl-start').value.trim();
+        const endDate   = document.getElementById('recrawl-end').value.trim();
+
+        if (!/^\d{8}$/.test(startDate) || !/^\d{8}$/.test(endDate)) {
+            setStatus('날짜는 YYYYMMDD 형식으로 입력해주세요.', true); return;
+        }
+        if (endDate < startDate) {
+            setStatus('종료일이 시작일보다 빠릅니다.', true); return;
+        }
+        if (!confirm(`"${row.keyword}" 의 기존 데이터와 로그를 모두 삭제하고\n${formatDate(startDate)} ~ ${formatDate(endDate)} 범위로 처음부터 다시 크롤링합니다.\n\n되돌릴 수 없습니다. 계속하시겠습니까?`)) return;
+
+        const btn = document.getElementById('recrawl-submit');
+        btn.disabled = true;
+        const res = await fetch(`/api/jobs/recrawl/${recrawlUid}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ start_date: startDate, end_date: endDate }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { setStatus(data.detail || '재크롤링에 실패했습니다.', true); btn.disabled = false; return; }
+
+        closeRecrawlModal();
+        // 큐가 차 있으면 바로 시작하지 않으므로("Queued Jobs"에서 대기), 시작이 아니라 접수로 안내한다
+        setStatus(`재크롤링 접수됨 (기존 데이터 삭제 완료) — job ${data.job_id}`);
+        loadDbList();
+    }
+
     async function deleteDb(uid, btn) {
         const row = dbRowsByUid.get(uid) || {};
         if (!confirm(`"${row.keyword}" DB를 완전히 삭제하시겠습니까?\n(파일과 기록이 전부 삭제되며 되돌릴 수 없습니다)`)) return;
@@ -1666,9 +1834,9 @@
     }
 
     document.getElementById('f-name').textContent = '{{ username }}';
+    document.getElementById('f-db-mine').checked = localStorage.getItem(MINE_ONLY_KEY) === '1';
     updateOptions();
     fillToday();
-    connectWS();
     loadDbList();
 
     // Running Jobs처럼 Database 목록도 주기적으로 자동 새로고침한다. 다만 상세/다운로드
