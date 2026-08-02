@@ -43,6 +43,7 @@ body{font-family:-apple-system,'Pretendard','Segoe UI',Roboto,'Malgun Gothic',sa
   box-shadow:0 2px 12px rgba(11,18,38,.30);position:sticky;top:0;z-index:100;
 }
 .top-header-logo{height:34px;object-fit:contain;display:block;flex-shrink:0}
+.top-header>a:first-child{display:flex;align-items:center;flex-shrink:0}
 
 /* 상단 서비스 네비게이션 — 크롤러/kemkim/network/statistics/manager 어디서든
    똑같이 보여서 서비스 간 이동이 쉽게 만든다. */

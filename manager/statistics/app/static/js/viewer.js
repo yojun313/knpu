@@ -76,6 +76,23 @@
     clearTimeout(t.__tm); t.__tm = setTimeout(function () { t.style.opacity = '0'; }, 1500);
   }
 
+  // 상단 네비게이션의 MANAGER 버튼: PC에 데스크톱 MANAGER 앱이 설치되어 있으면
+  // (설치 프로그램이 knpumanager:// URL 프로토콜을 등록해둔다) 바로 그 앱을 실행하고,
+  // 설치되어 있지 않으면(=페이지가 포커스를 잃지 않으면) 잠시 후 웹 버전으로 이동한다.
+  function openManagerApp(e) {
+    e.preventDefault();
+    var fallbackUrl = e.currentTarget.href;
+    var appOpened = false;
+    var onBlur = function () { appOpened = true; };
+    window.addEventListener('blur', onBlur, { once: true });
+    window.location.href = 'knpumanager://open';
+    setTimeout(function () {
+      window.removeEventListener('blur', onBlur);
+      if (!appOpened) window.location.href = fallbackUrl;
+    }, 1000);
+    return false;
+  }
+
   function fmtDate(iso) {
     try {
       var d = new Date(iso);
@@ -1344,6 +1361,8 @@
   var mobileQuery = window.matchMedia('(max-width:1100px)');
 
   function bindEvents() {
+    document.getElementById('navManagerLink').addEventListener('click', openManagerApp);
+
     var rail = document.getElementById('rail');
     var toggle = document.getElementById('railToggle');
 
