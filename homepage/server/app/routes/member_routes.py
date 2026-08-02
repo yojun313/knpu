@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Query, UploadFile, File
 from app.models import Member
-from app.db import members_db
+from app.db import members_db, user_logs_db
 from app.auth.dependencies import require_admin, get_current_user
 from app.auth import service as auth_service
 from app.libs import r2
+from shared.user_log import insert_log
 from fastapi import HTTPException
 import uuid
 
@@ -12,8 +13,6 @@ router = APIRouter()
 
 @router.get("/me")
 def my_linked_member(user=Depends(get_current_user)):
-    """로그인한 사용자와 이름이 일치하는 홈페이지 멤버 프로필(있으면)을 반환한다.
-    마이페이지가 프로필 사진 편집 UI를 보여줄지 판단하는 데 쓴다."""
     return auth_service.get_linked_member(user["sub"])
 
 
@@ -21,8 +20,6 @@ def my_linked_member(user=Depends(get_current_user)):
 async def upload_my_member_photo(
     file: UploadFile = File(...), user=Depends(get_current_user)
 ):
-    """일반 사용자가(관리자 아니어도) 자신과 연결된 멤버 프로필의 사진만 바꿀 수 있게 하는
-    셀프서비스 엔드포인트. 다른 필드는 손댈 수 없다."""
     url = r2.upload_fileobj(file, "members")
     return auth_service.update_my_member_photo(user["sub"], url)
 
@@ -57,8 +54,8 @@ def list_members():
     return docs
 
 
-@router.post("/", dependencies=[Depends(require_admin)])
-def upsert_member(member: Member):
+@router.post("/")
+def upsert_member(member: Member, admin=Depends(require_admin)):
     member_data = member.dict(by_alias=True)
     if "uid" not in member_data or not member_data["uid"]:
         member_data["uid"] = str(uuid.uuid4())
@@ -72,6 +69,17 @@ def upsert_member(member: Member):
         raise HTTPException(status_code=500, detail="Member upsert failed")
 
     new_member["_id"] = str(new_member["_id"])
+    insert_log(
+        user_logs_db,
+        admin["sub"],
+        "homepage.member.upsert",
+        "homepage",
+        target={
+            "type": "member",
+            "id": member_data["uid"],
+            "name": member_data.get("name"),
+        },
+    )
     return new_member
 
 
@@ -92,9 +100,20 @@ def get_member_options():
     }
 
 
-@router.delete("/", dependencies=[Depends(require_admin)])
-def delete_member(uid: str = Query(..., description="삭제할 멤버의 UID")):
+@router.delete("/")
+def delete_member(
+    uid: str = Query(..., description="삭제할 멤버의 UID"),
+    admin=Depends(require_admin),
+):
+    doc = members_db.find_one({"uid": uid})
     result = members_db.delete_one({"uid": uid})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Member not found")
+    insert_log(
+        user_logs_db,
+        admin["sub"],
+        "homepage.member.delete",
+        "homepage",
+        target={"type": "member", "id": uid, "name": (doc or {}).get("name")},
+    )
     return {"message": f"Member '{uid}' deleted successfully"}

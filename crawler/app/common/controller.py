@@ -3,13 +3,19 @@ import pandas as pd
 from datetime import datetime, timedelta
 import time
 import logging
-from db import crawler_db, get_admin_discord_ids
+from db import crawler_db, get_userinfo, user_logs_db
 from common.tokenization import tokenization
-from common.notification import sendDiscordDM, notifyRequester
+from common.notification import notifyRequester
 from common.storage import endCrawl, errorCrawl, appendCrawlLog
 from config import CRAWL_LOG_PATH
+from shared.user_log import insert_log
 
 logger = logging.getLogger(__name__)
+
+
+def _requester_uid(requester):
+    info = get_userinfo(requester) if requester else None
+    return info["userUid"] if info else None
 
 
 def convertToParquet(folder_path):
@@ -38,12 +44,6 @@ def convertToParquet(folder_path):
                 print(f"변환 실패: {csv_file} → 오류: {e}")
     except Exception as e:
         logger.exception(f"convertToParquet 실패: {folder_path}")
-
-
-def _admin_discord_recipients():
-    """운영 가시성 목적으로 모든 크롤링 완료/중단을 항상 DM 받는 관리자 목록.
-    요청자 본인에게는 별도로 notifyRequester()가 crawler_status 채널 멘션/이메일 폴백을 처리한다."""
-    return get_admin_discord_ids()
 
 
 def stopOperator(
@@ -110,9 +110,6 @@ def stopOperator(
         text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
 
-        sendDiscordDM(
-            _admin_discord_recipients(), title + "\n" + text, requester=requester
-        )
         notifyRequester(requester, userEmail, title, text)
 
         with open(os.path.join(CRAWL_LOG_PATH, DBname + "_log.txt"), "a") as log:
@@ -120,6 +117,19 @@ def stopOperator(
 
         if DBuid:
             appendCrawlLog(DBuid, "end", f"[크롤링 중단] {DBname}\n{text}")
+
+        insert_log(
+            user_logs_db,
+            _requester_uid(requester),
+            "crawler.crawl.stop",
+            "crawler",
+            message=f"크롤링 중단: {DBname}",
+            target={"type": "crawl_db", "id": DBuid, "name": DBname},
+            metadata={
+                "percentage": status.get("percentage"),
+                "articleCnt": status.get("articleCnt"),
+            },
+        )
 
     except Exception as e:
         logger.exception(f"stopOperator 실패: {DBname}")
@@ -232,9 +242,6 @@ def finishOperator(
         text += f"\n수집된 댓글 수 : {status.get('commentCnt', 'N/A')}"
         text += f"\n수집된 대댓글 수 : {status.get('replyCnt', 'N/A')}"
 
-        sendDiscordDM(
-            _admin_discord_recipients(), title + "\n" + text, requester=requester
-        )
         notifyRequester(requester, userEmail, title, text)
 
         with open(os.path.join(CRAWL_LOG_PATH, DBname + "_log.txt"), "a") as log:
@@ -243,6 +250,20 @@ def finishOperator(
         if DBuid:
             appendCrawlLog(DBuid, "end", f"[크롤링 완료] {DBname}\n{text}")
             endCrawl(DBuid)
+
+        insert_log(
+            user_logs_db,
+            _requester_uid(requester),
+            "crawler.crawl.finish",
+            "crawler",
+            message=f"크롤링 완료: {DBname}",
+            target={"type": "crawl_db", "id": DBuid, "name": DBname},
+            metadata={
+                "articleCnt": status.get("articleCnt"),
+                "commentCnt": status.get("commentCnt"),
+                "replyCnt": status.get("replyCnt"),
+            },
+        )
 
     except Exception as e:
         logger.exception(f"finishOperator 실패: {DBname}")

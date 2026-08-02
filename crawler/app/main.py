@@ -9,14 +9,21 @@ CRAWLER_APP_PATH = os.path.join(SERVER_DIR, "app")
 if CRAWLER_APP_PATH not in sys.path:
     sys.path.insert(0, CRAWLER_APP_PATH)
 
+_REPO_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.auth.middleware import AuthMiddleware
-from app.common.audit_log import AuditLogMiddleware
 from app.common.notification import sendDiscord
 from app.config import MODE
+from db import user_logs_db
+from shared.user_log import AuditLogMiddleware
 import gc
 import asyncio
 from datetime import datetime
@@ -24,6 +31,10 @@ from rich.console import Console
 import traceback
 
 console = Console()
+
+
+def _extract_identity(request: Request):
+    return (request.scope.get("state") or {}).get("user")
 
 
 async def periodic_gc(interval_seconds: int = 60):
@@ -111,4 +122,11 @@ from app.routes.dashboard_routes import router as dashboard_router
 fastapi_app.include_router(dashboard_router, tags=["Dashboard"])
 fastapi_app.include_router(api_router, prefix="/api", tags=["API"])
 
-app = AuthMiddleware(AuditLogMiddleware(fastapi_app))
+app = AuthMiddleware(
+    AuditLogMiddleware(
+        fastapi_app,
+        service="crawler",
+        collection=user_logs_db,
+        identity_extractor=_extract_identity,
+    )
+)

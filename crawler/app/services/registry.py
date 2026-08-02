@@ -21,8 +21,6 @@ class CrawlerEntry:
 
 
 class CrawlerRegistry:
-    """크롤러 인스턴스를 ThreadPoolExecutor에서 실행하고 관리한다."""
-
     def __init__(self, max_concurrent: int = 3):
         self.max_concurrent = max_concurrent
         self.executor = ThreadPoolExecutor(max_workers=max_concurrent)
@@ -31,7 +29,6 @@ class CrawlerRegistry:
         self.on_job_finished: Optional[Callable[[str], None]] = None
 
     def submit(self, job_id: str, crawler, meta: dict):
-        """크롤러를 백그라운드 스레드에서 실행"""
         entry = CrawlerEntry(job_id=job_id, crawler=crawler, meta=meta)
         with self.lock:
             self.active_jobs[job_id] = entry
@@ -40,10 +37,12 @@ class CrawlerRegistry:
         entry.future = future
 
     def _run_crawler(self, job_id: str, crawler):
-        """스레드에서 실행됨. crawler.main() 호출"""
         try:
             crawler.main()
-            self._mark_done(job_id, "completed")
+            # 중단 요청으로 빠져나온 경우 main()도 정상 반환하므로, running 플래그로
+            # 완료와 중단을 구분한다 (그러지 않으면 중단 작업이 완료로 기록된다).
+            stopped = hasattr(crawler, "running") and not crawler.running
+            self._mark_done(job_id, "stopped" if stopped else "completed")
         except Exception as e:
             logger.exception(f"Crawler {job_id} failed")
             self._mark_done(job_id, "error", str(e))
@@ -56,6 +55,27 @@ class CrawlerRegistry:
                     errorCrawl(crawler.DBuid)
                 except Exception:
                     logger.warning(f"DB 에러 상태 업데이트 실패: {job_id}")
+
+                try:
+                    from db import user_logs_db
+                    from shared.user_log import insert_log
+
+                    insert_log(
+                        user_logs_db,
+                        getattr(crawler, "requesterUid", None),
+                        "crawler.crawl.error",
+                        "crawler",
+                        message=f"크롤링 비정상 종료: {getattr(crawler, 'DBname', job_id)}",
+                        target={
+                            "type": "crawl_db",
+                            "id": crawler.DBuid,
+                            "name": getattr(crawler, "DBname", None),
+                        },
+                        outcome="failure",
+                        metadata={"error": str(e)},
+                    )
+                except Exception:
+                    logger.warning(f"에러 로그 기록 실패: {job_id}")
 
     def _mark_done(self, job_id: str, state: str, error: str = None):
         with self.lock:
@@ -73,7 +93,6 @@ class CrawlerRegistry:
                 logger.exception(f"on_job_finished callback failed for {job_id}")
 
     def get_status(self, job_id: str) -> Optional[dict]:
-        """crawler.reportStatus() 직접 호출 — thread-safe (GIL)"""
         with self.lock:
             entry = self.active_jobs.get(job_id)
         if (
@@ -89,7 +108,6 @@ class CrawlerRegistry:
             return self.active_jobs.get(job_id)
 
     def stop(self, job_id: str) -> bool:
-        """crawler.running = False — thread-safe atomic write (GIL)"""
         with self.lock:
             entry = self.active_jobs.get(job_id)
         if entry and entry.state == "running" and hasattr(entry.crawler, "running"):
@@ -106,7 +124,6 @@ class CrawlerRegistry:
             return list(self.active_jobs.values())
 
     def remove_finished(self, job_id: str):
-        """완료된 작업 엔트리 제거"""
         with self.lock:
             entry = self.active_jobs.get(job_id)
             if entry and entry.state in ("completed", "stopped", "error"):

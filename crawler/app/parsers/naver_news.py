@@ -845,7 +845,8 @@ class NaverNewsCrawler:
             if not state:
                 logger.info(f"DB has been deleted. Terminating crawl: {self.DBname}")
                 return
-            elif state == "stopped":
+            elif state == "stopped" or not self.running:
+                self.running = False
                 stopOperator(
                     DBpath=self.DBPath,
                     DBtype="navernews",

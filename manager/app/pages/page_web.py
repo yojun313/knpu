@@ -232,7 +232,7 @@ class Manager_Web:
                     "완료",
                     f"{payload.get('title', '논문')}가 추가되었습니다",
                 )
-                userLogging(f"WEB -> addHomePaper({payload.get('title')})")
+                userLogging(f"WEB: 논문 추가 - {payload.get('title')}")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -248,7 +248,7 @@ class Manager_Web:
                 QMessageBox.information(
                     self.main, "완료", f"{payload['name']} 멤버가 추가되었습니다"
                 )
-                userLogging(f"WEB -> addHomeMember({payload.get('name')})")
+                userLogging(f"WEB: 멤버 추가 - {payload.get('name')}")
                 self.refreshMemberBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -266,7 +266,7 @@ class Manager_Web:
                     "완료",
                     f"{payload.get('title', '뉴스')}가 추가되었습니다",
                 )
-                userLogging(f"WEB -> addHomeNews({payload.get('title')})")
+                userLogging(f"WEB: 뉴스 추가 - {payload.get('title')}")
                 self.refreshNewsBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -294,7 +294,7 @@ class Manager_Web:
                 Request("post", "/gallery/", HOMEPAGE_EDIT_API, json=payload)
 
                 QMessageBox.information(self.main, "완료", "갤러리에 추가되었습니다.")
-                userLogging(f"WEB -> addGroupPhoto({payload.get('title')})")
+                userLogging(f"WEB: 사진첩 게시글 추가 - {payload.get('title')}")
                 self.refreshGroupPhotoBoard()
 
         except Exception:
@@ -322,9 +322,7 @@ class Manager_Web:
                     HOMEPAGE_EDIT_API,
                     params={"uid": selectedUid},
                 )
-                userLogging(
-                    f"WEB -> deleteHomePaper({self.paper_data[selectedRow]['title']})"
-                )
+                userLogging(f"WEB: 논문 삭제 - {self.paper_data[selectedRow]['title']}")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -366,7 +364,7 @@ class Manager_Web:
                         HOMEPAGE_EDIT_API,
                         params={"uid": selectedUid},
                     )
-                    userLogging(f"WEB -> deleteHomeMember({targetName})")
+                    userLogging(f"WEB: 멤버 삭제 - {targetName}")
                     self.refreshMemberBoard()
                     QMessageBox.information(
                         self.main, "Success", "성공적으로 삭제되었습니다."
@@ -403,9 +401,7 @@ class Manager_Web:
                     HOMEPAGE_EDIT_API,
                     params={"uid": selectedUid},
                 )
-                userLogging(
-                    f"WEB -> deleteHomeNews({self.news_data[selectedRow]['title']})"
-                )
+                userLogging(f"WEB: 뉴스 삭제 - {self.news_data[selectedRow]['title']}")
                 self.refreshNewsBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -433,6 +429,7 @@ class Manager_Web:
             ):
                 # R2 사진 삭제는 서버(DELETE /gallery/)가 일괄 처리함
                 Request("delete", "gallery/", HOMEPAGE_EDIT_API, params={"uid": uid})
+                userLogging(f"WEB: 사진첩 게시글 삭제 - {target_data.get('title')}")
 
                 self.refreshGroupPhotoBoard()
                 QMessageBox.information(
@@ -474,7 +471,7 @@ class Manager_Web:
                     "완료",
                     f"{payload.get('title')}가 수정되었습니다",
                 )
-                userLogging(f"WEB -> editHomePaper({payload.get('title')})")
+                userLogging(f"WEB: 논문 수정 - {payload.get('title')}")
                 self.refreshPaperBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -504,7 +501,7 @@ class Manager_Web:
                 QMessageBox.information(
                     self.main, "완료", f"{payload.get('name')} 멤버가 수정되었습니다"
                 )
-                userLogging(f"WEB -> editHomeMember({payload.get('name')})")
+                userLogging(f"WEB: 멤버 수정 - {payload.get('name')}")
                 self.refreshMemberBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -534,7 +531,7 @@ class Manager_Web:
                 QMessageBox.information(
                     self.main, "완료", f"{payload.get('title')} 뉴스가 수정되었습니다"
                 )
-                userLogging(f"WEB -> editHomeNews({payload.get('title')})")
+                userLogging(f"WEB: 뉴스 수정 - {payload.get('title')}")
                 self.refreshNewsBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -583,7 +580,7 @@ class Manager_Web:
                     "완료",
                     f"'{payload.get('title')}' 게시글이 수정되었습니다.",
                 )
-                userLogging(f"WEB -> editGroupPhoto({payload.get('title')})")
+                userLogging(f"WEB: 사진첩 게시글 수정 - {payload.get('title')}")
                 self.refreshGroupPhotoBoard()
 
         except Exception:
@@ -705,7 +702,7 @@ class Manager_Web:
                     "완료",
                     f"{payload.get('title', '팝업')}이 추가되었습니다",
                 )
-                userLogging(f"WEB -> addHomePopup({payload.get('title')})")
+                userLogging(f"WEB: 팝업 추가 - {payload.get('title')}")
                 self.refreshPopupBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -729,9 +726,7 @@ class Manager_Web:
                 Request(
                     "delete", "/popups/", HOMEPAGE_EDIT_API, params={"uid": selectedUid}
                 )
-                userLogging(
-                    f"WEB -> deleteHomePopup({self.popup_data[selectedRow]['title']})"
-                )
+                userLogging(f"WEB: 팝업 삭제 - {self.popup_data[selectedRow]['title']}")
                 self.refreshPopupBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())
@@ -758,7 +753,7 @@ class Manager_Web:
                 QMessageBox.information(
                     self.main, "완료", f"{payload.get('title')} 팝업이 수정되었습니다"
                 )
-                userLogging(f"WEB -> editHomePopup({payload.get('title')})")
+                userLogging(f"WEB: 팝업 수정 - {payload.get('title')}")
                 self.refreshPopupBoard()
         except Exception:
             programBugLog(self.main, traceback.format_exc())

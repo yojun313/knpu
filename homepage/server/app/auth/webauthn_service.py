@@ -40,7 +40,6 @@ def _save_challenge(challenge: bytes, purpose: str, user_uid: str | None) -> Non
 
 
 def _pop_challenge(challenge_b64: str, purpose: str) -> dict | None:
-    """한 번 쓴 challenge는 성공 여부와 무관하게 즉시 지운다(재사용/재전송 공격 방지)."""
     doc = webauthn_challenges_db.find_one_and_delete({"_id": challenge_b64})
     if not doc or doc.get("purpose") != purpose:
         return None
@@ -130,6 +129,11 @@ def verify_registration(
             "last_used_at": None,
         }
     )
+    _log_user_activity(
+        user_uid,
+        "homepage.passkey.register",
+        f"패스키 등록: {(device_name or '').strip() or '이름 없음'}",
+    )
 
     return {"message": "패스키가 등록되었습니다"}
 
@@ -193,7 +197,9 @@ def verify_authentication(credential: dict) -> dict:
 
     token = create_token(user)
     try:
-        _log_user_activity(user["uid"], "Homepage login (passkey)")
+        _log_user_activity(
+            user["uid"], "homepage.auth.login_passkey", "Homepage login (passkey)"
+        )
     except Exception:
         pass
 
@@ -228,4 +234,5 @@ def delete_passkey(user_uid: str, credential_id: str) -> dict:
     )
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="패스키를 찾을 수 없습니다")
+    _log_user_activity(user_uid, "homepage.passkey.delete", "패스키 삭제")
     return {"message": "패스키가 삭제되었습니다"}

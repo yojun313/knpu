@@ -1,5 +1,14 @@
+import os
+import sys
 import traceback
 from urllib.parse import quote
+
+_REPO_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -18,11 +27,31 @@ from app.routes import (
     version_routes,
     settings_routes,
 )
-from app.libs.audit_log import AuditLogMiddleware
+from app.db import user_logs_col
+from app.libs.jwt import decode_token
 from app.libs.discord_notify import notify_discord
+from shared.user_log import AuditLogMiddleware
+
+
+def _extract_identity(request: Request):
+    token = request.cookies.get("session")
+    payload = decode_token(token) if token else None
+    if not payload:
+        return None
+    return {
+        "uid": payload.get("sub"),
+        "name": payload.get("name"),
+        "role": payload.get("role"),
+    }
+
 
 app = FastAPI(title="FPEI Dashboard")
-app.add_middleware(AuditLogMiddleware)
+app.add_middleware(
+    AuditLogMiddleware,
+    service="admin",
+    collection=user_logs_col,
+    identity_extractor=_extract_identity,
+)
 
 
 @app.exception_handler(Exception)

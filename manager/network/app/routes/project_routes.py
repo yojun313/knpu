@@ -6,6 +6,8 @@ from fastapi import APIRouter, UploadFile, File, Form, Query, Request, HTTPExcep
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 
 from app.services import project_store, graph_analysis, analyze_service, upload_staging
+from app.db import user_logs_db
+from shared.user_log import insert_log
 
 
 def _parse_csv_header(content: bytes) -> list[str]:
@@ -82,8 +84,20 @@ async def api_create_project(
         raise HTTPException(400, "네트워크 분석 결과 zip 파일을 업로드해주세요.")
     content = await file.read()
     project_name = name or os.path.splitext(file.filename)[0]
+    uid = _uid(request)
     project = _handle_store_error(
-        project_store.create_project, _uid(request), content, project_name
+        project_store.create_project, uid, content, project_name
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.project.create",
+        "network",
+        target={
+            "type": "project",
+            "id": project["project_id"],
+            "name": project["name"],
+        },
     )
     return JSONResponse(project)
 
@@ -114,21 +128,49 @@ async def api_finalize_zip(request: Request):
     project = _handle_store_error(
         project_store.create_project, uid, content, project_name
     )
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.project.create",
+        "network",
+        target={
+            "type": "project",
+            "id": project["project_id"],
+            "name": project["name"],
+        },
+    )
     return JSONResponse(project)
 
 
 @router.patch("/api/projects/{project_id}")
 async def api_rename_project(project_id: str, request: Request):
     body = await request.json()
+    uid = _uid(request)
     project = _handle_store_error(
-        project_store.rename_project, _uid(request), project_id, body.get("name", "")
+        project_store.rename_project, uid, project_id, body.get("name", "")
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.project.rename",
+        "network",
+        target={"type": "project", "id": project_id, "name": project["name"]},
     )
     return JSONResponse(project)
 
 
 @router.delete("/api/projects/{project_id}")
 async def api_delete_project(project_id: str, request: Request):
-    _handle_store_error(project_store.delete_project, _uid(request), project_id)
+    uid = _uid(request)
+    project = _handle_store_error(project_store.get_project, uid, project_id)
+    _handle_store_error(project_store.delete_project, uid, project_id)
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.project.delete",
+        "network",
+        target={"type": "project", "id": project_id, "name": project.get("name")},
+    )
     return JSONResponse({"message": "삭제되었습니다"})
 
 
@@ -273,6 +315,13 @@ async def api_crawl_db_select(uid: str, request: Request):
 
     filename = name.rsplit(".", 1)[0] + ".csv"
     stage_id = upload_staging.stage(_uid(request), resp.content, filename)
+    insert_log(
+        user_logs_db,
+        _uid(request),
+        "network.project.import_from_crawl_db",
+        "network",
+        target={"type": "crawl_db", "id": uid, "name": name},
+    )
     return JSONResponse(
         {
             "stage_id": stage_id,
@@ -319,6 +368,14 @@ async def api_analyze_start(request: Request):
     pid = analyze_service.start_job(
         content, filename, built_option, session_token, project_name=project_name
     )
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.project.analyze_start",
+        "network",
+        target={"type": "project", "id": pid, "name": project_name},
+        metadata={"text_col": built_option.get("text_col")},
+    )
     return JSONResponse({"pid": pid})
 
 
@@ -337,5 +394,13 @@ async def internal_ingest(
     content = await file.read()
     project = _handle_store_error(
         project_store.create_project, uid, content, name, "manager"
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "network.project.analyze_complete",
+        "network",
+        target={"type": "project", "id": project["project_id"], "name": name},
+        metadata={"source": "manager_desktop_analysis"},
     )
     return JSONResponse(project)

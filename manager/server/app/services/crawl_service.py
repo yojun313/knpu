@@ -60,7 +60,12 @@ def createCrawlDb(crawlDb: CrawlDbCreateDto):
     crawlList_db.insert_one(ordered_dict)
     if "_id" in ordered_dict:
         del ordered_dict["_id"]
-    log_user(userUid, f"Created crawl DB: {crawlDb_dict['name']}")
+    log_user(
+        userUid,
+        "manager.crawl_db.create",
+        f"Created crawl DB: {crawlDb_dict['name']}",
+        target={"type": "crawl_db", "id": crawlDb_dict["name"]},
+    )
 
     return JSONResponse(
         status_code=201,
@@ -103,7 +108,12 @@ def deleteCrawlDb(uid: str, userUid: str):
         raise NotFoundException("CrawlDB not found")
 
     targetDB = crawlDb["name"]
-    log_user(userUid, f"DATABASE -> Requested to delete crawl DB: {targetDB}")
+    log_user(
+        userUid,
+        "manager.crawl_db.delete_request",
+        f"DATABASE -> Requested to delete crawl DB: {targetDB}",
+        target={"type": "crawl_db", "id": targetDB},
+    )
 
     crawlList_db.delete_one({"uid": uid})
     crawlLog_db.delete_one({"uid": uid})
@@ -132,7 +142,12 @@ def stopCrawlDb(uid: str, userUid: str):
 
     if result.modified_count > 0:
         target_name = target_data.get("name", "Unknown")
-        log_user(userUid, f"DATABASE -> Requested to stop crawl DB: {target_name}")
+        log_user(
+            userUid,
+            "manager.crawl_db.stop_request",
+            f"DATABASE -> Requested to stop crawl DB: {target_name}",
+            target={"type": "crawl_db", "id": target_name},
+        )
 
         return JSONResponse(
             status_code=200,
@@ -249,7 +264,12 @@ def getCrawlDbInfo(uid: str, userUid: str = None):
         raise NotFoundException("CrawlDB not found")
 
     targetDB = crawlDb["name"]
-    log_user(userUid, f"DATABASE -> Requested info for crawl DB: {targetDB}")
+    log_user(
+        userUid,
+        "manager.crawl_db.info_view",
+        f"DATABASE -> Requested info for crawl DB: {targetDB}",
+        target={"type": "crawl_db", "id": targetDB},
+    )
 
     crawlDb = processDbInfo(crawlDb)
     return JSONResponse(
@@ -409,7 +429,12 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
         raise NotFoundException("CrawlDB not found")
 
     targetDB = crawlDb["name"]
-    log_user(userUid, f"DATABASE -> Requested to save crawl DB: {targetDB}")
+    log_user(
+        userUid,
+        "manager.crawl_db.save_request",
+        f"DATABASE -> Requested to save crawl DB: {targetDB}",
+        target={"type": "crawl_db", "id": targetDB},
+    )
 
     pid = saveOption["pid"]
 
@@ -661,7 +686,12 @@ def previewCrawlDb(uid: str, userUid: str):
     if not crawlDb:
         raise NotFoundException("CrawlDB not found")
     targetDB = crawlDb["name"]
-    log_user(userUid, f"DATABASE -> Requested preview for crawl DB: {targetDB}")
+    log_user(
+        userUid,
+        "manager.crawl_db.preview_request",
+        f"DATABASE -> Requested preview for crawl DB: {targetDB}",
+        target={"type": "crawl_db", "id": targetDB},
+    )
 
     target_folder = crawlDb["name"]  # 이 이름이 곧 디렉토리명
     base_path = os.path.join(crawldata_path, target_folder)  # 경로에 맞게 수정

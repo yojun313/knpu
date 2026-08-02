@@ -490,7 +490,8 @@ class YouTubeCrawler:
         for dayCount in range(self.date_range + 1):
             currentDate_str = self.currentDate.strftime("%Y%m%d")
 
-            if checkState(self.DBuid) == False:
+            state = checkState(self.DBuid)
+            if not state or state == "stopped":
                 self.running = False
 
             if not self.running:

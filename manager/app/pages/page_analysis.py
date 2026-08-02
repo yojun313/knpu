@@ -182,7 +182,7 @@ class Manager_Analysis(Manager_Worker):
             if reply != QMessageBox.StandardButton.Yes:
                 return
 
-            userLogging(f"ANALYSIS -> timesplit_file({filepath})")
+            userLogging(f"ANALYSIS: 기간 분할 실행 - {filepath}")
 
             thread_name = f"시계열 분할: {os.path.basename(filepath)}"
             register_thread(thread_name)
@@ -277,7 +277,7 @@ class Manager_Analysis(Manager_Worker):
             mergedfilename = data["mergedfilename"]
             save_dir = data["save_dir"]
 
-            userLogging(f"ANALYSIS -> merge_file({mergedfilename})")
+            userLogging(f"ANALYSIS: 파일 병합 실행 - {mergedfilename}")
 
             thread_name = f"데이터 병합: {mergedfilename}"
             register_thread(thread_name)
@@ -369,7 +369,7 @@ class Manager_Analysis(Manager_Worker):
 
             option = {"pid": pid, "category": category, "platform": platform}
 
-            userLogging(f"ANALYSIS -> statistics_file({filepath}) options: {option}")
+            userLogging(f"ANALYSIS: 통계 분석 실행 - {filepath} (옵션: {option})")
 
             save_path = os.path.dirname(filepath)
 
@@ -549,7 +549,8 @@ class Manager_Analysis(Manager_Worker):
                 exception_word_list = df["word"].tolist()
 
             userLogging(
-                f"ANALYSIS -> WordCloud({filename}) options: date={date}, period={period}, maxword={maxword}, except_word_path={exception_word_list_path}, eng={eng_yes_selected}"
+                f"ANALYSIS: 워드클라우드 생성 - {filename} "
+                f"(날짜: {date}, 기간: {period}, 최대단어: {maxword}, 영어: {eng_yes_selected})"
             )
 
             thread_name = f"워드클라우드: {filename}"
@@ -866,7 +867,7 @@ class Manager_Analysis(Manager_Worker):
                 if k not in ("exception_word_list", "pid")
             }
             userLogging(
-                f"ANALYSIS -> kemkim_file({tokenfile_name}) options: {option_for_log}"
+                f"ANALYSIS: KEMKIM 분석 실행 - {tokenfile_name} (옵션: {option_for_log})"
             )
 
             downloadDialog = DownloadDialog(
@@ -952,7 +953,7 @@ class Manager_Analysis(Manager_Worker):
                 )
                 return
 
-            userLogging(f"ANALYSIS -> rekemkim_file({result_directory[0]})")
+            userLogging(f"ANALYSIS: KEMKIM 재조정 - {result_directory[0]}")
             printStatus(self.main, "파일 불러오는 중...")
 
             result_directory = result_directory[0]
@@ -1237,7 +1238,7 @@ class Manager_Analysis(Manager_Worker):
                 return
 
             result_directory = result_directory[0]
-            userLogging(f"ANALYSIS -> interpret_kemkim_file({result_directory})")
+            userLogging(f"ANALYSIS: KEMKIM 해석 실행 - {result_directory}")
 
             final_signal_csv_path = os.path.join(
                 result_directory, "Signal", "Final_signal.csv"
@@ -1726,6 +1727,10 @@ class Manager_Analysis(Manager_Worker):
                 self._workers = []
             self._workers.append(worker)
 
+            userLogging(
+                f"ANALYSIS: 토큰화 실행 - {tokenfile_name} (언어: {selected_language})"
+            )
+
         except Exception:
             programBugLog(self.main, traceback.format_exc())
 
@@ -1798,6 +1803,9 @@ class Manager_Analysis(Manager_Worker):
                 safe_path(os.path.join(save_path, new_filename)),
                 index=False,
                 encoding="utf-8-sig",
+            )
+            userLogging(
+                f"ANALYSIS: 토큰 수정 - {base_filename} (윈도우 크기: {window_size})"
             )
 
             printStatus(self.main)
@@ -2010,6 +2018,9 @@ class Manager_Analysis(Manager_Worker):
             out_df = pd.DataFrame(results)
             out_file = os.path.join(save_path, file_name)
             out_df.to_csv(safe_path(out_file), index=False, encoding="utf-8-sig")
+            userLogging(
+                f"ANALYSIS: 공통 토큰 추출 - {file_name} (파일 {len(token_paths)}개, 기간: {period_choice})"
+            )
 
             printStatus(self.main)
             openFileResult(
@@ -2144,7 +2155,7 @@ class Manager_Analysis(Manager_Worker):
 
             # 로그
             userLogging(
-                f"ANALYSIS -> HateMeasure({csv_fname}) options: col={text_col}, opt={option_num}"
+                f"ANALYSIS: 혐오표현 측정 실행 - {csv_fname} (열: {text_col}, 옵션: {option_num})"
             )
 
         except Exception:
@@ -2267,7 +2278,7 @@ class Manager_Analysis(Manager_Worker):
             self._workers.append(worker)
 
             userLogging(
-                f"ANALYSIS -> Whisper({audio_fname}) options: lang={language}, model={model_level}"
+                f"ANALYSIS: 음성 전사(Whisper) 실행 - {audio_fname} (언어: {language}, 모델: {model_level})"
             )
 
         except Exception:
@@ -2350,7 +2361,7 @@ class Manager_Analysis(Manager_Worker):
         self._workers.append(worker)
 
         userLogging(
-            f"ANALYSIS -> YouTubeDownload(count={len(urls)}, fmt={fmt}, whisper={save_whisper})"
+            f"ANALYSIS: 유튜브 다운로드 - {len(urls)}건 (형식: {fmt}, whisper: {save_whisper})"
         )
 
     def run_detection(self):
@@ -2569,11 +2580,12 @@ class Manager_Analysis(Manager_Worker):
 
             if run_dino:
                 userLogging(
-                    f"ANALYSIS -> DINO(count={len(file_paths)}, prompt={dino_prompt}, conf={conf_thres})"
+                    f"ANALYSIS: 객체 탐지(DINO) 실행 - 이미지 {len(file_paths)}장 "
+                    f"(프롬프트: {dino_prompt}, 신뢰도: {conf_thres})"
                 )
             else:
                 userLogging(
-                    f"ANALYSIS -> YOLO(media={media}, count={len(file_paths)}, conf={conf_thres})"
+                    f"ANALYSIS: 객체 탐지(YOLO) 실행 - {media} {len(file_paths)}건 (신뢰도: {conf_thres})"
                 )
 
         except Exception:
@@ -2648,9 +2660,9 @@ class Manager_Analysis(Manager_Worker):
             thread_name = f"네트워크 분석: {filename}"
             register_thread(thread_name)
             userLogging(
-                f"ANALYSIS -> NetworkGraph({filename}) "
-                f"measure={res.get('measure')}, period={res.get('period')}, "
-                f"scope={res.get('scope')}, community={res.get('community')}"
+                f"ANALYSIS: 네트워크 분석 실행 - {filename} "
+                f"(측정: {res.get('measure')}, 기간: {res.get('period')}, "
+                f"범위: {res.get('scope')}, 커뮤니티: {res.get('community')})"
             )
 
             downloadDialog = DownloadDialog(thread_name, pid, self.main)

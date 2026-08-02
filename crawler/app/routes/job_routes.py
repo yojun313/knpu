@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.models.job_model import JobSubmitRequest, QueueConfigUpdate, ResumeRequest
 from app.routes.dependencies import get_current_user, check_owner_or_admin
-from app.db import crawler_db
+from app.db import crawler_db, user_logs_db
+from shared.user_log import insert_log
 
 router = APIRouter()
 
@@ -49,6 +50,13 @@ def resume_job(
         job_id = queue_manager.enqueue_resume(db_uid, req.end_date)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    insert_log(
+        user_logs_db,
+        user["uid"],
+        "crawler.crawl.resume",
+        "crawler",
+        target={"type": "crawl_db", "id": db_uid, "name": doc.get("name")},
+    )
     return {"status": "ok", "job_id": job_id}
 
 
@@ -59,21 +67,36 @@ def get_job_logs(job_id: str):
 
 
 @router.post("/jobs/{job_id}/stop")
-def stop_job(job_id: str):
+def stop_job(job_id: str, user=Depends(get_current_user)):
     success = queue_manager.stop_job(job_id)
     if not success:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not running")
+    insert_log(
+        user_logs_db,
+        user["uid"],
+        "crawler.crawl.stop",
+        "crawler",
+        target={"type": "crawl_job", "id": job_id},
+    )
     return {"status": "ok", "message": f"Job {job_id} stop signal sent"}
 
 
 @router.delete("/jobs/{job_id}")
-def cancel_job(job_id: str):
+def cancel_job(job_id: str, user=Depends(get_current_user)):
     success, removed_from = queue_manager.remove_job(job_id)
     if not success:
         if removed_from == "running":
             raise HTTPException(
                 status_code=409, detail=f"Job {job_id} is running; stop first"
             )
+    insert_log(
+        user_logs_db,
+        user["uid"],
+        "crawler.crawl.cancel",
+        "crawler",
+        target={"type": "crawl_job", "id": job_id},
+        outcome="success" if success else "failure",
+    )
     return {"status": "ok", "message": f"Job {job_id} removed ({removed_from})"}
 
 

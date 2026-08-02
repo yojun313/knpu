@@ -1,9 +1,10 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.db import popup_db
+from app.db import popup_db, user_logs_db
 from app.auth.dependencies import require_admin
 from datetime import datetime
 from app.models import Popup
+from shared.user_log import insert_log
 
 router = APIRouter()
 
@@ -17,8 +18,8 @@ def list_popups():
     return docs
 
 
-@router.post("/", dependencies=[Depends(require_admin)])
-def upsert_popup(popup: Popup):
+@router.post("/")
+def upsert_popup(popup: Popup, admin=Depends(require_admin)):
     data = popup.dict()
     if not data.get("uid"):
         data["uid"] = str(uuid.uuid4())
@@ -31,12 +32,29 @@ def upsert_popup(popup: Popup):
     if not result:
         raise HTTPException(status_code=500, detail="Popup upsert failed")
     result["_id"] = str(result["_id"])
+    insert_log(
+        user_logs_db,
+        admin["sub"],
+        "homepage.popup.upsert",
+        "homepage",
+        target={"type": "popup", "id": data["uid"]},
+    )
     return result
 
 
-@router.delete("/", dependencies=[Depends(require_admin)])
-def delete_popup(uid: str = Query(..., description="삭제할 팝업의 UID")):
+@router.delete("/")
+def delete_popup(
+    uid: str = Query(..., description="삭제할 팝업의 UID"),
+    admin=Depends(require_admin),
+):
     result = popup_db.delete_one({"uid": uid})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Popup not found")
+    insert_log(
+        user_logs_db,
+        admin["sub"],
+        "homepage.popup.delete",
+        "homepage",
+        target={"type": "popup", "id": uid},
+    )
     return {"message": f"Popup '{uid}' deleted successfully"}

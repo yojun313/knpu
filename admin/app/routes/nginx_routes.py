@@ -12,6 +12,9 @@ from pydantic import BaseModel
 from app.services.nginx_service import NginxService
 from app.routes.dependencies import get_current_user
 from app.services import settings_service
+from app.db import user_logs_col
+from app.libs.jwt import decode_token
+from shared.user_log import insert_log
 import os
 
 
@@ -50,6 +53,15 @@ async def nginx_manager_page(request: Request, user=Depends(get_current_user)):
 @router.post("/paths/add")
 async def add_path(payload: PathAddRequest, user=Depends(get_current_user)):
     ok, message = NginxService.add_path(payload.domain, payload.path, payload.port)
+    insert_log(
+        user_logs_col,
+        user["sub"],
+        "admin.nginx.path_add",
+        "admin",
+        message=f"nginx path 추가: {payload.domain}{payload.path} -> :{payload.port}",
+        target={"type": "nginx_domain", "id": payload.domain},
+        outcome="success" if ok else "failure",
+    )
     if not ok:
         raise HTTPException(status_code=400, detail=message)
     return {"success": True, "message": message}
@@ -59,6 +71,15 @@ async def add_path(payload: PathAddRequest, user=Depends(get_current_user)):
 async def edit_path(payload: PathEditRequest, user=Depends(get_current_user)):
     ok, message = NginxService.edit_path_port(
         payload.domain, payload.path, payload.port
+    )
+    insert_log(
+        user_logs_col,
+        user["sub"],
+        "admin.nginx.path_edit",
+        "admin",
+        message=f"nginx path 수정: {payload.domain}{payload.path} -> :{payload.port}",
+        target={"type": "nginx_domain", "id": payload.domain},
+        outcome="success" if ok else "failure",
     )
     if not ok:
         raise HTTPException(status_code=400, detail=message)
@@ -70,6 +91,15 @@ async def delete_path(payload: PathDeleteRequest, user=Depends(get_current_user)
     ok, message, requires_full_delete = NginxService.delete_path(
         payload.domain, payload.path
     )
+    insert_log(
+        user_logs_col,
+        user["sub"],
+        "admin.nginx.path_delete",
+        "admin",
+        message=f"nginx path 삭제: {payload.domain}{payload.path}",
+        target={"type": "nginx_domain", "id": payload.domain},
+        outcome="success" if ok else "failure",
+    )
     if requires_full_delete:
         return {"success": False, "requires_full_delete": True, "message": message}
     if not ok:
@@ -80,6 +110,15 @@ async def delete_path(payload: PathDeleteRequest, user=Depends(get_current_user)
 @router.websocket("/ws/console")
 async def nginx_console_ws(websocket: WebSocket):
     await websocket.accept()
+
+    token = websocket.cookies.get("session")
+    payload = decode_token(token) if token else None
+    if not payload or payload.get("role") != "admin":
+        await websocket.send_text("인증이 필요합니다")
+        await websocket.close()
+        return
+    admin_uid = payload.get("sub")
+
     try:
         data = await websocket.receive_json()
         action = data.get("action")
@@ -99,6 +138,15 @@ async def nginx_console_ws(websocket: WebSocket):
                 data["port"],
                 data.get("path") or "/",
             ]
+            insert_log(
+                user_logs_col,
+                admin_uid,
+                "admin.nginx.cert_issue",
+                "admin",
+                message=f"SSL 인증서 발급 + nginx 등록: {data['domain']}",
+                target={"type": "nginx_domain", "id": data["domain"]},
+                metadata={"port": data["port"], "path": data.get("path") or "/"},
+            )
         elif action == "delete":
             cmd = [
                 "sudo",
@@ -108,6 +156,14 @@ async def nginx_console_ws(websocket: WebSocket):
                 data["domain"],
                 "--non-interactive",
             ]
+            insert_log(
+                user_logs_col,
+                admin_uid,
+                "admin.nginx.cert_delete",
+                "admin",
+                message=f"SSL 인증서 및 nginx 설정 삭제: {data['domain']}",
+                target={"type": "nginx_domain", "id": data["domain"]},
+            )
         else:
             await websocket.send_text("Invalid Action")
             await websocket.close()

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
-from app.db import news_db
+from app.db import news_db, user_logs_db
 from app.auth.dependencies import require_admin
 from datetime import datetime
 from app.models import News
+from shared.user_log import insert_log
 import uuid
 
 
@@ -27,8 +28,8 @@ def list_news():
     return docs
 
 
-@router.post("/", dependencies=[Depends(require_admin)])
-def upsert_news(news: News):
+@router.post("/")
+def upsert_news(news: News, admin=Depends(require_admin)):
     news_data = news.dict(by_alias=True)
     if "uid" not in news_data or not news_data["uid"]:
         news_data["uid"] = str(uuid.uuid4())
@@ -42,12 +43,29 @@ def upsert_news(news: News):
         raise HTTPException(status_code=500, detail="News upsert failed")
 
     new_news["_id"] = str(new_news["_id"])
+    insert_log(
+        user_logs_db,
+        admin["sub"],
+        "homepage.news.upsert",
+        "homepage",
+        target={"type": "news", "id": news_data["uid"], "name": news_data.get("title")},
+    )
     return new_news
 
 
-@router.delete("/", dependencies=[Depends(require_admin)])
-def delete_news(uid: str = Query(..., description="삭제할 뉴스의 UID")):
+@router.delete("/")
+def delete_news(
+    uid: str = Query(..., description="삭제할 뉴스의 UID"),
+    admin=Depends(require_admin),
+):
     result = news_db.delete_one({"uid": uid})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="News not found")
+    insert_log(
+        user_logs_db,
+        admin["sub"],
+        "homepage.news.delete",
+        "homepage",
+        target={"type": "news", "id": uid},
+    )
     return {"message": f"News '{uid}' deleted successfully"}

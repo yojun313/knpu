@@ -14,8 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class QueueManager:
-    """우선순위 큐 + CrawlerRegistry + MongoDB 영속화를 통합 관리한다."""
-
     def __init__(self, registry: CrawlerRegistry, persistence: JobPersistence):
         self.registry = registry
         self.persistence = persistence
@@ -29,7 +27,6 @@ class QueueManager:
     # ── 외부 API ──────────────────────────────────────────────────────
 
     def enqueue(self, req: JobSubmitRequest) -> str:
-        """작업 제출. 용량 있으면 즉시 실행, 아니면 큐에 대기."""
         job_id = uuid4().hex[:8]
         req_dict = req.model_dump()
         self.persistence.save(job_id, req_dict, "queued")
@@ -47,9 +44,6 @@ class QueueManager:
         return job_id
 
     def enqueue_resume(self, db_uid: str, end_date: str = None) -> str:
-        """중단·에러·완료된 작업을 이어받는다. 같은 db_uid(같은 파일/데이터)로 새 job_id를
-        발급해 큐에 넣는다 — 용량 있으면 즉시 실행. 완료된 작업은 이미 원래 종료일까지
-        다 끝난 상태이므로, 더 늦은 end_date를 반드시 지정해야 확장해서 이어받을 수 있다."""
         doc = crawler_db["db-list"].find_one({"uid": db_uid})
         if not doc:
             raise ValueError(f"크롤링 작업을 찾을 수 없습니다: {db_uid}")
@@ -94,17 +88,14 @@ class QueueManager:
         return job_id
 
     def stop_job(self, job_id: str) -> bool:
-        """실행 중 작업 중단"""
         self.persistence.update_state(job_id, "stopped")
         return self.registry.stop(job_id)
 
     def cancel_job(self, job_id: str) -> bool:
-        """큐에서 대기 중인 작업 제거"""
         success, removed_from = self.remove_job(job_id)
         return success and removed_from == "queued"
 
     def remove_job(self, job_id: str) -> tuple[bool, str]:
-        """작업 삭제(queued, completed/stopped/error 가능). running은 삭제 불가."""
         with self.lock:
             for i, item in enumerate(self.queue):
                 if item[2] == job_id:
@@ -122,7 +113,6 @@ class QueueManager:
         return True, ""
 
     def get_job_status(self, job_id: str) -> Optional[dict]:
-        """단일 작업의 상태 조회"""
         entry = self.registry.get_entry(job_id)
         if entry:
             return {
@@ -148,7 +138,6 @@ class QueueManager:
         return None
 
     def get_all_statuses(self) -> dict:
-        """대시보드용 전체 상태. active + queued + recent 분류."""
         active = []
 
         for entry in self.registry.all_entries():
@@ -191,7 +180,6 @@ class QueueManager:
         return {"active": active, "queued": queued, "recent": recent}
 
     def restore_from_db(self) -> dict:
-        """서버 재시작 시 MongoDB에서 큐 복원. 복원 결과를 dict로 반환."""
         marked_error, db_uids = self.persistence.mark_running_as_error(
             "서버 재시작으로 중단됨"
         )
@@ -237,7 +225,6 @@ class QueueManager:
     # ── 내부 ──────────────────────────────────────────────────────────
 
     def _start(self, job_id: str, req: JobSubmitRequest):
-        """크롤러 인스턴스 생성 후 registry에 제출"""
         try:
             crawler = self._create_crawler(req)
             if hasattr(crawler, "DBuid"):
@@ -255,7 +242,6 @@ class QueueManager:
         )
 
     def _start_resume(self, job_id: str, db_uid: str, meta: dict):
-        """이어받기 크롤러 생성 후 registry에 제출 (일반 _start와 달리 fromResume 경유)"""
         try:
             crawler = self._create_resume_crawler(
                 meta.get("crawl_object"), db_uid, meta.get("resume_end_date")
@@ -300,7 +286,6 @@ class QueueManager:
         raise ValueError(f"지원하지 않는 크롤러 타입: {crawl_object}")
 
     def _create_crawler(self, req: JobSubmitRequest):
-        """크롤러 팩토리 — crawl_object에 따라 적절한 클래스 생성"""
         if req.crawl_object == 1:
             from parsers.naver_news import NaverNewsCrawler
 
@@ -370,7 +355,6 @@ class QueueManager:
         raise ValueError(f"지원하지 않는 크롤러 타입: {req.crawl_object}")
 
     def _on_finished(self, job_id: str):
-        """registry 콜백: 작업 완료 → DB 업데이트 + 큐에서 다음 작업 시작"""
         entry = self.registry.get_entry(job_id)
         if entry:
             self.persistence.update_state(job_id, entry.state, entry.error_message)

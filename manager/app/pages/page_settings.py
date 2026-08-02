@@ -749,6 +749,7 @@ class Manager_Setting(BaseDialog):
                 if save_path:
                     with open(safe_path(save_path), "wb") as f:
                         f.write(response.content)
+                    userLogging(f"SETTING: CSV 양식 다운로드 - {url}")
                     openFileResult(
                         self.main,
                         f"저장이 완료되었습니다\n\n파일 탐색기에서 확인하시겠습니까?",
@@ -850,7 +851,11 @@ class Manager_Setting(BaseDialog):
         set_setting("LLM_model", llm_model)
 
         userLogging(
-            f"Settings Updated | Theme: {theme} | ScreenSize: {screen_size} | AutoUpdate: {auto_update} | MyDB: {my_db} | GPT_Key: {'Set' if api_key != 'default' and len(api_key) >= 20 else 'Not Set'} | DB_Refresh: {db_refresh} | BootTerminal: {boot_terminal} | DBKeywordSort: {db_keywordsort} | LLM_model: {llm_model}"
+            f"SETTING: 설정 저장 (테마: {theme}, 화면크기: {screen_size}, "
+            f"자동업데이트: {auto_update}, MyDB: {my_db}, "
+            f"GPT키: {'설정됨' if api_key != 'default' and len(api_key) >= 20 else '미설정'}, "
+            f"DB새로고침: {db_refresh}, 부팅시터미널: {boot_terminal}, "
+            f"DB키워드정렬: {db_keywordsort}, LLM모델: {llm_model})"
         )
 
         self.accept()

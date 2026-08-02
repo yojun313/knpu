@@ -173,7 +173,9 @@ def manager_redirect():
 
 @router.get("/manager/download")
 def manager_download_page():
-    return _page("manager_download.html")
+    return RedirectResponse(
+        url="https://manager.knpu.re.kr/api/download", status_code=301
+    )
 
 
 @router.get("/manual/kemkim")
