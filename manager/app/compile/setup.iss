@@ -69,6 +69,12 @@ Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}"; ValueType: string; Value
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocKey}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
 Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}\SupportedTypes"; ValueType: string; ValueName: ".myp"; ValueData: ""
+; knpumanager:// 커스텀 URL 프로토콜 — 웹사이트 상단 네비게이션의 MANAGER 버튼이 이걸로
+; 설치된 데스크톱 앱을 직접 실행시킨다(미설치 시엔 브라우저가 무시하고 웹 페이지로 대체 이동).
+Root: HKA; Subkey: "Software\Classes\knpumanager"; ValueType: string; ValueName: ""; ValueData: "URL:KNPU Manager Protocol"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\knpumanager"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKA; Subkey: "Software\Classes\knpumanager\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
+Root: HKA; Subkey: "Software\Classes\knpumanager\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

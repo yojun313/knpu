@@ -53,6 +53,7 @@
             z-index: 100;
         }
         .top-header-logo { width: auto; height: 34px; object-fit: contain; display: block; flex-shrink: 0; box-shadow: none; border-radius: 0; }
+        .top-header > a:first-child { display: flex; align-items: center; flex-shrink: 0; }
 
         .top-nav { display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: none; }
         .top-nav::-webkit-scrollbar { display: none; }
@@ -318,10 +319,10 @@
 
 <body>
     <div class="top-header">
-        <img src="assets/imgs/lab_logo.png" alt="FPEI" class="top-header-logo">
+        <a href="https://knpu.re.kr" title="홈으로"><img src="assets/imgs/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
         <nav class="top-nav">
             <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
-            <a href="https://manager.knpu.re.kr" class="top-nav-link active">MANAGER</a>
+            <a href="https://manager.knpu.re.kr" class="top-nav-link active" onclick="return openManagerApp(event)">MANAGER</a>
             <a href="https://crawler.knpu.re.kr" class="top-nav-link">CRAWLER</a>
             <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
             <a href="https://kemkim.knpu.re.kr" class="top-nav-link">KEMKIM</a>
@@ -434,6 +435,24 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        // 상단 네비게이션의 MANAGER 버튼: PC에 데스크톱 MANAGER 앱이 설치되어 있으면
+        // (설치 프로그램이 knpumanager:// URL 프로토콜을 등록해둔다) 바로 그 앱을 실행하고,
+        // 설치되어 있지 않으면(=페이지가 포커스를 잃지 않으면) 잠시 후 이 웹 페이지에 그대로 머문다.
+        function openManagerApp(e) {
+            e.preventDefault();
+            var appOpened = false;
+            var onBlur = function () { appOpened = true; };
+            window.addEventListener('blur', onBlur, { once: true });
+            window.location.href = 'knpumanager://open';
+            setTimeout(function () {
+                window.removeEventListener('blur', onBlur);
+                // 이미 이 페이지(manager.knpu.re.kr)에 있으므로 미설치 시엔 그냥 여기 머문다.
+            }, 1000);
+            return false;
+        }
+    </script>
 </body>
 
 </html>
