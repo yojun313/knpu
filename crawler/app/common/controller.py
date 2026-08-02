@@ -3,14 +3,46 @@ import pandas as pd
 from datetime import datetime, timedelta
 import time
 import logging
-from db import crawler_db, get_userinfo, user_logs_db
+from db import crawler_db, get_userinfo, user_logs_db, get_admin_discord_ids
 from common.tokenization import tokenization
-from common.notification import notifyRequester
+from common.notification import notifyRequester, notifyRequesterAndAdmins
 from common.storage import endCrawl, errorCrawl, appendCrawlLog
 from config import CRAWL_LOG_PATH
 from shared.user_log import insert_log
 
 logger = logging.getLogger(__name__)
+
+
+class IPBlockedException(Exception):
+    pass
+
+
+def is_ip_blocked_error(e: Exception) -> bool:
+    response = getattr(e, "response", None)
+    return response is not None and getattr(response, "status_code", None) == 403
+
+
+def notifyIpBlocked(DBname, keyword, requester, userEmail, DBuid=None):
+    title = "🚫 [IP 차단] 크롤링 중단 - " + DBname
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    text = (
+        f"\nNaver가 요청을 거부했습니다(403 Forbidden) — 서버 IP가 차단됐을 가능성이 높습니다."
+        f"\n프록시/서버 IP 업데이트가 필요합니다."
+        f"\n\n검색어: {keyword}"
+        f"\n중단 시각: {now_str}"
+    )
+    try:
+        notifyRequesterAndAdmins(
+            requester, userEmail, title, text, get_admin_discord_ids()
+        )
+    except Exception:
+        logger.exception(f"IP 차단 알림 전송 실패: {DBname}")
+
+    if DBuid:
+        try:
+            appendCrawlLog(DBuid, "error", f"{title}\n{text}")
+        except Exception:
+            logger.warning(f"IP 차단 크롤 로그 기록 실패: {DBuid}")
 
 
 def _requester_uid(requester):
@@ -148,10 +180,6 @@ def finishOperator(
 ):
     try:
         convertToParquet(DBpath)
-        # "token_" 접두사가 붙은 파일은 이전 완료/중단 시점에 이미 생성된 토큰화 결과물이다
-        # (이어받기로 같은 폴더에서 finishOperator/stopOperator가 두 번째로 실행되면 이 파일들도
-        # .parquet로 남아있어, 걸러내지 않으면 원본 reply/rereply 테이블로 착각해 이미 컬럼이
-        # 축소된 토큰화 파일을 다시 groupby하려다 KeyError("Article Day")로 죽는다).
         parquet_files = [
             f
             for f in os.listdir(DBpath)
@@ -169,20 +197,11 @@ def finishOperator(
 
             token_file_path = os.path.join(DBpath, f"token_{table_name}.parquet")
 
-            # 이어받기라면 resumePriorCounts에 기록된 기존 행 수 이후만 "새로 추가된
-            # 부분"으로 취급해 증분 토큰화한다 — 단, 이건 그 기존 행들이 예전에 이미
-            # 토큰화된 적이 있을 때만 맞는 얘기다(token 파일이 실제로 존재해야 함).
-            # 에러/중단으로 죽어서 finishOperator를 한 번도 못 돌고 이어받은 경우엔
-            # raw 데이터는 있어도 토큰 파일은 없으므로, 이 경우엔 prior_count를 무시하고
-            # 처음부터(=raw 데이터 전체) 토큰화해야 누락이 없다.
             prior_count = (resumePriorCounts or {}).get(table_name, 0)
             if prior_count and not os.path.exists(token_file_path):
                 prior_count = 0
             new_df = data_df.iloc[prior_count:].copy() if prior_count else data_df
 
-            # Reply 관련 테이블이면 전처리 수행 (새로 추가된 행에 대해서만 그룹핑 —
-            # 기존에 이미 그룹핑되어 토큰 파일에 들어간 기사와는 URL이 겹치지 않는다,
-            # 같은 날짜를 두 번 크롤링하지 않기 때문)
             if len(new_df) and ("reply" in table_name or "rereply" in table_name):
                 date_column = (
                     "Rereply Date" if "rereply" in table_name else "Reply Date"
