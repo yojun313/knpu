@@ -15,6 +15,8 @@ from app.services import (
     analyze_service,
     upload_staging,
 )
+from app.db import user_logs_db
+from shared.user_log import insert_log
 
 router = APIRouter()
 
@@ -104,8 +106,20 @@ async def api_create_project(
         raise HTTPException(400, "KEMKIM 분석 결과 zip 파일을 업로드해주세요.")
     content = await file.read()
     project_name = name or os.path.splitext(file.filename)[0]
+    uid = _uid(request)
     project = _handle_store_error(
-        project_store.create_project, _uid(request), content, project_name
+        project_store.create_project, uid, content, project_name
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.project.create",
+        "kemkim",
+        target={
+            "type": "project",
+            "id": project["project_id"],
+            "name": project["name"],
+        },
     )
     return JSONResponse(project)
 
@@ -136,21 +150,49 @@ async def api_finalize_zip(request: Request):
     project = _handle_store_error(
         project_store.create_project, uid, content, project_name
     )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.project.create",
+        "kemkim",
+        target={
+            "type": "project",
+            "id": project["project_id"],
+            "name": project["name"],
+        },
+    )
     return JSONResponse(project)
 
 
 @router.patch("/api/projects/{project_id}")
 async def api_rename_project(project_id: str, request: Request):
     body = await request.json()
+    uid = _uid(request)
     project = _handle_store_error(
-        project_store.rename_project, _uid(request), project_id, body.get("name", "")
+        project_store.rename_project, uid, project_id, body.get("name", "")
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.project.rename",
+        "kemkim",
+        target={"type": "project", "id": project_id, "name": project["name"]},
     )
     return JSONResponse(project)
 
 
 @router.delete("/api/projects/{project_id}")
 async def api_delete_project(project_id: str, request: Request):
-    _handle_store_error(project_store.delete_project, _uid(request), project_id)
+    uid = _uid(request)
+    project = _handle_store_error(project_store.get_project, uid, project_id)
+    _handle_store_error(project_store.delete_project, uid, project_id)
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.project.delete",
+        "kemkim",
+        target={"type": "project", "id": project_id, "name": project.get("name")},
+    )
     return JSONResponse({"message": "삭제되었습니다"})
 
 
@@ -172,6 +214,13 @@ async def project_download(project_id: str, request: Request):
     uid = _uid(request)
     zip_path = _handle_store_error(project_store.zip_raw, uid, project_id)
     project = project_store.get_project(uid, project_id)
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.project.download",
+        "kemkim",
+        target={"type": "project", "id": project_id, "name": project.get("name")},
+    )
     return FileResponse(
         path=zip_path,
         media_type="application/zip",
@@ -206,8 +255,15 @@ async def project_upload_source(
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(400, "원본(토큰화 전) CSV 파일을 업로드해주세요.")
     content = await file.read()
-    _handle_store_error(
-        project_store.save_source_csv, _uid(request), project_id, content
+    uid = _uid(request)
+    _handle_store_error(project_store.save_source_csv, uid, project_id, content)
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.project.source_upload",
+        "kemkim",
+        target={"type": "project", "id": project_id},
+        metadata={"filename": file.filename},
     )
     return JSONResponse({"message": "원본 CSV가 저장되었습니다."})
 
@@ -273,6 +329,14 @@ async def project_interpret(project_id: str, request: Request):
     saved = _handle_store_error(
         project_store.save_interpretation, uid, project_id, interpretation
     )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.interpretation.run",
+        "kemkim",
+        target={"type": "project", "id": project_id},
+        metadata={"keywords": keywords, "match_mode": match_mode, "use_ai": use_ai},
+    )
     return JSONResponse(saved)
 
 
@@ -298,8 +362,17 @@ async def project_interpretation_detail(
 async def project_interpretation_export(
     project_id: str, interpretation_id: str, request: Request
 ):
+    uid = _uid(request)
     interpretation = _handle_store_error(
-        project_store.load_interpretation, _uid(request), project_id, interpretation_id
+        project_store.load_interpretation, uid, project_id, interpretation_id
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.interpretation.export",
+        "kemkim",
+        target={"type": "project", "id": project_id},
+        metadata={"interpretation_id": interpretation_id},
     )
 
     buf = io.StringIO()
@@ -415,6 +488,13 @@ async def api_crawl_db_select(uid: str, request: Request):
     filename = name.rsplit(".", 1)[0] + ".csv"
     stage_id = upload_staging.stage(_uid(request), resp.content, filename)
     suggested_start, suggested_end = _suggest_date_range(filename)
+    insert_log(
+        user_logs_db,
+        _uid(request),
+        "kemkim.project.import_from_crawl_db",
+        "kemkim",
+        target={"type": "crawl_db", "id": uid, "name": name},
+    )
     return JSONResponse(
         {
             "stage_id": stage_id,
@@ -470,6 +550,17 @@ async def api_analyze_start(request: Request):
     pid = analyze_service.start_job(
         content, filename, built_option, session_token, project_name=project_name
     )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.project.analyze_start",
+        "kemkim",
+        target={"type": "project", "id": pid, "name": project_name},
+        metadata={
+            "startdate": raw_option.get("startdate"),
+            "enddate": raw_option.get("enddate"),
+        },
+    )
     return JSONResponse({"pid": pid})
 
 
@@ -493,5 +584,13 @@ async def internal_ingest(
     content = await file.read()
     project = _handle_store_error(
         project_store.create_project, uid, content, name, "manager"
+    )
+    insert_log(
+        user_logs_db,
+        uid,
+        "kemkim.project.analyze_complete",
+        "kemkim",
+        target={"type": "project", "id": project["project_id"], "name": name},
+        metadata={"source": "manager_desktop_analysis"},
     )
     return JSONResponse(project)

@@ -18,6 +18,8 @@ from typing import List
 from app.libs.exceptions import BadRequestException
 from app.services.network_service import run_network_analysis
 from app.services.statistics_service import run_statistics_analysis
+from app.db import user_logs_db
+from shared.user_log import insert_log
 from io import StringIO
 
 router = APIRouter()
@@ -38,9 +40,17 @@ async def analysis_kemkim(
     token_data = pd.read_csv(StringIO(content.decode("utf-8")))
     uid = get_uid_from_bearer(authorization)
     project_name = os.path.splitext(file.filename)[0]
-    return start_kemkim(
+    result = start_kemkim(
         KemKimOption(**option), token_data, uid=uid, project_name=project_name
     )
+    insert_log(
+        user_logs_db,
+        uid,
+        "manager.analysis.kemkim_run",
+        "manager",
+        target={"type": "analysis", "id": project_name},
+    )
+    return result
 
 
 @router.post("/tokenize")
@@ -117,9 +127,24 @@ async def whisper_proxy(option: str = Form("{}"), file: UploadFile = File(...)):
 
 
 @router.post("/youtube")
-async def youtube_download(option: str = Form(...)):
+async def youtube_download(
+    option: str = Form(...), authorization: str | None = Header(None)
+):
     option = json.loads(option)
-    return await start_youtube_download(option)
+    uid = get_uid_from_bearer(authorization)
+    result = await start_youtube_download(option)
+    insert_log(
+        user_logs_db,
+        uid,
+        "manager.analysis.youtube_download",
+        "manager",
+        metadata={
+            "count": len(option.get("urls", []) or []),
+            "format": option.get("format", "mp3"),
+            "save_whisper": bool(option.get("save_whisper", False)),
+        },
+    )
+    return result
 
 
 @router.get("/yolo/models")
@@ -252,9 +277,17 @@ async def graph_network(
     df = pd.read_csv(StringIO(content.decode("utf-8")))
     uid = get_uid_from_bearer(authorization)
     project_name = os.path.splitext(file.filename)[0]
-    return run_network_analysis(
+    result = run_network_analysis(
         option.get("pid", "network"), df, option, uid=uid, project_name=project_name
     )
+    insert_log(
+        user_logs_db,
+        uid,
+        "manager.analysis.network_run",
+        "manager",
+        target={"type": "analysis", "id": project_name},
+    )
+    return result
 
 
 @router.post("/statistics")
@@ -269,8 +302,16 @@ async def analysis_statistics(
     uid = get_uid_from_bearer(authorization)
     project_name = os.path.splitext(file.filename)[0]
     try:
-        return run_statistics_analysis(
+        result = run_statistics_analysis(
             StatisticsOption(**option), df, uid=uid, project_name=project_name
         )
     except ValueError as e:
         raise BadRequestException(detail=str(e))
+    insert_log(
+        user_logs_db,
+        uid,
+        "manager.analysis.statistics_run",
+        "manager",
+        target={"type": "analysis", "id": project_name},
+    )
+    return result

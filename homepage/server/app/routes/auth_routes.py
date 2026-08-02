@@ -78,8 +78,6 @@ def _safe_redirect(url: str) -> str:
 
 @router.get("/token-login")
 def token_login(token: str, redirect: str, response: Response):
-    """MANAGER 데스크톱 앱이 이미 보유한(로그인 시 발급된) 토큰을 시스템 기본 브라우저에도
-    심어주기 위한 핸드오프. 뷰어(kemkim/network 등) 딥링크를 시스템 브라우저로 열 때 쓴다."""
     if not decode_token(token):
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다")
 
@@ -133,7 +131,7 @@ def approve_request(uid: str, admin=Depends(require_admin)):
 
 @router.post("/admin/requests/{uid}/reject")
 def reject_request(uid: str, admin=Depends(require_admin)):
-    return service.reject_request(uid)
+    return service.reject_request(uid, admin["sub"])
 
 
 @router.post("/admin/users/{uid}/role")
@@ -192,21 +190,11 @@ def passkey_delete(credential_id: str, user=Depends(get_current_user)):
     return webauthn_service.delete_passkey(user["sub"], credential_id)
 
 
-
-# navigator.credentials.create/get가 이 이름의 DOMException으로 거부되는 경우는
-# 거의 항상 사용자가 인증 창을 직접 취소했거나(가장 흔함) 브라우저가 타임아웃시킨
-# 것이지 실제 버그가 아니다 — WebAuthn 스펙상 "사용자가 취소함"과 "그 외 허용 안 됨"
-# 사유를 구분하는 별도 에러명이 없어 전부 NotAllowedError로 뭉뚱그려 온다. 이런
-# 경우까지 Discord로 보내면 알림이 의미 없이 계속 울리게 되므로 조용히 무시한다.
 _PASSKEY_IGNORED_ERROR_NAMES = {"NotAllowedError", "AbortError"}
 
 
 @router.post("/passkey/client-error")
 def passkey_client_error(data: PasskeyClientErrorRequest, request: Request):
-    """브라우저의 navigator.credentials.create/get 실패는 사용자 화면에는 띄우지 않고
-    여기로 보내 시스템 오류 채널로만 남긴다(실패 자체는 흔하고, 브라우저/기기별
-    WebAuthn 지원 차이가 원인인 경우가 많아 최종 사용자에게 기술적인 내용을 보여줄
-    필요는 없다 — 운영자만 확인)."""
     if data.name in _PASSKEY_IGNORED_ERROR_NAMES:
         return {"message": "ignored"}
 

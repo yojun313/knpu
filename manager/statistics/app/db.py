@@ -48,3 +48,4 @@ manager_db_name = "manager_dev" if MODE == 0 else "manager"
 manager_db = client[manager_db_name]
 
 statistics_projects_db = manager_db["statistics-projects"]
+user_logs_db = manager_db["user-logs"]

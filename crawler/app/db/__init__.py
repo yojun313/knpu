@@ -4,9 +4,7 @@ import os
 import socket
 import logging
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from config import MODE
-import uuid
 
 load_dotenv()
 
@@ -113,20 +111,16 @@ def get_admin_discord_ids() -> list:
 
 
 def add_userlog(userUid: str, dbname: str):
-    try:
-        kst = ZoneInfo("Asia/Seoul")
-        now_kst = datetime.now(kst)
+    from shared.user_log import insert_log
 
-        log_entry = {
-            "uid": str(uuid.uuid4()),
-            "userUid": userUid,
-            "datetime": now_kst,
-            "datetime_kst": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
-            "message": f"CRAWLER -> Started crawling: {dbname}",
-        }
-        user_logs_db.insert_one(log_entry)
-    except Exception as e:
-        logger.info(f"DB 유저 로그 추가 실패 : {userUid}, 에러: {e}")
+    insert_log(
+        user_logs_db,
+        userUid,
+        "crawler.crawl.start",
+        "crawler",
+        message=f"CRAWLER -> Started crawling: {dbname}",
+        target={"type": "crawl_db", "id": dbname},
+    )
 
 
 def recordDB(dbUid: str, status: str):

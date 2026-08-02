@@ -84,9 +84,6 @@ class MyBot(commands.Bot):
         self.tree.on_error = self.on_app_command_error
 
     async def _report_error(self, where: str, tb: str):
-        """knpu/ 전체 로그 채널(system_error)로 봇 자체 오류를 직접 전송한다.
-        봇이 죽었을 때는 discord.notifications 큐(다른 서비스가 쓰는 방식)를 폴링할
-        주체가 없으므로, 봇은 큐를 거치지 않고 채널에 바로 send한다."""
         for guild in self.guilds:
             channel = guild.get_channel(CHANNEL_IDS.get("system_error"))
             if not channel:

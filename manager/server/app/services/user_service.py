@@ -5,6 +5,7 @@ from pymongo import ReturnDocument
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from app.libs.discord_notify import notify_discord
+from shared.user_log import insert_log
 import uuid
 
 
@@ -33,19 +34,8 @@ def get_all_admins():
     return admins
 
 
-def log_user(userUid: str, message: str):
-    kst = ZoneInfo("Asia/Seoul")
-    now_kst = datetime.now(kst)
-
-    log_entry = {
-        "uid": str(uuid.uuid4()),
-        "userUid": userUid,
-        "datetime": now_kst,
-        "datetime_kst": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
-        "message": message,
-    }
-
-    user_logs_db.insert_one(log_entry)
+def log_user(userUid: str, action: str, message: str, **kwargs):
+    insert_log(user_logs_db, userUid, action, "manager", message=message, **kwargs)
 
 
 def bug_user(userUid: str, message: str):
@@ -86,7 +76,12 @@ def update_user_version(userUid: str, oldVersionName: str | None, newVersionName
         userName = updated_user.get("name", "Unknown")
         msg = f"{userName} updated {oldVersionName} -> {newVersionName}"
         notify_discord("admin_ops", msg)
-        log_user(userUid, f"Updated version: {oldVersionName} -> {newVersionName}")
+        log_user(
+            userUid,
+            "manager.user.version_update",
+            f"Updated version: {oldVersionName} -> {newVersionName}",
+            target={"type": "version", "id": newVersionName},
+        )
 
     return JSONResponse(
         status_code=200,

@@ -54,6 +54,17 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                                     {{ log.datetime }}
                                 </span>
+                                {% if log.action %}
+                                <span class="text-[10px] font-mono bg-blue-600/10 text-blue-400 border border-blue-600/30 px-2 py-0.5 rounded">
+                                    {{ log.action }}
+                                </span>
+                                {% if log.service %}
+                                <span class="text-[10px] font-mono text-zinc-500">{{ log.service }}</span>
+                                {% endif %}
+                                {% if log.outcome == "failure" %}
+                                <span class="text-[10px] font-bold bg-red-600/10 text-red-400 border border-red-600/30 px-2 py-0.5 rounded">failure</span>
+                                {% endif %}
+                                {% endif %}
                             </div>
                             <div class="text-sm text-zinc-300 leading-relaxed break-all pr-10">
                                 {{ log.message }}

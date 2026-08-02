@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.db import papers_db
+from app.db import papers_db, user_logs_db
 from app.models import PaperRequest
 from app.auth.dependencies import require_admin
 from datetime import datetime, timezone
+from shared.user_log import insert_log
 import uuid
 from app.libs.crawl_papers import fetch_bib
 
@@ -29,8 +30,8 @@ def list_papers():
     return result
 
 
-@router.post("/", dependencies=[Depends(require_admin)])
-def upsert_paper(paper: PaperRequest):
+@router.post("/")
+def upsert_paper(paper: PaperRequest, admin=Depends(require_admin)):
     paper_data = paper.dict(by_alias=True)
 
     if not paper_data.get("uid"):
@@ -45,14 +46,35 @@ def upsert_paper(paper: PaperRequest):
         {"$set": paper_data},
         upsert=True,
     )
+    insert_log(
+        user_logs_db,
+        admin["sub"],
+        "homepage.paper.upsert",
+        "homepage",
+        target={
+            "type": "paper",
+            "id": paper_data["uid"],
+            "name": paper_data.get("title"),
+        },
+    )
     return paper_data
 
 
-@router.delete("/", dependencies=[Depends(require_admin)])
-def delete_paper(uid: str = Query(..., description="삭제할 논문의 UID")):
+@router.delete("/")
+def delete_paper(
+    uid: str = Query(..., description="삭제할 논문의 UID"),
+    admin=Depends(require_admin),
+):
     result = papers_db.delete_one({"uid": uid})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Paper not found")
+    insert_log(
+        user_logs_db,
+        admin["sub"],
+        "homepage.paper.delete",
+        "homepage",
+        target={"type": "paper", "id": uid},
+    )
     return {"message": f"Paper '{uid}' deleted successfully"}
 
 

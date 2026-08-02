@@ -5,7 +5,7 @@
     <h2 class="text-2xl font-bold text-white">Audit Logs</h2>
     <p class="text-zinc-400 text-sm">
         {% if selected_user %}선택한 사용자의 전체 기간 감사 로그입니다 (총 {{ total }}건).
-        {% else %}서버가 변경(POST/PUT/PATCH/DELETE) 요청마다 자동으로 기록한 감사 로그입니다. 총 {{ total }}건.{% endif %}
+        {% else %}서버가 자동으로 남긴 요청 기록과 의도적으로 남긴 활동 기록을 전부 보여줍니다. 총 {{ total }}건.{% endif %}
     </p>
 </div>
 
@@ -103,7 +103,7 @@
                             <th class="px-4 py-3 font-semibold whitespace-nowrap">서비스</th>
                             <th class="px-4 py-3 font-semibold whitespace-nowrap">사용자</th>
                             <th class="px-4 py-3 font-semibold whitespace-nowrap">메서드</th>
-                            <th class="px-4 py-3 font-semibold">경로</th>
+                            <th class="px-4 py-3 font-semibold">경로/액션</th>
                             <th class="px-4 py-3 font-semibold whitespace-nowrap">상태</th>
                             <th class="px-4 py-3 font-semibold whitespace-nowrap text-right">소요</th>
                         </tr>
@@ -124,20 +124,32 @@
                                 {% endif %}
                             </td>
                             <td class="px-4 py-2.5 whitespace-nowrap" data-label="메서드">
+                                {% if log.method %}
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded
                                     {% if log.method == 'DELETE' %}bg-red-900/20 text-red-400 border border-red-900/30
                                     {% elif log.method == 'POST' %}bg-emerald-900/20 text-emerald-400 border border-emerald-900/30
                                     {% else %}bg-blue-900/20 text-blue-400 border border-blue-900/30{% endif %}">
                                     {{ log.method }}
                                 </span>
+                                {% else %}
+                                <span class="text-zinc-700">-</span>
+                                {% endif %}
                             </td>
-                            <td class="px-4 py-2.5 text-zinc-400 font-mono text-xs break-all audit-cell-path" data-label="경로">{{ log.path }}</td>
+                            <td class="px-4 py-2.5 text-zinc-400 font-mono text-xs break-all audit-cell-path" data-label="경로/액션">
+                                {% if log.path %}
+                                    {{ log.path }}
+                                {% else %}
+                                    <span class="text-blue-400">{{ log.action }}</span>
+                                {% endif %}
+                            </td>
                             <td class="px-4 py-2.5 whitespace-nowrap" data-label="상태">
                                 <span class="font-mono text-xs {% if log.success %}text-emerald-400{% else %}text-red-400{% endif %}">
                                     {{ log.status_code or '-' }}
                                 </span>
                             </td>
-                            <td class="px-4 py-2.5 text-zinc-500 font-mono text-xs text-right whitespace-nowrap" data-label="소요">{{ log.duration_ms }}ms</td>
+                            <td class="px-4 py-2.5 text-zinc-500 font-mono text-xs text-right whitespace-nowrap" data-label="소요">
+                                {% if log.duration_ms is not none %}{{ log.duration_ms }}ms{% else %}-{% endif %}
+                            </td>
                         </tr>
                         {% else %}
                         <tr>

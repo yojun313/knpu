@@ -1,9 +1,23 @@
+import os
+import sys
+
+_REPO_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from app.routes import api_router
-from app.libs.audit_log import AuditLogMiddleware
+from app.routes.site_routes import router as site_router
+from app.db import user_logs_db
 from app.libs.discord_notify import notify_discord
+from shared.user_log import AuditLogMiddleware
 import gc
 import asyncio
+import jwt as pyjwt
+from jwt import PyJWTError
 from datetime import datetime
 from rich.console import Console
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -11,6 +25,28 @@ from fastapi.responses import JSONResponse
 import traceback
 
 console = Console()
+
+_JWT_SECRET = os.getenv("JWT_SECRET")
+_JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
+
+
+def _extract_identity(request: Request):
+    token = request.cookies.get("session")
+    if not token:
+        authorization = request.headers.get("Authorization")
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization[len("Bearer ") :]
+    if not token:
+        return None
+    try:
+        payload = pyjwt.decode(token, _JWT_SECRET, algorithms=[_JWT_ALGORITHM])
+    except PyJWTError:
+        return None
+    return {
+        "uid": payload.get("sub"),
+        "name": payload.get("name"),
+        "role": payload.get("role"),
+    }
 
 
 async def periodic_gc(interval_seconds: int = 60):
@@ -85,7 +121,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 app.add_middleware(RichLoggerMiddleware)
-app.add_middleware(AuditLogMiddleware)
+app.add_middleware(
+    AuditLogMiddleware,
+    service="manager",
+    collection=user_logs_db,
+    identity_extractor=_extract_identity,
+)
 
 
 @app.on_event("startup")
@@ -93,4 +134,10 @@ async def start_background_tasks():
     asyncio.create_task(periodic_gc(60))
 
 
+app.include_router(site_router, tags=["Site"])
 app.include_router(api_router, prefix="/api", tags=["API"])
+
+_PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "public")
+app.mount(
+    "/assets", StaticFiles(directory=os.path.join(_PUBLIC_DIR, "assets")), name="assets"
+)

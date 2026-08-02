@@ -118,7 +118,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 initShortcut(self)
                 self.managerDatabaseObj.setDatabaseShortcut()
-                userLogging(f"Booting ({getUserLocation(self)})")
+                userLogging(f"부팅: {getUserLocation(self)}")
 
                 if get_setting("BootTerminal") == "on":
                     closeConsole()
@@ -288,7 +288,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # SETTING
         elif index == 5:
-            userLogging(f"User Setting")
             dialog = Manager_Setting(self)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
@@ -327,7 +326,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if reply == QMessageBox.StandardButton.Yes:
             try:
-                userLogging("Shutdown")
+                userLogging("앱 종료")
                 self.cleanUpTemp()
 
                 app = QApplication.instance()

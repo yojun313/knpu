@@ -2,7 +2,6 @@ import random
 import secrets
 import uuid
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 
@@ -20,24 +19,14 @@ from app.auth.email import sendEmail
 from app.auth.webauthn_config import EXPECTED_ORIGIN
 from app.libs import r2
 from app.libs.discord_notify import notify_discord
+from shared.user_log import insert_log
 
 CODE_TTL_MINUTES = 10
 SIGNUP_LINK_TTL_MINUTES = 30
 
 
-def _log_user_activity(user_uid: str, message: str) -> None:
-    """admin 대시보드 User Logs 탭이 읽는 manager.user-logs에 기록한다
-    (manager/server의 log_user()와 동일한 스키마)."""
-    now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
-    user_logs_db.insert_one(
-        {
-            "uid": str(uuid.uuid4()),
-            "userUid": user_uid,
-            "datetime": now_kst,
-            "datetime_kst": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
-            "message": message,
-        }
-    )
+def _log_user_activity(user_uid: str, action: str, message: str, **kwargs) -> None:
+    insert_log(user_logs_db, user_uid, action, "homepage", message=message, **kwargs)
 
 
 def _generate_code() -> str:
@@ -62,8 +51,6 @@ def _public_user(user: dict) -> dict:
 
 
 def _match_member(name: str) -> dict | None:
-    """홈페이지 멤버 목록에서 이름이 정확히 일치하는 멤버를 찾는다. 동명이인이 있으면
-    잘못 연결하지 않도록 정확히 1명 일치할 때만 반환한다."""
     matches = list(members_db.find({"name": name}))
     return matches[0] if len(matches) == 1 else None
 
@@ -76,9 +63,6 @@ def _member_already_linked(member_uid: str) -> bool:
 
 
 def _match_manager_account(name: str) -> dict | None:
-    """manager.users(kemkim/network/statistics/crawler 등에서 쓰는 계정)에 이름이 정확히
-    일치하는 계정이 있으면 그 uid를 그대로 이어받기 위해 찾는다. 동명이인이 있으면
-    잘못 연결하지 않도록 정확히 1명 일치할 때만 반환한다."""
     matches = list(manager_users_db.find({"name": name}))
     return matches[0] if len(matches) == 1 else None
 
@@ -88,9 +72,6 @@ def _manager_uid_already_used(uid: str) -> bool:
 
 
 def _manager_account_exists_by_email(email: str) -> bool:
-    """manager.users(이미 매니저 시스템에 등록된 랩 계정)에 같은 이메일로 가입 이력이
-    있으면 True. 동명이인 문제가 없는 이메일 기준이라 이름 매칭과 달리 바로 신뢰한다 —
-    이미 검증된 랩 구성원이므로 관리자 재승인 없이 바로 가입 승인하기 위함."""
     return manager_users_db.find_one({"email": email}) is not None
 
 
@@ -155,6 +136,11 @@ def signup(data) -> dict:
     }
     users_db.update_one({"username": data.username}, {"$set": user}, upsert=True)
     _send_signup_verification_link(data.username, data.email)
+    _log_user_activity(
+        user["uid"],
+        "homepage.auth.signup",
+        f"회원가입 신청: {data.name} (@{data.username})",
+    )
 
     return {
         "message": "가입 요청이 접수되었습니다. 이메일로 전송된 인증 링크를 눌러주세요"
@@ -230,6 +216,11 @@ def verify_email(data) -> dict:
 
     users_db.update_one({"username": user["username"]}, {"$set": updates})
     auth_codes_db.delete_one({"_id": code_doc["_id"]})
+    _log_user_activity(
+        user["uid"],
+        "homepage.auth.verify_email",
+        f"이메일 인증 완료: {user['name']} ({'자동 승인' if auto_approved else '관리자 승인 대기'})",
+    )
 
     notify_discord(
         "admin_ops",
@@ -292,7 +283,7 @@ def login(data) -> dict:
     token = create_token(user)
 
     try:
-        _log_user_activity(user["uid"], "Homepage login")
+        _log_user_activity(user["uid"], "homepage.auth.login", "Homepage login")
     except Exception:
         pass
 
@@ -307,9 +298,6 @@ def get_profile(uid: str) -> dict:
 
 
 def get_linked_member(uid: str) -> dict | None:
-    """이 계정과 연결된 홈페이지 멤버 프로필을 반환한다. 가입 시점에는 연결되지 않았더라도
-    (동명이인이었거나, 멤버가 나중에 등록됐거나) 지금 이름이 정확히 1명과 일치하면
-    그 자리에서 연결해준다."""
     user = users_db.find_one({"uid": uid})
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
@@ -356,6 +344,9 @@ def update_my_member_photo(uid: str, image_url: str) -> dict:
             pass
 
     member["image"] = image_url
+    _log_user_activity(
+        uid, "homepage.member.photo_update", f"프로필 사진 교체: {member.get('name')}"
+    )
     return member
 
 
@@ -384,6 +375,11 @@ def update_profile(uid: str, data) -> dict:
     if updates:
         updates["updated_at"] = datetime.now()
         users_db.update_one({"uid": uid}, {"$set": updates})
+        field_labels = {"name": "이름", "password_hash": "비밀번호"}
+        changed = [field_labels[k] for k in field_labels if k in updates]
+        _log_user_activity(
+            uid, "homepage.profile.update", "프로필 수정: " + ", ".join(changed)
+        )
 
     return get_profile(uid)
 
@@ -437,6 +433,9 @@ def reset_password(data) -> dict:
         },
     )
     auth_codes_db.delete_one({"_id": code_doc["_id"]})
+    _log_user_activity(
+        user["uid"], "homepage.auth.password_reset", f"비밀번호 재설정: {user['name']}"
+    )
 
     return {"message": "비밀번호가 재설정되었습니다"}
 
@@ -470,10 +469,16 @@ def approve_request(uid: str, admin_uid: str) -> dict:
         f"{user['name']}님, KNPU 랩 시스템 가입이 승인되었습니다. "
         f"이제 knpu.re.kr에서 로그인할 수 있습니다.",
     )
+    _log_user_activity(
+        admin_uid,
+        "homepage.member_request.approve",
+        f"가입 승인: {user['name']} (@{user['username']})",
+        target={"type": "user", "id": uid},
+    )
     return {"message": "승인 완료"}
 
 
-def reject_request(uid: str) -> dict:
+def reject_request(uid: str, admin_uid: str) -> dict:
     user = users_db.find_one({"uid": uid})
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
@@ -489,6 +494,12 @@ def reject_request(uid: str) -> dict:
         "[KNPU] 가입 요청이 거절되었습니다",
         f"{user['name']}님, KNPU 랩 시스템 가입 요청이 거절되었습니다. "
         f"문의 사항은 관리자에게 연락해주세요.",
+    )
+    _log_user_activity(
+        admin_uid,
+        "homepage.member_request.reject",
+        f"가입 거절: {user['name']} (@{user['username']})",
+        target={"type": "user", "id": uid},
     )
     return {"message": "거절 완료"}
 
@@ -517,6 +528,12 @@ def change_role(uid: str, new_role: str, admin_uid: str) -> dict:
         f"{user.get('name', user.get('username'))}({user.get('username')})의 역할이 "
         f"{user.get('role')} -> {new_role}(으)로 변경되었습니다 (관리자: {admin_uid})",
     )
+    _log_user_activity(
+        admin_uid,
+        "homepage.user.role_change",
+        f"역할 변경: {user.get('name')} ({user.get('role')} -> {new_role})",
+        target={"type": "user", "id": uid},
+    )
     return {"message": "역할이 변경되었습니다", "role": new_role}
 
 
@@ -538,5 +555,12 @@ def delete_user(uid: str, admin_uid: str) -> dict:
         "admin_ops",
         f"{user.get('name', user.get('username'))}({user.get('username')}) 계정이 "
         f"삭제되었습니다 (관리자: {admin_uid})",
+    )
+    _log_user_activity(
+        admin_uid,
+        "homepage.user.delete",
+        f"계정 삭제: {user.get('name')} (@{user.get('username')})",
+        target={"type": "user", "id": uid},
+        outcome="success",
     )
     return {"message": "삭제되었습니다"}

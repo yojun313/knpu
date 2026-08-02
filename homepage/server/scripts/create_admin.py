@@ -1,13 +1,3 @@
-"""1회용 부트스트랩 스크립트: 승인해줄 관리자가 아직 없는 상태에서 최초 관리자 계정을 만든다.
-
-사용법 (homepage/server 디렉토리에서):
-    python scripts/create_admin.py
-
-대화형으로 아이디/이름/이메일/비밀번호를 입력받아 status=approved, role=admin,
-email_verified=true 상태의 계정을 homepage.users 컬렉션에 바로 생성한다.
-이후 다른 모든 구성원은 이 관리자의 승인을 받아 정식 가입 절차를 밟는다.
-"""
-
 import getpass
 import sys
 import uuid

@@ -14,6 +14,8 @@ import psutil
 from app.services.pm2_service import PM2Service
 from app.routes.dependencies import get_current_user
 from app.services import settings_service
+from app.db import user_logs_col
+from shared.user_log import insert_log
 
 router = APIRouter(prefix="/process", tags=["process"])
 templates = Jinja2Templates(directory="app/templates")
@@ -53,11 +55,20 @@ async def pm2_manager_page(request: Request, user=Depends(get_current_user)):
 
 
 @router.post("/control/{action}/{name}")
-async def control_process(action: str, name: str):
+async def control_process(action: str, name: str, user=Depends(get_current_user)):
     if action not in ["restart", "stop", "start", "delete"]:
         raise HTTPException(status_code=400, detail="Invalid action")
 
     success = PM2Service.run_command(action, name)
+    insert_log(
+        user_logs_col,
+        user["sub"],
+        f"admin.pm2.{action}",
+        "admin",
+        message=f"pm2 {action}: {name}",
+        target={"type": "pm2_process", "id": name},
+        outcome="success" if success else "failure",
+    )
     if not success:
         raise HTTPException(status_code=500, detail="Command failed")
 
@@ -180,6 +191,15 @@ async def toggle_watch(name: str, user=Depends(get_current_user)):
     new_flag.append("--update-env")
 
     success = PM2Service.run_command("restart", name, new_flag)
+    insert_log(
+        user_logs_col,
+        user["sub"],
+        "admin.pm2.toggle_watch",
+        "admin",
+        message=f"pm2 watch 모드 전환: {name} -> {not current_watch}",
+        target={"type": "pm2_process", "id": name},
+        outcome="success" if success else "failure",
+    )
     if not success:
         raise HTTPException(status_code=500, detail="Failed to toggle watch mode")
 

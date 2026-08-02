@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/x-icon" href="/assets/imgs/lab_logo_favicon.ico" />
+  <link rel="icon" type="image/x-icon" href="https://knpu.re.kr/assets/imgs/lab_logo_favicon.ico" />
   <title>MANAGER Download | FPEI</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -199,7 +199,6 @@
       }
     }
   </style>
-  <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />
   <script>
     function toggleTable() {
       const container = document.getElementById('historyContainer');
@@ -215,10 +214,10 @@
 
     async function loadFiles() {
       try {
-        const response = await fetch('/files');
+        const response = await fetch('/api/download/files');
         let files = await response.json();
         files = files.filter(file => !file.name.includes('_update.exe'));
-        
+
         if (files.length === 0) {
           document.getElementById('latestVersion').innerHTML = '<p>No files available.</p>';
           return;
@@ -234,7 +233,7 @@
             <span class="info-item"><i class="fas fa-hdd"></i> ${latestFile.size}</span>
             <span class="info-item"><i class="fas fa-calendar-alt"></i> ${latestFile.created}</span>
           </div>
-          <a href="/download/${latestFile.name}" class="button">
+          <a href="/api/download/file/${latestFile.name}" class="button">
             <i class="fas fa-cloud-download-alt"></i> Download Latest
           </a>
         `;
@@ -249,7 +248,7 @@
             <td class="center" style="color:#888;">${file.size}</td>
             <td class="center" style="color:#888;">${file.created}</td>
             <td class="center">
-              <a href="/download/${file.name}" class="btn-secondary">
+              <a href="/api/download/file/${file.name}" class="btn-secondary">
                 <i class="fas fa-download"></i>
               </a>
             </td>
@@ -260,7 +259,7 @@
         console.error("Failed to load files", e);
       }
     }
-  
+
     document.addEventListener('DOMContentLoaded', loadFiles);
   </script>
 </head>
@@ -279,9 +278,9 @@
 
     <!-- 2. App Preview Image (Context/Verification Below) -->
     <div class="app-preview">
-      <img src="/assets/imgs/systems/manager.png" alt="Manager Application Preview">
+      <img src="https://knpu.re.kr/assets/imgs/systems/manager.png" alt="Manager Application Preview">
     </div>
-    
+
     <!-- 3. Toggle Archive -->
     <div id="toggleButton" class="toggle-button" onclick="toggleTable()">
       <i class="fas fa-chevron-down"></i> View Version History

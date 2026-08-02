@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from app.db import (
@@ -6,11 +7,26 @@ from app.db import (
     db_list_col,
     user_bugs_col,
     homepage_users_col,
-    audit_logs_col,
     crawler_log_col,
     manager_users_col,
     identity_history_col,
 )
+
+ANONYMOUS_AUDIT_KEY = "__anonymous__"
+
+# AuditLogMiddleware가 자동으로 남기는 action은 "METHOD /path" 형태를 그대로 쓴다
+# (예: "DELETE /api/crawl/{uid}"). source="auto" 태그가 붙기 전(이번 필드 도입 이전)에
+# 기록된 문서는 이 태그가 없으므로, action 값의 형태로도 자동 기록을 걸러낸다.
+_HTTP_ACTION_PATTERN = re.compile(r"^(GET|POST|PUT|PATCH|DELETE) ")
+
+
+def _explicit_log_filter() -> dict:
+    """User Logs 탭: '확실한 액션'이 있는 의도적 기록만 — 자동 기록(source="auto" 또는
+    source 필드 도입 이전의 "METHOD /path" 형태)과 액션이 아예 없는 레거시 기록은 제외."""
+    return {
+        "action": {"$exists": True, "$not": _HTTP_ACTION_PATTERN},
+        "source": {"$ne": "auto"},
+    }
 
 
 def get_all_users():
@@ -88,7 +104,7 @@ def get_admin_uids():
     return [a["uid"] for a in admins]
 
 
-def build_search_query(name=None, date_str=None, user_map=None):
+def build_search_query(name=None, date_str=None, user_map=None, only_explicit=False):
     query = {}
     admin_uids = get_admin_uids()
 
@@ -109,49 +125,78 @@ def build_search_query(name=None, date_str=None, user_map=None):
         except ValueError:
             pass
 
+    if only_explicit:
+        query.update(_explicit_log_filter())
+
     return query
+
+
+def _decorate_log(log: dict, user_map: dict) -> dict:
+    log["datetime"] = log.get("datetime_kst") or log.get("datetime").strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+    uid = log.get("userUid")
+    if uid:
+        log["user_name"] = user_map.get(uid, uid[:8])
+    else:
+        log["user_name"] = "익명 (로그인 전 요청)"
+    log["action"] = log.get("action")
+    log["service"] = log.get("service")
+    log["outcome"] = log.get("outcome")
+    req = log.get("request") or {}
+    log["method"] = req.get("method")
+    log["path"] = req.get("path")
+    log["status_code"] = req.get("status_code")
+    log["duration_ms"] = req.get("duration_ms")
+    log["success"] = log.get("outcome") != "failure"
+    return log
 
 
 def get_recent_logs(limit=10, name=None, date_str=None):
     user_map = get_user_mapping()
-    query = build_search_query(name, date_str, user_map)
+    query = build_search_query(name, date_str, user_map, only_explicit=True)
 
     logs = list(user_logs_col.find(query).sort("datetime", -1).limit(limit))
-
-    for log in logs:
-        log["datetime"] = log.get("datetime_kst") or log.get("datetime").strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
-        log["user_name"] = user_map.get(log.get("userUid"), log.get("userUid")[:8])
-    return logs
+    return [_decorate_log(log, user_map) for log in logs]
 
 
 def get_users_with_log_counts():
     user_map = get_user_mapping()
-    pipeline = [{"$group": {"_id": "$userUid", "count": {"$sum": 1}}}]
-    counts = {c["_id"]: c["count"] for c in user_logs_col.aggregate(pipeline)}
-    users = [
-        {"uid": uid, "name": user_map.get(uid, uid[:8]), "count": count}
-        for uid, count in counts.items()
+    pipeline = [
+        {"$match": _explicit_log_filter()},
+        {"$group": {"_id": "$userUid", "count": {"$sum": 1}}},
     ]
+    counts = {c["_id"]: c["count"] for c in user_logs_col.aggregate(pipeline)}
+    users = []
+    for uid, count in counts.items():
+        if uid:
+            users.append(
+                {"uid": uid, "name": user_map.get(uid, uid[:8]), "count": count}
+            )
+        else:
+            users.append(
+                {
+                    "uid": ANONYMOUS_AUDIT_KEY,
+                    "name": "익명 (로그인 전 요청)",
+                    "count": count,
+                }
+            )
     users.sort(key=lambda u: u["count"], reverse=True)
     return users
 
 
 def get_logs_for_user(user_uid: str, page=1, per_page=30):
     user_map = get_user_mapping()
-    query = {"userUid": user_uid}
+    query = {
+        "userUid": None if user_uid == ANONYMOUS_AUDIT_KEY else user_uid,
+        **_explicit_log_filter(),
+    }
     total = user_logs_col.count_documents(query)
     skip = max(0, (page - 1) * per_page)
     logs = list(
         user_logs_col.find(query).sort("datetime", -1).skip(skip).limit(per_page)
     )
-    for log in logs:
-        log["datetime"] = log.get("datetime_kst") or log.get("datetime").strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
-        log["user_name"] = user_map.get(log.get("userUid"), log.get("userUid")[:8])
-    return logs, total
+    return [_decorate_log(log, user_map) for log in logs], total
 
 
 def get_user_bugs(limit=50, name=None, date_str=None):
@@ -186,60 +231,57 @@ def get_recent_crawlers(limit=10):
 
 
 def get_audit_services():
-    return sorted(audit_logs_col.distinct("service"))
+    return sorted(user_logs_col.distinct("service"))
 
 
 def get_audit_logs(
     page=1, per_page=30, service=None, name=None, method=None, date_str=None
 ):
+    """Audit Logs 탭: source(explicit/auto)나 action 유무와 무관하게 전부 보여준다."""
+    user_map = get_user_mapping()
     query = {}
 
     if service:
         query["service"] = service
     if method:
-        query["method"] = method
+        query["request.method"] = method
     if name:
-        query["user_name"] = {"$regex": name, "$options": "i"}
+        matched_uids = [
+            uid for uid, uname in user_map.items() if name.lower() in uname.lower()
+        ]
+        query["userUid"] = {"$in": matched_uids}
     if date_str:
         try:
             kst = ZoneInfo("Asia/Seoul")
             start_dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=kst)
             end_dt = start_dt + timedelta(days=1)
-            query["ts"] = {"$gte": start_dt, "$lt": end_dt}
+            query["datetime"] = {"$gte": start_dt, "$lt": end_dt}
         except ValueError:
             pass
 
-    total = audit_logs_col.count_documents(query)
+    total = user_logs_col.count_documents(query)
     skip = max(0, (page - 1) * per_page)
-    logs = list(audit_logs_col.find(query).sort("ts", -1).skip(skip).limit(per_page))
-    for log in logs:
-        log["_id"] = str(log["_id"])
-    return logs, total
-
-
-ANONYMOUS_AUDIT_KEY = "__anonymous__"
+    logs = list(
+        user_logs_col.find(query).sort("datetime", -1).skip(skip).limit(per_page)
+    )
+    return [_decorate_log(log, user_map) for log in logs], total
 
 
 def get_users_with_audit_counts():
+    user_map = get_user_mapping()
     pipeline = [
-        {"$sort": {"ts": -1}},
-        {
-            "$group": {
-                "_id": "$user_uid",
-                "count": {"$sum": 1},
-                "name": {"$first": "$user_name"},
-            }
-        },
+        {"$sort": {"datetime": -1}},
+        {"$group": {"_id": "$userUid", "count": {"$sum": 1}}},
     ]
     users = []
     anon_count = 0
-    for r in audit_logs_col.aggregate(pipeline):
+    for r in user_logs_col.aggregate(pipeline):
         uid = r["_id"]
         if not uid:
             anon_count += r["count"]
             continue
         users.append(
-            {"uid": uid, "name": r.get("name") or uid[:8], "count": r["count"]}
+            {"uid": uid, "name": user_map.get(uid, uid[:8]), "count": r["count"]}
         )
 
     users.sort(key=lambda u: u["count"], reverse=True)
@@ -255,17 +297,14 @@ def get_users_with_audit_counts():
 
 
 def get_audit_logs_for_user(user_uid: str, page=1, per_page=30):
-    query = (
-        {"user_uid": None}
-        if user_uid == ANONYMOUS_AUDIT_KEY
-        else {"user_uid": user_uid}
-    )
-    total = audit_logs_col.count_documents(query)
+    user_map = get_user_mapping()
+    query = {"userUid": None if user_uid == ANONYMOUS_AUDIT_KEY else user_uid}
+    total = user_logs_col.count_documents(query)
     skip = max(0, (page - 1) * per_page)
-    logs = list(audit_logs_col.find(query).sort("ts", -1).skip(skip).limit(per_page))
-    for log in logs:
-        log["_id"] = str(log["_id"])
-    return logs, total
+    logs = list(
+        user_logs_col.find(query).sort("datetime", -1).skip(skip).limit(per_page)
+    )
+    return [_decorate_log(log, user_map) for log in logs], total
 
 
 def get_crawler_logs(uid: str):

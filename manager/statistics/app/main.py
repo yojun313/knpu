@@ -1,6 +1,13 @@
 # app/main.py
 import os
+import sys
 import traceback
+
+_REPO_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,11 +17,19 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.routes import api_router
 from app.auth.middleware import AuthMiddleware
+from app.db import user_logs_db
 from app.libs.discord_notify import notify_discord
+from shared.user_log import AuditLogMiddleware
 
 app = FastAPI(title="KNPU Statistics Analyzer")
 
 app.add_middleware(AuthMiddleware)
+app.add_middleware(
+    AuditLogMiddleware,
+    service="statistics",
+    collection=user_logs_db,
+    identity_extractor=lambda request: (request.scope.get("state") or {}).get("user"),
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

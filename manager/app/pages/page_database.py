@@ -121,6 +121,7 @@ class Manager_Database(Manager_Worker):
                             "Information",
                             "크롤링을 중단하고 DB를 삭제했습니다",
                         )
+                        userLogging(f"DATABASE: 크롤링 중단 후 DB 삭제 - {DBname}")
                         self.refreshDB()
 
                     elif clickedBtn == stopOnlyBtn:
@@ -129,6 +130,7 @@ class Manager_Database(Manager_Worker):
                         QMessageBox.information(
                             self.main, "Information", "크롤링 중단 요청을 전송했습니다"
                         )
+                        userLogging(f"DATABASE: 크롤링 중단 - {DBname}")
                         self.refreshDB()
 
                     else:
@@ -147,6 +149,7 @@ class Manager_Database(Manager_Worker):
                         QMessageBox.information(
                             self.main, "Information", f"'{DBname}'가 삭제되었습니다"
                         )
+                        userLogging(f"DATABASE: DB 삭제 - {DBname}")
                         self.refreshDB()
 
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
@@ -537,7 +540,7 @@ class Manager_Database(Manager_Worker):
             # 기본 브라우저로 URL 열기
             webbrowser.open(NETWORK_VIEWER_URL)
 
-            userLogging(f"DATABASE -> Network Analyzer")
+            userLogging("DATABASE: 네트워크 분석기 열기")
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
@@ -549,7 +552,7 @@ class Manager_Database(Manager_Worker):
             # 기본 브라우저로 URL 열기
             webbrowser.open(KEMKIM_VIEWER_URL)
 
-            userLogging(f"DATABASE -> KEMKIM Analyzer")
+            userLogging("DATABASE: KEMKIM 분석기 열기")
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
@@ -561,7 +564,7 @@ class Manager_Database(Manager_Worker):
             # 기본 브라우저로 URL 열기
             webbrowser.open(STATISTICS_VIEWER_URL)
 
-            userLogging(f"DATABASE -> Statistics Analyzer")
+            userLogging("DATABASE: 통계 분석기 열기")
             printStatus(self.main, f"{self.main.fullStorage} GB / 2 TB")
         except Exception as e:
             programBugLog(self.main, traceback.format_exc())
@@ -681,6 +684,10 @@ class Manager_Database(Manager_Worker):
             if not hasattr(self, "_workers"):
                 self._workers = []
             self._workers.append(worker)
+
+            userLogging(
+                f"DATABASE: DB 저장/다운로드 - {display_name} (기간옵션: {option['dateOption']}, 필터: {option['filterOption']})"
+            )
 
         except Exception:
             programBugLog(self.main, traceback.format_exc())
