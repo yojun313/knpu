@@ -4,8 +4,8 @@ from fastapi.responses import JSONResponse
 from pymongo import ReturnDocument
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from app.libs.discord_notify import notify_discord
-from shared.user_log import insert_log
+from system.notify.discord import notify_discord
+from system.logging.user_log import insert_log
 import uuid
 
 

@@ -12,8 +12,8 @@ from fastapi.staticfiles import StaticFiles
 from app.routes import api_router
 from app.routes.site_routes import router as site_router
 from app.db import user_logs_db
-from app.libs.discord_notify import notify_discord
-from shared.user_log import AuditLogMiddleware
+from system.notify.discord import notify_discord
+from system.logging.user_log import AuditLogMiddleware
 import gc
 import asyncio
 import jwt as pyjwt

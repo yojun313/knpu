@@ -6,10 +6,10 @@ from app.services.user_service import (
     get_all_admins,
     update_user_version,
 )
-from app.libs.jwt import verify_token
+from system.auth.jwt import verify_token
 from starlette.background import BackgroundTask
 from fastapi.responses import JSONResponse
-from app.libs.discord_notify import notify_discord
+from system.notify.discord import notify_discord
 
 
 router = APIRouter()

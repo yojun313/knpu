@@ -18,7 +18,7 @@ from app.routes.frontend_routes import router as frontend_router
 from app.db import user_logs_db
 from app.libs.discord_notify import notify_discord
 from app.auth.jwt import decode_token
-from shared.user_log import AuditLogMiddleware
+from system.logging.user_log import AuditLogMiddleware
 
 PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "public")
 

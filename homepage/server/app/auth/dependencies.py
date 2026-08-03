@@ -1,7 +1,7 @@
 from fastapi import Request, HTTPException
 from app.auth.jwt import decode_token
 from app.db import users_db
-from shared.session_check import revalidate_session
+from system.auth.session import revalidate_session
 
 
 def _extract_token(request: Request) -> str | None:

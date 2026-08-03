@@ -4,7 +4,7 @@ from app.db import popup_db, user_logs_db
 from app.auth.dependencies import require_admin
 from datetime import datetime
 from app.models import Popup
-from shared.user_log import insert_log
+from system.logging.user_log import insert_log
 
 router = APIRouter()
 

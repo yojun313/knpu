@@ -3,7 +3,7 @@ from app.db import news_db, user_logs_db
 from app.auth.dependencies import require_admin
 from datetime import datetime
 from app.models import News
-from shared.user_log import insert_log
+from system.logging.user_log import insert_log
 import uuid
 
 

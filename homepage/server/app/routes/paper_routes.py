@@ -3,7 +3,7 @@ from app.db import papers_db, user_logs_db
 from app.models import PaperRequest
 from app.auth.dependencies import require_admin
 from datetime import datetime, timezone
-from shared.user_log import insert_log
+from system.logging.user_log import insert_log
 import uuid
 from app.libs.crawl_papers import fetch_bib
 

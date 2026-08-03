@@ -6,7 +6,7 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse, JSONResponse
 from auth.jwt import verify_token
 from db import user_db
-from shared.session_check import revalidate_session
+from system.auth.session import revalidate_session
 import logging
 
 load_dotenv()

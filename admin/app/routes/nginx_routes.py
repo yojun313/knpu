@@ -14,8 +14,8 @@ from app.routes.dependencies import get_current_user
 from app.services import settings_service
 from app.db import user_logs_col, homepage_users_col
 from app.libs.jwt import decode_token
-from shared.user_log import insert_log
-from shared.session_check import revalidate_session
+from system.logging.user_log import insert_log
+from system.auth.session import revalidate_session
 import os
 
 

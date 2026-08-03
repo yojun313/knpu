@@ -4,7 +4,7 @@ from app.db import members_db, user_logs_db
 from app.auth.dependencies import require_admin, get_current_user
 from app.auth import service as auth_service
 from app.libs import r2
-from shared.user_log import insert_log
+from system.logging.user_log import insert_log
 from fastapi import HTTPException
 import uuid
 

@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi.responses import JSONResponse
 from app.db import version_board_db, bug_board_db, free_board_db, user_db, user_bugs_db
 from app.models.board_model import AddVersionDto, AddBugDto, AddPostDto
-from app.libs.discord_notify import notify_discord
+from system.notify.discord import notify_discord
 from app.libs.exceptions import NotFoundException
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo

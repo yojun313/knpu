@@ -17,7 +17,7 @@ from app.services.pm2_service import PM2Service
 from app.routes.dependencies import get_current_user
 from app.services import settings_service
 from app.db import user_logs_col
-from shared.user_log import insert_log
+from system.logging.user_log import insert_log
 
 router = APIRouter(prefix="/process", tags=["process"])
 templates = Jinja2Templates(directory="app/templates")

@@ -12,7 +12,7 @@ from starlette.background import BackgroundTask
 from app.config import STATISTICS_VIEWER_URL
 from app.libs import spss_analysis
 from app.libs.auto_chart import fill_missing_graphs
-from app.libs.progress import send_message
+from system.progress import send_message
 from app.libs.statistics_analysis import StatisticsAnalysis
 from app.models.analysis_model import StatisticsOption
 from app.utils.zip import fast_zip

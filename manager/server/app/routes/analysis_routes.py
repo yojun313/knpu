@@ -19,7 +19,7 @@ from app.libs.exceptions import BadRequestException
 from app.services.network_service import run_network_analysis
 from app.services.statistics_service import run_statistics_analysis
 from app.db import user_logs_db
-from shared.user_log import insert_log
+from system.logging.user_log import insert_log
 from io import StringIO
 
 router = APIRouter()

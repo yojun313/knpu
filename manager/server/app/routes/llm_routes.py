@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import Response, StreamingResponse
 import httpx
-from app.libs.jwt import verify_token
+from system.auth.jwt import verify_token
 import os
 
 router = APIRouter()

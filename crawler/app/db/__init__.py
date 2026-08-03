@@ -111,7 +111,7 @@ def get_admin_discord_ids() -> list:
 
 
 def add_userlog(userUid: str, dbname: str):
-    from shared.user_log import insert_log
+    from system.logging.user_log import insert_log
 
     insert_log(
         user_logs_db,

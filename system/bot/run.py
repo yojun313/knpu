@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import os
+import sys
 import asyncio
 import logging
 import socket
@@ -8,6 +9,10 @@ import traceback
 import warnings
 from dotenv import load_dotenv
 import motor.motor_asyncio
+
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 
 from config import CHANNEL_IDS
 

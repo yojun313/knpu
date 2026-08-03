@@ -19,7 +19,7 @@ from app.auth.email import sendEmail
 from app.auth.webauthn_config import EXPECTED_ORIGIN
 from app.libs import r2
 from app.libs.discord_notify import notify_discord
-from shared.user_log import insert_log
+from system.logging.user_log import insert_log
 
 CODE_TTL_MINUTES = 10
 SIGNUP_LINK_TTL_MINUTES = 30
