@@ -4,7 +4,7 @@ import sys
 import traceback
 
 _REPO_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
@@ -21,12 +21,12 @@ from app.db import user_logs_db
 from system.notify.discord import notify_discord
 from system.logging.user_log import AuditLogMiddleware
 
-app = FastAPI(title="KNPU Statistics Analyzer")
+app = FastAPI(title="KNPU Network Analyzer")
 
 app.add_middleware(AuthMiddleware)
 app.add_middleware(
     AuditLogMiddleware,
-    service="statistics",
+    service="network",
     collection=user_logs_db,
     identity_extractor=lambda request: (request.scope.get("state") or {}).get("user"),
 )
@@ -41,10 +41,10 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
-    print(f"[STATISTICS] Exception at {request.url.path}:\n{tb}")
+    print(f"[NETWORK] Exception at {request.url.path}:\n{tb}")
     notify_discord(
         "system_error",
-        f"[STATISTICS] {request.method} {request.url.path}\n```py\n{tb[-1500:]}\n```",
+        f"[NETWORK] {request.method} {request.url.path}\n```py\n{tb[-1500:]}\n```",
     )
     return JSONResponse(
         status_code=500,
@@ -77,12 +77,13 @@ app.mount(
 app.mount(
     "/img", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "img")), name="img"
 )
-
-SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "system", "ui")
+# statistics/kemkim/network가 함께 쓰는 테마 시스템(설정 모달 + glass/neu/mesh 스킨) —
+# 세 앱 다 이 한 디렉토리를 그대로 마운트해서 파일을 하나만 관리한다.
+SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "system", "ui")
 app.mount(
     "/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui"
 )
 
 app.include_router(api_router)
 
-print("Statistics viewer server is running...")
+print("Network viewer server is running...")
