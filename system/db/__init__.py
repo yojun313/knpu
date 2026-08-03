@@ -5,9 +5,15 @@
 admin, bot이 각자 MongoClient를 만들고 DB/컬렉션 이름을 흩어서 정의했다. 여기서 한 번만
 연결하고, 아래 각 모듈이 이 파일의 핸들을 가져다 쓴다.
 
-주의: 이 파일은 아직 "물리적으로" 기존 DB 구조(manager/homepage/crawler/discord/audit)를
-그대로 가리킨다 — DB 자체를 systems/network/kemkim/statistics 등으로 재편하는 작업은
-scripts/db/migrate.py로 데이터를 옮긴 뒤 이 파일에서 함께 전환한다(2단계 작업의 1단계).
+DB 구조 (scripts/db/migrate.py로 이관 완료, scripts/db/verify.py로 검증됨):
+- systems     : 계정/세션/인증코드/로그/감사로그/디스코드 알림 큐 등 전 서비스 공통 데이터
+- homepage    : 홈페이지 콘텐츠(members/news/papers/gallery/popups)
+- network / kemkim / statistics : 각 서비스의 projects/folders
+- crawler     : 크롤러 데이터 (db-list/log-list/job-queue/ip-list/youtube-api)
+- manager     : 매니저 게시판(version-board/bug-board/free-board)만 남음
+
+기존 manager/homepage/discord/audit DB는 며칠간 그대로 두고(구 코드가 참조할 일이 없어지면)
+수동으로 정리한다 — 이 파일에서는 더 이상 참조하지 않는다.
 """
 
 import os
@@ -59,21 +65,28 @@ else:
         f"@127.0.0.1:{_tunnel.local_bind_port}/?authSource={MONGO_AUTH_DB}"
     )
 
+systems_db_name = "systems_dev" if MODE == 0 else "systems"
 manager_db_name = "manager_dev" if MODE == 0 else "manager"
 crawler_db_name = "crawler_dev" if MODE == 0 else "crawler"
+network_db_name = "network_dev" if MODE == 0 else "network"
+kemkim_db_name = "kemkim_dev" if MODE == 0 else "kemkim"
+statistics_db_name = "statistics_dev" if MODE == 0 else "statistics"
 
+systems_db = client[systems_db_name]
 manager_db = client[manager_db_name]
 crawler_db = client[crawler_db_name]
 homepage_db = client["homepage"]
-discord_db = client["discord"]
-audit_db = client["audit"]
+network_db = client[network_db_name]
+kemkim_db = client[kemkim_db_name]
+statistics_db = client[statistics_db_name]
 
-# ── 계정 (단일 진실 소스: homepage.users) ──
-user_db = homepage_db["users"]
-auth_codes_db = homepage_db["auth_codes"]
-webauthn_credentials_db = homepage_db["webauthn_credentials"]
-webauthn_challenges_db = homepage_db["webauthn_challenges"]
-discord_link_requests_db = homepage_db["discord_link_requests"]
+# ── 계정/인증 (단일 진실 소스, dev/prod 구분 없이 하나만 존재 — 원래도 그랬다) ──
+user_db = systems_db["users"]
+auth_codes_db = systems_db["auth-codes"]
+legacy_auth_codes_db = systems_db["legacy-auth-codes"]
+webauthn_credentials_db = systems_db["webauthn-credentials"]
+webauthn_challenges_db = systems_db["webauthn-challenges"]
+discord_link_requests_db = systems_db["discord-link-requests"]
 
 # ── homepage 콘텐츠 ──
 members_db = homepage_db["members"]
@@ -83,47 +96,48 @@ gallery_db = homepage_db["gallery"]
 popup_db = homepage_db["popups"]
 
 # ── 세션 / 봇 설정 ──
-sessions_db = manager_db["sessions"]
-auth_config_db = manager_db["auth_config"]
+sessions_db = systems_db["sessions"]
+auth_config_db = systems_db["bot-config"]
 
 # ── 로깅 ──
-user_logs_db = manager_db["user-logs"]
-user_bugs_db = manager_db["user-bugs"]
-audit_logs_db = audit_db["logs"]
-identities_db = audit_db["identities"]
+user_logs_db = systems_db["user-logs"]
+user_bugs_db = systems_db["user-bugs"]
+audit_logs_db = systems_db["audit-logs"]
+identities_db = systems_db["identities"]
 
-# ── manager 게시판 ──
+# ── manager 게시판 (매니저 앱 전용으로 남은 유일한 데이터) ──
 version_board_db = manager_db["version-board"]
 bug_board_db = manager_db["bug-board"]
 free_board_db = manager_db["free-board"]
 
-# ── 서비스별 프로젝트 (아직 manager DB 안에 있음 — Phase 2에서 이관) ──
-network_projects_db = manager_db["network-projects"]
-network_folders_db = manager_db["network-folders"]
-kemkim_projects_db = manager_db["kemkim-projects"]
-kemkim_folders_db = manager_db["kemkim-folders"]
-statistics_projects_db = manager_db["statistics-projects"]
-statistics_folders_db = manager_db["statistics-folders"]
+# ── 서비스별 프로젝트 ──
+network_projects_db = network_db["projects"]
+network_folders_db = network_db["folders"]
+kemkim_projects_db = kemkim_db["projects"]
+kemkim_folders_db = kemkim_db["folders"]
+statistics_projects_db = statistics_db["projects"]
+statistics_folders_db = statistics_db["folders"]
 
 # ── 레거시 계정 (manager 데스크톱 앱이 과거에 쓰던 컬렉션). 마이그레이션 이전 로그의
 # userUid가 이 컬렉션의 uid를 참조하므로 이름 매핑용으로 유지한다. ──
-legacy_users_db = manager_db["users"]
+legacy_users_db = systems_db["legacy-users"]
 
 # ── crawler ──
 crawlList_db = crawler_db["db-list"]
 crawlLog_db = crawler_db["log-list"]
 crawlJobQueue_db = crawler_db["job-queue"]
 crawlIpList_db = crawler_db["ip-list"]
-crawlYoutubeApi_db = crawler_db["youtube_api"]
+crawlYoutubeApi_db = crawler_db["youtube-api"]
 
-# ── 디스코드 알림 발행 큐 — 실제 전송은 system/bot(구 knpu/bot)이 폴링해서 처리한다 ──
-discord_notifications_db = discord_db["notifications"]
+# ── 디스코드 알림 발행 큐 — 실제 전송은 system/bot(구 knpu/bot)이 폴링해서 처리한다.
+# 원래도 dev/prod 구분 없이 하나였다. ──
+discord_notifications_db = systems_db["discord-notifications"]
 
 crawldata_path = os.getenv("CRAWLDATA_PATH")
 
 
 def get_user_names(uids: list[str]) -> dict[str, str]:
-    """uid 목록 -> 표시용 이름. 계정 정보의 진짜 출처는 homepage.users이므로 조회만 한다."""
+    """uid 목록 -> 표시용 이름. 계정 정보의 진짜 출처는 systems.users이므로 조회만 한다."""
     if not uids:
         return {}
     docs = user_db.find({"uid": {"$in": list(set(uids))}}, {"uid": 1, "name": 1})

@@ -51,15 +51,15 @@ class MyBot(commands.Bot):
         self.mongo_client = motor.motor_asyncio.AsyncIOMotorClient(mongo_uri)
 
         if MODE == "0":
-            self.manager_db = self.mongo_client["manager_dev"]
+            self.systems_db = self.mongo_client["systems_dev"]
             self.crawler_db = self.mongo_client["crawler_dev"]
         else:
-            self.manager_db = self.mongo_client["manager"]
+            self.systems_db = self.mongo_client["systems"]
             self.crawler_db = self.mongo_client["crawler"]
 
-        # 홈페이지(로그인/가입 승인) DB + 서비스들이 공용으로 쓰는 디스코드 알림 큐
-        self.homepage_db = self.mongo_client["homepage"]
-        self.notifications_db = self.mongo_client["discord"]["notifications"]
+        # 계정/인증코드/디스코드 알림 큐는 원래도 dev/prod 구분 없이 하나였다
+        self.homepage_db = self.mongo_client["systems"]
+        self.notifications_db = self.mongo_client["systems"]["discord-notifications"]
 
         print(f"MongoDB 연결 설정 완료")
 

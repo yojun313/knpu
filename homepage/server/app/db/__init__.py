@@ -1,71 +1,37 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
-from sshtunnel import SSHTunnelForwarder
-import socket
-import os
+"""system.db가 관리하는 단일 MongoDB 연결의 핸들을 재노출한다 — 예전에는 이 서비스가
+자체 MongoClient(+SSH 터널)를 별도로 만들어서 프로세스마다 연결이 중복됐다.
 
-load_dotenv()
+이름은 이 서비스의 기존 호출부(app.auth.*, app.routes.*)와 맞추기 위해 그대로 유지한다
+(예: users_db, discord_link_col — system.db 쪽 이름과 다를 수 있음)."""
 
-SSH_HOST = os.getenv("SSH_HOST")
-SSH_PORT = int(os.getenv("SSH_PORT", 22))
-SSH_USER = os.getenv("SSH_USER")
-SSH_KEY = os.getenv("SSH_KEY")
+from system.db import (
+    user_db as users_db,
+    members_db,
+    news_db,
+    papers_db,
+    gallery_db,
+    popup_db,
+    auth_codes_db,
+    discord_link_requests_db as discord_link_col,
+    legacy_users_db as manager_users_db,
+    user_logs_db,
+    discord_notifications_db,
+    webauthn_credentials_db,
+    webauthn_challenges_db,
+)
 
-# MongoDB 설정
-MONGO_HOST = os.getenv("MONGO_HOST", "localhost")
-MONGO_PORT = int(os.getenv("MONGO_PORT", 27017))
-MONGO_USER = os.getenv("MONGO_USER")
-MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
-MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
-
-hostname = socket.gethostname()
-is_server = "knpu" in hostname or "server" in hostname  # 서버 이름 기준으로 판단
-
-if is_server:
-    # 서버 내부에서 실행 → 로컬 MongoDB 바로 사용
-    client = MongoClient(
-        f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-        f"@localhost:{MONGO_PORT}/?authSource={MONGO_AUTH_DB}"
-    )
-else:
-    # 외부에서 실행 → SSH 터널 사용
-    server = SSHTunnelForwarder(
-        (SSH_HOST, SSH_PORT),
-        ssh_username=SSH_USER,
-        ssh_pkey=SSH_KEY,
-        remote_bind_address=(MONGO_HOST, MONGO_PORT),
-    )
-    server.start()
-
-    client = MongoClient(
-        f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-        f"@127.0.0.1:{server.local_bind_port}/?authSource={MONGO_AUTH_DB}"
-    )
-
-homepage_db = client["homepage"]
-members_db = homepage_db["members"]
-news_db = homepage_db["news"]
-papers_db = homepage_db["papers"]
-gallery_db = homepage_db["gallery"]
-popup_db = homepage_db["popups"]
-users_db = homepage_db["users"]
-auth_codes_db = homepage_db["auth_codes"]
-discord_link_col = homepage_db["discord_link_requests"]
-
-# manager 서비스(kemkim/network/statistics/crawler 등)에서 쓰는 계정 — 회원가입 시
-# 이름이 일치하면 uid를 이어받아 두 시스템의 계정을 동일 uid로 연동한다
-manager_users_db = client["manager"]["users"]
-
-# admin 대시보드의 "User Logs" 탭이 그대로 읽는 컬렉션(manager/server의 log_user()와
-# 동일한 스키마) — 홈페이지 로그인 등 웹 쪽 활동도 여기에 같이 남겨 한 곳에서 본다
-user_logs_db = client["manager"]["user-logs"]
-
-# 디스코드 봇(bot/)이 폴링해서 실제 전송을 처리하는 알림 큐
-discord_notifications_db = client["discord"]["notifications"]
-
-# 패스키(WebAuthn) 등록된 인증기 — _id는 credential_id(base64url)라 조회/유일성 보장이
-# 자연스럽다. webauthn_challenges_db는 등록/로그인 시도마다 발급한 challenge를 잠깐
-# 보관해 재사용(replay) 공격을 막는다 — _id는 challenge 자체(base64url)이고 사용 후
-# 즉시 삭제한다.
-webauthn_credentials_db = homepage_db["webauthn_credentials"]
-webauthn_challenges_db = homepage_db["webauthn_challenges"]
+__all__ = [
+    "users_db",
+    "members_db",
+    "news_db",
+    "papers_db",
+    "gallery_db",
+    "popup_db",
+    "auth_codes_db",
+    "discord_link_col",
+    "manager_users_db",
+    "user_logs_db",
+    "discord_notifications_db",
+    "webauthn_credentials_db",
+    "webauthn_challenges_db",
+]

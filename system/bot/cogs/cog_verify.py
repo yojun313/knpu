@@ -27,7 +27,7 @@ class VerifyButtonView(discord.ui.View):
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
         token = secrets.token_urlsafe(24)
-        await self.bot.homepage_db.discord_link_requests.insert_one(
+        await self.bot.homepage_db["discord-link-requests"].insert_one(
             {
                 "token": token,
                 "discord_id": interaction.user.id,
@@ -143,7 +143,7 @@ class VerificationCog(commands.Cog):
         await channel.send(embed=embed)
 
     async def _complete_link(self, doc: dict):
-        col = self.bot.homepage_db.discord_link_requests
+        col = self.bot.homepage_db["discord-link-requests"]
 
         guild = self.bot.get_guild(doc["guild_id"])
         if not guild:
@@ -185,7 +185,7 @@ class VerificationCog(commands.Cog):
 
     @tasks.loop(seconds=3.0)
     async def poll_links(self):
-        cursor = self.bot.homepage_db.discord_link_requests.find({"status": "linked"})
+        cursor = self.bot.homepage_db["discord-link-requests"].find({"status": "linked"})
         docs = await cursor.to_list(length=20)
         for doc in docs:
             await self._complete_link(doc)

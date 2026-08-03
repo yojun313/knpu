@@ -167,7 +167,7 @@ class YouTubeCrawler:
     # ── 유틸리티 ──────────────────────────────────────────────
 
     def _load_api_keys(self):
-        collection = crawler_db["youtube_api"]
+        collection = crawler_db["youtube-api"]
         api_list = []
         cursor = collection.find({}, {"_id": 0, "API code": 1})
         for doc in cursor:

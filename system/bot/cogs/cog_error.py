@@ -33,7 +33,7 @@ class ErrorManageView(discord.ui.View):
             )
 
         try:
-            await self.bot.manager_db["user-bugs"].update_one(
+            await self.bot.systems_db["user-bugs"].update_one(
                 {"uid": bug_uid}, {"$set": {"status": status}}
             )
         except Exception as e:
@@ -97,7 +97,7 @@ class ErrorWatcher(commands.Cog):
     async def watch_errors(self):
         await self.bot.wait_until_ready()
 
-        bugs_cursor = self.bot.manager_db["user-bugs"].find({"notified": False})
+        bugs_cursor = self.bot.systems_db["user-bugs"].find({"notified": False})
         bugs = await bugs_cursor.to_list(length=100)
 
         if not bugs:
@@ -126,7 +126,7 @@ class ErrorWatcher(commands.Cog):
                         name="버그 UID", value=f"`{bug['uid']}`", inline=False
                     )
 
-                    user_data = await self.bot.manager_db.users.find_one(
+                    user_data = await self.bot.systems_db["legacy-users"].find_one(
                         {"uid": bug["userUid"]}
                     )
                     user_name = (
@@ -186,7 +186,7 @@ class ErrorWatcher(commands.Cog):
                 except Exception as e:
                     print(f"전송 실패 ({guild.name}): {e}")
 
-            await self.bot.manager_db["user-bugs"].update_one(
+            await self.bot.systems_db["user-bugs"].update_one(
                 {"uid": bug["uid"]},
                 {"$set": {"notified": True, "status": bug.get("status", "pending")}},
             )
