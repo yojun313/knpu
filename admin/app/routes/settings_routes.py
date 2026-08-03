@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from app.routes.dependencies import get_current_user
 from app.services import settings_service
 from app.db import user_logs_col
-from shared.user_log import insert_log
+from system.logging.user_log import insert_log
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")

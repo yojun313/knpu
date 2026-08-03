@@ -32,7 +32,7 @@ from app.routes import (
 from app.db import user_logs_col
 from app.libs.jwt import decode_token
 from app.libs.discord_notify import notify_discord
-from shared.user_log import AuditLogMiddleware
+from system.logging.user_log import AuditLogMiddleware
 
 
 def _extract_identity(request: Request):
@@ -106,7 +106,7 @@ class NoCacheStaticFiles(StaticFiles):
 
 # statistics/kemkim/network가 함께 쓰는 테마 시스템(테마 CSS) — 관리자 대시보드는
 # 상단 네비 바 없이 테마 스킨(glass/neu/mesh)만 설정 페이지에서 골라 쓴다.
-SHARED_UI_DIR = os.path.join(_REPO_ROOT, "manager", "shared_ui")
+SHARED_UI_DIR = os.path.join(_REPO_ROOT, "system", "ui")
 app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui")
 
 # 라우터 등록

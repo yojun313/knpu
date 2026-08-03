@@ -1,6 +1,6 @@
 from app.models.analysis_model import KemKimOption
 from app.libs.kemkim import KemKim
-from app.libs.progress import send_message
+from system.progress import send_message
 from app.config import KEMKIM_VIEWER_URL
 import requests
 import os

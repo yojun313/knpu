@@ -17,7 +17,7 @@ from app.services.board_service import (
     delete_post,
     edit_post,
 )
-from app.libs.jwt import verify_token
+from system.auth.jwt import verify_token
 
 router = APIRouter()
 

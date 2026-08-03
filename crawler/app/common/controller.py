@@ -9,7 +9,7 @@ from common.notification import notifyRequester, notifyRequesterAndAdmins
 from common.storage import endCrawl, errorCrawl, appendCrawlLog
 from common.req import set_proxy_list
 from config import CRAWL_LOG_PATH, PROXY, REFRESH_PROXY_DAILY
-from shared.user_log import insert_log
+from system.logging.user_log import insert_log
 
 logger = logging.getLogger(__name__)
 

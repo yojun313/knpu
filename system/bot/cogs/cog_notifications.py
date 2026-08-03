@@ -4,7 +4,7 @@ from discord.ext import commands, tasks
 
 from config import CHANNEL_IDS, HOMEPAGE_API_URL
 from libs.internal_auth import mint_admin_token
-from libs.mail import sendEmail
+from system.notify.mail import sendEmailAsync as sendEmail
 
 
 class SignupApprovalView(discord.ui.View):

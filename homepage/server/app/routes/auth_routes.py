@@ -25,7 +25,7 @@ from app.auth.dependencies import (
     get_current_user_optional,
     require_admin,
 )
-from shared.session_check import revalidate_session
+from system.auth.session import revalidate_session
 
 router = APIRouter()
 

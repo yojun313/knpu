@@ -16,10 +16,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.routes import api_router
-from app.auth.middleware import AuthMiddleware
+from system.auth.middleware import AuthMiddleware
 from app.db import user_logs_db
-from app.libs.discord_notify import notify_discord
-from shared.user_log import AuditLogMiddleware
+from system.notify.discord import notify_discord
+from system.logging.user_log import AuditLogMiddleware
 
 app = FastAPI(title="KNPU Network Analyzer")
 
@@ -79,7 +79,7 @@ app.mount(
 )
 # statistics/kemkim/network가 함께 쓰는 테마 시스템(설정 모달 + glass/neu/mesh 스킨) —
 # 세 앱 다 이 한 디렉토리를 그대로 마운트해서 파일을 하나만 관리한다.
-SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "shared_ui")
+SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "system", "ui")
 app.mount(
     "/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui"
 )

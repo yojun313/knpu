@@ -3,7 +3,7 @@ from app.models import GalleryPost
 from app.db import gallery_db, user_logs_db
 from app.auth.dependencies import require_admin
 from app.libs import r2
-from shared.user_log import insert_log
+from system.logging.user_log import insert_log
 import uuid
 
 router = APIRouter()

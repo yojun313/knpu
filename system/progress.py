@@ -1,6 +1,11 @@
-import requests
-from typing import Optional
+"""manager-progress(manager/web) 서버로 진행 상황을 보고하는 클라이언트.
+모든 분석 백엔드(kemkim/network/statistics/gpu)가 이 모듈을 공유한다 — 진행 상황 표시
+자체는 매니저(manager/web)에 그대로 남아있으므로, 각 서비스가 여기로 계속 보고한다."""
+
 import os
+from typing import Optional
+
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,8 +30,12 @@ def send_message(process_id: str, text: str) -> None:
     순수 문자열 메시지를 보냅니다.
     POST /notify/{process_id} { type: "message", text }
     """
+    if not process_id:
+        return
+
     payload = {"type": "message", "text": text}
     resp = requests.post(f"{PROGRESS_SERVER_URL}/notify/{process_id}", json=payload)
+    resp.raise_for_status()
 
 
 def send_progress(

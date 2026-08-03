@@ -16,10 +16,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.routes import api_router
-from app.auth.middleware import AuthMiddleware
+from system.auth.middleware import AuthMiddleware
 from app.db import user_logs_db
-from app.libs.discord_notify import notify_discord
-from shared.user_log import AuditLogMiddleware
+from system.notify.discord import notify_discord
+from system.logging.user_log import AuditLogMiddleware
 
 app = FastAPI(title="KNPU KemKim Analyzer")
 
@@ -78,7 +78,7 @@ app.mount(
     "/img", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "img")), name="img"
 )
 
-SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "shared_ui")
+SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "system", "ui")
 app.mount(
     "/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui"
 )

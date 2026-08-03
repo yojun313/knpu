@@ -1,15 +1,14 @@
+import logging
 import os
 from urllib.parse import quote
-from dotenv import load_dotenv
-from starlette.types import ASGIApp, Receive, Scope, Send
-from starlette.requests import Request
-from starlette.responses import RedirectResponse, JSONResponse
-from app.auth.jwt import verify_token
-from app.db import user_db
-from shared.session_check import revalidate_session
-import logging
 
-load_dotenv()
+from starlette.requests import Request
+from starlette.responses import JSONResponse, RedirectResponse
+from starlette.types import ASGIApp, Receive, Scope, Send
+
+from system.auth.jwt import decode_token
+from system.auth.session import revalidate_session
+from system.db import user_db
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,11 @@ INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 
 
 class AuthMiddleware:
-    """순수 ASGI 미들웨어. BaseHTTPMiddleware의 StreamingResponse hang 문제를 회피."""
+    """순수 ASGI 미들웨어. BaseHTTPMiddleware의 StreamingResponse hang 문제를 회피.
+
+    쿠키(session) 인증은 브라우저 뷰어용, Bearer 헤더 인증은 매니저 데스크톱 앱이 자신의
+    knpu.re.kr 로그인 토큰으로 각 서비스(kemkim/network/statistics)를 매니저 서버를 거치지
+    않고 직접 호출할 때 쓴다."""
 
     def __init__(self, app: ASGIApp):
         self.app = app
@@ -54,9 +57,16 @@ class AuthMiddleware:
             return
 
         token = request.cookies.get("session")
+        if not token:
+            authorization = request.headers.get("Authorization")
+            if authorization and authorization.startswith("Bearer "):
+                token = authorization[len("Bearer ") :]
 
         if token:
-            payload = verify_token(token)
+            payload = decode_token(token)
+            # 계정 삭제/거절/비밀번호·권한 변경 이후에도 예전 토큰이 만료 전까지
+            # 계속 통하는 걸 막기 위해, 매 요청마다 homepage.users의 현재 상태를
+            # 다시 확인한다.
             live = revalidate_session(payload, user_db)
             if live:
                 scope["state"] = {

@@ -1,4 +1,4 @@
-from .progress import send_message
+from system.progress import send_message
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import gc
 import platform

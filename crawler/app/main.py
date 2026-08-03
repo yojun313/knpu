@@ -23,7 +23,7 @@ from app.auth.middleware import AuthMiddleware
 from app.common.notification import sendDiscord
 from app.config import MODE
 from db import user_logs_db
-from shared.user_log import AuditLogMiddleware
+from system.logging.user_log import AuditLogMiddleware
 import gc
 import asyncio
 from datetime import datetime

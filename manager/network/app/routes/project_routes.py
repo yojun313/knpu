@@ -5,9 +5,10 @@ import requests
 from fastapi import APIRouter, UploadFile, File, Form, Query, Request, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 
-from app.services import project_store, graph_analysis, analyze_service, upload_staging
+from app.services import project_store, graph_analysis, analyze_service
+from system import uploads as upload_staging
 from app.db import user_logs_db
-from shared.user_log import insert_log
+from system.logging.user_log import insert_log
 
 
 def _parse_csv_header(content: bytes) -> list[str]:

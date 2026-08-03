@@ -8,7 +8,7 @@ from .format_routes import router as format_router
 from .llm_routes import router as llm_router
 from .download_routes import router as download_router
 from fastapi import Depends
-from app.libs.jwt import verify_token
+from system.auth.jwt import verify_token
 
 
 api_router = APIRouter()
