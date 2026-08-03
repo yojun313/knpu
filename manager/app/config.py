@@ -37,3 +37,9 @@ else:
     NETWORK_VIEWER_URL = "https://network.knpu.re.kr"
     KEMKIM_VIEWER_URL = "https://kemkim.knpu.re.kr"
     STATISTICS_VIEWER_URL = "https://statistics.knpu.re.kr"
+
+# 분석 요청은 이제 매니저 서버를 거치지 않고 각 서비스로 직접 간다
+# (kemkim/network/statistics가 매니저 서버 의존 없이 자체적으로 분석을 처리한다).
+NETWORK_API = f"{NETWORK_VIEWER_URL}/api"
+KEMKIM_API = f"{KEMKIM_VIEWER_URL}/api"
+STATISTICS_API = f"{STATISTICS_VIEWER_URL}/api"

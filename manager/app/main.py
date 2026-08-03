@@ -8,7 +8,7 @@ import traceback
 from config import VERSION
 from windows.splash_window import SplashDialog
 from core.setting import get_setting, set_setting
-from ui.style import theme_option
+from ui.style import get_stylesheet
 from PySide6.QtGui import QIcon, QGuiApplication
 from config import ASSETS_PATH
 from packaging import version
@@ -61,11 +61,12 @@ def build_app():
             app_font.setHintingPreference(QFont.HintingPreference.PreferFullHinting)
             app.setFont(app_font)
 
-    theme = get_setting("Theme", "default")
-    app.setStyleSheet(theme_option[theme])
+    theme_style = get_setting("ThemeStyle", "default")
+    theme_mode = get_setting("ThemeMode", "light")
+    app.setStyleSheet(get_stylesheet(theme_style, theme_mode))
 
     palette = QPalette()
-    if theme == "default":
+    if theme_mode == "light":
         palette.setColor(QPalette.ColorRole.Window, QColor(240, 240, 240))
         palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.black)
         palette.setColor(QPalette.ColorRole.Base, Qt.GlobalColor.white)
@@ -89,7 +90,7 @@ def build_app():
         palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.black)
     app.setPalette(palette)
 
-    return app, theme
+    return app, theme_mode
 
 
 def main():

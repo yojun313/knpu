@@ -82,7 +82,7 @@ def initStatusbar(parent):
     parent.leftLabel = ClickableLabel("  " + f"Version {VERSION}")
     parent.leftLabel.clicked.connect(
         lambda: AboutDialog(
-            VERSION, "light" if get_setting("Theme") == "default" else "dark", parent
+            VERSION, get_setting("ThemeMode", "light"), parent
         ).exec()
     )
     parent.rightLabel = ClickableLabel("")
