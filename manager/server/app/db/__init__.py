@@ -1,78 +1,40 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
-import os
-import socket
-from app.config import mode
+"""system.db가 관리하는 단일 MongoDB 연결의 핸들을 재노출한다 — 예전에는 이 서비스가
+자체 MongoClient(+SSH 터널)를 별도로 만들어서 프로세스마다 연결이 중복됐다.
 
-load_dotenv()
+`client`와 `manager_db`는 app/db/sync.py가 `from . import client, manager_db`로 그대로
+가져다 쓰므로 이름을 유지한다 (그 파일 자체는 "BE CAREFUL — Do Not Modify" 경고가 있어
+손대지 않았다)."""
 
-SSH_HOST = os.getenv("SSH_HOST")
-SSH_PORT = int(os.getenv("SSH_PORT", 22))
-SSH_USER = os.getenv("SSH_USER")
-SSH_KEY = os.getenv("SSH_KEY")
+from system.db import (
+    client,
+    manager_db,
+    crawler_db,
+    homepage_db,
+    crawlList_db,
+    crawlLog_db,
+    user_db,
+    user_logs_db,
+    user_bugs_db,
+    version_board_db,
+    bug_board_db,
+    free_board_db,
+    discord_notifications_db,
+    crawldata_path,
+)
 
-# MongoDB 설정
-MONGO_HOST = os.getenv("MONGO_HOST", "localhost")
-MONGO_PORT = int(os.getenv("MONGO_PORT", 27017))
-MONGO_USER = os.getenv("MONGO_USER")
-MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
-MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
-
-hostname = socket.gethostname()
-is_server = "knpu" in hostname or "server" in hostname  # 서버 이름 기준으로 판단
-
-if is_server:
-    # 서버 내부에서 실행 → 로컬 MongoDB 바로 사용
-    client = MongoClient(
-        f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-        f"@localhost:{MONGO_PORT}/?authSource={MONGO_AUTH_DB}"
-    )
-else:
-    import warnings
-
-    warnings.filterwarnings("ignore", module="paramiko")
-    from sshtunnel import SSHTunnelForwarder
-
-    # 외부에서 실행 → SSH 터널 사용
-    server = SSHTunnelForwarder(
-        (SSH_HOST, SSH_PORT),
-        ssh_username=SSH_USER,
-        ssh_pkey=SSH_KEY,
-        remote_bind_address=(MONGO_HOST, MONGO_PORT),
-    )
-    server.start()
-
-    client = MongoClient(
-        f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-        f"@127.0.0.1:{server.local_bind_port}/?authSource={MONGO_AUTH_DB}"
-    )
-
-if mode == 0:
-    manager_db_name = "manager_dev"
-    crawler_db_name = "crawler_dev"
-else:
-    manager_db_name = "manager"
-    crawler_db_name = "crawler"
-
-manager_db = client[manager_db_name]
-crawler_db = client[crawler_db_name]
-homepage_db = client["homepage"]
-
-crawlList_db = crawler_db["db-list"]
-crawlLog_db = crawler_db["log-list"]
-
-# 계정 데이터는 knpu.re.kr(homepage)의 중앙 로그인이 단일 진실 소스다
-user_db = homepage_db["users"]
-user_logs_db = manager_db["user-logs"]
-user_bugs_db = manager_db["user-bugs"]
-version_board_db = manager_db["version-board"]
-bug_board_db = manager_db["bug-board"]
-free_board_db = manager_db["free-board"]
-
-crawldata_path = os.getenv("CRAWLDATA_PATH")
-
-# 디스코드 봇(bot/)이 폴링해서 실제 전송을 처리하는 알림 큐 — 여러 서비스가 공유하는
-# 단일 컬렉션이라 dev/prod 구분 없이 하나만 둔다.
-discord_notifications_db = client["discord"]["notifications"]
+__all__ = [
+    "client",
+    "manager_db",
+    "crawler_db",
+    "homepage_db",
+    "crawlList_db",
+    "crawlLog_db",
+    "user_db",
+    "user_logs_db",
+    "user_bugs_db",
+    "version_board_db",
+    "bug_board_db",
+    "free_board_db",
+    "discord_notifications_db",
+    "crawldata_path",
+]

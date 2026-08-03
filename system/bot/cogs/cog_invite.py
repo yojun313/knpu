@@ -21,7 +21,7 @@ class ServerLogger(commands.Cog):
         self, interaction: discord.Interaction, channel: discord.TextChannel
     ):
 
-        await self.bot.manager_db.auth_config.update_one(
+        await self.bot.systems_db["bot-config"].update_one(
             {"guild_id": interaction.guild.id},
             {"$set": {"join_log_channel": channel.id}},
             upsert=True,
@@ -41,7 +41,7 @@ class ServerLogger(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
 
-        data = await self.bot.manager_db.auth_config.find_one(
+        data = await self.bot.systems_db["bot-config"].find_one(
             {"guild_id": member.guild.id}
         )
 

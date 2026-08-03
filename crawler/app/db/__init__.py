@@ -1,69 +1,41 @@
-from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
-import socket
+"""system.db의 단일 MongoClient를 재사용한다 — 예전에는 이 서비스가 자체
+MongoClient(+SSH 터널)를 별도로 만들어서 프로세스마다 연결이 중복됐다.
+
+주의: 이 서비스는 원래도 자신의 MODE(dev/prod)와 무관하게 항상 운영 DB(crawler/manager)를
+그대로 썼다(config.MODE를 import만 하고 DB 이름 분기에는 안 씀 — 옮기기 전 동작 그대로 보존).
+그래서 system.db의 MODE 분기 핸들(crawler_db/user_logs_db 등)을 쓰지 않고, client에서
+운영 DB 이름을 직접 고정해서 가져온다."""
+
 import logging
 from datetime import datetime
-from config import MODE
 
-load_dotenv()
-
-SSH_HOST = os.getenv("SSH_HOST")
-SSH_PORT = int(os.getenv("SSH_PORT", 22))
-SSH_USER = os.getenv("SSH_USER")
-SSH_KEY = os.getenv("SSH_KEY")
-
-# MongoDB 설정
-MONGO_HOST = os.getenv("MONGO_HOST", "localhost")
-MONGO_PORT = int(os.getenv("MONGO_PORT", 27017))
-MONGO_USER = os.getenv("MONGO_USER")
-MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
-MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
-
-hostname = socket.gethostname()
-is_server = "knpu" in hostname or "server" in hostname
+from system.db import client, discord_notifications_db, user_db
 
 logger = logging.getLogger(__name__)
 
-if is_server:
-    client = MongoClient(
-        f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-        f"@localhost:{MONGO_PORT}/?authSource={MONGO_AUTH_DB}"
-    )
-else:
-    import warnings
-
-    warnings.filterwarnings("ignore", module="paramiko")
-    from sshtunnel import SSHTunnelForwarder
-
-    # 외부에서 실행 → SSH 터널 사용
-    server = SSHTunnelForwarder(
-        (SSH_HOST, SSH_PORT),
-        ssh_username=SSH_USER,
-        ssh_pkey=SSH_KEY,
-        remote_bind_address=(MONGO_HOST, MONGO_PORT),
-        set_keepalive=30,  # 30초마다 keepalive 패킷 전송 → idle timeout 방지
-    )
-    server.start()
-
-    client = MongoClient(
-        f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}"
-        f"@127.0.0.1:{server.local_bind_port}/?authSource={MONGO_AUTH_DB}"
-    )
-
-manager_db_name = "manager"
 crawler_db_name = "crawler"
-homepage_db_name = "homepage"
 
 crawler_db = client[crawler_db_name]
-manager_db = client[manager_db_name]
-homepage_db = client[homepage_db_name]
+homepage_db = client["homepage"]
 
-user_db = homepage_db["users"]
-user_logs_db = manager_db["user-logs"]
+__all__ = [
+    "client",
+    "crawler_db",
+    "homepage_db",
+    "user_db",
+    "user_logs_db",
+    "discord_notifications_db",
+    "load_proxy_list",
+    "checkState",
+    "get_userinfo",
+    "get_admin_discord_ids",
+    "add_userlog",
+    "recordDB",
+]
 
-# 디스코드 봇(bot/)이 폴링해서 실제 전송을 처리하는 알림 큐
-discord_notifications_db = client["discord"]["notifications"]
+# 예전에도 이 컬렉션은 crawler 프로세스의 MODE와 무관하게 항상 운영 DB(manager.user-logs)를
+# 가리켰다 — 지금은 그 데이터가 systems.user-logs로 이관되었으므로 운영 systems DB를 고정해서 쓴다.
+user_logs_db = client["systems"]["user-logs"]
 
 
 def load_proxy_list():
