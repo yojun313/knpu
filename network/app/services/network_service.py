@@ -12,7 +12,6 @@ from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 import pandas as pd
-import requests
 from scipy.sparse import csr_matrix, vstack
 import igraph as ig
 
@@ -27,6 +26,7 @@ from starlette.background import BackgroundTask
 
 from system.progress import send_message
 from app.config import NETWORK_VIEWER_URL
+from app.services import project_store
 from scipy.spatial import ConvexHull
 from xml.sax.saxutils import escape
 
@@ -780,36 +780,27 @@ def _export_period_comparison(period_summ, out_dir):
 
 
 # ────────────────────── 엔트리포인트 ──────────────────────
-def _push_to_network_viewer(
-    zip_path: str, uid: str, project_name: str, pid: str
-) -> str | None:
-    """분석 결과 zip을 온라인 뷰어(manager/network)의 사용자 프로젝트로 곧바로 밀어 넣는다.
+def _save_as_project(zip_path: str, uid: str, project_name: str, pid: str) -> str | None:
+    """분석 결과 zip을 이 서비스 자신의 project_store에 바로 저장한다 — 예전에는 매니저
+    서버가 분석하고 HTTP로 여기 /api/internal/projects/ingest를 호출해 저장했지만,
+    분석 자체가 이 프로세스 안에서 도는 지금은 그 왕복이 필요 없다.
     실패해도 분석 자체를 실패시키지 않는다 — zip 다운로드는 항상 그대로 내려간다."""
-    internal_key = os.getenv("INTERNAL_API_KEY", "")
     try:
         with open(zip_path, "rb") as f:
-            resp = requests.post(
-                f"{NETWORK_VIEWER_URL}/api/internal/projects/ingest",
-                headers={"X-Internal-Key": internal_key},
-                data={"uid": uid, "name": project_name or "네트워크 분석"},
-                files={"file": (os.path.basename(zip_path), f, "application/zip")},
-                timeout=60,
-            )
-        if resp.status_code == 200:
-            project_id = resp.json().get("project_id")
-            send_message(
-                pid,
-                f"온라인 뷰어에 프로젝트로 저장했습니다: {NETWORK_VIEWER_URL}/viewer/{project_id}",
-            )
-            return project_id
+            content = f.read()
+        project = project_store.create_project(
+            uid, content, project_name or "네트워크 분석", "analysis"
+        )
+        project_id = project["project_id"]
         send_message(
             pid,
-            "온라인 뷰어 자동 업로드에 실패했습니다. (결과 zip은 정상적으로 받으실 수 있습니다)",
+            f"온라인 뷰어에 프로젝트로 저장했습니다: {NETWORK_VIEWER_URL}/viewer/{project_id}",
         )
+        return project_id
     except Exception:
         send_message(
             pid,
-            "온라인 뷰어 서버에 연결할 수 없습니다. (결과 zip은 정상적으로 받으실 수 있습니다)",
+            "프로젝트 저장에 실패했습니다. (결과 zip은 정상적으로 받으실 수 있습니다)",
         )
     return None
 
@@ -922,19 +913,17 @@ def run_network_analysis(
         _write_viewer_readme(out_dir)
         _write_analysis_options(out_dir, option, project_name)
 
-        send_message(
-            pid,
-            f"완료! 인터랙티브 뷰어: {NETWORK_VIEWER_URL} 에 결과 zip을 업로드하세요.",
-        )
         send_message(pid, "결과 압축 중...")
         zip_path = out_dir + ".zip"
         shutil.make_archive(out_dir, "zip", out_dir)
 
         response_headers = {}
         if uid:
-            project_id = _push_to_network_viewer(zip_path, uid, project_name, pid)
+            project_id = _save_as_project(zip_path, uid, project_name, pid)
             if project_id:
                 response_headers["X-Network-Project-Id"] = project_id
+        else:
+            send_message(pid, "완료!")
 
         return FileResponse(
             path=zip_path,

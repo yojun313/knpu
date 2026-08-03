@@ -1,27 +1,26 @@
 # app/services/analyze_service.py
 """
-원본 CSV를 웹에서 바로 업로드해 통계분석을 돌리는 기능. manager/server의
-/analysis/statistics 엔드포인트(데스크톱 MANAGER가 쓰는 것과 동일한 파이프라인)를 그대로
-호출하고, 결과는 manager/server가 알아서(uid 기반) 이 사용자의 프로젝트로 자동
-저장해준다. 진행 상황은 manager.knpu.re.kr/progress(WebSocket)로 그대로 흘러간다.
+원본 CSV를 웹에서 바로 업로드해 통계분석을 돌리는 기능. 데스크톱 MANAGER가
+/api/analysis/statistics로 호출하는 것과 같은 분석 함수(statistics_service.run_statistics_analysis)를
+이 프로세스 안에서 직접 돌리고, 끝나면 uid 기반으로 이 사용자의 프로젝트로 자동 저장한다.
+(예전에는 매니저 서버에 HTTP로 위임하고 매니저 서버가 다시 이 서비스로 결과를 밀어
+넣는 왕복 구조였다.) 진행 상황은 manager.knpu.re.kr/progress(WebSocket)로 그대로 흘러간다.
 """
 
-import json
 import os
 import threading
 import uuid
+from io import StringIO
 
+import pandas as pd
 import requests
 from dotenv import load_dotenv
+from fastapi.responses import JSONResponse
 
 load_dotenv()
 
 MODE = int(os.getenv("MODE", 1))
 
-# 매니저 서버(분석 파이프라인) 내부 호출 주소 — 같은 호스트이므로 로컬로 직접 호출한다.
-MANAGER_SERVER_API = os.getenv(
-    "MANAGER_SERVER_INTERNAL_API", "http://localhost:8000/api"
-)
 # 진행 상황 등록/전송(progress 서버) 내부 호출 주소
 PROGRESS_SERVER_URL = os.getenv("PROGRESS_SERVER_URL", "http://localhost:8080").rstrip(
     "/"
@@ -61,7 +60,7 @@ def start_job(
     filename: str,
     category: str,
     platform: str,
-    session_token: str,
+    uid: str,
     project_name: str | None = None,
 ) -> str:
     validate_option(category, platform)
@@ -85,27 +84,26 @@ def start_job(
 
     option = {"pid": pid, "category": category, "platform": platform}
 
-    # manager/server는 업로드된 파일명(확장자 제외)을 그대로 프로젝트 이름으로 쓴다
-    # (analysis_routes.py). 사용자가 고른 이름을 반영하기 위해 전송 파일명을 바꿔서 보낸다.
-    upload_filename = f"{project_name}.csv" if project_name else filename
-
     def _run():
         try:
-            resp = requests.post(
-                f"{MANAGER_SERVER_API}/analysis/statistics",
-                headers={"Authorization": f"Bearer {session_token}"},
-                data={"option": json.dumps(option)},
-                files={"file": (upload_filename, content, "text/csv")},
-                timeout=3600,
+            from app.models.analysis_model import StatisticsOption
+            from app.services.statistics_service import run_statistics_analysis
+
+            df = pd.read_csv(StringIO(content.decode("utf-8")))
+            result = run_statistics_analysis(
+                StatisticsOption(**option), df, uid=uid, project_name=project_name
             )
-            if resp.status_code != 200:
+            if isinstance(result, JSONResponse):
+                import json as _json
+
+                body = _json.loads(bytes(result.body))
                 _jobs[pid] = {
                     "status": "error",
                     "project_id": None,
-                    "error": f"분석 서버 오류 (HTTP {resp.status_code}): {resp.text[:300]}",
+                    "error": body.get("message") or body.get("error") or "분석 실패",
                 }
                 return
-            project_id = resp.headers.get("X-Statistics-Project-Id")
+            project_id = result.headers.get("X-Statistics-Project-Id")
             if not project_id:
                 _jobs[pid] = {
                     "status": "error",
