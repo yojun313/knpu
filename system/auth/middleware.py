@@ -1,5 +1,4 @@
 import logging
-import os
 from urllib.parse import quote
 
 from starlette.requests import Request
@@ -18,10 +17,6 @@ PUBLIC_PATHS = [
     "/docs",
     "/redoc",
 ]
-# 주의: /api/internal/*은 PUBLIC_PATHS에 넣지 않는다 — X-Internal-Key 검사를 반드시 거쳐야 한다.
-
-# 매니저 서버 경유 요청(내부 ingest) 확인용 키
-INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 
 
 class AuthMiddleware:
@@ -29,7 +24,12 @@ class AuthMiddleware:
 
     쿠키(session) 인증은 브라우저 뷰어용, Bearer 헤더 인증은 매니저 데스크톱 앱이 자신의
     knpu.re.kr 로그인 토큰으로 각 서비스(kemkim/network/statistics)를 매니저 서버를 거치지
-    않고 직접 호출할 때 쓴다."""
+    않고 직접 호출할 때 쓴다.
+
+    예전에는 매니저 서버가 분석 완료 직후 X-Internal-Key로 /api/internal/projects/ingest를
+    우회 호출했다. 그 엔드포인트가 제거된 뒤로 이 서비스들에는 그 우회를 쓸 곳이 전혀 없어
+    (남은 라우트가 전부 독립적으로 세션/Bearer 인증을 요구한다), 잠재적 공격 표면만 남기지
+    않도록 우회 로직 자체를 없앴다."""
 
     def __init__(self, app: ASGIApp):
         self.app = app
@@ -47,12 +47,6 @@ class AuthMiddleware:
             return
 
         if path.startswith("/js/") or path.startswith("/css/"):
-            await self.app(scope, receive, send)
-            return
-
-        # 매니저 서버 경유: 내부 API 키 (세션 쿠키 없이 통과, uid는 요청 바디로 받음)
-        internal_key = request.headers.get("X-Internal-Key")
-        if INTERNAL_API_KEY and internal_key == INTERNAL_API_KEY:
             await self.app(scope, receive, send)
             return
 

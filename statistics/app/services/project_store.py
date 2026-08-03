@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from app.db import statistics_projects_db, statistics_folders_db, get_user_names
+from system.archive import UnsafeZipError, safe_extract_zip
 
 PROJECT_ROOT = os.getenv("STATISTICS_PROJECT_ROOT", "/mnt/ssd/statistics")
 os.makedirs(PROJECT_ROOT, exist_ok=True)
@@ -373,9 +374,11 @@ def _extract_zip_and_build(root: str, upload_bytes: bytes) -> dict:
 
     try:
         with zipfile.ZipFile(io.BytesIO(upload_bytes)) as zf:
-            zf.extractall(raw_dir)
+            safe_extract_zip(zf, raw_dir)
     except zipfile.BadZipFile:
         raise ValueError("zip 파일이 아니거나 손상되었습니다.")
+    except UnsafeZipError as e:
+        raise ValueError(str(e))
 
     result_root = _find_result_root(raw_dir)
     base = _build_base_json(result_root)

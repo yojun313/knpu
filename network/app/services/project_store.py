@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 
 from app.db import network_projects_db, network_folders_db, get_user_names
+from system.archive import UnsafeZipError, safe_extract_zip
 
 PROJECT_ROOT = os.getenv("NETWORK_PROJECT_ROOT", "/mnt/ssd/network")
 os.makedirs(PROJECT_ROOT, exist_ok=True)
@@ -140,9 +141,11 @@ def _extract_zip_and_build(root: str, upload_bytes: bytes) -> tuple:
 
     try:
         with zipfile.ZipFile(io.BytesIO(upload_bytes)) as zf:
-            zf.extractall(extract_dir)
+            safe_extract_zip(zf, extract_dir)
     except zipfile.BadZipFile:
         raise ValueError("zip 파일이 아니거나 손상되었습니다.")
+    except UnsafeZipError as e:
+        raise ValueError(str(e))
 
     search_root = extract_dir
     entries = [e for e in os.listdir(extract_dir) if not e.startswith("__MACOSX")]
