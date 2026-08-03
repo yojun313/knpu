@@ -557,8 +557,9 @@
   var railProjects = [];
   var PALETTE_LIGHT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
   var PALETTE_DARK = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
+  function isDarkMode() { return document.documentElement.getAttribute('data-ui-theme-mode') === 'dark'; }
   function railDotColor(i) {
-    var pal = document.body.classList.contains('dark-theme') ? PALETTE_DARK : PALETTE_LIGHT;
+    var pal = isDarkMode() ? PALETTE_DARK : PALETTE_LIGHT;
     return pal[((i % pal.length) + pal.length) % pal.length];
   }
   function railInitial(name) { return (name || '?').trim().charAt(0).toUpperCase(); }
@@ -1527,13 +1528,6 @@
         .then(function () { location.href = 'https://knpu.re.kr/login?redirect=' + encodeURIComponent(window.location.href); });
     });
 
-    document.getElementById('btnTheme').addEventListener('click', function () {
-      var dark = document.body.classList.toggle('dark-theme');
-      localStorage.setItem('sv_theme', dark ? 'dark' : 'light');
-      renderRail();
-      if (base) renderDashboard();
-    });
-
     document.getElementById('search').addEventListener('input', function (e) {
       searchQuery = e.target.value.trim().toLowerCase();
       applyTableSearch();
@@ -1560,13 +1554,19 @@
       }
       highlightActiveRailItem();
     });
+
+    // 화면 다크모드는 더 이상 이 앱만의 버튼이 아니라 상단 그라디언트 바의 테마
+    // 설정(모든 KNPU 사이트 공용)에서 켜고 끈다. shared_ui/theme.js가 이 이벤트를
+    // 쏘면 다크 팔레트를 쓰는 차트를 다시 그려준다.
+    window.addEventListener('knpu-ui-theme-mode-change', function () {
+      renderRail();
+      if (base) renderDashboard();
+    });
   }
 
   // ---------------------------------------------------------------
   // 초기화
   // ---------------------------------------------------------------
-  if (localStorage.getItem('sv_theme') === 'dark') document.body.classList.add('dark-theme');
-
   bindEvents();
   loadMe().then(function () {
     if (projectId) {

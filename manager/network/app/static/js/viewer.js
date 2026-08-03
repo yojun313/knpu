@@ -184,9 +184,39 @@
     el.className = 'modal-status' + (cls ? ' ' + cls : '');
   }
 
+  function isDarkMode() { return document.documentElement.getAttribute('data-ui-theme-mode') === 'dark'; }
   function railDotColor(i) {
-    var pal = document.body.classList.contains('dark-theme') ? PALETTE_DARK : PALETTE_LIGHT;
+    var pal = isDarkMode() ? PALETTE_DARK : PALETTE_LIGHT;
     return pal[((i % pal.length) + pal.length) % pal.length];
+  }
+
+  function applyGraphDarkPreset(dark) {
+    cfg.theme = dark ? 'dark' : 'light';
+    if (dark) {
+      cfg.bgCenter = '#2b2b2b'; cfg.bgEdge = '#212121';
+      cfg.fontColor = '#eaeaea'; cfg.borderColor = '#2b2b2b'; cfg.edgeColor = '#5a5a5a';
+      if (cfg.colorUniform === '#2c3e50') cfg.colorUniform = '#34495e';
+    } else {
+      cfg.bgCenter = '#ffffff'; cfg.bgEdge = '#ecf0f1';
+      cfg.fontColor = '#2c3e50'; cfg.borderColor = '#ffffff'; cfg.edgeColor = '#bdc3c7';
+      if (cfg.colorUniform === '#34495e') cfg.colorUniform = '#2c3e50';
+    }
+  }
+  function syncGraphThemeFromGlobal(rerender) {
+    if (!cfg) return;
+    var dark = isDarkMode();
+    if ((cfg.theme === 'dark') === dark) return;
+    applyGraphDarkPreset(dark);
+    if (!rerender) return;
+    try {
+      syncControlsFromCfg();
+      applyBackground();
+      applyOptions();
+      buildLegend();
+      renderRail();
+      renderGraph();
+      if (net) requestAnimationFrame(function () { net.redraw(); });
+    } catch (err) { console.error('테마 전환 실패:', err); }
   }
 
   var ADMIN_ALL_KEY = 'nv_admin_all_projects';
@@ -1813,28 +1843,10 @@
     document.getElementById('btnZoomOut').addEventListener('click', function () { net.moveTo({ scale: clampScale(net.getScale() / 1.2) }); });
     document.getElementById('btnZoomReset').addEventListener('click', function () { net.fit({ animation: true }); });
 
-    document.getElementById('btnTheme').addEventListener('click', function () {
-      try {
-        cfg.theme = cfg.theme === 'light' ? 'dark' : 'light';
-        document.body.classList.toggle('dark-theme', cfg.theme === 'dark');
-        if (cfg.theme === 'dark') {
-          cfg.bgCenter = '#2b2b2b'; cfg.bgEdge = '#212121';
-          cfg.fontColor = '#eaeaea'; cfg.borderColor = '#2b2b2b'; cfg.edgeColor = '#5a5a5a';
-          if (cfg.colorUniform === '#2c3e50') cfg.colorUniform = '#34495e';
-        } else {
-          cfg.bgCenter = '#ffffff'; cfg.bgEdge = '#ecf0f1';
-          cfg.fontColor = '#2c3e50'; cfg.borderColor = '#ffffff'; cfg.edgeColor = '#bdc3c7';
-          if (cfg.colorUniform === '#34495e') cfg.colorUniform = '#2c3e50';
-        }
-        syncControlsFromCfg();
-        applyBackground();
-        applyOptions();
-        buildLegend();
-        renderRail();
-        renderGraph();
-        if (net) requestAnimationFrame(function () { net.redraw(); });
-      } catch (err) { console.error('테마 전환 실패:', err); }
-    });
+    // 화면 다크모드는 더 이상 이 앱만의 버튼이 아니라 상단 그라디언트 바의 테마
+    // 설정(모든 KNPU 사이트 공용)에서 켜고 끈다. shared_ui/theme.js가 이 이벤트를
+    // 쏘면 그래프 배경/글자/테두리 색까지 같이 맞춰 다시 그려준다.
+    window.addEventListener('knpu-ui-theme-mode-change', function () { syncGraphThemeFromGlobal(true); });
 
     var legendEl = document.getElementById('legend');
     legendEl.addEventListener('change', function (e) {
@@ -1880,7 +1892,7 @@
       selectedWords = {}; rawNodes.forEach(function (n) { selectedWords[n.id] = true; });
       document.getElementById('chkWordMode').checked = false;
       document.getElementById('wlSearch').value = '';
-      document.body.classList.remove('dark-theme');
+      applyGraphDarkPreset(isDarkMode());
       syncControlsFromCfg();
       buildWordList();
       buildLegend();
@@ -1936,7 +1948,10 @@
     });
 
     applySavedSettings();
-    document.body.classList.toggle('dark-theme', cfg.theme === 'dark');
+    // 페이지를 열 때마다 그래프 배색을 전역 다크모드 상태에 맞춰 강제로 맞춘다(저장된
+    // cfg.theme을 그대로 믿지 않는다) — 안 그러면 예전에 저장해둔 프로젝트별 테마와
+    // 지금의 전역 다크모드가 어긋나서 흰 배경에 흰 글씨 같은 가독성 문제가 생길 수 있다.
+    applyGraphDarkPreset(isDarkMode());
 
     var maxFreq = metricRangeOf('freq').max;
     document.getElementById('fslider').max = Math.max(1, Math.ceil(maxFreq));

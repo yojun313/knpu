@@ -12,7 +12,60 @@
             var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
             document.documentElement.setAttribute('data-theme', theme);
         })();
+        
+        const THEME_COOKIE_KEY = 'ui_theme_style';
+
+        function themeCookieDomainAttr() {
+            return /(^|\.)knpu\.re\.kr$/.test(location.hostname) ? '; domain=.knpu.re.kr' : '';
+        }
+
+        function currentUiTheme() {
+            try {
+                const m = document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);
+                return m ? decodeURIComponent(m[1]) : 'default';
+            } catch (e) { return 'default'; }
+        }
+
+        function applyUiTheme(id) {
+            if (id === 'default') document.documentElement.removeAttribute('data-ui-theme');
+            else document.documentElement.setAttribute('data-ui-theme', id);
+            try {
+                const maxAge = 60 * 60 * 24 * 365;
+                document.cookie = THEME_COOKIE_KEY + '=' + encodeURIComponent(id) +
+                    '; path=/; max-age=' + maxAge + '; samesite=lax' +
+                    themeCookieDomainAttr() + (location.protocol === 'https:' ? '; secure' : '');
+            } catch (e) { /* noop */ }
+        }
+
+        const THEME_MODE_COOKIE_KEY = 'ui_theme_mode';
+
+        function currentUiThemeMode() {
+            try {
+                const m = document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);
+                return m ? decodeURIComponent(m[1]) : 'light';
+            } catch (e) { return 'light'; }
+        }
+
+        function applyUiThemeMode(mode) {
+            if (mode === 'dark') document.documentElement.setAttribute('data-ui-theme-mode', 'dark');
+            else document.documentElement.removeAttribute('data-ui-theme-mode');
+            try {
+                const maxAge = 60 * 60 * 24 * 365;
+                document.cookie = THEME_MODE_COOKIE_KEY + '=' + encodeURIComponent(mode) +
+                    '; path=/; max-age=' + maxAge + '; samesite=lax' +
+                    themeCookieDomainAttr() + (location.protocol === 'https:' ? '; secure' : '');
+            } catch (e) { /* noop */ }
+        }
+
+        (function(){
+            try{
+                var v=currentUiTheme();
+                if(v&&v!=='default')document.documentElement.setAttribute('data-ui-theme',v);
+                if(currentUiThemeMode()==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');
+            }catch(e){}
+        })();
     </script>
+    <link rel="stylesheet" href="/shared-ui/theme.css">
     <style>
         /* 데스크톱 MANAGER 앱(kemkim/network 뷰어와 같은 뿌리) 배색 그대로 가져옴 */
         :root {
@@ -99,6 +152,137 @@
         .icon-sun { display: none; }
         :root[data-theme="light"] .icon-moon { display: none; }
         :root[data-theme="light"] .icon-sun { display: block; }
+
+        /* ── 글래스모피즘/뉴모피즘/그라디언트 메시 스킨 ─────────────────────────
+           이 페이지는 --panel/--panel2/--line/--ink/--muted/--accent/--brand 이
+           7개 변수(위 :root, :root[data-theme="light"])와, 그 변수를 참조하는
+           Tailwind zinc 계열 부분일치 선택자들로 전체 배색을 관리한다. 테마별로
+           같은 변수만 다시 정의하면 사이드바/카드/텍스트가 전부 자동으로
+           갈아입으므로, 셀렉터를 새로 나열할 필요 없이 변수만 덮어쓴다.
+           body 배경만은 그라디언트/블롭처럼 --panel과 다른 값이 필요해 따로 지정한다.
+           각 테마는 data-ui-theme-mode="dark"로 다크 배리언트를 켤 수 있다. 글래스
+           라이트 모드는 배경이 밝으므로 --ink를 어둡게 둬야 한다(전에는 흰 글자를 써서
+           흰 배경 위에 아무것도 안 보이는 버그가 있었다). */
+        :root[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) {
+            --accent: #7c6fd6; --brand: #3a4256;
+            --panel: rgba(255,255,255,0.62); --panel2: rgba(255,255,255,0.78);
+            --line: rgba(255,255,255,0.7); --muted: #626c7b; --ink: #262d38;
+        }
+        :root[data-ui-theme="glass"][data-ui-theme-mode="dark"] {
+            --accent: #7c9ce8; --brand: #cdd4e4;
+            --panel: rgba(255,255,255,0.07); --panel2: rgba(255,255,255,0.12);
+            --line: rgba(255,255,255,0.14); --muted: #99a1b2; --ink: #dde1ea;
+        }
+        :root[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) body {
+            background:
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3), transparent 45%),
+                linear-gradient(135deg, #cfd9ec 0%, #d8d2e8 45%, #e6d9e2 100%) !important;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="glass"][data-ui-theme-mode="dark"] body {
+            background:
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.05), transparent 45%),
+                linear-gradient(135deg, #1b2130 0%, #201e2c 50%, #241f27 100%) !important;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="glass"] .sidebar,
+        :root[data-ui-theme="glass"] .card,
+        :root[data-ui-theme="glass"] [class*="bg-zinc-900"],
+        :root[data-ui-theme="glass"] [class*="bg-zinc-950"],
+        :root[data-ui-theme="glass"] [class*="bg-\[\#09090b\]"],
+        :root[data-ui-theme="glass"] [class*="bg-zinc-800"],
+        :root[data-ui-theme="glass"] [class*="bg-black"] {
+            background: var(--panel) !important;
+            backdrop-filter: blur(16px) saturate(130%);
+            -webkit-backdrop-filter: blur(16px) saturate(130%);
+            border-color: var(--line) !important;
+        }
+
+        :root[data-ui-theme="neu"]:not([data-ui-theme-mode="dark"]) {
+            --accent: #5b7fdb; --brand: #4a5568;
+            --panel: #e7e9ee; --panel2: #dfe2e8;
+            --line: transparent; --muted: #6b7280; --ink: #2d3748;
+            --neu-dark: #d1d4da; --neu-light: #ffffff;
+        }
+        :root[data-ui-theme="neu"][data-ui-theme-mode="dark"] {
+            --accent: #7c96d9; --brand: #d3d6de;
+            --panel: #2b2e37; --panel2: #313540;
+            --line: transparent; --muted: #8b93a3; --ink: #d7dae2;
+            --neu-dark: #212329; --neu-light: #353a46;
+        }
+        :root[data-ui-theme="neu"] body { background: var(--panel) !important; }
+        :root[data-ui-theme="neu"] .sidebar,
+        :root[data-ui-theme="neu"] .card,
+        :root[data-ui-theme="neu"] [class*="bg-zinc-900"],
+        :root[data-ui-theme="neu"] [class*="bg-zinc-950"],
+        :root[data-ui-theme="neu"] [class*="bg-\[\#09090b\]"],
+        :root[data-ui-theme="neu"] [class*="bg-zinc-800"],
+        :root[data-ui-theme="neu"] [class*="bg-black"] {
+            background: var(--panel) !important;
+            border: none !important;
+            box-shadow: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
+        }
+        :root[data-ui-theme="neu"] .nav-item.active {
+            background-color: transparent !important;
+            color: var(--accent) !important;
+            box-shadow: inset 3px 3px 7px var(--neu-dark), inset -3px -3px 7px var(--neu-light);
+        }
+
+        :root[data-ui-theme="mesh"]:not([data-ui-theme-mode="dark"]) {
+            --accent: #4f9dc9; --brand: #3a4256;
+            --panel: rgba(255,255,255,0.5); --panel2: rgba(255,255,255,0.68);
+            --line: rgba(255,255,255,0.65); --muted: #626c7b; --ink: #262d38;
+            --mesh-base: #eef0f4;
+            --mesh-1: rgba(109,92,232,0.14); --mesh-2: rgba(34,211,238,0.12);
+            --mesh-3: rgba(240,163,207,0.12); --mesh-4: rgba(246,205,158,0.1);
+        }
+        :root[data-ui-theme="mesh"][data-ui-theme-mode="dark"] {
+            --accent: #22d3ee; --brand: #dde0ea;
+            --panel: rgba(255,255,255,0.05); --panel2: rgba(255,255,255,0.09);
+            --line: rgba(255,255,255,0.13); --muted: #96a0b3; --ink: #e0e3ea;
+            --mesh-base: #14151f;
+            --mesh-1: rgba(109,92,232,0.28); --mesh-2: rgba(34,211,238,0.22);
+            --mesh-3: rgba(240,163,207,0.2); --mesh-4: rgba(246,205,158,0.16);
+        }
+        :root[data-ui-theme="mesh"] body { background: var(--mesh-base) !important; }
+        :root[data-ui-theme="mesh"] body::before {
+            content: "";
+            position: fixed; inset: 0; z-index: -1;
+            background:
+                radial-gradient(circle at 15% 20%, var(--mesh-1), transparent 45%),
+                radial-gradient(circle at 85% 15%, var(--mesh-2), transparent 45%),
+                radial-gradient(circle at 25% 85%, var(--mesh-3), transparent 45%),
+                radial-gradient(circle at 80% 80%, var(--mesh-4), transparent 45%),
+                var(--mesh-base);
+            animation: themeMeshHue 30s linear infinite;
+        }
+        @keyframes themeMeshHue { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+        :root[data-ui-theme="mesh"] .sidebar,
+        :root[data-ui-theme="mesh"] .card,
+        :root[data-ui-theme="mesh"] [class*="bg-zinc-900"],
+        :root[data-ui-theme="mesh"] [class*="bg-zinc-950"],
+        :root[data-ui-theme="mesh"] [class*="bg-\[\#09090b\]"],
+        :root[data-ui-theme="mesh"] [class*="bg-zinc-800"],
+        :root[data-ui-theme="mesh"] [class*="bg-black"] {
+            background: var(--panel) !important;
+            backdrop-filter: blur(18px) saturate(120%);
+            -webkit-backdrop-filter: blur(18px) saturate(120%);
+            border-color: var(--line) !important;
+        }
+
+        /* ── 다크 모드 토글 스위치 (settings.html에서 사용) ─────────────────── */
+        .theme-mode-switch {
+            position: relative; width: 40px; height: 22px; border-radius: 999px;
+            background: rgba(127,127,127,0.32); border: none; cursor: pointer; flex-shrink: 0;
+            transition: background 150ms;
+        }
+        .theme-mode-switch::before {
+            content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+            border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+            transition: transform 150ms;
+        }
+        .theme-mode-switch.on { background: var(--accent); }
+        .theme-mode-switch.on::before { transform: translateX(18px); }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden bg-[#09090b]">

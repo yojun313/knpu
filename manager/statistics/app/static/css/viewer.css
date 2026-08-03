@@ -15,7 +15,11 @@
   /* 차트 계열색 — Okabe-Ito 색약 안전 팔레트에서 발췌 (blue / orange / green), 브랜드 톤에 맞춰 채도 조정 */
   --series-1:#2c7fb8; --series-2:#e08a2e; --series-3:#3d9a6b;
 }
-body.dark-theme{
+/* 다크 모드는 이 앱만의 버튼이 아니라 상단 그라디언트 바의 테마 설정(모든 KNPU 사이트
+   공용, shared_ui/theme.js)에서 켜고 끈다. 글래스/뉴모피즘/그라디언트 메시가 선택되어
+   있으면(:has data-ui-theme) 그쪽 다크 배리언트가 이미 담당하므로, 여기서는 "기본" 테마일
+   때만(=data-ui-theme 속성이 없을 때만) 이 다크 배색을 적용해 두 시스템이 겹치지 않게 한다. */
+html[data-ui-theme-mode="dark"]:not([data-ui-theme]) body{
   /* 다크 모드 — 같은 앱의 dark_style_sheet과 맞춘 배색 */
   --brand:#eaeaea; --brand-dark:#c9c9c9; --brand-light:#eaeaea;
   --accent:#34495e; --accent-soft:#3a539b;

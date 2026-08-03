@@ -5,6 +5,8 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, JSONResponse
 from app.auth.jwt import verify_token
+from app.db import user_db
+from shared.session_check import revalidate_session
 import logging
 
 load_dotenv()
@@ -55,12 +57,13 @@ class AuthMiddleware:
 
         if token:
             payload = verify_token(token)
-            if payload:
+            live = revalidate_session(payload, user_db)
+            if live:
                 scope["state"] = {
                     "user": {
-                        "uid": payload["sub"],
-                        "name": payload["name"],
-                        "role": payload.get("role"),
+                        "uid": live["sub"],
+                        "name": live["name"],
+                        "role": live.get("role"),
                     }
                 }
                 await self.app(scope, receive, send)

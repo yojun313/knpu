@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRAWLER</title>
+    <script>(function(){try{var m=document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);var t=m?decodeURIComponent(m[1]):null;if(t&&t!=='default')document.documentElement.setAttribute('data-ui-theme',t);var mm=document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);if(mm&&decodeURIComponent(mm[1])==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');}catch(e){}})();</script>
     <link rel="icon" type="image/x-icon" href="static/fpei_logo_favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -192,7 +193,7 @@
         .panel-count {
             font-size: 11px;
             color: var(--blue);
-            background: #e8eef8;
+            background: var(--bg);
             padding: 2px 9px;
             border-radius: 999px;
             font-weight: 700;
@@ -223,7 +224,7 @@
         .r-val {
             font-size: 14px;
             font-weight: 800;
-            color: var(--navy);
+            color: var(--ink);
         }
 
         .form-row {
@@ -278,7 +279,7 @@
             border-radius: 8px;
             padding: 9px 10px;
             font-size: 13px;
-            background: #fff;
+            background: var(--surface);
             color: var(--ink);
             font-family: inherit;
             font-weight: 700;
@@ -331,7 +332,7 @@
             padding: 0 10px;
             border: 1px solid var(--line);
             border-radius: 7px;
-            background: #f8fafd;
+            background: var(--surface);
             color: var(--deep);
             font-size: 13px;
             font-weight: 800;
@@ -340,7 +341,7 @@
             transition: background 150ms, border-color 150ms;
             white-space: nowrap;
         }
-        .op-btn:hover { background: #e8eef8; border-color: var(--blue); }
+        .op-btn:hover { background: var(--bg); border-color: var(--blue); }
 
         /* ── Search op rows ──────────────────────────── */
         #search-ops {
@@ -364,7 +365,7 @@
             display: flex;
             align-items: center;
             border-radius: 6px;
-            background: #e8eef8;
+            background: var(--bg);
             color: var(--deep);
             white-space: nowrap;
             flex-shrink: 0;
@@ -381,7 +382,7 @@
             font-family: inherit;
             font-weight: 700;
             color: var(--ink);
-            background: #fff;
+            background: var(--surface);
             transition: border-color 150ms, box-shadow 150ms;
         }
         .search-op-input:focus {
@@ -439,7 +440,7 @@
         .job-keyword {
             font-size: 16px;
             font-weight: 800;
-            color: var(--navy);
+            color: var(--ink);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -456,7 +457,7 @@
         .job-meta span { white-space: nowrap; }
 
         .progress-wrap { display: flex; align-items: center; gap: 8px; }
-        .progress-bar  { width: 150px; height: 6px; background: #e2ecf5; border-radius: 999px; overflow: hidden; flex-shrink: 0; }
+        .progress-bar  { width: 150px; height: 6px; background: var(--bg); border-radius: 999px; overflow: hidden; flex-shrink: 0; }
         .progress-bar .fill {
             height: 100%;
             background: linear-gradient(90deg, var(--blue), var(--sky));
@@ -539,7 +540,7 @@
             padding: 6px 12px;
             border: 1px solid var(--line);
             border-radius: 6px;
-            background: #fff;
+            background: var(--surface);
             color: var(--muted);
             font-size: 12px;
             font-weight: 700;
@@ -555,7 +556,7 @@
             overflow-y: auto;
             border: 1px solid var(--line);
             border-radius: 6px;
-            background: #fbfcfe;
+            background: var(--surface);
         }
         .job-logs.open { display: block; }
 
@@ -583,7 +584,7 @@
             font-size: 10px;
             padding: 1px 6px;
             border-radius: 4px;
-            background: #edf1f7;
+            background: var(--bg);
             color: var(--muted);
         }
         .job-log-error .job-log-type { background: var(--danger-soft); color: var(--danger); }
@@ -614,11 +615,11 @@
         }
         .btn-ghost {
             border: 1px solid var(--line);
-            background: #fff;
+            background: var(--surface);
             color: var(--deep);
         }
         .btn-stop   { background: var(--danger-soft); color: var(--danger); }
-        .btn-delete { background: #edf1f7; color: var(--muted); }
+        .btn-delete { background: var(--bg); color: var(--muted); }
         .btn-resume { background: var(--ok-soft); color: var(--ok); }
         .btn-download { background: var(--queued-soft); color: var(--deep); }
         .btn-recrawl { background: var(--warning-soft); color: var(--warning); }
@@ -648,7 +649,7 @@
         .filter-bar select, .filter-bar input {
             border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px;
             font-family: inherit; font-weight: 700; font-size: 12px; color: var(--ink);
-            min-width: 0;
+            background: var(--surface); min-width: 0;
         }
         .filter-bar input[type="text"] { flex: 1; min-width: 160px; }
         .mine-toggle {
@@ -665,18 +666,18 @@
             white-space: nowrap;
         }
         tbody td { padding: 9px 10px; border-bottom: 1px solid #eef2f8; vertical-align: middle; }
-        tbody tr:hover { background: #f8fafd; cursor: pointer; }
+        tbody tr:hover { background: var(--bg); cursor: pointer; }
         tbody tr:last-child td { border-bottom: none; }
         .actions-cell { display: flex; gap: 6px; flex-wrap: nowrap; }
         .actions-cell .btn { padding: 6px 10px; font-size: 11.5px; border-radius: 6px; flex-shrink: 0; }
 
-        .keyword-cell { font-weight: 800; color: var(--navy); word-break: break-word; }
+        .keyword-cell { font-weight: 800; color: var(--ink); word-break: break-word; }
         .muted-cell { color: var(--muted); font-size: 11px; }
         .requester-cell { white-space: nowrap; }
 
         .pager { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; flex-wrap: wrap; }
         .pager button {
-            border: 1px solid var(--line); background: #fff; color: var(--deep);
+            border: 1px solid var(--line); background: var(--surface); color: var(--deep);
             padding: 5px 12px; border-radius: 6px; font-family: inherit; font-weight: 700;
             font-size: 12px; cursor: pointer;
         }
@@ -697,7 +698,7 @@
             padding: 16px 20px; border-bottom: 1px solid var(--line);
             display: flex; align-items: center; justify-content: space-between; gap: 10px;
         }
-        .modal-head h3 { font-size: 15px; color: var(--navy); word-break: break-word; }
+        .modal-head h3 { font-size: 15px; color: var(--ink); word-break: break-word; }
         .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; flex-shrink: 0; }
         .modal-body { padding: 18px 20px; }
 
@@ -708,7 +709,7 @@
         }
         .log-row:last-child { border-bottom: none; }
         .log-time { color: var(--muted); flex-shrink: 0; white-space: nowrap; }
-        .log-type { flex-shrink: 0; font-weight: 700; text-transform: uppercase; font-size: 10px; padding: 1px 6px; border-radius: 4px; background: #edf1f7; color: var(--muted); }
+        .log-type { flex-shrink: 0; font-weight: 700; text-transform: uppercase; font-size: 10px; padding: 1px 6px; border-radius: 4px; background: var(--bg); color: var(--muted); }
         .log-error .log-type { background: var(--danger-soft); color: var(--danger); }
         .log-error .log-msg { color: var(--danger); }
         .log-msg { word-break: break-word; min-width: 0; flex: 1; }
@@ -717,9 +718,9 @@
         .form-field label { display: block; font-size: 12px; font-weight: 700; color: var(--deep); margin-bottom: 5px; }
         .form-field input[type="text"], .form-field select {
             width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
-            font-family: inherit; font-size: 13px; color: var(--ink);
+            font-family: inherit; font-size: 13px; color: var(--ink); background: var(--surface);
         }
-        .form-field input:disabled { background: #f4f7fb; color: var(--muted); }
+        .form-field input:disabled { background: var(--bg); color: var(--muted); }
 
         .recrawl-warn {
             background: var(--warning-soft); color: var(--warning); border-radius: 8px;
@@ -788,6 +789,195 @@
             .header-right { gap: 8px; }
             .panel-title { font-size: 13px; }
         }
+
+        /* ══════════════════════════════════════════════════════════════════
+           테마 설정 — statistics/kemkim/network와 같은 4가지 테마(기본/글래스모피즘/
+           뉴모피즘/그라디언트 메시)를 크롤러 자체 클래스(.panel/.card/.modal-box)에
+           맞게 이식한 것. 색·질감 값은 세 앱의 공용 shared_ui/theme.css와 동일하게
+           맞춰 다섯 사이트가 같은 팔레트를 쓴다(브랜드 상단 바는 테마와 무관하게 고정).
+           ══════════════════════════════════════════════════════════════════ */
+        .theme-settings-btn {
+            width: 34px; height: 34px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; border: 1px solid rgba(255,255,255,0.22);
+            background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85);
+            cursor: pointer; transition: background 150ms, transform 300ms ease;
+        }
+        .theme-settings-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+        .theme-settings-btn:hover svg { transform: rotate(45deg); }
+        .theme-settings-btn svg { transition: transform 300ms ease; display: block; }
+
+        .theme-modal-overlay {
+            position: fixed; inset: 0; z-index: 300; background: rgba(8,12,20,0.55);
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .theme-modal-overlay:not(.open) { display: none; }
+        .theme-modal {
+            width: min(460px, 100%); background: var(--surface); color: var(--ink);
+            border: 1px solid var(--line); border-radius: 16px;
+            box-shadow: 0 24px 60px rgba(15,23,42,0.35); overflow: hidden;
+        }
+        .theme-modal-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 18px; border-bottom: 1px solid var(--line);
+        }
+        .theme-modal-head h3 { font-size: 15px; margin: 0; }
+        .theme-modal-sub { font-size: 11.5px; color: var(--muted); margin: 2px 0 0; font-weight: 400; }
+        .theme-modal-close {
+            background: transparent; border: none; font-size: 20px; line-height: 1; cursor: pointer;
+            color: var(--muted); width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+        }
+        .theme-modal-close:hover { background: var(--bg); }
+        .theme-modal-body { padding: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .theme-option {
+            display: flex; flex-direction: column; background: transparent; border: 2px solid transparent;
+            border-radius: 12px; padding: 6px; cursor: pointer; font-family: inherit; color: inherit;
+            transition: border-color 150ms, background 150ms;
+        }
+        .theme-option:hover { background: var(--bg); }
+        .theme-option.selected { border-color: var(--blue); }
+        .theme-option-label {
+            font-size: 12px; font-weight: 700; text-align: center; padding: 2px 0 0;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .theme-option-check {
+            display: none; width: 14px; height: 14px; border-radius: 50%; background: var(--blue);
+            color: #fff; font-size: 9px; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .theme-option.selected .theme-option-check { display: inline-flex; }
+        .theme-swatch {
+            height: 62px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            gap: 6px; overflow: hidden; position: relative; border: 1px solid rgba(0,0,0,0.08);
+        }
+        .theme-swatch > span { width: 15px; height: 15px; border-radius: 5px; flex-shrink: 0; }
+        .theme-swatch-default { background: #eef2f8; }
+        .theme-swatch-default > span { background: #fff; border: 1px solid #c8d6e5; }
+        .theme-swatch-glass { background: linear-gradient(135deg, #cfd9ec 0%, #d8d2e8 45%, #e6d9e2 100%); }
+        .theme-swatch-glass > span { background: rgba(255,255,255,0.6); backdrop-filter: blur(3px); border: 1px solid rgba(255,255,255,0.65); }
+        .theme-swatch-neu { background: #e7e9ee; }
+        .theme-swatch-neu > span { background: #e7e9ee; box-shadow: 3px 3px 6px #d1d4da, -3px -3px 6px #ffffff; }
+        .theme-swatch-mesh {
+            background: radial-gradient(at 30% 30%, hsl(190 70% 55% / .5) 0, transparent 60%),
+                        radial-gradient(at 80% 70%, hsl(310 60% 60% / .45) 0, transparent 60%),
+                        radial-gradient(at 20% 85%, hsl(45 70% 55% / .4) 0, transparent 55%), #14151f;
+        }
+        .theme-swatch-mesh > span { background: rgba(255,255,255,0.14); backdrop-filter: blur(3px); border: 1px solid rgba(255,255,255,0.22); }
+        @media (max-width: 480px) { .theme-modal-body { grid-template-columns: 1fr; } }
+
+        /* ── 다크 모드 토글 스위치 ─────────────────────────── */
+        .theme-mode-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 4px 18px 18px; border-top: 1px solid var(--line); margin-top: 2px;
+        }
+        .theme-mode-row span { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+        .theme-mode-switch {
+            position: relative; width: 40px; height: 22px; border-radius: 999px;
+            background: rgba(127,127,127,0.32); border: none; cursor: pointer; flex-shrink: 0;
+            transition: background 150ms;
+        }
+        .theme-mode-switch::before {
+            content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+            border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+            transition: transform 150ms;
+        }
+        .theme-mode-switch.on { background: var(--blue); }
+        .theme-mode-switch.on::before { transform: translateX(18px); }
+
+        /* ── 글래스모피즘 (라이트/다크) ────────────────────── */
+        :root[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) {
+            --bg: rgba(255,255,255,0.68); --surface: rgba(255,255,255,0.62); --ink: #2a3240; --muted: #626c7b;
+            --line: rgba(255,255,255,0.65); --blue: #7c6fd6; --deep: #4a5670;
+        }
+        :root[data-ui-theme="glass"][data-ui-theme-mode="dark"] {
+            --bg: rgba(255,255,255,0.1); --surface: rgba(255,255,255,0.07); --ink: #dde1ea; --muted: #99a1b2;
+            --line: rgba(255,255,255,0.13); --blue: #7c9ce8; --deep: #cdd4e4;
+        }
+        :root[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) body {
+            background: radial-gradient(circle at 12% 8%, rgba(255,255,255,.35), transparent 45%),
+                        linear-gradient(135deg, #cfd9ec 0%, #d8d2e8 45%, #e6d9e2 100%);
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="glass"][data-ui-theme-mode="dark"] body {
+            background: radial-gradient(circle at 12% 8%, rgba(255,255,255,.05), transparent 45%),
+                        linear-gradient(135deg, #1b2130 0%, #201e2c 50%, #241f27 100%);
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="glass"] .panel,
+        :root[data-ui-theme="glass"] .card,
+        :root[data-ui-theme="glass"] .modal-box {
+            background: var(--surface) !important; backdrop-filter: blur(16px) saturate(130%);
+            -webkit-backdrop-filter: blur(16px) saturate(130%); border-color: var(--line) !important;
+            box-shadow: 0 8px 28px rgba(31,38,135,0.1) !important;
+        }
+        :root[data-ui-theme="glass"] .panel-head { background: var(--bg) !important; }
+
+        /* ── 뉴모피즘 (라이트/다크) ────────────────────────── */
+        :root[data-ui-theme="neu"]:not([data-ui-theme-mode="dark"]) {
+            --bg: #dfe2e8; --surface: #e7e9ee; --ink: #2d3748; --muted: #7a8496; --line: transparent;
+            --blue: #5b7fdb; --deep: #4a5568; --neu-dark: #d1d4da; --neu-light: #ffffff;
+        }
+        :root[data-ui-theme="neu"][data-ui-theme-mode="dark"] {
+            --bg: #313540; --surface: #2b2e37; --ink: #d7dae2; --muted: #8b93a3; --line: transparent;
+            --blue: #7c96d9; --deep: #d3d6de; --neu-dark: #212329; --neu-light: #353a46;
+        }
+        :root[data-ui-theme="neu"] body { background: var(--surface); }
+        :root[data-ui-theme="neu"] .panel,
+        :root[data-ui-theme="neu"] .card,
+        :root[data-ui-theme="neu"] .modal-box {
+            background: var(--surface) !important; border: none !important;
+            box-shadow: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light) !important;
+        }
+        :root[data-ui-theme="neu"] .panel-head { background: var(--surface) !important; }
+        :root[data-ui-theme="neu"] .btn {
+            box-shadow: 4px 4px 9px var(--neu-dark), -4px -4px 9px var(--neu-light);
+        }
+        :root[data-ui-theme="neu"] .btn:active { box-shadow: inset 3px 3px 7px var(--neu-dark), inset -3px -3px 7px var(--neu-light); }
+
+        /* ── 그라디언트 메시 (라이트/다크) ─────────────────── */
+        :root[data-ui-theme="mesh"]:not([data-ui-theme-mode="dark"]) {
+            --bg: rgba(255,255,255,0.68); --surface: rgba(255,255,255,0.5); --ink: #2a3240; --muted: #626c7b;
+            --line: rgba(255,255,255,0.65); --blue: #4f9dc9; --deep: #3f4658;
+            --mesh-base: #eef0f4;
+            --mesh-1: hsl(200 60% 65% / .18); --mesh-2: hsl(300 45% 68% / .15);
+            --mesh-3: hsl(40 65% 68% / .14); --mesh-4: hsl(255 45% 68% / .14);
+        }
+        :root[data-ui-theme="mesh"][data-ui-theme-mode="dark"] {
+            --bg: rgba(255,255,255,0.1); --surface: rgba(255,255,255,0.05); --ink: #e0e3ea; --muted: #96a0b3;
+            --line: rgba(255,255,255,0.13); --blue: #22d3ee; --deep: #dde0ea;
+            --mesh-base: #14151f;
+            --mesh-1: hsl(190 70% 55% / .28); --mesh-2: hsl(310 60% 60% / .24);
+            --mesh-3: hsl(45 70% 55% / .2); --mesh-4: hsl(260 60% 62% / .24);
+        }
+        :root[data-ui-theme="mesh"] body { background: var(--mesh-base); position: relative; }
+        :root[data-ui-theme="mesh"] body::before {
+            content: ""; position: fixed; inset: 0; z-index: 0;
+            background: radial-gradient(at 18% 20%, var(--mesh-1) 0, transparent 52%),
+                        radial-gradient(at 82% 15%, var(--mesh-2) 0, transparent 52%),
+                        radial-gradient(at 15% 82%, var(--mesh-3) 0, transparent 52%),
+                        radial-gradient(at 85% 85%, var(--mesh-4) 0, transparent 52%), var(--mesh-base);
+            animation: themeMeshHue 30s linear infinite;
+        }
+        @keyframes themeMeshHue { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+        :root[data-ui-theme="mesh"] .header,
+        :root[data-ui-theme="mesh"] .container { position: relative; z-index: 1; }
+        :root[data-ui-theme="mesh"] .panel,
+        :root[data-ui-theme="mesh"] .card,
+        :root[data-ui-theme="mesh"] .modal-box {
+            background: var(--surface) !important; backdrop-filter: blur(18px) saturate(120%);
+            -webkit-backdrop-filter: blur(18px) saturate(120%); border-color: var(--line) !important;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.18) !important; color: var(--ink);
+        }
+        :root[data-ui-theme="mesh"] .panel-head { background: var(--bg) !important; }
+        :root[data-ui-theme="mesh"] .empty,
+        :root[data-ui-theme="mesh"] .requester-bar {
+            background: var(--surface) !important;
+            border-color: var(--line) !important;
+            color: var(--ink);
+        }
+        :root[data-ui-theme="neu"] .empty,
+        :root[data-ui-theme="neu"] .requester-bar { background: var(--surface) !important; border-color: transparent !important; }
+        :root[data-ui-theme="glass"] .empty,
+        :root[data-ui-theme="glass"] .requester-bar { background: var(--surface) !important; border-color: var(--line) !important; }
     </style>
 </head>
 <body data-is-admin="{{ 'true' if is_admin else 'false' }}" data-my-uid="{{ my_uid or '' }}">
@@ -803,6 +993,43 @@
         <a href="https://statistics.knpu.re.kr" class="top-nav-link">STATISTICS</a>
     </nav>
     <div class="header-right">
+        <button id="themeSettingsBtn" class="theme-settings-btn" type="button" title="테마 설정" aria-label="테마 설정" onclick="openThemeModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+    </div>
+</div>
+
+<div class="theme-modal-overlay" id="themeModalOverlay" onclick="if(event.target===this) closeThemeModal()">
+    <div class="theme-modal" role="dialog" aria-modal="true" aria-label="테마 설정">
+        <div class="theme-modal-head">
+            <div>
+                <h3>테마 설정</h3>
+                <p class="theme-modal-sub">원하는 테마를 골라보세요. 모든 KNPU 사이트에 동일하게 적용됩니다.</p>
+            </div>
+            <button type="button" class="theme-modal-close" onclick="closeThemeModal()" aria-label="닫기">&times;</button>
+        </div>
+        <div class="theme-modal-body">
+            <button type="button" class="theme-option" data-theme="default" onclick="selectTheme('default')">
+                <span class="theme-swatch theme-swatch-default"><span></span><span></span><span></span></span>
+                <span class="theme-option-label"><span class="theme-option-check">✓</span>기본</span>
+            </button>
+            <button type="button" class="theme-option" data-theme="glass" onclick="selectTheme('glass')">
+                <span class="theme-swatch theme-swatch-glass"><span></span><span></span><span></span></span>
+                <span class="theme-option-label"><span class="theme-option-check">✓</span>글래스모피즘</span>
+            </button>
+            <button type="button" class="theme-option" data-theme="neu" onclick="selectTheme('neu')">
+                <span class="theme-swatch theme-swatch-neu"><span></span><span></span><span></span></span>
+                <span class="theme-option-label"><span class="theme-option-check">✓</span>뉴모피즘</span>
+            </button>
+            <button type="button" class="theme-option" data-theme="mesh" onclick="selectTheme('mesh')">
+                <span class="theme-swatch theme-swatch-mesh"><span></span><span></span><span></span></span>
+                <span class="theme-option-label"><span class="theme-option-check">✓</span>그라디언트 메시</span>
+            </button>
+        </div>
+        <div class="theme-mode-row">
+            <span>다크 모드</span>
+            <button type="button" class="theme-mode-switch" id="themeModeSwitch" onclick="toggleThemeMode()" aria-label="다크 모드 전환"></button>
+        </div>
     </div>
 </div>
 
@@ -1085,7 +1312,7 @@
         <div class="modal-body" style="padding:0;">
             <iframe id="progress-iframe" style="width:100%;height:360px;border:none;display:block;"></iframe>
             <div style="padding:14px 20px;">
-                <div style="background:#edf1f7;border-radius:8px;height:8px;overflow:hidden;">
+                <div style="background:var(--bg);border-radius:8px;height:8px;overflow:hidden;">
                     <div id="dl-progress-bar" style="background:var(--blue);height:100%;width:0%;transition:width 150ms;"></div>
                 </div>
                 <div id="dl-progress-text" style="font-size:11px;color:var(--muted);margin-top:6px;">서버에 요청 중...</div>
@@ -1240,6 +1467,79 @@
         document.getElementById('f-speed').value    = '3';
         document.getElementById('search-ops').innerHTML = '';
         fillToday();
+    }
+
+    // ── 테마 설정 (기본/글래스모피즘/뉴모피즘/그라디언트 메시) ──────────
+    // statistics/kemkim/network와 같은 domain=.knpu.re.kr 쿠키를 써서, 로그인 세션
+    // 쿠키처럼 모든 KNPU 서브도메인이 같은 값을 공유한다(localStorage는 서브도메인마다
+    // 격리되어 사이트 간 공유가 안 됨). <head>의 인라인 스니펫이 첫 렌더 전에 이미 적용해둔다.
+    const THEME_COOKIE_KEY = 'ui_theme_style';
+
+    function themeCookieDomainAttr() {
+        return /(^|\.)knpu\.re\.kr$/.test(location.hostname) ? '; domain=.knpu.re.kr' : '';
+    }
+
+    function currentUiTheme() {
+        try {
+            const m = document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);
+            return m ? decodeURIComponent(m[1]) : 'default';
+        } catch (e) { return 'default'; }
+    }
+
+    function applyUiTheme(id) {
+        if (id === 'default') document.documentElement.removeAttribute('data-ui-theme');
+        else document.documentElement.setAttribute('data-ui-theme', id);
+        try {
+            const maxAge = 60 * 60 * 24 * 365;
+            document.cookie = THEME_COOKIE_KEY + '=' + encodeURIComponent(id) +
+                '; path=/; max-age=' + maxAge + '; samesite=lax' +
+                themeCookieDomainAttr() + (location.protocol === 'https:' ? '; secure' : '');
+        } catch (e) { /* noop */ }
+    }
+
+    const THEME_MODE_COOKIE_KEY = 'ui_theme_mode';
+
+    function currentUiThemeMode() {
+        try {
+            const m = document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);
+            return m ? decodeURIComponent(m[1]) : 'light';
+        } catch (e) { return 'light'; }
+    }
+
+    function applyUiThemeMode(mode) {
+        if (mode === 'dark') document.documentElement.setAttribute('data-ui-theme-mode', 'dark');
+        else document.documentElement.removeAttribute('data-ui-theme-mode');
+        try {
+            const maxAge = 60 * 60 * 24 * 365;
+            document.cookie = THEME_MODE_COOKIE_KEY + '=' + encodeURIComponent(mode) +
+                '; path=/; max-age=' + maxAge + '; samesite=lax' +
+                themeCookieDomainAttr() + (location.protocol === 'https:' ? '; secure' : '');
+        } catch (e) { /* noop */ }
+    }
+
+    function markSelectedTheme() {
+        const active = currentUiTheme();
+        document.querySelectorAll('.theme-option').forEach(function (btn) {
+            btn.classList.toggle('selected', btn.getAttribute('data-theme') === active);
+        });
+        document.getElementById('themeModeSwitch').classList.toggle('on', currentUiThemeMode() === 'dark');
+    }
+
+    function openThemeModal() {
+        markSelectedTheme();
+        document.getElementById('themeModalOverlay').classList.add('open');
+    }
+    function closeThemeModal() {
+        document.getElementById('themeModalOverlay').classList.remove('open');
+    }
+    function selectTheme(id) {
+        applyUiTheme(id);
+        markSelectedTheme();
+        closeThemeModal();
+    }
+    function toggleThemeMode() {
+        applyUiThemeMode(currentUiThemeMode() === 'dark' ? 'light' : 'dark');
+        markSelectedTheme();
     }
 
     // 상단 네비게이션의 MANAGER 버튼: PC에 데스크톱 MANAGER 앱이 설치되어 있으면

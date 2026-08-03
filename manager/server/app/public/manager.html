@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="assets/imgs/lab_logo_favicon.ico" />
     <title>MANAGER | FPEI</title>
+    <script>(function(){try{var m=document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);var t=m?decodeURIComponent(m[1]):null;if(t&&t!=='default')document.documentElement.setAttribute('data-ui-theme',t);var mm=document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);if(mm&&decodeURIComponent(mm[1])==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');}catch(e){}})();</script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -314,6 +315,196 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* ══════════════════════════════════════════════════════════════════
+           테마 설정 — crawler/statistics/kemkim/network와 같은 4가지 테마를
+           이 페이지 자체 클래스(.download-card-simple/.img-container)에 맞게 이식.
+           상단 브랜드 바는 테마와 무관하게 항상 같은 색으로 고정한다.
+           ══════════════════════════════════════════════════════════════════ */
+        .theme-settings-btn {
+            margin-left: auto;
+            width: 34px; height: 34px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; border: 1px solid rgba(255,255,255,0.22);
+            background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85);
+            cursor: pointer; transition: background 150ms, transform 300ms ease;
+        }
+        .theme-settings-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+        .theme-settings-btn:hover svg { transform: rotate(45deg); }
+        .theme-settings-btn svg { transition: transform 300ms ease; display: block; }
+
+        .theme-modal-overlay {
+            position: fixed; inset: 0; z-index: 300; background: rgba(8,12,20,0.55);
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .theme-modal-overlay:not(.open) { display: none; }
+        .theme-modal {
+            width: min(460px, 100%); background: var(--bg-body); color: var(--text-main);
+            border: 1px solid var(--border); border-radius: 16px;
+            box-shadow: 0 24px 60px rgba(15,23,42,0.35); overflow: hidden;
+        }
+        .theme-modal-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 18px; border-bottom: 1px solid var(--border);
+        }
+        .theme-modal-head h3 { font-size: 15px; margin: 0; font-weight: 800; }
+        .theme-modal-sub { font-size: 11.5px; color: var(--text-muted); margin: 2px 0 0; font-weight: 400; }
+        .theme-modal-close {
+            background: transparent; border: none; font-size: 20px; line-height: 1; cursor: pointer;
+            color: var(--text-muted); width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+        }
+        .theme-modal-close:hover { background: var(--bg-side); }
+        .theme-modal-body { padding: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .theme-option {
+            display: flex; flex-direction: column; background: transparent; border: 2px solid transparent;
+            border-radius: 12px; padding: 6px; cursor: pointer; font-family: inherit; color: inherit;
+            transition: border-color 150ms, background 150ms;
+        }
+        .theme-option:hover { background: var(--bg-side); }
+        .theme-option.selected { border-color: var(--primary); }
+        .theme-option-label {
+            font-size: 12px; font-weight: 700; text-align: center; padding: 2px 0 0;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+        .theme-option-check {
+            display: none; width: 14px; height: 14px; border-radius: 50%; background: var(--primary);
+            color: #fff; font-size: 9px; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .theme-option.selected .theme-option-check { display: inline-flex; }
+        .theme-swatch {
+            height: 62px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            gap: 6px; overflow: hidden; position: relative; border: 1px solid rgba(0,0,0,0.08);
+        }
+        .theme-swatch > span { width: 15px; height: 15px; border-radius: 5px; flex-shrink: 0; }
+        .theme-swatch-default { background: #eef2f8; }
+        .theme-swatch-default > span { background: #fff; border: 1px solid #c8d6e5; }
+        .theme-swatch-glass { background: linear-gradient(135deg, #cfd9ec 0%, #d8d2e8 45%, #e6d9e2 100%); }
+        .theme-swatch-glass > span { background: rgba(255,255,255,0.6); backdrop-filter: blur(3px); border: 1px solid rgba(255,255,255,0.65); }
+        .theme-swatch-neu { background: #e7e9ee; }
+        .theme-swatch-neu > span { background: #e7e9ee; box-shadow: 3px 3px 6px #d1d4da, -3px -3px 6px #ffffff; }
+        .theme-swatch-mesh {
+            background: radial-gradient(at 30% 30%, hsl(190 70% 55% / .5) 0, transparent 60%),
+                        radial-gradient(at 80% 70%, hsl(310 60% 60% / .45) 0, transparent 60%),
+                        radial-gradient(at 20% 85%, hsl(45 70% 55% / .4) 0, transparent 55%), #14151f;
+        }
+        .theme-swatch-mesh > span { background: rgba(255,255,255,0.14); backdrop-filter: blur(3px); border: 1px solid rgba(255,255,255,0.22); }
+        @media (max-width: 480px) { .theme-modal-body { grid-template-columns: 1fr; } }
+
+        /* ── 다크 모드 토글 스위치 ─────────────────────────── */
+        .theme-mode-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 4px 18px 18px; border-top: 1px solid var(--border); margin-top: 2px;
+        }
+        .theme-mode-row span { font-size: 12.5px; font-weight: 600; color: var(--text-main); }
+        .theme-mode-switch {
+            position: relative; width: 40px; height: 22px; border-radius: 999px;
+            background: rgba(127,127,127,0.32); border: none; cursor: pointer; flex-shrink: 0;
+            transition: background 150ms;
+        }
+        .theme-mode-switch::before {
+            content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+            border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+            transition: transform 150ms;
+        }
+        .theme-mode-switch.on { background: var(--primary); }
+        .theme-mode-switch.on::before { transform: translateX(18px); }
+
+        /* ── 글래스모피즘 (라이트/다크) ────────────────────── */
+        :root[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) {
+            --primary: #7c6fd6; --primary-bg: rgba(255,255,255,0.62); --dark: #171d26;
+            --text-main: #2a3240; --text-muted: #626c7b; --bg-body: rgba(255,255,255,0.62);
+            --bg-side: rgba(255,255,255,0.5); --border: rgba(255,255,255,0.65);
+        }
+        :root[data-ui-theme="glass"][data-ui-theme-mode="dark"] {
+            --primary: #7c9ce8; --primary-bg: rgba(255,255,255,0.07); --dark: #f2f4f8;
+            --text-main: #dde1ea; --text-muted: #99a1b2; --bg-body: rgba(255,255,255,0.07);
+            --bg-side: rgba(255,255,255,0.05); --border: rgba(255,255,255,0.13);
+        }
+        :root[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) body {
+            background: radial-gradient(circle at 12% 8%, rgba(255,255,255,.35), transparent 45%),
+                        linear-gradient(135deg, #cfd9ec 0%, #d8d2e8 45%, #e6d9e2 100%) !important;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="glass"][data-ui-theme-mode="dark"] body {
+            background: radial-gradient(circle at 12% 8%, rgba(255,255,255,.05), transparent 45%),
+                        linear-gradient(135deg, #1b2130 0%, #201e2c 50%, #241f27 100%) !important;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="glass"] .download-card-simple,
+        :root[data-ui-theme="glass"] .img-container,
+        :root[data-ui-theme="glass"] .theme-modal {
+            background: var(--bg-body) !important; backdrop-filter: blur(16px) saturate(130%);
+            -webkit-backdrop-filter: blur(16px) saturate(130%); border-color: var(--border) !important;
+            box-shadow: 0 8px 28px rgba(31,38,135,0.1) !important;
+        }
+
+        /* ── 뉴모피즘 (라이트/다크) ────────────────────────── */
+        :root[data-ui-theme="neu"]:not([data-ui-theme-mode="dark"]) {
+            --primary: #5b7fdb; --primary-bg: #e7e9ee; --dark: #2d3748;
+            --text-main: #4a5568; --text-muted: #7a8496; --bg-body: #e7e9ee;
+            --bg-side: #dfe2e8; --border: transparent; --neu-dark: #d1d4da; --neu-light: #ffffff;
+        }
+        :root[data-ui-theme="neu"][data-ui-theme-mode="dark"] {
+            --primary: #7c96d9; --primary-bg: #2b2e37; --dark: #eef0f4;
+            --text-main: #d7dae2; --text-muted: #8b93a3; --bg-body: #2b2e37;
+            --bg-side: #313540; --border: transparent; --neu-dark: #212329; --neu-light: #353a46;
+        }
+        :root[data-ui-theme="neu"] body { background: var(--bg-body) !important; }
+        :root[data-ui-theme="neu"] header { background-color: var(--bg-side) !important; }
+        :root[data-ui-theme="neu"] .download-card-simple,
+        :root[data-ui-theme="neu"] .img-container,
+        :root[data-ui-theme="neu"] .theme-modal {
+            background: var(--bg-body) !important; border: none !important;
+            box-shadow: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light) !important;
+        }
+        :root[data-ui-theme="neu"] .download-btn-simple,
+        :root[data-ui-theme="neu"] nav.sidebar a.active {
+            box-shadow: 4px 4px 9px var(--neu-dark), -4px -4px 9px var(--neu-light);
+        }
+
+        /* ── 그라디언트 메시 (라이트/다크) ─────────────────── */
+        :root[data-ui-theme="mesh"]:not([data-ui-theme-mode="dark"]) {
+            --primary: #4f9dc9; --primary-bg: rgba(255,255,255,0.5); --dark: #171d26;
+            --text-main: #2a3240; --text-muted: #626c7b; --bg-body: rgba(255,255,255,0.5);
+            --bg-side: rgba(255,255,255,0.68); --border: rgba(255,255,255,0.65);
+            --mesh-base: #eef0f4;
+            --mesh-1: hsl(200 60% 65% / .18); --mesh-2: hsl(300 45% 68% / .15);
+            --mesh-3: hsl(40 65% 68% / .14); --mesh-4: hsl(255 45% 68% / .14);
+        }
+        :root[data-ui-theme="mesh"][data-ui-theme-mode="dark"] {
+            --primary: #22d3ee; --primary-bg: rgba(255,255,255,0.05); --dark: #f5f6fa;
+            --text-main: #e0e3ea; --text-muted: #96a0b3; --bg-body: rgba(255,255,255,0.05);
+            --bg-side: rgba(255,255,255,0.09); --border: rgba(255,255,255,0.13);
+            --mesh-base: #14151f;
+            --mesh-1: hsl(190 70% 55% / .28); --mesh-2: hsl(310 60% 60% / .24);
+            --mesh-3: hsl(45 70% 55% / .2); --mesh-4: hsl(260 60% 62% / .24);
+        }
+        :root[data-ui-theme="mesh"] body { background: var(--mesh-base) !important; position: relative; }
+        :root[data-ui-theme="mesh"] body::before {
+            content: ""; position: fixed; inset: 0; z-index: 0;
+            background: radial-gradient(at 18% 20%, var(--mesh-1) 0, transparent 52%),
+                        radial-gradient(at 82% 15%, var(--mesh-2) 0, transparent 52%),
+                        radial-gradient(at 15% 82%, var(--mesh-3) 0, transparent 52%),
+                        radial-gradient(at 85% 85%, var(--mesh-4) 0, transparent 52%), var(--mesh-base);
+            animation: themeMeshHue 30s linear infinite;
+        }
+        @keyframes themeMeshHue { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+        :root[data-ui-theme="mesh"] .top-header,
+        :root[data-ui-theme="mesh"] header,
+        :root[data-ui-theme="mesh"] .main-wrapper,
+        :root[data-ui-theme="mesh"] footer { position: relative; z-index: 1; }
+        :root[data-ui-theme="mesh"] .download-card-simple,
+        :root[data-ui-theme="mesh"] .img-container,
+        :root[data-ui-theme="mesh"] .theme-modal {
+            background: var(--bg-body) !important; backdrop-filter: blur(18px) saturate(120%);
+            -webkit-backdrop-filter: blur(18px) saturate(120%); border-color: var(--border) !important;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.18) !important; color: var(--text-main);
+        }
+        :root[data-ui-theme="mesh"] h2,
+        :root[data-ui-theme="mesh"] p,
+        :root[data-ui-theme="mesh"] nav.sidebar a,
+        :root[data-ui-theme="mesh"] .download-text h3 { color: var(--text-main); }
+        :root[data-ui-theme="mesh"] footer { background-color: var(--mesh-base) !important; }
     </style>
 </head>
 
@@ -328,6 +519,43 @@
             <a href="https://kemkim.knpu.re.kr" class="top-nav-link">KEMKIM</a>
             <a href="https://statistics.knpu.re.kr" class="top-nav-link">STATISTICS</a>
         </nav>
+        <button id="themeSettingsBtn" class="theme-settings-btn" type="button" title="테마 설정" aria-label="테마 설정" onclick="openThemeModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+    </div>
+
+    <div class="theme-modal-overlay" id="themeModalOverlay" onclick="if(event.target===this) closeThemeModal()">
+        <div class="theme-modal" role="dialog" aria-modal="true" aria-label="테마 설정">
+            <div class="theme-modal-head">
+                <div>
+                    <h3>테마 설정</h3>
+                    <p class="theme-modal-sub">원하는 테마를 골라보세요. 모든 KNPU 사이트에 동일하게 적용됩니다.</p>
+                </div>
+                <button type="button" class="theme-modal-close" onclick="closeThemeModal()" aria-label="닫기">&times;</button>
+            </div>
+            <div class="theme-modal-body">
+                <button type="button" class="theme-option" data-theme="default" onclick="selectTheme('default')">
+                    <span class="theme-swatch theme-swatch-default"><span></span><span></span><span></span></span>
+                    <span class="theme-option-label"><span class="theme-option-check">✓</span>기본</span>
+                </button>
+                <button type="button" class="theme-option" data-theme="glass" onclick="selectTheme('glass')">
+                    <span class="theme-swatch theme-swatch-glass"><span></span><span></span><span></span></span>
+                    <span class="theme-option-label"><span class="theme-option-check">✓</span>글래스모피즘</span>
+                </button>
+                <button type="button" class="theme-option" data-theme="neu" onclick="selectTheme('neu')">
+                    <span class="theme-swatch theme-swatch-neu"><span></span><span></span><span></span></span>
+                    <span class="theme-option-label"><span class="theme-option-check">✓</span>뉴모피즘</span>
+                </button>
+                <button type="button" class="theme-option" data-theme="mesh" onclick="selectTheme('mesh')">
+                    <span class="theme-swatch theme-swatch-mesh"><span></span><span></span><span></span></span>
+                    <span class="theme-option-label"><span class="theme-option-check">✓</span>그라디언트 메시</span>
+                </button>
+            </div>
+            <div class="theme-mode-row">
+                <span>다크 모드</span>
+                <button type="button" class="theme-mode-switch" id="themeModeSwitch" onclick="toggleThemeMode()" aria-label="다크 모드 전환"></button>
+            </div>
+        </div>
     </div>
 
     <div class="main-wrapper">
@@ -437,6 +665,80 @@
     </footer>
 
     <script>
+        // ── 테마 설정 (기본/글래스모피즘/뉴모피즘/그라디언트 메시) ──────────
+        // crawler/statistics/kemkim/network와 같은 domain=.knpu.re.kr 쿠키를 써서,
+        // 로그인 세션 쿠키처럼 모든 KNPU 서브도메인이 같은 값을 공유한다(localStorage는
+        // 서브도메인마다 격리되어 사이트 간 공유가 안 됨). <head>의 인라인 스니펫이
+        // 첫 렌더 전에 이미 적용해둔다.
+        var THEME_COOKIE_KEY = 'ui_theme_style';
+
+        function themeCookieDomainAttr() {
+            return /(^|\.)knpu\.re\.kr$/.test(location.hostname) ? '; domain=.knpu.re.kr' : '';
+        }
+
+        function currentUiTheme() {
+            try {
+                var m = document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);
+                return m ? decodeURIComponent(m[1]) : 'default';
+            } catch (e) { return 'default'; }
+        }
+
+        function applyUiTheme(id) {
+            if (id === 'default') document.documentElement.removeAttribute('data-ui-theme');
+            else document.documentElement.setAttribute('data-ui-theme', id);
+            try {
+                var maxAge = 60 * 60 * 24 * 365;
+                document.cookie = THEME_COOKIE_KEY + '=' + encodeURIComponent(id) +
+                    '; path=/; max-age=' + maxAge + '; samesite=lax' +
+                    themeCookieDomainAttr() + (location.protocol === 'https:' ? '; secure' : '');
+            } catch (e) { /* noop */ }
+        }
+
+        var THEME_MODE_COOKIE_KEY = 'ui_theme_mode';
+
+        function currentUiThemeMode() {
+            try {
+                var m = document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);
+                return m ? decodeURIComponent(m[1]) : 'light';
+            } catch (e) { return 'light'; }
+        }
+
+        function applyUiThemeMode(mode) {
+            if (mode === 'dark') document.documentElement.setAttribute('data-ui-theme-mode', 'dark');
+            else document.documentElement.removeAttribute('data-ui-theme-mode');
+            try {
+                var maxAge = 60 * 60 * 24 * 365;
+                document.cookie = THEME_MODE_COOKIE_KEY + '=' + encodeURIComponent(mode) +
+                    '; path=/; max-age=' + maxAge + '; samesite=lax' +
+                    themeCookieDomainAttr() + (location.protocol === 'https:' ? '; secure' : '');
+            } catch (e) { /* noop */ }
+        }
+
+        function markSelectedTheme() {
+            var active = currentUiTheme();
+            document.querySelectorAll('.theme-option').forEach(function (btn) {
+                btn.classList.toggle('selected', btn.getAttribute('data-theme') === active);
+            });
+            document.getElementById('themeModeSwitch').classList.toggle('on', currentUiThemeMode() === 'dark');
+        }
+
+        function openThemeModal() {
+            markSelectedTheme();
+            document.getElementById('themeModalOverlay').classList.add('open');
+        }
+        function closeThemeModal() {
+            document.getElementById('themeModalOverlay').classList.remove('open');
+        }
+        function selectTheme(id) {
+            applyUiTheme(id);
+            markSelectedTheme();
+            closeThemeModal();
+        }
+        function toggleThemeMode() {
+            applyUiThemeMode(currentUiThemeMode() === 'dark' ? 'light' : 'dark');
+            markSelectedTheme();
+        }
+
         // 상단 네비게이션의 MANAGER 버튼: PC에 데스크톱 MANAGER 앱이 설치되어 있으면
         // (설치 프로그램이 knpumanager:// URL 프로토콜을 등록해둔다) 바로 그 앱을 실행하고,
         // 설치되어 있지 않으면(=페이지가 포커스를 잃지 않으면) 잠시 후 이 웹 페이지에 그대로 머문다.

@@ -1,5 +1,7 @@
 from fastapi import Request, HTTPException
 from app.libs.jwt import decode_token
+from app.db import homepage_users_col
+from shared.session_check import revalidate_session
 
 
 def _extract_token(request: Request) -> str | None:
@@ -18,7 +20,8 @@ async def get_current_user(request: Request):
         raise HTTPException(status_code=307, detail="Not logged in")
 
     payload = decode_token(token)
-    if not payload or payload.get("role") != "admin":
+    live = revalidate_session(payload, homepage_users_col)
+    if not live or live.get("role") != "admin":
         raise HTTPException(status_code=307, detail="Not logged in")
 
-    return payload
+    return live

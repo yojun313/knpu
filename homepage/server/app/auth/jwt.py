@@ -13,6 +13,7 @@ def create_token(user: dict) -> str:
         "sub": user["uid"],
         "name": user["name"],
         "role": user["role"],
+        "tv": user.get("token_version", 1),
         "exp": datetime.now(timezone.utc) + timedelta(days=TOKEN_EXPIRE_DAYS),
         "iat": datetime.now(timezone.utc),
     }

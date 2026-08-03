@@ -13,7 +13,8 @@
   --scrollbar-thumb:#c6ced6; --scrollbar-thumb-hover:#aab4be;
   --strong-signal:#e34948; --weak-signal:#eda100; --latent-signal:#7c8896; --well-known-signal:#2a78d6;
 }
-body.dark-theme{
+
+html[data-ui-theme-mode="dark"]:not([data-ui-theme]) body{
   /* 다크 모드 — 같은 앱의 dark_style_sheet과 맞춘 배색 */
   --brand:#eaeaea; --brand-dark:#c9c9c9; --brand-light:#eaeaea;
   --accent:#34495e; --accent-soft:#3a539b;
@@ -338,7 +339,7 @@ table.crawl-table{width:100%;border-collapse:collapse;font-size:12.5px}
 .badge .pulse{width:7px;height:7px;border-radius:50%;background:var(--success);flex-shrink:0;
   box-shadow:0 0 0 3px rgba(76,175,80,.22)}
 .badge.warn{color:#b8560f}
-body.dark-theme .badge.warn{color:#ffb37a}
+html[data-ui-theme-mode="dark"]:not([data-ui-theme]) .badge.warn{color:#ffb37a}
 .badge.warn .pulse{background:var(--warn);box-shadow:0 0 0 3px rgba(224,138,46,.22)}
 .pillsel{background:var(--pill-bg);backdrop-filter:blur(8px);color:var(--pill-text);border:1px solid var(--pill-border);
   border-radius:11px;padding:9px 12px;font-size:12.5px;box-shadow:var(--pill-shadow)}

@@ -78,6 +78,11 @@ app.mount(
     "/img", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "img")), name="img"
 )
 
+SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "shared_ui")
+app.mount(
+    "/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui"
+)
+
 app.include_router(api_router)
 
 print("KemKim viewer server is running...")
