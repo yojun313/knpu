@@ -29,13 +29,19 @@ def send_message(process_id: str, text: str) -> None:
     """
     순수 문자열 메시지를 보냅니다.
     POST /notify/{process_id} { type: "message", text }
+
+    분석 진행 중 수십 번씩 호출되는 최선노력(best-effort) 알림이라, 진행 서버가 잠깐
+    느리거나 pid를 못 찾아도 분석 자체를 실패시키면 안 된다 — 그래서 다른 send_*와
+    달리 raise_for_status를 하지 않는다.
     """
     if not process_id:
         return
 
     payload = {"type": "message", "text": text}
-    resp = requests.post(f"{PROGRESS_SERVER_URL}/notify/{process_id}", json=payload)
-    resp.raise_for_status()
+    try:
+        requests.post(f"{PROGRESS_SERVER_URL}/notify/{process_id}", json=payload, timeout=10)
+    except requests.RequestException:
+        pass
 
 
 def send_progress(

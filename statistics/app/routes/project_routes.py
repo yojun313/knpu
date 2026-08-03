@@ -439,13 +439,10 @@ async def api_analyze_upload_stage(request: Request, file: UploadFile = File(...
 
 @router.post("/api/projects/analyze/start")
 async def api_analyze_start(request: Request):
-    """업로드 진행률 표시 2단계: 플랫폼/분석 종류를 확정해 manager/server의 통계분석
-    파이프라인(데스크톱 MANAGER와 동일한 백엔드)을 그대로 호출한다. 완료되면 결과가
+    """업로드 진행률 표시 2단계: 플랫폼/분석 종류를 확정해 통계분석 파이프라인
+    (데스크톱 MANAGER와 동일한 백엔드)을 이 프로세스 안에서 직접 돌린다. 완료되면 결과가
     자동으로 이 사용자의 프로젝트로 저장된다."""
     uid = _uid(request)
-    session_token = request.cookies.get("session")
-    if not session_token:
-        raise HTTPException(401, "인증이 필요합니다")
 
     body = await request.json()
     try:
@@ -465,7 +462,7 @@ async def api_analyze_start(request: Request):
             filename,
             category,
             platform,
-            session_token,
+            uid,
             project_name=project_name,
         )
     except ValueError as e:
@@ -485,29 +482,3 @@ async def api_analyze_start(request: Request):
 async def api_analyze_status(pid: str, request: Request):
     _uid(request)
     return JSONResponse(analyze_service.get_job(pid))
-
-
-# ---------------------------------------------------------------------------
-# 내부 전용: manager/server가 분석 완료 직후 결과 zip을 밀어 넣는 경로
-# ---------------------------------------------------------------------------
-
-
-@router.post("/api/internal/projects/ingest")
-async def internal_ingest(
-    uid: str = Form(...), name: str = Form(...), file: UploadFile = File(...)
-):
-    """매니저 서버가 분석 완료 직후 결과 zip을 사용자 프로젝트로 곧바로 밀어 넣을 때 쓰는
-    내부 전용 엔드포인트. 미들웨어의 X-Internal-Key 통과 경로로만 접근 가능하다."""
-    content = await file.read()
-    project = _handle_store_error(
-        project_store.create_project, uid, content, name, "manager"
-    )
-    insert_log(
-        user_logs_db,
-        uid,
-        "statistics.project.analyze_complete",
-        "statistics",
-        target={"type": "project", "id": project["project_id"], "name": name},
-        metadata={"source": "manager_desktop_analysis"},
-    )
-    return JSONResponse(project)
