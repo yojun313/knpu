@@ -4,7 +4,7 @@ import sys
 import traceback
 
 _REPO_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
@@ -78,7 +78,7 @@ app.mount(
     "/img", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "img")), name="img"
 )
 
-SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "system", "ui")
+SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "system", "ui")
 app.mount(
     "/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui"
 )

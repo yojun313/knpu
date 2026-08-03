@@ -86,6 +86,6 @@ members = [
     "homepage",
     "crawler",
     "complaint",
-    "bot",
+    "system/bot",
     "admin",
 ]

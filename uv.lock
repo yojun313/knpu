@@ -439,7 +439,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/44/1c/577d3ce406e88f370
 [[package]]
 name = "bot"
 version = "0.1.0"
-source = { virtual = "bot" }
+source = { virtual = "system/bot" }
 dependencies = [
     { name = "aiosmtplib" },
     { name = "discord-py" },
