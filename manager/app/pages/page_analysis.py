@@ -50,6 +50,9 @@ from services.llm import generateLLM
 from services.csv import readCSV, getCSVHeaders, safe_path
 from config import (
     MANAGER_SERVER_API,
+    NETWORK_API,
+    KEMKIM_API,
+    STATISTICS_API,
     NETWORK_VIEWER_URL,
     KEMKIM_VIEWER_URL,
     STATISTICS_VIEWER_URL,
@@ -312,7 +315,7 @@ class Manager_Analysis(Manager_Worker):
 
             def run(self):
                 try:
-                    upload_url = MANAGER_SERVER_API + "/analysis/statistics"
+                    upload_url = STATISTICS_API + "/analysis/statistics"
                     response = self.upload_file(
                         self.filepath,
                         upload_url,
@@ -603,7 +606,7 @@ class Manager_Analysis(Manager_Worker):
 
             def run(self):
                 try:
-                    upload_url = MANAGER_SERVER_API + "/analysis/kemkim"
+                    upload_url = KEMKIM_API + "/analysis/kemkim"
                     response = self.upload_file(
                         self.filepath,
                         upload_url,
@@ -2606,7 +2609,7 @@ class Manager_Analysis(Manager_Worker):
 
             def run(self):
                 try:
-                    upload_url = MANAGER_SERVER_API + "/analysis/graph-network"
+                    upload_url = NETWORK_API + "/analysis/graph-network"
 
                     response = self.upload_file(
                         self.filepath,
