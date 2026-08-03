@@ -11,7 +11,9 @@ if _REPO_ROOT not in sys.path:
 
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.types import Receive, Scope, Send
 from fastapi.exception_handlers import http_exception_handler
 from app.routes import (
     main_routes,
@@ -86,6 +88,26 @@ async def global_exception_handler(request: Request, exc: Exception):
         },
     )
 
+
+class NoCacheStaticFiles(StaticFiles):
+    """statistics/kemkim/network와 동일한 이유로 캐시를 끈다: 개발 중 자산이 자주
+    바뀌므로 브라우저가 옛 버전을 계속 쓰는 일이 없도록 한다."""
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.append((b"cache-control", b"no-store, must-revalidate"))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await super().__call__(scope, receive, send_wrapper)
+
+
+# statistics/kemkim/network가 함께 쓰는 테마 시스템(테마 CSS) — 관리자 대시보드는
+# 상단 네비 바 없이 테마 스킨(glass/neu/mesh)만 설정 페이지에서 골라 쓴다.
+SHARED_UI_DIR = os.path.join(_REPO_ROOT, "manager", "shared_ui")
+app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui")
 
 # 라우터 등록
 app.include_router(main_routes.router)

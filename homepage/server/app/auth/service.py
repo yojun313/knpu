@@ -109,8 +109,6 @@ def signup(data) -> dict:
     ):
         manager_uid = matched_manager_account["uid"]
 
-    # manager.users에 같은 이메일로 이미 가입 이력이 있으면(=이미 검증된 랩 구성원) 관리자
-    # 승인 없이 바로 가입 승인한다. 이름과 달리 이메일은 동명이인 걱정이 없어 곧바로 신뢰한다.
     manager_email_matched = _manager_account_exists_by_email(data.email)
 
     now = datetime.now()
@@ -133,6 +131,9 @@ def signup(data) -> dict:
         "approved_at": None,
         "approved_by": None,
         "updated_at": now,
+        "token_version": (
+            existing_username.get("token_version", 1) if existing_username else 1
+        ),
     }
     users_db.update_one({"username": data.username}, {"$set": user}, upsert=True)
     _send_signup_verification_link(data.username, data.email)
@@ -374,7 +375,12 @@ def update_profile(uid: str, data) -> dict:
 
     if updates:
         updates["updated_at"] = datetime.now()
-        users_db.update_one({"uid": uid}, {"$set": updates})
+        update_ops = {"$set": updates}
+        # 비밀번호가 바뀌면 다른 기기/브라우저·오래된 매니저 앱에 남아있는 이전 세션을
+        # 전부 즉시 무효화한다(자연 만료를 30일까지 기다리지 않는다).
+        if "password_hash" in updates:
+            update_ops["$inc"] = {"token_version": 1}
+        users_db.update_one({"uid": uid}, update_ops)
         field_labels = {"name": "이름", "password_hash": "비밀번호"}
         changed = [field_labels[k] for k in field_labels if k in updates]
         _log_user_activity(
@@ -429,7 +435,10 @@ def reset_password(data) -> dict:
             "$set": {
                 "password_hash": hash_password(data.new_password),
                 "updated_at": datetime.now(),
-            }
+            },
+            # 비밀번호 재설정은 계정 탈취를 의심할 때 쓰는 복구 경로이기도 하므로,
+            # 다른 곳에 남아있던 기존 세션을 전부 즉시 무효화한다.
+            "$inc": {"token_version": 1},
         },
     )
     auth_codes_db.delete_one({"_id": code_doc["_id"]})
@@ -487,7 +496,10 @@ def reject_request(uid: str, admin_uid: str) -> dict:
 
     users_db.update_one(
         {"uid": uid},
-        {"$set": {"status": "rejected", "updated_at": datetime.now()}},
+        {
+            "$set": {"status": "rejected", "updated_at": datetime.now()},
+            "$inc": {"token_version": 1},
+        },
     )
     sendEmail(
         user["email"],
@@ -521,7 +533,12 @@ def change_role(uid: str, new_role: str, admin_uid: str) -> dict:
 
     users_db.update_one(
         {"uid": uid},
-        {"$set": {"role": new_role, "updated_at": datetime.now()}},
+        {
+            "$set": {"role": new_role, "updated_at": datetime.now()},
+            # 권한이 바뀌면(특히 admin 해제) 이전 role 클레임을 담은 기존 세션이
+            # 계속 통하지 않도록 즉시 무효화한다.
+            "$inc": {"token_version": 1},
+        },
     )
     notify_discord(
         "admin_ops",

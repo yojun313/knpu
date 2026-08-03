@@ -8,7 +8,19 @@
 
 <div id="resultBanner" class="hidden mb-6 p-4 rounded-2xl border text-sm"></div>
 
-<div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 max-w-lg">
+<div class="mb-8">
+    <h3 class="text-base font-bold text-white tracking-tight">테마</h3>
+    <p class="text-zinc-400 text-sm">원하는 테마를 골라보세요. crawler·manager·statistics·kemkim·network를 포함한 모든 KNPU 사이트에 동일하게 적용됩니다.</p>
+    <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 max-w-lg mt-4 card">
+        <div id="themeOptionList" class="theme-modal-body" style="padding:0;"></div>
+        <div class="flex items-center justify-between pt-4 mt-2 border-t" style="border-color: var(--line);">
+            <span class="text-sm font-semibold" style="color: var(--ink);">다크 모드</span>
+            <button type="button" class="theme-mode-switch" id="themeModeSwitch" onclick="toggleUiThemeMode()" aria-label="다크 모드 전환"></button>
+        </div>
+    </div>
+</div>
+
+<div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900/20 max-w-lg card">
     <div id="navList" class="space-y-2 mb-4"></div>
     <button onclick="saveOrder()" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-lg text-sm font-bold transition">
         순서 저장
@@ -16,6 +28,10 @@
 </div>
 
 <style>
+    #themeOptionList .theme-option:hover { background: var(--panel2); }
+    #themeOptionList .theme-option.selected { border-color: var(--accent); }
+    #themeOptionList .theme-option-label { color: var(--ink); }
+    #themeOptionList .theme-modal-sub { color: var(--muted); }
     .nav-row {
         display: flex; align-items: center; gap: 10px;
         padding: 10px 12px; border-radius: 10px;
@@ -150,5 +166,44 @@
     }
 
     loadOrder();
+
+    // ── 테마(글래스모피즘/뉴모피즘/그라디언트 메시) ──────────────────────────
+    // currentUiTheme()/applyUiTheme()는 base.html의 <head> 스크립트에서
+    // 전역으로 미리 정의되어 있다(모든 KNPU 사이트와 공유하는 쿠키 기반).
+    const THEME_OPTIONS = [
+        { id: 'default', label: '기본' },
+        { id: 'glass', label: '글래스모피즘' },
+        { id: 'neu', label: '뉴모피즘' },
+        { id: 'mesh', label: '그라디언트 메시' },
+    ];
+
+    function themeOptionHtml(item) {
+        return `
+            <button type="button" class="theme-option" data-theme="${item.id}" onclick="selectUiTheme('${item.id}')">
+                <span class="theme-swatch theme-swatch-${item.id}"><span></span></span>
+                <span class="theme-option-label">${escHtml(item.label)}<span class="theme-option-check">&#10003;</span></span>
+            </button>`;
+    }
+
+    function markSelectedUiTheme() {
+        const active = currentUiTheme();
+        document.querySelectorAll('#themeOptionList .theme-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.getAttribute('data-theme') === active);
+        });
+        document.getElementById('themeModeSwitch').classList.toggle('on', currentUiThemeMode() === 'dark');
+    }
+
+    function toggleUiThemeMode() {
+        applyUiThemeMode(currentUiThemeMode() === 'dark' ? 'light' : 'dark');
+        markSelectedUiTheme();
+    }
+
+    function selectUiTheme(id) {
+        applyUiTheme(id);
+        markSelectedUiTheme();
+    }
+
+    document.getElementById('themeOptionList').innerHTML = THEME_OPTIONS.map(themeOptionHtml).join('');
+    markSelectedUiTheme();
 </script>
 {% endblock %}

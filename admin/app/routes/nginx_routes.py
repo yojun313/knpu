@@ -12,9 +12,10 @@ from pydantic import BaseModel
 from app.services.nginx_service import NginxService
 from app.routes.dependencies import get_current_user
 from app.services import settings_service
-from app.db import user_logs_col
+from app.db import user_logs_col, homepage_users_col
 from app.libs.jwt import decode_token
 from shared.user_log import insert_log
+from shared.session_check import revalidate_session
 import os
 
 
@@ -113,11 +114,12 @@ async def nginx_console_ws(websocket: WebSocket):
 
     token = websocket.cookies.get("session")
     payload = decode_token(token) if token else None
-    if not payload or payload.get("role") != "admin":
+    live = revalidate_session(payload, homepage_users_col)
+    if not live or live.get("role") != "admin":
         await websocket.send_text("인증이 필요합니다")
         await websocket.close()
         return
-    admin_uid = payload.get("sub")
+    admin_uid = live.get("sub")
 
     try:
         data = await websocket.receive_json()

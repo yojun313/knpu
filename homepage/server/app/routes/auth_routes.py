@@ -18,12 +18,14 @@ from app.models import (
 )
 from app.auth import service, webauthn_service
 from app.auth.jwt import decode_token
+from app.db import users_db
 from app.libs.discord_notify import notify_discord
 from app.auth.dependencies import (
     get_current_user,
     get_current_user_optional,
     require_admin,
 )
+from shared.session_check import revalidate_session
 
 router = APIRouter()
 
@@ -78,7 +80,7 @@ def _safe_redirect(url: str) -> str:
 
 @router.get("/token-login")
 def token_login(token: str, redirect: str, response: Response):
-    if not decode_token(token):
+    if not revalidate_session(decode_token(token), users_db):
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다")
 
     redirect_response = RedirectResponse(url=_safe_redirect(redirect))

@@ -77,6 +77,12 @@ app.mount(
 app.mount(
     "/img", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "img")), name="img"
 )
+# statistics/kemkim/network가 함께 쓰는 테마 시스템(설정 모달 + glass/neu/mesh 스킨) —
+# 세 앱 다 이 한 디렉토리를 그대로 마운트해서 파일을 하나만 관리한다.
+SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "shared_ui")
+app.mount(
+    "/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui"
+)
 
 app.include_router(api_router)
 

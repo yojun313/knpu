@@ -1,0 +1,405 @@
+/* ============================================================================
+   공통 테마 시스템 (statistics / kemkim / network 공용)
+   - 기본(default) 테마는 각 앱의 기존 viewer.css 그대로 둔다(변경 없음).
+   - glass / neu / mesh는 <html data-ui-theme="..."> 값에 따라 이 파일이
+     viewer.css보다 나중에 로드되어 같은 CSS 커스텀 프로퍼티(--sidebar-bg 등)를
+     덮어써서 앱 전체 배색을 바꾸고, 몇 가지 대표 표면 클래스(.rail/#top/#side/
+     .modal-card/.ctx-menu/.table-card)에 질감(블러·그림자·모서리)을 추가로 입힌다.
+   - 상단 브랜드 바(.top-header)는 어떤 테마에서도 항상 같은 남색/파란색
+     그라디언트를 유지한다(다섯 사이트 공통 정체성이라 테마와 무관하게 고정).
+   ============================================================================ */
+
+/* ── 설정(⚙) 버튼 ─────────────────────────────────────────────────────── */
+.theme-settings-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: background 150ms, transform 300ms ease;
+}
+.theme-settings-btn:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.theme-settings-btn:hover svg { transform: rotate(45deg); }
+.theme-settings-btn svg { transition: transform 300ms ease; display: block; }
+
+/* ── 모달 ──────────────────────────────────────────────────────────────── */
+.theme-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(8, 12, 20, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.theme-modal-overlay[hidden] { display: none; }
+
+.theme-modal {
+  width: min(460px, 100%);
+  background: var(--sidebar-bg, #fff);
+  color: var(--sidebar-text, #33414f);
+  border: 1px solid var(--sidebar-border, #bdc3c7);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
+  animation: themeModalIn 160ms ease;
+}
+@keyframes themeModalIn {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.theme-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--sidebar-border, #bdc3c7);
+}
+.theme-modal-head h3 { font-size: 15px; font-weight: 700; margin: 0; }
+.theme-modal-sub { font-size: 11.5px; color: var(--sidebar-muted, #7c8896); margin: 2px 0 0; }
+.theme-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--sidebar-muted, #7c8896);
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+.theme-modal-close:hover { background: var(--sidebar-panel2, #ecf0f1); }
+
+.theme-modal-body {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  transition: border-color 150ms, background 150ms;
+}
+.theme-option:hover { background: var(--sidebar-panel2, #ecf0f1); }
+.theme-option.selected { border-color: var(--accent, #2c3e50); }
+
+.theme-option-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  padding: 2px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.theme-option-check {
+  display: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent, #2c3e50);
+  color: #fff;
+  font-size: 9px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.theme-option.selected .theme-option-check { display: inline-flex; }
+
+/* 스와치(미리보기) — 실제 이미지 없이 각 테마 질감을 순수 CSS로 축소 재현 */
+.theme-swatch {
+  height: 62px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.theme-swatch > span { width: 15px; height: 15px; border-radius: 5px; flex-shrink: 0; }
+
+.theme-swatch-default { background: #eef2f8; }
+.theme-swatch-default > span { background: #ffffff; border: 1px solid #c8d6e5; }
+
+.theme-swatch-glass {
+  background: linear-gradient(135deg, #cfd9ec 0%, #d8d2e8 45%, #e6d9e2 100%);
+}
+.theme-swatch-glass > span {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(3px);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.theme-swatch-neu { background: #e7e9ee; }
+.theme-swatch-neu > span {
+  background: #e7e9ee;
+  box-shadow: 3px 3px 6px #d1d4da, -3px -3px 6px #ffffff;
+}
+
+.theme-swatch-mesh {
+  background:
+    radial-gradient(at 30% 30%, hsl(190 70% 55% / .5) 0, transparent 60%),
+    radial-gradient(at 80% 70%, hsl(310 60% 60% / .45) 0, transparent 60%),
+    radial-gradient(at 20% 85%, hsl(45 70% 55% / .4) 0, transparent 55%),
+    #14151f;
+}
+.theme-swatch-mesh > span {
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(3px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+@media (max-width: 480px) {
+  .theme-modal-body { grid-template-columns: 1fr; }
+}
+
+/* ── 다크 모드 토글 스위치 (모달 안, 테마 4종 아래) ──────────────────────── */
+.theme-mode-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 18px 18px;
+  border-top: 1px solid var(--sidebar-border, #bdc3c7);
+  margin-top: 2px;
+}
+.theme-mode-row span { font-size: 12.5px; font-weight: 600; color: var(--sidebar-text, #33414f); }
+.theme-mode-switch {
+  position: relative; width: 40px; height: 22px; border-radius: 999px;
+  background: rgba(127, 127, 127, 0.32); border: none; cursor: pointer; flex-shrink: 0;
+  transition: background 150ms;
+}
+.theme-mode-switch::before {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+  border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  transition: transform 150ms;
+}
+.theme-mode-switch.on { background: var(--accent, #2c3e50); }
+.theme-mode-switch.on::before { transform: translateX(18px); }
+
+/* ============================================================================
+   글래스모피즘 — 은은한 파스텔/딥톤 그라디언트 배경 + 반투명 유리 패널
+   (기존 버전보다 채도를 낮추고 패널 불투명도를 올려 과하지 않고 읽기 편하게 조정)
+   ============================================================================ */
+html[data-ui-theme="glass"]:not([data-ui-theme-mode="dark"]) body {
+  --brand: #4a5670;
+  --accent: #7c6fd6; --accent-soft: #9c92e0;
+  --sidebar-bg: rgba(255, 255, 255, 0.62);
+  --sidebar-panel: rgba(255, 255, 255, 0.5);
+  --sidebar-panel2: rgba(255, 255, 255, 0.68);
+  --sidebar-border: rgba(255, 255, 255, 0.65);
+  --sidebar-text: #2a3240; --sidebar-muted: #626c7b;
+  --text-strong: #171d26;
+  --overlay-hover: rgba(124, 111, 214, 0.08);
+  --scrollbar-thumb: rgba(40, 45, 60, 0.22); --scrollbar-thumb-hover: rgba(40, 45, 60, 0.35);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255,255,255,.35), transparent 45%),
+    linear-gradient(135deg, #cfd9ec 0%, #d8d2e8 45%, #e6d9e2 100%);
+  background-attachment: fixed;
+}
+html[data-ui-theme="glass"][data-ui-theme-mode="dark"] body {
+  --brand: #cdd4e4;
+  --accent: #7c9ce8; --accent-soft: #9db3ee;
+  --sidebar-bg: rgba(255, 255, 255, 0.07);
+  --sidebar-panel: rgba(255, 255, 255, 0.05);
+  --sidebar-panel2: rgba(255, 255, 255, 0.1);
+  --sidebar-border: rgba(255, 255, 255, 0.13);
+  --sidebar-text: #dde1ea; --sidebar-muted: #99a1b2;
+  --text-strong: #f2f4f8;
+  --overlay-hover: rgba(124, 156, 232, 0.1);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.2); --scrollbar-thumb-hover: rgba(255, 255, 255, 0.32);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255,255,255,.05), transparent 45%),
+    linear-gradient(135deg, #1b2130 0%, #201e2c 50%, #241f27 100%);
+  background-attachment: fixed;
+}
+
+/* 유리 패널이 화면을 꽉 채우면 뒤 배경이 안 보여 유리 느낌이 안 나므로, 앱 전체에
+   여백을 주고 레일을 카드처럼 띄운다(사방 모서리를 둥글게). */
+html[data-ui-theme="glass"] #app { padding: 14px; gap: 14px; box-sizing: border-box; }
+html[data-ui-theme="glass"] .rail,
+html[data-ui-theme="glass"] #top,
+html[data-ui-theme="glass"] #side,
+html[data-ui-theme="glass"] .modal-card,
+html[data-ui-theme="glass"] .theme-modal,
+html[data-ui-theme="glass"] .ctx-menu,
+html[data-ui-theme="glass"] .table-card,
+html[data-ui-theme="glass"] #main,
+html[data-ui-theme="glass"] #plotWrap {
+  background: var(--sidebar-bg) !important;
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  border-color: var(--sidebar-border) !important;
+  box-shadow: 0 8px 28px rgba(31, 38, 135, 0.1);
+}
+html[data-ui-theme="glass"] .rail,
+html[data-ui-theme="glass"] #main,
+html[data-ui-theme="glass"] #plotWrap { border-radius: 18px; }
+html[data-ui-theme="glass"] .modal-card,
+html[data-ui-theme="glass"] .theme-modal { border-radius: 18px; }
+html[data-ui-theme="glass"] .rail-item.active { background: var(--overlay-hover) !important; }
+
+/* ============================================================================
+   뉴모피즘 — 균일한 그레이 캔버스 + 눌린/돌출된 소프트 셰이프 (라이트/다크)
+   ============================================================================ */
+html[data-ui-theme="neu"]:not([data-ui-theme-mode="dark"]) body {
+  --brand: #4a5568;
+  --accent: #5b7fdb; --accent-soft: #7897e4;
+  --sidebar-bg: #e7e9ee;
+  --sidebar-panel: #e7e9ee;
+  --sidebar-panel2: #dfe2e8;
+  --sidebar-border: transparent;
+  --sidebar-text: #4a5568; --sidebar-muted: #7a8496;
+  --text-strong: #2d3748;
+  --overlay-hover: rgba(91, 127, 219, 0.08);
+  --scrollbar-thumb: #c9ccd3; --scrollbar-thumb-hover: #b3b7c0;
+  --neu-shadow-dark: #d1d4da; --neu-shadow-light: #ffffff;
+  background: #e7e9ee;
+}
+html[data-ui-theme="neu"][data-ui-theme-mode="dark"] body {
+  --brand: #d3d6de;
+  --accent: #7c96d9; --accent-soft: #97ade4;
+  --sidebar-bg: #2b2e37;
+  --sidebar-panel: #2b2e37;
+  --sidebar-panel2: #313540;
+  --sidebar-border: transparent;
+  --sidebar-text: #d7dae2; --sidebar-muted: #8b93a3;
+  --text-strong: #eef0f4;
+  --overlay-hover: rgba(124, 150, 217, 0.12);
+  --scrollbar-thumb: #3d414d; --scrollbar-thumb-hover: #4a4f5c;
+  --neu-shadow-dark: #212329; --neu-shadow-light: #353a46;
+  background: #2b2e37;
+}
+
+/* 돌출 그림자가 옆 패널이 아니라 바탕(같은 색)에 떨어져야 입체감이 보이므로
+   레일과 본문 사이, 앱 바깥에 여백을 준다. */
+html[data-ui-theme="neu"] #app { padding: 16px; gap: 16px; box-sizing: border-box; }
+html[data-ui-theme="neu"] .rail,
+html[data-ui-theme="neu"] #top,
+html[data-ui-theme="neu"] #side,
+html[data-ui-theme="neu"] .modal-card,
+html[data-ui-theme="neu"] .theme-modal,
+html[data-ui-theme="neu"] .ctx-menu,
+html[data-ui-theme="neu"] .table-card,
+html[data-ui-theme="neu"] #main,
+html[data-ui-theme="neu"] #plotWrap {
+  background: var(--sidebar-bg) !important;
+  border: none !important;
+  box-shadow: 8px 8px 16px var(--neu-shadow-dark), -8px -8px 16px var(--neu-shadow-light);
+}
+html[data-ui-theme="neu"] .rail,
+html[data-ui-theme="neu"] #main,
+html[data-ui-theme="neu"] #plotWrap { border-radius: 20px; }
+html[data-ui-theme="neu"] .modal-card,
+html[data-ui-theme="neu"] .theme-modal { border-radius: 20px; }
+
+html[data-ui-theme="neu"] .btn,
+html[data-ui-theme="neu"] .rail-upload,
+html[data-ui-theme="neu"] .icon-btn,
+html[data-ui-theme="neu"] .rail-new-folder-btn {
+  background: var(--sidebar-bg) !important;
+  border: none !important;
+  box-shadow: 4px 4px 9px var(--neu-shadow-dark), -4px -4px 9px var(--neu-shadow-light);
+}
+html[data-ui-theme="neu"] .rail-item.active,
+html[data-ui-theme="neu"] .btn:active,
+html[data-ui-theme="neu"] .rail-upload:active {
+  box-shadow: inset 3px 3px 7px var(--neu-shadow-dark), inset -3px -3px 7px var(--neu-shadow-light) !important;
+}
+
+/* ============================================================================
+   그라디언트 메시 — 은은하게 색이 도는 오로라 배경 + 글래스 패널 (라이트/다크)
+   ============================================================================ */
+html[data-ui-theme="mesh"]:not([data-ui-theme-mode="dark"]) body {
+  --brand: #3f4658;
+  --accent: #4f9dc9; --accent-soft: #79b9dc;
+  --sidebar-bg: rgba(255, 255, 255, 0.6);
+  --sidebar-panel: rgba(255, 255, 255, 0.5);
+  --sidebar-panel2: rgba(255, 255, 255, 0.68);
+  --sidebar-border: rgba(255, 255, 255, 0.65);
+  --sidebar-text: #2a3240; --sidebar-muted: #626c7b;
+  --text-strong: #171d26;
+  --overlay-hover: rgba(79, 157, 201, 0.1);
+  --scrollbar-thumb: rgba(40, 45, 60, 0.22); --scrollbar-thumb-hover: rgba(40, 45, 60, 0.35);
+  --mesh-base: #eef0f4;
+  --mesh-blob-1: hsl(200 60% 65% / .18); --mesh-blob-2: hsl(300 45% 68% / .15);
+  --mesh-blob-3: hsl(40 65% 68% / .14); --mesh-blob-4: hsl(255 45% 68% / .14);
+  background: var(--mesh-base);
+}
+html[data-ui-theme="mesh"][data-ui-theme-mode="dark"] body {
+  --brand: #dde0ea;
+  --accent: #22d3ee; --accent-soft: #67e8f9;
+  --sidebar-bg: rgba(20, 21, 31, 0.6);
+  --sidebar-panel: rgba(255, 255, 255, 0.05);
+  --sidebar-panel2: rgba(255, 255, 255, 0.09);
+  --sidebar-border: rgba(255, 255, 255, 0.13);
+  --sidebar-text: #e0e3ea; --sidebar-muted: #96a0b3;
+  --text-strong: #f5f6fa;
+  --overlay-hover: rgba(34, 211, 238, 0.1);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.2); --scrollbar-thumb-hover: rgba(255, 255, 255, 0.32);
+  --mesh-base: #14151f;
+  --mesh-blob-1: hsl(190 70% 55% / .28); --mesh-blob-2: hsl(310 60% 60% / .24);
+  --mesh-blob-3: hsl(45 70% 55% / .2); --mesh-blob-4: hsl(260 60% 62% / .24);
+  background: var(--mesh-base);
+}
+html[data-ui-theme="mesh"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(at 18% 20%, var(--mesh-blob-1) 0, transparent 52%),
+    radial-gradient(at 82% 15%, var(--mesh-blob-2) 0, transparent 52%),
+    radial-gradient(at 15% 82%, var(--mesh-blob-3) 0, transparent 52%),
+    radial-gradient(at 85% 85%, var(--mesh-blob-4) 0, transparent 52%),
+    var(--mesh-base);
+  animation: themeMeshHue 30s linear infinite;
+}
+@keyframes themeMeshHue {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+html[data-ui-theme="mesh"] #app { padding: 14px; gap: 14px; box-sizing: border-box; }
+html[data-ui-theme="mesh"] .rail,
+html[data-ui-theme="mesh"] #top,
+html[data-ui-theme="mesh"] #side,
+html[data-ui-theme="mesh"] .modal-card,
+html[data-ui-theme="mesh"] .theme-modal,
+html[data-ui-theme="mesh"] .ctx-menu,
+html[data-ui-theme="mesh"] .table-card,
+html[data-ui-theme="mesh"] #main,
+html[data-ui-theme="mesh"] #plotWrap {
+  background: var(--sidebar-bg) !important;
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  border-color: var(--sidebar-border) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+}
+html[data-ui-theme="mesh"] .rail,
+html[data-ui-theme="mesh"] #main,
+html[data-ui-theme="mesh"] #plotWrap { border-radius: 18px; }
+html[data-ui-theme="mesh"] .modal-card,
+html[data-ui-theme="mesh"] .theme-modal { border-radius: 18px; }
+html[data-ui-theme="mesh"] .rail-item.active { background: var(--overlay-hover) !important; }
+html[data-ui-theme="mesh"] ::selection { background: var(--overlay-hover); }

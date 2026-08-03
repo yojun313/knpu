@@ -1,5 +1,7 @@
 from fastapi import Request, HTTPException
 from app.auth.jwt import decode_token
+from app.db import users_db
+from shared.session_check import revalidate_session
 
 
 def _extract_token(request: Request) -> str | None:
@@ -21,14 +23,19 @@ def get_current_user(request: Request) -> dict:
     if not payload:
         raise HTTPException(status_code=401, detail="유효하지 않은 세션입니다")
 
-    return payload
+    live = revalidate_session(payload, users_db)
+    if not live:
+        raise HTTPException(status_code=401, detail="세션이 만료되었습니다. 다시 로그인해주세요")
+
+    return live
 
 
 def get_current_user_optional(request: Request) -> dict | None:
     token = _extract_token(request)
     if not token:
         return None
-    return decode_token(token)
+    payload = decode_token(token)
+    return revalidate_session(payload, users_db)
 
 
 def require_admin(request: Request) -> dict:

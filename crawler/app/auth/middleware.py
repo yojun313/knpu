@@ -5,6 +5,8 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, JSONResponse
 from auth.jwt import verify_token
+from db import user_db
+from shared.session_check import revalidate_session
 import logging
 
 load_dotenv()
@@ -62,12 +64,16 @@ class AuthMiddleware:
 
         if token:
             payload = verify_token(token)
-            if payload:
+            # 계정 삭제/거절/비밀번호·권한 변경 이후에도 예전 토큰이 만료 전까지
+            # 계속 통하는 걸 막기 위해, 매 요청마다 homepage.users의 현재 상태를
+            # 다시 확인한다.
+            live = revalidate_session(payload, user_db)
+            if live:
                 scope["state"] = {
                     "user": {
-                        "uid": payload["sub"],
-                        "name": payload["name"],
-                        "role": payload.get("role"),
+                        "uid": live["sub"],
+                        "name": live["name"],
+                        "role": live.get("role"),
                     }
                 }
                 await self.app(scope, receive, send)
