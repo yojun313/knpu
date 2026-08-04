@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/img/lab_logo.png">
+<title>FPEI ANALYSIS: Statistics</title>
+<script>(function(){try{var m=document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);var t=m?decodeURIComponent(m[1]):null;if(t&&t!=='default')document.documentElement.setAttribute('data-ui-theme',t);var mm=document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);if(mm&&decodeURIComponent(mm[1])==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');}catch(e){}})();</script>
+<link rel="stylesheet" href="/shared-ui/theme.css">
+<style>
+
+:root{
+  --accent:#2c3e50; --accent-hover:#34495e; --accent-text:#ffffff;
+  --sidebar-bg:#ffffff; --sidebar-panel:#f7f8f9; --sidebar-panel2:#ecf0f1;
+  --sidebar-border:#bdc3c7; --sidebar-text:#33414f; --sidebar-muted:#7c8896;
+  --text-strong:#16212c; --danger:#E74C3C; --success:#27ae60;
+}
+html[data-ui-theme-mode="dark"]:not([data-ui-theme]) body{
+  --accent:#34495e; --accent-hover:#3a539b; --accent-text:#eaeaea;
+  --sidebar-bg:#2b2b2b; --sidebar-panel:#323232; --sidebar-panel2:#3c3c3c;
+  --sidebar-border:#5a5a5a; --sidebar-text:#eaeaea; --sidebar-muted:#9a9a9a;
+  --text-strong:#ffffff;
+}
+
+
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,'Pretendard','Segoe UI',Roboto,'Malgun Gothic',sans-serif;
+  background:var(--sidebar-bg);color:var(--sidebar-text);transition:background .2s ease,color .2s ease}
+.top-header{
+  background:linear-gradient(110deg,#0B1226 0%,#2D4473 60%,#416BBF 100%);
+  height:58px;flex-shrink:0;padding:0 24px;display:flex;align-items:center;gap:16px;
+  box-shadow:0 2px 12px rgba(11,18,38,.30);position:sticky;top:0;z-index:100;
+}
+.top-header-logo{height:34px;object-fit:contain;display:block;flex-shrink:0}
+.top-header>a:first-child{display:flex;align-items:center;flex-shrink:0}
+.top-nav{display:flex;align-items:center;gap:4px;overflow-x:auto;scrollbar-width:none}
+.top-nav::-webkit-scrollbar{display:none}
+.top-nav-link{
+  flex-shrink:0;color:rgba(255,255,255,.72);text-decoration:none;font-size:12.5px;font-weight:800;
+  letter-spacing:.3px;padding:7px 13px;border-radius:7px;transition:background 150ms,color 150ms;white-space:nowrap;
+}
+.top-nav-link:hover{background:rgba(255,255,255,.12);color:#fff}
+.top-nav-link.active{background:rgba(255,255,255,.18);color:#fff}
+
+
+.container{max-width:1200px;margin:36px auto;padding:40px;background:var(--sidebar-bg);
+  border:1px solid var(--sidebar-border);border-radius:15px;box-shadow:0 12px 30px rgba(0,0,0,.12);
+  box-sizing:border-box}
+h1{font-size:34px;color:var(--text-strong);text-align:center;margin-bottom:28px}
+h2,h3,h4{color:var(--text-strong)}
+h2{font-size:28px;border-bottom:3px solid var(--sidebar-border);padding-bottom:10px;margin:36px 0 20px}
+h3{font-size:22px;border-bottom:2px solid var(--sidebar-border);padding-bottom:8px;margin:32px 0 16px}
+h4{font-size:19px;margin:24px 0 12px}
+p,ul,ol,li{font-size:16.5px;color:var(--sidebar-text);line-height:1.75}
+p,ul,ol{margin-bottom:18px}
+ul{padding-left:22px;list-style-type:disc}
+ul ul{list-style-type:circle;margin:8px 0}
+a{color:var(--accent);text-decoration:none;transition:color .2s ease}
+a:hover{color:var(--accent-hover);text-decoration:underline}
+code{background:var(--sidebar-panel2);color:var(--accent);padding:2px 7px;border-radius:5px;font-size:90%}
+.important{background:color-mix(in srgb, var(--danger) 10%, var(--sidebar-bg));
+  border-left:6px solid var(--danger);padding:20px;margin:32px 0;border-radius:8px;
+  box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.tip{background:color-mix(in srgb, var(--success) 10%, var(--sidebar-bg));
+  border-left:6px solid var(--success);padding:20px;margin:32px 0;border-radius:8px;
+  box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.note{background:color-mix(in srgb, var(--accent) 10%, var(--sidebar-bg));
+  border-left:6px solid var(--accent);padding:20px;margin:32px 0;border-radius:8px;
+  box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.toc{background:var(--sidebar-panel2);border:1px solid var(--sidebar-border);border-radius:10px;
+  padding:20px 30px;margin-bottom:36px}
+.toc ol{margin:0;padding-left:25px}
+.toc li{margin-bottom:8px;font-size:16.5px}
+.kbd{display:inline-block;background:var(--accent);color:var(--accent-text);padding:2px 8px;
+  border-radius:5px;font-size:14px;font-family:monospace}
+.opt-card{border:1px solid var(--sidebar-border);background:var(--sidebar-panel2);border-radius:10px;
+  padding:18px 22px;margin:18px 0;box-shadow:0 3px 10px rgba(0,0,0,.05)}
+.opt-card h4{margin-top:0;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.opt-card p{font-size:16px;margin-bottom:10px}
+.opt-card .default{display:inline-block;font-size:13px;
+  background:color-mix(in srgb, var(--success) 18%, var(--sidebar-bg));color:#1e7e4a;
+  border-radius:20px;padding:3px 12px;margin-left:6px;font-weight:bold}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:14px;font-weight:600;
+  margin-left:8px;border:1px solid var(--sidebar-border)}
+.badge-yolo{background:color-mix(in srgb, #ff9800 18%, var(--sidebar-bg));border-color:#ffd8b3;color:#a64b00}
+.badge-dino{background:color-mix(in srgb, var(--success) 18%, var(--sidebar-bg));border-color:#bfe9d6;color:#0b6b43}
+table{width:100%;border-collapse:collapse;margin:20px 0}
+th,td{border:1px solid var(--sidebar-border);padding:10px 12px;font-size:15.5px;text-align:left}
+th{background:var(--sidebar-panel2);color:var(--text-strong)}
+button{background:var(--accent);color:var(--accent-text);padding:12px 26px;border:none;
+  border-radius:6px;cursor:pointer;font-size:16px;transition:background .2s ease}
+button:hover{background:var(--accent-hover)}
+@media (max-width:768px){
+  .container{padding:20px;margin:16px}
+  h1{font-size:28px} h2{font-size:23px} h3{font-size:19px}
+  p,ul,ol,li{font-size:15.5px}
+  table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+
+
+</style>
+</head>
+<body>
+  <div class="top-header">
+    <a href="https://knpu.re.kr" title="홈으로"><img src="/img/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
+    <nav class="top-nav">
+      <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
+      <a href="https://manager.knpu.re.kr" class="top-nav-link" id="navManagerLink">MANAGER</a>
+      <a href="https://crawler.knpu.re.kr" class="top-nav-link">CRAWLER</a>
+      <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
+      <a href="https://kemkim.knpu.re.kr" class="top-nav-link">KEMKIM</a>
+      <a href="https://statistics.knpu.re.kr" class="top-nav-link active">STATISTICS</a>
+    </nav>
+    <button id="themeSettingsBtn" class="theme-settings-btn" type="button" title="테마 설정" aria-label="테마 설정">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+<div class="container">
+
+    <h1>Statistics Analysis</h1>
+
+    <div class="toc">
+        <strong>목차</strong>
+        <ol>
+            <li><a href="#overview">분석 개요</a></li>
+            <li><a href="#usage">사용법</a></li>
+            <li><a href="#matrix">플랫폼 &times; 분석 종류</a></li>
+            <li><a href="#hate">혐오도 분석</a></li>
+            <li><a href="#derived">공통 파생 표</a></li>
+            <li><a href="#results">결과 파일 설명</a></li>
+            <li><a href="#tips">활용 팁 &amp; 주의사항</a></li>
+        </ol>
+    </div>
+
+    <!-- ─────────────────────────────── -->
+    <h2 id="overview">1. 분석 개요</h2>
+    <p>
+        Statistics 분석은 크롤링된 원본 CSV(기사·댓글·대댓글)를 업로드하면
+        <strong>플랫폼(네이버 뉴스 / 네이버 카페 / 유튜브)</strong>과 <strong>분석 종류(article / statistics / reply / rereply)</strong>의
+        조합에 맞는 전용 통계 파이프라인을 서버에서 실행하여, 그래프(PNG)와 표(CSV)를 함께 생성합니다.
+    </p>
+    <p>
+        결과는 웹 뷰어에서 표를 즉석에서 인터랙티브 차트로 다시 그려 보여주며, 원본 그래프 이미지와
+        표는 그대로 zip으로 다운로드할 수도 있습니다.
+    </p>
+    <div class="note">
+        <p style="margin:0">
+            <strong>입력 데이터 조건:</strong> 이 분석은 <strong>토큰화되지 않은 원본 CSV</strong>를 대상으로 합니다
+            (KEM KIM/네트워크 분석과 반대로, 형태소 분석 전 원본을 사용합니다). 날짜 열은 이름에
+            <code>Date</code>가 포함되어야 자동으로 인식됩니다.
+        </p>
+    </div>
+
+    <!-- ─────────────────────────────── -->
+    <h2 id="usage">2. 사용법</h2>
+    <ol>
+        <li>웹 뷰어 좌측 레일의 <span class="kbd">＋ 새 프로젝트</span>를 눌러 원본 CSV를 업로드하거나,
+            <span class="kbd">크롤링 DB에서 선택</span>으로 완료된 크롤링 결과를 바로 불러옵니다.</li>
+        <li>플랫폼(네이버 뉴스 / 네이버 카페 / 유튜브)과 분석 종류를 선택합니다 — 선택 가능한 조합은
+            <a href="#matrix">3장</a>을 참고하세요.</li>
+        <li>분석 시작을 누르면 서버에서 파이프라인이 실행되고, 완료되면 결과가 자동으로 내 프로젝트로 저장됩니다.</li>
+        <li>프로젝트를 열면 생성된 모든 표를 뷰어에서 차트로 확인하거나, zip으로 원본 그래프·CSV를 내려받을 수 있습니다.</li>
+    </ol>
+
+    <!-- ─────────────────────────────── -->
+    <h2 id="matrix">3. 플랫폼 &times; 분석 종류</h2>
+    <p>플랫폼마다 지원하는 분석 종류가 다릅니다. 지원하지 않는 조합은 업로드 화면에서 아예 선택할 수 없습니다.</p>
+    <table>
+        <thead>
+            <tr><th>플랫폼</th><th>article 분석</th><th>statistics 분석</th><th>reply 분석</th><th>rereply 분석</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Naver News</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+            <tr><td>Naver Cafe</td><td>✅</td><td>—</td><td>✅</td><td>—</td></tr>
+            <tr><td>Google YouTube</td><td>✅</td><td>—</td><td>✅</td><td>✅</td></tr>
+        </tbody>
+    </table>
+
+    <div class="opt-card">
+        <h4>article 분석 <span class="default">기사/게시글 단위</span></h4>
+        <p>월별·일별 게시량 추이, 요일별 발행 패턴, 게시글 유형 분포, 상위 발행처(언론사/채널) 순위,
+            발행처별 참여도(게시글당 반응 수) 등을 계산합니다.</p>
+    </div>
+    <div class="opt-card">
+        <h4>statistics 분석 <span class="default">네이버 뉴스 전용</span></h4>
+        <p>기사 지표에 대한 기술통계(평균·표준편차 등)와 시계열 통계를 중심으로 좀 더 정량적인 표를 만듭니다.</p>
+    </div>
+    <div class="opt-card">
+        <h4>reply 분석 <span class="default">댓글 단위</span></h4>
+        <p>날짜별 댓글 수 추이, 댓글 감성(긍정/부정/중립) 분포, 주요 지표 간 상관관계 히트맵, 작성자별
+            댓글 수 상위 10명, 좋아요·싫어요와 감성을 함께 본 참여도 비교, 반응이 양극단으로 몰린
+            "논란의 댓글" 상위 20개, 좋아요 vs 싫어요 산점도 등을 생성합니다.</p>
+    </div>
+    <div class="opt-card">
+        <h4>rereply 분석 <span class="default">대댓글 단위</span></h4>
+        <p>reply 분석과 유사한 지표를 대댓글 단위로 계산하여, 원댓글 대비 논쟁이 얼마나 확산됐는지를
+            함께 볼 수 있습니다.</p>
+    </div>
+
+    <!-- ─────────────────────────────── -->
+    <h2 id="hate">4. 혐오도 분석</h2>
+    <p>
+        플랫폼과 무관하게 선택할 수 있는 별도 분석 종류입니다. 데이터에 <code>Hate</code>/<code>Clean</code> 또는
+        여성·가족 등 10개 세부 레이블 열이 포함되어 있으면 자동으로 형식을 판별하여:
+    </p>
+    <ul>
+        <li>기본 통계 · 월별/일별/7일 이동평균 추이</li>
+        <li>혐오 표현이 가장 많이 몰린 상위 기간(Top-N) 분석</li>
+        <li>지표 간 상관관계 히트맵</li>
+        <li>분포·추세 그래프</li>
+    </ul>
+    <p>를 <code>&lt;원본&gt;_hate_analysis/</code> 폴더에 생성합니다.</p>
+
+    <!-- ─────────────────────────────── -->
+    <h2 id="derived">5. 공통 파생 표</h2>
+    <p>어떤 분석 종류를 고르든, 원본 표들과는 별도로 다음 표가 항상 추가로 생성됩니다:</p>
+    <ul>
+        <li><strong>요일&times;시간대 히트맵:</strong> 날짜 열이 있으면 요일(월~일)과 시간(0~23시)별 게시량을
+            표로 만들어, 언제 활동이 가장 활발한지 한눈에 보여줍니다.</li>
+        <li><strong>7기간 이동평균 / 누적:</strong> 날짜 축을 가진 표마다 대응하는 <code>_trend</code>(7기간 이동평균)와
+            <code>_cumulative</code>(누적) 표를 별도 카드로 추가해, 단기 변동과 장기 추세·누적 성장을 따로 확인할 수
+            있게 합니다.</li>
+        <li><strong>기술통계(SPSS 스타일):</strong> 수치형 열들에 대해 평균·표준편차·왜도·첨도 등 기술통계와
+            정규성 검정 표를 자동으로 추가합니다.</li>
+    </ul>
+    <div class="tip">
+        <p style="margin:0">
+            이 파생 표들은 대응하는 그래프 이미지가 원래는 없었지만, 화면에 이미 잘 그려지는 다른 표들과
+            같은 규칙으로 그래프를 자동 생성해 zip 다운로드와 웹 화면의 표 목록이 항상 일치하도록 합니다.
+        </p>
+    </div>
+
+    <!-- ─────────────────────────────── -->
+    <h2 id="results">6. 결과 파일 설명</h2>
+    <ul>
+        <li><code>csv_files/*.csv</code>: 분석 종류별로 생성된 모든 표 (뷰어가 이 표들을 읽어 차트로 그립니다)</li>
+        <li><code>graphs/*.png</code>: 각 표에 대응하는 그래프 이미지 (zip 다운로드용)</li>
+        <li><code>metadata.json</code>: 분석에 사용한 플랫폼/분석 종류, 원본 파일명, 행 수, 분석 시각</li>
+        <li><code>description.txt</code>: 각 그래프가 무엇을 보여주는지에 대한 설명</li>
+    </ul>
+
+    <!-- ─────────────────────────────── -->
+    <h2 id="tips">7. 활용 팁 &amp; 주의사항</h2>
+    <div class="important">
+        <p style="margin:0">
+            <strong>플랫폼/분석 종류 조합 오류:</strong> 지원하지 않는 조합(예: 네이버 카페 + rereply 분석)을
+            선택하면 분석이 시작되지 않습니다 — <a href="#matrix">3장의 표</a>를 먼저 확인하세요.
+        </p>
+    </div>
+    <ul>
+        <li>날짜 열 이름에 <code>Date</code>가 포함되어야 요일&times;시간대 히트맵과 이동평균/누적 표가 생성됩니다.</li>
+        <li>행 수가 너무 적은 표(대략 8행 미만이거나 400행을 초과)는 이동평균/누적 표 생성에서 제외됩니다 —
+            추세를 보기에 유의미한 크기가 아니기 때문입니다.</li>
+        <li>결과는 KEM KIM/네트워크 분석과 마찬가지로 로그인 상태에서 분석하면 내 프로젝트로 자동 저장됩니다.</li>
+    </ul>
+
+</div>
+
+</body>
+</html>

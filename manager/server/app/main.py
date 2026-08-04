@@ -141,3 +141,8 @@ _PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "public")
 app.mount(
     "/assets", StaticFiles(directory=os.path.join(_PUBLIC_DIR, "assets")), name="assets"
 )
+
+# kemkim/network/statistics와 같은 테마 시스템(설정 모달 + glass/neu/mesh 스킨) — GPU 기능
+# 매뉴얼(hate_analysis/whisper/yolo)도 domain=.knpu.re.kr 쿠키로 저장된 같은 테마를 따라간다.
+_SHARED_UI_DIR = os.path.join(_REPO_ROOT, "system", "ui")
+app.mount("/shared-ui", StaticFiles(directory=_SHARED_UI_DIR), name="shared-ui")

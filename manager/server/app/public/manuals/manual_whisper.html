@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/assets/imgs/lab_logo_favicon.ico">
+<title>FPEI ANALYSIS: Speech-to-Text (Whisper)</title>
+<script>(function(){try{var m=document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);var t=m?decodeURIComponent(m[1]):null;if(t&&t!=='default')document.documentElement.setAttribute('data-ui-theme',t);var mm=document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);if(mm&&decodeURIComponent(mm[1])==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');}catch(e){}})();</script>
+<link rel="stylesheet" href="/shared-ui/theme.css">
+<style>
+
+:root{
+  --accent:#2c3e50; --accent-hover:#34495e; --accent-text:#ffffff;
+  --sidebar-bg:#ffffff; --sidebar-panel:#f7f8f9; --sidebar-panel2:#ecf0f1;
+  --sidebar-border:#bdc3c7; --sidebar-text:#33414f; --sidebar-muted:#7c8896;
+  --text-strong:#16212c; --danger:#E74C3C; --success:#27ae60;
+}
+html[data-ui-theme-mode="dark"]:not([data-ui-theme]) body{
+  --accent:#34495e; --accent-hover:#3a539b; --accent-text:#eaeaea;
+  --sidebar-bg:#2b2b2b; --sidebar-panel:#323232; --sidebar-panel2:#3c3c3c;
+  --sidebar-border:#5a5a5a; --sidebar-text:#eaeaea; --sidebar-muted:#9a9a9a;
+  --text-strong:#ffffff;
+}
+
+
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,'Pretendard','Segoe UI',Roboto,'Malgun Gothic',sans-serif;
+  background:var(--sidebar-bg);color:var(--sidebar-text);transition:background .2s ease,color .2s ease}
+.top-header{
+  background:linear-gradient(110deg,#0B1226 0%,#2D4473 60%,#416BBF 100%);
+  height:58px;flex-shrink:0;padding:0 24px;display:flex;align-items:center;gap:16px;
+  box-shadow:0 2px 12px rgba(11,18,38,.30);position:sticky;top:0;z-index:100;
+}
+.top-header-logo{height:34px;object-fit:contain;display:block;flex-shrink:0}
+.top-header>a:first-child{display:flex;align-items:center;flex-shrink:0}
+.top-nav{display:flex;align-items:center;gap:4px;overflow-x:auto;scrollbar-width:none}
+.top-nav::-webkit-scrollbar{display:none}
+.top-nav-link{
+  flex-shrink:0;color:rgba(255,255,255,.72);text-decoration:none;font-size:12.5px;font-weight:800;
+  letter-spacing:.3px;padding:7px 13px;border-radius:7px;transition:background 150ms,color 150ms;white-space:nowrap;
+}
+.top-nav-link:hover{background:rgba(255,255,255,.12);color:#fff}
+.top-nav-link.active{background:rgba(255,255,255,.18);color:#fff}
+
+
+.container{max-width:1200px;margin:36px auto;padding:40px;background:var(--sidebar-bg);
+  border:1px solid var(--sidebar-border);border-radius:15px;box-shadow:0 12px 30px rgba(0,0,0,.12);
+  box-sizing:border-box}
+h1{font-size:34px;color:var(--text-strong);text-align:center;margin-bottom:28px}
+h2,h3,h4{color:var(--text-strong)}
+h2{font-size:28px;border-bottom:3px solid var(--sidebar-border);padding-bottom:10px;margin:36px 0 20px}
+h3{font-size:22px;border-bottom:2px solid var(--sidebar-border);padding-bottom:8px;margin:32px 0 16px}
+h4{font-size:19px;margin:24px 0 12px}
+p,ul,ol,li{font-size:16.5px;color:var(--sidebar-text);line-height:1.75}
+p,ul,ol{margin-bottom:18px}
+ul{padding-left:22px;list-style-type:disc}
+ul ul{list-style-type:circle;margin:8px 0}
+a{color:var(--accent);text-decoration:none;transition:color .2s ease}
+a:hover{color:var(--accent-hover);text-decoration:underline}
+code{background:var(--sidebar-panel2);color:var(--accent);padding:2px 7px;border-radius:5px;font-size:90%}
+.important{background:color-mix(in srgb, var(--danger) 10%, var(--sidebar-bg));
+  border-left:6px solid var(--danger);padding:20px;margin:32px 0;border-radius:8px;
+  box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.tip{background:color-mix(in srgb, var(--success) 10%, var(--sidebar-bg));
+  border-left:6px solid var(--success);padding:20px;margin:32px 0;border-radius:8px;
+  box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.note{background:color-mix(in srgb, var(--accent) 10%, var(--sidebar-bg));
+  border-left:6px solid var(--accent);padding:20px;margin:32px 0;border-radius:8px;
+  box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.toc{background:var(--sidebar-panel2);border:1px solid var(--sidebar-border);border-radius:10px;
+  padding:20px 30px;margin-bottom:36px}
+.toc ol{margin:0;padding-left:25px}
+.toc li{margin-bottom:8px;font-size:16.5px}
+.kbd{display:inline-block;background:var(--accent);color:var(--accent-text);padding:2px 8px;
+  border-radius:5px;font-size:14px;font-family:monospace}
+.opt-card{border:1px solid var(--sidebar-border);background:var(--sidebar-panel2);border-radius:10px;
+  padding:18px 22px;margin:18px 0;box-shadow:0 3px 10px rgba(0,0,0,.05)}
+.opt-card h4{margin-top:0;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.opt-card p{font-size:16px;margin-bottom:10px}
+.opt-card .default{display:inline-block;font-size:13px;
+  background:color-mix(in srgb, var(--success) 18%, var(--sidebar-bg));color:#1e7e4a;
+  border-radius:20px;padding:3px 12px;margin-left:6px;font-weight:bold}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:14px;font-weight:600;
+  margin-left:8px;border:1px solid var(--sidebar-border)}
+.badge-yolo{background:color-mix(in srgb, #ff9800 18%, var(--sidebar-bg));border-color:#ffd8b3;color:#a64b00}
+.badge-dino{background:color-mix(in srgb, var(--success) 18%, var(--sidebar-bg));border-color:#bfe9d6;color:#0b6b43}
+table{width:100%;border-collapse:collapse;margin:20px 0}
+th,td{border:1px solid var(--sidebar-border);padding:10px 12px;font-size:15.5px;text-align:left}
+th{background:var(--sidebar-panel2);color:var(--text-strong)}
+button{background:var(--accent);color:var(--accent-text);padding:12px 26px;border:none;
+  border-radius:6px;cursor:pointer;font-size:16px;transition:background .2s ease}
+button:hover{background:var(--accent-hover)}
+@media (max-width:768px){
+  .container{padding:20px;margin:16px}
+  h1{font-size:28px} h2{font-size:23px} h3{font-size:19px}
+  p,ul,ol,li{font-size:15.5px}
+  table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+
+
+</style>
+</head>
+<body>
+  <div class="top-header">
+    <a href="https://knpu.re.kr" title="홈으로"><img src="/assets/imgs/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
+    <nav class="top-nav">
+      <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
+      <a href="https://manager.knpu.re.kr" class="top-nav-link active" id="navManagerLink">MANAGER</a>
+      <a href="https://crawler.knpu.re.kr" class="top-nav-link">CRAWLER</a>
+      <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
+      <a href="https://kemkim.knpu.re.kr" class="top-nav-link">KEMKIM</a>
+      <a href="https://statistics.knpu.re.kr" class="top-nav-link">STATISTICS</a>
+    </nav>
+    <button id="themeSettingsBtn" class="theme-settings-btn" type="button" title="테마 설정" aria-label="테마 설정">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+<div class="container">
+
+        <h1>음성 인식: Speech-to-Text (Whisper)</h1>
+
+        <h2>1. 분석 개요</h2>
+        <p>
+            음성 인식(STT: Speech-to-Text) 기능은 업로드된 오디오 파일(<strong>WAV/MP3/M4A/FLAC</strong> 등)을 입력으로 받아,
+            음성 내용을 문장 형태의 <strong>텍스트</strong>로 변환합니다.
+            변환 결과는 전체 발화 내용을 하나의 텍스트로 합친 형태로 제공되며,
+            분석 과정에서 <strong>언어를 지정</strong>하거나 <strong>자동 감지</strong>를 사용할 수 있습니다.
+        </p>
+
+        <p>
+            분석에는 OpenAI Whisper 계열 모델을 CTranslate2 기반으로 최적화한
+            <a href="https://huggingface.co/Systran/faster-whisper-large-v3" target="_blank">
+                <code>Systran/faster-whisper-large-v3</code>
+            </a>
+            모델이 사용되었습니다.
+        </p>
+
+        <h2>2. Whisper 모델 선택</h2>
+
+        <p>
+            본 분석 서비스는 Whisper 계열 모델 중 아래 3가지 모델을 선택적으로 사용합니다.
+            사용자가 선택한 옵션에 따라 정확도·속도·연산량이 달라집니다.
+        </p>
+
+        <table style="width:100%; border-collapse: collapse; margin-top: 20px;">
+            <thead>
+                <tr style="background-color:#ecf0f1;">
+                    <th style="padding:12px; border:1px solid #ccc;">옵션 번호</th>
+                    <th style="padding:12px; border:1px solid #ccc;">모델 이름</th>
+                    <th style="padding:12px; border:1px solid #ccc;">연산 정밀도</th>
+                    <th style="padding:12px; border:1px solid #ccc;">속도</th>
+                    <th style="padding:12px; border:1px solid #ccc;">정확도</th>
+                    <th style="padding:12px; border:1px solid #ccc;">권장 용도</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding:10px; border:1px solid #ccc;">1</td>
+                    <td style="padding:10px; border:1px solid #ccc;">
+                        <code>faster-whisper-small</code>
+                    </td>
+                    <td style="padding:10px; border:1px solid #ccc;">int8 + float16</td>
+                    <td style="padding:10px; border:1px solid #ccc;">매우 빠름</td>
+                    <td style="padding:10px; border:1px solid #ccc;">보통</td>
+                    <td style="padding:10px; border:1px solid #ccc;">
+                        짧은 음성, 테스트용, 빠른 결과 확인
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:10px; border:1px solid #ccc;">2</td>
+                    <td style="padding:10px; border:1px solid #ccc;">
+                        <code>faster-whisper-medium</code>
+                    </td>
+                    <td style="padding:10px; border:1px solid #ccc;">int8 + float16</td>
+                    <td style="padding:10px; border:1px solid #ccc;">빠름</td>
+                    <td style="padding:10px; border:1px solid #ccc;">높음</td>
+                    <td style="padding:10px; border:1px solid #ccc;">
+                        일반적인 음성 분석, 정확도·속도 균형
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:10px; border:1px solid #ccc;">3</td>
+                    <td style="padding:10px; border:1px solid #ccc;">
+                        <code>faster-whisper-large-v3</code>
+                    </td>
+                    <td style="padding:10px; border:1px solid #ccc;">float16</td>
+                    <td style="padding:10px; border:1px solid #ccc;">느림</td>
+                    <td style="padding:10px; border:1px solid #ccc;">매우 높음</td>
+                    <td style="padding:10px; border:1px solid #ccc;">
+                        긴 음성, 높은 정확도가 필요한 분석
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+
+        <h2>3. 입력 파일(오디오) 형식</h2>
+        <p>
+            음성 인식은 다음과 같은 오디오 파일 포맷을 입력으로 받습니다.
+            파일 포맷이 지원 범위를 벗어나거나 손상된 경우 분석이 실패할 수 있습니다.
+        </p>
+
+        <ul>
+            <li><code>.wav</code></li>
+            <li><code>.mp3</code></li>
+            <li><code>.m4a</code></li>
+            <li><code>.flac</code></li>
+            <li><code>.ogg</code></li>
+        </ul>
+
+        <div class="important">
+            <p>
+                파일 업로드 전, 오디오가 정상 재생되는지 확인해 주세요.
+                특히 매우 긴 음성 파일(예: 수 시간 분량)은 처리 시간이 길어질 수 있으며,
+                서버 환경에 따라 처리 중 제한이 발생할 수 있습니다.
+            </p>
+        </div>
+
+        <h2>4. 언어 선택 옵션</h2>
+        <p>
+            음성 인식은 다음 중 하나로 언어 처리를 수행합니다.
+        </p>
+
+        <ul>
+            <li><strong>한국어(기본값):</strong> <code>ko</code></li>
+            <li><strong>자동 감지:</strong> 입력 음성으로부터 언어를 자동으로 추정</li>
+            <li><strong>기타 언어:</strong> 영어(<code>en</code>), 일본어(<code>ja</code>), 중국어(<code>zh</code>) 등</li>
+        </ul>
+
+        <p>
+            특정 언어로 고정하면(예: <code>ko</code>) 인식 안정성이 높아질 수 있으며,
+            음성에 여러 언어가 섞인 경우에는 자동 감지를 권장합니다.
+        </p>
+
+    </div>
+</body>
+</html>

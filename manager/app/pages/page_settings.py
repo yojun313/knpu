@@ -682,30 +682,36 @@ class Manager_Setting(BaseDialog):
         link1_label.setOpenExternalLinks(True)
         link1_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
-        link2_label = QLabel('<a href="https://knpu.re.kr/manual/kemkim">KEM KIM</a>')
+        link2_label = QLabel('<a href="https://kemkim.knpu.re.kr/manual">KEM KIM</a>')
         link2_label.setOpenExternalLinks(True)
         link2_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         link3_label = QLabel(
-            '<a href="https://knpu.re.kr/manual/network">네트워크 분석</a>'
+            '<a href="https://network.knpu.re.kr/manual">네트워크 분석</a>'
         )
         link3_label.setOpenExternalLinks(True)
         link3_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
+        link3b_label = QLabel(
+            '<a href="https://statistics.knpu.re.kr/manual">통계 분석</a>'
+        )
+        link3b_label.setOpenExternalLinks(True)
+        link3b_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
         link4_label = QLabel(
-            '<a href="https://knpu.re.kr/manual/hate_analysis">혐오도 분석</a>'
+            '<a href="https://manager.knpu.re.kr/manual/hate_analysis">혐오도 분석</a>'
         )
         link4_label.setOpenExternalLinks(True)
         link4_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         link5_label = QLabel(
-            '<a href="https://knpu.re.kr/manual/whisper">음성 인식</a>'
+            '<a href="https://manager.knpu.re.kr/manual/whisper">음성 인식</a>'
         )
         link5_label.setOpenExternalLinks(True)
         link5_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
         link6_label = QLabel(
-            '<a href="https://knpu.re.kr/manual/yolo">영상/이미지 객체 검출</a>'
+            '<a href="https://manager.knpu.re.kr/manual/yolo">영상/이미지 객체 검출</a>'
         )
         link6_label.setOpenExternalLinks(True)
         link6_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -745,8 +751,10 @@ class Manager_Setting(BaseDialog):
         help_layout.addWidget(link1_label)
         help_layout.addWidget(link2_label)
         help_layout.addWidget(link3_label)
+        help_layout.addWidget(link3b_label)
         help_layout.addWidget(link4_label)
         help_layout.addWidget(link5_label)
+        help_layout.addWidget(link6_label)
 
         help_layout.addWidget(format_title_label)
         help_layout.addWidget(format_text_label)

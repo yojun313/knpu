@@ -40,7 +40,10 @@
       <div id="railResizer" class="rail-resizer" title="드래그해서 너비 조절"></div>
       <div class="rail-foot">
         <span id="railUserName" class="rail-user"></span>
-        <button id="railLogout" class="rail-logout" title="로그아웃">⎋</button>
+        <div class="rail-foot-actions">
+          <a id="railManualBtn" class="rail-logout" href="/manual" title="매뉴얼">?</a>
+          <button id="railLogout" class="rail-logout" title="로그아웃">⎋</button>
+        </div>
       </div>
     </div>
     <!-- #net은 vis-network가 완전히 소유하는 컨테이너입니다. vis-network는 생성 시
@@ -79,7 +82,6 @@
       <div class="title-block">
         <div><h1>Network Analyzer</h1><p>공출현 기반 단어 네트워크 분석기</p></div>
         <div class="title-actions">
-          <a class="icon-btn" id="btnManual" href="https://knpu.re.kr/manual/network" target="_blank" title="매뉴얼 열기">📘</a>
           <button class="icon-btn mobile-only" id="sideCloseBtn" title="닫기">✕</button>
         </div>
       </div>
