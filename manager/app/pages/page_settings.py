@@ -24,7 +24,6 @@ from ui.dialogs import BaseDialog
 from libs.path import safe_path
 from services.logging import userLogging
 from config import VERSION, MANAGER_SERVER_API
-from ui.style import STYLES, STYLE_LABELS
 
 
 class Manager_Setting(BaseDialog):
@@ -116,49 +115,19 @@ class Manager_Setting(BaseDialog):
         app_layout.setContentsMargins(10, 10, 10, 10)  # 여백 설정
 
         ################################################################################
-        # 앱 테마 스킨 설정 섹션 (웹 서비스들과 동일한 4종 스킨)
-        style_layout = QHBoxLayout()
-        style_label = QLabel("테마 스킨:")
-        style_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        style_label.setToolTip("MANAGER의 디자인 스킨을 설정합니다 (kemkim/network/statistics와 동일)")
-
-        current_style = get_setting("ThemeStyle", "default")
-        self.style_buttons: dict[str, QPushButton] = {}
-        style_buttons_layout = QHBoxLayout()
-        style_buttons_layout.setSpacing(6)
-        for style_id in STYLES:
-            btn = QPushButton(STYLE_LABELS[style_id])
-            self.init_toggle_style(btn, style_id == current_style)
-            btn.clicked.connect(
-                lambda checked=False, s=style_id: self.update_toggle_group(
-                    self.style_buttons[s], list(self.style_buttons.values())
-                )
-            )
-            self.style_buttons[style_id] = btn
-            style_buttons_layout.addWidget(btn)
-
-        style_layout.addWidget(style_label, 1)
-        style_layout.addLayout(style_buttons_layout, 2)
-
-        app_layout.addLayout(style_layout)
-        ################################################################################
-
-        ################################################################################
-        # 앱 라이트/다크 모드 설정 섹션
+        # 앱 테마 설정 섹션
         theme_layout = QHBoxLayout()
-        theme_label = QLabel("라이트/다크 모드:")
+        theme_label = QLabel("앱 테마 설정:")
         theme_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        theme_label.setToolTip("MANAGER의 명암 모드를 설정합니다")
+        theme_label.setToolTip("MANAGER의 색 테마를 설정합니다")
 
         self.light_mode_toggle = QPushButton("라이트 모드")
         self.dark_mode_toggle = QPushButton("다크 모드")
 
         self.init_toggle_style(
-            self.light_mode_toggle, get_setting("ThemeMode", "light") == "light"
+            self.light_mode_toggle, get_setting("Theme") == "default"
         )
-        self.init_toggle_style(
-            self.dark_mode_toggle, get_setting("ThemeMode", "light") != "light"
-        )
+        self.init_toggle_style(self.dark_mode_toggle, get_setting("Theme") != "default")
 
         self.light_mode_toggle.clicked.connect(
             lambda: self.update_toggle(self.light_mode_toggle, self.dark_mode_toggle)
@@ -836,27 +805,12 @@ class Manager_Setting(BaseDialog):
         self.init_toggle_style(selected_button, True)
         self.init_toggle_style(other_button, False)
 
-    def update_toggle_group(self, selected_button, all_buttons):
-        """
-        N개 버튼 중 하나만 선택되도록 스타일 업데이트 (테마 스킨 4종용)
-        """
-        for btn in all_buttons:
-            self.init_toggle_style(btn, btn is selected_button)
-
     def save_settings(self):
         # 선택된 설정 가져오기
-        theme_mode = (
-            "light"
+        theme = (
+            "default"
             if self.light_mode_toggle.styleSheet().find("#2c3e50") != -1
             else "dark"
-        )
-        theme_style = next(
-            (
-                style_id
-                for style_id, btn in self.style_buttons.items()
-                if btn.styleSheet().find("#2c3e50") != -1
-            ),
-            "default",
         )
         screen_size = (
             "default"
@@ -894,8 +848,7 @@ class Manager_Setting(BaseDialog):
         api_key.replace("\n", "").replace(" ", "")
 
         # 바뀐 값마다 즉시 기록
-        set_setting("ThemeMode", theme_mode)
-        set_setting("ThemeStyle", theme_style)
+        set_setting("Theme", theme)
         set_setting("ScreenSize", screen_size)
         set_setting("AutoUpdate", auto_update)
         set_setting("MyDB", my_db)
@@ -906,7 +859,7 @@ class Manager_Setting(BaseDialog):
         set_setting("LLM_model", llm_model)
 
         userLogging(
-            f"SETTING: 설정 저장 (테마 스킨: {theme_style}, 테마 모드: {theme_mode}, 화면크기: {screen_size}, "
+            f"SETTING: 설정 저장 (테마: {theme}, 화면크기: {screen_size}, "
             f"자동업데이트: {auto_update}, MyDB: {my_db}, "
             f"GPT키: {'설정됨' if api_key != 'default' and len(api_key) >= 20 else '미설정'}, "
             f"DB새로고침: {db_refresh}, 부팅시터미널: {boot_terminal}, "

@@ -16,8 +16,7 @@ from config import VERSION
 _qsettings = QSettings("KNPU", "MANAGER")
 
 _DEFAULTS: dict[str, Any] = {
-    "ThemeStyle": "default",  # default | glass | neu | mesh (웹 서비스들과 같은 4종 스킨)
-    "ThemeMode": "light",  # light | dark
+    "Theme": "default",  # default | dark
     "ScreenSize": "default",
     "OldPostUid": "default",
     "AutoUpdate": "default",
@@ -35,15 +34,6 @@ _DEFAULTS: dict[str, Any] = {
 for key, val in _DEFAULTS.items():
     if _qsettings.value(key) is None:
         _qsettings.setValue(key, val)
-
-# 구버전 마이그레이션: 예전엔 "Theme"(default|dark) 하나로 라이트/다크만 구분했다.
-# 그 값이 남아있고 아직 옮기지 않았으면 ThemeMode로 변환하고, 스킨은 기존 디자인(default)으로 둔다.
-_legacy_theme = _qsettings.value("Theme")
-if _legacy_theme is not None and _qsettings.value("ThemeMigrated") is None:
-    _qsettings.setValue("ThemeMode", "dark" if _legacy_theme == "dark" else "light")
-    _qsettings.setValue("ThemeStyle", "default")
-    _qsettings.setValue("ThemeMigrated", True)
-    _qsettings.sync()
 
 
 def get_setting(key: str, default: Any | None = None) -> Any:
