@@ -70,6 +70,11 @@ async def app_shell_viewer():
     return _page("viewer.html")
 
 
+@router.get("/manual", response_class=HTMLResponse)
+async def manual_page():
+    return _page("manual.html")
+
+
 @router.get("/api/me")
 async def api_me(request: Request):
     user = request.scope.get("state", {}).get("user")

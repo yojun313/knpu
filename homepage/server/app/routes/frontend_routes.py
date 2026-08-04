@@ -178,29 +178,36 @@ def manager_download_page():
     )
 
 
+# 매뉴얼은 각 서비스 서버 안으로 옮겼다 — 옛 북마크/링크가 죽지 않도록 새 위치로 리다이렉트만 남긴다.
 @router.get("/manual/kemkim")
 def manual_kemkim():
-    return _page("manuals/manual_kemkim.html")
-
-
-@router.get("/manual/hate_analysis")
-def manual_hate_analysis():
-    return _page("manuals/manual_hateanalysis.html")
-
-
-@router.get("/manual/whisper")
-def manual_whisper():
-    return _page("manuals/manual_whisper.html")
-
-
-@router.get("/manual/yolo")
-def manual_yolo():
-    return _page("manuals/manual_detection.html")
+    return RedirectResponse(url="https://kemkim.knpu.re.kr/manual", status_code=301)
 
 
 @router.get("/manual/network")
 def manual_network():
-    return _page("manuals/manual_network.html")
+    return RedirectResponse(url="https://network.knpu.re.kr/manual", status_code=301)
+
+
+@router.get("/manual/hate_analysis")
+def manual_hate_analysis():
+    return RedirectResponse(
+        url="https://manager.knpu.re.kr/manual/hate_analysis", status_code=301
+    )
+
+
+@router.get("/manual/whisper")
+def manual_whisper():
+    return RedirectResponse(
+        url="https://manager.knpu.re.kr/manual/whisper", status_code=301
+    )
+
+
+@router.get("/manual/yolo")
+def manual_yolo():
+    return RedirectResponse(
+        url="https://manager.knpu.re.kr/manual/yolo", status_code=301
+    )
 
 
 @router.get("/favicon.ico")
