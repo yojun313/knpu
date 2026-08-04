@@ -4,10 +4,6 @@ import time
 import urllib.error
 import urllib.request
 
-# Claude Code CLI가 세션(5시간)/주간(7일) 사용량 한도를 표시할 때 실제로 호출하는
-# 비공식 내부 엔드포인트다 (claude 바이너리 문자열 분석으로 확인). 공식 문서화된 API가
-# 아니므로 CLI 업데이트에 따라 언제든 바뀌거나 사라질 수 있다 — 실패 시 조용히 에러를
-# 반환하고 나머지 사용량 통계(토큰 집계)에는 영향이 없게 한다.
 CREDENTIALS_PATH = os.path.expanduser("~/.claude/.credentials.json")
 USAGE_ENDPOINT = "https://api.anthropic.com/api/oauth/usage"
 

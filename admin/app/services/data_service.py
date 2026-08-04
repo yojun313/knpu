@@ -13,10 +13,6 @@ from app.db import (
 )
 
 ANONYMOUS_AUDIT_KEY = "__anonymous__"
-
-# AuditLogMiddleware가 자동으로 남기는 action은 "METHOD /path" 형태를 그대로 쓴다
-# (예: "DELETE /api/crawl/{uid}"). source="auto" 태그가 붙기 전(이번 필드 도입 이전)에
-# 기록된 문서는 이 태그가 없으므로, action 값의 형태로도 자동 기록을 걸러낸다.
 _HTTP_ACTION_PATTERN = re.compile(r"^(GET|POST|PUT|PATCH|DELETE) ")
 
 
