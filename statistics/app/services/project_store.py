@@ -1,15 +1,3 @@
-# app/services/project_store.py
-"""
-분석 서버(manager/server, 통계분석 파이프라인)가 만든 결과 zip(csv_files/, graphs/,
-description.txt, metadata.json 포함)을 로그인한 사용자의 "프로젝트"로 저장한다. 원본
-결과는 /mnt/ssd/statistics/{uid}/{project_id}/ 아래 디스크에 두고, 프로젝트
-메타데이터(이름 등)는 MongoDB(statistics-projects 컬렉션)에 둔다.
-
-kemkim/network와 달리 통계분석 결과는 이미 "표"들의 모음이라, 분석 타입마다 다른
-파서를 만드는 대신 csv_files/*.csv를 범용으로 JSON 표로 변환한다(base.json). graphs/의
-PNG는 원본 zip 다운로드용으로만 두고, 뷰어는 표 데이터로 직접 인터랙티브 차트를 그린다.
-"""
-
 import io
 import json
 import os
@@ -77,9 +65,6 @@ def _humanize(stem: str) -> str:
     return " ".join(w.capitalize() for w in stem.replace("-", "_").split("_"))
 
 
-# csv_files/{id}.csv 표 이름 -> 사람이 읽는 설명. manager/server의
-# app/libs/statistics_analysis.py(10개 분석 함수)가 만드는 표 이름은 대부분 겹치므로,
-# 분석 함수마다 따로 만들지 않고 표 이름 하나로 전체 분석 종류를 커버한다.
 TABLE_DESCRIPTIONS: dict[str, str] = {
     "basic_stats": "원본 데이터의 각 열에 대한 기초 통계량(개수·평균·표준편차·사분위수 등)입니다.",
     "time_analysis": "월 단위로 집계한 게시물/댓글 수 추이입니다.",
@@ -144,9 +129,6 @@ def _fallback_description(stem: str, columns: list[str]) -> str:
     return "분석 결과 표입니다."
 
 
-# manager/server의 app/libs/spss_analysis.py(SPSS 스타일 범용 통계 스위트)가 만드는
-# 표들 — 열 이름에 원본 변수명이 그대로 들어가 stem이 매번 달라지므로 TABLE_DESCRIPTIONS처럼
-# 정적 dict로 못 만들고, 접두사 패턴으로 제목/설명을 만든다.
 def _spss_title(stem: str) -> str | None:
     if stem == "spss_descriptives":
         return "기술통계량"
@@ -534,7 +516,13 @@ def create_folder(uid: str, name: str) -> dict:
         raise ValueError("폴더 이름을 입력해주세요.")
     folder_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
-    doc = {"_id": folder_id, "uid": uid, "name": name, "created_at": now, "updated_at": now}
+    doc = {
+        "_id": folder_id,
+        "uid": uid,
+        "name": name,
+        "created_at": now,
+        "updated_at": now,
+    }
     statistics_folders_db.insert_one(doc)
     return _folder_out(doc)
 

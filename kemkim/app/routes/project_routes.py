@@ -1,4 +1,3 @@
-# app/routes/project_routes.py
 import csv
 import io
 import os
@@ -22,8 +21,6 @@ router = APIRouter()
 
 
 def _suggest_date_range(filename: str) -> tuple[str | None, str | None]:
-    """크롤러가 만드는 토큰 CSV 파일명(token_{type}_{keyword}_{시작일}_{종료일}_{MMDD}_{HHMM}_{table}.csv)
-    에서 실제로 크롤링된 날짜 범위를 추출한다. 데스크톱 MANAGER의 RunKemkimDialog와 동일한 규칙."""
     parts = os.path.splitext(filename)[0].split("_")
     if len(parts) < 5:
         return None, None
@@ -39,7 +36,6 @@ def _suggest_date_range(filename: str) -> tuple[str | None, str | None]:
 
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
-# 개발 중 자주 바뀌는 페이지라 브라우저가 옛 버전을 캐시해두는 일이 없도록 한다.
 _NO_CACHE = {"Cache-Control": "no-store, must-revalidate"}
 
 
@@ -75,8 +71,6 @@ def _handle_store_error(fn, *args, **kwargs):
 
 @router.get("/", response_class=HTMLResponse)
 async def app_shell():
-    """프로젝트 목록(왼쪽 레일)과 KEMKIM 뷰어가 한 화면에 있는 통합 UI. 프로젝트를
-    아직 선택하지 않은 상태로 열린다."""
     return _page("viewer.html")
 
 

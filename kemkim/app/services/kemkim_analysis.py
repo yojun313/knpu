@@ -1,15 +1,3 @@
-# app/services/kemkim_analysis.py
-"""
-"해석"(원본 문서에서 키워드 컨텍스트 추출 + AI 주제 요약)의 순수 계산 로직.
-manager/server의 무거운 KEMKIM 파이프라인(server/app/libs/kemkim.py)을 다시 호출하지
-않고 이 서비스 안에서 직접 처리한다 — kemkim.py에는 없고 데스크톱 UI 레이어
-(app/pages/page_analysis.py의 interpret_kemkim/extract_surrounding_text)에만 있던
-로직을 이식한 것이다.
-
-"조정"(제외어 재분류)은 더 이상 서버에서 재계산하지 않는다 — 웹에서는 base.json의
-좌표/신호를 그대로 두고 프론트엔드(viewer.js)가 사분면·단어 단위로 표시만 껐다 켠다.
-"""
-
 import re
 from datetime import datetime, timezone
 

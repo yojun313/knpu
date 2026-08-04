@@ -20,11 +20,9 @@ from starlette.background import BackgroundTask
 statistics_analysis = StatisticsAnalysis()
 
 
-def _save_as_project(zip_path: str, uid: str, project_name: str, pid: str) -> str | None:
-    """분석 결과 zip을 이 서비스 자신의 project_store에 바로 저장한다 — 예전에는 매니저
-    서버가 분석하고 HTTP로 여기 /api/internal/projects/ingest를 호출해 저장했지만,
-    분석 자체가 이 프로세스 안에서 도는 지금은 그 왕복이 필요 없다.
-    실패해도 분석 자체를 실패시키지 않는다 — zip 다운로드는 항상 그대로 내려간다."""
+def _save_as_project(
+    zip_path: str, uid: str, project_name: str, pid: str
+) -> str | None:
     try:
         with open(zip_path, "rb") as f:
             content = f.read()
@@ -53,9 +51,6 @@ def _find_date_column(columns) -> str | None:
 
 
 def _add_derived_time_series_tables(csv_dir: str) -> None:
-    """분석 함수가 만든 표들 중 날짜 축을 가진 것들에 '7기간 이동평균'과 '누적' 표를
-    추가로 만들어준다 — 원본 표를 건드리지 않고 새 표(=뷰어의 새 카드)로 분리해서,
-    추세와 누적 성장 같은 지표를 따로 확인할 수 있게 한다."""
     if not os.path.isdir(csv_dir):
         return
     for fname in list(os.listdir(csv_dir)):
@@ -112,8 +107,6 @@ def _add_derived_time_series_tables(csv_dir: str) -> None:
 
 
 def _add_hour_dow_heatmap(data, csv_dir: str) -> None:
-    """원본 데이터의 날짜 열로부터 요일×시간대 히트맵(투고 빈도) 표를 만든다.
-    특정 분석 함수에 종속되지 않는 범용 지표라 원본 데이터에서 바로 계산한다."""
     date_col = _find_date_column(data.columns)
     if not date_col:
         return
@@ -193,11 +186,6 @@ def run_statistics_analysis(
     _add_derived_time_series_tables(csv_dir)
     spss_analysis.run(data, csv_dir)
 
-    # 뷰어(manager/statistics)는 csv_files의 모든 표를 브라우저에서 즉석 차트로
-    # 그려 보여주는데, 그중 spss_analysis.py가 만든 표들과 위의 파생 표(히트맵/
-    # 추세/누적)는 여기 있는 10개 분석 함수와 달리 대응하는 그래프 이미지가 없어
-    # zip 다운로드에서만 빠지는 문제가 있었다. 화면에 이미 잘 그려지는 표들과 같은
-    # 규칙으로 그래프를 자동 생성해 graphs/에 채워 넣어 zip과 화면을 일치시킨다.
     graph_dir = os.path.join(output_dir, "graphs")
     fill_missing_graphs(csv_dir, graph_dir)
 

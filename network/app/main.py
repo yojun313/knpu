@@ -53,9 +53,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 class NoCacheStaticFiles(StaticFiles):
-    """개발 중 자산(js/css)이 자주 바뀌므로 브라우저가 캐시된 옛 버전을 계속 쓰는 일이
-    없도록 캐시를 끈다. 정적 파일이 몇 개 안 되는 내부 도구라 성능 영향은 무시할 만하다."""
-
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         async def send_wrapper(message):
             if message["type"] == "http.response.start":
@@ -77,12 +74,9 @@ app.mount(
 app.mount(
     "/img", NoCacheStaticFiles(directory=os.path.join(STATIC_DIR, "img")), name="img"
 )
-# statistics/kemkim/network가 함께 쓰는 테마 시스템(설정 모달 + glass/neu/mesh 스킨) —
-# 세 앱 다 이 한 디렉토리를 그대로 마운트해서 파일을 하나만 관리한다.
+
 SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "system", "ui")
-app.mount(
-    "/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui"
-)
+app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui")
 
 app.include_router(api_router)
 

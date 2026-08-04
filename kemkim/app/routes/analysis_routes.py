@@ -1,11 +1,3 @@
-# app/routes/analysis_routes.py
-"""매니저 데스크톱 앱이 직접 호출하는 KEMKIM 분석 엔드포인트.
-
-예전에는 매니저 서버(manager/server)가 이 분석을 대신 돌리고, 결과를 이 서비스의
-/api/internal/projects/ingest로 다시 밀어 넣었다. 이제 분석 자체가 이 프로세스 안에서
-돌기 때문에 매니저 서버를 거칠 필요가 없다 — 인증은 AuthMiddleware가 쿠키(브라우저)와
-Bearer 토큰(데스크톱 앱) 둘 다 처리해준다."""
-
 import json
 import os
 from io import StringIO

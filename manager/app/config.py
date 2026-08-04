@@ -19,8 +19,6 @@ if mode is None:
 else:
     mode = int(mode)
 
-# knpu.re.kr 중앙 로그인은 로컬/운영 모드와 무관하게 항상 공개 도메인을 사용한다
-# (HOMEPAGE_EDIT_API도 같은 이유로 두 모드 모두 공개 URL을 쓴다)
 HOMEPAGE_URL = "https://knpu.re.kr"
 
 if mode == 0:
@@ -38,8 +36,6 @@ else:
     KEMKIM_VIEWER_URL = "https://kemkim.knpu.re.kr"
     STATISTICS_VIEWER_URL = "https://statistics.knpu.re.kr"
 
-# 분석 요청은 이제 매니저 서버를 거치지 않고 각 서비스로 직접 간다
-# (kemkim/network/statistics가 매니저 서버 의존 없이 자체적으로 분석을 처리한다).
 NETWORK_API = f"{NETWORK_VIEWER_URL}/api"
 KEMKIM_API = f"{KEMKIM_VIEWER_URL}/api"
 STATISTICS_API = f"{STATISTICS_VIEWER_URL}/api"

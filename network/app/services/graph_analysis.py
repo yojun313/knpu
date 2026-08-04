@@ -1,10 +1,3 @@
-# app/services/graph_analysis.py
-"""
-업로드된 그래프에 대한 통계·요약 계산. network_service.py가 만들어 준 지표(빈도,
-중심성, 커뮤니티)를 그대로 활용해, 뷰어가 매번 다시 계산하지 않아도 되는
-전역 통계 / 임계값 가이드 / 커뮤니티별 대표 단어를 서버에서 미리 만들어 둔다.
-"""
-
 import numpy as np
 
 
