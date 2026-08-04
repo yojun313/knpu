@@ -71,19 +71,18 @@ crawler_db_name = "crawler_dev" if MODE == 0 else "crawler"
 network_db_name = "network_dev" if MODE == 0 else "network"
 kemkim_db_name = "kemkim_dev" if MODE == 0 else "kemkim"
 statistics_db_name = "statistics_dev" if MODE == 0 else "statistics"
+homepage_db_name = "homepage_dev" if MODE == 0 else "homepage"
 
 systems_db = client[systems_db_name]
 manager_db = client[manager_db_name]
 crawler_db = client[crawler_db_name]
-homepage_db = client["homepage"]
+homepage_db = client[homepage_db_name]
 network_db = client[network_db_name]
 kemkim_db = client[kemkim_db_name]
 statistics_db = client[statistics_db_name]
 
-# ── 계정/인증 (단일 진실 소스, dev/prod 구분 없이 하나만 존재 — 원래도 그랬다) ──
 user_db = systems_db["users"]
 auth_codes_db = systems_db["auth-codes"]
-legacy_auth_codes_db = systems_db["legacy-auth-codes"]
 webauthn_credentials_db = systems_db["webauthn-credentials"]
 webauthn_challenges_db = systems_db["webauthn-challenges"]
 discord_link_requests_db = systems_db["discord-link-requests"]
@@ -102,7 +101,6 @@ auth_config_db = systems_db["bot-config"]
 # ── 로깅 ──
 user_logs_db = systems_db["user-logs"]
 user_bugs_db = systems_db["user-bugs"]
-audit_logs_db = systems_db["audit-logs"]
 identities_db = systems_db["identities"]
 
 # ── manager 게시판 (매니저 앱 전용으로 남은 유일한 데이터) ──
@@ -118,8 +116,6 @@ kemkim_folders_db = kemkim_db["folders"]
 statistics_projects_db = statistics_db["projects"]
 statistics_folders_db = statistics_db["folders"]
 
-# ── 레거시 계정 (manager 데스크톱 앱이 과거에 쓰던 컬렉션). 마이그레이션 이전 로그의
-# userUid가 이 컬렉션의 uid를 참조하므로 이름 매핑용으로 유지한다. ──
 legacy_users_db = systems_db["legacy-users"]
 
 # ── crawler ──
@@ -133,7 +129,6 @@ crawlYoutubeApi_db = crawler_db["youtube-api"]
 discord_notifications_db = systems_db["discord-notifications"]
 
 crawldata_path = os.getenv("CRAWLDATA_PATH")
-
 
 def get_user_names(uids: list[str]) -> dict[str, str]:
     """uid 목록 -> 표시용 이름. 계정 정보의 진짜 출처는 systems.users이므로 조회만 한다."""

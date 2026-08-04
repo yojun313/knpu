@@ -19,7 +19,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.auth.middleware import AuthMiddleware
+from system.auth.middleware import AuthMiddleware
 from app.common.notification import sendDiscord
 from app.config import MODE
 from db import user_logs_db
@@ -128,5 +128,6 @@ app = AuthMiddleware(
         service="crawler",
         collection=user_logs_db,
         identity_extractor=_extract_identity,
-    )
+    ),
+    extra_public_paths=["/static/", "/api/proxy/update", "/auth/token-login"],
 )

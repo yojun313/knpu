@@ -1,10 +1,32 @@
-from app.db import crawlList_db, crawlLog_db, user_db, crawldata_path
-from app.libs.exceptions import ConflictException, NotFoundException, HTTPException
-from app.models.crawl_model import (
-    CrawlDbCreateDto,
-    CrawlLogUpdateDto,
-    SaveCrawlDbOption,
-)
+"""매니저 데스크톱 앱이 쓰던 크롤링 DB 조회/다운로드 로직 — 예전엔 manager/server가
+갖고 있었고 크롤러는 이 서버에 HTTP로 요청을 대신 넘겨주기만 했다. 이제 크롤러가
+crawlList_db/crawlLog_db를 직접 갖고 있으므로 그 왕복을 없애고 여기서 바로 처리한다."""
+
+import gc
+import itertools
+import multiprocessing
+import os
+import shutil
+import time
+import uuid
+import zipfile
+from collections import OrderedDict
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from datetime import datetime, timezone, timedelta
+from io import BytesIO
+from zoneinfo import ZoneInfo
+
+import pandas as pd
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse, StreamingResponse
+from starlette.background import BackgroundTask
+from starlette.responses import FileResponse
+
+from app.db import crawler_db, user_logs_db
+from config import CRAWL_DATA_PATH
+from system.logging.user_log import insert_log
+from system.progress import send_message
+
 from app.utils.zip import fast_zip
 from app.utils.getsize import getFolderSize, format_size
 from app.utils.csv_export import (
@@ -14,106 +36,44 @@ from app.utils.csv_export import (
     apply_word_filter,
     process_table_task,
 )
-from fastapi.responses import JSONResponse
-from collections import OrderedDict
-from datetime import datetime, timezone, timedelta
-from starlette.background import BackgroundTask
-from zoneinfo import ZoneInfo
-from fastapi.responses import StreamingResponse
-from starlette.responses import FileResponse
-from io import BytesIO
-from concurrent.futures import ProcessPoolExecutor, as_completed
-import pandas as pd
-import itertools
-import multiprocessing
-from system.progress import send_message
-from app.services.user_service import log_user
-import time
-import uuid
-import os
-import gc
-import zipfile
-import shutil
+
+crawlList_db = crawler_db["db-list"]
+crawlLog_db = crawler_db["log-list"]
 
 
-def createCrawlDb(crawlDb: CrawlDbCreateDto):
-    crawlDb_dict = crawlDb.model_dump()
-
-    existing_crawlDb = crawlList_db.find_one({"name": crawlDb_dict["name"]}, {"_id": 0})
-    if existing_crawlDb:
-        raise ConflictException("CrawlDB with this name already exists")
-
-    userUid = crawlDb_dict["userUid"]
-
-    ordered_dict = OrderedDict([("uid", str(uuid.uuid4()))])
-    ordered_dict.update(crawlDb_dict)
-    ordered_dict["stat"] = {"article": 0, "cmt": 0, "reply": 0}
-    now_kst = (
-        datetime.now(timezone.utc)
-        .astimezone(timezone(timedelta(hours=9)))
-        .strftime("%Y-%m-%d %H:%M")
-    )
-
-    ordered_dict["startTime"] = now_kst
-    ordered_dict["endTime"] = "0%"
-
-    crawlList_db.insert_one(ordered_dict)
-    if "_id" in ordered_dict:
-        del ordered_dict["_id"]
-    log_user(
-        userUid,
-        "manager.crawl_db.create",
-        f"Created crawl DB: {crawlDb_dict['name']}",
-        target={"type": "crawl_db", "id": crawlDb_dict["name"]},
-    )
-
-    return JSONResponse(
-        status_code=201,
-        content={"message": "CrawlDB created", "data": ordered_dict},
-    )
-
-
-def updateCrawlLog(crawlLog: CrawlLogUpdateDto):
-    crawlLog_dict = crawlLog.model_dump()
-
-    crawlLog_db.update_one(
-        {"uid": crawlLog_dict["uid"]},
-        {"$set": {"content": crawlLog_dict["content"]}},
-        upsert=True,
-    )
-
-    return JSONResponse(
-        status_code=201,
-        content={
-            "message": "CrawlLog updated/created",
-        },
+def _log(user_uid: str, action: str, message: str, target_id: str) -> None:
+    insert_log(
+        user_logs_db,
+        user_uid,
+        action,
+        "crawler",
+        message=message,
+        target={"type": "crawl_db", "id": target_id},
     )
 
 
 def getCrawlLog(uid: str):
-    # DB에서 uid로 crawlLog 검색
     crawlLog = crawlLog_db.find_one({"uid": uid}, {"_id": 0})
-
     if not crawlLog:
-        raise NotFoundException("CrawlLog not found")
-
+        raise HTTPException(status_code=404, detail="CrawlLog not found")
     return JSONResponse(
         status_code=200, content={"message": "CrawlLog fetched", "data": crawlLog}
     )
 
 
+def deleteCrawlDbBg(name: str):
+    folder_path = os.path.join(CRAWL_DATA_PATH, name)
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path, ignore_errors=True)
+
+
 def deleteCrawlDb(uid: str, userUid: str):
     crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
     if not crawlDb:
-        raise NotFoundException("CrawlDB not found")
+        raise HTTPException(status_code=404, detail="CrawlDB not found")
 
     targetDB = crawlDb["name"]
-    log_user(
-        userUid,
-        "manager.crawl_db.delete_request",
-        f"Deleted crawl DB: {targetDB}",
-        target={"type": "crawl_db", "id": targetDB},
-    )
+    _log(userUid, "crawler.crawl_db.delete_request", f"Deleted crawl DB: {targetDB}", targetDB)
 
     crawlList_db.delete_one({"uid": uid})
     crawlLog_db.delete_one({"uid": uid})
@@ -129,7 +89,6 @@ def deleteCrawlDb(uid: str, userUid: str):
 
 def stopCrawlDb(uid: str, userUid: str):
     target_data = crawlList_db.find_one({"uid": uid})
-
     if not target_data:
         raise HTTPException(status_code=404, detail="DB를 찾을 수 없습니다.")
 
@@ -142,13 +101,7 @@ def stopCrawlDb(uid: str, userUid: str):
 
     if result.modified_count > 0:
         target_name = target_data.get("name", "Unknown")
-        log_user(
-            userUid,
-            "manager.crawl_db.stop_request",
-            f"Stopped crawl DB: {target_name}",
-            target={"type": "crawl_db", "id": target_name},
-        )
-
+        _log(userUid, "crawler.crawl_db.stop_request", f"Stopped crawl DB: {target_name}", target_name)
         return JSONResponse(
             status_code=200,
             content={"message": f"'{target_name}' 크롤링이 중단되었습니다."},
@@ -158,12 +111,6 @@ def stopCrawlDb(uid: str, userUid: str):
             status_code=500,
             content={"message": "상태 업데이트에 실패했습니다."},
         )
-
-
-def deleteCrawlDbBg(name: str):
-    folder_path = os.path.join(crawldata_path, name)
-    if os.path.exists(folder_path):
-        shutil.rmtree(folder_path, ignore_errors=True)
 
 
 def processDbInfo(crawlDb: dict):
@@ -183,12 +130,9 @@ def processDbInfo(crawlDb: dict):
             crawlType = typ
 
     crawlDb["crawlType"] = crawlType
-    crawlDb["startDate"] = crawlDb["startDate"]
-    crawlDb["endDate"] = crawlDb["endDate"]
     crawlDb["crawlOption"] = str(crawlDb["crawlOption"])
     crawlDb["crawlSpeed"] = str(crawlDb["crawlSpeed"])
 
-    # 상태 처리
     if crawlDb["status"] == "completed":
         crawlDb["status"] = "Done"
     elif crawlDb["status"] == "error":
@@ -198,12 +142,11 @@ def processDbInfo(crawlDb: dict):
     elif crawlDb["status"] == "running":
         crawlDb["status"] = crawlDb["percent"]
 
-    # dbSize 처리
     size = crawlDb.get("dbSize") or 0
     size = int(size)
 
     if size == 0:
-        byte_size = getFolderSize(os.path.join(crawldata_path, name))
+        byte_size = getFolderSize(os.path.join(CRAWL_DATA_PATH, name))
         size = byte_size
 
     crawlDb["dbSize"] = format_size(size)
@@ -211,8 +154,7 @@ def processDbInfo(crawlDb: dict):
     return crawlDb
 
 
-def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
-    user = user_db.find_one({"uid": userUid}, {"_id": 0})
+def getCrawlDbList(sort_by: str, mine: int, user: dict):
     username = user["name"]
 
     if mine == 0:
@@ -232,9 +174,7 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
         crawlDbList = []
 
     fullStorage = 0
-
     filteredList = []
-    # 각 doc 가공
     for crawlDb in crawlDbList:
         processed = processDbInfo(crawlDb)
         if processed:
@@ -242,10 +182,8 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
             filteredList.append(processed)
 
     crawlDbList = filteredList
-
     activeCrawl = crawlList_db.count_documents({"status": "running"})
 
-    # 응답
     return JSONResponse(
         status_code=200,
         content={
@@ -257,81 +195,18 @@ def getCrawlDbList(sort_by: str, mine: int = 0, userUid: str = None):
     )
 
 
-def getCrawlDbInfo(uid: str, userUid: str = None):
+def getCrawlDbInfo(uid: str, userUid: str):
     crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
-
     if not crawlDb:
-        raise NotFoundException("CrawlDB not found")
+        raise HTTPException(status_code=404, detail="CrawlDB not found")
 
     targetDB = crawlDb["name"]
-    log_user(
-        userUid,
-        "manager.crawl_db.info_view",
-        f"Viewed crawl DB info: {targetDB}",
-        target={"type": "crawl_db", "id": targetDB},
-    )
+    _log(userUid, "crawler.crawl_db.info_view", f"Viewed crawl DB info: {targetDB}", targetDB)
 
     crawlDb = processDbInfo(crawlDb)
     return JSONResponse(
         status_code=200,
         content={"message": "CrawlDB retrieved", "data": crawlDb},
-    )
-
-
-def endCrawlDb(uid: str, error: bool = False):
-    crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
-    if not crawlDb:
-        raise NotFoundException("CrawlDB not found")
-
-    if error:
-        result = crawlList_db.update_one(
-            {"uid": uid},
-            {"$set": {"endTime": "X"}},
-        )
-    else:
-        now_kst = (
-            datetime.now(timezone.utc)
-            .astimezone(timezone(timedelta(hours=9)))
-            .strftime("%Y-%m-%d %H:%M")
-        )
-
-        result = crawlList_db.update_one(
-            {"uid": uid},
-            {"$set": {"endTime": now_kst}},
-        )
-
-    if result.matched_count == 0:
-        raise NotFoundException("CrawlDB not found")
-
-    return JSONResponse(
-        status_code=200,
-        content={
-            "message": "CrawlDB updated",
-        },
-    )
-
-
-def updateCount(uid: str, stat):
-    crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
-    if not crawlDb:
-        raise NotFoundException("CrawlDB not found")
-
-    dbsize = getFolderSize(os.path.join(crawldata_path, crawlDb["name"]))
-    data_info_dict = stat.model_dump()
-    percent = data_info_dict["percent"]
-
-    del data_info_dict["percent"]
-
-    crawlList_db.update_one(
-        {"uid": uid},
-        {"$set": {"stat": data_info_dict, "dbSize": dbsize, "endTime": percent}},
-    )
-
-    return JSONResponse(
-        status_code=200,
-        content={
-            "message": "CrawlDB updated",
-        },
     )
 
 
@@ -347,13 +222,10 @@ def _buildDownloadManifest(
     crawlDb: dict,
     targetDB: str,
     dbname: str,
-    userUid: str,
+    downloader_name: str,
     saveOption: dict,
     table_row_counts: dict,
 ) -> str:
-    requester_user = user_db.find_one({"uid": userUid}, {"_id": 0})
-    downloader_name = requester_user["name"] if requester_user else userUid
-
     typ = targetDB.split("_")[0]
     crawl_type_label = _CRAWL_TYPE_LABELS.get(typ, typ)
 
@@ -414,27 +286,20 @@ def _buildDownloadManifest(
     return "\n".join(lines) + "\n"
 
 
-def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
+def saveCrawlDb(uid: str, saveOption: dict, userUid: str, downloader_name: str):
     def cleanup_folder_and_zip(folder_path: str, zip_path: str):
-        # 폴더와 ZIP 파일을 삭제
         shutil.rmtree(folder_path, ignore_errors=True)
         try:
             os.remove(zip_path)
         except OSError:
             pass
 
-    saveOption = saveOption.model_dump()
     crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
     if not crawlDb:
-        raise NotFoundException("CrawlDB not found")
+        raise HTTPException(status_code=404, detail="CrawlDB not found")
 
     targetDB = crawlDb["name"]
-    log_user(
-        userUid,
-        "manager.crawl_db.save_request",
-        f"Requested crawl DB download: {targetDB}",
-        target={"type": "crawl_db", "id": targetDB},
-    )
+    _log(userUid, "crawler.crawl_db.save_request", f"Requested crawl DB download: {targetDB}", targetDB)
 
     pid = saveOption["pid"]
 
@@ -448,7 +313,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
 
     time.sleep(1)
     send_message(pid, f"DB에서 테이블 목록을 가져오는 중...")
-    localDbpath = os.path.join(crawldata_path, targetDB)
+    localDbpath = os.path.join(CRAWL_DATA_PATH, targetDB)
 
     tableList = [
         f[:-8]
@@ -456,21 +321,22 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
         if f.endswith(".parquet") and "info" not in f
     ]
 
-    # 정렬: article > statistics > 나머지
     tableList = sorted(
         tableList, key=lambda x: ("article" not in x, "statistics" not in x, x)
     )
 
-    # 현재 시각
     kst_now = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%m%d_%H%M")
 
-    # targetDB 구조 예시:
     parts = targetDB.split("_")[:-2] + kst_now.split("_")
     dbname = "_".join(parts)
     dbname = replaceKeywordInFilename(dbname, crawlDb["keyword"])
 
     dateOption = saveOption["dateOption"]
     filterOption = saveOption["filterOption"]
+
+    start_date_formed = None
+    end_date_formed = None
+    start_date = end_date = None
 
     if dateOption == "part":
         start_date = saveOption["start_date"]
@@ -525,9 +391,6 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
         )
         return replaceKeywordInFilename(name, crawlDb["keyword"])
 
-    # ---- 1단계: article / statistics 원본 테이블을 순차 처리해 articleURL/statisticsURL을
-    # 구한다. 나머지 테이블(reply, rereply, token_* 등)은 이 두 URL 목록만 있으면 서로
-    # 완전히 독립적으로 필터링할 수 있어, 2단계에서 프로세스 풀로 병렬 처리한다.
     raw_article_name = next(
         (t for t in tableList if t.endswith("_article") and not t.startswith("token_")),
         None,
@@ -560,7 +423,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
                     tableDF, "Article Text", incl_words, excl_words, include_all
                 )
             articleURL = tableDF["Article URL"].tolist()
-        else:  # raw_statistics_name
+        else:
             if filterOption:
                 tableDF = tableDF[tableDF["Article URL"].isin(articleURL)]
             statisticsURL = tableDF["Article URL"].tolist()
@@ -572,7 +435,6 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
         table_row_counts[edited_tableName] = len(tableDF)
         tableDF = None
 
-    # ---- 2단계: 나머지 테이블을 프로세스 풀로 병렬 처리 ----
     remaining_names = [t for t in tableList if t not in phase1_names]
     tasks = []
 
@@ -587,14 +449,10 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
             and raw_statistics_name is not None
             and tableName[len("token_") :] == raw_statistics_name
         ):
-            # token_statistics: raw statistics에서 구한 URL 집합을 그대로 재사용한다
-            # (articleURL/token_article 관계와 동일한 패턴). 여기서 별도로 다시 계산하면
-            # 토큰화가 원본보다 뒤처진 경우 이후 reply_statistics 결과가 누락될 수 있다.
             url_filter = statisticsURL
         elif "_article" in tableName:
-            # token_article: 필터링 옵션이 켜져 있을 때만 articleURL로 제한한다.
             url_filter = articleURL if filterOption else None
-        elif "reply" in tableName:  # reply / rereply / token_reply / token_rereply
+        elif "reply" in tableName:
             url_filter = articleURL if filterOption else None
         else:
             url_filter = None
@@ -654,7 +512,7 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
             crawlDb=crawlDb,
             targetDB=targetDB,
             dbname=dbname,
-            userUid=userUid,
+            downloader_name=downloader_name,
             saveOption=saveOption,
             table_row_counts=table_row_counts,
         )
@@ -684,22 +542,16 @@ def saveCrawlDb(uid: str, saveOption: SaveCrawlDbOption, userUid: str):
 def previewCrawlDb(uid: str, userUid: str):
     crawlDb = crawlList_db.find_one({"uid": uid}, {"_id": 0})
     if not crawlDb:
-        raise NotFoundException("CrawlDB not found")
+        raise HTTPException(status_code=404, detail="CrawlDB not found")
     targetDB = crawlDb["name"]
-    log_user(
-        userUid,
-        "manager.crawl_db.preview_request",
-        f"Requested crawl DB preview: {targetDB}",
-        target={"type": "crawl_db", "id": targetDB},
-    )
+    _log(userUid, "crawler.crawl_db.preview_request", f"Requested crawl DB preview: {targetDB}", targetDB)
 
-    target_folder = crawlDb["name"]  # 이 이름이 곧 디렉토리명
-    base_path = os.path.join(crawldata_path, target_folder)  # 경로에 맞게 수정
+    target_folder = crawlDb["name"]
+    base_path = os.path.join(CRAWL_DATA_PATH, target_folder)
 
     if not os.path.exists(base_path):
-        raise NotFoundException(f"폴더가 존재하지 않습니다: {base_path}")
+        raise HTTPException(status_code=404, detail=f"폴더가 존재하지 않습니다: {base_path}")
 
-    # 압축 버퍼 생성
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file in os.listdir(base_path):
@@ -714,11 +566,9 @@ def previewCrawlDb(uid: str, userUid: str):
                     df = pd.read_csv(file_path, encoding="utf-8-sig")
                 df_preview = pd.concat([df.head(50), df.tail(50)]).drop_duplicates()
 
-                # ID 열 제거 (있을 경우)
                 if "id" in df_preview.columns:
                     df_preview = df_preview.drop(columns=["id"])
 
-                # DataFrame을 BytesIO로 저장
                 df_buffer = BytesIO()
                 df_preview.to_parquet(df_buffer, index=False)
                 df_buffer.seek(0)
