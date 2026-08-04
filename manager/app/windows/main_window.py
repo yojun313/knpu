@@ -38,12 +38,12 @@ from core.boot import (
 )
 from core.shortcut import initShortcut, resetShortcuts
 from core.setting import get_setting, set_setting
+from ui.style import theme_option
 from core.auth import loginProgram
 from services.crawldb import updateDB
 from services.discord_notify import sendAdminNotify
 from services.update import updateProgram
 from services.logging import userLogging, getUserLocation
-from ui.style import get_stylesheet
 from ui.status import printStatus, changeStatusbarAction
 from ui.dialogs import ViewVersionDialog
 from assets.gui_ui import Ui_MainWindow
@@ -293,10 +293,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 QMessageBox.information(self, "Information", f"설정이 완료되었습니다")
                 printStatus(self, "설정 반영 중...")
                 QApplication.instance().setStyleSheet(
-                    get_stylesheet(
-                        get_setting("ThemeStyle", "default"),
-                        get_setting("ThemeMode", "light"),
-                    )
+                    theme_option[get_setting("Theme")]
                 )
                 self.managerDatabaseObj.refreshDB()
                 printStatus(self)
