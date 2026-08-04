@@ -4,9 +4,6 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 
-# Claude Code CLI가 세션마다 남기는 JSONL transcript. assistant 메시지의 "usage" 필드에
-# 실제 토큰 사용량(input/output/cache write/cache read)이 API 응답 그대로 기록되어 있어
-# 별도 계측 없이 여기서 바로 집계할 수 있다.
 PROJECTS_DIR = os.path.expanduser("~/.claude/projects")
 HOME_DIR = os.path.expanduser("~")
 
