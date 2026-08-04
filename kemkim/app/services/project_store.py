@@ -1,15 +1,3 @@
-# app/services/project_store.py
-"""
-분석 서버(manager/server, KemKim 파이프라인)가 만든 결과 zip(Data/, Result/, Trace/,
-kemkim_info.txt 포함)을 로그인한 사용자의 "프로젝트"로 저장한다. 원본 결과와 좌표/신호
-데이터는 /mnt/ssd/kemkim/{uid}/{project_id}/ 아래 디스크에 두고, 프로젝트 메타데이터(이름
-등)는 MongoDB(kemkim-projects 컬렉션)에 둔다.
-
-웹에서는 별도의 "조정" 단계 없이, 실행 결과(base.json)를 그대로 하나의 그래프로 두고
-프론트엔드에서 사분면/단어 단위로 표시를 껐다 켰다 한다(서버 재계산 없음) — 그래서
-network의 project_store.py와 달리 조정본(revision) 개념이 없다.
-"""
-
 import ast
 import io
 import json
@@ -425,7 +413,13 @@ def create_folder(uid: str, name: str) -> dict:
         raise ValueError("폴더 이름을 입력해주세요.")
     folder_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
-    doc = {"_id": folder_id, "uid": uid, "name": name, "created_at": now, "updated_at": now}
+    doc = {
+        "_id": folder_id,
+        "uid": uid,
+        "name": name,
+        "created_at": now,
+        "updated_at": now,
+    }
     kemkim_folders_db.insert_one(doc)
     return _folder_out(doc)
 

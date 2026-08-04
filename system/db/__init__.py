@@ -129,8 +129,7 @@ crawlJobQueue_db = crawler_db["job-queue"]
 crawlIpList_db = crawler_db["ip-list"]
 crawlYoutubeApi_db = crawler_db["youtube-api"]
 
-# ── 디스코드 알림 발행 큐 — 실제 전송은 system/bot(구 knpu/bot)이 폴링해서 처리한다.
-# 원래도 dev/prod 구분 없이 하나였다. ──
+# ── 디스코드 알림 발행 큐 —
 discord_notifications_db = systems_db["discord-notifications"]
 
 crawldata_path = os.getenv("CRAWLDATA_PATH")

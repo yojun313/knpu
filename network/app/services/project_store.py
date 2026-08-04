@@ -1,12 +1,3 @@
-# app/services/project_store.py
-"""
-분석 서버(network_service.py)가 만든 결과 zip(nodes*.csv, edges*.csv 포함)을 로그인한
-사용자의 "프로젝트"로 저장한다. 그래프 JSON은 /mnt/ssd/network/{uid}/{project_id}/ 아래
-디스크에 두고, 프로젝트 메타데이터(이름 등)는 MongoDB(network-projects 컬렉션)에 둔다.
-
-세션 방식과 달리 TTL 자동 삭제가 없다 — 사용자가 명시적으로 삭제하기 전까지 보존된다.
-"""
-
 import io
 import json
 import os

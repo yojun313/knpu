@@ -53,8 +53,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 class NoCacheStaticFiles(StaticFiles):
-    """개발 중 자산(js/css)이 자주 바뀌므로 브라우저가 캐시된 옛 버전을 계속 쓰는 일이
-    없도록 캐시를 끈다. 정적 파일이 몇 개 안 되는 내부 도구라 성능 영향은 무시할 만하다."""
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         async def send_wrapper(message):

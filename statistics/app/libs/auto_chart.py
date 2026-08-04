@@ -13,9 +13,7 @@ from app.libs.path import safe_path
 plt.rcParams["font.family"] = "NanumGothic"
 plt.rcParams["axes.unicode_minus"] = False
 
-# viewer.js planChart와 동일한 상한: 카테고리가 너무 많으면 막대 대신 표만 보여준다
 MAX_BAR_CATEGORIES = 50
-# 모든 열이 숫자일 때 첫 열을 라벨로 쓸지 판단하는 상한(viewer.js와 동일)
 MAX_LABEL_UNIQUE_FALLBACK = 40
 
 
@@ -37,8 +35,6 @@ def _is_numeric(series: pd.Series) -> bool:
 
 
 def _is_heatmap_table(stem: str, df: pd.DataFrame) -> bool:
-    """app/services/project_store.py(_is_heatmap_table)와 반드시 동일하게 유지할 것 —
-    뷰어가 히트맵으로 그리는 표는 여기서도 히트맵으로 그려야 zip과 화면이 일치한다."""
     if stem == "hour_dow_heatmap":
         return True
     if stem.startswith("spss_crosstab_") or stem == "spss_pca_loadings":
@@ -68,8 +64,6 @@ def _plan_chart(stem: str, df: pd.DataFrame):
     else:
         label_col = next((c for c in cols if not numeric_flags[c]), None)
         if label_col is None:
-            # 모든 열이 숫자인 경우 — 첫 열이 행 수만큼 서로 다른 값을 가지는
-            # 소규모 카테고리처럼 보이면 그 열을 라벨(x축)로 쓴다.
             first_col = cols[0]
             unique_count = df[first_col].nunique(dropna=True)
             if unique_count == len(df) and unique_count <= MAX_LABEL_UNIQUE_FALLBACK:
@@ -144,9 +138,6 @@ def _render_bar(df: pd.DataFrame, plan: dict, stem: str, out_path: str) -> None:
 
 
 def fill_missing_graphs(csv_dir: str, graph_dir: str) -> None:
-    """csv_dir의 표마다 뷰어가 그리는 것과 같은 차트를 재현해, graph_dir에 같은
-    이름(stem)의 PNG가 아직 없는 표만 새로 그려 넣는다. 이미 분석 함수가 같은
-    이름으로 직접 그려둔 그래프는 그대로 둔다."""
     if not os.path.isdir(csv_dir):
         return
     os.makedirs(graph_dir, exist_ok=True)
@@ -184,7 +175,5 @@ def fill_missing_graphs(csv_dir: str, graph_dir: str) -> None:
             else:
                 _render_bar(df, plan, stem, out_path)
         except Exception:
-            # 표 하나의 그래프 생성 실패가 나머지 표나 전체 분석 결과 저장을
-            # 막아서는 안 된다(spss_analysis.py의 safe() 패턴과 동일한 이유).
             plt.close("all")
             continue
