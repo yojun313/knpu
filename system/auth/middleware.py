@@ -20,8 +20,9 @@ PUBLIC_PATHS = [
 
 
 class AuthMiddleware:
-    def __init__(self, app: ASGIApp):
+    def __init__(self, app: ASGIApp, *, extra_public_paths: list[str] | None = None):
         self.app = app
+        self.public_paths = PUBLIC_PATHS + (extra_public_paths or [])
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] != "http":
@@ -31,7 +32,7 @@ class AuthMiddleware:
         request = Request(scope)
         path = request.url.path
 
-        if any(path.startswith(p) for p in PUBLIC_PATHS):
+        if any(path.startswith(p) for p in self.public_paths):
             await self.app(scope, receive, send)
             return
 

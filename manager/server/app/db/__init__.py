@@ -10,8 +10,6 @@ from system.db import (
     manager_db,
     crawler_db,
     homepage_db,
-    crawlList_db,
-    crawlLog_db,
     user_db,
     user_logs_db,
     user_bugs_db,
@@ -19,7 +17,6 @@ from system.db import (
     bug_board_db,
     free_board_db,
     discord_notifications_db,
-    crawldata_path,
 )
 
 __all__ = [
@@ -27,8 +24,6 @@ __all__ = [
     "manager_db",
     "crawler_db",
     "homepage_db",
-    "crawlList_db",
-    "crawlLog_db",
     "user_db",
     "user_logs_db",
     "user_bugs_db",
@@ -36,5 +31,4 @@ __all__ = [
     "bug_board_db",
     "free_board_db",
     "discord_notifications_db",
-    "crawldata_path",
 ]

@@ -28,6 +28,7 @@ if mode == 0:
     NETWORK_VIEWER_URL = "http://localhost:8001"
     KEMKIM_VIEWER_URL = "http://localhost:8008"
     STATISTICS_VIEWER_URL = "http://localhost:8009"
+    CRAWLER_VIEWER_URL = "http://localhost:3001"
 else:
     MANAGER_SERVER_API = "https://manager.knpu.re.kr/api"
     MANAGER_PROGRESS_API = "https://manager.knpu.re.kr/progress"
@@ -35,7 +36,9 @@ else:
     NETWORK_VIEWER_URL = "https://network.knpu.re.kr"
     KEMKIM_VIEWER_URL = "https://kemkim.knpu.re.kr"
     STATISTICS_VIEWER_URL = "https://statistics.knpu.re.kr"
+    CRAWLER_VIEWER_URL = "https://crawler.knpu.re.kr"
 
 NETWORK_API = f"{NETWORK_VIEWER_URL}/api"
 KEMKIM_API = f"{KEMKIM_VIEWER_URL}/api"
 STATISTICS_API = f"{STATISTICS_VIEWER_URL}/api"
+CRAWLER_API = f"{CRAWLER_VIEWER_URL}/api"

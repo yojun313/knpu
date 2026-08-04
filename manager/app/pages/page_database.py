@@ -44,7 +44,12 @@ from services.update import updateProgram
 from core.shortcut import resetShortcuts
 from core.thread import BaseWorker, DownloadDialog
 from core.auth import get_setting, set_setting, verifyAdmin
-from config import NETWORK_VIEWER_URL, KEMKIM_VIEWER_URL, STATISTICS_VIEWER_URL
+from config import (
+    NETWORK_VIEWER_URL,
+    KEMKIM_VIEWER_URL,
+    STATISTICS_VIEWER_URL,
+    CRAWLER_API,
+)
 from .page_worker import Manager_Worker
 
 warnings.filterwarnings("ignore")
@@ -114,7 +119,7 @@ class Manager_Database(Manager_Worker):
                     clickedBtn = msgBox.clickedButton()
 
                     if clickedBtn == stopDeleteBtn:
-                        Request("delete", f"crawls/{DBuid}")
+                        Request("delete", f"crawls/{DBuid}", base_api=CRAWLER_API)
                         self.main.activeCrawl -= 1
                         QMessageBox.information(
                             self.main,
@@ -125,7 +130,7 @@ class Manager_Database(Manager_Worker):
                         self.refreshDB()
 
                     elif clickedBtn == stopOnlyBtn:
-                        Request("put", f"crawls/{DBuid}/stop")
+                        Request("put", f"crawls/{DBuid}/stop", base_api=CRAWLER_API)
                         self.main.activeCrawl -= 1
                         QMessageBox.information(
                             self.main, "Information", "크롤링 중단 요청을 전송했습니다"
@@ -145,7 +150,7 @@ class Manager_Database(Manager_Worker):
                         QMessageBox.StandardButton.Yes,
                     )
                     if reply == QMessageBox.StandardButton.Yes:
-                        Request("delete", f"crawls/{DBuid}")
+                        Request("delete", f"crawls/{DBuid}", base_api=CRAWLER_API)
                         QMessageBox.information(
                             self.main, "Information", f"'{DBname}'가 삭제되었습니다"
                         )
@@ -170,7 +175,10 @@ class Manager_Database(Manager_Worker):
                 try:
                     self.message.emit("DB 데이터를 불러오는 중...")
                     response = Request(
-                        "get", f"crawls/{self.DBuid}/preview", stream=True
+                        "get",
+                        f"crawls/{self.DBuid}/preview",
+                        stream=True,
+                        base_api=CRAWLER_API,
                     )
 
                     tab_data = []
@@ -320,7 +328,9 @@ class Manager_Database(Manager_Worker):
         try:
             printStatus(self.main, "불러오는 중...")
             DBuid = self.DB["DBdata"][row]["uid"]
-            DBdata = Request("get", f"crawls/{DBuid}/info").json()["data"]
+            DBdata = Request(
+                "get", f"crawls/{DBuid}/info", base_api=CRAWLER_API
+            ).json()["data"]
 
             from ui.dialogs import DBInfoDialog
 
@@ -444,7 +454,9 @@ class Manager_Database(Manager_Worker):
 
                 try:
                     printStatus(self.main, "로그 불러오는 중...")
-                    response = Request("get", f"crawls/{DBuid}/log")
+                    response = Request(
+                        "get", f"crawls/{DBuid}/log", base_api=CRAWLER_API
+                    )
                     data = response.json().get("data")
 
                     if not data:
@@ -586,6 +598,7 @@ class Manager_Database(Manager_Worker):
                         json=self.option,
                         stream=True,
                         timeout=3600,
+                        base_api=CRAWLER_API,
                     )
 
                     content_disp = response.headers.get("Content-Disposition", "")

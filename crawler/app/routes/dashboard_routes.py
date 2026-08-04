@@ -2,7 +2,7 @@ import os
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from auth.jwt import verify_token
+from system.auth.jwt import decode_token as verify_token
 
 router = APIRouter()
 
