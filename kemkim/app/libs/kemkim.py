@@ -90,6 +90,17 @@ class KemKim:
                 elif "Date" in column:
                     self.dateColumn_name = column
 
+            self.folder_name = re.sub(
+                r"(\d{8})_(\d{8})_(\d{4})_(\d{4})",
+                f"{self.startdate}~{self.enddate}_{period}",
+                self.folder_name,
+            )
+            self.kemkim_folder_path = os.path.join(
+                self.save_path,
+                f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}",
+            )
+            os.makedirs(self.kemkim_folder_path, exist_ok=True)
+
             # Step 1: 데이터 분할 및 초기화
             self.period_divided_group = self.divide_period(self.token_data, period)
             period_list = list(self.period_divided_group.groups.keys())
@@ -110,16 +121,6 @@ class KemKim:
                 self.weighterror = True
 
             else:
-                self.folder_name = re.sub(
-                    r"(\d{8})_(\d{8})_(\d{4})_(\d{4})",
-                    f"{self.startdate}~{self.enddate}_{period}",
-                    self.folder_name,
-                )
-                self.kemkim_folder_path = os.path.join(
-                    self.save_path,
-                    f"kemkim_{str(self.folder_name)}_{self.now.strftime('%m%d%H%M')}",
-                )
-                os.makedirs(self.kemkim_folder_path, exist_ok=True)
                 self.write_status()
 
     def clear_console(self):

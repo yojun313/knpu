@@ -29,7 +29,7 @@
 
   function railApi(path, opts) {
     return fetch(path, opts).then(function (res) {
-      if (res.status === 401) { location.href = '/login'; return Promise.reject(new Error('unauthorized')); }
+      if (res.status === 401) { location.href = 'https://knpu.re.kr/login?redirect=' + encodeURIComponent(location.href); return Promise.reject(new Error('unauthorized')); }
       return res.json().then(function (b) {
         if (!res.ok) throw new Error(b.detail || res.statusText);
         return b;
@@ -54,7 +54,7 @@
         if (e.lengthComputable && onProgress) onProgress(Math.round(e.loaded / e.total * 100));
       };
       xhr.onload = function () {
-        if (xhr.status === 401) { location.href = '/login'; return; }
+        if (xhr.status === 401) { location.href = 'https://knpu.re.kr/login?redirect=' + encodeURIComponent(location.href); return; }
         var body = {};
         try { body = JSON.parse(xhr.responseText); } catch (e) { /* noop */ }
         if (xhr.status >= 200 && xhr.status < 300) resolve(body);
