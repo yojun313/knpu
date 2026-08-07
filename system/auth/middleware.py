@@ -32,7 +32,11 @@ class AuthMiddleware:
         request = Request(scope)
         path = request.url.path
 
-        if any(path.startswith(p) for p in self.public_paths):
+        # "/"는 다른 모든 경로의 접두어이기도 하므로 startswith가 아니라 정확히
+        # 일치할 때만 공개 경로로 취급한다 (안 그러면 전체 API가 공개된다).
+        if any(
+            path == p if p == "/" else path.startswith(p) for p in self.public_paths
+        ):
             await self.app(scope, receive, send)
             return
 

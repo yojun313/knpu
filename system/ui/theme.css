@@ -197,6 +197,33 @@
 .theme-mode-switch.on { background: var(--accent, #2c3e50); }
 .theme-mode-switch.on::before { transform: translateX(18px); }
 
+/* ── 상단 네비게이션 바 자동 숨김 토글 (모달 안, 다크모드 스위치 아래) ──────── */
+.theme-nav-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 18px 18px;
+}
+.theme-nav-row span { font-size: 12.5px; font-weight: 600; color: var(--sidebar-text, #33414f); }
+
+/* ── 상단 네비게이션 바 자동 숨김 동작 ────────────────────────────────────
+   html[data-ui-nav="autohide"]일 때 .top-header를 화면 상단에 고정시키고
+   위로 밀어 올려 숨긴다. 최상단에 살짝(6px) 걸쳐두거나 마우스를 올리면
+   다시 미끄러져 내려온다. #app이 있는 뷰어 페이지(kemkim/network/statistics)는
+   헤더가 차지하던 58px를 그대로 화면에 반환해 콘텐츠가 전체 높이를 쓰게 한다. */
+html[data-ui-nav="autohide"] .top-header {
+  position: fixed; top: 0; left: 0; right: 0;
+  transform: translateY(calc(-100% + 6px));
+  transition: transform 200ms ease;
+  will-change: transform;
+}
+html[data-ui-nav="autohide"] .top-header:hover,
+html[data-ui-nav="autohide"] .top-header:focus-within {
+  transform: translateY(0);
+}
+html[data-ui-nav="autohide"] #app { height: 100vh; }
+@supports (height: 100dvh) {
+  html[data-ui-nav="autohide"] #app { height: 100dvh; }
+}
+
 /* ============================================================================
    글래스모피즘 — 은은한 파스텔/딥톤 그라디언트 배경 + 반투명 유리 패널
    (기존 버전보다 채도를 낮추고 패널 불투명도를 올려 과하지 않고 읽기 편하게 조정)

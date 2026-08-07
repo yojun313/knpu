@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Request
 from app.models.board_model import AddVersionDto, AddBugDto, AddPostDto
 from app.services.board_service import (
     add_version,
@@ -17,7 +17,7 @@ from app.services.board_service import (
     delete_post,
     edit_post,
 )
-from system.auth.jwt import verify_token
+from app.routes.dependencies import get_uid
 
 router = APIRouter()
 
@@ -30,8 +30,8 @@ def create_version():
 
 
 @router.post("/version/add")
-def create_version(data: AddVersionDto, userUid: str = Depends(verify_token)):
-    return add_version(data, userUid)
+def create_version(data: AddVersionDto, request: Request):
+    return add_version(data, get_uid(request))
 
 
 @router.get("/version/{versionName}")
@@ -40,10 +40,8 @@ def read_version(versionName: str):
 
 
 @router.put("/version/{versionName}")
-def update_version(
-    versionName: str, data: AddVersionDto, userUid: str = Depends(verify_token)
-):
-    return edit_version(versionName, data, userUid)
+def update_version(versionName: str, data: AddVersionDto, request: Request):
+    return edit_version(versionName, data, get_uid(request))
 
 
 @router.get("/version")
@@ -52,21 +50,21 @@ def list_versions():
 
 
 @router.delete("/version/{versionName}")
-def remove_version(versionName: str, userUid: str = Depends(verify_token)):
-    return delete_version(versionName, userUid)
+def remove_version(versionName: str, request: Request):
+    return delete_version(versionName, get_uid(request))
 
 
 # ---------------- Bug ----------------
 
 
 @router.post("/bug/add")
-def create_bug(data: AddBugDto, userUid: str = Depends(verify_token)):
-    return add_bug(data, userUid)
+def create_bug(data: AddBugDto, request: Request):
+    return add_bug(data, get_uid(request))
 
 
 @router.get("/bug/{uid}")
-def read_bug(uid: str, userUid: str = Depends(verify_token)):
-    return get_bug(uid, userUid)
+def read_bug(uid: str, request: Request):
+    return get_bug(uid, get_uid(request))
 
 
 @router.get("/bug")
@@ -75,21 +73,21 @@ def list_bugs():
 
 
 @router.delete("/bug/{uid}")
-def remove_bug(uid: str, userUid: str = Depends(verify_token)):
-    return delete_bug(uid, userUid)
+def remove_bug(uid: str, request: Request):
+    return delete_bug(uid, get_uid(request))
 
 
 # ---------------- Free Board ----------------
 
 
 @router.post("/post/add")
-def create_post(data: AddPostDto, userUid: str = Depends(verify_token)):
-    return add_post(data, userUid)
+def create_post(data: AddPostDto, request: Request):
+    return add_post(data, get_uid(request))
 
 
 @router.get("/post/{uid}")
-def read_post(uid: str, userUid=Depends(verify_token)):
-    return get_post(uid, userUid)
+def read_post(uid: str, request: Request):
+    return get_post(uid, get_uid(request))
 
 
 @router.get("/post")
@@ -98,10 +96,10 @@ def list_posts():
 
 
 @router.delete("/post/{uid}")
-def remove_post(uid: str, userUid: str = Depends(verify_token)):
-    return delete_post(uid, userUid)
+def remove_post(uid: str, request: Request):
+    return delete_post(uid, get_uid(request))
 
 
 @router.put("/post/{uid}")
-def update_post(uid: str, data: AddPostDto, userUid: str = Depends(verify_token)):
-    return edit_post(uid, data, userUid)
+def update_post(uid: str, data: AddPostDto, request: Request):
+    return edit_post(uid, data, get_uid(request))
