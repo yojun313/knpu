@@ -1,7 +1,3 @@
-"""매니저 데스크톱 앱이 쓰던 크롤링 DB 조회/다운로드 로직 — 예전엔 manager/server가
-갖고 있었고 크롤러는 이 서버에 HTTP로 요청을 대신 넘겨주기만 했다. 이제 크롤러가
-crawlList_db/crawlLog_db를 직접 갖고 있으므로 그 왕복을 없애고 여기서 바로 처리한다."""
-
 import gc
 import itertools
 import multiprocessing

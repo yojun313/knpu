@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Request, Body
 from app.services.user_service import (
     get_all_users,
     log_user,
@@ -6,7 +6,7 @@ from app.services.user_service import (
     get_all_admins,
     update_user_version,
 )
-from system.auth.jwt import verify_token
+from app.routes.dependencies import get_uid
 from starlette.background import BackgroundTask
 from fastapi.responses import JSONResponse
 from system.notify.discord import notify_discord
@@ -16,25 +16,25 @@ router = APIRouter()
 
 
 @router.post("/log")
-def addUserLog(message: str = Body(..., embed=True), userUid=Depends(verify_token)):
-    task = BackgroundTask(log_user, userUid, "manager.client.custom_log", message)
+def addUserLog(request: Request, message: str = Body(..., embed=True)):
+    task = BackgroundTask(log_user, get_uid(request), "manager.client.custom_log", message)
     return JSONResponse(
         status_code=201, content={"message": "User log added"}, background=task
     )
 
 
 @router.post("/bug")
-def addUserBug(message: str = Body(..., embed=True), userUid=Depends(verify_token)):
-    return bug_user(userUid, message)
+def addUserBug(request: Request, message: str = Body(..., embed=True)):
+    return bug_user(get_uid(request), message)
 
 
 @router.post("/version")
 def updateVersion(
+    request: Request,
     oldVersionName: str | None = Body(None, embed=True),
     newVersionName: str = Body(..., embed=True),
-    userUid=Depends(verify_token),
 ):
-    return update_user_version(userUid, oldVersionName, newVersionName)
+    return update_user_version(get_uid(request), oldVersionName, newVersionName)
 
 
 @router.get("")

@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request
 from fastapi.responses import Response, StreamingResponse
 import httpx
-from system.auth.jwt import verify_token
 import os
 
 router = APIRouter()
@@ -14,7 +13,6 @@ OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions"
 @router.post("/v1/openai/chat/completions")
 async def proxy_openai_chat(
     request: Request,
-    userUid=Depends(verify_token),
 ):
     body = await request.json()
 
@@ -54,7 +52,6 @@ async def proxy_openai_chat(
 async def proxy_llm(
     path: str,
     request: Request,
-    userUid=Depends(verify_token),
 ):
     url = f"{LLM_BASE_URL}/v1/{path}"
 
@@ -84,7 +81,6 @@ async def proxy_llm(
 async def proxy_llm_stream(
     path: str,
     request: Request,
-    userUid=Depends(verify_token),
 ):
     url = f"{LLM_BASE_URL}/v1/{path}"
 

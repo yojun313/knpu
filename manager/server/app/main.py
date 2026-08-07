@@ -12,12 +12,11 @@ from fastapi.staticfiles import StaticFiles
 from app.routes import api_router
 from app.routes.site_routes import router as site_router
 from app.db import user_logs_db
+from system.auth.middleware import AuthMiddleware
 from system.notify.discord import notify_discord
 from system.logging.user_log import AuditLogMiddleware
 import gc
 import asyncio
-import jwt as pyjwt
-from jwt import PyJWTError
 from datetime import datetime
 from rich.console import Console
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -26,27 +25,9 @@ import traceback
 
 console = Console()
 
-_JWT_SECRET = os.getenv("JWT_SECRET")
-_JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
-
 
 def _extract_identity(request: Request):
-    token = request.cookies.get("session")
-    if not token:
-        authorization = request.headers.get("Authorization")
-        if authorization and authorization.startswith("Bearer "):
-            token = authorization[len("Bearer ") :]
-    if not token:
-        return None
-    try:
-        payload = pyjwt.decode(token, _JWT_SECRET, algorithms=[_JWT_ALGORITHM])
-    except PyJWTError:
-        return None
-    return {
-        "uid": payload.get("sub"),
-        "name": payload.get("name"),
-        "role": payload.get("role"),
-    }
+    return (request.scope.get("state") or {}).get("user")
 
 
 async def periodic_gc(interval_seconds: int = 60):
@@ -121,6 +102,18 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 app.add_middleware(RichLoggerMiddleware)
+app.add_middleware(
+    AuthMiddleware,
+    extra_public_paths=[
+        "/",
+        "/manual/",
+        "/api/format/",
+        "/api/ping/",
+        "/api/download",
+        "/assets/",
+        "/shared-ui/",
+    ],
+)
 app.add_middleware(
     AuditLogMiddleware,
     service="manager",

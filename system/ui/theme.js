@@ -13,6 +13,7 @@
 
   var COOKIE_KEY = 'ui_theme_style';
   var MODE_COOKIE_KEY = 'ui_theme_mode';
+  var NAV_COOKIE_KEY = 'ui_nav_visibility';
   var THEMES = [
     { id: 'default', label: '기본' },
     { id: 'glass', label: '글래스모피즘' },
@@ -61,6 +62,14 @@
     } catch (e) { /* noop */ }
   }
 
+  function currentNav() { return getCookie(NAV_COOKIE_KEY) || 'show'; }
+
+  function applyNav(mode) {
+    if (mode === 'autohide') document.documentElement.setAttribute('data-ui-nav', 'autohide');
+    else document.documentElement.removeAttribute('data-ui-nav');
+    setCookie(NAV_COOKIE_KEY, mode);
+  }
+
   function buildModal() {
     var overlay = document.createElement('div');
     overlay.id = 'themeModalOverlay';
@@ -85,6 +94,8 @@
       + '<div class="theme-modal-body">' + optionsHtml + '</div>'
       + '<div class="theme-mode-row"><span>다크 모드</span>'
       + '<button type="button" class="theme-mode-switch" id="themeModeSwitch" aria-label="다크 모드 전환"></button></div>'
+      + '<div class="theme-nav-row"><span>상단 네비게이션 바 자동 숨김 (마우스를 올리면 표시)</span>'
+      + '<button type="button" class="theme-mode-switch" id="themeNavSwitch" aria-label="네비게이션 바 자동 숨김 전환"></button></div>'
       + '</div>';
 
     document.body.appendChild(overlay);
@@ -97,6 +108,7 @@
       btn.classList.toggle('selected', btn.getAttribute('data-theme') === active);
     });
     overlay.querySelector('#themeModeSwitch').classList.toggle('on', currentMode() === 'dark');
+    overlay.querySelector('#themeNavSwitch').classList.toggle('on', currentNav() === 'autohide');
   }
 
   function init() {
@@ -120,6 +132,10 @@
     });
     overlay.querySelector('#themeModeSwitch').addEventListener('click', function () {
       applyMode(currentMode() === 'dark' ? 'light' : 'dark');
+      markSelected(overlay);
+    });
+    overlay.querySelector('#themeNavSwitch').addEventListener('click', function () {
+      applyNav(currentNav() === 'autohide' ? 'show' : 'autohide');
       markSelected(overlay);
     });
     window.addEventListener('keydown', function (e) {
