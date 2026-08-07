@@ -8,11 +8,16 @@
     </div>
     <div class="flex items-center gap-3">
         <span id="lastUpdated" class="text-[11px] font-mono text-zinc-500">-</span>
-        <button onclick="doFetch()" id="fetchBtn" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 border border-zinc-700">
+        <button onclick="doFetch()" id="fetchBtn" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 border border-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
             Fetch
         </button>
     </div>
+</div>
+
+<div id="loadingIndicator" class="hidden mb-6 p-4 rounded-2xl border border-blue-900/40 bg-blue-950/20 text-blue-400 text-sm flex items-center gap-3">
+    <svg class="animate-spin flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+    <span id="loadingText">처리 중...</span>
 </div>
 
 <div id="resultBanner" class="hidden mb-6 p-4 rounded-2xl border text-sm whitespace-pre-wrap break-words"></div>
@@ -48,11 +53,11 @@
 
         <!-- Push / Pull -->
         <div class="grid grid-cols-2 gap-4 mb-6">
-            <button onclick="doPull()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-4 rounded-2xl text-sm font-bold transition flex flex-col items-center gap-2">
+            <button onclick="doPull()" class="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-4 rounded-2xl text-sm font-bold transition flex flex-col items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 Pull
             </button>
-            <button onclick="doPush()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-4 rounded-2xl text-sm font-bold transition flex flex-col items-center gap-2">
+            <button onclick="doPush()" class="bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-4 rounded-2xl text-sm font-bold transition flex flex-col items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                 Push
             </button>
@@ -141,6 +146,15 @@
         document.getElementById('resultBanner').classList.add('hidden');
     }
 
+    function showLoading(text) {
+        document.getElementById('loadingText').textContent = text;
+        document.getElementById('loadingIndicator').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+        document.getElementById('loadingIndicator').classList.add('hidden');
+    }
+
     function renderStatus(d) {
         lastStatus = d;
         document.getElementById('currentBranch').textContent = d.branch;
@@ -209,8 +223,9 @@
         }
     }
 
-    async function postAction(url, body) {
+    async function postAction(url, body, loadingText) {
         setButtonsDisabled(true);
+        showLoading(loadingText || '처리 중...');
         try {
             const res = await fetch(url, {
                 method: 'POST',
@@ -228,12 +243,13 @@
             return null;
         } finally {
             setButtonsDisabled(false);
+            hideLoading();
         }
     }
 
     async function doFetch() {
         hideBanner();
-        const d = await postAction('/api/git/fetch');
+        const d = await postAction('/api/git/fetch', undefined, '원격 저장소 정보를 가져오는 중...');
         if (d) { renderStatus(d); showBanner('원격 저장소 정보를 갱신했습니다.', false); }
     }
 
@@ -242,7 +258,7 @@
         if (!message) { showBanner('커밋 메시지를 입력해주세요.', true); return; }
         if (!confirm(`다음 메시지로 전체 변경사항을 커밋할까요?\n\n"${message}"`)) return;
         hideBanner();
-        const d = await postAction('/api/git/commit', { message });
+        const d = await postAction('/api/git/commit', { message }, '커밋하는 중...');
         if (d) {
             renderStatus(d);
             document.getElementById('commitMessage').value = '';
@@ -253,14 +269,14 @@
     async function doPush() {
         if (!confirm(`현재 브랜치(${lastStatus ? lastStatus.branch : ''})를 origin에 push할까요?`)) return;
         hideBanner();
-        const d = await postAction('/api/git/push');
+        const d = await postAction('/api/git/push', undefined, 'Push 중... (원격 저장소로 전송하고 있습니다)');
         if (d) { renderStatus(d); showBanner('push 완료.', false); }
     }
 
     async function doPull() {
         if (!confirm(`origin에서 현재 브랜치(${lastStatus ? lastStatus.branch : ''})를 pull할까요?`)) return;
         hideBanner();
-        const d = await postAction('/api/git/pull');
+        const d = await postAction('/api/git/pull', undefined, 'Pull 중... (원격 저장소에서 받아오고 있습니다)');
         if (d) { renderStatus(d); showBanner('pull 완료.', false); }
     }
 
@@ -268,7 +284,7 @@
         const branch = document.getElementById('mergeBranchSelect').value;
         if (!branch) return;
         hideBanner();
-        const d = await postAction('/api/git/merge/preview', { branch });
+        const d = await postAction('/api/git/merge/preview', { branch }, '병합 미리보기를 가져오는 중...');
         if (!d) return;
         previewedBranch = branch;
         const box = document.getElementById('mergePreviewBox');
@@ -284,7 +300,7 @@
         if (!branch || branch !== previewedBranch) return;
         if (!confirm(`'${branch}' 브랜치를 main에 병합할까요?\n(자동으로 push되지 않습니다)`)) return;
         hideBanner();
-        const d = await postAction('/api/git/merge', { branch });
+        const d = await postAction('/api/git/merge', { branch }, '병합하는 중...');
         if (d) {
             renderStatus(d);
             showBanner(d.merge_result ? d.merge_result.message : '병합했습니다.', false);
