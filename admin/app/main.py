@@ -47,7 +47,7 @@ def _extract_identity(request: Request):
     }
 
 
-app = FastAPI(title="FPEI Dashboard")
+app = FastAPI(title="KNPU Dashboard")
 app.add_middleware(
     AuditLogMiddleware,
     service="admin",
