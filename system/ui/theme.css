@@ -153,6 +153,23 @@
   border: 1px solid rgba(255, 255, 255, 0.65);
 }
 
+/* 애플 글래스 — 은은한 컬러 월페이퍼 위에 흰 서리 유리 칩이 떠 있는 모습 */
+.theme-swatch-apple {
+  background:
+    radial-gradient(60% 60% at 18% 12%, rgba(120, 170, 255, .55) 0, transparent 62%),
+    radial-gradient(55% 55% at 86% 20%, rgba(255, 170, 195, .5) 0, transparent 62%),
+    radial-gradient(60% 60% at 72% 92%, rgba(150, 205, 255, .5) 0, transparent 62%),
+    #eef0f5;
+}
+.theme-swatch-apple > span {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(6px) saturate(180%);
+  -webkit-backdrop-filter: blur(6px) saturate(180%);
+  border: none;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), 0 2px 6px rgba(0, 0, 0, .1);
+}
+
 .theme-swatch-neu { background: #e7e9ee; }
 .theme-swatch-neu > span {
   background: #e7e9ee;
@@ -430,3 +447,510 @@ html[data-ui-theme="mesh"] .modal-card,
 html[data-ui-theme="mesh"] .theme-modal { border-radius: 18px; }
 html[data-ui-theme="mesh"] .rail-item.active { background: var(--overlay-hover) !important; }
 html[data-ui-theme="mesh"] ::selection { background: var(--overlay-hover); }
+
+/* ============================================================================
+   애플 글래스 (Liquid Glass) — 애플 디자인 철학을 그대로 옮긴 전면 투명 테마
+   ----------------------------------------------------------------------------
+   기존 glass 테마와 무엇이 다른가:
+   - glass는 "반투명 패널"이지만, apple은 화면 전체가 하나의 월페이퍼 위에 떠 있는
+     재질(material) 계층 구조다. 컨텐츠 영역(#netWrap/#plotWrap/#main/#content)은
+     아예 투명하게 비우고, 크롬(rail/side/top/모달)만 유리로 만든다.
+   - 애플 머티리얼 규칙 3가지를 지킨다:
+     (1) 재질의 두께가 위계를 나타낸다 — 구조 영역(rail/side)은 두껍게(regular),
+         떠다니는 팝오버/모달은 가장 두껍게(thick), 컨텐츠 카드는 얇게(thin).
+     (2) 반투명 위에 반투명을 겹치지 않는다 — 유리 패널 *안쪽* 요소(.btn/.rail-item/
+         .modal-tab 등)는 backdrop-filter 없이 단순 틴트만 얹는다. 겹치면 가독성이
+         무너진다.
+     (3) 빛을 받는 모서리 — 1px 테두리 대신 위쪽에 specular 하이라이트(inset)를 넣어
+         진짜 유리판처럼 빛이 걸리게 한다.
+   - 색은 애플 시스템 컬러(systemBlue/Green/Red/Orange)와 label/secondaryLabel
+     불투명도 규칙을 그대로 쓴다. 흐린 유리 위 글자는 회색으로 흐리게 두지 않고
+     (vibrancy) 대비·굵기를 올려서 읽히게 한다.
+   - 모션은 오버슈트 없는 애플 표준 이징을 쓰고, 모달은 blur와 scale을 함께 애니메이션
+     해서 "재질이 도착하는" 느낌을 준다(단순 페이드 아님).
+   - 접근성: prefers-reduced-transparency / reduced-motion / contrast에 각각 대응하고,
+     backdrop-filter를 못 쓰는 브라우저에서는 불투명도를 올려 가독성을 지킨다.
+   ============================================================================ */
+
+/* ── 모드 공통 토큰 ────────────────────────────────────────────────────────── */
+html[data-ui-theme="apple"] body {
+  /* 애플 표준 이징 — 임계 감쇠(오버슈트 없음). 제스처 관성이 없는 UI에는 바운스를
+     넣지 않는 것이 애플 규칙이라 여기서는 전부 이 곡선을 쓴다. */
+  --ap-ease: cubic-bezier(.32, .72, 0, 1);
+  /* 재질 두께 3단계 */
+  --ap-blur-thin: 20px;
+  --ap-blur-regular: 30px;
+  --ap-blur-thick: 40px;
+  --ap-sat: 180%;
+  /* 모서리 — 애플은 큰 면일수록 반경을 키운다 */
+  --ap-r-lg: 22px;
+  --ap-r-md: 14px;
+  --ap-r-sm: 10px;
+  /* 체크박스·라디오·슬라이더 같은 네이티브 컨트롤도 테마 accent를 따라가게 한다 */
+  accent-color: var(--accent);
+}
+
+/* 네이티브 컨트롤(체크박스/셀렉트/숫자 입력/스크롤바)이 모드에 맞게 그려지도록 알린다.
+   이걸 안 하면 다크 모드에서 체크박스가 흰 사각형으로 남아 유리 위에 떠 보인다. */
+html[data-ui-theme="apple"] { color-scheme: light; }
+html[data-ui-theme="apple"][data-ui-theme-mode="dark"] { color-scheme: dark; }
+
+/* ── 라이트 ────────────────────────────────────────────────────────────────── */
+html[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) body {
+  --brand: #1d1d1f;
+  --brand-dark: #000000; --brand-light: #3a3a3c;
+  --accent: #007aff; --accent-soft: #409cff;           /* systemBlue */
+  --sidebar-bg: rgba(255, 255, 255, 0.55);
+  --sidebar-panel: rgba(255, 255, 255, 0.4);
+  --sidebar-panel2: rgba(255, 255, 255, 0.72);
+  --sidebar-border: rgba(60, 60, 67, 0.14);            /* separator */
+  --sidebar-text: rgba(0, 0, 0, 0.86);                 /* label */
+  --sidebar-muted: rgba(60, 60, 67, 0.62);             /* secondaryLabel */
+  --text-strong: #1d1d1f;
+  --canvas-c1: rgba(255, 255, 255, 0.24); --canvas-c2: rgba(255, 255, 255, 0.04);
+  --success: #34c759; --danger: #ff3b30; --warn: #ff9500;
+  --pill-bg: rgba(255, 255, 255, 0.6); --pill-border: rgba(255, 255, 255, 0.5);
+  --pill-text: #1d1d1f; --pill-muted: rgba(60, 60, 67, 0.6);
+  --pill-shadow: 0 1px 2px rgba(0, 0, 0, .05), 0 6px 18px rgba(0, 0, 0, .09);
+  --overlay-hover: rgba(0, 122, 255, 0.1);
+  --scrollbar-thumb: rgba(60, 60, 67, 0.26); --scrollbar-thumb-hover: rgba(60, 60, 67, 0.42);
+  --series-1: #007aff; --series-2: #ff9500; --series-3: #34c759;
+  --strong-signal: #ff3b30; --weak-signal: #ff9500;
+  --latent-signal: rgba(60, 60, 67, 0.6); --well-known-signal: #007aff;
+
+  /* 유리 재질 */
+  --ap-tint-thin: rgba(255, 255, 255, 0.4);
+  --ap-tint: rgba(255, 255, 255, 0.55);
+  --ap-tint-thick: rgba(255, 255, 255, 0.72);
+  --ap-specular: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --ap-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 8px 24px rgba(0, 0, 0, .07), 0 24px 60px rgba(0, 0, 0, .06);
+  --ap-shadow-thick: 0 2px 6px rgba(0, 0, 0, .07), 0 20px 50px rgba(0, 0, 0, .16), 0 40px 90px rgba(0, 0, 0, .1);
+  --ap-scrim: rgba(0, 0, 0, 0.26);
+  /* 컨트롤 채움 — 애플 tertiarySystemFill / systemFill 그대로.
+     흰 틴트를 쓰면 밝은 유리 위에서 버튼이 사라져 버려서 회색 필을 쓴다. */
+  --ap-control: rgba(118, 118, 128, 0.12);
+  --ap-control-hover: rgba(120, 120, 128, 0.2);
+
+  /* 월페이퍼 — 유리는 뒤에 볼 것이 있어야 유리로 보인다. 채도를 낮춘 애플 벽지 톤. */
+  background:
+    radial-gradient(58% 50% at 12% 0%, rgba(96, 156, 255, .55) 0, transparent 60%),
+    radial-gradient(48% 44% at 90% 6%, rgba(255, 148, 186, .45) 0, transparent 60%),
+    radial-gradient(55% 50% at 82% 98%, rgba(104, 190, 255, .5) 0, transparent 60%),
+    radial-gradient(44% 40% at 4% 94%, rgba(178, 152, 255, .42) 0, transparent 60%),
+    #e9edf6;
+  background-attachment: fixed;
+}
+
+/* ── 다크 ──────────────────────────────────────────────────────────────────── */
+html[data-ui-theme="apple"][data-ui-theme-mode="dark"] body {
+  --brand: #f5f5f7;
+  --brand-dark: #d1d1d6; --brand-light: #ffffff;
+  --accent: #0a84ff; --accent-soft: #409cff;           /* systemBlue (dark) */
+  --sidebar-bg: rgba(255, 255, 255, 0.08);
+  --sidebar-panel: rgba(255, 255, 255, 0.055);
+  --sidebar-panel2: rgba(255, 255, 255, 0.14);
+  --sidebar-border: rgba(255, 255, 255, 0.12);
+  --sidebar-text: rgba(255, 255, 255, 0.92);
+  --sidebar-muted: rgba(235, 235, 245, 0.6);
+  --text-strong: #ffffff;
+  --canvas-c1: rgba(255, 255, 255, 0.06); --canvas-c2: rgba(0, 0, 0, 0.14);
+  --success: #30d158; --danger: #ff453a; --warn: #ff9f0a;
+  --pill-bg: rgba(44, 44, 48, 0.55); --pill-border: rgba(255, 255, 255, 0.14);
+  --pill-text: #ffffff; --pill-muted: rgba(235, 235, 245, 0.6);
+  --pill-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .4);
+  --overlay-hover: rgba(10, 132, 255, 0.18);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.22); --scrollbar-thumb-hover: rgba(255, 255, 255, 0.36);
+  --series-1: #0a84ff; --series-2: #ff9f0a; --series-3: #30d158;
+  --strong-signal: #ff453a; --weak-signal: #ff9f0a;
+  --latent-signal: rgba(235, 235, 245, 0.6); --well-known-signal: #0a84ff;
+
+  --ap-tint-thin: rgba(255, 255, 255, 0.055);
+  --ap-tint: rgba(255, 255, 255, 0.08);
+  --ap-tint-thick: rgba(255, 255, 255, 0.12);
+  --ap-specular: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --ap-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .45);
+  --ap-shadow-thick: 0 2px 8px rgba(0, 0, 0, .4), 0 24px 60px rgba(0, 0, 0, .6);
+  --ap-scrim: rgba(0, 0, 0, 0.5);
+  --ap-control: rgba(118, 118, 128, 0.24);
+  --ap-control-hover: rgba(120, 120, 128, 0.36);
+
+  background:
+    radial-gradient(62% 55% at 14% 2%, rgba(38, 92, 190, .42) 0, transparent 62%),
+    radial-gradient(52% 48% at 90% 8%, rgba(118, 48, 140, .34) 0, transparent 62%),
+    radial-gradient(58% 52% at 78% 96%, rgba(18, 96, 148, .38) 0, transparent 62%),
+    radial-gradient(46% 42% at 6% 92%, rgba(72, 52, 150, .3) 0, transparent 62%),
+    #0a0a0d;
+  background-attachment: fixed;
+}
+
+/* ── 타이포그래피 ──────────────────────────────────────────────────────────────
+   애플 시스템 서체를 먼저 쓰고(광학 사이즈·가독성 튜닝이 이미 들어 있다), 한글은
+   Pretendard/Apple SD Gothic Neo로 이어받는다. 자간은 크기별로 다르게 준다:
+   큰 글씨는 음수 자간, 작은 글씨는 살짝 양수 자간이 애플 규칙이다. */
+html[data-ui-theme="apple"] body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+    'Helvetica Neue', 'Pretendard', 'Apple SD Gothic Neo', 'Segoe UI', Roboto,
+    'Malgun Gothic', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.003em;
+}
+/* 큰 제목 — 커질수록 자간을 좁히고 행간을 붙인다 */
+html[data-ui-theme="apple"] .modal-head h3,
+html[data-ui-theme="apple"] .theme-modal-head h3,
+html[data-ui-theme="apple"] .brandmark span,
+html[data-ui-theme="apple"] .section-title,
+html[data-ui-theme="apple"] .ep-title,
+html[data-ui-theme="apple"] .tc-title,
+html[data-ui-theme="apple"] .title-block {
+  letter-spacing: -0.021em;
+  line-height: 1.2;
+}
+/* 작은 라벨 — 흐린 유리 위에서는 자간을 살짝 벌려야 읽힌다(vibrancy) */
+html[data-ui-theme="apple"] .rail-brand,
+html[data-ui-theme="apple"] .top-nav-link,
+html[data-ui-theme="apple"] .fh-count,
+html[data-ui-theme="apple"] .ri-meta,
+html[data-ui-theme="apple"] .tc-meta,
+html[data-ui-theme="apple"] .field label,
+html[data-ui-theme="apple"] .hint {
+  letter-spacing: 0.012em;
+}
+/* 유리 위 보조 텍스트는 회색으로 흐리게 두지 않고 굵기를 한 단계 올려 대비를 세운다 */
+html[data-ui-theme="apple"] .stat span:first-child,
+html[data-ui-theme="apple"] .metric span:first-child,
+html[data-ui-theme="apple"] .ri-meta,
+html[data-ui-theme="apple"] .tc-meta,
+html[data-ui-theme="apple"] .fh-count { font-weight: 550; }
+
+/* ── 앱 셸 ────────────────────────────────────────────────────────────────────
+   유리 패널이 화면을 꽉 채우면 뒤 월페이퍼가 안 보여 유리로 읽히지 않는다.
+   사방에 여백을 줘서 모든 패널이 월페이퍼 위에 떠 있는 카드가 되게 한다. */
+html[data-ui-theme="apple"] #app {
+  padding: 16px;
+  gap: 16px;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+/* 컨텐츠 영역은 재질이 아니라 "빈 공간"이다 — 월페이퍼가 그대로 비쳐야 한다.
+   (반투명 위에 반투명을 겹치지 않는다는 규칙을 지키기 위해서도 필요하다.) */
+html[data-ui-theme="apple"] #main,
+html[data-ui-theme="apple"] #content,
+html[data-ui-theme="apple"] #dashboard { background: transparent !important; }
+
+/* ── 재질 1: Regular — 구조 영역(사이드바/인스펙터/컨텍스트 메뉴) ───────────── */
+html[data-ui-theme="apple"] .rail,
+html[data-ui-theme="apple"] #side,
+html[data-ui-theme="apple"] .ctx-menu {
+  background: var(--ap-tint) !important;
+  backdrop-filter: blur(var(--ap-blur-regular)) saturate(var(--ap-sat));
+  -webkit-backdrop-filter: blur(var(--ap-blur-regular)) saturate(var(--ap-sat));
+  border: none !important;
+  border-radius: var(--ap-r-lg);
+  box-shadow: var(--ap-specular), var(--ap-shadow);
+}
+html[data-ui-theme="apple"] .ctx-menu { border-radius: var(--ap-r-md); }
+
+/* ── 재질 2: Thin — 월페이퍼 위에 직접 놓이는 컨텐츠 카드 ───────────────────── */
+html[data-ui-theme="apple"] .table-card {
+  background: var(--ap-tint-thin) !important;
+  backdrop-filter: blur(var(--ap-blur-thin)) saturate(var(--ap-sat));
+  -webkit-backdrop-filter: blur(var(--ap-blur-thin)) saturate(var(--ap-sat));
+  border: none !important;
+  border-radius: var(--ap-r-lg);
+  box-shadow: var(--ap-specular), var(--ap-shadow);
+}
+
+/* 이미 유리인 패널(모달 본문·#side 인스펙터) *안쪽*에 들어가는 상자들.
+   여기에 또 blur를 걸면 반투명이 겹쳐 글자가 뭉개지므로, 블러 없이 납작한 틴트만
+   얹어서 표면 위의 한 겹으로만 읽히게 한다. */
+html[data-ui-theme="apple"] .crawl-table-wrap,
+html[data-ui-theme="apple"] .ai-box,
+html[data-ui-theme="apple"] .interp-summary,
+html[data-ui-theme="apple"] .wl-box,
+html[data-ui-theme="apple"] .progress-log,
+html[data-ui-theme="apple"] .sec-body {
+  background: var(--ap-tint-thin) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-radius: var(--ap-r-md);
+}
+
+/* ── 재질 3: Thick — 모든 것 위에 뜨는 모달/시트 ────────────────────────────── */
+html[data-ui-theme="apple"] .modal-card,
+html[data-ui-theme="apple"] .theme-modal,
+html[data-ui-theme="apple"] .article-modal-card {
+  background: var(--ap-tint-thick) !important;
+  backdrop-filter: blur(var(--ap-blur-thick)) saturate(var(--ap-sat));
+  -webkit-backdrop-filter: blur(var(--ap-blur-thick)) saturate(var(--ap-sat));
+  border: none !important;
+  border-radius: var(--ap-r-lg);
+  box-shadow: var(--ap-specular), var(--ap-shadow-thick);
+}
+
+/* 그래프/플롯 캔버스 — 배경을 거의 비워 월페이퍼가 비치게 하고 모서리만 둥글린다 */
+html[data-ui-theme="apple"] #netWrap,
+html[data-ui-theme="apple"] #plotWrap {
+  border-radius: var(--ap-r-lg);
+  overflow: hidden;
+}
+
+/* ── 상단 브랜드 바 ───────────────────────────────────────────────────────────
+   다섯 사이트 공통 정체성이라 남색→파랑 그라디언트 자체는 유지하되, 이 테마에서만
+   불투명 판이 아니라 브랜드 색으로 틴트된 유리로 만든다. 애플에서 네비게이션·툴바는
+   언제나 컨텐츠 위에 떠 있는 반투명 재질이지 색 판이 아니기 때문이다. */
+html[data-ui-theme="apple"] .top-header {
+  background: linear-gradient(110deg,
+    rgba(11, 18, 38, .72) 0%, rgba(45, 68, 115, .6) 60%, rgba(65, 107, 191, .55) 100%);
+  backdrop-filter: blur(var(--ap-blur-regular)) saturate(var(--ap-sat));
+  -webkit-backdrop-filter: blur(var(--ap-blur-regular)) saturate(var(--ap-sat));
+  box-shadow: inset 0 -0.5px 0 rgba(255, 255, 255, .16), 0 1px 12px rgba(0, 0, 0, .12);
+}
+
+/* statistics의 #top은 #main 안에 자리를 차지하는 툴바라 재질이 필요하다.
+   network/kemkim의 #top은 그래프 위에 떠 있는 투명 오버레이(pointer-events:none)이고
+   그 안의 알약들이 각각 유리라서, 여기에 배경을 깔면 그래프를 가린다 — 건드리지 않는다. */
+html[data-ui-theme="apple"] #main #top {
+  background: var(--ap-tint) !important;
+  backdrop-filter: blur(var(--ap-blur-regular)) saturate(var(--ap-sat));
+  -webkit-backdrop-filter: blur(var(--ap-blur-regular)) saturate(var(--ap-sat));
+  border: none !important;
+  border-radius: var(--ap-r-lg);
+  box-shadow: var(--ap-specular), var(--ap-shadow);
+}
+
+/* ── 떠다니는 알약(brandmark/검색/배지) — network·kemkim 그래프 위 크롬 ─────── */
+html[data-ui-theme="apple"] .brandmark,
+html[data-ui-theme="apple"] .badge,
+html[data-ui-theme="apple"] .netsel,
+html[data-ui-theme="apple"] .search input,
+html[data-ui-theme="apple"] #zoombox {
+  backdrop-filter: blur(var(--ap-blur-regular)) saturate(var(--ap-sat));
+  -webkit-backdrop-filter: blur(var(--ap-blur-regular)) saturate(var(--ap-sat));
+  border: none !important;
+  border-radius: 999px;
+  box-shadow: var(--ap-specular), var(--ap-shadow);
+}
+html[data-ui-theme="apple"] #zoombox { border-radius: var(--ap-r-md); }
+html[data-ui-theme="apple"] .search input:focus {
+  /* 애플 포커스 링 — 굵은 테두리 대신 accent 색 링 하나 */
+  box-shadow: var(--ap-specular), var(--ap-shadow), 0 0 0 3.5px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+/* ── 컨트롤 — 유리 *위*에 얹히므로 자체 backdrop-filter를 주지 않는다 ────────
+   (반투명 위에 반투명을 겹치면 가독성이 무너진다는 애플 규칙) */
+html[data-ui-theme="apple"] .btn,
+html[data-ui-theme="apple"] .icon-btn,
+html[data-ui-theme="apple"] .rail-toggle,
+html[data-ui-theme="apple"] .rail-logout,
+html[data-ui-theme="apple"] .ri-btn,
+html[data-ui-theme="apple"] .modal-tab,
+html[data-ui-theme="apple"] .option-btn,
+html[data-ui-theme="apple"] .tc-toggle,
+html[data-ui-theme="apple"] .tc-png-btn {
+  background: var(--ap-control) !important;
+  border: none !important;
+  border-radius: var(--ap-r-sm);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, .5);
+  transition: background 140ms var(--ap-ease), transform 140ms var(--ap-ease),
+              box-shadow 140ms var(--ap-ease);
+}
+html[data-ui-theme="apple"] .btn:hover,
+html[data-ui-theme="apple"] .icon-btn:hover,
+html[data-ui-theme="apple"] .rail-toggle:hover,
+html[data-ui-theme="apple"] .rail-logout:hover,
+html[data-ui-theme="apple"] .ri-btn:hover {
+  background: var(--ap-control-hover) !important;
+  transform: none;   /* 기본 테마의 살짝 뜨는 효과 대신 애플식 눌림만 쓴다 */
+}
+/* 눌림은 포인터가 "내려가는 순간" 즉시 반응해야 한다 */
+html[data-ui-theme="apple"] .btn:active,
+html[data-ui-theme="apple"] .icon-btn:active,
+html[data-ui-theme="apple"] .rail-toggle:active,
+html[data-ui-theme="apple"] .rail-logout:active,
+html[data-ui-theme="apple"] .ri-btn:active {
+  transform: scale(.96);
+  transition-duration: 60ms;
+}
+html[data-ui-theme="apple"] .btn.primary,
+html[data-ui-theme="apple"] .modal-tab.active {
+  background: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, .35), 0 2px 8px color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+/* 점선 업로드 버튼 — 애플은 점선 대신 옅은 채움 + 라운드를 쓴다 */
+html[data-ui-theme="apple"] .rail-upload,
+html[data-ui-theme="apple"] .rail-new-folder-btn,
+html[data-ui-theme="apple"] .modal-dropzone,
+html[data-ui-theme="apple"] .modal-dropzone-sm {
+  border: none !important;
+  background: var(--ap-control) !important;
+  border-radius: var(--ap-r-md);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, .5);
+}
+html[data-ui-theme="apple"] .rail-upload:hover,
+html[data-ui-theme="apple"] .rail-new-folder-btn:hover,
+html[data-ui-theme="apple"] .modal-dropzone:hover {
+  background: var(--ap-control-hover) !important;
+}
+
+/* 사이드바 선택 — macOS 사이드바처럼 accent 틴트 알약 하나로 (왼쪽 막대는 뺀다) */
+html[data-ui-theme="apple"] .rail-item { border-radius: var(--ap-r-sm); }
+html[data-ui-theme="apple"] .rail-item.active {
+  background: var(--overlay-hover) !important;
+  color: var(--accent);
+}
+html[data-ui-theme="apple"] .rail-item.active .ri-name { color: var(--accent); font-weight: 600; }
+html[data-ui-theme="apple"] .rail-item.active::before { display: none; }
+html[data-ui-theme="apple"] .folder-header,
+html[data-ui-theme="apple"] .user-header,
+html[data-ui-theme="apple"] .ctx-item { border-radius: var(--ap-r-sm); }
+
+/* ── 스크림 — 시트 뒤 배경은 어둡게 + 흐리게 (애플 모달 프레젠테이션) ────────── */
+html[data-ui-theme="apple"] .modal-overlay,
+html[data-ui-theme="apple"] .theme-modal-overlay,
+html[data-ui-theme="apple"] #mobileBackdrop {
+  background: var(--ap-scrim) !important;
+  backdrop-filter: blur(var(--ap-blur-thin)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--ap-blur-thin)) saturate(120%);
+}
+
+/* ── 모션 ─────────────────────────────────────────────────────────────────────
+   재질이 "도착"하게 만든다: 불투명도만 페이드하는 게 아니라 blur와 scale을 함께
+   움직여서 유리판이 실제로 응결되는 것처럼 보이게 한다. */
+@keyframes appleMaterializeIn {
+  from {
+    opacity: 0;
+    transform: scale(.94);
+    backdrop-filter: blur(0) saturate(100%);
+    -webkit-backdrop-filter: blur(0) saturate(100%);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    backdrop-filter: blur(var(--ap-blur-thick)) saturate(var(--ap-sat));
+    -webkit-backdrop-filter: blur(var(--ap-blur-thick)) saturate(var(--ap-sat));
+  }
+}
+html[data-ui-theme="apple"] .modal-card,
+html[data-ui-theme="apple"] .theme-modal,
+html[data-ui-theme="apple"] .article-modal-card {
+  animation: appleMaterializeIn 360ms var(--ap-ease) both;
+  transform-origin: center;
+}
+/* 컨텍스트 메뉴는 클릭한 지점에서 자라나야 공간적 인과관계가 유지된다 */
+html[data-ui-theme="apple"] .ctx-menu {
+  animation: appleMaterializeIn 220ms var(--ap-ease) both;
+  transform-origin: top left;
+}
+
+/* ── 스크롤바 — 애플식 오버레이 스크롤바 ────────────────────────────────────── */
+html[data-ui-theme="apple"] ::-webkit-scrollbar { width: 9px; height: 9px; }
+html[data-ui-theme="apple"] ::-webkit-scrollbar-track { background: transparent; }
+html[data-ui-theme="apple"] ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+html[data-ui-theme="apple"] ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: content-box; }
+html[data-ui-theme="apple"] { scrollbar-color: var(--scrollbar-thumb) transparent; }
+
+/* 키보드 포커스 링 — 애플은 accent 색 링 하나로 통일한다 */
+html[data-ui-theme="apple"] :focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+html[data-ui-theme="apple"] ::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+
+/* ── 접근성: 투명도 줄이기 ────────────────────────────────────────────────────
+   블러를 끄고 불투명도를 올린다(투명도를 뺀다고 위계까지 없애지는 않는다). */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) body {
+    --ap-tint-thin: #f7f7fa; --ap-tint: #ffffff; --ap-tint-thick: #ffffff;
+    --ap-control: #eeeef2; --ap-control-hover: #e4e4ea;
+    --pill-bg: #ffffff;
+    background: #eef0f5;
+  }
+  html[data-ui-theme="apple"][data-ui-theme-mode="dark"] body {
+    --ap-tint-thin: #1c1c1e; --ap-tint: #2c2c2e; --ap-tint-thick: #3a3a3c;
+    --ap-control: #3a3a3c; --ap-control-hover: #48484a;
+    --pill-bg: #2c2c2e;
+    background: #000000;
+  }
+  html[data-ui-theme="apple"] .rail,
+  html[data-ui-theme="apple"] #side,
+  html[data-ui-theme="apple"] .ctx-menu,
+  html[data-ui-theme="apple"] .table-card,
+  html[data-ui-theme="apple"] .progress-card,
+  html[data-ui-theme="apple"] .modal-card,
+  html[data-ui-theme="apple"] .theme-modal,
+  html[data-ui-theme="apple"] .article-modal-card,
+  html[data-ui-theme="apple"] .brandmark,
+  html[data-ui-theme="apple"] .badge,
+  html[data-ui-theme="apple"] .search input,
+  html[data-ui-theme="apple"] #main #top,
+  html[data-ui-theme="apple"] .top-header,
+  html[data-ui-theme="apple"] .modal-overlay,
+  html[data-ui-theme="apple"] .theme-modal-overlay {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  html[data-ui-theme="apple"] .top-header { background: linear-gradient(110deg, #0B1226 0%, #2D4473 60%, #416BBF 100%); }
+}
+
+/* ── 접근성: 모션 줄이기 ──────────────────────────────────────────────────────
+   움직임을 없애는 게 아니라 전정기관을 자극하지 않는 형태(짧은 크로스페이드)로 바꾼다. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-ui-theme="apple"] .modal-card,
+  html[data-ui-theme="apple"] .theme-modal,
+  html[data-ui-theme="apple"] .article-modal-card,
+  html[data-ui-theme="apple"] .ctx-menu {
+    animation: none;
+    transition: opacity 200ms ease;
+  }
+  html[data-ui-theme="apple"] .btn:active,
+  html[data-ui-theme="apple"] .icon-btn:active,
+  html[data-ui-theme="apple"] .rail-toggle:active,
+  html[data-ui-theme="apple"] .rail-logout:active,
+  html[data-ui-theme="apple"] .ri-btn:active { transform: none; }
+}
+
+/* ── 접근성: 고대비 ─────────────────────────────────────────────────────────── */
+@media (prefers-contrast: more) {
+  html[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) body {
+    --ap-tint-thin: rgba(255, 255, 255, .92); --ap-tint: rgba(255, 255, 255, .95);
+    --ap-tint-thick: rgba(255, 255, 255, .98);
+    --sidebar-border: rgba(0, 0, 0, .45); --sidebar-muted: rgba(0, 0, 0, .75);
+    --sidebar-text: #000; --accent: #0040dd;
+  }
+  html[data-ui-theme="apple"][data-ui-theme-mode="dark"] body {
+    --ap-tint-thin: rgba(20, 20, 22, .92); --ap-tint: rgba(28, 28, 30, .95);
+    --ap-tint-thick: rgba(40, 40, 42, .98);
+    --sidebar-border: rgba(255, 255, 255, .5); --sidebar-muted: rgba(255, 255, 255, .85);
+    --sidebar-text: #fff; --accent: #4da3ff;
+  }
+  html[data-ui-theme="apple"] .rail,
+  html[data-ui-theme="apple"] #side,
+  html[data-ui-theme="apple"] .ctx-menu,
+  html[data-ui-theme="apple"] .table-card,
+  html[data-ui-theme="apple"] .modal-card,
+  html[data-ui-theme="apple"] .theme-modal { border: 1px solid var(--sidebar-border) !important; }
+}
+
+/* ── backdrop-filter 미지원 브라우저 대비 ───────────────────────────────────── */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) body {
+    --ap-tint-thin: rgba(255, 255, 255, .86); --ap-tint: rgba(255, 255, 255, .9);
+    --ap-tint-thick: rgba(255, 255, 255, .96);
+    --pill-bg: rgba(255, 255, 255, .92);
+  }
+  html[data-ui-theme="apple"][data-ui-theme-mode="dark"] body {
+    --ap-tint-thin: rgba(28, 28, 30, .86); --ap-tint: rgba(32, 32, 36, .9);
+    --ap-tint-thick: rgba(44, 44, 48, .96);
+    --pill-bg: rgba(32, 32, 36, .92);
+  }
+}

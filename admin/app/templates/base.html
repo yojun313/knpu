@@ -198,6 +198,84 @@
             border-color: var(--line) !important;
         }
 
+        /* ── 애플 글래스 (라이트/다크) ─────────────────────────────────────
+           애플 머티리얼 규칙대로: 월페이퍼 위에 유리 패널이 떠 있고, 테두리 1px
+           대신 위쪽 specular 하이라이트로 빛이 걸리게 한다. 색은 애플 시스템
+           컬러(systemBlue)와 label/secondaryLabel 불투명도를 그대로 쓴다. */
+        :root[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) {
+            --accent: #007aff; --brand: #1d1d1f;
+            --panel: rgba(255,255,255,0.55); --panel2: rgba(255,255,255,0.72);
+            --line: rgba(60,60,67,0.14); --muted: rgba(60,60,67,0.62); --ink: rgba(0,0,0,0.86);
+            --ap-specular: inset 0 1px 0 rgba(255,255,255,0.75);
+            --ap-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.07);
+        }
+        :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] {
+            --accent: #0a84ff; --brand: #f5f5f7;
+            --panel: rgba(255,255,255,0.08); --panel2: rgba(255,255,255,0.14);
+            --line: rgba(255,255,255,0.12); --muted: rgba(235,235,245,0.6); --ink: rgba(255,255,255,0.92);
+            --ap-specular: inset 0 1px 0 rgba(255,255,255,0.16);
+            --ap-shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.45);
+        }
+        :root[data-ui-theme="apple"] body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+                'Helvetica Neue', 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            letter-spacing: -0.003em;
+        }
+        :root[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) body {
+            background:
+                radial-gradient(62% 55% at 14% 2%, rgba(118,170,255,.38) 0, transparent 62%),
+                radial-gradient(52% 48% at 88% 8%, rgba(255,170,198,.32) 0, transparent 62%),
+                radial-gradient(58% 52% at 78% 96%, rgba(140,205,255,.34) 0, transparent 62%),
+                radial-gradient(46% 42% at 6% 92%, rgba(198,180,255,.3) 0, transparent 62%),
+                #eef0f5 !important;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] body {
+            background:
+                radial-gradient(62% 55% at 14% 2%, rgba(38,92,190,.42) 0, transparent 62%),
+                radial-gradient(52% 48% at 90% 8%, rgba(118,48,140,.34) 0, transparent 62%),
+                radial-gradient(58% 52% at 78% 96%, rgba(18,96,148,.38) 0, transparent 62%),
+                radial-gradient(46% 42% at 6% 92%, rgba(72,52,150,.3) 0, transparent 62%),
+                #0a0a0d !important;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="apple"] .sidebar,
+        :root[data-ui-theme="apple"] .card,
+        :root[data-ui-theme="apple"] [class*="bg-zinc-900"],
+        :root[data-ui-theme="apple"] [class*="bg-zinc-950"],
+        :root[data-ui-theme="apple"] [class*="bg-\[\#09090b\]"],
+        :root[data-ui-theme="apple"] [class*="bg-zinc-800"],
+        :root[data-ui-theme="apple"] [class*="bg-black"] {
+            background: var(--panel) !important;
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border-color: transparent !important;
+            border-radius: 18px;
+            box-shadow: var(--ap-specular), var(--ap-shadow);
+        }
+        /* 유리 위에 얹히는 컨트롤은 자체 블러를 주지 않는다(반투명 겹침 금지) */
+        :root[data-ui-theme="apple"] .nav-item.active {
+            background-color: rgba(0,122,255,.12) !important;
+            color: var(--accent) !important;
+            border-radius: 10px;
+        }
+        @media (prefers-reduced-transparency: reduce) {
+            :root[data-ui-theme="apple"] .sidebar,
+            :root[data-ui-theme="apple"] .card,
+            :root[data-ui-theme="apple"] [class*="bg-zinc-900"],
+            :root[data-ui-theme="apple"] [class*="bg-zinc-950"],
+            :root[data-ui-theme="apple"] [class*="bg-zinc-800"],
+            :root[data-ui-theme="apple"] [class*="bg-black"] {
+                backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+            }
+            :root[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) { --panel: #ffffff; --panel2: #f2f2f7; }
+            :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] { --panel: #2c2c2e; --panel2: #3a3a3c; }
+            :root[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) body { background: #eef0f5 !important; }
+            :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] body { background: #000 !important; }
+        }
+
         :root[data-ui-theme="neu"]:not([data-ui-theme-mode="dark"]) {
             --accent: #5b7fdb; --brand: #4a5568;
             --panel: #e7e9ee; --panel2: #dfe2e8;
