@@ -854,6 +854,18 @@
         .theme-swatch-default > span { background: #fff; border: 1px solid #c8d6e5; }
         .theme-swatch-glass { background: linear-gradient(135deg, #cfd9ec 0%, #d8d2e8 45%, #e6d9e2 100%); }
         .theme-swatch-glass > span { background: rgba(255,255,255,0.6); backdrop-filter: blur(3px); border: 1px solid rgba(255,255,255,0.65); }
+        .theme-swatch-apple {
+            background:
+                radial-gradient(60% 60% at 18% 12%, rgba(120,170,255,.55) 0, transparent 62%),
+                radial-gradient(55% 55% at 86% 20%, rgba(255,170,195,.5) 0, transparent 62%),
+                radial-gradient(60% 60% at 72% 92%, rgba(150,205,255,.5) 0, transparent 62%),
+                #eef0f5;
+        }
+        .theme-swatch-apple > span {
+            background: rgba(255,255,255,0.5); backdrop-filter: blur(6px) saturate(180%);
+            -webkit-backdrop-filter: blur(6px) saturate(180%); border: none; border-radius: 6px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 2px 6px rgba(0,0,0,.1);
+        }
         .theme-swatch-neu { background: #e7e9ee; }
         .theme-swatch-neu > span { background: #e7e9ee; box-shadow: 3px 3px 6px #d1d4da, -3px -3px 6px #ffffff; }
         .theme-swatch-mesh {
@@ -910,6 +922,83 @@
             box-shadow: 0 8px 28px rgba(31,38,135,0.1) !important;
         }
         :root[data-ui-theme="glass"] .panel-head { background: var(--bg) !important; }
+
+        /* ── 애플 글래스 (라이트/다크) ─────────────────────────────────────
+           월페이퍼 위에 유리 패널이 떠 있는 애플 머티리얼 구조. 테두리 1px 대신
+           위쪽 specular 하이라이트로 빛이 걸리게 하고, 색은 애플 시스템 컬러를 쓴다. */
+        :root[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) {
+            --bg: rgba(255,255,255,0.72); --surface: rgba(255,255,255,0.55);
+            --ink: rgba(0,0,0,0.86); --muted: rgba(60,60,67,0.62);
+            --line: rgba(60,60,67,0.14); --blue: #007aff; --deep: #1d1d1f;
+            --ap-specular: inset 0 1px 0 rgba(255,255,255,0.75);
+            --ap-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.07);
+        }
+        :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] {
+            --bg: rgba(255,255,255,0.14); --surface: rgba(255,255,255,0.08);
+            --ink: rgba(255,255,255,0.92); --muted: rgba(235,235,245,0.6);
+            --line: rgba(255,255,255,0.12); --blue: #0a84ff; --deep: #f5f5f7;
+            --ap-specular: inset 0 1px 0 rgba(255,255,255,0.16);
+            --ap-shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.45);
+        }
+        :root[data-ui-theme="apple"] body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+                'Helvetica Neue', 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            letter-spacing: -0.003em;
+        }
+        :root[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) body {
+            background:
+                radial-gradient(62% 55% at 14% 2%, rgba(118,170,255,.38) 0, transparent 62%),
+                radial-gradient(52% 48% at 88% 8%, rgba(255,170,198,.32) 0, transparent 62%),
+                radial-gradient(58% 52% at 78% 96%, rgba(140,205,255,.34) 0, transparent 62%),
+                radial-gradient(46% 42% at 6% 92%, rgba(198,180,255,.3) 0, transparent 62%),
+                #eef0f5;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] body {
+            background:
+                radial-gradient(62% 55% at 14% 2%, rgba(38,92,190,.42) 0, transparent 62%),
+                radial-gradient(52% 48% at 90% 8%, rgba(118,48,140,.34) 0, transparent 62%),
+                radial-gradient(58% 52% at 78% 96%, rgba(18,96,148,.38) 0, transparent 62%),
+                radial-gradient(46% 42% at 6% 92%, rgba(72,52,150,.3) 0, transparent 62%),
+                #0a0a0d;
+            background-attachment: fixed;
+        }
+        :root[data-ui-theme="apple"] .panel,
+        :root[data-ui-theme="apple"] .card,
+        :root[data-ui-theme="apple"] .modal-box {
+            background: var(--surface) !important;
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border-color: transparent !important;
+            border-radius: 22px;
+            box-shadow: var(--ap-specular), var(--ap-shadow) !important;
+        }
+        /* 패널 헤더는 이미 유리인 패널 안쪽이라 블러를 겹치지 않고 틴트만 얹는다 */
+        :root[data-ui-theme="apple"] .panel-head {
+            background: var(--bg) !important;
+            border-color: var(--line) !important;
+        }
+        :root[data-ui-theme="apple"] .btn {
+            border-radius: 10px;
+            transition: transform 140ms cubic-bezier(.32,.72,0,1), background 140ms cubic-bezier(.32,.72,0,1);
+        }
+        :root[data-ui-theme="apple"] .btn:active { transform: scale(.96); transition-duration: 60ms; }
+        @media (prefers-reduced-transparency: reduce) {
+            :root[data-ui-theme="apple"] .panel,
+            :root[data-ui-theme="apple"] .card,
+            :root[data-ui-theme="apple"] .modal-box {
+                backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+            }
+            :root[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) { --surface: #ffffff; --bg: #f2f2f7; }
+            :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] { --surface: #2c2c2e; --bg: #3a3a3c; }
+            :root[data-ui-theme="apple"]:not([data-ui-theme-mode="dark"]) body { background: #eef0f5; }
+            :root[data-ui-theme="apple"][data-ui-theme-mode="dark"] body { background: #000; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            :root[data-ui-theme="apple"] .btn:active { transform: none; }
+        }
 
         /* ── 뉴모피즘 (라이트/다크) ────────────────────────── */
         :root[data-ui-theme="neu"]:not([data-ui-theme-mode="dark"]) {
@@ -1016,6 +1105,10 @@
             <button type="button" class="theme-option" data-theme="glass" onclick="selectTheme('glass')">
                 <span class="theme-swatch theme-swatch-glass"><span></span><span></span><span></span></span>
                 <span class="theme-option-label"><span class="theme-option-check">✓</span>글래스모피즘</span>
+            </button>
+            <button type="button" class="theme-option" data-theme="apple" onclick="selectTheme('apple')">
+                <span class="theme-swatch theme-swatch-apple"><span></span><span></span><span></span></span>
+                <span class="theme-option-label"><span class="theme-option-check">✓</span>애플 글래스</span>
             </button>
             <button type="button" class="theme-option" data-theme="neu" onclick="selectTheme('neu')">
                 <span class="theme-swatch theme-swatch-neu"><span></span><span></span><span></span></span>

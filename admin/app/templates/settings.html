@@ -167,12 +167,14 @@
 
     loadOrder();
 
-    // ── 테마(글래스모피즘/뉴모피즘/그라디언트 메시) ──────────────────────────
+    // ── 테마(글래스모피즘/애플 글래스/뉴모피즘/그라디언트 메시) ────────────────
     // currentUiTheme()/applyUiTheme()는 base.html의 <head> 스크립트에서
     // 전역으로 미리 정의되어 있다(모든 KNPU 사이트와 공유하는 쿠키 기반).
+    // 목록은 shared_ui/theme.js의 THEMES와 같은 순서로 맞춰 둔다.
     const THEME_OPTIONS = [
         { id: 'default', label: '기본' },
         { id: 'glass', label: '글래스모피즘' },
+        { id: 'apple', label: '애플 글래스' },
         { id: 'neu', label: '뉴모피즘' },
         { id: 'mesh', label: '그라디언트 메시' },
     ];
