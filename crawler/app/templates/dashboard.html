@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRAWLER</title>
     <script>(function(){try{var m=document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);var t=m?decodeURIComponent(m[1]):null;if(t&&t!=='default')document.documentElement.setAttribute('data-ui-theme',t);var mm=document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);if(mm&&decodeURIComponent(mm[1])==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');}catch(e){}})();</script>
-    <link rel="icon" type="image/x-icon" href="static/fpei_logo_favicon.ico" />
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@700;800&display=swap" rel="stylesheet">
@@ -33,6 +33,38 @@
 
             --shadow:  0 8px 24px rgba(11, 18, 38, 0.10);
             --shadow-sm: 0 2px 8px rgba(11, 18, 38, 0.07);
+
+            /* ── 버튼 3톤 ──────────────────────────────────────────────────
+               예전에는 액션마다 다른 파스텔 배경(파랑/초록/주황/빨강)을 썼는데,
+               색 종류만 많고 정작 다크모드에서는 전부 안 읽혔다. 이제 의미가
+               같은 것끼리 묶어 3톤으로만 쓴다:
+                 neutral = 일반 액션(다운로드/이어받기/초기화)
+                 warn    = 되돌리기 어려운 액션(재크롤링/중지)
+                 danger  = 파괴적 액션(삭제)
+               각 톤은 배경/글자를 한 쌍으로 정의해서, 배경만 바뀌고 글자는
+               그대로 남아 대비가 무너지는 사고가 구조적으로 안 생기게 한다. */
+            --tone-neutral-bg: #e8eef6;  --tone-neutral-fg: #2D4473;
+            --tone-warn-bg:    #ffedd5;  --tone-warn-fg:    #9a3412;
+            --tone-danger-bg:  #fde4e2;  --tone-danger-fg:  #b42318;
+        }
+
+        /* ── 다크모드 색 보정 (모든 테마 공통) ────────────────────────────────
+           data-ui-theme-mode="dark"는 data-ui-theme(기본/glass/apple/neu/mesh)와
+           독립적으로 <html>에 붙으므로, 이 블록 하나면 다섯 테마의 다크모드를 전부
+           덮는다. 예전에는 --*-soft가 :root에만 밝은 파스텔로 정의되고 어떤 다크
+           블록에서도 재정의되지 않아서, 전경색(--deep/--muted)만 밝은 색으로 뒤집히며
+           "밝은 글자 + 밝은 배경"이 되어 버튼 글씨가 사라졌다.
+           배경을 불투명 색이 아니라 rgba 틴트로 두는 게 핵심이다. 그래야 유리(glass/
+           apple/mesh)든 불투명(neu/기본)이든 어떤 다크 표면 위에서도 같은 대비가 난다. */
+        :root[data-ui-theme][data-ui-theme-mode="dark"] {
+            --ok: #4ade80;            --ok-soft:      rgba(74, 222, 128, 0.18);
+            --danger: #ff9d96;        --danger-soft:  rgba(255, 123, 114, 0.18);
+            --warning: #fcd34d;       --warning-soft: rgba(251, 191, 36, 0.18);
+            --queued-soft: rgba(125, 175, 255, 0.18);
+
+            --tone-neutral-bg: rgba(255, 255, 255, 0.12); --tone-neutral-fg: #e8edf5;
+            --tone-warn-bg:    rgba(251, 191, 36, 0.20);  --tone-warn-fg:    #fcd34d;
+            --tone-danger-bg:  rgba(255, 123, 114, 0.20); --tone-danger-fg:  #ff9d96;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -192,8 +224,10 @@
 
         .panel-count {
             font-size: 11px;
-            color: var(--blue);
-            background: var(--bg);
+            /* --bg 위에 --blue를 얹으면 다크에서 둘 다 어두워져 안 읽힌다. 버튼과 같은
+               neutral 톤을 써서 어떤 테마·모드에서도 같은 대비를 유지한다. */
+            color: var(--tone-neutral-fg);
+            background: var(--tone-neutral-bg);
             padding: 2px 9px;
             border-radius: 999px;
             font-weight: 700;
@@ -605,7 +639,10 @@
             transition: transform 150ms ease, filter 150ms ease;
             white-space: nowrap;
         }
+        /* 밝게/어둡게는 모드에 따라 방향이 반대다. 라이트에서 쓰던 brightness(0.93)을
+           다크에서 그대로 쓰면 어두워져서 더 안 보이므로 다크에서는 밝히는 쪽으로 뒤집는다. */
         .btn:hover { filter: brightness(0.93); transform: translateY(-1px); }
+        :root[data-ui-theme][data-ui-theme-mode="dark"] .btn:hover { filter: brightness(1.25); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
         .btn-primary {
@@ -613,17 +650,39 @@
             color: #fff;
             box-shadow: 0 2px 8px rgba(65,107,191,0.30);
         }
-        .btn-ghost {
-            border: 1px solid var(--line);
-            background: var(--surface);
-            color: var(--deep);
+        /* 다크에서 --deep은 거의 흰색이 되어 그라디언트가 "흰색→파랑"이 되고 흰 글자가
+           묻힌다. 그렇다고 var(--blue) 단색에 흰 글자를 얹으면 안 된다 — 각 테마의
+           --blue는 어두운 배경 위에 얹으라고 만든 밝은 accent라서(mesh는 시안 #22d3ee)
+           흰 글자와는 대비가 1.8:1까지 떨어진다. 밝은 accent 위에는 어두운 글자를
+           얹는 게 맞고, 이러면 테마별 accent 색을 유지하면서도 5:1 이상이 나온다. */
+        :root[data-ui-theme][data-ui-theme-mode="dark"] .btn-primary {
+            background: var(--blue);
+            color: #0b1226;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
         }
-        .btn-stop   { background: var(--danger-soft); color: var(--danger); }
-        .btn-delete { background: var(--bg); color: var(--muted); }
-        .btn-resume { background: var(--ok-soft); color: var(--ok); }
-        .btn-download { background: var(--queued-soft); color: var(--deep); }
-        .btn-recrawl { background: var(--warning-soft); color: var(--warning); }
-        .btn-db-delete { background: var(--danger-soft); color: var(--danger); }
+        /* 빈 상태 안내문은 --muted가 너무 어두워 다크에서 4.1:1까지 떨어진다.
+           보조 텍스트 느낌은 유지하되(opacity) 본문 색을 기준으로 올린다. */
+        :root[data-ui-theme][data-ui-theme-mode="dark"] .empty {
+            color: var(--tone-neutral-fg);
+            opacity: 0.82;
+        }
+
+        /* neutral — 일반 액션 */
+        .btn-ghost,
+        .btn-delete,
+        .btn-resume,
+        .btn-download {
+            background: var(--tone-neutral-bg);
+            color: var(--tone-neutral-fg);
+        }
+        .btn-ghost { border: 1px solid var(--line); }
+
+        /* warn — 되돌리기 어려운 액션 */
+        .btn-recrawl,
+        .btn-stop { background: var(--tone-warn-bg); color: var(--tone-warn-fg); }
+
+        /* danger — 파괴적 액션 */
+        .btn-db-delete { background: var(--tone-danger-bg); color: var(--tone-danger-fg); }
 
         /* ── Badges ───────────────────────────────────── */
         .state-badge { font-size: 11px; padding: 3px 9px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
@@ -1067,6 +1126,14 @@
         :root[data-ui-theme="neu"] .requester-bar { background: var(--surface) !important; border-color: transparent !important; }
         :root[data-ui-theme="glass"] .empty,
         :root[data-ui-theme="glass"] .requester-bar { background: var(--surface) !important; border-color: var(--line) !important; }
+        /* .empty(#f8fafd)와 .requester-bar(밝은 그라디언트)는 배경이 하드코딩돼 있어서
+           테마마다 따로 덮어줘야 한다. apple만 빠져 있어 다크에서 흰 박스로 남았다. */
+        :root[data-ui-theme="apple"] .empty,
+        :root[data-ui-theme="apple"] .requester-bar {
+            background: var(--surface) !important;
+            border-color: var(--line) !important;
+            color: var(--ink);
+        }
     </style>
 </head>
 <body data-is-admin="{{ 'true' if is_admin else 'false' }}" data-my-uid="{{ my_uid or '' }}">
