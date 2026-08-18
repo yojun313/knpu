@@ -1,7 +1,9 @@
 (function () {
   'use strict';
 
-  const SAATY_LEVELS = [9, 7, 5, 3, 1, 3, 5, 7, 9];
+  // 9~1~1/9 전 구간(17칸) — entry.js의 scaleOptionsHtml과 같은 눈금으로 맞춘다.
+  const SAATY_LEVELS = [9, 8, 7, 6, 5, 4, 3, 2, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  function levelLabel(n, i) { return i <= SAATY_LEVELS.length / 2 ? String(n) : ('1/' + n); }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -32,7 +34,7 @@
           const nameA = (nodes[children[i]] || {}).name || children[i];
           const nameB = (nodes[children[j]] || {}).name || children[j];
           block += '<table class="pair-table"><thead><tr><th>' + esc(nameA) + '</th>' +
-            SAATY_LEVELS.map(function (n) { return '<th>' + n + '</th>'; }).join('') +
+            SAATY_LEVELS.map(function (n, i) { return '<th>' + levelLabel(n, i) + '</th>'; }).join('') +
             '<th>' + esc(nameB) + '</th></tr></thead><tbody><tr><td></td>' +
             SAATY_LEVELS.map(function () { return '<td class="mark-cell"></td>'; }).join('') +
             '<td></td></tr></tbody></table>';

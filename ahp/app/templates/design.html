@@ -18,6 +18,7 @@
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <span id="dirtyBadge" class="badge warn" hidden>저장 안 됨</span>
+      <button class="btn" id="previewDiagramBtn">🌳 계층도 미리보기</button>
       <button class="btn" id="settingsBtn">⚙ 방법론 설정</button>
       <button class="btn danger" id="deleteProjectBtn">삭제</button>
       <button class="btn primary" id="saveHierarchyBtn">저장</button>
@@ -32,6 +33,15 @@
         <button class="btn sm" id="addRootChildBtn">＋ 최상위 기준 추가</button>
       </div>
       <div id="treeRoot" class="tree-root"></div>
+    </div>
+
+    <div id="altPanel" class="table-card" hidden>
+      <div class="tc-head"><span class="tc-title">대안 관리</span>
+        <span class="tc-meta">최하위 기준마다 이 대안들의 비교 문항이 자동 추가됩니다</span></div>
+      <div class="brainstorm-add">
+        <input type="text" id="altInput" placeholder="대안 이름을 입력하고 Enter">
+      </div>
+      <div id="altList" class="brainstorm-list"></div>
     </div>
 
     <div class="table-card">
@@ -51,6 +61,25 @@
     <div class="field"><label>이름</label><input type="text" id="nodeEditName"></div>
     <div class="field"><label>설명(응답자에게 표시됨)</label><textarea id="nodeEditDesc"></textarea></div>
     <button class="btn primary" id="nodeEditSave" style="width:100%">적용</button>
+  </div>
+</div>
+
+<div id="diagramModal" class="modal-overlay" hidden>
+  <div class="modal-card wide">
+    <div class="modal-head"><span>계층도 미리보기</span><button class="modal-close" id="diagramClose">×</button></div>
+    <div id="diagramContainer" class="hd-scroll"></div>
+  </div>
+</div>
+
+<div id="moveModal" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><span>다른 항목의 하위로 이동</span><button class="modal-close" id="moveClose">×</button></div>
+    <p style="font-size:12px;color:var(--sidebar-muted);margin-bottom:12px">하위 항목이 있으면 계층 구조 그대로 함께 이동합니다.</p>
+    <div class="field">
+      <label>이동할 위치(새 상위 항목)</label>
+      <select id="moveTargetSelect"></select>
+    </div>
+    <button class="btn primary" id="moveSave" style="width:100%">이 위치로 이동</button>
   </div>
 </div>
 
@@ -122,4 +151,7 @@
   </div>
 </div>
 {% endblock %}
-{% block extra_scripts %}<script src="/js/designer.js"></script>{% endblock %}
+{% block extra_scripts %}
+<script src="/js/hierarchy_diagram.js"></script>
+<script src="/js/designer.js"></script>
+{% endblock %}

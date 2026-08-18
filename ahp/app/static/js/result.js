@@ -2,8 +2,15 @@
   'use strict';
 
   const projectId = location.pathname.split('/')[2];
+  const MODE_LABEL = { offline: '오프라인', online: '온라인', realtime: '실시간' };
   let results = null;
   let hierarchyNodes = [];
+  let altNames = {};
+  let collectionsWithRounds = [];
+  // scopeMode 'all' = 응답자별 최신 라운드로 전체 합산(기존 기본 동작).
+  // 'custom'이면 scopeSelection에 담긴 collection_ids(+선택된 round만) 조합만 본다.
+  let scopeMode = 'all';
+  let scopeSelection = { collectionIds: [], roundMap: {} };
 
   function renderWeightChart(container, weights, nodeNames, opts) {
     opts = opts || {};
@@ -74,10 +81,35 @@
     document.getElementById('statBadCr').textContent = allCrs.filter(function (c) { return c > (results.cr_threshold || 0.1); }).length;
   }
 
+  // 현재 선택 범위를 쿼리스트링으로 — get_results/get_sensitivity가 공유하는
+  // collection_id(단일, 레거시)/collection_ids(복수)/rounds(cid:round 쌍) 규약을 그대로 따른다.
+  function buildScopeQuery() {
+    if (scopeMode === 'all') return '';
+    const params = new URLSearchParams();
+    if (scopeSelection.collectionIds.length) {
+      params.set('collection_ids', scopeSelection.collectionIds.join(','));
+    }
+    const roundPairs = Object.keys(scopeSelection.roundMap).map(function (cid) {
+      return cid + ':' + scopeSelection.roundMap[cid];
+    });
+    if (roundPairs.length) params.set('rounds', roundPairs.join(','));
+    const qs = params.toString();
+    return qs ? ('?' + qs) : '';
+  }
+
   async function loadResults() {
-    const collectionId = document.getElementById('collectionFilter').value;
-    const qs = collectionId ? ('?collection_id=' + collectionId) : '';
-    results = await ahpApi('/api/projects/' + projectId + '/results' + qs);
+    document.getElementById('resultError').hidden = true;
+    try {
+      results = await ahpApi('/api/projects/' + projectId + '/results' + buildScopeQuery());
+    } catch (e) {
+      // 성공이든 실패든 반드시 화면을 갱신한다 — 예외를 그냥 던지면 직전 범위의
+      // 렌더가 그대로 남아 "필터를 바꿔도 안 바뀐다"는 문제로 이어진다.
+      document.getElementById('resultEmpty').hidden = true;
+      document.getElementById('resultContent').hidden = true;
+      document.getElementById('resultError').hidden = false;
+      ahpToast(e.message || '결과를 불러오는 중 오류가 발생했습니다', true);
+      return;
+    }
 
     matrixParentMap = {};
     // matrices 정보가 결과에 직접 없으므로 hierarchy 기반으로 부모=matrix_id 관계를 유추
@@ -93,24 +125,77 @@
     renderConsensus();
     renderCrTable();
 
+    const altScores = results.alternative_scores || {};
+    const hasAlts = Object.keys(altScores).length > 0;
+    document.getElementById('altRankCard').hidden = !hasAlts;
+    if (hasAlts) {
+      renderWeightChart(document.getElementById('altRankChart'), altScores, altNames);
+    }
+
     const proj = await ahpApi('/api/projects/' + projectId);
     document.getElementById('statAgg').textContent = proj.settings.aggregation;
   }
 
+  function updateScopeButtonLabel() {
+    const btn = document.getElementById('scopeBtn');
+    if (scopeMode === 'all') { btn.textContent = '결과 범위: 전체 합산 ▾'; return; }
+    const n = scopeSelection.collectionIds.length;
+    btn.textContent = '결과 범위: ' + n + '개 선택 ▾';
+  }
+
+  function renderScopeList() {
+    const box = document.getElementById('scopeCollectionsList');
+    if (!collectionsWithRounds.length) {
+      box.innerHTML = '<p class="muted" style="font-size:11.5px">아직 제출된 수집이 없습니다.</p>';
+      return;
+    }
+    box.innerHTML = collectionsWithRounds.map(function (c) {
+      const roundOpts = ['<option value="">최신 라운드</option>'].concat(
+        c.rounds.map(function (r) { return '<option value="' + r + '">' + r + '라운드</option>'; })
+      ).join('');
+      return '<div class="scope-coll-row" data-id="' + c.id + '">' +
+        '<label><input type="checkbox" class="scope-coll-check" data-id="' + c.id + '">' +
+        '<span>' + ahpEsc(c.label) + ' · ' + (MODE_LABEL[c.mode] || c.mode) + '</span></label>' +
+        '<select class="scope-round-select" data-id="' + c.id + '">' + roundOpts + '</select></div>';
+    }).join('');
+  }
+
   async function loadCollectionsFilter() {
-    const collections = await ahpApi('/api/projects/' + projectId + '/collections');
-    const sel = document.getElementById('collectionFilter');
-    collections.forEach(function (c) {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = c.label + ' (' + c.mode + ')';
-      sel.appendChild(opt);
-    });
+    collectionsWithRounds = await ahpApi('/api/projects/' + projectId + '/collections/rounds');
+    renderScopeList();
+  }
+
+  function applyScopeSelection() {
+    const allChecked = document.getElementById('scopeAllToggle').checked;
+    if (allChecked) {
+      scopeMode = 'all';
+      scopeSelection = { collectionIds: [], roundMap: {} };
+    } else {
+      const collectionIds = [];
+      const roundMap = {};
+      document.querySelectorAll('.scope-coll-check:checked').forEach(function (cb) {
+        const cid = cb.dataset.id;
+        collectionIds.push(cid);
+        const roundSel = document.querySelector('.scope-round-select[data-id="' + cid + '"]');
+        if (roundSel && roundSel.value) roundMap[cid] = Number(roundSel.value);
+      });
+      if (!collectionIds.length) {
+        ahpToast('최소 한 개 이상 선택하거나 "전체 합산"을 유지해 주세요', true);
+        return;
+      }
+      scopeMode = 'custom';
+      scopeSelection = { collectionIds: collectionIds, roundMap: roundMap };
+    }
+    updateScopeButtonLabel();
+    document.getElementById('scopePanel').hidden = true;
+    loadResults();
   }
 
   async function loadSensNodeOptions() {
     const h = await ahpApi('/api/projects/' + projectId + '/hierarchy');
     hierarchyNodes = h.nodes;
+    altNames = {};
+    (h.alternatives || []).forEach(function (a) { altNames[a.uuid] = a.name; });
     const sel = document.getElementById('sensNode');
     sel.innerHTML = hierarchyNodes
       .filter(function (n) { return n.parent_id !== null; })
@@ -121,11 +206,11 @@
   async function runSensitivity() {
     const target = document.getElementById('sensNode').value;
     const delta = Number(document.getElementById('sensDelta').value);
-    const collectionId = document.getElementById('collectionFilter').value;
-    const qs = new URLSearchParams({ target_node: target, delta_pct: delta });
-    if (collectionId) qs.set('collection_id', collectionId);
+    const base = buildScopeQuery();
+    const sep = base ? '&' : '?';
+    const qs = base + sep + new URLSearchParams({ target_node: target, delta_pct: delta }).toString();
     try {
-      const res = await ahpApi('/api/projects/' + projectId + '/results/sensitivity?' + qs.toString());
+      const res = await ahpApi('/api/projects/' + projectId + '/results/sensitivity' + qs);
       renderWeightChart(document.getElementById('sensResult'), res.adjusted, results.node_names, { adjusted: true });
     } catch (e) {
       ahpToast(e.message || '민감도 분석에 실패했습니다', true);
@@ -162,7 +247,15 @@
       });
     });
 
-    document.getElementById('collectionFilter').addEventListener('change', loadResults);
+    document.getElementById('scopeBtn').addEventListener('click', function (e) {
+      e.stopPropagation();
+      document.getElementById('scopePanel').hidden = !document.getElementById('scopePanel').hidden;
+    });
+    document.getElementById('scopePanel').addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('click', function () {
+      document.getElementById('scopePanel').hidden = true;
+    });
+    document.getElementById('scopeApplyBtn').addEventListener('click', applyScopeSelection);
     document.getElementById('sensRunBtn').addEventListener('click', runSensitivity);
   }
 

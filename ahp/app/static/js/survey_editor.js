@@ -15,6 +15,7 @@
     const h = await ahpApi('/api/projects/' + projectId + '/hierarchy');
     const map = {};
     h.nodes.forEach(function (n) { map[n.uuid] = n; });
+    (h.alternatives || []).forEach(function (a) { map[a.uuid] = a; });
     return map;
   }
 
@@ -44,7 +45,8 @@
       }).join('');
       return '<div class="table-card matrix-block">' +
         '<div class="matrix-parent">' +
-        '<div class="mp-name">' + ahpEsc(nodeName(m.parent_uuid, nodesByUuid)) + '</div>' +
+        '<div class="mp-name">' + (m.is_alternative ? '<span class="badge ok" style="margin-right:6px">대안 비교</span>' : '') +
+        ahpEsc(nodeName(m.parent_uuid, nodesByUuid)) + '</div>' +
         '<div class="field"><label>이 기준 자체에 대한 설명(선택)</label>' +
         '<textarea class="node-desc-input" data-node="' + m.parent_uuid + '">' + ahpEsc(parentDesc) + '</textarea></div>' +
         '<div class="field" style="margin-top:10px"><label>비교 질문 문구</label>' +

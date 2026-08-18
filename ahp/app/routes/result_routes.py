@@ -30,22 +30,33 @@ async def _get_project_checked(project_id: str, request: Request) -> dict:
 
 
 async def _gather_final_submissions(
-    project_id: str, collection_id: str | None
+    project_id: str,
+    collection_ids: list[str] | None = None,
+    round_by_collection: dict[str, int] | None = None,
 ) -> dict[str, dict]:
-    """respondent_id -> 그 사람의 최종(가장 높은 round) 제출 answers.
-    collection_id가 주어지면 그 회차만, 아니면 프로젝트의 모든 회차를 합친다."""
+    """respondent_id -> 그 사람의 최종 제출 answers.
+
+    collection_ids가 주어지면 그 회차들만, 아니면 프로젝트의 모든 회차를 합친다.
+    round_by_collection에 특정 collection_id -> round가 있으면 그 회차는 "최신
+    라운드"가 아니라 지정된 라운드의 제출만 쓴다(회차·라운드를 골라 조합해 보는
+    결과 화면 기능, PLAN.md 13절). 지정이 없는 회차는 응답자별 최신 라운드를 쓰는
+    기존 동작 그대로다."""
     survey_ids = [
         s["_id"] async for s in surveys_db.find({"project_id": project_id}, {"_id": 1})
     ]
     query = {"survey_id": {"$in": survey_ids}}
-    if collection_id:
-        query = {"_id": collection_id, "survey_id": {"$in": survey_ids}}
-    collection_ids = [c["_id"] async for c in collections_db.find(query, {"_id": 1})]
-    if not collection_ids:
+    if collection_ids:
+        query = {"_id": {"$in": collection_ids}, "survey_id": {"$in": survey_ids}}
+    resolved_ids = [c["_id"] async for c in collections_db.find(query, {"_id": 1})]
+    if not resolved_ids:
         return {}
 
+    round_by_collection = round_by_collection or {}
     latest_by_respondent: dict[str, dict] = {}
-    async for sub in submissions_db.find({"collection_id": {"$in": collection_ids}}):
+    async for sub in submissions_db.find({"collection_id": {"$in": resolved_ids}}):
+        wanted_round = round_by_collection.get(sub["collection_id"])
+        if wanted_round is not None and sub["round"] != wanted_round:
+            continue
         rid = sub["respondent_id"]
         cur = latest_by_respondent.get(rid)
         if cur is None or sub["round"] > cur["round"]:
@@ -67,13 +78,68 @@ async def _canonical_survey_and_hierarchy(project_id: str):
     return survey, hierarchy
 
 
+def _parse_selection(
+    collection_id: str | None, collection_ids: str | None, rounds: str | None
+) -> tuple[list[str] | None, dict[str, int]]:
+    """`collection_id`(단일, 하위호환) / `collection_ids`(콤마 구분 복수) /
+    `rounds`(콤마 구분 "collection_id:round" 쌍)을 결과 조회용 선택 조건으로 푼다."""
+    ids: list[str] | None = None
+    if collection_ids:
+        ids = [c for c in collection_ids.split(",") if c]
+    elif collection_id:
+        ids = [collection_id]
+
+    round_map: dict[str, int] = {}
+    if rounds:
+        for pair in rounds.split(","):
+            cid, _, rnd = pair.partition(":")
+            if cid and rnd.isdigit():
+                round_map[cid] = int(rnd)
+    return ids, round_map
+
+
+@router.get("/api/projects/{project_id}/collections/rounds")
+async def get_collection_rounds(project_id: str, request: Request):
+    """각 collection에 실제로 존재하는 라운드 목록 — 결과 화면에서 회차×라운드
+    조합을 골라 종합해 볼 때 선택지로 쓴다."""
+    await _get_project_checked(project_id, request)
+    survey_ids = [
+        s["_id"] async for s in surveys_db.find({"project_id": project_id}, {"_id": 1})
+    ]
+    colls = [
+        c
+        async for c in collections_db.find(
+            {"survey_id": {"$in": survey_ids}}, {"_id": 1, "label": 1, "mode": 1}
+        )
+    ]
+    out = []
+    for c in colls:
+        rounds = sorted(
+            await submissions_db.distinct("round", {"collection_id": c["_id"]})
+        )
+        out.append(
+            {
+                "id": c["_id"],
+                "label": c.get("label", ""),
+                "mode": c.get("mode"),
+                "rounds": rounds,
+            }
+        )
+    return out
+
+
 @router.get("/api/projects/{project_id}/results")
 async def get_results(
-    project_id: str, request: Request, collection_id: str | None = Query(None)
+    project_id: str,
+    request: Request,
+    collection_id: str | None = Query(None),
+    collection_ids: str | None = Query(None),
+    rounds: str | None = Query(None),
 ):
     project = await _get_project_checked(project_id, request)
     survey, hierarchy = await _canonical_survey_and_hierarchy(project_id)
-    submissions = await _gather_final_submissions(project_id, collection_id)
+    ids, round_map = _parse_selection(collection_id, collection_ids, rounds)
+    submissions = await _gather_final_submissions(project_id, ids, round_map)
 
     if not submissions:
         return {
@@ -99,10 +165,13 @@ async def get_sensitivity(
     target_node: str = Query(...),
     delta_pct: float = Query(...),
     collection_id: str | None = Query(None),
+    collection_ids: str | None = Query(None),
+    rounds: str | None = Query(None),
 ):
     project = await _get_project_checked(project_id, request)
     survey, hierarchy = await _canonical_survey_and_hierarchy(project_id)
-    submissions = await _gather_final_submissions(project_id, collection_id)
+    ids, round_map = _parse_selection(collection_id, collection_ids, rounds)
+    submissions = await _gather_final_submissions(project_id, ids, round_map)
     if not submissions:
         raise HTTPException(400, "응답이 없어 민감도 분석을 할 수 없습니다")
 
