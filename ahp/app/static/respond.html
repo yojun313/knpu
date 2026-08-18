@@ -1,0 +1,89 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>AHP 설문</title>
+<link rel="icon" type="image/x-icon" href="/img/favicon.ico">
+<link rel="stylesheet" href="/css/respond.css">
+</head><body>
+
+<div id="connBar" class="conn-bar" hidden><span id="connText"></span></div>
+<div id="patchNotice" class="patch-notice" hidden><span id="patchNoticeText"></span></div>
+
+<div id="viewLoading" class="view center">
+  <div class="spinner"></div>
+</div>
+
+<div id="viewError" class="view center" hidden>
+  <div class="err-icon">⚠</div>
+  <h1 id="errorTitle">연결할 수 없습니다</h1>
+  <p id="errorMessage" class="muted"></p>
+</div>
+
+<div id="viewConsent" class="view" hidden>
+  <div class="card">
+    <h1 id="consentTitle"></h1>
+    <p id="consentIntro" class="intro"></p>
+    <div class="consent-box">
+      <p id="consentText"></p>
+    </div>
+    <label class="check-row">
+      <input type="checkbox" id="consentCheck">
+      <span>위 내용을 읽었으며 참여에 동의합니다</span>
+    </label>
+    <button class="btn-primary" id="consentNextBtn" disabled>시작하기</button>
+  </div>
+</div>
+
+<div id="viewCode" class="view" hidden>
+  <div class="card">
+    <h1>접속 코드 입력</h1>
+    <p class="muted">배부받은 코드를 입력해 주세요. 코드는 여러분을 익명으로 구별하는 용도로만 쓰입니다.</p>
+    <input type="text" id="codeInput" class="code-input" placeholder="ABC-123" autocomplete="off" autocapitalize="characters">
+    <p id="codeError" class="err-text" hidden></p>
+    <button class="btn-primary" id="codeSubmitBtn">확인</button>
+  </div>
+</div>
+
+<div id="viewSurvey" class="view" hidden>
+  <div class="survey-top">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-label"><span id="progressText">0%</span></div>
+  </div>
+
+  <div class="survey-body">
+    <div class="q-parent" id="qParentName"></div>
+    <div class="q-desc" id="qParentDesc"></div>
+    <h1 class="q-title" id="qQuestionText"></h1>
+
+    <div class="picker">
+      <div class="side-labels">
+        <span id="labelA"></span>
+        <span id="labelB"></span>
+      </div>
+      <div class="side-buttons" id="sideButtons">
+        <button type="button" class="side-btn" data-side="a"><span id="sideBtnAName"></span></button>
+        <button type="button" class="side-btn equal" data-side="eq">동일</button>
+        <button type="button" class="side-btn" data-side="b"><span id="sideBtnBName"></span></button>
+      </div>
+      <div class="intensity-wrap" id="intensityWrap" hidden>
+        <p class="intensity-hint" id="intensityHint"></p>
+        <div class="intensity-row" id="intensityRow"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="survey-nav">
+    <button class="btn-ghost" id="prevBtn">이전</button>
+    <span id="qCounter" class="q-counter"></span>
+    <button class="btn-primary" id="nextBtn">다음</button>
+  </div>
+</div>
+
+<div id="viewDone" class="view center" hidden>
+  <div class="done-icon">✓</div>
+  <h1>제출이 완료되었습니다</h1>
+  <p class="muted">참여해 주셔서 감사합니다. 이 창은 닫으셔도 됩니다.</p>
+</div>
+
+<script src="/js/respond.js"></script>
+</body></html>

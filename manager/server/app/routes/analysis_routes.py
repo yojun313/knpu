@@ -234,5 +234,3 @@ async def grounding_dino_proxy_route(
         media_type=content_type,
         headers={"Content-Disposition": cd},
     )
-
-

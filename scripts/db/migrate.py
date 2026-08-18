@@ -95,11 +95,7 @@ def migrate_one(client, src_db, src_coll, dst_db, dst_coll, apply: bool, force: 
         if idx_name == "_id_":
             continue
         keys = idx_info["key"]
-        options = {
-            k: v
-            for k, v in idx_info.items()
-            if k not in ("key", "v", "ns")
-        }
+        options = {k: v for k, v in idx_info.items() if k not in ("key", "v", "ns")}
         try:
             target.create_index(keys, name=idx_name, **options)
         except Exception as e:

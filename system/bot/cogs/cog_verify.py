@@ -185,7 +185,9 @@ class VerificationCog(commands.Cog):
 
     @tasks.loop(seconds=3.0)
     async def poll_links(self):
-        cursor = self.bot.homepage_db["discord-link-requests"].find({"status": "linked"})
+        cursor = self.bot.homepage_db["discord-link-requests"].find(
+            {"status": "linked"}
+        )
         docs = await cursor.to_list(length=20)
         for doc in docs:
             await self._complete_link(doc)

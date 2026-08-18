@@ -53,7 +53,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 class NoCacheStaticFiles(StaticFiles):
-
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         async def send_wrapper(message):
             if message["type"] == "http.response.start":
@@ -77,9 +76,7 @@ app.mount(
 )
 
 SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "system", "ui")
-app.mount(
-    "/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui"
-)
+app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui")
 
 app.include_router(api_router)
 

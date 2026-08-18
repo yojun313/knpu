@@ -1,0 +1,24 @@
+.entry-layout{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}
+@media (max-width:800px){.entry-layout{grid-template-columns:1fr}}
+
+.entry-resp-list{padding:8px;display:flex;flex-direction:column;gap:2px;max-height:640px;overflow-y:auto}
+.entry-resp-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;cursor:pointer}
+.entry-resp-item:hover{background:var(--sidebar-panel2)}
+.entry-resp-item.selected{background:var(--overlay-hover);outline:1.5px solid var(--accent)}
+.entry-resp-item .er-name{flex:1;font-size:12.5px;font-weight:700;color:var(--text-strong);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry-resp-item .er-del{width:22px;height:22px;border:none;background:transparent;border-radius:6px;
+  color:var(--sidebar-muted);cursor:pointer;flex-shrink:0}
+.entry-resp-item .er-del:hover{background:var(--danger);color:#fff}
+
+.entry-matrices{padding:14px 16px}
+.entry-matrix{margin-bottom:22px}
+.entry-matrix:last-child{margin-bottom:0}
+.entry-matrix-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.entry-matrix-head h4{font-size:13px;font-weight:800;color:var(--text-strong)}
+.entry-pair-row{display:grid;grid-template-columns:1fr 160px;gap:10px;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--sidebar-border)}
+.entry-pair-row:last-child{border-bottom:none}
+.entry-pair-row .ep-label{font-size:12.5px;color:var(--text-strong)}
+.entry-pair-row select{width:100%;padding:7px 9px;border-radius:7px;border:1px solid var(--sidebar-border);
+  background:var(--sidebar-bg);color:var(--text-strong);font-size:12.5px}

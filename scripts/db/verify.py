@@ -111,14 +111,18 @@ def main():
     for src_db, src_coll, dst_db, dst_coll in CHECKS:
         expected = manifest.get("databases", {}).get(src_db, {}).get(src_coll)
         if expected is None:
-            print(f"[skip] {src_db}.{src_coll}: manifest에 없음 (백업 시점에 DB가 없었음)")
+            print(
+                f"[skip] {src_db}.{src_coll}: manifest에 없음 (백업 시점에 DB가 없었음)"
+            )
             continue
 
         actual = client[dst_db][dst_coll].estimated_document_count()
         status = "OK" if actual == expected else "MISMATCH"
         if status == "MISMATCH":
             ok = False
-        print(f"[{status}] {src_db}.{src_coll} ({expected}) -> {dst_db}.{dst_coll} ({actual})")
+        print(
+            f"[{status}] {src_db}.{src_coll} ({expected}) -> {dst_db}.{dst_coll} ({actual})"
+        )
 
         if status == "OK" and expected > 0:
             backup_docs = load_backup_docs(backup_dir, src_db, src_coll)
@@ -143,7 +147,10 @@ def main():
             ok = False
         print(f"[{status}] {db}.{coll}: {expected} -> {actual}")
 
-    print("\n" + ("전체 검증 통과" if ok else "검증 실패 항목 있음 — 위 MISMATCH/FAIL 확인"))
+    print(
+        "\n"
+        + ("전체 검증 통과" if ok else "검증 실패 항목 있음 — 위 MISMATCH/FAIL 확인")
+    )
     sys.exit(0 if ok else 1)
 
 

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}실시간 콘솔{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/css/console.css">{% endblock %}
+{% block content %}
+<div class="page-body">
+  <div class="page-head">
+    <div>
+      <h1 id="collLabel">실시간 콘솔</h1>
+      <p>참여자별 진행률과 일관성(CR)을 실시간으로 확인하고, 문항을 즉시 수정해 반영할 수 있습니다.</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="wsStatus" class="badge muted">연결 중…</span>
+      <span class="badge ok">라운드 <b id="roundNum">1</b></span>
+      <button class="btn" id="advanceRoundBtn">다음 라운드 시작</button>
+      <a class="btn sm" id="backToCollect" href="#">← 수집 관리로</a>
+    </div>
+  </div>
+
+  <div class="console-layout">
+    <div class="table-card">
+      <div class="tc-head"><span class="tc-title">참여자</span><span class="tc-meta" id="respCountMeta"></span></div>
+      <div id="respondentTable" class="resp-table"></div>
+    </div>
+
+    <div class="table-card">
+      <div class="tc-head"><span class="tc-title">문항 실시간 수정</span>
+        <span class="tc-meta">저장하면 접속 중인 응답자 화면에 즉시 반영됩니다</span></div>
+      <div id="liveMatricesList" class="live-matrices"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}<script src="/js/console.js"></script>{% endblock %}

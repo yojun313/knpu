@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}프로젝트{% endblock %}
+{% block content %}
+<div class="page-body">
+  <div class="page-head">
+    <div>
+      <h1>내 AHP 프로젝트</h1>
+      <p>계층 설계부터 결과 분석까지 프로젝트 단위로 관리합니다.</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="statusFilter" style="width:auto">
+        <option value="">모든 상태</option>
+        <option value="draft">설계 중</option>
+        <option value="active">진행 중</option>
+        <option value="closed">종료됨</option>
+      </select>
+      <label id="allToggleWrap" class="all-toggle-wrap" hidden>
+        <input type="checkbox" id="allToggle"> 모든 사용자 프로젝트 보기
+      </label>
+      <button class="btn primary" id="dashNewProjectBtn">＋ 새 프로젝트</button>
+    </div>
+  </div>
+  <div id="dashGrid" class="card-grid"></div>
+  <div id="dashEmpty" class="empty-state" hidden>
+    <div class="es-icon">🗂</div>
+    <h2>아직 프로젝트가 없습니다</h2>
+    <p style="max-width:340px">새 프로젝트를 만들어 AHP 계층 설계를 시작하세요.</p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}<script src="/js/dashboard.js"></script>{% endblock %}
