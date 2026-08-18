@@ -11,7 +11,11 @@ DB 접근이 없는 순수 함수 계층이라 단위 테스트 대상이다.
 from __future__ import annotations
 
 
-def generate_matrices(nodes: list[dict]) -> list[dict]:
+def generate_matrices(
+    nodes: list[dict],
+    alternatives: list[dict] | None = None,
+    alt_layer_on: bool = False,
+) -> list[dict]:
     """계층 노드에서 '부모 하나당 비교행렬 하나'를 기계적으로 뽑는다.
 
     자식이 없는 리프는 비교할 게 없으니 건너뛴다. 자식이 1개뿐인 부모도 행렬을
@@ -21,6 +25,11 @@ def generate_matrices(nodes: list[dict]) -> list[dict]:
     matrix_id는 parent_uuid를 그대로 쓴다 — 부모 하나에 행렬 하나가 항상 1:1이라
     별도 식별자를 만들 이유가 없고, ahp_calc.global_weights()의 matrix_of_parent
     매핑도 항등함수가 되어 계산 계층이 더 단순해진다.
+
+    alt_layer_on이면 최하위(leaf) 기준마다 "대안들 간 비교" 행렬을 하나씩 추가로
+    만든다(matrix_id = "alt:<leaf_uuid>", is_alternative=True로 표시해서 결과
+    화면이 기준 비교와 구분해 대안 최종 점수를 합성할 수 있게 한다). 대안 자체는
+    계층이 아니라 평탄한 목록이라, leaf 하나당 같은 대안 목록을 그대로 재사용한다.
     """
     by_parent: dict[str, list[dict]] = {}
     for n in nodes:
@@ -41,8 +50,27 @@ def generate_matrices(nodes: list[dict]) -> list[dict]:
                     f"'{parent_name}' 측면에서 다음 항목들이 서로 얼마나 중요한지 "
                     f"비교해 주세요."
                 ),
+                "is_alternative": False,
             }
         )
+
+    if alt_layer_on and alternatives:
+        alt_ids = [a["uuid"] for a in sorted(alternatives, key=lambda a: a["order"])]
+        leaves = [n for n in nodes if n["uuid"] not in by_parent]
+        for leaf in leaves:
+            matrices.append(
+                {
+                    "matrix_id": f"alt:{leaf['uuid']}",
+                    "parent_uuid": leaf["uuid"],
+                    "child_uuids": alt_ids,
+                    "question_text": (
+                        f"'{leaf['name']}' 기준에서 다음 대안들이 서로 얼마나 "
+                        f"우수한지 비교해 주세요."
+                    ),
+                    "is_alternative": True,
+                }
+            )
+
     return matrices
 
 

@@ -40,6 +40,8 @@
         : '';
       const codesBtn = c.mode !== 'offline'
         ? '<button class="btn sm" data-act="codes" data-id="' + c.id + '">코드 발급</button>' : '';
+      const respondentsBtn = c.mode !== 'offline'
+        ? '<button class="btn sm" data-act="respondents" data-id="' + c.id + '">응답자 관리</button>' : '';
       const toggleBtn = c.status === 'open'
         ? '<button class="btn sm" data-act="close" data-id="' + c.id + '">종료</button>'
         : '<button class="btn sm" data-act="reopen" data-id="' + c.id + '">재개</button>';
@@ -50,7 +52,7 @@
         '<div class="cc-stats"><span>응답자 <b>' + c.respondent_count + '</b></span>' +
         '<span>제출 완료 <b>' + c.submitted_count + '</b></span>' +
         (c.mode === 'realtime' ? '<span>라운드 <b>' + c.round + '</b></span>' : '') + '</div>' +
-        '<div class="cc-actions">' + openBtn + linkBtn + codesBtn + toggleBtn +
+        '<div class="cc-actions">' + openBtn + linkBtn + codesBtn + respondentsBtn + toggleBtn +
         '<button class="btn sm danger" data-act="delete" data-id="' + c.id + '">삭제</button></div>' +
         '</div>';
     }).join('');
@@ -98,6 +100,37 @@
     }
   }
 
+  let activeCollectionForRespondents = null;
+
+  function fmtStatus(s) {
+    return s === 'submitted' ? '제출 완료' : s === 'in_progress' ? '응답 중' : '시작 전';
+  }
+
+  async function loadRespondentsTable() {
+    const list = await ahpApi('/api/collections/' + activeCollectionForRespondents + '/respondents');
+    const body = document.getElementById('respondentsTableBody');
+    if (!list.length) {
+      body.innerHTML = '<tr><td colspan="5" style="padding:14px;color:var(--sidebar-muted)">아직 응답자가 없습니다.</td></tr>';
+      return;
+    }
+    body.innerHTML = list.map(function (r) {
+      return '<tr data-id="' + r.id + '">' +
+        '<td style="padding:6px">' + ahpEsc(r.label) + '</td>' +
+        '<td style="padding:6px;font-family:monospace">' + ahpEsc(r.code || '-') + '</td>' +
+        '<td style="padding:6px">' + fmtStatus(r.status) + '</td>' +
+        '<td style="padding:6px">' + (r.progress || 0) + '%</td>' +
+        '<td style="padding:6px;white-space:nowrap">' +
+        '<button class="btn sm" data-act="reissue" data-id="' + r.id + '">코드 재발급</button> ' +
+        '<button class="btn sm danger" data-act="remove-resp" data-id="' + r.id + '">삭제</button></td></tr>';
+    }).join('');
+  }
+
+  async function openRespondentsModal(collectionId) {
+    activeCollectionForRespondents = collectionId;
+    document.getElementById('respondentsModal').hidden = false;
+    await loadRespondentsTable();
+  }
+
   function init() {
     load();
     ahpApi('/api/projects/' + projectId).then(function (p) {
@@ -136,6 +169,8 @@
         document.getElementById('codesIssueForm').hidden = false;
         document.getElementById('codesResult').hidden = true;
         document.getElementById('codesModal').hidden = false;
+      } else if (act === 'respondents') {
+        await openRespondentsModal(id);
       } else if (act === 'close') {
         await ahpApi('/api/collections/' + id + '/close', { method: 'POST' });
         await load();
@@ -157,6 +192,41 @@
       const text = document.getElementById('codesResult').dataset.text || '';
       await navigator.clipboard.writeText(text).catch(function () {});
       ahpToast('전체 코드를 복사했습니다');
+    });
+
+    document.getElementById('respondentsClose').addEventListener('click', function () {
+      document.getElementById('respondentsModal').hidden = true;
+    });
+    document.getElementById('respondentsTableBody').addEventListener('click', async function (e) {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const rid = btn.dataset.id;
+      const act = btn.dataset.act;
+      if (act === 'reissue') {
+        if (!confirm('이 응답자의 접속 코드를 재발급할까요? 기존 코드는 즉시 무효화됩니다.')) return;
+        try {
+          const res = await ahpApi(
+            '/api/collections/' + activeCollectionForRespondents + '/respondents/' + rid + '/reissue-code',
+            { method: 'POST' }
+          );
+          ahpToast('새 코드: ' + res.code);
+          await loadRespondentsTable();
+        } catch (err) {
+          ahpToast(err.message || '재발급에 실패했습니다', true);
+        }
+      } else if (act === 'remove-resp') {
+        if (!confirm('이 응답자를 삭제할까요? 진행 중이던 응답도 함께 삭제되며 되돌릴 수 없습니다.')) return;
+        try {
+          await ahpApi(
+            '/api/collections/' + activeCollectionForRespondents + '/respondents/' + rid,
+            { method: 'DELETE' }
+          );
+          await loadRespondentsTable();
+          await load();
+        } catch (err) {
+          ahpToast(err.message || '삭제에 실패했습니다', true);
+        }
+      }
     });
   }
 

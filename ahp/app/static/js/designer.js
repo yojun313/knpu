@@ -3,6 +3,7 @@
 
   const projectId = location.pathname.split('/')[2];
   let tree = { version: 0, nodes: [] };
+  let alternatives = [];
   let dirty = false;
   let selectedParentId = null;
   const expanded = new Set();
@@ -84,6 +85,7 @@
       '<button data-act="edit" title="편집">✎</button>' +
       (node.parent_id !== null ? '<button data-act="up" title="위로">↑</button>' +
         '<button data-act="down" title="아래로">↓</button>' +
+        '<button data-act="move" title="다른 항목의 하위로 이동">⇥</button>' +
         '<button data-act="del" class="danger" title="삭제">🗑</button>' : '');
     actions.addEventListener('click', function (e) {
       const btn = e.target.closest('button');
@@ -94,6 +96,7 @@
       else if (act === 'edit') openEditNode(node.uuid);
       else if (act === 'up') moveSibling(node.uuid, -1);
       else if (act === 'down') moveSibling(node.uuid, 1);
+      else if (act === 'move') openMoveTarget(node.uuid);
       else if (act === 'del') deleteNode(node.uuid);
     });
 
@@ -179,6 +182,72 @@
     renderTree();
   }
 
+  // ── 재부모화(다른 항목의 하위로 이동) ───────────────────────────────────────
+  function descendantIds(id) {
+    const out = new Set();
+    const stack = childrenOf(id).map(function (n) { return n.uuid; });
+    while (stack.length) {
+      const cur = stack.pop();
+      out.add(cur);
+      childrenOf(cur).forEach(function (c) { stack.push(c.uuid); });
+    }
+    return out;
+  }
+
+  let movingNodeId = null;
+  function openMoveTarget(id) {
+    movingNodeId = id;
+    const excluded = descendantIds(id);
+    excluded.add(id);
+    const sel = document.getElementById('moveTargetSelect');
+    sel.innerHTML = tree.nodes
+      .filter(function (n) { return !excluded.has(n.uuid); })
+      .slice()
+      .sort(function (a, b) { return a.level - b.level; })
+      .map(function (n) { return '<option value="' + n.uuid + '">' + '　'.repeat(n.level) + ahpEsc(n.name) + '</option>'; })
+      .join('');
+    document.getElementById('moveModal').hidden = false;
+  }
+
+  function moveNode() {
+    const newParentId = document.getElementById('moveTargetSelect').value;
+    if (!newParentId) { ahpToast('이동할 위치를 선택해 주세요', true); return; }
+    const node = byId(movingNodeId);
+    node.parent_id = newParentId;
+    const sibs = childrenOf(newParentId).filter(function (s) { return s.uuid !== node.uuid; });
+    node.order = sibs.length ? Math.max.apply(null, sibs.map(function (s) { return s.order; })) + 1 : 0;
+    expanded.add(newParentId);
+    setDirty(true);
+    document.getElementById('moveModal').hidden = true;
+    renderTree();
+    ahpToast('이동했습니다. 저장을 눌러야 반영됩니다.');
+  }
+
+  // ── 대안 관리 ────────────────────────────────────────────────────────────
+  function renderAltList() {
+    const list = document.getElementById('altList');
+    if (!alternatives.length) {
+      list.innerHTML = '<p style="font-size:12px;color:var(--sidebar-muted)">비교할 대안을 추가해 주세요.</p>';
+      return;
+    }
+    list.innerHTML = alternatives.slice().sort(function (a, b) { return a.order - b.order; }).map(function (a) {
+      return '<div class="brain-card"><span class="bc-text">' + ahpEsc(a.name) + '</span>' +
+        '<span class="bc-actions"><button data-act="remove-alt" data-id="' + a.uuid + '" title="삭제">×</button></span></div>';
+    }).join('');
+  }
+
+  function addAlternative(name) {
+    alternatives.push({ uuid: crypto.randomUUID(), name: name, description: '', order: alternatives.length });
+    setDirty(true);
+    renderAltList();
+  }
+
+  function removeAlternative(id) {
+    alternatives = alternatives.filter(function (a) { return a.uuid !== id; });
+    setDirty(true);
+    renderAltList();
+  }
+
   // ── 저장 ────────────────────────────────────────────────────────────────
   async function saveHierarchy() {
     const btn = document.getElementById('saveHierarchyBtn');
@@ -187,13 +256,20 @@
       const payload = tree.nodes.map(function (n) {
         return { uuid: n.uuid, parent_id: n.parent_id, name: n.name, description: n.description, order: n.order };
       });
-      const res = await ahpApi('/api/projects/' + projectId + '/hierarchy', { method: 'PUT', body: { nodes: payload } });
+      const altPayload = alternatives.map(function (a) {
+        return { uuid: a.uuid, name: a.name, description: a.description, order: a.order };
+      });
+      const res = await ahpApi('/api/projects/' + projectId + '/hierarchy', {
+        method: 'PUT', body: { nodes: payload, alternatives: altPayload },
+      });
       tree.version = res.version;
       tree.nodes = res.nodes;
+      alternatives = res.alternatives || [];
       setDirty(false);
       renderWarnings(res.warnings || []);
       ahpToast('저장했습니다 (v' + res.version + ')');
       renderTree();
+      renderAltList();
     } catch (e) {
       ahpToast(e.message || '저장에 실패했습니다', true);
     } finally {
@@ -276,6 +352,7 @@
     try {
       await ahpApi('/api/projects/' + projectId + '/settings', { method: 'PUT', body: body });
       document.getElementById('settingsModal').hidden = true;
+      document.getElementById('altPanel').hidden = body.alt_layer !== 'on';
       ahpToast('설정을 저장했습니다');
     } catch (e) {
       ahpToast(e.message || '설정 저장에 실패했습니다', true);
@@ -287,6 +364,7 @@
     try {
       const project = await ahpApi('/api/projects/' + projectId);
       document.getElementById('projTitle').textContent = project.title;
+      document.getElementById('altPanel').hidden = project.settings.alt_layer !== 'on';
       if (window.AHPShell) window.AHPShell.setActiveProject(projectId);
     } catch (e) {
       ahpToast('프로젝트를 불러오지 못했습니다', true);
@@ -295,11 +373,13 @@
 
     const h = await ahpApi('/api/projects/' + projectId + '/hierarchy');
     tree = { version: h.version, nodes: h.nodes };
+    alternatives = h.alternatives || [];
     selectedParentId = root() ? root().uuid : null;
     expandAll();
     renderTree();
     renderWarnings(h.warnings || []);
     renderBrainList();
+    renderAltList();
 
     // 스테이지 탭 링크 연결
     document.querySelectorAll('#stageTabs .stage-tab').forEach(function (tab) {
@@ -335,6 +415,19 @@
       renderTree();
     });
 
+    document.getElementById('altInput').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      const text = e.target.value.trim();
+      if (!text) return;
+      addAlternative(text);
+      e.target.value = '';
+    });
+    document.getElementById('altList').addEventListener('click', function (e) {
+      const btn = e.target.closest('button');
+      if (!btn || btn.dataset.act !== 'remove-alt') return;
+      removeAlternative(btn.dataset.id);
+    });
+
     document.getElementById('brainInput').addEventListener('keydown', function (e) {
       if (e.key !== 'Enter') return;
       const text = e.target.value.trim();
@@ -356,6 +449,11 @@
         openPromote(i);
       }
     });
+    document.getElementById('moveClose').addEventListener('click', function () {
+      document.getElementById('moveModal').hidden = true;
+    });
+    document.getElementById('moveSave').addEventListener('click', moveNode);
+
     document.getElementById('promoteClose').addEventListener('click', function () {
       document.getElementById('promoteModal').hidden = true;
     });
@@ -376,6 +474,14 @@
       renderBrainList();
       renderTree();
       ahpToast('트리에 추가했습니다. 저장을 눌러야 반영됩니다.');
+    });
+
+    document.getElementById('previewDiagramBtn').addEventListener('click', function () {
+      window.AHPHierarchyDiagram.render(document.getElementById('diagramContainer'), tree.nodes);
+      document.getElementById('diagramModal').hidden = false;
+    });
+    document.getElementById('diagramClose').addEventListener('click', function () {
+      document.getElementById('diagramModal').hidden = true;
     });
 
     document.getElementById('settingsBtn').addEventListener('click', openSettings);

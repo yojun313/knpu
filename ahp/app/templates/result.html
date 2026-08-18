@@ -15,11 +15,25 @@
       <p id="resultSubtitle">오프라인·온라인·실시간 응답을 모두 합쳐서 분석합니다.</p>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <select id="collectionFilter"><option value="">전체 수집 합산</option></select>
+      <div class="scope-picker">
+        <button class="btn sm" id="scopeBtn">결과 범위: 전체 합산 ▾</button>
+        <div id="scopePanel" class="scope-panel" hidden>
+          <label class="scope-all-row"><input type="checkbox" id="scopeAllToggle" checked> 전체 합산(기본 — 응답자별 최신 라운드)</label>
+          <div id="scopeCollectionsList" class="scope-collections"></div>
+          <p class="scope-hint">특정 회차·라운드를 골라 종합해 보려면 "전체 합산"을 해제하고 원하는 항목을 체크하세요.</p>
+          <button class="btn sm primary" id="scopeApplyBtn" style="width:100%;margin-top:8px">적용</button>
+        </div>
+      </div>
       <a class="btn sm" id="exportDocx" href="#">Word 설문지</a>
       <a class="btn sm" id="exportXlsx" href="#">Excel 패키지</a>
       <a class="btn sm" id="exportCsv" href="#">CSV 원자료</a>
     </div>
+  </div>
+
+  <div id="resultError" class="empty-state" hidden>
+    <div class="es-icon">⚠</div>
+    <h2>결과를 불러오지 못했습니다</h2>
+    <p>잠시 후 다시 시도하거나 다른 범위를 선택해 보세요.</p>
   </div>
 
   <div id="resultEmpty" class="empty-state" hidden>
@@ -39,6 +53,11 @@
     <div class="table-card" style="margin-top:16px">
       <div class="tc-head"><span class="tc-title">전역 가중치</span><span class="tc-meta">루트 기준 상대 중요도</span></div>
       <div id="globalWeightsChart" class="weight-chart"></div>
+    </div>
+
+    <div class="table-card" id="altRankCard" style="margin-top:14px" hidden>
+      <div class="tc-head"><span class="tc-title">대안 최종 순위</span><span class="tc-meta">기준 전역 가중치 × 대안 지역 가중치 합성(distributive)</span></div>
+      <div id="altRankChart" class="weight-chart"></div>
     </div>
 
     <div class="table-card" style="margin-top:14px">

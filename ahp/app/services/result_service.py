@@ -61,13 +61,24 @@ def build_results(
             local_weights_by_matrix[matrix_id] = {node_ids[0]: 1.0}
             continue
 
-        if aggregation == "AIJ":
-            result, merged_pairs = aggregate_aij(node_ids, respondent_pairs)
-            group_w = result.weights
-        else:
-            group_w, per_resp_results, skipped = aggregate_aip(
-                node_ids, respondent_pairs
-            )
+        # 이 매트릭스에 응답은 있지만(respondent_pairs 비어있지 않음) 전원이
+        # 불완전한 쌍만 갖고 있으면 aggregate_aij/aip가 예외를 던진다
+        # (aggregate_aij -> derive_weights의 IncompleteMatrixError,
+        # aggregate_aip -> "완전한 응답이 하나도 없음" ValueError). 예전엔 이걸
+        # 잡지 않아서 매트릭스 하나 때문에 /results 전체가 500으로 죽고, 그 여파로
+        # 프런트가 필터를 바꿔도 화면이 갱신되지 않는 문제로 이어졌다. 위
+        # "응답 없음" 분기(56행)와 동일하게 취급해 이 매트릭스만 0 가중치로 넘어간다.
+        try:
+            if aggregation == "AIJ":
+                result, merged_pairs = aggregate_aij(node_ids, respondent_pairs)
+                group_w = result.weights
+            else:
+                group_w, per_resp_results, skipped = aggregate_aip(
+                    node_ids, respondent_pairs
+                )
+        except (ValueError, IncompleteMatrixError):
+            local_weights_by_matrix[matrix_id] = {nid: 0.0 for nid in node_ids}
+            continue
         local_weights_by_matrix[matrix_id] = group_w
 
         # 쌍별 합의도(극단값) — 응답자가 3명 이상 있어야 의미가 있다
@@ -106,6 +117,9 @@ def build_results(
                 consensus_by_matrix[matrix_id] = {"kendalls_w": kendalls_w(rankings)}
 
     global_w = global_weights(node_parent, local_weights_by_matrix, matrix_of_parent)
+    alternative_scores = synthesize_alternatives(
+        matrices, local_weights_by_matrix, global_w
+    )
 
     return {
         "node_names": node_name,
@@ -116,4 +130,28 @@ def build_results(
         "outliers": outliers_by_matrix,
         "respondent_count": len(submissions_by_respondent),
         "cr_threshold": settings.get("cr_threshold", 0.1),
+        "alternative_scores": alternative_scores,
     }
+
+
+def synthesize_alternatives(
+    matrices: list[dict],
+    local_weights_by_matrix: dict[str, dict],
+    global_weights_: dict[str, float],
+) -> dict[str, float]:
+    """전통적 distributive AHP 합성 — 각 리프 기준의 전역 가중치 × 그 기준
+    아래 대안 로컬 가중치를 모든 리프에 대해 더한다. 대안 계층을 안 쓰면
+    (is_alternative 매트릭스가 없으면) 빈 dict를 돌려준다."""
+    scores: dict[str, float] = {}
+    for m in matrices:
+        if not m.get("is_alternative"):
+            continue
+        leaf_global = global_weights_.get(m["parent_uuid"], 0.0)
+        alt_local = local_weights_by_matrix.get(m["matrix_id"], {})
+        for aid, w in alt_local.items():
+            scores[aid] = scores.get(aid, 0.0) + leaf_global * w
+
+    total = sum(scores.values())
+    if total > 0:
+        scores = {k: v / total for k, v in scores.items()}
+    return scores

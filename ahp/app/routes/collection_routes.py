@@ -6,6 +6,7 @@
 result_routes에서 합쳐 분석한다(PLAN.md 1절).
 """
 
+import math
 import uuid
 from datetime import datetime, timezone
 
@@ -24,10 +25,14 @@ from app.db import (
 )
 from app.services.codes import generate_code, hash_code, generate_access_token
 from app.services.ahp_calc import derive_weights, IncompleteMatrixError
+from app.services.aggregate import find_outliers
+from app.services.consistency import worst_offending_pairs
+from app.services.hub import hub
 
 router = APIRouter()
 
 MODES = {"offline", "online", "realtime"}
+MODE_LABELS_KO = {"offline": "오프라인", "online": "온라인", "realtime": "실시간"}
 STATUS_LABELS = {"open": "진행 중", "closed": "종료됨"}
 
 
@@ -114,9 +119,11 @@ async def create_collection(request: Request):
         "survey_id": survey["_id"],
         "survey_version": survey["version"],
         "mode": mode,
-        "label": (body.get("label") or "").strip() or f"{mode} 수집",
+        "label": (body.get("label") or "").strip()
+        or f"{MODE_LABELS_KO[mode]} 수집",
         "status": "open",
         "round": 1,
+        "section_rounds": {},
         "access_token": None if mode == "offline" else generate_access_token(),
         "opened_at": _now(),
         "closed_at": None,
@@ -209,6 +216,7 @@ async def issue_codes(collection_id: str, request: Request):
             {
                 "_id": rid,
                 "collection_id": collection_id,
+                "code": code,
                 "code_hash": hash_code(code),
                 "label": label,
                 "source": "web",
@@ -221,6 +229,49 @@ async def issue_codes(collection_id: str, request: Request):
         issued.append({"respondent_id": rid, "label": label, "code": code})
 
     return {"issued": issued}
+
+
+@router.post("/api/collections/{collection_id}/respondents/{respondent_id}/reissue-code")
+async def reissue_code(collection_id: str, respondent_id: str, request: Request):
+    """분실된 접속 코드를 재발급한다. 응답자 신원(label)과 지금까지의 진행 상황은
+    그대로 유지하고 code/code_hash만 바꾼다 — 코드를 잃어버렸다고 진행 중이던
+    응답까지 지울 필요는 없다(요청사항: 지나치게 과한 익명성 제약을 완화)."""
+    await _get_collection_checked(collection_id, request)
+    r = await respondents_db.find_one(
+        {"_id": respondent_id, "collection_id": collection_id}
+    )
+    if not r:
+        raise HTTPException(404, "응답자를 찾을 수 없습니다")
+    if r.get("source") == "manual":
+        raise HTTPException(400, "오프라인(직접 입력) 응답자는 접속 코드가 없습니다")
+
+    code = generate_code()
+    await respondents_db.update_one(
+        {"_id": respondent_id},
+        {"$set": {"code": code, "code_hash": hash_code(code)}},
+    )
+    return {"respondent_id": respondent_id, "code": code}
+
+
+@router.delete("/api/collections/{collection_id}/respondents/{respondent_id}")
+async def delete_respondent(collection_id: str, respondent_id: str, request: Request):
+    """응답자 삭제(코드/링크 응답자 포함) — entry_routes의 delete_manual_respondent는
+    source=='manual'(오프라인)만 다루므로, 온라인/실시간 응답자를 위한 대응 엔드포인트.
+    분실된 코드를 재발급하는 대신 아예 지우고 새로 등록하는 관리 흐름을 지원한다."""
+    await _get_collection_checked(collection_id, request)
+    r = await respondents_db.find_one(
+        {"_id": respondent_id, "collection_id": collection_id}
+    )
+    if not r:
+        raise HTTPException(404, "응답자를 찾을 수 없습니다")
+    await responses_db.delete_many(
+        {"collection_id": collection_id, "respondent_id": respondent_id}
+    )
+    await submissions_db.delete_many(
+        {"collection_id": collection_id, "respondent_id": respondent_id}
+    )
+    await respondents_db.delete_one({"_id": respondent_id})
+    return {"status": "deleted"}
 
 
 def respondent_progress_summary(matrices: list[dict], answers: dict) -> dict:
@@ -271,6 +322,7 @@ async def list_respondents(collection_id: str, request: Request):
         {
             "id": d["_id"],
             "label": d["label"],
+            "code": d.get("code"),
             "source": d.get("source", "web"),
             "status": d.get("status", "not_started"),
             "consent_at": d.get("consent_at"),
@@ -295,7 +347,113 @@ async def advance_round(collection_id: str, request: Request):
         {"collection_id": collection_id, "status": "submitted"},
         {"$set": {"status": "in_progress"}},
     )
-    from app.services.hub import hub
-
     await hub.publish(collection_id, "round.advanced", {"round": new_round})
     return {"round": new_round}
+
+
+# ── 섹션(=계층 매트릭스) 단위 델파이 진행 ─────────────────────────────────────
+# 전체 설문 라운드(위 advance_round, collections.round)와 별개로, 매트릭스 하나
+# ("섹션")마다 독립된 라운드 카운터를 둔다. 현장에서 한 섹션에 대한 토론이 끝나면
+# 관리자가 이 섹션만 다시 열어 응답자가 재조정하거나(section.unlock), 응답자와
+# 확인한 값을 관리자가 콘솔에서 직접 입력할 수 있어야 한다(요청사항 — 후자는
+# 기존 오프라인 입력 경로 PUT /api/entry/{collection_id}/answers를 그대로 재사용).
+
+
+@router.get("/api/collections/{collection_id}/sections/{matrix_id}/snapshot")
+async def section_snapshot(collection_id: str, matrix_id: str, request: Request):
+    collection = await _get_collection_checked(collection_id, request)
+    survey = await surveys_db.find_one({"_id": collection["survey_id"]})
+    matrix = next(
+        (m for m in survey["matrices"] if m["matrix_id"] == matrix_id), None
+    )
+    if not matrix:
+        raise HTTPException(404, "해당 항목을 찾을 수 없습니다")
+    node_ids = matrix["child_uuids"]
+    total_pairs = len(node_ids) * (len(node_ids) - 1) // 2
+
+    respondents = [
+        r async for r in respondents_db.find({"collection_id": collection_id})
+    ]
+    responses_by_rid = {
+        r["respondent_id"]: r.get("answers", {})
+        async for r in responses_db.find({"collection_id": collection_id})
+    }
+
+    rows = []
+    pair_values: dict[str, dict[str, float]] = {}
+    all_pairs_for_diagnosis: dict[str, list[float]] = {}
+    for r in respondents:
+        pairs = responses_by_rid.get(r["_id"], {}).get(matrix_id, {})
+        cr = None
+        if len(node_ids) >= 3 and pairs:
+            try:
+                cr = derive_weights(node_ids, pairs).cr
+            except IncompleteMatrixError:
+                cr = None
+        rows.append(
+            {
+                "respondent_id": r["_id"],
+                "label": r["label"],
+                "answered_pairs": len(pairs),
+                "total_pairs": total_pairs,
+                "cr": cr,
+                "answers": pairs,
+            }
+        )
+        for pid, v in pairs.items():
+            pair_values.setdefault(pid, {})[r["_id"]] = v
+            all_pairs_for_diagnosis.setdefault(pid, []).append(v)
+
+    outliers = []
+    for pid, values_by_rid in pair_values.items():
+        if len(values_by_rid) < 4:
+            continue
+        idx_list = list(values_by_rid.keys())
+        values = {i: values_by_rid[idx_list[i]] for i in range(len(idx_list))}
+        out_idx = find_outliers(values)
+        if out_idx:
+            outliers.append(
+                {
+                    "pair_id": pid,
+                    "outlier_respondents": [idx_list[i] for i in out_idx],
+                }
+            )
+
+    # 그룹 전체가 어느 쌍에서 가장 흔들리는지(재고 지점) — 기하평균으로 응답을
+    # 합친 뒤(AHP에서 유일하게 올바른 평균) worst_offending_pairs를 돌린다.
+    worst = []
+    if len(node_ids) >= 3 and all_pairs_for_diagnosis:
+        merged = {
+            pid: math.exp(sum(math.log(v) for v in vs) / len(vs))
+            for pid, vs in all_pairs_for_diagnosis.items()
+        }
+        try:
+            worst = [w.to_dict() for w in worst_offending_pairs(node_ids, merged)]
+        except Exception:
+            worst = []
+
+    return {
+        "matrix_id": matrix_id,
+        "round": (collection.get("section_rounds") or {}).get(matrix_id, 1),
+        "respondents": rows,
+        "outliers": outliers,
+        "worst_pairs": worst,
+    }
+
+
+@router.post("/api/collections/{collection_id}/sections/{matrix_id}/unlock")
+async def unlock_section(collection_id: str, matrix_id: str, request: Request):
+    """이 섹션(매트릭스)만 재응답 대상으로 다시 연다 — 이미 제출을 마친
+    응답자도 이 매트릭스만 다시 편집할 수 있게 응답자 화면에 신호를 보낸다."""
+    collection = await _get_collection_checked(collection_id, request)
+    section_rounds = dict(collection.get("section_rounds") or {})
+    section_rounds[matrix_id] = section_rounds.get(matrix_id, 1) + 1
+    await collections_db.update_one(
+        {"_id": collection_id}, {"$set": {"section_rounds": section_rounds}}
+    )
+    await hub.publish(
+        collection_id,
+        "section.unlock",
+        {"matrix_id": matrix_id, "round": section_rounds[matrix_id]},
+    )
+    return {"matrix_id": matrix_id, "round": section_rounds[matrix_id]}

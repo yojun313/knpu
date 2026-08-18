@@ -114,6 +114,7 @@ async def create_project(request: Request):
                     "level": 0,
                 }
             ],
+            "alternatives": [],
             "created_at": now,
         }
     )
@@ -311,6 +312,27 @@ def _sibling_warnings(nodes: list[dict]) -> list[dict]:
     return warnings
 
 
+def _validate_and_normalize_alternatives(alts: list[dict]) -> list[dict]:
+    """대안은 계층이 아니라 평탄한 목록이다(PLAN.md 5절 결정 — nodes와 구조를
+    분리해야 derive_weights/global_weights를 그대로 재사용할 수 있다)."""
+    seen = set()
+    normalized = []
+    for i, a in enumerate(alts or []):
+        aid = a.get("uuid") or uuid.uuid4().hex
+        if aid in seen:
+            raise HTTPException(400, f"중복된 대안 uuid: {aid}")
+        seen.add(aid)
+        normalized.append(
+            {
+                "uuid": aid,
+                "name": (a.get("name") or "").strip() or "(이름 없음)",
+                "description": a.get("description", ""),
+                "order": a.get("order", i),
+            }
+        )
+    return normalized
+
+
 @router.get("/api/projects/{project_id}/hierarchy")
 async def get_hierarchy(project_id: str, request: Request):
     await _get_project_or_404(project_id, request)
@@ -322,6 +344,7 @@ async def get_hierarchy(project_id: str, request: Request):
     return {
         "version": doc["version"],
         "nodes": doc["nodes"],
+        "alternatives": doc.get("alternatives", []),
         "warnings": _sibling_warnings(doc["nodes"]),
     }
 
@@ -337,11 +360,19 @@ async def put_hierarchy(project_id: str, request: Request):
     )
     next_version = (latest["version"] + 1) if latest else 1
 
+    # alternatives가 요청 본문에 없으면(계층 구조만 바꾼 저장) 직전 버전의
+    # 대안 목록을 그대로 이어받는다 — 안 그러면 계층만 저장해도 대안이 사라진다.
+    if body.get("alternatives") is None:
+        alternatives = (latest or {}).get("alternatives", [])
+    else:
+        alternatives = _validate_and_normalize_alternatives(body["alternatives"])
+
     doc = {
         "_id": uuid.uuid4().hex,
         "project_id": project_id,
         "version": next_version,
         "nodes": nodes,
+        "alternatives": alternatives,
         "created_at": _now(),
     }
     await hierarchies_db.insert_one(doc)
@@ -350,5 +381,6 @@ async def put_hierarchy(project_id: str, request: Request):
     return {
         "version": next_version,
         "nodes": nodes,
+        "alternatives": alternatives,
         "warnings": _sibling_warnings(nodes),
     }

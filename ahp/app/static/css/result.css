@@ -31,3 +31,17 @@
 .sens-form{display:flex;gap:8px;padding:14px 16px 4px;flex-wrap:wrap;align-items:center}
 .sens-form select{flex:1;min-width:160px}
 .sens-form input{width:90px}
+
+/* ── 결과 범위 선택(수집 회차 × 라운드) ── */
+.scope-picker{position:relative}
+.scope-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:120;width:min(360px,88vw);
+  background:var(--sidebar-bg);border:1px solid var(--sidebar-border);border-radius:12px;
+  box-shadow:0 16px 40px rgba(15,23,42,.25);padding:14px}
+.scope-all-row{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;
+  padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--sidebar-border)}
+.scope-collections{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto}
+.scope-coll-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.scope-coll-row label{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
+.scope-coll-row label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scope-coll-row select{width:auto;min-width:104px;padding:5px 8px;font-size:11.5px}
+.scope-hint{font-size:11px;color:var(--sidebar-muted);margin-top:10px;line-height:1.5}

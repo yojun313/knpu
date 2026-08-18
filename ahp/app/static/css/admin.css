@@ -2,6 +2,12 @@
    테마(글래스/애플/뉴모피즘/메시)가 선택되면 /shared-ui/theme.css가 이 변수들을
    덮어써서 배색을 통째로 바꾼다. "기본" 테마일 때만 여기 값이 그대로 쓰인다. */
 :root{
+  /* 다크 모드 토글 시 <select> 드롭다운 팝업의 네이티브 캔버스가 이 값을 안 보면
+     Chrome/Windows는 라이트로 그려서, 흰 글자(color:var(--text-strong))가 흰
+     배경 위에 얹혀 안 보이는 문제가 생긴다(option{background/color}만으로는
+     팝업 자체의 배경까지는 안 바뀜). apple 테마는 이미 이걸 선언해 뒀는데
+     기본 테마엔 빠져 있었다. */
+  color-scheme:light;
   --brand:#2c3e50; --brand-dark:#1b2634; --brand-light:#34495e;
   --accent:#2c3e50; --accent-soft:#34495e;
   --sidebar-bg:#ffffff; --sidebar-panel:#f7f8f9; --sidebar-panel2:#ecf0f1;
@@ -14,6 +20,7 @@
   --scrollbar-thumb:#c6ced6; --scrollbar-thumb-hover:#aab4be;
 }
 html[data-ui-theme-mode="dark"]:not([data-ui-theme]) body{
+  color-scheme:dark;
   --brand:#eaeaea; --brand-dark:#c9c9c9; --brand-light:#eaeaea;
   --accent:#34495e; --accent-soft:#3a539b;
   --sidebar-bg:#2b2b2b; --sidebar-panel:#323232; --sidebar-panel2:#3c3c3c;

@@ -80,7 +80,10 @@ async def _ensure_survey(project_doc: dict) -> dict:
         return existing
 
     hierarchy = await _latest_hierarchy(project_id)
-    matrices = generate_matrices(hierarchy["nodes"])
+    alt_on = project_doc.get("settings", {}).get("alt_layer") == "on"
+    matrices = generate_matrices(
+        hierarchy["nodes"], hierarchy.get("alternatives", []), alt_on
+    )
     node_descriptions = {
         n["uuid"]: n.get("description", "")
         for n in hierarchy["nodes"]
@@ -188,7 +191,10 @@ async def resync_survey(project_id: str, request: Request):
     if hierarchy["version"] == current["hierarchy_version"]:
         return {"changed": False, "message": "계층이 그대로라 변경할 내용이 없습니다"}
 
-    new_matrices = generate_matrices(hierarchy["nodes"])
+    alt_on = project.get("settings", {}).get("alt_layer") == "on"
+    new_matrices = generate_matrices(
+        hierarchy["nodes"], hierarchy.get("alternatives", []), alt_on
+    )
     diff = diff_matrices(current["matrices"], new_matrices)
     impact = diff_has_impact(diff)
 

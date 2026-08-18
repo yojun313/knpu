@@ -17,6 +17,7 @@
 
   let landing = null;
   let respondentToken = localStorage.getItem(STORAGE_TOKEN_KEY);
+  let pendingReopenMatrixId = null;
   let questions = [];
   let currentIndex = 0;
   let answers = {};
@@ -33,6 +34,11 @@
     show('viewError');
   }
   function pairId(a, b) { return [a, b].sort().join(':'); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
 
   // ── 저장 큐(네트워크 문제에도 입력을 잃지 않는다, PLAN.md 4.6) ─────────────
   function loadQueue() {
@@ -122,6 +128,7 @@
           matrix_id: m.matrix_id, parent_name: m.parent_name, parent_description: m.parent_description,
           question_text: m.question_text, uuid_a: p.uuid_a, uuid_b: p.uuid_b,
           name_a: a ? a.name : p.uuid_a, name_b: b ? b.name : p.uuid_b,
+          is_alternative: !!m.is_alternative,
           is_last_in_matrix: false,
         });
       });
@@ -148,10 +155,10 @@
       if (res.status === 401) { await handleTokenExpired(); renderConsent(); return; }
       if (!res.ok) throw new Error('resume failed');
       const me = await res.json();
-      if (me.respondent.status === 'submitted') { show('viewDone'); return; }
       answers = {};
       Object.keys(me.answers).forEach(function (mid) { Object.assign(answers, me.answers[mid]); });
       clientSeq = me.client_seq || clientSeq;
+      if (me.respondent.status === 'submitted') { await showDone(); return; }
       currentIndex = questions.findIndex(function (q) { return !(pairId(q.uuid_a, q.uuid_b) in answers); });
       if (currentIndex === -1) currentIndex = questions.length ? questions.length - 1 : 0;
       startSurvey();
@@ -223,6 +230,7 @@
       try { msg = JSON.parse(e.data); } catch (err) { return; }
       if (msg.event === 'survey.patch') handleSurveyPatch(msg);
       else if (msg.event === 'round.advanced') handleRoundAdvanced(msg);
+      else if (msg.event === 'section.unlock') handleSectionUnlock(msg);
     });
     ws.addEventListener('close', function () {
       realtimeSocket = null;
@@ -260,6 +268,20 @@
     }
   }
 
+  // 연구자가 콘솔에서 특정 섹션(계층 매트릭스)만 다시 열었을 때 — 이미 제출을
+  // 마친 응답자도 이 항목만 다시 조정할 수 있게 안내한다(PLAN.md 3절: 델파이는
+  // 계층 하나하나가 곧 라운드이기도 하다).
+  function handleSectionUnlock(msg) {
+    const q = questions.find(function (qq) { return qq.matrix_id === msg.matrix_id; });
+    const name = q ? q.parent_name : '이 항목';
+    pendingReopenMatrixId = msg.matrix_id;
+    const onDone = document.getElementById('viewDone').hidden === false;
+    showNotice(
+      '연구자가 "' + name + '" 항목을 다시 열었습니다. ' +
+      (onDone ? '아래 "답변 수정하기"를 눌러 조정해 주세요.' : '이어서 응답해 주세요.')
+    );
+  }
+
   function currentValueForQuestion(q) {
     const pid = pairId(q.uuid_a, q.uuid_b);
     return (pid in answers) ? answers[pid] : null;
@@ -267,7 +289,7 @@
 
   function renderQuestion() {
     const q = questions[currentIndex];
-    document.getElementById('qParentName').textContent = q.parent_name;
+    document.getElementById('qParentName').textContent = (q.is_alternative ? '대안 비교 · ' : '') + q.parent_name;
     document.getElementById('qParentDesc').textContent = q.parent_description || '';
     document.getElementById('qParentDesc').hidden = !q.parent_description;
     document.getElementById('qQuestionText').textContent = q.question_text;
@@ -385,9 +407,32 @@
       });
       if (res.status === 401) { await handleTokenExpired(); return; }
       if (!res.ok && res.status !== 409) throw new Error('submit failed');
-      show('viewDone');
+      await showDone();
     } catch (e) {
       alert('제출 중 문제가 발생했습니다. 다시 시도해 주세요.');
+    }
+  }
+
+  // ── 제출 완료 화면 — 기준별 CR 요약 + 재조정 진입점 ─────────────────────────
+  async function showDone() {
+    show('viewDone');
+    const box = document.getElementById('crSummaryList');
+    box.innerHTML = '<p class="muted">CR을 불러오는 중입니다…</p>';
+    try {
+      const res = await fetch('/api/respond/' + accessToken + '/summary', {
+        headers: { 'Authorization': 'Bearer ' + respondentToken },
+      });
+      if (!res.ok) throw new Error('summary failed');
+      const data = await res.json();
+      if (!data.items.length) { box.innerHTML = ''; return; }
+      box.innerHTML = data.items.map(function (it) {
+        const cls = (it.cr === null || it.cr === undefined) ? '' : (it.cr <= data.cr_threshold ? 'ok' : 'bad');
+        const crText = (it.cr === null || it.cr === undefined) ? '-' : ('CR ' + it.cr.toFixed(3));
+        return '<div class="cr-summary-row ' + cls + '"><span class="csr-name">' + esc(it.parent_name) + '</span>' +
+          '<span class="csr-cr">' + crText + '</span></div>';
+      }).join('');
+    } catch (e) {
+      box.innerHTML = '';
     }
   }
 
@@ -430,6 +475,16 @@
 
     document.getElementById('nextBtn').addEventListener('click', goNext);
     document.getElementById('prevBtn').addEventListener('click', goPrev);
+    document.getElementById('editAnswersBtn').addEventListener('click', function () {
+      if (pendingReopenMatrixId) {
+        const idx = questions.findIndex(function (q) { return q.matrix_id === pendingReopenMatrixId; });
+        currentIndex = idx !== -1 ? idx : 0;
+        pendingReopenMatrixId = null;
+      } else {
+        currentIndex = 0;
+      }
+      startSurvey();
+    });
     window.addEventListener('online', flushQueue);
 
     run();

@@ -28,6 +28,24 @@
       <div id="liveMatricesList" class="live-matrices"></div>
     </div>
   </div>
+
+  <div class="table-card" style="margin-top:14px">
+    <div class="tc-head">
+      <span class="tc-title">섹션별 진행 (계층 단위 델파이)</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="sectionMatrixSelect" style="min-width:200px"></select>
+        <span class="badge ok">섹션 라운드 <b id="sectionRoundNum">1</b></span>
+        <button class="btn sm" id="sectionUnlockBtn">이 섹션 재응답 요청</button>
+        <button class="btn sm" id="sectionRefreshBtn">새로고침</button>
+      </div>
+    </div>
+    <p style="padding:10px 16px 0;font-size:11.5px;color:var(--sidebar-muted)">
+      값을 바로 고치면 관리자가 응답자와 확인한 값이라는 뜻입니다. 그렇지 않다면
+      "이 섹션 재응답 요청"으로 응답자가 직접 조정하게 하세요.
+    </p>
+    <div id="sectionWorstPairs" style="padding:10px 16px 0"></div>
+    <div id="sectionTable" class="tw" style="padding:10px 16px 16px"></div>
+  </div>
 </div>
 {% endblock %}
 {% block extra_scripts %}<script src="/js/console.js"></script>{% endblock %}

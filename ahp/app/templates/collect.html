@@ -48,7 +48,8 @@
     </div>
     <div id="codesResult" hidden>
       <p style="font-size:12px;color:var(--sidebar-muted);margin-bottom:10px">
-        코드는 지금만 보이며 다시 조회할 수 없습니다. 인쇄하거나 복사해 배부하세요.</p>
+        인쇄하거나 복사해 배부하세요. 발급된 코드는 이후에도 "응답자 관리" 화면에서
+        언제든 다시 확인할 수 있습니다.</p>
       <div class="tw" style="max-height:340px;overflow-y:auto">
         <table style="width:100%;font-size:12.5px">
           <thead><tr><th style="text-align:left;padding:6px">참여자</th><th style="text-align:left;padding:6px">코드</th></tr></thead>
@@ -56,6 +57,24 @@
         </table>
       </div>
       <button class="btn sm" id="codesCopyAllBtn" style="margin-top:10px">전체 복사</button>
+    </div>
+  </div>
+</div>
+
+<div id="respondentsModal" class="modal-overlay" hidden>
+  <div class="modal-card wide">
+    <div class="modal-head"><span id="respondentsTitle">응답자 관리</span><button class="modal-close" id="respondentsClose">×</button></div>
+    <div class="tw" style="max-height:420px;overflow-y:auto">
+      <table style="width:100%;font-size:12.5px">
+        <thead><tr>
+          <th style="text-align:left;padding:6px">참여자</th>
+          <th style="text-align:left;padding:6px">코드</th>
+          <th style="text-align:left;padding:6px">상태</th>
+          <th style="text-align:left;padding:6px">진행률</th>
+          <th style="padding:6px"></th>
+        </tr></thead>
+        <tbody id="respondentsTableBody"></tbody>
+      </table>
     </div>
   </div>
 </div>

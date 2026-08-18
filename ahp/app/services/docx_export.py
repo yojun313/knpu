@@ -15,15 +15,23 @@ from docx.oxml import OxmlElement
 
 SAATY_LEVELS = [
     9,
+    8,
     7,
+    6,
     5,
+    4,
     3,
+    2,
     1,
+    2,
     3,
+    4,
     5,
+    6,
     7,
+    8,
     9,
-]  # 왼쪽부터: item_a 절대적 ... 동일 ... item_b 절대적
+]  # 왼쪽부터: item_a 절대적(9) ... 동일(1) ... item_b 절대적(9) — 1~9 전 구간
 
 
 def _prevent_row_split(row):
@@ -97,19 +105,22 @@ def build_survey_docx(survey: dict, nodes_by_uuid: dict) -> io.BytesIO:
                     _prevent_row_split(row)
 
                 header = table.rows[0]
-                _set_cell_text(header.cells[0], name_a, bold=True, size=10)
+                _set_cell_text(header.cells[0], name_a, bold=True, size=9)
                 for k, lvl in enumerate(SAATY_LEVELS):
+                    label = str(lvl) if k <= len(SAATY_LEVELS) // 2 else f"1/{lvl}"
                     _set_cell_text(
-                        header.cells[1 + k], str(lvl), align_center=True, size=9
+                        header.cells[1 + k], label, align_center=True, size=7
                     )
-                _set_cell_text(header.cells[-1], name_b, bold=True, size=10)
+                _set_cell_text(header.cells[-1], name_b, bold=True, size=9)
 
                 mark_row = table.rows[1]
                 for k in range(len(SAATY_LEVELS) + 2):
-                    _set_cell_text(mark_row.cells[k], "☐", align_center=True, size=11)
+                    _set_cell_text(mark_row.cells[k], "☐", align_center=True, size=10)
 
+                # 17칸(9~1~1/9)이 되면서 칸마다 폭을 줄여야 기본 여백(1인치, 가용
+                # 폭 ~15.9cm A4 기준) 안에 맞는다: 2*1.8 + 17*0.7 = 15.5cm.
                 for cell, width in zip(
-                    table.columns, [Cm(2.6)] + [Cm(0.9)] * len(SAATY_LEVELS) + [Cm(2.6)]
+                    table.columns, [Cm(1.8)] + [Cm(0.7)] * len(SAATY_LEVELS) + [Cm(1.8)]
                 ):
                     for c in cell.cells:
                         c.width = width

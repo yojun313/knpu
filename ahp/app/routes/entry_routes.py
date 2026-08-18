@@ -39,6 +39,8 @@ async def _survey_and_nodes(collection: dict):
         {"project_id": survey["project_id"], "version": survey["hierarchy_version"]}
     )
     nodes_by_id = {n["uuid"]: n for n in hierarchy["nodes"]}
+    for a in hierarchy.get("alternatives", []):
+        nodes_by_id[a["uuid"]] = a
     return survey, nodes_by_id
 
 
@@ -125,6 +127,7 @@ async def get_grid(collection_id: str, request: Request):
             {
                 "matrix_id": m["matrix_id"],
                 "parent_name": nodes_by_id.get(m["parent_uuid"], {}).get("name", ""),
+                "is_alternative": m.get("is_alternative", False),
                 "children": [
                     {"uuid": cid, "name": nodes_by_id.get(cid, {}).get("name", cid)}
                     for cid in m["child_uuids"]
@@ -211,6 +214,20 @@ async def put_answer(collection_id: str, request: Request):
     await responses_db.update_one(
         {"_id": resp["_id"]},
         {"$set": {"answers": answers, "updated_at": _now()}},
+    )
+
+    # 이 응답자가 현재 라운드에 이미 제출까지 마쳤다면(오프라인은 CSV 반입 직후,
+    # 실시간/온라인은 섹션 콘솔에서 관리자가 직접 고치는 경우) 그 스냅샷도 같이
+    # 갱신한다 — 안 그러면 결과 화면은 submissions만 보므로 방금 고친 값이
+    # 반영되지 않는다(respond_routes.submit의 "같은 라운드는 덮어쓴다" 원칙과 동일).
+    current_round = collection.get("round", 1)
+    await submissions_db.update_one(
+        {
+            "collection_id": collection_id,
+            "respondent_id": respondent_id,
+            "round": current_round,
+        },
+        {"$set": {"answers": answers, "submitted_at": _now()}},
     )
 
     return _compute_cr_for_matrix(matrix, answers)

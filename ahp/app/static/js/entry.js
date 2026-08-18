@@ -63,7 +63,8 @@
           '<select>' + scaleOptionsHtml(nameA, nameB, current) + '</select></div>';
       }).join('');
       return '<div class="entry-matrix" data-matrix-block="' + m.matrix_id + '">' +
-        '<div class="entry-matrix-head"><h4>' + ahpEsc(m.parent_name) + '</h4>' +
+        '<div class="entry-matrix-head"><h4>' + (m.is_alternative ? '<span class="badge ok" style="margin-right:6px">대안</span>' : '') +
+        ahpEsc(m.parent_name) + '</h4>' +
         '<span class="badge muted" data-cr-badge="' + m.matrix_id + '">-</span></div>' +
         rows + '</div>';
     }).join('');
@@ -167,6 +168,7 @@
       const collection = await ahpApi('/api/collections/' + collectionId);
       document.getElementById('collLabel').textContent = collection.label + ' · 오프라인 입력';
       document.getElementById('backToCollect').href = '/collect/' + collection.project_id;
+      document.getElementById('downloadTemplateBtn').href = '/api/export/' + collection.project_id + '/import-template.csv';
       if (window.AHPShell) window.AHPShell.setActiveProject(collection.project_id);
     } catch (e) {
       ahpToast('수집 정보를 불러오지 못했습니다', true);

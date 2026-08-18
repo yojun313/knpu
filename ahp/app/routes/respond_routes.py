@@ -48,6 +48,10 @@ async def _survey_and_nodes(collection: dict):
         {"project_id": survey["project_id"], "version": survey["hierarchy_version"]}
     )
     nodes_by_id = {n["uuid"]: n for n in hierarchy["nodes"]}
+    # 대안 비교 행렬(is_alternative)의 child_uuids는 기준 노드가 아니라 대안이라,
+    # 같은 uuid 조회 경로(nodes_by_id)에 대안도 섞어 둬야 이름이 정상 표시된다.
+    for a in hierarchy.get("alternatives", []):
+        nodes_by_id[a["uuid"]] = a
     return survey, nodes_by_id
 
 
@@ -70,6 +74,7 @@ def _build_matrices_view(survey: dict, nodes_by_id: dict) -> list[dict]:
                     m["parent_uuid"], ""
                 ),
                 "question_text": m["question_text"],
+                "is_alternative": m.get("is_alternative", False),
                 "children": children,
                 "pairs": [
                     {"uuid_a": m["child_uuids"][i], "uuid_b": m["child_uuids"][j]}
@@ -313,21 +318,76 @@ async def submit(token: str, request: Request):
             "round": current_round,
         }
     )
-    if already:
+    # 같은 라운드 안에서는 제출 후에도 CR을 보고 자율적으로 값을 조정해 다시
+    # 제출할 수 있어야 한다(요청사항) — collection이 열려 있는 한 같은 라운드의
+    # submissions 문서를 덮어쓴다. 라운드가 넘어가면(advance-round) round 값 자체가
+    # 바뀌므로 이전 라운드 스냅샷은 그대로 보존된다.
+    if already and collection.get("status") != "open":
         raise HTTPException(409, f"이미 {current_round}라운드에 제출했습니다")
 
-    await submissions_db.insert_one(
+    sub_id = already["_id"] if already else (resp["_id"] + f"-s{current_round}")
+    await submissions_db.update_one(
+        {"_id": sub_id},
         {
-            "_id": resp["_id"] + f"-s{current_round}",
-            "collection_id": collection["_id"],
-            "respondent_id": payload["respondent_id"],
-            "round": current_round,
-            "survey_version": resp["survey_version"],
-            "answers": resp.get("answers", {}),
-            "submitted_at": _now(),
-        }
+            "$set": {
+                "collection_id": collection["_id"],
+                "respondent_id": payload["respondent_id"],
+                "round": current_round,
+                "survey_version": resp["survey_version"],
+                "answers": resp.get("answers", {}),
+                "submitted_at": _now(),
+            }
+        },
+        upsert=True,
     )
     await respondents_db.update_one(
         {"_id": payload["respondent_id"]}, {"$set": {"status": "submitted"}}
     )
     return {"status": "submitted"}
+
+
+@router.get("/api/respond/{token}/summary")
+async def respond_summary(token: str, request: Request):
+    """제출 완료 화면에서 기준별 CR을 보여주기 위한 요약. 제출된(submissions)
+    스냅샷 기준으로 계산한다 — 작업 중인 responses가 아니라 실제로 제출한 값이어야
+    CR도 "제출한 답"과 일치한다."""
+    payload = current_respondent(request)
+    collection = await _collection_by_token(token)
+    if collection["_id"] != payload["collection_id"]:
+        raise HTTPException(403, "이 링크의 응답자가 아닙니다")
+
+    current_round = collection.get("round", 1)
+    sub = await submissions_db.find_one(
+        {
+            "collection_id": collection["_id"],
+            "respondent_id": payload["respondent_id"],
+            "round": current_round,
+        }
+    )
+    if not sub:
+        raise HTTPException(404, "제출된 응답을 찾을 수 없습니다")
+
+    survey, nodes_by_id = await _survey_and_nodes(collection)
+    matrices_view = _build_matrices_view(survey, nodes_by_id)
+    cr_threshold = (
+        (await projects_db.find_one({"_id": survey["project_id"]}, {"settings": 1}))
+        or {}
+    ).get("settings", {}).get("cr_threshold", 0.1)
+
+    items = []
+    for m in matrices_view:
+        node_ids = [c["uuid"] for c in m["children"]]
+        pairs = sub["answers"].get(m["matrix_id"], {})
+        try:
+            result = derive_weights(node_ids, pairs)
+            items.append(
+                {
+                    "matrix_id": m["matrix_id"],
+                    "parent_name": m["parent_name"],
+                    "cr": result.cr,
+                }
+            )
+        except IncompleteMatrixError:
+            continue
+
+    return {"items": items, "cr_threshold": cr_threshold}

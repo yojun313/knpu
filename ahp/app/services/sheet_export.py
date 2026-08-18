@@ -86,6 +86,13 @@ def build_workbook(
             ]
         )
 
+    alternatives = hierarchy.get("alternatives") or []
+    if alternatives:
+        ws_alt = wb.create_sheet("대안")
+        _header(ws_alt, ["uuid", "이름", "설명", "순서"])
+        for a in alternatives:
+            ws_alt.append([a["uuid"], a["name"], a.get("description", ""), a.get("order", 0)])
+
     ws3 = wb.create_sheet("설문지")
     _header(ws3, ["matrix_id", "기준(부모)", "하위 항목들", "질문 문구"])
     for m in survey.get("matrices", []):
@@ -134,6 +141,15 @@ def build_workbook(
                         round(cr, 4) if cr is not None else "미완료",
                     ]
                 )
+
+        alt_scores = results.get("alternative_scores") or {}
+        if alt_scores:
+            alt_names = {a["uuid"]: a["name"] for a in alternatives}
+            ws7 = wb.create_sheet("대안 순위")
+            _header(ws7, ["대안", "최종 점수", "순위"])
+            ranked = sorted(alt_scores.items(), key=lambda kv: -kv[1])
+            for rank, (aid, score) in enumerate(ranked, start=1):
+                ws7.append([alt_names.get(aid, aid), round(score, 4), rank])
 
     buf = io.BytesIO()
     wb.save(buf)
