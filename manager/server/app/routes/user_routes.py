@@ -17,7 +17,9 @@ router = APIRouter()
 
 @router.post("/log")
 def addUserLog(request: Request, message: str = Body(..., embed=True)):
-    task = BackgroundTask(log_user, get_uid(request), "manager.client.custom_log", message)
+    task = BackgroundTask(
+        log_user, get_uid(request), "manager.client.custom_log", message
+    )
     return JSONResponse(
         status_code=201, content={"message": "User log added"}, background=task
     )

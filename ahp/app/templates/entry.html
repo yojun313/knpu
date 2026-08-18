@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}오프라인 입력{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/css/entry.css">{% endblock %}
+{% block content %}
+<div class="page-body">
+  <div class="page-head">
+    <div>
+      <h1 id="collLabel">오프라인 응답 입력</h1>
+      <p>종이로 받은 응답을 응답자별로 직접 입력하거나 CSV로 한 번에 반입하세요.</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <label class="btn sm" style="cursor:pointer">CSV 반입
+        <input type="file" id="csvFile" accept=".csv" style="display:none">
+      </label>
+      <a class="btn sm" id="backToCollect" href="#">← 수집 관리로</a>
+    </div>
+  </div>
+
+  <div class="entry-layout">
+    <div class="table-card">
+      <div class="tc-head"><span class="tc-title">응답자</span>
+        <button class="btn sm" id="addRespondentBtn">＋ 추가</button></div>
+      <div id="respondentList" class="entry-resp-list"></div>
+    </div>
+
+    <div class="table-card">
+      <div class="tc-head"><span class="tc-title" id="entryMatricesTitle">비교 항목</span></div>
+      <div id="matricesForm" class="entry-matrices"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}<script src="/js/entry.js"></script>{% endblock %}

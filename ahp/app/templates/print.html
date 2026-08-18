@@ -1,0 +1,13 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>설문지 인쇄 미리보기</title>
+<link rel="stylesheet" href="/css/print.css">
+</head><body>
+<div class="print-toolbar no-print">
+  <button id="printBtn">🖨 인쇄</button>
+  <span class="hint">브라우저 인쇄 대화상자에서 여백을 "기본값"으로 두면 가장 깔끔합니다.</span>
+</div>
+<div id="sheet"></div>
+<script>window.AHP_SURVEY_ID = {{ survey_id | tojson }};</script>
+<script src="/js/print.js"></script>
+</body></html>

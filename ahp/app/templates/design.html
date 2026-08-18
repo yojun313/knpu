@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}계층 설계{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/css/designer.css">{% endblock %}
+{% block content %}
+<div class="stage-tabs" id="stageTabs">
+  <a href="#" class="stage-tab active" data-stage="design">1. 계층 설계</a>
+  <a href="#" class="stage-tab" data-stage="survey">2. 설문지</a>
+  <a href="#" class="stage-tab" data-stage="collect">3. 수집</a>
+  <a href="#" class="stage-tab" data-stage="result">4. 결과</a>
+</div>
+<div class="page-body">
+  <div class="page-head">
+    <div>
+      <h1><span id="projTitle">계층 설계</span>
+        <button class="icon-btn sm" id="renameProjectBtn" title="이름 변경" style="width:24px;height:24px;font-size:11px;vertical-align:middle;margin-left:4px">✎</button>
+      </h1>
+      <p>드래그 없이도 화살표로 순서를 바꾸고, 브레인스토밍 카드를 트리로 승격할 수 있습니다.</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="dirtyBadge" class="badge warn" hidden>저장 안 됨</span>
+      <button class="btn" id="settingsBtn">⚙ 방법론 설정</button>
+      <button class="btn danger" id="deleteProjectBtn">삭제</button>
+      <button class="btn primary" id="saveHierarchyBtn">저장</button>
+    </div>
+  </div>
+
+  <div id="warningsBox"></div>
+
+  <div class="designer-layout">
+    <div class="table-card">
+      <div class="tc-head"><span class="tc-title">계층 트리</span>
+        <button class="btn sm" id="addRootChildBtn">＋ 최상위 기준 추가</button>
+      </div>
+      <div id="treeRoot" class="tree-root"></div>
+    </div>
+
+    <div class="table-card">
+      <div class="tc-head"><span class="tc-title">브레인스토밍</span>
+        <span class="tc-meta">자유롭게 적고, 정리되면 트리로 승격하세요</span></div>
+      <div class="brainstorm-add">
+        <input type="text" id="brainInput" placeholder="아이디어를 입력하고 Enter">
+      </div>
+      <div id="brainList" class="brainstorm-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="nodeEditModal" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><span id="nodeEditTitle">항목 편집</span><button class="modal-close" id="nodeEditClose">×</button></div>
+    <div class="field"><label>이름</label><input type="text" id="nodeEditName"></div>
+    <div class="field"><label>설명(응답자에게 표시됨)</label><textarea id="nodeEditDesc"></textarea></div>
+    <button class="btn primary" id="nodeEditSave" style="width:100%">적용</button>
+  </div>
+</div>
+
+<div id="promoteModal" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><span>트리로 승격</span><button class="modal-close" id="promoteClose">×</button></div>
+    <div class="field">
+      <label>추가할 부모 항목</label>
+      <select id="promoteParentSelect"></select>
+    </div>
+    <button class="btn primary" id="promoteSave" style="width:100%">이 항목의 하위로 추가</button>
+  </div>
+</div>
+
+<div id="settingsModal" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><span>방법론 설정</span><button class="modal-close" id="settingsClose">×</button></div>
+    <div id="settingsLockNotice" class="callout warn" hidden style="margin-bottom:14px">
+      이미 배포된 수집이 있어 일부 항목은 잠겨 있습니다. 바꾸려면 새 collection으로 다시 시작하세요.
+    </div>
+    <div class="field">
+      <label>집계 방식</label>
+      <select id="setAggregation">
+        <option value="AIP">AIP — 개인 가중치 먼저 (개별 CR 즉시 확보, 기본값)</option>
+        <option value="AIJ">AIJ — 판단값 먼저 집계 (단일 합의 결과)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>가중치 도출법</label>
+      <select id="setWeightMethod">
+        <option value="eigen">고유벡터법 (Saaty 표준, 기본값)</option>
+        <option value="geomean">행 기하평균법</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>대안 계층</label>
+      <select id="setAltLayer">
+        <option value="off">사용 안 함 — 기준 가중치만 (기본값)</option>
+        <option value="on">사용 — 대안 평가까지</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>불완전 응답 처리</label>
+      <select id="setIncomplete">
+        <option value="block">제출 차단 (기본값)</option>
+        <option value="allow_partial">완료율만 표시하고 허용</option>
+        <option value="harker">불완전 AHP(Harker법) 적용</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>척도</label>
+      <select id="setScale">
+        <option value="9">9점 척도 (Saaty 표준, 기본값)</option>
+        <option value="5">5점 축약형</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>CR 임계값</label>
+      <input type="number" id="setCrThreshold" step="0.01" min="0" max="1">
+    </div>
+    <div class="field">
+      <label>CR 초과 시</label>
+      <select id="setCrAction">
+        <option value="warn">경고만 (기본값)</option>
+        <option value="block">제출 차단</option>
+      </select>
+    </div>
+    <button class="btn primary" id="settingsSave" style="width:100%">저장</button>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}<script src="/js/designer.js"></script>{% endblock %}

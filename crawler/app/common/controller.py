@@ -3,7 +3,13 @@ import pandas as pd
 from datetime import datetime, timedelta
 import time
 import logging
-from db import crawler_db, get_userinfo, user_logs_db, get_admin_discord_ids, load_proxy_list
+from db import (
+    crawler_db,
+    get_userinfo,
+    user_logs_db,
+    get_admin_discord_ids,
+    load_proxy_list,
+)
 from common.tokenization import tokenization
 from common.notification import notifyRequester, notifyRequesterAndAdmins
 from common.storage import endCrawl, errorCrawl, appendCrawlLog

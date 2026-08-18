@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}결과 분석{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/css/result.css">{% endblock %}
+{% block content %}
+<div class="stage-tabs" id="stageTabs">
+  <a href="#" class="stage-tab" data-stage="design">1. 계층 설계</a>
+  <a href="#" class="stage-tab" data-stage="survey">2. 설문지</a>
+  <a href="#" class="stage-tab" data-stage="collect">3. 수집</a>
+  <a href="#" class="stage-tab active" data-stage="result">4. 결과</a>
+</div>
+<div class="page-body">
+  <div class="page-head">
+    <div>
+      <h1 id="projTitle">결과 분석</h1>
+      <p id="resultSubtitle">오프라인·온라인·실시간 응답을 모두 합쳐서 분석합니다.</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="collectionFilter"><option value="">전체 수집 합산</option></select>
+      <a class="btn sm" id="exportDocx" href="#">Word 설문지</a>
+      <a class="btn sm" id="exportXlsx" href="#">Excel 패키지</a>
+      <a class="btn sm" id="exportCsv" href="#">CSV 원자료</a>
+    </div>
+  </div>
+
+  <div id="resultEmpty" class="empty-state" hidden>
+    <div class="es-icon">📊</div>
+    <h2>아직 제출된 응답이 없습니다</h2>
+    <p>수집이 진행되면 이 화면에서 실시간으로 결과를 볼 수 있습니다.</p>
+  </div>
+
+  <div id="resultContent" hidden>
+    <div class="stat-row">
+      <div class="stat-card"><span class="sc-label">응답자</span><span class="sc-value" id="statRespondents">-</span></div>
+      <div class="stat-card"><span class="sc-label">평균 CR</span><span class="sc-value" id="statAvgCr">-</span></div>
+      <div class="stat-card"><span class="sc-label">CR 초과 응답</span><span class="sc-value" id="statBadCr">-</span></div>
+      <div class="stat-card"><span class="sc-label">집계 방식</span><span class="sc-value" id="statAgg">-</span></div>
+    </div>
+
+    <div class="table-card" style="margin-top:16px">
+      <div class="tc-head"><span class="tc-title">전역 가중치</span><span class="tc-meta">루트 기준 상대 중요도</span></div>
+      <div id="globalWeightsChart" class="weight-chart"></div>
+    </div>
+
+    <div class="table-card" style="margin-top:14px">
+      <div class="tc-head"><span class="tc-title">기준별 합의도 · 극단값</span></div>
+      <div id="consensusList" class="consensus-list"></div>
+    </div>
+
+    <div class="table-card" style="margin-top:14px">
+      <div class="tc-head"><span class="tc-title">개인별 CR</span></div>
+      <div class="tw"><table class="cr-table" id="crTable"></table></div>
+    </div>
+
+    <div class="table-card" style="margin-top:14px">
+      <div class="tc-head"><span class="tc-title">민감도 분석</span><span class="tc-meta">한 기준의 가중치를 흔들면 순위가 바뀌는지 확인</span></div>
+      <div class="sens-form">
+        <select id="sensNode"></select>
+        <input type="number" id="sensDelta" value="0.1" step="0.05" min="-0.9" max="0.9">
+        <button class="btn sm" id="sensRunBtn">적용해 보기</button>
+      </div>
+      <div id="sensResult" class="weight-chart"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}<script src="/js/result.js"></script>{% endblock %}

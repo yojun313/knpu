@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}설문지{% endblock %}
+{% block content %}
+<div class="stage-tabs" id="stageTabs">
+  <a href="#" class="stage-tab" data-stage="design">1. 계층 설계</a>
+  <a href="#" class="stage-tab active" data-stage="survey">2. 설문지</a>
+  <a href="#" class="stage-tab" data-stage="collect">3. 수집</a>
+  <a href="#" class="stage-tab" data-stage="result">4. 결과</a>
+</div>
+<div class="page-body">
+  <div class="page-head">
+    <div>
+      <h1 id="projTitle">설문지 편집</h1>
+      <p>계층에서 자동으로 뽑힌 문항에 안내문과 설명을 채워 응답자가 바로 작성할 수 있게 합니다.</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span id="surveyStatusBadge" class="badge muted"></span>
+      <button class="btn" id="resyncBtn">↻ 계층에서 새로고침</button>
+      <button class="btn" id="previewBtn">인쇄 미리보기</button>
+      <button class="btn primary" id="publishBtn">발행</button>
+    </div>
+  </div>
+
+  <div id="resyncNotice"></div>
+
+  <div class="table-card" style="margin-bottom:14px">
+    <div class="tc-head"><span class="tc-title">안내 · 동의</span></div>
+    <div style="padding:16px">
+      <div class="field"><label>설문지 제목</label><input type="text" id="surveyTitle"></div>
+      <div class="field"><label>도입 안내(응답자에게 첫 화면에 표시)</label>
+        <textarea id="surveyIntro" placeholder="이 연구의 목적과 소요 시간 등을 간단히 설명해 주세요"></textarea></div>
+      <div class="field"><label>통계 비밀유지 · 동의 문구</label>
+        <textarea id="surveyConsent"></textarea></div>
+      <button class="btn primary sm" id="saveIntroBtn">저장</button>
+    </div>
+  </div>
+
+  <div id="matricesList"></div>
+</div>
+{% endblock %}
+{% block extra_scripts %}<script src="/js/survey_editor.js"></script>{% endblock %}

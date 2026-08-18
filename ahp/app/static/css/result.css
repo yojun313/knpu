@@ -1,0 +1,33 @@
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat-card{background:var(--sidebar-bg);border:1px solid var(--sidebar-border);border-radius:12px;
+  padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.sc-label{font-size:11px;color:var(--sidebar-muted);font-weight:700}
+.sc-value{font-size:22px;font-weight:800;color:var(--text-strong);font-variant-numeric:tabular-nums}
+
+.weight-chart{padding:16px}
+.wc-row{display:grid;grid-template-columns:160px 1fr 60px;gap:10px;align-items:center;margin-bottom:10px}
+.wc-row .wc-name{font-size:12.5px;font-weight:700;color:var(--text-strong);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.wc-row .wc-track{height:18px;border-radius:6px;background:var(--sidebar-panel2);overflow:hidden;position:relative}
+.wc-row .wc-fill{height:100%;background:var(--accent);border-radius:6px;transition:width .3s ease}
+.wc-row .wc-fill.adjusted{background:var(--warn)}
+.wc-row .wc-pct{font-size:12px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+
+.consensus-list{padding:6px 16px 16px}
+.consensus-item{padding:10px 0;border-bottom:1px solid var(--sidebar-border)}
+.consensus-item:last-child{border-bottom:none}
+.consensus-item .ci-head{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;
+  color:var(--text-strong);margin-bottom:4px}
+.consensus-item .ci-w{font-variant-numeric:tabular-nums;color:var(--sidebar-muted);font-weight:600}
+.consensus-item .ci-outliers{font-size:11.5px;color:var(--danger)}
+
+.cr-table{width:100%;font-size:12.5px;border-collapse:collapse}
+.cr-table th{text-align:left;padding:8px 14px;font-size:10.5px;color:var(--sidebar-muted);
+  text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--sidebar-border)}
+.cr-table td{padding:7px 14px;border-bottom:1px solid var(--sidebar-border)}
+.cr-table .cr-bad{color:var(--danger);font-weight:700}
+.cr-table .cr-ok{color:var(--success);font-weight:700}
+
+.sens-form{display:flex;gap:8px;padding:14px 16px 4px;flex-wrap:wrap;align-items:center}
+.sens-form select{flex:1;min-width:160px}
+.sens-form input{width:90px}

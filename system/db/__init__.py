@@ -130,6 +130,7 @@ discord_notifications_db = systems_db["discord-notifications"]
 
 crawldata_path = os.getenv("CRAWLDATA_PATH")
 
+
 def get_user_names(uids: list[str]) -> dict[str, str]:
     """uid 목록 -> 표시용 이름. 계정 정보의 진짜 출처는 systems.users이므로 조회만 한다."""
     if not uids:

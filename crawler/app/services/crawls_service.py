@@ -69,7 +69,12 @@ def deleteCrawlDb(uid: str, userUid: str):
         raise HTTPException(status_code=404, detail="CrawlDB not found")
 
     targetDB = crawlDb["name"]
-    _log(userUid, "crawler.crawl_db.delete_request", f"Deleted crawl DB: {targetDB}", targetDB)
+    _log(
+        userUid,
+        "crawler.crawl_db.delete_request",
+        f"Deleted crawl DB: {targetDB}",
+        targetDB,
+    )
 
     crawlList_db.delete_one({"uid": uid})
     crawlLog_db.delete_one({"uid": uid})
@@ -97,7 +102,12 @@ def stopCrawlDb(uid: str, userUid: str):
 
     if result.modified_count > 0:
         target_name = target_data.get("name", "Unknown")
-        _log(userUid, "crawler.crawl_db.stop_request", f"Stopped crawl DB: {target_name}", target_name)
+        _log(
+            userUid,
+            "crawler.crawl_db.stop_request",
+            f"Stopped crawl DB: {target_name}",
+            target_name,
+        )
         return JSONResponse(
             status_code=200,
             content={"message": f"'{target_name}' 크롤링이 중단되었습니다."},
@@ -197,7 +207,12 @@ def getCrawlDbInfo(uid: str, userUid: str):
         raise HTTPException(status_code=404, detail="CrawlDB not found")
 
     targetDB = crawlDb["name"]
-    _log(userUid, "crawler.crawl_db.info_view", f"Viewed crawl DB info: {targetDB}", targetDB)
+    _log(
+        userUid,
+        "crawler.crawl_db.info_view",
+        f"Viewed crawl DB info: {targetDB}",
+        targetDB,
+    )
 
     crawlDb = processDbInfo(crawlDb)
     return JSONResponse(
@@ -295,7 +310,12 @@ def saveCrawlDb(uid: str, saveOption: dict, userUid: str, downloader_name: str):
         raise HTTPException(status_code=404, detail="CrawlDB not found")
 
     targetDB = crawlDb["name"]
-    _log(userUid, "crawler.crawl_db.save_request", f"Requested crawl DB download: {targetDB}", targetDB)
+    _log(
+        userUid,
+        "crawler.crawl_db.save_request",
+        f"Requested crawl DB download: {targetDB}",
+        targetDB,
+    )
 
     pid = saveOption["pid"]
 
@@ -540,13 +560,20 @@ def previewCrawlDb(uid: str, userUid: str):
     if not crawlDb:
         raise HTTPException(status_code=404, detail="CrawlDB not found")
     targetDB = crawlDb["name"]
-    _log(userUid, "crawler.crawl_db.preview_request", f"Requested crawl DB preview: {targetDB}", targetDB)
+    _log(
+        userUid,
+        "crawler.crawl_db.preview_request",
+        f"Requested crawl DB preview: {targetDB}",
+        targetDB,
+    )
 
     target_folder = crawlDb["name"]
     base_path = os.path.join(CRAWL_DATA_PATH, target_folder)
 
     if not os.path.exists(base_path):
-        raise HTTPException(status_code=404, detail=f"폴더가 존재하지 않습니다: {base_path}")
+        raise HTTPException(
+            status_code=404, detail=f"폴더가 존재하지 않습니다: {base_path}"
+        )
 
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:

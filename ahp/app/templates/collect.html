@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}수집 관리{% endblock %}
+{% block content %}
+<div class="stage-tabs" id="stageTabs">
+  <a href="#" class="stage-tab" data-stage="design">1. 계층 설계</a>
+  <a href="#" class="stage-tab" data-stage="survey">2. 설문지</a>
+  <a href="#" class="stage-tab active" data-stage="collect">3. 수집</a>
+  <a href="#" class="stage-tab" data-stage="result">4. 결과</a>
+</div>
+<div class="page-body">
+  <div class="page-head">
+    <div>
+      <h1 id="projTitle">수집 관리</h1>
+      <p>오프라인·온라인·실시간 수집을 동시에 여러 개 운영할 수 있습니다. 같은 설문지의 응답은 결과 화면에서 함께 분석됩니다.</p>
+    </div>
+    <button class="btn primary" id="newCollectionBtn">＋ 새 수집 시작</button>
+  </div>
+  <div id="collectionsList" class="card-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))"></div>
+  <div id="collectionsEmpty" class="empty-state" hidden>
+    <div class="es-icon">📮</div>
+    <h2>아직 시작된 수집이 없습니다</h2>
+    <p>설문지를 발행한 뒤 오프라인·온라인·실시간 중 원하는 방식으로 수집을 시작하세요.</p>
+  </div>
+</div>
+
+<div id="newCollectionModal" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><span>새 수집 시작</span><button class="modal-close" id="newCollectionClose">×</button></div>
+    <div class="field">
+      <label>방식</label>
+      <select id="newCollectionMode">
+        <option value="offline">오프라인 — 종이 설문을 관리자가 직접 입력</option>
+        <option value="online">온라인 — 링크 배포, 비실시간</option>
+        <option value="realtime">실시간 — 델파이 세션, 관리자 콘솔에서 실시간 확인</option>
+      </select>
+    </div>
+    <div class="field"><label>이름(선택)</label><input type="text" id="newCollectionLabel" placeholder="예: 1차 전문가 패널"></div>
+    <button class="btn primary" id="newCollectionSubmit" style="width:100%">시작</button>
+  </div>
+</div>
+
+<div id="codesModal" class="modal-overlay" hidden>
+  <div class="modal-card wide">
+    <div class="modal-head"><span>접속 코드 발급</span><button class="modal-close" id="codesClose">×</button></div>
+    <div id="codesIssueForm">
+      <div class="field"><label>발급할 인원 수</label><input type="number" id="codesCount" value="10" min="1" max="500"></div>
+      <button class="btn primary" id="codesIssueBtn" style="width:100%">발급</button>
+    </div>
+    <div id="codesResult" hidden>
+      <p style="font-size:12px;color:var(--sidebar-muted);margin-bottom:10px">
+        코드는 지금만 보이며 다시 조회할 수 없습니다. 인쇄하거나 복사해 배부하세요.</p>
+      <div class="tw" style="max-height:340px;overflow-y:auto">
+        <table style="width:100%;font-size:12.5px">
+          <thead><tr><th style="text-align:left;padding:6px">참여자</th><th style="text-align:left;padding:6px">코드</th></tr></thead>
+          <tbody id="codesTableBody"></tbody>
+        </table>
+      </div>
+      <button class="btn sm" id="codesCopyAllBtn" style="margin-top:10px">전체 복사</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}<script src="/js/collect.js"></script>{% endblock %}

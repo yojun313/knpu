@@ -307,7 +307,13 @@ def create_folder(uid: str, name: str) -> dict:
         raise ValueError("폴더 이름을 입력해주세요.")
     folder_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
-    doc = {"_id": folder_id, "uid": uid, "name": name, "created_at": now, "updated_at": now}
+    doc = {
+        "_id": folder_id,
+        "uid": uid,
+        "name": name,
+        "created_at": now,
+        "updated_at": now,
+    }
     network_folders_db.insert_one(doc)
     return _folder_out(doc)
 
@@ -356,7 +362,9 @@ def move_project_folder(uid: str, project_id: str, folder_id: str | None) -> dic
     return _doc_out(network_projects_db.find_one({"_id": project_id}))
 
 
-def load_graph(uid: str, project_id: str, tag: str = "", is_admin: bool = False) -> dict:
+def load_graph(
+    uid: str, project_id: str, tag: str = "", is_admin: bool = False
+) -> dict:
     doc = _get_owned_doc(uid, project_id, is_admin)
     # 파일은 소유자(doc["uid"]) 아래에 있으므로 관리자가 대신 조회할 때도 그 경로를 써야 한다.
     path = os.path.join(

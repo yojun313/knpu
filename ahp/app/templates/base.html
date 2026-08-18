@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}AHP{% endblock %} · KNPU AHP</title>
+  <script>(function(){try{var m=document.cookie.match(/(?:^|; )ui_theme_style=([^;]*)/);var t=m?decodeURIComponent(m[1]):null;if(t&&t!=='default')document.documentElement.setAttribute('data-ui-theme',t);var mm=document.cookie.match(/(?:^|; )ui_theme_mode=([^;]*)/);if(mm&&decodeURIComponent(mm[1])==='dark')document.documentElement.setAttribute('data-ui-theme-mode','dark');var mn=document.cookie.match(/(?:^|; )ui_nav_visibility=([^;]*)/);if(mn&&decodeURIComponent(mn[1])==='autohide')document.documentElement.setAttribute('data-ui-nav','autohide');}catch(e){}})();</script>
+  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/shared-ui/theme.css">
+  <link rel="icon" type="image/x-icon" href="/shared-ui/favicon.ico">
+  {% block extra_head %}{% endblock %}
+</head><body>
+  <div class="top-header">
+    <a href="https://knpu.re.kr" title="홈으로"><img src="/img/lab_logo.png" alt="FPEI" class="top-header-logo"></a>
+    <nav class="top-nav">
+      <a href="https://knpu.re.kr" class="top-nav-link">HOME</a>
+      <a href="https://manager.knpu.re.kr" class="top-nav-link">MANAGER</a>
+      <a href="https://crawler.knpu.re.kr" class="top-nav-link">CRAWLER</a>
+      <a href="https://network.knpu.re.kr" class="top-nav-link">NETWORK</a>
+      <a href="https://kemkim.knpu.re.kr" class="top-nav-link">KEMKIM</a>
+      <a href="https://statistics.knpu.re.kr" class="top-nav-link">STATISTICS</a>
+      <a href="https://ahp.knpu.re.kr" class="top-nav-link active">AHP</a>
+    </nav>
+    <button id="themeSettingsBtn" class="theme-settings-btn" type="button" title="테마 설정" aria-label="테마 설정">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+  <div id="app">
+    <div id="rail" class="rail">
+      <div class="rail-head">
+        <button id="railToggle" class="rail-toggle" title="사이드바 접기/펼치기">☰</button>
+        <span class="rail-brand">AHP 프로젝트</span>
+      </div>
+      <div class="rail-actions-row">
+        <button id="railNewProjectBtn" class="rail-upload" title="새 프로젝트">
+          <span class="ru-icon">＋</span><span class="ru-text">새 프로젝트</span>
+        </button>
+      </div>
+      <div id="railList" class="rail-list"></div>
+      <div id="railEmpty" class="rail-empty" hidden>아직 프로젝트가 없습니다</div>
+      <div class="rail-foot">
+        <span id="railUserName" class="rail-user"></span>
+        <div class="rail-foot-actions">
+          <button id="railLogout" class="rail-logout" title="로그아웃">⎋</button>
+        </div>
+      </div>
+    </div>
+    <div id="main">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+  <div id="newProjectModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><span>새 AHP 프로젝트</span><button class="modal-close" id="newProjectClose">×</button></div>
+      <div class="field">
+        <label>연구 제목</label>
+        <input type="text" id="newProjectTitle" placeholder="예: 정책 우선순위 도출을 위한 AHP 분석">
+      </div>
+      <div class="field">
+        <label>설명(선택)</label>
+        <input type="text" id="newProjectDesc" placeholder="연구 목적을 간단히">
+      </div>
+      <button class="btn primary" id="newProjectSubmit" style="width:100%">만들기</button>
+    </div>
+  </div>
+
+  <script src="/js/admin_shell.js"></script>
+  {% block extra_scripts %}{% endblock %}
+  <script src="/shared-ui/theme.js"></script>
+</body></html>

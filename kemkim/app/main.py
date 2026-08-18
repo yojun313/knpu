@@ -79,9 +79,7 @@ app.mount(
 )
 
 SHARED_UI_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "system", "ui")
-app.mount(
-    "/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui"
-)
+app.mount("/shared-ui", NoCacheStaticFiles(directory=SHARED_UI_DIR), name="shared-ui")
 
 app.include_router(api_router)
 

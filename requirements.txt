@@ -20,6 +20,7 @@ matplotlib
 motor
 numpy
 openai
+openpyxl
 packaging
 pandas
 paramiko
