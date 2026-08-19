@@ -21,7 +21,7 @@ PROGRESS_PUBLIC_WS_URL = (
     else "wss://manager.knpu.re.kr/progress"
 )
 CRAWLER_INTERNAL_API = os.getenv(
-    "CRAWLER_INTERNAL_API", "http://localhost:8002/api"
+    "CRAWLER_INTERNAL_API", f"http://localhost:{18002 if MODE == 0 else 8002}/api"
 )
 
 PLATFORM_CATEGORIES = {

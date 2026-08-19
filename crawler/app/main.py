@@ -45,7 +45,12 @@ async def periodic_gc(interval_seconds: int = 60):
 
 fastapi_app = FastAPI(title="CRAWLER")
 
-cors_origins = ["http://localhost:3001", "https://crawler.knpu.re.kr"]
+# dev(dev-crawler.knpu.re.kr)도 같은 앱을 18002로 띄워 쓰므로 함께 허용한다.
+cors_origins = [
+    "http://localhost:3001",
+    "https://crawler.knpu.re.kr",
+    "https://dev-crawler.knpu.re.kr",
+]
 fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
