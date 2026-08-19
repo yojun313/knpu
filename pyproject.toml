@@ -70,6 +70,7 @@ dependencies = [
     "websockets>=16.0",
     "wordcloud>=1.9.6",
     "yt-dlp>=2026.3.17",
+    "webauthn>=3.0.0",
 ]
 
 [tool.uv]
