@@ -23,7 +23,6 @@ load_dotenv()
 
 # 환경 변수 로드
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
-MODE = os.getenv("MODE")
 
 SSH_HOST = os.getenv("SSH_HOST")
 SSH_PORT = int(os.getenv("SSH_PORT", 22))
@@ -52,14 +51,10 @@ class MyBot(commands.Bot):
         # 외부에서 생성된 URI로 DB 연결
         self.mongo_client = motor.motor_asyncio.AsyncIOMotorClient(mongo_uri)
 
-        if MODE == "0":
-            self.systems_db = self.mongo_client["systems_dev"]
-            self.crawler_db = self.mongo_client["crawler_dev"]
-        else:
-            self.systems_db = self.mongo_client["systems"]
-            self.crawler_db = self.mongo_client["crawler"]
-
-        # 계정/인증코드/디스코드 알림 큐는 원래도 dev/prod 구분 없이 하나였다
+        # dev/prod는 DB를 공유한다(system/db/__init__.py 참고) — MODE로 "_dev"
+        # DB를 갈라 보던 옛 동작은 실제로 존재하지 않는 DB를 가리키고 있었다.
+        self.systems_db = self.mongo_client["systems"]
+        self.crawler_db = self.mongo_client["crawler"]
         self.homepage_db = self.mongo_client["systems"]
         self.notifications_db = self.mongo_client["systems"]["discord-notifications"]
 
