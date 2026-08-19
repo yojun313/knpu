@@ -1,8 +1,10 @@
 import os
 import requests
 
+MODE = int(os.getenv("MODE", 1))
+
 MANAGER_SERVER_INTERNAL_API = os.getenv(
-    "MANAGER_SERVER_INTERNAL_API", "http://localhost:8000/api"
+    "MANAGER_SERVER_INTERNAL_API", f"http://localhost:{18001 if MODE == 0 else 8001}/api"
 )
 
 

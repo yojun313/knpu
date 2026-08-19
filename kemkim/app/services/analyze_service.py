@@ -14,18 +14,22 @@ load_dotenv()
 MODE = int(os.getenv("MODE", 1))
 
 MANAGER_SERVER_API = os.getenv(
-    "MANAGER_SERVER_INTERNAL_API", "http://localhost:8000/api"
+    "MANAGER_SERVER_INTERNAL_API", f"http://localhost:{18001 if MODE == 0 else 8001}/api"
 )
 
-PROGRESS_SERVER_URL = os.getenv("PROGRESS_SERVER_URL", "http://localhost:8080").rstrip(
-    "/"
-)
+PROGRESS_SERVER_URL = os.getenv(
+    "PROGRESS_SERVER_URL", f"http://localhost:{18006 if MODE == 0 else 8006}"
+).rstrip("/")
 
 PROGRESS_PUBLIC_WS_URL = (
-    "ws://localhost:8080" if MODE == 0 else "wss://manager.knpu.re.kr/progress"
+    "wss://dev-manager.knpu.re.kr/progress"
+    if MODE == 0
+    else "wss://manager.knpu.re.kr/progress"
 )
 
-CRAWLER_INTERNAL_API = os.getenv("CRAWLER_INTERNAL_API", "http://localhost:3001/api")
+CRAWLER_INTERNAL_API = os.getenv(
+    "CRAWLER_INTERNAL_API", f"http://localhost:{18005 if MODE == 0 else 8005}/api"
+)
 
 _DEFAULT_OPTION = {
     "period": "1y",

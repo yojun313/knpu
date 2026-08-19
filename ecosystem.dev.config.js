@@ -1,3 +1,7 @@
+// 개발용(dev) pm2 설정. prod와 동시에 떠 있어도 포트가 겹치지 않는다(= prod 포트 + 10000).
+// MODE=0 이라서 DB도 자동으로 "_dev" 접미사가 붙은 쪽을 사용한다(system/db 참고).
+// 도메인은 각 서비스 prod 도메인에 "dev-" 접두사(예: dev-manager.knpu.re.kr).
+// 켜고 끄기: pm2 start/stop/delete ecosystem.dev.config.js  (전체 dev를 한번에 제어)
 module.exports = {
   apps: [
     {
@@ -7,34 +11,7 @@ module.exports = {
       interpreter: "/home/lab/knpu/.venv/bin/python",
       watch: false,
       time: true,
-      env: { MODE: "0", PORT: "18002" },
-    },
-    {
-      name: "complaint-dev",
-      cwd: "/home/lab/knpu/complaint/server",
-      script: "run.py",
-      interpreter: "/home/lab/knpu/.venv/bin/python",
-      watch: false,
-      time: true,
-      env: { MODE: "0", PORT: "18003" },
-    },
-    {
-      name: "manager_web-dev",
-      cwd: "/home/lab/knpu/manager/web",
-      script: "run.py",
-      interpreter: "/home/lab/knpu/.venv/bin/python",
-      watch: false,
-      time: true,
-      env: { MODE: "0", PORT: "18080" },
-    },
-    {
-      name: "dashboard-dev",
-      cwd: "/home/lab/knpu/admin",
-      script: "run.py",
-      interpreter: "/home/lab/knpu/.venv/bin/python",
-      watch: false,
-      time: true,
-      env: { MODE: "0", PORT: "13004" },
+      env: { MODE: "0", PORT: "18000" },
     },
     {
       name: "manager-dev",
@@ -43,7 +20,7 @@ module.exports = {
       interpreter: "/home/lab/knpu/.venv/bin/python",
       watch: false,
       time: true,
-      env: { MODE: "0", PORT: "18000" },
+      env: { MODE: "0", PORT: "18001" },
     },
     {
       name: "network-dev",
@@ -52,7 +29,7 @@ module.exports = {
       interpreter: "/home/lab/knpu/.venv/bin/python",
       watch: false,
       time: true,
-      env: { MODE: "0", PORT: "18001" },
+      env: { MODE: "0", PORT: "18002" },
     },
     {
       name: "kemkim-dev",
@@ -61,7 +38,7 @@ module.exports = {
       interpreter: "/home/lab/knpu/.venv/bin/python",
       watch: false,
       time: true,
-      env: { MODE: "0", PORT: "18008" },
+      env: { MODE: "0", PORT: "18003" },
     },
     {
       name: "statistics-dev",
@@ -70,7 +47,25 @@ module.exports = {
       interpreter: "/home/lab/knpu/.venv/bin/python",
       watch: false,
       time: true,
-      env: { MODE: "0", PORT: "18009" },
+      env: { MODE: "0", PORT: "18004" },
+    },
+    {
+      name: "crawler-dev",
+      cwd: "/home/lab/knpu/crawler",
+      script: "run.py",
+      interpreter: "/home/lab/knpu/.venv/bin/python",
+      watch: false,
+      time: true,
+      env: { MODE: "0", PORT: "18005" },
+    },
+    {
+      name: "manager_web-dev",
+      cwd: "/home/lab/knpu/manager/web",
+      script: "run.py",
+      interpreter: "/home/lab/knpu/.venv/bin/python",
+      watch: false,
+      time: true,
+      env: { MODE: "0", PORT: "18006" },
     },
     {
       name: "ahp-dev",
@@ -79,7 +74,25 @@ module.exports = {
       interpreter: "/home/lab/knpu/.venv/bin/python",
       watch: false,
       time: true,
-      env: { MODE: "0", PORT: "18010" },
+      env: { MODE: "0", PORT: "18007" },
+    },
+    {
+      name: "complaint-dev",
+      cwd: "/home/lab/knpu/complaint/server",
+      script: "run.py",
+      interpreter: "/home/lab/knpu/.venv/bin/python",
+      watch: false,
+      time: true,
+      env: { MODE: "0", PORT: "18008" },
+    },
+    {
+      name: "dashboard-dev",
+      cwd: "/home/lab/knpu/admin",
+      script: "run.py",
+      interpreter: "/home/lab/knpu/.venv/bin/python",
+      watch: false,
+      time: true,
+      env: { MODE: "0", PORT: "18009" },
     },
   ],
 };

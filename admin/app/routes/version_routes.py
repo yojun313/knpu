@@ -11,8 +11,9 @@ templates.env.globals["get_nav_items"] = settings_service.get_nav_items_ordered
 
 # manager_server가 admin과 같은 서버에서 돌아가므로 내부 호출은 로컬호스트로 바로 붙는다
 # (다른 서비스들의 discord_notify.py 프록시와 동일한 관례).
+MODE = int(os.getenv("MODE", 1))
 MANAGER_SERVER_API = os.getenv(
-    "MANAGER_SERVER_INTERNAL_API", "http://localhost:8000/api"
+    "MANAGER_SERVER_INTERNAL_API", f"http://localhost:{18001 if MODE == 0 else 8001}/api"
 )
 
 

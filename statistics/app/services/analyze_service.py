@@ -12,13 +12,17 @@ load_dotenv()
 
 MODE = int(os.getenv("MODE", 1))
 
-PROGRESS_SERVER_URL = os.getenv("PROGRESS_SERVER_URL", "http://localhost:8080").rstrip(
-    "/"
-)
+PROGRESS_SERVER_URL = os.getenv(
+    "PROGRESS_SERVER_URL", f"http://localhost:{18006 if MODE == 0 else 8006}"
+).rstrip("/")
 PROGRESS_PUBLIC_WS_URL = (
-    "ws://localhost:8080" if MODE == 0 else "wss://manager.knpu.re.kr/progress"
+    "wss://dev-manager.knpu.re.kr/progress"
+    if MODE == 0
+    else "wss://manager.knpu.re.kr/progress"
 )
-CRAWLER_INTERNAL_API = os.getenv("CRAWLER_INTERNAL_API", "http://localhost:3001/api")
+CRAWLER_INTERNAL_API = os.getenv(
+    "CRAWLER_INTERNAL_API", f"http://localhost:{18005 if MODE == 0 else 8005}/api"
+)
 
 PLATFORM_CATEGORIES = {
     "Naver News": ["article 분석", "statistics 분석", "reply 분석", "rereply 분석"],

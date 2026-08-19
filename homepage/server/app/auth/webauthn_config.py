@@ -7,6 +7,6 @@ MODE = int(os.getenv("MODE", 1))
 
 RP_ID = "knpu.re.kr" if MODE == 1 else "localhost"
 RP_NAME = "KNPU FPEI"
-EXPECTED_ORIGIN = "https://knpu.re.kr" if MODE == 1 else "http://localhost:8002"
+EXPECTED_ORIGIN = "https://knpu.re.kr" if MODE == 1 else "http://localhost:8000"
 
 CHALLENGE_TTL_MINUTES = 5

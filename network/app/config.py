@@ -11,6 +11,6 @@ load_dotenv()
 mode = int(os.getenv("MODE", 1))
 
 if mode == 0:
-    NETWORK_VIEWER_URL = "http://localhost:8001"
+    NETWORK_VIEWER_URL = "https://dev-network.knpu.re.kr"
 else:
     NETWORK_VIEWER_URL = "https://network.knpu.re.kr"
