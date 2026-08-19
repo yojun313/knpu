@@ -68,6 +68,7 @@
             <thead>
                 <tr class="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Domain Name</th>
+                    <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Port</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Paths</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px]">Config File</th>
                     <th class="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Actions</th>
@@ -85,6 +86,19 @@
                             </a>
                         </div>
                     </td>
+                    <td class="p-4" data-label="Port">
+                        {% if d.primary_port %}
+                        <span class="font-mono font-bold text-blue-400 bg-blue-900/10 px-2 py-1 rounded border border-blue-900/30 text-xs">
+                            :{{ d.primary_port }}
+                        </span>
+                        {% else %}
+                        <span class="font-mono text-zinc-600 text-xs">—</span>
+                        {% endif %}
+                        {% set other_ports = d.paths|selectattr('port', 'ne', d.primary_port|string)|map(attribute='port')|unique|list %}
+                        {% if other_ports %}
+                        <span class="font-mono text-zinc-500 text-[10px] ml-1">+{{ other_ports|join(', ') }}</span>
+                        {% endif %}
+                    </td>
                     <td class="p-4" data-label="Paths">
                         <span class="font-mono text-zinc-400 bg-black/40 px-2 py-1 rounded border border-zinc-800/50 text-xs">
                             {{ d.paths|length }}개
@@ -101,7 +115,7 @@
                     </td>
                 </tr>
                 <tr id="paths-row-{{ d.domain }}" class="hidden bg-black/20 border-b border-zinc-800/50">
-                    <td colspan="4" class="p-0">
+                    <td colspan="5" class="p-0">
                         <div class="px-6 py-4 overflow-x-auto">
                             <table class="nested-paths-table w-full text-left text-xs">
                                 <thead>
@@ -129,7 +143,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" class="p-20 text-center">
+                    <td colspan="5" class="p-20 text-center">
                         <div class="text-zinc-600 mb-2 italic">등록된 도메인이 없습니다.</div>
                     </td>
                 </tr>
