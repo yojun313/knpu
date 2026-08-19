@@ -71,7 +71,11 @@ class AuthMiddleware:
                 content={"detail": "인증이 필요합니다"},
             )
         else:
-            redirect_url = str(request.url)
+            # request.url은 uvicorn이 프록시 뒤에 있다는 걸 모르기 때문에 scheme이
+            # 항상 http로 찍힌다 — nginx가 TLS를 종료하므로 실제로 http로 오는 경우는
+            # 없으니 https로 강제한다. 그렇지 않으면 로그인 후 되돌아갈 때 Secure
+            # 쿠키가 http 요청에 실리지 않아 리다이렉트가 깨진다.
+            redirect_url = str(request.url.replace(scheme="https"))
             response = RedirectResponse(
                 url=f"https://knpu.re.kr/login?redirect={quote(redirect_url)}",
                 status_code=302,
