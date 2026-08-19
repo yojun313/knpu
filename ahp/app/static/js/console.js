@@ -46,6 +46,10 @@
     renderTable();
   }
 
+  function activeSectionMatrix() {
+    return surveyMatricesCache[activeSectionIndex] || null;
+  }
+
   function renderPhaseBadge() {
     const badge = document.getElementById('sessionPhaseBadge');
     const startBtn = document.getElementById('startSessionBtn');
@@ -53,15 +57,29 @@
       badge.textContent = '시작 전';
       badge.className = 'badge muted';
       startBtn.hidden = false;
-    } else if (activeSectionIndex >= totalSections) {
+      return;
+    }
+    startBtn.hidden = true;
+    if (activeSectionIndex >= totalSections) {
       badge.textContent = '모든 섹션 완료 — 라운드 결정 대기';
       badge.className = 'badge ok';
-      startBtn.hidden = true;
-    } else {
-      badge.textContent = '섹션 ' + (activeSectionIndex + 1) + '/' + totalSections + ' 진행 중';
-      badge.className = 'badge ok';
-      startBtn.hidden = true;
+      return;
     }
+    const m = activeSectionMatrix();
+    const name = m ? (m.is_alternative ? '[대안] ' : '') + nodeNameFromHierarchy(m.parent_uuid) : '';
+    badge.textContent = '섹션 ' + (activeSectionIndex + 1) + '/' + totalSections + ' 진행 중 — ' + name;
+    badge.className = 'badge ok';
+  }
+
+  // 진행 중인 섹션이 바뀔 때마다(시작·다음 섹션·라운드 진행) 아래 섹션 그리드가
+  // 자동으로 그 섹션을 보여주게 한다 — 예전엔 관리자가 드롭다운을 직접 바꾸거나
+  // 새로고침해야 지금 무슨 섹션이 열려 있는지 알 수 있었다(요청사항).
+  function syncSectionToActive() {
+    const m = activeSectionMatrix();
+    if (!sessionStarted || !m) return;
+    const sel = document.getElementById('sectionMatrixSelect');
+    if (sel.value !== m.matrix_id) sel.value = m.matrix_id;
+    loadSectionSnapshot();
   }
 
   function setWsStatus(state) {
@@ -95,14 +113,17 @@
         sessionStarted = true;
         activeSectionIndex = 0;
         renderPhaseBadge();
+        syncSectionToActive();
         loadRespondents();
       } else if (msg.event === 'session.started') {
         sessionStarted = true;
         activeSectionIndex = 0;
         renderPhaseBadge();
+        syncSectionToActive();
       } else if (msg.event === 'section.advanced') {
         activeSectionIndex = msg.section_index;
         renderPhaseBadge();
+        syncSectionToActive();
       }
     });
     ws.addEventListener('close', function () {
@@ -142,7 +163,7 @@
           '<textarea class="live-desc-input" data-node="' + cid + '">' + ahpEsc(desc) + '</textarea></div>';
       }).join('');
       return '<div class="live-matrix" data-matrix="' + m.matrix_id + '">' +
-        '<h4>' + ahpEsc(nodeNamesCache[m.matrix_id] || m.matrix_id) + '</h4>' +
+        '<h4>' + (m.is_alternative ? '[대안] ' : '') + ahpEsc(nodeNameFromHierarchy(m.parent_uuid)) + '</h4>' +
         '<div class="field"><label>질문 문구</label>' +
         '<textarea class="live-question-input" data-matrix="' + m.matrix_id + '">' + ahpEsc(m.question_text) + '</textarea></div>' +
         childrenHtml + '</div>';
@@ -331,7 +352,10 @@
       }
     });
 
-    await loadSectionSnapshot();
+    // 콘솔을 열었을 때(또는 새로고침 후) 이미 세션이 진행 중이면 처음부터
+    // 현재 열려 있는 섹션을 보여준다 — 매번 드롭다운에서 직접 찾을 필요 없게.
+    if (sessionStarted) syncSectionToActive();
+    else await loadSectionSnapshot();
     document.getElementById('sectionMatrixSelect').addEventListener('change', loadSectionSnapshot);
     document.getElementById('sectionRefreshBtn').addEventListener('click', loadSectionSnapshot);
     document.getElementById('sectionUnlockBtn').addEventListener('click', async function () {
@@ -378,6 +402,7 @@
         sessionStarted = true;
         activeSectionIndex = 0;
         renderPhaseBadge();
+        syncSectionToActive();
       } catch (e) {
         ahpToast(e.message || '세션 시작에 실패했습니다', true);
       }
@@ -390,6 +415,7 @@
         const res = await ahpApi('/api/collections/' + collectionId + '/sections/advance', { method: 'POST' });
         activeSectionIndex = res.section_index;
         renderPhaseBadge();
+        syncSectionToActive();
         await loadRespondents();
       } catch (e) {
         ahpToast(e.message || '섹션 진행에 실패했습니다', true);
