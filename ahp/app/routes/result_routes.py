@@ -141,6 +141,26 @@ async def get_results(
     ids, round_map = _parse_selection(collection_id, collection_ids, rounds)
     submissions = await _gather_final_submissions(project_id, ids, round_map)
 
+    # 대안(hierarchy.alternatives)은 기준 트리(hierarchy.nodes)와 별도의 평탄한
+    # 목록이라(PLAN.md 5절 결정), build_results에 그대로 넘기면 node_parent 등
+    # 트리 전제 로직이 깨진다(대안 항목엔 parent_id가 없다). 그래서 node_names만
+    # 여기서 별도로 채운다 — 대안 순위(alternative_scores)의 키가 대안 uuid라
+    # 이게 없으면 화면에 이름 대신 uuid가 그대로 노출된다.
+    alt_names = {a["uuid"]: a["name"] for a in hierarchy.get("alternatives", [])}
+
+    # matrix_id -> 부모 기준 이름. result.js가 이전엔 "matrix_id == parent_uuid"라는
+    # 전제로 이 매핑을 클라이언트에서 유추했는데, 대안 비교 행렬은 matrix_id가
+    # "alt:<leaf_uuid>" 형식이라(survey_service.generate_matrices) 그 전제가
+    # 깨져 대안 섹션의 CR·합의도 행이 이름 대신 "alt:<uuid>"로 보였다.
+    nodes_by_uuid = {n["uuid"]: n for n in hierarchy["nodes"]}
+    matrix_parent_names = {
+        m["matrix_id"]: (
+            ("[대안] " if m.get("is_alternative") else "")
+            + nodes_by_uuid.get(m["parent_uuid"], {}).get("name", "")
+        )
+        for m in survey["matrices"]
+    }
+
     if not submissions:
         return {
             "respondent_count": 0,
@@ -149,13 +169,17 @@ async def get_results(
             "per_respondent_cr": {},
             "consensus": {},
             "outliers": {},
-            "node_names": {n["uuid"]: n["name"] for n in hierarchy["nodes"]},
+            "node_names": {**{n["uuid"]: n["name"] for n in hierarchy["nodes"]}, **alt_names},
+            "matrix_parent_names": matrix_parent_names,
             "message": "아직 제출된 응답이 없습니다",
         }
 
-    return build_results(
+    results = build_results(
         hierarchy["nodes"], survey["matrices"], submissions, project.get("settings", {})
     )
+    results["node_names"].update(alt_names)
+    results["matrix_parent_names"] = matrix_parent_names
+    return results
 
 
 @router.get("/api/projects/{project_id}/results/sensitivity")

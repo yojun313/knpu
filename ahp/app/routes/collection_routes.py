@@ -465,6 +465,16 @@ async def unlock_section(collection_id: str, matrix_id: str, request: Request):
     await collections_db.update_one(
         {"_id": collection_id}, {"$set": {"section_rounds": section_rounds}}
     )
+    if collection["mode"] == "realtime":
+        # 실시간 게이팅 하에서는 이미 지난 섹션에 대한 PUT이 서버에서 막혀
+        # 있다(respond_routes.put_answer의 active_matrix_id 검사) — 전원에게
+        # revision_matrix_id를 부여해야 실제로 다시 응답할 수 있다. 개별
+        # 재조정 요청(request_individual_revision)과 같은 메커니즘을 전원
+        # 대상으로 쓰는 것뿐이다.
+        await respondents_db.update_many(
+            {"collection_id": collection_id},
+            {"$set": {"revision_matrix_id": matrix_id}},
+        )
     await hub.publish(
         collection_id,
         "section.unlock",

@@ -426,6 +426,15 @@
   function handleSectionUnlock(msg) {
     const q = questions.find(function (qq) { return qq.matrix_id === msg.matrix_id; });
     const name = q ? q.parent_name : '이 항목';
+    if (landing.collection.mode === 'realtime') {
+      // 실시간 모드는 게이팅 때문에 알림만 띄워선 안 된다 — 서버가 이미 전원에게
+      // revision_matrix_id를 부여했으니(collection_routes.unlock_section) 곧장
+      // 그 섹션 화면으로 데려가야 실제로 다시 응답할 수 있다.
+      revisionMatrixId = msg.matrix_id;
+      showNotice('연구자가 "' + name + '" 항목을 참가자 전원에게 다시 열었습니다. 이어서 응답해 주세요.');
+      enterRealtimeFlow();
+      return;
+    }
     pendingReopenMatrixId = msg.matrix_id;
     const onDone = document.getElementById('viewDone').hidden === false;
     showNotice(

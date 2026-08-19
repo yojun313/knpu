@@ -48,6 +48,8 @@
     }).join('');
   }
 
+  function matrixParentName(mid) { return (results.matrix_parent_names || {})[mid] || mid; }
+
   function renderConsensus() {
     const box = document.getElementById('consensusList');
     const matrixIds = Object.keys(results.consensus || {});
@@ -61,14 +63,11 @@
       const outlierText = outliers.length
         ? outliers.map(function (o) { return o.outlier_respondents.length + '명 의견이 크게 다른 쌍 발견'; }).join(', ')
         : '극단값 없음';
-      return '<div class="consensus-item"><div class="ci-head"><span>' + ahpEsc(results.node_names[matrixIdToParent(mid)] || mid) + '</span>' +
+      return '<div class="consensus-item"><div class="ci-head"><span>' + ahpEsc(matrixParentName(mid)) + '</span>' +
         '<span class="ci-w">Kendall W ' + c.kendalls_w.toFixed(2) + '</span></div>' +
         '<div class="ci-outliers">' + ahpEsc(outlierText) + '</div></div>';
     }).join('');
   }
-
-  let matrixParentMap = {};
-  function matrixIdToParent(mid) { return matrixParentMap[mid] || mid; }
 
   function renderCrTable() {
     const table = document.getElementById('crTable');
@@ -77,7 +76,7 @@
       const rid = entry[0], perMatrix = entry[1];
       Object.entries(perMatrix).forEach(function (mEntry) {
         const mid = mEntry[0], cr = mEntry[1];
-        rows.push({ rid: rid, parent: results.node_names[matrixIdToParent(mid)] || mid, cr: cr });
+        rows.push({ rid: rid, parent: matrixParentName(mid), cr: cr });
       });
     });
     if (!rows.length) {
@@ -132,11 +131,6 @@
       ahpToast(e.message || '결과를 불러오는 중 오류가 발생했습니다', true);
       return;
     }
-
-    matrixParentMap = {};
-    // matrices 정보가 결과에 직접 없으므로 hierarchy 기반으로 부모=matrix_id 관계를 유추
-    // (survey_service의 규칙: matrix_id는 항상 parent_uuid와 같다)
-    Object.keys(results.local_weights || {}).forEach(function (mid) { matrixParentMap[mid] = mid; });
 
     document.getElementById('resultEmpty').hidden = results.respondent_count > 0;
     document.getElementById('resultContent').hidden = results.respondent_count === 0;
