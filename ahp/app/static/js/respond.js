@@ -19,6 +19,10 @@
   let respondentToken = localStorage.getItem(STORAGE_TOKEN_KEY);
   let pendingReopenMatrixId = null;
   let questions = [];
+  // 실시간 모드에서 지금 이 화면에 보여줄 문항 부분집합 — 그 외 모드에서는 항상
+  // questions 전체와 같다(섹션 게이팅이 없으니까). goNext/renderQuestion 등
+  // 설문 진행 로직은 전부 questions가 아니라 이걸 봐야 한다.
+  let activeList = [];
   let currentIndex = 0;
   let answers = {};
   let matrixCrCache = {};
@@ -27,8 +31,27 @@
   let pendingIntensity = null;
   let reviewMatrixId = null;
   let reviewWorstPid = null;
+  // 연구자가 "재조정 요청"을 보낸 섹션 — 설정돼 있으면 지금 열린 섹션이 아니어도
+  // 이 매트릭스만은 다시 응답할 수 있다(요청사항 5단계).
+  let revisionMatrixId = null;
 
-  function views() { return ['viewLoading', 'viewError', 'viewConsent', 'viewCode', 'viewSurvey', 'viewDone', 'viewReview']; }
+  const STORAGE_SECTIONS_DONE_KEY = 'ahp_sections_done_' + accessToken;
+  function loadSectionsDone() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_SECTIONS_DONE_KEY) || '{}'); } catch (e) { return {}; }
+  }
+  function markSectionDone(matrixId) {
+    const done = loadSectionsDone();
+    done[landing.collection.round + ':' + matrixId] = true;
+    localStorage.setItem(STORAGE_SECTIONS_DONE_KEY, JSON.stringify(done));
+  }
+  function isSectionDone(matrixId) {
+    return !!loadSectionsDone()[landing.collection.round + ':' + matrixId];
+  }
+
+  function views() {
+    return ['viewLoading', 'viewError', 'viewConsent', 'viewCode', 'viewSurvey', 'viewDone',
+      'viewReview', 'viewWaitStart', 'viewSectionWait'];
+  }
   function show(id) { views().forEach(function (v) { document.getElementById(v).hidden = (v !== id); }); }
   function showError(title, msg) {
     document.getElementById('errorTitle').textContent = title;
@@ -162,12 +185,46 @@
       Object.keys(me.answers).forEach(function (mid) { Object.assign(answers, me.answers[mid]); });
       clientSeq = me.client_seq || clientSeq;
       if (me.respondent.status === 'submitted') { await showDone(); return; }
-      currentIndex = questions.findIndex(function (q) { return !(pairId(q.uuid_a, q.uuid_b) in answers); });
-      if (currentIndex === -1) currentIndex = questions.length ? questions.length - 1 : 0;
+      if (landing.collection.mode === 'realtime') { enterRealtimeFlow(); return; }
+      activeList = questions;
+      currentIndex = computeResumeIndex(activeList);
       startSurvey();
     } catch (e) {
       renderConsent();
     }
+  }
+
+  // 다음에 보여줄 문항 인덱스 — 답 없는 첫 문항, 전부 채워져 있으면 마지막
+  // 문항에 머문다(제출 전 다시 훑어볼 수 있게).
+  function computeResumeIndex(list) {
+    const idx = list.findIndex(function (q) { return currentValueForQuestion(q) === null; });
+    return idx === -1 ? (list.length ? list.length - 1 : 0) : idx;
+  }
+
+  // 실시간 모드에서 "지금 무엇을 보여줘야 하는가"를 한 곳에서 결정한다 —
+  // 세션 시작 전(대기), 재조정 요청을 받은 섹션(즉시 그 섹션), 현재 열린
+  // 섹션을 이미 마쳤으면(대기), 아니면 그 섹션의 남은 문항부터.
+  function refreshActiveList() {
+    if (landing.collection.mode !== 'realtime') { activeList = questions; return; }
+    const targetId = revisionMatrixId || landing.collection.active_matrix_id;
+    activeList = questions.filter(function (q) { return q.matrix_id === targetId; });
+  }
+
+  function enterRealtimeFlow() {
+    refreshActiveList();
+    if (!landing.collection.session_started) { showWaitStart(); return; }
+    const targetId = revisionMatrixId || landing.collection.active_matrix_id;
+    if (!targetId) {
+      // active_matrix_id가 없다 = 마지막 섹션까지 이미 넘어갔다는 뜻(서버 상태
+      // 기준) — 보통은 section.advanced의 done 알림으로 곧장 제출까지 끝나지만,
+      // 그 알림을 놓치고 재접속한 경우에도 대기 화면에 갇히지 않도록 여기서도
+      // 같은 마무리를 한 번 더 시도한다.
+      finishSurvey();
+      return;
+    }
+    if (!revisionMatrixId && isSectionDone(targetId)) { showSectionWait(); return; }
+    currentIndex = computeResumeIndex(activeList);
+    startSurvey();
   }
 
   async function submitCode(code) {
@@ -191,6 +248,8 @@
       localStorage.setItem(STORAGE_TOKEN_KEY, respondentToken);
       currentIndex = 0;
       answers = {};
+      if (landing.collection.mode === 'realtime') { enterRealtimeFlow(); return; }
+      activeList = questions;
       startSurvey();
     } catch (e) {
       errEl.textContent = '연결에 실패했습니다. 다시 시도해 주세요';
@@ -205,6 +264,44 @@
     show('viewSurvey');
     renderQuestion();
     connectRealtimeIfNeeded();
+  }
+
+  function showWaitStart() {
+    show('viewWaitStart');
+    connectRealtimeIfNeeded();
+  }
+
+  function showSectionWait() {
+    const box = document.getElementById('sectionWaitResults');
+    box.innerHTML = '';
+    box.hidden = true;
+    show('viewSectionWait');
+    connectRealtimeIfNeeded();
+  }
+
+  function nodeNameByUuid(uuid) {
+    for (let i = 0; i < questions.length; i++) {
+      if (questions[i].uuid_a === uuid) return questions[i].name_a;
+      if (questions[i].uuid_b === uuid) return questions[i].name_b;
+    }
+    return uuid;
+  }
+
+  function renderSectionWaitResults(msg, isIndividual) {
+    if (document.getElementById('viewSectionWait').hidden) return;
+    if (msg.matrix_id !== (revisionMatrixId || landing.collection.active_matrix_id)) return;
+    const box = document.getElementById('sectionWaitResults');
+    const cr = isIndividual ? msg.cr : msg.avg_cr;
+    const crLine = (cr === null || cr === undefined) ? '' :
+      '<div class="swr-cr">CR ' + cr.toFixed(3) + '</div>';
+    const rows = Object.keys(msg.weights || {})
+      .sort(function (a, b) { return msg.weights[b] - msg.weights[a]; })
+      .map(function (uuid) {
+        return '<div class="swr-row"><span>' + esc(nodeNameByUuid(uuid)) + '</span>' +
+          '<span>' + (msg.weights[uuid] * 100).toFixed(1) + '%</span></div>';
+      }).join('');
+    box.innerHTML = '<h3>' + (isIndividual ? '나의 결과' : '그룹 결과') + '</h3>' + crLine + rows;
+    box.hidden = false;
   }
 
   // ── 실시간 수신 전용 소켓 (PLAN.md 7.2) ────────────────────────────────
@@ -234,12 +331,22 @@
       if (msg.event === 'survey.patch') handleSurveyPatch(msg);
       else if (msg.event === 'round.advanced') handleRoundAdvanced(msg);
       else if (msg.event === 'section.unlock') handleSectionUnlock(msg);
+      else if (msg.event === 'session.started') handleSessionStarted(msg);
+      else if (msg.event === 'section.advanced') handleSectionAdvanced(msg);
+      else if (msg.event === 'section.results') renderSectionWaitResults(msg, false);
+      else if (msg.event === 'section.individual_result') renderSectionWaitResults(msg, true);
+      else if (msg.event === 'section.revision_requested') handleRevisionRequested(msg);
     });
     ws.addEventListener('close', function () {
       realtimeSocket = null;
       // 재연결(지수 백오프) — 응답 저장 자체는 HTTP라 끊겨도 입력을 잃지 않지만,
-      // 문항 실시간 반영 채널은 계속 살려 둔다.
-      setTimeout(function () { if (document.getElementById('viewSurvey').hidden === false) connectRealtimeIfNeeded(); }, 2000);
+      // 문항 실시간 반영 채널은 계속 살려 둬야 대기 화면에서도 다음 섹션·공개
+      // 결과 알림을 받을 수 있다.
+      setTimeout(function () {
+        const stillNeedsSocket = ['viewSurvey', 'viewWaitStart', 'viewSectionWait']
+          .some(function (id) { return document.getElementById(id).hidden === false; });
+        if (stillNeedsSocket) connectRealtimeIfNeeded();
+      }, 2000);
     });
   }
 
@@ -258,17 +365,59 @@
       }
     } catch (e) { /* 서버 재조회 실패해도 로컬 답은 유지하고 계속 진행 */ }
     buildQuestions();
-    currentIndex = questions.findIndex(function (q) { return !(pairId(q.uuid_a, q.uuid_b) in answers); });
-    if (currentIndex === -1) currentIndex = questions.length ? questions.length - 1 : 0;
+    if (document.getElementById('viewSurvey').hidden) return;
+    refreshActiveList();
+    currentIndex = computeResumeIndex(activeList);
     renderQuestion();
   }
 
-  function handleRoundAdvanced(msg) {
+  async function handleRoundAdvanced(msg) {
     showNotice((msg.round) + '라운드가 시작되었습니다. 이어서 응답해 주세요.');
+    if (landing.collection.mode === 'realtime') {
+      try {
+        const res = await fetch('/api/respond/' + accessToken);
+        if (res.ok) { landing = await res.json(); buildQuestions(); }
+      } catch (e) { /* 재조회 실패해도 기존 landing으로 계속 진행 */ }
+      revisionMatrixId = null;
+      const waiting = ['viewDone', 'viewWaitStart', 'viewSectionWait', 'viewSurvey']
+        .some(function (id) { return document.getElementById(id).hidden === false; });
+      if (waiting) enterRealtimeFlow();
+      return;
+    }
     if (!document.getElementById('viewDone').hidden) {
+      activeList = questions;
       currentIndex = 0;
       startSurvey();
     }
+  }
+
+  function handleSessionStarted(msg) {
+    landing.collection.session_started = true;
+    landing.collection.active_matrix_id = msg.matrix_id;
+    revisionMatrixId = null;
+    showNotice('연구자가 설문을 시작했습니다.');
+    if (document.getElementById('viewWaitStart').hidden === false) enterRealtimeFlow();
+  }
+
+  function handleSectionAdvanced(msg) {
+    landing.collection.active_matrix_id = msg.matrix_id;
+    revisionMatrixId = null;
+    if (msg.done) {
+      showNotice('모든 섹션이 끝났습니다. 제출을 마무리합니다.');
+      finishSurvey();
+      return;
+    }
+    showNotice('다음 섹션이 열렸습니다.');
+    const waiting = ['viewSectionWait', 'viewWaitStart'].some(function (id) {
+      return document.getElementById(id).hidden === false;
+    });
+    if (waiting) enterRealtimeFlow();
+  }
+
+  function handleRevisionRequested(msg) {
+    revisionMatrixId = msg.matrix_id;
+    showNotice('연구자가 이 항목의 응답을 다시 확인해 달라고 요청했습니다.');
+    enterRealtimeFlow();
   }
 
   // 연구자가 콘솔에서 특정 섹션(계층 매트릭스)만 다시 열었을 때 — 이미 제출을
@@ -291,7 +440,7 @@
   }
 
   function renderQuestion() {
-    const q = questions[currentIndex];
+    const q = activeList[currentIndex];
     document.getElementById('qParentName').textContent = (q.is_alternative ? '대안 비교 · ' : '') + q.parent_name;
     document.getElementById('qParentDesc').textContent = q.parent_description || '';
     document.getElementById('qParentDesc').hidden = !q.parent_description;
@@ -303,7 +452,7 @@
     document.getElementById('descA').textContent = q.desc_a || '';
     document.getElementById('descB').textContent = q.desc_b || '';
     document.getElementById('itemDescs').hidden = !q.desc_a && !q.desc_b;
-    document.getElementById('qCounter').textContent = (currentIndex + 1) + ' / ' + questions.length;
+    document.getElementById('qCounter').textContent = (currentIndex + 1) + ' / ' + activeList.length;
     document.getElementById('prevBtn').disabled = currentIndex === 0;
 
     const current = currentValueForQuestion(q);
@@ -338,8 +487,8 @@
   }
 
   function updateProgress() {
-    const answeredCount = questions.filter(function (q) { return currentValueForQuestion(q) !== null; }).length;
-    const pct = questions.length ? Math.round(100 * answeredCount / questions.length) : 100;
+    const answeredCount = activeList.filter(function (q) { return currentValueForQuestion(q) !== null; }).length;
+    const pct = activeList.length ? Math.round(100 * answeredCount / activeList.length) : 100;
     document.getElementById('progressFill').style.width = pct + '%';
     document.getElementById('progressText').textContent = pct + '% 완료';
   }
@@ -347,11 +496,14 @@
   function updateNextButtonState() {
     const ready = pendingSide === 'eq' || (pendingSide && pendingIntensity);
     document.getElementById('nextBtn').disabled = !ready;
-    document.getElementById('nextBtn').textContent = currentIndex === questions.length - 1 ? '제출' : '다음';
+    const isLast = currentIndex === activeList.length - 1;
+    document.getElementById('nextBtn').textContent = isLast
+      ? (landing.collection.mode === 'realtime' ? '완료' : '제출')
+      : '다음';
   }
 
   function commitAnswer() {
-    const q = questions[currentIndex];
+    const q = activeList[currentIndex];
     let value;
     if (pendingSide === 'eq') value = 1;
     else if (pendingSide === 'a') value = pendingIntensity;
@@ -376,7 +528,7 @@
 
   async function goNext() {
     if (!commitAnswer()) return;
-    const q = questions[currentIndex];
+    const q = activeList[currentIndex];
 
     if (q.is_last_in_matrix) {
       await flushQueue();
@@ -391,9 +543,17 @@
       }
     }
 
-    if (currentIndex < questions.length - 1) {
+    if (currentIndex < activeList.length - 1) {
       currentIndex += 1;
       renderQuestion();
+    } else if (landing.collection.mode === 'realtime') {
+      // 실시간 모드는 섹션 하나를 다 채웠다고 곧장 다음 섹션으로 넘어가지
+      // 않는다 — 연구자가 "다음 섹션 진행"을 누를 때까지 대기 화면에서
+      // 기다린다(요청사항 4~5단계).
+      await flushQueue();
+      if (revisionMatrixId === q.matrix_id) revisionMatrixId = null;
+      else markSectionDone(q.matrix_id);
+      enterRealtimeFlow();
     } else {
       await finishSurvey();
     }

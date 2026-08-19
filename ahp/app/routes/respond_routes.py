@@ -93,12 +93,22 @@ async def respond_landing(token: str):
     survey, nodes_by_id = await _survey_and_nodes(collection)
     project = await projects_db.find_one({"_id": survey["project_id"]}, {"settings": 1})
 
+    active_matrix_id = None
+    if collection["mode"] == "realtime" and collection.get("session_started"):
+        idx = collection.get("active_section_index", 0)
+        matrices = survey["matrices"]
+        if 0 <= idx < len(matrices):
+            active_matrix_id = matrices[idx]["matrix_id"]
+
     return {
         "collection": {
             "id": collection["_id"],
             "mode": collection["mode"],
             "status": collection.get("status", "open"),
             "label": collection.get("label"),
+            "round": collection.get("round", 1),
+            "session_started": collection.get("session_started", False),
+            "active_matrix_id": active_matrix_id,
         },
         "survey": {
             "title": survey["title"],
@@ -237,6 +247,20 @@ async def put_answer(token: str, request: Request):
     if not matrix:
         raise HTTPException(404, "해당 비교 항목을 찾을 수 없습니다")
 
+    respondent = await respondents_db.find_one({"_id": payload["respondent_id"]})
+    if collection["mode"] == "realtime" and collection.get("session_started"):
+        idx = collection.get("active_section_index", 0)
+        matrices = survey["matrices"]
+        active_matrix_id = matrices[idx]["matrix_id"] if 0 <= idx < len(matrices) else None
+        is_revision = (respondent or {}).get("revision_matrix_id") == matrix_id
+        if matrix_id != active_matrix_id and not is_revision:
+            # 예외를 던지면 클라이언트 큐(flushQueue)가 이걸 "일시적 네트워크
+            # 실패"로 오인해 지수 백오프로 영원히 재시도한다(정지된 seq 처리와
+            # 같은 이유로 200 + 플래그를 쓴다, 위 stale 분기 참고). 정상 UI라면
+            # 애초에 열리지 않은 섹션을 PUT할 방법이 없고, 유일한 경합 상황은
+            # 응답 중 섹션이 넘어간 순간의 네트워크 경쟁 정도라 조용히 무시한다.
+            return {"ack": client_seq, "gated": True}
+
     resp = await responses_db.find_one(
         {"collection_id": collection["_id"], "respondent_id": payload["respondent_id"]}
     )
@@ -281,6 +305,10 @@ async def put_answer(token: str, request: Request):
     try:
         result = derive_weights(node_ids, matrix_answers)
         cr_info = {"complete": True, "cr": result.cr}
+        if (respondent or {}).get("revision_matrix_id") == matrix_id:
+            await respondents_db.update_one(
+                {"_id": payload["respondent_id"]}, {"$unset": {"revision_matrix_id": ""}}
+            )
     except IncompleteMatrixError:
         cr_info = {"complete": False}
 

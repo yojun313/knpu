@@ -6,6 +6,9 @@
   let respondents = [];
   let ws = null;
   let backoff = 1000;
+  let sessionStarted = false;
+  let activeSectionIndex = 0;
+  let totalSections = 0;
 
   function fmtCr(v) {
     if (v === null || v === undefined) return '-';
@@ -29,7 +32,11 @@
         '<div class="rr-status">' + (r.status === 'submitted' ? '제출 완료' : r.status === 'in_progress' ? '응답 중' : '시작 전') + '</div>' +
         '<div class="rr-progress"><div class="rr-progress-fill" style="width:' + (r.progress || 0) + '%"></div></div></div>' +
         '<span class="rr-cr ' + crCls + '">' + fmtCr(r.worst_cr) + '</span>' +
-        '<span></span></div>';
+        '<div class="rr-actions">' +
+        (r.source === 'web'
+          ? '<button class="rr-act" data-act="reissue" data-id="' + r.id + '" title="코드 재발급">↻</button>'
+          : '') +
+        '<button class="rr-act" data-act="delete" data-id="' + r.id + '" title="삭제">×</button></div></div>';
     }).join('');
   }
 
@@ -37,6 +44,24 @@
     const r = respondents.find(function (x) { return x.id === id; });
     if (r) Object.assign(r, patch);
     renderTable();
+  }
+
+  function renderPhaseBadge() {
+    const badge = document.getElementById('sessionPhaseBadge');
+    const startBtn = document.getElementById('startSessionBtn');
+    if (!sessionStarted) {
+      badge.textContent = '시작 전';
+      badge.className = 'badge muted';
+      startBtn.hidden = false;
+    } else if (activeSectionIndex >= totalSections) {
+      badge.textContent = '모든 섹션 완료 — 라운드 결정 대기';
+      badge.className = 'badge ok';
+      startBtn.hidden = true;
+    } else {
+      badge.textContent = '섹션 ' + (activeSectionIndex + 1) + '/' + totalSections + ' 진행 중';
+      badge.className = 'badge ok';
+      startBtn.hidden = true;
+    }
   }
 
   function setWsStatus(state) {
@@ -67,7 +92,17 @@
         patchRespondent(msg.respondent_id, { online: msg.online });
       } else if (msg.event === 'round.advanced') {
         document.getElementById('roundNum').textContent = msg.round;
+        sessionStarted = true;
+        activeSectionIndex = 0;
+        renderPhaseBadge();
         loadRespondents();
+      } else if (msg.event === 'session.started') {
+        sessionStarted = true;
+        activeSectionIndex = 0;
+        renderPhaseBadge();
+      } else if (msg.event === 'section.advanced') {
+        activeSectionIndex = msg.section_index;
+        renderPhaseBadge();
       }
     });
     ws.addEventListener('close', function () {
@@ -92,6 +127,8 @@
   async function loadLiveMatrices() {
     const survey = await ahpApi('/api/projects/' + projectId + '/survey');
     surveyMatricesCache = survey.matrices;
+    totalSections = survey.matrices.length;
+    renderPhaseBadge();
     populateSectionMatrixSelect(survey.matrices);
     const box = document.getElementById('liveMatricesList');
     if (!survey.matrices.length) {
@@ -193,7 +230,7 @@
 
     const header = '<tr><th>참여자</th><th>CR</th>' + pairs.map(function (p) {
       return '<th>' + ahpEsc(nodeNameFromHierarchy(p[0])) + ' vs ' + ahpEsc(nodeNameFromHierarchy(p[1])) + '</th>';
-    }).join('') + '</tr>';
+    }).join('') + '<th>개별 진행</th></tr>';
 
     const rows = (snap.respondents || []).map(function (r) {
       const crCls = r.cr === null || r.cr === undefined ? '' : (r.cr <= 0.1 ? 'ok' : 'bad');
@@ -205,8 +242,12 @@
           '<option value="">(미응답)</option>' +
           scaleOptionsHtml(nodeNameFromHierarchy(p[0]), nodeNameFromHierarchy(p[1]), current) + '</select></td>';
       }).join('');
+      const actions = '<td><div class="section-row-actions">' +
+        '<button class="sr-act" data-act="reveal-individual" data-rid="' + r.respondent_id + '">개별 공개</button>' +
+        '<button class="sr-act" data-act="request-revision" data-rid="' + r.respondent_id + '">재조정 요청</button>' +
+        '</div></td>';
       return '<tr><td>' + ahpEsc(r.label) + ' <span class="muted">(' + r.answered_pairs + '/' + r.total_pairs + ')</span></td>' +
-        '<td class="' + crCls + '">' + (r.cr === null || r.cr === undefined ? '-' : r.cr.toFixed(3)) + '</td>' + cells + '</tr>';
+        '<td class="' + crCls + '">' + (r.cr === null || r.cr === undefined ? '-' : r.cr.toFixed(3)) + '</td>' + cells + actions + '</tr>';
     }).join('');
 
     box.innerHTML = rows
@@ -259,6 +300,9 @@
     document.getElementById('collLabel').textContent = collection.label + ' · 실시간 콘솔';
     document.getElementById('roundNum').textContent = collection.round;
     document.getElementById('backToCollect').href = '/collect/' + projectId;
+    sessionStarted = !!collection.session_started;
+    activeSectionIndex = collection.active_section_index || 0;
+    renderPhaseBadge();
     if (window.AHPShell) window.AHPShell.setActiveProject(projectId);
 
     try {
@@ -308,6 +352,98 @@
       if (el.value === '') return;
       if (!confirm('응답자와 확인한 값입니까?')) { loadSectionSnapshot(); return; }
       saveSectionCell(el.dataset.rid, el.dataset.a, el.dataset.b, Number(el.value));
+    });
+    document.getElementById('sectionTable').addEventListener('click', async function (e) {
+      const btn = e.target.closest('.sr-act');
+      if (!btn) return;
+      const matrix = currentSectionMatrix();
+      if (!matrix) return;
+      const rid = btn.dataset.rid;
+      const path = '/api/collections/' + collectionId + '/sections/' + matrix.matrix_id + '/' + btn.dataset.act + '/' + rid;
+      if (btn.dataset.act === 'request-revision' &&
+        !confirm('이 참여자에게만 이 섹션을 다시 조정하도록 요청할까요?')) return;
+      try {
+        await ahpApi(path, { method: 'POST' });
+        ahpToast(btn.dataset.act === 'reveal-individual' ? '이 참여자에게 결과를 공개했습니다' : '재조정을 요청했습니다');
+      } catch (e2) {
+        ahpToast(e2.message || '처리에 실패했습니다', true);
+      }
+    });
+
+    // ── 실시간 세션 진행 제어 ──────────────────────────────────────────
+    document.getElementById('startSessionBtn').addEventListener('click', async function () {
+      if (!confirm('설문을 시작할까요? 대기 중인 참여자에게 첫 섹션이 열립니다.')) return;
+      try {
+        await ahpApi('/api/collections/' + collectionId + '/session/start', { method: 'POST' });
+        sessionStarted = true;
+        activeSectionIndex = 0;
+        renderPhaseBadge();
+      } catch (e) {
+        ahpToast(e.message || '세션 시작에 실패했습니다', true);
+      }
+    });
+
+    document.getElementById('advanceSectionBtn').addEventListener('click', async function () {
+      const isLast = activeSectionIndex >= totalSections - 1;
+      if (!confirm(isLast ? '마지막 섹션입니다. 진행하면 라운드가 종료됩니다. 계속할까요?' : '다음 섹션을 열까요?')) return;
+      try {
+        const res = await ahpApi('/api/collections/' + collectionId + '/sections/advance', { method: 'POST' });
+        activeSectionIndex = res.section_index;
+        renderPhaseBadge();
+        await loadRespondents();
+      } catch (e) {
+        ahpToast(e.message || '섹션 진행에 실패했습니다', true);
+      }
+    });
+
+    document.getElementById('revealGroupBtn').addEventListener('click', async function () {
+      const matrix = currentSectionMatrix();
+      if (!matrix) return;
+      try {
+        await ahpApi('/api/collections/' + collectionId + '/sections/' + matrix.matrix_id + '/reveal-group', { method: 'POST' });
+        ahpToast('그룹 결과를 공개했습니다');
+      } catch (e) {
+        ahpToast(e.message || '공개에 실패했습니다', true);
+      }
+    });
+
+    // ── 참여자 관리(입장 현황과 함께 콘솔에서 바로) ──────────────────────
+    document.getElementById('addParticipantBtn').addEventListener('click', async function () {
+      const count = Number(prompt('발급할 인원 수', '1') || '0');
+      if (!count || count < 1) return;
+      try {
+        const res = await ahpApi('/api/collections/' + collectionId + '/codes', {
+          method: 'POST', body: { count: count },
+        });
+        ahpToast(res.issued.length + '명의 코드를 발급했습니다 — "수집 관리"에서 확인/인쇄할 수 있습니다');
+        await loadRespondents();
+      } catch (e) {
+        ahpToast(e.message || '발급에 실패했습니다', true);
+      }
+    });
+
+    document.getElementById('respondentTable').addEventListener('click', async function (e) {
+      const btn = e.target.closest('.rr-act');
+      if (!btn) return;
+      const rid = btn.dataset.id;
+      if (btn.dataset.act === 'reissue') {
+        try {
+          const res = await ahpApi('/api/collections/' + collectionId + '/respondents/' + rid + '/reissue-code', { method: 'POST' });
+          alert('새 코드: ' + res.code);
+        } catch (e2) {
+          ahpToast(e2.message || '재발급에 실패했습니다', true);
+        }
+        return;
+      }
+      if (btn.dataset.act === 'delete') {
+        if (!confirm('이 참여자를 삭제할까요? 지금까지의 응답도 함께 삭제됩니다.')) return;
+        try {
+          await ahpApi('/api/collections/' + collectionId + '/respondents/' + rid, { method: 'DELETE' });
+          await loadRespondents();
+        } catch (e2) {
+          ahpToast(e2.message || '삭제에 실패했습니다', true);
+        }
+      }
     });
   }
 

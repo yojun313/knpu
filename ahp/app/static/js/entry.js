@@ -6,6 +6,11 @@
   let selectedRespondentId = null;
   let scaleMax = 9;
 
+  // currentAOverB가 null이면 "아직 응답하지 않음" — 맨 앞에 비활성 플레이스홀더를
+  // 넣어 어떤 척도도 선택되지 않은 상태로 보여준다. 이게 없으면 네이티브 select가
+  // 첫 옵션(가장 강한 A쪽)을 시각적으로 선택된 것처럼 보여줘서 "동일하게 중요"를
+  // 실제로 고른 것과 구별이 안 됐다(요청사항 — console.js의 섹션 그리드가 이미
+  // 쓰는 "(미응답)" 패턴을 그대로 재사용).
   function scaleOptionsHtml(nameA, nameB, currentAOverB) {
     const opts = [];
     for (let n = scaleMax; n >= 2; n--) {
@@ -15,8 +20,10 @@
     for (let n = 2; n <= scaleMax; n++) {
       opts.push({ v: 1 / n, label: ahpEsc(nameB) + '가(이) ' + n + '배 더 중요' });
     }
-    return opts.map(function (o) {
-      const sel = Math.abs(o.v - currentAOverB) < 1e-6 ? ' selected' : '';
+    const placeholder = currentAOverB === null
+      ? '<option value="" selected disabled hidden>(미응답)</option>' : '';
+    return placeholder + opts.map(function (o) {
+      const sel = currentAOverB !== null && Math.abs(o.v - currentAOverB) < 1e-6 ? ' selected' : '';
       return '<option value="' + o.v + '"' + sel + '>' + o.label + '</option>';
     }).join('');
   }
@@ -63,9 +70,19 @@
     badge.className = state.cls;
   }
 
+  function updateSubmitButton() {
+    const btn = document.getElementById('markSubmittedBtn');
+    const resp = currentRespondent();
+    if (!resp) { btn.disabled = true; btn.textContent = '제출 완료로 표시'; return; }
+    const done = resp.status === 'submitted';
+    btn.disabled = done;
+    btn.textContent = done ? '제출 완료됨' : '제출 완료로 표시';
+  }
+
   function renderMatrices() {
     const box = document.getElementById('matricesForm');
     const resp = currentRespondent();
+    updateSubmitButton();
     if (!resp) {
       box.innerHTML = '<p style="color:var(--sidebar-muted);font-size:12.5px">왼쪽에서 응답자를 선택하세요.</p>';
       return;
@@ -80,7 +97,7 @@
         const pid = [p.uuid_a, p.uuid_b].sort().join(':');
         const nameA = (m.children.find(function (c) { return c.uuid === p.uuid_a; }) || {}).name || p.uuid_a;
         const nameB = (m.children.find(function (c) { return c.uuid === p.uuid_b; }) || {}).name || p.uuid_b;
-        const current = pid in answers ? answers[pid] : 1;
+        const current = pid in answers ? answers[pid] : null;
         return '<div class="entry-pair-row" data-matrix="' + m.matrix_id + '" data-a="' + p.uuid_a + '" data-b="' + p.uuid_b + '">' +
           '<span class="ep-label">' + ahpEsc(nameA) + ' vs ' + ahpEsc(nameB) + '</span>' +
           '<select>' + scaleOptionsHtml(nameA, nameB, current) + '</select></div>';
@@ -131,6 +148,21 @@
     }
   }
 
+  async function markSubmitted() {
+    const resp = currentRespondent();
+    if (!resp || resp.status === 'submitted') return;
+    if (!confirm(resp.label + '의 응답을 제출 완료로 표시할까요?')) return;
+    try {
+      await ahpApi('/api/entry/' + collectionId + '/respondents/' + resp.id + '/submit', { method: 'POST' });
+      resp.status = 'submitted';
+      renderRespondents();
+      updateSubmitButton();
+      ahpToast('제출 완료로 표시했습니다');
+    } catch (e) {
+      ahpToast(e.message || '처리에 실패했습니다', true);
+    }
+  }
+
   async function addRespondent() {
     const label = prompt('응답자 이름 또는 번호(비워두면 자동 지정)') || '';
     try {
@@ -174,6 +206,7 @@
     await loadGrid();
 
     document.getElementById('addRespondentBtn').addEventListener('click', addRespondent);
+    document.getElementById('markSubmittedBtn').addEventListener('click', markSubmitted);
     document.getElementById('respondentList').addEventListener('click', async function (e) {
       const del = e.target.closest('.er-del');
       if (del) {
