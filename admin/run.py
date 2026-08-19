@@ -1,5 +1,3 @@
-# uvicorn app.main:app --host 0.0.0.0 --port 3004 --reload
-
 import os
 import uvicorn
 import warnings

@@ -6,10 +6,15 @@
 """
 
 import os
+
 import requests
 
+from system.endpoints import internal_api
+
+# 기본값이 홈페이지 포트(8000)로 잘못 잡혀 있어서 이 프록시의 알림이 조용히 404로
+# 사라지고 있었다 — /users/admin/notify는 manager/server(8001, dev 18001)의 것이다.
 MANAGER_SERVER_INTERNAL_API = os.getenv(
-    "MANAGER_SERVER_INTERNAL_API", "http://localhost:8000/api"
+    "MANAGER_SERVER_INTERNAL_API", internal_api("manager")
 )
 
 

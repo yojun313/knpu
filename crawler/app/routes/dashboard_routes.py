@@ -3,14 +3,15 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from system.auth.jwt import decode_token as verify_token
+from system.endpoints import LOGIN_URL
 
 router = APIRouter()
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
-MODE = int(os.getenv("MODE", 1))
-COOKIE_SECURE = MODE == 1
+# dev(dev-crawler.knpu.re.kr)도 https로 서빙되므로 MODE와 무관하게 Secure를 켠다.
+COOKIE_SECURE = True
 COOKIE_MAX_AGE = 30 * 24 * 60 * 60
 
 
@@ -34,7 +35,7 @@ async def dashboard_page(request: Request):
 async def token_login(token: str):
     payload = verify_token(token)
     if not payload:
-        return RedirectResponse(url="https://knpu.re.kr/login")
+        return RedirectResponse(url=LOGIN_URL)
 
     response = RedirectResponse(url="/")
     response.set_cookie(

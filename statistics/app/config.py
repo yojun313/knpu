@@ -1,6 +1,8 @@
-"""
-0: local
-1: production
+"""MODE
+0: dev  (dev*.knpu.re.kr, 18xxx 포트)
+1: prod (*.knpu.re.kr, 8xxx 포트)
+
+DB와 계정은 두 모드가 공유한다 — system/db/__init__.py 참고.
 """
 
 import os
